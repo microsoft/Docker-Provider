@@ -155,14 +155,15 @@ protected:
 		// Should have same number of images
 		CPPUNIT_ASSERT_EQUAL(images.size(), context.Size());
 
-		wchar_t currentId[66];
+		wchar_t currentId[128];
 		int imageCount = 0;
 
 		// Verify every field of every object
 		for (unsigned i = 0; i < images.size(); i++)
 		{
 			bool flag = false;
-			mbstowcs(currentId, cJSON_GetObjectItem(images[i], "InstanceID")->valuestring, 65);
+			int rc = mbstowcs(currentId, cJSON_GetObjectItem(images[i], "InstanceID")->valuestring, (sizeof(currentId)/sizeof(currentId[0])) - 1);
+			if (rc > 0 && rc < sizeof(currentId)/sizeof(currentId[0])) currentId[rc] = 0;
 
 			for (unsigned j = 0; !flag && j < context.Size(); j++)
 			{
