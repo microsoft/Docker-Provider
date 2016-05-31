@@ -19,6 +19,7 @@
 #include "cjson/cJSON.h"
 
 #define LASTQUERYTIMEFILE "/var/opt/microsoft/docker-cimprov/state/LastEventQueryTime.txt"
+#define TEST_LASTQUERYTIMEFILE "./LastEventQueryTime.txt"
 
 using namespace std;
 using namespace SCXCoreLib;
@@ -89,7 +90,7 @@ protected:
 		m_keyNames.push_back(L"InstanceID");
 
 		// Read the time from disk
-		FILE* file = fopen(LASTQUERYTIMEFILE, "r");
+		FILE* file = fopen(TEST_LASTQUERYTIMEFILE, "r");
 		int fileTime = time(NULL);
 
 		if (file)
@@ -98,7 +99,7 @@ protected:
 		}
 		else
 		{
-			file = fopen(LASTQUERYTIMEFILE, "w");
+			file = fopen(TEST_LASTQUERYTIMEFILE, "w");
 			CPPUNIT_ASSERT(file);
 			fprintf(file, "%d", fileTime);
 		}

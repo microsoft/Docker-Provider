@@ -18,6 +18,7 @@
 #include "Container_ContainerLogFileReader.h"
 
 #define LASTQUERYTIMEFILE "/var/opt/microsoft/docker-cimprov/state/LastEventQueryTime.txt"
+#define TEST_LASTQUERYTIMEFILE "./LastEventQueryTime.txt"
 
 using namespace std;
 
@@ -43,6 +44,20 @@ class EventQuery
 {
 private:
 	///
+	/// Utility to get file path for LastEventQueryTime
+	/// 
+	static char* GetEventQueryTimeFilePath()
+	{
+		char* lastQueryFile = LASTQUERYTIMEFILE;
+		const char *cTestRun = getenv("CONTAINER_TESTRUN_ACTIVE");
+		if (cTestRun != NULL)
+		{
+			lastQueryFile = TEST_LASTQUERYTIMEFILE;
+		}
+		return lastQueryFile;
+	}
+
+	///
 	/// Get the previous time if it was stored, otherwise get the current time
 	///
 	/// \returns Time of previous query if available
@@ -51,7 +66,8 @@ private:
 	{
 		int fileTime = time(NULL);
 		int currentTime = fileTime;
-		FILE* file = fopen(LASTQUERYTIMEFILE, "r");
+		char* lastQueryFile = GetEventQueryTimeFilePath();
+		FILE* file = fopen(lastQueryFile, "r");
 
 		if (file)
 		{
@@ -60,12 +76,12 @@ private:
 
 			if (fileTime > currentTime)
 			{
-				syslog(LOG_WARNING, "The time stored in %s is more recent than the current time", LASTQUERYTIMEFILE);
+				syslog(LOG_WARNING, "The time stored in %s is more recent than the current time", lastQueryFile);
 			}
 		}
 		else
 		{
-			syslog(LOG_ERR, "Attempt in GetPreviousTime to open %s for reading failed", LASTQUERYTIMEFILE);
+			syslog(LOG_ERR, "Attempt in GetPreviousTime to open %s for reading failed", lastQueryFile);
 		}
 
 		// Discard stored times that are more recent than the current time
@@ -79,7 +95,8 @@ private:
 	///
 	static void SetPreviousTime(int t)
 	{
-		FILE* file = fopen(LASTQUERYTIMEFILE, "w");
+		char* lastQueryFile = GetEventQueryTimeFilePath();
+		FILE* file = fopen(lastQueryFile, "w");
 
 		if (file)
 		{
@@ -88,7 +105,7 @@ private:
 		}
 		else
 		{
-			syslog(LOG_ERR, "Attempt in SetPreviousTime to open %s for writing failed", LASTQUERYTIMEFILE);
+			syslog(LOG_ERR, "Attempt in SetPreviousTime to open %s for writing failed", lastQueryFile);
 		}
 	}
 
@@ -179,7 +196,9 @@ public:
 				{
 					cJSON* entry = cJSON_GetArrayItem(response[0], i);
 
-					if (entry)
+					// the API may return objects that are not of type container (eg: image, network).
+					// Some of these objects do not have status or time keys
+					if (entry && !strcmp(cJSON_GetObjectItem(entry, "type")->valuestring, "container"))
 					{
 						// New inventory entry
 						Container_DaemonEvent_Class instance;

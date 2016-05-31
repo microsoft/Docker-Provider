@@ -171,7 +171,7 @@ void getResponseInBatch(vector<string>& request, vector<cJSON*>& response, unsig
 	for (int i = 0; !ignoreResponse && i < n; i++)
 	{
 		char readBuf[bufferSize + 1];
-		size_t read_n = 0;
+		int read_n = 0;
 		string raw_response;
 		response.push_back(NULL);
 
