@@ -45,16 +45,18 @@ class EventQuery
 private:
 	///
 	/// Utility to get file path for LastEventQueryTime
-	/// 
-	static char* GetEventQueryTimeFilePath()
+	///
+	static const char* GetEventQueryTimeFilePath()
 	{
-		char* lastQueryFile = LASTQUERYTIMEFILE;
 		const char *cTestRun = getenv("CONTAINER_TESTRUN_ACTIVE");
 		if (cTestRun != NULL)
 		{
-			lastQueryFile = TEST_LASTQUERYTIMEFILE;
+			return TEST_LASTQUERYTIMEFILE;
 		}
-		return lastQueryFile;
+		else
+		{
+			return LASTQUERYTIMEFILE;
+		}
 	}
 
 	///
@@ -66,7 +68,7 @@ private:
 	{
 		int fileTime = time(NULL);
 		int currentTime = fileTime;
-		char* lastQueryFile = GetEventQueryTimeFilePath();
+		const char* lastQueryFile = GetEventQueryTimeFilePath();
 		FILE* file = fopen(lastQueryFile, "r");
 
 		if (file)
@@ -95,7 +97,7 @@ private:
 	///
 	static void SetPreviousTime(int t)
 	{
-		char* lastQueryFile = GetEventQueryTimeFilePath();
+		const char* lastQueryFile = GetEventQueryTimeFilePath();
 		FILE* file = fopen(lastQueryFile, "w");
 
 		if (file)
