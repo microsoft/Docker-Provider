@@ -92,31 +92,61 @@ protected:
 		// Enumerate provider
 		StandardTestEnumerateInstances<mi::Container_ImageInventory_Class_Provider>(m_keyNames, context, CALL_LOCATION(errMsg));
 
-		// Get images using command line
-		CPPUNIT_ASSERT(!system("docker images -q --no-trunc > /tmp/docker_image_ids.txt"));
+		// Get images info using command line
+		wstring dockerimages = StrFromMultibyte(RunCommand("docker images --no-trunc"));
+		// split into lines
+		vector<wstring> lines;
+		StrTokenize(dockerimages, lines, L"\n");
 
-		FILE* idFile = fopen("/tmp/docker_image_ids.txt", "r");
-		CPPUNIT_ASSERT(idFile);
-
-		wchar_t id[65];
 		set<wstring> allIds;
 
-		// Full image IDs (one per line)
-		while (fwscanf(idFile, L"%ls", id) != EOF)
+		int matched = 0;
+
+		// Full image info (header plus one per line)
+		if (lines.size() > 0)
 		{
-			allIds.insert(wstring(id));
+			// parse header to get column offsets
+			vector<wstring>::iterator it = lines.begin();
+			string hdrstr = StrToMultibyte(*it, true);
+			it++;
+
+			string::size_type repoix = hdrstr.find("REPOSITORY", 0);
+			CPPUNIT_ASSERT_MESSAGE(string("Can't find 'REPOSITORY' keyword in docker output line: ").append(hdrstr), repoix != string::npos);
+			string::size_type tagix = hdrstr.find("TAG", 0);
+			CPPUNIT_ASSERT_MESSAGE(string("Can't find 'TAG' keyword in docker output line: ").append(hdrstr), tagix != string::npos);
+			string::size_type idix = hdrstr.find("IMAGE ID", 0);
+			CPPUNIT_ASSERT_MESSAGE(string("Can't find 'IMAGE ID' keyword in docker output line: ").append(hdrstr), idix != string::npos);
+			string::size_type createdix = hdrstr.find("CREATED", 0);
+			CPPUNIT_ASSERT_MESSAGE(string("Can't find 'CREATED' keyword in docker output line: ").append(hdrstr), createdix != string::npos);
+
+			// loop over lines after the header
+			for (; it != lines.end(); ++it)
+			{
+				wstring id = StrTrimR((*it).substr(idix, createdix - idix));
+				bool match = false;
+				for (unsigned i = 0; i < context.Size(); ++i)
+				{
+					// Verify the InstanceID
+					if (id.compare(context[i].GetKey(L"InstanceID", CALL_LOCATION(errMsg))) == 0)
+					{
+						match = true;
+						matched++;
+						break;
+					}
+				}
+
+				if (!match)
+				{
+					// not found. If the repo & tag are both "<none>", then this is ok since enumerate may filter these
+					wstring repo = StrTrimR((*it).substr(repoix, tagix - repoix));
+					CPPUNIT_ASSERT_EQUAL(wstring(L"<none>"), repo);
+					wstring tag = StrTrimR((*it).substr(tagix, idix - tagix));
+					CPPUNIT_ASSERT_EQUAL(wstring(L"<none>"), tag);
+				}
+			}
 		}
 
-		fclose(idFile);
-		remove("/tmp/docker_image_ids.txt");
-
-		CPPUNIT_ASSERT_EQUAL(allIds.size(), context.Size());
-
-		for (unsigned i = 0; i < context.Size(); ++i)
-		{
-			// Verify the InstanceID
-			CPPUNIT_ASSERT(allIds.count(context[i].GetKey(L"InstanceID", CALL_LOCATION(errMsg))));
-		}
+		CPPUNIT_ASSERT_EQUAL(matched, context.Size());
 	}
 
 	void TestEnumerateVerifyAllValues()
@@ -162,8 +192,8 @@ protected:
 		for (unsigned i = 0; i < images.size(); i++)
 		{
 			bool flag = false;
-			int rc = mbstowcs(currentId, cJSON_GetObjectItem(images[i], "InstanceID")->valuestring, (sizeof(currentId)/sizeof(currentId[0])) - 1);
-			if (rc > 0 && rc < sizeof(currentId)/sizeof(currentId[0])) currentId[rc] = 0;
+			size_t rc = mbstowcs(currentId, cJSON_GetObjectItem(images[i], "InstanceID")->valuestring, (sizeof(currentId)/sizeof(currentId[0])) - 1);
+			if (rc != (size_t)-1 && rc < (sizeof(currentId)/sizeof(currentId[0]))) currentId[rc] = 0;
 
 			for (unsigned j = 0; !flag && j < context.Size(); j++)
 			{
