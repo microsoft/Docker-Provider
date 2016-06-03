@@ -198,9 +198,8 @@ public:
 				{
 					cJSON* entry = cJSON_GetArrayItem(response[0], i);
 
-					// the API may return objects that are not of type container (eg: image, network).
-					// Some of these objects do not have status or time keys
-					if (entry && !strcmp(cJSON_GetObjectItem(entry, "type")->valuestring, "container"))
+					// the newer versions of the API may return objects that do not have status or id
+					if (entry && cJSON_GetObjectItem(entry, "status") != NULL && cJSON_GetObjectItem(entry, "id") != NULL)
 					{
 						// New inventory entry
 						Container_DaemonEvent_Class instance;
