@@ -91,7 +91,8 @@ protected:
 
         // Read the time from disk
         FILE* file = fopen(TEST_LASTQUERYTIMEFILE, "r");
-        int fileTime = time(NULL);
+        // initialize previous time to now - 60 seconds
+        int fileTime = time(NULL) - 60;
 
         if (file)
         {
