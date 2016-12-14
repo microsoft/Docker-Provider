@@ -55,8 +55,11 @@ private:
             {
                 // Docker 1.8.x
                 network = cJSON_GetObjectItem(stats, "network");
-                totalRx = cJSON_GetObjectItem(network, "rx_bytes")->valueint;
-                totalTx = cJSON_GetObjectItem(network, "tx_bytes")->valueint;
+		if (network)
+		{
+                    totalRx = cJSON_GetObjectItem(network, "rx_bytes")->valueint;
+                    totalTx = cJSON_GetObjectItem(network, "tx_bytes")->valueint;
+		}
             }
         }
         else
