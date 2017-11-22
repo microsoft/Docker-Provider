@@ -82,6 +82,7 @@ class KubernetesApiClient
             begin
                 kubesystemResourceUri = "namespaces/" + @@KubeSystemNamespace +"/pods"
                 podInfo = getKubeResourceInfo("namespaces/kube-system/pods")
+                @@ClusterName = "None"
                 podInfo['items'].each do |items|
                     if items['metadata']['name'].include? "kube-controller-manager"
                        items['spec']['containers'][0]['command'].each do |command|
@@ -91,7 +92,6 @@ class KubernetesApiClient
                        end
                     end
                 end
-                @@ClusterName = "None"
             rescue => error
                 @Log.warn("cluster name request failed: #{error}")    
             end
