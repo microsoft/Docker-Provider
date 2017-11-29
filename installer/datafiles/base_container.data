@@ -84,6 +84,10 @@ touch /var/opt/microsoft/docker-cimprov/state/KubeEventQueryState.yaml
 chmod 644 /var/opt/microsoft/docker-cimprov/state/KubeEventQueryState.yaml
 chown omsagent:omsagent /var/opt/microsoft/docker-cimprov/state/KubeEventQueryState.yaml
 
+touch /var/opt/microsoft/docker-cimprov/state/KubeLogQueryState.yaml
+chmod 644 /var/opt/microsoft/docker-cimprov/state/KubeLogQueryState.yaml
+chown omsagent:omsagent /var/opt/microsoft/docker-cimprov/state/KubeLogQueryState.yaml
+
 mv /etc/opt/microsoft/docker-cimprov/container.conf /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 chown omsagent:omsagent /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 
