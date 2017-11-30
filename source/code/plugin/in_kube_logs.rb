@@ -12,6 +12,7 @@ module Fluent
             require 'yaml'
             require 'date'
             require 'time'
+            require 'json'
 
             require_relative 'KubernetesApiClient'
             require_relative 'oms_common'
@@ -99,8 +100,8 @@ module Fluent
                                         record['Pod'] = pod['metadata']['name']
                                         record['Container'] = container['name']
                                         record['Message'] = lines[i][(lines[i].index(' ') + 1)..(lines[i].length - 1)]
-                                        record['Type'] = 'Containerlog'
                                         record['TimeGenerated'] = lines[i].split(" ").first
+                                        record['Computer'] = OMS::Common.get_hostname
                                         router.emit(@tag, time, record) if record
                                     end
                                     newLogQueryState[containerId] = lines.last.split(" ").first
@@ -121,8 +122,8 @@ module Fluent
                 record['Pod'] = ""
                 record['Container'] = ""
                 record['Message'] = ""
-                record['Type'] = ""
                 record['TimeGenerated'] = ""
+                record['Computer'] = ""
                 router.emit(@tag, time, record)  
             end 
         end 
@@ -143,10 +144,10 @@ module Fluent
         end
     
         def getLogQueryState
-            logQueryState = []
+            logQueryState = {}
             begin
                 if File.file?(@@KubeLogsStateFile)
-                    logQueryState = YAML.load_file(@@KubeLogsStateFile)
+                    logQueryState = YAML.load_file(@@KubeLogsStateFile, {})
                 end
             rescue  => errorStr
                 $log.warn $log.warn line.dump, error: errorStr.to_s

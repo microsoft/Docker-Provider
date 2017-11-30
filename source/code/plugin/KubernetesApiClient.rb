@@ -106,7 +106,7 @@ class KubernetesApiClient
                         thisNodeName = OMS::Common.get_hostname
                         allNodesInfo['items'].each do |item|
                             if item['metadata']['name'].casecmp(thisNodeName) == 0
-                                if !item['metadata']['labels'].to_s.include?("master") && item['metadata']['labels']["kubernetes.io/hostname"].to_s.split('-').last == '0'
+                                if item['metadata']['labels']["kubernetes.io/role"].to_s.include?("master") && item['metadata']['labels']["kubernetes.io/hostname"].to_s.split('-').last == '0'
                                     @@IsNodeMaster = true                                    
                                 end    
                                 break
