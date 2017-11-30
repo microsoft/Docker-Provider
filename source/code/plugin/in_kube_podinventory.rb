@@ -8,6 +8,8 @@ module Fluent
     def initialize
       super
       require 'yaml'
+      require 'json'
+      
       require_relative 'KubernetesApiClient'
       require_relative 'oms_common'
       require_relative 'omslog'
@@ -45,7 +47,7 @@ module Fluent
       time = Time.now.to_f
       if KubernetesApiClient.isNodeMaster
         if podList.nil?
-          podInventory = KubernetesApiClient.getKubeResourceInfo('pods')
+          podInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo('pods').body)
         else
           podInventory = podList
         end    

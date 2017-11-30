@@ -10,7 +10,8 @@ module Fluent
     def initialize
       super
       require 'yaml'
-
+      require 'json'
+      
       require_relative 'KubernetesApiClient'
       require_relative 'oms_common'
       require_relative 'omslog'
@@ -48,7 +49,7 @@ module Fluent
         time = Time.now.to_f
         if KubernetesApiClient.isNodeMaster
           if eventList.nil?
-            events = KubernetesApiClient.getKubeResourceInfo('events')
+            events = JSON.parse(KubernetesApiClient.getKubeResourceInfo('events').body)
           else
             events = eventList
           end   

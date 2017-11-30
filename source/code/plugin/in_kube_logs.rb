@@ -71,7 +71,7 @@ module Fluent
                             timeStamp = DateTime.now
 
                             containerId = pod['metadata']['namespace'] + "_" + pod['metadata']['name'] + "_" + container['name']
-                            if !logQueryState.empty? && logQueryState[containerId]]
+                            if !logQueryState.empty? && logQueryState[containerId]
                                 timeStamp = DateTime.parse(logQueryState[containerId])
                             end  
                             #puts timeStamp.rfc3339(9)
@@ -108,11 +108,12 @@ module Fluent
                                     newLogQueryState[containerId] = DateTime.now.rfc3339(9)
                                 end
                             end
-                        rescue  => errorStr
-                            $log.warn line.dump, error: errorStr.to_s
-                            $log.debug_backtrace(e.backtrace)
                         end    
+                    rescue  => errorStr
+                        $log.warn line.dump, error: errorStr.to_s
+                        $log.debug_backtrace(e.backtrace)
                     end
+                end
                 writeLogQueryState(newLogQueryState)
             else
                 record = {}
