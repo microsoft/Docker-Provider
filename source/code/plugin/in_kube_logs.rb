@@ -68,7 +68,7 @@ module Fluent
                             #     puts container['name'] + ' is running'
                             # end
 
-                            timeStamp = DateTime.now
+                            timeStamp = DateTime.now - 7 # get logs in 7 days by default
 
                             containerId = pod['metadata']['namespace'] + "_" + pod['metadata']['name'] + "_" + container['name']
                             if !logQueryState.empty? && logQueryState[containerId]
