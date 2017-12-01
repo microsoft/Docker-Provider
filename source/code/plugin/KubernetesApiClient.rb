@@ -156,11 +156,9 @@ class KubernetesApiClient
             def getContainerLogsSinceTime(namespace, pod, container, since, showTimeStamp)
                 @@ContainerLogs = ""
                 begin
-                    # HTML URL Encoding
-                    since.gsub! ":", "%3A"
-                    since.gsub! ".", "%2E"
-                    since.gsub! "+", "%2B"
                     kubesystemResourceUri = "namespaces/" + namespace + "/pods/" + pod + "/log" + "?container=" + container + "&sinceTime=" + since
+                    kubesystemResourceUri = URI.escape(kubesystemResourceUri, ":.+") # HTML URL Encoding for date
+                    
                     if showTimeStamp 
                         kubesystemResourceUri += "&timestamps=true"
                     end
