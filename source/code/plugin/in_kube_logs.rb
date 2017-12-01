@@ -50,7 +50,9 @@ module Fluent
         def enumerate(podList = nil)
 
             namespace = ENV['OMS_KUBERNETES_LOGS_NAMESPACE']
-            if namespace.nil? || namespace.empty? return
+            if namespace.nil? || namespace.empty? 
+                return
+            end
 
             time = Time.now.to_f
             if KubernetesApiClient.isNodeMaster
