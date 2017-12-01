@@ -21,7 +21,6 @@ module Fluent
     
         config_param :run_interval, :time, :default => '1m'
         config_param :tag, :string, :default => "oms.api.KubeLogs"
-        config_param :namespace, :string, :default => "default"
 
         def configure (conf)
             super
@@ -49,11 +48,15 @@ module Fluent
         end
     
         def enumerate(podList = nil)
+
+            namespace = ENV['OMS_KUBERNETES_LOGS_NAMESPACE']
+            if namespace.nil? || namespace.empty? return
+
             time = Time.now.to_f
             if KubernetesApiClient.isNodeMaster
 
                 if podList.nil?
-                    pods = KubernetesApiClient.getPods(@namespace)
+                    pods = KubernetesApiClient.getPods(namespace)
                 else
                     pods = podList
                 end   
@@ -69,7 +72,7 @@ module Fluent
                             #     puts container['name'] + ' is running'
                             # end
 
-                            timeStamp = DateTime.now - 7 # get logs in 7 days by default
+                            timeStamp = DateTime.now
 
                             containerId = pod['metadata']['namespace'] + "_" + pod['metadata']['name'] + "_" + container['name']
                             if !logQueryState.empty? && logQueryState[containerId]
