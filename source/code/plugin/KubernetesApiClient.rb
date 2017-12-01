@@ -14,6 +14,8 @@ class KubernetesApiClient
         @@CaFile = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
         @@ClusterName = nil
         @@IsNodeMaster = nil
+        @@IsValidRunningNode = nil
+        @@IsLinuxCluster = nil
         @@KubeSystemNamespace = "kube-system"
         @LogPath = "/var/opt/microsoft/omsagent/log/kubernetes_client_log.txt"
         @Log = Logger.new(@LogPath, 'weekly')
@@ -106,7 +108,7 @@ class KubernetesApiClient
                         thisNodeName = OMS::Common.get_hostname
                         allNodesInfo['items'].each do |item|
                             if item['metadata']['name'].casecmp(thisNodeName) == 0
-                                if item['metadata']['labels']["kubernetes.io/role"].to_s.include?("master") && item['metadata']['labels']["kubernetes.io/hostname"].to_s.split('-').last == '0'
+                                if item['metadata']['labels']["kubernetes.io/role"].to_s.include?("master")
                                     @@IsNodeMaster = true                                    
                                 end    
                                 break
@@ -124,6 +126,43 @@ class KubernetesApiClient
                 return @@IsNodeMaster
             end    
             
+            def isValidRunningNode
+                return @@IsValidRunningNode if !@@IsValidRunningNode.nil?
+                @@IsValidRunningNode = false
+                begin
+                    thisNodeName = OMS::Common.get_hostname
+                    if isLinuxCluster
+                        # Run on agent node [0]
+                        @@IsValidRunningNode = !isNodeMaster && thisNodeName.to_s.split('-').last == '0'
+                    else
+                        # Run on master node [0]
+                        @@IsValidRunningNode = isNodeMaster && thisNodeName.to_s.split('-').last == '0'
+                    end
+                rescue => error
+                    @Log.warn("Checking Node Type failed: #{error}")
+                end
+                return @@IsValidRunningNode
+            end
+
+            def isLinuxCluster
+                return @@IsLinuxCluster if !@@IsLinuxCluster.nil?
+                @@IsLinuxCluster = true
+                begin
+                    allNodesInfo = JSON.parse(getKubeResourceInfo('nodes').body)
+                    if !allNodesInfo.nil? && !allNodesInfo.empty?
+                        allNodesInfo['items'].each do |item|
+                            if !item['status']['nodeInfo']['operatingSystem'].casecmp('linux')
+                                @@IsLinuxCluster = false
+                                break
+                            end
+                        end
+                    end
+                rescue => error
+                    @Log.warn("node role request failed: #{error}")
+                end
+                return @@IsLinuxCluster
+            end
+
             # returns an arry of pods (json)
             def getPods(namespace)
                 @@Pods= []
@@ -134,7 +173,7 @@ class KubernetesApiClient
                         @@Pods.push items
                     end
                 rescue => error
-                    @Log.warn("List pods request failed: #{error}")    
+                    @Log.warn("List pods request failed: #{error}")
                 end
                 return @@Pods
             end
@@ -158,7 +197,7 @@ class KubernetesApiClient
                 begin
                     kubesystemResourceUri = "namespaces/" + namespace + "/pods/" + pod + "/log" + "?container=" + container + "&sinceTime=" + since
                     kubesystemResourceUri = URI.escape(kubesystemResourceUri, ":.+") # HTML URL Encoding for date
-                    
+
                     if showTimeStamp 
                         kubesystemResourceUri += "&timestamps=true"
                     end

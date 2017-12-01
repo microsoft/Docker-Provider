@@ -27,7 +27,7 @@ module Fluent
         end
     
         def start
-            if KubernetesApiClient.isNodeMaster && @run_interval
+            if KubernetesApiClient.isValidRunningNode && @run_interval
                 @finished = false
                 @condition = ConditionVariable.new
                 @mutex = Mutex.new
@@ -38,7 +38,7 @@ module Fluent
         end
     
         def shutdown
-            if KubernetesApiClient.isNodeMaster && @run_interval
+            if KubernetesApiClient.isValidRunningNode && @run_interval
                 @mutex.synchronize {
                     @finished = true
                     @condition.signal
@@ -55,7 +55,7 @@ module Fluent
             end
 
             time = Time.now.to_f
-            if KubernetesApiClient.isNodeMaster
+            if KubernetesApiClient.isValidRunningNode
 
                 if podList.nil?
                     pods = KubernetesApiClient.getPods(namespace)
@@ -106,6 +106,8 @@ module Fluent
                                         record['Message'] = lines[i][(lines[i].index(' ') + 1)..(lines[i].length - 1)]
                                         record['TimeGenerated'] = lines[i].split(" ").first
                                         record['Node'] = pod['spec']['nodeName']
+                                        record['Computer'] = OMS::Common.get_hostname
+                                        record['ClusterName'] = KubernetesApiClient.getClusterName
                                         router.emit(@tag, time, record) if record
                                     end
                                     newLogQueryState[containerId] = lines.last.split(" ").first
@@ -128,6 +130,8 @@ module Fluent
                 record['Message'] = ""
                 record['TimeGenerated'] = ""
                 record['Node'] = ""
+                record['Computer'] = ""
+                record['ClusterName'] = ""
                 router.emit(@tag, time, record)  
             end 
         end 
