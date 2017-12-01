@@ -80,7 +80,6 @@ module Fluent
                             if !logQueryState.empty? && logQueryState[containerId]
                                 timeStamp = DateTime.parse(logQueryState[containerId])
                             end  
-                            #puts timeStamp.rfc3339(9)
 
                             logs = KubernetesApiClient.getContainerLogsSinceTime(pod['metadata']['namespace'], pod['metadata']['name'], container['name'], timeStamp.rfc3339(9), true)
                             
@@ -106,7 +105,7 @@ module Fluent
                                         record['Container'] = container['name']
                                         record['Message'] = lines[i][(lines[i].index(' ') + 1)..(lines[i].length - 1)]
                                         record['TimeGenerated'] = lines[i].split(" ").first
-                                        record['Computer'] = OMS::Common.get_hostname
+                                        record['Node'] = pod['spec']['nodeName']
                                         router.emit(@tag, time, record) if record
                                     end
                                     newLogQueryState[containerId] = lines.last.split(" ").first
@@ -128,7 +127,7 @@ module Fluent
                 record['Container'] = ""
                 record['Message'] = ""
                 record['TimeGenerated'] = ""
-                record['Computer'] = ""
+                record['Node'] = ""
                 router.emit(@tag, time, record)  
             end 
         end 
