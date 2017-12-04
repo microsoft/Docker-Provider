@@ -151,7 +151,7 @@ class KubernetesApiClient
                     allNodesInfo = JSON.parse(getKubeResourceInfo('nodes').body)
                     if !allNodesInfo.nil? && !allNodesInfo.empty?
                         allNodesInfo['items'].each do |item|
-                            if !item['status']['nodeInfo']['operatingSystem'].casecmp('linux')
+                            if !(item['status']['nodeInfo']['operatingSystem'].casecmp('linux') == 0)
                                 @@IsLinuxCluster = false
                                 break
                             end
