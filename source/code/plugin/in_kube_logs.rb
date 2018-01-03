@@ -85,6 +85,7 @@ module Fluent
                             logs = KubernetesApiClient.getContainerLogsSinceTime(pod['metadata']['namespace'], pod['metadata']['name'], container['name'], timeStamp.rfc3339(9), true)
                             
                             if logs && logs.empty?
+                                $log.info "no logs returned"
                                 newLogQueryState[containerId] = timeStamp.rfc3339(9)
                             else
                                 lines = logs.split("\n")
@@ -92,6 +93,7 @@ module Fluent
             
                                 # skip duplicates
                                 for i in 0...lines.count
+                                    $log.info line
                                     dateTime = DateTime.parse(lines[i].split(" ").first)               
                                     if (dateTime.to_time - timeStamp.to_time) > 0.0
                                         index = i
