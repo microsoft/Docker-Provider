@@ -81,6 +81,7 @@ module Fluent
                                 timeStamp = DateTime.parse(logQueryState[containerId])
                             end  
 
+                            $log.info "Getting logs for #{container['name']}"
                             logs = KubernetesApiClient.getContainerLogsSinceTime(pod['metadata']['namespace'], pod['metadata']['name'], container['name'], timeStamp.rfc3339(9), true)
                             
                             if logs && logs.empty?
@@ -99,6 +100,7 @@ module Fluent
                                 end
             
                                 if index >= 0
+                                    $log.info "starting from line #{index}"
                                     for i in index...lines.count
                                         record['Namespace'] = pod['metadata']['namespace']
                                         record['Pod'] = pod['metadata']['name']
@@ -144,7 +146,9 @@ module Fluent
                 done = @finished
                 @mutex.unlock
                 if !done
+                    $log.info "calling enumerate"
                     enumerate
+                    $log.info "done with enumerate"
                 end
                 @mutex.lock
             end
