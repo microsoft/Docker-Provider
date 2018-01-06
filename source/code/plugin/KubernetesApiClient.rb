@@ -28,7 +28,7 @@ class KubernetesApiClient
         class << self
             def getKubeResourceInfo(resource)    
                 headers = {}
-                response = ""
+                response = nil
                 @Log.info 'Getting Kube resource'
                 @Log.info resource
                 begin
@@ -47,6 +47,7 @@ class KubernetesApiClient
                         kubeApiRequest = Net::HTTP::Get.new(uri.request_uri)
                         kubeApiRequest['Authorization'] = "Bearer " + getTokenStr
                         response = http.request(kubeApiRequest)
+                        @Log.info "Got response of #{response.code}"
                     end    
                 rescue => error
                     @Log.warn("kubernetes api request failed: #{error}") 
@@ -165,35 +166,36 @@ class KubernetesApiClient
 
             # returns an arry of pods (json)
             def getPods(namespace)
-                @@Pods= []
+                pods = []
                 begin
                     kubesystemResourceUri = "namespaces/" + namespace + "/pods"
                     podInfo = JSON.parse(getKubeResourceInfo(kubesystemResourceUri).body)
                     podInfo['items'].each do |items|
-                        @@Pods.push items
+                        pods.push items
                     end
                 rescue => error
                     @Log.warn("List pods request failed: #{error}")
                 end
-                return @@Pods
+                return pods
             end
     
             def getContainerLogs(namespace, pod, container, showTimeStamp)
-                @@ContainerLogs = ""
+                containerLogs = ""
                 begin
                     kubesystemResourceUri = "namespaces/" + namespace + "/pods/" + pod + "/log" + "?container=" + container
                     if showTimeStamp 
                         kubesystemResourceUri += "&timestamps=true"
                     end
-                    @@ContainerLogs = getKubeResourceInfo(kubesystemResourceUri).body
+
+                    containerLogs = getKubeResourceInfo(kubesystemResourceUri).body
                 rescue => error
                     @Log.warn("Pod logs request failed: #{error}")    
                 end
-                return @@ContainerLogs  
+                return containerLogs  
             end
     
             def getContainerLogsSinceTime(namespace, pod, container, since, showTimeStamp)
-                @@ContainerLogs = ""
+                containerLogs = ""
                 begin
                     kubesystemResourceUri = "namespaces/" + namespace + "/pods/" + pod + "/log" + "?container=" + container + "&sinceTime=" + since
                     kubesystemResourceUri = URI.escape(kubesystemResourceUri, ":.+") # HTML URL Encoding for date
@@ -201,11 +203,12 @@ class KubernetesApiClient
                     if showTimeStamp 
                         kubesystemResourceUri += "&timestamps=true"
                     end
-                    @@ContainerLogs = getKubeResourceInfo(kubesystemResourceUri).body
+                    @Log.info("calling #{kubesystemResourceUri}")
+                    containerLogs = getKubeResourceInfo(kubesystemResourceUri).body
                 rescue => error
                     @Log.warn("Pod logs request failed: #{error}")    
                 end
-                return @@ContainerLogs  
+                return containerLogs  
             end
         end    
     end   
