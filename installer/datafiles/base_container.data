@@ -23,10 +23,13 @@ MAINTAINER:              'Microsoft Corporation'
 
 /opt/microsoft/omsagent/plugin/filter_docker_log.rb;			source/code/plugin/filter_docker_log.rb;			644; root; root
 /opt/microsoft/omsagent/plugin/filter_container.rb;			    source/code/plugin/filter_container.rb;				644; root; root
+/opt/microsoft/omsagent/plugin/filter_container_log.rb;			source/code/plugin/filter_container_log.rb;		    644; root; root
 
 /opt/microsoft/omsagent/plugin/in_kube_podinventory.rb;			source/code/plugin/in_kube_podinventory.rb;			644; root; root
 /opt/microsoft/omsagent/plugin/in_kube_events.rb;			    source/code/plugin/in_kube_events.rb;				644; root; root
 /opt/microsoft/omsagent/plugin/KubernetesApiClient.rb;			source/code/plugin/KubernetesApiClient.rb;			644; root; root
+/opt/microsoft/omsagent/plugin/in_custom_sudo_tail.rb;			source/code/plugin/in_custom_sudo_tail.rb;			644; root; root 
+/opt/microsoft/omsagent/plugin/containerloglfilereader.rb;		source/code/plugin/containerloglfilereader.rb;		744; omsagent; root 
 
 /etc/opt/microsoft/docker-cimprov/container.conf;			    installer/conf/container.conf;                      644; root; root
 
