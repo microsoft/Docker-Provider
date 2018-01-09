@@ -83,9 +83,9 @@ module Fluent
 
                             # Try to get logs for the container
                             begin
-                              $log.info "Getting logs for #{container['name']}"
+                              $log.debug "Getting logs for #{container['name']}"
                               logs = KubernetesApiClient.getContainerLogsSinceTime(pod['metadata']['namespace'], pod['metadata']['name'], container['name'], timeStamp.rfc3339(9), true)
-                              $log.info "got something back"
+                              $log.debug "got something back"
                               
                               # By default we don't change the timestamp (if no logs were returned or if there was a (hopefully transient) error in retrieval
                               newLogQueryState[containerId] = timeStamp.rfc3339(9)
@@ -93,13 +93,12 @@ module Fluent
                               if !logs || logs.empty?
                                   $log.info "no logs returned"
                               else
-                                  $log.info "response size is #{logs.length}"
+                                  $log.debug "response size is #{logs.length}"
                                   lines = logs.split("\n")
                                   index = -1
              
                                   # skip duplicates
                                   for i in 0...lines.count
-                                      $log.info i
                                       dateTime = DateTime.parse(lines[i].split(" ").first)               
                                       if (dateTime.to_time - timeStamp.to_time) > 0.0
                                           index = i
@@ -108,7 +107,7 @@ module Fluent
                                   end
             
                                   if index >= 0
-                                      $log.info "starting from line #{index}"
+                                      $log.debug "starting from line #{index}"
                                       for i in index...lines.count
                                           record['Namespace'] = pod['metadata']['namespace']
                                           record['Pod'] = pod['metadata']['name']
@@ -187,7 +186,7 @@ module Fluent
                 File.write(@@KubeLogsStateFile, logQueryState.to_yaml)       
             rescue  => errorStr
                 $log.warn "Failed to write query state #{errorStr.to_s}"
-                $log.debug_backtrace(e.backtrace)
+                $log.debug_backtrace(errorStr.backtrace)
             end
         end
     
