@@ -28,8 +28,8 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/in_kube_podinventory.rb;			source/code/plugin/in_kube_podinventory.rb;			644; root; root
 /opt/microsoft/omsagent/plugin/in_kube_events.rb;			    source/code/plugin/in_kube_events.rb;				644; root; root
 /opt/microsoft/omsagent/plugin/KubernetesApiClient.rb;			source/code/plugin/KubernetesApiClient.rb;			644; root; root
-/opt/microsoft/omsagent/plugin/in_custom_sudo_tail.rb;			source/code/plugin/in_custom_sudo_tail.rb;			644; root; root 
-/opt/microsoft/omsagent/plugin/containerloglfilereader.rb;		source/code/plugin/containerloglfilereader.rb;		744; omsagent; root 
+/opt/microsoft/omsagent/plugin/in_containerlog_sudo_tail.rb;	source/code/plugin/in_containerlog_sudo_tail.rb;	644; root; root
+/opt/microsoft/omsagent/plugin/containerlogtailfilereader.rb;	source/code/plugin/containerlogtailfilereader.rb;	744; omsagent; root 
 
 /etc/opt/microsoft/docker-cimprov/container.conf;			    installer/conf/container.conf;                      644; root; root
 
@@ -77,6 +77,14 @@ WriteInstallInfo() {
 	echo ${{VERSION}}-${{RELEASE}} >> /etc/opt/microsoft/docker-cimprov/conf/installinfo.txt
 }
 WriteInstallInfo
+
+#Setup sudo permission for containerlogtailfilereader
+if [[ -z $(cat /etc/sudoers.d/omsagent | grep /containerlogtailfilereader.rb) ]]; then
+    chmod +w /etc/sudoers.d/omsagent
+    echo "#run containerlogtailfilereader.rb for docker-provider" >> /etc/sudoers.d/omsagent
+    echo "omsagent ALL=(ALL) NOPASSWD: /opt/microsoft/omsagent/ruby/bin/ruby /opt/microsoft/omsagent/plugin/containerlogtailfilereader.rb *" >> /etc/sudoers.d/omsagent
+    chmod 440 /etc/sudoers.d/omsagent
+fi
 
 # Get the state file in place with proper permissions
 touch /var/opt/microsoft/docker-cimprov/state/LastEventQueryTime.txt
