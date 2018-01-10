@@ -8,6 +8,8 @@ module Fluent
     def initialize
       super
       require 'yaml'
+      require 'json'
+      
       require_relative 'KubernetesApiClient'
       require_relative 'oms_common'
       require_relative 'omslog'
@@ -21,7 +23,7 @@ module Fluent
     end
 
     def start
-      if KubernetesApiClient.isNodeMaster && @run_interval
+      if KubernetesApiClient.isValidRunningNode && @run_interval
         @finished = false
         @condition = ConditionVariable.new
         @mutex = Mutex.new
@@ -32,7 +34,7 @@ module Fluent
     end
 
     def shutdown
-      if KubernetesApiClient.isNodeMaster && @run_interval
+      if KubernetesApiClient.isValidRunningNode && @run_interval
         @mutex.synchronize {
           @finished = true
           @condition.signal
@@ -43,9 +45,9 @@ module Fluent
 
     def enumerate(podList = nil)
       time = Time.now.to_f
-      if KubernetesApiClient.isNodeMaster
+      if KubernetesApiClient.isValidRunningNode
         if podList.nil?
-          podInventory = KubernetesApiClient.getKubeResourceInfo('pods')
+          podInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo('pods').body)
         else
           podInventory = podList
         end    
