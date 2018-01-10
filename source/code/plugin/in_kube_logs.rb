@@ -81,47 +81,62 @@ module Fluent
                                 timeStamp = DateTime.parse(logQueryState[containerId])
                             end  
 
-                            logs = KubernetesApiClient.getContainerLogsSinceTime(pod['metadata']['namespace'], pod['metadata']['name'], container['name'], timeStamp.rfc3339(9), true)
-                            
-                            if logs && logs.empty?
-                                newLogQueryState[containerId] = timeStamp.rfc3339(9)
-                            else
-                                lines = logs.split("\n")
-                                index = -1
+                            # Try to get logs for the container
+                            begin
+                              $log.debug "Getting logs for #{container['name']}"
+                              logs = KubernetesApiClient.getContainerLogsSinceTime(pod['metadata']['namespace'], pod['metadata']['name'], container['name'], timeStamp.rfc3339(9), true)
+                              $log.debug "got something back"
+                              
+                              # By default we don't change the timestamp (if no logs were returned or if there was a (hopefully transient) error in retrieval
+                              newLogQueryState[containerId] = timeStamp.rfc3339(9)
+
+                              if !logs || logs.empty?
+                                  $log.info "no logs returned"
+                              else
+                                  $log.debug "response size is #{logs.length}"
+                                  lines = logs.split("\n")
+                                  index = -1
+             
+                                  # skip duplicates
+                                  for i in 0...lines.count
+                                      dateTime = DateTime.parse(lines[i].split(" ").first)               
+                                      if (dateTime.to_time - timeStamp.to_time) > 0.0
+                                          index = i
+                                          break
+                                      end
+                                  end
             
-                                # skip duplicates
-                                for i in 0...lines.count
-                                    dateTime = DateTime.parse(lines[i].split(" ").first)               
-                                    if (dateTime.to_time - timeStamp.to_time) > 0.0
-                                        index = i
-                                        break
-                                    end
-                                end
-            
-                                if index >= 0
-                                    for i in index...lines.count
-                                        record['Namespace'] = pod['metadata']['namespace']
-                                        record['Pod'] = pod['metadata']['name']
-                                        record['Container'] = container['name']
-                                        record['Message'] = lines[i][(lines[i].index(' ') + 1)..(lines[i].length - 1)]
-                                        record['TimeGenerated'] = lines[i].split(" ").first
-                                        record['Node'] = pod['spec']['nodeName']
-                                        record['Computer'] = OMS::Common.get_hostname
-                                        record['ClusterName'] = KubernetesApiClient.getClusterName
-                                        router.emit(@tag, time, record) if record
-                                    end
-                                    newLogQueryState[containerId] = lines.last.split(" ").first
-                                else
-                                    newLogQueryState[containerId] = DateTime.now.rfc3339(9)
-                                end
+                                  if index >= 0
+                                      $log.debug "starting from line #{index}"
+                                      for i in index...lines.count
+                                          record['Namespace'] = pod['metadata']['namespace']
+                                          record['Pod'] = pod['metadata']['name']
+                                          record['Container'] = container['name']
+                                          record['Message'] = lines[i][(lines[i].index(' ') + 1)..(lines[i].length - 1)]
+                                          record['TimeGenerated'] = lines[i].split(" ").first
+                                          record['Node'] = pod['spec']['nodeName']
+                                          record['Computer'] = OMS::Common.get_hostname
+                                          record['ClusterName'] = KubernetesApiClient.getClusterName
+                                          router.emit(@tag, time, record) if record
+                                      end
+                                      newLogQueryState[containerId] = lines.last.split(" ").first
+                                  else
+                                      newLogQueryState[containerId] = DateTime.now.rfc3339(9)
+                                  end
+                              end
+                            rescue => logException
+                              $log.warn "Failed to retrieve logs for container: #{logException}"
+                              $log.debug_backtrace(logException.backtrace)
                             end
                         end    
+                        # Update log query state only if logging was succesfful. 
+                        # TODO: May have a few duplicate lines in case of 
+                        writeLogQueryState(newLogQueryState)
                     rescue  => errorStr
-                        $log.warn line.dump, error: errorStr.to_s
-                        $log.debug_backtrace(e.backtrace)
+                        $log.warn "Exception raised in enumerate: #{errorStr}"
+                        $log.debug_backtrace(errorStr.backtrace)
                     end
                 end
-                writeLogQueryState(newLogQueryState)
             else
                 record = {}
                 record['Namespace'] = ""
@@ -144,7 +159,9 @@ module Fluent
                 done = @finished
                 @mutex.unlock
                 if !done
+                    $log.info "calling enumerate"
                     enumerate
+                    $log.info "done with enumerate"
                 end
                 @mutex.lock
             end
@@ -158,8 +175,8 @@ module Fluent
                     logQueryState = YAML.load_file(@@KubeLogsStateFile, {})
                 end
             rescue  => errorStr
-                $log.warn $log.warn line.dump, error: errorStr.to_s
-                $log.debug_backtrace(e.backtrace)
+                $log.warn "Failed to load query state #{errorStr}"
+                $log.debug_backtrace(errorStr.backtrace)
             end
             return logQueryState
         end
@@ -168,8 +185,8 @@ module Fluent
             begin     
                 File.write(@@KubeLogsStateFile, logQueryState.to_yaml)       
             rescue  => errorStr
-                $log.warn $log.warn line.dump, error: errorStr.to_s
-                $log.debug_backtrace(e.backtrace)
+                $log.warn "Failed to write query state #{errorStr.to_s}"
+                $log.debug_backtrace(errorStr.backtrace)
             end
         end
     
