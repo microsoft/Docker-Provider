@@ -27,6 +27,7 @@ MAINTAINER:              'Microsoft Corporation'
 
 /opt/microsoft/omsagent/plugin/in_kube_podinventory.rb;			source/code/plugin/in_kube_podinventory.rb;			644; root; root
 /opt/microsoft/omsagent/plugin/in_kube_events.rb;			    source/code/plugin/in_kube_events.rb;				644; root; root
+/opt/microsoft/omsagent/plugin/in_kube_logs.rb;			        source/code/plugin/in_kube_logs.rb;				    644; root; root
 /opt/microsoft/omsagent/plugin/KubernetesApiClient.rb;			source/code/plugin/KubernetesApiClient.rb;			644; root; root
 /opt/microsoft/omsagent/plugin/in_containerlog_sudo_tail.rb;	source/code/plugin/in_containerlog_sudo_tail.rb;	644; root; root
 /opt/microsoft/omsagent/plugin/containerlogtailfilereader.rb;	source/code/plugin/containerlogtailfilereader.rb;	744; omsagent; root 
@@ -94,6 +95,10 @@ chown omsagent:omsagent /var/opt/microsoft/docker-cimprov/state/LastEventQueryTi
 touch /var/opt/microsoft/docker-cimprov/state/KubeEventQueryState.yaml
 chmod 644 /var/opt/microsoft/docker-cimprov/state/KubeEventQueryState.yaml
 chown omsagent:omsagent /var/opt/microsoft/docker-cimprov/state/KubeEventQueryState.yaml
+
+touch /var/opt/microsoft/docker-cimprov/state/KubeLogQueryState.yaml
+chmod 644 /var/opt/microsoft/docker-cimprov/state/KubeLogQueryState.yaml
+chown omsagent:omsagent /var/opt/microsoft/docker-cimprov/state/KubeLogQueryState.yaml
 
 mv /etc/opt/microsoft/docker-cimprov/container.conf /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 chown omsagent:omsagent /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
