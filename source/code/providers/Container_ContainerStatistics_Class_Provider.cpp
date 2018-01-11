@@ -112,7 +112,7 @@ private:
                 bool readFlag = false;
                 bool writeFlag = false;
 
-                for (int i = 0; values && !readFlag && !writeFlag && i < cJSON_GetArraySize(values); i++)
+                for (int i = 0; values && !(readFlag && writeFlag) && i < cJSON_GetArraySize(values); i++)
                 {
                     cJSON* entry = cJSON_GetArrayItem(values, i);
 
