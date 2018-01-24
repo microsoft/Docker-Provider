@@ -10,7 +10,7 @@ module Fluent
           require 'yaml'
           require 'json'
     
-          require_relative 'CAdvisorMetricsApiClient'
+          require_relative 'CAdvisorMetricsAPIClient'
           require_relative 'oms_common'
           require_relative 'omslog'
         end
@@ -46,7 +46,7 @@ module Fluent
         def enumerate()
           time = Time.now.to_f
           begin
-              metricData = CAdvisorMetricsApiClient.getMetrics()
+              metricData = CAdvisorMetricsAPIClient.getMetrics()
               metricData.each do |record|
                       record['DataType'] = "LINUX_PERF_BLOB"
                       record['IPName'] = "LogManagement"

@@ -1,6 +1,6 @@
 #!/usr/local/bin/ruby
 
-class CAdvisorMetricsApiClient
+class CAdvisorMetricsAPIClient
     
             require 'json'
             require 'logger'
