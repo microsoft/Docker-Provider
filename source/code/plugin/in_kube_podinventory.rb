@@ -68,7 +68,7 @@ module Fluent
               record['Computer'] = items['spec']['nodeName']
               record['ClusterName'] = KubernetesApiClient.getClusterName
               podRestartCount = 0
-              record['PodRestartCount'] = 0;		    
+              record['PodRestartCount'] = 0		    
               items['status']['containerStatuses'].each do |container|		
                 containerRestartCount = 0		
                 #container Id is of the form 		
