@@ -56,16 +56,40 @@ module Fluent
             podInventory['items'].each do |items|
               records = []
               record = {}
-                record['Name'] = items['metadata']['name']
-                record['PodUid'] = items['metadata']['uid']
-                record['PodLabel'] = [items['metadata']['labels']]
-                record['Namespace'] = items['metadata']['namespace']
-                record['PodCreationTimeStamp'] = items['metadata']['creationTimestamp']
-                record['PodStatus'] = items['status']['phase']
-                record['PodIp'] =items['status']['podIP']
-                record['Computer'] = items['spec']['nodeName']
-                record['ClusterName'] = KubernetesApiClient.getClusterName
-                router.emit(@tag, time, record) if record     
+              record['Name'] = items['metadata']['name']
+              podUid = items['metadata']['uid']
+              record['PodUid'] = podUid
+              record['PodLabel'] = [items['metadata']['labels']]
+              record['Namespace'] = items['metadata']['namespace']
+              record['PodCreationTimeStamp'] = items['metadata']['creationTimestamp']
+              record['PodStartTime'] = items['status']['startTime']
+              record['PodStatus'] = items['status']['phase']
+              record['PodIp'] =items['status']['podIP']
+              record['Computer'] = items['spec']['nodeName']
+              record['ClusterName'] = KubernetesApiClient.getClusterName
+              podRestartCount = 0
+              record['PodRestartCount'] = 0;		    
+              items['status']['containerStatuses'].each do |container|		
+                containerRestartCount = 0		
+                #container Id is of the form 		
+                #docker://dfd9da983f1fd27432fb2c1fe3049c0a1d25b1c697b2dc1a530c986e58b16527		
+                record['ContainerID'] = container['containerID'].split("//")[1]		
+                #keeping this as <PodUid/container_name> which is same as InstanceName in perf table		
+                record['ContainerName'] = podUid + "/" +container['name']		
+                #Pod restart count is a sumtotal of restart counts of individual containers		
+                #within the pod. The restart count of a container is maintained by kubernetes		
+                #itself in the form of a container label.		
+                containerRestartCount = container['restartCount']		
+                record['ContainerRestartCount'] = containerRestartCount		
+                podRestartCount += containerRestartCount	
+                records.push(record)		
+              end
+              records.each do |record|
+                if !record.nil? 		
+                  record['PodRestartCount'] = podRestartCount		
+                  router.emit(@tag, time, record) 
+                end    		
+              end       
             end
           end  
         rescue  => errorStr
@@ -83,6 +107,12 @@ module Fluent
         record['PodIp'] = ""
         record['Computer'] = ""
         record['ClusterName'] = ""
+        record['ContainerID'] = ""		
+        record['InstanceName'] = ""		
+        record['ContainerRestartCount'] = ""		
+        record['PodRestartCount'] = "0"		
+        record['PodStartTime'] = ""
+        record['ContainerStartTime'] = ""        
         router.emit(@tag, time, record)
       end
     end
