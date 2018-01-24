@@ -34,7 +34,7 @@ MAINTAINER:              'Microsoft Corporation'
 
 /etc/opt/microsoft/docker-cimprov/container.conf;			    installer/conf/container.conf;                      644; root; root
 
-/opt/microsoft/omsagent/plugin/CAdvisorMetricsApiClient.rb;     source/code/plugin/CAdvisorMetricsApiClient.rb;     644; root; root
+/opt/microsoft/omsagent/plugin/CAdvisorMetricsAPIClient.rb;     source/code/plugin/CAdvisorMetricsAPIClient.rb;     644; root; root
 /opt/microsoft/omsagent/plugin/in_kube_perf.rb;			        source/code/plugin/in_kube_perf.rb;			    	644; root; root
 
 
