@@ -94,21 +94,38 @@ module Fluent
               items['status']['containerStatuses'].each do |container|		
                 containerRestartCount = 0		
                 #container Id is of the form 		
-                #docker://dfd9da983f1fd27432fb2c1fe3049c0a1d25b1c697b2dc1a530c986e58b16527		
-                record['ContainerID'] = container['containerID'].split("//")[1]		
+                #docker://dfd9da983f1fd27432fb2c1fe3049c0a1d25b1c697b2dc1a530c986e58b16527	
+                if !container['containerID'].nil?	
+                  record['ContainerID'] = container['containerID'].split("//")[1]		
+                else 
+                  record['ContainerID'] = "00000000-0000-0000-0000-000000000000"  
+                end 
                 #keeping this as <PodUid/container_name> which is same as InstanceName in perf table		
                 record['ContainerName'] = podUid + "/" +container['name']		
                 #Pod restart count is a sumtotal of restart counts of individual containers		
                 #within the pod. The restart count of a container is maintained by kubernetes		
                 #itself in the form of a container label.		
                 containerRestartCount = container['restartCount']		
-                record['ContainerRestartCount'] = containerRestartCount		
+                record['ContainerRestartCount'] = containerRestartCount
+                containerStatus = container['state']
+                # state is of the following form , so just picking up the first key name
+                # "state": {
+                #   "waiting": {
+                #     "reason": "CrashLoopBackOff",
+                #      "message": "Back-off 5m0s restarting failed container=metrics-server pod=metrics-server-2011498749-3g453_kube-system(5953be5f-fcae-11e7-a356-000d3ae0e432)"
+                #   }
+                # },
+                record['ContainerStatus'] = containerStatus.keys[0]
+                if containerStatus == "running"
+                  record['ContainerCreationTimeStamp'] = container['running']['startedAt']
+                end
                 podRestartCount += containerRestartCount	
                 records.push(record)		
               end
               records.each do |record|
                 if !record.nil? 		
                   record['PodRestartCount'] = podRestartCount		
+                  $log.info record
                   router.emit(@tag, time, record) 
                 end    		
               end       
