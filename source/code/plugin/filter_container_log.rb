@@ -22,7 +22,6 @@ module Fluent
     
     def filter(tag, time, record)
       record['Computer'] =  @hostname
-      record['LogEntry'] = "#{record['TimeGeneratedByLog']} #{record['LogEntry']}"
       wrapper = {
                  "DataType"=>"CONTAINER_LOG_BLOB",
                  "IPName"=>"Containers",
