@@ -90,6 +90,9 @@ module Fluent
                     eventStream.add(emitTime, wrapper) if wrapper
                 end 
                 router.emit_stream(@tag, eventStream) if eventStream
+          if ENV['ISTEST'] == true
+            $log.info("in_kube_nodeinventory::emit-stream : Success @ #{Time.now.utc.iso8601}")
+          end
             end  
           rescue  => errorStr
             $log.warn "Failed to retrieve node inventory: #{errorStr}"

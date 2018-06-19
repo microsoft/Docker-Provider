@@ -157,6 +157,9 @@ module Fluent
           end  
         end  #podInventory block end
         router.emit_stream(@tag, eventStream) if eventStream
+        if ENV['ISTEST'] == true
+          $log.info("in_kube_podinventory::emit-stream : Success @ #{Time.now.utc.iso8601}")
+        end
       rescue  => errorStr
         $log.warn "Failed in parse_and_emit_record pod inventory: #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)

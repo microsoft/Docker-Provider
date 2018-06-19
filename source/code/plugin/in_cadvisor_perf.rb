@@ -54,7 +54,10 @@ module Fluent
                     #router.emit(@tag, time, record) if record    
             end 
             
-            router.emit_stream(@tag, eventStream) if eventStream          
+            router.emit_stream(@tag, eventStream) if eventStream
+            if ENV['ISTEST'] == true
+              $log.info("in_cadvisor_perf::emit-stream : Success @ #{Time.now.utc.iso8601}")
+            end
             rescue  => errorStr
             $log.warn "Failed to retrieve cadvisor metric data: #{errorStr}"
             $log.debug_backtrace(errorStr.backtrace)
