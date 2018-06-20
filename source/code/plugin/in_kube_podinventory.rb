@@ -157,7 +157,7 @@ module Fluent
           end  
         end  #podInventory block end
         router.emit_stream(@tag, eventStream) if eventStream
-        if ENV['ISTEST'] == true
+        if (ENV['ISTEST'] == true && eventStream.count > 0)
           $log.info("in_kube_podinventory::emit-stream : Success @ #{Time.now.utc.iso8601}")
         end
       rescue  => errorStr
