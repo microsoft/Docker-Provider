@@ -52,7 +52,7 @@ module Fluent
           podInventory = podList
         end
         begin
-          if(!podInventory.empty?)    
+          if(!podInventory.empty? && podInventory.key?("items") && !podInventory['items'].empty?)
             podInventory['items'].each do |items|
               records = []
               record = {}
@@ -95,7 +95,12 @@ module Fluent
         done = @finished
         @mutex.unlock
         if !done
-          enumerate
+           begin
+            $log.info("in_kube_podinventory::run_periodic @ #{Time.now.utc.iso8601}")
+            enumerate
+          rescue => errorStr
+            $log.warn "in_kube_podinventory::run_periodic: enumerate Failed to retrieve pod inventory: #{errorStr}"
+          end
         end
         @mutex.lock
       end
