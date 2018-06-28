@@ -159,9 +159,13 @@ module Fluent
                 done = @finished
                 @mutex.unlock
                 if !done
-                    $log.debug "calling enumerate for KubeLogs"
-                    enumerate
-                    $log.debug "done with enumerate for KubeLogs"
+                    begin
+                      $log.debug "calling enumerate for KubeLogs"
+                      enumerate
+                      $log.debug "done with enumerate for KubeLogs"
+                    rescue => errorStr
+                      $log.warn "in_kube_logs::run_periodic: enumerate Failed to retrieve kube logs: #{errorStr}"
+                    end
                 end
                 @mutex.lock
             end
