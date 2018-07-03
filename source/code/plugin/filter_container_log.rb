@@ -19,6 +19,14 @@ module Fluent
     end
     
     def filter(tag, time, record)
+      begin
+        #Try to force utf-8 encoding on the string so that all characters can flow through to
+        record['LogEntry'].force_encoding('UTF-8')
+      rescue
+        $log.error "Failed to convert record['LogEntry'] : '#{record['LogEntry']}' to UTF-8 using force_encoding."
+        $log.error "Current string encoding for record['LogEntry'] is #{record['LogEntry'].encoding}"
+      end
+      
       record['Computer'] =  @hostname
       record['LogEntry'] = "#{record['TimeGeneratedByLog']} #{record['LogEntry']}"
       wrapper = {
