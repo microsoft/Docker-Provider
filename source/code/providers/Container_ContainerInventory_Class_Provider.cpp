@@ -135,8 +135,44 @@ private:
 
             // Environment variables
             char* env = cJSON_Print(cJSON_GetObjectItem(config, "Env"));
-            instance.EnvironmentVar_value(strcmp(env, "null") ? env : "");
-
+			try {
+				int envStringLength = strlen(env);
+				//Restricting the ENV string value to 200kb since the limit on the packet size is 250kb.
+				if (envStringLength > 200000)
+				{
+					string stringToTruncate = env;
+					string quotestring = "\"";
+					string quoteandbracestring = "\"]";
+					string quoteandcommastring = "\",";
+					string correctedstring;
+					stringToTruncate.resize(200000);
+					if (stringToTruncate.compare(stringToTruncate.size() - quotestring.size(), quotestring.size(), quotestring) == 0) {
+						correctedstring = stringToTruncate + "]";
+					}
+					else if (stringToTruncate.compare(stringToTruncate.size() - quoteandbracestring.size(), quoteandbracestring.size(), quoteandbracestring) == 0) {
+						correctedstring = stringToTruncate;
+					}
+					else if (stringToTruncate.compare(stringToTruncate.size() - quoteandcommastring.size(), quoteandcommastring.size(), quoteandcommastring) == 0) {
+						correctedstring = stringToTruncate.substr(0, stringToTruncate.length() - 1);
+						correctedstring = correctedstring + "]";
+					}
+					else {
+						correctedstring = stringToTruncate + "\"]";
+					}
+					instance.EnvironmentVar_value(correctedstring.c_str());
+				}
+				else {
+					instance.EnvironmentVar_value(strcmp(env, "null") ? env : "");
+				}
+			}
+			catch (std::exception &e)
+			{
+				syslog(LOG_ERR, "Container_ContainerInventory - ENV string truncation %s", e.what());
+			}
+			catch (...)
+			{
+				syslog(LOG_ERR, "Container_ContainerInventory - - ENV string truncation- Unknown exception");
+			}
             // Command
 	        char *cmd = cJSON_Print(cJSON_GetObjectItem(config, "Cmd"));
             instance.Command_value(cmd);
