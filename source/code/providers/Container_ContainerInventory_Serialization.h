@@ -71,12 +71,10 @@ public:
 		catch (std::exception &e)
 		{
 			syslog(LOG_ERR, "Container_ContainerInventory-Serialization %s", e.what());
-			context.Post(MI_RESULT_FAILED);
 		}
 		catch (...)
 		{
 			syslog(LOG_ERR, "Container_ContainerInventory-Serialization Unknown exception");
-			context.Post(MI_RESULT_FAILED);
 		}
 
         closelog();
@@ -169,12 +167,10 @@ public:
 		catch (std::exception &e)
 		{
 			syslog(LOG_ERR, "Container_ContainerInventory-Deserialization %s", e.what());
-			context.Post(MI_RESULT_FAILED);
 		}
 		catch (...)
 		{
 			syslog(LOG_ERR, "Container_ContainerInventory-Deserialization Unknown exception");
-			context.Post(MI_RESULT_FAILED);
 		}
         closelog();
         return instance;
