@@ -87,13 +87,12 @@ public:
     ///
     static Container_ContainerInventory_Class DeserializeObject(string& id)
     {
-        openlog("ContainerInventorySerializer", LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+		openlog("ContainerInventorySerializer", LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+		// New inventory entry
+		Container_ContainerInventory_Class instance;
+
+		instance.InstanceID_value(id.c_str());
 		try {
-			// New inventory entry
-			Container_ContainerInventory_Class instance;
-
-			instance.InstanceID_value(id.c_str());
-
 			char filename[128];
 			sprintf(filename, "%s%s", DIRECTORY, id.c_str());
 
