@@ -30,132 +30,152 @@ public:
     ///
     static Container_HostInventory_Class InspectHost()
     {
-        Container_HostInventory_Class hostInventoryInstance;
+		try {
+			Container_HostInventory_Class hostInventoryInstance;
 
-        // Request containers
-        vector<string> request(1, DockerRestHelper::restDockerInfo());
-        vector<cJSON*> response;
+			// Request containers
+			vector<string> request(1, DockerRestHelper::restDockerInfo());
+			vector<cJSON*> response;
 
-        //check to see if its a test environment
-        if(getenv(DOCKER_TESTRUNNER_STRING) != NULL)
-        {
-            //fake response for test
-            char* testResponseStr = getenv(DOCKER_TESTRUNNER_STRING);
-            string tempStr = testResponseStr;
-            cJSON* testJsonObject = parseJson(tempStr);
-            response.push_back(testJsonObject);
-        }
-        else
-        {
-            //regular code path, get response from rest call
-            response = getResponse(request);
-        }
+			//check to see if its a test environment
+			if (getenv(DOCKER_TESTRUNNER_STRING) != NULL)
+			{
+				//fake response for test
+				char* testResponseStr = getenv(DOCKER_TESTRUNNER_STRING);
+				string tempStr = testResponseStr;
+				cJSON* testJsonObject = parseJson(tempStr);
+				response.push_back(testJsonObject);
+			}
+			else
+			{
+				//regular code path, get response from rest call
+				response = getResponse(request);
+			}
 
-        // See https://docs.docker.com/engine/api/v1.27/#section/Versioning for example output
-        if (!response.empty() && response[0])
-        {   
-            PopulateInstanceFromJson(hostInventoryInstance, response[0]);
-            // Clean up object
-            cJSON_Delete(response[0]);
-        }
-        else
-        {
-            syslog(LOG_WARNING, "API call in Container_HostInventory::InspectHost to get host info returned null");
-        }
-        return hostInventoryInstance;
+			// See https://docs.docker.com/engine/api/v1.27/#section/Versioning for example output
+			if (!response.empty() && response[0])
+			{
+				PopulateInstanceFromJson(hostInventoryInstance, response[0]);
+				// Clean up object
+				cJSON_Delete(response[0]);
+			}
+			else
+			{
+				syslog(LOG_WARNING, "API call in Container_HostInventory::InspectHost to get host info returned null");
+			}
+			return hostInventoryInstance;
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_HostInventory %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_HostInventory Unknown exception");
+		}
     }
 
     static void PopulateInstanceFromJson(Container_HostInventory_Class &instance, cJSON* responseJson)
     {
-            instance.InstanceID_value(Guid::NewToString().c_str());
-            string computerName = string((cJSON_GetObjectItem(responseJson, "Name")->valuestring));
-            instance.Computer_value(computerName.c_str());
-            instance.DockerVersion_value((cJSON_GetObjectItem(responseJson, "ServerVersion")->valuestring));
-            string operatingSystem = string(cJSON_GetObjectItem(responseJson, "OperatingSystem")->valuestring);
-            instance.OperatingSystem_value(operatingSystem.c_str());
-            //Get Volume and Network info from "Plugins"
-            cJSON* plugins_entry = cJSON_GetObjectItem(responseJson, "Plugins");
-            if(plugins_entry != NULL)
-            {
-                //Get volume info
-                cJSON* volumeEntry = cJSON_GetObjectItem(plugins_entry, "Volume");
-                string volumeList;
-                if(volumeEntry != NULL)
-                {
-                    for(int i =0; i < cJSON_GetArraySize(volumeEntry);i++)
-                    {
-                        volumeList.append(string(cJSON_GetArrayItem(volumeEntry, i)->valuestring));
-                    }
-                }
-                instance.Volume_value(volumeList.c_str());
-                //Get network info
-                cJSON* networkEntry = cJSON_GetObjectItem(plugins_entry, "Network");
-                string networkList;
-                if(networkEntry != NULL)
-                {
-                    for(int i =0; i < cJSON_GetArraySize(networkEntry);i++)
-                    {
-                        networkList.append(string(cJSON_GetArrayItem(networkEntry, i)->valuestring));
-                        networkList.append(" ");
-                    }
-                }
-                instance.Network_value(networkList.c_str());
-            }
+		try {
+			instance.InstanceID_value(Guid::NewToString().c_str());
+			string computerName = string((cJSON_GetObjectItem(responseJson, "Name")->valuestring));
+			instance.Computer_value(computerName.c_str());
+			instance.DockerVersion_value((cJSON_GetObjectItem(responseJson, "ServerVersion")->valuestring));
+			string operatingSystem = string(cJSON_GetObjectItem(responseJson, "OperatingSystem")->valuestring);
+			instance.OperatingSystem_value(operatingSystem.c_str());
+			//Get Volume and Network info from "Plugins"
+			cJSON* plugins_entry = cJSON_GetObjectItem(responseJson, "Plugins");
+			if (plugins_entry != NULL)
+			{
+				//Get volume info
+				cJSON* volumeEntry = cJSON_GetObjectItem(plugins_entry, "Volume");
+				string volumeList;
+				if (volumeEntry != NULL)
+				{
+					for (int i = 0; i < cJSON_GetArraySize(volumeEntry); i++)
+					{
+						volumeList.append(string(cJSON_GetArrayItem(volumeEntry, i)->valuestring));
+					}
+				}
+				instance.Volume_value(volumeList.c_str());
+				//Get network info
+				cJSON* networkEntry = cJSON_GetObjectItem(plugins_entry, "Network");
+				string networkList;
+				if (networkEntry != NULL)
+				{
+					for (int i = 0; i < cJSON_GetArraySize(networkEntry); i++)
+					{
+						networkList.append(string(cJSON_GetArrayItem(networkEntry, i)->valuestring));
+						networkList.append(" ");
+					}
+				}
+				instance.Network_value(networkList.c_str());
+			}
 
-            //Node role is obtained from the computer name. e.g. k8s-master-71E8D996-0 => master role
-            if(computerName.find("master") != string::npos || computerName.find("manager") != string::npos)
-            {
-                //swarm
-                instance.NodeRole_value("Master");  
-            }
-            else if(computerName.find("agent") != string::npos)
-            {
-                //swarm
-                instance.NodeRole_value("Agent");  
-            }
-            else
-            {
-                instance.NodeRole_value("Not Orchestrated");  
-            }   
+			//Node role is obtained from the computer name. e.g. k8s-master-71E8D996-0 => master role
+			if (computerName.find("master") != string::npos || computerName.find("manager") != string::npos)
+			{
+				//swarm
+				instance.NodeRole_value("Master");
+			}
+			else if (computerName.find("agent") != string::npos)
+			{
+				//swarm
+				instance.NodeRole_value("Agent");
+			}
+			else
+			{
+				instance.NodeRole_value("Not Orchestrated");
+			}
 
-            //Orchestrator type is obtained from the node name. example of node names swarm-manager-vmss_0 for swarm, k8s-master-71E8D996-0 for kubernetes
-            if(operatingSystem.find("OpenShift") != string::npos)
-            {
-                //OpenShift
-                instance.OrchestratorType_value("OpenShift");
-                instance.NodeRole_value("Node");
-            }
-            else if (DIR *sfDir = opendir(SF_DIR))
-            {
-                //ServiceFabric
-                instance.OrchestratorType_value("ServiceFabric");
-                closedir(sfDir);
-                instance.NodeRole_value("Node");
-            }
-            else if(computerName.find("swarmm") != string::npos)
-            {
-                //swarm mode
-                instance.OrchestratorType_value("Swarm Mode");  
-            }
-            else if(computerName.find("swarm") != string::npos)
-            {
-                //swarm
-                instance.OrchestratorType_value("Swarm");  
-            }
-            else if(getenv(KUBENETES_SERVICE_HOST_STRING) != NULL)
-            {
-                //kubernetes
-                instance.OrchestratorType_value("Kubernetes");  
-            }
-            else if(computerName.find("dcos") != string::npos)
-            {
-                //dc/os
-                instance.OrchestratorType_value("DC/OS");  
-            }
-            else
-            {
-                instance.OrchestratorType_value("None");  
-            }   
+			//Orchestrator type is obtained from the node name. example of node names swarm-manager-vmss_0 for swarm, k8s-master-71E8D996-0 for kubernetes
+			if (operatingSystem.find("OpenShift") != string::npos)
+			{
+				//OpenShift
+				instance.OrchestratorType_value("OpenShift");
+				instance.NodeRole_value("Node");
+			}
+			else if (DIR *sfDir = opendir(SF_DIR))
+			{
+				//ServiceFabric
+				instance.OrchestratorType_value("ServiceFabric");
+				closedir(sfDir);
+				instance.NodeRole_value("Node");
+			}
+			else if (computerName.find("swarmm") != string::npos)
+			{
+				//swarm mode
+				instance.OrchestratorType_value("Swarm Mode");
+			}
+			else if (computerName.find("swarm") != string::npos)
+			{
+				//swarm
+				instance.OrchestratorType_value("Swarm");
+			}
+			else if (getenv(KUBENETES_SERVICE_HOST_STRING) != NULL)
+			{
+				//kubernetes
+				instance.OrchestratorType_value("Kubernetes");
+			}
+			else if (computerName.find("dcos") != string::npos)
+			{
+				//dc/os
+				instance.OrchestratorType_value("DC/OS");
+			}
+			else
+			{
+				instance.OrchestratorType_value("None");
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_HostInventory %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_HostInventory Unknown exception");
+		}
     }
 };
 
