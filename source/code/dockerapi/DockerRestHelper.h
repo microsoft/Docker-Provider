@@ -118,42 +118,32 @@ public:
     ///
     static string restDockerExecCreate(string id, vector<string>& command)
     {
-		try {
-			// Request body
-			cJSON* root = cJSON_CreateObject();
+        // Request body
+        cJSON* root = cJSON_CreateObject();
 
-			cJSON_AddFalseToObject(root, "AttachStdin");
-			cJSON_AddFalseToObject(root, "AttachStdout");
-			cJSON_AddFalseToObject(root, "AttachStderr");
-			cJSON_AddFalseToObject(root, "Tty");
+        cJSON_AddFalseToObject(root, "AttachStdin");
+        cJSON_AddFalseToObject(root, "AttachStdout");
+        cJSON_AddFalseToObject(root, "AttachStderr");
+        cJSON_AddFalseToObject(root, "Tty");
 
-			cJSON* cmd = cJSON_CreateArray();
+        cJSON* cmd = cJSON_CreateArray();
 
-			for (unsigned i = 0; i < command.size(); i++)
-			{
-				cJSON_AddItemToArray(cmd, cJSON_CreateString(command[i].c_str()));
-			}
+        for (unsigned i = 0; i < command.size(); i++)
+        {
+            cJSON_AddItemToArray(cmd, cJSON_CreateString(command[i].c_str()));
+        }
+		
+        cJSON_AddItemToObject(root, "Cmd", cmd);
 
-			cJSON_AddItemToObject(root, "Cmd", cmd);
+        char* json = cJSON_PrintUnformatted(root);
 
-			char* json = cJSON_PrintUnformatted(root);
+        char result[2048];
+        snprintf(result, 2048, "POST /containers/%s/exec HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: %zu\r\n\r\n%s", id.c_str(), strlen(json), json);
 
-			char result[2048];
-			snprintf(result, 2048, "POST /containers/%s/exec HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: %zu\r\n\r\n%s", id.c_str(), strlen(json), json);
+        if(root) cJSON_Delete(root);
+        if(json) free(json);
 
-			if (root) cJSON_Delete(root);
-			if (json) free(json);
-
-			return string(result);
-		}
-		catch (std::exception &e)
-		{
-			syslog(LOG_ERR, "DockerRestHelper %s", e.what());
-		}
-		catch (...)
-		{
-			syslog(LOG_ERR, "DockerRestHelper Unknown exception");
-		}
+        return string(result);
     }
 
     ///
@@ -165,31 +155,21 @@ public:
     ///
     static string restDockerExecStart(string execId)
     {
-		try {
-			// Request body
-			cJSON* root = cJSON_CreateObject();
+        // Request body
+        cJSON* root = cJSON_CreateObject();
 
-			cJSON_AddTrueToObject(root, "Detach");
-			cJSON_AddFalseToObject(root, "Tty");
+        cJSON_AddTrueToObject(root, "Detach");
+        cJSON_AddFalseToObject(root, "Tty");
 
-			char* json = cJSON_PrintUnformatted(root);
+        char* json = cJSON_PrintUnformatted(root);
 
-			char result[512];
-			snprintf(result, 512, "POST /exec/%s/start HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: %zu\r\n\r\n%s", execId.c_str(), strlen(json), json);
+        char result[512];
+        snprintf(result, 512, "POST /exec/%s/start HTTP/1.1\r\nHost: localhost\r\nContent-Type: application/json\r\nContent-Length: %zu\r\n\r\n%s", execId.c_str(), strlen(json), json);
 
-			if (root) cJSON_Delete(root);
-			if (json) free(json);
+        if(root) cJSON_Delete(root);
+        if(json) free(json);
 
-			return string(result);
-		}
-		catch (std::exception &e)
-		{
-			syslog(LOG_ERR, "DockerRestHelper %s", e.what());
-		}
-		catch (...)
-		{
-			syslog(LOG_ERR, "DockerRestHelper Unknown exception");
-		}
+        return string(result);
     }
 
     ///
