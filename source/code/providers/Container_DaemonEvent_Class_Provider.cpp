@@ -54,22 +54,32 @@ private:
         int fileTime = time(NULL);
         int currentTime = fileTime;
         const char* lastQueryFile = GetEventQueryTimeFilePath();
-        FILE* file = fopen(lastQueryFile, "r");
+		try {
+			FILE* file = fopen(lastQueryFile, "r");
 
-        if (file)
-        {
-            fscanf(file, "%d", &fileTime);
-            fclose(file);
+			if (file)
+			{
+				fscanf(file, "%d", &fileTime);
+				fclose(file);
 
-            if (fileTime > currentTime)
-            {
-                syslog(LOG_WARNING, "The time stored in %s is more recent than the current time", lastQueryFile);
-            }
-        }
-        else
-        {
-            syslog(LOG_ERR, "Attempt in GetPreviousTime to open %s for reading failed", lastQueryFile);
-        }
+				if (fileTime > currentTime)
+				{
+					syslog(LOG_WARNING, "The time stored in %s is more recent than the current time", lastQueryFile);
+				}
+			}
+			else
+			{
+				syslog(LOG_ERR, "Attempt in GetPreviousTime to open %s for reading failed", lastQueryFile);
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_DaemonEvent - GetPreviousTime %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_DaemonEvent - GetPreviousTime - Unknown exception");
+		}
 
         // Discard stored times that are more recent than the current time
         return fileTime > currentTime ? currentTime : fileTime;
@@ -83,17 +93,27 @@ private:
     static void SetPreviousTime(int t)
     {
         const char* lastQueryFile = GetEventQueryTimeFilePath();
-        FILE* file = fopen(lastQueryFile, "w");
+		try {
+			FILE* file = fopen(lastQueryFile, "w");
 
-        if (file)
-        {
-            fprintf(file, "%d", t);
-            fclose(file);
-        }
-        else
-        {
-            syslog(LOG_ERR, "Attempt in SetPreviousTime to open %s for writing failed", lastQueryFile);
-        }
+			if (file)
+			{
+				fprintf(file, "%d", t);
+				fclose(file);
+			}
+			else
+			{
+				syslog(LOG_ERR, "Attempt in SetPreviousTime to open %s for writing failed", lastQueryFile);
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_DaemonEvent - SetPreviousTime %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_DaemonEvent - SetPreviousTime - Unknown exception");
+		}
     }
 
     ///
@@ -109,30 +129,40 @@ private:
         vector<string> request(1, DockerRestHelper::restDockerPs());
         vector<cJSON*> response = getResponse(request);
 
-        // See https://docs.docker.com/engine/reference/api/docker_remote_api_v1.21/#list-containers for example output
-        if (!response.empty() && response[0])
-        {
-            for (int i = 0; i < cJSON_GetArraySize(response[0]); i++)
-            {
-                cJSON* entry = cJSON_GetArrayItem(response[0], i);
+		try {
+			// See https://docs.docker.com/engine/reference/api/docker_remote_api_v1.21/#list-containers for example output
+			if (!response.empty() && response[0])
+			{
+				for (int i = 0; i < cJSON_GetArraySize(response[0]); i++)
+				{
+					cJSON* entry = cJSON_GetArrayItem(response[0], i);
 
-                if (entry)
-                {
-                    cJSON* nameField = cJSON_GetObjectItem(entry, "Names");
+					if (entry)
+					{
+						cJSON* nameField = cJSON_GetObjectItem(entry, "Names");
 
-                    if (nameField && cJSON_GetArraySize(nameField))
-                    {
-                        // Docker API documentation says that this field contains the short ID but that is not the case; use full ID instead
-                        result[string(cJSON_GetObjectItem(entry, "Id")->valuestring)] = string(cJSON_GetArrayItem(nameField, 0)->valuestring + 1);
-                    }
-                }
-            }
-            cJSON_Delete(response[0]);
-        }
-        else
-        {
-            syslog(LOG_ERR, "Attempt in MapContainerIdToName to list containers failed");
-        }
+						if (nameField && cJSON_GetArraySize(nameField))
+						{
+							// Docker API documentation says that this field contains the short ID but that is not the case; use full ID instead
+							result[string(cJSON_GetObjectItem(entry, "Id")->valuestring)] = string(cJSON_GetArrayItem(nameField, 0)->valuestring + 1);
+						}
+					}
+				}
+				cJSON_Delete(response[0]);
+			}
+			else
+			{
+				syslog(LOG_ERR, "Attempt in MapContainerIdToName to list containers failed");
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_DaemonEvent - MapContainerIdToName %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_DaemonEvent - MapContainerIdToName - Unknown exception");
+		}
 
         return result;
     }
@@ -144,10 +174,20 @@ private:
     ///
     static void LinkFilesNewContainers(vector<string> ids)
     {
-        for (unsigned i = 0; i < ids.size(); i++)
-        {
-            ContainerLogFileReader::LinkFilesToStream(ids[i]);
-        }
+		try {
+			for (unsigned i = 0; i < ids.size(); i++)
+			{
+				ContainerLogFileReader::LinkFilesToStream(ids[i]);
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_DaemonEvent - LinkFilesNewContainers %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_DaemonEvent - LinkFilesNewContainers - Unknown exception");
+		}
     }
 
 public:
@@ -164,88 +204,98 @@ public:
         int previousTime = GetPreviousTime();
         int currentTime = time(NULL);
 
-        if (currentTime > previousTime)
-        {
-            // Get computer name
-            string hostname = getDockerHostName();
+		try {
+			if (currentTime > previousTime)
+			{
+				// Get computer name
+				string hostname = getDockerHostName();
 
-            // Request events
-            vector<string> request(1, DockerRestHelper::restDockerEvents(previousTime, currentTime));
-            vector<cJSON*> response = getResponse(request, true);
+				// Request events
+				vector<string> request(1, DockerRestHelper::restDockerEvents(previousTime, currentTime));
+				vector<cJSON*> response = getResponse(request, true);
 
-            // See https://docs.docker.com/reference/api/Container_remote_api_v1.21/#monitor-docker-s-events for example output
-            if (!response.empty() && response[0])
-            {
-                map<string, string> idMap = MapContainerIdToName();
-                vector<string> newContainers;
+				// See https://docs.docker.com/reference/api/Container_remote_api_v1.21/#monitor-docker-s-events for example output
+				if (!response.empty() && response[0])
+				{
+					map<string, string> idMap = MapContainerIdToName();
+					vector<string> newContainers;
 
-                for (int i = 0; i < cJSON_GetArraySize(response[0]); i++)
-                {
-                    cJSON* entry = cJSON_GetArrayItem(response[0], i);
+					for (int i = 0; i < cJSON_GetArraySize(response[0]); i++)
+					{
+						cJSON* entry = cJSON_GetArrayItem(response[0], i);
 
-                    // the newer versions of the API may return objects that do not have status or id
-                    if (entry && cJSON_GetObjectItem(entry, "status") != NULL && cJSON_GetObjectItem(entry, "id") != NULL)
-                    {
-                        // New inventory entry
-                        Container_DaemonEvent_Class instance;
-                        instance.Computer_value(hostname.c_str());
-                        instance.InstanceID_value(Guid::NewToString().c_str());
-                        instance.Command_value(cJSON_GetObjectItem(entry, "status")->valuestring);
+						// the newer versions of the API may return objects that do not have status or id
+						if (entry && cJSON_GetObjectItem(entry, "status") != NULL && cJSON_GetObjectItem(entry, "id") != NULL)
+						{
+							// New inventory entry
+							Container_DaemonEvent_Class instance;
+							instance.Computer_value(hostname.c_str());
+							instance.InstanceID_value(Guid::NewToString().c_str());
+							instance.Command_value(cJSON_GetObjectItem(entry, "status")->valuestring);
 
-                        char buffer[33];
-                        snprintf(buffer, 33, "%d", cJSON_GetObjectItem(entry, "time")->valueint);
-                        instance.TimeOfCommand_value(buffer);
+							char buffer[33];
+							snprintf(buffer, 33, "%d", cJSON_GetObjectItem(entry, "time")->valueint);
+							instance.TimeOfCommand_value(buffer);
 
-                        cJSON* tempImageName = cJSON_GetObjectItem(entry, "from");
+							cJSON* tempImageName = cJSON_GetObjectItem(entry, "from");
 
-                        if (tempImageName)
-                        {
-                            // Container event
+							if (tempImageName)
+							{
+								// Container event
 
-                            instance.ElementName_value(tempImageName->valuestring);
+								instance.ElementName_value(tempImageName->valuestring);
 
-                            char* id = cJSON_GetObjectItem(entry, "id")->valuestring;
-                            instance.Id_value(id);
-                            string idStr = string(id);
-                            
-			    // Get the container name
-                            if (idMap.count(idStr))
-                            {
-                                instance.ContainerName_value(idMap[idStr].c_str());
-                                // Add newly created containers to list
-                                if (!strcmp(cJSON_GetObjectItem(entry, "status")->valuestring, "create"))
-                                {
-                                    newContainers.push_back(string(id));
-                                }
-                            }
-                            else
-                            {
-                                syslog(LOG_NOTICE, "No container name found for container %s", id);
-                            }
-                        }
-                        else
-                        {
-                            // Image event
-                            instance.ElementName_value(cJSON_GetObjectItem(entry, "id")->valuestring);
-                            instance.Id_value("");
-                            instance.ContainerName_value("");
-                        }
-                        result.push_back(instance);
-                    }
-                    else
-                    {
-                        syslog(LOG_WARNING, "Attempt in QueryAll to get element %d of event list returned null", i);
-                    }
-                }
-                LinkFilesNewContainers(newContainers);
-                // Clean up object
-                cJSON_Delete(response[0]);
-            }
-            else
-            {
-                syslog(LOG_ERR, "Attempt in QueryAll to get Docker events failed");
-            }
-        }
+								char* id = cJSON_GetObjectItem(entry, "id")->valuestring;
+								instance.Id_value(id);
+								string idStr = string(id);
+
+								// Get the container name
+								if (idMap.count(idStr))
+								{
+									instance.ContainerName_value(idMap[idStr].c_str());
+									// Add newly created containers to list
+									if (!strcmp(cJSON_GetObjectItem(entry, "status")->valuestring, "create"))
+									{
+										newContainers.push_back(string(id));
+									}
+								}
+								else
+								{
+									syslog(LOG_NOTICE, "No container name found for container %s", id);
+								}
+							}
+							else
+							{
+								// Image event
+								instance.ElementName_value(cJSON_GetObjectItem(entry, "id")->valuestring);
+								instance.Id_value("");
+								instance.ContainerName_value("");
+							}
+							result.push_back(instance);
+						}
+						else
+						{
+							syslog(LOG_WARNING, "Attempt in QueryAll to get element %d of event list returned null", i);
+						}
+					}
+					LinkFilesNewContainers(newContainers);
+					// Clean up object
+					cJSON_Delete(response[0]);
+				}
+				else
+				{
+					syslog(LOG_ERR, "Attempt in QueryAll to get Docker events failed");
+				}
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_DaemonEvent - QueryAll %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_DaemonEvent - QueryAll - Unknown exception");
+		}
         SetPreviousTime(currentTime);
         closelog();
         return result;

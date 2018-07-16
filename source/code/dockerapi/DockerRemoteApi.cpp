@@ -29,23 +29,33 @@ int readSocket(int fd, char* buf, int size, int timeout)
 {
     int result = SELECT_ERROR;
 
-    fd_set rfds;
-    FD_ZERO(&rfds);
-    FD_SET(fd, &rfds);
+	try {
+		fd_set rfds;
+		FD_ZERO(&rfds);
+		FD_SET(fd, &rfds);
 
-    struct timeval tv;
-    tv.tv_sec = timeout;
-    tv.tv_usec = 0;
+		struct timeval tv;
+		tv.tv_sec = timeout;
+		tv.tv_usec = 0;
 
-    result = select(fd + 1, &rfds, NULL, NULL, &tv);
-    if (result == 0)
-    {
-        result = SELECT_TIMEOUT;
-    }    
-    else if ((result != -1) && FD_ISSET(fd, &rfds))
-    {
-        result = read(fd, buf, size);
-    }
+		result = select(fd + 1, &rfds, NULL, NULL, &tv);
+		if (result == 0)
+		{
+			result = SELECT_TIMEOUT;
+		}
+		else if ((result != -1) && FD_ISSET(fd, &rfds))
+		{
+			result = read(fd, buf, size);
+		}
+	}
+	catch (std::exception &e)
+	{
+		syslog(LOG_ERR, "DockerRemoteApi - readSocket %s",e.what());
+	}
+	catch (...)
+	{
+		syslog(LOG_ERR, "DockerRemoteApi - readSocket - Unknown exception");
+	}
 	
     return result;
 }
@@ -55,44 +65,54 @@ int readSocket(int fd, char* buf, int size, int timeout)
  */
 void createConnection(unsigned int n, vector<int>& fds)
 {
-    fds.clear();
-    fds.reserve(n);
+	try {
+		fds.clear();
+		fds.reserve(n);
 
-    struct sockaddr_un addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sun_family = AF_UNIX;
+		struct sockaddr_un addr;
+		memset(&addr, 0, sizeof(addr));
+		addr.sun_family = AF_UNIX;
 
-    char socket_path[] = SOCKET_PATH;
-    memcpy(addr.sun_path, socket_path, sizeof(socket_path));
+		char socket_path[] = SOCKET_PATH;
+		memcpy(addr.sun_path, socket_path, sizeof(socket_path));
 
-    bool next = true;
+		bool next = true;
 
-    for (unsigned int i = 0; next && i < n; i++)
-    {
-        int fd = socket(AF_UNIX, SOCK_STREAM, 0);
+		for (unsigned int i = 0; next && i < n; i++)
+		{
+			int fd = socket(AF_UNIX, SOCK_STREAM, 0);
 
-        if (fd > 0)
-        {
-            if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) != -1)
-            {
-                fds.push_back(fd);
-            }
-            else
-            {
-                close(fd);
-                next = false;
-            }
-        }
-        else
-        {
-            next = false;
-        }
-    }
+			if (fd > 0)
+			{
+				if (connect(fd, (struct sockaddr*)&addr, sizeof(addr)) != -1)
+				{
+					fds.push_back(fd);
+				}
+				else
+				{
+					close(fd);
+					next = false;
+				}
+			}
+			else
+			{
+				next = false;
+			}
+		}
 
-    for (unsigned int i = 0; !next && i < fds.size(); i++)
-    {
-        close(fds[i]);
-    }
+		for (unsigned int i = 0; !next && i < fds.size(); i++)
+		{
+			close(fds[i]);
+		}
+	}
+	catch (std::exception &e)
+	{
+		syslog(LOG_ERR, "DockerRemoteApi - createConnection %s", e.what());
+	}
+	catch (...)
+	{
+		syslog(LOG_ERR, "DockerRemoteApi - createConnection - Unknown exception");
+	}
 }
 
 cJSON* parseMultiJson(string &raw_response)
@@ -159,50 +179,60 @@ cJSON* parseJson(string& raw_response)
  */
 void getResponseInBatch(vector<string>& request, vector<cJSON*>& response, unsigned int start, unsigned int end, bool isMultiJson = false, bool ignoreResponse = false)
 {
-    const int bufferSize = 4096;
-    const int timeoutSecond = 5;
-    vector<int> sockfd;
-    end = (end == 0 || end > request.size()) ? request.size() : end;
-    int n = end - start;
-    createConnection(n, sockfd);
+	try {
+		const int bufferSize = 4096;
+		const int timeoutSecond = 5;
+		vector<int> sockfd;
+		end = (end == 0 || end > request.size()) ? request.size() : end;
+		int n = end - start;
+		createConnection(n, sockfd);
 
-    for (int i = 0; i < n; i++)
-    {
-        size_t r = write(sockfd[i], request[start + i].c_str(), request[start + i].length());
+		for (int i = 0; i < n; i++)
+		{
+			size_t r = write(sockfd[i], request[start + i].c_str(), request[start + i].length());
 
-        if (r != request[start + i].length())
-        {
-            throw string("Write to socket in getResponseInBatch failed");
-        }
-    }
+			if (r != request[start + i].length())
+			{
+				throw string("Write to socket in getResponseInBatch failed");
+			}
+		}
 
-    for (int i = 0; !ignoreResponse && i < n; i++)
-    {
-        char readBuf[bufferSize + 1];
-        int read_n = 0;
-        string raw_response;
-        response.push_back(NULL);
+		for (int i = 0; !ignoreResponse && i < n; i++)
+		{
+			char readBuf[bufferSize + 1];
+			int read_n = 0;
+			string raw_response;
+			response.push_back(NULL);
 
-        while ((read_n = readSocket(sockfd[i], readBuf, bufferSize, timeoutSecond)) > 0)
-        {
-            readBuf[read_n] = 0;
-            raw_response.append(readBuf);
-            cJSON* json = isMultiJson ? parseMultiJson(raw_response) : parseJson(raw_response);
+			while ((read_n = readSocket(sockfd[i], readBuf, bufferSize, timeoutSecond)) > 0)
+			{
+				readBuf[read_n] = 0;
+				raw_response.append(readBuf);
+				cJSON* json = isMultiJson ? parseMultiJson(raw_response) : parseJson(raw_response);
 
-            if (json)
-            {
-                response[start + i] = json;
-                break;
-            }
-        }
+				if (json)
+				{
+					response[start + i] = json;
+					break;
+				}
+			}
 
-        close(sockfd[i]);
+			close(sockfd[i]);
 
-        if (!ignoreResponse && raw_response.length() > 0 && response[start + i] == NULL)
-        {
-            throw string("Failed to parse data:`" + raw_response + "` to json" + " \n Request :" + request[start + i]);
-        }
-    }
+			if (!ignoreResponse && raw_response.length() > 0 && response[start + i] == NULL)
+			{
+				throw string("Failed to parse data:`" + raw_response + "` to json" + " \n Request :" + request[start + i]);
+			}
+		}
+	}
+	catch (std::exception &e)
+	{
+		syslog(LOG_ERR, "DockerRemoteApi - GetResponseInBatch %s", e.what());
+	}
+	catch (...)
+	{
+		syslog(LOG_ERR, "DockerRemoteApi - GetResponseInBatch - Unknown exception");
+	}
 }
 
 vector<cJSON*> getResponse(vector<string>& request, bool isMultiJson, bool ignoreResponse)
@@ -228,67 +258,87 @@ vector<cJSON*> getResponse(vector<string>& request, bool isMultiJson, bool ignor
 
 void readLine(char* str, int length, int& readPtr, string& line)
 {
-    while (str && (readPtr < length))
-    {
-        if ((readPtr + 1) < length &&
-            str[readPtr] == '\r' && str[readPtr + 1] == '\n')
-        {
-            readPtr = readPtr + 2;
-            break;
-        }
-        line.append(string(1, str[readPtr]));
-        readPtr++;
-    }
+	try {
+		while (str && (readPtr < length))
+		{
+			if ((readPtr + 1) < length &&
+				str[readPtr] == '\r' && str[readPtr + 1] == '\n')
+			{
+				readPtr = readPtr + 2;
+				break;
+			}
+			line.append(string(1, str[readPtr]));
+			readPtr++;
+		}
+	}
+	catch (std::exception &e)
+	{
+		syslog(LOG_ERR, "DockerRemoteApi - readLine %s", e.what());
+	}
+	catch (...)
+	{
+		syslog(LOG_ERR, "DockerRemoteApi - readLine - Unknown exception");
+	}
 }
 
 void parseLogs(char* str, int length, vector<string>& logs)
 {
-    int readPtr = 0;
-   
-    if(!str)
-        return;
+	try {
+		int readPtr = 0;
 
-    // skip header
-    while (readPtr < length)
-    {
-        if ((readPtr + 3) < length &&
-            str[readPtr] == '\r' && str[readPtr + 1] == '\n' && str[readPtr + 2] == '\r' && str[readPtr + 3] == '\n')
-        {
-            readPtr = readPtr + 4;
-            break;
-        }
-        readPtr++;
-    }
+		if (!str)
+			return;
 
-    // read the logs
-    while (readPtr < length)
-    {
-        // skip data length
-        string dataLength;
-        readLine(str, length, readPtr, dataLength);
+		// skip header
+		while (readPtr < length)
+		{
+			if ((readPtr + 3) < length &&
+				str[readPtr] == '\r' && str[readPtr + 1] == '\n' && str[readPtr + 2] == '\r' && str[readPtr + 3] == '\n')
+			{
+				readPtr = readPtr + 4;
+				break;
+			}
+			readPtr++;
+		}
 
-        if (readPtr + 8 > length)
-        {
-            return;
-        }
+		// read the logs
+		while (readPtr < length)
+		{
+			// skip data length
+			string dataLength;
+			readLine(str, length, readPtr, dataLength);
 
-        // stream type
-        string parsedLog;
-        if(str[readPtr] == 1)
-        {
-            parsedLog = "stdout;";
-        }
-        else
-        {
-            parsedLog = "stderr;";
-        }
-        readPtr = readPtr + 8;
+			if (readPtr + 8 > length)
+			{
+				return;
+			}
 
-        string message;
-        readLine(str, length, readPtr, message);
-        parsedLog.append(message);
-        logs.push_back(parsedLog);
-    }
+			// stream type
+			string parsedLog;
+			if (str[readPtr] == 1)
+			{
+				parsedLog = "stdout;";
+			}
+			else
+			{
+				parsedLog = "stderr;";
+			}
+			readPtr = readPtr + 8;
+
+			string message;
+			readLine(str, length, readPtr, message);
+			parsedLog.append(message);
+			logs.push_back(parsedLog);
+		}
+	}
+	catch (std::exception &e)
+	{
+		syslog(LOG_ERR, "DockerRemoteApi - parseLogs %s", e.what());
+	}
+	catch (...)
+	{
+		syslog(LOG_ERR, "DockerRemoteApi - parseLogs - Unknown exception");
+	}
 }
 
 vector<string> getContainerLogs(string& request)
@@ -370,19 +420,29 @@ string getDockerHostName()
         vector<string> request(1, DockerRestHelper::restDockerInfo());
         vector<cJSON*> response = getResponse(request);
 
-        if (!response.empty() && response[0])
-        {
-            dockerHostName = string(cJSON_GetObjectItem(response[0], "Name")->valuestring);
+		try {
+			if (!response.empty() && response[0])
+			{
+				dockerHostName = string(cJSON_GetObjectItem(response[0], "Name")->valuestring);
 
-            // in case get full name, extract up to '.'
-            size_t dotpos = dockerHostName.find('.');
-            if (dotpos != string::npos)
-            {
-                dockerHostName = dockerHostName.substr(0, dotpos);
-            }
-    
-            cJSON_Delete(response[0]);
-        }
+				// in case get full name, extract up to '.'
+				size_t dotpos = dockerHostName.find('.');
+				if (dotpos != string::npos)
+				{
+					dockerHostName = dockerHostName.substr(0, dotpos);
+				}
+
+				cJSON_Delete(response[0]);
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "DockerRemoteApi - getDockerHostName %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "DockerRemoteApi - getDockerHostName - Unknown exception");
+		}
     }
 
     return dockerHostName;
@@ -399,18 +459,28 @@ vector<string> listContainer(bool all)
     vector<string> request(1, all ? DockerRestHelper::restDockerPs() : DockerRestHelper::restDockerPsRunning());
     vector<cJSON*> response = getResponse(request);
 
-    if (!response.empty() && response[0])
-    {
-        int n = cJSON_GetArraySize(response[0]);
+	try {
+		if (!response.empty() && response[0])
+		{
+			int n = cJSON_GetArraySize(response[0]);
 
-        for (int i = 0; i < n; i++)
-        {
-            cJSON* container = cJSON_GetArrayItem(response[0], i);
-            ids.push_back(string(cJSON_GetObjectItem(container, "Id")->valuestring));
-        }
+			for (int i = 0; i < n; i++)
+			{
+				cJSON* container = cJSON_GetArrayItem(response[0], i);
+				ids.push_back(string(cJSON_GetObjectItem(container, "Id")->valuestring));
+			}
 
-        cJSON_Delete(response[0]);
-    }
+			cJSON_Delete(response[0]);
+		}
+	}
+	catch (std::exception &e)
+	{
+		syslog(LOG_ERR, "DockerRemoteApi - listContainer %s", e.what());
+	}
+	catch (...)
+	{
+		syslog(LOG_ERR, "DockerRemoteApi - listContainer - Unknown exception");
+	}
 
     return ids;
 }
@@ -426,18 +496,28 @@ set<string> listContainerSet(bool all)
     vector<string> request(1, all ? DockerRestHelper::restDockerPs() : DockerRestHelper::restDockerPsRunning());
     vector<cJSON*> response = getResponse(request);
 
-    if (!response.empty() && response[0])
-    {
-        int n = cJSON_GetArraySize(response[0]);
+	try {
+		if (!response.empty() && response[0])
+		{
+			int n = cJSON_GetArraySize(response[0]);
 
-        for (int i = 0; i < n; i++)
-        {
-            cJSON* container = cJSON_GetArrayItem(response[0], i);
-            ids.insert(string(cJSON_GetObjectItem(container, "Id")->valuestring));
-        }
+			for (int i = 0; i < n; i++)
+			{
+				cJSON* container = cJSON_GetArrayItem(response[0], i);
+				ids.insert(string(cJSON_GetObjectItem(container, "Id")->valuestring));
+			}
 
-        cJSON_Delete(response[0]);
-    }
+			cJSON_Delete(response[0]);
+		}
+	}
+	catch (std::exception &e)
+	{
+		syslog(LOG_ERR, "DockerRemoteApi - listContainerSet %s", e.what());
+	}
+	catch (...)
+	{
+		syslog(LOG_ERR, "DockerRemoteApi - listContainerSet - Unknown exception");
+	}
 
     return ids;
 }

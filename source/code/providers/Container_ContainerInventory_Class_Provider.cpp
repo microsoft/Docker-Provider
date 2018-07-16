@@ -38,27 +38,39 @@ private:
         {
             default:
             {
-                // Find delimiters in the string of format repository/image:imagetag
-                int slashLocation = properties.find('/');
-                int colonLocation = properties.find(':');
+				try {
+					// Find delimiters in the string of format repository/image:imagetag
+					int slashLocation = properties.find('/');
+					int colonLocation = properties.find(':');
 
-                if ((unsigned)colonLocation != string::npos)
-                {
-                    if ((unsigned)slashLocation >= properties.size())
-                    {
-                        // image:imagetag
-                        result[1] = properties.substr(0, colonLocation);
-                    }
-                    else
-                    {
-                        // repository/image:imagetag
-                        result[0] = properties.substr(0, slashLocation);
-                        result[1] = properties.substr(slashLocation + 1, colonLocation - slashLocation - 1);
-                    }
+					if ((unsigned)colonLocation != string::npos)
+					{
+						if ((unsigned)slashLocation >= properties.size())
+						{
+							// image:imagetag
+							result[1] = properties.substr(0, colonLocation);
+						}
+						else
+						{
+							// repository/image:imagetag
+							result[0] = properties.substr(0, slashLocation);
+							result[1] = properties.substr(slashLocation + 1, colonLocation - slashLocation - 1);
+						}
 
-                    result[2] = properties.substr(colonLocation + 1);
-                    break;
-                }
+						result[2] = properties.substr(colonLocation + 1);
+						break;
+					}
+				}
+				catch (std::exception &e)
+				{
+					syslog(LOG_ERR, "Container_ContainerInventory-SetImageRepositoryImageTag %s", e.what());
+					break;
+				}
+				catch (...)
+				{
+					syslog(LOG_ERR, "Container_ContainerInventory -SetImageRepositoryImageTag- Unknown exception");
+					break;
+				}
             }
             case 0:
             {
@@ -67,7 +79,6 @@ private:
                 break;
             }
         }
-
         return result;
     }
 
@@ -85,35 +96,45 @@ private:
         vector<cJSON*> response = getResponse(request);
 
         // See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-images for example output
-        if (!response.empty() && response[0])
-        {
-            for (int i = 0; i < cJSON_GetArraySize(response[0]); i++)
-            {
-                cJSON* entry = cJSON_GetArrayItem(response[0], i);
+		try {
+			if (!response.empty() && response[0])
+			{
+				for (int i = 0; i < cJSON_GetArraySize(response[0]); i++)
+				{
+					cJSON* entry = cJSON_GetArrayItem(response[0], i);
 
-                if (entry)
-                {
-                    cJSON* tags = cJSON_GetObjectItem(entry, "RepoTags");
+					if (entry)
+					{
+						cJSON* tags = cJSON_GetObjectItem(entry, "RepoTags");
 
-                    if (tags && cJSON_GetArraySize(tags))
-                    {
-                        string value = string(cJSON_GetArrayItem(tags, 0)->valuestring);
-                        result[string(cJSON_GetObjectItem(entry, "Id")->valuestring)] = SetImageRepositoryImageTag(value);
-                    }
-                }
-                else
-                {
-                    syslog(LOG_WARNING, "Attempt in GenerateImageNameMap to get element %d of image list returned null", i);
-                }
-            }
+						if (tags && cJSON_GetArraySize(tags))
+						{
+							string value = string(cJSON_GetArrayItem(tags, 0)->valuestring);
+							result[string(cJSON_GetObjectItem(entry, "Id")->valuestring)] = SetImageRepositoryImageTag(value);
+						}
+					}
+					else
+					{
+						syslog(LOG_WARNING, "Attempt in GenerateImageNameMap to get element %d of image list returned null", i);
+					}
+				}
 
-            // Clean up object
-            cJSON_Delete(response[0]);
-        }
-        else
-        {
-            syslog(LOG_WARNING, "API call in GenerateImageNameMap to list images returned null");
-        }
+				// Clean up object
+				cJSON_Delete(response[0]);
+			}
+			else
+			{
+				syslog(LOG_WARNING, "API call in GenerateImageNameMap to list images returned null");
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_ContainerInventory - GenerateImageNameMap %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_ContainerInventory - GenerateImageNameMap Unknown exception");
+		}
 
         return result;
     }
@@ -208,56 +229,66 @@ private:
     ///
     static void ObtainContainerState(Container_ContainerInventory_Class& instance, cJSON* entry)
     {
-        cJSON* state = cJSON_GetObjectItem(entry, "State");
+		try {
+			cJSON* state = cJSON_GetObjectItem(entry, "State");
 
-        if (state)
-        {
-            int exitCode = cJSON_GetObjectItem(state, "ExitCode")->valueint;
+			if (state)
+			{
+				int exitCode = cJSON_GetObjectItem(state, "ExitCode")->valueint;
 
-            // Exit codes less than 0 are not supported by the engine
-            if (exitCode < 0)
-            {
-                exitCode = 128;
-                syslog(LOG_NOTICE, "Container %s returned negative exit code", cJSON_GetObjectItem(entry, "Id")->valuestring);
-            }
+				// Exit codes less than 0 are not supported by the engine
+				if (exitCode < 0)
+				{
+					exitCode = 128;
+					syslog(LOG_NOTICE, "Container %s returned negative exit code", cJSON_GetObjectItem(entry, "Id")->valuestring);
+				}
 
-            instance.ExitCode_value(exitCode);
+				instance.ExitCode_value(exitCode);
 
-            if (exitCode)
-            {
-                // Container failed
-                instance.State_value("Failed");
-            }
-            else
-            {
-                // Set the Container status : Running/Paused/Stopped
-                if (cJSON_GetObjectItem(state, "Running")->valueint)
-                 {
-                     // Container running
-                     if (cJSON_GetObjectItem(state, "Paused")->valueint)
-                     {
-                         // Container paused
-                         instance.State_value("Paused");
-                     }
-                     else
-                     {
-                         instance.State_value("Running");
-                     }
-                 }
-                 else
-                 {
-                     // Container exited
-                     instance.State_value("Stopped");
-                 }
-            }
+				if (exitCode)
+				{
+					// Container failed
+					instance.State_value("Failed");
+				}
+				else
+				{
+					// Set the Container status : Running/Paused/Stopped
+					if (cJSON_GetObjectItem(state, "Running")->valueint)
+					{
+						// Container running
+						if (cJSON_GetObjectItem(state, "Paused")->valueint)
+						{
+							// Container paused
+							instance.State_value("Paused");
+						}
+						else
+						{
+							instance.State_value("Running");
+						}
+					}
+					else
+					{
+						// Container exited
+						instance.State_value("Stopped");
+					}
+				}
 
-            instance.StartedTime_value(cJSON_GetObjectItem(state, "StartedAt")->valuestring);
-            instance.FinishedTime_value(cJSON_GetObjectItem(state, "FinishedAt")->valuestring);
-        }
-        else
-        {
-            syslog(LOG_WARNING, "Attempt in ObtainContainerState to get container %s state information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
-        }
+				instance.StartedTime_value(cJSON_GetObjectItem(state, "StartedAt")->valuestring);
+				instance.FinishedTime_value(cJSON_GetObjectItem(state, "FinishedAt")->valuestring);
+			}
+			else
+			{
+				syslog(LOG_WARNING, "Attempt in ObtainContainerState to get container %s state information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_ContainerInventory-ObtainContainerState %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_ContainerInventory -ObtainContainerState- Unknown exception");
+		}
     }
 
     ///
@@ -268,25 +299,35 @@ private:
     ///
     static void ObtainContainerHostConfig(Container_ContainerInventory_Class& instance, cJSON* entry)
     {
-        cJSON* hostConfig = cJSON_GetObjectItem(entry, "HostConfig");
+		try {
+			cJSON* hostConfig = cJSON_GetObjectItem(entry, "HostConfig");
 
-        if (hostConfig)
-        {
-            // Links
-            char* links = cJSON_Print(cJSON_GetObjectItem(hostConfig, "Links"));
-            instance.Links_value(strcmp(links, "null") ? links : "");
+			if (hostConfig)
+			{
+				// Links
+				char* links = cJSON_Print(cJSON_GetObjectItem(hostConfig, "Links"));
+				instance.Links_value(strcmp(links, "null") ? links : "");
 
-            // Ports
-            char* ports = cJSON_Print(cJSON_GetObjectItem(hostConfig, "PortBindings"));
-            instance.Ports_value(strcmp(ports, "{\n}") ? ports : "");
+				// Ports
+				char* ports = cJSON_Print(cJSON_GetObjectItem(hostConfig, "PortBindings"));
+				instance.Ports_value(strcmp(ports, "{\n}") ? ports : "");
 
-	    if(links) free(links);
-	    if(ports) free(ports);
-        }
-        else
-        {
-            syslog(LOG_WARNING, "Attempt in ObtainContainerHostConfig to get container %s host config information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
-        }
+				if (links) free(links);
+				if (ports) free(ports);
+			}
+			else
+			{
+				syslog(LOG_WARNING, "Attempt in ObtainContainerHostConfig to get container %s host config information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_ContainerInventory-ObtainContainerHostConfig %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_ContainerInventory -ObtainContainerHostConfig- Unknown exception");
+		}
     }
 
     ///
@@ -305,40 +346,50 @@ private:
         vector<cJSON*> response = getResponse(request);
 
         // See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#inspect-a-container for example output
-        if (!response.empty() && response[0])
-        {
-            instance.InstanceID_value(cJSON_GetObjectItem(response[0], "Id")->valuestring);
-            instance.CreatedTime_value(cJSON_GetObjectItem(response[0], "Created")->valuestring);
+		try {
+			if (!response.empty() && response[0])
+			{
+				instance.InstanceID_value(cJSON_GetObjectItem(response[0], "Id")->valuestring);
+				instance.CreatedTime_value(cJSON_GetObjectItem(response[0], "Created")->valuestring);
 
-            char* containerName = cJSON_GetObjectItem(response[0], "Name")->valuestring;
+				char* containerName = cJSON_GetObjectItem(response[0], "Name")->valuestring;
 
-            if (strlen(containerName))
-            {
-                // Remove the leading / from the name if it exists (this is an API issue)
-                instance.ElementName_value(containerName[0] == '/' ? containerName + 1 : containerName);
-            }
+				if (strlen(containerName))
+				{
+					// Remove the leading / from the name if it exists (this is an API issue)
+					instance.ElementName_value(containerName[0] == '/' ? containerName + 1 : containerName);
+				}
 
-            string imageId = string(cJSON_GetObjectItem(response[0], "Image")->valuestring);
-            instance.ImageId_value(imageId.c_str());
+				string imageId = string(cJSON_GetObjectItem(response[0], "Image")->valuestring);
+				instance.ImageId_value(imageId.c_str());
 
-            if (nameMap.count(imageId))
-            {
-                instance.Repository_value(nameMap[imageId][0].c_str());
-                instance.Image_value(nameMap[imageId][1].c_str());
-                instance.ImageTag_value(nameMap[imageId][2].c_str());
-            }
+				if (nameMap.count(imageId))
+				{
+					instance.Repository_value(nameMap[imageId][0].c_str());
+					instance.Image_value(nameMap[imageId][1].c_str());
+					instance.ImageTag_value(nameMap[imageId][2].c_str());
+				}
 
-            ObtainContainerConfig(instance, response[0]);
-            ObtainContainerState(instance, response[0]);
-            ObtainContainerHostConfig(instance, response[0]);
+				ObtainContainerConfig(instance, response[0]);
+				ObtainContainerState(instance, response[0]);
+				ObtainContainerHostConfig(instance, response[0]);
 
-            // Clean up object
-            cJSON_Delete(response[0]);
-        }
-        else
-        {
-            syslog(LOG_WARNING, "Attempt in InspectContainer to inspect %s returned null", id.c_str());
-        }
+				// Clean up object
+				cJSON_Delete(response[0]);
+			}
+			else
+			{
+				syslog(LOG_WARNING, "Attempt in InspectContainer to inspect %s returned null", id.c_str());
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_ContainerInventory - GenerateImageNameMap %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_ContainerInventory - GenerateImageNameMap Unknown exception");
+		}
 
         return instance;
     }
@@ -364,31 +415,40 @@ public:
         /// Map the image name, repository, imagetag to ID
         map<string, vector<string> > nameMap = GenerateImageNameMap();
 
-        for (set<string>::iterator i = containerIds.begin(); i != containerIds.end(); ++i)
-        {
-            // Set all data
-            string id = string(*i);
-            Container_ContainerInventory_Class instance = InspectContainer(id, nameMap);
-            instance.Computer_value(hostname.c_str());
+		try {
+			for (set<string>::iterator i = containerIds.begin(); i != containerIds.end(); ++i)
+			{
+				// Set all data
+				string id = string(*i);
+				Container_ContainerInventory_Class instance = InspectContainer(id, nameMap);
+				instance.Computer_value(hostname.c_str());
 
-            ContainerInventorySerializer::SerializeObject(instance);
-            result.push_back(instance);
-        }
+				ContainerInventorySerializer::SerializeObject(instance);
+				result.push_back(instance);
+			}
 
-        // Find IDs of deleted containers
-        ContainerInventoryValidation cv;
-        set<string> deleted = cv.GetDeletedContainers(containerIds);
+			// Find IDs of deleted containers
+			ContainerInventoryValidation cv;
+			set<string> deleted = cv.GetDeletedContainers(containerIds);
 
-        for (set<string>::iterator i = deleted.begin(); i != deleted.end(); ++i)
-        {
-            // Putting string(*i) directly in the function call will cause compilation error
-            string id = string(*i);
-            Container_ContainerInventory_Class instance = ContainerInventorySerializer::DeserializeObject(id);
-            instance.State_value("Deleted");
+			for (set<string>::iterator i = deleted.begin(); i != deleted.end(); ++i)
+			{
+				// Putting string(*i) directly in the function call will cause compilation error
+				string id = string(*i);
+				Container_ContainerInventory_Class instance = ContainerInventorySerializer::DeserializeObject(id);
+				instance.State_value("Deleted");
 
-            result.push_back(instance);
-        }
-
+				result.push_back(instance);
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_ContainerInventory - QueryAll %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_ContainerInventory - QueryAll Unknown exception");
+		}
         closelog();
         return result;
     }

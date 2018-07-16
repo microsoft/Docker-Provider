@@ -33,23 +33,33 @@ private:
     static string SelectTag(cJSON* tags)
     {
         string result = "";
+		try {
 
-        if (tags && cJSON_GetArraySize(tags))
-        {
-            bool flag = false;
+			if (tags && cJSON_GetArraySize(tags))
+			{
+				bool flag = false;
 
-            for (int j = cJSON_GetArraySize(tags) - 1; !flag && j > -1; j--)
-            {
-                // Get value of tag
-                result = string(cJSON_GetArrayItem(tags, j)->valuestring);
+				for (int j = cJSON_GetArraySize(tags) - 1; !flag && j > -1; j--)
+				{
+					// Get value of tag
+					result = string(cJSON_GetArrayItem(tags, j)->valuestring);
 
-                // Use the tag which contains latest
-                if (result.find(":latest") != string::npos)
-                {
-                    flag = true;
-                }
-            }
-        }
+					// Use the tag which contains latest
+					if (result.find(":latest") != string::npos)
+					{
+						flag = true;
+					}
+				}
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_ImageInventory - SelectTag %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_ImageInventory - SelectTag - Unknown exception");
+		}
 
         return result;
     }
@@ -71,32 +81,52 @@ private:
             default:
             {
                 // Find delimiters in the string of format repository/image:imagetag
-                int slashLocation = properties.find('/');
-                int colonLocation = properties.find(':');
+				try {
+					int slashLocation = properties.find('/');
+					int colonLocation = properties.find(':');
 
-                if ((unsigned)colonLocation != string::npos)
-                {
-                    string name = "<none>";
+					if ((unsigned)colonLocation != string::npos)
+					{
+						string name = "<none>";
 
-                    if ((unsigned)slashLocation >= properties.size())
-                    {
-                        // image:imagetag
-                        name = properties.substr(0, colonLocation);
-                        instance.Repository_value("");
-                    }
-                    else
-                    {
-                        // repository/image:imagetag
-                        name = properties.substr(slashLocation + 1, colonLocation - slashLocation - 1);
-                        instance.Repository_value(properties.substr(0, slashLocation).c_str());
-                    }
+						if ((unsigned)slashLocation >= properties.size())
+						{
+							// image:imagetag
+							name = properties.substr(0, colonLocation);
+							instance.Repository_value("");
+						}
+						else
+						{
+							// repository/image:imagetag
+							name = properties.substr(slashLocation + 1, colonLocation - slashLocation - 1);
+							instance.Repository_value(properties.substr(0, slashLocation).c_str());
+						}
 
-                    result = (name.compare("<none>") != 0) && !name.empty();
+						result = (name.compare("<none>") != 0) && !name.empty();
 
-                    instance.Image_value(name.c_str());
-                    instance.ImageTag_value(properties.substr(colonLocation + 1).c_str());
-                    break;
-                }
+						instance.Image_value(name.c_str());
+						instance.ImageTag_value(properties.substr(colonLocation + 1).c_str());
+						break;
+					}
+				}
+				catch (std::exception &e)
+				{
+					syslog(LOG_ERR, "Container_ImageInventory - SetImageRepositoryImageTag %s", e.what());
+					instance.Image_value("");
+					instance.Repository_value("");
+					instance.ImageTag_value("");
+					result = false;
+					break;
+				}
+				catch (...)
+				{
+					syslog(LOG_ERR, "Container_ImageInventory - SetImageRepositoryImageTag - Unknown exception");
+					instance.Image_value("");
+					instance.Repository_value("");
+					instance.ImageTag_value("");
+					result = false;
+					break;
+				}
 
                 // If the colon was not found, the name is invalid and execution will fall through to case 0
             }
@@ -125,45 +155,55 @@ private:
     ///
     static void ObtainContainerState(vector<Container_ImageInventory_Class>& instances, map<string, int>& idTable, cJSON* entry)
     {
-        cJSON* state = cJSON_GetObjectItem(entry, "State");
+		try {
+			cJSON* state = cJSON_GetObjectItem(entry, "State");
 
-        if (state)
-        {
-            string id = string(cJSON_GetObjectItem(entry, "Image")->valuestring);
+			if (state)
+			{
+				string id = string(cJSON_GetObjectItem(entry, "Image")->valuestring);
 
-            if (cJSON_GetObjectItem(state, "Running")->valueint)
-            {
-                // Running container
-                if (cJSON_GetObjectItem(state, "Paused")->valueint)
-                {
-                    // Paused container
-                    instances[idTable[id]].Paused_value(instances[idTable[id]].Paused_value() + 1);
-                }
-                else
-                {
-                    instances[idTable[id]].Running_value(instances[idTable[id]].Running_value() + 1);
-                }
-            }
-            else
-            {
-                if (cJSON_GetObjectItem(state, "ExitCode")->valueint)
-                {
-                    // Container exited nonzero
-                    instances[idTable[id]].Failed_value(instances[idTable[id]].Failed_value() + 1);
-                }
-                else
-                {
-                    // Container exited normally
-                    instances[idTable[id]].Stopped_value(instances[idTable[id]].Stopped_value() + 1);
-                }
-            }
+				if (cJSON_GetObjectItem(state, "Running")->valueint)
+				{
+					// Running container
+					if (cJSON_GetObjectItem(state, "Paused")->valueint)
+					{
+						// Paused container
+						instances[idTable[id]].Paused_value(instances[idTable[id]].Paused_value() + 1);
+					}
+					else
+					{
+						instances[idTable[id]].Running_value(instances[idTable[id]].Running_value() + 1);
+					}
+				}
+				else
+				{
+					if (cJSON_GetObjectItem(state, "ExitCode")->valueint)
+					{
+						// Container exited nonzero
+						instances[idTable[id]].Failed_value(instances[idTable[id]].Failed_value() + 1);
+					}
+					else
+					{
+						// Container exited normally
+						instances[idTable[id]].Stopped_value(instances[idTable[id]].Stopped_value() + 1);
+					}
+				}
 
-            instances[idTable[id]].Total_value(instances[idTable[id]].Total_value() + 1);
-        }
-        else
-        {
-            syslog(LOG_WARNING, "Attempt in ObtainContainerState to get container %s state information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
-        }
+				instances[idTable[id]].Total_value(instances[idTable[id]].Total_value() + 1);
+			}
+			else
+			{
+				syslog(LOG_WARNING, "Attempt in ObtainContainerState to get container %s state information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_ImageInventory - ObtainContainerState %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_ImageInventory - ObtainContainerState - Unknown exception");
+		}
     }
 
     ///
@@ -174,49 +214,59 @@ private:
     ///
     static void AggregateContainerStatus(vector<Container_ImageInventory_Class>& instances, map<string, int>& idTable)
     {
-        // Request containers
-        vector<string> request(1, DockerRestHelper::restDockerPs());
-        vector<cJSON*> response = getResponse(request);
+		try {
+			// Request containers
+			vector<string> request(1, DockerRestHelper::restDockerPs());
+			vector<cJSON*> response = getResponse(request);
 
-        // See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-containers for example output
-        if (!response.empty() && response[0])
-        {
-            for (int i = 0; i < cJSON_GetArraySize(response[0]); i++)
-            {
-                cJSON* entry = cJSON_GetArrayItem(response[0], i);
+			// See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-containers for example output
+			if (!response.empty() && response[0])
+			{
+				for (int i = 0; i < cJSON_GetArraySize(response[0]); i++)
+				{
+					cJSON* entry = cJSON_GetArrayItem(response[0], i);
 
-                if (entry)
-                {
-                    // Inspect container
-                    vector<string> subRequest(1, DockerRestHelper::restDockerInspect(string(cJSON_GetObjectItem(entry, "Id")->valuestring)));
-                    vector<cJSON*> subResponse = getResponse(subRequest);
+					if (entry)
+					{
+						// Inspect container
+						vector<string> subRequest(1, DockerRestHelper::restDockerInspect(string(cJSON_GetObjectItem(entry, "Id")->valuestring)));
+						vector<cJSON*> subResponse = getResponse(subRequest);
 
-                    // See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#inspect-a-container for example output
-                    if (!subResponse.empty() && subResponse[0])
-                    {
-                        ObtainContainerState(instances, idTable, subResponse[0]);
+						// See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#inspect-a-container for example output
+						if (!subResponse.empty() && subResponse[0])
+						{
+							ObtainContainerState(instances, idTable, subResponse[0]);
 
-                        // Clean up object
-                        cJSON_Delete(subResponse[0]);
-                    }
-                    else
-                    {
-                        syslog(LOG_WARNING, "API call in AggregateContainerStatus to inspect container %s returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
-                    }
-                }
-                else
-                {
-                    syslog(LOG_WARNING, "Attempt in AggregateContainerStatus to get element %d of container list returned null", i);
-                }
-            }
+							// Clean up object
+							cJSON_Delete(subResponse[0]);
+						}
+						else
+						{
+							syslog(LOG_WARNING, "API call in AggregateContainerStatus to inspect container %s returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+						}
+					}
+					else
+					{
+						syslog(LOG_WARNING, "Attempt in AggregateContainerStatus to get element %d of container list returned null", i);
+					}
+				}
 
-            // Clean up object
-            cJSON_Delete(response[0]);
-        }
-        else
-        {
-            syslog(LOG_WARNING, "API call in AggregateContainerStatus to list containers returned null");
-        }
+				// Clean up object
+				cJSON_Delete(response[0]);
+			}
+			else
+			{
+				syslog(LOG_WARNING, "API call in AggregateContainerStatus to list containers returned null");
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_ImageInventory - AggregateContainerStatus %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_ImageInventory - AggregateContainerStatus - Unknown exception");
+		}
     }
 
 public:
@@ -241,91 +291,100 @@ public:
         vector<string> request(1, DockerRestHelper::restDockerImages());
         vector<cJSON*> response = getResponse(request);
 
-        // See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-images for example output
-        if (!response.empty() && response[0])
-        {
-            vector<bool> imageNameIsNotNone;
+		try {
+			// See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-images for example output
+			if (!response.empty() && response[0])
+			{
+				vector<bool> imageNameIsNotNone;
 
-            for (int i = 0; i < cJSON_GetArraySize(response[0]); i++)
-            {
-                cJSON* entry = cJSON_GetArrayItem(response[0], i);
+				for (int i = 0; i < cJSON_GetArraySize(response[0]); i++)
+				{
+					cJSON* entry = cJSON_GetArrayItem(response[0], i);
 
-                if (entry)
-                {
-                    // New inventory entry
-                    Container_ImageInventory_Class instance;
-                    instance.Computer_value(hostname.c_str());
+					if (entry)
+					{
+						// New inventory entry
+						Container_ImageInventory_Class instance;
+						instance.Computer_value(hostname.c_str());
 
-                    // Get ID
-                    string instanceId = string(cJSON_GetObjectItem(entry, "Id")->valuestring);
-                    instance.InstanceID_value(instanceId.c_str());
+						// Get ID
+						string instanceId = string(cJSON_GetObjectItem(entry, "Id")->valuestring);
+						instance.InstanceID_value(instanceId.c_str());
 
-                    // Get size
-                    char imageSize[128];
-                    char virtualSize[128];
-                    sprintf(imageSize, "%d MB", cJSON_GetObjectItem(entry, "Size")->valueint / NUMBYTESPERMB);
-                    sprintf(virtualSize, "%d MB", cJSON_GetObjectItem(entry, "VirtualSize")->valueint / NUMBYTESPERMB);
-                    instance.ImageSize_value(imageSize);
-                    instance.VirtualSize_value(virtualSize);
+						// Get size
+						char imageSize[128];
+						char virtualSize[128];
+						sprintf(imageSize, "%d MB", cJSON_GetObjectItem(entry, "Size")->valueint / NUMBYTESPERMB);
+						sprintf(virtualSize, "%d MB", cJSON_GetObjectItem(entry, "VirtualSize")->valueint / NUMBYTESPERMB);
+						instance.ImageSize_value(imageSize);
+						instance.VirtualSize_value(virtualSize);
 
-                    // Get image
-                    imageNameIsNotNone.push_back(SetImageRepositoryImageTag(instance, SelectTag(cJSON_GetObjectItem(entry, "RepoTags"))));
+						// Get image
+						imageNameIsNotNone.push_back(SetImageRepositoryImageTag(instance, SelectTag(cJSON_GetObjectItem(entry, "RepoTags"))));
 
-                    // Default container states
-                    instance.Running_value(0);
-                    instance.Paused_value(0);
-                    instance.Stopped_value(0);
-                    instance.Failed_value(0);
-                    instance.Total_value(0);
+						// Default container states
+						instance.Running_value(0);
+						instance.Paused_value(0);
+						instance.Stopped_value(0);
+						instance.Failed_value(0);
+						instance.Total_value(0);
 
-                    // Map the image ID to the vector index
-                    idTable[instanceId] = result.size();
-                    result.push_back(instance);
+						// Map the image ID to the vector index
+						idTable[instanceId] = result.size();
+						result.push_back(instance);
 
-                    // Store all image IDs in set for deleted image check
-                    imageIds.insert(instanceId);
-                }
-                else
-                {
-                    syslog(LOG_WARNING, "Attempt in QueryAll to get element %d of image list returned null", i);
-                }
-            }
+						// Store all image IDs in set for deleted image check
+						imageIds.insert(instanceId);
+					}
+					else
+					{
+						syslog(LOG_WARNING, "Attempt in QueryAll to get element %d of image list returned null", i);
+					}
+				}
 
-            // Clean up object
-            cJSON_Delete(response[0]);
+				// Clean up object
+				cJSON_Delete(response[0]);
 
-            // Get container status
-            AggregateContainerStatus(result, idTable);
+				// Get container status
+				AggregateContainerStatus(result, idTable);
 
-            // Remove intermediary images
-            for (unsigned i = 0; i < result.size() && i < imageNameIsNotNone.size() ; i++)
-            {
-                if (imageNameIsNotNone[i] || result[i].Total_value())
-                {
-                    filteredResult.push_back(result[i]);
+				// Remove intermediary images
+				for (unsigned i = 0; i < result.size() && i < imageNameIsNotNone.size(); i++)
+				{
+					if (imageNameIsNotNone[i] || result[i].Total_value())
+					{
+						filteredResult.push_back(result[i]);
 
-                    // Serialize object for deleted image check
-                    ImageInventorySerializer::SerializeObject(result[i]);
-                }
-            }
-			
-            // Find IDs of deleted images
-            ContainerInventoryValidation cv(true);
-            set<string> deleted = cv.GetDeletedContainers(imageIds);
+						// Serialize object for deleted image check
+						ImageInventorySerializer::SerializeObject(result[i]);
+					}
+				}
 
-            for (set<string>::iterator i = deleted.begin(); i != deleted.end(); ++i)
-            {
-                // Putting string(*i) directly in the function call will cause compilation error
-                string id = string(*i);
-                Container_ImageInventory_Class instance = ImageInventorySerializer::DeserializeObject(id);
-                filteredResult.push_back(instance);
-            }
-        }
-        else
-        {
-            syslog(LOG_WARNING, "API call in QueryAll to list images returned null");
-        }
+				// Find IDs of deleted images
+				ContainerInventoryValidation cv(true);
+				set<string> deleted = cv.GetDeletedContainers(imageIds);
 
+				for (set<string>::iterator i = deleted.begin(); i != deleted.end(); ++i)
+				{
+					// Putting string(*i) directly in the function call will cause compilation error
+					string id = string(*i);
+					Container_ImageInventory_Class instance = ImageInventorySerializer::DeserializeObject(id);
+					filteredResult.push_back(instance);
+				}
+			}
+			else
+			{
+				syslog(LOG_WARNING, "API call in QueryAll to list images returned null");
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_ImageInventory - QueryAll %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_ImageInventory - QueryAll - Unknown exception");
+		}
         closelog();
         return filteredResult;
     }

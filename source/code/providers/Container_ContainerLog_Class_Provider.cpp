@@ -37,23 +37,32 @@ private:
         int fileTime = time(NULL);
         int currentTime = fileTime;
         const char* lastQueryFile = LASTLOGQUERYTIMEFILE;
-        FILE* file = fopen(lastQueryFile, "r");
+		try {
+			FILE* file = fopen(lastQueryFile, "r");
 
-        if (file)
-        {
-            fscanf(file, "%d", &fileTime);
-            fclose(file);
+			if (file)
+			{
+				fscanf(file, "%d", &fileTime);
+				fclose(file);
 
-            if (fileTime > currentTime)
-            {
-                syslog(LOG_WARNING, "The time stored in %s is more recent than the current time", lastQueryFile);
-            }
-        }
-        else
-        {
-            syslog(LOG_ERR, "Attempt in GetPreviousTime to open %s for reading failed", lastQueryFile);
-        }
-
+				if (fileTime > currentTime)
+				{
+					syslog(LOG_WARNING, "The time stored in %s is more recent than the current time", lastQueryFile);
+				}
+			}
+			else
+			{
+				syslog(LOG_ERR, "Attempt in GetPreviousTime to open %s for reading failed", lastQueryFile);
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_ContainerLog - GetPreviousTime %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_ContainerLog - GetPreviousTime Unknown exception");
+		}
         // Discard stored times that are more recent than the current time
         return fileTime > currentTime ? currentTime : fileTime;
     }
@@ -89,11 +98,21 @@ private:
         vector<string> request(1, DockerRestHelper::restDockerInfo());
         vector<cJSON*> response = getResponse(request);
 
-        if (!response.empty() && response[0])
-        {
-            logDriverName = string(cJSON_GetObjectItem(response[0], "LoggingDriver")->valuestring);
-            cJSON_Delete(response[0]);
-        }
+		try {
+			if (!response.empty() && response[0])
+			{
+				logDriverName = string(cJSON_GetObjectItem(response[0], "LoggingDriver")->valuestring);
+				cJSON_Delete(response[0]);
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_ContainerLog - getLogDriverName %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_ContainerLog - getLogDriverName Unknown exception");
+		}
 
         return logDriverName;
     }
@@ -125,73 +144,83 @@ public:
         vector<string> request(1, DockerRestHelper::restDockerPs());
         vector<cJSON*> response = getResponse(request);
 
-        // See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-containers for example output
-        if (!response.empty() && response[0])
-        {
-            for (int i = 0; i < cJSON_GetArraySize(response[0]); i++)
-            {
-                cJSON* entry = cJSON_GetArrayItem(response[0], i);
-                if (entry)
-                {
-                    string containerId = string(cJSON_GetObjectItem(entry, "Id")->valuestring);
-                    string imageName = string(cJSON_GetObjectItem(entry, "Image")->valuestring);
-                    string containerName;
+		try {
+			// See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-containers for example output
+			if (!response.empty() && response[0])
+			{
+				for (int i = 0; i < cJSON_GetArraySize(response[0]); i++)
+				{
+					cJSON* entry = cJSON_GetArrayItem(response[0], i);
+					if (entry)
+					{
+						string containerId = string(cJSON_GetObjectItem(entry, "Id")->valuestring);
+						string imageName = string(cJSON_GetObjectItem(entry, "Image")->valuestring);
+						string containerName;
 
-                    // Get container name
-                    cJSON* names = cJSON_GetObjectItem(entry, "Names");
-                    if (cJSON_GetArraySize(names))
-                    {
-                        containerName = string(cJSON_GetArrayItem(names, 0)->valuestring + 1);
-                    }
+						// Get container name
+						cJSON* names = cJSON_GetObjectItem(entry, "Names");
+						if (cJSON_GetArraySize(names))
+						{
+							containerName = string(cJSON_GetArrayItem(names, 0)->valuestring + 1);
+						}
 
-                    // Get container logs
-                    string logRequest = DockerRestHelper::restDockerLogs(containerId, previousTime);
-                    vector<string> logResponse = getContainerLogs(logRequest);
+						// Get container logs
+						string logRequest = DockerRestHelper::restDockerLogs(containerId, previousTime);
+						vector<string> logResponse = getContainerLogs(logRequest);
 
-                    // See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-containers for example output
-                    if (!logResponse.empty())
-                    {
-                        for (int j = 0; j < (int)logResponse.size(); j++)
-                        {
-                            Container_ContainerLog_Class instance;
-                            instance.InstanceID_value(Guid::NewToString().c_str());
-                            instance.Image_value(imageName.c_str());
-                            instance.ImageName_value(imageName.c_str());
-                            instance.Id_value(containerId.c_str());
-                            instance.Name_value(containerName.c_str());
+						// See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-containers for example output
+						if (!logResponse.empty())
+						{
+							for (int j = 0; j < (int)logResponse.size(); j++)
+							{
+								Container_ContainerLog_Class instance;
+								instance.InstanceID_value(Guid::NewToString().c_str());
+								instance.Image_value(imageName.c_str());
+								instance.ImageName_value(imageName.c_str());
+								instance.Id_value(containerId.c_str());
+								instance.Name_value(containerName.c_str());
 
-                            // split the message. 
-                            // message format : stdout;log
-                            string message = logResponse[j];
-                            std::size_t pos = message.find(';');
-                            if(pos != std::string::npos)
-                            {
-                                instance.LogEntrySource_value(message.substr(0, pos).c_str());
-                                if(pos + 1 != std::string::npos)
-                                {
-                                    instance.LogEntry_value(message.substr(pos + 1).c_str());
-                                }
-                            }
-                            instance.Computer_value(hostname.c_str());
-                            result.push_front(instance);
-                        }
+								// split the message. 
+								// message format : stdout;log
+								string message = logResponse[j];
+								std::size_t pos = message.find(';');
+								if (pos != std::string::npos)
+								{
+									instance.LogEntrySource_value(message.substr(0, pos).c_str());
+									if (pos + 1 != std::string::npos)
+									{
+										instance.LogEntry_value(message.substr(pos + 1).c_str());
+									}
+								}
+								instance.Computer_value(hostname.c_str());
+								result.push_front(instance);
+							}
 
-                        logResponse.clear();
-                    }
-                }
-                else
-                {
-                    syslog(LOG_WARNING, "API call in Container_ContainerLog::QueryAll to inspect container returned null");
-                }
-            }
+							logResponse.clear();
+						}
+					}
+					else
+					{
+						syslog(LOG_WARNING, "API call in Container_ContainerLog::QueryAll to inspect container returned null");
+					}
+				}
 
-            // Clean up object
-            cJSON_Delete(response[0]);
-        }
-        else
-        {
-            syslog(LOG_WARNING, "API call in Container_ContainerLog::QueryAll to list containers returned null");
-        }
+				// Clean up object
+				cJSON_Delete(response[0]);
+			}
+			else
+			{
+				syslog(LOG_WARNING, "API call in Container_ContainerLog::QueryAll to list containers returned null");
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_ContainerLog - QueryAll %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_ContainerLog - QueryAll- Unknown exception");
+		}
 
         SetPreviousTime(currentTime);
         return result;

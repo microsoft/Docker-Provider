@@ -25,36 +25,46 @@ public:
     ///
     static void SerializeObject(Container_ImageInventory_Class& object)
     {
-        openlog("ImageInventorySerializer", LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+		try {
+			openlog("ImageInventorySerializer", LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 
-        char filename[128];
-        const char* id = object.InstanceID_value().Str();
-        sprintf(filename, "%s%s", IMGDIRECTORY, id);
+			char filename[128];
+			const char* id = object.InstanceID_value().Str();
+			sprintf(filename, "%s%s", IMGDIRECTORY, id);
 
-        FILE* target = fopen(filename, "w");
+			FILE* target = fopen(filename, "w");
 
-        if (target)
-        {
-            cJSON* root = cJSON_CreateObject();
+			if (target)
+			{
+				cJSON* root = cJSON_CreateObject();
 
-            // Add all fields to JSON
-            cJSON_AddStringToObject(root, "Image", object.Image_value().Str());
-            cJSON_AddStringToObject(root, "Repository", object.Repository_value().Str());
-            cJSON_AddStringToObject(root, "ImageTag", object.ImageTag_value().Str());
-            cJSON_AddStringToObject(root, "Computer", object.Computer_value().Str());
+				// Add all fields to JSON
+				cJSON_AddStringToObject(root, "Image", object.Image_value().Str());
+				cJSON_AddStringToObject(root, "Repository", object.Repository_value().Str());
+				cJSON_AddStringToObject(root, "ImageTag", object.ImageTag_value().Str());
+				cJSON_AddStringToObject(root, "Computer", object.Computer_value().Str());
 
-            char* imageInventoryStr = cJSON_PrintUnformatted(root);
-            fprintf(target, "%s", imageInventoryStr);
-            fclose(target);
-            cJSON_Delete(root);
-            if(imageInventoryStr) free(imageInventoryStr);
-        }
-        else
-        {
-            syslog(LOG_ERR, "Failed to serialize %s - file could not be opened: %s", id, strerror(errno));
-        }
+				char* imageInventoryStr = cJSON_PrintUnformatted(root);
+				fprintf(target, "%s", imageInventoryStr);
+				fclose(target);
+				cJSON_Delete(root);
+				if (imageInventoryStr) free(imageInventoryStr);
+			}
+			else
+			{
+				syslog(LOG_ERR, "Failed to serialize %s - file could not be opened: %s", id, strerror(errno));
+			}
 
-        closelog();
+			closelog();
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_ImageInventorySerialization - SerializeObject %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_ImageInventorySerialization - SerializeObject - Unknown exception");
+		}
     }
 
     ///
@@ -74,66 +84,76 @@ public:
         char filename[128];
         sprintf(filename, "%s%s", IMGDIRECTORY, id.c_str());
 
-        FILE* target = fopen(filename, "r");
+		try {
+			FILE* target = fopen(filename, "r");
 
-        if (target)
-        {
-            //Go to EOF
-            fseek(target, 0, SEEK_END);
-            //Get file size
-            long fileSize = ftell(target);
-            //Rewind to beginning
-            rewind(target);
-            //Get a buffer for the size of the file being read
-            char* buffer = (char*) malloc(fileSize + 1);
+			if (target)
+			{
+				//Go to EOF
+				fseek(target, 0, SEEK_END);
+				//Get file size
+				long fileSize = ftell(target);
+				//Rewind to beginning
+				rewind(target);
+				//Get a buffer for the size of the file being read
+				char* buffer = (char*)malloc(fileSize + 1);
 
-            if (fgets(buffer, fileSize+1, target))
-            {
-                cJSON* root = cJSON_Parse(buffer);
-                if(root != NULL)
-                {
-                    // Get all fields from JSON
-                    instance.Image_value(cJSON_GetObjectItem(root, "Image")->valuestring);
-                    instance.Repository_value(cJSON_GetObjectItem(root, "Repository")->valuestring);
-                    instance.ImageTag_value(cJSON_GetObjectItem(root, "ImageTag")->valuestring);
-                    instance.Computer_value(cJSON_GetObjectItem(root, "Computer")->valuestring);
-                    instance.Running_value(0);
-                    instance.Stopped_value(0);
-                    instance.Failed_value(0);
-                    instance.Paused_value(0);
-                    instance.Total_value(0);
-                    instance.ImageSize_value("0 MB");
-                    instance.VirtualSize_value("0 MB");
+				if (fgets(buffer, fileSize + 1, target))
+				{
+					cJSON* root = cJSON_Parse(buffer);
+					if (root != NULL)
+					{
+						// Get all fields from JSON
+						instance.Image_value(cJSON_GetObjectItem(root, "Image")->valuestring);
+						instance.Repository_value(cJSON_GetObjectItem(root, "Repository")->valuestring);
+						instance.ImageTag_value(cJSON_GetObjectItem(root, "ImageTag")->valuestring);
+						instance.Computer_value(cJSON_GetObjectItem(root, "Computer")->valuestring);
+						instance.Running_value(0);
+						instance.Stopped_value(0);
+						instance.Failed_value(0);
+						instance.Paused_value(0);
+						instance.Total_value(0);
+						instance.ImageSize_value("0 MB");
+						instance.VirtualSize_value("0 MB");
 
-                    cJSON_Delete(root);
-                }
-                else
-                {
-                    syslog(LOG_ERR, "Could not parse deleted image info %s", cJSON_GetErrorPtr());
-                }   
-            }
-            else
-            {
-                syslog(LOG_ERR, "Failed to deserialize %s - file could not be read: %s", id.c_str(), strerror(errno));
-            }
+						cJSON_Delete(root);
+					}
+					else
+					{
+						syslog(LOG_ERR, "Could not parse deleted image info %s", cJSON_GetErrorPtr());
+					}
+				}
+				else
+				{
+					syslog(LOG_ERR, "Failed to deserialize %s - file could not be read: %s", id.c_str(), strerror(errno));
+				}
 
-            fclose(target);
+				fclose(target);
 
-            if(buffer) 
-            {
-                free(buffer);
-                buffer = NULL;
-            }
+				if (buffer)
+				{
+					free(buffer);
+					buffer = NULL;
+				}
 
-            if (remove(filename))
-            {
-                syslog(LOG_ERR, "Failed to remove %s after deserialization: %s", id.c_str(), strerror(errno));
-            }
-        }
-        else
-        {
-            syslog(LOG_ERR, "Failed to deserialize %s - file could not be opened: %s", id.c_str(), strerror(errno));
-        }
+				if (remove(filename))
+				{
+					syslog(LOG_ERR, "Failed to remove %s after deserialization: %s", id.c_str(), strerror(errno));
+				}
+			}
+			else
+			{
+				syslog(LOG_ERR, "Failed to deserialize %s - file could not be opened: %s", id.c_str(), strerror(errno));
+			}
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "Container_ImageInventorySerialization - DeSerializeObject %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_ImageInventorySerialization - DeSerializeObject - Unknown exception");
+		}
 
         closelog();
         return instance;
