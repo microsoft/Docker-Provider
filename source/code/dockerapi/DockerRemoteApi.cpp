@@ -152,7 +152,19 @@ cJSON* parseMultiJson(string &raw_response)
 
     json_array += "]";
 
-    return cJSON_Parse(json_array.c_str());
+	try {
+		return cJSON_Parse(json_array.c_str());
+	}
+	catch (std::exception &e)
+	{
+		syslog(LOG_ERR, "DockerRemoteApi - parseMultiJson %s", e.what());
+		return NULL;
+	}
+	catch (...)
+	{
+		syslog(LOG_ERR, "DockerRemoteApi - parseMultiJson - Unknown exception");
+		return NULL;
+	}
 }
 
 cJSON* parseJson(string& raw_response)
@@ -167,7 +179,17 @@ cJSON* parseJson(string& raw_response)
 
     if (json_begin != std::string::npos)
     {
-        result = cJSON_Parse(raw_response.c_str() + json_begin);
+		try {
+			result = cJSON_Parse(raw_response.c_str() + json_begin);
+		}
+		catch (std::exception &e)
+		{
+			syslog(LOG_ERR, "DockerRemoteApi - parseJson %s", e.what());
+		}
+		catch (...)
+		{
+			syslog(LOG_ERR, "DockerRemoteApi - parseJson - Unknown exception");
+		}
     }
 
     return result;
