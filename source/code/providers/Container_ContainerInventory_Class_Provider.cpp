@@ -145,12 +145,13 @@ private:
     /// \param[in] instance Object representing the container
     /// \param[in] entry JSON from docker inspect
     ///
-    static void ObtainContainerConfig(Container_ContainerInventory_Class& instance, cJSON* entry)
+	static void ObtainContainerConfig(Container_ContainerInventory_Class& instance, cJSON* entry)
 	{
-		cJSON* config = cJSON_GetObjectItem(entry, "Config");
-		if (config)
-		{
-			try {
+		try {
+			cJSON* config = cJSON_GetObjectItem(entry, "Config");
+
+			if (config)
+			{
 				// Hostname of container
 				instance.ContainerHostname_value(cJSON_GetObjectItem(config, "Hostname")->valuestring);
 
@@ -184,41 +185,42 @@ private:
 				else {
 					instance.EnvironmentVar_value(strcmp(env, "null") ? env : "");
 				}
-			}
-			catch (std::exception &e)
-			{
-				syslog(LOG_ERR, "Container_ContainerInventory - ENV string truncation %s", e.what());
-			}
-			catch (...)
-			{
-				syslog(LOG_ERR, "Container_ContainerInventory - - ENV string truncation- Unknown exception");
-			}
-			// Command
-			char *cmd = cJSON_Print(cJSON_GetObjectItem(config, "Cmd"));
-			instance.Command_value(cmd);
 
-			cJSON* labels = cJSON_GetObjectItem(config, "Labels");
+				// Command
+				char *cmd = cJSON_Print(cJSON_GetObjectItem(config, "Cmd"));
+				instance.Command_value(cmd);
 
-			// Compose group
-			instance.ComposeGroup_value("");
+				cJSON* labels = cJSON_GetObjectItem(config, "Labels");
 
-			if (labels)
-			{
-				cJSON* groupName = cJSON_GetObjectItem(labels, "com.docker.compose.project");
+				// Compose group
+				instance.ComposeGroup_value("");
 
-				if (groupName)
+				if (labels)
 				{
-					instance.ComposeGroup_value(groupName->valuestring);
+					cJSON* groupName = cJSON_GetObjectItem(labels, "com.docker.compose.project");
+
+					if (groupName)
+					{
+						instance.ComposeGroup_value(groupName->valuestring);
+					}
 				}
+				if (env) free(env);
+				if (cmd) free(cmd);
 			}
-			if(env) free(env);
-			if(cmd) free(cmd);
+			else
+			{
+				syslog(LOG_WARNING, "Attempt in ObtainContainerConfig to get container %s config information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+			}
 		}
-		else
+		catch (std::exception &e)
 		{
-			syslog(LOG_WARNING, "Attempt in ObtainContainerConfig to get container %s config information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+			syslog(LOG_ERR, "Container_ContainerInventory - ObtainContainerConfig %s", e.what());
 		}
-    }
+		catch (...)
+		{
+			syslog(LOG_ERR, "Container_ContainerInventory - - ObtainContainerConfig- Unknown exception");
+		}
+	}
 
     ///
     /// Get information from container state field
