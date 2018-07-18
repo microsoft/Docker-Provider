@@ -95,10 +95,10 @@ private:
     {
         string logDriverName;
 
-        vector<string> request(1, DockerRestHelper::restDockerInfo());
-        vector<cJSON*> response = getResponse(request);
-
 		try {
+			vector<string> request(1, DockerRestHelper::restDockerInfo());
+			vector<cJSON*> response = getResponse(request);
+
 			if (!response.empty() && response[0])
 			{
 				logDriverName = string(cJSON_GetObjectItem(response[0], "LoggingDriver")->valuestring);
@@ -137,14 +137,14 @@ public:
         int previousTime = GetPreviousTime();
         int currentTime = time(NULL);
 
-        // Get computer name
-        string hostname = getDockerHostName();
-
-        // Request containers
-        vector<string> request(1, DockerRestHelper::restDockerPs());
-        vector<cJSON*> response = getResponse(request);
-
 		try {
+			// Get computer name
+			string hostname = getDockerHostName();
+
+			// Request containers
+			vector<string> request(1, DockerRestHelper::restDockerPs());
+			vector<cJSON*> response = getResponse(request);
+
 			// See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-containers for example output
 			if (!response.empty() && response[0])
 			{

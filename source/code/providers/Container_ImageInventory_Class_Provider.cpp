@@ -287,11 +287,11 @@ public:
         // Get computer name
         string hostname = getDockerHostName();
 
-        // Request images
-        vector<string> request(1, DockerRestHelper::restDockerImages());
-        vector<cJSON*> response = getResponse(request);
-
 		try {
+			// Request images
+			vector<string> request(1, DockerRestHelper::restDockerImages());
+			vector<cJSON*> response = getResponse(request);
+
 			// See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-images for example output
 			if (!response.empty() && response[0])
 			{

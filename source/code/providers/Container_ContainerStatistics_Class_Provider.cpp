@@ -276,10 +276,10 @@ public:
 
         vector<Container_ContainerStatistics_Class> result;
 
-        // Request running containers
-        vector<string> request(1, DockerRestHelper::restDockerPsRunning());
-        vector<cJSON*> response = getResponse(request);
 		try {
+			// Request running containers
+			vector<string> request(1, DockerRestHelper::restDockerPsRunning());
+			vector<cJSON*> response = getResponse(request);
 			// See http://docs.docker.com/engine/reference/api/docker_remote_api_v1.21/#list-containers for example output
 			if (!response.empty() && response[0])
 			{

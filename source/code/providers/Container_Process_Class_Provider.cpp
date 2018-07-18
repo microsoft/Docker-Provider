@@ -45,11 +45,11 @@ public:
         // Get computer name
         string hostname = getDockerHostName();
 
-        // Request containers
-        vector<string> dockerPsRequest(1, DockerRestHelper::restDockerPsRunning());
-        vector<cJSON*> dockerPsResponse = getResponse(dockerPsRequest);
-
 		try {
+			// Request containers
+			vector<string> dockerPsRequest(1, DockerRestHelper::restDockerPsRunning());
+			vector<cJSON*> dockerPsResponse = getResponse(dockerPsRequest);
+
 			if (!dockerPsResponse.empty() && dockerPsResponse[0])
 			{
 				for (int i = 0; i < cJSON_GetArraySize(dockerPsResponse[0]); i++)

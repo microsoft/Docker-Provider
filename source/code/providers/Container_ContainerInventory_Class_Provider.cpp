@@ -91,12 +91,12 @@ private:
     {
         map<string, vector<string> > result;
 
-        // Request images
-        vector<string> request(1, DockerRestHelper::restDockerImages());
-        vector<cJSON*> response = getResponse(request);
-
-        // See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-images for example output
 		try {
+        // Request images
+			vector<string> request(1, DockerRestHelper::restDockerImages());
+			vector<cJSON*> response = getResponse(request);
+
+			// See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#list-images for example output
 			if (!response.empty() && response[0])
 			{
 				for (int i = 0; i < cJSON_GetArraySize(response[0]); i++)
@@ -147,16 +147,17 @@ private:
     ///
     static void ObtainContainerConfig(Container_ContainerInventory_Class& instance, cJSON* entry)
     {
-        cJSON* config = cJSON_GetObjectItem(entry, "Config");
+		try {
 
-        if (config)
-        {
-            // Hostname of container
-            instance.ContainerHostname_value(cJSON_GetObjectItem(config, "Hostname")->valuestring);
+			cJSON* config = cJSON_GetObjectItem(entry, "Config");
 
-            // Environment variables
-            char* env = cJSON_Print(cJSON_GetObjectItem(config, "Env"));
-			try {
+			if (config)
+			{
+				// Hostname of container
+				instance.ContainerHostname_value(cJSON_GetObjectItem(config, "Hostname")->valuestring);
+
+				// Environment variables
+				char* env = cJSON_Print(cJSON_GetObjectItem(config, "Env"));
 				int envStringLength = strlen(env);
 				//Restricting the ENV string value to 200kb since the limit on the packet size is 250kb.
 				if (envStringLength > 200000)
@@ -340,13 +341,12 @@ private:
     {
         // New inventory entry
         Container_ContainerInventory_Class instance;
-
-        // Inspect container
-        vector<string> request(1, DockerRestHelper::restDockerInspect(id));
-        vector<cJSON*> response = getResponse(request);
-
-        // See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#inspect-a-container for example output
 		try {
+			// Inspect container
+			vector<string> request(1, DockerRestHelper::restDockerInspect(id));
+			vector<cJSON*> response = getResponse(request);
+
+			// See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#inspect-a-container for example output
 			if (!response.empty() && response[0])
 			{
 				instance.InstanceID_value(cJSON_GetObjectItem(response[0], "Id")->valuestring);
@@ -409,13 +409,13 @@ public:
 
         vector<Container_ContainerInventory_Class> result;
 
-        // Get all current containers
-        set<string> containerIds = listContainerSet(true);
-
-        /// Map the image name, repository, imagetag to ID
-        map<string, vector<string> > nameMap = GenerateImageNameMap();
-
 		try {
+			// Get all current containers
+			set<string> containerIds = listContainerSet(true);
+
+			/// Map the image name, repository, imagetag to ID
+			map<string, vector<string> > nameMap = GenerateImageNameMap();
+
 			for (set<string>::iterator i = containerIds.begin(); i != containerIds.end(); ++i)
 			{
 				// Set all data

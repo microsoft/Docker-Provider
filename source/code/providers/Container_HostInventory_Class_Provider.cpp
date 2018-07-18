@@ -32,11 +32,11 @@ public:
     {
         Container_HostInventory_Class hostInventoryInstance;
 
-        // Request containers
-        vector<string> request(1, DockerRestHelper::restDockerInfo());
-        vector<cJSON*> response;
-
 		try {
+			// Request containers
+			vector<string> request(1, DockerRestHelper::restDockerInfo());
+			vector<cJSON*> response;
+
 			//check to see if its a test environment
 			if (getenv(DOCKER_TESTRUNNER_STRING) != NULL)
 			{

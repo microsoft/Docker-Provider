@@ -53,8 +53,8 @@ private:
     {
         int fileTime = time(NULL);
         int currentTime = fileTime;
-        const char* lastQueryFile = GetEventQueryTimeFilePath();
 		try {
+			const char* lastQueryFile = GetEventQueryTimeFilePath();
 			FILE* file = fopen(lastQueryFile, "r");
 
 			if (file)
@@ -92,8 +92,8 @@ private:
     ///
     static void SetPreviousTime(int t)
     {
-        const char* lastQueryFile = GetEventQueryTimeFilePath();
 		try {
+			const char* lastQueryFile = GetEventQueryTimeFilePath();
 			FILE* file = fopen(lastQueryFile, "w");
 
 			if (file)
@@ -125,11 +125,11 @@ private:
     {
         map<string, string> result;
 
-        // Request list of containers
-        vector<string> request(1, DockerRestHelper::restDockerPs());
-        vector<cJSON*> response = getResponse(request);
-
 		try {
+			// Request list of containers
+			vector<string> request(1, DockerRestHelper::restDockerPs());
+			vector<cJSON*> response = getResponse(request);
+
 			// See https://docs.docker.com/engine/reference/api/docker_remote_api_v1.21/#list-containers for example output
 			if (!response.empty() && response[0])
 			{
