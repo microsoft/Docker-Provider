@@ -181,6 +181,7 @@ private:
 						correctedstring = stringToTruncate + "\"]";
 					}
 					instance.EnvironmentVar_value(correctedstring.c_str());
+					syslog(LOG_WARNING, "Environment variable truncated for container %s", cJSON_GetObjectItem(entry, "Id")->valuestring);
 				}
 				else {
 					instance.EnvironmentVar_value(strcmp(env, "null") ? env : "");
