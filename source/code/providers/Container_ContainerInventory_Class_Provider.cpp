@@ -146,13 +146,11 @@ private:
     /// \param[in] entry JSON from docker inspect
     ///
     static void ObtainContainerConfig(Container_ContainerInventory_Class& instance, cJSON* entry)
-    {
-		try {
-
-			cJSON* config = cJSON_GetObjectItem(entry, "Config");
-
-			if (config)
-			{
+	{
+		cJSON* config = cJSON_GetObjectItem(entry, "Config");
+		if (config)
+		{
+			try {
 				// Hostname of container
 				instance.ContainerHostname_value(cJSON_GetObjectItem(config, "Hostname")->valuestring);
 
@@ -195,31 +193,31 @@ private:
 			{
 				syslog(LOG_ERR, "Container_ContainerInventory - - ENV string truncation- Unknown exception");
 			}
-            // Command
-	        char *cmd = cJSON_Print(cJSON_GetObjectItem(config, "Cmd"));
-            instance.Command_value(cmd);
+			// Command
+			char *cmd = cJSON_Print(cJSON_GetObjectItem(config, "Cmd"));
+			instance.Command_value(cmd);
 
-            cJSON* labels = cJSON_GetObjectItem(config, "Labels");
+			cJSON* labels = cJSON_GetObjectItem(config, "Labels");
 
-            // Compose group
-            instance.ComposeGroup_value("");
+			// Compose group
+			instance.ComposeGroup_value("");
 
-            if (labels)
-            {
-                cJSON* groupName = cJSON_GetObjectItem(labels, "com.docker.compose.project");
+			if (labels)
+			{
+				cJSON* groupName = cJSON_GetObjectItem(labels, "com.docker.compose.project");
 
-                if (groupName)
-                {
-                    instance.ComposeGroup_value(groupName->valuestring);
-                }
-            }
-            if(env) free(env);
-            if(cmd) free(cmd);
-        }
-        else
-        {
-            syslog(LOG_WARNING, "Attempt in ObtainContainerConfig to get container %s config information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
-        }
+				if (groupName)
+				{
+					instance.ComposeGroup_value(groupName->valuestring);
+				}
+			}
+			if(env) free(env);
+			if(cmd) free(cmd);
+		}
+		else
+		{
+			syslog(LOG_WARNING, "Attempt in ObtainContainerConfig to get container %s config information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+		}
     }
 
     ///
