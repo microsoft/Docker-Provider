@@ -152,8 +152,8 @@ module ContainerLogTailscript
           @log = log
           @read_lines_limit = 1000 
           @receive_lines = receive_lines
-          @buffer = ''.force_encoding('UTF-8')
-          @iobuf = ''.force_encoding('UTF-8')
+          @buffer = ''.force_encoding('ASCII-8BIT')
+          @iobuf = ''.force_encoding('ASCII-8BIT')
           @lines = []
         end
 
