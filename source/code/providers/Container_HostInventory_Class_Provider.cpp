@@ -92,7 +92,7 @@ public:
 				instance.DockerVersion_value(objItem->valuestring);
 			}
 			string operatingSystem = "";
-			cJSON* objItem = cJSON_GetObjectItem(responseJson, "OperatingSystem");
+			objItem = cJSON_GetObjectItem(responseJson, "OperatingSystem");
 			if (objItem != NULL) {
 				if (objItem->valuestring != NULL) {
 					operatingSystem = string(objItem->valuestring);
