@@ -183,7 +183,7 @@ private:
 
 				// Environment variables
 				string envValue = "";
-				cJSON* objItem = cJSON_GetObjectItem(config, "Env");
+				objItem = cJSON_GetObjectItem(config, "Env");
 				if (objItem != NULL) {
 					char* env = cJSON_Print(objItem);
 					int envStringLength = strlen(env);
@@ -220,7 +220,7 @@ private:
 
 				// Command
 				string cmdValue = "";
-				cJSON* objItem = cJSON_GetObjectItem(config, "Cmd");
+				objItem = cJSON_GetObjectItem(config, "Cmd");
 				if (objItem != NULL) {
 					char *cmd = cJSON_Print(objItem);
 					instance.Command_value(cmd);
