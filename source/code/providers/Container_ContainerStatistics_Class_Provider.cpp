@@ -46,8 +46,18 @@ private:
 					// Sum the number of bytes from each NIC if there is more than one
 					while (network)
 					{
-						totalRx += cJSON_GetObjectItem(network, "rx_bytes")->valueint;
-						totalTx += cJSON_GetObjectItem(network, "tx_bytes")->valueint;
+						cJSON* objItem = cJSON_GetObjectItem(network, "rx_bytes");
+						if (objItem != NULL) {
+							if (objItem->valueint != NULL) {
+								totalRx += objItem->valueint;
+							}
+						}
+						objItem = cJSON_GetObjectItem(network, "tx_bytes");
+						if (objItem != NULL) {
+							if (objItem->valueint != NULL) {
+								totalTx += objItem->valueint;
+							}
+						}
 
 						network = network->next;
 					}
@@ -58,8 +68,18 @@ private:
 					network = cJSON_GetObjectItem(stats, "network");
 					if (network)
 					{
-						totalRx = cJSON_GetObjectItem(network, "rx_bytes")->valueint;
-						totalTx = cJSON_GetObjectItem(network, "tx_bytes")->valueint;
+						cJSON* objItem = cJSON_GetObjectItem(network, "rx_bytes");
+						if (objItem != NULL) {
+							if (objItem->valueint != NULL) {
+								totalRx = objItem->valueint;
+							}
+						}
+						objItem = cJSON_GetObjectItem(network, "tx_bytes");
+						if (objItem != NULL) {
+							if (objItem->valueint != NULL) {
+								totalTx = objItem->valueint;
+							}
+						}
 					}
 				}
 			}
@@ -93,7 +113,15 @@ private:
 			if (stats)
 			{
 				cJSON* memory_stats = cJSON_GetObjectItem(stats, "memory_stats");
-				instance.MemUsedMB_value((unsigned long long)cJSON_GetObjectItem(memory_stats, "usage")->valuedouble / (unsigned long long)NUMBYTESPERMB);
+				if (memory_stats != NULL) {
+					cJSON* objItem = cJSON_GetObjectItem(memory_stats, "usage");
+					if (objItem != NULL) {
+						if (objItem->valuedouble != NULL)
+						{
+							instance.MemUsedMB_value((unsigned long long)objItem->valuedouble / (unsigned long long)NUMBYTESPERMB);
+						}
+					}
+				}
 			}
 			else
 			{
@@ -197,8 +225,18 @@ private:
 
 					if (cpu_usage)
 					{
-						result["container"] = (unsigned long long)cJSON_GetObjectItem(cpu_usage, "total_usage")->valuedouble;
-						result["system"] = (unsigned long long)cJSON_GetObjectItem(cpu_stats, "system_cpu_usage")->valuedouble;
+						cJSON* objItem = cJSON_GetObjectItem(cpu_usage, "total_usage");
+						if (objItem != NULL) {
+							if (objItem->valuedouble != NULL) {
+								result["container"] = (unsigned long long)objItem->valuedouble;
+							}
+						}
+						objItem = cJSON_GetObjectItem(cpu_stats, "system_cpu_usage");
+						if (objItem != NULL) {
+							if (objItem->valuedouble != NULL) {
+								result["system"] = (unsigned long long)objItem->valuedouble;
+							}
+						}
 					}
 				}
 			}
@@ -241,14 +279,20 @@ private:
 
 					if (cpu_usage)
 					{
-						unsigned long long containerUsage = (unsigned long long)cJSON_GetObjectItem(cpu_usage, "total_usage")->valuedouble;
-						unsigned long long systemTotalUsage = (unsigned long long)cJSON_GetObjectItem(cpu_stats, "system_cpu_usage")->valuedouble;
+						cJSON* totalUsageItem = cJSON_GetObjectItem(cpu_usage, "total_usage");
+						cJSON* systemCpuUsageItem = cJSON_GetObjectItem(cpu_stats, "system_cpu_usage");
 
-						instance.CPUTotal_value((unsigned long)(containerUsage / (unsigned long long)1000000000));
-
-						if (systemTotalUsage - previousStats["system"])
-						{
-							instance.CPUTotalPct_value((unsigned short)((containerUsage - previousStats["container"]) * 100 / (systemTotalUsage - previousStats["system"])));
+						if (totalUsageItem != NULL && systemCpuUsageItem != NULL) {
+							if ((totalUsageItem->valuedouble != NULL) && (systemCpuUsageItem->valuedouble != NULL))
+							{
+								unsigned long long containerUsage = (unsigned long long)totalUsageItem->valuedouble;
+								unsigned long long systemTotalUsage = (unsigned long long)systemCpuUsageItem->valuedouble;
+								instance.CPUTotal_value((unsigned long)(containerUsage / (unsigned long long)1000000000));
+								if (systemTotalUsage - previousStats["system"])
+								{
+									instance.CPUTotalPct_value((unsigned short)((containerUsage - previousStats["container"]) * 100 / (systemTotalUsage - previousStats["system"])));
+								}
+							}
 						}
 					}
 				}
@@ -295,38 +339,48 @@ public:
 						Container_ContainerStatistics_Class instance;
 
 						// Set container ID
-						char* id = cJSON_GetObjectItem(entry, "Id")->valuestring;
-						instance.InstanceID_value(id);
-
-						// Set container name
-						cJSON* names = cJSON_GetObjectItem(entry, "Names");
-
-						if (cJSON_GetArraySize(names))
+						cJSON* objItem = cJSON_GetObjectItem(entry, "Id");
 						{
-							instance.ElementName_value(cJSON_GetArrayItem(names, 0)->valuestring + 1);
+							if (objItem != NULL)
+							{
+								char* id = cJSON_GetObjectItem(entry, "Id")->valuestring;
+								instance.InstanceID_value(id);
+
+								// Set container name
+								cJSON* names = cJSON_GetObjectItem(entry, "Names");
+
+								if (cJSON_GetArraySize(names))
+								{
+									cJSON* arrItem = cJSON_GetArrayItem(names, 0);
+									if (arrItem != NULL)
+									{
+										instance.ElementName_value(arrItem->valuestring + 1);
+									}
+								}
+								else
+								{
+									syslog(LOG_WARNING, "Attempt in QueryAll to get name of container %s failed", id);
+								}
+
+								// Request container stats
+								vector<string> subRequest(1, DockerRestHelper::restDockerStats(string(id)));
+								vector<cJSON*> subResponse = getResponse(subRequest);
+
+								// See http://docs.docker.com/engine/reference/api/docker_remote_api_v1.21/#get-container-stats-based-on-resource-usage for example output
+								if (!subResponse.empty() && subResponse[0])
+								{
+									TrySetContainerNetworkData(instance, subResponse[0]);
+									TrySetContainerMemoryData(instance, subResponse[0]);
+									TrySetContainerDiskData(instance, subResponse[0]);
+									previousStatsList.push_back(PreliminarySetContainerCpuData(subResponse[0]));
+
+									// Clean up object
+									cJSON_Delete(subResponse[0]);
+								}
+
+								result.push_back(instance);
+							}
 						}
-						else
-						{
-							syslog(LOG_WARNING, "Attempt in QueryAll to get name of container %s failed", id);
-						}
-
-						// Request container stats
-						vector<string> subRequest(1, DockerRestHelper::restDockerStats(string(id)));
-						vector<cJSON*> subResponse = getResponse(subRequest);
-
-						// See http://docs.docker.com/engine/reference/api/docker_remote_api_v1.21/#get-container-stats-based-on-resource-usage for example output
-						if (!subResponse.empty() && subResponse[0])
-						{
-							TrySetContainerNetworkData(instance, subResponse[0]);
-							TrySetContainerMemoryData(instance, subResponse[0]);
-							TrySetContainerDiskData(instance, subResponse[0]);
-							previousStatsList.push_back(PreliminarySetContainerCpuData(subResponse[0]));
-
-							// Clean up object
-							cJSON_Delete(subResponse[0]);
-						}
-
-						result.push_back(instance);
 					}
 				}
 

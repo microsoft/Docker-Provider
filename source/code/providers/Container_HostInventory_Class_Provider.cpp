@@ -79,10 +79,25 @@ public:
     {
 		try {
 			instance.InstanceID_value(Guid::NewToString().c_str());
-			string computerName = string((cJSON_GetObjectItem(responseJson, "Name")->valuestring));
+			string computerName = "";
+			cJSON* objItem = cJSON_GetObjectItem(responseJson, "Name");
+			if (objItem != NULL) {
+				if (objItem->valuestring != NULL) {
+					computerName = string(objItem->valuestring);
+				}
+			}
 			instance.Computer_value(computerName.c_str());
-			instance.DockerVersion_value((cJSON_GetObjectItem(responseJson, "ServerVersion")->valuestring));
-			string operatingSystem = string(cJSON_GetObjectItem(responseJson, "OperatingSystem")->valuestring);
+			objItem = cJSON_GetObjectItem(responseJson, "ServerVersion");
+			if (objItem != NULL) {
+				instance.DockerVersion_value(objItem->valuestring);
+			}
+			string operatingSystem = "";
+			cJSON* objItem = cJSON_GetObjectItem(responseJson, "OperatingSystem");
+			if (objItem != NULL) {
+				if (objItem->valuestring != NULL) {
+					operatingSystem = string(objItem->valuestring);
+				}
+			}
 			instance.OperatingSystem_value(operatingSystem.c_str());
 			//Get Volume and Network info from "Plugins"
 			cJSON* plugins_entry = cJSON_GetObjectItem(responseJson, "Plugins");
@@ -91,11 +106,18 @@ public:
 				//Get volume info
 				cJSON* volumeEntry = cJSON_GetObjectItem(plugins_entry, "Volume");
 				string volumeList;
+				cJSON* arrItem;
 				if (volumeEntry != NULL)
 				{
 					for (int i = 0; i < cJSON_GetArraySize(volumeEntry); i++)
 					{
-						volumeList.append(string(cJSON_GetArrayItem(volumeEntry, i)->valuestring));
+						arrItem = cJSON_GetArrayItem(volumeEntry, i);
+						if (arrItem != NULL) {
+							if (arrItem->valuestring != NULL)
+							{
+								volumeList.append(string(arrItem->valuestring));
+							}
+						}
 					}
 				}
 				instance.Volume_value(volumeList.c_str());
@@ -106,8 +128,14 @@ public:
 				{
 					for (int i = 0; i < cJSON_GetArraySize(networkEntry); i++)
 					{
-						networkList.append(string(cJSON_GetArrayItem(networkEntry, i)->valuestring));
-						networkList.append(" ");
+						arrItem = cJSON_GetArrayItem(networkEntry, i);
+						if (arrItem != NULL) {
+							if (arrItem->valuestring != NULL)
+							{
+								networkList.append(string(arrItem->valuestring));
+								networkList.append(" ");
+							}
+						}
 					}
 				}
 				instance.Network_value(networkList.c_str());

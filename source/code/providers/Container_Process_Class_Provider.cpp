@@ -57,74 +57,113 @@ public:
 					cJSON* containerEntry = cJSON_GetArrayItem(dockerPsResponse[0], i);
 					if (containerEntry)
 					{
-						string containerId = string(cJSON_GetObjectItem(containerEntry, "Id")->valuestring);
-						string containerName;
-						string containerPod;
-						string containerNamespace;
-
-						// Get container name
-						cJSON* names = cJSON_GetObjectItem(containerEntry, "Names");
-						if (cJSON_GetArraySize(names))
+						cJSON* objItem = cJSON_GetObjectItem(containerEntry, "Id");
+						if (objItem != NULL)
 						{
-							containerName = string(cJSON_GetArrayItem(names, 0)->valuestring + 1);
-							vector <string> containerMetaInformation = delimiterParse(containerName, '_');
-							//only k8 now
-							if (containerMetaInformation[0].find("k8s") != string::npos)
+							if (objItem->valuestring != NULL)
 							{
-								//add namespace pod info
-								containerPod = containerMetaInformation[2];
-								containerNamespace = containerMetaInformation[3];
-							}
-							else
-							{
-								containerPod = "None";
-								containerNamespace = "None";
-							}
-						}
+								string containerId = string(objItem->valuestring);
+								string containerName;
+								string containerPod;
+								string containerNamespace;
 
-						// Request container process info
-						vector<string> dockerTopRequest(1, DockerRestHelper::restDockerTop(containerId));
-						vector<cJSON*> dockerTopResponse = getResponse(dockerTopRequest);
-
-						if (!dockerTopResponse.empty() && dockerTopResponse[0])
-						{
-							//Get process entry
-							cJSON* processArr = cJSON_GetObjectItem(dockerTopResponse[0], "Processes");
-							if (processArr != NULL)
-							{
-								for (int j = 0; j < cJSON_GetArraySize(processArr); j++)
+								// Get container name
+								cJSON* names = cJSON_GetObjectItem(containerEntry, "Names");
+								if (cJSON_GetArraySize(names))
 								{
-									Container_Process_Class processInstance;
-
-									cJSON* processEntry = cJSON_GetArrayItem(processArr, j);
-									//process scpecific values
-									if ((processEntry != NULL) && (cJSON_GetArraySize(processEntry) >= 8))
+									containerName = string(cJSON_GetArrayItem(names, 0)->valuestring + 1);
+									vector <string> containerMetaInformation = delimiterParse(containerName, '_');
+									//only k8 now
+									if (containerMetaInformation[0].find("k8s") != string::npos)
 									{
-										processInstance.InstanceID_value(containerId.c_str());
-										processInstance.Uid_value(cJSON_GetArrayItem(processEntry, 0)->valuestring);
-										processInstance.PID_value(cJSON_GetArrayItem(processEntry, 1)->valuestring);
-										processInstance.PPID_value(cJSON_GetArrayItem(processEntry, 2)->valuestring);
-										processInstance.C_value(cJSON_GetArrayItem(processEntry, 3)->valuestring);
-										processInstance.STIME_value(cJSON_GetArrayItem(processEntry, 4)->valuestring);
-										processInstance.Tty_value(cJSON_GetArrayItem(processEntry, 5)->valuestring);
-										processInstance.TIME_value(cJSON_GetArrayItem(processEntry, 6)->valuestring);
-										processInstance.Cmd_value(cJSON_GetArrayItem(processEntry, 7)->valuestring);
-										//container specific values
-										processInstance.Id_value(containerId.c_str());
-										processInstance.Name_value(containerName.c_str());
-										processInstance.Pod_value(containerPod.c_str());
-										processInstance.Namespace_value(containerNamespace.c_str());
-										processInstance.Computer_value(hostname.c_str());
+										//add namespace pod info
+										containerPod = containerMetaInformation[2];
+										containerNamespace = containerMetaInformation[3];
 									}
-									runningProcessListInstance.push_back(processInstance);
+									else
+									{
+										containerPod = "None";
+										containerNamespace = "None";
+									}
 								}
+
+								// Request container process info
+								vector<string> dockerTopRequest(1, DockerRestHelper::restDockerTop(containerId));
+								vector<cJSON*> dockerTopResponse = getResponse(dockerTopRequest);
+
+								if (!dockerTopResponse.empty() && dockerTopResponse[0])
+								{
+									//Get process entry
+									cJSON* processArr = cJSON_GetObjectItem(dockerTopResponse[0], "Processes");
+									if (processArr != NULL)
+									{
+										for (int j = 0; j < cJSON_GetArraySize(processArr); j++)
+										{
+											Container_Process_Class processInstance;
+
+											cJSON* processEntry = cJSON_GetArrayItem(processArr, j);
+											//process scpecific values
+											if ((processEntry != NULL) && (cJSON_GetArraySize(processEntry) >= 8))
+											{
+												processInstance.InstanceID_value(containerId.c_str());
+												cJSON* arrItem = cJSON_GetArrayItem(processEntry, 0);
+												if (arrItem != NULL)
+												{
+													processInstance.Uid_value(arrItem->valuestring);
+												}
+												arrItem = cJSON_GetArrayItem(processEntry, 1);
+												if (arrItem != NULL)
+												{
+													processInstance.PID_value(arrItem->valuestring);
+												}
+												arrItem = cJSON_GetArrayItem(processEntry, 2);
+												if (arrItem != NULL)
+												{
+													processInstance.PPID_value(arrItem->valuestring);
+												}
+												arrItem = cJSON_GetArrayItem(processEntry, 3);
+												if (arrItem != NULL)
+												{
+													processInstance.C_value(arrItem->valuestring);
+												}
+												arrItem = cJSON_GetArrayItem(processEntry, 4);
+												if (arrItem != NULL)
+												{
+													processInstance.STIME_value(arrItem->valuestring);
+												}
+												arrItem = cJSON_GetArrayItem(processEntry, 5);
+												if (arrItem != NULL)
+												{
+													processInstance.Tty_value(arrItem->valuestring);
+												}
+												arrItem = cJSON_GetArrayItem(processEntry, 6);
+												if (arrItem != NULL)
+												{
+													processInstance.TIME_value(arrItem->valuestring);
+												}
+												arrItem = cJSON_GetArrayItem(processEntry, 7);
+												if (arrItem != NULL)
+												{
+													processInstance.Cmd_value(arrItem->valuestring);
+												}
+												//container specific values
+												processInstance.Id_value(containerId.c_str());
+												processInstance.Name_value(containerName.c_str());
+												processInstance.Pod_value(containerPod.c_str());
+												processInstance.Namespace_value(containerNamespace.c_str());
+												processInstance.Computer_value(hostname.c_str());
+											}
+											runningProcessListInstance.push_back(processInstance);
+										}
+									}
+								}
+								cJSON_Delete(dockerTopResponse[0]);
 							}
 						}
-						cJSON_Delete(dockerTopResponse[0]);
 					}
 				}
-				cJSON_Delete(dockerPsResponse[0]);
 			}
+			cJSON_Delete(dockerPsResponse[0]);
 		}
 		catch (std::exception &e)
 		{

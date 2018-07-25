@@ -144,7 +144,21 @@ private:
 						if (nameField && cJSON_GetArraySize(nameField))
 						{
 							// Docker API documentation says that this field contains the short ID but that is not the case; use full ID instead
-							result[string(cJSON_GetObjectItem(entry, "Id")->valuestring)] = string(cJSON_GetArrayItem(nameField, 0)->valuestring + 1);
+							cJSON* objItem = cJSON_GetObjectItem(entry, "Id");
+							if (objItem != NULL)
+							{
+								if (objItem->valuestring != NULL)
+								{
+									cJSON* arrItem = cJSON_GetArrayItem(nameField, 0);
+									if (arrItem != NULL) {
+										if (arrItem->valuestring != NULL)
+										{
+											result[string(objItem->valuestring)] = string(arrItem->valuestring + 1);
+										}
+									}
+									
+								}
+							}
 						}
 					}
 				}
@@ -233,9 +247,12 @@ public:
 							instance.InstanceID_value(Guid::NewToString().c_str());
 							instance.Command_value(cJSON_GetObjectItem(entry, "status")->valuestring);
 
-							char buffer[33];
-							snprintf(buffer, 33, "%d", cJSON_GetObjectItem(entry, "time")->valueint);
-							instance.TimeOfCommand_value(buffer);
+							cJSON* objItem = cJSON_GetObjectItem(entry, "time");
+							if (objItem != NULL) {
+								char buffer[33];
+								snprintf(buffer, 33, "%d", objItem->valueint);
+								instance.TimeOfCommand_value(buffer);
+							}
 
 							cJSON* tempImageName = cJSON_GetObjectItem(entry, "from");
 
@@ -244,24 +261,29 @@ public:
 								// Container event
 
 								instance.ElementName_value(tempImageName->valuestring);
+								objItem = cJSON_GetObjectItem(entry, "id");
+								if (objItem != NULL) {
+									char* id = objItem->valuestring;
+									instance.Id_value(id);
+									string idStr = string(id);
 
-								char* id = cJSON_GetObjectItem(entry, "id")->valuestring;
-								instance.Id_value(id);
-								string idStr = string(id);
-
-								// Get the container name
-								if (idMap.count(idStr))
-								{
-									instance.ContainerName_value(idMap[idStr].c_str());
-									// Add newly created containers to list
-									if (!strcmp(cJSON_GetObjectItem(entry, "status")->valuestring, "create"))
+									// Get the container name
+									if (idMap.count(idStr))
 									{
-										newContainers.push_back(string(id));
+										instance.ContainerName_value(idMap[idStr].c_str());
+										// Add newly created containers to list
+										objItem = cJSON_GetObjectItem(entry, "status");
+										if (objItem != NULL) {
+											if (!strcmp(objItem->valuestring, "create"))
+											{
+												newContainers.push_back(string(id));
+											}
+										}
 									}
-								}
-								else
-								{
-									syslog(LOG_NOTICE, "No container name found for container %s", id);
+									else
+									{
+										syslog(LOG_NOTICE, "No container name found for container %s", id);
+									}
 								}
 							}
 							else

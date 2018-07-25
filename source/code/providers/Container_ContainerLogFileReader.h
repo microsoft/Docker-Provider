@@ -63,7 +63,14 @@ private:
 					if (response[i])
 					{
 						// Get ID of exec instance
-						startRequests.push_back(DockerRestHelper::restDockerExecStart(string(cJSON_GetObjectItem(response[i], "Id")->valuestring)));
+						cJSON* objItem = cJSON_GetObjectItem(response[i], "Id");
+						if (objItem != NULL)
+						{
+							if (objItem->valuestring != NULL)
+							{
+								startRequests.push_back(DockerRestHelper::restDockerExecStart(string(objItem->valuestring)));
+							}
+						}
 					}
 					else
 					{
@@ -120,7 +127,7 @@ public:
 				if (state != NULL)
 				{
 					// Check if container is running first
-					if (cJSON_GetObjectItem(state, "Running")->valueint)
+					if ((cJSON_GetObjectItem(state, "Running")!= NULL) && (cJSON_GetObjectItem(state, "Running")->valueint))
 					{
 						// Get the container config
 						cJSON* config = cJSON_GetObjectItem(response[0], "Config");

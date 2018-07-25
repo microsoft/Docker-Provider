@@ -109,8 +109,26 @@ private:
 
 						if (tags && cJSON_GetArraySize(tags))
 						{
-							string value = string(cJSON_GetArrayItem(tags, 0)->valuestring);
-							result[string(cJSON_GetObjectItem(entry, "Id")->valuestring)] = SetImageRepositoryImageTag(value);
+							string value = "";
+							cJSON* arrItem = cJSON_GetArrayItem(tags, 0);
+							if (arrItem != NULL)
+							{
+								if (arrItem->valuestring != NULL)
+								{
+									value = string(arrItem->valuestring);
+								}
+							}
+
+							string idvalue = "";
+							cJSON* objItem = cJSON_GetObjectItem(entry, "Id");
+							if (objItem != NULL)
+							{
+								if (objItem->valuestring != NULL)
+								{
+									idvalue = string(objItem->valuestring);
+									result[idvalue] = SetImageRepositoryImageTag(value);
+								}
+							}
 						}
 					}
 					else
@@ -153,43 +171,61 @@ private:
 			if (config)
 			{
 				// Hostname of container
-				instance.ContainerHostname_value(cJSON_GetObjectItem(config, "Hostname")->valuestring);
+				string hostnamevalue = "";
+				cJSON* objItem = cJSON_GetObjectItem(config, "Hostname");
+				if (objItem != NULL)
+				{
+					if (objItem->valuestring != NULL)
+					{
+						instance.ContainerHostname_value(objItem->valuestring);
+					}
+				}
 
 				// Environment variables
-				char* env = cJSON_Print(cJSON_GetObjectItem(config, "Env"));
-				int envStringLength = strlen(env);
-				//Restricting the ENV string value to 200kb since the limit on the packet size is 250kb.
-				if (envStringLength > 200000)
-				{
-					string stringToTruncate = env;
-					string quotestring = "\"";
-					string quoteandbracestring = "\"]";
-					string quoteandcommastring = "\",";
-					string correctedstring;
-					stringToTruncate.resize(200000);
-					if (stringToTruncate.compare(stringToTruncate.size() - quotestring.size(), quotestring.size(), quotestring) == 0) {
-						correctedstring = stringToTruncate + "]";
-					}
-					else if (stringToTruncate.compare(stringToTruncate.size() - quoteandbracestring.size(), quoteandbracestring.size(), quoteandbracestring) == 0) {
-						correctedstring = stringToTruncate;
-					}
-					else if (stringToTruncate.compare(stringToTruncate.size() - quoteandcommastring.size(), quoteandcommastring.size(), quoteandcommastring) == 0) {
-						correctedstring = stringToTruncate.substr(0, stringToTruncate.length() - 1);
-						correctedstring = correctedstring + "]";
+				string envValue = "";
+				cJSON* objItem = cJSON_GetObjectItem(config, "Env");
+				if (objItem != NULL) {
+					char* env = cJSON_Print(objItem);
+					int envStringLength = strlen(env);
+					//Restricting the ENV string value to 200kb since the limit on the packet size is 250kb.
+					if (envStringLength > 200000)
+					{
+						string stringToTruncate = env;
+						string quotestring = "\"";
+						string quoteandbracestring = "\"]";
+						string quoteandcommastring = "\",";
+						string correctedstring;
+						stringToTruncate.resize(200000);
+						if (stringToTruncate.compare(stringToTruncate.size() - quotestring.size(), quotestring.size(), quotestring) == 0) {
+							correctedstring = stringToTruncate + "]";
+						}
+						else if (stringToTruncate.compare(stringToTruncate.size() - quoteandbracestring.size(), quoteandbracestring.size(), quoteandbracestring) == 0) {
+							correctedstring = stringToTruncate;
+						}
+						else if (stringToTruncate.compare(stringToTruncate.size() - quoteandcommastring.size(), quoteandcommastring.size(), quoteandcommastring) == 0) {
+							correctedstring = stringToTruncate.substr(0, stringToTruncate.length() - 1);
+							correctedstring = correctedstring + "]";
+						}
+						else {
+							correctedstring = stringToTruncate + "\"]";
+						}
+						instance.EnvironmentVar_value(correctedstring.c_str());
+						syslog(LOG_WARNING, "Environment variable truncated for container %s", cJSON_GetObjectItem(entry, "Id")->valuestring);
 					}
 					else {
-						correctedstring = stringToTruncate + "\"]";
+						instance.EnvironmentVar_value(strcmp(env, "null") ? env : "");
 					}
-					instance.EnvironmentVar_value(correctedstring.c_str());
-					syslog(LOG_WARNING, "Environment variable truncated for container %s", cJSON_GetObjectItem(entry, "Id")->valuestring);
-				}
-				else {
-					instance.EnvironmentVar_value(strcmp(env, "null") ? env : "");
+					if (env) free(env);
 				}
 
 				// Command
-				char *cmd = cJSON_Print(cJSON_GetObjectItem(config, "Cmd"));
-				instance.Command_value(cmd);
+				string cmdValue = "";
+				cJSON* objItem = cJSON_GetObjectItem(config, "Cmd");
+				if (objItem != NULL) {
+					char *cmd = cJSON_Print(objItem);
+					instance.Command_value(cmd);
+					if (cmd) free(cmd);
+				}
 
 				cJSON* labels = cJSON_GetObjectItem(config, "Labels");
 
@@ -205,8 +241,6 @@ private:
 						instance.ComposeGroup_value(groupName->valuestring);
 					}
 				}
-				if (env) free(env);
-				if (cmd) free(cmd);
 			}
 			else
 			{
@@ -236,47 +270,61 @@ private:
 
 			if (state)
 			{
-				int exitCode = cJSON_GetObjectItem(state, "ExitCode")->valueint;
-
-				// Exit codes less than 0 are not supported by the engine
-				if (exitCode < 0)
+				cJSON* objItem = cJSON_GetObjectItem(state, "ExitCode");
+				if (objItem != NULL)
 				{
-					exitCode = 128;
-					syslog(LOG_NOTICE, "Container %s returned negative exit code", cJSON_GetObjectItem(entry, "Id")->valuestring);
-				}
-
-				instance.ExitCode_value(exitCode);
-
-				if (exitCode)
-				{
-					// Container failed
-					instance.State_value("Failed");
-				}
-				else
-				{
-					// Set the Container status : Running/Paused/Stopped
-					if (cJSON_GetObjectItem(state, "Running")->valueint)
+					int exitCode = objItem->valueint;
+					// Exit codes less than 0 are not supported by the engine
+					if (exitCode < 0)
 					{
-						// Container running
-						if (cJSON_GetObjectItem(state, "Paused")->valueint)
-						{
-							// Container paused
-							instance.State_value("Paused");
-						}
-						else
-						{
-							instance.State_value("Running");
-						}
+						exitCode = 128;
+						syslog(LOG_NOTICE, "Container %s returned negative exit code", cJSON_GetObjectItem(entry, "Id")->valuestring);
+					}
+
+					instance.ExitCode_value(exitCode);
+
+					if (exitCode)
+					{
+						// Container failed
+						instance.State_value("Failed");
 					}
 					else
 					{
-						// Container exited
-						instance.State_value("Stopped");
+						cJSON* objItem = cJSON_GetObjectItem(state, "Running");
+						if (objItem != NULL) {
+							// Set the Container status : Running/Paused/Stopped
+							if (objItem->valueint)
+							{
+								objItem = cJSON_GetObjectItem(state, "Paused");
+								if (objItem != NULL) {
+									// Container running
+									if (objItem->valueint)
+									{
+										// Container paused
+										instance.State_value("Paused");
+									}
+									else
+									{
+										instance.State_value("Running");
+									}
+								}
+							}
+							else
+							{
+								// Container exited
+								instance.State_value("Stopped");
+							}
+						}
 					}
 				}
-
-				instance.StartedTime_value(cJSON_GetObjectItem(state, "StartedAt")->valuestring);
-				instance.FinishedTime_value(cJSON_GetObjectItem(state, "FinishedAt")->valuestring);
+				objItem = cJSON_GetObjectItem(state, "StartedAt");
+				if (objItem != NULL) {
+					instance.StartedTime_value(objItem->valuestring);
+				}
+				objItem = cJSON_GetObjectItem(state, "FinishedAt");
+				if (objItem != NULL) {
+					instance.FinishedTime_value(objItem->valuestring);
+				}
 			}
 			else
 			{
@@ -307,15 +355,20 @@ private:
 			if (hostConfig)
 			{
 				// Links
-				char* links = cJSON_Print(cJSON_GetObjectItem(hostConfig, "Links"));
-				instance.Links_value(strcmp(links, "null") ? links : "");
+				cJSON* objItem = cJSON_GetObjectItem(hostConfig, "Links");
+				if (objItem != NULL) {
+					char* links = cJSON_Print(objItem);
+					instance.Links_value(strcmp(links, "null") ? links : "");
+					if (links) free(links);
+				}
 
 				// Ports
-				char* ports = cJSON_Print(cJSON_GetObjectItem(hostConfig, "PortBindings"));
-				instance.Ports_value(strcmp(ports, "{\n}") ? ports : "");
-
-				if (links) free(links);
-				if (ports) free(ports);
+				objItem = cJSON_GetObjectItem(hostConfig, "PortBindings");
+				if (objItem != NULL) {
+					char* ports = cJSON_Print(objItem);
+					instance.Ports_value(strcmp(ports, "{\n}") ? ports : "");
+					if (ports) free(ports);
+				}
 			}
 			else
 			{
@@ -350,25 +403,38 @@ private:
 			// See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#inspect-a-container for example output
 			if (!response.empty() && response[0])
 			{
-				instance.InstanceID_value(cJSON_GetObjectItem(response[0], "Id")->valuestring);
-				instance.CreatedTime_value(cJSON_GetObjectItem(response[0], "Created")->valuestring);
-
-				char* containerName = cJSON_GetObjectItem(response[0], "Name")->valuestring;
-
-				if (strlen(containerName))
-				{
-					// Remove the leading / from the name if it exists (this is an API issue)
-					instance.ElementName_value(containerName[0] == '/' ? containerName + 1 : containerName);
+				cJSON* objItem = cJSON_GetObjectItem(response[0], "Id");
+				if (objItem != NULL) {
+					instance.InstanceID_value(objItem->valuestring);
 				}
 
-				string imageId = string(cJSON_GetObjectItem(response[0], "Image")->valuestring);
-				instance.ImageId_value(imageId.c_str());
+				objItem = cJSON_GetObjectItem(response[0], "Created");
+				if (objItem != NULL) {
+					instance.CreatedTime_value(objItem->valuestring);
+				}
 
-				if (nameMap.count(imageId))
-				{
-					instance.Repository_value(nameMap[imageId][0].c_str());
-					instance.Image_value(nameMap[imageId][1].c_str());
-					instance.ImageTag_value(nameMap[imageId][2].c_str());
+				objItem = cJSON_GetObjectItem(response[0], "Name");
+				if (objItem != NULL) {
+					char* containerName = objItem->valuestring;
+
+					if (strlen(containerName))
+					{
+						// Remove the leading / from the name if it exists (this is an API issue)
+						instance.ElementName_value(containerName[0] == '/' ? containerName + 1 : containerName);
+					}
+				}
+
+				objItem = cJSON_GetObjectItem(response[0], "Image");
+				if (objItem != NULL) {
+					string imageId = string(objItem->valuestring);
+					instance.ImageId_value(imageId.c_str());
+
+					if (nameMap.count(imageId))
+					{
+						instance.Repository_value(nameMap[imageId][0].c_str());
+						instance.Image_value(nameMap[imageId][1].c_str());
+						instance.ImageTag_value(nameMap[imageId][2].c_str());
+					}
 				}
 
 				ObtainContainerConfig(instance, response[0]);

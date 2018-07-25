@@ -42,12 +42,18 @@ private:
 				for (int j = cJSON_GetArraySize(tags) - 1; !flag && j > -1; j--)
 				{
 					// Get value of tag
-					result = string(cJSON_GetArrayItem(tags, j)->valuestring);
-
-					// Use the tag which contains latest
-					if (result.find(":latest") != string::npos)
+					cJSON* arrItem = cJSON_GetArrayItem(tags, j);
+					if (arrItem != NULL)
 					{
-						flag = true;
+						if (arrItem->valuestring != NULL)
+						{
+							result = string(arrItem->valuestring);
+							// Use the tag which contains latest
+							if (result.find(":latest") != string::npos)
+							{
+								flag = true;
+							}
+						}
 					}
 				}
 			}
@@ -160,36 +166,43 @@ private:
 
 			if (state)
 			{
-				string id = string(cJSON_GetObjectItem(entry, "Image")->valuestring);
-
-				if (cJSON_GetObjectItem(state, "Running")->valueint)
+				cJSON* objItem = cJSON_GetObjectItem(entry, "Image");
+				if (objItem != NULL)
 				{
-					// Running container
-					if (cJSON_GetObjectItem(state, "Paused")->valueint)
+					if (objItem->valuestring != NULL)
 					{
-						// Paused container
-						instances[idTable[id]].Paused_value(instances[idTable[id]].Paused_value() + 1);
-					}
-					else
-					{
-						instances[idTable[id]].Running_value(instances[idTable[id]].Running_value() + 1);
+						string id = string(objItem->valuestring);
+
+						if (cJSON_GetObjectItem(state, "Running")->valueint)
+						{
+							// Running container
+							if (cJSON_GetObjectItem(state, "Paused")->valueint)
+							{
+								// Paused container
+								instances[idTable[id]].Paused_value(instances[idTable[id]].Paused_value() + 1);
+							}
+							else
+							{
+								instances[idTable[id]].Running_value(instances[idTable[id]].Running_value() + 1);
+							}
+						}
+						else
+						{
+							if (cJSON_GetObjectItem(state, "ExitCode")->valueint)
+							{
+								// Container exited nonzero
+								instances[idTable[id]].Failed_value(instances[idTable[id]].Failed_value() + 1);
+							}
+							else
+							{
+								// Container exited normally
+								instances[idTable[id]].Stopped_value(instances[idTable[id]].Stopped_value() + 1);
+							}
+						}
+
+						instances[idTable[id]].Total_value(instances[idTable[id]].Total_value() + 1);
 					}
 				}
-				else
-				{
-					if (cJSON_GetObjectItem(state, "ExitCode")->valueint)
-					{
-						// Container exited nonzero
-						instances[idTable[id]].Failed_value(instances[idTable[id]].Failed_value() + 1);
-					}
-					else
-					{
-						// Container exited normally
-						instances[idTable[id]].Stopped_value(instances[idTable[id]].Stopped_value() + 1);
-					}
-				}
-
-				instances[idTable[id]].Total_value(instances[idTable[id]].Total_value() + 1);
 			}
 			else
 			{
@@ -228,21 +241,28 @@ private:
 
 					if (entry)
 					{
-						// Inspect container
-						vector<string> subRequest(1, DockerRestHelper::restDockerInspect(string(cJSON_GetObjectItem(entry, "Id")->valuestring)));
-						vector<cJSON*> subResponse = getResponse(subRequest);
-
-						// See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#inspect-a-container for example output
-						if (!subResponse.empty() && subResponse[0])
+						cJSON* objItem = cJSON_GetObjectItem(entry, "Id");
+						if (objItem != NULL)
 						{
-							ObtainContainerState(instances, idTable, subResponse[0]);
+							if (objItem->valuestring != NULL)
+							{
+								// Inspect container
+								vector<string> subRequest(1, DockerRestHelper::restDockerInspect(string(objItem->valuestring)));
+								vector<cJSON*> subResponse = getResponse(subRequest);
 
-							// Clean up object
-							cJSON_Delete(subResponse[0]);
-						}
-						else
-						{
-							syslog(LOG_WARNING, "API call in AggregateContainerStatus to inspect container %s returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+								// See http://docs.docker.com/reference/api/Container_remote_api_v1.21/#inspect-a-container for example output
+								if (!subResponse.empty() && subResponse[0])
+								{
+									ObtainContainerState(instances, idTable, subResponse[0]);
+
+									// Clean up object
+									cJSON_Delete(subResponse[0]);
+								}
+								else
+								{
+									syslog(LOG_WARNING, "API call in AggregateContainerStatus to inspect container %s returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+								}
+							}
 						}
 					}
 					else
@@ -308,33 +328,37 @@ public:
 						instance.Computer_value(hostname.c_str());
 
 						// Get ID
-						string instanceId = string(cJSON_GetObjectItem(entry, "Id")->valuestring);
-						instance.InstanceID_value(instanceId.c_str());
+						cJSON* objItem = cJSON_GetObjectItem(entry, "Id");
+						if (objItem != NULL)
+						{
+							string instanceId = string(objItem->valuestring);
+							instance.InstanceID_value(instanceId.c_str());
 
-						// Get size
-						char imageSize[128];
-						char virtualSize[128];
-						sprintf(imageSize, "%d MB", cJSON_GetObjectItem(entry, "Size")->valueint / NUMBYTESPERMB);
-						sprintf(virtualSize, "%d MB", cJSON_GetObjectItem(entry, "VirtualSize")->valueint / NUMBYTESPERMB);
-						instance.ImageSize_value(imageSize);
-						instance.VirtualSize_value(virtualSize);
+							// Get size
+							char imageSize[128];
+							char virtualSize[128];
+							sprintf(imageSize, "%d MB", cJSON_GetObjectItem(entry, "Size")->valueint / NUMBYTESPERMB);
+							sprintf(virtualSize, "%d MB", cJSON_GetObjectItem(entry, "VirtualSize")->valueint / NUMBYTESPERMB);
+							instance.ImageSize_value(imageSize);
+							instance.VirtualSize_value(virtualSize);
 
-						// Get image
-						imageNameIsNotNone.push_back(SetImageRepositoryImageTag(instance, SelectTag(cJSON_GetObjectItem(entry, "RepoTags"))));
+							// Get image
+							imageNameIsNotNone.push_back(SetImageRepositoryImageTag(instance, SelectTag(cJSON_GetObjectItem(entry, "RepoTags"))));
 
-						// Default container states
-						instance.Running_value(0);
-						instance.Paused_value(0);
-						instance.Stopped_value(0);
-						instance.Failed_value(0);
-						instance.Total_value(0);
+							// Default container states
+							instance.Running_value(0);
+							instance.Paused_value(0);
+							instance.Stopped_value(0);
+							instance.Failed_value(0);
+							instance.Total_value(0);
 
-						// Map the image ID to the vector index
-						idTable[instanceId] = result.size();
-						result.push_back(instance);
+							// Map the image ID to the vector index
+							idTable[instanceId] = result.size();
+							result.push_back(instance);
 
-						// Store all image IDs in set for deleted image check
-						imageIds.insert(instanceId);
+							// Store all image IDs in set for deleted image check
+							imageIds.insert(instanceId);
+						}
 					}
 					else
 					{
