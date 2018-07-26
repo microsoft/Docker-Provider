@@ -104,10 +104,26 @@ public:
 					if (root != NULL)
 					{
 						// Get all fields from JSON
-						instance.Image_value(cJSON_GetObjectItem(root, "Image")->valuestring);
-						instance.Repository_value(cJSON_GetObjectItem(root, "Repository")->valuestring);
-						instance.ImageTag_value(cJSON_GetObjectItem(root, "ImageTag")->valuestring);
-						instance.Computer_value(cJSON_GetObjectItem(root, "Computer")->valuestring);
+						cJSON* objItem = cJSON_GetObjectItem(root, "Image");
+						if (objItem != NULL)
+						{
+							instance.Image_value(objItem->valuestring);
+						}
+						objItem = cJSON_GetObjectItem(root, "Repository");
+						if (objItem != NULL)
+						{
+							instance.Repository_value(objItem->valuestring);
+						}
+						objItem = cJSON_GetObjectItem(root, "ImageTag");
+						if (objItem != NULL)
+						{
+							instance.ImageTag_value(objItem->valuestring);
+						}
+						objItem = cJSON_GetObjectItem(root, "Computer");
+						if (objItem != NULL)
+						{
+							instance.Computer_value(objItem->valuestring);
+						}
 						instance.Running_value(0);
 						instance.Stopped_value(0);
 						instance.Failed_value(0);
