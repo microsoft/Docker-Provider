@@ -192,7 +192,7 @@ module Fluent
         router.emit_stream(@tag, eventStream) if eventStream
         @@istestvar = ENV['ISTEST']
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp('true') == 0 && eventStream.count > 0)
-          $log.info("in_kube_podinventory::emit-stream : Success @ #{Time.now.utc.iso8601}")
+          $log.info("kubePodInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
         end
       rescue  => errorStr
         $log.warn "Failed in parse_and_emit_record pod inventory: #{errorStr}"
