@@ -35,7 +35,7 @@ private:
         string result = "";
 		try {
 
-			if (tags && cJSON_GetArraySize(tags))
+			if ((tags != NULL) && cJSON_GetArraySize(tags))
 			{
 				bool flag = false;
 
@@ -163,7 +163,7 @@ private:
 		try {
 			cJSON* state = cJSON_GetObjectItem(entry, "State");
 
-			if (state)
+			if (state != NULL)
 			{
 				cJSON* objItem = cJSON_GetObjectItem(entry, "Image");
 				if (objItem != NULL)
@@ -172,10 +172,10 @@ private:
 					{
 						string id = string(objItem->valuestring);
 
-						if (cJSON_GetObjectItem(state, "Running")->valueint)
+						if (cJSON_GetObjectItem(state, "Running") != NULL && cJSON_GetObjectItem(state, "Running")->valueint)
 						{
 							// Running container
-							if (cJSON_GetObjectItem(state, "Paused")->valueint)
+							if (cJSON_GetObjectItem(state, "Paused") != NULL && cJSON_GetObjectItem(state, "Paused")->valueint)
 							{
 								// Paused container
 								instances[idTable[id]].Paused_value(instances[idTable[id]].Paused_value() + 1);
@@ -187,7 +187,7 @@ private:
 						}
 						else
 						{
-							if (cJSON_GetObjectItem(state, "ExitCode")->valueint)
+							if (cJSON_GetObjectItem(state, "ExitCode") != NULL && cJSON_GetObjectItem(state, "ExitCode")->valueint)
 							{
 								// Container exited nonzero
 								instances[idTable[id]].Failed_value(instances[idTable[id]].Failed_value() + 1);
@@ -205,7 +205,10 @@ private:
 			}
 			else
 			{
-				syslog(LOG_WARNING, "Attempt in ObtainContainerState to get container %s state information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+				if (cJSON_GetObjectItem(entry, "Id") != NULL)
+				{
+					syslog(LOG_WARNING, "Attempt in ObtainContainerState to get container %s state information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+				}
 			}
 		}
 		catch (std::exception &e)
@@ -238,7 +241,7 @@ private:
 				{
 					cJSON* entry = cJSON_GetArrayItem(response[0], i);
 
-					if (entry)
+					if (entry != NULL)
 					{
 						cJSON* objItem = cJSON_GetObjectItem(entry, "Id");
 						if (objItem != NULL)
@@ -320,7 +323,7 @@ public:
 				{
 					cJSON* entry = cJSON_GetArrayItem(response[0], i);
 
-					if (entry)
+					if (entry != NULL)
 					{
 						// New inventory entry
 						Container_ImageInventory_Class instance;

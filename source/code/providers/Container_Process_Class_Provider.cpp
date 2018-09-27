@@ -55,7 +55,7 @@ public:
 				for (int i = 0; i < cJSON_GetArraySize(dockerPsResponse[0]); i++)
 				{
 					cJSON* containerEntry = cJSON_GetArrayItem(dockerPsResponse[0], i);
-					if (containerEntry)
+					if (containerEntry != NULL)
 					{
 						cJSON* objItem = cJSON_GetObjectItem(containerEntry, "Id");
 						if (objItem != NULL)

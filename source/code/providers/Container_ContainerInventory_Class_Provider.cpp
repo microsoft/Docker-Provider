@@ -104,11 +104,11 @@ private:
 				{
 					cJSON* entry = cJSON_GetArrayItem(response[0], i);
 
-					if (entry)
+					if (entry != NULL)
 					{
 						cJSON* tags = cJSON_GetObjectItem(entry, "RepoTags");
 
-						if (tags && cJSON_GetArraySize(tags))
+						if ((tags != NULL) && cJSON_GetArraySize(tags))
 						{
 							string value = "";
 							cJSON* arrItem = cJSON_GetArrayItem(tags, 0);
@@ -168,7 +168,7 @@ private:
 		try {
 			cJSON* config = cJSON_GetObjectItem(entry, "Config");
 
-			if (config)
+			if (config != NULL)
 			{
 				// Hostname of container
 				string hostnamevalue = "";
@@ -232,7 +232,7 @@ private:
 				// Compose group
 				instance.ComposeGroup_value("");
 
-				if (labels)
+				if (labels != NULL)
 				{
 					cJSON* groupName = cJSON_GetObjectItem(labels, "com.docker.compose.project");
 
@@ -244,7 +244,10 @@ private:
 			}
 			else
 			{
-				syslog(LOG_WARNING, "Attempt in ObtainContainerConfig to get container %s config information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+				if (cJSON_GetObjectItem(entry, "Id") != NULL)
+				{
+					syslog(LOG_WARNING, "Attempt in ObtainContainerConfig to get container %s config information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+				}
 			}
 		}
 		catch (std::exception &e)
@@ -268,7 +271,7 @@ private:
 		try {
 			cJSON* state = cJSON_GetObjectItem(entry, "State");
 
-			if (state)
+			if (state != NULL)
 			{
 				cJSON* objItem = cJSON_GetObjectItem(state, "ExitCode");
 				if (objItem != NULL)
@@ -279,7 +282,10 @@ private:
 					if (exitCode < 0)
 					{
 						exitCode = 128;
-						syslog(LOG_NOTICE, "Container %s returned negative exit code", cJSON_GetObjectItem(entry, "Id")->valuestring);
+						if (cJSON_GetObjectItem(entry, "Id") != NULL)
+						{
+							syslog(LOG_NOTICE, "Container %s returned negative exit code", cJSON_GetObjectItem(entry, "Id")->valuestring);
+						}
 					}
 
 					instance.ExitCode_value(exitCode);
@@ -330,7 +336,10 @@ private:
 			}
 			else
 			{
-				syslog(LOG_WARNING, "Attempt in ObtainContainerState to get container %s state information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+				if (cJSON_GetObjectItem(entry, "Id") != NULL)
+				{
+					syslog(LOG_WARNING, "Attempt in ObtainContainerState to get container %s state information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+				}
 			}
 		}
 		catch (std::exception &e)
@@ -354,7 +363,7 @@ private:
 		try {
 			cJSON* hostConfig = cJSON_GetObjectItem(entry, "HostConfig");
 
-			if (hostConfig)
+			if (hostConfig != NULL)
 			{
 				// Links
 				cJSON* objItem = cJSON_GetObjectItem(hostConfig, "Links");
@@ -374,7 +383,10 @@ private:
 			}
 			else
 			{
-				syslog(LOG_WARNING, "Attempt in ObtainContainerHostConfig to get container %s host config information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+				if (cJSON_GetObjectItem(entry, "Id") != NULL)
+				{
+					syslog(LOG_WARNING, "Attempt in ObtainContainerHostConfig to get container %s host config information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+				}
 			}
 		}
 		catch (std::exception &e)
