@@ -52,6 +52,7 @@ func CreateHTTPClient() {
 	cert, err := tls.LoadX509KeyPair(PluginConfiguration["cert_file_path"], PluginConfiguration["key_file_path"])
 	if err != nil {
 		Log("Error when loading cert %s", err.Error())
+		log.Fatalf("Error when loading cert %s", err.Error())
 	}
 
 	tlsConfig := &tls.Config{

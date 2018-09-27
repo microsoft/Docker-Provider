@@ -18,9 +18,7 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 // ctx (context) pointer to fluentbit context (state/ c code)
 func FLBPluginInit(ctx unsafe.Pointer) int {
 	Log("Initializing out_oms go plugin for fluentbit")
-	PluginConfiguration = InitializeConfig("/etc/opt/microsoft/docker-cimprov/out_oms.conf")
-	CreateHTTPClient()
-	updateContainersData()
+	InitializePlugin(ContainerLogPluginConfFilePath)
 	return output.FLB_OK
 }
 
@@ -50,6 +48,8 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 
 // FLBPluginExit exits the plugin
 func FLBPluginExit() int {
+	KubeSystemContainersRefreshTicker.Stop()
+	ContainerImageNameRefreshTicker.Stop()
 	return output.FLB_OK
 }
 
