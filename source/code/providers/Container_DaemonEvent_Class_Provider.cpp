@@ -278,9 +278,10 @@ public:
 							else
 							{
 								// Image event
-								if (cJSON_GetObjectItem(entry, "id") != NULL)
+								cJSON* idItem = cJSON_GetObjectItem(entry, "id");
+								if (idItem != NULL)
 								{
-									instance.ElementName_value(cJSON_GetObjectItem(entry, "id")->valuestring);
+									instance.ElementName_value(idItem->valuestring);
 								}
 								instance.Id_value("");
 								instance.ContainerName_value("");
