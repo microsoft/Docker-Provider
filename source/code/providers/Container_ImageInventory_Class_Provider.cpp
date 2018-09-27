@@ -173,10 +173,12 @@ private:
 					{
 						string id = string(objItem->valuestring);
 
-						if (cJSON_GetObjectItem(state, "Running") != NULL && cJSON_GetObjectItem(state, "Running")->valueint)
+						cJSON* runningItem = cJSON_GetObjectItem(state, "Running");
+						if (runningItem != NULL && runningItem->valueint)
 						{
 							// Running container
-							if (cJSON_GetObjectItem(state, "Paused") != NULL && cJSON_GetObjectItem(state, "Paused")->valueint)
+							cJSON* pausedItem = cJSON_GetObjectItem(state, "Paused");
+							if (pausedItem != NULL && pausedItem->valueint)
 							{
 								// Paused container
 								instances[idTable[id]].Paused_value(instances[idTable[id]].Paused_value() + 1);
@@ -188,7 +190,8 @@ private:
 						}
 						else
 						{
-							if (cJSON_GetObjectItem(state, "ExitCode") != NULL && cJSON_GetObjectItem(state, "ExitCode")->valueint)
+							cJSON* exitCodeItem = cJSON_GetObjectItem(state, "ExitCode");
+							if (exitCodeItem != NULL && exitCodeItem->valueint)
 							{
 								// Container exited nonzero
 								instances[idTable[id]].Failed_value(instances[idTable[id]].Failed_value() + 1);
@@ -206,9 +209,10 @@ private:
 			}
 			else
 			{
-				if (cJSON_GetObjectItem(entry, "Id") != NULL)
+				cJSON* idItem = cJSON_GetObjectItem(entry, "Id");
+				if (idItem != NULL)
 				{
-					syslog(LOG_WARNING, "Attempt in ObtainContainerState to get container %s state information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+					syslog(LOG_WARNING, "Attempt in ObtainContainerState to get container %s state information returned null", idItem->valuestring);
 				}
 			}
 		}
@@ -263,7 +267,7 @@ private:
 								}
 								else
 								{
-									syslog(LOG_WARNING, "API call in AggregateContainerStatus to inspect container %s returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+									syslog(LOG_WARNING, "API call in AggregateContainerStatus to inspect container %s returned null", objItem->valuestring);
 								}
 							}
 						}

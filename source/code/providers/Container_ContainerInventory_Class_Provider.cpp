@@ -210,7 +210,11 @@ private:
 							correctedstring = stringToTruncate + "\"]";
 						}
 						instance.EnvironmentVar_value(correctedstring.c_str());
-						syslog(LOG_WARNING, "Environment variable truncated for container %s", cJSON_GetObjectItem(entry, "Id")->valuestring);
+						cJSON* idItem = cJSON_GetObjectItem(entry, "Id");
+						if (idItem != NULL)
+						{
+							syslog(LOG_WARNING, "Environment variable truncated for container %s", idItem->valuestring);
+						}
 					}
 					else {
 						instance.EnvironmentVar_value(strcmp(env, "null") ? env : "");
@@ -244,9 +248,10 @@ private:
 			}
 			else
 			{
-				if (cJSON_GetObjectItem(entry, "Id") != NULL)
+				cJSON* idItem = cJSON_GetObjectItem(entry, "Id");
+				if (idItem != NULL)
 				{
-					syslog(LOG_WARNING, "Attempt in ObtainContainerConfig to get container %s config information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+					syslog(LOG_WARNING, "Attempt in ObtainContainerConfig to get container %s config information returned null", idItem->valuestring);
 				}
 			}
 		}
@@ -281,9 +286,10 @@ private:
 					if (exitCode < 0)
 					{
 						exitCode = 128;
-						if (cJSON_GetObjectItem(entry, "Id") != NULL)
+						cJSON* idItem = cJSON_GetObjectItem(entry, "Id");
+						if (idItem != NULL)
 						{
-							syslog(LOG_NOTICE, "Container %s returned negative exit code", cJSON_GetObjectItem(entry, "Id")->valuestring);
+							syslog(LOG_NOTICE, "Container %s returned negative exit code", idItem->valuestring);
 						}
 					}
 
@@ -334,9 +340,10 @@ private:
 			}
 			else
 			{
-				if (cJSON_GetObjectItem(entry, "Id"))
+				cJSON* idItem = cJSON_GetObjectItem(entry, "Id");
+				if (idItem)
 				{
-					syslog(LOG_WARNING, "Attempt in ObtainContainerState to get container %s state information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+					syslog(LOG_WARNING, "Attempt in ObtainContainerState to get container %s state information returned null", idItem->valuestring);
 				}
 			}
 		}
@@ -381,9 +388,10 @@ private:
 			}
 			else
 			{
-				if (cJSON_GetObjectItem(entry, "Id"))
+				cJSON* idItem = cJSON_GetObjectItem(entry, "Id");
+				if (idItem != NULL)
 				{
-					syslog(LOG_WARNING, "Attempt in ObtainContainerHostConfig to get container %s host config information returned null", cJSON_GetObjectItem(entry, "Id")->valuestring);
+					syslog(LOG_WARNING, "Attempt in ObtainContainerHostConfig to get container %s host config information returned null", idItem->valuestring);
 				}
 			}
 		}
