@@ -34,7 +34,7 @@ private:
 			int totalRx = 0;
 			int totalTx = 0;
 
-			if (stats)
+			if (stats != NULL)
 			{
 				cJSON* network = cJSON_GetObjectItem(stats, "networks");
 
