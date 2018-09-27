@@ -168,7 +168,7 @@ private:
 		try {
 			cJSON* config = cJSON_GetObjectItem(entry, "Config");
 
-			if (config != NULl)
+			if (config != NULL)
 			{
 				// Hostname of container
 				string hostnamevalue = "";
