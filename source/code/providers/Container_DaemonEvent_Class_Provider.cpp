@@ -137,11 +137,11 @@ private:
 				{
 					cJSON* entry = cJSON_GetArrayItem(response[0], i);
 
-					if (entry)
+					if (entry != NULL)
 					{
 						cJSON* nameField = cJSON_GetObjectItem(entry, "Names");
 
-						if (nameField && cJSON_GetArraySize(nameField))
+						if ((nameField != NULL) && cJSON_GetArraySize(nameField))
 						{
 							// Docker API documentation says that this field contains the short ID but that is not the case; use full ID instead
 							cJSON* objItem = cJSON_GetObjectItem(entry, "Id");
@@ -239,7 +239,7 @@ public:
 						cJSON* entry = cJSON_GetArrayItem(response[0], i);
 
 						// the newer versions of the API may return objects that do not have status or id
-						if (entry && cJSON_GetObjectItem(entry, "status") != NULL && cJSON_GetObjectItem(entry, "id") != NULL)
+						if ((entry != NULL) && cJSON_GetObjectItem(entry, "status") != NULL && cJSON_GetObjectItem(entry, "id") != NULL)
 						{
 							// New inventory entry
 							Container_DaemonEvent_Class instance;

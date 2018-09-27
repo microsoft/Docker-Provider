@@ -38,13 +38,13 @@ private:
 			{
 				cJSON* network = cJSON_GetObjectItem(stats, "networks");
 
-				if (network)
+				if (network != NULL)
 				{
 					// Docker 1.9+
 					network = network->child;
 
 					// Sum the number of bytes from each NIC if there is more than one
-					while (network)
+					while (network != NULL)
 					{
 						cJSON* objItem = cJSON_GetObjectItem(network, "rx_bytes");
 						if (objItem != NULL) {
@@ -66,7 +66,7 @@ private:
 				{
 					// Docker 1.8.x
 					network = cJSON_GetObjectItem(stats, "network");
-					if (network)
+					if (network != NULL)
 					{
 						cJSON* objItem = cJSON_GetObjectItem(network, "rx_bytes");
 						if (objItem != NULL) {
@@ -110,7 +110,7 @@ private:
     static void TrySetContainerMemoryData(Container_ContainerStatistics_Class& instance, cJSON* stats)
     {
 		try {
-			if (stats)
+			if (stats != NULL)
 			{
 				cJSON* memory_stats = cJSON_GetObjectItem(stats, "memory_stats");
 				if (memory_stats != NULL) {
@@ -150,11 +150,11 @@ private:
 			instance.DiskBytesRead_value(0);
 			instance.DiskBytesWritten_value(0);
 
-			if (stats)
+			if (stats != NULL)
 			{
 				cJSON* blkio_stats = cJSON_GetObjectItem(stats, "blkio_stats");
 
-				if (blkio_stats)
+				if (blkio_stats != NULL)
 				{
 					cJSON* values = cJSON_GetObjectItem(blkio_stats, "io_service_bytes_recursive");
 
@@ -165,12 +165,12 @@ private:
 					{
 						cJSON* entry = cJSON_GetArrayItem(values, i);
 
-						if (entry)
+						if (entry != NULL)
 						{
 							cJSON* op = cJSON_GetObjectItem(entry, "op");
 							cJSON* rawValue = cJSON_GetObjectItem(entry, "value");
 
-							if (op && rawValue)
+							if ((op != NULL) && (rawValue != NULL))
 							{
 								if (!strcmp(op->valuestring, "Read"))
 								{
@@ -219,11 +219,11 @@ private:
 			{
 				cJSON* cpu_stats = cJSON_GetObjectItem(stats, "cpu_stats");
 
-				if (cpu_stats)
+				if (cpu_stats != NULL)
 				{
 					cJSON* cpu_usage = cJSON_GetObjectItem(cpu_stats, "cpu_usage");
 
-					if (cpu_usage)
+					if (cpu_usage != NULL)
 					{
 						cJSON* objItem = cJSON_GetObjectItem(cpu_usage, "total_usage");
 						if (objItem != NULL) {
@@ -269,15 +269,15 @@ private:
 			instance.CPUTotal_value(0);
 			instance.CPUTotalPct_value(0);
 
-			if (stats)
+			if (stats != NULL)
 			{
 				cJSON* cpu_stats = cJSON_GetObjectItem(stats, "cpu_stats");
 
-				if (cpu_stats)
+				if (cpu_stats != NULL)
 				{
 					cJSON* cpu_usage = cJSON_GetObjectItem(cpu_stats, "cpu_usage");
 
-					if (cpu_usage)
+					if (cpu_usage != NULL)
 					{
 						cJSON* totalUsageItem = cJSON_GetObjectItem(cpu_usage, "total_usage");
 						cJSON* systemCpuUsageItem = cJSON_GetObjectItem(cpu_stats, "system_cpu_usage");
@@ -333,7 +333,7 @@ public:
 				{
 					cJSON* entry = cJSON_GetArrayItem(response[0], i);
 
-					if (entry)
+					if (entry != NULL)
 					{
 						// New perf entry
 						Container_ContainerStatistics_Class instance;
@@ -396,7 +396,10 @@ public:
 					// See http://docs.docker.com/engine/reference/api/docker_remote_api_v1.21/#get-container-stats-based-on-resource-usage for example output
 					if (!subResponse.empty() && subResponse[0])
 					{
-						TrySetContainerCpuData(result[i], subResponse[0], previousStatsList[i]);
+						if (i < previousStatsList.size())
+						{
+							TrySetContainerCpuData(result[i], subResponse[0], previousStatsList[i]);
+						}
 
 						// Set container name in 'InstanceName' field of Perf data.
 						result[i].InstanceID_value(result[i].ElementName_value());
