@@ -163,7 +163,7 @@ public:
 					}
 				}
 			}
-			if (!dockerPsResponse.empty() && dockerPsResponse[0])
+			if (dockerPsResponse != NULL && !dockerPsResponse.empty() && dockerPsResponse[0])
 			{
 				cJSON_Delete(dockerPsResponse[0]);
 			}
