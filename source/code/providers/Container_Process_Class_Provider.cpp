@@ -163,7 +163,10 @@ public:
 					}
 				}
 			}
-			cJSON_Delete(dockerPsResponse[0]);
+			if (!dockerPsResponse.empty() && dockerPsResponse[0])
+			{
+				cJSON_Delete(dockerPsResponse[0]);
+			}
 		}
 		catch (std::exception &e)
 		{
