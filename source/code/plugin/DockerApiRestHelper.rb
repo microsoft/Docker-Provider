@@ -43,6 +43,15 @@ class DockerApiRestHelper
             end
         end
 
+        # Create the REST request to get docker info
+        # https://docs.docker.com/engine/reference/api/docker_remote_api_v1.21/#get-container-stats-based-on-resource-usage
+        # returns Request in string format
+        def restDockerInfo()
+            begin
+                return "GET /info HTTP/1.1\r\nHost: localhost\r\n\r\n";
+            end
+        end
+
 end
 
         
