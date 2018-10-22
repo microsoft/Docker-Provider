@@ -33,13 +33,16 @@ class DockerApiClient
     def parseResponse(dockerResponse, isMultiJson)
         # Doing this because the response is in the raw format and includes headers.
         # Need to do a regex match to extract the json part of the response - Anything between [{}] in response
+        parsedJsonResponse = nil
         begin
             jsonResponse = isMultiJson ? dockerResponse[/\[{.+}\]/] : dockerResponse[/{.+}/]
         rescue => exception
             @Log.warn("Regex match for docker response failed: #{exception} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
         end
         begin
-            parsedJsonResponse = JSON.parse(jsonResponse)
+            if jsonResponse != nil
+                parsedJsonResponse = JSON.parse(jsonResponse)
+            end
         rescue => exception
             @Log.warn("Json parsing for docker response failed: #{exception} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
         end 
@@ -55,6 +58,16 @@ class DockerApiClient
             dockerHostName = reponse['Name']
         end
         return dockerHostName
+    end
+
+    def listContainers()
+        ids = []
+        request = DockerApiRestHelper.restDockerPs()
+        containers = getResponse(request, true)
+        containers.each do |container|
+            ids.push container['Id']
+        end
+        return ids
     end
 
 end
