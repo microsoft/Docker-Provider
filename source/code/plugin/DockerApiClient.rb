@@ -95,7 +95,7 @@ class DockerApiClient
             return result
         end
 
-        def generateImageNameMap()
+        def getImageIdMap()
             result = nil
             request = DockerApiRestHelper.restDockerImages
             images = getResponse(request, true)

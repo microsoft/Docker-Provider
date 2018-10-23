@@ -39,6 +39,39 @@ module Fluent
       end
     end
 
+    def inspectContainer(id, nameMap)
+      containerInstance = {}
+      request = DockerApiRestHelper.restDockerInspect(id)
+      container = getResponse(request, false)
+      if !container.nil? && !container.empty?
+        containerInstance['InstanceID'] = container['Id']
+        containerInstance['CreatedTime'] = container['Created']
+        containerName = container['Name']
+        if !containerName.nil? && !containerName.empty?
+          # Remove the leading / from the name if it exists (this is an API issue)
+          containerInstance['ElementName'] = (containerName[0] == '/') ? containerName[1..-1] : containerName
+        end
+        imageValue = container['Image']
+        if !imageValue.nil? && !imageValue.empty?
+          containerInstance['ImageId'] = imageValue
+          repoImageTagArray = nameMap['imageValue']
+          if nameMap.has_key? imageValue
+            containerInstance['Repository'] = repoImageTagArray[0]
+            containerInstance['Image'] = repoImageTagArray[1]
+            containerInstance['ImageTag'] = repoImageTagArray[2]
+          end
+        end
+
+
+
+
+        
+      end
+
+
+    end
+
+
     def enumerate
       currentTime = Time.now
       emitTime = currentTime.to_f
@@ -47,6 +80,16 @@ module Fluent
       hostname = DockerApiClient.getDockerHostName
       begin
         containerIds = DockerApiClient.listContainers
+        nameMap = DockerApiClient.getImageIdMap
+        containerIds.each do |containerId|
+          inspectedContainer = {}
+          inspectedContainer = inspectContainer(containerId, nameMap)
+          inspectedContainer['Computer'] = hostname
+        end
+
+
+
+
         eventStream = MultiEventStream.new
         record = {}
         record['myhost'] = myhost
