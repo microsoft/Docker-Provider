@@ -10,6 +10,7 @@ module Fluent
       super
       require 'json'
       require_relative 'DockerApiClient'
+      require_relative 'omslog'
     end
 
     config_param :run_interval, :time, :default => '1m'
@@ -42,13 +43,17 @@ module Fluent
       currentTime = Time.now
       emitTime = currentTime.to_f
       batchTime = currentTime.utc.iso8601
-      myhost = DockerApiClient.getDockerHostName
+      $log.info("in_container_inventory::enumerate : Begin processing @ #{Time.now.utc.iso8601}")
+      hostname = DockerApiClient.getDockerHostName
       begin
+        containerIds = DockerApiClient.listContainers
         eventStream = MultiEventStream.new
         record = {}
         record['myhost'] = myhost
         eventStream.add(emitTime, record) if record
         router.emit_stream(@tag, eventStream) if eventStream
+      rescue => errorStr
+
       end
     end
 

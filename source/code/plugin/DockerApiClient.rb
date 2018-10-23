@@ -54,7 +54,7 @@ class DockerApiClient
 
         def getDockerHostName()
             dockerHostName = ""
-            request = DockerApiRestHelper.restDockerInfo()
+            request = DockerApiRestHelper.restDockerInfo
             response = getResponse(request, false)
             if (response != nil)
                 dockerHostName = response['Name']
@@ -64,12 +64,55 @@ class DockerApiClient
 
         def listContainers()
             ids = []
-            request = DockerApiRestHelper.restDockerPs()
+            request = DockerApiRestHelper.restDockerPs
             containers = getResponse(request, true)
-            containers.each do |container|
-                ids.push container['Id']
+            if !containers.nil? && !containers.empty?
+                containers.each do |container|
+                    ids.push(container['Id'])
+                end
             end
             return ids
+        end
+
+        def getImageRepositoryImageTag(tagValue)
+            result = ["" "", ""]
+            if !tagValue.empty?
+                # Find delimiters in the string of format repository/image:imagetag
+                slashLocation = tagValue.index('/')
+                colonLocation = tagValue.index(':')
+                if !colonLocation.nil?
+                    if slashLocation.nil?
+                        # image:imagetag
+                        result[1] = tagValue[0..(colonLocation-1)]
+                    else
+                        # repository/image:imagetag
+                        result[0] = tagValue[0..(slashLocation-1)]
+                        result[1] = tagValue[(slashLocation + 1)..(colonLocation - 1)]
+                    end
+                    result[2] = tagValue[(colonLocation + 1)..-1]
+                end
+            end
+            return result
+        end
+
+        def generateImageNameMap()
+            result = nil
+            request = DockerApiRestHelper.restDockerImages
+            images = getResponse(request, true)
+            if !images.nil? && !images.empty?
+                images.each do |image|
+                    tagValue = ""
+                    tags = image['RepoTags']
+                    if !tags.nil? && tags.kind_of?(Array) && tags.length > 0
+                        tagValue = tags[0]
+                    end
+                    idValue = image['Id']
+                    if !idValue.nil?
+                        result[idValue] = getImageRepositoryImageTag(tagValue)
+                    end
+                end
+            end
+            return result
         end
     end
 end
