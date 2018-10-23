@@ -6,6 +6,7 @@ class DockerApiClient
     require 'socket'
     require 'json'
     require_relative 'oms_common'
+    require_relative 'omslog'
     require_relative 'DockerApiRestHelper'
 
     @@SocketPath = "/var/run/docker.sock"
@@ -14,62 +15,63 @@ class DockerApiClient
     def initialize
     end
 
-    # Make docker socket call to 
-    def getResponse(request, isMultiJson)
-        #TODO: Add error handling and retries
-        socket = UnixSocket.New(@@SocketPath)
-        dockerResponse = ""
-        socket.write(request)
-        # iterate through the response until the last chunk is less than the chunk size so that we can read all data in socket.
-        loop do
-            responseChunk = socket.recv(@@ChunkSize)
-            dockerResponse += responseChunk
-            break if responseChunk.length < @@ChunkSize
-        end
-        socket.close
-        return parseResponse(dockerResponse, isMultiJson)
-    end
-
-    def parseResponse(dockerResponse, isMultiJson)
-        # Doing this because the response is in the raw format and includes headers.
-        # Need to do a regex match to extract the json part of the response - Anything between [{}] in response
-        parsedJsonResponse = nil
-        begin
-            jsonResponse = isMultiJson ? dockerResponse[/\[{.+}\]/] : dockerResponse[/{.+}/]
-        rescue => exception
-            @Log.warn("Regex match for docker response failed: #{exception} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
-        end
-        begin
-            if jsonResponse != nil
-                parsedJsonResponse = JSON.parse(jsonResponse)
+    class << self
+        # Make docker socket call to 
+        def getResponse(request, isMultiJson)
+            #TODO: Add error handling and retries
+            socket = UNIXSocket.new(@@SocketPath)
+            dockerResponse = ""
+            socket.write(request)
+            # iterate through the response until the last chunk is less than the chunk size so that we can read all data in socket.
+            loop do
+                responseChunk = socket.recv(@@ChunkSize)
+                dockerResponse += responseChunk
+                break if responseChunk.length < @@ChunkSize
             end
-        rescue => exception
-            @Log.warn("Json parsing for docker response failed: #{exception} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
+            socket.close
+            return parseResponse(dockerResponse, isMultiJson)
+        end
+
+        def parseResponse(dockerResponse, isMultiJson)
+            # Doing this because the response is in the raw format and includes headers.
+            # Need to do a regex match to extract the json part of the response - Anything between [{}] in response
+            parsedJsonResponse = nil
+            begin
+                jsonResponse = isMultiJson ? dockerResponse[/\[{.+}\]/] : dockerResponse[/{.+}/]
+            rescue => exception
+                @Log.warn("Regex match for docker response failed: #{exception} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
+            end
+            begin
+                if jsonResponse != nil
+                    parsedJsonResponse = JSON.parse(jsonResponse)
+                end
+            rescue => exception
+                @Log.warn("Json parsing for docker response failed: #{exception} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
+            end 
+            return parsedJsonResponse
         end 
-        return parsedJsonResponse
-    end 
 
 
-    def getDockerHostName()
-        dockerHostName = ""
-        request = DockerApiRestHelper.restDockerInfo()
-        response = getResponse(request, false)
-        if (response != nil)
-            dockerHostName = reponse['Name']
+        def getDockerHostName()
+            dockerHostName = ""
+            request = DockerApiRestHelper.restDockerInfo()
+            response = getResponse(request, false)
+            if (response != nil)
+                dockerHostName = response['Name']
+            end
+            return dockerHostName
         end
-        return dockerHostName
-    end
 
-    def listContainers()
-        ids = []
-        request = DockerApiRestHelper.restDockerPs()
-        containers = getResponse(request, true)
-        containers.each do |container|
-            ids.push container['Id']
+        def listContainers()
+            ids = []
+            request = DockerApiRestHelper.restDockerPs()
+            containers = getResponse(request, true)
+            containers.each do |container|
+                ids.push container['Id']
+            end
+            return ids
         end
-        return ids
     end
-
 end
 
         

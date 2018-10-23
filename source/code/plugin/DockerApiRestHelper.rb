@@ -51,7 +51,7 @@ class DockerApiRestHelper
                 return "GET /info HTTP/1.1\r\nHost: localhost\r\n\r\n";
             end
         end
-
+    end
 end
 
         
