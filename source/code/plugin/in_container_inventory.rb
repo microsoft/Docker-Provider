@@ -40,50 +40,66 @@ module Fluent
     end
 
     def obtainContainerConfig(instance, container)
+      begin
       configValue = container['Config']
       if !configValue.nil?
         instance['ContainerHostname'] = configValue['Hostname']
-=begin envValue = ""
-        envItem = configValue['Env']
-        if !envItem.nil? && !envItem.empty?
-          envStringLength = envItem.length
-          if envStringLength > 200000
-						quotestring = "\"";
-						quoteandbracestring = "\"]";
-						quoteandcommastring = "\",";
-            stringToTruncate = envItem[0..200000];
-          end
-        end
-=end
-        instance['EnvironmentVar'] = configValue['Env']
-        instance['Command'] = configValue['Cmd']
+
+        envValue = configValue['Env']
+        envValueString = (envValue.nil?) ? "" : envValue.to_s
+        instance['EnvironmentVar'] = envValueString
+
+        cmdValue = configValue['Cmd']
+        cmdValueString = (cmdValue.nil?) ? "" : cmdValue.to_s
+        instance['Command'] = cmdValueString
+
+        instance['ComposeGroup'] = ""
         labelsValue = configValue['Labels']
         if !labelsValue.nil? && !labelsValue.empty?
           instance['ComposeGroup'] = labelsValue['com.docker.compose.project']
         end
+      else
+        $log.warn("Attempt in ObtainContainerConfig to get container #{container['Id']} config information returned null")
+      end
+      rescue => errorStr
+        $log.warn("Exception in obtainContainerConfig: #{errorStr}")
       end
     end
 
     def obtainContainerState(instance, container)
+      begin
       stateValue = container['State']
       if !stateValue.nil?
-        exitCode  = stateValue['ExitCode']
-        if exitCode .is_a? Numeric
-          if exitCode < 0
-            exitCode =  128
-            $log.info("obtainContainerState::Container #{container['Id']} returned negative exit code")
-          end
-          instance['ExitCode'] = exitCode
-          if exitCode > 0
-            instance['State'] = "Failed"
-          else
-
-          end
-
-
+        exitCodeValue  = stateValue['ExitCode']
+        # Exit codes less than 0 are not supported by the engine
+        if exitCodeValue < 0
+          exitCodeValue =  128
+          $log.info("obtainContainerState::Container #{container['Id']} returned negative exit code")
         end
+        instance['ExitCode'] = exitCodeValue
+        if exitCodeValue > 0
+          instance['State'] = "Failed"
+        else
+          # Set the Container status : Running/Paused/Stopped
+          runningValue = stateValue['Running']
+          if runningValue
+            pausedValue = stateValue['Paused']
+            # Checking for paused within running is true state because docker returns true for both Running and Paused fields when the container is paused
+            if pausedValue
+              instance['State'] = "Paused"
+            else
+              instance['State'] = "Running"
+            end
+          else
+            instance['State'] = "Stopped"
+          end
+        end
+      else
+        $log.info("Attempt in ObtainContainerState to get container: #{container['Id']} state information returned null")
       end
-
+      rescue => errorStr
+        $log.warn("Exception in obtainContainerState: #{errorStr}")
+      end
     end
 
     def obtainContainerHostConfig(instance, container)
@@ -91,8 +107,8 @@ module Fluent
       if !hostConfig.nil?
         links = hostConfig['Links']
         if !links.nil?
-          links.to_s
-          instance['Links'] = (links == "null")? "" : links
+          linksString = links.to_s
+          instance['Links'] = (linksString == "null")? "" : links
         end
         portBindings = hostConfig['PortBindings']
         if !portBindings.nil?
@@ -101,8 +117,6 @@ module Fluent
         end
       end
     end
-
-
 
     def inspectContainer(id, nameMap)
       containerInstance = {}
