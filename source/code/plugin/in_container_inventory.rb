@@ -103,18 +103,24 @@ module Fluent
     end
 
     def obtainContainerHostConfig(instance, container)
+      begin
       hostConfig = container['HostConfig']
       if !hostConfig.nil?
         links = hostConfig['Links']
         if !links.nil?
           linksString = links.to_s
-          instance['Links'] = (linksString == "null")? "" : links
+          instance['Links'] = (linksString == "null")? "" : linksString
         end
         portBindings = hostConfig['PortBindings']
         if !portBindings.nil?
-          portBindings.to_s
-          instance['Ports'] = (portBindings == "null")? "" : portBindings
+          portBindingsString = portBindings.to_s
+          instance['Ports'] = (portBindings == "null")? "" : portBindingsString
         end
+      else
+        $log.info("Attempt in ObtainContainerHostConfig to get container: #{container['Id']} host config information returned null")
+      end
+      rescue => errorStr
+        $log.warn("Exception in obtainContainerHostConfig: #{errorStr}")
       end
     end
 
