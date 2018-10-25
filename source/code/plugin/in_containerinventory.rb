@@ -134,7 +134,7 @@ module Fluent
       begin
         container = DockerApiClient.dockerInspectContainer(id)
         if !container.nil? && !container.empty?
-          containerInstance['InstanceID'] = "rashmi" + container['Id']
+          containerInstance['InstanceID'] = container['Id']
           containerInstance['CreatedTime'] = container['Created']
           containerName = container['Name']
           if !containerName.nil? && !containerName.empty?
@@ -178,9 +178,21 @@ module Fluent
             inspectedContainer = inspectContainer(containerId, nameMap)
             inspectedContainer['Computer'] = hostname
             containerInventory.push inspectedContainer
-            ContainerInventoryState.WriteContainerState(inspectedContainer)
+            ContainerInventoryState.writeContainerState(inspectedContainer)
           end
-          #TODO: Get deleted container state and update it
+          # Update the state for deleted containers
+          deletedContainers = ContainerInventoryState.getDeletedContainers(containerIds)
+          if !deletedContainers.nil? && !deletedContainers.empty?
+            deletedContainers.each do |deletedContainer|
+              container = ContainerInventoryState.readContainerState(deletedContainer)
+              if !container.nil?
+                container.each{|k,v| container[k]=v}
+                container['State'] = "Deleted"
+                containerInventory.push container
+              end
+            end
+          end
+
           containerInventory.each do |record|
             wrapper = {
               "DataType"=>"CONTAINER_INVENTORY_BLOB",
