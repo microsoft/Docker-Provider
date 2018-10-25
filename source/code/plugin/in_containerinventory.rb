@@ -167,16 +167,11 @@ module Fluent
       containerInventory = Array.new
       $log.info("in_container_inventory::enumerate : Begin processing @ #{Time.now.utc.iso8601}")
       hostname = DockerApiClient.getDockerHostName
-      $log.info("Done getting host name @ #{Time.now.utc.iso8601}")
       begin
         containerIds = DockerApiClient.listContainers
-        $log.info("Done getting containers @ #{Time.now.utc.iso8601}")
         if !containerIds.empty?
-          $log.info("in container ids not empty @ #{Time.now.utc.iso8601}")
           eventStream = MultiEventStream.new
-          $log.info("Done creating eventstream @ #{Time.now.utc.iso8601}")
           nameMap = DockerApiClient.getImageIdMap
-          $log.info("Done getting namemap @ #{Time.now.utc.iso8601}")
           containerIds.each do |containerId|
             inspectedContainer = {}
             inspectedContainer = inspectContainer(containerId, nameMap)
