@@ -24,15 +24,6 @@ class DockerApiRestHelper
             end
         end
 
-        # Create the REST request to list running containers
-        # https://docs.docker.com/engine/reference/api/docker_remote_api_v1.21/#list-containers
-        # returns Request in string format
-        def restDockerPsRunning()
-            begin
-                return "GET /containers/json HTTP/1.1\r\nHost: localhost\r\n\r\n";
-            end
-        end
-
         # Create the REST request to inspect a container
         # https://docs.docker.com/engine/reference/api/docker_remote_api_v1.21/#inspect-a-container
         # parameter - ID of the container to be inspected

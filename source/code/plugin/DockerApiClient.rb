@@ -18,18 +18,22 @@ class DockerApiClient
     class << self
         # Make docker socket call to 
         def getResponse(request, isMultiJson)
-            #TODO: Add error handling and retries
-            socket = UNIXSocket.new(@@SocketPath)
-            dockerResponse = ""
-            socket.write(request)
-            # iterate through the response until the last chunk is less than the chunk size so that we can read all data in socket.
-            loop do
-                responseChunk = socket.recv(@@ChunkSize)
-                dockerResponse += responseChunk
-                break if responseChunk.length < @@ChunkSize
+            #TODO: Add retries
+            begin
+                socket = UNIXSocket.new(@@SocketPath)
+                dockerResponse = ""
+                socket.write(request)
+                # iterate through the response until the last chunk is less than the chunk size so that we can read all data in socket.
+                loop do
+                    responseChunk = socket.recv(@@ChunkSize)
+                    dockerResponse += responseChunk
+                    break if responseChunk.length < @@ChunkSize
+                end
+                socket.close
+                return parseResponse(dockerResponse, isMultiJson)
+            rescue => errorStr
+                $log.warn("Socket call failed for request: #{request} error: #{errorStr} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
             end
-            socket.close
-            return parseResponse(dockerResponse, isMultiJson)
         end
 
         def parseResponse(dockerResponse, isMultiJson)
@@ -38,15 +42,15 @@ class DockerApiClient
             parsedJsonResponse = nil
             begin
                 jsonResponse = isMultiJson ? dockerResponse[/\[{.+}\]/] : dockerResponse[/{.+}/]
-            rescue => exception
-                @Log.warn("Regex match for docker response failed: #{exception} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
+            rescue => errorStr
+                $log.warn("Regex match for docker response failed: #{errorStr} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
             end
             begin
                 if jsonResponse != nil
                     parsedJsonResponse = JSON.parse(jsonResponse)
                 end
-            rescue => exception
-                @Log.warn("Json parsing for docker response failed: #{exception} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
+            rescue => errorStr
+                $log.warn("Json parsing for docker response failed: #{errorStr} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
             end 
             return parsedJsonResponse
         end 
@@ -75,7 +79,7 @@ class DockerApiClient
         end
 
         def getImageRepositoryImageTag(tagValue)
-            result = ["" "", ""]
+            result = ["", "", ""]
             if !tagValue.empty?
                 # Find delimiters in the string of format repository/image:imagetag
                 slashLocation = tagValue.index('/')
@@ -100,6 +104,7 @@ class DockerApiClient
             request = DockerApiRestHelper.restDockerImages
             images = getResponse(request, true)
             if !images.nil? && !images.empty?
+                result = {}
                 images.each do |image|
                     tagValue = ""
                     tags = image['RepoTags']
@@ -114,7 +119,10 @@ class DockerApiClient
             end
             return result
         end
+
+        def dockerInspectContainer(id)
+            request = DockerApiRestHelper.restDockerInspect(id)
+            return getResponse(request, false)
+        end
     end
 end
-
-        
