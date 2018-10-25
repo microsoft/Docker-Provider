@@ -10,6 +10,7 @@ module Fluent
       super
       require 'json'
       require_relative 'DockerApiClient'
+      require_relative 'ContainerInventoryState'
       require_relative 'omslog'
     end
 
@@ -177,6 +178,7 @@ module Fluent
             inspectedContainer = inspectContainer(containerId, nameMap)
             inspectedContainer['Computer'] = hostname
             containerInventory.push inspectedContainer
+            ContainerInventoryState.WriteContainerState(inspectedContainer)
           end
           #TODO: Get deleted container state and update it
           containerInventory.each do |record|
