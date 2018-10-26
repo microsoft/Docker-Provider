@@ -60,7 +60,7 @@ module Fluent
             instance['ComposeGroup'] = labelsValue['com.docker.compose.project']
           end
         else
-          $log.warn("Attempt in ObtainContainerConfig to get container #{container['Id']} config information returned null")
+          $log.warn("Attempt in ObtainContainerConfig to get container: #{container['Id']} config information returned null")
         end
         rescue => errorStr
           $log.warn("Exception in obtainContainerConfig: #{errorStr}")
@@ -75,7 +75,7 @@ module Fluent
           # Exit codes less than 0 are not supported by the engine
           if exitCodeValue < 0
             exitCodeValue =  128
-            $log.info("obtainContainerState::Container #{container['Id']} returned negative exit code")
+            $log.info("obtainContainerState::Container: #{container['Id']} returned negative exit code")
           end
           instance['ExitCode'] = exitCodeValue
           if exitCodeValue > 0
