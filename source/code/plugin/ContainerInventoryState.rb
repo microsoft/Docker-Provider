@@ -3,7 +3,6 @@
 
 class ContainerInventoryState
     require 'json'
-    require_relative 'oms_common'
     require_relative 'omslog'
     @@InventoryDirectory = "/var/opt/microsoft/docker-cimprov/state/ContainerInventory/"
 

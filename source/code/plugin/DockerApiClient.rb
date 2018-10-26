@@ -5,7 +5,6 @@ class DockerApiClient
 
     require 'socket'
     require 'json'
-    require_relative 'oms_common'
     require_relative 'omslog'
     require_relative 'DockerApiRestHelper'
 
@@ -80,42 +79,50 @@ class DockerApiClient
 
         def getImageRepositoryImageTag(tagValue)
             result = ["", "", ""]
-            if !tagValue.empty?
-                # Find delimiters in the string of format repository/image:imagetag
-                slashLocation = tagValue.index('/')
-                colonLocation = tagValue.index(':')
-                if !colonLocation.nil?
-                    if slashLocation.nil?
-                        # image:imagetag
-                        result[1] = tagValue[0..(colonLocation-1)]
-                    else
-                        # repository/image:imagetag
-                        result[0] = tagValue[0..(slashLocation-1)]
-                        result[1] = tagValue[(slashLocation + 1)..(colonLocation - 1)]
+            begin
+                if !tagValue.empty?
+                    # Find delimiters in the string of format repository/image:imagetag
+                    slashLocation = tagValue.index('/')
+                    colonLocation = tagValue.index(':')
+                    if !colonLocation.nil?
+                        if slashLocation.nil?
+                            # image:imagetag
+                            result[1] = tagValue[0..(colonLocation-1)]
+                        else
+                            # repository/image:imagetag
+                            result[0] = tagValue[0..(slashLocation-1)]
+                            result[1] = tagValue[(slashLocation + 1)..(colonLocation - 1)]
+                        end
+                        result[2] = tagValue[(colonLocation + 1)..-1]
                     end
-                    result[2] = tagValue[(colonLocation + 1)..-1]
                 end
+            rescue => errorStr
+                $log.warn("Exception at getImageRepositoryImageTag: #{errorStr} @ #{Time.now.utc.iso8601}")
             end
             return result
         end
 
         def getImageIdMap()
             result = nil
-            request = DockerApiRestHelper.restDockerImages
-            images = getResponse(request, true)
-            if !images.nil? && !images.empty?
-                result = {}
-                images.each do |image|
-                    tagValue = ""
-                    tags = image['RepoTags']
-                    if !tags.nil? && tags.kind_of?(Array) && tags.length > 0
-                        tagValue = tags[0]
-                    end
-                    idValue = image['Id']
-                    if !idValue.nil?
-                        result[idValue] = getImageRepositoryImageTag(tagValue)
+            begin
+                request = DockerApiRestHelper.restDockerImages
+                images = getResponse(request, true)
+                if !images.nil? && !images.empty?
+                    result = {}
+                    images.each do |image|
+                        tagValue = ""
+                        tags = image['RepoTags']
+                        if !tags.nil? && tags.kind_of?(Array) && tags.length > 0
+                            tagValue = tags[0]
+                        end
+                        idValue = image['Id']
+                        if !idValue.nil?
+                            result[idValue] = getImageRepositoryImageTag(tagValue)
+                        end
                     end
                 end
+            rescue => errorStr
+                $log.warn("Exception at getImageIdMap: #{errorStr} @ #{Time.now.utc.iso8601}")
             end
             return result
         end
