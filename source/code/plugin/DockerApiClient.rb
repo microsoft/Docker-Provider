@@ -5,11 +5,13 @@ class DockerApiClient
 
     require 'socket'
     require 'json'
+    require 'timeout'
     require_relative 'omslog'
     require_relative 'DockerApiRestHelper'
 
     @@SocketPath = "/var/run/docker.sock"
     @@ChunkSize = 4096
+    @@TimeoutInSeconds = 5
 
     def initialize
     end
@@ -21,15 +23,24 @@ class DockerApiClient
             begin
                 socket = UNIXSocket.new(@@SocketPath)
                 dockerResponse = ""
+                isTimeOut = false
                 socket.write(request)
                 # iterate through the response until the last chunk is less than the chunk size so that we can read all data in socket.
                 loop do
-                    responseChunk = socket.recv(@@ChunkSize)
-                    dockerResponse += responseChunk
+                    begin
+                        responseChunk = ""
+                        timeout(@@TimeoutInSeconds) do
+                            responseChunk = socket.recv(@@ChunkSize)
+                        end
+                        dockerResponse += responseChunk
+                    rescue Timeout::Error
+                        $log.warn("Socket read timedout for request: #{request} @ #{Time.now.utc.iso8601}")
+                        isTimeOut = true
+                    end
                     break if responseChunk.length < @@ChunkSize
                 end
                 socket.close
-                return parseResponse(dockerResponse, isMultiJson)
+                return (isTimeOut)? nil : parseResponse(dockerResponse, isMultiJson)
             rescue => errorStr
                 $log.warn("Socket call failed for request: #{request} error: #{errorStr} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
             end
