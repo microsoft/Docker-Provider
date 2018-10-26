@@ -202,6 +202,7 @@ module Fluent
             eventStream.add(emitTime, wrapper) if wrapper
           end
           router.emit_stream(@tag, eventStream) if eventStream
+          $log.info("in_container_inventory::enumerate : Processing complete - emitted stream @ #{Time.now.utc.iso8601}")
         end
       rescue => errorStr
         $log.warn("Exception in enumerate container inventory: #{errorStr}")
