@@ -23,7 +23,7 @@ class ContainerInventoryState
                         $log.warn("Exception while opening file with id: #{containerId}")
                     end
                 rescue => errorStr
-                    $log.warn("Exception in WriteContainerState: #{errorStr}")
+                    $log.warn("Exception in writeContainerState: #{errorStr}")
                 end
             end
        end
@@ -31,16 +31,19 @@ class ContainerInventoryState
        def readContainerState(containerId)
             begin
                 containerObject = nil
-                file = File.open(@@InventoryDirectory + containerId, "r")
+                filepath = @@InventoryDirectory + containerId
+                file = File.open(filepath, "r")
                 if !file.nil?
                     fileContents = file.read
                     containerObject = JSON.parse(fileContents)
                     file.close
+                    # Delete the file since the state is update to deleted
+                    File.delete(filepath) if File.exist?(filepath)
                 else
-                    $log.warn("Exception while opening file with id: #{containerId}")
+                    $log.warn("Open file for container with id returned nil: #{containerId}")
                 end
             rescue => errorStr
-                $log.warn("Exception in ReadContainerState: #{errorStr}")
+                $log.warn("Exception in readContainerState: #{errorStr}")
             end
             return containerObject
        end

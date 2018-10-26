@@ -74,8 +74,7 @@ MAINTAINER:              'Microsoft Corporation'
 /var/opt/microsoft;                                     755; root; root; sysdir
 /var/opt/microsoft/docker-cimprov;                      755; root; root
 /var/opt/microsoft/docker-cimprov/state;                755; root; root
-/var/opt/microsoft/docker-cimprov/state/ContainerInventory; 755; root; root
-/var/opt/microsoft/docker-cimprov/state/ImageInventory; 755; root; root
+/var/opt/microsoft/docker-cimprov/state/ContainerInventory; 755; omsagent; omsagent
 /var/opt/microsoft/docker-cimprov/log;                  755; root; root
 
 /opt/td-agent-bit;                          755; root; root;sysdir
