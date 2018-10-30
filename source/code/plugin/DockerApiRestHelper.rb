@@ -42,5 +42,14 @@ class DockerApiRestHelper
                 return "GET /info HTTP/1.1\r\nHost: localhost\r\n\r\n";
             end
         end
+
+        # Create the REST request to get docker info
+        # https://docs.docker.com/engine/api/v1.21/#21-containers
+        # returns Request in string format
+        def restDockerVersion()
+            begin
+                return "GET /version HTTP/1.1\r\nHost: localhost\r\n\r\n";
+            end
+        end
     end
 end
