@@ -8,6 +8,7 @@ class DockerApiClient
     require 'timeout'
     require_relative 'omslog'
     require_relative 'DockerApiRestHelper'
+    require_relative 'ApplicationInsightsUtility'
 
     @@SocketPath = "/var/run/docker.sock"
     @@ChunkSize = 4096
@@ -43,6 +44,7 @@ class DockerApiClient
                 return (isTimeOut)? nil : parseResponse(dockerResponse, isMultiJson)
             rescue => errorStr
                 $log.warn("Socket call failed for request: #{request} error: #{errorStr} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
+                ApplicationInsightsUtility.sendExceptionTelemetry('ContainerInventory', errorStr)
             end
         end
 
@@ -61,6 +63,7 @@ class DockerApiClient
                 end
             rescue => errorStr
                 $log.warn("Json parsing for docker response failed: #{errorStr} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
+                ApplicationInsightsUtility.sendExceptionTelemetry('ContainerInventory', errorStr)
             end 
             return parsedJsonResponse
         end 

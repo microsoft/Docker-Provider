@@ -28,6 +28,7 @@ module Fluent
         @condition = ConditionVariable.new
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
+        @@telemetryTimeTracker = DateTime.now.to_time.to_i
         #@workspaceId = ApplicationInsightsUtility.getWorkspaceId
       end
     end
@@ -204,6 +205,15 @@ module Fluent
             eventStream.add(emitTime, wrapper) if wrapper
           end
           router.emit_stream(@tag, eventStream) if eventStream
+          timeDifference =  (DateTime.now.to_time.to_i - @telemetryTimeTracker).abs
+          timeDifferenceInMinutes = timeDifference/60
+          if (timeDifferenceInMinutes >= 5)
+            @telemetryTimeTracker = DateTime.now.to_time.to_i
+            telemetryProperties = {}
+            telemetryProperties['Computer'] = hostname
+            telemetryProperties['ContainerCount'] = containerInventory.length
+            ApplicationInsightsUtility.sendTelemetry('ContainerInventory')
+          end
           $log.info("in_container_inventory::enumerate : Processing complete - emitted stream @ #{Time.now.utc.iso8601}")
         end
       rescue => errorStr
