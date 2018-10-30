@@ -10,6 +10,7 @@ class ContainerInventoryState
     end
 
     class << self
+       # Write the container information to disk with the data that is obtained from the current plugin execution
        def writeContainerState(container)
             containerId = container['InstanceID']
             if !containerId.nil? && !containerId.empty?
@@ -27,6 +28,7 @@ class ContainerInventoryState
             end
        end
 
+       # Reads the container state for the deleted container
        def readContainerState(containerId)
             begin
                 containerObject = nil
@@ -47,6 +49,8 @@ class ContainerInventoryState
             return containerObject
        end
 
+       # Gets the containers that were written to the disk with the previous plugin invocation but do not exist in the current container list
+       # Doing this because we need to update the container state to deleted. Else this will stay running forever.
        def getDeletedContainers(containerIds)
             deletedContainers = nil
             begin

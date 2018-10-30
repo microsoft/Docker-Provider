@@ -18,9 +18,8 @@ class DockerApiClient
     end
 
     class << self
-        # Make docker socket call to 
+        # Make docker socket call for requests
         def getResponse(request, isMultiJson)
-            #TODO: Add retries
             begin
                 socket = UNIXSocket.new(@@SocketPath)
                 dockerResponse = ""
@@ -91,6 +90,7 @@ class DockerApiClient
             return ids
         end
 
+        # This method splits the tag value into an array - repository, image and tag
         def getImageRepositoryImageTag(tagValue)
             result = ["", "", ""]
             begin
@@ -116,6 +116,7 @@ class DockerApiClient
             return result
         end
 
+        # Image is in the format repository/image:imagetag - This method creates a hash of image id and repository, image and tag
         def getImageIdMap()
             result = nil
             begin
@@ -146,16 +147,15 @@ class DockerApiClient
             return getResponse(request, false)
         end
 
+        # This method returns docker version and docker api version for telemetry
         def dockerInfo()
             request = DockerApiRestHelper.restDockerVersion
             response = getResponse(request, false)
             dockerInfo = {}
-            $log.warn("docker info returned before: #{response}")
             if (response != nil)
                 dockerInfo['Version'] = response['Version']
                 dockerInfo['ApiVersion'] = response['ApiVersion']
             end
-            $log.warn("docker info returned: #{dockerInfo}")
             return dockerInfo
         end
     end

@@ -6,6 +6,12 @@ module Fluent
   class Container_Inventory_Input < Input
     Plugin.register_input('containerinventory', self)
 
+    @@PluginName = 'ContainerInventory'
+    @@RunningState = 'Running'
+    @@FailedState = 'Failed'
+    @@StoppedState = 'Stopped'
+    @@PausedState = 'Paused'
+
     def initialize
       super
       require 'json'
@@ -16,7 +22,7 @@ module Fluent
     end
 
     config_param :run_interval, :time, :default => '1m'
-    config_param :tag, :string, :default => "oms.containerinsights.ContainerInventory"
+    config_param :tag, :string, :default => "oms.containerinsights.containerinventory"
   
     def configure (conf)
       super
@@ -29,7 +35,6 @@ module Fluent
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
         @@telemetryTimeTracker = DateTime.now.to_time.to_i
-        #@workspaceId = ApplicationInsightsUtility.getWorkspaceId
       end
     end
 
@@ -82,7 +87,7 @@ module Fluent
           end
           instance['ExitCode'] = exitCodeValue
           if exitCodeValue > 0
-            instance['State'] = "Failed"
+            instance['State'] = @@FailedState
           else
             # Set the Container status : Running/Paused/Stopped
             runningValue = stateValue['Running']
@@ -90,12 +95,12 @@ module Fluent
               pausedValue = stateValue['Paused']
               # Checking for paused within running is true state because docker returns true for both Running and Paused fields when the container is paused
               if pausedValue
-                instance['State'] = "Paused"
+                instance['State'] = @@PausedState
               else
-                instance['State'] = "Running"
+                instance['State'] = @@RunningState
               end
             else
-              instance['State'] = "Stopped"
+              instance['State'] = @@StoppedState
             end
           end
           instance['StartedTime'] = stateValue['StartedAt']
@@ -212,7 +217,7 @@ module Fluent
             telemetryProperties = {}
             telemetryProperties['Computer'] = hostname
             telemetryProperties['ContainerCount'] = containerInventory.length
-            ApplicationInsightsUtility.sendTelemetry('ContainerInventory', telemetryProperties)
+            ApplicationInsightsUtility.sendTelemetry(@@PluginName, telemetryProperties)
           end
           $log.info("in_container_inventory::enumerate : Processing complete - emitted stream @ #{Time.now.utc.iso8601}")
         end

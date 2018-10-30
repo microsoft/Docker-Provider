@@ -6,90 +6,126 @@ class ApplicationInsightsUtility
     require_relative 'omslog'
     require_relative 'DockerApiClient'
     require 'json'
+    require "base64"
 
     @@HeartBeat = 'HeartBeatEvent'
     @@Exception = 'ExceptionEvent'
+    @@AcsClusterType = 'ACS'
+    @@AksClusterType = 'AKS'
+    @@DaemonsetControllerType = 'DaemonSet'
     @OmsAdminFilePath = '/etc/opt/microsoft/omsagent/conf/omsadmin.conf'
-    @@customProperties = {}
-    @@tc = ApplicationInsights::TelemetryClient.new '9435b43f-97d5-4ded-8d90-b047958e6e87'
+    @@EnvAcsResourceName = 'ACS_RESOURCE_NAME'
+    @@EnvAksRegion = 'AKS_REGION'
+    @@EnvAgentVersion = 'AgentVersion'
+    @@CustomProperties = {}
+    encodedAppInsightsKey = ENV['APPLICATIONINSIGHTS_AUTH']
+    decodedAppInsightsKey = Base64.decode64(encodedAppInsightsKey)
+    @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey
+
     def initialize
     end
 
     class << self
         def initilizeutility()
-            resourceInfo = ENV['AKS_RESOURCE_ID']
-            if resourceInfo.nil? || resourceInfo.empty?
-                @@customProperties["ACSResourceName"] = ENV['ACS_RESOURCE_NAME']
-		        @@customProperties["ClusterType"] = 'ACS'
-		        @@customProperties["SubscriptionID"] = ""
-		        @@customProperties["ResourceGroupName"] = ""
-		        @@customProperties["ClusterName"] = ""
-		        @@customProperties["Region"] = ""
-                @@customProperties["AKS_RESOURCE_ID"] = ""
-            else
-                aksResourceId = ENV['AKS_RESOURCE_ID']
-                @@customProperties["AKS_RESOURCE_ID"] = aksResourceId
             begin
-                splitStrings = aksResourceId.split('/')
-                subscriptionId = splitStrings[2]
-                resourceGroupName = splitStrings[4]
-                clusterName = splitStrings[8]
+                resourceInfo = ENV['AKS_RESOURCE_ID']
+                if resourceInfo.nil? || resourceInfo.empty?
+                    @@CustomProperties["ACSResourceName"] = ENV[@@EnvAcsResourceName]
+		            @@CustomProperties["ClusterType"] = @@AcsClusterType
+		            @@CustomProperties["SubscriptionID"] = ""
+		            @@CustomProperties["ResourceGroupName"] = ""
+		            @@CustomProperties["ClusterName"] = ""
+		            @@CustomProperties["Region"] = ""
+                    @@CustomProperties["AKS_RESOURCE_ID"] = ""
+                else
+                    aksResourceId = ENV['AKS_RESOURCE_ID']
+                    @@CustomProperties["AKS_RESOURCE_ID"] = aksResourceId
+                    @@CustomProperties["ACSResourceName"] = ""
+                begin
+                    splitStrings = aksResourceId.split('/')
+                    subscriptionId = splitStrings[2]
+                    resourceGroupName = splitStrings[4]
+                    clusterName = splitStrings[8]
+                rescue => errorStr
+                    $log.warn("Exception in AppInsightsUtility: parsing AKS resourceId: #{aksResourceId}, error: #{errorStr}")
+                end
+		            @@CustomProperties["ClusterType"] = @@AksClusterType
+		            @@CustomProperties["SubscriptionID"] = subscriptionId
+		            @@CustomProperties["ResourceGroupName"] = resourceGroupName
+		            @@CustomProperties["ClusterName"] = clusterName
+		            @@CustomProperties["Region"] = ENV[@@EnvAksRegion]
+                end
+                @@CustomProperties['ControllerType'] = @@DaemonsetControllerType
+                dockerInfo = DockerApiClient.dockerInfo
+                @@CustomProperties['DockerVersion'] = dockerInfo['Version']
+                @@CustomProperties['DockerApiVersion'] = dockerInfo['ApiVersion']
+                @@CustomProperties['WorkspaceID'] = getWorkspaceId
+                @@CustomProperties['AgentVersion'] = ENV[@@EnvAgentVersion]
             rescue => errorStr
-                $log.warn("Exception in AppInsightsUtility: parsing AKS resourceId: #{aksResourceId}, error: #{errorStr}")
+                $log.warn("Exception in AppInsightsUtility: initilizeUtility - error: #{errorStr}")
             end
-		        @@customProperties["ClusterType"] = 'AKS'
-		        @@customProperties["SubscriptionID"] = subscriptionId
-		        @@customProperties["ResourceGroupName"] = resourceGroupName
-		        @@customProperties["ClusterName"] = clusterName
-		        @@customProperties["Region"] = ENV['AKS_REGION']
-            end
-            @@customProperties['ControllerType'] = 'DaemonSet'
-            dockerInfo = DockerApiClient.dockerInfo
-            @@customProperties['DockerVersion'] = dockerInfo['Version']
-            @@customProperties['DockerApiVersion'] = dockerInfo['ApiVersion']
-            @@customProperties['WorkspaceID'] = getWorkspaceId
         end
 
         def sendHeartBeatEvent(pluginName, properties)
-            eventName = pluginName + @@HeartBeat
-            @@tc.track_event eventName , :properties => @@customProperties
-            @@tc.flush
+            begin
+                eventName = pluginName + @@HeartBeat
+                @@tc.track_event eventName , :properties => @@CustomProperties
+                @@tc.flush
+            rescue =>errorStr
+                $log.warn("Exception in AppInsightsUtility: sendHeartBeatEvent - error: #{errorStr}")
+            end
         end
 
         def sendCustomEvent(pluginName, properties)
-            @@tc.track_metric 'LastProcessedContainerInventoryCount', properties['ContainerCount'], 
-            :kind => ApplicationInsights::Channel::Contracts::DataPointType::MEASUREMENT, 
-            :properties => @@customProperties
-            @@tc.flush
+            begin
+                @@tc.track_metric 'LastProcessedContainerInventoryCount', properties['ContainerCount'], 
+                :kind => ApplicationInsights::Channel::Contracts::DataPointType::MEASUREMENT, 
+                :properties => @@CustomProperties
+                @@tc.flush
+            rescue => errorStr
+                $log.warn("Exception in AppInsightsUtility: sendCustomEvent - error: #{errorStr}")
+            end
         end
 
         def sendExceptionTelemetry(pluginName, errorStr)
-            if @@customProperties.empty? || @@customProperties.nil?
-                initilizeutility
+            begin
+                if @@CustomProperties.empty? || @@CustomProperties.nil?
+                    initilizeutility
+                end
+                eventName = pluginName + @@Exception
+                @@tc.track_exception errorStr , :properties => @@CustomProperties
+                @@tc.flush
+            rescue => errorStr
+                $log.warn("Exception in AppInsightsUtility: sendExceptionTelemetry - error: #{errorStr}")
             end
-            eventName = pluginName + @@Exception
-            @@tc.track_exception errorStr , :properties => @@customProperties
-            @@tc.flush
         end
 
         def sendTelemetry(pluginName, properties)
-            if @@customProperties.empty? || @@customProperties.nil?
-                initilizeutility
+            begin
+                if @@CustomProperties.empty? || @@CustomProperties.nil?
+                    initilizeutility
+                end
+                @@CustomProperties['Computer'] = properties['Computer']
+                sendHeartBeatEvent(pluginName, properties)
+                sendCustomEvent(pluginName, properties)
+            rescue
+                $log.warn("Exception in AppInsightsUtility: sendTelemetry - error: #{errorStr}")
             end
-            @@customProperties['Computer'] = properties['Computer']
-            sendHeartBeatEvent(pluginName, properties)
-            sendCustomEvent(pluginName, properties)
         end
 
         def getWorkspaceId()
-            adminConf = {}
-            confFile = File.open(@OmsAdminFilePath, "r")
-            confFile.each_line do |line|
-                splitStrings = line.split('=')
-                adminConf[splitStrings[0]] = splitStrings[1]
+            begin
+                adminConf = {}
+                confFile = File.open(@OmsAdminFilePath, "r")
+                confFile.each_line do |line|
+                    splitStrings = line.split('=')
+                    adminConf[splitStrings[0]] = splitStrings[1]
+                end
+                workspaceId = adminConf['WORKSPACE_ID']
+                return workspaceId
+            rescue => errorStr
+                $log.warn("Exception in AppInsightsUtility: getWorkspaceId - error: #{errorStr}")
             end
-            workspaceId = adminConf['WORKSPACE_ID']
-            return workspaceId
         end
     end
 end
