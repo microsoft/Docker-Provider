@@ -212,7 +212,7 @@ module Fluent
             telemetryProperties = {}
             telemetryProperties['Computer'] = hostname
             telemetryProperties['ContainerCount'] = containerInventory.length
-            ApplicationInsightsUtility.sendTelemetry('ContainerInventory')
+            ApplicationInsightsUtility.sendTelemetry('ContainerInventory', telemetryProperties)
           end
           $log.info("in_container_inventory::enumerate : Processing complete - emitted stream @ #{Time.now.utc.iso8601}")
         end
