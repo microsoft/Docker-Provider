@@ -205,10 +205,10 @@ module Fluent
             eventStream.add(emitTime, wrapper) if wrapper
           end
           router.emit_stream(@tag, eventStream) if eventStream
-          timeDifference =  (DateTime.now.to_time.to_i - @telemetryTimeTracker).abs
+          timeDifference =  (DateTime.now.to_time.to_i - @@telemetryTimeTracker).abs
           timeDifferenceInMinutes = timeDifference/60
           if (timeDifferenceInMinutes >= 5)
-            @telemetryTimeTracker = DateTime.now.to_time.to_i
+            @@telemetryTimeTracker = DateTime.now.to_time.to_i
             telemetryProperties = {}
             telemetryProperties['Computer'] = hostname
             telemetryProperties['ContainerCount'] = containerInventory.length

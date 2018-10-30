@@ -13,18 +13,22 @@ class ApplicationInsightsUtility
     @@customProperties = {}
     @@tc = ApplicationInsights::TelemetryClient.new '9435b43f-97d5-4ded-8d90-b047958e6e87'
     def initialize
-        resourceInfo = ENV['AKS_RESOURCE_ID']
-        if resourceInfo.nil? || resourceInfo.empty?
-            @@customProperties["ACSResourceName"] = ENV['ACS_RESOURCE_NAME']
-		    @@customProperties["ClusterType"] = 'ACS'
-		    @@customProperties["SubscriptionID"] = ""
-		    @@customProperties["ResourceGroupName"] = ""
-		    @@customProperties["ClusterName"] = ""
-		    @@customProperties["Region"] = ""
-            @@customProperties["AKS_RESOURCE_ID"] = ""
-        else
-            aksResourceId = ENV['AKS_RESOURCE_ID']
-            @@customProperties["AKS_RESOURCE_ID"] = aksResourceId
+    end
+
+    class << self
+        def initilizeutility()
+            resourceInfo = ENV['AKS_RESOURCE_ID']
+            if resourceInfo.nil? || resourceInfo.empty?
+                @@customProperties["ACSResourceName"] = ENV['ACS_RESOURCE_NAME']
+		        @@customProperties["ClusterType"] = 'ACS'
+		        @@customProperties["SubscriptionID"] = ""
+		        @@customProperties["ResourceGroupName"] = ""
+		        @@customProperties["ClusterName"] = ""
+		        @@customProperties["Region"] = ""
+                @@customProperties["AKS_RESOURCE_ID"] = ""
+            else
+                aksResourceId = ENV['AKS_RESOURCE_ID']
+                @@customProperties["AKS_RESOURCE_ID"] = aksResourceId
             begin
                 splitStrings = aksResourceId.split('/')
                 subscriptionId = splitStrings[2]
@@ -33,20 +37,19 @@ class ApplicationInsightsUtility
             rescue => errorStr
                 $log.warn("Exception in AppInsightsUtility: parsing AKS resourceId: #{aksResourceId}, error: #{errorStr}")
             end
-		    @@customProperties["ClusterType"] = 'AKS'
-		    @@customProperties["SubscriptionID"] = subscriptionId
-		    @@customProperties["ResourceGroupName"] = resourceGroupName
-		    @@customProperties["ClusterName"] = clusterName
-		    @@customProperties["Region"] = ENV['AKS_REGION']
+		        @@customProperties["ClusterType"] = 'AKS'
+		        @@customProperties["SubscriptionID"] = subscriptionId
+		        @@customProperties["ResourceGroupName"] = resourceGroupName
+		        @@customProperties["ClusterName"] = clusterName
+		        @@customProperties["Region"] = ENV['AKS_REGION']
+            end
+            @@customProperties['ControllerType'] = 'DaemonSet'
+            dockerInfo = DockerApiClient.dockerInfo
+            @@customProperties['DockerVersion'] = dockerInfo['Version']
+            @@customProperties['DockerApiVersion'] = dockerInfo['ApiVersion']
+            @@customProperties['WorkspaceID'] = getWorkspaceId
         end
-        @@customProperties['ControllerType'] = 'DaemonSet'
-        dockerInfo = DockerApiClient.dockerInfo
-        @@customProperties['DockerVersion'] = dockerInfo['Version']
-        @@customProperties['DockerApiVersion'] = dockerInfo['ApiVersion']
-        @@customProperties['WorkspaceID'] = getWorkspaceId
-    end
 
-    class << self
         def sendHeartBeatEvent(pluginName, properties)
             eventName = pluginName + @@HeartBeat
             @@tc.track_event eventName , :properties => @@customProperties
@@ -56,19 +59,25 @@ class ApplicationInsightsUtility
         def sendCustomEvent(pluginName, properties)
             @@tc.track_metric 'LastProcessedContainerInventoryCount', properties['ContainerCount'], 
             :kind => ApplicationInsights::Channel::Contracts::DataPointType::MEASUREMENT, 
-            :properties => { @@customProperties }
+            :properties => @@customProperties
             @@tc.flush
         end
 
         def sendExceptionTelemetry(pluginName, errorStr)
+            if @@customProperties.empty? || @@customProperties.nil?
+                initilizeutility
+            end
             eventName = pluginName + @@Exception
             @@tc.track_exception errorStr , :properties => @@customProperties
             @@tc.flush
         end
 
         def sendTelemetry(pluginName, properties)
+            if @@customProperties.empty? || @@customProperties.nil?
+                initilizeutility
+            end
             @@customProperties['Computer'] = properties['Computer']
-            sendHeartBeatEvent(properties)
+            sendHeartBeatEvent(pluginName, properties)
             sendCustomEvent(pluginName, properties)
         end
 

@@ -147,13 +147,15 @@ class DockerApiClient
         end
 
         def dockerInfo()
-            request = DockerApiRestHelper.restDockerVersion
+            request = DockerApiRestHelper.restDockerInfo
             response = getResponse(request, false)
             dockerInfo = {}
+            $log.warn("docker info returned before: #{response}")
             if (response != nil)
                 dockerInfo['Version'] = response['Version']
                 dockerInfo['ApiVersion'] = response['ApiVersion']
             end
+            $log.warn("docker info returned: #{dockerInfo}")
             return dockerInfo
         end
     end
