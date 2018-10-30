@@ -28,8 +28,7 @@ module Fluent
         @condition = ConditionVariable.new
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
-        @dockerInfo = DockerApiClient.dockerInfo
-        @workspaceId = ApplicationInsightsUtility.getWorkspaceId
+        #@workspaceId = ApplicationInsightsUtility.getWorkspaceId
       end
     end
 

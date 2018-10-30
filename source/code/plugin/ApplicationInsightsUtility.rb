@@ -4,9 +4,11 @@
 class ApplicationInsightsUtility
     require_relative 'application_insights'
     require_relative 'omslog'
+    require_relative 'DockerApiClient'
     require 'json'
 
     @@HeartBeat = 'HeartBeatEvent'
+    @@Exception = 'ExceptionEvent'
     @OmsAdminFilePath = '/etc/opt/microsoft/omsagent/conf/omsadmin.conf'
     def initialize
         tc = ApplicationInsights::TelemetryClient.new '9435b43f-97d5-4ded-8d90-b047958e6e87'
@@ -38,22 +40,37 @@ class ApplicationInsightsUtility
 		    customProperties["Region"] = ENV['AKS_REGION']
         end
         customProperties['ControllerType'] = 'DaemonSet'
+        dockerInfo = DockerApiClient.dockerInfo
+        customProperties['DockerVersion'] = dockerInfo['Version']
+        customProperties['DockerApiVersion'] = dockerInfo['ApiVersion']
+        customProperties['WorkspaceID'] = getWorkspaceId
     end
 
     class << self
-        def sendHeartBeatEvent(pluginName, dockerInfo, hostName, workspaceId)
-            customProperties['WorkspaceID'] = workspaceId
+        def sendHeartBeatEvent(pluginName, properties)
             eventName = pluginName + @@HeartBeat
-            customProperties['Computer'] = hostName
             tc.track_event eventName , :properties => customProperties
+            tc.flush
         end
 
-        def sendCustomEvent(pluginName)
-
+        def sendCustomEvent(pluginName, properties)
+            tc.track_metric 'LastProcessedContainerInventoryCount', properties['ContainerCount'], 
+            :kind => ApplicationInsights::Channel::Contracts::DataPointType::MEASUREMENT, 
+            :properties => { customProperties }
+            tc.flush
         end
 
-        def sendExceptionLog(pluginName)
+        def sendExceptionTelemetry(pluginName, errorStr)
+            eventName = pluginName + @@Exception
+            customProperties['Exception'] = errorStr
+            tc.track_event eventName , :properties => customProperties
+            tc.flush
+        end
 
+        def sendTelemetry(pluginName, properties)
+            customProperties['Computer'] = properties['Computer']
+            sendHeartBeatEvent(properties)
+            sendCustomEvent(pluginName, properties)
         end
 
         def getWorkspaceId()
