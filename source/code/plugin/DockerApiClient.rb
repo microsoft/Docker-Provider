@@ -142,5 +142,16 @@ class DockerApiClient
             request = DockerApiRestHelper.restDockerInspect(id)
             return getResponse(request, false)
         end
+
+        def dockerInfo()
+            request = DockerApiRestHelper.restDockerVersion
+            response = getResponse(request, false)
+            dockerInfo = {}
+            if (response != nil)
+                dockerInfo['Version'] = response['Version']
+                dockerInfo['ApiVersion'] = response['ApiVersion']
+            end
+            return dockerInfo
+        end
     end
 end

@@ -44,5 +44,3 @@ class DockerApiRestHelper
         end
     end
 end
-
-        

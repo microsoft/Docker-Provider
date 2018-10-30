@@ -12,6 +12,7 @@ module Fluent
       require_relative 'DockerApiClient'
       require_relative 'ContainerInventoryState'
       require_relative 'omslog'
+      require_relative 'application_insights'
     end
 
     config_param :run_interval, :time, :default => '1m'
@@ -27,6 +28,8 @@ module Fluent
         @condition = ConditionVariable.new
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
+        @dockerInfo = DockerApiClient.dockerInfo
+        @workspaceId = ApplicationInsightsUtility.getWorkspaceId
       end
     end
 
