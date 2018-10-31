@@ -17,6 +17,7 @@ module Fluent
       require 'json'
       require_relative 'DockerApiClient'
       require_relative 'ContainerInventoryState'
+      require_relative 'ApplicationInsightsUtility'
       require_relative 'omslog'
     end
 

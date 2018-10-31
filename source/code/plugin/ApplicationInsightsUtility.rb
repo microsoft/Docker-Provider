@@ -37,16 +37,15 @@ class ApplicationInsightsUtility
 		            @@CustomProperties["ClusterName"] = ""
 		            @@CustomProperties["Region"] = ""
                 else
-                    aksResourceId = ENV['AKS_RESOURCE_ID']
-                    @@CustomProperties["AKS_RESOURCE_ID"] = aksResourceId
-                begin
-                    splitStrings = aksResourceId.split('/')
-                    subscriptionId = splitStrings[2]
-                    resourceGroupName = splitStrings[4]
-                    clusterName = splitStrings[8]
-                rescue => errorStr
-                    $log.warn("Exception in AppInsightsUtility: parsing AKS resourceId: #{aksResourceId}, error: #{errorStr}")
-                end
+                    @@CustomProperties["AKS_RESOURCE_ID"] = resourceInfo
+                    begin
+                        splitStrings = resourceInfo.split('/')
+                        subscriptionId = splitStrings[2]
+                        resourceGroupName = splitStrings[4]
+                        clusterName = splitStrings[8]
+                    rescue => errorStr
+                        $log.warn("Exception in AppInsightsUtility: parsing AKS resourceId: #{resourceInfo}, error: #{errorStr}")
+                    end
 		            @@CustomProperties["ClusterType"] = @@AksClusterType
 		            @@CustomProperties["SubscriptionID"] = subscriptionId
 		            @@CustomProperties["ResourceGroupName"] = resourceGroupName
@@ -69,7 +68,7 @@ class ApplicationInsightsUtility
             end
         end
 
-        def sendHeartBeatEvent(pluginName, properties)
+        def sendHeartBeatEvent(pluginName)
             begin
                 eventName = pluginName + @@HeartBeat
                 if !@@Tc.nil?
@@ -115,7 +114,7 @@ class ApplicationInsightsUtility
                     initializeUtility
                 end
                 @@CustomProperties['Computer'] = properties['Computer']
-                sendHeartBeatEvent(pluginName, properties)
+                sendHeartBeatEvent(pluginName)
                 sendCustomEvent(pluginName, properties)
                 $log.info("AppInsights Telemetry sent successfully")
             rescue => errorStr
