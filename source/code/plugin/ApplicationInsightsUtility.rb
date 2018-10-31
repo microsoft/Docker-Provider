@@ -19,6 +19,7 @@ class ApplicationInsightsUtility
     @@EnvAgentVersion = 'AGENT_VERSION'
     @@EnvApplicationInsightsKey = 'APPLICATIONINSIGHTS_AUTH'
     @@CustomProperties = {}
+    @@Tc
 
     def initialize
     end
@@ -116,6 +117,7 @@ class ApplicationInsightsUtility
                 @@CustomProperties['Computer'] = properties['Computer']
                 sendHeartBeatEvent(pluginName, properties)
                 sendCustomEvent(pluginName, properties)
+                $log.info("AppInsights Telemetry sent successfully")
             rescue => errorStr
                 $log.warn("Exception in AppInsightsUtility: sendTelemetry - error: #{errorStr}")
             end
