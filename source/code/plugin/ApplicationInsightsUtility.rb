@@ -19,7 +19,7 @@ class ApplicationInsightsUtility
     @@EnvAgentVersion = 'AGENT_VERSION'
     @@EnvApplicationInsightsKey = 'APPLICATIONINSIGHTS_AUTH'
     @@CustomProperties = {}
-    @@Tc
+    @@Tc = nil
 
     def initialize
     end
@@ -71,9 +71,10 @@ class ApplicationInsightsUtility
         def sendHeartBeatEvent(pluginName)
             begin
                 eventName = pluginName + @@HeartBeat
-                if !@@Tc.nil?
+                if !(@@Tc.nil?)
                     @@Tc.track_event eventName , :properties => @@CustomProperties
                     @@Tc.flush
+                    $log.info("AppInsights Heartbeat Telemetry sent successfully")
                 end
             rescue =>errorStr
                 $log.warn("Exception in AppInsightsUtility: sendHeartBeatEvent - error: #{errorStr}")
@@ -82,11 +83,12 @@ class ApplicationInsightsUtility
 
         def sendCustomEvent(pluginName, properties)
             begin
-                if !@@Tc.nil?
+                if !(@@Tc.nil?)
                     @@Tc.track_metric 'LastProcessedContainerInventoryCount', properties['ContainerCount'], 
                     :kind => ApplicationInsights::Channel::Contracts::DataPointType::MEASUREMENT, 
                     :properties => @@CustomProperties
-                @@Tc.flush
+                    @@Tc.flush
+                    $log.info("AppInsights Container Count Telemetry sent successfully")
                 end
             rescue => errorStr
                 $log.warn("Exception in AppInsightsUtility: sendCustomEvent - error: #{errorStr}")
@@ -98,9 +100,10 @@ class ApplicationInsightsUtility
                 if @@CustomProperties.empty? || @@CustomProperties.nil?
                     initializeUtility
                 end
-                if !@@Tc.nil?
+                if !(@@Tc.nil?)
                     @@Tc.track_exception errorStr , :properties => @@CustomProperties
                     @@Tc.flush
+                    $log.info("AppInsights Exception Telemetry sent successfully")
                 end
             rescue => errorStr
                 $log.warn("Exception in AppInsightsUtility: sendExceptionTelemetry - error: #{errorStr}")
@@ -116,7 +119,6 @@ class ApplicationInsightsUtility
                 @@CustomProperties['Computer'] = properties['Computer']
                 sendHeartBeatEvent(pluginName)
                 sendCustomEvent(pluginName, properties)
-                $log.info("AppInsights Telemetry sent successfully")
             rescue => errorStr
                 $log.warn("Exception in AppInsightsUtility: sendTelemetry - error: #{errorStr}")
             end
