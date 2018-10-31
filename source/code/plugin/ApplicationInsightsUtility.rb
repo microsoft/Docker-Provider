@@ -6,7 +6,7 @@ class ApplicationInsightsUtility
     require_relative 'omslog'
     require_relative 'DockerApiClient'
     require 'json'
-    require "base64"
+    require 'base64'
 
     @@HeartBeat = 'HeartBeatEvent'
     @@Exception = 'ExceptionEvent'
@@ -16,11 +16,10 @@ class ApplicationInsightsUtility
     @OmsAdminFilePath = '/etc/opt/microsoft/omsagent/conf/omsadmin.conf'
     @@EnvAcsResourceName = 'ACS_RESOURCE_NAME'
     @@EnvAksRegion = 'AKS_REGION'
-    @@EnvAgentVersion = 'AgentVersion'
+    @@EnvAgentVersion = 'AGENTVERSION'
+    @@EnvApplicationInsightsKey = 'APPLICATIONINSIGHTS_AUTH'
     @@CustomProperties = {}
-    encodedAppInsightsKey = ENV['APPLICATIONINSIGHTS_AUTH']
-    decodedAppInsightsKey = Base64.decode64(encodedAppInsightsKey)
-    @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey
+    @@Tc = nil
 
     def initialize
     end
@@ -61,6 +60,9 @@ class ApplicationInsightsUtility
                 @@CustomProperties['DockerApiVersion'] = dockerInfo['ApiVersion']
                 @@CustomProperties['WorkspaceID'] = getWorkspaceId
                 @@CustomProperties['AgentVersion'] = ENV[@@EnvAgentVersion]
+                encodedAppInsightsKey = ENV[@@encodedAppInsightsKey]
+                decodedAppInsightsKey = Base64.decode64(encodedAppInsightsKey)
+                @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey
             rescue => errorStr
                 $log.warn("Exception in AppInsightsUtility: initilizeUtility - error: #{errorStr}")
             end
@@ -69,8 +71,8 @@ class ApplicationInsightsUtility
         def sendHeartBeatEvent(pluginName, properties)
             begin
                 eventName = pluginName + @@HeartBeat
-                @@tc.track_event eventName , :properties => @@CustomProperties
-                @@tc.flush
+                @@Tc.track_event eventName , :properties => @@CustomProperties
+                @@Tc.flush
             rescue =>errorStr
                 $log.warn("Exception in AppInsightsUtility: sendHeartBeatEvent - error: #{errorStr}")
             end
@@ -78,23 +80,23 @@ class ApplicationInsightsUtility
 
         def sendCustomEvent(pluginName, properties)
             begin
-                @@tc.track_metric 'LastProcessedContainerInventoryCount', properties['ContainerCount'], 
+                @@Tc.track_metric 'LastProcessedContainerInventoryCount', properties['ContainerCount'], 
                 :kind => ApplicationInsights::Channel::Contracts::DataPointType::MEASUREMENT, 
                 :properties => @@CustomProperties
-                @@tc.flush
+                @@Tc.flush
             rescue => errorStr
                 $log.warn("Exception in AppInsightsUtility: sendCustomEvent - error: #{errorStr}")
             end
         end
 
-        def sendExceptionTelemetry(pluginName, errorStr)
+        def sendExceptionTelemetry(errorStr)
             begin
                 if @@CustomProperties.empty? || @@CustomProperties.nil?
                     initilizeutility
                 end
                 eventName = pluginName + @@Exception
-                @@tc.track_exception errorStr , :properties => @@CustomProperties
-                @@tc.flush
+                @@Tc.track_exception errorStr , :properties => @@CustomProperties
+                @@Tc.flush
             rescue => errorStr
                 $log.warn("Exception in AppInsightsUtility: sendExceptionTelemetry - error: #{errorStr}")
             end
@@ -108,7 +110,7 @@ class ApplicationInsightsUtility
                 @@CustomProperties['Computer'] = properties['Computer']
                 sendHeartBeatEvent(pluginName, properties)
                 sendCustomEvent(pluginName, properties)
-            rescue
+            rescue => errorStr
                 $log.warn("Exception in AppInsightsUtility: sendTelemetry - error: #{errorStr}")
             end
         end

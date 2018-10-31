@@ -18,7 +18,6 @@ module Fluent
       require_relative 'DockerApiClient'
       require_relative 'ContainerInventoryState'
       require_relative 'omslog'
-      require_relative 'application_insights'
     end
 
     config_param :run_interval, :time, :default => '1m'
