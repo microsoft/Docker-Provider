@@ -2,7 +2,7 @@
 # frozen_string_literal: true
 
 class ApplicationInsightsUtility
-    require_relative 'application_insights'
+    require_relative 'lib/application_insights'
     require_relative 'omslog'
     require_relative 'DockerApiClient'
     require 'json'
