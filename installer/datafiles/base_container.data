@@ -74,7 +74,7 @@ MAINTAINER:              'Microsoft Corporation'
 /var/opt/microsoft;                                     755; root; root; sysdir
 /var/opt/microsoft/docker-cimprov;                      755; root; root
 /var/opt/microsoft/docker-cimprov/state;                755; root; root
-/var/opt/microsoft/docker-cimprov/state/ContainerInventory; 755; omsagent; omsagent
+/var/opt/microsoft/docker-cimprov/state/ContainerInventory; 755; root; root
 /var/opt/microsoft/docker-cimprov/log;                  755; root; root
 
 /opt/td-agent-bit;                          755; root; root;sysdir
@@ -88,6 +88,9 @@ WriteInstallInfo() {
 	echo ${{VERSION}}-${{RELEASE}} >> /etc/opt/microsoft/docker-cimprov/conf/installinfo.txt
 }
 WriteInstallInfo
+
+#Make omsagent owner for ContainerInventory directory. This is needed for ruby plugin to have access
+chown omsagent:omsagent /var/opt/microsoft/docker-cimprov/state/ContainerInventory
 
 # Get the state file in place with proper permissions
 touch /var/opt/microsoft/docker-cimprov/state/LastEventQueryTime.txt
