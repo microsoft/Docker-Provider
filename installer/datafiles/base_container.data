@@ -131,6 +131,12 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/td-agent-bit;                          755; root; root;sysdir
 /opt/td-agent-bit/bin;                      755; root; root;sysdir
 
+/opt/microsoft/omsagent/plugin/lib;												755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/lib/application_insights;                        755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/lib/application_insights/channel;                755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/lib/application_insights/channel/contracts;      755; root; root; sysdir
+/opt/microsoft/omsagent/plugin/lib/application_insights/rack;                   755; root; root; sysdir
+
 %Dependencies
 
 %Postinstall_10
