@@ -183,6 +183,7 @@ module Fluent
           nameMap = DockerApiClient.getImageIdMap
           containerIds.each do |containerId|
             inspectedContainer = {}
+            inspectedContainer['CollectionTime'] = batchTime #This is the time that is mapped to become TimeGenerated
             inspectedContainer = inspectContainer(containerId, nameMap)
             inspectedContainer['Computer'] = hostname
             containerInventory.push inspectedContainer
