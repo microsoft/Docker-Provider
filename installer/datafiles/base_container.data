@@ -43,7 +43,6 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/DockerApiRestHelper.rb;											source/code/plugin/DockerApiRestHelper.rb;			644; root; root
 /opt/microsoft/omsagent/plugin/in_containerinventory.rb;										source/code/plugin/in_containerinventory.rb;		644; root; root
 
-# Files for application insights library
 /opt/microsoft/omsagent/plugin/lib/application_insights/version.rb;								source/code/plugin/lib/application_insights/version.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/lib/application_insights/rack/track_request.rb;					source/code/plugin/lib/application_insights/rack/track_request.rb;      644; root; root
 /opt/microsoft/omsagent/plugin/lib/application_insights/unhandled_exception.rb;					source/code/plugin/lib/application_insights/unhandled_exception.rb;     644; root; root
