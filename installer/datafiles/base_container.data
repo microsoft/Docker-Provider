@@ -37,6 +37,14 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/in_kube_services.rb;			        source/code/plugin/in_kube_services.rb;			    	644; root; root
 /opt/microsoft/omsagent/plugin/in_kube_nodes.rb;			        source/code/plugin/in_kube_nodes.rb;			    	644; root; root
 
+/opt/microsoft/omsagent/plugin/ApplicationInsightsUtility.rb	source/code/plugin/ApplicationInsightsUtility.rb	644; root; root
+/opt/microsoft/omsagent/plugin/ContainerInventoryState.rb		source/code/plugin/ContainerInventoryState.rb		644; root; root
+/opt/microsoft/omsagent/plugin/DockerApiClient.rb				source/code/plugin/DockerApiClient.rb				644; root; root
+/opt/microsoft/omsagent/plugin/DockerApiRestHelper.rb			source/code/plugin/DockerApiRestHelper.rb			644; root; root
+/opt/microsoft/omsagent/plugin/in_containerinventory.rb			source/code/plugin/in_containerinventory.rb			644; root; root
+/opt/microsoft/omsagent/plugin/lib								source/code/plugin/lib								644; root; root
+
+
 /opt/td-agent-bit/bin/out_oms.so;                                intermediate/${{BUILD_CONFIGURATION}}/out_oms.so;  	755; root; root
 /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf;			    installer/conf/td-agent-bit.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/out_oms.conf;			            installer/conf/out_oms.conf;                    644; root; root
