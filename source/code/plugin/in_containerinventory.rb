@@ -56,7 +56,17 @@ module Fluent
 
           envValue = configValue['Env']
           envValueString = (envValue.nil?) ? "" : envValue.to_s
-          instance['EnvironmentVar'] = envValueString
+          # Restricting the ENV string value to 200kb since the size of this string can go very high
+          if envValueString.length > 200000
+            envValueStringTruncated = envValueString.slice(0..200000)
+            lastIndex = envValueStringTruncated.rindex("\", ")
+            if !lastIndex.nil?
+              envValueStringTruncated = envValueStringTruncated.slice(0..lastIndex) + "]"
+            end
+            instance['EnvironmentVar'] = envValueStringTruncated
+          else
+            instance['EnvironmentVar'] = envValueString
+          end
 
           cmdValue = configValue['Cmd']
           cmdValueString = (cmdValue.nil?) ? "" : cmdValue.to_s
