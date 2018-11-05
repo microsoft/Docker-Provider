@@ -221,6 +221,10 @@ module Fluent
             eventStream.add(emitTime, wrapper) if wrapper
           end
           router.emit_stream(@tag, eventStream) if eventStream
+          @@istestvar = ENV['ISTEST']
+          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp('true') == 0 && eventStream.count > 0)
+            $log.info("containerInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+          end
           timeDifference =  (DateTime.now.to_time.to_i - @@telemetryTimeTracker).abs
           timeDifferenceInMinutes = timeDifference/60
           if (timeDifferenceInMinutes >= 5)
