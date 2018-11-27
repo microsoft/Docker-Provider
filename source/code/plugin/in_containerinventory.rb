@@ -56,6 +56,11 @@ module Fluent
 
           envValue = configValue['Env']
           envValueString = (envValue.nil?) ? "" : envValue.to_s
+          # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
+          if /AZMON_COLLECT_ENV=FALSE/i.match(envValueString)
+            envValueString = ["AZMON_COLLECT_ENV=FALSE"]
+            $log.warn("Environment Variable collection for container: #{container['Id']} skipped because AZMON_COLLECT_ENV is set to false")
+          end
           # Restricting the ENV string value to 200kb since the size of this string can go very high
           if envValueString.length > 200000
             envValueStringTruncated = envValueString.slice(0..200000)
