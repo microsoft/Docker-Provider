@@ -37,7 +37,7 @@ class DockerApiClient
                         $log.warn("Socket read timedout for request: #{request} @ #{Time.now.utc.iso8601}")
                         isTimeOut = true
                     end
-                    break if responseChunk.length < @@ChunkSize
+                    break if responseChunk.end_with? "0\r\n\r\n"
                 end
                 socket.close
                 return (isTimeOut)? nil : parseResponse(dockerResponse, isMultiJson)
