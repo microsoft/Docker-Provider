@@ -19,7 +19,7 @@ class DockerApiClient
 
     class << self
         # Make docker socket call for requests
-        def getResponse(request, isMultiJson)
+        def getResponse(request, isMultiJson, isVersion)
             begin
                 socket = UNIXSocket.new(@@SocketPath)
                 dockerResponse = ""
@@ -36,8 +36,9 @@ class DockerApiClient
                     rescue Timeout::Error
                         $log.warn("Socket read timedout for request: #{request} @ #{Time.now.utc.iso8601}")
                         isTimeOut = true
+                        break
                     end
-                    break if responseChunk.length < @@ChunkSize
+                    break if (isVersion)? (responseChunk.length < @@ChunkSize) : (responseChunk.end_with? "0\r\n\r\n")
                 end
                 socket.close
                 return (isTimeOut)? nil : parseResponse(dockerResponse, isMultiJson)
@@ -71,7 +72,7 @@ class DockerApiClient
         def getDockerHostName()
             dockerHostName = ""
             request = DockerApiRestHelper.restDockerInfo
-            response = getResponse(request, false)
+            response = getResponse(request, false, false)
             if (response != nil)
                 dockerHostName = response['Name']
             end
@@ -81,7 +82,7 @@ class DockerApiClient
         def listContainers()
             ids = []
             request = DockerApiRestHelper.restDockerPs
-            containers = getResponse(request, true)
+            containers = getResponse(request, true, false)
             if !containers.nil? && !containers.empty?
                 containers.each do |container|
                     ids.push(container['Id'])
@@ -121,7 +122,7 @@ class DockerApiClient
             result = nil
             begin
                 request = DockerApiRestHelper.restDockerImages
-                images = getResponse(request, true)
+                images = getResponse(request, true, false)
                 if !images.nil? && !images.empty?
                     result = {}
                     images.each do |image|
@@ -144,13 +145,13 @@ class DockerApiClient
 
         def dockerInspectContainer(id)
             request = DockerApiRestHelper.restDockerInspect(id)
-            return getResponse(request, false)
+            return getResponse(request, false, false)
         end
 
         # This method returns docker version and docker api version for telemetry
         def dockerInfo()
             request = DockerApiRestHelper.restDockerVersion
-            response = getResponse(request, false)
+            response = getResponse(request, false, true)
             dockerInfo = {}
             if (response != nil)
                 dockerInfo['Version'] = response['Version']
