@@ -55,6 +55,11 @@ module Fluent
                 #get node inventory 
                 nodeInventory['items'].each do |items|
                     record = {}
+                    # Sending records for ContainerNodeInventory
+                    containerInventory = {}
+                    containerInventory['CollectionTime'] = batchTime #This is the time that is mapped to become TimeGenerated
+                    containerInventory['Computer'] = items['metadata']['name']
+
                     record['CollectionTime'] = batchTime #This is the time that is mapped to become TimeGenerated
                     record['Computer'] = items['metadata']['name'] 
                     record['ClusterName'] = KubernetesApiClient.getClusterName
@@ -89,8 +94,14 @@ module Fluent
 
                     end
 
-                    record['KubeletVersion'] = items['status']['nodeInfo']['kubeletVersion']
-                    record['KubeProxyVersion'] = items['status']['nodeInfo']['kubeProxyVersion']
+                    nodeInfo = items['status']['nodeInfo']
+                    record['KubeletVersion'] = nodeInfo['kubeletVersion']
+                    record['KubeProxyVersion'] = nodeInfo['kubeProxyVersion']
+                    containerInventory['OperatingSystem'] = nodeInfo['osImage']
+                    dockerVersion = nodeInfo['containerRuntimeVersion']
+                    dockerVersion.slice! "docker://"
+                    containerInventory['DockerVersion'] = dockerVersion
+
                     wrapper = {
                       "DataType"=>"KUBE_NODE_INVENTORY_BLOB",
                       "IPName"=>"ContainerInsights",
