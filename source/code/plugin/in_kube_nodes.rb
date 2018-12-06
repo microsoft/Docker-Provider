@@ -6,6 +6,8 @@ module Fluent
     class Kube_nodeInventory_Input < Input
       Plugin.register_input('kubenodeinventory', self)
   
+      @@ContainerNodeInventoryTag = 'oms.api.ContainerNodeInventory'
+
       def initialize
         super
         require 'yaml'
@@ -52,13 +54,14 @@ module Fluent
           begin
             if(!nodeInventory.empty?)
               eventStream = MultiEventStream.new
+              containerNodeInventoryEventStream = MultiEventStream.new 
                 #get node inventory 
                 nodeInventory['items'].each do |items|
                     record = {}
                     # Sending records for ContainerNodeInventory
-                    containerInventory = {}
-                    containerInventory['CollectionTime'] = batchTime #This is the time that is mapped to become TimeGenerated
-                    containerInventory['Computer'] = items['metadata']['name']
+                    containerNodeInventoryRecord = {}
+                    containerNodeInventoryRecord['CollectionTime'] = batchTime #This is the time that is mapped to become TimeGenerated
+                    containerNodeInventoryRecord['Computer'] = items['metadata']['name']
 
                     record['CollectionTime'] = batchTime #This is the time that is mapped to become TimeGenerated
                     record['Computer'] = items['metadata']['name'] 
@@ -97,10 +100,12 @@ module Fluent
                     nodeInfo = items['status']['nodeInfo']
                     record['KubeletVersion'] = nodeInfo['kubeletVersion']
                     record['KubeProxyVersion'] = nodeInfo['kubeProxyVersion']
-                    containerInventory['OperatingSystem'] = nodeInfo['osImage']
+                    containerNodeInventoryRecord['OperatingSystem'] = nodeInfo['osImage']
                     dockerVersion = nodeInfo['containerRuntimeVersion']
                     dockerVersion.slice! "docker://"
-                    containerInventory['DockerVersion'] = dockerVersion
+                    containerNodeInventoryRecord['DockerVersion'] = dockerVersion
+                    # ContainerNodeInventory data for docker version and operating system.
+                    containerNodeInventoryEventStream.add(emitTime, containerNodeInventoryRecord) if containerNodeInventoryRecord
 
                     wrapper = {
                       "DataType"=>"KUBE_NODE_INVENTORY_BLOB",
@@ -110,6 +115,7 @@ module Fluent
                     eventStream.add(emitTime, wrapper) if wrapper
                 end 
                 router.emit_stream(@tag, eventStream) if eventStream
+                router.emit_stream(@@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
                 @@istestvar = ENV['ISTEST']
                 if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp('true') == 0 && eventStream.count > 0)
                   $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
