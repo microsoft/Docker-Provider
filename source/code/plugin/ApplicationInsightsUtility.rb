@@ -83,7 +83,7 @@ class ApplicationInsightsUtility
             end
         end
 
-        def sendCustomEvent(pluginName, properties)
+        def sendCustomMetric(pluginName, properties)
             begin
                 if !(@@Tc.nil?)
                     @@Tc.track_metric 'LastProcessedContainerInventoryCount', properties['ContainerCount'], 
@@ -93,7 +93,7 @@ class ApplicationInsightsUtility
                     $log.info("AppInsights Container Count Telemetry sent successfully")
                 end
             rescue => errorStr
-                $log.warn("Exception in AppInsightsUtility: sendCustomEvent - error: #{errorStr}")
+                $log.warn("Exception in AppInsightsUtility: sendCustomMetric - error: #{errorStr}")
             end
         end
 
@@ -120,7 +120,7 @@ class ApplicationInsightsUtility
                 end
                 @@CustomProperties['Computer'] = properties['Computer']
                 sendHeartBeatEvent(pluginName)
-                sendCustomEvent(pluginName, properties)
+                sendCustomMetric(pluginName, properties)
             rescue => errorStr
                 $log.warn("Exception in AppInsightsUtility: sendTelemetry - error: #{errorStr}")
             end

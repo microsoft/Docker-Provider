@@ -14,6 +14,7 @@ module Fluent
         require 'json'
   
         require_relative 'KubernetesApiClient'
+        require_relative 'ApplicationInsightsUtility'
         require_relative 'oms_common'
         require_relative 'omslog'
       end
@@ -31,6 +32,7 @@ module Fluent
           @condition = ConditionVariable.new
           @mutex = Mutex.new
           @thread = Thread.new(&method(:run_periodic))
+          @@telemetryTimeTracker = DateTime.now.to_time.to_i
         end
       end
   
@@ -48,9 +50,10 @@ module Fluent
         currentTime = Time.now
         emitTime = currentTime.to_f
         batchTime = currentTime.utc.iso8601
-          $log.info("in_kube_nodes::enumerate : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
-          nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo('nodes').body)
-          $log.info("in_kube_nodes::enumerate : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
+        @@telemetrySent = false
+        $log.info("in_kube_nodes::enumerate : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
+        nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo('nodes').body)
+        $log.info("in_kube_nodes::enumerate : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
           begin
             if(!nodeInventory.empty?)
               eventStream = MultiEventStream.new
@@ -113,9 +116,24 @@ module Fluent
                       "DataItems"=>[record.each{|k,v| record[k]=v}]
                     }
                     eventStream.add(emitTime, wrapper) if wrapper
+                    # Adding telemetry to send node telemetry every 5 minutes
+                    timeDifference =  (DateTime.now.to_time.to_i - @@telemetryTimeTracker).abs
+                    timeDifferenceInMinutes = timeDifference/60
+                    if (timeDifferenceInMinutes >= 5)
+                      properties = {}
+                      properties["Computer"] = record["Computer"]
+                      ApplicationInsightsUtility.sendMetricTelemetry("KubeletVersion", record["KubeletVersion"] , properties)
+                      capacityInfo = items['status']['capacity']
+                      ApplicationInsightsUtility.sendMetricTelemetry("CoreCapacity", capacityInfo["cpu"] , properties)
+                      ApplicationInsightsUtility.sendMetricTelemetry("Memory", capacityInfo["memory"] , properties)
+                      @@telemetrySent = true
+                    end
                 end 
                 router.emit_stream(@tag, eventStream) if eventStream
                 router.emit_stream(@@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
+                if @@telemetrySent == true
+                  @@telemetryTimeTracker = DateTime.now.to_time.to_i
+                end
                 @@istestvar = ENV['ISTEST']
                 if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp('true') == 0 && eventStream.count > 0)
                   $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
