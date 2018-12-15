@@ -32,7 +32,7 @@ module Fluent
           @condition = ConditionVariable.new
           @mutex = Mutex.new
           @thread = Thread.new(&method(:run_periodic))
-          @@telemetryTimeTracker = DateTime.now.to_time.to_i
+          @@nodeTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
       end
   
@@ -117,7 +117,7 @@ module Fluent
                     }
                     eventStream.add(emitTime, wrapper) if wrapper
                     # Adding telemetry to send node telemetry every 5 minutes
-                    timeDifference =  (DateTime.now.to_time.to_i - @@telemetryTimeTracker).abs
+                    timeDifference =  (DateTime.now.to_time.to_i - @@nodeTelemetryTimeTracker).abs
                     timeDifferenceInMinutes = timeDifference/60
                     if (timeDifferenceInMinutes >= 5)
                       properties = {}
@@ -132,7 +132,7 @@ module Fluent
                 router.emit_stream(@tag, eventStream) if eventStream
                 router.emit_stream(@@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
                 if @@telemetrySent == true
-                  @@telemetryTimeTracker = DateTime.now.to_time.to_i
+                  @@nodeTelemetryTimeTracker = DateTime.now.to_time.to_i
                 end
                 @@istestvar = ENV['ISTEST']
                 if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp('true') == 0 && eventStream.count > 0)

@@ -10,8 +10,10 @@ module Fluent
       super
       require 'yaml'
       require 'json'
+      require 'set'
 
       require_relative 'KubernetesApiClient'
+      require_relative 'ApplicationInsightsUtility'
       require_relative 'oms_common'
       require_relative 'omslog'
     end
@@ -29,6 +31,7 @@ module Fluent
         @condition = ConditionVariable.new
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
+        @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
       end
     end
 
@@ -71,6 +74,8 @@ module Fluent
       emitTime = currentTime.to_f
       batchTime = currentTime.utc.iso8601
       eventStream = MultiEventStream.new
+      controllerSet = Set.new []
+      telemetryFlush = false
       begin #begin block start
         podInventory['items'].each do |items| #podInventory block start
           records = []
@@ -78,6 +83,12 @@ module Fluent
           record['CollectionTime'] = batchTime #This is the time that is mapped to become TimeGenerated
           record['Name'] = items['metadata']['name']
           podNameSpace = items['metadata']['namespace']
+          # Adding telemetry to send node telemetry every 5 minutes
+          timeDifference =  (DateTime.now.to_time.to_i - @@nodeTelemetryTimeTracker).abs
+          timeDifferenceInMinutes = timeDifference/60
+          if (timeDifferenceInMinutes >= 5)
+            telemetryFlush = true
+          end
           if podNameSpace.eql?("kube-system") && !items['metadata'].key?("ownerReferences")
             # The above case seems to be the only case where you have horizontal scaling of pods
             # but no controller, in which case cAdvisor picks up kubernetes.io/config.hash
@@ -85,8 +96,14 @@ module Fluent
             # its ok to use this.
             # Use kubernetes.io/config.hash to be able to correlate with cadvisor data
             podUid = items['metadata']['annotations']['kubernetes.io/config.hash']
+            if telemetryFlush == true
+              controllerSet.add(podUid)
+            end
           else
             podUid = items['metadata']['uid']
+            if telemetryFlush == true
+              controllerSet.add(podUid)
+            end
           end
           record['PodUid'] = podUid
           record['PodLabel'] = [items['metadata']['labels']]
@@ -189,6 +206,11 @@ module Fluent
               eventStream.add(emitTime, wrapper) if wrapper
             end  
           end  
+          if telemetryFlush == true
+            ApplicationInsightsUtility.sendMetricTelemetry("PodCount", records.count , {})
+            ApplicationInsightsUtility.sendMetricTelemetry("ControllerCount", controllerSet.length , {})
+            @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
+          end
         end  #podInventory block end
         router.emit_stream(@tag, eventStream) if eventStream
         @@istestvar = ENV['ISTEST']
