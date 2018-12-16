@@ -83,8 +83,8 @@ module Fluent
           record['CollectionTime'] = batchTime #This is the time that is mapped to become TimeGenerated
           record['Name'] = items['metadata']['name']
           podNameSpace = items['metadata']['namespace']
-          # Adding telemetry to send node telemetry every 5 minutes
-          timeDifference =  (DateTime.now.to_time.to_i - @@nodeTelemetryTimeTracker).abs
+          # Adding telemetry to send pod telemetry every 5 minutes
+          timeDifference =  (DateTime.now.to_time.to_i - @@podTelemetryTimeTracker).abs
           timeDifferenceInMinutes = timeDifference/60
           if (timeDifferenceInMinutes >= 5)
             telemetryFlush = true
@@ -206,13 +206,13 @@ module Fluent
               eventStream.add(emitTime, wrapper) if wrapper
             end  
           end  
-          if telemetryFlush == true
-            ApplicationInsightsUtility.sendMetricTelemetry("PodCount", records.count , {})
-            ApplicationInsightsUtility.sendMetricTelemetry("ControllerCount", controllerSet.length , {})
-            @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
-          end
         end  #podInventory block end
         router.emit_stream(@tag, eventStream) if eventStream
+        if telemetryFlush == true
+          ApplicationInsightsUtility.sendMetricTelemetry("PodCount", podInventory['items'].length , {})
+          ApplicationInsightsUtility.sendMetricTelemetry("ControllerCount", controllerSet.length , {})
+          @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
+        end
         @@istestvar = ENV['ISTEST']
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp('true') == 0 && eventStream.count > 0)
           $log.info("kubePodInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")

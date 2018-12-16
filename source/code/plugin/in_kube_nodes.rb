@@ -50,7 +50,7 @@ module Fluent
         currentTime = Time.now
         emitTime = currentTime.to_f
         batchTime = currentTime.utc.iso8601
-        @@telemetrySent = false
+        telemetrySent = false
         $log.info("in_kube_nodes::enumerate : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
         nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo('nodes').body)
         $log.info("in_kube_nodes::enumerate : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
@@ -124,14 +124,14 @@ module Fluent
                       properties["Computer"] = record["Computer"]
                       ApplicationInsightsUtility.sendMetricTelemetry("KubeletVersion", record["KubeletVersion"] , properties)
                       capacityInfo = items['status']['capacity']
-                      ApplicationInsightsUtility.sendMetricTelemetry("CoreCapacity", capacityInfo["cpu"] , properties)
-                      ApplicationInsightsUtility.sendMetricTelemetry("Memory", capacityInfo["memory"] , properties)
-                      @@telemetrySent = true
+                      ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"] , properties)
+                      ApplicationInsightsUtility.sendMetricTelemetry("NodeMemory", capacityInfo["memory"] , properties)
+                      telemetrySent = true
                     end
                 end 
                 router.emit_stream(@tag, eventStream) if eventStream
                 router.emit_stream(@@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
-                if @@telemetrySent == true
+                if telemetrySent == true
                   @@nodeTelemetryTimeTracker = DateTime.now.to_time.to_i
                 end
                 @@istestvar = ENV['ISTEST']
