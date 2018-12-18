@@ -10,7 +10,7 @@ class DockerApiClient
     require_relative 'DockerApiRestHelper'
     require_relative 'ApplicationInsightsUtility'
 
-    @@SocketPath = "/var/run/docker.sock"
+    @@SocketPath = "/var/run/host/docker.sock"
     @@ChunkSize = 4096
     @@TimeoutInSeconds = 5
     @@PluginName = 'ContainerInventory'
