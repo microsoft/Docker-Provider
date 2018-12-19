@@ -17,6 +17,10 @@ var (
 	FlushedRecordsCount float64
 	// FlushedRecordsTimeTaken indicates the cumulative time taken to flush the records for the current period
 	FlushedRecordsTimeTaken float64
+	// This is telemetry for how old/latent logs we are processing in milliseconds (max over a period of time)
+	AgentLogProcessingMaxLatencyMs float64
+	// This is telemetry for which container logs were latent (max over a period of time)
+	AgentLogProcessingMaxLatencyMsContainer string
 	// CommonProperties indicates the dimensions that are sent with every event/metric
 	CommonProperties map[string]string
 	// TelemetryClient is the client used to send the telemetry
@@ -35,6 +39,7 @@ const (
 	envAppInsightsAuth                  = "APPLICATIONINSIGHTS_AUTH"
 	metricNameAvgFlushRate              = "ContainerLogAvgRecordsFlushedPerSec"
 	metricNameAvgLogGenerationRate      = "ContainerLogsGeneratedPerSec"
+	metricNameAgentLogProcessingMaxLatencyMs = "ContainerLogsAgentSideLatencyMs"
 	defaultTelemetryPushIntervalSeconds = 300
 
 	eventNameContainerLogInit   = "ContainerLogPluginInitialized"
@@ -62,12 +67,19 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		logRate := FlushedRecordsCount / float64(elapsed/time.Second)
 		FlushedRecordsCount = 0.0
 		FlushedRecordsTimeTaken = 0.0
+		logLatencyMs := AgentLogProcessingMaxLatencyMs
+		logLatencyMsContainer := AgentLogProcessingMaxLatencyMsContainer
+		AgentLogProcessingMaxLatencyMs = 0
+		AgentLogProcessingMaxLatencyMsContainer = ""
 		ContainerLogTelemetryMutex.Unlock()
 
 		flushRateMetric := appinsights.NewMetricTelemetry(metricNameAvgFlushRate, flushRate)
 		TelemetryClient.Track(flushRateMetric)
 		logRateMetric := appinsights.NewMetricTelemetry(metricNameAvgLogGenerationRate, logRate)
 		TelemetryClient.Track(logRateMetric)
+		logLatencyMetric := appinsights.NewMetricTelemetry(metricNameAgentLogProcessingMaxLatencyMs, logLatencyMs)
+		logLatencyMetric.Properties["Container"] = logLatencyMsContainer
+		TelemetryClient.Track(logLatencyMetric)
 		start = time.Now()
 	}
 }

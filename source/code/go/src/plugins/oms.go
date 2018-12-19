@@ -77,9 +77,10 @@ var (
 
 // DataItem represents the object corresponding to the json that is sent by fluentbit tail plugin
 type DataItem struct {
-	LogEntry          string `json:"LogEntry"`
-	LogEntrySource    string `json:"LogEntrySource"`
-	LogEntryTimeStamp string `json:"LogEntryTimeStamp"`
+	LogEntry          		string `json:"LogEntry"`
+	LogEntrySource    		string `json:"LogEntrySource"`
+	LogEntryTimeStamp 		string `json:"LogEntryTimeStamp"`
+	LogEntryTimeOfCommand	string `json:"TimeOfCommand"`
 	ID                string `json:"Id"`
 	Image             string `json:"Image"`
 	Name              string `json:"Name"`
@@ -204,6 +205,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	start := time.Now()
 	var dataItems []DataItem
+	var maxLatency float64
+	var maxLatencyContainer string
 	ignoreIDSet := make(map[string]bool)
 	imageIDMap := make(map[string]string)
 	nameIDMap := make(map[string]string)
@@ -248,18 +251,32 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			Log("ContainerId %s not present in Map ", containerID)
 		}
 
+
 		dataItem := DataItem{
-			ID:                stringMap["Id"],
-			LogEntry:          stringMap["LogEntry"],
-			LogEntrySource:    stringMap["LogEntrySource"],
-			LogEntryTimeStamp: stringMap["LogEntryTimeStamp"],
-			SourceSystem:      stringMap["SourceSystem"],
-			Computer:          Computer,
-			Image:             stringMap["Image"],
-			Name:              stringMap["Name"],
+			ID:                		stringMap["Id"],
+			LogEntry:          		stringMap["LogEntry"],
+			LogEntrySource:    		stringMap["LogEntrySource"],
+			LogEntryTimeStamp: 		stringMap["LogEntryTimeStamp"],
+			LogEntryTimeOfCommand: 	start.Format(time.RFC3339),
+			SourceSystem:      		stringMap["SourceSystem"],
+			Computer:          		Computer,
+			Image:             		stringMap["Image"],
+			Name:              		stringMap["Name"],
 		}
 
 		dataItems = append(dataItems, dataItem)
+		loggedTime, e := time.Parse(time.RFC3339, dataItem.LogEntryTimeStamp)
+		if e!= nil {
+			message := fmt.Sprintf("Error while converting LogEntryTimeStamp for telemetry purposes: %s", e.Error())
+			Log(message)
+			SendException(message)
+		} else {
+			ltncy := float64(start.Sub(loggedTime) / time.Millisecond)
+			if ltncy >= maxLatency {
+				maxLatency = ltncy
+				maxLatencyContainer = dataItem.Name + "=" + dataItem.ID
+			}
+		}
 	}
 
 	if len(dataItems) > 0 {
@@ -302,6 +319,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		ContainerLogTelemetryMutex.Lock()
 		FlushedRecordsCount += float64(numRecords)
 		FlushedRecordsTimeTaken += float64(elapsed / time.Millisecond)
+		if maxLatency >= AgentLogProcessingMaxLatencyMs {
+			AgentLogProcessingMaxLatencyMs = maxLatency
+			AgentLogProcessingMaxLatencyMsContainer = maxLatencyContainer
+		}
 		ContainerLogTelemetryMutex.Unlock()
 	}
 
