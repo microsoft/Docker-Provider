@@ -66,6 +66,7 @@ module Fluent
         rescue  => errorStr
           $log.warn "Failed in enumerate pod inventory: #{errorStr}"
           $log.debug_backtrace(errorStr.backtrace)
+          ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
         end  
     end
 
@@ -207,6 +208,7 @@ module Fluent
         end  #podInventory block end
         router.emit_stream(@tag, eventStream) if eventStream
         if telemetryFlush == true
+          ApplicationInsightsUtility.sendHeartBeatEvent("KubePodInventory")
           ApplicationInsightsUtility.sendMetricTelemetry("PodCount", podInventory['items'].length , {})
           ApplicationInsightsUtility.sendMetricTelemetry("ControllerCount", controllerSet.length , {})
           @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
@@ -218,6 +220,7 @@ module Fluent
       rescue  => errorStr
         $log.warn "Failed in parse_and_emit_record pod inventory: #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end #begin block end  
     end  
 
@@ -234,6 +237,7 @@ module Fluent
             enumerate
           rescue => errorStr
             $log.warn "in_kube_podinventory::run_periodic: enumerate Failed to retrieve pod inventory: #{errorStr}"
+            ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
           end
         end
         @mutex.lock
@@ -268,6 +272,7 @@ module Fluent
       rescue  => errorStr
         $log.warn "Failed to retrieve service name from labels: #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
       return serviceName
     end

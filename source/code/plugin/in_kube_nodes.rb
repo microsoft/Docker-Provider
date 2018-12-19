@@ -142,6 +142,7 @@ module Fluent
           rescue  => errorStr
             $log.warn "Failed to retrieve node inventory: #{errorStr}"
             $log.debug_backtrace(errorStr.backtrace)
+            ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
           end       
       end
   
@@ -158,6 +159,7 @@ module Fluent
               enumerate
             rescue => errorStr
               $log.warn "in_kube_nodes::run_periodic: enumerate Failed to retrieve node inventory: #{errorStr}"
+              ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
             end
           end
           @mutex.lock
