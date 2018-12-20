@@ -15,6 +15,9 @@ module Fluent
           require_relative 'oms_common'
           require_relative 'omslog'
           require_relative 'ApplicationInsightsUtility'
+
+          @@ReplicasetControllerType = 'ReplicaSet'
+
         end
     
         config_param :run_interval, :time, :default => '1m'
@@ -71,7 +74,7 @@ module Fluent
               rescue  => errorStr
                 $log.warn line.dump, error: errorStr.to_s
                 $log.debug_backtrace(e.backtrace)
-                ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+                ApplicationInsightsUtility.sendExceptionTelemetry(errorStr, @@ReplicasetControllerType)
               end   
         end
     
@@ -88,7 +91,7 @@ module Fluent
                 enumerate
               rescue => errorStr
                 $log.warn "in_kube_services::run_periodic: enumerate Failed to kube services: #{errorStr}"
-                ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+                ApplicationInsightsUtility.sendExceptionTelemetry(errorStr, @@ReplicasetControllerType)
               end
             end
             @mutex.lock
