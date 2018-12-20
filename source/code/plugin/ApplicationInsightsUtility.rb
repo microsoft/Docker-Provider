@@ -103,7 +103,7 @@ class ApplicationInsightsUtility
 
         def sendExceptionTelemetry(errorStr, controllerType)
             begin
-                if @@CustomProperties.empty? || @@CustomProperties.nil? || || @@CustomProperties['DockerVersion'].nil?
+                if @@CustomProperties.empty? || @@CustomProperties.nil? || @@CustomProperties['DockerVersion'].nil?
                     initializeUtility()
                 end
                 if !(@@Tc.nil?)
