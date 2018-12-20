@@ -125,8 +125,8 @@ class ApplicationInsightsUtility
                 end
                 @@CustomProperties['ControllerType'] = controllerType
                 @@CustomProperties['Computer'] = properties['Computer']
-                sendHeartBeatEvent(pluginName)
-                sendCustomMetric(pluginName, properties)
+                sendHeartBeatEvent(pluginName, controllerType)
+                sendCustomMetric(pluginName, properties, controllerType)
             rescue => errorStr
                 $log.warn("Exception in AppInsightsUtility: sendTelemetry - error: #{errorStr}")
             end
