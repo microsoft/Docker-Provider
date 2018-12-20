@@ -13,13 +13,12 @@ class ApplicationInsightsUtility
     @@Exception = 'ExceptionEvent'
     @@AcsClusterType = 'ACS'
     @@AksClusterType = 'AKS'
-    @@DaemonsetControllerType = 'DaemonSet'
-    @@ReplicasetControllerType = 'ReplicaSet'
     @OmsAdminFilePath = '/etc/opt/microsoft/omsagent/conf/omsadmin.conf'
     @@EnvAcsResourceName = 'ACS_RESOURCE_NAME'
     @@EnvAksRegion = 'AKS_REGION'
     @@EnvAgentVersion = 'AGENT_VERSION'
     @@EnvApplicationInsightsKey = 'APPLICATIONINSIGHTS_AUTH'
+    @@EnvControllerType = 'CONTROLLER_TYPE'
     @@CustomProperties = {}
     @@Tc = nil
     @@hostName = (OMS::Common.get_hostname)
@@ -62,6 +61,7 @@ class ApplicationInsightsUtility
                 end
                 @@CustomProperties['WorkspaceID'] = getWorkspaceId
                 @@CustomProperties['AgentVersion'] = ENV[@@EnvAgentVersion]
+                @@CustomProperties['ControllerType'] = ENV[@@EnvControllerType]
                 encodedAppInsightsKey = ENV[@@EnvApplicationInsightsKey]
                 if !encodedAppInsightsKey.nil?
                     decodedAppInsightsKey = Base64.decode64(encodedAppInsightsKey)
@@ -72,10 +72,9 @@ class ApplicationInsightsUtility
             end
         end
 
-        def sendHeartBeatEvent(pluginName, controllerType)
+        def sendHeartBeatEvent(pluginName)
             begin
                 eventName = pluginName + @@HeartBeat
-                @@CustomProperties['ControllerType'] = controllerType
                 if !(@@Tc.nil?)
                     @@Tc.track_event eventName , :properties => @@CustomProperties
                     @@Tc.flush
@@ -86,10 +85,9 @@ class ApplicationInsightsUtility
             end
         end
 
-        def sendCustomMetric(pluginName, properties, controllerType)
+        def sendCustomMetric(pluginName, properties)
             begin
                 if !(@@Tc.nil?)
-                    @@CustomProperties['ControllerType'] = controllerType
                     @@Tc.track_metric 'LastProcessedContainerInventoryCount', properties['ContainerCount'], 
                     :kind => ApplicationInsights::Channel::Contracts::DataPointType::MEASUREMENT, 
                     :properties => @@CustomProperties
@@ -101,13 +99,12 @@ class ApplicationInsightsUtility
             end
         end
 
-        def sendExceptionTelemetry(errorStr, controllerType)
+        def sendExceptionTelemetry(errorStr)
             begin
                 if @@CustomProperties.empty? || @@CustomProperties.nil? || @@CustomProperties['DockerVersion'].nil?
                     initializeUtility()
                 end
                 if !(@@Tc.nil?)
-                    @@CustomProperties['ControllerType'] = controllerType
                     @@Tc.track_exception errorStr , :properties => @@CustomProperties
                     @@Tc.flush
                     $log.info("AppInsights Exception Telemetry sent successfully")
@@ -118,22 +115,21 @@ class ApplicationInsightsUtility
         end
 
         #Method to send heartbeat and container inventory count
-        def sendTelemetry(pluginName, properties, controllerType)
+        def sendTelemetry(pluginName, properties)
             begin
                 if @@CustomProperties.empty? || @@CustomProperties.nil? || @@CustomProperties['DockerVersion'].nil?
                     initializeUtility()
                 end
-                @@CustomProperties['ControllerType'] = controllerType
                 @@CustomProperties['Computer'] = properties['Computer']
-                sendHeartBeatEvent(pluginName, controllerType)
-                sendCustomMetric(pluginName, properties, controllerType)
+                sendHeartBeatEvent(pluginName)
+                sendCustomMetric(pluginName, properties)
             rescue => errorStr
                 $log.warn("Exception in AppInsightsUtility: sendTelemetry - error: #{errorStr}")
             end
         end
 
         #Method to send metric. It will merge passed-in properties with common custom properties
-        def sendMetricTelemetry(metricName, metricValue, properties, controllerType)
+        def sendMetricTelemetry(metricName, metricValue, properties)
             begin
                 if (metricName.empty? || metricName.nil?)
                     $log.warn("SendMetricTelemetry: metricName is missing")
@@ -144,7 +140,6 @@ class ApplicationInsightsUtility
                 end
                 telemetryProps = {}
                 telemetryProps["Computer"] = @@hostName
-                @@CustomProperties['ControllerType'] = controllerType
                 # add common dimensions
                 @@CustomProperties.each{ |k,v| telemetryProps[k]=v}
                 # add passed-in dimensions if any

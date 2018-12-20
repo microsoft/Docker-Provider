@@ -17,7 +17,6 @@ module Fluent
       require_relative 'omslog'
       require_relative 'ApplicationInsightsUtility'
 
-      @@ReplicasetControllerType = 'ReplicaSet'
     end
 
     config_param :run_interval, :time, :default => '1m'
@@ -97,7 +96,7 @@ module Fluent
           rescue  => errorStr
             $log.warn line.dump, error: errorStr.to_s
             $log.debug_backtrace(errorStr.backtrace)
-            ApplicationInsightsUtility.sendExceptionTelemetry(errorStr, @@ReplicasetControllerType)
+            ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
           end   
     end
 
@@ -114,7 +113,7 @@ module Fluent
             enumerate
           rescue => errorStr
             $log.warn "in_kube_events::run_periodic: enumerate Failed to retrieve kube events: #{errorStr}"
-            ApplicationInsightsUtility.sendExceptionTelemetry(errorStr, @@ReplicasetControllerType)
+            ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
           end
         end
         @mutex.lock
@@ -134,7 +133,7 @@ module Fluent
       rescue  => errorStr
         $log.warn $log.warn line.dump, error: errorStr.to_s
         $log.debug_backtrace(errorStr.backtrace)
-        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr, @@ReplicasetControllerType)
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
       return eventQueryState
     end
@@ -150,7 +149,7 @@ module Fluent
       rescue  => errorStr
         $log.warn $log.warn line.dump, error: errorStr.to_s
         $log.debug_backtrace(errorStr.backtrace)
-        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr, @@ReplicasetControllerType)
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
 

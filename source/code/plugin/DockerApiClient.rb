@@ -14,7 +14,6 @@ class DockerApiClient
     @@ChunkSize = 4096
     @@TimeoutInSeconds = 5
     @@PluginName = 'ContainerInventory'
-    @@DaemonsetControllerType = 'DaemonSet'
 
     def initialize
     end
@@ -46,7 +45,7 @@ class DockerApiClient
                 return (isTimeOut)? nil : parseResponse(dockerResponse, isMultiJson)
             rescue => errorStr
                 $log.warn("Socket call failed for request: #{request} error: #{errorStr} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
-                ApplicationInsightsUtility.sendExceptionTelemetry(errorStr, @@DaemonsetControllerType)
+                ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
             end
         end
 
@@ -65,7 +64,7 @@ class DockerApiClient
                 end
             rescue => errorStr
                 $log.warn("Json parsing for docker response failed: #{errorStr} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
-                ApplicationInsightsUtility.sendExceptionTelemetry(errorStr, @@DaemonsetControllerType)
+                ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
             end 
             return parsedJsonResponse
         end 

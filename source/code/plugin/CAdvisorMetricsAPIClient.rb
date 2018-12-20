@@ -22,7 +22,6 @@ class CAdvisorMetricsAPIClient
             @@txBytesTimeLast = nil
             @@telemetryCpuMetricTimeTracker = DateTime.now.to_time.to_i
             @@telemetryMemoryMetricTimeTracker = DateTime.now.to_time.to_i
-            @@ReplicasetControllerType = 'ReplicaSet'
     
             def initialize
             end
@@ -143,7 +142,7 @@ class CAdvisorMetricsAPIClient
                                                 telemetryProps = {}
                                                 telemetryProps['PodName'] = podName
                                                 telemetryProps['ContainerName'] = containerName
-                                                ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps, @@ReplicasetControllerType)
+                                                ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
                                             end
                                         end
                                     rescue => errorStr
@@ -206,7 +205,7 @@ class CAdvisorMetricsAPIClient
                                                 telemetryProps = {}
                                                 telemetryProps['PodName'] = podName
                                                 telemetryProps['ContainerName'] = containerName
-                                                ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps, @@ReplicasetControllerType)
+                                                ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
                                             end
                                         end
                                     rescue => errorStr

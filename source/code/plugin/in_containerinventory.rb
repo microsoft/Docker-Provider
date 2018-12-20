@@ -20,7 +20,6 @@ module Fluent
       require_relative 'ApplicationInsightsUtility'
       require_relative 'omslog'
 
-      @@DaemonsetControllerType = 'DaemonSet'
     end
 
     config_param :run_interval, :time, :default => '1m'
@@ -239,7 +238,7 @@ module Fluent
             telemetryProperties = {}
             telemetryProperties['Computer'] = hostname
             telemetryProperties['ContainerCount'] = containerInventory.length
-            ApplicationInsightsUtility.sendTelemetry(@@PluginName, telemetryProperties, @@DaemonsetControllerType)
+            ApplicationInsightsUtility.sendTelemetry(@@PluginName, telemetryProperties)
           end
           $log.info("in_container_inventory::enumerate : Processing complete - emitted stream @ #{Time.now.utc.iso8601}")
         end

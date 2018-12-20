@@ -18,7 +18,6 @@ module Fluent
         require_relative 'oms_common'
         require_relative 'omslog'
 
-        @@ReplicasetControllerType = 'ReplicaSet'
       end
   
       config_param :run_interval, :time, :default => '1m'
@@ -124,10 +123,10 @@ module Fluent
                     if (timeDifferenceInMinutes >= 5)
                       properties = {}
                       properties["Computer"] = record["Computer"]
-                      ApplicationInsightsUtility.sendMetricTelemetry("KubeletVersion", record["KubeletVersion"] , properties, @@ReplicasetControllerType)
+                      ApplicationInsightsUtility.sendMetricTelemetry("KubeletVersion", record["KubeletVersion"] , properties)
                       capacityInfo = items['status']['capacity']
-                      ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"] , properties, @@ReplicasetControllerType)
-                      ApplicationInsightsUtility.sendMetricTelemetry("NodeMemory", capacityInfo["memory"] , properties, @@ReplicasetControllerType)
+                      ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"] , properties)
+                      ApplicationInsightsUtility.sendMetricTelemetry("NodeMemory", capacityInfo["memory"] , properties)
                       telemetrySent = true
                     end
                 end 
@@ -144,7 +143,7 @@ module Fluent
           rescue  => errorStr
             $log.warn "Failed to retrieve node inventory: #{errorStr}"
             $log.debug_backtrace(errorStr.backtrace)
-            ApplicationInsightsUtility.sendExceptionTelemetry(errorStr, @@ReplicasetControllerType)
+            ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
           end       
       end
   
@@ -161,7 +160,7 @@ module Fluent
               enumerate
             rescue => errorStr
               $log.warn "in_kube_nodes::run_periodic: enumerate Failed to retrieve node inventory: #{errorStr}"
-              ApplicationInsightsUtility.sendExceptionTelemetry(errorStr, @@ReplicasetControllerType)
+              ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
             end
           end
           @mutex.lock
