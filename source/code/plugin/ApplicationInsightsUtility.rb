@@ -54,11 +54,7 @@ class ApplicationInsightsUtility
 		            @@CustomProperties["ClusterName"] = clusterName
 		            @@CustomProperties["Region"] = ENV[@@EnvAksRegion]
                 end
-                dockerInfo = DockerApiClient.dockerInfo
-                if (!dockerInfo.empty? && !dockerInfo.nil?)
-                    @@CustomProperties['DockerVersion'] = dockerInfo['Version']
-                    @@CustomProperties['DockerApiVersion'] = dockerInfo['ApiVersion']
-                end
+                getDockerInfo()
                 @@CustomProperties['WorkspaceID'] = getWorkspaceId
                 @@CustomProperties['AgentVersion'] = ENV[@@EnvAgentVersion]
                 @@CustomProperties['ControllerType'] = ENV[@@EnvControllerType]
@@ -69,6 +65,14 @@ class ApplicationInsightsUtility
                 end
             rescue => errorStr
                 $log.warn("Exception in AppInsightsUtility: initilizeUtility - error: #{errorStr}")
+            end
+        end
+
+        def getDockerInfo() 
+            dockerInfo = DockerApiClient.dockerInfo
+            if (!dockerInfo.nil? && !dockerInfo.empty?)
+                @@CustomProperties['DockerVersion'] = dockerInfo['Version']
+                @@CustomProperties['DockerApiVersion'] = dockerInfo['ApiVersion']
             end
         end
 
@@ -101,8 +105,10 @@ class ApplicationInsightsUtility
 
         def sendExceptionTelemetry(errorStr)
             begin
-                if @@CustomProperties.empty? || @@CustomProperties.nil? || @@CustomProperties['DockerVersion'].nil?
+                if @@CustomProperties.empty? || @@CustomProperties.nil?
                     initializeUtility()
+                elsif @@CustomProperties['DockerVersion'].nil?
+                    getDockerInfo()
                 end
                 if !(@@Tc.nil?)
                     @@Tc.track_exception errorStr , :properties => @@CustomProperties
@@ -117,8 +123,10 @@ class ApplicationInsightsUtility
         #Method to send heartbeat and container inventory count
         def sendTelemetry(pluginName, properties)
             begin
-                if @@CustomProperties.empty? || @@CustomProperties.nil? || @@CustomProperties['DockerVersion'].nil?
+                if @@CustomProperties.empty? || @@CustomProperties.nil?
                     initializeUtility()
+                elsif @@CustomProperties['DockerVersion'].nil?
+                    getDockerInfo()
                 end
                 @@CustomProperties['Computer'] = properties['Computer']
                 sendHeartBeatEvent(pluginName)
@@ -135,8 +143,10 @@ class ApplicationInsightsUtility
                     $log.warn("SendMetricTelemetry: metricName is missing")
                     return
                 end
-                if @@CustomProperties.empty? || @@CustomProperties.nil? || @@CustomProperties['DockerVersion'].nil?
+                if @@CustomProperties.empty? || @@CustomProperties.nil?
                     initializeUtility()
+                elsif @@CustomProperties['DockerVersion'].nil?
+                    getDockerInfo()
                 end
                 telemetryProps = {}
                 telemetryProps["Computer"] = @@hostName
