@@ -20,7 +20,7 @@ module Fluent
     end
 
     config_param :run_interval, :time, :default => '1m'
-    config_param :tag, :string, :default => "oms.api.KubeEvents.CollectionTime"
+    config_param :tag, :string, :default => "oms.containerinsights.KubeEvents"
 
     def configure (conf)
       super
