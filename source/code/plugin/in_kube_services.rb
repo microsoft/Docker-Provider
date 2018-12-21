@@ -65,7 +65,6 @@ module Fluent
                     record['ClusterIP'] = items['spec']['clusterIP']
                     record['ServiceType'] = items['spec']['type']
                     #<TODO> : Add ports and status fields
-                    #eventStream.add(emitTime, record) if record
                     wrapper = {
                       "DataType"=>"KUBE_SERVICES_BLOB",
                       "IPName"=>"ContainerInsights",

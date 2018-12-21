@@ -88,7 +88,6 @@ module Fluent
                 end
                 record['ClusterName'] = KubernetesApiClient.getClusterName
                 record['ClusterId'] = KubernetesApiClient.getClusterId
-                #eventStream.add(emitTime, record) if record
                 wrapper = {
                   "DataType"=>"KUBE_EVENTS_BLOB",
                   "IPName"=>"ContainerInsights",
