@@ -123,7 +123,7 @@ module Fluent
                     if (timeDifferenceInMinutes >= 5)
                       properties = {}
                       properties["Computer"] = record["Computer"]
-                      ApplicationInsightsUtility.sendMetricTelemetry("KubeletVersion", record["KubeletVersion"] , properties)
+                      properties["KubeletVersion"] = record["KubeletVersion"]
                       capacityInfo = items['status']['capacity']
                       ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"] , properties)
                       ApplicationInsightsUtility.sendMetricTelemetry("NodeMemory", capacityInfo["memory"] , properties)
