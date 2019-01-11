@@ -11,21 +11,21 @@ additional questions or comments.
 
 Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate the agent build dates (not release dates)
   
-### 10/09/2018 - Version microsoft/oms:ciprod01092019
+### 01/09/2018 - Version microsoft/oms:ciprod01092019-2
 - Omsagent - 1.8.1.256 (nov 2018 release)
 - Persist fluentbit state between container restarts
 - Populate 'TimeOfCommand' for agent ingest time for container logs
 - Get node cpu usage from cpuusagenanoseconds (and convert to cpuusgaenanocores)
 - Container Node Inventory - move to fluentD from OMI
 - Mount docker.sock (Daemon set) as /var/run/host
-- Liveness probe (Daemon set) - check for omsagent user permissions in docker.sock and update as necessary (required when docker daemon gets restarted)
+- Add omsagent user to docker group
 - Move to fixed type for kubeevents & kubeservices
 - Disable collecting ENV for our oms agent container (daemonset & replicaset)
 - Disable container inventory collection for 'sandbox' containers & non kubernetes managed containers
 - Agent telemetry - ContainerLogsAgentSideLatencyMs
 - Agent telemetry - PodCount
 - Agent telemetry - ControllerCount
--	Agent telemetry - K8S Version
+- Agent telemetry - K8S Version
 - Agent telemetry - NodeCoreCapacity
 - Agent telemetry - NodeMemoryCapacity
 - Agent telemetry - KubeEvents (exceptions)
