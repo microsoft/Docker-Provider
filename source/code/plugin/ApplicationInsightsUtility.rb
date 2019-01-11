@@ -19,6 +19,7 @@ class ApplicationInsightsUtility
     @@EnvAgentVersion = 'AGENT_VERSION'
     @@EnvApplicationInsightsKey = 'APPLICATIONINSIGHTS_AUTH'
     @@EnvControllerType = 'CONTROLLER_TYPE'
+
     @@CustomProperties = {}
     @@Tc = nil
     @@hostName = (OMS::Common.get_hostname)
@@ -54,6 +55,7 @@ class ApplicationInsightsUtility
 		            @@CustomProperties["ClusterName"] = clusterName
 		            @@CustomProperties["Region"] = ENV[@@EnvAksRegion]
                 end
+
                 getDockerInfo()
                 @@CustomProperties['WorkspaceID'] = getWorkspaceId
                 @@CustomProperties['AgentVersion'] = ENV[@@EnvAgentVersion]

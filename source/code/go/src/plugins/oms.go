@@ -205,8 +205,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	start := time.Now()
 	var dataItems []DataItem
+
 	var maxLatency float64
 	var maxLatencyContainer string
+
 	ignoreIDSet := make(map[string]bool)
 	imageIDMap := make(map[string]string)
 	nameIDMap := make(map[string]string)
@@ -319,10 +321,12 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		ContainerLogTelemetryMutex.Lock()
 		FlushedRecordsCount += float64(numRecords)
 		FlushedRecordsTimeTaken += float64(elapsed / time.Millisecond)
+
 		if maxLatency >= AgentLogProcessingMaxLatencyMs {
 			AgentLogProcessingMaxLatencyMs = maxLatency
 			AgentLogProcessingMaxLatencyMsContainer = maxLatencyContainer
 		}
+
 		ContainerLogTelemetryMutex.Unlock()
 	}
 

@@ -24,8 +24,8 @@ class CAdvisorMetricsAPIClient
             @@nodeCpuUsageNanoSecondsTimeLast = nil
             @@telemetryCpuMetricTimeTracker = DateTime.now.to_time.to_i
             @@telemetryMemoryMetricTimeTracker = DateTime.now.to_time.to_i
-            
-    
+           
+
             def initialize
             end
     

@@ -19,7 +19,6 @@ module Fluent
       require_relative 'ContainerInventoryState'
       require_relative 'ApplicationInsightsUtility'
       require_relative 'omslog'
-
     end
 
     config_param :run_interval, :time, :default => '1m'

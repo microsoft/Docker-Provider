@@ -40,6 +40,7 @@ const (
 	metricNameAvgFlushRate              = "ContainerLogAvgRecordsFlushedPerSec"
 	metricNameAvgLogGenerationRate      = "ContainerLogsGeneratedPerSec"
 	metricNameAgentLogProcessingMaxLatencyMs = "ContainerLogsAgentSideLatencyMs"
+
 	defaultTelemetryPushIntervalSeconds = 300
 
 	eventNameContainerLogInit   = "ContainerLogPluginInitialized"
