@@ -6,7 +6,7 @@ module Fluent
     class Kube_nodeInventory_Input < Input
       Plugin.register_input('kubenodeinventory', self)
   
-      @@ContainerNodeInventoryTag = 'oms.api.ContainerNodeInventory'
+      @@ContainerNodeInventoryTag = 'oms.containerinsights.ContainerNodeInventory'
 
       def initialize
         super
@@ -109,7 +109,12 @@ module Fluent
                     dockerVersion.slice! "docker://"
                     containerNodeInventoryRecord['DockerVersion'] = dockerVersion
                     # ContainerNodeInventory data for docker version and operating system.
-                    containerNodeInventoryEventStream.add(emitTime, containerNodeInventoryRecord) if containerNodeInventoryRecord
+                    containerNodeInventoryWrapper = {
+                      "DataType"=>"CONTAINER_NODE_INVENTORY_BLOB",
+                      "IPName"=>"ContainerInsights",
+                      "DataItems"=>[containerNodeInventoryRecord.each{|k,v| containerNodeInventoryRecord[k]=v}]
+                    }
+                    containerNodeInventoryEventStream.add(emitTime, containerNodeInventoryWrapper) if containerNodeInventoryWrapper
 
                     wrapper = {
                       "DataType"=>"KUBE_NODE_INVENTORY_BLOB",
