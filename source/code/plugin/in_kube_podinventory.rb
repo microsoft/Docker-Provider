@@ -171,7 +171,7 @@ module Fluent
               containerRestartCount = container['restartCount']		
               record['ContainerRestartCount'] = containerRestartCount
               containerStatus = container['state']
-              record['ContainerNotRunningReason'] = ''
+              record['ContainerStatusReason'] = ''
               # state is of the following form , so just picking up the first key name
               # "state": {
               #   "waiting": {
@@ -191,7 +191,7 @@ module Fluent
                 record['ContainerCreationTimeStamp'] = container['state']['running']['startedAt']
               else
                 if !containerStatus[containerStatus.keys[0]]['reason'].nil? && !containerStatus[containerStatus.keys[0]]['reason'].empty?
-                  record['ContainerNotRunningReason'] = containerStatus[containerStatus.keys[0]]['reason']
+                  record['ContainerStatusReason'] = containerStatus[containerStatus.keys[0]]['reason']
                 end
               end
               podRestartCount += containerRestartCount	
