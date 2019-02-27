@@ -23,10 +23,12 @@ MAINTAINER:              'Microsoft Corporation'
 
 /opt/microsoft/omsagent/plugin/filter_docker_log.rb;			source/code/plugin/filter_docker_log.rb;			644; root; root
 /opt/microsoft/omsagent/plugin/filter_container.rb;			    source/code/plugin/filter_container.rb;				644; root; root
+/opt/microsoft/omsagent/plugin/filter_health_cpu_memory.rb;	    source/code/plugin/filter_health_cpu_memory.rb;		644; root; root
 
 /opt/microsoft/omsagent/plugin/in_kube_podinventory.rb;			source/code/plugin/in_kube_podinventory.rb;			644; root; root
 /opt/microsoft/omsagent/plugin/in_kube_events.rb;			    source/code/plugin/in_kube_events.rb;				644; root; root
 /opt/microsoft/omsagent/plugin/in_kube_logs.rb;                 source/code/plugin/in_kube_logs.rb;                 644; root; root
+/opt/microsoft/omsagent/plugin/in_health_kubelet.rb;            source/code/plugin/in_health_kubelet.rb;            644; root; root
 /opt/microsoft/omsagent/plugin/KubernetesApiClient.rb;			source/code/plugin/KubernetesApiClient.rb;			644; root; root
 
 /etc/opt/microsoft/docker-cimprov/container.conf;			    installer/conf/container.conf;                      644; root; root
@@ -183,6 +185,10 @@ chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2md
 touch /var/opt/microsoft/docker-cimprov/log/filter_inventory2mdm.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/filter_inventory2mdm.log
 chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/filter_inventory2mdm.log
+
+touch /var/opt/microsoft/omsagent/log/filter_health_cpu_memory.log
+chmod 666 /var/opt/microsoft/omsagent/log/filter_health_cpu_memory.log
+chown omsagent:omiusers /var/opt/microsoft/omsagent/log/filter_health_cpu_memory.log
 
 mv /etc/opt/microsoft/docker-cimprov/container.conf /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 chown omsagent:omsagent /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
