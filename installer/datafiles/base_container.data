@@ -36,12 +36,18 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/in_cadvisor_perf.rb;			        source/code/plugin/in_cadvisor_perf.rb;			    	644; root; root
 /opt/microsoft/omsagent/plugin/in_kube_services.rb;			        source/code/plugin/in_kube_services.rb;			    	644; root; root
 /opt/microsoft/omsagent/plugin/in_kube_nodes.rb;			        source/code/plugin/in_kube_nodes.rb;			    	644; root; root
+/opt/microsoft/omsagent/plugin/filter_inventory2mdm.rb;			     source/code/plugin/filter_inventory2mdm.rb;			    	644; root; root
+/opt/microsoft/omsagent/plugin/CustomMetricsUtils.rb;			     source/code/plugin/CustomMetricsUtils.rb;			    	644; root; root
+
 
 /opt/microsoft/omsagent/plugin/ApplicationInsightsUtility.rb;									source/code/plugin/ApplicationInsightsUtility.rb;	644; root; root
 /opt/microsoft/omsagent/plugin/ContainerInventoryState.rb;										source/code/plugin/ContainerInventoryState.rb;		644; root; root
 /opt/microsoft/omsagent/plugin/DockerApiClient.rb;												source/code/plugin/DockerApiClient.rb;				644; root; root
 /opt/microsoft/omsagent/plugin/DockerApiRestHelper.rb;											source/code/plugin/DockerApiRestHelper.rb;			644; root; root
 /opt/microsoft/omsagent/plugin/in_containerinventory.rb;										source/code/plugin/in_containerinventory.rb;		644; root; root
+
+/opt/microsoft/omsagent/plugin/out_mdm.rb;                                                  source/code/plugin/out_mdm.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/filter_cadvisor2mdm.rb;                                      source/code/plugin/filter_cadvisor2mdm.rb; 644; root; root
 
 /opt/microsoft/omsagent/plugin/lib/application_insights/version.rb;								source/code/plugin/lib/application_insights/version.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/lib/application_insights/rack/track_request.rb;					source/code/plugin/lib/application_insights/rack/track_request.rb;      644; root; root
@@ -169,6 +175,14 @@ chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/kubernetes_client_
 touch /var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt
 chmod 666 /var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt
 chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt
+
+touch /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log
+chmod 666 /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log
+chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log
+
+touch /var/opt/microsoft/docker-cimprov/log/filter_inventory2mdm.log
+chmod 666 /var/opt/microsoft/docker-cimprov/log/filter_inventory2mdm.log
+chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/filter_inventory2mdm.log
 
 mv /etc/opt/microsoft/docker-cimprov/container.conf /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 chown omsagent:omsagent /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf

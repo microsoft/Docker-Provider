@@ -7,6 +7,7 @@ module Fluent
       Plugin.register_input('kubenodeinventory', self)
   
       @@ContainerNodeInventoryTag = 'oms.containerinsights.ContainerNodeInventory'
+      @@MDMKubeNodeInventoryTag = 'mdm.kubenodeinventory'
 
       def initialize
         super
@@ -136,6 +137,7 @@ module Fluent
                     end
                 end 
                 router.emit_stream(@tag, eventStream) if eventStream
+                router.emit_stream(@@MDMKubeNodeInventoryTag, eventStream) if eventStream
                 router.emit_stream(@@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
                 if telemetrySent == true
                   @@nodeTelemetryTimeTracker = DateTime.now.to_time.to_i

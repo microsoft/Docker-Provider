@@ -6,6 +6,8 @@ module Fluent
   class Kube_PodInventory_Input < Input
     Plugin.register_input('kubepodinventory', self)
 
+    @@MDMKubePodInventoryTag = 'mdm.kubepodinventory'
+
     def initialize
       super
       require 'yaml'
@@ -171,6 +173,7 @@ module Fluent
               containerRestartCount = container['restartCount']		
               record['ContainerRestartCount'] = containerRestartCount
               containerStatus = container['state']
+              record['ContainerStatusReason'] = ''
               # state is of the following form , so just picking up the first key name
               # "state": {
               #   "waiting": {
@@ -188,6 +191,10 @@ module Fluent
               #Picking up both container and node start time from cAdvisor to be consistent
               if containerStatus.keys[0] == "running"
                 record['ContainerCreationTimeStamp'] = container['state']['running']['startedAt']
+              else
+                if !containerStatus[containerStatus.keys[0]]['reason'].nil? && !containerStatus[containerStatus.keys[0]]['reason'].empty?
+                  record['ContainerStatusReason'] = containerStatus[containerStatus.keys[0]]['reason']
+                end
               end
               podRestartCount += containerRestartCount	
               records.push(record.dup) 
@@ -208,6 +215,7 @@ module Fluent
           end  
         end  #podInventory block end
         router.emit_stream(@tag, eventStream) if eventStream
+        router.emit_stream(@@MDMKubePodInventoryTag, eventStream) if eventStream
         if telemetryFlush == true
           ApplicationInsightsUtility.sendHeartBeatEvent("KubePodInventory")
           ApplicationInsightsUtility.sendMetricTelemetry("PodCount", podInventory['items'].length , {})

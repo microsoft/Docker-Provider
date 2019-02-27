@@ -61,9 +61,16 @@ class ApplicationInsightsUtility
                 @@CustomProperties['AgentVersion'] = ENV[@@EnvAgentVersion]
                 @@CustomProperties['ControllerType'] = ENV[@@EnvControllerType]
                 encodedAppInsightsKey = ENV[@@EnvApplicationInsightsKey]
-                if !encodedAppInsightsKey.nil?
+
+                #Check if telemetry is turned off
+                telemetryOffSwitch = ENV['DISABLE_TELEMETRY']
+                if telemetryOffSwitch && !telemetryOffSwitch.nil? && !telemetryOffSwitch.empty? && telemetryOffSwitch.downcase == "true".downcase
+                    $log.warn("AppInsightsUtility: Telemetry is disabled")
+                    @@Tc = ApplicationInsights::TelemetryClient.new
+                elsif !encodedAppInsightsKey.nil?
                     decodedAppInsightsKey = Base64.decode64(encodedAppInsightsKey)
                     @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey
+                  
                 end
             rescue => errorStr
                 $log.warn("Exception in AppInsightsUtility: initilizeUtility - error: #{errorStr}")
@@ -91,7 +98,7 @@ class ApplicationInsightsUtility
             end
         end
 
-        def sendCustomMetric(pluginName, properties)
+        def sendLastProcessedContainerInventoryCountMetric(pluginName, properties)
             begin
                 if !(@@Tc.nil?)
                     @@Tc.track_metric 'LastProcessedContainerInventoryCount', properties['ContainerCount'], 
@@ -102,6 +109,21 @@ class ApplicationInsightsUtility
                 end
             rescue => errorStr
                 $log.warn("Exception in AppInsightsUtility: sendCustomMetric - error: #{errorStr}")
+            end
+        end
+
+        def sendCustomEvent(eventName, properties)
+            begin
+                if @@CustomProperties.empty? || @@CustomProperties.nil?
+                    initializeUtility()
+                end 
+                if !(@@Tc.nil?)
+                    @@Tc.track_event eventName, :properties => @@CustomProperties
+                    @@Tc.flush
+                    $log.info("AppInsights Custom Event #{eventName} sent successfully")
+                end
+            rescue => errorStr
+                $log.warn("Exception in AppInsightsUtility: sendCustomEvent - error: #{errorStr}")
             end
         end
 
@@ -132,7 +154,7 @@ class ApplicationInsightsUtility
                 end
                 @@CustomProperties['Computer'] = properties['Computer']
                 sendHeartBeatEvent(pluginName)
-                sendCustomMetric(pluginName, properties)
+                sendLastProcessedContainerInventoryCountMetric(pluginName, properties)
             rescue => errorStr
                 $log.warn("Exception in AppInsightsUtility: sendTelemetry - error: #{errorStr}")
             end

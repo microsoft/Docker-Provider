@@ -120,6 +120,11 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 	}
 
 	TelemetryClient = appinsights.NewTelemetryClient(string(decIkey))
+	telemetryOffSwitch := os.Getenv("DISABLE_TELEMETRY")
+	if strings.Compare(strings.ToLower(telemetryOffSwitch), "true") == 0 {
+		Log("Appinsights telemetry is disabled \n")
+		TelemetryClient.SetIsEnabled(false)
+	}
 
 	CommonProperties = make(map[string]string)
 	CommonProperties["Computer"] = Computer
