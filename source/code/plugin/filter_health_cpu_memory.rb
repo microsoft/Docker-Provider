@@ -185,9 +185,15 @@ module Fluent
           details = {}
           details["NodeCpuUsagePercentage"] = cpuMetricPercentValue
           details["NodeCpuUsageMilliCores"] = cpuMetricValue
-          details["PrevNodeCpuUsageDetails"] = { "Percent": @@previousCpuHealthDetails["CPUUsagePercentage"], "TimeStamp": @@previousCpuHealthDetails["Time"], "Millicores": @@previousCpuHealthDetails["CPUUsageMillicores"] }
-          details["PrevPrevNodeCpuUsageDetails"] = { "Percent": @@previousPreviousCpuHealthDetails["CPUUsagePercentage"], "TimeStamp": @@previousPreviousCpuHealthDetails["Time"], "Millicores": @@previousPreviousCpuHealthDetails["CPUUsageMillicores"] }
+          details["PrevNodeCpuUsageDetails"] = {"Percent": @@previousCpuHealthDetails["CPUUsagePercentage"], "TimeStamp": @@previousCpuHealthDetails["Time"], "Millicores": @@previousCpuHealthDetails["CPUUsageMillicores"]}
+          details["PrevPrevNodeCpuUsageDetails"] = {"Percent": @@previousPreviousCpuHealthDetails["CPUUsagePercentage"], "TimeStamp": @@previousPreviousCpuHealthDetails["Time"], "Millicores": @@previousPreviousCpuHealthDetails["CPUUsageMillicores"]}
           cpuHealthRecord["Details"] = details.to_json
+
+          monitorConfigDetails = {}
+          monitorConfigDetails["PassPercentage"] = @@cpuPassPercentage
+          monitorConfigDetails["FailPercentage"] = @@cpuFailPercentage
+          monitorConfigDetails["MonitorTimeOut"] = @@cpuMonitorTimeOut
+          cpuHealthRecord["MonitorConfigDetails"] = monitorConfigDetails.to_json
 
           #Sendind this data as collection time because this is overridden in custom log type. This will be mapped to TimeGenerated with fixed type.
           cpuHealthRecord["CollectionTime"] = @@previousPreviousCpuHealthDetails["Time"]
@@ -259,9 +265,16 @@ module Fluent
           details = {}
           details["NodeMemoryRssPercentage"] = memoryRssMetricPercentValue
           details["NodeMemoryRssBytes"] = memoryRssMetricValue
-          details["PrevNodeMemoryRssDetails"] = { "Percent": @@previousMemoryRssHealthDetails["memoryRssPercentage"], "TimeStamp": @@previousMemoryRssHealthDetails["Time"], "Bytes": @@previousMemoryRssHealthDetails["memoryRssBytes"] }
-          details["PrevPrevNodeMemoryRssDetails"] = { "Percent": @@previousPreviousMemoryRssHealthDetails["memoryRssPercentage"], "TimeStamp": @@previousPreviousMemoryRssHealthDetails["Time"], "Bytes": @@previousPreviousMemoryRssHealthDetails["memoryRssBytes"] }
+          details["PrevNodeMemoryRssDetails"] = {"Percent": @@previousMemoryRssHealthDetails["memoryRssPercentage"], "TimeStamp": @@previousMemoryRssHealthDetails["Time"], "Bytes": @@previousMemoryRssHealthDetails["memoryRssBytes"]}
+          details["PrevPrevNodeMemoryRssDetails"] = {"Percent": @@previousPreviousMemoryRssHealthDetails["memoryRssPercentage"], "TimeStamp": @@previousPreviousMemoryRssHealthDetails["Time"], "Bytes": @@previousPreviousMemoryRssHealthDetails["memoryRssBytes"]}
           memRssHealthRecord["Details"] = details.to_json
+
+          monitorConfigDetails = {}
+          monitorConfigDetails["PassPercentage"] = @@memoryPassPercentage
+          monitorConfigDetails["FailPercentage"] = @@memoryFailPercentage
+          monitorConfigDetails["MonitorTimeOut"] = @@memoryRssMonitorTimeOut
+          memRssHealthRecord["MonitorConfigDetails"] = monitorConfigDetails.to_json
+
           #Sending this data as collection time because this is overridden in custom log type. This will be mapped to TimeGenerated with fixed type.
           memRssHealthRecord["CollectionTime"] = @@previousPreviousMemoryRssHealthDetails["Time"]
           updateMemoryRssHealthState = true

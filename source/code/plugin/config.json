@@ -1,0 +1,15 @@
+{
+  "NodeCpuMonitor": {
+    "PassPercentage": 2.0,
+    "FailPercentage": 2.0,
+    "MonitorTimeOut":  5
+  },
+  "NodeMemoryRssMonitor": {
+    "PassPercentage": 2.0,
+    "FailPercentage": 2.0,
+    "MonitorTimeOut": 5
+  },
+  "KubeletMonitor": {
+    "MonitorTimeOut" :  3
+  }
+}

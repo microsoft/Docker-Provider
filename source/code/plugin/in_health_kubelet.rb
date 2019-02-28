@@ -19,6 +19,8 @@ module Fluent
     config_param :run_interval, :time, :default => "1m"
     config_param :tag, :string, :default => "oms.containerinsights.KubeletHealth"
 
+    @@HealthConfigFile = "/var/opt/microsoft/docker-cimprov/healthConfig/config"
+
     def configure(conf)
       super
     end
@@ -38,6 +40,24 @@ module Fluent
         @@clusterRegion = KubernetesApiClient.getClusterRegion
         @@telemetryTimeTracker = DateTime.now.to_time.to_i
         @@PluginName = "in_health_kubelet"
+        begin
+          healthConfigObject = nil
+          file = File.open(@@HealthConfigFile, "r")
+          if !file.nil?
+            fileContents = file.read
+            healthConfigObject = JSON.parse(fileContents)
+            file.close
+            if !healthConfigObject.nil?
+              @@kubeletMonitorTimeOut = healthConfigObject["KubeletMonitor"]["MonitorTimeOut"]
+              @log.info "Successfully read config values from file, using values for kubelet monitor timeout."
+            end
+          else
+            @log.warn "Failed to open file at location #{@@HealthConfigFile} to read health config, using defaults"
+          end
+        rescue => errorStr
+          @log.debug "Exception occured while reading config file at location #{@@HealthConfigFile}, error: #{errorStr}"
+          ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+        end
       end
     end
 
@@ -122,13 +142,16 @@ module Fluent
 
                 if @@previousNodeStatus[computerName + conditionType].nil? ||
                    !(conditionStatus.casecmp(@@previousNodeStatus[computerName + conditionType]) == 0) ||
-                   timeDifferenceInMinutes >= 3
+                   timeDifferenceInMinutes >= @@kubeletMonitorTimeOut
                   # Comparing current status with previous status and setting state change as true
                   flushRecord = true
                   @@previousNodeStatus[computerName + conditionType] = conditionStatus
                   conditionInformation = {}
                   conditionInformation["Reason"] = conditionReason
                   conditionInformation["Message"] = conditionMessage
+                  monitorConfigDetails = {}
+                  monitorConfigDetails["MonitorTimeOut"] = @@kubeletMonitorTimeOut
+                  record["MonitorConfigDetails"] = monitorConfigDetails.to_json
                   allNodeConditions[conditionType] = conditionInformation.to_json
                   record["NewState"] = nodeState
                   record["OldState"] = @@previousNodeState[computerName]
@@ -146,6 +169,7 @@ module Fluent
               @@nodeHealthDataTimeTracker[computerName] = currentTime
               timeDifference = (DateTime.now.to_time.to_i - @@telemetryTimeTracker).abs
               timeDifferenceInMinutes = timeDifference / 60
+              # Telemetry record flush
               if (timeDifferenceInMinutes >= 5)
                 @@telemetryTimeTracker = DateTime.now.to_time.to_i
                 telemetryProperties = {}
