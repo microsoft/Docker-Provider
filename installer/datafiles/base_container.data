@@ -30,6 +30,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/in_kube_logs.rb;                 source/code/plugin/in_kube_logs.rb;                 644; root; root
 /opt/microsoft/omsagent/plugin/in_health_kubelet.rb;            source/code/plugin/in_health_kubelet.rb;            644; root; root
 /opt/microsoft/omsagent/plugin/KubernetesApiClient.rb;			source/code/plugin/KubernetesApiClient.rb;			644; root; root
+/var/opt/microsoft/docker-cimprov/healthConfig/config;          source/code/plugin/healthConfig.json;               644; root; root
 
 /etc/opt/microsoft/docker-cimprov/container.conf;			    installer/conf/container.conf;                      644; root; root
 
@@ -144,6 +145,8 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/lib/application_insights/channel;                755; root; root; sysdir
 /opt/microsoft/omsagent/plugin/lib/application_insights/channel/contracts;      755; root; root; sysdir
 /opt/microsoft/omsagent/plugin/lib/application_insights/rack;                   755; root; root; sysdir
+
+/var/opt/microsoft/docker-cimprov/healthConfig;                                 755; root; root; sysdir
 
 %Dependencies
 
