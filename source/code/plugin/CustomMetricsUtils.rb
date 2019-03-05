@@ -9,8 +9,8 @@ class CustomMetricsUtils
         def check_custom_metrics_availability(custom_metric_regions)
             aks_region = ENV['AKS_REGION']
             aks_resource_id = ENV['AKS_RESOURCE_ID']
-            if aks_region.to_s.empty? && aks_resource_id.to_s.empty?
-                false # This will also take care of AKS-Engine Scenario. AKS_REGION/AKS_RESOURCE_ID is not set for AKS-Engine. Only ACS_RESOURCE_NAME is set
+            if aks_region.to_s.empty? || aks_resource_id.to_s.empty?
+                return false # This will also take care of AKS-Engine Scenario. AKS_REGION/AKS_RESOURCE_ID is not set for AKS-Engine. Only ACS_RESOURCE_NAME is set
             end
             
             custom_metrics_regions_arr = custom_metric_regions.split(',')

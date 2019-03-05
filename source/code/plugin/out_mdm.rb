@@ -29,6 +29,7 @@ module Fluent
       @cached_access_token = String.new
       @last_post_attempt_time = Time.now
       @first_post_attempt_made = false
+      @can_send_data_to_mdm = true
     end
 
     def configure(conf)
@@ -39,7 +40,13 @@ module Fluent
 
     def start
       super
-      file = File.read(@@azure_json_path)
+      begin
+        file = File.read(@@azure_json_path)
+      rescue => e
+        @log.info "Unable to read file #{@@azure_json_path} #{e}"
+        @can_send_data_to_mdm = false
+        return
+      end
       # Handle the case where the file read fails. Send Telemetry and exit the plugin? 
       @data_hash = JSON.parse(file)
       @token_url = @@token_url_template % {tenant_id: @data_hash['tenantId']}
@@ -48,11 +55,13 @@ module Fluent
       aks_region = ENV['AKS_REGION']
       if aks_resource_id.to_s.empty?
         @log.info "Environment Variable AKS_RESOURCE_ID is not set.. "
-        raise Exception.new "Environment Variable AKS_RESOURCE_ID is not set!!" 
+        @can_send_data_to_mdm = false
+        return
       end
       if aks_region.to_s.empty?
         @log.info "Environment Variable AKS_REGION is not set.. "
-        raise Exception.new "Environment Variable AKS_REGION is not set!!" 
+        @can_send_data_to_mdm = false
+        return
       end
 
       @@post_request_url = @@post_request_url_template % {aks_region: aks_region, aks_resource_id: aks_resource_id}
@@ -115,14 +124,18 @@ module Fluent
     # 'chunk' is a buffer chunk that includes multiple formatted records
     def write(chunk)
       begin
-        if !@first_post_attempt_made || (Time.now > @last_post_attempt_time + retry_mdm_post_wait_minutes*60)
+        if (!@first_post_attempt_made || (Time.now > @last_post_attempt_time + retry_mdm_post_wait_minutes*60)) && @can_send_data_to_mdm
           post_body = []
           chunk.msgpack_each {|(tag, record)|
             post_body.push(record.to_json)
           }
           send_to_mdm post_body
         else
-          @log.info "Last Failed POST attempt to MDM was made #{((Time.now - @last_post_attempt_time)/60).round(1)} min ago. This is less than the current retry threshold of #{@retry_mdm_post_wait_minutes} min. NO-OP"
+          if !@can_send_data_to_mdm
+            @log.info "Cannot send data to MDM since all required conditions were not met"
+          else
+            @log.info "Last Failed POST attempt to MDM was made #{((Time.now - @last_post_attempt_time)/60).round(1)} min ago. This is less than the current retry threshold of #{@retry_mdm_post_wait_minutes} min. NO-OP"
+          end
         end
       rescue Exception => e
         @log.info "Exception when writing to MDM: #{e}"
