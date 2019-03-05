@@ -6,6 +6,7 @@ module Fluent
   require "logger"
   require "json"
   require_relative "omslog"
+  require_relative "oms_common"
 
   class CPUMemoryHealthFilter < Filter
     Fluent::Plugin.register_filter("filter_health_cpu_memory", self)
@@ -16,7 +17,7 @@ module Fluent
 
     @@HealthConfigFile = "/var/opt/microsoft/docker-cimprov/healthConfig/config"
     @@PluginName = "filter_health_cpu_memory"
-
+    @@hostName = (OMS::Common.get_hostname)
     # Setting the memory and cpu pass and fail percentages to default values
     @@memoryPassPercentage = 80.0
     @@memoryFailPercentage = 90.0
@@ -27,6 +28,7 @@ module Fluent
 
     @@previousCpuHealthDetails = {}
     @@previousPreviousCpuHealthDetails = {}
+    @@nodeLabels = {}
     @@previousCpuHealthStateSent = ""
     @@nodeCpuHealthDataTimeTracker = DateTime.now.to_time.to_i
     @@nodeMemoryRssDataTimeTracker = DateTime.now.to_time.to_i
@@ -66,7 +68,8 @@ module Fluent
       @@cpu_limit = 0.0
       @@memory_limit = 0.0
       begin
-        nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("nodes").body)
+        nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("nodes?fieldSelector=metadata.name%3D#{@@hostName}").body)
+        populateLabels(nodeInventory)
       rescue Exception => e
         @log.info "Error when getting nodeInventory from kube API. Exception: #{e.class} Message: #{e.message} "
         ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
@@ -96,10 +99,6 @@ module Fluent
           healthConfigObject = JSON.parse(fileContents)
           file.close
           if !healthConfigObject.nil?
-            # memPassPercent = healthConfigObject["memoryPassPercentage"]
-            # memFailPercent = healthConfigObject["memoryFailPercentage"]
-            # cpuPassPercent = healthConfigObject["cpuPassPercentage"]
-            # cpuFailPercent = healthConfigObject["cpuFailPercentage"]
             cpuPassPercent = healthConfigObject["NodeCpuMonitor"]["PassPercentage"]
             cpuFailPercent = healthConfigObject["NodeCpuMonitor"]["FailPercentage"]
             memPassPercent = healthConfigObject["NodeMemoryRssMonitor"]["PassPercentage"]
@@ -130,6 +129,23 @@ module Fluent
       end
     end
 
+    def populateLabels(nodeInventory)
+      begin
+        # Since the kube api is queried for one node, the nodeinventory has just one item
+        nodeInventory["items"].each do |node|
+          if !node["metadata"].nil? && !node["metadata"]["labels"].nil?
+            @@nodeLabels = node["metadata"]["labels"]
+          end
+          @@nodeLabels["monitor.azure.com/ClusterName"] = @@clusterName
+          @@nodeLabels["monitor.azure.com/ClusterId"] = @@clusterId
+          @@nodeLabels["monitor.azure.com/ClusterRegion"] = @@clusterRegion
+        end
+      rescue => errorStr
+        @log.debug "Exception occured while parsing node labels, error: #{errorStr}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      end
+    end
+
     def shutdown
       super
     end
@@ -150,12 +166,8 @@ module Fluent
         updateCpuHealthState = false
         cpuHealthRecord = {}
         currentCpuHealthDetails = {}
-        labels = {}
-        labels["ClusterName"] = @@clusterName
-        labels["ClusterId"] = @@clusterId
-        labels["ClusterRegion"] = @@clusterRegion
-        labels["NodeName"] = host
-        cpuHealthRecord["Labels"] = labels.to_json
+        cpuHealthRecord["Labels"] = @@nodeLabels.to_json
+
         cpuHealthRecord["MonitorId"] = "NodeCpuMonitor"
         cpuHealthState = ""
         if cpuMetricPercentValue.to_f < @@cpuPassPercentage
@@ -229,12 +241,7 @@ module Fluent
         memRssHealthRecord = {}
         currentMemoryRssHealthDetails = {}
 
-        labels = {}
-        labels["ClusterName"] = @@clusterName
-        labels["ClusterId"] = @@clusterId
-        labels["ClusterRegion"] = @@clusterRegion
-        labels["NodeName"] = host
-        memRssHealthRecord["Labels"] = labels.to_json
+        memRssHealthRecord["Labels"] = @@nodeLabels.to_json
         memRssHealthRecord["MonitorId"] = "NodeMemoryRssMonitor"
 
         memoryRssHealthState = ""

@@ -86,11 +86,10 @@ module Fluent
             record = {}
             record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
             computerName = item["metadata"]["name"]
-            labels = {}
-            labels["ClusterName"] = @@clusterName
-            labels["ClusterId"] = @@clusterId
-            labels["ClusterRegion"] = @@clusterRegion
-            labels["NodeName"] = computerName
+            labels = item["metadata"]["labels"]
+            labels["monitor.azure.com/ClusterName"] = @@clusterName
+            labels["monitor.azure.com/ClusterId"] = @@clusterId
+            labels["monitor.azure.com/ClusterRegion"] = @@clusterRegion
             # Tracking state change in order to send node health data only in case of state change or timeout
             flushRecord = false
 
