@@ -11,6 +11,7 @@ module Fluent
       require "json"
 
       require_relative "CAdvisorMetricsAPIClient"
+      require_relative "KubernetesApiClient"
       require_relative "oms_common"
       require_relative "omslog"
     end
@@ -46,6 +47,7 @@ module Fluent
       time = Time.now.to_f
       begin
         eventStream = MultiEventStream.new
+        winNodes = KubernetesApiClient.getWindowsNodes()
         metricData = CAdvisorMetricsAPIClient.getMetrics()
         metricData.each do |record|
           record["DataType"] = "LINUX_PERF_BLOB"
