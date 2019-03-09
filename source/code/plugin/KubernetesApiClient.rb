@@ -224,21 +224,21 @@ class KubernetesApiClient
     def getWindowsNodes
       winNodes = []
       begin
-        # kubesystemResourceUri = "namespaces/" + namespace + "/pods"
-        # podInfo = JSON.parse(getKubeResourceInfo(kubesystemResourceUri).body)
         nodeInventory = JSON.parse(getKubeResourceInfo("nodes").body)
+        @Log.info "KubernetesAPIClient::getWindowsNodes : Got nodes from kube api"
         if (!nodeInventory.empty?)
           nodeInventory["items"].each do |item|
             # check for windows operating system in node metadata
             winNode = {}
             nodeStatus = item["status"]
             if !nodeStatus.nil? && !nodeStatus["nodeInfo"].nil? && !nodeStatus["nodeInfo"]["operatingSystem"].nil?
+              @Log.info "KubernetesAPIClient::getWindowsNodes : Iterating through nodes to get windows nodes"
               operatingSystem = nodeStatus["nodeInfo"]["operatingSystem"]
-              if (operatingSystem.is_a? String && operatingSystem.casecmp("windows") == 0)
+              if (operatingSystem.is_a?(String) && operatingSystem.casecmp("windows") == 0)
                 nodeStatusAddresses = nodeStatus["addresses"]
                 if !nodeStatusAddresses.nil?
                   nodeStatusAddresses.each do |address|
-                    winNode[address["type"]] = address[address]
+                    winNode[address["type"]] = address["address"]
                   end
                   winNodes.push(winNode)
                 end
@@ -250,7 +250,6 @@ class KubernetesApiClient
       rescue => error
         @Log.warn("Error in get windows nodes: #{error}")
       end
-      return pods
     end
 
     def getContainerIDs(namespace)

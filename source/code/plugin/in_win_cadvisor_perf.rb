@@ -17,8 +17,7 @@ module Fluent
     end
 
     config_param :run_interval, :time, :default => "1m"
-    config_param :tag, :string, :default => "oms.containerinsights.wincadvisorperf"
-    # config_param :mdmtag, :string, :default => "mdm.cadvisorperf"
+    config_param :tag, :string, :default => "oms.api.wincadvisorperf"
 
     def configure(conf)
       super
@@ -47,20 +46,25 @@ module Fluent
       time = Time.now.to_f
       begin
         eventStream = MultiEventStream.new
+        $log.info "in_win_cadvisor_perf : Getting windows nodes"
         winNodes = KubernetesApiClient.getWindowsNodes()
-        metricData = CAdvisorMetricsAPIClient.getMetrics()
-        metricData.each do |record|
-          record["DataType"] = "LINUX_PERF_BLOB"
-          record["IPName"] = "LogManagement"
-          eventStream.add(time, record) if record
-          #router.emit(@tag, time, record) if record
-        end
-
-        router.emit_stream(@tag, eventStream) if eventStream
-        router.emit_stream(@mdmtag, eventStream) if eventStream
-        @@istestvar = ENV["ISTEST"]
-        if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
-          $log.info("winCAdvisorPerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+        $log.info "in_win_cadvisor_perf : Successuly got windows nodes"
+        winNodes.each do |winNode|
+          metricData = CAdvisorMetricsAPIClient.getMetrics(winNode)
+          # $log.info "windows node metric data: #{metricData}"
+          metricData.each do |record|
+            if !record.empty?
+              record["DataType"] = "LINUX_PERF_BLOB"
+              record["IPName"] = "LogManagement"
+              eventStream.add(time, record) if record
+              #$log.info "windows node record: #{record}"
+            end
+          end
+          router.emit_stream(@tag, eventStream) if eventStream
+          @@istestvar = ENV["ISTEST"]
+          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
+            $log.info("winCAdvisorPerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+          end
         end
       rescue => errorStr
         $log.warn "Failed to retrieve cadvisor metric data for windows nodes: #{errorStr}"
