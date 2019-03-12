@@ -15,12 +15,14 @@ class CAdvisorMetricsAPIClient
 
   @LogPath = "/var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt"
   @Log = Logger.new(@LogPath, 2, 10 * 1048576) #keep last 2 files, max log file size = 10M
-  @@rxBytesLast = nil
-  @@rxBytesTimeLast = nil
-  @@txBytesLast = nil
-  @@txBytesTimeLast = nil
+  #   @@rxBytesLast = nil
+  #   @@rxBytesTimeLast = nil
+  #   @@txBytesLast = nil
+  #   @@txBytesTimeLast = nil
   @@nodeCpuUsageNanoSecondsLast = nil
   @@nodeCpuUsageNanoSecondsTimeLast = nil
+  @@winNodeCpuUsageNanoSecondsLast = {}
+  @@winNodeCpuUsageNanoSecondsTimeLast = {}
   @@telemetryCpuMetricTimeTracker = DateTime.now.to_time.to_i
   @@telemetryMemoryMetricTimeTracker = DateTime.now.to_time.to_i
 
@@ -77,8 +79,10 @@ class CAdvisorMetricsAPIClient
       begin
         if !winNode.nil?
           hostName = winNode["Hostname"]
+          operatingSystem = "Windows"
         else
           hostName = (OMS::Common.get_hostname)
+          operatingSystem = "Linux"
         end
         metricInfo = JSON.parse(getSummaryStatsFromCAdvisor(winNode).body)
         #@Log.info "metric info: #{metricInfo}"
@@ -88,24 +92,26 @@ class CAdvisorMetricsAPIClient
           metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "rssBytes", "memoryRssBytes"))
           metricDataItems.concat(getContainerStartTimeMetricItems(metricInfo, hostName, "restartTimeEpoch"))
 
-          cpuUsageNanoSecondsRate = getNodeMetricItemRate(metricInfo, hostName, "cpu", "usageCoreNanoSeconds", "cpuUsageNanoCores")
+          cpuUsageNanoSecondsRate = getNodeMetricItemRate(metricInfo, hostName, "cpu", "usageCoreNanoSeconds", "cpuUsageNanoCores", operatingSystem)
           if cpuUsageNanoSecondsRate && !cpuUsageNanoSecondsRate.empty? && !cpuUsageNanoSecondsRate.nil?
             metricDataItems.push(cpuUsageNanoSecondsRate)
           end
           metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "memory", "workingSetBytes", "memoryWorkingSetBytes"))
           metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "memory", "rssBytes", "memoryRssBytes"))
-          metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "network", "rxBytes", "networkRxBytes"))
-          metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "network", "txBytes", "networkTxBytes"))
+
           metricDataItems.push(getNodeLastRebootTimeMetric(metricInfo, hostName, "restartTimeEpoch"))
 
-          networkRxRate = getNodeMetricItemRate(metricInfo, hostName, "network", "rxBytes", "networkRxBytesPerSec")
-          if networkRxRate && !networkRxRate.empty? && !networkRxRate.nil?
-            metricDataItems.push(networkRxRate)
-          end
-          networkTxRate = getNodeMetricItemRate(metricInfo, hostName, "network", "txBytes", "networkTxBytesPerSec")
-          if networkTxRate && !networkTxRate.empty? && !networkTxRate.nil?
-            metricDataItems.push(networkTxRate)
-          end
+          # Disabling networkRxRate and networkTxRate since we dont use it as of now.
+          #metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "network", "rxBytes", "networkRxBytes"))
+          #metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "network", "txBytes", "networkTxBytes"))
+          #   networkRxRate = getNodeMetricItemRate(metricInfo, hostName, "network", "rxBytes", "networkRxBytesPerSec")
+          #   if networkRxRate && !networkRxRate.empty? && !networkRxRate.nil?
+          #     metricDataItems.push(networkRxRate)
+          #   end
+          #   networkTxRate = getNodeMetricItemRate(metricInfo, hostName, "network", "txBytes", "networkTxBytesPerSec")
+          #   if networkTxRate && !networkTxRate.empty? && !networkTxRate.nil?
+          #     metricDataItems.push(networkTxRate)
+          #   end
         else
           @Log.warn("Couldn't get metric information for host: #{hostName}")
         end
@@ -280,7 +286,7 @@ class CAdvisorMetricsAPIClient
       return metricItem
     end
 
-    def getNodeMetricItemRate(metricJSON, hostName, metricCategory, metricNameToCollect, metricNametoReturn)
+    def getNodeMetricItemRate(metricJSON, hostName, metricCategory, metricNameToCollect, metricNametoReturn, operatingSystem)
       metricItem = {}
       clusterId = KubernetesApiClient.getClusterId
       begin
@@ -292,41 +298,61 @@ class CAdvisorMetricsAPIClient
           metricValue = node[metricCategory][metricNameToCollect]
           metricTime = node[metricCategory]["time"]
 
-          if !(metricNameToCollect == "rxBytes" || metricNameToCollect == "txBytes" || metricNameToCollect == "usageCoreNanoSeconds")
-            @Log.warn("getNodeMetricItemRate : rateMetric is supported only for rxBytes, txBytes & usageCoreNanoSeconds and not for #{metricNameToCollect}")
+          #   if !(metricNameToCollect == "rxBytes" || metricNameToCollect == "txBytes" || metricNameToCollect == "usageCoreNanoSeconds")
+          #     @Log.warn("getNodeMetricItemRate : rateMetric is supported only for rxBytes, txBytes & usageCoreNanoSeconds and not for #{metricNameToCollect}")
+          if !(metricNameToCollect == "usageCoreNanoSeconds")
+            @Log.warn("getNodeMetricItemRate : rateMetric is supported only for usageCoreNanoSeconds and not for #{metricNameToCollect}")
             return nil
-          elsif metricNameToCollect == "rxBytes"
-            if @@rxBytesLast.nil? || @@rxBytesTimeLast.nil? || @@rxBytesLast > metricValue #when kubelet is restarted the last condition will be true
-              @@rxBytesLast = metricValue
-              @@rxBytesTimeLast = metricTime
-              return nil
-            else
-              metricRateValue = ((metricValue - @@rxBytesLast) * 1.0) / (DateTime.parse(metricTime).to_time - DateTime.parse(@@rxBytesTimeLast).to_time)
-              @@rxBytesLast = metricValue
-              @@rxBytesTimeLast = metricTime
-              metricValue = metricRateValue
-            end
-          elsif metricNameToCollect == "txBytes"
-            if @@txBytesLast.nil? || @@txBytesTimeLast.nil? || @@txBytesLast > metricValue #when kubelet is restarted the last condition will be true
-              @@txBytesLast = metricValue
-              @@txBytesTimeLast = metricTime
-              return nil
-            else
-              metricRateValue = ((metricValue - @@txBytesLast) * 1.0) / (DateTime.parse(metricTime).to_time - DateTime.parse(@@txBytesTimeLast).to_time)
-              @@txBytesLast = metricValue
-              @@txBytesTimeLast = metricTime
-              metricValue = metricRateValue
-            end
+            #   elsif metricNameToCollect == "rxBytes"
+            #     if @@rxBytesLast.nil? || @@rxBytesTimeLast.nil? || @@rxBytesLast > metricValue #when kubelet is restarted the last condition will be true
+            #       @@rxBytesLast = metricValue
+            #       @@rxBytesTimeLast = metricTime
+            #       return nil
+            #     else
+            #       metricRateValue = ((metricValue - @@rxBytesLast) * 1.0) / (DateTime.parse(metricTime).to_time - DateTime.parse(@@rxBytesTimeLast).to_time)
+            #       @@rxBytesLast = metricValue
+            #       @@rxBytesTimeLast = metricTime
+            #       metricValue = metricRateValue
+            #     end
+            #   elsif metricNameToCollect == "txBytes"
+            #     if @@txBytesLast.nil? || @@txBytesTimeLast.nil? || @@txBytesLast > metricValue #when kubelet is restarted the last condition will be true
+            #       @@txBytesLast = metricValue
+            #       @@txBytesTimeLast = metricTime
+            #       return nil
+            #     else
+            #       metricRateValue = ((metricValue - @@txBytesLast) * 1.0) / (DateTime.parse(metricTime).to_time - DateTime.parse(@@txBytesTimeLast).to_time)
+            #       @@txBytesLast = metricValue
+            #       @@txBytesTimeLast = metricTime
+            #       metricValue = metricRateValue
+            #     end
           else
-            if @@nodeCpuUsageNanoSecondsLast.nil? || @@nodeCpuUsageNanoSecondsTimeLast.nil? || @@nodeCpuUsageNanoSecondsLast > metricValue #when kubelet is restarted the last condition will be true
-              @@nodeCpuUsageNanoSecondsLast = metricValue
-              @@nodeCpuUsageNanoSecondsTimeLast = metricTime
-              return nil
-            else
-              metricRateValue = ((metricValue - @@nodeCpuUsageNanoSecondsLast) * 1.0) / (DateTime.parse(metricTime).to_time - DateTime.parse(@@nodeCpuUsageNanoSecondsTimeLast).to_time)
-              @@nodeCpuUsageNanoSecondsLast = metricValue
-              @@nodeCpuUsageNanoSecondsTimeLast = metricTime
-              metricValue = metricRateValue
+            if (operatingSystem == "Linux")
+              if @@nodeCpuUsageNanoSecondsLast.nil? || @@nodeCpuUsageNanoSecondsTimeLast.nil? || @@nodeCpuUsageNanoSecondsLast > metricValue #when kubelet is restarted the last condition will be true
+                @@nodeCpuUsageNanoSecondsLast = metricValue
+                @@nodeCpuUsageNanoSecondsTimeLast = metricTime
+                return nil
+              else
+                metricRateValue = ((metricValue - @@nodeCpuUsageNanoSecondsLast) * 1.0) / (DateTime.parse(metricTime).to_time - DateTime.parse(@@nodeCpuUsageNanoSecondsTimeLast).to_time)
+                @@nodeCpuUsageNanoSecondsLast = metricValue
+                @@nodeCpuUsageNanoSecondsTimeLast = metricTime
+                metricValue = metricRateValue
+              end
+            elsif (operatingSystem == "Windows")
+                # Using the hash for windows nodes since this is running in replica set and there can be multiple nodes
+                if @@winNodeCpuUsageNanoSecondsLast[hostName].nil? || @@winNodeCpuUsageNanoSecondsTimeLast[hostName].nil? || @@winNodeCpuUsageNanoSecondsLast[hostName] > metricValue #when kubelet is restarted the last condition will be true
+                    @@winNodeCpuUsageNanoSecondsLast[hostName] = metricValue
+                    @@winNodeCpuUsageNanoSecondsTimeLast[hostName] = metricTime
+                    @Log.info "@@nodeCpuUsageNanoSecondsLast: #{@@nodeCpuUsageNanoSecondsLast}"
+              @Log.info "@@nodeCpuUsageNanoSecondsTimeLast: #{@@nodeCpuUsageNanoSecondsTimeLast}"
+              @Log.info "In condition 1"
+              @Log.info "metricValue :#{metricValue}"
+              @Log.info "metricTime :#{metricTime}"
+                    return nil
+                  else
+                    metricRateValue = ((metricValue - @@winNodeCpuUsageNanoSecondsLast[hostName]) * 1.0) / (DateTime.parse(metricTime).to_time - DateTime.parse(@@winNodeCpuUsageNanoSecondsTimeLast[hostName]).to_time)
+                    @@winNodeCpuUsageNanoSecondsLast[hostName] = metricValue
+                    @@winNodeCpuUsageNanoSecondsTimeLast[hostName] = metricTime
+                    metricValue = metricRateValue
             end
           end
           metricItem["DataItems"] = []
