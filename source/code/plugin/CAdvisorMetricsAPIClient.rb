@@ -326,7 +326,7 @@ class CAdvisorMetricsAPIClient
             #       metricValue = metricRateValue
             #     end
           else
-            if (operatingSystem == "Linux")
+            if operatingSystem == "Linux"
               if @@nodeCpuUsageNanoSecondsLast.nil? || @@nodeCpuUsageNanoSecondsTimeLast.nil? || @@nodeCpuUsageNanoSecondsLast > metricValue #when kubelet is restarted the last condition will be true
                 @@nodeCpuUsageNanoSecondsLast = metricValue
                 @@nodeCpuUsageNanoSecondsTimeLast = metricTime
@@ -337,22 +337,31 @@ class CAdvisorMetricsAPIClient
                 @@nodeCpuUsageNanoSecondsTimeLast = metricTime
                 metricValue = metricRateValue
               end
-            elsif (operatingSystem == "Windows")
-                # Using the hash for windows nodes since this is running in replica set and there can be multiple nodes
-                if @@winNodeCpuUsageNanoSecondsLast[hostName].nil? || @@winNodeCpuUsageNanoSecondsTimeLast[hostName].nil? || @@winNodeCpuUsageNanoSecondsLast[hostName] > metricValue #when kubelet is restarted the last condition will be true
-                    @@winNodeCpuUsageNanoSecondsLast[hostName] = metricValue
-                    @@winNodeCpuUsageNanoSecondsTimeLast[hostName] = metricTime
-                    @Log.info "@@nodeCpuUsageNanoSecondsLast: #{@@nodeCpuUsageNanoSecondsLast}"
-              @Log.info "@@nodeCpuUsageNanoSecondsTimeLast: #{@@nodeCpuUsageNanoSecondsTimeLast}"
-              @Log.info "In condition 1"
-              @Log.info "metricValue :#{metricValue}"
-              @Log.info "metricTime :#{metricTime}"
-                    return nil
-                  else
-                    metricRateValue = ((metricValue - @@winNodeCpuUsageNanoSecondsLast[hostName]) * 1.0) / (DateTime.parse(metricTime).to_time - DateTime.parse(@@winNodeCpuUsageNanoSecondsTimeLast[hostName]).to_time)
-                    @@winNodeCpuUsageNanoSecondsLast[hostName] = metricValue
-                    @@winNodeCpuUsageNanoSecondsTimeLast[hostName] = metricTime
-                    metricValue = metricRateValue
+            elsif operatingSystem == "Windows"
+              # Using the hash for windows nodes since this is running in replica set and there can be multiple nodes
+              if @@winNodeCpuUsageNanoSecondsLast[hostName].nil? || @@winNodeCpuUsageNanoSecondsTimeLast[hostName].nil? || @@winNodeCpuUsageNanoSecondsLast[hostName] > metricValue #when kubelet is restarted the last condition will be true
+                @@winNodeCpuUsageNanoSecondsLast[hostName] = metricValue
+                @@winNodeCpuUsageNanoSecondsTimeLast[hostName] = metricTime
+                # @Log.info "@@winNodeCpuUsageNanoSecondsLast[#{hostName}]: #{@@winNodeCpuUsageNanoSecondsLast[hostName]}"
+                # @Log.info "@@winNodeCpuUsageNanoSecondsLast[#{hostName}]: #{@@winNodeCpuUsageNanoSecondsLast[hostName]}"
+                # @Log.info "In condition 1"
+                # @Log.info "metricValue :#{metricValue}"
+                # @Log.info "metricTime :#{metricTime}"
+                return nil
+              else
+                metricRateValue = ((metricValue - @@winNodeCpuUsageNanoSecondsLast[hostName]) * 1.0) / (DateTime.parse(metricTime).to_time - DateTime.parse(@@winNodeCpuUsageNanoSecondsTimeLast[hostName]).to_time)
+                # @Log.info "In condition 2"
+                # @Log.info "metricValue :#{metricValue}"
+                # @Log.info "@@winNodeCpuUsageNanoSecondsLast[#{hostName}]: #{@@winNodeCpuUsageNanoSecondsLast[hostName]}"
+                # @Log.info "metricTime :#{metricTime}"
+                # @Log.info "DateTime.parse(metricTime).to_time: #{DateTime.parse(metricTime).to_time}"
+                # @Log.info "@@winNodeCpuUsageNanoSecondsTimeLast[#{hostName}]: #{@@winNodeCpuUsageNanoSecondsTimeLast[hostName]}"
+                # @Log.info "DateTime.parse(@@winNodeCpuUsageNanoSecondsTimeLast[#{hostName}].to_time: #{DateTime.parse(@@winNodeCpuUsageNanoSecondsTimeLast[hostName]).to_time}"
+                # @Log.info "metricRateValue: #{metricRateValue}"
+                @@winNodeCpuUsageNanoSecondsLast[hostName] = metricValue
+                @@winNodeCpuUsageNanoSecondsTimeLast[hostName] = metricTime
+                metricValue = metricRateValue
+              end
             end
           end
           metricItem["DataItems"] = []
