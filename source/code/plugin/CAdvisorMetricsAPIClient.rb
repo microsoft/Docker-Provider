@@ -23,6 +23,8 @@ class CAdvisorMetricsAPIClient
   @@nodeCpuUsageNanoSecondsTimeLast = nil
   @@winNodeCpuUsageNanoSecondsLast = {}
   @@winNodeCpuUsageNanoSecondsTimeLast = {}
+  @@winContainerCpuUsageNanoSecondsLast = {}
+  @@winContainerCpuUsageNanoSecondsTimeLast = {}
   @@telemetryCpuMetricTimeTracker = DateTime.now.to_time.to_i
   @@telemetryMemoryMetricTimeTracker = DateTime.now.to_time.to_i
 
@@ -87,10 +89,18 @@ class CAdvisorMetricsAPIClient
         metricInfo = JSON.parse(getSummaryStatsFromCAdvisor(winNode).body)
         #@Log.info "metric info: #{metricInfo}"
         if !metricInfo.nil?
-          metricDataItems.concat(getContainerCpuMetricItems(metricInfo, hostName, "usageNanoCores", "cpuUsageNanoCores"))
           metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", "memoryWorkingSetBytes"))
           metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "rssBytes", "memoryRssBytes"))
           metricDataItems.concat(getContainerStartTimeMetricItems(metricInfo, hostName, "restartTimeEpoch"))
+
+          if operatingSystem == "Linux"
+            metricDataItems.concat(getContainerCpuMetricItems(metricInfo, hostName, "usageNanoCores", "cpuUsageNanoCores"))
+          elsif operatingSystem == "Windows"
+            containerCpuUsageNanoSecondsRate = getContainerCpuMetricItemRate(metricInfo, hostName, "usageCoreNanoSeconds", "cpuUsageNanoCores")
+            if containerCpuUsageNanoSecondsRate && !containerCpuUsageNanoSecondsRate.empty? && !containerCpuUsageNanoSecondsRate.nil?
+              metricDataItems.push(containerCpuUsageNanoSecondsRate)
+            end
+          end
 
           cpuUsageNanoSecondsRate = getNodeMetricItemRate(metricInfo, hostName, "cpu", "usageCoreNanoSeconds", "cpuUsageNanoCores", operatingSystem)
           if cpuUsageNanoSecondsRate && !cpuUsageNanoSecondsRate.empty? && !cpuUsageNanoSecondsRate.nil?
@@ -181,6 +191,95 @@ class CAdvisorMetricsAPIClient
         end
       rescue => error
         @Log.warn("getcontainerCpuMetricItems failed: #{error} for metric #{cpuMetricNameToCollect}")
+        return metricItems
+      end
+      return metricItems
+    end
+
+    # usageNanoCores doesnt exist for windows nodes. Hence need to compute this from usageCoreNanoSeconds
+    def getContainerCpuMetricItemRate(metricJSON, hostName, cpuMetricNameToCollect, metricNametoReturn)
+      metricItems = []
+      clusterId = KubernetesApiClient.getClusterId
+      timeDifference = (DateTime.now.to_time.to_i - @@telemetryCpuMetricTimeTracker).abs
+      timeDifferenceInMinutes = timeDifference / 60
+      begin
+        metricInfo = metricJSON
+        metricInfo["pods"].each do |pod|
+          podUid = pod["podRef"]["uid"]
+          podName = pod["podRef"]["name"]
+          podNamespace = pod["podRef"]["namespace"]
+
+          if (!pod["containers"].nil?)
+            pod["containers"].each do |container|
+              #cpu metric
+              containerName = container["name"]
+              metricValue = container["cpu"][cpuMetricNameToCollect]
+              metricTime = container["cpu"]["time"]
+              metricItem = {}
+              metricItem["DataItems"] = []
+
+              metricProps = {}
+              metricProps["Timestamp"] = metricTime
+              metricProps["Host"] = hostName
+              metricProps["ObjectName"] = "K8SContainer"
+              metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
+
+              metricProps["Collections"] = []
+              metricCollections = {}
+              metricCollections["CounterName"] = metricNametoReturn
+
+              containerId = podUid + "/" + containerName
+              if @@winContainerCpuUsageNanoSecondsLast[containerId].nil? || @@winContainerCpuUsageNanoSecondsTimeLast[containerId].nil? || @@winContainerCpuUsageNanoSecondsLast[containerId] > metricValue #when kubelet is restarted the last condition will be true
+                @@winContainerCpuUsageNanoSecondsLast[containerId] = metricValue
+                @@winContainerCpuUsageNanoSecondsTimeLast[containerId] = metricTime
+                @Log.info "In condition 1"
+                @Log.info "metricValue :#{metricValue}"
+                @Log.info "metricTime :#{metricTime}"
+                return nil
+              else
+                metricRateValue = ((metricValue - @@winContainerCpuUsageNanoSecondsLast[containerId]) * 1.0) / (DateTime.parse(metricTime).to_time - DateTime.parse(@@winContainerCpuUsageNanoSecondsTimeLast[containerId]).to_time)
+                @Log.info "In condition 2"
+                @Log.info "metricValue :#{metricValue}"
+                @Log.info "@@winContainerCpuUsageNanoSecondsLast[#{containerId}]: #{@@winContainerCpuUsageNanoSecondsLast[containerId]}"
+                @Log.info "metricTime :#{metricTime}"
+                @Log.info "DateTime.parse(metricTime).to_time: #{DateTime.parse(metricTime).to_time}"
+                @Log.info "@@winContainerCpuUsageNanoSecondsTimeLast[#{containerId}]: #{@@winContainerCpuUsageNanoSecondsTimeLast[containerId]}"
+                @Log.info "DateTime.parse(@@winContainerCpuUsageNanoSecondsTimeLast[#{containerId}].to_time: #{DateTime.parse(@@winContainerCpuUsageNanoSecondsTimeLast[containerId]).to_time}"
+                @Log.info "metricRateValue: #{metricRateValue}"
+                @@winContainerCpuUsageNanoSecondsLast[containerId] = metricValue
+                @@winContainerCpuUsageNanoSecondsTimeLast[containerId] = metricTime
+                metricValue = metricRateValue
+              end
+
+              metricCollections["Value"] = metricValue
+
+              metricProps["Collections"].push(metricCollections)
+              metricItem["DataItems"].push(metricProps)
+              metricItems.push(metricItem)
+              #Telemetry about agent performance
+              begin
+                # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
+                # cadvisor does not have pod/container metadata. so would need more work to cache as pv & use
+                if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent") && metricNametoReturn.eql?("cpuUsageNanoCores"))
+                  if (timeDifferenceInMinutes >= 10)
+                    telemetryProps = {}
+                    telemetryProps["PodName"] = podName
+                    telemetryProps["ContainerName"] = containerName
+                    ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
+                  end
+                end
+              rescue => errorStr
+                $log.warn("Exception while generating Telemetry from getcontainerCpuMetricItems failed: #{errorStr} for metric #{cpuMetricNameToCollect}")
+              end
+            end
+          end
+        end
+        # reset time outside pod iterator as we use one timer per metric for 2 pods (ds & rs)
+        if (timeDifferenceInMinutes >= 10 && metricNametoReturn.eql?("cpuUsageNanoCores"))
+          @@telemetryCpuMetricTimeTracker = DateTime.now.to_time.to_i
+        end
+      rescue => error
+        @Log.warn("getcontainerCpuMetricItemRate failed: #{error} for metric #{cpuMetricNameToCollect}")
         return metricItems
       end
       return metricItems
