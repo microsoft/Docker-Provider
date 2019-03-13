@@ -90,15 +90,16 @@ class CAdvisorMetricsAPIClient
         #@Log.info "metric info: #{metricInfo}"
         if !metricInfo.nil?
           metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", "memoryWorkingSetBytes"))
-          metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "rssBytes", "memoryRssBytes"))
+          # metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "rssBytes", "memoryRssBytes"))
           metricDataItems.concat(getContainerStartTimeMetricItems(metricInfo, hostName, "restartTimeEpoch"))
 
           if operatingSystem == "Linux"
             metricDataItems.concat(getContainerCpuMetricItems(metricInfo, hostName, "usageNanoCores", "cpuUsageNanoCores"))
+            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "rssBytes", "memoryRssBytes"))
           elsif operatingSystem == "Windows"
             containerCpuUsageNanoSecondsRate = getContainerCpuMetricItemRate(metricInfo, hostName, "usageCoreNanoSeconds", "cpuUsageNanoCores")
             if containerCpuUsageNanoSecondsRate && !containerCpuUsageNanoSecondsRate.empty? && !containerCpuUsageNanoSecondsRate.nil?
-              metricDataItems.push(containerCpuUsageNanoSecondsRate)
+              metricDataItems.concat(containerCpuUsageNanoSecondsRate)
             end
           end
 
@@ -167,6 +168,7 @@ class CAdvisorMetricsAPIClient
               metricProps["Collections"].push(metricCollections)
               metricItem["DataItems"].push(metricProps)
               metricItems.push(metricItem)
+              # @Log.info "Container : countername: #{metricCollections["CounterName"]}, countervalue: #{metricCollections["Value"]}"
               #Telemetry about agent performance
               begin
                 # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
@@ -232,20 +234,20 @@ class CAdvisorMetricsAPIClient
               if @@winContainerCpuUsageNanoSecondsLast[containerId].nil? || @@winContainerCpuUsageNanoSecondsTimeLast[containerId].nil? || @@winContainerCpuUsageNanoSecondsLast[containerId] > metricValue #when kubelet is restarted the last condition will be true
                 @@winContainerCpuUsageNanoSecondsLast[containerId] = metricValue
                 @@winContainerCpuUsageNanoSecondsTimeLast[containerId] = metricTime
-                @Log.info "In condition 1"
-                @Log.info "metricValue :#{metricValue}"
-                @Log.info "metricTime :#{metricTime}"
+                # @Log.info "In condition 1"
+                # @Log.info "metricValue :#{metricValue}"
+                # @Log.info "metricTime :#{metricTime}"
                 return nil
               else
                 metricRateValue = ((metricValue - @@winContainerCpuUsageNanoSecondsLast[containerId]) * 1.0) / (DateTime.parse(metricTime).to_time - DateTime.parse(@@winContainerCpuUsageNanoSecondsTimeLast[containerId]).to_time)
-                @Log.info "In condition 2"
-                @Log.info "metricValue :#{metricValue}"
-                @Log.info "@@winContainerCpuUsageNanoSecondsLast[#{containerId}]: #{@@winContainerCpuUsageNanoSecondsLast[containerId]}"
-                @Log.info "metricTime :#{metricTime}"
-                @Log.info "DateTime.parse(metricTime).to_time: #{DateTime.parse(metricTime).to_time}"
-                @Log.info "@@winContainerCpuUsageNanoSecondsTimeLast[#{containerId}]: #{@@winContainerCpuUsageNanoSecondsTimeLast[containerId]}"
-                @Log.info "DateTime.parse(@@winContainerCpuUsageNanoSecondsTimeLast[#{containerId}].to_time: #{DateTime.parse(@@winContainerCpuUsageNanoSecondsTimeLast[containerId]).to_time}"
-                @Log.info "metricRateValue: #{metricRateValue}"
+                # @Log.info "In condition 2"
+                # @Log.info "metricValue :#{metricValue}"
+                # @Log.info "@@winContainerCpuUsageNanoSecondsLast[#{containerId}]: #{@@winContainerCpuUsageNanoSecondsLast[containerId]}"
+                # @Log.info "metricTime :#{metricTime}"
+                # @Log.info "DateTime.parse(metricTime).to_time: #{DateTime.parse(metricTime).to_time}"
+                # @Log.info "@@winContainerCpuUsageNanoSecondsTimeLast[#{containerId}]: #{@@winContainerCpuUsageNanoSecondsTimeLast[containerId]}"
+                # @Log.info "DateTime.parse(@@winContainerCpuUsageNanoSecondsTimeLast[#{containerId}].to_time: #{DateTime.parse(@@winContainerCpuUsageNanoSecondsTimeLast[containerId]).to_time}"
+                # @Log.info "metricRateValue: #{metricRateValue}"
                 @@winContainerCpuUsageNanoSecondsLast[containerId] = metricValue
                 @@winContainerCpuUsageNanoSecondsTimeLast[containerId] = metricTime
                 metricValue = metricRateValue
@@ -256,6 +258,8 @@ class CAdvisorMetricsAPIClient
               metricProps["Collections"].push(metricCollections)
               metricItem["DataItems"].push(metricProps)
               metricItems.push(metricItem)
+              # @Log.info "Container: countername: #{metricCollections["CounterName"]}, countervalue: #{metricCollections["Value"]}"
+              @Log.info "#{metricItem}"
               #Telemetry about agent performance
               begin
                 # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
@@ -319,6 +323,8 @@ class CAdvisorMetricsAPIClient
               metricProps["Collections"].push(metricCollections)
               metricItem["DataItems"].push(metricProps)
               metricItems.push(metricItem)
+              @Log.info "#{metricItem}"
+              # @Log.info "Container - countername: #{metricCollections["CounterName"]}, countervalue: #{metricCollections["Value"]}"
               #Telemetry about agent performance
               begin
                 # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
@@ -376,6 +382,7 @@ class CAdvisorMetricsAPIClient
 
           metricProps["Collections"].push(metricCollections)
           metricItem["DataItems"].push(metricProps)
+          # @Log.info "Node - countername: #{metricCollections["CounterName"]}, countervalue: #{metricCollections["Value"]}"
         end
       rescue => error
         @Log.warn("getNodeMetricItem failed: #{error} for metric #{metricNameToCollect}")
@@ -477,7 +484,9 @@ class CAdvisorMetricsAPIClient
           metricCollections["Value"] = metricValue
 
           metricProps["Collections"].push(metricCollections)
+          # @Log.info "Node - countername: #{metricCollections["CounterName"]}, countervalue: #{metricCollections["Value"]}"
           metricItem["DataItems"].push(metricProps)
+          @Log.info "#{metricItem}"
         end
       rescue => error
         @Log.warn("getNodeMetricItemRate failed: #{error} for metric #{metricNameToCollect}")
@@ -515,6 +524,7 @@ class CAdvisorMetricsAPIClient
 
         metricProps["Collections"].push(metricCollections)
         metricItem["DataItems"].push(metricProps)
+        # @Log.info "Node - countername: #{metricCollections["CounterName"]}, countervalue: #{metricCollections["Value"]}"
       rescue => error
         @Log.warn("getNodeLastRebootTimeMetric failed: #{error} ")
         @Log.warn metricJSON
@@ -554,6 +564,7 @@ class CAdvisorMetricsAPIClient
               metricProps["Collections"].push(metricCollections)
               metricItem["DataItems"].push(metricProps)
               metricItems.push(metricItem)
+              # @Log.info "Container - countername: #{metricCollections["CounterName"]}, countervalue: #{metricCollections["Value"]}"
             end
           end
         end
