@@ -246,16 +246,11 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 		if val, ok := imageIDMap[containerID]; ok {
 			stringMap["Image"] = val
-		} else {
-			Log("ContainerId %s not present in Name Map ", containerID)
-		}
+		} 
 
 		if val, ok := nameIDMap[containerID]; ok {
 			stringMap["Name"] = val
-		} else {
-			Log("ContainerId %s not present in Image Map ", containerID)
-		}
-
+		} 
 
 		dataItem := DataItem{
 			ID:                    stringMap["Id"],
@@ -318,6 +313,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			}
 			return output.FLB_RETRY
 		}
+
+		defer resp.Body.Close()
 
 		numRecords := len(dataItems)
 		Log("Successfully flushed %d records in %s", numRecords, elapsed)

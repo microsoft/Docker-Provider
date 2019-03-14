@@ -154,20 +154,42 @@ module Fluent
             timestamp = DateTime.now
             pod_count_hash = Hash.new
             no_phase_dim_values_hash = Hash.new
+            total_pod_count = 0
+            pod_count_by_phase = {}
+	    podUids = {}
+            record_count = 0
             begin
                 records = []
                 es.each{|time,record|
-                    
+                    record_count += 1
                     timestamp = record['DataItems'][0]['CollectionTime']
+                    podUid = record['DataItems'][0]['PodUid']
+                    
+		    if podUids.key?(podUid)
+                        #@log.info "pod with #{podUid} already counted"
+                        next
+                    end
+
+                    podUids[podUid] = true
                     podPhaseDimValue = record['DataItems'][0]['PodStatus']
                     podNamespaceDimValue = record['DataItems'][0]['Namespace']
                     podControllerNameDimValue = record['DataItems'][0]['ControllerName']
                     podNodeDimValue = record['DataItems'][0]['Computer']
-                    
+
                     # group by distinct dimension values
                     pod_key = [podNodeDimValue, podNamespaceDimValue, podControllerNameDimValue, podPhaseDimValue].join('~~')
-                    
-                    if pod_count_hash.key?(pod_key) 
+
+                    if pod_count_by_phase.key?(podPhaseDimValue)
+                        phase_count = pod_count_by_phase[podPhaseDimValue]
+                        phase_count += 1
+                        pod_count_by_phase[podPhaseDimValue] = phase_count
+                    else
+                        pod_count_by_phase[podPhaseDimValue] = 1
+                    end
+
+                    total_pod_count += 1
+
+                    if pod_count_hash.key?(pod_key)
                         pod_count = pod_count_hash[pod_key]
                         pod_count = pod_count + 1
                         pod_count_hash[pod_key] = pod_count
@@ -175,7 +197,7 @@ module Fluent
                         pod_count = 1
                         pod_count_hash[pod_key] = pod_count
                     end
-
+                    
                     # Collect all possible combinations of dimension values other than pod phase
                     key_without_phase_dim_value = [podNodeDimValue, podNamespaceDimValue, podControllerNameDimValue].join('~~')
                     if no_phase_dim_values_hash.key?(key_without_phase_dim_value)
@@ -191,7 +213,7 @@ module Fluent
                         pod_key = [key, phase].join('~~')
                         if !pod_count_hash.key?(pod_key)
                             pod_count_hash[pod_key] = 0
-                            @log.info "Zero filled #{pod_key}"
+                            #@log.info "Zero filled #{pod_key}"
                         else
                             next
                         end
@@ -227,6 +249,7 @@ module Fluent
                 ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
                 return [],timestamp
             end
+            @log.info "Record Count #{record_count} pod count = #{total_pod_count} Pod Count To Phase #{pod_count_by_phase} "
             return records, timestamp
         end
 

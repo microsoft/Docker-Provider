@@ -1,3 +1,6 @@
+#!/usr/local/bin/ruby
+# frozen_string_literal: true
+
 module Fluent
 
   class OutputMDM < BufferedOutput
