@@ -5,6 +5,8 @@ module Fluent
   class Win_CAdvisor_Perf_Input < Input
     Plugin.register_input("wincadvisorperf", self)
 
+    @@winNodes = []
+
     def initialize
       super
       require "yaml"
@@ -29,6 +31,7 @@ module Fluent
         @condition = ConditionVariable.new
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
+        @@winNodeQueryTimeTracker = DateTime.now.to_time.to_i
       end
     end
 
@@ -48,10 +51,14 @@ module Fluent
         eventStream = MultiEventStream.new
         # $log.info "1"
         $log.info "in_win_cadvisor_perf : Getting windows nodes"
-        winNodes = KubernetesApiClient.getWindowsNodes()
+        timeDifference = (DateTime.now.to_time.to_i - @@winNodeQueryTimeTracker).abs
+        timeDifferenceInMinutes = timeDifference / 60
+        if (timeDifferenceInMinutes >= 5)
+          @@winNodes = KubernetesApiClient.getWindowsNodes()
+          $log.info "in_win_cadvisor_perf : Successuly got windows nodes"
+        end
         # $log.info "2"
-        $log.info "in_win_cadvisor_perf : Successuly got windows nodes"
-        winNodes.each do |winNode|
+        @@winNodes.each do |winNode|
           # $log.info "3"
           metricData = CAdvisorMetricsAPIClient.getMetrics(winNode)
           # $log.info "4"

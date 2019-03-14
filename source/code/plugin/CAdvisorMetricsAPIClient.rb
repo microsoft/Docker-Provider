@@ -239,7 +239,12 @@ class CAdvisorMetricsAPIClient
                 # @Log.info "metricTime :#{metricTime}"
                 return nil
               else
-                metricRateValue = ((metricValue - @@winContainerCpuUsageNanoSecondsLast[containerId]) * 1.0) / (DateTime.parse(metricTime).to_time - DateTime.parse(@@winContainerCpuUsageNanoSecondsTimeLast[containerId]).to_time)
+                timeDifference = DateTime.parse(metricTime).to_time - DateTime.parse(@@winContainerCpuUsageNanoSecondsTimeLast[containerId]).to_time
+                if timeDifference != 0
+                  metricRateValue = ((metricValue - @@winContainerCpuUsageNanoSecondsLast[containerId]) * 1.0) / timeDifference
+                else
+                  metricRateValue = 0
+                end
                 # @Log.info "In condition 2"
                 # @Log.info "metricValue :#{metricValue}"
                 # @Log.info "@@winContainerCpuUsageNanoSecondsLast[#{containerId}]: #{@@winContainerCpuUsageNanoSecondsLast[containerId]}"
@@ -438,7 +443,12 @@ class CAdvisorMetricsAPIClient
                 @@nodeCpuUsageNanoSecondsTimeLast = metricTime
                 return nil
               else
-                metricRateValue = ((metricValue - @@nodeCpuUsageNanoSecondsLast) * 1.0) / (DateTime.parse(metricTime).to_time - DateTime.parse(@@nodeCpuUsageNanoSecondsTimeLast).to_time)
+                timeDifference = DateTime.parse(metricTime).to_time - DateTime.parse(@@nodeCpuUsageNanoSecondsTimeLast).to_time
+                if timeDifference != 0
+                  metricRateValue = ((metricValue - @@nodeCpuUsageNanoSecondsLast) * 1.0) / timeDifference
+                else
+                  metricRateValue = 0
+                end
                 @@nodeCpuUsageNanoSecondsLast = metricValue
                 @@nodeCpuUsageNanoSecondsTimeLast = metricTime
                 metricValue = metricRateValue
@@ -455,7 +465,12 @@ class CAdvisorMetricsAPIClient
                 # @Log.info "metricTime :#{metricTime}"
                 return nil
               else
-                metricRateValue = ((metricValue - @@winNodeCpuUsageNanoSecondsLast[hostName]) * 1.0) / (DateTime.parse(metricTime).to_time - DateTime.parse(@@winNodeCpuUsageNanoSecondsTimeLast[hostName]).to_time)
+                timeDifference = DateTime.parse(metricTime).to_time - DateTime.parse(@@winNodeCpuUsageNanoSecondsTimeLast[hostName]).to_time
+                if timeDifference != 0
+                  metricRateValue = ((metricValue - @@winNodeCpuUsageNanoSecondsLast[hostName]) * 1.0) / timeDifference
+                else
+                  metricRateValue = 0
+                end
                 # @Log.info "In condition 2"
                 # @Log.info "metricValue :#{metricValue}"
                 # @Log.info "@@winNodeCpuUsageNanoSecondsLast[#{hostName}]: #{@@winNodeCpuUsageNanoSecondsLast[hostName]}"
