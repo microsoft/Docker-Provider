@@ -34,6 +34,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/CAdvisorMetricsAPIClient.rb;     source/code/plugin/CAdvisorMetricsAPIClient.rb;     644; root; root
 /opt/microsoft/omsagent/plugin/in_kube_perf.rb;			        source/code/plugin/in_kube_perf.rb;			    	644; root; root
 /opt/microsoft/omsagent/plugin/in_cadvisor_perf.rb;			        source/code/plugin/in_cadvisor_perf.rb;			    	644; root; root
+/opt/microsoft/omsagent/plugin/in_win_cadvisor_perf.rb;			    source/code/plugin/in_win_cadvisor_perf.rb;			    644; root; root
 /opt/microsoft/omsagent/plugin/in_kube_services.rb;			        source/code/plugin/in_kube_services.rb;			    	644; root; root
 /opt/microsoft/omsagent/plugin/in_kube_nodes.rb;			        source/code/plugin/in_kube_nodes.rb;			    	644; root; root
 /opt/microsoft/omsagent/plugin/filter_inventory2mdm.rb;			     source/code/plugin/filter_inventory2mdm.rb;			    	644; root; root
