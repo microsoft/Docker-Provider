@@ -49,33 +49,23 @@ module Fluent
       time = Time.now.to_f
       begin
         eventStream = MultiEventStream.new
-        # $log.info "1"
         $log.info "in_win_cadvisor_perf : Getting windows nodes"
         timeDifference = (DateTime.now.to_time.to_i - @@winNodeQueryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
         if (timeDifferenceInMinutes >= 5)
           @@winNodes = KubernetesApiClient.getWindowsNodes()
-          $log.info "in_win_cadvisor_perf : Successuly got windows nodes"
+          $log.info "in_win_cadvisor_perf : Successuly got windows nodes after 5 minute interval"
         end
-        # $log.info "2"
         @@winNodes.each do |winNode|
-          # $log.info "3"
           metricData = CAdvisorMetricsAPIClient.getMetrics(winNode)
-          # $log.info "4"
-          # $log.info "windows node metric data: #{metricData}"
           metricData.each do |record|
-            # $log.info "5"
             if !record.empty?
-              # $log.info "6"
               record["DataType"] = "LINUX_PERF_BLOB"
               record["IPName"] = "LogManagement"
               eventStream.add(time, record) if record
-              $log.info "windows node record: #{record}"
-              # $log.info "7"
             end
           end
           router.emit_stream(@tag, eventStream) if eventStream
-          # $log.info "8"
           @@istestvar = ENV["ISTEST"]
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
             $log.info("winCAdvisorPerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")

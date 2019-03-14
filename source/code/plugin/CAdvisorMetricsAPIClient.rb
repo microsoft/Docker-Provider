@@ -170,7 +170,6 @@ class CAdvisorMetricsAPIClient
               metricProps["Collections"].push(metricCollections)
               metricItem["DataItems"].push(metricProps)
               metricItems.push(metricItem)
-              # @Log.info "Container : countername: #{metricCollections["CounterName"]}, countervalue: #{metricCollections["Value"]}"
               #Telemetry about agent performance
               begin
                 # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
@@ -311,7 +310,6 @@ class CAdvisorMetricsAPIClient
               metricItem["DataItems"].push(metricProps)
               metricItems.push(metricItem)
               @Log.info "#{metricItem}"
-              # @Log.info "Container - countername: #{metricCollections["CounterName"]}, countervalue: #{metricCollections["Value"]}"
               #Telemetry about agent performance
               begin
                 # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
@@ -545,7 +543,6 @@ class CAdvisorMetricsAPIClient
               metricProps["Collections"].push(metricCollections)
               metricItem["DataItems"].push(metricProps)
               metricItems.push(metricItem)
-              # @Log.info "Container - countername: #{metricCollections["CounterName"]}, countervalue: #{metricCollections["Value"]}"
             end
           end
         end
