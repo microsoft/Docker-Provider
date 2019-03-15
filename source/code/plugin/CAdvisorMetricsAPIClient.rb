@@ -202,7 +202,6 @@ class CAdvisorMetricsAPIClient
     # usageNanoCores doesnt exist for windows nodes. Hence need to compute this from usageCoreNanoSeconds
     def getContainerCpuMetricItemRate(metricJSON, hostName, cpuMetricNameToCollect, metricNametoReturn)
       metricItems = []
-      containerCount = 0
       clusterId = KubernetesApiClient.getClusterId
       timeDifference = (DateTime.now.to_time.to_i - @@telemetryCpuMetricTimeTracker).abs
       timeDifferenceInMinutes = timeDifference / 60
@@ -216,7 +215,6 @@ class CAdvisorMetricsAPIClient
           if (!pod["containers"].nil?)
             pod["containers"].each do |container|
               #cpu metric
-              containerCount += 1
               containerName = container["name"]
               metricValue = container["cpu"][cpuMetricNameToCollect]
               metricTime = container["cpu"]["time"]
@@ -264,9 +262,8 @@ class CAdvisorMetricsAPIClient
           @@telemetryTimeTracker = DateTime.now.to_time.to_i
           telemetryProperties = {}
           telemetryProperties["Computer"] = hostname
-          telemetryProperties["ContainerCount"] = containerCount
           # Hardcoding the event to ContainerInventory hearbeat event since the telemetry is pivoted off of this event.
-          ApplicationInsightsUtility.sendTelemetry("ContainerInventory", telemetryProperties)
+          ApplicationInsightsUtility.sendCustomEvent("ContainerInventoryHeartBeatEvent", telemetryProperties)
         end
       rescue => error
         @Log.warn("getcontainerCpuMetricItemRate failed: #{error} for metric #{cpuMetricNameToCollect}")
