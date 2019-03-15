@@ -25,9 +25,12 @@ class CAdvisorMetricsAPIClient
   @@winNodeCpuUsageNanoSecondsTimeLast = {}
   @@winContainerCpuUsageNanoSecondsLast = {}
   @@winContainerCpuUsageNanoSecondsTimeLast = {}
+  @@winContainerPrevMetricRate = {}
+  @@linuxNodePrevMetricRate = nil
+  @@winNodePrevMetricRate = {}
   @@telemetryCpuMetricTimeTracker = DateTime.now.to_time.to_i
   @@telemetryMemoryMetricTimeTracker = DateTime.now.to_time.to_i
-  @@telemetryTimeTracker = DateTime.now.to_time.to_i
+  @@nodeTelemetryTimeTracker = {}
 
   def initialize
   end
@@ -202,6 +205,7 @@ class CAdvisorMetricsAPIClient
     # usageNanoCores doesnt exist for windows nodes. Hence need to compute this from usageCoreNanoSeconds
     def getContainerCpuMetricItemRate(metricJSON, hostName, cpuMetricNameToCollect, metricNametoReturn)
       metricItems = []
+      # containerCount = 0
       clusterId = KubernetesApiClient.getClusterId
       timeDifference = (DateTime.now.to_time.to_i - @@telemetryCpuMetricTimeTracker).abs
       timeDifferenceInMinutes = timeDifference / 60
@@ -215,6 +219,7 @@ class CAdvisorMetricsAPIClient
           if (!pod["containers"].nil?)
             pod["containers"].each do |container|
               #cpu metric
+              # containerCount += 1
               containerName = container["name"]
               metricValue = container["cpu"][cpuMetricNameToCollect]
               metricTime = container["cpu"]["time"]
@@ -235,35 +240,52 @@ class CAdvisorMetricsAPIClient
               if @@winContainerCpuUsageNanoSecondsLast[containerId].nil? || @@winContainerCpuUsageNanoSecondsTimeLast[containerId].nil? || @@winContainerCpuUsageNanoSecondsLast[containerId] > metricValue #when kubelet is restarted the last condition will be true
                 @@winContainerCpuUsageNanoSecondsLast[containerId] = metricValue
                 @@winContainerCpuUsageNanoSecondsTimeLast[containerId] = metricTime
-                return nil
+                # return nil
+                next
               else
                 timeDifference = DateTime.parse(metricTime).to_time - DateTime.parse(@@winContainerCpuUsageNanoSecondsTimeLast[containerId]).to_time
-                if timeDifference != 0
-                  metricRateValue = ((metricValue - @@winContainerCpuUsageNanoSecondsLast[containerId]) * 1.0) / timeDifference
+                containerCpuUsageDifference = metricValue - @@winContainerCpuUsageNanoSecondsLast[containerId]
+                # containerCpuUsageDifference check is added to make sure we report non zero values when cadvisor returns same values for subsequent calls
+                if timeDifference != 0 && containerCpuUsageDifference != 0
+                  metricRateValue = (containerCpuUsageDifference * 1.0) / timeDifference
                 else
-                  metricRateValue = 0
+                  @Log.info "container - cpu usage difference / time difference is 0, hence using previous cached value"
+                  if !@@winContainerPrevMetricRate[containerId].nil?
+                    metricRateValue = @@winContainerPrevMetricRate[containerId]
+                  else
+                    # This can happen when the metric value returns same values for subsequent calls when the plugin first starts
+                    metricRateValue = 0
+                  end
                 end
                 @@winContainerCpuUsageNanoSecondsLast[containerId] = metricValue
                 @@winContainerCpuUsageNanoSecondsTimeLast[containerId] = metricTime
                 metricValue = metricRateValue
+                @@winContainerPrevMetricRate[containerId] = metricRateValue
               end
 
               metricCollections["Value"] = metricValue
               metricProps["Collections"].push(metricCollections)
               metricItem["DataItems"].push(metricProps)
               metricItems.push(metricItem)
+              @Log.info "metric item: #{metricItem}"
             end
           end
         end
         #Sending ContainerInventoryTelemetry from replicaset for telemetry purposes
-        timeDifference = (DateTime.now.to_time.to_i - @@telemetryTimeTracker).abs
-        timeDifferenceInMinutes = timeDifference / 60
-        if (timeDifferenceInMinutes >= 5)
-          @@telemetryTimeTracker = DateTime.now.to_time.to_i
-          telemetryProperties = {}
-          telemetryProperties["Computer"] = hostname
-          # Hardcoding the event to ContainerInventory hearbeat event since the telemetry is pivoted off of this event.
-          ApplicationInsightsUtility.sendCustomEvent("ContainerInventoryHeartBeatEvent", telemetryProperties)
+        if @@nodeTelemetryTimeTracker[hostName].nil?
+          @@nodeTelemetryTimeTracker[hostName] = DateTime.now.to_time.to_i
+        else
+          timeDifference = (DateTime.now.to_time.to_i - @@nodeTelemetryTimeTracker[hostName]).abs
+          timeDifferenceInMinutes = timeDifference / 60
+          if (timeDifferenceInMinutes >= 5)
+            @@nodeTelemetryTimeTracker[hostName] = DateTime.now.to_time.to_i
+            telemetryProperties = {}
+            telemetryProperties["Computer"] = hostName
+            # telemetryProperties["ContainerCount"] = containerCount
+            # Hardcoding the event to ContainerInventory hearbeat event since the telemetry is pivoted off of this event.
+            @Log.info "sending container inventory heartbeat telemetry"
+            ApplicationInsightsUtility.sendCustomEvent("ContainerInventoryHeartBeatEvent", telemetryProperties)
+          end
         end
       rescue => error
         @Log.warn("getcontainerCpuMetricItemRate failed: #{error} for metric #{cpuMetricNameToCollect}")
@@ -420,13 +442,22 @@ class CAdvisorMetricsAPIClient
                 return nil
               else
                 timeDifference = DateTime.parse(metricTime).to_time - DateTime.parse(@@nodeCpuUsageNanoSecondsTimeLast).to_time
-                if timeDifference != 0
-                  metricRateValue = ((metricValue - @@nodeCpuUsageNanoSecondsLast) * 1.0) / timeDifference
+                nodeCpuUsageDifference = metricValue - @@nodeCpuUsageNanoSecondsLast
+                # nodeCpuUsageDifference check is added to make sure we report non zero values when cadvisor returns same values for subsequent calls
+                if timeDifference != 0 && nodeCpuUsageDifference != 0
+                  metricRateValue = (nodeCpuUsageDifference * 1.0) / timeDifference
                 else
-                  metricRateValue = 0
+                  @Log.info "linux node - cpu usage difference / time difference is 0, hence using previous cached value"
+                  if !@@linuxNodePrevMetricRate.nil?
+                    metricRateValue = @@linuxNodePrevMetricRate
+                  else
+                    # This can happen when the metric value returns same values for subsequent calls when the plugin first starts
+                    metricRateValue = 0
+                  end
                 end
                 @@nodeCpuUsageNanoSecondsLast = metricValue
                 @@nodeCpuUsageNanoSecondsTimeLast = metricTime
+                @@linuxNodePrevMetricRate = metricRateValue
                 metricValue = metricRateValue
               end
             elsif operatingSystem == "Windows"
@@ -437,13 +468,22 @@ class CAdvisorMetricsAPIClient
                 return nil
               else
                 timeDifference = DateTime.parse(metricTime).to_time - DateTime.parse(@@winNodeCpuUsageNanoSecondsTimeLast[hostName]).to_time
-                if timeDifference != 0
-                  metricRateValue = ((metricValue - @@winNodeCpuUsageNanoSecondsLast[hostName]) * 1.0) / timeDifference
+                nodeCpuUsageDifference = metricValue - @@winNodeCpuUsageNanoSecondsLast[hostName]
+                # nodeCpuUsageDifference check is added to make sure we report non zero values when cadvisor returns same values for subsequent calls
+                if timeDifference != 0 && nodeCpuUsageDifference != 0
+                  metricRateValue = (nodeCpuUsageDifference * 1.0) / timeDifference
                 else
-                  metricRateValue = 0
+                  @Log.info "windows node - cpu usage difference / time difference is 0, hence using previous cached value"
+                  if !@@winNodePrevMetricRate[hostName].nil?
+                    metricRateValue = @@winNodePrevMetricRate[hostName]
+                  else
+                    # This can happen when the metric value returns same values for subsequent calls when the plugin first starts
+                    metricRateValue = 0
+                  end
                 end
                 @@winNodeCpuUsageNanoSecondsLast[hostName] = metricValue
                 @@winNodeCpuUsageNanoSecondsTimeLast[hostName] = metricTime
+                @@winNodePrevMetricRate[hostName] = metricRateValue
                 metricValue = metricRateValue
               end
             end
