@@ -84,7 +84,6 @@ module Fluent
         winNodes = KubernetesApiClient.getWindowsNodesArray
         podInventory["items"].each do |items| #podInventory block start
           containerInventoryRecords = []
-          containerInventoryRecord = {}
           records = []
           record = {}
           record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
@@ -205,6 +204,7 @@ module Fluent
               #Generate ContainerInventory records for windows nodes so that we can get image and image tag in property panel
               if winNodes.length > 0
                 if (!record["Computer"].empty? && (winNodes.include? record["Computer"]))
+                  containerInventoryRecord = {}
                   containerInventoryRecord["ContainerID"] = record["ContainerID"]
                   containerInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
                   containerInventoryRecord["Computer"] = record["Computer"]
@@ -226,6 +226,7 @@ module Fluent
                   if !imageIdSplitInfo.nil?
                     containerInventoryRecord["ImageId"] = imageIdSplitInfo[1]
                   end
+                  containerInventoryRecords.push(containerInventoryRecord)
                 end
               end
             end
@@ -241,6 +242,17 @@ module Fluent
                           "DataItems" => [record.each { |k, v| record[k] = v }],
                         }
               eventStream.add(emitTime, wrapper) if wrapper
+            end
+          end
+          # Send container inventory records for containers on windows nodes
+          containerInventoryRecords.each do |cirecord|
+            if !cirecord.nil?
+              ciwrapper = {
+                "DataType" => "CONTAINER_INVENTORY_BLOB",
+                "IPName" => "ContainerInsights",
+                "DataItems" => [cirecord.each { |k, v| cirecord[k] = v }],
+              }
+              eventStream.add(emitTime, ciwrapper) if ciwrapper
             end
           end
         end  #podInventory block end
