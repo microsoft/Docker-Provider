@@ -79,6 +79,7 @@ module Fluent
       eventStream = MultiEventStream.new
       controllerSet = Set.new []
       telemetryFlush = false
+      winContainerCount = 0
       begin #begin block start
         # Getting windows nodes from kubeapi
         winNodes = KubernetesApiClient.getWindowsNodesArray
@@ -205,9 +206,10 @@ module Fluent
               if winNodes.length > 0
                 if (!record["Computer"].empty? && (winNodes.include? record["Computer"]))
                   containerInventoryRecord = {}
-                  containerInventoryRecord["ContainerID"] = record["ContainerID"]
+                  containerInventoryRecord["InstanceID"] = record["ContainerID"]
                   containerInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
                   containerInventoryRecord["Computer"] = record["Computer"]
+                  containerInventoryRecord["ContainerHostname"] = record["Computer"]
                   containerInventoryRecord["ElementName"] = container["name"]
                   image = container["image"]
                   repoInfo = image.split("/")
@@ -245,6 +247,7 @@ module Fluent
             end
           end
           # Send container inventory records for containers on windows nodes
+          winContainerCount += containerInventoryRecords.length
           containerInventoryRecords.each do |cirecord|
             if !cirecord.nil?
               ciwrapper = {
@@ -265,6 +268,10 @@ module Fluent
           ApplicationInsightsUtility.sendCustomEvent("KubePodInventoryHeartBeatEvent", telemetryProperties)
           ApplicationInsightsUtility.sendMetricTelemetry("PodCount", podInventory["items"].length, {})
           ApplicationInsightsUtility.sendMetricTelemetry("ControllerCount", controllerSet.length, {})
+          if winContainerCount > 0
+            telemetryProperties["ClusterWideWindowsContainersCount"] = winContainerCount
+            ApplicationInsightsUtility.sendCustomEvent("WindowsContainerInventoryEvent", telemetryProperties)
+          end
           @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
         @@istestvar = ENV["ISTEST"]
