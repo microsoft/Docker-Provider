@@ -228,6 +228,26 @@ module Fluent
                   if !imageIdSplitInfo.nil?
                     containerInventoryRecord["ImageId"] = imageIdSplitInfo[1]
                   end
+                  # Get container state
+                  if containerStatus.keys[0] == "running"
+                    containerInventoryRecord["State"] = "Running"
+                    containerInventoryRecord["StartedTime"] = container["state"]["running"]["startedAt"]
+                  elsif containerStatus.keys[0] == "terminated"
+                    containerExitCode = container["state"]["terminated"]["exitCode"]
+                    containerStartTime = container["state"]["terminated"]["startedAt"]
+                    if containerExitCode < 0
+                      # Exit codes less than 0 are not supported by the engine
+                      containerExitCode = 128
+                    end
+                    if containerExitCode > 0
+                      containerInventoryRecord["State"] = "Failed"
+                      containerInventoryRecord["ExitCode"] = containerExitCode
+                      containerInventoryRecord["StartedTime"] = containerStartTime
+                    else
+                      containerInventoryRecord["State"] = "Stopped"
+                      containerInventoryRecord["ExitCode"] = containerStartTime
+                    end
+                  end
                   containerInventoryRecords.push(containerInventoryRecord)
                 end
               end
