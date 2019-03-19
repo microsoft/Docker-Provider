@@ -80,7 +80,11 @@ module Fluent
       controllerSet = Set.new []
       telemetryFlush = false
       begin #begin block start
+        # Getting windows nodes from kubeapi
+        winNodes = KubernetesApiClient.getWindowsNodesArray
         podInventory["items"].each do |items| #podInventory block start
+          containerInventoryRecords = []
+          containerInventoryRecord = {}
           records = []
           record = {}
           record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
@@ -197,6 +201,33 @@ module Fluent
               end
               podRestartCount += containerRestartCount
               records.push(record.dup)
+
+              #Generate ContainerInventory records for windows nodes so that we can get image and image tag in property panel
+              if winNodes.length > 0
+                if (!record["Computer"].empty? && (winNodes.include? record["Computer"]))
+                  containerInventoryRecord["ContainerID"] = record["ContainerID"]
+                  containerInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+                  containerInventoryRecord["Computer"] = record["Computer"]
+                  containerInventoryRecord["ElementName"] = container["name"]
+                  image = container["image"]
+                  repoInfo = image.split("/")
+                  if !repoInfo.nil?
+                    containerInventoryRecord["Repository"] = repoInfo[0]
+                    if !repoInfo[1].nil?
+                      imageInfo = repoInfo[1].split(":")
+                      if !imageInfo.nil?
+                        containerInventoryRecord["Image"] = imageInfo[0]
+                        containerInventoryRecord["ImageTag"] = imageInfo[1]
+                      end
+                    end
+                  end
+                  imageIdInfo = container["imageID"]
+                  imageIdSplitInfo = imageIdInfo.split("@")
+                  if !imageIdSplitInfo.nil?
+                    containerInventoryRecord["ImageId"] = imageIdSplitInfo[1]
+                  end
+                end
+              end
             end
           else # for unscheduled pods there are no status.containerStatuses, in this case we still want the pod
             records.push(record)
@@ -213,6 +244,7 @@ module Fluent
             end
           end
         end  #podInventory block end
+
         router.emit_stream(@tag, eventStream) if eventStream
         router.emit_stream(@@MDMKubePodInventoryTag, eventStream) if eventStream
         if telemetryFlush == true

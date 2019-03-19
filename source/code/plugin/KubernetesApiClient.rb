@@ -24,6 +24,7 @@ class KubernetesApiClient
   @@TokenFileName = "/var/run/secrets/kubernetes.io/serviceaccount/token"
   @@TokenStr = nil
   @@NodeMetrics = Hash.new
+  @@WinNodeArray = []
 
   def initialize
   end
@@ -231,10 +232,16 @@ class KubernetesApiClient
             # check for windows operating system in node metadata
             winNode = {}
             nodeStatus = item["status"]
+            nodeMetadata = item["metadata"]
             if !nodeStatus.nil? && !nodeStatus["nodeInfo"].nil? && !nodeStatus["nodeInfo"]["operatingSystem"].nil?
               @Log.info "KubernetesAPIClient::getWindowsNodes : Iterating through nodes to get windows nodes"
               operatingSystem = nodeStatus["nodeInfo"]["operatingSystem"]
               if (operatingSystem.is_a?(String) && operatingSystem.casecmp("windows") == 0)
+                # Adding windows nodes to winNodeArray so that it can be used in kubepodinventory to send ContainerInventory data
+                # to get images and image tags for containers in windows nodes
+                if !nodeMetadata.nil? && !nodeMetadata["name"].nil?
+                  @@WinNodeArray.push(nodeMetadata["name"])
+                end
                 nodeStatusAddresses = nodeStatus["addresses"]
                 if !nodeStatusAddresses.nil?
                   nodeStatusAddresses.each do |address|
@@ -250,6 +257,10 @@ class KubernetesApiClient
       rescue => error
         @Log.warn("Error in get windows nodes: #{error}")
       end
+    end
+
+    def getWindowsNodesArray
+      return @@WinNodeArray
     end
 
     def getContainerIDs(namespace)
