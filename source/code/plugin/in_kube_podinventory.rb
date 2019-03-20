@@ -122,7 +122,9 @@ module Fluent
         elsif containerStatus.keys[0] == "waiting"
           containerInventoryRecord["State"] = "Waiting"
         end
-        containerInventoryRecord["EnvironmentVar"] = containerEnvVariableHash[containerName]
+        if !containerEnvVariableHash.nil? && !containerEnvVariableHash.empty?
+          containerInventoryRecord["EnvironmentVar"] = containerEnvVariableHash[containerName]
+        end
         return containerInventoryRecord
       rescue => errorStr
         $log.warn "Failed in populateWindowsContainerInventoryRecord: #{errorStr}"
@@ -137,7 +139,21 @@ module Fluent
         containerEnvHash = {}
         if !podSpec.nil? && !podSpec["containers"].nil?
           podSpec["containers"].each do |container|
-            containerEnvHash[container["name"]] = container["env"].to_s
+            envVarsArray = []
+            containerEnvArray = container["env"]
+            # Parsing the environment variable array of hashes to a string value
+            # since that is format being sent by container inventory workflow in daemonset
+            # Keeping it in the same format because the workflow expects it in this format
+            # and the UX expects an array of string for environment variables
+            if !containerEnvArray.nil? && !containerEnvArray.empty?
+              containerEnvArray.each do |envVarHash|
+                envName = envVarHash["name"]
+                envValue = envVarHash["value"]
+                envArrayElement = envName + "=" + envValue
+                envVarsArray.push(envArrayElement)
+              end
+            end
+            containerEnvHash[container["name"]] = envVarsArray.to_s
           end
         end
         return containerEnvHash
@@ -156,11 +172,11 @@ module Fluent
       controllerSet = Set.new []
       telemetryFlush = false
       winContainerCount = 0
-      sendWindowsContainerInventoryRecord = false
       begin #begin block start
         # Getting windows nodes from kubeapi
         winNodes = KubernetesApiClient.getWindowsNodesArray
         podInventory["items"].each do |items| #podInventory block start
+          sendWindowsContainerInventoryRecord = false
           containerInventoryRecords = []
           records = []
           record = {}
@@ -311,7 +327,6 @@ module Fluent
           end
           # Send container inventory records for containers on windows nodes
           winContainerCount += containerInventoryRecords.length
-          $log.info "cirecords: #{containerInventoryRecords}"
           containerInventoryRecords.each do |cirecord|
             if !cirecord.nil?
               ciwrapper = {
