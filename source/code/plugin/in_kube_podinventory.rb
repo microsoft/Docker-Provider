@@ -72,54 +72,80 @@ module Fluent
       end
     end
 
-    def populateWindowsContainerInventoryRecord(container, record, batchTime)
-      containerInventoryRecord = {}
-      containerInventoryRecord["InstanceID"] = record["ContainerID"]
-      containerInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
-      containerInventoryRecord["Computer"] = record["Computer"]
-      containerInventoryRecord["ContainerHostname"] = record["Computer"]
-      containerInventoryRecord["ElementName"] = container["name"]
-      image = container["image"]
-      repoInfo = image.split("/")
-      if !repoInfo.nil?
-        containerInventoryRecord["Repository"] = repoInfo[0]
-        if !repoInfo[1].nil?
-          imageInfo = repoInfo[1].split(":")
-          if !imageInfo.nil?
-            containerInventoryRecord["Image"] = imageInfo[0]
-            containerInventoryRecord["ImageTag"] = imageInfo[1]
+    def populateWindowsContainerInventoryRecord(container, record, containerEnvVariableHash, batchTime)
+      begin
+        containerInventoryRecord = {}
+        containerName = container["name"]
+        containerInventoryRecord["InstanceID"] = record["ContainerID"]
+        containerInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+        containerInventoryRecord["Computer"] = record["Computer"]
+        containerInventoryRecord["ContainerHostname"] = record["Computer"]
+        containerInventoryRecord["ElementName"] = containerName
+        image = container["image"]
+        repoInfo = image.split("/")
+        if !repoInfo.nil?
+          containerInventoryRecord["Repository"] = repoInfo[0]
+          if !repoInfo[1].nil?
+            imageInfo = repoInfo[1].split(":")
+            if !imageInfo.nil?
+              containerInventoryRecord["Image"] = imageInfo[0]
+              containerInventoryRecord["ImageTag"] = imageInfo[1]
+            end
           end
         end
-      end
-      imageIdInfo = container["imageID"]
-      imageIdSplitInfo = imageIdInfo.split("@")
-      if !imageIdSplitInfo.nil?
-        containerInventoryRecord["ImageId"] = imageIdSplitInfo[1]
-      end
-      # Get container state
-      if containerStatus.keys[0] == "running"
-        containerInventoryRecord["State"] = "Running"
-        containerInventoryRecord["StartedTime"] = container["state"]["running"]["startedAt"]
-      elsif containerStatus.keys[0] == "terminated"
-        containerExitCode = container["state"]["terminated"]["exitCode"]
-        containerStartTime = container["state"]["terminated"]["startedAt"]
-        containerFinishTime = container["state"]["terminated"]["finishedAt"]
-        if containerExitCode < 0
-          # Exit codes less than 0 are not supported by the engine
-          containerExitCode = 128
+        imageIdInfo = container["imageID"]
+        imageIdSplitInfo = imageIdInfo.split("@")
+        if !imageIdSplitInfo.nil?
+          containerInventoryRecord["ImageId"] = imageIdSplitInfo[1]
         end
-        if containerExitCode > 0
-          containerInventoryRecord["State"] = "Failed"
-        else
-          containerInventoryRecord["State"] = "Stopped"
+        # Get container state
+        containerStatus = container["state"]
+        if containerStatus.keys[0] == "running"
+          containerInventoryRecord["State"] = "Running"
+          containerInventoryRecord["StartedTime"] = container["state"]["running"]["startedAt"]
+        elsif containerStatus.keys[0] == "terminated"
+          containerExitCode = container["state"]["terminated"]["exitCode"]
+          containerStartTime = container["state"]["terminated"]["startedAt"]
+          containerFinishTime = container["state"]["terminated"]["finishedAt"]
+          if containerExitCode < 0
+            # Exit codes less than 0 are not supported by the engine
+            containerExitCode = 128
+          end
+          if containerExitCode > 0
+            containerInventoryRecord["State"] = "Failed"
+          else
+            containerInventoryRecord["State"] = "Stopped"
+          end
+          containerInventoryRecord["ExitCode"] = containerExitCode
+          containerInventoryRecord["StartedTime"] = containerStartTime
+          containerInventoryRecord["FinishedTime"] = containerFinishTime
+        elsif containerStatus.keys[0] == "waiting"
+          containerInventoryRecord["State"] = "Waiting"
         end
-        containerInventoryRecord["ExitCode"] = containerExitCode
-        containerInventoryRecord["StartedTime"] = containerStartTime
-        containerInventoryRecord["FinishedTime"] = containerFinishTime
-      elsif containerStatus.keys[0] == "waiting"
-        containerInventoryRecord["State"] = "Waiting"
+        containerInventoryRecord["EnvironmentVar"] = containerEnvVariableHash[containerName]
+        return containerInventoryRecord
+      rescue => errorStr
+        $log.warn "Failed in populateWindowsContainerInventoryRecord: #{errorStr}"
+        $log.debug_backtrace(errorStr.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
-      return containerInventoryRecord
+    end
+
+    def getContainerEnvironmentVariables(pod)
+      begin
+        podSpec = pod["spec"]
+        containerEnvHash = {}
+        if !podSpec.nil? && !podSpec["containers"].nil?
+          podSpec["containers"].each do |container|
+            containerEnvHash[container["name"]] = container["env"].to_s
+          end
+        end
+        return containerEnvHash
+      rescue => errorStr
+        $log.warn "Failed in getContainerEnvironmentVariables: #{errorStr}"
+        $log.debug_backtrace(errorStr.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      end
     end
 
     def parse_and_emit_records(podInventory, serviceList)
@@ -140,15 +166,6 @@ module Fluent
           record = {}
           record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
           record["Name"] = items["metadata"]["name"]
-
-          # Setting this flag to true so that we can send ContainerInventory records for containers
-          # on windows nodes and parse environment variables for these containers
-          if winNodes.length > 0
-            if (!record["Computer"].empty? && (winNodes.include? record["Computer"]))
-              sendWindowsContainerInventoryRecord = true
-            end
-          end
-
           podNameSpace = items["metadata"]["namespace"]
 
           if podNameSpace.eql?("kube-system") && !items["metadata"].key?("ownerReferences")
@@ -199,6 +216,16 @@ module Fluent
           else
             record["Computer"] = ""
           end
+
+          # Setting this flag to true so that we can send ContainerInventory records for containers
+          # on windows nodes and parse environment variables for these containers
+          if winNodes.length > 0
+            if (!record["Computer"].empty? && (winNodes.include? record["Computer"]))
+              sendWindowsContainerInventoryRecord = true
+              containerEnvVariableHash = getContainerEnvironmentVariables(items)
+            end
+          end
+
           record["ClusterId"] = KubernetesApiClient.getClusterId
           record["ClusterName"] = KubernetesApiClient.getClusterName
           record["ServiceName"] = getServiceNameFromLabels(items["metadata"]["namespace"], items["metadata"]["labels"], serviceList)
@@ -263,11 +290,9 @@ module Fluent
               records.push(record.dup)
 
               #Generate ContainerInventory records for windows nodes so that we can get image and image tag in property panel
-              if winNodes.length > 0
-                if (!record["Computer"].empty? && (winNodes.include? record["Computer"]))
-                  containerInventoryRecord = populateWindowsContainerInventoryRecord(container, record, batchTime)
-                  containerInventoryRecords.push(containerInventoryRecord)
-                end
+              if sendWindowsContainerInventoryRecord == true
+                containerInventoryRecord = populateWindowsContainerInventoryRecord(container, record, containerEnvVariableHash, batchTime)
+                containerInventoryRecords.push(containerInventoryRecord)
               end
             end
           else # for unscheduled pods there are no status.containerStatuses, in this case we still want the pod
@@ -286,6 +311,7 @@ module Fluent
           end
           # Send container inventory records for containers on windows nodes
           winContainerCount += containerInventoryRecords.length
+          $log.info "cirecords: #{containerInventoryRecords}"
           containerInventoryRecords.each do |cirecord|
             if !cirecord.nil?
               ciwrapper = {
