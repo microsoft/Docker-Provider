@@ -54,6 +54,9 @@ module Fluent
         $log.info "in_win_cadvisor_perf : Getting windows nodes"
         timeDifference = (DateTime.now.to_time.to_i - @@winNodeQueryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
+
+        #Resetting this cache so that it is populated with the current set of containers with every call
+        CAdvisorMetricsAPIClient.resetWinContainerIdCache()
         if (timeDifferenceInMinutes >= 5)
           @@winNodes = KubernetesApiClient.getWindowsNodes()
           $log.info "in_win_cadvisor_perf : Successuly got windows nodes after 5 minute interval"
@@ -70,11 +73,12 @@ module Fluent
           router.emit_stream(@tag, eventStream) if eventStream
           router.emit_stream(@mdmtag, eventStream) if eventStream
 
+          # Cleanup routine to clear deleted containers from cache
           cleanupTimeDifference = (DateTime.now.to_time.to_i - @@cleanupRoutineTimeTracker).abs
           cleanupTimeDifferenceInMinutes = cleanupTimeDifference / 60
           if (cleanupTimeDifferenceInMinutes >= 10)
             $log.info "in_win_cadvisor_perf : Cleanup routine kicking in to clear deleted containers from cache"
-
+            CAdvisorMetricsAPIClient.clearDeletedWinContainersFromCache()
             @@cleanupRoutineTimeTracker = DateTime.now.to_time.to_i
           end
 

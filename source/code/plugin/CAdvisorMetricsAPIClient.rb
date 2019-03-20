@@ -208,8 +208,16 @@ class CAdvisorMetricsAPIClient
       return metricItems
     end
 
-    def clearDeletedWinContainers()
-      @@cleanupRoutineTimeTracker = DateTime.now.to_time.to_i
+    def clearDeletedWinContainersFromCache()
+      winCpuUsageNanoSecondsKeys = @@winContainerCpuUsageNanoSecondsLast.keys
+      winCpuUsageNanoSecondsTimeKeys = @@winContainerCpuUsageNanoSecondsTimeLast.keys
+
+      # Find the container ids to be deleted from cache
+      winContainersToBeCleared = winCpuUsageNanoSecondsKeys - @@winContainerIdCache
+    end
+
+    def resetWinContainerIdCache
+      return @@winContainerIdCache = []
     end
 
     # usageNanoCores doesnt exist for windows nodes. Hence need to compute this from usageCoreNanoSeconds
