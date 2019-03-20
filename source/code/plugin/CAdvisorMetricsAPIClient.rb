@@ -209,11 +209,20 @@ class CAdvisorMetricsAPIClient
     end
 
     def clearDeletedWinContainersFromCache()
-      winCpuUsageNanoSecondsKeys = @@winContainerCpuUsageNanoSecondsLast.keys
-      winCpuUsageNanoSecondsTimeKeys = @@winContainerCpuUsageNanoSecondsTimeLast.keys
+      begin
+        winCpuUsageNanoSecondsKeys = @@winContainerCpuUsageNanoSecondsLast.keys
+        winCpuUsageNanoSecondsTimeKeys = @@winContainerCpuUsageNanoSecondsTimeLast.keys
 
-      # Find the container ids to be deleted from cache
-      winContainersToBeCleared = winCpuUsageNanoSecondsKeys - @@winContainerIdCache
+        # Find the container ids to be deleted from cache
+        winContainersToBeCleared = winCpuUsageNanoSecondsKeys - @@winContainerIdCache
+        winContainersToBeCleared.each do |containerId|
+          @@winContainerCpuUsageNanoSecondsLast.delete(containerId)
+          @@winContainerCpuUsageNanoSecondsTimeLast.delete(containerId)
+        end
+      rescue => errorStr
+        @Log.warn("clearDeletedWinContainersFromCache failed: #{errorStr}")
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      end
     end
 
     def resetWinContainerIdCache
