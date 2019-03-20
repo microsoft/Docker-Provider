@@ -215,6 +215,9 @@ class CAdvisorMetricsAPIClient
 
         # Find the container ids to be deleted from cache
         winContainersToBeCleared = winCpuUsageNanoSecondsKeys - @@winContainerIdCache
+        if winContainersToBeCleared.length > 0
+          @Log.warn "Stale containers found in cache, clearing...: #{winContainersToBeCleared}"
+        end
         winContainersToBeCleared.each do |containerId|
           @@winContainerCpuUsageNanoSecondsLast.delete(containerId)
           @@winContainerCpuUsageNanoSecondsTimeLast.delete(containerId)
@@ -226,7 +229,7 @@ class CAdvisorMetricsAPIClient
     end
 
     def resetWinContainerIdCache
-      return @@winContainerIdCache = []
+      @@winContainerIdCache = []
     end
 
     # usageNanoCores doesnt exist for windows nodes. Hence need to compute this from usageCoreNanoSeconds
@@ -236,6 +239,7 @@ class CAdvisorMetricsAPIClient
       clusterId = KubernetesApiClient.getClusterId
       timeDifference = (DateTime.now.to_time.to_i - @@telemetryCpuMetricTimeTracker).abs
       timeDifferenceInMinutes = timeDifference / 60
+      @Log.warn "in host: #{hostName}"
       begin
         metricInfo = metricJSON
         metricInfo["pods"].each do |pod|
@@ -297,15 +301,14 @@ class CAdvisorMetricsAPIClient
               metricProps["Collections"].push(metricCollections)
               metricItem["DataItems"].push(metricProps)
               metricItems.push(metricItem)
+              # # clean up routine to clear the deleted containers from the cache
+              # timeDifference = (DateTime.now.to_time.to_i - @@cleanupRoutineTimeTracker).abs
+              # timeDifferenceInMinutes = timeDifference / 60
+              # if (timeDifferenceInMinutes >= 5)
+              #   clearDeletedWinContainers
+              # end
 
-              # clean up routine to clear the deleted containers from the cache
-              timeDifference = (DateTime.now.to_time.to_i - @@cleanupRoutineTimeTracker).abs
-              timeDifferenceInMinutes = timeDifference / 60
-              if (timeDifferenceInMinutes >= 5)
-                clearDeletedWinContainers
-              end
-
-              @Log.info "metric item: #{metricItem}"
+              # @Log.info "metric item: #{metricItem}"
             end
           end
         end
@@ -366,7 +369,7 @@ class CAdvisorMetricsAPIClient
               metricProps["Collections"].push(metricCollections)
               metricItem["DataItems"].push(metricProps)
               metricItems.push(metricItem)
-              @Log.info "#{metricItem}"
+              # @Log.info "#{metricItem}"
               #Telemetry about agent performance
               begin
                 # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
@@ -541,7 +544,7 @@ class CAdvisorMetricsAPIClient
 
           metricProps["Collections"].push(metricCollections)
           metricItem["DataItems"].push(metricProps)
-          @Log.info "#{metricItem}"
+          # @Log.info "#{metricItem}"
         end
       rescue => error
         @Log.warn("getNodeMetricItemRate failed: #{error} for metric #{metricNameToCollect}")

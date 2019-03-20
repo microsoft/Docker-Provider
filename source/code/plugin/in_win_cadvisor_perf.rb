@@ -73,19 +73,19 @@ module Fluent
           router.emit_stream(@tag, eventStream) if eventStream
           router.emit_stream(@mdmtag, eventStream) if eventStream
 
-          # Cleanup routine to clear deleted containers from cache
-          cleanupTimeDifference = (DateTime.now.to_time.to_i - @@cleanupRoutineTimeTracker).abs
-          cleanupTimeDifferenceInMinutes = cleanupTimeDifference / 60
-          if (cleanupTimeDifferenceInMinutes >= 10)
-            $log.info "in_win_cadvisor_perf : Cleanup routine kicking in to clear deleted containers from cache"
-            CAdvisorMetricsAPIClient.clearDeletedWinContainersFromCache()
-            @@cleanupRoutineTimeTracker = DateTime.now.to_time.to_i
-          end
-
           @@istestvar = ENV["ISTEST"]
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
             $log.info("winCAdvisorPerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
           end
+        end
+
+        # Cleanup routine to clear deleted containers from cache
+        cleanupTimeDifference = (DateTime.now.to_time.to_i - @@cleanupRoutineTimeTracker).abs
+        cleanupTimeDifferenceInMinutes = cleanupTimeDifference / 60
+        if (cleanupTimeDifferenceInMinutes >= 5)
+          $log.info "in_win_cadvisor_perf : Cleanup routine kicking in to clear deleted containers from cache"
+          CAdvisorMetricsAPIClient.clearDeletedWinContainersFromCache()
+          @@cleanupRoutineTimeTracker = DateTime.now.to_time.to_i
         end
       rescue => errorStr
         $log.warn "Failed to retrieve cadvisor metric data for windows nodes: #{errorStr}"
