@@ -72,6 +72,56 @@ module Fluent
       end
     end
 
+    def populateWindowsContainerInventoryRecord(container, record, batchTime)
+      containerInventoryRecord = {}
+      containerInventoryRecord["InstanceID"] = record["ContainerID"]
+      containerInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+      containerInventoryRecord["Computer"] = record["Computer"]
+      containerInventoryRecord["ContainerHostname"] = record["Computer"]
+      containerInventoryRecord["ElementName"] = container["name"]
+      image = container["image"]
+      repoInfo = image.split("/")
+      if !repoInfo.nil?
+        containerInventoryRecord["Repository"] = repoInfo[0]
+        if !repoInfo[1].nil?
+          imageInfo = repoInfo[1].split(":")
+          if !imageInfo.nil?
+            containerInventoryRecord["Image"] = imageInfo[0]
+            containerInventoryRecord["ImageTag"] = imageInfo[1]
+          end
+        end
+      end
+      imageIdInfo = container["imageID"]
+      imageIdSplitInfo = imageIdInfo.split("@")
+      if !imageIdSplitInfo.nil?
+        containerInventoryRecord["ImageId"] = imageIdSplitInfo[1]
+      end
+      # Get container state
+      if containerStatus.keys[0] == "running"
+        containerInventoryRecord["State"] = "Running"
+        containerInventoryRecord["StartedTime"] = container["state"]["running"]["startedAt"]
+      elsif containerStatus.keys[0] == "terminated"
+        containerExitCode = container["state"]["terminated"]["exitCode"]
+        containerStartTime = container["state"]["terminated"]["startedAt"]
+        containerFinishTime = container["state"]["terminated"]["finishedAt"]
+        if containerExitCode < 0
+          # Exit codes less than 0 are not supported by the engine
+          containerExitCode = 128
+        end
+        if containerExitCode > 0
+          containerInventoryRecord["State"] = "Failed"
+        else
+          containerInventoryRecord["State"] = "Stopped"
+        end
+        containerInventoryRecord["ExitCode"] = containerExitCode
+        containerInventoryRecord["StartedTime"] = containerStartTime
+        containerInventoryRecord["FinishedTime"] = containerFinishTime
+      elsif containerStatus.keys[0] == "waiting"
+        containerInventoryRecord["State"] = "Waiting"
+      end
+      return containerInventoryRecord
+    end
+
     def parse_and_emit_records(podInventory, serviceList)
       currentTime = Time.now
       emitTime = currentTime.to_f
@@ -80,6 +130,7 @@ module Fluent
       controllerSet = Set.new []
       telemetryFlush = false
       winContainerCount = 0
+      sendWindowsContainerInventoryRecord = false
       begin #begin block start
         # Getting windows nodes from kubeapi
         winNodes = KubernetesApiClient.getWindowsNodesArray
@@ -89,6 +140,15 @@ module Fluent
           record = {}
           record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
           record["Name"] = items["metadata"]["name"]
+
+          # Setting this flag to true so that we can send ContainerInventory records for containers
+          # on windows nodes and parse environment variables for these containers
+          if winNodes.length > 0
+            if (!record["Computer"].empty? && (winNodes.include? record["Computer"]))
+              sendWindowsContainerInventoryRecord = true
+            end
+          end
+
           podNameSpace = items["metadata"]["namespace"]
 
           if podNameSpace.eql?("kube-system") && !items["metadata"].key?("ownerReferences")
@@ -205,49 +265,7 @@ module Fluent
               #Generate ContainerInventory records for windows nodes so that we can get image and image tag in property panel
               if winNodes.length > 0
                 if (!record["Computer"].empty? && (winNodes.include? record["Computer"]))
-                  containerInventoryRecord = {}
-                  containerInventoryRecord["InstanceID"] = record["ContainerID"]
-                  containerInventoryRecord["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
-                  containerInventoryRecord["Computer"] = record["Computer"]
-                  containerInventoryRecord["ContainerHostname"] = record["Computer"]
-                  containerInventoryRecord["ElementName"] = container["name"]
-                  image = container["image"]
-                  repoInfo = image.split("/")
-                  if !repoInfo.nil?
-                    containerInventoryRecord["Repository"] = repoInfo[0]
-                    if !repoInfo[1].nil?
-                      imageInfo = repoInfo[1].split(":")
-                      if !imageInfo.nil?
-                        containerInventoryRecord["Image"] = imageInfo[0]
-                        containerInventoryRecord["ImageTag"] = imageInfo[1]
-                      end
-                    end
-                  end
-                  imageIdInfo = container["imageID"]
-                  imageIdSplitInfo = imageIdInfo.split("@")
-                  if !imageIdSplitInfo.nil?
-                    containerInventoryRecord["ImageId"] = imageIdSplitInfo[1]
-                  end
-                  # Get container state
-                  if containerStatus.keys[0] == "running"
-                    containerInventoryRecord["State"] = "Running"
-                    containerInventoryRecord["StartedTime"] = container["state"]["running"]["startedAt"]
-                  elsif containerStatus.keys[0] == "terminated"
-                    containerExitCode = container["state"]["terminated"]["exitCode"]
-                    containerStartTime = container["state"]["terminated"]["startedAt"]
-                    if containerExitCode < 0
-                      # Exit codes less than 0 are not supported by the engine
-                      containerExitCode = 128
-                    end
-                    if containerExitCode > 0
-                      containerInventoryRecord["State"] = "Failed"
-                      containerInventoryRecord["ExitCode"] = containerExitCode
-                      containerInventoryRecord["StartedTime"] = containerStartTime
-                    else
-                      containerInventoryRecord["State"] = "Stopped"
-                      containerInventoryRecord["ExitCode"] = containerStartTime
-                    end
-                  end
+                  containerInventoryRecord = populateWindowsContainerInventoryRecord(container, record, batchTime)
                   containerInventoryRecords.push(containerInventoryRecord)
                 end
               end
