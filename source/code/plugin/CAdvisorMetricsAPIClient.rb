@@ -30,7 +30,13 @@ class CAdvisorMetricsAPIClient
   @@winNodePrevMetricRate = {}
   @@telemetryCpuMetricTimeTracker = DateTime.now.to_time.to_i
   @@telemetryMemoryMetricTimeTracker = DateTime.now.to_time.to_i
+
+  #Containers a hash of node name and the last time telemetry was sent for this node
   @@nodeTelemetryTimeTracker = {}
+
+  # Keeping track of containers so that can delete the container from the container cpu cache when the container is deleted
+  # as a part of the cleanup routine
+  @@winContainerIdCache = []
 
   def initialize
   end
@@ -202,6 +208,10 @@ class CAdvisorMetricsAPIClient
       return metricItems
     end
 
+    def clearDeletedWinContainers()
+      @@cleanupRoutineTimeTracker = DateTime.now.to_time.to_i
+    end
+
     # usageNanoCores doesnt exist for windows nodes. Hence need to compute this from usageCoreNanoSeconds
     def getContainerCpuMetricItemRate(metricJSON, hostName, cpuMetricNameToCollect, metricNametoReturn)
       metricItems = []
@@ -237,6 +247,9 @@ class CAdvisorMetricsAPIClient
               metricCollections["CounterName"] = metricNametoReturn
 
               containerId = podUid + "/" + containerName
+              # Adding the containers to the winContainerIdCache so that it can be used by the cleanup routine
+              # to clear the delted containers every 5 minutes
+              @@winContainerIdCache.push(containerId)
               if @@winContainerCpuUsageNanoSecondsLast[containerId].nil? || @@winContainerCpuUsageNanoSecondsTimeLast[containerId].nil? || @@winContainerCpuUsageNanoSecondsLast[containerId] > metricValue #when kubelet is restarted the last condition will be true
                 @@winContainerCpuUsageNanoSecondsLast[containerId] = metricValue
                 @@winContainerCpuUsageNanoSecondsTimeLast[containerId] = metricTime
@@ -267,6 +280,14 @@ class CAdvisorMetricsAPIClient
               metricProps["Collections"].push(metricCollections)
               metricItem["DataItems"].push(metricProps)
               metricItems.push(metricItem)
+
+              # clean up routine to clear the deleted containers from the cache
+              timeDifference = (DateTime.now.to_time.to_i - @@cleanupRoutineTimeTracker).abs
+              timeDifferenceInMinutes = timeDifference / 60
+              if (timeDifferenceInMinutes >= 5)
+                clearDeletedWinContainers
+              end
+
               @Log.info "metric item: #{metricItem}"
             end
           end

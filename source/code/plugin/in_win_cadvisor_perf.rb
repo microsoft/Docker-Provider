@@ -33,6 +33,7 @@ module Fluent
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
         @@winNodeQueryTimeTracker = DateTime.now.to_time.to_i
+        @@cleanupRoutineTimeTracker = DateTime.now.to_time.to_i
       end
     end
 
@@ -68,6 +69,15 @@ module Fluent
           end
           router.emit_stream(@tag, eventStream) if eventStream
           router.emit_stream(@mdmtag, eventStream) if eventStream
+
+          cleanupTimeDifference = (DateTime.now.to_time.to_i - @@cleanupRoutineTimeTracker).abs
+          cleanupTimeDifferenceInMinutes = cleanupTimeDifference / 60
+          if (cleanupTimeDifferenceInMinutes >= 10)
+            $log.info "in_win_cadvisor_perf : Cleanup routine kicking in to clear deleted containers from cache"
+
+            @@cleanupRoutineTimeTracker = DateTime.now.to_time.to_i
+          end
+
           @@istestvar = ENV["ISTEST"]
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
             $log.info("winCAdvisorPerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
