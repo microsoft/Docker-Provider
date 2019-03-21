@@ -301,14 +301,6 @@ class CAdvisorMetricsAPIClient
               metricProps["Collections"].push(metricCollections)
               metricItem["DataItems"].push(metricProps)
               metricItems.push(metricItem)
-              # # clean up routine to clear the deleted containers from the cache
-              # timeDifference = (DateTime.now.to_time.to_i - @@cleanupRoutineTimeTracker).abs
-              # timeDifferenceInMinutes = timeDifference / 60
-              # if (timeDifferenceInMinutes >= 5)
-              #   clearDeletedWinContainers
-              # end
-
-              # @Log.info "metric item: #{metricItem}"
             end
           end
         end
@@ -322,7 +314,6 @@ class CAdvisorMetricsAPIClient
             @@nodeTelemetryTimeTracker[hostName] = DateTime.now.to_time.to_i
             telemetryProperties = {}
             telemetryProperties["Computer"] = hostName
-            # telemetryProperties["ContainerCount"] = containerCount
             # Hardcoding the event to ContainerInventory hearbeat event since the telemetry is pivoted off of this event.
             @Log.info "sending container inventory heartbeat telemetry"
             ApplicationInsightsUtility.sendCustomEvent("ContainerInventoryHeartBeatEvent", telemetryProperties)
@@ -369,7 +360,6 @@ class CAdvisorMetricsAPIClient
               metricProps["Collections"].push(metricCollections)
               metricItem["DataItems"].push(metricProps)
               metricItems.push(metricItem)
-              # @Log.info "#{metricItem}"
               #Telemetry about agent performance
               begin
                 # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
@@ -544,7 +534,6 @@ class CAdvisorMetricsAPIClient
 
           metricProps["Collections"].push(metricCollections)
           metricItem["DataItems"].push(metricProps)
-          # @Log.info "#{metricItem}"
         end
       rescue => error
         @Log.warn("getNodeMetricItemRate failed: #{error} for metric #{metricNameToCollect}")
