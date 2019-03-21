@@ -250,7 +250,6 @@ class CAdvisorMetricsAPIClient
           if (!pod["containers"].nil?)
             pod["containers"].each do |container|
               #cpu metric
-              # containerCount += 1
               containerName = container["name"]
               metricValue = container["cpu"][cpuMetricNameToCollect]
               metricTime = container["cpu"]["time"]
@@ -274,7 +273,6 @@ class CAdvisorMetricsAPIClient
               if @@winContainerCpuUsageNanoSecondsLast[containerId].nil? || @@winContainerCpuUsageNanoSecondsTimeLast[containerId].nil? || @@winContainerCpuUsageNanoSecondsLast[containerId] > metricValue #when kubelet is restarted the last condition will be true
                 @@winContainerCpuUsageNanoSecondsLast[containerId] = metricValue
                 @@winContainerCpuUsageNanoSecondsTimeLast[containerId] = metricTime
-                # return nil
                 next
               else
                 timeDifference = DateTime.parse(metricTime).to_time - DateTime.parse(@@winContainerCpuUsageNanoSecondsTimeLast[containerId]).to_time
