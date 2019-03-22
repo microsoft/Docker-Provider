@@ -57,7 +57,8 @@ module Fluent
 
         #Resetting this cache so that it is populated with the current set of containers with every call
         CAdvisorMetricsAPIClient.resetWinContainerIdCache()
-        if (timeDifferenceInMinutes >= 5)
+        if (timeDifferenceInMinutes >= 2)
+          $log.info "in_win_cadvisor_perf: getting windows nodes"
           @@winNodes = KubernetesApiClient.getWindowsNodes()
           $log.info "in_win_cadvisor_perf : Successuly got windows nodes after 5 minute interval"
         end
