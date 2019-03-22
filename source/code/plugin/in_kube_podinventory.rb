@@ -174,9 +174,8 @@ module Fluent
       winContainerCount = 0
       begin #begin block start
         # Getting windows nodes from kubeapi
-        $log.warn "kubepodinventory: getting windows nodes"
         winNodes = KubernetesApiClient.getWindowsNodesArray
-        $log.warn "windows nodes: #{winNodes}"
+
         podInventory["items"].each do |items| #podInventory block start
           sendWindowsContainerInventoryRecord = false
           containerInventoryRecords = []

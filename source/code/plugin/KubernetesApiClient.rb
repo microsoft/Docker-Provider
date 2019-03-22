@@ -25,8 +25,6 @@ class KubernetesApiClient
   @@TokenStr = nil
   @@NodeMetrics = Hash.new
   @@WinNodeArray = []
-  @@mutex = Mutex.new
-  @@cv = ConditionVariable.new
 
   def initialize
   end
@@ -229,39 +227,34 @@ class KubernetesApiClient
       begin
         nodeInventory = JSON.parse(getKubeResourceInfo("nodes").body)
         @Log.info "KubernetesAPIClient::getWindowsNodes : Got nodes from kube api"
-        @Log.warn "locking for population"
-        @@mutex.synchronize {
-          # Resetting the windows node cache
-          @@WinNodeArray.clear
-          if (!nodeInventory.empty?)
-            nodeInventory["items"].each do |item|
-              # check for windows operating system in node metadata
-              winNode = {}
-              nodeStatus = item["status"]
-              nodeMetadata = item["metadata"]
-              if !nodeStatus.nil? && !nodeStatus["nodeInfo"].nil? && !nodeStatus["nodeInfo"]["operatingSystem"].nil?
-                @Log.info "KubernetesAPIClient::getWindowsNodes : Iterating through nodes to get windows nodes"
-                operatingSystem = nodeStatus["nodeInfo"]["operatingSystem"]
-                if (operatingSystem.is_a?(String) && operatingSystem.casecmp("windows") == 0)
-                  # Adding windows nodes to winNodeArray so that it can be used in kubepodinventory to send ContainerInventory data
-                  # to get images and image tags for containers in windows nodes
-                  if !nodeMetadata.nil? && !nodeMetadata["name"].nil?
-                    @@WinNodeArray.push(nodeMetadata["name"])
+        # Resetting the windows node cache
+        @@WinNodeArray.clear
+        if (!nodeInventory.empty?)
+          nodeInventory["items"].each do |item|
+            # check for windows operating system in node metadata
+            winNode = {}
+            nodeStatus = item["status"]
+            nodeMetadata = item["metadata"]
+            if !nodeStatus.nil? && !nodeStatus["nodeInfo"].nil? && !nodeStatus["nodeInfo"]["operatingSystem"].nil?
+              @Log.info "KubernetesAPIClient::getWindowsNodes : Iterating through nodes to get windows nodes"
+              operatingSystem = nodeStatus["nodeInfo"]["operatingSystem"]
+              if (operatingSystem.is_a?(String) && operatingSystem.casecmp("windows") == 0)
+                # Adding windows nodes to winNodeArray so that it can be used in kubepodinventory to send ContainerInventory data
+                # to get images and image tags for containers in windows nodes
+                if !nodeMetadata.nil? && !nodeMetadata["name"].nil?
+                  @@WinNodeArray.push(nodeMetadata["name"])
+                end
+                nodeStatusAddresses = nodeStatus["addresses"]
+                if !nodeStatusAddresses.nil?
+                  nodeStatusAddresses.each do |address|
+                    winNode[address["type"]] = address["address"]
                   end
-                  nodeStatusAddresses = nodeStatus["addresses"]
-                  if !nodeStatusAddresses.nil?
-                    nodeStatusAddresses.each do |address|
-                      winNode[address["type"]] = address["address"]
-                    end
-                    winNodes.push(winNode)
-                  end
+                  winNodes.push(winNode)
                 end
               end
             end
           end
-          @Log.warn "releasing lock"
-          @@cv.signal
-        }
+        end
         return winNodes
       rescue => error
         @Log.warn("Error in get windows nodes: #{error}")
@@ -269,12 +262,7 @@ class KubernetesApiClient
     end
 
     def getWindowsNodesArray
-      @@mutex.synchronize {
-        @Log.warn "waiting for signal"
-        @@cv.wait(@@mutex)
-        @Log.warn "got signal: proceeding"
-        return @@WinNodeArray
-      }
+      return @@WinNodeArray
     end
 
     def getContainerIDs(namespace)
