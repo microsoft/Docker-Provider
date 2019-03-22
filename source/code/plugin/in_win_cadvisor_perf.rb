@@ -51,16 +51,16 @@ module Fluent
       time = Time.now.to_f
       begin
         eventStream = MultiEventStream.new
-        $log.info "in_win_cadvisor_perf : Getting windows nodes"
         timeDifference = (DateTime.now.to_time.to_i - @@winNodeQueryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
 
         #Resetting this cache so that it is populated with the current set of containers with every call
         CAdvisorMetricsAPIClient.resetWinContainerIdCache()
         if (timeDifferenceInMinutes >= 5)
-          $log.info "in_win_cadvisor_perf: getting windows nodes"
+          $log.info "in_win_cadvisor_perf: Getting windows nodes"
           @@winNodes = KubernetesApiClient.getWindowsNodes()
           $log.info "in_win_cadvisor_perf : Successuly got windows nodes after 5 minute interval"
+          @@winNodeQueryTimeTracker = DateTime.now.to_time.to_i
         end
         @@winNodes.each do |winNode|
           metricData = CAdvisorMetricsAPIClient.getMetrics(winNode)

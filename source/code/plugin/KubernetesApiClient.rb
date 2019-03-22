@@ -236,7 +236,6 @@ class KubernetesApiClient
             nodeStatus = item["status"]
             nodeMetadata = item["metadata"]
             if !nodeStatus.nil? && !nodeStatus["nodeInfo"].nil? && !nodeStatus["nodeInfo"]["operatingSystem"].nil?
-              @Log.info "KubernetesAPIClient::getWindowsNodes : Iterating through nodes to get windows nodes"
               operatingSystem = nodeStatus["nodeInfo"]["operatingSystem"]
               if (operatingSystem.is_a?(String) && operatingSystem.casecmp("windows") == 0)
                 # Adding windows nodes to winNodeArray so that it can be used in kubepodinventory to send ContainerInventory data
