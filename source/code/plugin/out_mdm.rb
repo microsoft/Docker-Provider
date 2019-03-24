@@ -52,10 +52,8 @@ module Fluent
       @data_hash = JSON.parse(file)
       @token_url = @@token_url_template % {tenant_id: @data_hash["tenantId"]}
       @cached_access_token = get_access_token
-      # aks_resource_id = ENV['AKS_RESOURCE_ID']
-      aks_resource_id = "/subscriptions/692aea0b-2d89-4e7e-ae30-fffe40782ee2/resourceGroups/rashmi-int-workspace/providers/Microsoft.ContainerService/managedClusters/rashmi-int-workspace"
-      # aks_region = ENV['AKS_REGION']
-      aks_region = "eastus"
+      aks_resource_id = ENV['AKS_RESOURCE_ID']
+      aks_region = ENV['AKS_REGION']
 
       if aks_resource_id.to_s.empty?
         @log.info "Environment Variable AKS_RESOURCE_ID is not set.. "

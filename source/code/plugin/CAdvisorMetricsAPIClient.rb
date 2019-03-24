@@ -96,7 +96,9 @@ class CAdvisorMetricsAPIClient
           hostName = (OMS::Common.get_hostname)
           operatingSystem = "Linux"
         end
-        metricInfo = JSON.parse(getSummaryStatsFromCAdvisor(winNode).body)
+        if !getSummaryStatsFromCAdvisor(winNode).nil?
+          metricInfo = JSON.parse(getSummaryStatsFromCAdvisor(winNode).body)
+        end
         #@Log.info "metric info: #{metricInfo}"
         if !metricInfo.nil?
           metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", "memoryWorkingSetBytes"))
