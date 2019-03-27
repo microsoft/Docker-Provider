@@ -52,8 +52,8 @@ module Fluent
       @data_hash = JSON.parse(file)
       @token_url = @@token_url_template % {tenant_id: @data_hash["tenantId"]}
       @cached_access_token = get_access_token
-      aks_resource_id = ENV['AKS_RESOURCE_ID']
-      aks_region = ENV['AKS_REGION']
+      aks_resource_id = ENV["AKS_RESOURCE_ID"]
+      aks_region = ENV["AKS_REGION"]
 
       if aks_resource_id.to_s.empty?
         @log.info "Environment Variable AKS_RESOURCE_ID is not set.. "
@@ -82,20 +82,11 @@ module Fluent
         http_access_token = Net::HTTP.new(token_uri.host, token_uri.port)
         http_access_token.use_ssl = true
         token_request = Net::HTTP::Post.new(token_uri.request_uri)
-        # token_request.set_form_data(
-        #   {
-        #     "grant_type" => @@grant_type,
-        #     "client_id" => @data_hash["aadClientId"],
-        #     "client_secret" => @data_hash["aadClientSecret"],
-        #     "resource" => @@token_resource_url,
-        #   }
-        # )
-
         token_request.set_form_data(
           {
             "grant_type" => @@grant_type,
-            "client_id" => "c77c0339-d374-40db-b163-b4574c9a4814",
-            "client_secret" => "be8d3b1d-f787-45dd-91e7-93576f091233",
+            "client_id" => @data_hash["aadClientId"],
+            "client_secret" => @data_hash["aadClientSecret"],
             "resource" => @@token_resource_url,
           }
         )
