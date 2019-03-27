@@ -56,7 +56,8 @@ class ApplicationInsightsUtility
           @@CustomProperties["Region"] = ENV[@@EnvAksRegion]
         end
 
-        getDockerInfo()
+        #Commenting it for now from initilize method, we need to pivot all telemetry off of kubenode docker version
+        #getDockerInfo()
         @@CustomProperties["WorkspaceID"] = getWorkspaceId
         @@CustomProperties["AgentVersion"] = ENV[@@EnvAgentVersion]
         @@CustomProperties["ControllerType"] = ENV[@@EnvControllerType]
@@ -179,7 +180,6 @@ class ApplicationInsightsUtility
           getDockerInfo()
         end
         telemetryProps = {}
-        telemetryProps["Computer"] = @@hostName
         # add common dimensions
         @@CustomProperties.each { |k, v| telemetryProps[k] = v }
         # add passed-in dimensions if any

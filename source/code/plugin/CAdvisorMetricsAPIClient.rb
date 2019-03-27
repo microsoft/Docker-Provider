@@ -96,8 +96,9 @@ class CAdvisorMetricsAPIClient
           hostName = (OMS::Common.get_hostname)
           operatingSystem = "Linux"
         end
-        if !getSummaryStatsFromCAdvisor(winNode).nil?
-          metricInfo = JSON.parse(getSummaryStatsFromCAdvisor(winNode).body)
+        winNodeCAdvisorStats = getSummaryStatsFromCAdvisor(winNode)
+        if !winNodeCAdvisorStats.nil?
+          metricInfo = JSON.parse(winNodeCAdvisorStats.body)
         end
         #@Log.info "metric info: #{metricInfo}"
         if !metricInfo.nil?
@@ -190,6 +191,7 @@ class CAdvisorMetricsAPIClient
                     telemetryProps = {}
                     telemetryProps["PodName"] = podName
                     telemetryProps["ContainerName"] = containerName
+                    telemetryProps["Computer"] = hostName
                     ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
                   end
                 end
@@ -369,6 +371,7 @@ class CAdvisorMetricsAPIClient
                     telemetryProps = {}
                     telemetryProps["PodName"] = podName
                     telemetryProps["ContainerName"] = containerName
+                    telemetryProps["Computer"] = hostName
                     ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
                   end
                 end
