@@ -81,7 +81,7 @@ class ApplicationInsightsUtility
       dockerInfo = DockerApiClient.dockerInfo
       if (!dockerInfo.nil? && !dockerInfo.empty?)
         @@CustomProperties["DockerVersion"] = dockerInfo["Version"]
-        @@CustomProperties["DockerApiVersion"] = dockerInfo["ApiVersion"]
+        #@@CustomProperties["DockerApiVersion"] = dockerInfo["ApiVersion"]
       end
     end
 

@@ -128,11 +128,7 @@ module Fluent
               properties["Computer"] = record["Computer"]
               properties["KubeletVersion"] = record["KubeletVersion"]
               properties["OperatingSystem"] = nodeInfo["operatingSystem"]
-              #containerRuntimeVersion is of the form
-              #docker://18.9.0
-              if !nodeInfo["containerRuntimeVersion"].nil? && !nodeInfo["containerRuntimeVersion"].split("//").nil?
-                properties["DockerVersion"] = nodeInfo["containerRuntimeVersion"].split("//")[1]
-              end
+              properties["DockerVersion"] = dockerVersion
               capacityInfo = items["status"]["capacity"]
               ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
               ApplicationInsightsUtility.sendMetricTelemetry("NodeMemory", capacityInfo["memory"], properties)
