@@ -134,15 +134,22 @@ class ApplicationInsightsUtility
       end
     end
 
-    def sendExceptionTelemetry(errorStr)
+    def sendExceptionTelemetry(errorStr, properties = nil)
       begin
         if @@CustomProperties.empty? || @@CustomProperties.nil?
           initializeUtility()
         elsif @@CustomProperties["DockerVersion"].nil?
           getDockerInfo()
         end
+        telemetryProps = {}
+        # add common dimensions
+        @@CustomProperties.each { |k, v| telemetryProps[k] = v }
+        # add passed-in dimensions if any
+        if (!properties.nil? && !properties.empty?)
+          properties.each { |k, v| telemetryProps[k] = v }
+        end
         if !(@@Tc.nil?)
-          @@Tc.track_exception errorStr, :properties => @@CustomProperties
+          @@Tc.track_exception errorStr, :properties => telemetryProps
           @@Tc.flush
           $log.info("AppInsights Exception Telemetry sent successfully")
         end

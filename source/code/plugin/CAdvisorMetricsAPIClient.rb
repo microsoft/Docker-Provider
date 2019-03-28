@@ -59,6 +59,9 @@ class CAdvisorMetricsAPIClient
         end
       rescue => error
         @Log.warn("CAdvisor api request failed: #{error}")
+        telemetryProps = {}
+        telemetryProps["ErrorHostName"] = winNode["Hostname"]
+        ApplicationInsightsUtility.sendExceptionTelemetry(error, telemetryProps)
       end
       return response
     end
@@ -96,14 +99,12 @@ class CAdvisorMetricsAPIClient
           hostName = (OMS::Common.get_hostname)
           operatingSystem = "Linux"
         end
-        winNodeCAdvisorStats = getSummaryStatsFromCAdvisor(winNode)
-        if !winNodeCAdvisorStats.nil?
-          metricInfo = JSON.parse(winNodeCAdvisorStats.body)
+        cAdvisorStats = getSummaryStatsFromCAdvisor(winNode)
+        if !cAdvisorStats.nil?
+          metricInfo = JSON.parse(cAdvisorStats.body)
         end
-        #@Log.info "metric info: #{metricInfo}"
         if !metricInfo.nil?
           metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", "memoryWorkingSetBytes"))
-          # metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "rssBytes", "memoryRssBytes"))
           metricDataItems.concat(getContainerStartTimeMetricItems(metricInfo, hostName, "restartTimeEpoch"))
 
           if operatingSystem == "Linux"
@@ -122,7 +123,6 @@ class CAdvisorMetricsAPIClient
             metricDataItems.push(cpuUsageNanoSecondsRate)
           end
           metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "memory", "workingSetBytes", "memoryWorkingSetBytes"))
-          # metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "memory", "rssBytes", "memoryRssBytes"))
 
           metricDataItems.push(getNodeLastRebootTimeMetric(metricInfo, hostName, "restartTimeEpoch"))
 
@@ -239,7 +239,6 @@ class CAdvisorMetricsAPIClient
     # usageNanoCores doesnt exist for windows nodes. Hence need to compute this from usageCoreNanoSeconds
     def getContainerCpuMetricItemRate(metricJSON, hostName, cpuMetricNameToCollect, metricNametoReturn)
       metricItems = []
-      # containerCount = 0
       clusterId = KubernetesApiClient.getClusterId
       timeDifference = (DateTime.now.to_time.to_i - @@telemetryCpuMetricTimeTracker).abs
       timeDifferenceInMinutes = timeDifference / 60
