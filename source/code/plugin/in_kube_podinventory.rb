@@ -153,7 +153,12 @@ module Fluent
                 envVarsArray.push(envArrayElement)
               end
             end
-            containerEnvHash[container["name"]] = envVarsArray.to_s
+            # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
+            envValueString = envVarsArray.to_s
+            if /AZMON_COLLECT_ENV=FALSE/i.match(envValueString)
+              envValueString = ["AZMON_COLLECT_ENV=FALSE"]
+            end
+            containerEnvHash[container["name"]] = envValueString
           end
         end
         return containerEnvHash

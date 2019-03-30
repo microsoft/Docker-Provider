@@ -257,6 +257,7 @@ class KubernetesApiClient
         return winNodes
       rescue => error
         @Log.warn("Error in get windows nodes: #{error}")
+        return nil
       end
     end
 

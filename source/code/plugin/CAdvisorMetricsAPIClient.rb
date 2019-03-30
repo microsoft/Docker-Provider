@@ -245,6 +245,7 @@ class CAdvisorMetricsAPIClient
       @Log.warn "in host: #{hostName}"
       begin
         metricInfo = metricJSON
+        containerCount = 0
         metricInfo["pods"].each do |pod|
           podUid = pod["podRef"]["uid"]
           podName = pod["podRef"]["name"]
@@ -253,6 +254,7 @@ class CAdvisorMetricsAPIClient
           if (!pod["containers"].nil?)
             pod["containers"].each do |container|
               #cpu metric
+              containerCount += 1
               containerName = container["name"]
               metricValue = container["cpu"][cpuMetricNameToCollect]
               metricTime = container["cpu"]["time"]
@@ -315,6 +317,7 @@ class CAdvisorMetricsAPIClient
             @@nodeTelemetryTimeTracker[hostName] = DateTime.now.to_time.to_i
             telemetryProperties = {}
             telemetryProperties["Computer"] = hostName
+            telemetryProperties["ContainerCount"] = containerCount
             # Hardcoding the event to ContainerInventory hearbeat event since the telemetry is pivoted off of this event.
             @Log.info "sending container inventory heartbeat telemetry"
             ApplicationInsightsUtility.sendCustomEvent("ContainerInventoryHeartBeatEvent", telemetryProperties)
