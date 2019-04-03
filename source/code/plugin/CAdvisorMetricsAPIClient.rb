@@ -318,6 +318,7 @@ class CAdvisorMetricsAPIClient
             telemetryProperties = {}
             telemetryProperties["Computer"] = hostName
             telemetryProperties["ContainerCount"] = containerCount
+            telemetryProperties["OS"] = "Windows"
             # Hardcoding the event to ContainerInventory hearbeat event since the telemetry is pivoted off of this event.
             @Log.info "sending container inventory heartbeat telemetry"
             ApplicationInsightsUtility.sendCustomEvent("ContainerInventoryHeartBeatEvent", telemetryProperties)
