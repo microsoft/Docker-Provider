@@ -171,6 +171,7 @@ private:
 					if (objItem->valuestring != NULL)
 					{
 						string id = string(objItem->valuestring);
+						//make this check to ensure that the value at address is not null
 						if (idTable[id] > 0 && idTable[id] < instances.size())
 						{
 							cJSON* runningItem = cJSON_GetObjectItem(state, "Running");
