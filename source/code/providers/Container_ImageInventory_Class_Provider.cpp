@@ -168,10 +168,11 @@ private:
 				cJSON* objItem = cJSON_GetObjectItem(entry, "Image");
 				if (objItem != NULL)
 				{
-					if (objItem->valuestring != NULL && idTable[id] != NULL && instances[idTable[id]] != NULL)
+					if (objItem->valuestring != NULL)
 					{
 						string id = string(objItem->valuestring);
-
+						if (idTable[id] != NULL && instances[idTable[id]] != NULL)
+{
 						cJSON* runningItem = cJSON_GetObjectItem(state, "Running");
 						if (runningItem != NULL && runningItem->valueint)
 						{
@@ -211,6 +212,7 @@ private:
 						{
 							instances[idTable[id]].Total_value(instances[idTable[id]].Total_value() + 1);
 						}
+					}
 					}
 				}
 			}
