@@ -171,48 +171,48 @@ private:
 					if (objItem->valuestring != NULL)
 					{
 						string id = string(objItem->valuestring);
-						if (idTable[id] != NULL && instances[idTable[id]] != NULL)
-{
-						cJSON* runningItem = cJSON_GetObjectItem(state, "Running");
-						if (runningItem != NULL && runningItem->valueint)
-						{
-							// Running container
-							cJSON* pausedItem = cJSON_GetObjectItem(state, "Paused");
-							if (pausedItem != NULL && pausedItem->valueint)
+						//if (idTable[id] != NULL && instances[idTable[id]] != NULL)
+						//{
+							cJSON* runningItem = cJSON_GetObjectItem(state, "Running");
+							if (runningItem != NULL && runningItem->valueint)
 							{
-								// Paused container
-								if (instances[idTable[id]].Paused_value() != NULL)
+								// Running container
+								cJSON* pausedItem = cJSON_GetObjectItem(state, "Paused");
+								if (pausedItem != NULL && pausedItem->valueint)
 								{
-									instances[idTable[id]].Paused_value(instances[idTable[id]].Paused_value() + 1);
+									// Paused container
+									if (instances[idTable[id]].Paused_value() != NULL)
+									{
+										instances[idTable[id]].Paused_value(instances[idTable[id]].Paused_value() + 1);
+									}
+								}
+								else if (instances[idTable[id]].Running_value() != NULL)
+								{
+									instances[idTable[id]].Running_value(instances[idTable[id]].Running_value() + 1);
 								}
 							}
-							else if (instances[idTable[id]].Running_value() != NULL)
+							else
 							{
-								instances[idTable[id]].Running_value(instances[idTable[id]].Running_value() + 1);
-							}
-						}
-						else
-						{
-							cJSON* exitCodeItem = cJSON_GetObjectItem(state, "ExitCode");
-							if (exitCodeItem != NULL && exitCodeItem->valueint)
-							{
-								// Container exited nonzero
-								if (instances[idTable[id]].Failed_value() != NULL)
+								cJSON* exitCodeItem = cJSON_GetObjectItem(state, "ExitCode");
+								if (exitCodeItem != NULL && exitCodeItem->valueint)
 								{
-									instances[idTable[id]].Failed_value(instances[idTable[id]].Failed_value() + 1);
+									// Container exited nonzero
+									if (instances[idTable[id]].Failed_value() != NULL)
+									{
+										instances[idTable[id]].Failed_value(instances[idTable[id]].Failed_value() + 1);
+									}
+								}
+								else if (instances[idTable[id]].Stopped_value != NULL)
+								{
+									// Container exited normally
+									instances[idTable[id]].Stopped_value(instances[idTable[id]].Stopped_value() + 1);
 								}
 							}
-							else if (instances[idTable[id]].Stopped_value != NULL)
+							if (instances[idTable[id]].Total_value != NULL) 
 							{
-								// Container exited normally
-								instances[idTable[id]].Stopped_value(instances[idTable[id]].Stopped_value() + 1);
+								instances[idTable[id]].Total_value(instances[idTable[id]].Total_value() + 1);
 							}
-						}
-						if (instances[idTable[id]].Total_value != NULL) 
-						{
-							instances[idTable[id]].Total_value(instances[idTable[id]].Total_value() + 1);
-						}
-					}
+						//}
 					}
 				}
 			}
