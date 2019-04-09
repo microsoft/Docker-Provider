@@ -171,8 +171,8 @@ private:
 					if (objItem->valuestring != NULL)
 					{
 						string id = string(objItem->valuestring);
-						//if (idTable[id] != NULL && instances[idTable[id]] != NULL)
-						//{
+						if (idTable[id] && instances[idTable[id]])
+						{
 							cJSON* runningItem = cJSON_GetObjectItem(state, "Running");
 							if (runningItem != NULL && runningItem->valueint)
 							{
@@ -181,12 +181,9 @@ private:
 								if (pausedItem != NULL && pausedItem->valueint)
 								{
 									// Paused container
-									if (instances[idTable[id]].Paused_value() != NULL)
-									{
-										instances[idTable[id]].Paused_value(instances[idTable[id]].Paused_value() + 1);
-									}
+									instances[idTable[id]].Paused_value(instances[idTable[id]].Paused_value() + 1);
 								}
-								else if (instances[idTable[id]].Running_value() != NULL)
+								else 
 								{
 									instances[idTable[id]].Running_value(instances[idTable[id]].Running_value() + 1);
 								}
@@ -197,22 +194,16 @@ private:
 								if (exitCodeItem != NULL && exitCodeItem->valueint)
 								{
 									// Container exited nonzero
-									if (instances[idTable[id]].Failed_value() != NULL)
-									{
-										instances[idTable[id]].Failed_value(instances[idTable[id]].Failed_value() + 1);
-									}
+									instances[idTable[id]].Failed_value(instances[idTable[id]].Failed_value() + 1);
 								}
-								else if (instances[idTable[id]].Stopped_value != NULL)
+								else 
 								{
 									// Container exited normally
 									instances[idTable[id]].Stopped_value(instances[idTable[id]].Stopped_value() + 1);
 								}
 							}
-							if (instances[idTable[id]].Total_value != NULL) 
-							{
-								instances[idTable[id]].Total_value(instances[idTable[id]].Total_value() + 1);
-							}
-						//}
+							instances[idTable[id]].Total_value(instances[idTable[id]].Total_value() + 1);
+						}
 					}
 				}
 			}
