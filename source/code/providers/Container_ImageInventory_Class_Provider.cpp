@@ -171,7 +171,7 @@ private:
 					if (objItem->valuestring != NULL)
 					{
 						string id = string(objItem->valuestring);
-						if (instances[idTable[id]] != NULL)
+						if (idTable[id] > 0 && idTable[id] < instances.size())
 						{
 							cJSON* runningItem = cJSON_GetObjectItem(state, "Running");
 							if (runningItem != NULL && runningItem->valueint)
