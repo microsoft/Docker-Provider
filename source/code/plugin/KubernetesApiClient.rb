@@ -439,58 +439,58 @@ class KubernetesApiClient
     end #parseNodeLimits
 
     def getMetricNumericValue(metricName, metricVal)
-      metricValue = metricVal
+      metricValue = metricVal.downcase
       begin
         case metricName
         when "memory" #convert to bytes for memory
           #https://kubernetes.io/docs/tasks/configure-pod-container/assign-memory-resource/
-          if (metricValue.end_with?("Ki"))
-            metricValue.chomp!("Ki")
+          if (metricValue.end_with?("ki"))
+            metricValue.chomp!("ki")
             metricValue = Float(metricValue) * 1024.0 ** 1
-          elsif (metricValue.end_with?("Mi"))
-            metricValue.chomp!("Mi")
+          elsif (metricValue.end_with?("mi"))
+            metricValue.chomp!("mi")
             metricValue = Float(metricValue) * 1024.0 ** 2
-          elsif (metricValue.end_with?("Gi"))
-            metricValue.chomp!("Gi")
+          elsif (metricValue.end_with?("gi"))
+            metricValue.chomp!("gi")
             metricValue = Float(metricValue) * 1024.0 ** 3
-          elsif (metricValue.end_with?("Ti"))
-            metricValue.chomp!("Ti")
+          elsif (metricValue.end_with?("ti"))
+            metricValue.chomp!("ti")
             metricValue = Float(metricValue) * 1024.0 ** 4
-          elsif (metricValue.end_with?("Pi"))
-            metricValue.chomp!("Pi")
+          elsif (metricValue.end_with?("pi"))
+            metricValue.chomp!("pi")
             metricValue = Float(metricValue) * 1024.0 ** 5
-          elsif (metricValue.end_with?("Ei"))
-            metricValue.chomp!("Ei")
+          elsif (metricValue.end_with?("ei"))
+            metricValue.chomp!("ei")
             metricValue = Float(metricValue) * 1024.0 ** 6
-          elsif (metricValue.end_with?("Zi"))
-            metricValue.chomp!("Zi")
+          elsif (metricValue.end_with?("zi"))
+            metricValue.chomp!("zi")
             metricValue = Float(metricValue) * 1024.0 ** 7
-          elsif (metricValue.end_with?("Yi"))
-            metricValue.chomp!("Yi")
+          elsif (metricValue.end_with?("yi"))
+            metricValue.chomp!("yi")
             metricValue = Float(metricValue) * 1024.0 ** 8
-          elsif (metricValue.end_with?("K"))
-            metricValue.chomp!("K")
+          elsif (metricValue.end_with?("k"))
+            metricValue.chomp!("k")
             metricValue = Float(metricValue) * 1000.0 ** 1
-          elsif (metricValue.end_with?("M"))
-            metricValue.chomp!("M")
+          elsif (metricValue.end_with?("m"))
+            metricValue.chomp!("m")
             metricValue = Float(metricValue) * 1000.0 ** 2
-          elsif (metricValue.end_with?("G"))
-            metricValue.chomp!("G")
+          elsif (metricValue.end_with?("g"))
+            metricValue.chomp!("g")
             metricValue = Float(metricValue) * 1000.0 ** 3
-          elsif (metricValue.end_with?("T"))
-            metricValue.chomp!("T")
+          elsif (metricValue.end_with?("t"))
+            metricValue.chomp!("t")
             metricValue = Float(metricValue) * 1000.0 ** 4
-          elsif (metricValue.end_with?("P"))
-            metricValue.chomp!("P")
+          elsif (metricValue.end_with?("p"))
+            metricValue.chomp!("p")
             metricValue = Float(metricValue) * 1000.0 ** 5
-          elsif (metricValue.end_with?("E"))
-            metricValue.chomp!("E")
+          elsif (metricValue.end_with?("e"))
+            metricValue.chomp!("e")
             metricValue = Float(metricValue) * 1000.0 ** 6
-          elsif (metricValue.end_with?("Z"))
-            metricValue.chomp!("Z")
+          elsif (metricValue.end_with?("z"))
+            metricValue.chomp!("z")
             metricValue = Float(metricValue) * 1000.0 ** 7
-          elsif (metricValue.end_with?("Y"))
-            metricValue.chomp!("Y")
+          elsif (metricValue.end_with?("y"))
+            metricValue.chomp!("y")
             metricValue = Float(metricValue) * 1000.0 ** 8
           else #assuming there are no units specified, it is bytes (the below conversion will fail for other unsupported 'units')
             metricValue = Float(metricValue)
