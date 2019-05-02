@@ -36,12 +36,15 @@ const ResourceNameEnv = "ACS_RESOURCE_NAME"
 
 // Origin prefix for telegraf Metrics (used as prefix for origin field & prefix for azure monitor specific tags)
 const TelegrafMetricOriginPrefix = "container.azm.ms"
+
 // Origin suffix for telegraf Metrics (used as suffix for origin field)
 const TelegrafMetricOriginSuffix = "telegraf"
+
 // Namespace prefix for telegraf Metrics (used as prefix for Namespace field)
 //const TelegrafMetricNamespacePrefix = "plugin"
 // clusterName tag
 const TelegrafTagClusterName = "clusterName"
+
 // clusterId tag
 const TelegrafTagClusterID = "clusterId"
 
@@ -54,6 +57,12 @@ const IPName = "Containers"
 const defaultContainerInventoryRefreshInterval = 60
 const defaultKubeSystemContainersRefreshInterval = 300
 
+// // stdout stream
+// const stdoutStream = "stdout"
+
+// // stderr stream
+// const stderrStream = "stderr"
+
 var (
 	// PluginConfiguration the plugins configuration
 	PluginConfiguration map[string]string
@@ -65,11 +74,11 @@ var (
 	Computer string
 	// WorkspaceID log analytics workspace id
 	WorkspaceID string
-	// ResourceID for resource-centric log analytics data 
+	// ResourceID for resource-centric log analytics data
 	ResourceID string
 	// Resource-centric flag (will be true if we determine if above RseourceID is non-empty - default is false)
 	ResourceCentric bool
-	//ResourceName 
+	//ResourceName
 	ResourceName string
 )
 
@@ -118,21 +127,21 @@ type DataItem struct {
 // telegraf metric DataItem represents the object corresponding to the json that is sent by fluentbit tail plugin
 type laTelegrafMetric struct {
 	// 'golden' fields
-	Origin          		string `json:"Origin"`
-	Namespace          		string `json:"Namespace"`
-	Name	          		string `json:"Name"`
-	Value                	float64 `json:"Value"`
-	Tags					string `json:"Tags"`
+	Origin    string  `json:"Origin"`
+	Namespace string  `json:"Namespace"`
+	Name      string  `json:"Name"`
+	Value     float64 `json:"Value"`
+	Tags      string  `json:"Tags"`
 	// specific required fields for LA
-	CollectionTime			string `json:"CollectionTime"` //mapped to TimeGenerated
-	Computer				string `json:"Computer"`
+	CollectionTime string `json:"CollectionTime"` //mapped to TimeGenerated
+	Computer       string `json:"Computer"`
 }
 
 // ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
 type InsightsMetricsBlob struct {
-	DataType  string     			`json:"DataType"`
-	IPName    string     			`json:"IPName"`
-	DataItems []laTelegrafMetric 	`json:"DataItems"`
+	DataType  string             `json:"DataType"`
+	IPName    string             `json:"IPName"`
+	DataItems []laTelegrafMetric `json:"DataItems"`
 }
 
 // ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
@@ -187,7 +196,7 @@ func updateContainerImageNameMaps() {
 		listOptions := metav1.ListOptions{}
 		listOptions.FieldSelector = fmt.Sprintf("spec.nodeName=%s", Computer)
 		pods, err := ClientSet.CoreV1().Pods("").List(listOptions)
-		
+
 		if err != nil {
 			message := fmt.Sprintf("Error getting pods %s\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())
 			Log(message)
@@ -265,24 +274,24 @@ func convert(in interface{}) (float64, bool) {
 		}
 		return float64(0), true
 	default:
-		Log ("returning 0 for %v ", in)
+		Log("returning 0 for %v ", in)
 		return float64(0), false
 	}
 }
 
 //Translates telegraf time series to one or more Azure loganalytics metric(s)
 func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetric, error) {
-	
+
 	var laMetrics []*laTelegrafMetric
 	var tags map[interface{}]interface{}
 	tags = m["tags"].(map[interface{}]interface{})
 	tagMap := make(map[string]string)
 	for k, v := range tags {
-		key := fmt.Sprintf("%s",k)
+		key := fmt.Sprintf("%s", k)
 		if key == "" {
 			continue
 		}
-		tagMap[key] = fmt.Sprintf("%s",v)
+		tagMap[key] = fmt.Sprintf("%s", v)
 	}
 
 	//add azure monitor tags
@@ -305,14 +314,14 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 		}
 		i := m["timestamp"].(uint64)
 		laMetric := laTelegrafMetric{
-			Origin: 		fmt.Sprintf("%s/%s", TelegrafMetricOriginPrefix, TelegrafMetricOriginSuffix),
+			Origin: fmt.Sprintf("%s/%s", TelegrafMetricOriginPrefix, TelegrafMetricOriginSuffix),
 			//Namespace:  	fmt.Sprintf("%s/%s", TelegrafMetricNamespacePrefix, m["name"]),
-			Namespace:  	fmt.Sprintf("%s", m["name"]),
-			Name:       	fmt.Sprintf("%s",k),
-			Value:			fv,
-			Tags:     		fmt.Sprintf("%s", tagJson),
-			CollectionTime: time.Unix(int64(i),0).Format(time.RFC3339),
-			Computer: 	Computer, //this is the collection agent's computer name, not necessarily to which computer the metric applies to
+			Namespace:      fmt.Sprintf("%s", m["name"]),
+			Name:           fmt.Sprintf("%s", k),
+			Value:          fv,
+			Tags:           fmt.Sprintf("%s", tagJson),
+			CollectionTime: time.Unix(int64(i), 0).Format(time.RFC3339),
+			Computer:       Computer, //this is the collection agent's computer name, not necessarily to which computer the metric applies to
 		}
 
 		//Log ("la metric:%v", laMetric)
@@ -325,7 +334,7 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int {
 	var laMetrics []*laTelegrafMetric
 
-	if ( (telegrafRecords== nil) || ! (len(telegrafRecords) > 0) ) {
+	if (telegrafRecords == nil) || !(len(telegrafRecords) > 0) {
 		Log("PostTelegrafMetricsToLA::Error:no timeseries to derive")
 		return output.FLB_OK
 	}
@@ -340,7 +349,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		laMetrics = append(laMetrics, translatedMetrics...)
 	}
 
-	if ( (laMetrics == nil) || !(len(laMetrics) > 0) ) {
+	if (laMetrics == nil) || !(len(laMetrics) > 0) {
 		Log("PostTelegrafMetricsToLA::Info:no metrics derived from timeseries data")
 		return output.FLB_OK
 	} else {
@@ -351,7 +360,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	var metrics []laTelegrafMetric
 	var i int
 
-	for i=0; i < len(laMetrics); i++ {
+	for i = 0; i < len(laMetrics); i++ {
 		metrics = append(metrics, *laMetrics[i])
 	}
 
@@ -368,7 +377,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		SendException(message)
 		return output.FLB_OK
 	}
-	
+
 	//Post metrics data to LA
 	req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(jsonBytes))
 
@@ -376,7 +385,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 	//set headers
 	req.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
-	
+
 	//expensive to do string len for every request, so use a flag
 	if ResourceCentric == true {
 		req.Header.Set("x-ms-AzureResourceId", ResourceID)
@@ -451,6 +460,16 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			continue
 		}
 
+		// recordStream = ToString(record["stream"])
+
+		// if (strings.EqualFold(recordStream, stdoutStream)) && (strings.Compare(os.Getenv("DISABLE_STD_OUT_LOG_COLLECTION"), "true") == 0) {
+		// 	continue
+		// }
+
+		// if (strings.EqualFold(recordStream, stderrStream)) && (strings.Compare(os.Getenv("DISABLE_STD_ERR_LOG_COLLECTION"), "true") == 0) {
+		// 	continue
+		// }
+
 		stringMap := make(map[string]string)
 
 		stringMap["LogEntry"] = ToString(record["log"])
@@ -461,11 +480,11 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 		if val, ok := imageIDMap[containerID]; ok {
 			stringMap["Image"] = val
-		} 
+		}
 
 		if val, ok := nameIDMap[containerID]; ok {
 			stringMap["Name"] = val
-		} 
+		}
 
 		dataItem := DataItem{
 			ID:                    stringMap["Id"],
@@ -606,19 +625,19 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		splitted := strings.Split(ResourceID, "/")
 		ResourceName = splitted[len(splitted)-1]
 		Log("ResourceCentric: True")
-		Log("ResourceID=%s",ResourceID)
-		Log("ResourceName=%s",ResourceID)
-	} 
-	
+		Log("ResourceID=%s", ResourceID)
+		Log("ResourceName=%s", ResourceID)
+	}
+
 	if ResourceCentric == false {
 		//AKS-Engine/hybrid scenario
 		ResourceName = os.Getenv(ResourceNameEnv)
 		ResourceID = ResourceName
 		Log("ResourceCentric: False")
-		Log("ResourceID=%s",ResourceID)
-		Log("ResourceName=%s",ResourceName)
+		Log("ResourceID=%s", ResourceID)
+		Log("ResourceName=%s", ResourceName)
 	}
-	
+
 	// Initialize image,name map refresh ticker
 	containerInventoryRefreshInterval, err := strconv.Atoi(pluginConfig["container_inventory_refresh_interval"])
 	if err != nil {
