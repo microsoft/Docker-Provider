@@ -34,7 +34,7 @@ module Fluent
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
         @@telemetryTimeTracker = DateTime.now.to_time.to_i
-        @@disableAzmonCollectEnvironmentVar = ENV["DISABLE_AZMON_CLUSTER_ENV_COLLECTION"]
+        @@disableCollectEnvironmentVar = ENV["AZMON_DISABLE_CLUSTER_ENV_COLLECTION"]
       end
     end
 
@@ -55,9 +55,9 @@ module Fluent
           instance["ContainerHostname"] = configValue["Hostname"]
 
           # Check to see if the environment variable collection is disabled at the cluster level - This disables env variable collection for all containers.
-          if !@@disableAzmonCollectEnvironmentVar.nil? && !@@disableAzmonCollectEnvironmentVar.empty? && @@disableAzmonCollectEnvironmentVar.casecmp("true") == 0
+          if !@@disableCollectEnvironmentVar.nil? && !@@disableCollectEnvironmentVar.empty? && @@disableCollectEnvironmentVar.casecmp("true") == 0
             $log.info("in_container_inventory : Environment Variable collection disabled for the cluster")
-            instance["EnvironmentVar"] = ["DISABLE_AZMON_CLUSTER_ENV_COLLECTION=TRUE"]
+            instance["EnvironmentVar"] = ["AZMON_DISABLE_CLUSTER_ENV_COLLECTION=TRUE"]
           else
             envValue = configValue["Env"]
             envValueString = (envValue.nil?) ? "" : envValue.to_s

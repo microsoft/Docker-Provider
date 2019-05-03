@@ -34,7 +34,7 @@ module Fluent
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
         @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
-        @@disableAzmonCollectEnvironmentVar = ENV["DISABLE_AZMON_CLUSTER_ENV_COLLECTION"]
+        @@disableCollectEnvironmentVar = ENV["AZMON_DISABLE_CLUSTER_ENV_COLLECTION"]
       end
     end
 
@@ -140,9 +140,9 @@ module Fluent
         containerEnvHash = {}
         if !podSpec.nil? && !podSpec["containers"].nil?
           podSpec["containers"].each do |container|
-            if !@@disableAzmonCollectEnvironmentVar.nil? && !@@disableAzmonCollectEnvironmentVar.empty? && @@disableAzmonCollectEnvironmentVar.casecmp("true") == 0
+            if !@@disableCollectEnvironmentVar.nil? && !@@disableCollectEnvironmentVar.empty? && @@disableCollectEnvironmentVar.casecmp("true") == 0
               $log.info("in_kube_pod_inventory : Environment Variable collection disabled for the cluster")
-              containerEnvHash[container["name"]] = ["DISABLE_AZMON_CLUSTER_ENV_COLLECTION=TRUE"]
+              containerEnvHash[container["name"]] = ["AZMON_DISABLE_CLUSTER_ENV_COLLECTION=TRUE"]
             else
               envVarsArray = []
               containerEnvArray = container["env"]
