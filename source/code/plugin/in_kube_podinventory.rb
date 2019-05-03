@@ -34,6 +34,7 @@ module Fluent
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
         @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
+        @@azmonCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV"]
       end
     end
 
@@ -139,26 +140,31 @@ module Fluent
         containerEnvHash = {}
         if !podSpec.nil? && !podSpec["containers"].nil?
           podSpec["containers"].each do |container|
-            envVarsArray = []
-            containerEnvArray = container["env"]
-            # Parsing the environment variable array of hashes to a string value
-            # since that is format being sent by container inventory workflow in daemonset
-            # Keeping it in the same format because the workflow expects it in this format
-            # and the UX expects an array of string for environment variables
-            if !containerEnvArray.nil? && !containerEnvArray.empty?
-              containerEnvArray.each do |envVarHash|
-                envName = envVarHash["name"]
-                envValue = envVarHash["value"]
-                envArrayElement = envName + "=" + envValue
-                envVarsArray.push(envArrayElement)
+            if !@@azmonCollectEnvironmentVar.nil? && !@@azmonCollectEnvironmentVar.empty? && @@azmonCollectEnvironmentVar.casecmp("false") == 0
+              $log.info("in_kube_pod_inventory : Environment Variable collection disabled for the cluster")
+              containerEnvHash[container["name"]] = ["AZMON_CLUSTER_COLLECT_ENV=FALSE"]
+            else
+              envVarsArray = []
+              containerEnvArray = container["env"]
+              # Parsing the environment variable array of hashes to a string value
+              # since that is format being sent by container inventory workflow in daemonset
+              # Keeping it in the same format because the workflow expects it in this format
+              # and the UX expects an array of string for environment variables
+              if !containerEnvArray.nil? && !containerEnvArray.empty?
+                containerEnvArray.each do |envVarHash|
+                  envName = envVarHash["name"]
+                  envValue = envVarHash["value"]
+                  envArrayElement = envName + "=" + envValue
+                  envVarsArray.push(envArrayElement)
+                end
               end
+              # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
+              envValueString = envVarsArray.to_s
+              if /AZMON_COLLECT_ENV=FALSE/i.match(envValueString)
+                envValueString = ["AZMON_COLLECT_ENV=FALSE"]
+              end
+              containerEnvHash[container["name"]] = envValueString
             end
-            # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
-            envValueString = envVarsArray.to_s
-            if /AZMON_COLLECT_ENV=FALSE/i.match(envValueString)
-              envValueString = ["AZMON_COLLECT_ENV=FALSE"]
-            end
-            containerEnvHash[container["name"]] = envValueString
           end
         end
         return containerEnvHash

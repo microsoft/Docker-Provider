@@ -34,6 +34,7 @@ module Fluent
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
         @@telemetryTimeTracker = DateTime.now.to_time.to_i
+        @@azmonCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV"]
       end
     end
 
@@ -53,23 +54,30 @@ module Fluent
         if !configValue.nil?
           instance["ContainerHostname"] = configValue["Hostname"]
 
-          envValue = configValue["Env"]
-          envValueString = (envValue.nil?) ? "" : envValue.to_s
-          # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
-          if /AZMON_COLLECT_ENV=FALSE/i.match(envValueString)
-            envValueString = ["AZMON_COLLECT_ENV=FALSE"]
-            $log.warn("Environment Variable collection for container: #{container["Id"]} skipped because AZMON_COLLECT_ENV is set to false")
-          end
-          # Restricting the ENV string value to 200kb since the size of this string can go very high
-          if envValueString.length > 200000
-            envValueStringTruncated = envValueString.slice(0..200000)
-            lastIndex = envValueStringTruncated.rindex("\", ")
-            if !lastIndex.nil?
-              envValueStringTruncated = envValueStringTruncated.slice(0..lastIndex) + "]"
-            end
-            instance["EnvironmentVar"] = envValueStringTruncated
+          # Check to see if the environment variable collection is disabled at the cluster level - This disables env variable collection for all containers.
+          if !@@azmonCollectEnvironmentVar.nil? && !@@azmonCollectEnvironmentVar.empty? && @@azmonCollectEnvironmentVar.casecmp("false") == 0
+            $log.info("in_container_inventory : Environment Variable collection disabled for the cluster")
+            instance["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV=FALSE"]
           else
-            instance["EnvironmentVar"] = envValueString
+            envValue = configValue["Env"]
+            envValueString = (envValue.nil?) ? "" : envValue.to_s
+            # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
+            # Check to see if the environment variable collection is disabled for this container.
+            if /AZMON_COLLECT_ENV=FALSE/i.match(envValueString)
+              envValueString = ["AZMON_COLLECT_ENV=FALSE"]
+              $log.warn("Environment Variable collection for container: #{container["Id"]} skipped because AZMON_COLLECT_ENV is set to false")
+            end
+            # Restricting the ENV string value to 200kb since the size of this string can go very high
+            if envValueString.length > 200000
+              envValueStringTruncated = envValueString.slice(0..200000)
+              lastIndex = envValueStringTruncated.rindex("\", ")
+              if !lastIndex.nil?
+                envValueStringTruncated = envValueStringTruncated.slice(0..lastIndex) + "]"
+              end
+              instance["EnvironmentVar"] = envValueStringTruncated
+            else
+              instance["EnvironmentVar"] = envValueString
+            end
           end
 
           cmdValue = configValue["Cmd"]
