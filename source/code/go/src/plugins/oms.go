@@ -57,12 +57,6 @@ const IPName = "Containers"
 const defaultContainerInventoryRefreshInterval = 60
 const defaultKubeSystemContainersRefreshInterval = 300
 
-// // stdout stream
-// const stdoutStream = "stdout"
-
-// // stderr stream
-// const stderrStream = "stderr"
-
 var (
 	// PluginConfiguration the plugins configuration
 	PluginConfiguration map[string]string
@@ -459,16 +453,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		if containerID == "" || containsKey(ignoreIDSet, containerID) {
 			continue
 		}
-
-		// recordStream = ToString(record["stream"])
-
-		// if (strings.EqualFold(recordStream, stdoutStream)) && (strings.Compare(os.Getenv("DISABLE_STD_OUT_LOG_COLLECTION"), "true") == 0) {
-		// 	continue
-		// }
-
-		// if (strings.EqualFold(recordStream, stderrStream)) && (strings.Compare(os.Getenv("DISABLE_STD_ERR_LOG_COLLECTION"), "true") == 0) {
-		// 	continue
-		// }
 
 		stringMap := make(map[string]string)
 
