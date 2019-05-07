@@ -104,9 +104,6 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/tomlrb/string_utils.rb;                                    source/code/toml-parser/tomlrb/string_utils.rb; 644; root; root
 /opt/tomlrb/version.rb;                                         source/code/toml-parser/tomlrb/version.rb; 644; root; root
 
-
-
-
 /opt/td-agent-bit/bin/out_oms.so;                                intermediate/${{BUILD_CONFIGURATION}}/out_oms.so;  	755; root; root
 /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf;			    installer/conf/td-agent-bit.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/out_oms.conf;			            installer/conf/out_oms.conf;                    644; root; root
@@ -158,6 +155,8 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/lib/application_insights/channel;                755; root; root; sysdir
 /opt/microsoft/omsagent/plugin/lib/application_insights/channel/contracts;      755; root; root; sysdir
 /opt/microsoft/omsagent/plugin/lib/application_insights/rack;                   755; root; root; sysdir
+
+/opt/tomlrb;												755; root; root; sysdir
 
 %Dependencies
 
