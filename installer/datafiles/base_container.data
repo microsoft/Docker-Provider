@@ -95,6 +95,18 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/lib/application_insights/channel/event.rb;						source/code/plugin/lib/application_insights/channel/event.rb;   644; root; root
 /opt/microsoft/omsagent/plugin/lib/application_insights.rb;     source/code/plugin/lib/application_insights.rb; 644; root; root
 
+/opt/tomlrb.rb;                                                 source/code/toml-parser/tomlrb.rb; 644; root; root
+/opt/tomlrb/generated_parser.rb;                                source/code/toml-parser/tomlrb/generated_parser.rb; 644; root; root
+/opt/tomlrb/handler.rb;                                         source/code/toml-parser/tomlrb/handler.rb; 644; root; root
+/opt/tomlrb/parser.rb;                                          source/code/toml-parser/tomlrb/parser.rb; 644; root; root
+/opt/tomlrb/parser.y;                                           source/code/toml-parser/tomlrb/parser.y; 644; root; root
+/opt/tomlrb/scanner.rb;                                         source/code/toml-parser/tomlrb/scanner.rb; 644; root; root
+/opt/tomlrb/string_utils.rb;                                    source/code/toml-parser/tomlrb/string_utils.rb; 644; root; root
+/opt/tomlrb/version.rb;                                         source/code/toml-parser/tomlrb/version.rb; 644; root; root
+
+
+
+
 /opt/td-agent-bit/bin/out_oms.so;                                intermediate/${{BUILD_CONFIGURATION}}/out_oms.so;  	755; root; root
 /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf;			    installer/conf/td-agent-bit.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/out_oms.conf;			            installer/conf/out_oms.conf;                    644; root; root
