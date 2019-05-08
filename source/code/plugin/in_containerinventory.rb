@@ -200,7 +200,7 @@ module Fluent
         if !containerIds.empty?
           eventStream = MultiEventStream.new
           nameMap = DockerApiClient.getImageIdMap
-          clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
+          clusterCollectEnvironmentVar = ENV['AZMON_CLUSTER_COLLECT_ENV_VAR']
           $log.warn("clusterCollectEnvironmentVar: #{clusterCollectEnvironmentVar}")
           if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
             $log.warn("Environment Variable collection disabled for cluster")
