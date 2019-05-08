@@ -34,7 +34,6 @@ module Fluent
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
         @@telemetryTimeTracker = DateTime.now.to_time.to_i
-        @@clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
       end
     end
 
@@ -48,15 +47,13 @@ module Fluent
       end
     end
 
-    def obtainContainerConfig(instance, container)
+    def obtainContainerConfig(instance, container, clusterCollectEnvironmentVar)
       begin
         configValue = container["Config"]
         if !configValue.nil?
           instance["ContainerHostname"] = configValue["Hostname"]
-
           # Check to see if the environment variable collection is disabled at the cluster level - This disables env variable collection for all containers.
-          if !@@clusterCollectEnvironmentVar.nil? && !@@clusterCollectEnvironmentVar.empty? && @@clusterCollectEnvironmentVar.casecmp("false") == 0
-            $log.info("in_container_inventory : Environment Variable collection disabled for the cluster")
+          if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
             instance["EnvironmentVar"] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
           else
             envValue = configValue["Env"]
@@ -159,7 +156,7 @@ module Fluent
       end
     end
 
-    def inspectContainer(id, nameMap)
+    def inspectContainer(id, nameMap, clusterCollectEnvironmentVar)
       containerInstance = {}
       begin
         container = DockerApiClient.dockerInspectContainer(id)
@@ -181,7 +178,7 @@ module Fluent
               containerInstance["ImageTag"] = repoImageTagArray[2]
             end
           end
-          obtainContainerConfig(containerInstance, container)
+          obtainContainerConfig(containerInstance, container, clusterCollectEnvironmentVar)
           obtainContainerState(containerInstance, container)
           obtainContainerHostConfig(containerInstance, container)
         end
@@ -203,9 +200,13 @@ module Fluent
         if !containerIds.empty?
           eventStream = MultiEventStream.new
           nameMap = DockerApiClient.getImageIdMap
+          clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
+          if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
+            $log.warn("Environment Variable collection disabled for cluster")
+          end
           containerIds.each do |containerId|
             inspectedContainer = {}
-            inspectedContainer = inspectContainer(containerId, nameMap)
+            inspectedContainer = inspectContainer(containerId, nameMap, clusterCollectEnvironmentVar)
             inspectedContainer["Computer"] = hostname
             inspectedContainer["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
             containerInventory.push inspectedContainer

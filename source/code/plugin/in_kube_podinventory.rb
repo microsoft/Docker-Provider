@@ -34,7 +34,6 @@ module Fluent
         @mutex = Mutex.new
         @thread = Thread.new(&method(:run_periodic))
         @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
-        @@clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
       end
     end
 
@@ -134,14 +133,13 @@ module Fluent
       end
     end
 
-    def getContainerEnvironmentVariables(pod)
+    def getContainerEnvironmentVariables(pod, clusterCollectEnvironmentVar)
       begin
         podSpec = pod["spec"]
         containerEnvHash = {}
         if !podSpec.nil? && !podSpec["containers"].nil?
           podSpec["containers"].each do |container|
-            if !@@clusterCollectEnvironmentVar.nil? && !@@clusterCollectEnvironmentVar.empty? && @@clusterCollectEnvironmentVar.casecmp("false") == 0
-              $log.info("in_kube_pod_inventory : Environment Variable collection disabled for the cluster")
+            if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
               containerEnvHash[container["name"]] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
             else
               envVarsArray = []
@@ -162,6 +160,7 @@ module Fluent
               envValueString = envVarsArray.to_s
               if /AZMON_COLLECT_ENV=FALSE/i.match(envValueString)
                 envValueString = ["AZMON_COLLECT_ENV=FALSE"]
+                $log.warn("Environment Variable collection for container: #{container["name"]} skipped because AZMON_COLLECT_ENV is set to false")
               end
               containerEnvHash[container["name"]] = envValueString
             end
@@ -249,8 +248,12 @@ module Fluent
           # on windows nodes and parse environment variables for these containers
           if winNodes.length > 0
             if (!record["Computer"].empty? && (winNodes.include? record["Computer"]))
+              clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
+              if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
+                $log.warn("WindowsContainerInventory: Environment Variable collection disabled for cluster")
+              end
               sendWindowsContainerInventoryRecord = true
-              containerEnvVariableHash = getContainerEnvironmentVariables(items)
+              containerEnvVariableHash = getContainerEnvironmentVariables(items, clusterCollectEnvironmentVar)
             end
           end
 
