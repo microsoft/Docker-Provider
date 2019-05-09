@@ -84,7 +84,11 @@ var (
 	// NameIDMap caches the container it to Name mapping
 	NameIDMap map[string]string
 	// IgnoreIDSet set of  container Ids of kube-system pods
-	IgnoreIDSet map[string]bool
+	// IgnoreIDSet map[string]bool
+	// StdoutIgnoreIDSet set of  container Ids of excluded namespaces for stdout logs
+	StdoutIgnoreIDSet map[string]bool
+	// StderrIgnoreIDSet set of  container Ids of excluded namespaces for stderr logs
+	StderrIgnoreIDSet map[string]bool
 	// DataUpdateMutex read and write mutex access to the container id set
 	DataUpdateMutex = &sync.Mutex{}
 	// ContainerLogTelemetryMutex read and write mutex access to the Container Log Telemetry
@@ -223,11 +227,43 @@ func updateContainerImageNameMaps() {
 	}
 }
 
-func updateKubeSystemContainerIDs() {
-	for ; true; <-KubeSystemContainersRefreshTicker.C {
-		if strings.Compare(os.Getenv("DISABLE_KUBE_SYSTEM_LOG_COLLECTION"), "true") != 0 {
-			Log("Kube System Log Collection is ENABLED.")
-			return
+// func updateKubeSystemContainerIDs() {
+// 	for ; true; <-KubeSystemContainersRefreshTicker.C {
+// 		if strings.Compare(os.Getenv("DISABLE_KUBE_SYSTEM_LOG_COLLECTION"), "true") != 0 {
+// 			Log("Kube System Log Collection is ENABLED.")
+// 			return
+// 		}
+
+// 		Log("Kube System Log Collection is DISABLED. Collecting containerIds to drop their records")
+
+// 		pods, err := ClientSet.CoreV1().Pods("kube-system").List(metav1.ListOptions{})
+// 		if err != nil {
+// 			message := fmt.Sprintf("Error getting pods %s\nIt is ok to log here and continue. Kube-system logs will be collected", err.Error())
+// 			SendException(message)
+// 			Log(message)
+// 			continue
+// 		}
+
+// 		_ignoreIDSet := make(map[string]bool)
+// 		for _, pod := range pods.Items {
+// 			for _, status := range pod.Status.ContainerStatuses {
+// 				lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
+// 				_ignoreIDSet[status.ContainerID[lastSlashIndex+1:len(status.ContainerID)]] = true
+// 			}
+// 		}
+
+// 		Log("Locking to update kube-system container IDs")
+// 		DataUpdateMutex.Lock()
+// 		IgnoreIDSet = _ignoreIDSet
+// 		DataUpdateMutex.Unlock()
+// 		Log("Unlocking after updating kube-system container IDs")
+// 	}
+// }
+
+func updateExcludeStdoutContainerIDs() {
+	for ; true; <-ExcludeNamespacesContainersRefreshTicker.C {
+		if strings.Compare(os.Getenv("AZMON_COLLECT_STDOUT_LOGS"), "true") == 0 {
+			stdoutNSExcludeList = os.Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES")
 		}
 
 		Log("Kube System Log Collection is DISABLED. Collecting containerIds to drop their records")
