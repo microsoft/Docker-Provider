@@ -260,42 +260,60 @@ func updateContainerImageNameMaps() {
 // 	}
 // }
 
+func excludeContainerIDPopulator(excludeNamespaceList []string, logStream string) {
+	var podsToExclude []*v1.PodList
+	for _, nameSpace := range excludeNamespaceList {
+		pods, err := ClientSet.CoreV1().Pods(nameSpace).List(metav1.ListOptions{})
+		if err != nil {
+			message := fmt.Sprintf("Error getting pods %s - for namespace %s for %s\nIt is ok to log here and continue. %s logs will be collected", err.Error(), nameSpace, logStream, nameSpace)
+			SendException(message)
+			Log(message)
+			continue
+		}
+		podsToExclude = append(podsToExclude, pods)
+	}
+	
+	_ignoreIDSet := make(map[string]bool)
+	for _, podToExclude := range podsToExclude {
+		for _, pod := range podToExclude.Items {
+			for _, status := range pod.Status.ContainerStatuses {
+				lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
+				_ignoreIDSet[status.ContainerID[lastSlashIndex+1:len(status.ContainerID)]] = true
+			}
+		}
+	}
+
+	Log("Locking to update excluded container IDs for %s", logStream)
+	DataUpdateMutex.Lock()
+	if (strings.Compare(logStream, "stdout") == 0) {
+		StdoutIgnoreIDSet = _ignoreIDSet
+	} else {
+		StderrIgnoreIDSet = _ignoreIDSet
+	}
+	DataUpdateMutex.Unlock()
+	Log("Unlocking after updating excluded container IDs for %s", logStream)
+}
+
+
 func updateExcludeStdoutContainerIDs() {
 	for ; true; <-ExcludeNamespacesContainersRefreshTicker.C {
-		collectStdoutLogs = os.Getenv("AZMON_COLLECT_STDOUT_LOGS")
+		collectStdoutLogs := os.Getenv("AZMON_COLLECT_STDOUT_LOGS")
 		var stdoutNSExcludeList []string
 		if (strings.Compare(collectStdoutLogs, "true") == 0) || (collectStdoutLogs == nil) {
 			stdoutNSExcludeList = os.Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES")
 		}
+		excludeContainerIDPopulator(stdoutNSExcludeList, "stdout")
+	}
+}
 
-		var podsToExclude []*v1.PodList
-
-		for _, nameSpace := range stdoutNSExcludeList {
-			pods, err := ClientSet.CoreV1().Pods(nameSpace).List(metav1.ListOptions{})
-			if err != nil {
-				message := fmt.Sprintf("Error getting pods %s - for namespace %s\nIt is ok to log here and continue. %s logs will be collected", err.Error(), nameSpace, nameSpace)
-				SendException(message)
-				Log(message)
-				continue
-			}
-			podsToExclude = append(podsToExclude, pods)
+func updateExcludeStderrContainerIDs() {
+	for ; true; <-ExcludeNamespacesContainersRefreshTicker.C {
+		collectStderrLogs := os.Getenv("AZMON_COLLECT_STDERR_LOGS")
+		var stderrNSExcludeList []string
+		if (strings.Compare(collectStderrLogs, "true") == 0) || (collectStdoutLogs == nil) {
+			stderrNSExcludeList = os.Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES")
 		}
-		
-		_ignoreIDSet := make(map[string]bool)
-		for _, podToExclude := range podsToExclude {
-			for _, pod := range podToExclude.Items {
-				for _, status := range pod.Status.ContainerStatuses {
-					lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
-					_ignoreIDSet[status.ContainerID[lastSlashIndex+1:len(status.ContainerID)]] = true
-				}
-			}
-		}
-
-		Log("Locking to update excluded container IDs for stdout")
-		DataUpdateMutex.Lock()
-		StdoutIgnoreIDSet = _ignoreIDSet
-		DataUpdateMutex.Unlock()
-		Log("Unlocking after updating excluded container IDs for stdout")
+		excludeContainerIDPopulator(stderrNSExcludeList, "stderr")
 	}
 }
 
@@ -756,6 +774,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	PluginConfiguration = pluginConfig
 
 	CreateHTTPClient()
-	go updateKubeSystemContainerIDs()
+	// go updateKubeSystemContainerIDs()
+	go updateExcludeStdoutContainerIDs()
+	go updateExcludeStderrContainerIDs()
 	go updateContainerImageNameMaps()
 }
