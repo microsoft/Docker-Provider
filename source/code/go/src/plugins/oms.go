@@ -491,7 +491,7 @@ func UpdateNumTelegrafMetricsSentTelemetry(numMetricsSent int, numSendErrors int
 
 // PostDataHelper sends data to the OMS endpoint
 func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
-
+	Log("In PostDataHelper")
 	start := time.Now()
 	var dataItems []DataItem
 
@@ -505,10 +505,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	nameIDMap := make(map[string]string)
 
 	DataUpdateMutex.Lock()
-	for k, v := range stdoutIgnoreIDSet {
+	for k, v := range StdoutIgnoreIDSet {
 		stdoutIgnoreIDSet[k] = v
 	}
-	for k, v := range stderrIgnoreIDSet {
+	for k, v := range StderrIgnoreIDSet {
 		stderrIgnoreIDSet[k] = v
 	}
 	for k, v := range ImageIDMap {
@@ -520,7 +520,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	DataUpdateMutex.Unlock()
 
 	for _, record := range tailPluginRecords {
-
+		Log("In PostDataHelper: looping through")
 		containerID := GetContainerIDFromFilePath(ToString(record["filepath"]))
 		logEntrySource := ToString(record["stream"])
 
