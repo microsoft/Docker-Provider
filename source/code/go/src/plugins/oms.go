@@ -17,6 +17,7 @@ import (
 
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -261,7 +262,7 @@ func updateContainerImageNameMaps() {
 // }
 
 func excludeContainerIDPopulator(excludeNamespaceList []string, logStream string) {
-	var podsToExclude []metav1.PodList
+	var podsToExclude []*corev1.PodList
 	for _, nameSpace := range excludeNamespaceList {
 		pods, err := ClientSet.CoreV1().Pods(nameSpace).List(metav1.ListOptions{})
 		if err != nil {
@@ -299,7 +300,7 @@ func updateExcludeStdoutContainerIDs() {
 		collectStdoutLogs := os.Getenv("AZMON_COLLECT_STDOUT_LOGS")
 		var stdoutNSExcludeList []string
 		if strings.Compare(collectStdoutLogs, "true") == 0 {
-			stdoutEnv = os.Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES")
+			stdoutEnv := os.Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES")
 			stdoutNSExcludeList = strings.Split(stdoutEnv, ",")
 		}
 		excludeContainerIDPopulator(stdoutNSExcludeList, "stdout")
@@ -311,7 +312,7 @@ func updateExcludeStderrContainerIDs() {
 		collectStderrLogs := os.Getenv("AZMON_COLLECT_STDERR_LOGS")
 		var stderrNSExcludeList []string
 		if strings.Compare(collectStderrLogs, "true") == 0 {
-			stderrEnv = os.Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES")
+			stderrEnv := os.Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES")
 			stderrNSExcludeList = strings.Split(stderrEnv, ",")
 		}
 		excludeContainerIDPopulator(stderrNSExcludeList, "stderr")
@@ -521,11 +522,11 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		containerID := GetContainerIDFromFilePath(ToString(record["filepath"]))
 		logEntrySource := ToString(record["stream"])
 
-		if strings.EqualFold(logEntrySource, "stdout") == 0 {
+		if strings.EqualFold(logEntrySource, "stdout") {
 			if containerID == "" || containsKey(stdoutIgnoreIDSet, containerID) {
 				continue
 			}
-		} else if strings.EqualFold(logEntrySource, "stderr") == 0 {
+		} else if strings.EqualFold(logEntrySource, "stderr") {
 			if containerID == "" || containsKey(stderrIgnoreIDSet, containerID) {
 				continue
 			}
@@ -657,7 +658,8 @@ func GetContainerIDFromFilePath(filepath string) string {
 // InitializePlugin reads and populates plugin configuration
 func InitializePlugin(pluginConfPath string, agentVersion string) {
 
-	IgnoreIDSet = make(map[string]bool)
+	StdoutIgnoreIDSet = make(map[string]bool)
+	StderrIgnoreIDSet = make(map[string]bool)
 	ImageIDMap = make(map[string]string)
 	NameIDMap = make(map[string]string)
 
