@@ -261,7 +261,7 @@ func updateContainerImageNameMaps() {
 // }
 
 func excludeContainerIDPopulator(excludeNamespaceList []string, logStream string) {
-	var podsToExclude []*v1.PodList
+	var podsToExclude []metav1.PodList
 	for _, nameSpace := range excludeNamespaceList {
 		pods, err := ClientSet.CoreV1().Pods(nameSpace).List(metav1.ListOptions{})
 		if err != nil {
@@ -272,7 +272,7 @@ func excludeContainerIDPopulator(excludeNamespaceList []string, logStream string
 		}
 		podsToExclude = append(podsToExclude, pods)
 	}
-	
+
 	_ignoreIDSet := make(map[string]bool)
 	for _, podToExclude := range podsToExclude {
 		for _, pod := range podToExclude.Items {
@@ -285,7 +285,7 @@ func excludeContainerIDPopulator(excludeNamespaceList []string, logStream string
 
 	Log("Locking to update excluded container IDs for %s", logStream)
 	DataUpdateMutex.Lock()
-	if (strings.Compare(logStream, "stdout") == 0) {
+	if strings.Compare(logStream, "stdout") == 0 {
 		StdoutIgnoreIDSet = _ignoreIDSet
 	} else {
 		StderrIgnoreIDSet = _ignoreIDSet
@@ -294,13 +294,13 @@ func excludeContainerIDPopulator(excludeNamespaceList []string, logStream string
 	Log("Unlocking after updating excluded container IDs for %s", logStream)
 }
 
-
 func updateExcludeStdoutContainerIDs() {
 	for ; true; <-ExcludeNamespacesContainersRefreshTicker.C {
 		collectStdoutLogs := os.Getenv("AZMON_COLLECT_STDOUT_LOGS")
 		var stdoutNSExcludeList []string
-		if (strings.Compare(collectStdoutLogs, "true") == 0) || (collectStdoutLogs == nil) {
-			stdoutNSExcludeList = os.Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES")
+		if strings.Compare(collectStdoutLogs, "true") == 0 {
+			stdoutEnv = os.Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES")
+			stdoutNSExcludeList = strings.Split(stdoutEnv, ",")
 		}
 		excludeContainerIDPopulator(stdoutNSExcludeList, "stdout")
 	}
@@ -310,8 +310,9 @@ func updateExcludeStderrContainerIDs() {
 	for ; true; <-ExcludeNamespacesContainersRefreshTicker.C {
 		collectStderrLogs := os.Getenv("AZMON_COLLECT_STDERR_LOGS")
 		var stderrNSExcludeList []string
-		if (strings.Compare(collectStderrLogs, "true") == 0) || (collectStdoutLogs == nil) {
-			stderrNSExcludeList = os.Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES")
+		if strings.Compare(collectStderrLogs, "true") == 0 {
+			stderrEnv = os.Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES")
+			stderrNSExcludeList = strings.Split(stderrEnv, ",")
 		}
 		excludeContainerIDPopulator(stderrNSExcludeList, "stderr")
 	}
@@ -518,7 +519,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	for _, record := range tailPluginRecords {
 
 		containerID := GetContainerIDFromFilePath(ToString(record["filepath"]))
-		logEntrySource = ToString(record["stream"])
+		logEntrySource := ToString(record["stream"])
 
 		if strings.EqualFold(logEntrySource, "stdout") == 0 {
 			if containerID == "" || containsKey(stdoutIgnoreIDSet, containerID) {
