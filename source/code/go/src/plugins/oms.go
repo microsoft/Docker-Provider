@@ -498,7 +498,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	var maxLatency float64
 	var maxLatencyContainer string
 
-	// ignoreIDSet := make(map[string]bool)
 	stdoutIgnoreIDSet := make(map[string]bool)
 	stderrIgnoreIDSet := make(map[string]bool)
 	imageIDMap := make(map[string]string)
@@ -520,7 +519,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	DataUpdateMutex.Unlock()
 
 	for _, record := range tailPluginRecords {
-		Log("In PostDataHelper: looping through")
 		containerID := GetContainerIDFromFilePath(ToString(record["filepath"]))
 		logEntrySource := ToString(record["stream"])
 
@@ -535,10 +533,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				continue
 			}
 		}
-
-		// if containerID == "" || containsKey(ignoreIDSet, containerID) {
-		// 	continue
-		// }
 
 		stringMap := make(map[string]string)
 
@@ -568,6 +562,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			Name:                  stringMap["Name"],
 		}
 
+		Log("created dataitem")
+
 		dataItems = append(dataItems, dataItem)
 		loggedTime, e := time.Parse(time.RFC3339, dataItem.LogEntryTimeStamp)
 		if e != nil {
@@ -596,6 +592,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			SendException(message)
 			return output.FLB_OK
 		}
+		Log("posted dataitem")
 		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
 		req.Header.Set("Content-Type", "application/json")
 		//expensive to do string len for every request, so use a flag
@@ -623,6 +620,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		}
 
 		defer resp.Body.Close()
+		Log("got response")
 
 		numRecords := len(dataItems)
 		Log("Successfully flushed %d records in %s", numRecords, elapsed)
