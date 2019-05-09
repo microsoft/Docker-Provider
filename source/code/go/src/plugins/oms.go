@@ -281,7 +281,7 @@ func excludeContainerIDPopulator(excludeNamespaceList []string, logStream string
 			for _, status := range pod.Status.ContainerStatuses {
 				lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
 				_ignoreIDSet[status.ContainerID[lastSlashIndex+1:len(status.ContainerID)]] = true
-				Log("Excluding container with id: %s for namespace: %s for %s logs", status.ContainerID[lastSlashIndex+1:len(status.ContainerID)], nameSpace, logStream)
+				Log("excludeContainerIDPopulator: Excluding container with id: %s for %s logs", status.ContainerID[lastSlashIndex+1:len(status.ContainerID)], logStream)
 			}
 		}
 	}
