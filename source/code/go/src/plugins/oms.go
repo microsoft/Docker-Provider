@@ -262,33 +262,40 @@ func updateContainerImageNameMaps() {
 
 func updateExcludeStdoutContainerIDs() {
 	for ; true; <-ExcludeNamespacesContainersRefreshTicker.C {
-		if strings.Compare(os.Getenv("AZMON_COLLECT_STDOUT_LOGS"), "true") == 0 {
+		collectStdoutLogs = os.Getenv("AZMON_COLLECT_STDOUT_LOGS")
+		var stdoutNSExcludeList []string
+		if (strings.Compare(collectStdoutLogs, "true") == 0) || (collectStdoutLogs == nil) {
 			stdoutNSExcludeList = os.Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES")
 		}
 
-		Log("Kube System Log Collection is DISABLED. Collecting containerIds to drop their records")
+		var podsToExclude []*v1.PodList
 
-		pods, err := ClientSet.CoreV1().Pods("kube-system").List(metav1.ListOptions{})
-		if err != nil {
-			message := fmt.Sprintf("Error getting pods %s\nIt is ok to log here and continue. Kube-system logs will be collected", err.Error())
-			SendException(message)
-			Log(message)
-			continue
+		for _, nameSpace := range stdoutNSExcludeList {
+			pods, err := ClientSet.CoreV1().Pods(nameSpace).List(metav1.ListOptions{})
+			if err != nil {
+				message := fmt.Sprintf("Error getting pods %s - for namespace %s\nIt is ok to log here and continue. %s logs will be collected", err.Error(), nameSpace, nameSpace)
+				SendException(message)
+				Log(message)
+				continue
+			}
+			podsToExclude = append(podsToExclude, pods)
 		}
-
+		
 		_ignoreIDSet := make(map[string]bool)
-		for _, pod := range pods.Items {
-			for _, status := range pod.Status.ContainerStatuses {
-				lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
-				_ignoreIDSet[status.ContainerID[lastSlashIndex+1:len(status.ContainerID)]] = true
+		for _, podToExclude := range podsToExclude {
+			for _, pod := range podToExclude.Items {
+				for _, status := range pod.Status.ContainerStatuses {
+					lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
+					_ignoreIDSet[status.ContainerID[lastSlashIndex+1:len(status.ContainerID)]] = true
+				}
 			}
 		}
 
-		Log("Locking to update kube-system container IDs")
+		Log("Locking to update excluded container IDs for stdout")
 		DataUpdateMutex.Lock()
-		IgnoreIDSet = _ignoreIDSet
+		StdoutIgnoreIDSet = _ignoreIDSet
 		DataUpdateMutex.Unlock()
-		Log("Unlocking after updating kube-system container IDs")
+		Log("Unlocking after updating excluded container IDs for stdout")
 	}
 }
 
