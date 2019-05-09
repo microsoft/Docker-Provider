@@ -74,7 +74,7 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 // FLBPluginExit exits the plugin
 func FLBPluginExit() int {
 	ContainerLogTelemetryTicker.Stop()
-	KubeSystemContainersRefreshTicker.Stop()
+	ExcludeNamespacesContainersRefreshTicker.Stop()
 	ContainerImageNameRefreshTicker.Stop()
 	return output.FLB_OK
 }
