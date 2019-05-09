@@ -55,7 +55,9 @@ const ReplicaSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimp
 // IPName for Container Log
 const IPName = "Containers"
 const defaultContainerInventoryRefreshInterval = 60
-const defaultKubeSystemContainersRefreshInterval = 300
+
+// const defaultKubeSystemContainersRefreshInterval = 300
+const defaultExcludeNamespacesContainersRefreshInterval = 300
 
 var (
 	// PluginConfiguration the plugins configuration
@@ -93,7 +95,8 @@ var (
 
 var (
 	// KubeSystemContainersRefreshTicker updates the kube-system containers
-	KubeSystemContainersRefreshTicker *time.Ticker
+	//KubeSystemContainersRefreshTicker *time.Ticker
+	ExcludeNamespacesContainersRefreshTicker *time.Ticker
 	// ContainerImageNameRefreshTicker updates the container image and names periodically
 	ContainerImageNameRefreshTicker *time.Ticker
 )
@@ -430,13 +433,18 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	var maxLatency float64
 	var maxLatencyContainer string
 
-	ignoreIDSet := make(map[string]bool)
+	// ignoreIDSet := make(map[string]bool)
+	stdoutIgnoreIDSet := make(map[string]bool)
+	stderrIgnoreIDSet := make(map[string]bool)
 	imageIDMap := make(map[string]string)
 	nameIDMap := make(map[string]string)
 
 	DataUpdateMutex.Lock()
-	for k, v := range IgnoreIDSet {
-		ignoreIDSet[k] = v
+	for k, v := range stdoutIgnoreIDSet {
+		stdoutIgnoreIDSet[k] = v
+	}
+	for k, v := range stderrIgnoreIDSet {
+		stderrIgnoreIDSet[k] = v
 	}
 	for k, v := range ImageIDMap {
 		imageIDMap[k] = v
@@ -449,15 +457,26 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	for _, record := range tailPluginRecords {
 
 		containerID := GetContainerIDFromFilePath(ToString(record["filepath"]))
+		logEntrySource = ToString(record["stream"])
 
-		if containerID == "" || containsKey(ignoreIDSet, containerID) {
-			continue
+		if strings.EqualFold(logEntrySource, "stdout") == 0 {
+			if containerID == "" || containsKey(stdoutIgnoreIDSet, containerID) {
+				continue
+			}
+		} else if strings.EqualFold(logEntrySource, "stderr") == 0 {
+			if containerID == "" || containsKey(stderrIgnoreIDSet, containerID) {
+				continue
+			}
 		}
+
+		// if containerID == "" || containsKey(ignoreIDSet, containerID) {
+		// 	continue
+		// }
 
 		stringMap := make(map[string]string)
 
 		stringMap["LogEntry"] = ToString(record["log"])
-		stringMap["LogEntrySource"] = ToString(record["stream"])
+		stringMap["LogEntrySource"] = logEntrySource
 		stringMap["LogEntryTimeStamp"] = ToString(record["time"])
 		stringMap["SourceSystem"] = "Containers"
 		stringMap["Id"] = containerID
@@ -635,16 +654,27 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	ContainerImageNameRefreshTicker = time.NewTicker(time.Second * time.Duration(containerInventoryRefreshInterval))
 
 	// Initialize Kube System Refresh Ticker
-	kubeSystemContainersRefreshInterval, err := strconv.Atoi(pluginConfig["kube_system_containers_refresh_interval"])
+	// kubeSystemContainersRefreshInterval, err := strconv.Atoi(pluginConfig["kube_system_containers_refresh_interval"])
+	// if err != nil {
+	// 	message := fmt.Sprintf("Error Reading Kube System Container Ids Refresh Interval %s", err.Error())
+	// 	Log(message)
+	// 	SendException(message)
+	// 	Log("Using Default Refresh Interval of %d s\n", defaultKubeSystemContainersRefreshInterval)
+	// 	kubeSystemContainersRefreshInterval = defaultKubeSystemContainersRefreshInterval
+	// }
+	// Log("kubeSystemContainersRefreshInterval = %d \n", kubeSystemContainersRefreshInterval)
+	// KubeSystemContainersRefreshTicker = time.NewTicker(time.Second * time.Duration(kubeSystemContainersRefreshInterval))
+
+	excludeNamespacesContainersRefreshInterval, err := strconv.Atoi(pluginConfig["exclude_namespaces_containers_refresh_interval"])
 	if err != nil {
-		message := fmt.Sprintf("Error Reading Kube System Container Ids Refresh Interval %s", err.Error())
+		message := fmt.Sprintf("Error Reading exclude namespaces Container Ids Refresh Interval %s", err.Error())
 		Log(message)
 		SendException(message)
-		Log("Using Default Refresh Interval of %d s\n", defaultKubeSystemContainersRefreshInterval)
-		kubeSystemContainersRefreshInterval = defaultKubeSystemContainersRefreshInterval
+		Log("Using Default Refresh Interval of %d s\n", defaultExcludeNamespacesContainersRefreshInterval)
+		excludeNamespacesContainersRefreshInterval = defaultExcludeNamespacesContainersRefreshInterval
 	}
-	Log("kubeSystemContainersRefreshInterval = %d \n", kubeSystemContainersRefreshInterval)
-	KubeSystemContainersRefreshTicker = time.NewTicker(time.Second * time.Duration(kubeSystemContainersRefreshInterval))
+	Log("excludeNamespacesContainersRefreshInterval = %d \n", excludeNamespacesContainersRefreshInterval)
+	ExcludeNamespacesContainersRefreshTicker = time.NewTicker(time.Second * time.Duration(excludeNamespacesContainersRefreshInterval))
 
 	// Populate Computer field
 	containerHostName, err := ioutil.ReadFile(pluginConfig["container_host_file_path"])
