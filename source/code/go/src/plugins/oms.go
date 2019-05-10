@@ -84,8 +84,6 @@ var (
 	ImageIDMap map[string]string
 	// NameIDMap caches the container it to Name mapping
 	NameIDMap map[string]string
-	// IgnoreIDSet set of  container Ids of kube-system pods
-	// IgnoreIDSet map[string]bool
 	// StdoutIgnoreIDSet set of  container Ids of excluded namespaces for stdout logs
 	StdoutIgnoreIDSet map[string]bool
 	// StderrIgnoreIDSet set of  container Ids of excluded namespaces for stderr logs
@@ -99,8 +97,7 @@ var (
 )
 
 var (
-	// KubeSystemContainersRefreshTicker updates the kube-system containers
-	//KubeSystemContainersRefreshTicker *time.Ticker
+	// ExcludeNamespacesContainersRefreshTicker updates the excludenamespace containers
 	ExcludeNamespacesContainersRefreshTicker *time.Ticker
 	// ContainerImageNameRefreshTicker updates the container image and names periodically
 	ContainerImageNameRefreshTicker *time.Ticker
@@ -227,39 +224,6 @@ func updateContainerImageNameMaps() {
 		Log("Unlocking after updating image and name maps")
 	}
 }
-
-// func updateKubeSystemContainerIDs() {
-// 	for ; true; <-KubeSystemContainersRefreshTicker.C {
-// 		if strings.Compare(os.Getenv("DISABLE_KUBE_SYSTEM_LOG_COLLECTION"), "true") != 0 {
-// 			Log("Kube System Log Collection is ENABLED.")
-// 			return
-// 		}
-
-// 		Log("Kube System Log Collection is DISABLED. Collecting containerIds to drop their records")
-
-// 		pods, err := ClientSet.CoreV1().Pods("kube-system").List(metav1.ListOptions{})
-// 		if err != nil {
-// 			message := fmt.Sprintf("Error getting pods %s\nIt is ok to log here and continue. Kube-system logs will be collected", err.Error())
-// 			SendException(message)
-// 			Log(message)
-// 			continue
-// 		}
-
-// 		_ignoreIDSet := make(map[string]bool)
-// 		for _, pod := range pods.Items {
-// 			for _, status := range pod.Status.ContainerStatuses {
-// 				lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
-// 				_ignoreIDSet[status.ContainerID[lastSlashIndex+1:len(status.ContainerID)]] = true
-// 			}
-// 		}
-
-// 		Log("Locking to update kube-system container IDs")
-// 		DataUpdateMutex.Lock()
-// 		IgnoreIDSet = _ignoreIDSet
-// 		DataUpdateMutex.Unlock()
-// 		Log("Unlocking after updating kube-system container IDs")
-// 	}
-// }
 
 func excludeContainerIDPopulator(excludeNamespaceList []string, logStream string) {
 	var podsToExclude []*corev1.PodList
@@ -718,18 +682,6 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	}
 	Log("containerInventoryRefreshInterval = %d \n", containerInventoryRefreshInterval)
 	ContainerImageNameRefreshTicker = time.NewTicker(time.Second * time.Duration(containerInventoryRefreshInterval))
-
-	// Initialize Kube System Refresh Ticker
-	// kubeSystemContainersRefreshInterval, err := strconv.Atoi(pluginConfig["kube_system_containers_refresh_interval"])
-	// if err != nil {
-	// 	message := fmt.Sprintf("Error Reading Kube System Container Ids Refresh Interval %s", err.Error())
-	// 	Log(message)
-	// 	SendException(message)
-	// 	Log("Using Default Refresh Interval of %d s\n", defaultKubeSystemContainersRefreshInterval)
-	// 	kubeSystemContainersRefreshInterval = defaultKubeSystemContainersRefreshInterval
-	// }
-	// Log("kubeSystemContainersRefreshInterval = %d \n", kubeSystemContainersRefreshInterval)
-	// KubeSystemContainersRefreshTicker = time.NewTicker(time.Second * time.Duration(kubeSystemContainersRefreshInterval))
 
 	excludeNamespacesContainersRefreshInterval, err := strconv.Atoi(pluginConfig["exclude_namespaces_containers_refresh_interval"])
 	if err != nil {
