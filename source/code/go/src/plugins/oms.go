@@ -455,7 +455,6 @@ func UpdateNumTelegrafMetricsSentTelemetry(numMetricsSent int, numSendErrors int
 
 // PostDataHelper sends data to the OMS endpoint
 func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
-	Log("In PostDataHelper")
 	start := time.Now()
 	var dataItems []DataItem
 
@@ -526,8 +525,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			Name:                  stringMap["Name"],
 		}
 
-		Log("created dataitem")
-
 		dataItems = append(dataItems, dataItem)
 		loggedTime, e := time.Parse(time.RFC3339, dataItem.LogEntryTimeStamp)
 		if e != nil {
@@ -556,7 +553,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			SendException(message)
 			return output.FLB_OK
 		}
-		Log("posted dataitem")
 		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
 		req.Header.Set("Content-Type", "application/json")
 		//expensive to do string len for every request, so use a flag
@@ -584,8 +580,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		}
 
 		defer resp.Body.Close()
-		Log("got response")
-
 		numRecords := len(dataItems)
 		Log("Successfully flushed %d records in %s", numRecords, elapsed)
 		ContainerLogTelemetryMutex.Lock()
