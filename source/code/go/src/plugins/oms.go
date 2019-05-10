@@ -278,7 +278,7 @@ func updateExcludeStderrContainerIDs() {
 		collectStderrLogs := os.Getenv("AZMON_COLLECT_STDERR_LOGS")
 		var stderrNSExcludeList []string
 		excludeList := os.Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES")
-		if ((strings.Compare(collectStderrLogs, "true") == 0) && (len(excludeList) > 0) {
+		if (strings.Compare(collectStderrLogs, "true") == 0) && (len(excludeList) > 0) {
 			stderrNSExcludeList = strings.Split(excludeList, ",")
 			excludeContainerIDPopulator(stderrNSExcludeList, "stderr")
 		}
