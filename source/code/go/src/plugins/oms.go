@@ -236,7 +236,6 @@ func excludeContainerIDPopulator(excludeNamespaceList []string, logStream string
 			continue
 		}
 		podsToExclude = append(podsToExclude, pods)
-		Log("Excluding namespace: %s for %s logs", nameSpace, logStream)
 	}
 
 	_ignoreIDSet := make(map[string]bool)
@@ -245,7 +244,6 @@ func excludeContainerIDPopulator(excludeNamespaceList []string, logStream string
 			for _, status := range pod.Status.ContainerStatuses {
 				lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
 				_ignoreIDSet[status.ContainerID[lastSlashIndex+1:len(status.ContainerID)]] = true
-				Log("excludeContainerIDPopulator: Excluding container with id: %s for %s logs", status.ContainerID[lastSlashIndex+1:len(status.ContainerID)], logStream)
 			}
 		}
 	}
@@ -487,12 +485,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 		if strings.EqualFold(logEntrySource, "stdout") {
 			if containerID == "" || containsKey(stdoutIgnoreIDSet, containerID) {
-				Log("Excluding container with id: %s in postdatahelper for stdout logs", containerID)
 				continue
 			}
 		} else if strings.EqualFold(logEntrySource, "stderr") {
 			if containerID == "" || containsKey(stderrIgnoreIDSet, containerID) {
-				Log("Excluding container with id: %s in postdatahelper for stderr logs", containerID)
 				continue
 			}
 		}
