@@ -265,11 +265,11 @@ func updateExcludeStdoutContainerIDs() {
 	for ; true; <-ExcludeNamespacesContainersRefreshTicker.C {
 		collectStdoutLogs := os.Getenv("AZMON_COLLECT_STDOUT_LOGS")
 		var stdoutNSExcludeList []string
-		if strings.Compare(collectStdoutLogs, "true") == 0 {
-			stdoutEnv := os.Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES")
-			stdoutNSExcludeList = strings.Split(stdoutEnv, ",")
+		excludeList := os.Getenv("AZMON_STDOUT_EXCLUDED_NAMESPACES")
+		if (strings.Compare(collectStdoutLogs, "true") == 0) && (len(excludeList) > 0) {
+			stdoutNSExcludeList = strings.Split(excludeList, ",")
+			excludeContainerIDPopulator(stdoutNSExcludeList, "stdout")
 		}
-		excludeContainerIDPopulator(stdoutNSExcludeList, "stdout")
 	}
 }
 
@@ -277,11 +277,11 @@ func updateExcludeStderrContainerIDs() {
 	for ; true; <-ExcludeNamespacesContainersRefreshTicker.C {
 		collectStderrLogs := os.Getenv("AZMON_COLLECT_STDERR_LOGS")
 		var stderrNSExcludeList []string
-		if strings.Compare(collectStderrLogs, "true") == 0 {
-			stderrEnv := os.Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES")
-			stderrNSExcludeList = strings.Split(stderrEnv, ",")
+		excludeList := os.Getenv("AZMON_STDERR_EXCLUDED_NAMESPACES")
+		if ((strings.Compare(collectStderrLogs, "true") == 0) && (len(excludeList) > 0) {
+			stderrNSExcludeList = strings.Split(excludeList, ",")
+			excludeContainerIDPopulator(stderrNSExcludeList, "stderr")
 		}
-		excludeContainerIDPopulator(stderrNSExcludeList, "stderr")
 	}
 }
 
