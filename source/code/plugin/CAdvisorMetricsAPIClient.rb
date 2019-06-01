@@ -16,6 +16,7 @@ class CAdvisorMetricsAPIClient
   @configMapMountPath = "/etc/config/settings/log-data-collection-settings"
   @clusterEnvVarcollectionEnabled = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
   @clusterLogTailPath = ENV["AZMON_LOG_TAIL_PATH"]
+  @clusterAgentSchemaVersion = ENV["AZMON_AGENT_CFG_SCHEMA_VERSION"]
   @LogPath = "/var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt"
   @Log = Logger.new(@LogPath, 2, 10 * 1048576) #keep last 2 files, max log file size = 10M
   #   @@rxBytesLast = nil
@@ -200,6 +201,7 @@ class CAdvisorMetricsAPIClient
                       telemetryProps["logdatacollectionsettings"] = true
                       telemetryProps["clusterenvvars"] = @clusterEnvVarcollectionEnabled
                       telemetryProps["clusterLogTailPath"] = @clusterLogTailPath
+                      telemetryProps["clusterAgentSchemaVersion"] = @clusterAgentSchemaVersion
                     end
                     ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
                   end
