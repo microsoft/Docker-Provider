@@ -227,23 +227,33 @@ func updateContainerImageNameMaps() {
 
 func excludeContainerIDPopulator(excludeNamespaceList []string, logStream string) {
 	var podsToExclude []*corev1.PodList
-	for _, nameSpace := range excludeNamespaceList {
-		pods, err := ClientSet.CoreV1().Pods(nameSpace).List(metav1.ListOptions{})
-		if err != nil {
-			message := fmt.Sprintf("Error getting pods %s - for namespace %s for %s\nIt is ok to log here and continue. %s logs will be collected", err.Error(), nameSpace, logStream, nameSpace)
-			SendException(message)
-			Log(message)
-			continue
-		}
-		podsToExclude = append(podsToExclude, pods)
+	listOptions := metav1.ListOptions{}
+	listOptions.FieldSelector = fmt.Sprintf("spec.nodeName=%s", Computer)
+	
+	pods, err := ClientSet.CoreV1().Pods("").List(listOptions)
+	if err != nil {
+		message := fmt.Sprintf("Error getting pods %s - for node %s . All %s logs might be collected", err.Error(), Computer, logStream)
+		SendException(message)
+		Log(message)
+		return
 	}
-
+	
+	podsToExclude = append(podsToExclude, pods)
+	ignoreNamespaceSet := make(map[string]bool)
+	for _, ns := range excludeNamespaceList {
+		ignoreNamespaceSet[strings.TrimSpace(ns)] = true
+	}
+	
 	_ignoreIDSet := make(map[string]bool)
-	for _, podToExclude := range podsToExclude {
-		for _, pod := range podToExclude.Items {
-			for _, status := range pod.Status.ContainerStatuses {
-				lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
-				_ignoreIDSet[status.ContainerID[lastSlashIndex+1:len(status.ContainerID)]] = true
+	for _, pod := range podsToExclude {
+		for _, pod := range pod.Items {
+			_, ok := ignoreNamespaceSet[pod.Namespace]
+			if ok {
+				Log ("Adding pod %s in namespace %s to %s exclusion list", pod.Name, pod.Namespace, logStream)
+				for _, status := range pod.Status.ContainerStatuses {
+						lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
+						_ignoreIDSet[status.ContainerID[lastSlashIndex+1:len(status.ContainerID)]] = true
+				}
 			}
 		}
 	}
