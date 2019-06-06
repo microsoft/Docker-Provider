@@ -731,8 +731,11 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	PluginConfiguration = pluginConfig
 
 	CreateHTTPClient()
-	// go updateKubeSystemContainerIDs()
-	go updateExcludeStdoutContainerIDs()
-	go updateExcludeStderrContainerIDs()
+	defaultExcludePath := os.Getenv("AZMON_CLUSTER_LOG_TAIL_EXCLUDE_PATH")
+	//further optimization for clustes with default settings. need this cache only when log collection config is overridden with custom config
+	if ( (strings.Compare(defaultExcludePath, "*_kube-system_*.log") != 0) ) {
+		go updateExcludeStdoutContainerIDs()
+		go updateExcludeStderrContainerIDs()
+	}
 	go updateContainerImageNameMaps()
 }
