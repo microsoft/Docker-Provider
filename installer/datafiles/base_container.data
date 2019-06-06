@@ -106,8 +106,10 @@ MAINTAINER:              'Microsoft Corporation'
 
 /opt/td-agent-bit/bin/out_oms.so;                                intermediate/${{BUILD_CONFIGURATION}}/out_oms.so;  	755; root; root
 /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf;			    installer/conf/td-agent-bit.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/td-agent-bit-rs.conf;			    installer/conf/td-agent-bit-rs.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/out_oms.conf;			            installer/conf/out_oms.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/telegraf.conf;			        installer/conf/telegraf.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf;			        installer/conf/telegraf-rs.conf;                    644; root; root
 /opt/microsoft/docker-cimprov/bin/TelegrafTCPErrorTelemetry.sh;	        installer/scripts/TelegrafTCPErrorTelemetry.sh;      755; root; root
 /opt/livenessprobe.sh;                                              installer/scripts/livenessprobe.sh;      755; root; root
 /opt/tomlparser.rb;                                                 installer/scripts/tomlparser.rb     755; root; root 

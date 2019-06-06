@@ -31,6 +31,7 @@ module Fluent
       @last_post_attempt_time = Time.now
       @first_post_attempt_made = false
       @can_send_data_to_mdm = true
+      @last_telemetry_sent_time = nil
     end
 
     def configure(conf)
@@ -156,7 +157,11 @@ module Fluent
         response = @http_client.request(request)
         response.value # this throws for non 200 HTTP response code
         @log.info "HTTP Post Response Code : #{response.code}"
-        ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMSendSuccessful", {})
+        if @last_telemetry_sent_time.nil? || @last_telemetry_sent_time + 60 * 60 < Time.now
+            ApplicationInsightsUtility.sendCustomEvent("AKSCustomMetricsMDMSendSuccessful", {})
+            @last_telemetry_sent_time = Time.now
+        end
+
       rescue Net::HTTPServerException => e
         @log.info "Failed to Post Metrics to MDM : #{e} Response: #{response}"
         @log.debug_backtrace(e.backtrace)

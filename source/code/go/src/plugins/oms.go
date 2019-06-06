@@ -51,7 +51,7 @@ const TelegrafTagClusterID = "clusterId"
 
 // ContainerLogPluginConfFilePath --> config file path for container log plugin
 const DaemonSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimprov/out_oms.conf"
-const ReplicaSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimprov/out_oms-rs.conf"
+const ReplicaSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimprov/out_oms.conf"
 
 // IPName for Container Log
 const IPName = "Containers"
@@ -731,11 +731,16 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	PluginConfiguration = pluginConfig
 
 	CreateHTTPClient()
-	defaultExcludePath := os.Getenv("AZMON_CLUSTER_LOG_TAIL_EXCLUDE_PATH")
-	//further optimization for clustes with default settings. need this cache only when log collection config is overridden with custom config
-	if ( (strings.Compare(defaultExcludePath, "*_kube-system_*.log") != 0) ) {
-		go updateExcludeStdoutContainerIDs()
-		go updateExcludeStderrContainerIDs()
+
+  if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
+    defaultExcludePath := os.Getenv("AZMON_CLUSTER_LOG_TAIL_EXCLUDE_PATH")
+    //further optimization for clusters with default settings. need this cache only when log collection config is overridden with custom config
+    if ( (strings.Compare(defaultExcludePath, "*_kube-system_*.log") != 0) ) {
+      go updateExcludeStdoutContainerIDs()
+      go updateExcludeStderrContainerIDs()
+    }
+    go updateContainerImageNameMaps()
+  } else {
+		Log("Running in replicaset. Disabling kube-system container cache collection & updates \n")
 	}
-	go updateContainerImageNameMaps()
 }
