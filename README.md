@@ -11,6 +11,27 @@ additional questions or comments.
 
 Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate the agent build dates (not release dates)
   
+### 06/14/2019 - 
+##### Version microsoft/oms:ciprod06142019 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod06142019
+- MDM pod metrics bug fixes - MDM rejecting pod metrics due to nodename or controllername dimensions being empty
+- Prometheus metrics collection by default in every node for kubelet docker operations and kubelet docker operation errors
+- Telegraf metric collection for diskio and networkio metrics
+- Agent Configuration/ Settings for data collection
+  * Cluster level log collection enable/disable option
+  * Ability to enable/disable stdout and/or stderr logs collection per namespace
+  * Cluster level environment variable collection enable/disable option
+  * Config file version & config schema version
+  * Pod annotation for supported config schema version(s)
+- Log collection optimization/tuning for better performance
+  * Derive k8s namespaces from log file name (instead of making call to k8s api service)
+  * Do not tail log files for containers in the excluded namespace list (if excluded both in stdout & stderr)
+  * Limit buffer size to 1M and flush logs more frequently [every 10 secs (instead of 30 secs)] 
+  * Tuning of several other fluent bit settings
+-	Increase requests 
+  * Replica set memory request by 75M (100M to 175M)
+  * Daemonset CPU request by 25m (50m to 75m)
+- Will be pushing image only to MCR ( no more Docker) starting this release. AKS-engine will also start to pull our agent image from MCR
+  
 ### 04/23/2019 - 
 ##### Version microsoft/oms:ciprod043232019 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod04232019
 - Windows node monitoring (metrics & inventory)
