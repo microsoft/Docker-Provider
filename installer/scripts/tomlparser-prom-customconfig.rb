@@ -71,6 +71,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           kubernetesServices = parsedConfig[:prometheus_data_collection_settings][:cluster][:kubernetes_services]
           monitorKubernetesPods = parsedConfig[:prometheus_data_collection_settings][:cluster][:monitor_kubernetes_pods]
 
+          # Check for the right datattypes to enforce right setting values
           if checkForType(interval, String) &&
              checkForTypeArray(fieldPass, String) &&
              checkForTypeArray(fieldDrop, String) &&
@@ -79,7 +80,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
              checkForType(monitorKubernetesPods, Boolean)
             # Write the settings to file, so that they can be set as environment variables
             file = File.open("prom_config_env_var", "w")
-
             if !file.nil?
               file.write("export AZMON_RS_PROM_INTERVAL=#{interval}\n")
               file.write("export AZMON_RS_PROM_FIELDPASS=\"#{fieldPass}\"\n")
@@ -91,7 +91,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               file.close
               puts "****************End Prometheus Config Processing********************"
             else
-              puts "config::error::Exception while opening file for writing prometheus  replicaset config environment variables"
+              puts "config::error::Exception while opening file for writing prometheus replicaset config environment variables"
               puts "****************End Prometheus Config Processing********************"
             end
           end # end of type check condition
@@ -106,13 +106,13 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           fieldDrop = parsedConfig[:prometheus_data_collection_settings][:node][:fielddrop]
           urls = parsedConfig[:prometheus_data_collection_settings][:node][:urls]
 
+          # Check for the right datattypes to enforce right setting values
           if checkForType(interval, String) &&
              checkForTypeArray(fieldPass, String) &&
              checkForTypeArray(fieldDrop, String) &&
              checkForTypeArray(urls, String)
             # Write the settings to file, so that they can be set as environment variables
             file = File.open("prom_config_env_var", "w")
-
             if !file.nil?
               file.write("export AZMON_DS_PROM_INTERVAL=#{interval}\n")
               file.write("export AZMON_DS_PROM_FIELDPASS=\"#{fieldPass}\"\n")
@@ -144,8 +144,7 @@ if !@promConfigSchemaVersion.nil? && !@promConfigSchemaVersion.empty? && @promCo
     populateSettingValuesFromConfigMap(promConfigMapSettings)
   end
 else
-  if (File.file?(@promConfigMapMountPath))
-    puts "config::unsupported/missing config schema version for prometheus config - '#{@promConfigSchemaVersion}' , using defaults"
-  end
-  # @excludePath = "*_kube-system_*.log"
+  #Do we need this - if (File.file?(@promConfigMapMountPath))
+  puts "config::unsupported/missing config schema version for prometheus config - '#{@promConfigSchemaVersion}' , using defaults"
+  # end
 end
