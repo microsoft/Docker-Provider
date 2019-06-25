@@ -71,8 +71,12 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           kubernetesServices = parsedConfig[:prometheus_data_collection_settings][:cluster][:kubernetes_services]
           monitorKubernetesPods = parsedConfig[:prometheus_data_collection_settings][:cluster][:monitor_kubernetes_pods]
 
-          if checkForType(interval, String) && checkForTypeArray(fieldPass, String) && checkForTypeArray(fieldDrop, String) && checkForTypeArray(kubernetesServices, String) && checkForTypeArray(urls, String) && checkForType(monitorKubernetesPods, Boolean)
-
+          if checkForType(interval, String) &&
+             checkForTypeArray(fieldPass, String) &&
+             checkForTypeArray(fieldDrop, String) &&
+             checkForTypeArray(kubernetesServices, String) &&
+             checkForTypeArray(urls, String) &&
+             checkForType(monitorKubernetesPods, Boolean)
             # Write the settings to file, so that they can be set as environment variables
             file = File.open("prom_config_env_var", "w")
 
@@ -90,7 +94,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               puts "config::error::Exception while opening file for writing prometheus  replicaset config environment variables"
               puts "****************End Prometheus Config Processing********************"
             end
-          end
+          end # end of type check condition
         rescue => errorStr
           puts "config::error::Exception while reading config file for prometheus config for replicaset: #{errorStr}, using defaults"
         end
@@ -102,7 +106,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           fieldDrop = parsedConfig[:prometheus_data_collection_settings][:node][:fielddrop]
           urls = parsedConfig[:prometheus_data_collection_settings][:node][:urls]
 
-          if checkForType(interval, String) && checkForTypeArray(fieldPass, String) && checkForTypeArray(fieldDrop, String) && checkForTypeArray(urls, String)
+          if checkForType(interval, String) &&
+             checkForTypeArray(fieldPass, String) &&
+             checkForTypeArray(fieldDrop, String) &&
+             checkForTypeArray(urls, String)
             # Write the settings to file, so that they can be set as environment variables
             file = File.open("prom_config_env_var", "w")
 
@@ -118,14 +125,14 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               puts "config::error::Exception while opening file for writing prometheus daemonset config environment variables"
               puts "****************End Prometheus Config Processing********************"
             end
-          end
+          end # end of type check condition
         rescue => errorStr
           puts "config::error::Exception while reading config file for prometheus config for daemonset: #{errorStr}, using defaults"
         end
-      end # end for controller type check
+      end # end of controller type check
     end
   else
-    puts "config::error:: Controller undefined, using defaults"
+    puts "config::error:: Controller undefined while processing prometheus config, using defaults"
   end
 end
 
