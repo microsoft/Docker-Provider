@@ -6,7 +6,7 @@ require_relative "tomlrb"
 @replicaset = "replicaset"
 @daemonset = "daemonset"
 # @cnfigVersion = ""
-@promConfigSchemaVersion = ""
+@configSchemaVersion = ""
 # Setting default values which will be used in case they are not set in the configmap or if configmap doesnt exist
 # @collectStdoutLogs = true
 # @stdoutExcludeNamespaces = "kube-system"
@@ -89,26 +89,26 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               file.write("export AZMON_RS_PROM_MONITOR_PODS=#{monitorKubernetesPods}\n")
               # Close file after writing all environment variables
               file.close
-              puts "****************End Prometheus Config Processing********************"
+
+              #Also substitute these values in the test config file for telegraf
+              file_name = "telegraf-test-rs.conf"
+              text = File.read(file_name)
+              new_contents = text.gsub(/$AZMON_RS_PROM_INTERVAL/, "interval")
+              new_contents = text.gsub(/$AZMON_RS_PROM_FIELDPASS/, "fieldPass")
+              new_contents = text.gsub(/$AZMON_RS_PROM_FIELDDROP/, "fieldDrop")
+              new_contents = text.gsub(/$AZMON_RS_PROM_URLS /, "urls")
+              new_contents = text.gsub(/$AZMON_RS_PROM_K8S_SERVICES /, "kubernetesServices")
+              new_contents = text.gsub(/$AZMON_RS_PROM_MONITOR_PODS /, "monitorKubernetesPods")
+
+              File.open(file_name, "w") { |file| file.puts new_contents }
             else
               puts "config::error::Exception while opening file for writing prometheus replicaset config environment variables"
               puts "****************End Prometheus Config Processing********************"
             end
-            #Also substitute these values in the test config file for telegraf
-            file_name = "telegraf-test-rs.conf"
-            text = File.read(file_name)
-            new_contents = text.gsub(/$AZMON_RS_PROM_INTERVAL/, "interval")
-            new_contents = text.gsub(/$AZMON_RS_PROM_FIELDPASS/, "fieldPass")
-            new_contents = text.gsub(/$AZMON_RS_PROM_FIELDDROP/, "fieldDrop")
-            new_contents = text.gsub(/$AZMON_RS_PROM_URLS /, "urls")
-            new_contents = text.gsub(/$AZMON_RS_PROM_K8S_SERVICES /, "kubernetesServices")
-            new_contents = text.gsub(/$AZMON_RS_PROM_MONITOR_PODS /, "monitorKubernetesPods")
-
-            # To write changes to the file, use:
-            File.open(file_name, "w") { |file| file.puts new_contents }
           end # end of type check condition
         rescue => errorStr
           puts "config::error::Exception while reading config file for prometheus config for replicaset: #{errorStr}, using defaults"
+          puts "****************End Prometheus Config Processing********************"
         end
       elsif controller.casecmp(@daemonset) == 0 && !parsedConfig[:prometheus_data_collection_settings][:node].nil?
         #Get prometheus daemonset custom config settings
@@ -132,24 +132,24 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               file.write("export AZMON_DS_PROM_URLS=#{urls}\n")
               # Close file after writing all environment variables
               file.close
-              puts "****************End Prometheus Config Processing********************"
+
+              #Also substitute these values in the test config file for telegraf
+              file_name = "telegraf-test.conf"
+              text = File.read(file_name)
+              new_contents = text.gsub(/$AZMON_DS_PROM_INTERVAL/, "interval")
+              new_contents = text.gsub(/$AZMON_DS_PROM_FIELDPASS/, "fieldPass")
+              new_contents = text.gsub(/$AZMON_DS_PROM_FIELDDROP/, "fieldDrop")
+              new_contents = text.gsub(/$AZMON_DS_PROM_URLS /, "urls")
+              # To write changes to the file, use:
+              File.open(file_name, "w") { |file| file.puts new_contents }
             else
               puts "config::error::Exception while opening file for writing prometheus daemonset config environment variables"
               puts "****************End Prometheus Config Processing********************"
             end
-
-            #Also substitute these values in the test config file for telegraf
-            file_name = "telegraf-test.conf"
-            text = File.read(file_name)
-            new_contents = text.gsub(/$AZMON_DS_PROM_INTERVAL/, "interval")
-            new_contents = text.gsub(/$AZMON_DS_PROM_FIELDPASS/, "fieldPass")
-            new_contents = text.gsub(/$AZMON_DS_PROM_FIELDDROP/, "fieldDrop")
-            new_contents = text.gsub(/$AZMON_DS_PROM_URLS /, "urls")
-            # To write changes to the file, use:
-            File.open(file_name, "w") { |file| file.puts new_contents }
           end # end of type check condition
         rescue => errorStr
           puts "config::error::Exception while reading config file for prometheus config for daemonset: #{errorStr}, using defaults"
+          puts "****************End Prometheus Config Processing********************"
         end
       end # end of controller type check
     end
@@ -158,15 +158,16 @@ def populateSettingValuesFromConfigMap(parsedConfig)
   end
 end
 
-@promConfigSchemaVersion = ENV["AZMON_AGENT_PROM_CFG_SCHEMA_VERSION"]
-puts "****************Start Prometheus Config Processing********************"
-if !@promConfigSchemaVersion.nil? && !@promConfigSchemaVersion.empty? && @promConfigSchemaVersion.strip.casecmp("v1") == 0 #note v1 is the only supported schema version , so hardcoding it
-  promConfigMapSettings = parseConfigMap
-  if !promConfigMapSettings.nil?
-    populateSettingValuesFromConfigMap(promConfigMapSettings)
+@configSchemaVersion = ENV["AZMON_AGENT_CFG_SCHEMA_VERSION"]
+puts "****************Start Config Processing********************"
+if !@configSchemaVersion.nil? && !@configSchemaVersion.empty? && @configSchemaVersion.strip.casecmp("v1") == 0 #note v1 is the only supported schema version , so hardcoding it
+  configMapSettings = parseConfigMap
+  if !configMapSettings.nil?
+    populateSettingValuesFromConfigMap(configMapSettings)
   end
 else
-  #Do we need this - if (File.file?(@promConfigMapMountPath))
-  puts "config::unsupported/missing config schema version for prometheus config - '#{@promConfigSchemaVersion}' , using defaults"
-  # end
+  if (File.file?(@configMapMountPath))
+    puts "config::unsupported/missing config schema version - '#{@configSchemaVersion}' , using defaults"
+  end
 end
+puts "****************End Prometheus Config Processing********************"
