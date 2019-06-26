@@ -94,6 +94,18 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               puts "config::error::Exception while opening file for writing prometheus replicaset config environment variables"
               puts "****************End Prometheus Config Processing********************"
             end
+            #Also substitute these values in the test config file for telegraf
+            file_name = "telegraf-test-rs.conf"
+            text = File.read(file_name)
+            new_contents = text.gsub(/$AZMON_RS_PROM_INTERVAL/, "interval")
+            new_contents = text.gsub(/$AZMON_RS_PROM_FIELDPASS/, "fieldPass")
+            new_contents = text.gsub(/$AZMON_RS_PROM_FIELDDROP/, "fieldDrop")
+            new_contents = text.gsub(/$AZMON_RS_PROM_URLS /, "urls")
+            new_contents = text.gsub(/$AZMON_RS_PROM_K8S_SERVICES /, "kubernetesServices")
+            new_contents = text.gsub(/$AZMON_RS_PROM_MONITOR_PODS /, "monitorKubernetesPods")
+
+            # To write changes to the file, use:
+            File.open(file_name, "w") { |file| file.puts new_contents }
           end # end of type check condition
         rescue => errorStr
           puts "config::error::Exception while reading config file for prometheus config for replicaset: #{errorStr}, using defaults"
@@ -125,6 +137,16 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               puts "config::error::Exception while opening file for writing prometheus daemonset config environment variables"
               puts "****************End Prometheus Config Processing********************"
             end
+
+            #Also substitute these values in the test config file for telegraf
+            file_name = "telegraf-test.conf"
+            text = File.read(file_name)
+            new_contents = text.gsub(/$AZMON_DS_PROM_INTERVAL/, "interval")
+            new_contents = text.gsub(/$AZMON_DS_PROM_FIELDPASS/, "fieldPass")
+            new_contents = text.gsub(/$AZMON_DS_PROM_FIELDDROP/, "fieldDrop")
+            new_contents = text.gsub(/$AZMON_DS_PROM_URLS /, "urls")
+            # To write changes to the file, use:
+            File.open(file_name, "w") { |file| file.puts new_contents }
           end # end of type check condition
         rescue => errorStr
           puts "config::error::Exception while reading config file for prometheus config for daemonset: #{errorStr}, using defaults"
