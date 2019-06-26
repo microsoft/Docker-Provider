@@ -78,6 +78,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
              checkForTypeArray(kubernetesServices, String) &&
              checkForTypeArray(urls, String) &&
              checkForType(monitorKubernetesPods, Boolean)
+            puts "config::Successfully passed typecheck for config settings for replicaset"
             # Write the settings to file, so that they can be set as environment variables
             file = File.open("prom_config_env_var", "w")
             if !file.nil?
@@ -89,6 +90,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               file.write("export AZMON_RS_PROM_MONITOR_PODS=#{monitorKubernetesPods}\n")
               # Close file after writing all environment variables
               file.close
+              puts "config::Successfully created custom config environment variable file for replicaset"
 
               #Also substitute these values in the test config file for telegraf
               file_name = "telegraf-test-rs.conf"
@@ -101,6 +103,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               new_contents = text.gsub(/$AZMON_RS_PROM_MONITOR_PODS /, "monitorKubernetesPods")
 
               File.open(file_name, "w") { |file| file.puts new_contents }
+              puts "config::Successfully replaced the settings in test telegraf config file for replicaset"
             else
               puts "config::error::Exception while opening file for writing prometheus replicaset config environment variables"
               puts "****************End Prometheus Config Processing********************"
@@ -123,6 +126,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
              checkForTypeArray(fieldPass, String) &&
              checkForTypeArray(fieldDrop, String) &&
              checkForTypeArray(urls, String)
+            puts "config::Successfully passed typecheck for config settings for daemonset"
             # Write the settings to file, so that they can be set as environment variables
             file = File.open("prom_config_env_var", "w")
             if !file.nil?
@@ -132,6 +136,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               file.write("export AZMON_DS_PROM_URLS=#{urls}\n")
               # Close file after writing all environment variables
               file.close
+              puts "config::Successfully created custom config environment variable file for daemonset"
 
               #Also substitute these values in the test config file for telegraf
               file_name = "telegraf-test.conf"
@@ -142,6 +147,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               new_contents = text.gsub(/$AZMON_DS_PROM_URLS /, "urls")
               # To write changes to the file, use:
               File.open(file_name, "w") { |file| file.puts new_contents }
+              puts "config::Successfully replaced the settings in test telegraf config file for daemonset"
             else
               puts "config::error::Exception while opening file for writing prometheus daemonset config environment variables"
               puts "****************End Prometheus Config Processing********************"
@@ -166,7 +172,7 @@ if !@configSchemaVersion.nil? && !@configSchemaVersion.empty? && @configSchemaVe
     populateSettingValuesFromConfigMap(configMapSettings)
   end
 else
-  if (File.file?(@configMapMountPath))
+  if (File.file?(@promConfigMapMountPath))
     puts "config::unsupported/missing config schema version - '#{@configSchemaVersion}' , using defaults"
   end
 end
