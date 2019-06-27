@@ -44,7 +44,6 @@ end
 
 # Use the ruby structure created after config parsing to set the right values to be used as environment variables
 def populateSettingValuesFromConfigMap(parsedConfig)
-  puts "****************Start Prometheus Config Processing********************"
   # Checking to see if this is the daemonset or replicaset to parse config accordingly
   controller = ENV["CONTROLLER_TYPE"]
   if !controller.nil?
@@ -95,7 +94,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDDROP", fieldDrop.join("\",\""))
               new_contents = new_contents.gsub("$AZMON_RS_PROM_URLS", urls.join("\",\""))
               new_contents = new_contents.gsub("$AZMON_RS_PROM_K8S_SERVICES", kubernetesServices.join("\",\""))
-              new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", monitorKubernetesPods.join("\",\""))
+              new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", monitorKubernetesPods)
 
               File.open(file_name, "w") { |file| file.puts new_contents }
               puts "config::Successfully replaced the settings in test telegraf config file for replicaset"
@@ -174,6 +173,8 @@ if !@configSchemaVersion.nil? && !@configSchemaVersion.empty? && @configSchemaVe
 else
   if (File.file?(@promConfigMapMountPath))
     puts "config::unsupported/missing config schema version - '#{@configSchemaVersion}' , using defaults"
+  else
+    puts "config::No configmap mounted for prometheus custom config, using defaults"
   end
 end
 puts "****************End Prometheus Config Processing********************"
