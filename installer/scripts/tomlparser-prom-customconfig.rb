@@ -84,9 +84,14 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             if !file.nil?
               file.write("export AZMON_RS_PROM_INTERVAL=#{interval}\n")
               file.write("export AZMON_RS_PROM_FIELDPASS=\"#{fieldPass}\"\n")
+              #Setting array lengths as environment variables for telemetry purposes
+              file.write("export TELEMETRY_RS_PROM_FIELDPASS_LENGTH=\"#{fieldPass.length}\"\n")
               file.write("export AZMON_RS_PROM_FIELDDROP=#{fieldDrop}\n")
+              file.write("export TELEMETRY_RS_PROM_FIELDDROP_LENGTH=\"#{fieldDrop.length}\"\n")
               file.write("export AZMON_RS_PROM_K8S_SERVICES=#{kubernetesServices}\n")
+              file.write("export TELEMETRY_RS_PROM_K8S_SERVICES_LENGTH=#{kubernetesServices.length}\n")
               file.write("export AZMON_RS_PROM_URLS=#{urls}\n")
+              file.write("export TELEMETRY_RS_PROM_URLS_LENGTH=#{urls.length}\n")
               file.write("export AZMON_RS_PROM_MONITOR_PODS=#{monitorKubernetesPods}\n")
               # Close file after writing all environment variables
               file.close
@@ -132,8 +137,12 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             if !file.nil?
               file.write("export AZMON_DS_PROM_INTERVAL=#{interval}\n")
               file.write("export AZMON_DS_PROM_FIELDPASS=\"#{fieldPass}\"\n")
+              #Setting array lengths as environment variables for telemetry purposes
+              file.write("export TELEMETRY_DS_PROM_FIELDPASS_LENGTH=\"#{fieldPass.length}\"\n")
               file.write("export AZMON_DS_PROM_FIELDDROP=#{fieldDrop}\n")
+              file.write("export TELEMETRY_DS_PROM_FIELDDROP_LENGTH=\"#{fieldDrop.length}\"\n")
               file.write("export AZMON_DS_PROM_URLS=#{urls}\n")
+              file.write("export TELEMETRY_DS_PROM_URLS_LENGTH=#{urls.length}\n")
               # Close file after writing all environment variables
               file.close
               puts "config::Successfully created custom config environment variable file for daemonset"
