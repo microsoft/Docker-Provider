@@ -100,12 +100,12 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               #Also substitute these values in the test config file for telegraf
               file_name = "telegraf-test-rs.conf"
               text = File.read(file_name)
-              new_contents = text.gsub(/$AZMON_RS_PROM_INTERVAL/, "interval")
-              new_contents = text.gsub(/$AZMON_RS_PROM_FIELDPASS/, "fieldPass")
-              new_contents = text.gsub(/$AZMON_RS_PROM_FIELDDROP/, "fieldDrop")
-              new_contents = text.gsub(/$AZMON_RS_PROM_URLS /, "urls")
-              new_contents = text.gsub(/$AZMON_RS_PROM_K8S_SERVICES /, "kubernetesServices")
-              new_contents = text.gsub(/$AZMON_RS_PROM_MONITOR_PODS /, "monitorKubernetesPods")
+              new_contents = text.gsub("$AZMON_RS_PROM_INTERVAL", interval)
+              new_contents = text.gsub("$AZMON_RS_PROM_FIELDPASS", fieldPass)
+              new_contents = text.gsub("$AZMON_RS_PROM_FIELDDROP", fieldDrop)
+              new_contents = text.gsub("$AZMON_RS_PROM_URLS", urls)
+              new_contents = text.gsub("$AZMON_RS_PROM_K8S_SERVICES", kubernetesServices)
+              new_contents = text.gsub("$AZMON_RS_PROM_MONITOR_PODS", monitorKubernetesPods)
 
               File.open(file_name, "w") { |file| file.puts new_contents }
               puts "config::Successfully replaced the settings in test telegraf config file for replicaset"
@@ -150,10 +150,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               #Also substitute these values in the test config file for telegraf
               file_name = "telegraf-test.conf"
               text = File.read(file_name)
-              new_contents = text.gsub(/$AZMON_DS_PROM_INTERVAL/, "interval")
-              new_contents = text.gsub(/$AZMON_DS_PROM_FIELDPASS/, "fieldPass")
-              new_contents = text.gsub(/$AZMON_DS_PROM_FIELDDROP/, "fieldDrop")
-              new_contents = text.gsub(/$AZMON_DS_PROM_URLS /, "urls")
+              new_contents = text.gsub("$AZMON_DS_PROM_INTERVAL", interval)
+              new_contents = text.gsub("$AZMON_DS_PROM_FIELDPASS", fieldPass)
+              new_contents = text.gsub("$AZMON_DS_PROM_FIELDDROP", fieldDrop)
+              new_contents = text.gsub("$AZMON_DS_PROM_URLS", urls)
               # To write changes to the file, use:
               File.open(file_name, "w") { |file| file.puts new_contents }
               puts "config::Successfully replaced the settings in test telegraf config file for daemonset"
