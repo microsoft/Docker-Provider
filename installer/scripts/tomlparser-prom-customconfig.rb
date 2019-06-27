@@ -5,17 +5,7 @@ require_relative "tomlrb"
 @promConfigMapMountPath = "/etc/config/settings/prometheus-data-collection-settings"
 @replicaset = "replicaset"
 @daemonset = "daemonset"
-# @cnfigVersion = ""
 @configSchemaVersion = ""
-# Setting default values which will be used in case they are not set in the configmap or if configmap doesnt exist
-# @collectStdoutLogs = true
-# @stdoutExcludeNamespaces = "kube-system"
-# @collectStderrLogs = true
-# @stderrExcludeNamespaces = "kube-system"
-# @collectClusterEnvVariables = true
-# @logTailPath = "/var/log/containers/*.log"
-# @logExclusionRegexPattern = "(^((?!stdout|stderr).)*$)"
-# @excludePath = "*.csv2" #some invalid path
 
 # Use parser to parse the configmap toml file to a ruby structure
 def parseConfigMap
@@ -28,12 +18,10 @@ def parseConfigMap
       return parsedConfig
     else
       puts "config::configmap container-azm-ms-agentconfig for settings not mounted, using defaults for prometheus scraping"
-      # @excludePath = "*_kube-system_*.log"
       return nil
     end
   rescue => errorStr
     puts "config::error::Exception while parsing toml config file for prometheus config: #{errorStr}, using defaults"
-    # @excludePath = "*_kube-system_*.log"
     return nil
   end
 end
