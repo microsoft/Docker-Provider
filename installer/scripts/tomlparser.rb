@@ -82,7 +82,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         if @collectStderrLogs && !stderrNamespaces.nil?
           if stderrNamespaces.kind_of?(Array)
             if !@stdoutExcludeNamespaces.nil? && !@stdoutExcludeNamespaces.empty?
-              stdoutNamespaces = @stdoutExcludeNamespaces.split(',')
+              stdoutNamespaces = @stdoutExcludeNamespaces.split(",")
             end
             # Checking only for the first element to be string because toml enforces the arrays to contain elements of same type
             if stderrNamespaces.length > 0 && stderrNamespaces[0].kind_of?(String)
@@ -119,47 +119,47 @@ def populateSettingValuesFromConfigMap(parsedConfig)
   end
 end
 
-  @configSchemaVersion = ENV['AZMON_AGENT_CFG_SCHEMA_VERSION']
-  puts "****************Start Config Processing********************"
-  if !@configSchemaVersion.nil? && !@configSchemaVersion.empty? && @configSchemaVersion.strip.casecmp('v1') == 0 #note v1 is the only supported schema version , so hardcoding it
-    configMapSettings = parseConfigMap
-    if !configMapSettings.nil?
-      populateSettingValuesFromConfigMap(configMapSettings)
-    end
-  else
-    if (File.file?(@configMapMountPath))
-      puts "config::unsupported/missing config schema version - '#{@configSchemaVersion}' , using defaults"
-    end 
-    @excludePath = "*_kube-system_*.log"
+@configSchemaVersion = ENV["AZMON_AGENT_CFG_SCHEMA_VERSION"]
+puts "****************Start Config Processing********************"
+if !@configSchemaVersion.nil? && !@configSchemaVersion.empty? && @configSchemaVersion.strip.casecmp("v1") == 0 #note v1 is the only supported schema version , so hardcoding it
+  configMapSettings = parseConfigMap
+  if !configMapSettings.nil?
+    populateSettingValuesFromConfigMap(configMapSettings)
   end
-
-  # Write the settings to file, so that they can be set as environment variables
-  file = File.open("config_env_var", "w")
-
-  if !file.nil?
-    # This will be used in td-agent-bit.conf file to filter out logs
-    if (!@collectStdoutLogs && !@collectStderrLogs)
-      #Stop log tailing completely
-      @logTailPath = "/opt/nolog*.log"
-      @logExclusionRegexPattern = "stdout|stderr"
-    elsif !@collectStdoutLogs
-      @logExclusionRegexPattern = "stdout"
-    elsif !@collectStderrLogs
-      @logExclusionRegexPattern = "stderr"
-    end
-    file.write("export AZMON_COLLECT_STDOUT_LOGS=#{@collectStdoutLogs}\n")
-    file.write("export AZMON_LOG_TAIL_PATH=#{@logTailPath}\n")
-    file.write("export AZMON_LOG_EXCLUSION_REGEX_PATTERN=\"#{@logExclusionRegexPattern}\"\n")
-    file.write("export AZMON_STDOUT_EXCLUDED_NAMESPACES=#{@stdoutExcludeNamespaces}\n")
-    file.write("export AZMON_COLLECT_STDERR_LOGS=#{@collectStderrLogs}\n")
-    file.write("export AZMON_STDERR_EXCLUDED_NAMESPACES=#{@stderrExcludeNamespaces}\n")
-    file.write("export AZMON_CLUSTER_COLLECT_ENV_VAR=#{@collectClusterEnvVariables}\n")
-    file.write("export AZMON_CLUSTER_LOG_TAIL_EXCLUDE_PATH=#{@excludePath}\n")
-    # Close file after writing all environment variables
-    file.close
-    puts "Both stdout & stderr log collection are turned off for namespaces: '#{@excludePath}' "
-    puts "****************End Config Processing********************"
-  else
-    puts "config::error::Exception while opening file for writing config environment variables"
-    puts "****************End Config Processing********************"
+else
+  if (File.file?(@configMapMountPath))
+    puts "config::unsupported/missing config schema version - '#{@configSchemaVersion}' , using defaults"
   end
+  @excludePath = "*_kube-system_*.log"
+end
+
+# Write the settings to file, so that they can be set as environment variables
+file = File.open("config_env_var", "w")
+
+if !file.nil?
+  # This will be used in td-agent-bit.conf file to filter out logs
+  if (!@collectStdoutLogs && !@collectStderrLogs)
+    #Stop log tailing completely
+    @logTailPath = "/opt/nolog*.log"
+    @logExclusionRegexPattern = "stdout|stderr"
+  elsif !@collectStdoutLogs
+    @logExclusionRegexPattern = "stdout"
+  elsif !@collectStderrLogs
+    @logExclusionRegexPattern = "stderr"
+  end
+  file.write("export AZMON_COLLECT_STDOUT_LOGS=#{@collectStdoutLogs}\n")
+  file.write("export AZMON_LOG_TAIL_PATH=#{@logTailPath}\n")
+  file.write("export AZMON_LOG_EXCLUSION_REGEX_PATTERN=\"#{@logExclusionRegexPattern}\"\n")
+  file.write("export AZMON_STDOUT_EXCLUDED_NAMESPACES=#{@stdoutExcludeNamespaces}\n")
+  file.write("export AZMON_COLLECT_STDERR_LOGS=#{@collectStderrLogs}\n")
+  file.write("export AZMON_STDERR_EXCLUDED_NAMESPACES=#{@stderrExcludeNamespaces}\n")
+  file.write("export AZMON_CLUSTER_COLLECT_ENV_VAR=#{@collectClusterEnvVariables}\n")
+  file.write("export AZMON_CLUSTER_LOG_TAIL_EXCLUDE_PATH=#{@excludePath}\n")
+  # Close file after writing all environment variables
+  file.close
+  puts "Both stdout & stderr log collection are turned off for namespaces: '#{@excludePath}' "
+  puts "****************End Config Processing********************"
+else
+  puts "config::error::Exception while opening file for writing config environment variables"
+  puts "****************End Config Processing********************"
+end
