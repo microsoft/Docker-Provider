@@ -102,6 +102,8 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               puts "config::error::Exception while opening file for writing prometheus replicaset config environment variables"
               puts "****************End Prometheus Config Processing********************"
             end
+          else
+            puts "config::Typecheck failed for prometheus config settings for replicaset"
           end # end of type check condition
         rescue => errorStr
           puts "config::error::Exception while reading config file for prometheus config for replicaset: #{errorStr}, using defaults"
@@ -151,6 +153,8 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               puts "config::error::Exception while opening file for writing prometheus daemonset config environment variables"
               puts "****************End Prometheus Config Processing********************"
             end
+          else
+            puts "config::Typecheck failed for prometheus config settings for daemonset"
           end # end of type check condition
         rescue => errorStr
           puts "config::error::Exception while reading config file for prometheus config for daemonset: #{errorStr}, using defaults"
