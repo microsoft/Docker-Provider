@@ -77,7 +77,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
              checkForTypeArray(fieldDrop, String) &&
              checkForTypeArray(kubernetesServices, String) &&
              checkForTypeArray(urls, String) &&
-             checkForType(monitorKubernetesPods, Boolean)
+             !monitorKubernetesPods.nil? && monitorKubernetesPods.is_a?(Boolean)
             puts "config::Successfully passed typecheck for config settings for replicaset"
             # Write the settings to file, so that they can be set as environment variables
             file = File.open("prom_config_env_var", "w")
