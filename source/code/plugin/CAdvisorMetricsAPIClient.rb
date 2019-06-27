@@ -14,12 +14,31 @@ class CAdvisorMetricsAPIClient
   require_relative "ApplicationInsightsUtility"
 
   @configMapMountPath = "/etc/config/settings/log-data-collection-settings"
+  @promConfigMountPath = "/etc/config/settings/prometheus-data-collection-settings"
   @clusterEnvVarCollectionEnabled = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
   @clusterStdErrLogCollectionEnabled = ENV["AZMON_COLLECT_STDERR_LOGS"]
   @clusterStdOutLogCollectionEnabled = ENV["AZMON_COLLECT_STDOUT_LOGS"]
   @clusterLogTailExcludPath = ENV["AZMON_CLUSTER_LOG_TAIL_EXCLUDE_PATH"]
   @clusterLogTailPath = ENV["AZMON_LOG_TAIL_PATH"]
   @clusterAgentSchemaVersion = ENV["AZMON_AGENT_CFG_SCHEMA_VERSION"]
+
+  @rsPromInterval = ENV["TELEMETRY_RS_PROM_INTERVAL"]
+  @dsPromInterval = ENV["TELEMETRY_DS_PROM_INTERVAL"]
+  
+  @rsPromFieldPassCount = ENV["TELEMETRY_RS_PROM_FIELDPASS_LENGTH"]
+  @dsPromFieldPassCount = ENV["TELEMETRY_DS_PROM_FIELDPASS_LENGTH"]
+  
+  @rsPromFieldDropCount = ENV["TELEMETRY_RS_PROM_FIELDDROP_LENGTH"]
+  @dsPromFieldDropCount = ENV["TELEMETRY_DS_PROM_FIELDDROP_LENGTH"]
+
+  @rsPromK8sServiceCount = ENV["TELEMETRY_RS_PROM_K8S_SERVICES_LENGTH"]
+
+  @rsPromUrlCount = ENV["TELEMETRY_RS_PROM_URLS_LENGTH"]
+  @dsPromUrlCount = ENV["TELEMETRY_DS_PROM_URLS_LENGTH"]
+
+  @rsPromMonitorPods = ENV["TELEMETRY_RS_PROM_MONITOR_PODS"]
+  
+
   @LogPath = "/var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt"
   @Log = Logger.new(@LogPath, 2, 10 * 1048576) #keep last 2 files, max log file size = 10M
   #   @@rxBytesLast = nil
@@ -199,7 +218,7 @@ class CAdvisorMetricsAPIClient
                     telemetryProps["PodName"] = podName
                     telemetryProps["ContainerName"] = containerName
                     telemetryProps["Computer"] = hostName
-                    #telemetry about custom log collections setting
+                    #telemetry about log collections settings
                     if (File.file?(@configMapMountPath))
                       telemetryProps["clustercustomsettings"] = true
                       telemetryProps["clusterenvvars"] = @clusterEnvVarCollectionEnabled
@@ -208,6 +227,19 @@ class CAdvisorMetricsAPIClient
                       telemetryProps["clusterlogtailexcludepath"] = @clusterLogTailExcludPath
                       telemetryProps["clusterLogTailPath"] = @clusterLogTailPath
                       telemetryProps["clusterAgentSchemaVersion"] = @clusterAgentSchemaVersion
+                    end
+                    #telemetry about prometheus metric collections settings
+                    if (File.file?(@promConfigMountPath))
+                      telemetryProps["rsPromInt"] = @rsPromInterval
+                      telemetryProps["dsPromInt"] = @dsPromInterval
+                      telemetryProps["rsPromFPC"] = @rsPromFieldPassCount
+                      telemetryProps["dsPromFPC"] = @dsPromFieldPassCount
+                      telemetryProps["rsPromFDC"] = @rsPromFieldDropCount
+                      telemetryProps["dsPromFDC"] = @dsPromFieldDropCount
+                      telemetryProps["rsPromServ"] = @rsPromK8sServiceCount
+                      telemetryProps["rsPromUrl"] = @rsPromUrlCount
+                      telemetryProps["dsPromUrl"] = @dsPromUrlCount
+                      telemetryProps["rsPromMonPods"] = @rsPromMonitorPods
                     end
                     ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
                   end

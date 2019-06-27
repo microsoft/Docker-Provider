@@ -34,14 +34,12 @@ const ResourceIdEnv = "AKS_RESOURCE_ID"
 //env variable which has ResourceName for NON-AKS
 const ResourceNameEnv = "ACS_RESOURCE_NAME"
 
-// Origin prefix for telegraf Metrics (used as prefix for origin field & prefix for azure monitor specific tags)
+// Origin prefix for telegraf Metrics (used as prefix for origin field & prefix for azure monitor specific tags and also for custom-metrics telemetry )
 const TelegrafMetricOriginPrefix = "container.azm.ms"
 
 // Origin suffix for telegraf Metrics (used as suffix for origin field)
 const TelegrafMetricOriginSuffix = "telegraf"
 
-// Namespace prefix for telegraf Metrics (used as prefix for Namespace field)
-//const TelegrafMetricNamespacePrefix = "plugin"
 // clusterName tag
 const TelegrafTagClusterName = "clusterName"
 
