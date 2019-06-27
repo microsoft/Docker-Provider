@@ -94,7 +94,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDDROP", fieldDrop.join("\",\""))
               new_contents = new_contents.gsub("$AZMON_RS_PROM_URLS", urls.join("\",\""))
               new_contents = new_contents.gsub("$AZMON_RS_PROM_K8S_SERVICES", kubernetesServices.join("\",\""))
-              new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", monitorKubernetesPods)
+              new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", (monitorKubernetesPods ? "true" : "false"))
 
               File.open(file_name, "w") { |file| file.puts new_contents }
               puts "config::Successfully replaced the settings in test telegraf config file for replicaset"
