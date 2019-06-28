@@ -69,19 +69,19 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             # Write the settings to file, so that they can be set as environment variables
             file = File.open("prom_config_env_var", "w")
             if !file.nil?
-              file.write("export AZMON_RS_PROM_INTERVAL=#{interval}\n")
+              file.write("export AZMON_RS_PROM_INTERVAL=\"#{interval}\"\n")
               file.write("export TELEMETRY_RS_PROM_INTERVAL=\"#{interval}\"\n")
               file.write("export AZMON_RS_PROM_FIELDPASS=\"#{fieldPass.join("\",\"")}\"\n")
               #Setting array lengths as environment variables for telemetry purposes
               file.write("export TELEMETRY_RS_PROM_FIELDPASS_LENGTH=\"#{fieldPass.length}\"\n")
-              file.write("export AZMON_RS_PROM_FIELDDROP=#{fieldDrop.join("\",\"")}\n")
+              file.write("export AZMON_RS_PROM_FIELDDROP=\"#{fieldDrop.join("\",\"")}\"\n")
               file.write("export TELEMETRY_RS_PROM_FIELDDROP_LENGTH=\"#{fieldDrop.length}\"\n")
-              file.write("export AZMON_RS_PROM_K8S_SERVICES=#{kubernetesServices.join("\",\"")}\n")
-              file.write("export TELEMETRY_RS_PROM_K8S_SERVICES_LENGTH=#{kubernetesServices.length}\n")
-              file.write("export AZMON_RS_PROM_URLS=#{urls.join("\",\"")}\n")
-              file.write("export TELEMETRY_RS_PROM_URLS_LENGTH=#{urls.length}\n")
+              file.write("export AZMON_RS_PROM_K8S_SERVICES=\"#{kubernetesServices.join("\",\"")}\"\n")
+              file.write("export TELEMETRY_RS_PROM_K8S_SERVICES_LENGTH=\"#{kubernetesServices.length}\"\n")
+              file.write("export AZMON_RS_PROM_URLS=\"#{urls.join("\",\"")}\"\n")
+              file.write("export TELEMETRY_RS_PROM_URLS_LENGTH=\"#{urls.length}\"\n")
               file.write("export AZMON_RS_PROM_MONITOR_PODS=#{monitorKubernetesPods}\n")
-              file.write("export TELEMETRY_RS_PROM_MONITOR_PODS=\"#{monitorKubernetesPods}\"\n")
+              file.write("export TELEMETRY_RS_PROM_MONITOR_PODS=#{monitorKubernetesPods}\n")
               # Close file after writing all environment variables
               file.close
               puts "config::Successfully created custom config environment variable file for replicaset"
@@ -89,11 +89,11 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               #Also substitute these values in the test config file for telegraf
               file_name = "telegraf-test-rs.conf"
               text = File.read(file_name)
-              new_contents = text.gsub("$AZMON_RS_PROM_INTERVAL", interval)
-              new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDPASS", fieldPass.join("\",\""))
-              new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDDROP", fieldDrop.join("\",\""))
-              new_contents = new_contents.gsub("$AZMON_RS_PROM_URLS", urls.join("\",\""))
-              new_contents = new_contents.gsub("$AZMON_RS_PROM_K8S_SERVICES", kubernetesServices.join("\",\""))
+              new_contents = text.gsub("$AZMON_RS_PROM_INTERVAL", "\"" + interval + "\"")
+              new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDPASS", "\"" + fieldPass.join("\",\"") + "\"")
+              new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDDROP", "\"" + fieldDrop.join("\",\"") + "\"")
+              new_contents = new_contents.gsub("$AZMON_RS_PROM_URLS", "\"" + urls.join("\",\"") + "\"")
+              new_contents = new_contents.gsub("$AZMON_RS_PROM_K8S_SERVICES", "\"" + kubernetesServices.join("\",\"") + "\"")
               new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", (monitorKubernetesPods ? "true" : "false"))
 
               File.open(file_name, "w") { |file| file.puts new_contents }
@@ -126,15 +126,15 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             # Write the settings to file, so that they can be set as environment variables
             file = File.open("prom_config_env_var", "w")
             if !file.nil?
-              file.write("export AZMON_DS_PROM_INTERVAL=#{interval}\n")
+              file.write("export AZMON_DS_PROM_INTERVAL=\"#{interval}\"\n")
               file.write("export TELEMETRY_DS_PROM_INTERVAL=\"#{interval}\"\n")
               file.write("export AZMON_DS_PROM_FIELDPASS=\"#{fieldPass.join("\",\"")}\"\n")
               #Setting array lengths as environment variables for telemetry purposes
               file.write("export TELEMETRY_DS_PROM_FIELDPASS_LENGTH=\"#{fieldPass.length}\"\n")
-              file.write("export AZMON_DS_PROM_FIELDDROP=#{fieldDrop.join("\",\"")}\n")
+              file.write("export AZMON_DS_PROM_FIELDDROP=\"#{fieldDrop.join("\",\"")}\"\n")
               file.write("export TELEMETRY_DS_PROM_FIELDDROP_LENGTH=\"#{fieldDrop.length}\"\n")
-              file.write("export AZMON_DS_PROM_URLS=#{urls.join("\",\"")}\n")
-              file.write("export TELEMETRY_DS_PROM_URLS_LENGTH=#{urls.length}\n")
+              file.write("export AZMON_DS_PROM_URLS=\"#{urls.join("\",\"")}\"\n")
+              file.write("export TELEMETRY_DS_PROM_URLS_LENGTH=\"#{urls.length}\"\n")
               # Close file after writing all environment variables
               file.close
               puts "config::Successfully created custom config environment variable file for daemonset"
@@ -142,10 +142,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               #Also substitute these values in the test config file for telegraf
               file_name = "telegraf-test.conf"
               text = File.read(file_name)
-              new_contents = text.gsub("$AZMON_DS_PROM_INTERVAL", interval)
-              new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDPASS", fieldPass.join("\",\""))
-              new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDDROP", fieldDrop.join("\",\""))
-              new_contents = new_contents.gsub("$AZMON_DS_PROM_URLS", urls.join("\",\""))
+              new_contents = text.gsub("$AZMON_DS_PROM_INTERVAL", "\"" + interval + "\"")
+              new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDPASS", "\"" + fieldPass.join("\",\"") + "\"")
+              new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDDROP", "\"" + fieldDrop.join("\",\"") + "\"")
+              new_contents = new_contents.gsub("$AZMON_DS_PROM_URLS", "\"" + urls.join("\",\"") + "\"")
               # To write changes to the file, use:
               File.open(file_name, "w") { |file| file.puts new_contents }
               puts "config::Successfully replaced the settings in test telegraf config file for daemonset"
