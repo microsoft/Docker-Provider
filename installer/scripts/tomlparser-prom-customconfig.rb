@@ -6,6 +6,16 @@ require_relative "tomlrb"
 @replicaset = "replicaset"
 @daemonset = "daemonset"
 @configSchemaVersion = ""
+@defaultDsInterval = "1m"
+@defaultDsPromUrls = ""
+@defaultDsFieldPass = ""
+@defaultDsFieldDrop = ""
+@defaultRsInterval = "1m"
+@defaultRsPromUrls = ""
+@defaultRsFieldPass = ""
+@defaultRsFieldDrop = ""
+@defaultRsK8sServices = ""
+@defaultRsMonitorPods = false
 
 # Use parser to parse the configmap toml file to a ruby structure
 def parseConfigMap
@@ -27,7 +37,7 @@ def parseConfigMap
 end
 
 def checkForTypeArray(arrayValue, arrayType)
-  if !arrayValue.nil? && arrayValue.kind_of?(Array) && arrayValue.length > 0 && arrayValue[0].kind_of?(arrayType)
+  if (arrayValue.nil? || (arrayValue.kind_of?(Array) && arrayValue.length > 0 && arrayValue[0].kind_of?(arrayType)))
     return true
   else
     return false
@@ -35,7 +45,7 @@ def checkForTypeArray(arrayValue, arrayType)
 end
 
 def checkForType(variable, varType)
-  if !variable.nil? && variable.kind_of?(varType)
+  if variable.nil? || variable.kind_of?(varType)
     return true
   else
     return false
@@ -66,6 +76,14 @@ def populateSettingValuesFromConfigMap(parsedConfig)
              checkForTypeArray(urls, String) &&
              !monitorKubernetesPods.nil? && (!!monitorKubernetesPods == monitorKubernetesPods) #Checking for Boolean type, since 'Boolean' is not defined as a type in ruby
             puts "config::Successfully passed typecheck for config settings for replicaset"
+            #if setting is nil assign default values
+            interval = (interval.nil?) ? @defaultRsInterval : interval
+            fieldPass = (fieldPass.nil?) ? @defaultRsFieldPass : fieldPass
+            fieldDrop = (fieldDrop.nil?) ? @defaultRsFieldDrop : fieldDrop
+            kubernetesServices = (kubernetesServices.nil?) ? @defaultRsK8sServices : kubernetesServices
+            urls = (urls.nil?) ? @defaultRsPromUrls : urls
+            monitorKubernetesPods = (kubernetesServices.nil?) ? @defaultRsMonitorPods : monitorKubernetesPods
+
             # Write the settings to file, so that they can be set as environment variables
             file = File.open("prom_config_env_var", "w")
             if !file.nil?
@@ -123,6 +141,13 @@ def populateSettingValuesFromConfigMap(parsedConfig)
              checkForTypeArray(fieldDrop, String) &&
              checkForTypeArray(urls, String)
             puts "config::Successfully passed typecheck for config settings for daemonset"
+
+            #if setting is nil assign default values
+            interval = (interval.nil?) ? @defaultDsInterval : interval
+            fieldPass = (fieldPass.nil?) ? @defaultDsFieldPass : fieldPass
+            fieldDrop = (fieldDrop.nil?) ? @defaultDsFieldDrop : fieldDrop
+            urls = (urls.nil?) ? @defaultDsPromUrls : urls
+
             # Write the settings to file, so that they can be set as environment variables
             file = File.open("prom_config_env_var", "w")
             if !file.nil?
