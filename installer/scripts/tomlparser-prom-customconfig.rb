@@ -7,14 +7,14 @@ require_relative "tomlrb"
 @daemonset = "daemonset"
 @configSchemaVersion = ""
 @defaultDsInterval = "1m"
-@defaultDsPromUrls = ""
-@defaultDsFieldPass = ""
-@defaultDsFieldDrop = ""
+@defaultDsPromUrls = [""]
+@defaultDsFieldPass = [""]
+@defaultDsFieldDrop = [""]
 @defaultRsInterval = "1m"
-@defaultRsPromUrls = ""
-@defaultRsFieldPass = ""
-@defaultRsFieldDrop = ""
-@defaultRsK8sServices = ""
+@defaultRsPromUrls = [""]
+@defaultRsFieldPass = [""]
+@defaultRsFieldDrop = [""]
+@defaultRsK8sServices = [""]
 @defaultRsMonitorPods = false
 
 # Use parser to parse the configmap toml file to a ruby structure
