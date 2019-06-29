@@ -126,14 +126,14 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             # Write the settings to file, so that they can be set as environment variables
             file = File.open("prom_config_env_var", "w")
             if !file.nil?
-              file.write("export AZMON_DS_PROM_INTERVAL=\"#{interval}\"\n")
+              file.write("export AZMON_DS_PROM_INTERVAL='\"#{interval}\"'\n")
               file.write("export TELEMETRY_DS_PROM_INTERVAL=\"#{interval}\"\n")
-              file.write("export AZMON_DS_PROM_FIELDPASS=\"#{fieldPass.join("\",\"")}\"\n")
+              file.write("export AZMON_DS_PROM_FIELDPASS='\"#{fieldPass.join("\",\"")}\"'\n")
               #Setting array lengths as environment variables for telemetry purposes
               file.write("export TELEMETRY_DS_PROM_FIELDPASS_LENGTH=\"#{fieldPass.length}\"\n")
-              file.write("export AZMON_DS_PROM_FIELDDROP=\"#{fieldDrop.join("\",\"")}\"\n")
+              file.write("export AZMON_DS_PROM_FIELDDROP='\"#{fieldDrop.join("\",\"")}\"'\n")
               file.write("export TELEMETRY_DS_PROM_FIELDDROP_LENGTH=\"#{fieldDrop.length}\"\n")
-              file.write("export AZMON_DS_PROM_URLS=\"#{urls.join("\",\"")}\"\n")
+              file.write("export AZMON_DS_PROM_URLS='\"#{urls.join("\",\"")}\"'\n")
               file.write("export TELEMETRY_DS_PROM_URLS_LENGTH=\"#{urls.length}\"\n")
               # Close file after writing all environment variables
               file.close
