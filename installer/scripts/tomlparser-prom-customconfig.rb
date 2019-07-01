@@ -1,6 +1,7 @@
 #!/usr/local/bin/ruby
 
 require_relative "tomlrb"
+require "fileutils"
 
 @promConfigMapMountPath = "/etc/config/settings/prometheus-data-collection-settings"
 @replicaset = "replicaset"
@@ -84,47 +85,47 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             urls = (urls.nil?) ? @defaultRsPromUrls : urls
             monitorKubernetesPods = (kubernetesServices.nil?) ? @defaultRsMonitorPods : monitorKubernetesPods
 
-            # Write the settings to file, so that they can be set as environment variables
-            file = File.open("prom_config_env_var", "w")
-            if !file.nil?
-              file.write("export AZMON_RS_PROM_INTERVAL=#{interval}\n")
-              file.write("export TELEMETRY_RS_PROM_INTERVAL=\"#{interval}\"\n")
-              file.write("export AZMON_RS_PROM_FIELDPASS=\"#{fieldPass.join("\",\"")}\"\n")
-              #Setting array lengths as environment variables for telemetry purposes
-              file.write("export TELEMETRY_RS_PROM_FIELDPASS_LENGTH=\"#{fieldPass.length}\"\n")
-              file.write("export AZMON_RS_PROM_FIELDDROP=#{fieldDrop.join("\",\"")}\n")
-              file.write("export TELEMETRY_RS_PROM_FIELDDROP_LENGTH=\"#{fieldDrop.length}\"\n")
-              file.write("export AZMON_RS_PROM_K8S_SERVICES=#{kubernetesServices.join("\",\"")}\n")
-              file.write("export TELEMETRY_RS_PROM_K8S_SERVICES_LENGTH=#{kubernetesServices.length}\n")
-              file.write("export AZMON_RS_PROM_URLS=#{urls.join("\",\"")}\n")
-              file.write("export TELEMETRY_RS_PROM_URLS_LENGTH=#{urls.length}\n")
-              file.write("export AZMON_RS_PROM_MONITOR_PODS=#{monitorKubernetesPods}\n")
-              file.write("export TELEMETRY_RS_PROM_MONITOR_PODS=\"#{monitorKubernetesPods}\"\n")
-              # Close file after writing all environment variables
-              file.close
-              puts "config::Successfully created custom config environment variable file for replicaset"
+            file_name = "/opt/telegraf-test-rs.conf"
+            # Copy the telegraf config file to a temp file to run telegraf in test mode with this config
+            FileUtils.cp("/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf", file_name)
 
-              #Also substitute these values in the test config file for telegraf
-              file_name = "telegraf-test-rs.conf"
-              text = File.read(file_name)
-              new_contents = text.gsub("$AZMON_RS_PROM_INTERVAL", interval)
-              new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDPASS", fieldPass.join("\",\""))
-              new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDDROP", fieldDrop.join("\",\""))
-              new_contents = new_contents.gsub("$AZMON_RS_PROM_URLS", urls.join("\",\""))
-              new_contents = new_contents.gsub("$AZMON_RS_PROM_K8S_SERVICES", kubernetesServices.join("\",\""))
-              new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", (monitorKubernetesPods ? "true" : "false"))
-
-              File.open(file_name, "w") { |file| file.puts new_contents }
-              puts "config::Successfully replaced the settings in test telegraf config file for replicaset"
-            else
-              puts "config::error::Exception while opening file for writing prometheus replicaset config environment variables"
-              puts "****************End Prometheus Config Processing********************"
-            end
+            #Replace the placeholder config values with values from custom config
+            text = File.read(file_name)
+            new_contents = text.gsub("$AZMON_RS_PROM_INTERVAL", interval)
+            new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDPASS", fieldPass.join("\",\""))
+            new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDDROP", fieldDrop.join("\",\""))
+            new_contents = new_contents.gsub("$AZMON_RS_PROM_URLS", urls.join("\",\""))
+            new_contents = new_contents.gsub("$AZMON_RS_PROM_K8S_SERVICES", kubernetesServices.join("\",\""))
+            new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", (monitorKubernetesPods ? "true" : "false"))
+            File.open(file_name, "w") { |file| file.puts new_contents }
+            # puts "****************End Prometheus Config Processing********************"
+            #Set environment variables for telemetry
+            # file = File.open("telemetry_prom_config_env_var", "w")
+            # if !file.nil?
+            #   file.write("export AZMON_RS_PROM_INTERVAL=#{interval}\n")
+            #   file.write("export TELEMETRY_RS_PROM_INTERVAL=\"#{interval}\"\n")
+            #   file.write("export AZMON_RS_PROM_FIELDPASS=\"#{fieldPass.join("\",\"")}\"\n")
+            #   #Setting array lengths as environment variables for telemetry purposes
+            #   file.write("export TELEMETRY_RS_PROM_FIELDPASS_LENGTH=\"#{fieldPass.length}\"\n")
+            #   file.write("export AZMON_RS_PROM_FIELDDROP=#{fieldDrop.join("\",\"")}\n")
+            #   file.write("export TELEMETRY_RS_PROM_FIELDDROP_LENGTH=\"#{fieldDrop.length}\"\n")
+            #   file.write("export AZMON_RS_PROM_K8S_SERVICES=#{kubernetesServices.join("\",\"")}\n")
+            #   file.write("export TELEMETRY_RS_PROM_K8S_SERVICES_LENGTH=#{kubernetesServices.length}\n")
+            #   file.write("export AZMON_RS_PROM_URLS=#{urls.join("\",\"")}\n")
+            #   file.write("export TELEMETRY_RS_PROM_URLS_LENGTH=#{urls.length}\n")
+            #   file.write("export AZMON_RS_PROM_MONITOR_PODS=#{monitorKubernetesPods}\n")
+            #   file.write("export TELEMETRY_RS_PROM_MONITOR_PODS=\"#{monitorKubernetesPods}\"\n")
+            #   # Close file after writing all environment variables
+            #   file.close
+            #   puts "config::Successfully created custom config environment variable file for replicaset"
+            # end
           else
             puts "config::Typecheck failed for prometheus config settings for replicaset, using defaults"
+            # setRsPromDefaults
           end # end of type check condition
         rescue => errorStr
-          puts "config::error::Exception while reading config file for prometheus config for replicaset: #{errorStr}, using defaults"
+          puts "config::error::Exception while parsing config file for prometheus config for replicaset: #{errorStr}, using defaults"
+          setRsPromDefaults
           puts "****************End Prometheus Config Processing********************"
         end
       elsif controller.casecmp(@daemonset) == 0 && !parsedConfig[:prometheus_data_collection_settings][:node].nil?
@@ -148,41 +149,22 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             fieldDrop = (fieldDrop.nil?) ? @defaultDsFieldDrop : fieldDrop
             urls = (urls.nil?) ? @defaultDsPromUrls : urls
 
-            # Write the settings to file, so that they can be set as environment variables
-            file = File.open("prom_config_env_var", "w")
-            if !file.nil?
-              file.write("export AZMON_DS_PROM_INTERVAL=#{interval}\n")
-              file.write("export TELEMETRY_DS_PROM_INTERVAL=\"#{interval}\"\n")
-              file.write("export AZMON_DS_PROM_FIELDPASS=\"#{fieldPass.join("\",\"")}\"\n")
-              #Setting array lengths as environment variables for telemetry purposes
-              file.write("export TELEMETRY_DS_PROM_FIELDPASS_LENGTH=\"#{fieldPass.length}\"\n")
-              file.write("export AZMON_DS_PROM_FIELDDROP=#{fieldDrop.join("\",\"")}\n")
-              file.write("export TELEMETRY_DS_PROM_FIELDDROP_LENGTH=\"#{fieldDrop.length}\"\n")
-              file.write("export AZMON_DS_PROM_URLS=#{urls.join("\",\"")}\n")
-              file.write("export TELEMETRY_DS_PROM_URLS_LENGTH=#{urls.length}\n")
-              # Close file after writing all environment variables
-              file.close
-              puts "config::Successfully created custom config environment variable file for daemonset"
+            file_name = "/opt/telegraf-test.conf"
+            # Copy the telegraf config file to a temp file to run telegraf in test mode with this config
+            FileUtils.cp("/etc/opt/microsoft/docker-cimprov/telegraf.conf", file_name)
 
-              #Also substitute these values in the test config file for telegraf
-              file_name = "telegraf-test.conf"
-              text = File.read(file_name)
-              new_contents = text.gsub("$AZMON_DS_PROM_INTERVAL", interval)
-              new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDPASS", fieldPass.join("\",\""))
-              new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDDROP", fieldDrop.join("\",\""))
-              new_contents = new_contents.gsub("$AZMON_DS_PROM_URLS", urls.join("\",\""))
-              # To write changes to the file, use:
-              File.open(file_name, "w") { |file| file.puts new_contents }
-              puts "config::Successfully replaced the settings in test telegraf config file for daemonset"
-            else
-              puts "config::error::Exception while opening file for writing prometheus daemonset config environment variables"
-              puts "****************End Prometheus Config Processing********************"
-            end
+            #Replace the placeholder config values with values from custom config
+            text = File.read(file_name)
+            new_contents = text.gsub("$AZMON_DS_PROM_INTERVAL", interval)
+            new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDPASS", fieldPass.join("\",\""))
+            new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDDROP", fieldDrop.join("\",\""))
+            new_contents = new_contents.gsub("$AZMON_DS_PROM_URLS", urls.join("\",\""))
+            File.open(file_name, "w") { |file| file.puts new_contents }
           else
             puts "config::Typecheck failed for prometheus config settings for daemonset, using defaults"
           end # end of type check condition
         rescue => errorStr
-          puts "config::error::Exception while reading config file for prometheus config for daemonset: #{errorStr}, using defaults"
+          puts "config::error::Exception while parsing config file for prometheus config for daemonset: #{errorStr}, using defaults"
           puts "****************End Prometheus Config Processing********************"
         end
       end # end of controller type check
