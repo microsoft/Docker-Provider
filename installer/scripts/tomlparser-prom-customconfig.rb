@@ -96,7 +96,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDPASS", ((fieldPass.length > 0) ? ("[\"" + fieldPass.join("\",\"") + "\"]") : "[]"))
             new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDDROP", ((fieldDrop.length > 0) ? ("[\"" + fieldDrop.join("\",\"") + "\"]") : "[]"))
             new_contents = new_contents.gsub("$AZMON_RS_PROM_URLS", ((urls.length > 0) ? ("[\"" + urls.join("\",\"") + "\"]") : "[]"))
-            new_contents = new_contents.gsub("$AZMON_RS_PROM_K8S_SERVICES", ((kubernetesServices.length > 0) ? ("[\"" + kubernetesServices.join("\",\"]") + "\"") : "[]"))
+            new_contents = new_contents.gsub("$AZMON_RS_PROM_K8S_SERVICES", ((kubernetesServices.length > 0) ? ("[\"" + kubernetesServices.join("\",\"") + "\"]") : "[]"))
             new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", (monitorKubernetesPods ? "true" : "false"))
             File.open(file_name, "w") { |file| file.puts new_contents }
             #Set environment variables for telemetry
