@@ -89,7 +89,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             # Copy the telegraf config file to a temp file to run telegraf in test mode with this config
             FileUtils.cp("/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf", file_name)
 
-            fieldPass.length > 0
+            puts "config::Starting to substitute the placeholders in telegraf conf copy file for replicaset"
             #Replace the placeholder config values with values from custom config
             text = File.read(file_name)
             new_contents = text.gsub("$AZMON_RS_PROM_INTERVAL", interval)
@@ -99,6 +99,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             new_contents = new_contents.gsub("$AZMON_RS_PROM_K8S_SERVICES", ((kubernetesServices.length > 0) ? ("[\"" + kubernetesServices.join("\",\"") + "\"]") : "[]"))
             new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", (monitorKubernetesPods ? "true" : "false"))
             File.open(file_name, "w") { |file| file.puts new_contents }
+            puts "config::Successfully substituted the placeholders in telegraf conf file for replicaset"
             #Set environment variables for telemetry
             file = File.open("telemetry_prom_config_env_var", "w")
             if !file.nil?
@@ -115,7 +116,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             end
           else
             puts "config::Typecheck failed for prometheus config settings for replicaset, using defaults"
-            # setRsPromDefaults
           end # end of type check condition
         rescue => errorStr
           puts "config::error::Exception while parsing config file for prometheus config for replicaset: #{errorStr}, using defaults"
@@ -147,6 +147,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             # Copy the telegraf config file to a temp file to run telegraf in test mode with this config
             FileUtils.cp("/etc/opt/microsoft/docker-cimprov/telegraf.conf", file_name)
 
+            puts "config::Starting to substitute the placeholders in telegraf conf copy file for daemonset"
             #Replace the placeholder config values with values from custom config
             text = File.read(file_name)
             new_contents = text.gsub("$AZMON_DS_PROM_INTERVAL", interval)
@@ -154,6 +155,8 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDDROP", ((fieldDrop.length > 0) ? ("[\"" + fieldDrop.join("\",\"") + "\"]") : "[]"))
             new_contents = new_contents.gsub("$AZMON_DS_PROM_URLS", ((urls.length > 0) ? ("[\"" + urls.join("\",\"") + "\"]") : "[]"))
             File.open(file_name, "w") { |file| file.puts new_contents }
+            puts "config::Successfully substituted the placeholders in telegraf conf file for replicaset"
+
             #Set environment variables for telemetry
             file = File.open("telemetry_prom_config_env_var", "w")
             if !file.nil?
