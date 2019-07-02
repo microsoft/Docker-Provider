@@ -93,10 +93,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             #Replace the placeholder config values with values from custom config
             text = File.read(file_name)
             new_contents = text.gsub("$AZMON_RS_PROM_INTERVAL", interval)
-            new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDPASS", ((fieldPass.length > 0) ? ("\"" + fieldPass.join("\",\"") + "\"") : fieldPass))
-            new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDDROP", ((fieldDrop.length > 0) ? ("\"" + fieldDrop.join("\",\"") + "\"") : fieldDrop))
-            new_contents = new_contents.gsub("$AZMON_RS_PROM_URLS", ((urls.length > 0) ? ("\"" + urls.join("\",\"") + "\"") : urls))
-            new_contents = new_contents.gsub("$AZMON_RS_PROM_K8S_SERVICES", ((kubernetesServices.length > 0) ? ("\"" + kubernetesServices.join("\",\"") + "\"") : kubernetesServices))
+            new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDPASS", ((fieldPass.length > 0) ? ("\"" + fieldPass.join("\",\"") + "\"") : "\"$AZMON_RS_PROM_FIELDPASS\""))
+            new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDDROP", ((fieldDrop.length > 0) ? ("\"" + fieldDrop.join("\",\"") + "\"") : "\"$AZMON_RS_PROM_FIELDDROP\""))
+            new_contents = new_contents.gsub("$AZMON_RS_PROM_URLS", ((urls.length > 0) ? ("\"" + urls.join("\",\"") + "\"") : "\"$AZMON_RS_PROM_URLS\""))
+            new_contents = new_contents.gsub("$AZMON_RS_PROM_K8S_SERVICES", ((kubernetesServices.length > 0) ? ("\"" + kubernetesServices.join("\",\"") + "\"") : "\"$AZMON_RS_PROM_K8S_SERVICES\""))
             new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", (monitorKubernetesPods ? "true" : "false"))
             File.open(file_name, "w") { |file| file.puts new_contents }
             # puts "****************End Prometheus Config Processing********************"
@@ -157,9 +157,9 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             #Replace the placeholder config values with values from custom config
             text = File.read(file_name)
             new_contents = text.gsub("$AZMON_DS_PROM_INTERVAL", interval)
-            new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDPASS", ((fieldPass.length > 0) ? ("\"" + fieldPass.join("\",\"") + "\"") : fieldPass))
-            new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDDROP", ((fieldDrop.length > 0) ? ("\"" + fieldDrop.join("\",\"") + "\"") : fieldDrop))
-            new_contents = new_contents.gsub("$AZMON_DS_PROM_URLS", ((urls.length > 0) ? ("\"" + urls.join("\",\"") + "\"") : urls))
+            new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDPASS", ((fieldPass.length > 0) ? ("\"" + fieldPass.join("\",\"") + "\"") : "\"$AZMON_DS_PROM_FIELDPASS\""))
+            new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDDROP", ((fieldDrop.length > 0) ? ("\"" + fieldDrop.join("\",\"") + "\"") : "\"$AZMON_DS_PROM_FIELDDROP\""))
+            new_contents = new_contents.gsub("$AZMON_DS_PROM_URLS", ((urls.length > 0) ? ("\"" + urls.join("\",\"") + "\"") : "\"$AZMON_DS_PROM_URLS\""))
             File.open(file_name, "w") { |file| file.puts new_contents }
           else
             puts "config::Typecheck failed for prometheus config settings for daemonset, using defaults"
