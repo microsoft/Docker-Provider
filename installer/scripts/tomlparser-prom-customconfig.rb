@@ -99,27 +99,20 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             new_contents = new_contents.gsub("$AZMON_RS_PROM_K8S_SERVICES", ((kubernetesServices.length > 0) ? ("\"" + kubernetesServices.join("\",\"") + "\"") : "\"$AZMON_RS_PROM_K8S_SERVICES\""))
             new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", (monitorKubernetesPods ? "true" : "false"))
             File.open(file_name, "w") { |file| file.puts new_contents }
-            # puts "****************End Prometheus Config Processing********************"
             #Set environment variables for telemetry
-            # file = File.open("telemetry_prom_config_env_var", "w")
-            # if !file.nil?
-            #   file.write("export AZMON_RS_PROM_INTERVAL=#{interval}\n")
-            #   file.write("export TELEMETRY_RS_PROM_INTERVAL=\"#{interval}\"\n")
-            #   file.write("export AZMON_RS_PROM_FIELDPASS=\"#{fieldPass.join("\",\"")}\"\n")
-            #   #Setting array lengths as environment variables for telemetry purposes
-            #   file.write("export TELEMETRY_RS_PROM_FIELDPASS_LENGTH=\"#{fieldPass.length}\"\n")
-            #   file.write("export AZMON_RS_PROM_FIELDDROP=#{fieldDrop.join("\",\"")}\n")
-            #   file.write("export TELEMETRY_RS_PROM_FIELDDROP_LENGTH=\"#{fieldDrop.length}\"\n")
-            #   file.write("export AZMON_RS_PROM_K8S_SERVICES=#{kubernetesServices.join("\",\"")}\n")
-            #   file.write("export TELEMETRY_RS_PROM_K8S_SERVICES_LENGTH=#{kubernetesServices.length}\n")
-            #   file.write("export AZMON_RS_PROM_URLS=#{urls.join("\",\"")}\n")
-            #   file.write("export TELEMETRY_RS_PROM_URLS_LENGTH=#{urls.length}\n")
-            #   file.write("export AZMON_RS_PROM_MONITOR_PODS=#{monitorKubernetesPods}\n")
-            #   file.write("export TELEMETRY_RS_PROM_MONITOR_PODS=\"#{monitorKubernetesPods}\"\n")
-            #   # Close file after writing all environment variables
-            #   file.close
-            #   puts "config::Successfully created custom config environment variable file for replicaset"
-            # end
+            file = File.open("telemetry_prom_config_env_var", "w")
+            if !file.nil?
+              file.write("export TELEMETRY_RS_PROM_INTERVAL=\"#{interval}\"\n")
+              #Setting array lengths as environment variables for telemetry purposes
+              file.write("export TELEMETRY_RS_PROM_FIELDPASS_LENGTH=\"#{fieldPass.length}\"\n")
+              file.write("export TELEMETRY_RS_PROM_FIELDDROP_LENGTH=\"#{fieldDrop.length}\"\n")
+              file.write("export TELEMETRY_RS_PROM_K8S_SERVICES_LENGTH=#{kubernetesServices.length}\n")
+              file.write("export TELEMETRY_RS_PROM_URLS_LENGTH=#{urls.length}\n")
+              file.write("export TELEMETRY_RS_PROM_MONITOR_PODS=\"#{monitorKubernetesPods}\"\n")
+              # Close file after writing all environment variables
+              file.close
+              puts "config::Successfully created telemetry file for replicaset"
+            end
           else
             puts "config::Typecheck failed for prometheus config settings for replicaset, using defaults"
             # setRsPromDefaults
@@ -161,6 +154,18 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDDROP", ((fieldDrop.length > 0) ? ("\"" + fieldDrop.join("\",\"") + "\"") : "\"$AZMON_DS_PROM_FIELDDROP\""))
             new_contents = new_contents.gsub("$AZMON_DS_PROM_URLS", ((urls.length > 0) ? ("\"" + urls.join("\",\"") + "\"") : "\"$AZMON_DS_PROM_URLS\""))
             File.open(file_name, "w") { |file| file.puts new_contents }
+            #Set environment variables for telemetry
+            file = File.open("telemetry_prom_config_env_var", "w")
+            if !file.nil?
+              file.write("export TELEMETRY_DS_PROM_INTERVAL=\"#{interval}\"\n")
+              #Setting array lengths as environment variables for telemetry purposes
+              file.write("export TELEMETRY_DS_PROM_FIELDPASS_LENGTH=\"#{fieldPass.length}\"\n")
+              file.write("export TELEMETRY_DS_PROM_FIELDDROP_LENGTH=\"#{fieldDrop.length}\"\n")
+              file.write("export TELEMETRY_DS_PROM_URLS_LENGTH=#{urls.length}\n")
+              # Close file after writing all environment variables
+              file.close
+              puts "config::Successfully created telemetry file for daemonset"
+            end
           else
             puts "config::Typecheck failed for prometheus config settings for daemonset, using defaults"
           end # end of type check condition
