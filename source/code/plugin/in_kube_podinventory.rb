@@ -317,6 +317,19 @@ module Fluent
                   record["ContainerStatusReason"] = containerStatus[containerStatus.keys[0]]["reason"]
                 end
               end
+
+              # Record the last state of the container. This may have information on why a container was killed.
+              if container["lastState"].keys.length > 0
+                lastStateName = container["lastState"].keys[0]
+                record["ContainerLastStatus"] = Hash.new
+                record["ContainerLastStatus"]["lastState"] = lastStateName  # get the name of the last state (ex: terminated)
+                record["ContainerLastStatus"]["reason"] = container["lastState"][lastStateName]["reason"]  # (ex: OOMKilled)
+                record["ContainerLastStatus"]["startedAt"] = container["lastState"][lastStateName]["startedAt"]  # (ex: 2019-07-02T14:58:51Z)
+                record["ContainerLastStatus"]["finishedAt"] = container["lastState"][lastStateName]["finishedAt"]  # (ex: 2019-07-02T14:58:52Z)
+              else
+                record["ContainerLastStatus"] = container["lastState"]  # this is an empty json hash (hashmap)
+              end
+
               podRestartCount += containerRestartCount
               records.push(record.dup)
 
