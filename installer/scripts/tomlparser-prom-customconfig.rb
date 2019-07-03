@@ -155,7 +155,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDDROP", ((fieldDrop.length > 0) ? ("[\"" + fieldDrop.join("\",\"") + "\"]") : "[]"))
             new_contents = new_contents.gsub("$AZMON_DS_PROM_URLS", ((urls.length > 0) ? ("[\"" + urls.join("\",\"") + "\"]") : "[]"))
             File.open(file_name, "w") { |file| file.puts new_contents }
-            puts "config::Successfully substituted the placeholders in telegraf conf file for replicaset"
+            puts "config::Successfully substituted the placeholders in telegraf conf file for daemonset"
 
             #Set environment variables for telemetry
             file = File.open("telemetry_prom_config_env_var", "w")
