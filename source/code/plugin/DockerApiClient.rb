@@ -112,9 +112,11 @@ class DockerApiClient
       atLocation = nil
       begin
         if !digestValue.empty?
-          # digest is of the format - repo/image@sha256:imageid
+          # digest is of the format - repo@sha256:imageid
           atLocation = digestValue.index("@")
-          result[3] = digestValue[(atLocation + 1)..-1]
+          if !atLocation.nil?
+            result[3] = digestValue[(atLocation + 1)..-1]
+          end
         end
 
         if !tagValue.empty?
@@ -133,11 +135,9 @@ class DockerApiClient
             result[2] = tagValue[(colonLocation + 1)..-1]
           end
         elsif !digestValue.empty?
-          # Getting repo and image information from repodigests when repotags is empty
-          lastSlashLocation = digestValue.rindex("/")
-          result[0] = digestValue[0..(lastSlashLocation - 1)]
+          # Getting repo information from repodigests when repotags is empty
           if !atLocation.nil?
-            result[1] = digestValue[(lastSlashLocation + 1)..(atLocation - 1)]
+            result[0] = digestValue[(atLocation + 1)..-1]
           end
         end
       rescue => errorStr
