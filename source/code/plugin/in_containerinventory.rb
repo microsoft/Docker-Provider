@@ -170,12 +170,13 @@ module Fluent
           end
           imageValue = container["Image"]
           if !imageValue.nil? && !imageValue.empty?
-            containerInstance["ImageId"] = imageValue
             repoImageTagArray = nameMap[imageValue]
             if nameMap.has_key? imageValue
               containerInstance["Repository"] = repoImageTagArray[0]
               containerInstance["Image"] = repoImageTagArray[1]
               containerInstance["ImageTag"] = repoImageTagArray[2]
+              # Setting the image id to the id in the remote repository
+              containerInstance["ImageId"] = repoImageTagArray[3]
             end
           end
           obtainContainerConfig(containerInstance, container, clusterCollectEnvironmentVar)
@@ -200,7 +201,7 @@ module Fluent
         if !containerIds.empty?
           eventStream = MultiEventStream.new
           nameMap = DockerApiClient.getImageIdMap
-          clusterCollectEnvironmentVar = ENV['AZMON_CLUSTER_COLLECT_ENV_VAR']
+          clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
           if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
             $log.warn("Environment Variable collection disabled for cluster")
           end
