@@ -137,7 +137,7 @@ class DockerApiClient
         elsif !digestValue.empty?
           # Getting repo information from repodigests when repotags is empty
           if !atLocation.nil?
-            result[0] = digestValue[(atLocation + 1)..-1]
+            result[0] = digestValue[0..(atLocation - 1)]
           end
         end
       rescue => errorStr
