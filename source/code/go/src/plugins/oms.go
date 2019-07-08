@@ -191,7 +191,6 @@ func updateContainerImageNameMaps() {
 		if err != nil {
 			message := fmt.Sprintf("Error getting pods %s\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())
 			Log(message)
-			SendException(message)
 			continue
 		}
 
@@ -382,7 +381,6 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	if err != nil {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending %v metrics. duration:%v err:%q \n", len(laMetrics), elapsed, err.Error())
 		Log(message)
-		SendException(message)
 		UpdateNumTelegrafMetricsSentTelemetry(0, 1)
 		return output.FLB_RETRY
 	}
