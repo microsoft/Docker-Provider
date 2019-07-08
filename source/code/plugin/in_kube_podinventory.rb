@@ -327,7 +327,7 @@ module Fluent
                 record["ContainerLastStatus"]["startedAt"] = container["lastState"][lastStateName]["startedAt"]  # (ex: 2019-07-02T14:58:51Z)
                 record["ContainerLastStatus"]["finishedAt"] = container["lastState"][lastStateName]["finishedAt"]  # (ex: 2019-07-02T14:58:52Z)
               else
-                record["ContainerLastStatus"] = container["lastState"]  # this is an empty json hash (hashmap)
+                record["ContainerLastStatus"] = container["lastState"]  # this is an empty hash
               end
 
               podRestartCount += containerRestartCount
