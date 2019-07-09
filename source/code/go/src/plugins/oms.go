@@ -191,7 +191,6 @@ func updateContainerImageNameMaps() {
 		if err != nil {
 			message := fmt.Sprintf("Error getting pods %s\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())
 			Log(message)
-			SendException(message)
 			continue
 		}
 
@@ -224,7 +223,7 @@ func populateExcludedStdoutNamespaces() {
 	if (strings.Compare(collectStdoutLogs, "true") == 0) && (len(excludeList) > 0) {
 		stdoutNSExcludeList = strings.Split(excludeList, ",")
 		for _, ns := range stdoutNSExcludeList {
-			Log ("Excluding namespace %s for stdout log collection", ns)
+			Log("Excluding namespace %s for stdout log collection", ns)
 			StdoutIgnoreNsSet[strings.TrimSpace(ns)] = true
 		}
 	}
@@ -237,7 +236,7 @@ func populateExcludedStderrNamespaces() {
 	if (strings.Compare(collectStderrLogs, "true") == 0) && (len(excludeList) > 0) {
 		stderrNSExcludeList = strings.Split(excludeList, ",")
 		for _, ns := range stderrNSExcludeList {
-			Log ("Excluding namespace %s for stderr log collection", ns)
+			Log("Excluding namespace %s for stderr log collection", ns)
 			StderrIgnoreNsSet[strings.TrimSpace(ns)] = true
 		}
 	}
@@ -382,7 +381,6 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	if err != nil {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending %v metrics. duration:%v err:%q \n", len(laMetrics), elapsed, err.Error())
 		Log(message)
-		SendException(message)
 		UpdateNumTelegrafMetricsSentTelemetry(0, 1)
 		return output.FLB_RETRY
 	}
@@ -423,7 +421,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	nameIDMap := make(map[string]string)
 
 	DataUpdateMutex.Lock()
-	
+
 	for k, v := range ImageIDMap {
 		imageIDMap[k] = v
 	}
@@ -515,7 +513,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		if err != nil {
 			message := fmt.Sprintf("Error when sending request %s \n", err.Error())
 			Log(message)
-			SendException(message)
+			// Commenting this out for now. TODO - Add better telemetry for ods errors using aggregation
+			//SendException(message)
 			Log("Failed to flush %d records after %s", len(dataItems), elapsed)
 
 			return output.FLB_RETRY
@@ -559,7 +558,7 @@ func GetContainerIDK8sNamespaceFromFileName(filename string) (string, string) {
 
 	start := strings.LastIndex(filename, "-")
 	end := strings.LastIndex(filename, ".")
-	
+
 	if start >= end || start == -1 || end == -1 {
 		id = ""
 	} else {
@@ -639,7 +638,6 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	Log("containerInventoryRefreshInterval = %d \n", containerInventoryRefreshInterval)
 	ContainerImageNameRefreshTicker = time.NewTicker(time.Second * time.Duration(containerInventoryRefreshInterval))
 
-
 	// Populate Computer field
 	containerHostName, err := ioutil.ReadFile(pluginConfig["container_host_file_path"])
 	if err != nil {
@@ -678,11 +676,11 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	CreateHTTPClient()
 
-  	if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
+	if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
 		populateExcludedStdoutNamespaces()
 		populateExcludedStderrNamespaces()
-		go updateContainerImageNameMaps()		
-  	} else {
+		go updateContainerImageNameMaps()
+	} else {
 		Log("Running in replicaset. Disabling container enrichment caching & updates \n")
 	}
 }

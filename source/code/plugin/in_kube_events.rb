@@ -2,27 +2,25 @@
 # frozen_string_literal: true
 
 module Fluent
-
   class Kube_Event_Input < Input
-    Plugin.register_input('kubeevents', self)
+    Plugin.register_input("kubeevents", self)
 
     @@KubeEventsStateFile = "/var/opt/microsoft/docker-cimprov/state/KubeEventQueryState.yaml"
 
     def initialize
       super
-      require 'json'
+      require "json"
 
-      require_relative 'KubernetesApiClient'
-      require_relative 'oms_common'
-      require_relative 'omslog'
-      require_relative 'ApplicationInsightsUtility'
-
+      require_relative "KubernetesApiClient"
+      require_relative "oms_common"
+      require_relative "omslog"
+      require_relative "ApplicationInsightsUtility"
     end
 
-    config_param :run_interval, :time, :default => '1m'
+    config_param :run_interval, :time, :default => "1m"
     config_param :tag, :string, :default => "oms.containerinsights.KubeEvents"
 
-    def configure (conf)
+    def configure(conf)
       super
     end
 
@@ -46,63 +44,62 @@ module Fluent
     end
 
     def enumerate(eventList = nil)
-        currentTime = Time.now
-        emitTime = currentTime.to_f
-        batchTime = currentTime.utc.iso8601
-          if eventList.nil?
-            $log.info("in_kube_events::enumerate : Getting events from Kube API @ #{Time.now.utc.iso8601}")
-            events = JSON.parse(KubernetesApiClient.getKubeResourceInfo('events').body)
-            $log.info("in_kube_events::enumerate : Done getting events from Kube API @ #{Time.now.utc.iso8601}")
-          else
-            events = eventList
+      currentTime = Time.now
+      emitTime = currentTime.to_f
+      batchTime = currentTime.utc.iso8601
+      if eventList.nil?
+        $log.info("in_kube_events::enumerate : Getting events from Kube API @ #{Time.now.utc.iso8601}")
+        events = JSON.parse(KubernetesApiClient.getKubeResourceInfo("events").body)
+        $log.info("in_kube_events::enumerate : Done getting events from Kube API @ #{Time.now.utc.iso8601}")
+      else
+        events = eventList
+      end
+      eventQueryState = getEventQueryState
+      newEventQueryState = []
+      begin
+        if (!events.empty? && !events["items"].nil?)
+          eventStream = MultiEventStream.new
+          events["items"].each do |items|
+            record = {}
+            #<BUGBUG> - Not sure if ingestion has the below mapping for this custom type. Fix it as part of fixed type conversion
+            record["CollectionTime"] = batchTime #This is the time that is mapped to become TimeGenerated
+            eventId = items["metadata"]["uid"] + "/" + items["count"].to_s
+            newEventQueryState.push(eventId)
+            if !eventQueryState.empty? && eventQueryState.include?(eventId)
+              next
+            end
+            record["ObjectKind"] = items["involvedObject"]["kind"]
+            record["Namespace"] = items["involvedObject"]["namespace"]
+            record["Name"] = items["involvedObject"]["name"]
+            record["Reason"] = items["reason"]
+            record["Message"] = items["message"]
+            record["Type"] = items["type"]
+            record["TimeGenerated"] = items["metadata"]["creationTimestamp"]
+            record["SourceComponent"] = items["source"]["component"]
+            record["FirstSeen"] = items["firstTimestamp"]
+            record["LastSeen"] = items["lastTimestamp"]
+            record["Count"] = items["count"]
+            if items["source"].key?("host")
+              record["Computer"] = items["source"]["host"]
+            else
+              record["Computer"] = (OMS::Common.get_hostname)
+            end
+            record["ClusterName"] = KubernetesApiClient.getClusterName
+            record["ClusterId"] = KubernetesApiClient.getClusterId
+            wrapper = {
+              "DataType" => "KUBE_EVENTS_BLOB",
+              "IPName" => "ContainerInsights",
+              "DataItems" => [record.each { |k, v| record[k] = v }],
+            }
+            eventStream.add(emitTime, wrapper) if wrapper
           end
-          eventQueryState = getEventQueryState
-          newEventQueryState = []
-          begin
-            if(!events.empty?)
-              eventStream = MultiEventStream.new
-              events['items'].each do |items|
-                record = {}
-                #<BUGBUG> - Not sure if ingestion has the below mapping for this custom type. Fix it as part of fixed type conversion
-                record['CollectionTime'] = batchTime #This is the time that is mapped to become TimeGenerated
-                eventId = items['metadata']['uid'] + "/" + items['count'].to_s  
-                newEventQueryState.push(eventId)
-                if !eventQueryState.empty? && eventQueryState.include?(eventId)
-                  next
-                end  
-                record['ObjectKind']= items['involvedObject']['kind']
-                record['Namespace'] = items['involvedObject']['namespace']
-                record['Name'] = items['involvedObject']['name']
-                record['Reason'] = items['reason']
-                record['Message'] = items['message']
-                record['Type'] = items['type']
-                record['TimeGenerated'] = items['metadata']['creationTimestamp']
-                record['SourceComponent'] = items['source']['component']
-                record['FirstSeen'] = items['firstTimestamp']
-                record['LastSeen'] = items['lastTimestamp']
-                record['Count'] = items['count']
-                if items['source'].key?('host')
-                        record['Computer'] = items['source']['host']
-                else
-                        record['Computer'] = (OMS::Common.get_hostname)
-                end
-                record['ClusterName'] = KubernetesApiClient.getClusterName
-                record['ClusterId'] = KubernetesApiClient.getClusterId
-                wrapper = {
-                  "DataType"=>"KUBE_EVENTS_BLOB",
-                  "IPName"=>"ContainerInsights",
-                  "DataItems"=>[record.each{|k,v| record[k]=v}]
-                }
-                eventStream.add(emitTime, wrapper) if wrapper
-              end
-              router.emit_stream(@tag, eventStream) if eventStream
-            end  
-            writeEventQueryState(newEventQueryState)
-          rescue  => errorStr
-            $log.warn line.dump, error: errorStr.to_s
-            $log.debug_backtrace(errorStr.backtrace)
-            ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
-          end   
+          router.emit_stream(@tag, eventStream) if eventStream
+        end
+        writeEventQueryState(newEventQueryState)
+      rescue => errorStr
+        $log.debug_backtrace(errorStr.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      end
     end
 
     def run_periodic
@@ -135,7 +132,7 @@ module Fluent
             eventQueryState.push(line.chomp) #puts will append newline which needs to be removed
           end
         end
-      rescue  => errorStr
+      rescue => errorStr
         $log.warn $log.warn line.dump, error: errorStr.to_s
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
@@ -145,20 +142,17 @@ module Fluent
 
     def writeEventQueryState(eventQueryState)
       begin
-        if(!eventQueryState.nil? && !eventQueryState.empty?)
+        if (!eventQueryState.nil? && !eventQueryState.empty?)
           # No need to close file handle (f) due to block scope
           File.open(@@KubeEventsStateFile, "w") do |f|
             f.puts(eventQueryState)
           end
         end
-      rescue  => errorStr
+      rescue => errorStr
         $log.warn $log.warn line.dump, error: errorStr.to_s
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
-
   end # Kube_Event_Input
-
 end # module
-

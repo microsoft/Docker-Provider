@@ -152,8 +152,10 @@ module Fluent
                 containerEnvArray.each do |envVarHash|
                   envName = envVarHash["name"]
                   envValue = envVarHash["value"]
-                  envArrayElement = envName + "=" + envValue
-                  envVarsArray.push(envArrayElement)
+                  if !envName.nil? && !envValue.nil?
+                    envArrayElement = envName + "=" + envValue
+                    envVarsArray.push(envArrayElement)
+                  end
                 end
               end
               # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
@@ -201,7 +203,9 @@ module Fluent
             # instead of the actual poduid. Since this uid is not being surface into the UX
             # its ok to use this.
             # Use kubernetes.io/config.hash to be able to correlate with cadvisor data
-            podUid = items["metadata"]["annotations"]["kubernetes.io/config.hash"]
+            if !items["metadata"]["annotations"].nil?
+              podUid = items["metadata"]["annotations"]["kubernetes.io/config.hash"]
+            end
           else
             podUid = items["metadata"]["uid"]
           end
@@ -287,7 +291,9 @@ module Fluent
                 record["ContainerID"] = ""
               end
               #keeping this as <PodUid/container_name> which is same as InstanceName in perf table
-              record["ContainerName"] = podUid + "/" + container["name"]
+              if !podUid.nil? && !container["name"].nil?
+                record["ContainerName"] = podUid + "/" + container["name"]
+              end
               #Pod restart count is a sumtotal of restart counts of individual containers
               #within the pod. The restart count of a container is maintained by kubernetes
               #itself in the form of a container label.

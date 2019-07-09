@@ -110,8 +110,6 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/opt/microsoft/docker-cimprov/out_oms.conf;			            installer/conf/out_oms.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/telegraf.conf;			        installer/conf/telegraf.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/telegraf-rs.conf;			        installer/conf/telegraf-rs.conf;                    644; root; root
-/opt/telegraf-test.conf;			                                installer/conf/telegraf-test.conf;                    644; root; root
-/opt/telegraf-test-rs.conf;			                                installer/conf/telegraf-test-rs.conf;                    644; root; root
 /opt/microsoft/docker-cimprov/bin/TelegrafTCPErrorTelemetry.sh;	    installer/scripts/TelegrafTCPErrorTelemetry.sh;      755; root; root
 /opt/livenessprobe.sh;                                              installer/scripts/livenessprobe.sh;      755; root; root
 /opt/tomlparser.rb;                                                 installer/scripts/tomlparser.rb;     755; root; root 

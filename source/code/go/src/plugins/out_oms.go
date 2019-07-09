@@ -64,8 +64,6 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 		return PushToAppInsightsTraces(records, appinsights.Information, incomingTag)
 	} else if strings.Contains(incomingTag, "oms.container.perf.telegraf") {
 		return PostTelegrafMetricsToLA(records)
-	} else if strings.Contains(incomingTag, "oms.container.log.telegraf.err") {
-		return PushToAppInsightsTraces(records, appinsights.Error, incomingTag)
 	}
 
 	return PostDataHelper(records)
