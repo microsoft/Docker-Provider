@@ -73,7 +73,7 @@ module Fluent
           router.emit_stream(@tag, eventStream) if eventStream
         end
       rescue => errorStr
-        $log.debug_backtrace(e.backtrace)
+        $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end

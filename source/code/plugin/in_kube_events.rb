@@ -57,7 +57,7 @@ module Fluent
       eventQueryState = getEventQueryState
       newEventQueryState = []
       begin
-        if (!events.empty?)
+        if (!events.empty? && !events["items"].nil?)
           eventStream = MultiEventStream.new
           events["items"].each do |items|
             record = {}
