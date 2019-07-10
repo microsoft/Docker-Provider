@@ -472,6 +472,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			Name:                  stringMap["Name"],
 		}
 
+		FlushedRecordsSize += float64(len(stringMap["LogEntry"]))
+
 		dataItems = append(dataItems, dataItem)
 		loggedTime, e := time.Parse(time.RFC3339, dataItem.LogEntryTimeStamp)
 		if e != nil {

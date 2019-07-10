@@ -16,6 +16,8 @@ import (
 var (
 	// FlushedRecordsCount indicates the number of flushed log records in the current period
 	FlushedRecordsCount float64
+	// FlushedRecordsSize indicates the size of the flushed records in the current period
+	FlushedRecordsSize float64
 	// FlushedRecordsTimeTaken indicates the cumulative time taken to flush the records for the current period
 	FlushedRecordsTimeTaken float64
 	// This is telemetry for how old/latent logs we are processing in milliseconds (max over a period of time)
@@ -35,16 +37,17 @@ var (
 )
 
 const (
-	clusterTypeACS                      = "ACS"
-	clusterTypeAKS                      = "AKS"
-	envAKSResourceID                    = "AKS_RESOURCE_ID"
-	envACSResourceName                  = "ACS_RESOURCE_NAME"
-	envAppInsightsAuth                  = "APPLICATIONINSIGHTS_AUTH"
-	metricNameAvgFlushRate              = "ContainerLogAvgRecordsFlushedPerSec"
-	metricNameAvgLogGenerationRate      = "ContainerLogsGeneratedPerSec"
-	metricNameAgentLogProcessingMaxLatencyMs = "ContainerLogsAgentSideLatencyMs"
+	clusterTypeACS                                    = "ACS"
+	clusterTypeAKS                                    = "AKS"
+	envAKSResourceID                                  = "AKS_RESOURCE_ID"
+	envACSResourceName                                = "ACS_RESOURCE_NAME"
+	envAppInsightsAuth                                = "APPLICATIONINSIGHTS_AUTH"
+	metricNameAvgFlushRate                            = "ContainerLogAvgRecordsFlushedPerSec"
+	metricNameAvgLogGenerationRate                    = "ContainerLogsGeneratedPerSec"
+	metricNameLogSize                                 = "ContainerLogsSize"
+	metricNameAgentLogProcessingMaxLatencyMs          = "ContainerLogsAgentSideLatencyMs"
 	metricNameNumberofTelegrafMetricsSentSuccessfully = "TelegrafMetricsSentCount"
-	metricNameNumberofSendErrorsTelegrafMetrics = "TelegrafMetricsSendErrorCount"
+	metricNameNumberofSendErrorsTelegrafMetrics       = "TelegrafMetricsSendErrorCount"
 
 	defaultTelemetryPushIntervalSeconds = 300
 
@@ -71,11 +74,13 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		ContainerLogTelemetryMutex.Lock()
 		flushRate := FlushedRecordsCount / FlushedRecordsTimeTaken * 1000
 		logRate := FlushedRecordsCount / float64(elapsed/time.Second)
+		logSizeRate := FlushedRecordsSize / float64(elapsed/time.Second)
 		telegrafMetricsSentCount := TelegrafMetricsSentCount
 		telegrafMetricsSendErrorCount := TelegrafMetricsSendErrorCount
 		TelegrafMetricsSentCount = 0.0
 		TelegrafMetricsSendErrorCount = 0.0
 		FlushedRecordsCount = 0.0
+		FlushedRecordsSize = 0.0
 		FlushedRecordsTimeTaken = 0.0
 		logLatencyMs := AgentLogProcessingMaxLatencyMs
 		logLatencyMsContainer := AgentLogProcessingMaxLatencyMsContainer
@@ -88,7 +93,10 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 			flushRateMetric := appinsights.NewMetricTelemetry(metricNameAvgFlushRate, flushRate)
 			TelemetryClient.Track(flushRateMetric)
 			logRateMetric := appinsights.NewMetricTelemetry(metricNameAvgLogGenerationRate, logRate)
+			logSizeMetric := appinsights.NewMetricTelemetry(metricNameLogSize, logSizeRate)
 			TelemetryClient.Track(logRateMetric)
+			Log("Log Size Rate: %f\n", logSizeRate)
+			TelemetryClient.Track(logSizeMetric)
 			logLatencyMetric := appinsights.NewMetricTelemetry(metricNameAgentLogProcessingMaxLatencyMs, logLatencyMs)
 			logLatencyMetric.Properties["Container"] = logLatencyMsContainer
 			TelemetryClient.Track(logLatencyMetric)
