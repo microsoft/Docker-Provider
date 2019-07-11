@@ -333,7 +333,11 @@ class KubernetesApiClient
             # instead of the actual poduid. Since this uid is not being surface into the UX
             # its ok to use this.
             # Use kubernetes.io/config.hash to be able to correlate with cadvisor data
-            podUid = pod["metadata"]["annotations"]["kubernetes.io/config.hash"]
+            if pod["metadata"]["annotations"].nil?
+              next
+            else
+              podUid = pod["metadata"]["annotations"]["kubernetes.io/config.hash"]
+            end
           else
             podUid = pod["metadata"]["uid"]
           end
