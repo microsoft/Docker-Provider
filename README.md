@@ -10,7 +10,20 @@ additional questions or comments.
 ## Release History
 
 Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate the agent build dates (not release dates)
-  
+
+### 07/09/2019 - 
+##### Version microsoft/oms:ciprod07092019 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod07092019
+- Prometheus custom metric collection using config map allowing omsagent to
+  * Scrape metrics from user defined urls
+  * Scrape kubernetes pods with prometheus annotations
+  * Scrape metrics from kubernetes services
+- Exception fixes in daemonset and replicaset
+- Container Inventory plugin changes to get image id from the repo digest and populate repository for image with
+only image digest
+- Remove telegraf errors from being sent to ApplicationInsights and instead log it to stderr to provide visibility for
+customers
+- Bug fixes for region names with spaces being processed incorrectly while sending mdm metrics
+- Add log size in telemetry
 ### 06/14/2019 - 
 ##### Version microsoft/oms:ciprod06142019 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod06142019
 - MDM pod metrics bug fixes - MDM rejecting pod metrics due to nodename or controllername dimensions being empty
