@@ -203,11 +203,7 @@ module Fluent
             # instead of the actual poduid. Since this uid is not being surface into the UX
             # its ok to use this.
             # Use kubernetes.io/config.hash to be able to correlate with cadvisor data
-            if items["metadata"]["annotations"].nil?
-              next
-            else
-              podUid = items["metadata"]["annotations"]["kubernetes.io/config.hash"]
-            end
+            podUid = items["metadata"]["annotations"]["kubernetes.io/config.hash"]
           else
             podUid = items["metadata"]["uid"]
           end
@@ -293,11 +289,7 @@ module Fluent
                 record["ContainerID"] = ""
               end
               #keeping this as <PodUid/container_name> which is same as InstanceName in perf table
-              if podUid.nil? || container["name"].nil?
-                next
-              else
-                record["ContainerName"] = podUid + "/" + container["name"]
-              end
+              record["ContainerName"] = podUid + "/" + container["name"]
               #Pod restart count is a sumtotal of restart counts of individual containers
               #within the pod. The restart count of a container is maintained by kubernetes
               #itself in the form of a container label.
