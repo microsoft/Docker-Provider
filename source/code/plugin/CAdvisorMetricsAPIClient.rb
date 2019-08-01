@@ -201,32 +201,32 @@ class CAdvisorMetricsAPIClient
                 # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
                 # cadvisor does not have pod/container metadata. so would need more work to cache as pv & use
                 if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent") && metricNametoReturn.eql?("cpuUsageNanoCores"))
-                  if (timeDifferenceInMinutes >= 10)
-                    telemetryProps = {}
-                    telemetryProps["PodName"] = podName
-                    telemetryProps["ContainerName"] = containerName
-                    telemetryProps["Computer"] = hostName
-                    #telemetry about log collections settings
-                    if (File.file?(@configMapMountPath))
-                      telemetryProps["clustercustomsettings"] = true
-                      telemetryProps["clusterenvvars"] = @clusterEnvVarCollectionEnabled
-                      telemetryProps["clusterstderrlogs"] = @clusterStdErrLogCollectionEnabled
-                      telemetryProps["clusterstdoutlogs"] = @clusterStdOutLogCollectionEnabled
-                      telemetryProps["clusterlogtailexcludepath"] = @clusterLogTailExcludPath
-                      telemetryProps["clusterLogTailPath"] = @clusterLogTailPath
-                      telemetryProps["clusterAgentSchemaVersion"] = @clusterAgentSchemaVersion
-                    end
-                    #telemetry about prometheus metric collections settings for daemonset
-                    if (File.file?(@promConfigMountPath))
-                      # telemetryProps["rsPromInt"] = @rsPromInterval
-                      telemetryProps["promData"] = true
-                      telemetryProps["dsPromInt"] = @dsPromInterval
-                      telemetryProps["dsPromFPC"] = @dsPromFieldPassCount
-                      telemetryProps["dsPromFDC"] = @dsPromFieldDropCount
-                      telemetryProps["dsPromUrl"] = @dsPromUrlCount
-                    end
-                    ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
+                  # if (timeDifferenceInMinutes >= 10)
+                  telemetryProps = {}
+                  telemetryProps["PodName"] = podName
+                  telemetryProps["ContainerName"] = containerName
+                  telemetryProps["Computer"] = hostName
+                  #telemetry about log collections settings
+                  if (File.file?(@configMapMountPath))
+                    telemetryProps["clustercustomsettings"] = true
+                    telemetryProps["clusterenvvars"] = @clusterEnvVarCollectionEnabled
+                    telemetryProps["clusterstderrlogs"] = @clusterStdErrLogCollectionEnabled
+                    telemetryProps["clusterstdoutlogs"] = @clusterStdOutLogCollectionEnabled
+                    telemetryProps["clusterlogtailexcludepath"] = @clusterLogTailExcludPath
+                    telemetryProps["clusterLogTailPath"] = @clusterLogTailPath
+                    telemetryProps["clusterAgentSchemaVersion"] = @clusterAgentSchemaVersion
                   end
+                  #telemetry about prometheus metric collections settings for daemonset
+                  if (File.file?(@promConfigMountPath))
+                    # telemetryProps["rsPromInt"] = @rsPromInterval
+                    telemetryProps["promData"] = true
+                    telemetryProps["dsPromInt"] = @dsPromInterval
+                    telemetryProps["dsPromFPC"] = @dsPromFieldPassCount
+                    telemetryProps["dsPromFDC"] = @dsPromFieldDropCount
+                    telemetryProps["dsPromUrl"] = @dsPromUrlCount
+                  end
+                  ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
+                  # end
                 end
               rescue => errorStr
                 $log.warn("Exception while generating Telemetry from getcontainerCpuMetricItems failed: #{errorStr} for metric #{cpuMetricNameToCollect}")

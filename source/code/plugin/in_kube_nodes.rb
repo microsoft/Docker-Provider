@@ -132,7 +132,7 @@ module Fluent
               # Adding telemetry to send node telemetry every 5 minutes
               timeDifference = (DateTime.now.to_time.to_i - @@nodeTelemetryTimeTracker).abs
               timeDifferenceInMinutes = timeDifference / 60
-              if (timeDifferenceInMinutes >= 5)
+              # if (timeDifferenceInMinutes >= 5)
                 properties = {}
                 properties["Computer"] = record["Computer"]
                 properties["KubeletVersion"] = record["KubeletVersion"]
@@ -153,7 +153,7 @@ module Fluent
                 end
                 ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
                 telemetrySent = true
-              end
+              # end
             end
           end
           router.emit_stream(@tag, eventStream) if eventStream
