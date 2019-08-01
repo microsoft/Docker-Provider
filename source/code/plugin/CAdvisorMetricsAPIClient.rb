@@ -22,22 +22,10 @@ class CAdvisorMetricsAPIClient
   @clusterLogTailPath = ENV["AZMON_LOG_TAIL_PATH"]
   @clusterAgentSchemaVersion = ENV["AZMON_AGENT_CFG_SCHEMA_VERSION"]
 
-  @rsPromInterval = ENV["TELEMETRY_RS_PROM_INTERVAL"]
   @dsPromInterval = ENV["TELEMETRY_DS_PROM_INTERVAL"]
-  
-  @rsPromFieldPassCount = ENV["TELEMETRY_RS_PROM_FIELDPASS_LENGTH"]
   @dsPromFieldPassCount = ENV["TELEMETRY_DS_PROM_FIELDPASS_LENGTH"]
-  
-  @rsPromFieldDropCount = ENV["TELEMETRY_RS_PROM_FIELDDROP_LENGTH"]
   @dsPromFieldDropCount = ENV["TELEMETRY_DS_PROM_FIELDDROP_LENGTH"]
-
-  @rsPromK8sServiceCount = ENV["TELEMETRY_RS_PROM_K8S_SERVICES_LENGTH"]
-
-  @rsPromUrlCount = ENV["TELEMETRY_RS_PROM_URLS_LENGTH"]
   @dsPromUrlCount = ENV["TELEMETRY_DS_PROM_URLS_LENGTH"]
-
-  @rsPromMonitorPods = ENV["TELEMETRY_RS_PROM_MONITOR_PODS"]
-  
 
   @LogPath = "/var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt"
   @Log = Logger.new(@LogPath, 2, 10 * 1048576) #keep last 2 files, max log file size = 10M
@@ -228,18 +216,14 @@ class CAdvisorMetricsAPIClient
                       telemetryProps["clusterLogTailPath"] = @clusterLogTailPath
                       telemetryProps["clusterAgentSchemaVersion"] = @clusterAgentSchemaVersion
                     end
-                    #telemetry about prometheus metric collections settings
+                    #telemetry about prometheus metric collections settings for daemonset
                     if (File.file?(@promConfigMountPath))
-                      telemetryProps["rsPromInt"] = @rsPromInterval
+                      # telemetryProps["rsPromInt"] = @rsPromInterval
+                      telemetryProps["promData"] = true
                       telemetryProps["dsPromInt"] = @dsPromInterval
-                      telemetryProps["rsPromFPC"] = @rsPromFieldPassCount
                       telemetryProps["dsPromFPC"] = @dsPromFieldPassCount
-                      telemetryProps["rsPromFDC"] = @rsPromFieldDropCount
                       telemetryProps["dsPromFDC"] = @dsPromFieldDropCount
-                      telemetryProps["rsPromServ"] = @rsPromK8sServiceCount
-                      telemetryProps["rsPromUrl"] = @rsPromUrlCount
                       telemetryProps["dsPromUrl"] = @dsPromUrlCount
-                      telemetryProps["rsPromMonPods"] = @rsPromMonitorPods
                     end
                     ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
                   end
