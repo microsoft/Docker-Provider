@@ -7,14 +7,14 @@ module Fluent
 
     @@ContainerNodeInventoryTag = "oms.containerinsights.ContainerNodeInventory"
     @@MDMKubeNodeInventoryTag = "mdm.kubenodeinventory"
-    @promConfigMountPath = "/etc/config/settings/prometheus-data-collection-settings"
+    @@promConfigMountPath = "/etc/config/settings/prometheus-data-collection-settings"
 
-    @rsPromInterval = ENV["TELEMETRY_RS_PROM_INTERVAL"]
-    @rsPromFieldPassCount = ENV["TELEMETRY_RS_PROM_FIELDPASS_LENGTH"]
-    @rsPromFieldDropCount = ENV["TELEMETRY_RS_PROM_FIELDDROP_LENGTH"]
-    @rsPromK8sServiceCount = ENV["TELEMETRY_RS_PROM_K8S_SERVICES_LENGTH"]
-    @rsPromUrlCount = ENV["TELEMETRY_RS_PROM_URLS_LENGTH"]
-    @rsPromMonitorPods = ENV["TELEMETRY_RS_PROM_MONITOR_PODS"]
+    @@rsPromInterval = ENV["TELEMETRY_RS_PROM_INTERVAL"]
+    @@rsPromFieldPassCount = ENV["TELEMETRY_RS_PROM_FIELDPASS_LENGTH"]
+    @@rsPromFieldDropCount = ENV["TELEMETRY_RS_PROM_FIELDDROP_LENGTH"]
+    @@rsPromK8sServiceCount = ENV["TELEMETRY_RS_PROM_K8S_SERVICES_LENGTH"]
+    @@rsPromUrlCount = ENV["TELEMETRY_RS_PROM_URLS_LENGTH"]
+    @@rsPromMonitorPods = ENV["TELEMETRY_RS_PROM_MONITOR_PODS"]
 
     def initialize
       super
@@ -133,26 +133,26 @@ module Fluent
               timeDifference = (DateTime.now.to_time.to_i - @@nodeTelemetryTimeTracker).abs
               timeDifferenceInMinutes = timeDifference / 60
               # if (timeDifferenceInMinutes >= 10)
-                properties = {}
-                properties["Computer"] = record["Computer"]
-                properties["KubeletVersion"] = record["KubeletVersion"]
-                properties["OperatingSystem"] = nodeInfo["operatingSystem"]
-                properties["DockerVersion"] = dockerVersion
+              properties = {}
+              properties["Computer"] = record["Computer"]
+              properties["KubeletVersion"] = record["KubeletVersion"]
+              properties["OperatingSystem"] = nodeInfo["operatingSystem"]
+              properties["DockerVersion"] = dockerVersion
 
-                capacityInfo = items["status"]["capacity"]
-                ApplicationInsightsUtility.sendMetricTelemetry("NodeMemory", capacityInfo["memory"], properties)
+              capacityInfo = items["status"]["capacity"]
+              ApplicationInsightsUtility.sendMetricTelemetry("NodeMemory", capacityInfo["memory"], properties)
 
-                #telemetry about prometheus metric collections settings for replicaset
-                if (File.file?(@promConfigMountPath))
-                  properties["rsPromInt"] = @rsPromInterval
-                  properties["rsPromFPC"] = @rsPromFieldPassCount
-                  properties["rsPromFDC"] = @rsPromFieldDropCount
-                  properties["rsPromServ"] = @rsPromK8sServiceCount
-                  properties["rsPromUrl"] = @rsPromUrlCount
-                  properties["rsPromMonPods"] = @rsPromMonitorPods
-                end
-                ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
-                telemetrySent = true
+              #telemetry about prometheus metric collections settings for replicaset
+              if (File.file?(@@promConfigMountPath))
+                properties["rsPromInt"] = @@rsPromInterval
+                properties["rsPromFPC"] = @@rsPromFieldPassCount
+                properties["rsPromFDC"] = @@rsPromFieldDropCount
+                properties["rsPromServ"] = @@rsPromK8sServiceCount
+                properties["rsPromUrl"] = @@rsPromUrlCount
+                properties["rsPromMonPods"] = @@rsPromMonitorPods
+              end
+              ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
+              telemetrySent = true
               # end
             end
           end
