@@ -132,28 +132,28 @@ module Fluent
               # Adding telemetry to send node telemetry every 5 minutes
               timeDifference = (DateTime.now.to_time.to_i - @@nodeTelemetryTimeTracker).abs
               timeDifferenceInMinutes = timeDifference / 60
-              # if (timeDifferenceInMinutes >= 10)
-              properties = {}
-              properties["Computer"] = record["Computer"]
-              properties["KubeletVersion"] = record["KubeletVersion"]
-              properties["OperatingSystem"] = nodeInfo["operatingSystem"]
-              properties["DockerVersion"] = dockerVersion
+              if (timeDifferenceInMinutes >= 10)
+                properties = {}
+                properties["Computer"] = record["Computer"]
+                properties["KubeletVersion"] = record["KubeletVersion"]
+                properties["OperatingSystem"] = nodeInfo["operatingSystem"]
+                properties["DockerVersion"] = dockerVersion
 
-              capacityInfo = items["status"]["capacity"]
-              ApplicationInsightsUtility.sendMetricTelemetry("NodeMemory", capacityInfo["memory"], properties)
+                capacityInfo = items["status"]["capacity"]
+                ApplicationInsightsUtility.sendMetricTelemetry("NodeMemory", capacityInfo["memory"], properties)
 
-              #telemetry about prometheus metric collections settings for replicaset
-              if (File.file?(@@promConfigMountPath))
-                properties["rsPromInt"] = @@rsPromInterval
-                properties["rsPromFPC"] = @@rsPromFieldPassCount
-                properties["rsPromFDC"] = @@rsPromFieldDropCount
-                properties["rsPromServ"] = @@rsPromK8sServiceCount
-                properties["rsPromUrl"] = @@rsPromUrlCount
-                properties["rsPromMonPods"] = @@rsPromMonitorPods
+                #telemetry about prometheus metric collections settings for replicaset
+                if (File.file?(@@promConfigMountPath))
+                  properties["rsPromInt"] = @@rsPromInterval
+                  properties["rsPromFPC"] = @@rsPromFieldPassCount
+                  properties["rsPromFDC"] = @@rsPromFieldDropCount
+                  properties["rsPromServ"] = @@rsPromK8sServiceCount
+                  properties["rsPromUrl"] = @@rsPromUrlCount
+                  properties["rsPromMonPods"] = @@rsPromMonitorPods
+                end
+                ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
+                telemetrySent = true
               end
-              ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
-              telemetrySent = true
-              # end
             end
           end
           router.emit_stream(@tag, eventStream) if eventStream
