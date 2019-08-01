@@ -132,7 +132,7 @@ module Fluent
               # Adding telemetry to send node telemetry every 5 minutes
               timeDifference = (DateTime.now.to_time.to_i - @@nodeTelemetryTimeTracker).abs
               timeDifferenceInMinutes = timeDifference / 60
-              # if (timeDifferenceInMinutes >= 5)
+              # if (timeDifferenceInMinutes >= 10)
                 properties = {}
                 properties["Computer"] = record["Computer"]
                 properties["KubeletVersion"] = record["KubeletVersion"]

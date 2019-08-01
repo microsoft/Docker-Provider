@@ -219,7 +219,6 @@ class CAdvisorMetricsAPIClient
                   #telemetry about prometheus metric collections settings for daemonset
                   if (File.file?(@promConfigMountPath))
                     # telemetryProps["rsPromInt"] = @rsPromInterval
-                    telemetryProps["promData"] = true
                     telemetryProps["dsPromInt"] = @dsPromInterval
                     telemetryProps["dsPromFPC"] = @dsPromFieldPassCount
                     telemetryProps["dsPromFDC"] = @dsPromFieldDropCount
