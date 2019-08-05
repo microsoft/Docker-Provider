@@ -1,13 +1,14 @@
 #!/usr/local/bin/ruby
 
 @td_agent_bit_conf_path = "/etc/opt/microsoft/docker-cimprov/td-agent-bit.conf"
-@default_service_interval = 15
 
-def is_number?(string)
-  true if Integer(string) rescue false
+@default_service_interval = "15"
+
+def is_number?(value)
+  true if Integer(value) rescue false
 end
 
-def substituteFluebtBitPlaceHolders
+def substituteFluentBitPlaceHolders
   begin
     # Replace the fluentbit config file with custom values if present
     puts "config::Starting to substitute the placeholders in td-agent-bit.conf file for log collection"
@@ -20,10 +21,8 @@ def substituteFluebtBitPlaceHolders
     serviceIntervalSetting = "Flush         " + serviceInterval
 
     tailBufferChunkSize = (!bufferChunkSize.nil? && is_number?(bufferChunkSize)) ? bufferChunkSize : nil
-    # tailBufferChunkSizeSetting = (!tailBufferChunkSize.nil?) ? ("Buffer_Chunk_Size " + tailBufferChunkSize + "m") : ""
 
     tailBufferMaxSize = (!bufferMaxSize.nil? && is_number?(bufferMaxSize)) ? bufferMaxSize : nil
-    tailBufferMaxSizeSetting = (!tailBufferMaxSize.nil?) ? ("Buffer_Max_Size " + tailBufferMaxSize + "m") : ""
 
     text = File.read(@td_agent_bit_conf_path)
     new_contents = text.gsub("${SERVICE_FLUSH_INTERVAL}", serviceIntervalSetting)
@@ -38,9 +37,11 @@ def substituteFluebtBitPlaceHolders
       new_contents = new_contents.gsub("\n    ${TAIL_BUFFER_MAX_SIZE}\n", "\n")
     end
 
-    File.open(file_name, "w") { |file| file.puts new_contents }
+    File.open(@td_agent_bit_conf_path, "w") { |file| file.puts new_contents }
     puts "config::Successfully substituted the placeholders in td-agent-bit.conf file"
   rescue => errorStr
     puts "td-agent-bit-config-customizer: error while substituting values: #{errorStr}"
   end
 end
+
+substituteFluentBitPlaceHolders
