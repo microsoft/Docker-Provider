@@ -114,6 +114,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/livenessprobe.sh;                                              installer/scripts/livenessprobe.sh;      755; root; root
 /opt/tomlparser.rb;                                                 installer/scripts/tomlparser.rb;     755; root; root 
 /opt/tomlparser-prom-customconfig.rb;                               installer/scripts/tomlparser-prom-customconfig.rb;     755; root; root 
+/opt/td-agent-bit-conf-customizer.rb;                               installer/scripts/td-agent-bit-conf-customizer.rb;     755; root; root
 
 %Links
 /opt/omi/lib/libcontainer.${{SHLIB_EXT}}; /opt/microsoft/docker-cimprov/lib/libcontainer.${{SHLIB_EXT}}; 644; root; root
