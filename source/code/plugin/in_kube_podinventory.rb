@@ -285,7 +285,6 @@ module Fluent
                 controllerValue = controllerData[record["ControllerKind"]]
                 controllerData[record["ControllerKind"]] += 1
               end
-              $log.warn "controller data: #{controllerData}"
             end
           end
           podRestartCount = 0
@@ -412,8 +411,8 @@ module Fluent
           telemetryProperties["Computer"] = @@hostName
           ApplicationInsightsUtility.sendCustomEvent("KubePodInventoryHeartBeatEvent", telemetryProperties)
           ApplicationInsightsUtility.sendMetricTelemetry("PodCount", podInventory["items"].length, {})
-          ApplicationInsightsUtility.sendMetricTelemetry("ControllerCount", controllerSet.length, {})
-          ApplicationInsightsUtility.sendMetricTelemetry("ControllerData", controllerData, telemetryProperties)
+          telemetryProperties["ControllerData"] = controllerData.to_json
+          ApplicationInsightsUtility.sendMetricTelemetry("ControllerCount", controllerSet.length, telemetryProperties)
           if winContainerCount > 0
             telemetryProperties["ClusterWideWindowsContainersCount"] = winContainerCount
             ApplicationInsightsUtility.sendCustomEvent("WindowsContainerInventoryEvent", telemetryProperties)
