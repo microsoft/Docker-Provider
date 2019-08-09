@@ -355,6 +355,7 @@ class KubernetesApiClient
                 metricProps = {}
                 metricProps["Timestamp"] = metricTime
                 metricProps["Host"] = nodeName
+                metricProps["Computer"] = nodeName
                 metricProps["ObjectName"] = "K8SContainer"
                 metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
 
@@ -378,6 +379,7 @@ class KubernetesApiClient
                   metricProps = {}
                   metricProps["Timestamp"] = metricTime
                   metricProps["Host"] = nodeName
+                  metricProps["Computer"] = nodeName
                   metricProps["ObjectName"] = "K8SContainer"
                   metricProps["InstanceName"] = clusterId + "/" + podUid + "/" + containerName
 
@@ -420,6 +422,7 @@ class KubernetesApiClient
             metricProps = {}
             metricProps["Timestamp"] = metricTime
             metricProps["Host"] = node["metadata"]["name"]
+            metricProps["Computer"] = node["metadata"]["name"]
             metricProps["ObjectName"] = "K8SNode"
             metricProps["InstanceName"] = clusterId + "/" + node["metadata"]["name"]
             metricProps["Collections"] = []
