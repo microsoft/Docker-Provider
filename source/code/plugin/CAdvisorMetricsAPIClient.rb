@@ -106,16 +106,20 @@ class CAdvisorMetricsAPIClient
     def getMetrics(winNode = nil)
       metricDataItems = []
       begin
+        cAdvisorStats = getSummaryStatsFromCAdvisor(winNode)
+        if !cAdvisorStats.nil?
+          metricInfo = JSON.parse(cAdvisorStats.body)
+        end
         if !winNode.nil?
           hostName = winNode["Hostname"]
           operatingSystem = "Windows"
         else
-          hostName = (OMS::Common.get_hostname)
+          if !metricInfo.nil? && !metricInfo["node"].nil? && !metricInfo["node"]["nodeName"].nil?
+            hostName = metricInfo["node"]["nodeName"]
+          else
+            hostName = (OMS::Common.get_hostname)
+          end
           operatingSystem = "Linux"
-        end
-        cAdvisorStats = getSummaryStatsFromCAdvisor(winNode)
-        if !cAdvisorStats.nil?
-          metricInfo = JSON.parse(cAdvisorStats.body)
         end
         if !metricInfo.nil?
           metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", "memoryWorkingSetBytes"))
