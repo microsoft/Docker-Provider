@@ -42,6 +42,7 @@ const (
 	envAKSResourceID                                  = "AKS_RESOURCE_ID"
 	envACSResourceName                                = "ACS_RESOURCE_NAME"
 	envAppInsightsAuth                                = "APPLICATIONINSIGHTS_AUTH"
+	envAppInsightsEndpoint                            = "APPLICATIONINSIGHTS_ENDPOINT"
 	metricNameAvgFlushRate                            = "ContainerLogAvgRecordsFlushedPerSec"
 	metricNameAvgLogGenerationRate                    = "ContainerLogsGeneratedPerSec"
 	metricNameLogSize                                 = "ContainerLogsSize"
@@ -141,7 +142,9 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 		return -1, err
 	}
 
-	TelemetryClient = appinsights.NewTelemetryClient(string(decIkey))
+	telemetryClientConfig :=  appinsights.NewTelemetryConfiguration(string(decIkey))
+	telemetryClientConfig.EndpointUrl = envAppInsightsEndpoint
+	TelemetryClient = appinsights.NewTelemetryClientFromConfig(telemetryClientConfig)
 	telemetryOffSwitch := os.Getenv("DISABLE_TELEMETRY")
 	if strings.Compare(strings.ToLower(telemetryOffSwitch), "true") == 0 {
 		Log("Appinsights telemetry is disabled \n")

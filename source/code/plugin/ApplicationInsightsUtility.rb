@@ -18,6 +18,7 @@ class ApplicationInsightsUtility
   @@EnvAksRegion = "AKS_REGION"
   @@EnvAgentVersion = "AGENT_VERSION"
   @@EnvApplicationInsightsKey = "APPLICATIONINSIGHTS_AUTH"
+  @@EnvApplicationInsightsEndpoint = "APPLICATIONINSIGHTS_ENDPOINT"
   @@EnvControllerType = "CONTROLLER_TYPE"
 
   @@CustomProperties = {}
@@ -62,6 +63,7 @@ class ApplicationInsightsUtility
         @@CustomProperties["AgentVersion"] = ENV[@@EnvAgentVersion]
         @@CustomProperties["ControllerType"] = ENV[@@EnvControllerType]
         encodedAppInsightsKey = ENV[@@EnvApplicationInsightsKey]
+        appInsightsEndpoint = ENV[@@EnvApplicationInsightsEndpoint]
 
         #Check if telemetry is turned off
         telemetryOffSwitch = ENV["DISABLE_TELEMETRY"]
@@ -70,7 +72,11 @@ class ApplicationInsightsUtility
           @@Tc = ApplicationInsights::TelemetryClient.new
         elsif !encodedAppInsightsKey.nil?
           decodedAppInsightsKey = Base64.decode64(encodedAppInsightsKey)
-          @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey
+          telemetryContext = ApplicationInsights::Channel::TelemetryContext.new
+          telemetrySynchronousSender = ApplicationInsights::Channel::SynchronousSender.new appInsightsEndpoint
+          telemetrySynchronousQueue = ApplicationInsights::Channel::SynchronousQueue.new telemetrySynchronousSender
+          telemetryChannel = ApplicationInsights::Channel.TelemetryChannel.new telemetryContext, telemetrySynchronousQueue
+          @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey, telemetryChannel
         end
       rescue => errorStr
         $log.warn("Exception in AppInsightsUtility: initilizeUtility - error: #{errorStr}")
