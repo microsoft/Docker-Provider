@@ -198,7 +198,7 @@ module Fluent
       hostname = DockerApiClient.getDockerHostName
       begin
         containerIds = DockerApiClient.listContainers
-        if !containerIds.empty?
+        if !containerIds.nil? && !containerIds.empty?
           eventStream = MultiEventStream.new
           nameMap = DockerApiClient.getImageIdMap
           clusterCollectEnvironmentVar = ENV["AZMON_CLUSTER_COLLECT_ENV_VAR"]
@@ -252,6 +252,7 @@ module Fluent
         end
       rescue => errorStr
         $log.warn("Exception in enumerate container inventory: #{errorStr}")
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
 

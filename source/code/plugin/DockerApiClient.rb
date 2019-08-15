@@ -44,7 +44,11 @@ class DockerApiClient
         return (isTimeOut) ? nil : parseResponse(dockerResponse, isMultiJson)
       rescue => errorStr
         $log.warn("Socket call failed for request: #{request} error: #{errorStr} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
-        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+        # Adding this check to avoid an infinite loop for the docker info call in exception telemetry
+        if !request.include? "GET /version "
+          ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+        end
+        return nil
       end
     end
 
@@ -80,28 +84,32 @@ class DockerApiClient
 
     def listContainers()
       ids = []
-      request = DockerApiRestHelper.restDockerPs
-      containers = getResponse(request, true, false)
-      if !containers.nil? && !containers.empty?
-        containers.each do |container|
-          labels = (!container["Labels"].nil?) ? container["Labels"] : container["labels"]
-          if !labels.nil?
-            labelKeys = labels.keys
-            dockerTypeLabel = labelKeys.find { |k| "io.kubernetes.docker.type".downcase == k.downcase }
-            if !dockerTypeLabel.nil?
-              dockerTypeLabelValue = labels[dockerTypeLabel]
-              # Checking for 'io.kubernetes.docker.type' label for docker containers to exclude the pause-amd64 containers
-              if !(dockerTypeLabelValue.downcase == "podsandbox".downcase)
-                # Case insensitive lookup for pod uid label - This is to exclude containers created using docker run and only include containers that
-                # are created in the pods for ContainerInventory
-                keyValue = labelKeys.find { |k| "io.kubernetes.pod.uid".downcase == k.downcase }
-                if !labels[keyValue].nil?
-                  ids.push(container["Id"])
+      begin
+        request = DockerApiRestHelper.restDockerPs
+        containers = getResponse(request, true, false)
+        if !containers.nil? && !containers.empty?
+          containers.each do |container|
+            labels = (!container["Labels"].nil?) ? container["Labels"] : container["labels"]
+            if !labels.nil?
+              labelKeys = labels.keys
+              dockerTypeLabel = labelKeys.find { |k| "io.kubernetes.docker.type".downcase == k.downcase }
+              if !dockerTypeLabel.nil?
+                dockerTypeLabelValue = labels[dockerTypeLabel]
+                # Checking for 'io.kubernetes.docker.type' label for docker containers to exclude the pause-amd64 containers
+                if !(dockerTypeLabelValue.downcase == "podsandbox".downcase)
+                  # Case insensitive lookup for pod uid label - This is to exclude containers created using docker run and only include containers that
+                  # are created in the pods for ContainerInventory
+                  keyValue = labelKeys.find { |k| "io.kubernetes.pod.uid".downcase == k.downcase }
+                  if !labels[keyValue].nil?
+                    ids.push(container["Id"])
+                  end
                 end
               end
             end
           end
         end
+      rescue => errorStr
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
       return ids
     end
