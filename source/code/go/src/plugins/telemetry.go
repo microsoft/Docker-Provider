@@ -142,9 +142,15 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 		return -1, err
 	}
 
-	telemetryClientConfig :=  appinsights.NewTelemetryConfiguration(string(decIkey))
-	telemetryClientConfig.EndpointUrl = envAppInsightsEndpoint
+	appInsightsEndpoint := os.Getenv(envAppInsightsEndpoint)
+	telemetryClientConfig := appinsights.NewTelemetryConfiguration(string(decIkey))
+	// endpoint override required only for sovereign clouds
+	if appInsightsEndpoint != "" {
+		Log("Overriding the default AppInsights EndpointUrl with %s", appInsightsEndpoint)
+		telemetryClientConfig.EndpointUrl = envAppInsightsEndpoint
+	}
 	TelemetryClient = appinsights.NewTelemetryClientFromConfig(telemetryClientConfig)
+
 	telemetryOffSwitch := os.Getenv("DISABLE_TELEMETRY")
 	if strings.Compare(strings.ToLower(telemetryOffSwitch), "true") == 0 {
 		Log("Appinsights telemetry is disabled \n")

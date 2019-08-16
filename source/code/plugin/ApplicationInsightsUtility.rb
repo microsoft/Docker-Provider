@@ -72,10 +72,16 @@ class ApplicationInsightsUtility
           @@Tc = ApplicationInsights::TelemetryClient.new
         elsif !encodedAppInsightsKey.nil?
           decodedAppInsightsKey = Base64.decode64(encodedAppInsightsKey)
-          telemetrySynchronousSender = ApplicationInsights::Channel::SynchronousSender.new appInsightsEndpoint
-          telemetrySynchronousQueue = ApplicationInsights::Channel::SynchronousQueue.new(telemetrySynchronousSender)
-          telemetryChannel = ApplicationInsights::Channel::TelemetryChannel.new nil, telemetrySynchronousQueue
-          @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey, telemetryChannel
+          #override ai endpoint if its available otherwise use default.
+          if appInsightsEndpoint && !appInsightsEndpoint.nil? && !appInsightsEndpoint.empty?
+            $log.info("AppInsightsUtility: Telemetry client uses overrided endpoint url : #{appInsightsEndpoint}")
+            telemetrySynchronousSender = ApplicationInsights::Channel::SynchronousSender.new appInsightsEndpoint
+            telemetrySynchronousQueue = ApplicationInsights::Channel::SynchronousQueue.new(telemetrySynchronousSender)
+            telemetryChannel = ApplicationInsights::Channel::TelemetryChannel.new nil, telemetrySynchronousQueue
+            @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey, telemetryChannel
+          else
+            @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey
+          end
         end
       rescue => errorStr
         $log.warn("Exception in AppInsightsUtility: initilizeUtility - error: #{errorStr}")
