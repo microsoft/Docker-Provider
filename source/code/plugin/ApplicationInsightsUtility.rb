@@ -72,10 +72,9 @@ class ApplicationInsightsUtility
           @@Tc = ApplicationInsights::TelemetryClient.new
         elsif !encodedAppInsightsKey.nil?
           decodedAppInsightsKey = Base64.decode64(encodedAppInsightsKey)
-          telemetryContext = ApplicationInsights::Channel::TelemetryContext.new
           telemetrySynchronousSender = ApplicationInsights::Channel::SynchronousSender.new appInsightsEndpoint
-          telemetrySynchronousQueue = ApplicationInsights::Channel::SynchronousQueue.new telemetrySynchronousSender
-          telemetryChannel = ApplicationInsights::Channel.TelemetryChannel.new telemetryContext, telemetrySynchronousQueue
+          telemetrySynchronousQueue = ApplicationInsights::Channel::SynchronousQueue.new(telemetrySynchronousSender)
+          telemetryChannel = ApplicationInsights::Channel::TelemetryChannel.new nil, telemetrySynchronousQueue
           @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey, telemetryChannel
         end
       rescue => errorStr
