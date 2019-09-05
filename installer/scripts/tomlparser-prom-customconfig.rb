@@ -18,6 +18,14 @@ require "fileutils"
 @defaultRsK8sServices = []
 @defaultRsMonitorPods = false
 
+#Configurations to be used for the auto-generated input prometheus plugins for namespace filtering
+@metricVersion = 2
+@urlTag = "scrapeUrl"
+@bearerToken = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+@responseTimeout = "15s"
+@tlsCa = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+@insecureSkipVerify = true
+
 # Use parser to parse the configmap toml file to a ruby structure
 def parseConfigMap
   begin
@@ -53,6 +61,33 @@ def checkForType(variable, varType)
   end
 end
 
+def replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
+  new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
+  new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
+end
+
+def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKubernetesPodsNamespaces, new_contents, interval, fieldPassSetting, fieldDropSetting)
+  begin
+    new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_RS_PROM_MONITOR_PODS")
+    monitorKubernetesPodsNamespaces.each do |namespace|
+      new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "[[inputs.prometheus]]\n  interval = #{interval}\n  
+      monitor_kubernetes_pods = true\n  
+      monitor_kubernetes_pods_namespaces = #{namespace}\n
+      fieldpass = #{fieldPassSetting}\n
+      fielddrop = #{fieldDropSetting}\n
+      metric_version = #{@metricVersion}\n
+      url_tag = #{@urlTag}\n
+      bearer_token = #{@bearerToken}\n
+      response_timeout = #{@responseTimeout}\n
+      tls_ca = #{@tlsCa}\n
+      insecure_skip_verify = #{@insecureSkipVerify}\n")
+    end
+  rescue => errorStr
+    puts "config::error::Exception while creating prometheus input plugins to filter namespaces: #{errorStr}, using defaults"
+    replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
+  end
+end
+
 # Use the ruby structure created after config parsing to set the right values to be used as environment variables
 def populateSettingValuesFromConfigMap(parsedConfig)
   # Checking to see if this is the daemonset or replicaset to parse config accordingly
@@ -68,6 +103,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           urls = parsedConfig[:prometheus_data_collection_settings][:cluster][:urls]
           kubernetesServices = parsedConfig[:prometheus_data_collection_settings][:cluster][:kubernetes_services]
           monitorKubernetesPods = parsedConfig[:prometheus_data_collection_settings][:cluster][:monitor_kubernetes_pods]
+          monitorKubernetesPodsNamespaces = parsedConfig[:prometheus_data_collection_settings][:cluster][:monitor_kubernetes_pods_namespaces]
+
+          # Setting this to false by default, will be set to true/false based on the setting evaluation for 'monitor_kubernetes_pods_namespaces'
+          #namespaceFilterForMonitorPods = false
 
           # Check for the right datattypes to enforce right setting values
           if checkForType(interval, String) &&
@@ -75,7 +114,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
              checkForTypeArray(fieldDrop, String) &&
              checkForTypeArray(kubernetesServices, String) &&
              checkForTypeArray(urls, String) &&
-             !monitorKubernetesPods.nil? && (!!monitorKubernetesPods == monitorKubernetesPods) #Checking for Boolean type, since 'Boolean' is not defined as a type in ruby
+             (monitorKubernetesPods.nil? || (!monitorKubernetesPods.nil? && (!!monitorKubernetesPods == monitorKubernetesPods))) #Checking for Boolean type, since 'Boolean' is not defined as a type in ruby
             puts "config::Successfully passed typecheck for config settings for replicaset"
             #if setting is nil assign default values
             interval = (interval.nil?) ? @defaultRsInterval : interval
@@ -83,7 +122,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             fieldDrop = (fieldDrop.nil?) ? @defaultRsFieldDrop : fieldDrop
             kubernetesServices = (kubernetesServices.nil?) ? @defaultRsK8sServices : kubernetesServices
             urls = (urls.nil?) ? @defaultRsPromUrls : urls
-            monitorKubernetesPods = (kubernetesServices.nil?) ? @defaultRsMonitorPods : monitorKubernetesPods
+            monitorKubernetesPods = (monitorKubernetesPods.nil?) ? @defaultRsMonitorPods : monitorKubernetesPods
+            # if monitorKubernetesPods && checkForTypeArray(monitorKubernetesPodsNamespaces, String)
+            #   namespaceFilterForMonitorPods = true
+            # end
 
             file_name = "/opt/telegraf-test-rs.conf"
             # Copy the telegraf config file to a temp file to run telegraf in test mode with this config
@@ -93,11 +135,25 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             #Replace the placeholder config values with values from custom config
             text = File.read(file_name)
             new_contents = text.gsub("$AZMON_RS_PROM_INTERVAL", interval)
-            new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDPASS", ((fieldPass.length > 0) ? ("[\"" + fieldPass.join("\",\"") + "\"]") : "[]"))
-            new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDDROP", ((fieldDrop.length > 0) ? ("[\"" + fieldDrop.join("\",\"") + "\"]") : "[]"))
+            fieldPassSetting = (fieldPass.length > 0) ? ("[\"" + fieldPass.join("\",\"") + "\"]") : "[]"
+            new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDPASS", fieldPassSetting)
+            fieldDropSetting = (fieldDrop.length > 0) ? ("[\"" + fieldDrop.join("\",\"") + "\"]") : "[]"
+            new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDDROP", fieldDropSetting)
             new_contents = new_contents.gsub("$AZMON_RS_PROM_URLS", ((urls.length > 0) ? ("[\"" + urls.join("\",\"") + "\"]") : "[]"))
             new_contents = new_contents.gsub("$AZMON_RS_PROM_K8S_SERVICES", ((kubernetesServices.length > 0) ? ("[\"" + kubernetesServices.join("\",\"") + "\"]") : "[]"))
-            new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", (monitorKubernetesPods ? "true" : "false"))
+
+            # Check to see if monitor_kubernetes_pods is set to true with a valid setting for monitor_kubernetes_namespaces to enable scraping for specific namespaces
+            # Adding nil check here as well since checkForTypeArray returns true even if setting is nil to accomodate for other settings to be able -
+            # - to use defaults in case of nil settings
+            if monitorKubernetesPods && !monitorKubernetesPodsNamespaces.nil? && checkForTypeArray(monitorKubernetesPodsNamespaces, String)
+              createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKubernetesPodsNamespaces, new_contents, interval, fieldPassSetting, fieldDropSetting)
+            else
+              #new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", (monitorKubernetesPods ? "monitor_kubernetes_pods = true" : "monitor_kubernetes_pods = false"))
+              replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
+              # new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
+              # new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
+            end
+
             File.open(file_name, "w") { |file| file.puts new_contents }
             puts "config::Successfully substituted the placeholders in telegraf conf file for replicaset"
             #Set environment variables for telemetry
