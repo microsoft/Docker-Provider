@@ -78,7 +78,7 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
       new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "[[inputs.prometheus]]\n
   interval = \"#{interval}\"\n
   monitor_kubernetes_pods = true\n
-  monitor_kubernetes_pods_namespaces = \"#{namespace}\"\n
+  monitor_kubernetes_pods_namespace = \"#{namespace}\"\n
   fieldpass = #{fieldPassSetting}\n
   fielddrop = #{fieldDropSetting}\n
   metric_version = #{@metricVersion}\n
