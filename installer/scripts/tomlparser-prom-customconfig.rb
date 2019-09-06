@@ -77,17 +77,17 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
     pluginConfigsWithNamespaces = ""
     monitorKubernetesPodsNamespaces.each do |namespace|
       pluginConfigsWithNamespaces += "\n[[inputs.prometheus]]\n
-      interval = \"#{interval}\"\n
-      monitor_kubernetes_pods = true\n
-      monitor_kubernetes_pods_namespace = \"#{namespace}\"\n
-      fieldpass = #{fieldPassSetting}\n
-      fielddrop = #{fieldDropSetting}\n
-      metric_version = #{@metricVersion}\n
-      url_tag = \"#{@urlTag}\"\n
-      bearer_token = \"#{@bearerToken}\"\n
-      response_timeout = \"#{@responseTimeout}\"\n
-      tls_ca = \"#{@tlsCa}\"\n
-      insecure_skip_verify = #{@insecureSkipVerify}\n"
+  interval = \"#{interval}\"
+  monitor_kubernetes_pods = true
+  monitor_kubernetes_pods_namespace = \"#{namespace}\"
+  fieldpass = #{fieldPassSetting}
+  fielddrop = #{fieldDropSetting}
+  metric_version = #{@metricVersion}
+  url_tag = \"#{@urlTag}\"
+  bearer_token = \"#{@bearerToken}\"
+  response_timeout = \"#{@responseTimeout}\"
+  tls_ca = \"#{@tlsCa}\"
+  insecure_skip_verify = #{@insecureSkipVerify}\n"
     end
     new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", pluginConfigsWithNamespaces)
     return new_contents
