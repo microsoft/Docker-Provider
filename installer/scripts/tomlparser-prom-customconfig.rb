@@ -75,17 +75,18 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
   begin
     new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_RS_PROM_MONITOR_PODS")
     monitorKubernetesPodsNamespaces.each do |namespace|
-      new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "[[inputs.prometheus]]\n  interval = #{interval}\n  
-      monitor_kubernetes_pods = true\n  
-      monitor_kubernetes_pods_namespaces = #{namespace}\n
-      fieldpass = #{fieldPassSetting}\n
-      fielddrop = #{fieldDropSetting}\n
-      metric_version = #{@metricVersion}\n
-      url_tag = #{@urlTag}\n
-      bearer_token = #{@bearerToken}\n
-      response_timeout = #{@responseTimeout}\n
-      tls_ca = #{@tlsCa}\n
-      insecure_skip_verify = #{@insecureSkipVerify}\n")
+      new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "[[inputs.prometheus]]\n
+  interval = \"#{interval}\"\n
+  monitor_kubernetes_pods = true\n
+  monitor_kubernetes_pods_namespaces = \"#{namespace}\"\n
+  fieldpass = #{fieldPassSetting}\n
+  fielddrop = #{fieldDropSetting}\n
+  metric_version = #{@metricVersion}\n
+  url_tag = \"#{@urlTag}\"\n
+  bearer_token = \"#{@bearerToken}\"\n
+  response_timeout = \"#{@responseTimeout}\"\n
+  tls_ca = \"#{@tlsCa}\"\n
+  insecure_skip_verify = #{@insecureSkipVerify}\n")
     end
     return new_contents
   rescue => errorStr
