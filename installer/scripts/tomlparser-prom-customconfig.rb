@@ -62,8 +62,13 @@ def checkForType(variable, varType)
 end
 
 def replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
-  new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
-  new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
+  begin
+    new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
+    new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
+  rescue => errorStr
+    puts "config::error::Exception while replacing default pod monitor settings: #{errorStr}"
+  end
+  return new_contents
 end
 
 def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKubernetesPodsNamespaces, new_contents, interval, fieldPassSetting, fieldDropSetting)
@@ -82,6 +87,7 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
       tls_ca = #{@tlsCa}\n
       insecure_skip_verify = #{@insecureSkipVerify}\n")
     end
+    return new_contents
   rescue => errorStr
     puts "config::error::Exception while creating prometheus input plugins to filter namespaces: #{errorStr}, using defaults"
     replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
@@ -146,10 +152,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             # Adding nil check here as well since checkForTypeArray returns true even if setting is nil to accomodate for other settings to be able -
             # - to use defaults in case of nil settings
             if monitorKubernetesPods && !monitorKubernetesPodsNamespaces.nil? && checkForTypeArray(monitorKubernetesPodsNamespaces, String)
-              createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKubernetesPodsNamespaces, new_contents, interval, fieldPassSetting, fieldDropSetting)
+              new_contents = createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKubernetesPodsNamespaces, new_contents, interval, fieldPassSetting, fieldDropSetting)
             else
               #new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", (monitorKubernetesPods ? "monitor_kubernetes_pods = true" : "monitor_kubernetes_pods = false"))
-              replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
+              new_contents = replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
               # new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
               # new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
             end
