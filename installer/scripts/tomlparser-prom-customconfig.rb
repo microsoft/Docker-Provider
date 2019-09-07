@@ -76,7 +76,7 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
     new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_RS_PROM_MONITOR_PODS")
     pluginConfigsWithNamespaces = ""
     monitorKubernetesPodsNamespaces.each do |namespace|
-      pluginConfigsWithNamespaces += "\n[[inputs.prometheus]]\n
+      pluginConfigsWithNamespaces += "\n[[inputs.prometheus]]
   interval = \"#{interval}\"
   monitor_kubernetes_pods = true
   monitor_kubernetes_pods_namespace = \"#{namespace}\"
