@@ -114,9 +114,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           monitorKubernetesPods = parsedConfig[:prometheus_data_collection_settings][:cluster][:monitor_kubernetes_pods]
           monitorKubernetesPodsNamespaces = parsedConfig[:prometheus_data_collection_settings][:cluster][:monitor_kubernetes_pods_namespaces]
 
-          # Setting this to false by default, will be set to true/false based on the setting evaluation for 'monitor_kubernetes_pods_namespaces'
-          #namespaceFilterForMonitorPods = false
-
           # Check for the right datattypes to enforce right setting values
           if checkForType(interval, String) &&
              checkForTypeArray(fieldPass, String) &&
@@ -132,9 +129,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             kubernetesServices = (kubernetesServices.nil?) ? @defaultRsK8sServices : kubernetesServices
             urls = (urls.nil?) ? @defaultRsPromUrls : urls
             monitorKubernetesPods = (monitorKubernetesPods.nil?) ? @defaultRsMonitorPods : monitorKubernetesPods
-            # if monitorKubernetesPods && checkForTypeArray(monitorKubernetesPodsNamespaces, String)
-            #   namespaceFilterForMonitorPods = true
-            # end
 
             file_name = "/opt/telegraf-test-rs.conf"
             # Copy the telegraf config file to a temp file to run telegraf in test mode with this config
@@ -157,10 +151,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             if monitorKubernetesPods && !monitorKubernetesPodsNamespaces.nil? && checkForTypeArray(monitorKubernetesPodsNamespaces, String)
               new_contents = createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKubernetesPodsNamespaces, new_contents, interval, fieldPassSetting, fieldDropSetting)
             else
-              #new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", (monitorKubernetesPods ? "monitor_kubernetes_pods = true" : "monitor_kubernetes_pods = false"))
               new_contents = replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
-              # new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
-              # new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
             end
 
             File.open(file_name, "w") { |file| file.puts new_contents }
