@@ -150,8 +150,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             # - to use defaults in case of nil settings
             if monitorKubernetesPods && !monitorKubernetesPodsNamespaces.nil? && checkForTypeArray(monitorKubernetesPodsNamespaces, String)
               new_contents = createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKubernetesPodsNamespaces, new_contents, interval, fieldPassSetting, fieldDropSetting)
+              monitorKubernetesPodsNamespacesLength = monitorKubernetesPodsNamespaces.length
             else
               new_contents = replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
+              monitorKubernetesPodsNamespacesLength = 0
             end
 
             File.open(file_name, "w") { |file| file.puts new_contents }
@@ -166,6 +168,8 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               file.write("export TELEMETRY_RS_PROM_K8S_SERVICES_LENGTH=#{kubernetesServices.length}\n")
               file.write("export TELEMETRY_RS_PROM_URLS_LENGTH=#{urls.length}\n")
               file.write("export TELEMETRY_RS_PROM_MONITOR_PODS=\"#{monitorKubernetesPods}\"\n")
+              file.write("export TELEMETRY_RS_PROM_MONITOR_PODS_NS_LENGTH=\"#{monitorKubernetesPodsNamespacesLength}\"\n")
+
               # Close file after writing all environment variables
               file.close
               puts "config::Successfully created telemetry file for replicaset"

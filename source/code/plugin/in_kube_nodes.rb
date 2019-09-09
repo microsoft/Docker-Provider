@@ -15,6 +15,7 @@ module Fluent
     @@rsPromK8sServiceCount = ENV["TELEMETRY_RS_PROM_K8S_SERVICES_LENGTH"]
     @@rsPromUrlCount = ENV["TELEMETRY_RS_PROM_URLS_LENGTH"]
     @@rsPromMonitorPods = ENV["TELEMETRY_RS_PROM_MONITOR_PODS"]
+    @@rsPromMonitorPodsNamespaceLength = ENV["TELEMETRY_RS_PROM_MONITOR_PODS_NS_LENGTH"]
 
     def initialize
       super
@@ -150,6 +151,7 @@ module Fluent
                   properties["rsPromServ"] = @@rsPromK8sServiceCount
                   properties["rsPromUrl"] = @@rsPromUrlCount
                   properties["rsPromMonPods"] = @@rsPromMonitorPods
+                  properties["rsPromMonPodsNs"] = @@rsPromMonitorPodsNamespaceLength
                 end
                 ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
                 telemetrySent = true
