@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"fmt"
 
 	"github.com/Microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/Microsoft/ApplicationInsights-Go/appinsights/contracts"
@@ -215,7 +214,7 @@ func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType)
 		Log("\n")
 	} else {
 		Log("scrapingError\n")
-		var scrapingSplitString = string.Split(logRecordString, "[inputs.prometheus]: ")
+		var scrapingSplitString = strings.Split(logRecordString, "[inputs.prometheus]: ")
 		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
 			Log(scrapingSplitString[1])
 		}
