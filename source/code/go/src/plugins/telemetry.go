@@ -206,7 +206,7 @@ func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType)
 	configErrorHash := make(map[string]struct{})
 	promScrapeErrorHash := make(map[string]struct{})
 
-	logRecordString = ToString(record["Log"])
+	var logRecordString = ToString(record["log"])
 
 	if errType == ConfigError {
 		Log("configError\n")
@@ -214,7 +214,10 @@ func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType)
 		Log("\n")
 	} else {
 		Log("scrapingError\n")
-		Log(after(logRecordString, "[inputs.prometheus]: "))
+		var scrapingSplitString = string.Split(logRecordString, "[inputs.prometheus]: ")
+		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
+			Log(scrapingSplitString[1])
+		}
 		Log("\n")
 	}
 }
