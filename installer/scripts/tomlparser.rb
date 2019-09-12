@@ -50,12 +50,12 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         puts "config::Using config map setting for stdout log collection"
         stdoutNamespaces = parsedConfig[:log_collection_settings][:stdout][:exclude_namespaces]
 
+        #Clearing it, so that it can be overridden with the config map settings
+        @stdoutExcludeNamespaces.clear
         if @collectStdoutLogs && !stdoutNamespaces.nil?
           if stdoutNamespaces.kind_of?(Array)
             # Checking only for the first element to be string because toml enforces the arrays to contain elements of same type
             if stdoutNamespaces.length > 0 && stdoutNamespaces[0].kind_of?(String)
-              #Clearing it, so that it can be overridden with the config map settings
-              @stdoutExcludeNamespaces.clear
               #Empty the array to use the values from configmap
               stdoutNamespaces.each do |namespace|
                 if @stdoutExcludeNamespaces.empty?
@@ -85,7 +85,8 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         puts "config::Using config map setting for stderr log collection"
         stderrNamespaces = parsedConfig[:log_collection_settings][:stderr][:exclude_namespaces]
         stdoutNamespaces = Array.new
-
+        #Clearing it, so that it can be overridden with the config map settings
+        @stderrExcludeNamespaces.clear
         if @collectStderrLogs && !stderrNamespaces.nil?
           if stderrNamespaces.kind_of?(Array)
             if !@stdoutExcludeNamespaces.nil? && !@stdoutExcludeNamespaces.empty?
@@ -93,8 +94,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             end
             # Checking only for the first element to be string because toml enforces the arrays to contain elements of same type
             if stderrNamespaces.length > 0 && stderrNamespaces[0].kind_of?(String)
-              #Clearing it, so that it can be overridden with the config map settings
-              @stderrExcludeNamespaces.clear
               stderrNamespaces.each do |namespace|
                 if @stderrExcludeNamespaces.empty?
                   # To not append , for the first element
