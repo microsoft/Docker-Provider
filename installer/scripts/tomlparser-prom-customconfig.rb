@@ -182,7 +182,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               puts "config::Successfully created telemetry file for replicaset"
             end
           else
-            puts "config::Typecheck failed for prometheus config settings for replicaset, using defaults"
+            ConfigParseErrorLogger.logError("Typecheck failed for prometheus config settings for replicaset, using defaults")
           end # end of type check condition
         rescue => errorStr
           ConfigParseErrorLogger.logError("Exception while parsing config file for prometheus config for replicaset: #{errorStr}, using defaults")
