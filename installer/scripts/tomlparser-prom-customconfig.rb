@@ -1,6 +1,7 @@
 #!/usr/local/bin/ruby
 
 require_relative "tomlrb"
+require_relative "ConfigParseErrorLogger"
 require "fileutils"
 
 @promConfigMapMountPath = "/etc/config/settings/prometheus-data-collection-settings"
@@ -40,7 +41,7 @@ def parseConfigMap
       return nil
     end
   rescue => errorStr
-    puts "config::error::Exception while parsing toml config file for prometheus config: #{errorStr}, using defaults"
+    ConfigParseErrorLogger.logError("Exception while parsing toml config file for prometheus config: #{errorStr}, using defaults")
     return nil
   end
 end
@@ -66,7 +67,7 @@ def replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
     new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
     new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
   rescue => errorStr
-    puts "config::error::Exception while replacing default pod monitor settings: #{errorStr}"
+    ConfigParseErrorLogger.logError("Exception while replacing default pod monitor settings: #{errorStr}")
   end
   return new_contents
 end
@@ -98,7 +99,7 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
     new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", pluginConfigsWithNamespaces)
     return new_contents
   rescue => errorStr
-    puts "config::error::Exception while creating prometheus input plugins to filter namespaces: #{errorStr}, using defaults"
+    ConfigParseErrorLogger.logError("Exception while creating prometheus input plugins to filter namespaces: #{errorStr}, using defaults")
     replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
   end
 end
@@ -184,7 +185,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             puts "config::Typecheck failed for prometheus config settings for replicaset, using defaults"
           end # end of type check condition
         rescue => errorStr
-          puts "config::error::Exception while parsing config file for prometheus config for replicaset: #{errorStr}, using defaults"
+          ConfigParseErrorLogger.logError("Exception while parsing config file for prometheus config for replicaset: #{errorStr}, using defaults")
           setRsPromDefaults
           puts "****************End Prometheus Config Processing********************"
         end
@@ -239,13 +240,13 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             puts "config::Typecheck failed for prometheus config settings for daemonset, using defaults"
           end # end of type check condition
         rescue => errorStr
-          puts "config::error::Exception while parsing config file for prometheus config for daemonset: #{errorStr}, using defaults"
+          ConfigParseErrorLogger.logError("Exception while parsing config file for prometheus config for daemonset: #{errorStr}, using defaults")
           puts "****************End Prometheus Config Processing********************"
         end
       end # end of controller type check
     end
   else
-    puts "config::error:: Controller undefined while processing prometheus config, using defaults"
+    ConfigParseErrorLogger.logError("Controller undefined while processing prometheus config, using defaults")
   end
 end
 
