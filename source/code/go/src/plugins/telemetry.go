@@ -209,9 +209,9 @@ func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType)
 	var logRecordString = ToString(record["log"])
 
 	if errType == ConfigError {
-		Log("configError\n")
-		Log(logRecordString)
+		Log("configErrorHash\n")
 		configErrorHash[logRecordString] = struct{}{}
+		Log(configErrorHash)
 		Log("\n")
 	} else {
 		Log("scrapingError\n")
@@ -219,6 +219,7 @@ func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType)
 		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
 			var splitString = scrapingSplitString[1]
 			promScrapeErrorHash[splitString] = struct{}{}
+			Log(promScrapeErrorHash)
 		}
 		Log("\n")
 	}
