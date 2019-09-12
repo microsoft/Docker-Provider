@@ -56,6 +56,11 @@ const (
 	eventNameDaemonSetHeartbeat = "ContainerLogDaemonSetHeartbeatEvent"
 )
 
+const (
+	ConfigError  = iota
+	ScrapingError
+)
+
 // SendContainerLogPluginMetrics is a go-routine that flushes the data periodically (every 5 mins to App Insights)
 func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 	telemetryPushInterval, err := strconv.Atoi(telemetryPushIntervalProperty)
@@ -194,11 +199,36 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 	return 0, nil
 }
 
+// PostConfigErrorstoLA sends config/prometheus scraping error log lines to LA
+func PostConfigErrorstoLA(record map[interface{}]interface{}, errorType const) {
+	configErrorHash := make(map[string]struct{})
+	promScrapeErrorHash := make(map[string]struct{})
+
+	logRecordString = ToString(record["Log"]
+
+	if (errorType == ConfigError) {
+ 		Log("configError\n")
+ 		Log(logRecordString)
+ 		Log("\n")
+	} else {
+		Log("scrapingError\n")
+		Log(after(logRecordString, "[inputs.prometheus]: ")
+		Log("\n")
+	}
+}
+
 // PushToAppInsightsTraces sends the log lines as trace messages to the configured App Insights Instance
 func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLevel contracts.SeverityLevel, tag string) int {
 	var logLines []string
 	for _, record := range records {
 		logLines = append(logLines, ToString(record["log"]))
+		// If record contains config error or prometheus scraping errors send it to ****** table
+		var logEntry = ToString(record["log"])
+		if (strings.Contains(logEntry, "config::error") {
+			PostConfigErrorstoLA(record, ConfigError)
+		} else if (strings.Contains(logEntry, "E! [inputs.prometheus]")) {
+			PostConfigErrorstoLA(record, ScrapingError)
+		}
 	}
 
 	traceEntry := strings.Join(logLines, "\n")
