@@ -56,8 +56,10 @@ const (
 	eventNameDaemonSetHeartbeat = "ContainerLogDaemonSetHeartbeatEvent"
 )
 
+type ErrorType int
+
 const (
-	ConfigError  = iota
+	ConfigError ErrorType = iota
 	ScrapingError
 )
 
@@ -200,13 +202,13 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 }
 
 // PostConfigErrorstoLA sends config/prometheus scraping error log lines to LA
-func PostConfigErrorstoLA(record map[interface{}]interface{}, errorType const) {
+func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType) {
 	configErrorHash := make(map[string]struct{})
 	promScrapeErrorHash := make(map[string]struct{})
 
 	logRecordString = ToString(record["Log"]
 
-	if (errorType == ConfigError) {
+	if (errType == ConfigError) {
  		Log("configError\n")
  		Log(logRecordString)
  		Log("\n")
