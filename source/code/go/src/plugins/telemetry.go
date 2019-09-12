@@ -206,7 +206,7 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 // PostConfigErrorstoLA sends config/prometheus scraping error log lines to LA
 func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType) {
 	configErrorHash := make(map[string]struct{})
-	promScrapeErrorHash := make(map[string]struct{})
+	// promScrapeErrorHash := make(map[string]struct{})
 
 	var logRecordString = ToString(record["log"])
 
@@ -222,7 +222,7 @@ func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType)
 		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
 			var splitString0 = scrapingSplitString[0]
 			var splitString1 = scrapingSplitString[1]
-			promScrapeErrorHash[splitString] = struct{}{}
+			// promScrapeErrorHash[splitString] = struct{}{}
 			Log("scrapingError-0\n")
 			Log(splitString0)
 			Log("\n")
