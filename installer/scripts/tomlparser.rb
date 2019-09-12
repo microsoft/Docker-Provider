@@ -136,6 +136,14 @@ end
 
 @configSchemaVersion = ENV["AZMON_AGENT_CFG_SCHEMA_VERSION"]
 puts "****************Start Config Processing********************"
+teststr = "rashmi1
+rashmi2
+rashmi3
+rashmi4"
+
+puts "without_to_json: " + teststr
+puts "with_to_json: " + teststr.to_json
+
 if !@configSchemaVersion.nil? && !@configSchemaVersion.empty? && @configSchemaVersion.strip.casecmp("v1") == 0 #note v1 is the only supported schema version , so hardcoding it
     configMapSettings = {}
 
