@@ -56,9 +56,11 @@ const (
 	eventNameDaemonSetHeartbeat = "ContainerLogDaemonSetHeartbeatEvent"
 )
 
+// ErrorType to be used as enum
 type ErrorType int
 
 const (
+	// ErrorType to be used as enum for ConfigError and ScrapingError
 	ConfigError ErrorType = iota
 	ScrapingError
 )
@@ -208,20 +210,26 @@ func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType)
 
 	var logRecordString = ToString(record["log"])
 
-	if errType == ConfigError {
+	switch errType {
+	case ConfigError:
 		Log("configErrorHash\n")
 		configErrorHash[logRecordString] = struct{}{}
 		Log(logRecordString)
 		Log("\n")
-	} else {
-		Log("scrapingError\n")
+
+	case ScrapingError:
 		var scrapingSplitString = strings.Split(logRecordString, "[inputs.prometheus]: ")
 		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
-			var splitString = scrapingSplitString[1]
+			var splitString0 = scrapingSplitString[0]
+			var splitString1 = scrapingSplitString[1]
 			promScrapeErrorHash[splitString] = struct{}{}
-			Log(splitString)
+			Log("scrapingError-0\n")
+			Log(splitString0)
+			Log("\n")
+			Log("scrapingError-1\n")
+			Log(splitString1)
+			Log("\n")
 		}
-		Log("\n")
 	}
 }
 
