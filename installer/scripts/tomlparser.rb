@@ -113,10 +113,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
 
     #Get environment variables log config settings
     begin
-      if !parsedConfig[:log_collection_settings][:env_var].nil? && !parsedConfig[:log_collection_settings][:env_var][:enabled].nil?
+      #if !parsedConfig[:log_collection_settings][:env_var].nil? && !parsedConfig[:log_collection_settings][:env_var][:enabled].nil?
         @collectClusterEnvVariables = parsedConfig[:log_collection_settings][:env_var][:enabled]
         puts "config::Using config map setting for cluster level environment variable collection"
-      end
+      #end
     rescue => errorStr
       ConfigParseErrorLogger.logError("Exception while reading config settings for cluster level environment variable collection - #{errorStr}, using defaults")
     end
