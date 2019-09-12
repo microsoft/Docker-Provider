@@ -206,15 +206,15 @@ func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType)
 	configErrorHash := make(map[string]struct{})
 	promScrapeErrorHash := make(map[string]struct{})
 
-	logRecordString = ToString(record["Log"]
+	logRecordString = ToString(record["Log"])
 
-	if (errType == ConfigError) {
- 		Log("configError\n")
- 		Log(logRecordString)
- 		Log("\n")
+	if errType == ConfigError {
+		Log("configError\n")
+		Log(logRecordString)
+		Log("\n")
 	} else {
 		Log("scrapingError\n")
-		Log(after(logRecordString, "[inputs.prometheus]: ")
+		Log(after(logRecordString, "[inputs.prometheus]: "))
 		Log("\n")
 	}
 }
@@ -226,9 +226,9 @@ func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLeve
 		logLines = append(logLines, ToString(record["log"]))
 		// If record contains config error or prometheus scraping errors send it to ****** table
 		var logEntry = ToString(record["log"])
-		if (strings.Contains(logEntry, "config::error") {
+		if strings.Contains(logEntry, "config::error") {
 			PostConfigErrorstoLA(record, ConfigError)
-		} else if (strings.Contains(logEntry, "E! [inputs.prometheus]")) {
+		} else if strings.Contains(logEntry, "E! [inputs.prometheus]") {
 			PostConfigErrorstoLA(record, ScrapingError)
 		}
 	}
