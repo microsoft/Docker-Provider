@@ -217,7 +217,7 @@ func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType)
 		Log("scrapingError\n")
 		var scrapingSplitString = strings.Split(logRecordString, "[inputs.prometheus]: ")
 		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
-			var splitString = Log(scrapingSplitString[1])
+			var splitString = scrapingSplitString[1]
 			promScrapeErrorHash[splitString] = struct{}{}
 		}
 		Log("\n")
