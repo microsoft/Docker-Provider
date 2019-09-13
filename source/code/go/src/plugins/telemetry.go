@@ -206,38 +206,39 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 // PostConfigErrorstoLA sends config/prometheus scraping error log lines to LA
 func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType) {
 	configErrorHash := make(map[string]struct{})
-	// promScrapeErrorHash := make(map[string]struct{})
+	promScrapeErrorHash := make(map[string]struct{})
 
-	Log("Iterating\n")
-	for k, v := range record {
-		Log("key[%s] value[%s]\n", k, v)
-	}
-	Log("Done Iterating\n")
-	// var test = record["log"]
-	// var logRecord = ToString(test["log"])
-	// Log("LogRecordlog\n")
-	// Log(logRecord)
+	// Log("Iterating\n")
+	// for k, v := range record {
+	// 	Log("key[%s] value[%s]\n", k, v)
+	// }
+	// Log("Done Iterating\n")
 	var logRecordString = ToString(record["log"])
 
 	switch errType {
 	case ConfigError:
 		Log("configErrorHash\n")
 		configErrorHash[logRecordString] = struct{}{}
-		Log(logRecordString)
+		for k, v := range configErrorHash {
+			Log("key[%s] value[%s]\n", k, v)
+		}
+		// Log(logRecordString)
 		Log("\n")
 
 	case ScrapingError:
-		var scrapingSplitString = strings.Split(logRecordString, "[inputs.prometheus]: ")
+		// Splitting this based on the string 'E! [inputs.prometheus]: ' since the log entry has timestamp and we want to remove that before building the hash
+		var scrapingSplitString = strings.Split(logRecordString, "E! [inputs.prometheus]: ")
 		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
-			var splitString0 = scrapingSplitString[0]
-			var splitString1 = scrapingSplitString[1]
-			// promScrapeErrorHash[splitString] = struct{}{}
-			Log("scrapingError-0\n")
-			Log(splitString0)
-			Log("\n")
-			Log("scrapingError-1\n")
-			Log(splitString1)
-			Log("\n")
+			var splitString = scrapingSplitString[1]
+			if splitString != nil {
+				promScrapeErrorHash[splitString] = struct{}{}
+				Log("promScrapeErrorHash\n")
+				for k, v := range promScrapeErrorHash {
+					Log("key[%s] value[%s]\n", k, v)
+				}
+				// Log(splitString1)
+				Log("\n")
+			}
 		}
 	}
 }
