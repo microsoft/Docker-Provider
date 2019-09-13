@@ -208,9 +208,9 @@ func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType)
 	configErrorHash := make(map[string]struct{})
 	// promScrapeErrorHash := make(map[string]struct{})
 
-	var logRecord = ToString(record)
+	//var logRecord = ToString(record)
 	Log("LogRecord\n")
-	Log(logRecord)
+	Log(record)
 	var logRecordString = ToString(record["log"])
 
 	switch errType {
