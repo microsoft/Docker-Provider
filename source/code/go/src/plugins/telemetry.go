@@ -2,7 +2,9 @@ package main
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -203,6 +205,19 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 	return 0, nil
 }
 
+// telegraf metric DataItem represents the object corresponding to the json that is sent by fluentbit tail plugin
+type laConfigError struct {
+	// 'golden' fields
+	Origin    string  `json:"Origin"`
+	Namespace string  `json:"Namespace"`
+	Name      string  `json:"Name"`
+	Value     float64 `json:"Value"`
+	Tags      string  `json:"Tags"`
+	// specific required fields for LA
+	CollectionTime string `json:"CollectionTime"` //mapped to TimeGenerated
+	Computer       string `json:"Computer"`
+}
+
 // PostConfigErrorstoLA sends config/prometheus scraping error log lines to LA
 func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType) {
 	configErrorHash := make(map[string]struct{})
@@ -239,6 +254,41 @@ func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType)
 				// Log(splitString1)
 				Log("\n")
 			}
+		}
+
+		Log("Posting custom log type to LA\n")
+		var laConfigErrorDataItems []*laConfigError
+		configError := laConfigError{
+			Origin:         "myOrigin",
+			Namespace:      "myNamespace",
+			Name:           "myName",
+			Value:          3.14,
+			Tags:           "myTags",
+			CollectionTime: "2019-09-16T10:00:00.625Z",
+			Computer:       "myComputer",
+		}
+
+		//Log ("la metric:%v", laMetric)
+		laConfigErrorDataItems = append(laConfigErrorDataItems, &configError)
+		jsonBytes, err := json.Marshal(laConfigErrorDataItems)
+
+		var uri = "https://17052a42-0cf3-4954-bbf1-30ef85e918a2.ods.opinsights.azure.com/api/logs?api-version=2016-04-01"
+		req, _ := http.NewRequest("POST", uri, jsonBytes)
+		req.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
+		req.Header.Set("Authorization", "SharedKey 17052a42-0cf3-4954-bbf1-30ef85e918a2:s3mrYKEufENFit8ANb7BitrDbZ9Y26xhxHwa877q9co=")
+		req.Header.Set("Log-Type", "MyRecordType")
+		req.Header.Set("time-generated-field", "2019-09-16T14:00:00.625Z")
+		req.Header.Set("Accept", "application/json")
+
+		resp, err := HTTPClient.Do(req)
+		if err != nil {
+			Log("Error:")
+			Log(err)
+			Log("\n")
+		} else {
+			Log("response:")
+			Log(resp)
+			Log("\n")
 		}
 	}
 }
