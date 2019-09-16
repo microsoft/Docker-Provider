@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -273,7 +275,7 @@ func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType)
 		jsonBytes, err := json.Marshal(laConfigErrorDataItems)
 
 		var uri = "https://17052a42-0cf3-4954-bbf1-30ef85e918a2.ods.opinsights.azure.com/api/logs?api-version=2016-04-01"
-		req, _ := http.NewRequest("POST", uri, jsonBytes)
+		req, _ := http.NewRequest("POST", uri, bytes.NewBuffer(jsonBytes))
 		req.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
 		req.Header.Set("Authorization", "SharedKey 17052a42-0cf3-4954-bbf1-30ef85e918a2:s3mrYKEufENFit8ANb7BitrDbZ9Y26xhxHwa877q9co=")
 		req.Header.Set("Log-Type", "MyRecordType")
@@ -282,14 +284,19 @@ func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType)
 
 		resp, err := HTTPClient.Do(req)
 		if err != nil {
-			Log("Error:")
-			Log(err)
-			Log("\n")
-		} else {
-			Log("response:")
-			Log(resp)
-			Log("\n")
+			message := fmt.Sprintf("PostConfigErrorsToLA::Error:when sending data \n")
+			Log(message)
 		}
+
+		if resp == nil || resp.StatusCode != 200 {
+			if resp != nil {
+				Log("PostConfigErrorsToLA::Error:Response Status %v Status Code %v", resp.Status, resp.StatusCode)
+			}
+		} else if resp.StatusCode == 200 {
+			Log("Success")
+		}
+
+		defer resp.Body.Close()
 	}
 }
 
