@@ -89,9 +89,9 @@ var (
 	// ClientSet for querying KubeAPIs
 	ClientSet *kubernetes.Clientset
 	// Config error hash
-	ConfigErrorHash map[string]configErrorDetails
+	ConfigErrorHash map[string]ConfigErrorDetails
 	// Prometheus scraping error hash
-	PromScrapeErrorHash map[string]configErrorDetails
+	PromScrapeErrorHash map[string]ConfigErrorDetails
 )
 
 var (
@@ -157,17 +157,17 @@ type laConfigError struct {
 	ConfigErrorLevel   string `json:"ConfigErrorLevel"`
 }
 
-type configErrorDetails struct {
-	ContainerId string
-	PodName     string
-	Computer    string
-	ErrorTime   string
+type ConfigErrorDetails struct {
+	ContainerId    string
+	PodName        string
+	Computer       string
+	ErrorTimeStamp string
 }
 
 type ConfigErrorBlob struct {
-	DataType  string     `json:"DataType"`
-	IPName    string     `json:"IPName"`
-	DataItems []DataItem `json:"DataItems"`
+	DataType  string          `json:"DataType"`
+	IPName    string          `json:"IPName"`
+	DataItems []laConfigError `json:"DataItems"`
 }
 
 // ErrorType to be used as enum
@@ -312,7 +312,7 @@ func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 	switch errType {
 	case ConfigError:
 		// Log("configErrorHash\n")
-		ConfigErrorHash[logRecordString] = configErrorDetails{
+		ConfigErrorHash[logRecordString] = ConfigErrorDetails{
 			ContainerId:    containerID,
 			PodName:        podName,
 			Computer:       Computer,
@@ -325,7 +325,7 @@ func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
 			var splitString = scrapingSplitString[1]
 			if splitString != "" {
-				PromScrapeErrorHash[splitString] = configErrorDetails{
+				PromScrapeErrorHash[splitString] = ConfigErrorDetails{
 					ContainerId:    containerID,
 					PodName:        podName,
 					Computer:       Computer,
@@ -341,7 +341,7 @@ func flushConfigErrorRecords() {
 	var laConfigErrorRecords []laConfigError
 	start := time.Now()
 
-	for k, v := range configErrorHash {
+	for k, v := range ConfigErrorHash {
 		laConfigErrorRecord := laConfigError{
 			ConfigErrorMessage: k,
 			ContainerId:        v.ContainerId,
@@ -355,7 +355,7 @@ func flushConfigErrorRecords() {
 		// Log("key[%s] value[%s]\n", k, v)
 	}
 
-	for k, v := range promScrapeErrorHash {
+	for k, v := range PromScrapeErrorHash {
 		laConfigErrorRecord := laConfigError{
 			ConfigErrorMessage: k,
 			ContainerId:        v.ContainerId,
@@ -380,7 +380,7 @@ func flushConfigErrorRecords() {
 			message := fmt.Sprintf("Error while Marshalling config error entry: %s", err.Error())
 			Log(message)
 			SendException(message)
-			return output.FLB_OK
+			// return output.FLB_OK
 		}
 		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
 		req.Header.Set("Content-Type", "application/json")
@@ -397,14 +397,14 @@ func flushConfigErrorRecords() {
 			Log(message)
 			Log("Failed to flush %d records after %s", len(laConfigErrorRecords), elapsed)
 
-			return output.FLB_RETRY
+			// return output.FLB_RETRY
 		}
 
 		if resp == nil || resp.StatusCode != 200 {
 			if resp != nil {
 				Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
 			}
-			return output.FLB_RETRY
+			// return output.FLB_RETRY
 		}
 
 		defer resp.Body.Close()
@@ -749,8 +749,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	NameIDMap = make(map[string]string)
 	// Keeping the two error hashes separate since we need to keep the config error hash for the lifetime of the container
 	// whereas the prometheus scrape error hash needs to be refreshed every hour
-	ConfigErrorHash := make(map[string]configErrorDetails{})
-	PromScrapeErrorHash := make(map[string]configErrorDetails{})
+	ConfigErrorHash := make(map[string]ConfigErrorDetails)
+	PromScrapeErrorHash := make(map[string]ConfigErrorDetails)
 
 	pluginConfig, err := ReadConfiguration(pluginConfPath)
 	if err != nil {
