@@ -57,13 +57,13 @@ const (
 )
 
 // ErrorType to be used as enum
-type ErrorType int
+// type ErrorType int
 
-const (
-	// ErrorType to be used as enum for ConfigError and ScrapingError
-	ConfigError ErrorType = iota
-	ScrapingError
-)
+// const (
+// 	// ErrorType to be used as enum for ConfigError and ScrapingError
+// 	ConfigError ErrorType = iota
+// 	ScrapingError
+// )
 
 // SendContainerLogPluginMetrics is a go-routine that flushes the data periodically (every 5 mins to App Insights)
 func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {

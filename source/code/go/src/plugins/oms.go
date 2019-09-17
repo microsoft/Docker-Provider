@@ -88,6 +88,10 @@ var (
 	ContainerLogTelemetryMutex = &sync.Mutex{}
 	// ClientSet for querying KubeAPIs
 	ClientSet *kubernetes.Clientset
+	// Config error hash
+	ConfigErrorHash map[string]configErrorDetails
+	// Prometheus scraping error hash
+	PromScrapeErrorHash map[string]configErrorDetails
 )
 
 var (
@@ -701,7 +705,7 @@ func containsKey(currentMap map[string]bool, key string) bool {
 
 // GetContainerIDK8sNamespacePodNameFromFileName Gets the container ID, k8s namespace and pod name From the file Name
 // sample filename kube-proxy-dgcx7_kube-system_kube-proxy-8df7e49e9028b60b5b0d0547f409c455a9567946cf763267b7e6fa053ab8c182.log
-func GetContainerIDK8sNamespacePodNameFromFileName(filename string) (string, string) {
+func GetContainerIDK8sNamespacePodNameFromFileName(filename string) (string, string, string) {
 	id := ""
 	ns := ""
 	podName := ""
