@@ -305,9 +305,8 @@ func convert(in interface{}) (float64, bool) {
 // PostConfigErrorstoLA sends config/prometheus scraping error log lines to LA
 func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 	var logRecordString = ToString(record["log"])
-	var fileName = ToString(record["filepath"])
 	var errorTimeStamp = ToString(record["time"])
-	containerID, k8sNamespace, podName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
+	containerID, _, podName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
 
 	switch errType {
 	case ConfigError:
@@ -582,7 +581,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	DataUpdateMutex.Unlock()
 
 	for _, record := range tailPluginRecords {
-		containerID, k8sNamespace, podName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
+		containerID, k8sNamespace, _ := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
 		logEntrySource := ToString(record["stream"])
 
 		if strings.EqualFold(logEntrySource, "stdout") {
@@ -749,8 +748,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	NameIDMap = make(map[string]string)
 	// Keeping the two error hashes separate since we need to keep the config error hash for the lifetime of the container
 	// whereas the prometheus scrape error hash needs to be refreshed every hour
-	ConfigErrorHash := make(map[string]ConfigErrorDetails)
-	PromScrapeErrorHash := make(map[string]ConfigErrorDetails)
+	// ConfigErrorHash := make(map[string]ConfigErrorDetails)
+	// PromScrapeErrorHash := make(map[string]ConfigErrorDetails)
 
 	pluginConfig, err := ReadConfiguration(pluginConfPath)
 	if err != nil {
