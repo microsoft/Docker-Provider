@@ -311,7 +311,7 @@ func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 		ConfigErrorHash[logRecordString] = configErrorDetails{
 			ContainerId:    containerID,
 			PodName:        podName,
-			Computer:       "",
+			Computer:       Computer,
 			ErrorTimeStamp: errorTimeStamp,
 		}
 
@@ -324,7 +324,7 @@ func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 				PromScrapeErrorHash[splitString] = configErrorDetails{
 					ContainerId:    containerID,
 					PodName:        podName,
-					Computer:       "",
+					Computer:       Computer,
 					ErrorTimeStamp: errorTimeStamp,
 				}
 			}
@@ -341,7 +341,7 @@ func flushConfigErrorRecords() {
 		laConfigErrorRecord := laConfigError{
 			ConfigErrorMessage: k,
 			ContainerId:        v.ContainerId,
-			Computer:           "Computer",
+			Computer:           v.Computer,
 			PodName:            v.PodName,
 			CollectionTime:     start.Format(time.RFC3339),
 			ConfigErrorTime:    v.ErrorTimeStamp,
@@ -355,7 +355,7 @@ func flushConfigErrorRecords() {
 		laConfigErrorRecord := laConfigError{
 			ConfigErrorMessage: k,
 			ContainerId:        v.ContainerId,
-			Computer:           "Computer",
+			Computer:           v.Computer,
 			PodName:            v.PodName,
 			CollectionTime:     start.Format(time.RFC3339),
 			ConfigErrorTime:    v.ErrorTimeStamp,
