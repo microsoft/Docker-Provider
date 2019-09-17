@@ -375,7 +375,9 @@ func flushConfigErrorRecords() {
 			DataItems: laConfigErrorRecords}
 
 		marshalled, err := json.Marshal(configErrorEntry)
-		Log("configerrorlogdata:\n" + marshalled)
+		Log("configerrorlogdata-unmarshalled:\n" + ToString(configErrorEntry))
+
+		Log("configerrorlogdata-marshalled:\n" + ToString(marshalled))
 		if err != nil {
 			message := fmt.Sprintf("Error while Marshalling config error entry: %s", err.Error())
 			Log(message)
