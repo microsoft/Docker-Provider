@@ -1,12 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -207,17 +204,62 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 	return 0, nil
 }
 
-// telegraf metric DataItem represents the object corresponding to the json that is sent by fluentbit tail plugin
+// Config Error message to be sent to Log Analytics
 type laConfigError struct {
-	// 'golden' fields
-	Origin    string  `json:"Origin"`
-	Namespace string  `json:"Namespace"`
-	Name      string  `json:"Name"`
-	Value     float64 `json:"Value"`
-	Tags      string  `json:"Tags"`
-	// specific required fields for LA
-	CollectionTime string `json:"CollectionTime"` //mapped to TimeGenerated
-	Computer       string `json:"Computer"`
+	ConfigErrorMessage string `json:"ConfigErrorMessage"`
+	ContainerId        string `json:"ContainerId"`
+	PodName            string `json:"PodName"`
+	CollectionTime     string `json:"CollectionTime"` //mapped to TimeGenerated
+	Computer           string `json:"Computer"`
+	ErrorTime string `json:"ErrorTime"`
+}
+
+type configErrorDetails struct {
+	ContainerId string
+	PodName     string
+	Computer    string
+	ErrorTime string
+}
+
+// Function to get config error log records after iterating through the two hashes
+func getConfigErrorLogs(configErrorHash, promScrapeErrorHash) {
+	var laConfigErrorRecords []*laConfigError
+
+	for k, v := range configErrorHash {
+
+		laConfigErrorRecord := laConfigError{
+			ConfigErrorMessage: k,
+			ContainerId: v.ContainerId,
+			Computer: "Computer",
+			PodName: v.PodName,
+			CollectionTime:
+		}
+
+		Log("key[%s] value[%s]\n", k, v)
+	}
+
+	for k, v := range fieldMap {
+		fv, ok := convert(v)
+		if !ok {
+			continue
+		}
+		i := m["timestamp"].(uint64)
+		laMetric := laTelegrafMetric{
+			Origin: fmt.Sprintf("%s/%s", TelegrafMetricOriginPrefix, TelegrafMetricOriginSuffix),
+			//Namespace:  	fmt.Sprintf("%s/%s", TelegrafMetricNamespacePrefix, m["name"]),
+			Namespace:      fmt.Sprintf("%s", m["name"]),
+			Name:           fmt.Sprintf("%s", k),
+			Value:          fv,
+			Tags:           fmt.Sprintf("%s", tagJson),
+			CollectionTime: time.Unix(int64(i), 0).Format(time.RFC3339),
+			Computer:       Computer, //this is the collection agent's computer name, not necessarily to which computer the metric applies to
+		}
+
+		//Log ("la metric:%v", laMetric)
+		laMetrics = append(laMetrics, &laMetric)
+	}
+	return laMetrics, nil
+
 }
 
 // PostConfigErrorstoLA sends config/prometheus scraping error log lines to LA
@@ -231,11 +273,19 @@ func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType)
 	// }
 	// Log("Done Iterating\n")
 	var logRecordString = ToString(record["log"])
+	var fileName = ToString(record["filepath"])
+	var errorTimeStamp = ToString(record["time"])
+	containerID, k8sNamespace, podName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
 
 	switch errType {
 	case ConfigError:
 		Log("configErrorHash\n")
-		configErrorHash[logRecordString] = struct{}{}
+		configErrorHash[logRecordString] = configErrorDetails{
+			ContainerId: containerID,
+			PodName:     podName,
+			Computer:    "",
+			ErrorTimeStamp: errorTimeStamp,
+		}
 		for k, v := range configErrorHash {
 			Log("key[%s] value[%s]\n", k, v)
 		}
@@ -248,7 +298,12 @@ func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType)
 		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
 			var splitString = scrapingSplitString[1]
 			if splitString != "" {
-				promScrapeErrorHash[splitString] = struct{}{}
+				promScrapeErrorHash[splitString] = configErrorDetails{
+					ContainerId: containerID,
+					PodName:     podName,
+					Computer:    "",
+					ErrorTimeStamp: errorTimeStamp,
+				}
 				Log("promScrapeErrorHash\n")
 				for k, v := range promScrapeErrorHash {
 					Log("key[%s] value[%s]\n", k, v)
@@ -257,46 +312,6 @@ func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType)
 				Log("\n")
 			}
 		}
-
-		Log("Posting custom log type to LA\n")
-		var laConfigErrorDataItems []*laConfigError
-		configError := laConfigError{
-			Origin:         "myOrigin",
-			Namespace:      "myNamespace",
-			Name:           "myName",
-			Value:          3.14,
-			Tags:           "myTags",
-			CollectionTime: "2019-09-16T10:00:00.625Z",
-			Computer:       "myComputer",
-		}
-
-		//Log ("la metric:%v", laMetric)
-		laConfigErrorDataItems = append(laConfigErrorDataItems, &configError)
-		jsonBytes, err := json.Marshal(laConfigErrorDataItems)
-
-		var uri = "https://17052a42-0cf3-4954-bbf1-30ef85e918a2.ods.opinsights.azure.com/api/logs?api-version=2016-04-01"
-		req, _ := http.NewRequest("POST", uri, bytes.NewBuffer(jsonBytes))
-		req.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
-		req.Header.Set("Authorization", "SharedKey 17052a42-0cf3-4954-bbf1-30ef85e918a2:s3mrYKEufENFit8ANb7BitrDbZ9Y26xhxHwa877q9co=")
-		req.Header.Set("Log-Type", "MyRecordType")
-		req.Header.Set("time-generated-field", "2019-09-16T14:00:00.625Z")
-		req.Header.Set("Accept", "application/json")
-
-		resp, err := HTTPClient.Do(req)
-		if err != nil {
-			message := fmt.Sprintf("PostConfigErrorsToLA::Error:when sending data \n")
-			Log(message)
-		}
-
-		if resp == nil || resp.StatusCode != 200 {
-			if resp != nil {
-				Log("PostConfigErrorsToLA::Error:Response Status %v Status Code %v", resp.Status, resp.StatusCode)
-			}
-		} else if resp.StatusCode == 200 {
-			Log("Success")
-		}
-
-		defer resp.Body.Close()
 	}
 }
 

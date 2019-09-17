@@ -431,7 +431,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	DataUpdateMutex.Unlock()
 
 	for _, record := range tailPluginRecords {
-		containerID, k8sNamespace := GetContainerIDK8sNamespaceFromFileName(ToString(record["filepath"]))
+		containerID, k8sNamespace, podName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
 		logEntrySource := ToString(record["stream"])
 
 		if strings.EqualFold(logEntrySource, "stdout") {
@@ -552,11 +552,12 @@ func containsKey(currentMap map[string]bool, key string) bool {
 	return c
 }
 
-// GetContainerIDK8sNamespaceFromFileName Gets the container ID From the file Name
+// GetContainerIDK8sNamespacePodNameFromFileName Gets the container ID, k8s namespace and pod name From the file Name
 // sample filename kube-proxy-dgcx7_kube-system_kube-proxy-8df7e49e9028b60b5b0d0547f409c455a9567946cf763267b7e6fa053ab8c182.log
-func GetContainerIDK8sNamespaceFromFileName(filename string) (string, string) {
+func GetContainerIDK8sNamespacePodNameFromFileName(filename string) (string, string) {
 	id := ""
 	ns := ""
+	podName := ""
 
 	start := strings.LastIndex(filename, "-")
 	end := strings.LastIndex(filename, ".")
@@ -576,7 +577,16 @@ func GetContainerIDK8sNamespaceFromFileName(filename string) (string, string) {
 		ns = filename[start+1 : end]
 	}
 
-	return id, ns
+	//start = strings.Index(filename, "_")
+	end = strings.Index(filename, "_")
+
+	if start >= end || start == -1 || end == -1 {
+		podName = ""
+	} else {
+		podName = filename[0:end]
+	}
+
+	return id, ns, podName
 }
 
 // InitializePlugin reads and populates plugin configuration
