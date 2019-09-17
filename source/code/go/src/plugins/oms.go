@@ -299,15 +299,7 @@ func convert(in interface{}) (float64, bool) {
 }
 
 // PostConfigErrorstoLA sends config/prometheus scraping error log lines to LA
-func getErrorHash(record map[interface{}]interface{}, errType ErrorType) {
-	// errorHash := make(map[string]configErrorDetails{})
-	// promScrapeErrorHash := make(map[string]struct{})
-
-	// Log("Iterating\n")
-	// for k, v := range record
-	// 	Log("key[%s] value[%s]\n", k, v)
-	// }
-	// Log("Done Iterating\n")
+func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 	var logRecordString = ToString(record["log"])
 	var fileName = ToString(record["filepath"])
 	var errorTimeStamp = ToString(record["time"])
@@ -316,7 +308,7 @@ func getErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 	switch errType {
 	case ConfigError:
 		// Log("configErrorHash\n")
-		ErrorHash[logRecordString] = configErrorDetails{
+		ConfigErrorHash[logRecordString] = configErrorDetails{
 			ContainerId:    containerID,
 			PodName:        podName,
 			Computer:       "",
@@ -329,7 +321,7 @@ func getErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
 			var splitString = scrapingSplitString[1]
 			if splitString != "" {
-				ErrorHash[splitString] = configErrorDetails{
+				PromScrapeErrorHash[splitString] = configErrorDetails{
 					ContainerId:    containerID,
 					PodName:        podName,
 					Computer:       "",
@@ -338,11 +330,10 @@ func getErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 			}
 		}
 	}
-	return errorHash
 }
 
 // Function to get config error log records after iterating through the two hashes
-func getConfigErrorLogs(configErrorHash, promScrapeErrorHash) {
+func flushConfigErrorRecords() {
 	var laConfigErrorRecords []laConfigError
 	start := time.Now()
 
@@ -368,7 +359,7 @@ func getConfigErrorLogs(configErrorHash, promScrapeErrorHash) {
 			PodName:            v.PodName,
 			CollectionTime:     start.Format(time.RFC3339),
 			ConfigErrorTime:    v.ErrorTimeStamp,
-			ConfigErrorLevel:   "Error",
+			ConfigErrorLevel:   "Warning",
 		}
 		laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
 		// Log("key[%s] value[%s]\n", k, v)
@@ -752,7 +743,10 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	StderrIgnoreNsSet = make(map[string]bool)
 	ImageIDMap = make(map[string]string)
 	NameIDMap = make(map[string]string)
-	ErrorHash := make(map[string]configErrorDetails{})
+	// Keeping the two error hashes separate since we need to keep the config error hash for the lifetime of the container
+	// whereas the prometheus scrape error hash needs to be refreshed every hour
+	ConfigErrorHash := make(map[string]configErrorDetails{})
+	PromScrapeErrorHash := make(map[string]configErrorDetails{})
 
 	pluginConfig, err := ReadConfiguration(pluginConfPath)
 	if err != nil {
