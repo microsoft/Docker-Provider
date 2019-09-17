@@ -142,6 +142,42 @@ type ContainerLogBlob struct {
 	DataItems []DataItem `json:"DataItems"`
 }
 
+// Config Error message to be sent to Log Analytics
+type laConfigError struct {
+	ConfigErrorMessage string `json:"ConfigErrorMessage"`
+	ContainerId        string `json:"ContainerId"`
+	PodName            string `json:"PodName"`
+	CollectionTime     string `json:"CollectionTime"` //mapped to TimeGenerated
+	Computer           string `json:"Computer"`
+	ConfigErrorTime    string `json:"ConfigErrorTime"`
+	ConfigErrorLevel   string `json:"ConfigErrorLevel"`
+}
+
+type configErrorDetails struct {
+	ContainerId string
+	PodName     string
+	Computer    string
+	ErrorTime   string
+}
+
+type ConfigErrorBlob struct {
+	DataType  string     `json:"DataType"`
+	IPName    string     `json:"IPName"`
+	DataItems []DataItem `json:"DataItems"`
+}
+
+// ErrorType to be used as enum
+type ErrorType int
+
+const (
+	// ErrorType to be used as enum for ConfigError and ScrapingError
+	ConfigError ErrorType = iota
+	ScrapingError
+)
+
+// DataType for Config error
+const ConfigErrorDataType = "CONFIG_ERROR_BLOB"
+
 func createLogger() *log.Logger {
 	var logfile *os.File
 	path := "/var/opt/microsoft/docker-cimprov/log/fluent-bit-out-oms-runtime.log"
@@ -259,6 +295,126 @@ func convert(in interface{}) (float64, bool) {
 	default:
 		Log("returning 0 for %v ", in)
 		return float64(0), false
+	}
+}
+
+// PostConfigErrorstoLA sends config/prometheus scraping error log lines to LA
+func getErrorHash(record map[interface{}]interface{}, errType ErrorType) {
+	// errorHash := make(map[string]configErrorDetails{})
+	// promScrapeErrorHash := make(map[string]struct{})
+
+	// Log("Iterating\n")
+	// for k, v := range record
+	// 	Log("key[%s] value[%s]\n", k, v)
+	// }
+	// Log("Done Iterating\n")
+	var logRecordString = ToString(record["log"])
+	var fileName = ToString(record["filepath"])
+	var errorTimeStamp = ToString(record["time"])
+	containerID, k8sNamespace, podName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
+
+	switch errType {
+	case ConfigError:
+		// Log("configErrorHash\n")
+		ErrorHash[logRecordString] = configErrorDetails{
+			ContainerId:    containerID,
+			PodName:        podName,
+			Computer:       "",
+			ErrorTimeStamp: errorTimeStamp,
+		}
+
+	case ScrapingError:
+		// Splitting this based on the string 'E! [inputs.prometheus]: ' since the log entry has timestamp and we want to remove that before building the hash
+		var scrapingSplitString = strings.Split(logRecordString, "E! [inputs.prometheus]: ")
+		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
+			var splitString = scrapingSplitString[1]
+			if splitString != "" {
+				ErrorHash[splitString] = configErrorDetails{
+					ContainerId:    containerID,
+					PodName:        podName,
+					Computer:       "",
+					ErrorTimeStamp: errorTimeStamp,
+				}
+			}
+		}
+	}
+	return errorHash
+}
+
+// Function to get config error log records after iterating through the two hashes
+func getConfigErrorLogs(configErrorHash, promScrapeErrorHash) {
+	var laConfigErrorRecords []laConfigError
+	start := time.Now()
+
+	for k, v := range configErrorHash {
+		laConfigErrorRecord := laConfigError{
+			ConfigErrorMessage: k,
+			ContainerId:        v.ContainerId,
+			Computer:           "Computer",
+			PodName:            v.PodName,
+			CollectionTime:     start.Format(time.RFC3339),
+			ConfigErrorTime:    v.ErrorTimeStamp,
+			ConfigErrorLevel:   "Error",
+		}
+		laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
+		// Log("key[%s] value[%s]\n", k, v)
+	}
+
+	for k, v := range promScrapeErrorHash {
+		laConfigErrorRecord := laConfigError{
+			ConfigErrorMessage: k,
+			ContainerId:        v.ContainerId,
+			Computer:           "Computer",
+			PodName:            v.PodName,
+			CollectionTime:     start.Format(time.RFC3339),
+			ConfigErrorTime:    v.ErrorTimeStamp,
+			ConfigErrorLevel:   "Error",
+		}
+		laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
+		// Log("key[%s] value[%s]\n", k, v)
+	}
+
+	if len(laConfigErrorRecords) > 0 {
+		configErrorEntry := ConfigErrorBlob{
+			DataType:  ConfigErrorDataType,
+			IPName:    IPName,
+			DataItems: laConfigErrorRecords}
+
+		marshalled, err := json.Marshal(configErrorEntry)
+		if err != nil {
+			message := fmt.Sprintf("Error while Marshalling config error entry: %s", err.Error())
+			Log(message)
+			SendException(message)
+			return output.FLB_OK
+		}
+		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
+		req.Header.Set("Content-Type", "application/json")
+		//expensive to do string len for every request, so use a flag
+		// if ResourceCentric == true {
+		// 	req.Header.Set("x-ms-AzureResourceId", ResourceID)
+		// }
+
+		resp, err := HTTPClient.Do(req)
+		elapsed := time.Since(start)
+
+		if err != nil {
+			message := fmt.Sprintf("Error when sending config error request %s \n", err.Error())
+			Log(message)
+			Log("Failed to flush %d records after %s", len(laConfigErrorRecords), elapsed)
+
+			return output.FLB_RETRY
+		}
+
+		if resp == nil || resp.StatusCode != 200 {
+			if resp != nil {
+				Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
+			}
+			return output.FLB_RETRY
+		}
+
+		defer resp.Body.Close()
+		numRecords := len(laConfigErrorRecords)
+		Log("Successfully flushed %d records in %s", numRecords, elapsed)
 	}
 }
 
@@ -596,6 +752,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	StderrIgnoreNsSet = make(map[string]bool)
 	ImageIDMap = make(map[string]string)
 	NameIDMap = make(map[string]string)
+	ErrorHash := make(map[string]configErrorDetails{})
 
 	pluginConfig, err := ReadConfiguration(pluginConfPath)
 	if err != nil {

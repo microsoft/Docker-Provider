@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -204,117 +203,6 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 	return 0, nil
 }
 
-// Config Error message to be sent to Log Analytics
-type laConfigError struct {
-	ConfigErrorMessage string `json:"ConfigErrorMessage"`
-	ContainerId        string `json:"ContainerId"`
-	PodName            string `json:"PodName"`
-	CollectionTime     string `json:"CollectionTime"` //mapped to TimeGenerated
-	Computer           string `json:"Computer"`
-	ErrorTime string `json:"ErrorTime"`
-}
-
-type configErrorDetails struct {
-	ContainerId string
-	PodName     string
-	Computer    string
-	ErrorTime string
-}
-
-// Function to get config error log records after iterating through the two hashes
-func getConfigErrorLogs(configErrorHash, promScrapeErrorHash) {
-	var laConfigErrorRecords []*laConfigError
-
-	for k, v := range configErrorHash {
-
-		laConfigErrorRecord := laConfigError{
-			ConfigErrorMessage: k,
-			ContainerId: v.ContainerId,
-			Computer: "Computer",
-			PodName: v.PodName,
-			CollectionTime:
-		}
-
-		Log("key[%s] value[%s]\n", k, v)
-	}
-
-	for k, v := range fieldMap {
-		fv, ok := convert(v)
-		if !ok {
-			continue
-		}
-		i := m["timestamp"].(uint64)
-		laMetric := laTelegrafMetric{
-			Origin: fmt.Sprintf("%s/%s", TelegrafMetricOriginPrefix, TelegrafMetricOriginSuffix),
-			//Namespace:  	fmt.Sprintf("%s/%s", TelegrafMetricNamespacePrefix, m["name"]),
-			Namespace:      fmt.Sprintf("%s", m["name"]),
-			Name:           fmt.Sprintf("%s", k),
-			Value:          fv,
-			Tags:           fmt.Sprintf("%s", tagJson),
-			CollectionTime: time.Unix(int64(i), 0).Format(time.RFC3339),
-			Computer:       Computer, //this is the collection agent's computer name, not necessarily to which computer the metric applies to
-		}
-
-		//Log ("la metric:%v", laMetric)
-		laMetrics = append(laMetrics, &laMetric)
-	}
-	return laMetrics, nil
-
-}
-
-// PostConfigErrorstoLA sends config/prometheus scraping error log lines to LA
-func PostConfigErrorstoLA(record map[interface{}]interface{}, errType ErrorType) {
-	configErrorHash := make(map[string]struct{})
-	promScrapeErrorHash := make(map[string]struct{})
-
-	// Log("Iterating\n")
-	// for k, v := range record {
-	// 	Log("key[%s] value[%s]\n", k, v)
-	// }
-	// Log("Done Iterating\n")
-	var logRecordString = ToString(record["log"])
-	var fileName = ToString(record["filepath"])
-	var errorTimeStamp = ToString(record["time"])
-	containerID, k8sNamespace, podName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
-
-	switch errType {
-	case ConfigError:
-		Log("configErrorHash\n")
-		configErrorHash[logRecordString] = configErrorDetails{
-			ContainerId: containerID,
-			PodName:     podName,
-			Computer:    "",
-			ErrorTimeStamp: errorTimeStamp,
-		}
-		for k, v := range configErrorHash {
-			Log("key[%s] value[%s]\n", k, v)
-		}
-		// Log(logRecordString)
-		Log("\n")
-
-	case ScrapingError:
-		// Splitting this based on the string 'E! [inputs.prometheus]: ' since the log entry has timestamp and we want to remove that before building the hash
-		var scrapingSplitString = strings.Split(logRecordString, "E! [inputs.prometheus]: ")
-		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
-			var splitString = scrapingSplitString[1]
-			if splitString != "" {
-				promScrapeErrorHash[splitString] = configErrorDetails{
-					ContainerId: containerID,
-					PodName:     podName,
-					Computer:    "",
-					ErrorTimeStamp: errorTimeStamp,
-				}
-				Log("promScrapeErrorHash\n")
-				for k, v := range promScrapeErrorHash {
-					Log("key[%s] value[%s]\n", k, v)
-				}
-				// Log(splitString1)
-				Log("\n")
-			}
-		}
-	}
-}
-
 // PushToAppInsightsTraces sends the log lines as trace messages to the configured App Insights Instance
 func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLevel contracts.SeverityLevel, tag string) int {
 	var logLines []string
@@ -323,9 +211,9 @@ func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLeve
 		// If record contains config error or prometheus scraping errors send it to ****** table
 		var logEntry = ToString(record["log"])
 		if strings.Contains(logEntry, "config::error") {
-			PostConfigErrorstoLA(record, ConfigError)
+			populateErrorHash(record, ConfigError)
 		} else if strings.Contains(logEntry, "E! [inputs.prometheus]") {
-			PostConfigErrorstoLA(record, ScrapingError)
+			populateErrorHash(record, ScrapingError)
 		}
 	}
 
