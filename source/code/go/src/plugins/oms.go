@@ -730,13 +730,13 @@ func GetContainerIDK8sNamespacePodNameFromFileName(filename string) (string, str
 		ns = filename[start+1 : end]
 	}
 
-	//start = strings.Index(filename, "_")
+	start = 0
 	end = strings.Index(filename, "_")
 
 	if start >= end || start == -1 || end == -1 {
 		podName = ""
 	} else {
-		podName = filename[0:end]
+		podName = filename[start:end]
 	}
 
 	return id, ns, podName
