@@ -304,7 +304,7 @@ func convert(in interface{}) (float64, bool) {
 
 // PostConfigErrorstoLA sends config/prometheus scraping error log lines to LA
 func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
-	var logRecordString = record["log"]
+	var logRecordString = ToString(record["log"])
 	var errorTimeStamp = ToString(record["time"])
 	containerID, _, podName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
 
