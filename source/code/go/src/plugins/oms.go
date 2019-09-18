@@ -751,8 +751,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	NameIDMap = make(map[string]string)
 	// Keeping the two error hashes separate since we need to keep the config error hash for the lifetime of the container
 	// whereas the prometheus scrape error hash needs to be refreshed every hour
-	ConfigErrorHash := make(map[string]ConfigErrorDetails)
-	PromScrapeErrorHash := make(map[string]ConfigErrorDetails)
+	ConfigErrorHash = make(map[string]ConfigErrorDetails)
+	PromScrapeErrorHash = make(map[string]ConfigErrorDetails)
 
 	pluginConfig, err := ReadConfiguration(pluginConfPath)
 	if err != nil {
