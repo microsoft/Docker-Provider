@@ -327,6 +327,8 @@ func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 		var scrapingSplitString = strings.Split(logRecordString, "E! [inputs.prometheus]: ")
 		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
 			var splitString = scrapingSplitString[1]
+			// Trimming the newline character at the end since this is being added as the key
+			splitString = strings.TrimSuffix(splitString, "\n")
 			if splitString != "" {
 				PromScrapeErrorHash[splitString] = ConfigErrorDetails{
 					ContainerId:    containerID,
