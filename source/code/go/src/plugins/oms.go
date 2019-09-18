@@ -313,8 +313,8 @@ func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 		// Log("configErrorHash\n")
 		// Doing this since the error logger library is adding quotes around the string and a newline to the end because
 		// we are converting string to json to log lines in different lines as one record
-		// logRecordString = logRecordString[1 : len(logRecordString)-1]
-		// logRecordString = strings.TrimSuffix(logRecordString, "\n")
+		logRecordString = strings.TrimSuffix(logRecordString, "\n")
+		logRecordString = logRecordString[1 : len(logRecordString)-1]
 		ConfigErrorHash[logRecordString] = ConfigErrorDetails{
 			ContainerId:    containerID,
 			PodName:        podName,
