@@ -429,7 +429,7 @@ func flushConfigErrorRecords() {
 			//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
 			Log("PromScrapeErrorHash before:\n")
 			for k := range PromScrapeErrorHash {
-				Log(PromScrapeErrorHash[k])
+				Log(ToString(PromScrapeErrorHash[k]))
 			}
 
 			for k := range PromScrapeErrorHash {
@@ -438,7 +438,7 @@ func flushConfigErrorRecords() {
 
 			Log("PromScrapeErrorHash after:\n")
 			for k := range PromScrapeErrorHash {
-				Log(PromScrapeErrorHash[k])
+				Log(ToString(PromScrapeErrorHash[k]))
 			}
 
 		}
