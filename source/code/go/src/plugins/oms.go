@@ -53,6 +53,7 @@ const ReplicaSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimp
 // IPName for Container Log
 const IPName = "Containers"
 const defaultContainerInventoryRefreshInterval = 60
+const kubeMonAgentConfigEventFlushInterval = 120
 
 var (
 	// PluginConfiguration the plugins configuration
@@ -97,6 +98,8 @@ var (
 var (
 	// ContainerImageNameRefreshTicker updates the container image and names periodically
 	ContainerImageNameRefreshTicker *time.Ticker
+	// KubeMonAgentConfigEventsSendTicker to send config events every hour
+	KubeMonAgentConfigEventsSendTicker *time.Ticker
 )
 
 var (
@@ -148,11 +151,14 @@ type ContainerLogBlob struct {
 
 // Config Error message to be sent to Log Analytics
 type laConfigError struct {
+	CollectionTime string `json:"CollectionTime"` //mapped to TimeGenerated
+	Computer       string `json:"Computer"`
+	// Category           string `json:"Category"`
+	// Level              string `json:"Level"`
+	// Details   		   string `json:"Details"`
 	ConfigErrorMessage string `json:"ConfigErrorMessage"`
 	ContainerId        string `json:"ContainerId"`
 	PodName            string `json:"PodName"`
-	CollectionTime     string `json:"CollectionTime"` //mapped to TimeGenerated
-	Computer           string `json:"Computer"`
 	ConfigErrorTime    string `json:"ConfigErrorTime"`
 	ConfigErrorLevel   string `json:"ConfigErrorLevel"`
 }
@@ -343,81 +349,99 @@ func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 
 // Function to get config error log records after iterating through the two hashes
 func flushConfigErrorRecords() {
-	var laConfigErrorRecords []laConfigError
-	start := time.Now()
+	for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
+		var laConfigErrorRecords []laConfigError
+		start := time.Now()
 
-	for k, v := range ConfigErrorHash {
-		laConfigErrorRecord := laConfigError{
-			ConfigErrorMessage: k,
-			ContainerId:        v.ContainerId,
-			Computer:           v.Computer,
-			PodName:            v.PodName,
-			CollectionTime:     start.Format(time.RFC3339),
-			ConfigErrorTime:    v.ErrorTimeStamp,
-			ConfigErrorLevel:   "Error",
-		}
-		laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
-		// Log("key[%s] value[%s]\n", k, v)
-	}
-
-	for k, v := range PromScrapeErrorHash {
-		laConfigErrorRecord := laConfigError{
-			ConfigErrorMessage: k,
-			ContainerId:        v.ContainerId,
-			Computer:           v.Computer,
-			PodName:            v.PodName,
-			CollectionTime:     start.Format(time.RFC3339),
-			ConfigErrorTime:    v.ErrorTimeStamp,
-			ConfigErrorLevel:   "Warning",
-		}
-		laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
-		// Log("key[%s] value[%s]\n", k, v)
-	}
-
-	if len(laConfigErrorRecords) > 0 {
-		configErrorEntry := ConfigErrorBlob{
-			DataType:  ConfigErrorDataType,
-			IPName:    IPName,
-			DataItems: laConfigErrorRecords}
-
-		marshalled, err := json.Marshal(configErrorEntry)
-		Log("configerrorlogdata-unmarshalled:\n" + ToString(configErrorEntry))
-
-		Log("configerrorlogdata-marshalled:\n" + ToString(marshalled))
-		if err != nil {
-			message := fmt.Sprintf("Error while Marshalling config error entry: %s", err.Error())
-			Log(message)
-			SendException(message)
-			// return output.FLB_OK
-		}
-		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
-		req.Header.Set("Content-Type", "application/json")
-		//expensive to do string len for every request, so use a flag
-		// if ResourceCentric == true {
-		// 	req.Header.Set("x-ms-AzureResourceId", ResourceID)
-		// }
-
-		resp, err := HTTPClient.Do(req)
-		elapsed := time.Since(start)
-
-		if err != nil {
-			message := fmt.Sprintf("Error when sending config error request %s \n", err.Error())
-			Log(message)
-			Log("Failed to flush %d records after %s", len(laConfigErrorRecords), elapsed)
-
-			// return output.FLB_RETRY
-		}
-
-		if resp == nil || resp.StatusCode != 200 {
-			if resp != nil {
-				Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
+		for k, v := range ConfigErrorHash {
+			laConfigErrorRecord := laConfigError{
+				ConfigErrorMessage: k,
+				ContainerId:        v.ContainerId,
+				Computer:           v.Computer,
+				PodName:            v.PodName,
+				CollectionTime:     start.Format(time.RFC3339),
+				ConfigErrorTime:    v.ErrorTimeStamp,
+				ConfigErrorLevel:   "Error",
 			}
-			// return output.FLB_RETRY
+			laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
+			// Log("key[%s] value[%s]\n", k, v)
 		}
 
-		defer resp.Body.Close()
-		numRecords := len(laConfigErrorRecords)
-		Log("Successfully flushed %d records in %s", numRecords, elapsed)
+		for k, v := range PromScrapeErrorHash {
+			laConfigErrorRecord := laConfigError{
+				ConfigErrorMessage: k,
+				ContainerId:        v.ContainerId,
+				Computer:           v.Computer,
+				PodName:            v.PodName,
+				CollectionTime:     start.Format(time.RFC3339),
+				ConfigErrorTime:    v.ErrorTimeStamp,
+				ConfigErrorLevel:   "Warning",
+			}
+			laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
+			// Log("key[%s] value[%s]\n", k, v)
+		}
+
+		if len(laConfigErrorRecords) > 0 {
+			configErrorEntry := ConfigErrorBlob{
+				DataType:  ConfigErrorDataType,
+				IPName:    IPName,
+				DataItems: laConfigErrorRecords}
+
+			marshalled, err := json.Marshal(configErrorEntry)
+			Log("configerrorlogdata-unmarshalled:\n" + ToString(configErrorEntry))
+
+			Log("configerrorlogdata-marshalled:\n" + ToString(marshalled))
+			if err != nil {
+				message := fmt.Sprintf("Error while Marshalling config error entry: %s", err.Error())
+				Log(message)
+				SendException(message)
+				// return output.FLB_OK
+			}
+			req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
+			req.Header.Set("Content-Type", "application/json")
+			//expensive to do string len for every request, so use a flag
+			if ResourceCentric == true {
+				req.Header.Set("x-ms-AzureResourceId", ResourceID)
+			}
+
+			resp, err := HTTPClient.Do(req)
+			elapsed := time.Since(start)
+
+			if err != nil {
+				message := fmt.Sprintf("Error when sending config error request %s \n", err.Error())
+				Log(message)
+				Log("Failed to flush %d records after %s", len(laConfigErrorRecords), elapsed)
+
+				// return output.FLB_RETRY
+			}
+
+			if resp == nil || resp.StatusCode != 200 {
+				if resp != nil {
+					Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
+				}
+				// return output.FLB_RETRY
+			}
+
+			defer resp.Body.Close()
+			numRecords := len(laConfigErrorRecords)
+			Log("Successfully flushed %d records in %s", numRecords, elapsed)
+
+			//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
+			Log("PromScrapeErrorHash before:\n")
+			for k := range PromScrapeErrorHash {
+				Log(PromScrapeErrorHash[k])
+			}
+
+			for k := range PromScrapeErrorHash {
+				delete(PromScrapeErrorHash, k)
+			}
+
+			Log("PromScrapeErrorHash after:\n")
+			for k := range PromScrapeErrorHash {
+				Log(PromScrapeErrorHash[k])
+			}
+
+		}
 	}
 }
 
@@ -812,6 +836,9 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	}
 	Log("containerInventoryRefreshInterval = %d \n", containerInventoryRefreshInterval)
 	ContainerImageNameRefreshTicker = time.NewTicker(time.Second * time.Duration(containerInventoryRefreshInterval))
+
+	Log("kubeMonAgentConfigEventFlushInterval = %d \n", kubeMonAgentConfigEventFlushInterval)
+	KubeMonAgentConfigEventsSendTicker = time.NewTicker(time.Second * time.Duration(kubeMonAgentConfigEventFlushInterval))
 
 	// Populate Computer field
 	containerHostName, err := ioutil.ReadFile(pluginConfig["container_host_file_path"])
