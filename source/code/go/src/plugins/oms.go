@@ -93,6 +93,8 @@ var (
 	ConfigErrorHash map[string]ConfigErrorDetails
 	// Prometheus scraping error hash
 	PromScrapeErrorHash map[string]ConfigErrorDetails
+	// EventHashUpdateMutex read and write mutex access to the event hash
+	EventHashUpdateMutex = &sync.Mutex{}
 )
 
 var (
@@ -314,6 +316,8 @@ func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 	var errorTimeStamp = ToString(record["time"])
 	containerID, _, podName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
 
+	Log("Updating config event hash - Locking for update \n ")
+	EventHashUpdateMutex.Lock()
 	switch errType {
 	case ConfigError:
 		// Log("configErrorHash\n")
@@ -345,6 +349,8 @@ func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 			}
 		}
 	}
+	EventHashUpdateMutex.Unlock()
+	Log("Updating config event hash - Unlocked after update \n ")
 }
 
 // Function to get config error log records after iterating through the two hashes
@@ -427,9 +433,9 @@ func flushConfigErrorRecords() {
 			Log("Successfully flushed %d records in %s", numRecords, elapsed)
 
 			//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
-			for k := range PromScrapeErrorHash {
-				delete(PromScrapeErrorHash, k)
-			}
+			// for k := range PromScrapeErrorHash {
+			// 	delete(PromScrapeErrorHash, k)
+			// }
 		}
 	}
 }
@@ -871,10 +877,11 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		populateExcludedStdoutNamespaces()
 		populateExcludedStderrNamespaces()
 		go updateContainerImageNameMaps()
+
+		// Flush config error records every hour
+		go flushConfigErrorRecords()
 	} else {
 		Log("Running in replicaset. Disabling container enrichment caching & updates \n")
 	}
 
-	// Flush config error records every hour
-	go flushConfigErrorRecords()
 }
