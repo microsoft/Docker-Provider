@@ -349,6 +349,7 @@ func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 
 // Function to get config error log records after iterating through the two hashes
 func flushConfigErrorRecords() {
+	Log("In flushConfigErrorRecords\n")
 	var laConfigErrorRecords []laConfigError
 	start := time.Now()
 
@@ -363,7 +364,7 @@ func flushConfigErrorRecords() {
 			ConfigErrorLevel:   "Error",
 		}
 		laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
-		// Log("key[%s] value[%s]\n", k, v)
+		Log("key[%s] value[%s]\n", k, v)
 	}
 
 	for k, v := range PromScrapeErrorHash {
@@ -377,7 +378,7 @@ func flushConfigErrorRecords() {
 			ConfigErrorLevel:   "Warning",
 		}
 		laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
-		// Log("key[%s] value[%s]\n", k, v)
+		Log("key[%s] value[%s]\n", k, v)
 	}
 
 	if len(laConfigErrorRecords) > 0 {
