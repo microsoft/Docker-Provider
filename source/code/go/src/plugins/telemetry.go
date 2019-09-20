@@ -217,7 +217,10 @@ func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLeve
 		}
 	}
 
-	flushConfigErrorRecords()
+	for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
+		Log("Flushing config error records\n")
+		flushConfigErrorRecords()
+	}
 	traceEntry := strings.Join(logLines, "\n")
 	traceTelemetryItem := appinsights.NewTraceTelemetry(traceEntry, severityLevel)
 	traceTelemetryItem.Properties["tag"] = tag

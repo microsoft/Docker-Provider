@@ -349,98 +349,95 @@ func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 
 // Function to get config error log records after iterating through the two hashes
 func flushConfigErrorRecords() {
-	for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
-		var laConfigErrorRecords []laConfigError
-		start := time.Now()
+	var laConfigErrorRecords []laConfigError
+	start := time.Now()
 
-		for k, v := range ConfigErrorHash {
-			laConfigErrorRecord := laConfigError{
-				ConfigErrorMessage: k,
-				ContainerId:        v.ContainerId,
-				Computer:           v.Computer,
-				PodName:            v.PodName,
-				CollectionTime:     start.Format(time.RFC3339),
-				ConfigErrorTime:    v.ErrorTimeStamp,
-				ConfigErrorLevel:   "Error",
-			}
-			laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
-			// Log("key[%s] value[%s]\n", k, v)
+	for k, v := range ConfigErrorHash {
+		laConfigErrorRecord := laConfigError{
+			ConfigErrorMessage: k,
+			ContainerId:        v.ContainerId,
+			Computer:           v.Computer,
+			PodName:            v.PodName,
+			CollectionTime:     start.Format(time.RFC3339),
+			ConfigErrorTime:    v.ErrorTimeStamp,
+			ConfigErrorLevel:   "Error",
+		}
+		laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
+		// Log("key[%s] value[%s]\n", k, v)
+	}
+
+	for k, v := range PromScrapeErrorHash {
+		laConfigErrorRecord := laConfigError{
+			ConfigErrorMessage: k,
+			ContainerId:        v.ContainerId,
+			Computer:           v.Computer,
+			PodName:            v.PodName,
+			CollectionTime:     start.Format(time.RFC3339),
+			ConfigErrorTime:    v.ErrorTimeStamp,
+			ConfigErrorLevel:   "Warning",
+		}
+		laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
+		// Log("key[%s] value[%s]\n", k, v)
+	}
+
+	if len(laConfigErrorRecords) > 0 {
+		configErrorEntry := ConfigErrorBlob{
+			DataType:  ConfigErrorDataType,
+			IPName:    IPName,
+			DataItems: laConfigErrorRecords}
+
+		marshalled, err := json.Marshal(configErrorEntry)
+		Log("configerrorlogdata-unmarshalled:\n" + ToString(configErrorEntry))
+
+		Log("configerrorlogdata-marshalled:\n" + ToString(marshalled))
+		if err != nil {
+			message := fmt.Sprintf("Error while Marshalling config error entry: %s", err.Error())
+			Log(message)
+			SendException(message)
+			// return output.FLB_OK
+		}
+		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
+		req.Header.Set("Content-Type", "application/json")
+		//expensive to do string len for every request, so use a flag
+		if ResourceCentric == true {
+			req.Header.Set("x-ms-AzureResourceId", ResourceID)
 		}
 
-		for k, v := range PromScrapeErrorHash {
-			laConfigErrorRecord := laConfigError{
-				ConfigErrorMessage: k,
-				ContainerId:        v.ContainerId,
-				Computer:           v.Computer,
-				PodName:            v.PodName,
-				CollectionTime:     start.Format(time.RFC3339),
-				ConfigErrorTime:    v.ErrorTimeStamp,
-				ConfigErrorLevel:   "Warning",
-			}
-			laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
-			// Log("key[%s] value[%s]\n", k, v)
+		resp, err := HTTPClient.Do(req)
+		elapsed := time.Since(start)
+
+		if err != nil {
+			message := fmt.Sprintf("Error when sending config error request %s \n", err.Error())
+			Log(message)
+			Log("Failed to flush %d records after %s", len(laConfigErrorRecords), elapsed)
+
+			// return output.FLB_RETRY
 		}
 
-		if len(laConfigErrorRecords) > 0 {
-			configErrorEntry := ConfigErrorBlob{
-				DataType:  ConfigErrorDataType,
-				IPName:    IPName,
-				DataItems: laConfigErrorRecords}
-
-			marshalled, err := json.Marshal(configErrorEntry)
-			Log("configerrorlogdata-unmarshalled:\n" + ToString(configErrorEntry))
-
-			Log("configerrorlogdata-marshalled:\n" + ToString(marshalled))
-			if err != nil {
-				message := fmt.Sprintf("Error while Marshalling config error entry: %s", err.Error())
-				Log(message)
-				SendException(message)
-				// return output.FLB_OK
+		if resp == nil || resp.StatusCode != 200 {
+			if resp != nil {
+				Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
 			}
-			req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
-			req.Header.Set("Content-Type", "application/json")
-			//expensive to do string len for every request, so use a flag
-			if ResourceCentric == true {
-				req.Header.Set("x-ms-AzureResourceId", ResourceID)
-			}
+			// return output.FLB_RETRY
+		}
 
-			resp, err := HTTPClient.Do(req)
-			elapsed := time.Since(start)
+		defer resp.Body.Close()
+		numRecords := len(laConfigErrorRecords)
+		Log("Successfully flushed %d records in %s", numRecords, elapsed)
 
-			if err != nil {
-				message := fmt.Sprintf("Error when sending config error request %s \n", err.Error())
-				Log(message)
-				Log("Failed to flush %d records after %s", len(laConfigErrorRecords), elapsed)
+		//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
+		Log("PromScrapeErrorHash before:\n")
+		for k := range PromScrapeErrorHash {
+			Log(ToString(PromScrapeErrorHash[k]))
+		}
 
-				// return output.FLB_RETRY
-			}
+		for k := range PromScrapeErrorHash {
+			delete(PromScrapeErrorHash, k)
+		}
 
-			if resp == nil || resp.StatusCode != 200 {
-				if resp != nil {
-					Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
-				}
-				// return output.FLB_RETRY
-			}
-
-			defer resp.Body.Close()
-			numRecords := len(laConfigErrorRecords)
-			Log("Successfully flushed %d records in %s", numRecords, elapsed)
-
-			//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
-			Log("PromScrapeErrorHash before:\n")
-			for k := range PromScrapeErrorHash {
-				Log(ToString(PromScrapeErrorHash[k]))
-			}
-
-			for k := range PromScrapeErrorHash {
-				delete(PromScrapeErrorHash, k)
-			}
-
-			Log("PromScrapeErrorHash after:\n")
-			for k := range PromScrapeErrorHash {
-				Log(ToString(PromScrapeErrorHash[k]))
-			}
-
+		Log("PromScrapeErrorHash after:\n")
+		for k := range PromScrapeErrorHash {
+			Log(ToString(PromScrapeErrorHash[k]))
 		}
 	}
 }
