@@ -360,6 +360,7 @@ func flushConfigErrorRecords() {
 		var laConfigErrorRecords []laConfigError
 		start := time.Now()
 
+		EventHashUpdateMutex.Lock()
 		for k, v := range ConfigErrorHash {
 			laConfigErrorRecord := laConfigError{
 				ConfigErrorMessage: k,
@@ -371,7 +372,7 @@ func flushConfigErrorRecords() {
 				ConfigErrorLevel:   "Error",
 			}
 			laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
-			Log("key[%s] value[%s]\n", k, v)
+			// Log("key[%s] value[%s]\n", k, v)
 		}
 
 		for k, v := range PromScrapeErrorHash {
@@ -385,8 +386,9 @@ func flushConfigErrorRecords() {
 				ConfigErrorLevel:   "Warning",
 			}
 			laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
-			Log("key[%s] value[%s]\n", k, v)
+			// Log("key[%s] value[%s]\n", k, v)
 		}
+		EventHashUpdateMutex.UnLock()
 
 		if len(laConfigErrorRecords) > 0 {
 			configErrorEntry := ConfigErrorBlob{
@@ -433,9 +435,15 @@ func flushConfigErrorRecords() {
 			Log("Successfully flushed %d records in %s", numRecords, elapsed)
 
 			//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
+			EventHashUpdateMutex.Lock()
 			// for k := range PromScrapeErrorHash {
 			// 	delete(PromScrapeErrorHash, k)
 			// }
+			for k := range ConfigErrorHash {
+				delete(ConfigErrorHash, k)
+			}
+			EventHashUpdateMutex.Unlock()
+
 		}
 	}
 }
