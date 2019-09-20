@@ -310,39 +310,37 @@ func convert(in interface{}) (float64, bool) {
 
 // PostConfigErrorstoLA sends config/prometheus scraping error log lines to LA
 func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
-	for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
-		var logRecordString = ToString(record["log"])
-		var errorTimeStamp = ToString(record["time"])
-		containerID, _, podName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
+	var logRecordString = ToString(record["log"])
+	var errorTimeStamp = ToString(record["time"])
+	containerID, _, podName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
 
-		switch errType {
-		case ConfigError:
-			// Log("configErrorHash\n")
-			// Doing this since the error logger library is adding quotes around the string and a newline to the end because
-			// we are converting string to json to log lines in different lines as one record
-			logRecordString = strings.TrimSuffix(logRecordString, "\n")
-			logRecordString = logRecordString[1 : len(logRecordString)-1]
-			ConfigErrorHash[logRecordString] = ConfigErrorDetails{
-				ContainerId:    containerID,
-				PodName:        podName,
-				Computer:       Computer,
-				ErrorTimeStamp: errorTimeStamp,
-			}
+	switch errType {
+	case ConfigError:
+		// Log("configErrorHash\n")
+		// Doing this since the error logger library is adding quotes around the string and a newline to the end because
+		// we are converting string to json to log lines in different lines as one record
+		logRecordString = strings.TrimSuffix(logRecordString, "\n")
+		logRecordString = logRecordString[1 : len(logRecordString)-1]
+		ConfigErrorHash[logRecordString] = ConfigErrorDetails{
+			ContainerId:    containerID,
+			PodName:        podName,
+			Computer:       Computer,
+			ErrorTimeStamp: errorTimeStamp,
+		}
 
-		case ScrapingError:
-			// Splitting this based on the string 'E! [inputs.prometheus]: ' since the log entry has timestamp and we want to remove that before building the hash
-			var scrapingSplitString = strings.Split(logRecordString, "E! [inputs.prometheus]: ")
-			if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
-				var splitString = scrapingSplitString[1]
-				// Trimming the newline character at the end since this is being added as the key
-				splitString = strings.TrimSuffix(splitString, "\n")
-				if splitString != "" {
-					PromScrapeErrorHash[splitString] = ConfigErrorDetails{
-						ContainerId:    containerID,
-						PodName:        podName,
-						Computer:       Computer,
-						ErrorTimeStamp: errorTimeStamp,
-					}
+	case ScrapingError:
+		// Splitting this based on the string 'E! [inputs.prometheus]: ' since the log entry has timestamp and we want to remove that before building the hash
+		var scrapingSplitString = strings.Split(logRecordString, "E! [inputs.prometheus]: ")
+		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
+			var splitString = scrapingSplitString[1]
+			// Trimming the newline character at the end since this is being added as the key
+			splitString = strings.TrimSuffix(splitString, "\n")
+			if splitString != "" {
+				PromScrapeErrorHash[splitString] = ConfigErrorDetails{
+					ContainerId:    containerID,
+					PodName:        podName,
+					Computer:       Computer,
+					ErrorTimeStamp: errorTimeStamp,
 				}
 			}
 		}
@@ -351,85 +349,87 @@ func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 
 // Function to get config error log records after iterating through the two hashes
 func flushConfigErrorRecords() {
-	Log("In flushConfigErrorRecords\n")
-	var laConfigErrorRecords []laConfigError
-	start := time.Now()
+	for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
+		Log("In flushConfigErrorRecords\n")
+		var laConfigErrorRecords []laConfigError
+		start := time.Now()
 
-	for k, v := range ConfigErrorHash {
-		laConfigErrorRecord := laConfigError{
-			ConfigErrorMessage: k,
-			ContainerId:        v.ContainerId,
-			Computer:           v.Computer,
-			PodName:            v.PodName,
-			CollectionTime:     start.Format(time.RFC3339),
-			ConfigErrorTime:    v.ErrorTimeStamp,
-			ConfigErrorLevel:   "Error",
-		}
-		laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
-		Log("key[%s] value[%s]\n", k, v)
-	}
-
-	for k, v := range PromScrapeErrorHash {
-		laConfigErrorRecord := laConfigError{
-			ConfigErrorMessage: k,
-			ContainerId:        v.ContainerId,
-			Computer:           v.Computer,
-			PodName:            v.PodName,
-			CollectionTime:     start.Format(time.RFC3339),
-			ConfigErrorTime:    v.ErrorTimeStamp,
-			ConfigErrorLevel:   "Warning",
-		}
-		laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
-		Log("key[%s] value[%s]\n", k, v)
-	}
-
-	if len(laConfigErrorRecords) > 0 {
-		configErrorEntry := ConfigErrorBlob{
-			DataType:  ConfigErrorDataType,
-			IPName:    IPName,
-			DataItems: laConfigErrorRecords}
-
-		marshalled, err := json.Marshal(configErrorEntry)
-
-		Log("configerrorlogdata-marshalled:\n" + ToString(marshalled))
-		if err != nil {
-			message := fmt.Sprintf("Error while Marshalling config error entry: %s", err.Error())
-			Log(message)
-			SendException(message)
-			// return output.FLB_OK
-		}
-		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
-		req.Header.Set("Content-Type", "application/json")
-		//expensive to do string len for every request, so use a flag
-		if ResourceCentric == true {
-			req.Header.Set("x-ms-AzureResourceId", ResourceID)
-		}
-
-		resp, err := HTTPClient.Do(req)
-		elapsed := time.Since(start)
-
-		if err != nil {
-			message := fmt.Sprintf("Error when sending config error request %s \n", err.Error())
-			Log(message)
-			Log("Failed to flush %d records after %s", len(laConfigErrorRecords), elapsed)
-
-			// return output.FLB_RETRY
-		}
-
-		if resp == nil || resp.StatusCode != 200 {
-			if resp != nil {
-				Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
+		for k, v := range ConfigErrorHash {
+			laConfigErrorRecord := laConfigError{
+				ConfigErrorMessage: k,
+				ContainerId:        v.ContainerId,
+				Computer:           v.Computer,
+				PodName:            v.PodName,
+				CollectionTime:     start.Format(time.RFC3339),
+				ConfigErrorTime:    v.ErrorTimeStamp,
+				ConfigErrorLevel:   "Error",
 			}
-			// return output.FLB_RETRY
+			laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
+			Log("key[%s] value[%s]\n", k, v)
 		}
 
-		defer resp.Body.Close()
-		numRecords := len(laConfigErrorRecords)
-		Log("Successfully flushed %d records in %s", numRecords, elapsed)
+		for k, v := range PromScrapeErrorHash {
+			laConfigErrorRecord := laConfigError{
+				ConfigErrorMessage: k,
+				ContainerId:        v.ContainerId,
+				Computer:           v.Computer,
+				PodName:            v.PodName,
+				CollectionTime:     start.Format(time.RFC3339),
+				ConfigErrorTime:    v.ErrorTimeStamp,
+				ConfigErrorLevel:   "Warning",
+			}
+			laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
+			Log("key[%s] value[%s]\n", k, v)
+		}
 
-		//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
-		for k := range PromScrapeErrorHash {
-			delete(PromScrapeErrorHash, k)
+		if len(laConfigErrorRecords) > 0 {
+			configErrorEntry := ConfigErrorBlob{
+				DataType:  ConfigErrorDataType,
+				IPName:    IPName,
+				DataItems: laConfigErrorRecords}
+
+			marshalled, err := json.Marshal(configErrorEntry)
+
+			Log("configerrorlogdata-marshalled:\n" + ToString(marshalled))
+			if err != nil {
+				message := fmt.Sprintf("Error while Marshalling config error entry: %s", err.Error())
+				Log(message)
+				SendException(message)
+				// return output.FLB_OK
+			}
+			req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
+			req.Header.Set("Content-Type", "application/json")
+			//expensive to do string len for every request, so use a flag
+			if ResourceCentric == true {
+				req.Header.Set("x-ms-AzureResourceId", ResourceID)
+			}
+
+			resp, err := HTTPClient.Do(req)
+			elapsed := time.Since(start)
+
+			if err != nil {
+				message := fmt.Sprintf("Error when sending config error request %s \n", err.Error())
+				Log(message)
+				Log("Failed to flush %d records after %s", len(laConfigErrorRecords), elapsed)
+
+				// return output.FLB_RETRY
+			}
+
+			if resp == nil || resp.StatusCode != 200 {
+				if resp != nil {
+					Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
+				}
+				// return output.FLB_RETRY
+			}
+
+			defer resp.Body.Close()
+			numRecords := len(laConfigErrorRecords)
+			Log("Successfully flushed %d records in %s", numRecords, elapsed)
+
+			//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
+			for k := range PromScrapeErrorHash {
+				delete(PromScrapeErrorHash, k)
+			}
 		}
 	}
 }
