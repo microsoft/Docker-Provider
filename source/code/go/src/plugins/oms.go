@@ -388,7 +388,7 @@ func flushConfigErrorRecords() {
 			laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
 			// Log("key[%s] value[%s]\n", k, v)
 		}
-		EventHashUpdateMutex.UnLock()
+		EventHashUpdateMutex.Unlock()
 
 		if len(laConfigErrorRecords) > 0 {
 			configErrorEntry := ConfigErrorBlob{
