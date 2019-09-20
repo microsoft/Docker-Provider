@@ -53,7 +53,7 @@ const ReplicaSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimp
 // IPName for Container Log
 const IPName = "Containers"
 const defaultContainerInventoryRefreshInterval = 60
-const kubeMonAgentConfigEventFlushInterval = 120
+const kubeMonAgentConfigEventFlushInterval = 300
 
 var (
 	// PluginConfiguration the plugins configuration
@@ -387,7 +387,6 @@ func flushConfigErrorRecords() {
 			DataItems: laConfigErrorRecords}
 
 		marshalled, err := json.Marshal(configErrorEntry)
-		Log("configerrorlogdata-unmarshalled:\n" + ToString(configErrorEntry))
 
 		Log("configerrorlogdata-marshalled:\n" + ToString(marshalled))
 		if err != nil {
@@ -426,18 +425,8 @@ func flushConfigErrorRecords() {
 		Log("Successfully flushed %d records in %s", numRecords, elapsed)
 
 		//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
-		Log("PromScrapeErrorHash before:\n")
-		for k := range PromScrapeErrorHash {
-			Log(ToString(PromScrapeErrorHash[k]))
-		}
-
 		for k := range PromScrapeErrorHash {
 			delete(PromScrapeErrorHash, k)
-		}
-
-		Log("PromScrapeErrorHash after:\n")
-		for k := range PromScrapeErrorHash {
-			Log(ToString(PromScrapeErrorHash[k]))
 		}
 	}
 }
