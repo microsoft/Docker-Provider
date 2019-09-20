@@ -53,7 +53,7 @@ const ReplicaSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimp
 // IPName for Container Log
 const IPName = "Containers"
 const defaultContainerInventoryRefreshInterval = 60
-const kubeMonAgentConfigEventFlushInterval = 300
+const kubeMonAgentConfigEventFlushInterval = 120
 
 var (
 	// PluginConfiguration the plugins configuration
