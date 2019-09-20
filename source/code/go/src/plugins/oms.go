@@ -53,7 +53,7 @@ const ReplicaSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimp
 // IPName for Container Log
 const IPName = "Containers"
 const defaultContainerInventoryRefreshInterval = 60
-const kubeMonAgentConfigEventFlushInterval = 120
+const kubeMonAgentConfigEventFlushInterval = 300
 
 var (
 	// PluginConfiguration the plugins configuration
@@ -310,37 +310,39 @@ func convert(in interface{}) (float64, bool) {
 
 // PostConfigErrorstoLA sends config/prometheus scraping error log lines to LA
 func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
-	var logRecordString = ToString(record["log"])
-	var errorTimeStamp = ToString(record["time"])
-	containerID, _, podName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
+	for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
+		var logRecordString = ToString(record["log"])
+		var errorTimeStamp = ToString(record["time"])
+		containerID, _, podName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
 
-	switch errType {
-	case ConfigError:
-		// Log("configErrorHash\n")
-		// Doing this since the error logger library is adding quotes around the string and a newline to the end because
-		// we are converting string to json to log lines in different lines as one record
-		logRecordString = strings.TrimSuffix(logRecordString, "\n")
-		logRecordString = logRecordString[1 : len(logRecordString)-1]
-		ConfigErrorHash[logRecordString] = ConfigErrorDetails{
-			ContainerId:    containerID,
-			PodName:        podName,
-			Computer:       Computer,
-			ErrorTimeStamp: errorTimeStamp,
-		}
+		switch errType {
+		case ConfigError:
+			// Log("configErrorHash\n")
+			// Doing this since the error logger library is adding quotes around the string and a newline to the end because
+			// we are converting string to json to log lines in different lines as one record
+			logRecordString = strings.TrimSuffix(logRecordString, "\n")
+			logRecordString = logRecordString[1 : len(logRecordString)-1]
+			ConfigErrorHash[logRecordString] = ConfigErrorDetails{
+				ContainerId:    containerID,
+				PodName:        podName,
+				Computer:       Computer,
+				ErrorTimeStamp: errorTimeStamp,
+			}
 
-	case ScrapingError:
-		// Splitting this based on the string 'E! [inputs.prometheus]: ' since the log entry has timestamp and we want to remove that before building the hash
-		var scrapingSplitString = strings.Split(logRecordString, "E! [inputs.prometheus]: ")
-		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
-			var splitString = scrapingSplitString[1]
-			// Trimming the newline character at the end since this is being added as the key
-			splitString = strings.TrimSuffix(splitString, "\n")
-			if splitString != "" {
-				PromScrapeErrorHash[splitString] = ConfigErrorDetails{
-					ContainerId:    containerID,
-					PodName:        podName,
-					Computer:       Computer,
-					ErrorTimeStamp: errorTimeStamp,
+		case ScrapingError:
+			// Splitting this based on the string 'E! [inputs.prometheus]: ' since the log entry has timestamp and we want to remove that before building the hash
+			var scrapingSplitString = strings.Split(logRecordString, "E! [inputs.prometheus]: ")
+			if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
+				var splitString = scrapingSplitString[1]
+				// Trimming the newline character at the end since this is being added as the key
+				splitString = strings.TrimSuffix(splitString, "\n")
+				if splitString != "" {
+					PromScrapeErrorHash[splitString] = ConfigErrorDetails{
+						ContainerId:    containerID,
+						PodName:        podName,
+						Computer:       Computer,
+						ErrorTimeStamp: errorTimeStamp,
+					}
 				}
 			}
 		}
@@ -872,4 +874,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	} else {
 		Log("Running in replicaset. Disabling container enrichment caching & updates \n")
 	}
+
+	// Flush config error records every hour
+	go flushConfigErrorRecords()
 }
