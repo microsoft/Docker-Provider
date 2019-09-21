@@ -90,9 +90,9 @@ var (
 	// ClientSet for querying KubeAPIs
 	ClientSet *kubernetes.Clientset
 	// Config error hash
-	ConfigErrorHash map[string]ConfigErrorDetails
+	ConfigErrorEvent map[string]KubeMonAgentEventDetails
 	// Prometheus scraping error hash
-	PromScrapeErrorHash map[string]ConfigErrorDetails
+	PromScrapeErrorEvent map[string]KubeMonAgentEventDetails
 	// EventHashUpdateMutex read and write mutex access to the event hash
 	EventHashUpdateMutex = &sync.Mutex{}
 )
@@ -152,7 +152,7 @@ type ContainerLogBlob struct {
 }
 
 // Config Error message to be sent to Log Analytics
-type laConfigError struct {
+type laKubeMonAgentEvents struct {
 	CollectionTime string `json:"CollectionTime"` //mapped to TimeGenerated
 	Computer       string `json:"Computer"`
 	// Category           string `json:"Category"`
@@ -165,30 +165,30 @@ type laConfigError struct {
 	ConfigErrorLevel   string `json:"ConfigErrorLevel"`
 }
 
-type ConfigErrorDetails struct {
+type KubeMonAgentEventDetails struct {
 	ContainerId    string
 	PodName        string
 	Computer       string
 	ErrorTimeStamp string
 }
 
-type ConfigErrorBlob struct {
-	DataType  string          `json:"DataType"`
-	IPName    string          `json:"IPName"`
-	DataItems []laConfigError `json:"DataItems"`
+type KubeMonAgentEventBlob struct {
+	DataType  string                 `json:"DataType"`
+	IPName    string                 `json:"IPName"`
+	DataItems []laKubeMonAgentEvents `json:"DataItems"`
 }
 
-// ErrorType to be used as enum
-type ErrorType int
+// KubeMonAgentEventType to be used as enum
+type KubeMonAgentEventType int
 
 const (
-	// ErrorType to be used as enum for ConfigError and ScrapingError
-	ConfigError ErrorType = iota
-	ScrapingError
+	// KubeMonAgentEventType to be used as enum for ConfigError and ScrapingError
+	ConfigErrorEvent KubeMonAgentEventType = iota
+	ScrapingErrorEvent
 )
 
 // DataType for Config error
-const ConfigErrorDataType = "CONFIG_ERROR_BLOB"
+const KubeMonAgentEventDataType = "KUBE_MON_AGENT_EVENTS_BLOB"
 
 func createLogger() *log.Logger {
 	var logfile *os.File
@@ -311,7 +311,7 @@ func convert(in interface{}) (float64, bool) {
 }
 
 // PostConfigErrorstoLA sends config/prometheus scraping error log lines to LA
-func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
+func populateErrorHash(record map[interface{}]interface{}, errType KubeMonAgentEventType) {
 	var logRecordString = ToString(record["log"])
 	var errorTimeStamp = ToString(record["time"])
 	containerID, _, podName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
@@ -319,20 +319,20 @@ func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 	Log("Updating config event hash - Locking for update \n ")
 	EventHashUpdateMutex.Lock()
 	switch errType {
-	case ConfigError:
-		// Log("configErrorHash\n")
+	case ConfigErrorEvent:
+		// Log("ConfigErrorEvent\n")
 		// Doing this since the error logger library is adding quotes around the string and a newline to the end because
 		// we are converting string to json to log lines in different lines as one record
 		logRecordString = strings.TrimSuffix(logRecordString, "\n")
 		logRecordString = logRecordString[1 : len(logRecordString)-1]
-		ConfigErrorHash[logRecordString] = ConfigErrorDetails{
+		ConfigErrorEvent[logRecordString] = KubeMonAgentEventDetails{
 			ContainerId:    containerID,
 			PodName:        podName,
 			Computer:       Computer,
 			ErrorTimeStamp: errorTimeStamp,
 		}
 
-	case ScrapingError:
+	case ScrapingErrorEvent:
 		// Splitting this based on the string 'E! [inputs.prometheus]: ' since the log entry has timestamp and we want to remove that before building the hash
 		var scrapingSplitString = strings.Split(logRecordString, "E! [inputs.prometheus]: ")
 		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
@@ -340,7 +340,7 @@ func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 			// Trimming the newline character at the end since this is being added as the key
 			splitString = strings.TrimSuffix(splitString, "\n")
 			if splitString != "" {
-				PromScrapeErrorHash[splitString] = ConfigErrorDetails{
+				PromScrapeErrorEvent[splitString] = KubeMonAgentEventDetails{
 					ContainerId:    containerID,
 					PodName:        podName,
 					Computer:       Computer,
@@ -354,15 +354,15 @@ func populateErrorHash(record map[interface{}]interface{}, errType ErrorType) {
 }
 
 // Function to get config error log records after iterating through the two hashes
-func flushConfigErrorRecords() {
+func flushKubeMonAgentEventRecords() {
 	for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
 		Log("In flushConfigErrorRecords\n")
-		var laConfigErrorRecords []laConfigError
+		var laKubeMonAgentEventsRecords []laKubeMonAgentEvents
 		start := time.Now()
 
 		EventHashUpdateMutex.Lock()
-		for k, v := range ConfigErrorHash {
-			laConfigErrorRecord := laConfigError{
+		for k, v := range ConfigErrorEvent {
+			laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
 				ConfigErrorMessage: k,
 				ContainerId:        v.ContainerId,
 				Computer:           v.Computer,
@@ -371,12 +371,12 @@ func flushConfigErrorRecords() {
 				ConfigErrorTime:    v.ErrorTimeStamp,
 				ConfigErrorLevel:   "Error",
 			}
-			laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
+			laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
 			// Log("key[%s] value[%s]\n", k, v)
 		}
 
-		for k, v := range PromScrapeErrorHash {
-			laConfigErrorRecord := laConfigError{
+		for k, v := range PromScrapeErrorEvent {
+			laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
 				ConfigErrorMessage: k,
 				ContainerId:        v.ContainerId,
 				Computer:           v.Computer,
@@ -385,18 +385,18 @@ func flushConfigErrorRecords() {
 				ConfigErrorTime:    v.ErrorTimeStamp,
 				ConfigErrorLevel:   "Warning",
 			}
-			laConfigErrorRecords = append(laConfigErrorRecords, laConfigErrorRecord)
+			laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
 			// Log("key[%s] value[%s]\n", k, v)
 		}
 		EventHashUpdateMutex.Unlock()
 
-		if len(laConfigErrorRecords) > 0 {
-			configErrorEntry := ConfigErrorBlob{
-				DataType:  ConfigErrorDataType,
+		if len(laKubeMonAgentEventsRecords) > 0 {
+			kubeMonAgentEventEntry := KubeMonAgentEventBlob{
+				DataType:  KubeMonAgentEventDataType,
 				IPName:    IPName,
-				DataItems: laConfigErrorRecords}
+				DataItems: laKubeMonAgentEventsRecords}
 
-			marshalled, err := json.Marshal(configErrorEntry)
+			marshalled, err := json.Marshal(kubeMonAgentEventEntry)
 
 			Log("configerrorlogdata-marshalled:\n" + ToString(marshalled))
 			if err != nil {
@@ -418,7 +418,7 @@ func flushConfigErrorRecords() {
 			if err != nil {
 				message := fmt.Sprintf("Error when sending config error request %s \n", err.Error())
 				Log(message)
-				Log("Failed to flush %d records after %s", len(laConfigErrorRecords), elapsed)
+				Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
 
 				// return output.FLB_RETRY
 			}
@@ -431,16 +431,13 @@ func flushConfigErrorRecords() {
 			}
 
 			defer resp.Body.Close()
-			numRecords := len(laConfigErrorRecords)
+			numRecords := len(laKubeMonAgentEventsRecords)
 			Log("Successfully flushed %d records in %s", numRecords, elapsed)
 
 			//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
 			EventHashUpdateMutex.Lock()
-			// for k := range PromScrapeErrorHash {
-			// 	delete(PromScrapeErrorHash, k)
-			// }
-			for k := range ConfigErrorHash {
-				delete(ConfigErrorHash, k)
+			for k := range PromScrapeErrorEvent {
+				delete(PromScrapeErrorEvent, k)
 			}
 			EventHashUpdateMutex.Unlock()
 
@@ -784,8 +781,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	NameIDMap = make(map[string]string)
 	// Keeping the two error hashes separate since we need to keep the config error hash for the lifetime of the container
 	// whereas the prometheus scrape error hash needs to be refreshed every hour
-	ConfigErrorHash = make(map[string]ConfigErrorDetails)
-	PromScrapeErrorHash = make(map[string]ConfigErrorDetails)
+	ConfigErrorEvent = make(map[string]KubeMonAgentEventDetails)
+	PromScrapeErrorEvent = make(map[string]KubeMonAgentEventDetails)
 
 	pluginConfig, err := ReadConfiguration(pluginConfPath)
 	if err != nil {
@@ -887,7 +884,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		go updateContainerImageNameMaps()
 
 		// Flush config error records every hour
-		go flushConfigErrorRecords()
+		go flushKubeMonAgentEventRecords()
 	} else {
 		Log("Running in replicaset. Disabling container enrichment caching & updates \n")
 	}
