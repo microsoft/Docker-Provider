@@ -396,7 +396,8 @@ func flushKubeMonAgentEventRecords() {
 
 			if err != nil {
 				// return nil, err
-
+				Log(ToString(err))
+			} else {
 				laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
 					Computer:       Computer,
 					CollectionTime: start.Format(time.RFC3339),
@@ -417,7 +418,8 @@ func flushKubeMonAgentEventRecords() {
 			if err != nil {
 				// 	return nil, err
 				// }
-
+				Log(ToString(err))
+			} else {
 				laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
 					Computer:       Computer,
 					CollectionTime: start.Format(time.RFC3339),
