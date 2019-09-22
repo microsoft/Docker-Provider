@@ -153,23 +153,28 @@ type ContainerLogBlob struct {
 
 // Config Error message to be sent to Log Analytics
 type laKubeMonAgentEvents struct {
-	CollectionTime string `json:"CollectionTime"` //mapped to TimeGenerated
 	Computer       string `json:"Computer"`
-	// Category           string `json:"Category"`
-	// Level              string `json:"Level"`
-	// Details   		   string `json:"Details"`
-	ConfigErrorMessage string `json:"ConfigErrorMessage"`
-	ContainerId        string `json:"ContainerId"`
-	PodName            string `json:"PodName"`
-	ConfigErrorTime    string `json:"ConfigErrorTime"`
-	ConfigErrorLevel   string `json:"ConfigErrorLevel"`
+	CollectionTime string `json:"CollectionTime"` //mapped to TimeGenerated
+	Category       string `json:"Category"`
+	Level          string `json:"Level"`
+	ClusterId      string `json:"ClusterId"`
+	ClusterName    string `json:"ClusterName"`
+	Message        string `json:"Message"`
+	Tags           string `json:"Tags"`
+	// ConfigErrorMessage string `json:"ConfigErrorMessage"`
+	// ContainerId        string `json:"ContainerId"`
+	// PodName            string `json:"PodName"`
+	// ConfigErrorTime    string `json:"ConfigErrorTime"`
+	// ConfigErrorLevel   string `json:"ConfigErrorLevel"`
 }
 
-type KubeMonAgentEventDetails struct {
-	ContainerId    string
-	PodName        string
-	Computer       string
-	ErrorTimeStamp string
+type KubeMonAgentEventTags struct {
+	PodName     string
+	ContainerId string
+	// EventTime      string
+	FirstOccurance string
+	LastOccurance  string
+	Count          int
 }
 
 type KubeMonAgentEventBlob struct {
@@ -184,7 +189,7 @@ type KubeMonAgentEventType int
 const (
 	// KubeMonAgentEventType to be used as enum for ConfigError and ScrapingError
 	ConfigErrorEvent KubeMonAgentEventType = iota
-	ScrapingErrorEvent
+	PromPromScrapingErrorEvent
 )
 
 // DataType for Config error
@@ -311,9 +316,9 @@ func convert(in interface{}) (float64, bool) {
 }
 
 // PostConfigErrorstoLA sends config/prometheus scraping error log lines to LA
-func populateErrorHash(record map[interface{}]interface{}, errType KubeMonAgentEventType) {
+func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType KubeMonAgentEventType) {
 	var logRecordString = ToString(record["log"])
-	var errorTimeStamp = ToString(record["time"])
+	var eventTimeStamp = ToString(record["time"])
 	containerID, _, podName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
 
 	Log("Updating config event hash - Locking for update \n ")
@@ -325,14 +330,23 @@ func populateErrorHash(record map[interface{}]interface{}, errType KubeMonAgentE
 		// we are converting string to json to log lines in different lines as one record
 		logRecordString = strings.TrimSuffix(logRecordString, "\n")
 		logRecordString = logRecordString[1 : len(logRecordString)-1]
-		ConfigErrorEvent[logRecordString] = KubeMonAgentEventDetails{
-			ContainerId:    containerID,
-			PodName:        podName,
-			Computer:       Computer,
-			ErrorTimeStamp: errorTimeStamp,
+
+		var existingErrorEvent = ConfigErrorEvent[logRecordString]
+		if existingErrorEvent != nil {
+			existingErrorEvent.LastOccurance = eventTimeStamp
+			existingErrorEvent.Count = existingErrorEvent.Count + 1
+		} else {
+			ConfigErrorEvent[logRecordString] = KubeMonAgentEventTags{
+				PodName:     podName,
+				ContainerId: containerID,
+				// EventTime:   eventTimeStamp,
+				FirstOccurance: eventTimeStamp,
+				LastOccurance:  eventTimeStamp,
+				Count:          1
+			}
 		}
 
-	case ScrapingErrorEvent:
+	case PromPromScrapingErrorEvent:
 		// Splitting this based on the string 'E! [inputs.prometheus]: ' since the log entry has timestamp and we want to remove that before building the hash
 		var scrapingSplitString = strings.Split(logRecordString, "E! [inputs.prometheus]: ")
 		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
@@ -340,12 +354,20 @@ func populateErrorHash(record map[interface{}]interface{}, errType KubeMonAgentE
 			// Trimming the newline character at the end since this is being added as the key
 			splitString = strings.TrimSuffix(splitString, "\n")
 			if splitString != "" {
-				PromScrapeErrorEvent[splitString] = KubeMonAgentEventDetails{
-					ContainerId:    containerID,
+				existingErrorEvent := PromScrapeErrorEvent[splitString]
+		if existingErrorEvent != nil {
+			existingErrorEvent.LastOccurance = eventTimeStamp
+			existingErrorEvent.Count = existingErrorEvent.Count + 1
+		} else {
+				PromScrapeErrorEvent[splitString] = KubeMonAgentEventTags{
 					PodName:        podName,
-					Computer:       Computer,
-					ErrorTimeStamp: errorTimeStamp,
+					ContainerId:    containerID,
+					// ErrorTimeStamp: errorTimeStamp,
+					FirstOccurance: eventTimeStamp,
+				LastOccurance:  eventTimeStamp,
+				Count:          1
 				}
+			}
 			}
 		}
 	}
