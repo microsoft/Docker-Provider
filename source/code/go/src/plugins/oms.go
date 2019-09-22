@@ -188,8 +188,8 @@ type KubeMonAgentEventType int
 
 const (
 	// KubeMonAgentEventType to be used as enum for ConfigError and ScrapingError
-	ConfigErrorEvent KubeMonAgentEventType = iota
-	PromPromScrapingErrorEvent
+	ConfigError KubeMonAgentEventType = iota
+	PromScrapingError
 )
 
 // DataType for Config error
@@ -324,7 +324,7 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 	Log("Updating config event hash - Locking for update \n ")
 	EventHashUpdateMutex.Lock()
 	switch errType {
-	case ConfigErrorEvent:
+	case ConfigError:
 		// Log("ConfigErrorEvent\n")
 		// Doing this since the error logger library is adding quotes around the string and a newline to the end because
 		// we are converting string to json to log lines in different lines as one record
@@ -346,7 +346,7 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 			}
 		}
 
-	case PromPromScrapingErrorEvent:
+	case PromScrapingError:
 		// Splitting this based on the string 'E! [inputs.prometheus]: ' since the log entry has timestamp and we want to remove that before building the hash
 		var scrapingSplitString = strings.Split(logRecordString, "E! [inputs.prometheus]: ")
 		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
