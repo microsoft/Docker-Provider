@@ -90,9 +90,9 @@ var (
 	// ClientSet for querying KubeAPIs
 	ClientSet *kubernetes.Clientset
 	// Config error hash
-	ConfigErrorEvent map[string]KubeMonAgentEventTags
+	ConfigErrorEvent map[string]*KubeMonAgentEventTags
 	// Prometheus scraping error hash
-	PromScrapeErrorEvent map[string]KubeMonAgentEventTags
+	PromScrapeErrorEvent map[string]*KubeMonAgentEventTags
 	// EventHashUpdateMutex read and write mutex access to the event hash
 	EventHashUpdateMutex = &sync.Mutex{}
 )
@@ -332,15 +332,15 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 		logRecordString = logRecordString[1 : len(logRecordString)-1]
 
 		// var existingErrorEvent = ConfigErrorEvent[logRecordString]
-		if val, ok := &ConfigErrorEvent[logRecordString]; ok {
+		if val, ok := ConfigErrorEvent[logRecordString]; ok {
 			// existingErrorEvent := &ConfigErrorEvent[logRecordString]
-			val.LastOccurance = eventTimeStamp
-			val.Count = ConfigErrorEvent[logRecordString].Count + 1
+			*val.LastOccurance = eventTimeStamp
+			*val.Count = *val.Count + 1
 			// if existingErrorEvent != nil {
 			// 	existingErrorEvent.LastOccurance = eventTimeStamp
 			// 	existingErrorEvent.Count = existingErrorEvent.Count + 1
 		} else {
-			ConfigErrorEvent[logRecordString] = KubeMonAgentEventTags{
+			ConfigErrorEvent[logRecordString] = &KubeMonAgentEventTags{
 				PodName:     podName,
 				ContainerId: containerID,
 				// EventTime:   eventTimeStamp,
@@ -362,12 +362,12 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 				// if existingErrorEvent != nil {
 				// 	existingErrorEvent.LastOccurance = eventTimeStamp
 				// 	existingErrorEvent.Count = existingErrorEvent.Count + 1
-				if val, ok := &PromScrapeErrorEvent[splitString]; ok {
+				if val, ok := PromScrapeErrorEvent[splitString]; ok {
 					// existingErrorEvent := &PromScrapeErrorEvent[splitString]
-					val.LastOccurance = eventTimeStamp
-					val.Count = PromScrapeErrorEvent[splitString].Count + 1
+					*val.LastOccurance = eventTimeStamp
+					*val.Count = *val.Count + 1
 				} else {
-					PromScrapeErrorEvent[splitString] = KubeMonAgentEventTags{
+					PromScrapeErrorEvent[splitString] = &KubeMonAgentEventTags{
 						PodName:     podName,
 						ContainerId: containerID,
 						// ErrorTimeStamp: errorTimeStamp,
@@ -392,7 +392,7 @@ func flushKubeMonAgentEventRecords() {
 
 		EventHashUpdateMutex.Lock()
 		for k, v := range ConfigErrorEvent {
-			tagJson, err := json.Marshal(v)
+			tagJson, err := json.Marshal(*v)
 
 			// if err != nil {
 			// 	return nil, err
@@ -413,7 +413,7 @@ func flushKubeMonAgentEventRecords() {
 		}
 
 		for k, v := range PromScrapeErrorEvent {
-			tagJson, err := json.Marshal(v)
+			tagJson, err := json.Marshal(*v)
 			// if err != nil {
 			// 	return nil, err
 			// }
@@ -824,8 +824,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	NameIDMap = make(map[string]string)
 	// Keeping the two error hashes separate since we need to keep the config error hash for the lifetime of the container
 	// whereas the prometheus scrape error hash needs to be refreshed every hour
-	ConfigErrorEvent = make(map[string]KubeMonAgentEventTags)
-	PromScrapeErrorEvent = make(map[string]KubeMonAgentEventTags)
+	ConfigErrorEvent = make(map[string]*KubeMonAgentEventTags)
+	PromScrapeErrorEvent = make(map[string]*KubeMonAgentEventTags)
 
 	pluginConfig, err := ReadConfiguration(pluginConfPath)
 	if err != nil {
