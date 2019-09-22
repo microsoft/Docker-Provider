@@ -331,9 +331,9 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 		logRecordString = strings.TrimSuffix(logRecordString, "\n")
 		logRecordString = logRecordString[1 : len(logRecordString)-1]
 
-		var existingErrorEvent = ConfigErrorEvent[logRecordString]
-		if val, ok := existingErrorEvent; ok {
-			// existingErrorEvent := ConfigErrorEvent[logRecordString]
+		// var existingErrorEvent = ConfigErrorEvent[logRecordString]
+		if val, ok := ConfigErrorEvent[logRecordString]; ok {
+			existingErrorEvent := ConfigErrorEvent[logRecordString]
 			ConfigErrorEvent[logRecordString].LastOccurance = eventTimeStamp
 			ConfigErrorEvent[logRecordString].Count = existingErrorEvent.Count + 1
 			// if existingErrorEvent != nil {
@@ -363,7 +363,7 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 				// 	existingErrorEvent.LastOccurance = eventTimeStamp
 				// 	existingErrorEvent.Count = existingErrorEvent.Count + 1
 				if val, ok := PromScrapeErrorEvent[splitString]; ok {
-					var existingErrorEvent = PromScrapeErrorEvent[splitString]
+					existingErrorEvent := PromScrapeErrorEvent[splitString]
 					PromScrapeErrorEvent[splitString].LastOccurance = eventTimeStamp
 					PromScrapeErrorEvent[splitString].Count = existingErrorEvent.Count + 1
 				} else {
@@ -824,8 +824,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	NameIDMap = make(map[string]string)
 	// Keeping the two error hashes separate since we need to keep the config error hash for the lifetime of the container
 	// whereas the prometheus scrape error hash needs to be refreshed every hour
-	ConfigErrorEvent = make(map[string]KubeMonAgentEventDetails)
-	PromScrapeErrorEvent = make(map[string]KubeMonAgentEventDetails)
+	ConfigErrorEvent = make(map[string]KubeMonAgentEventTags)
+	PromScrapeErrorEvent = make(map[string]KubeMonAgentEventTags)
 
 	pluginConfig, err := ReadConfiguration(pluginConfPath)
 	if err != nil {
