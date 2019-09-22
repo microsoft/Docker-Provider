@@ -331,8 +331,8 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 		logRecordString = strings.TrimSuffix(logRecordString, "\n")
 		logRecordString = logRecordString[1 : len(logRecordString)-1]
 
-		// var existingErrorEvent = ConfigErrorEvent[logRecordString]
-		if val, ok := ConfigErrorEvent[logRecordString]; ok {
+		var existingErrorEvent = ConfigErrorEvent[logRecordString]
+		if val, ok := existingErrorEvent; ok {
 			// existingErrorEvent := ConfigErrorEvent[logRecordString]
 			ConfigErrorEvent[logRecordString].LastOccurance = eventTimeStamp
 			ConfigErrorEvent[logRecordString].Count = existingErrorEvent.Count + 1
@@ -363,7 +363,7 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 				// 	existingErrorEvent.LastOccurance = eventTimeStamp
 				// 	existingErrorEvent.Count = existingErrorEvent.Count + 1
 				if val, ok := PromScrapeErrorEvent[splitString]; ok {
-					// existingErrorEvent := PromScrapeErrorEvent[splitString]
+					var existingErrorEvent = PromScrapeErrorEvent[splitString]
 					PromScrapeErrorEvent[splitString].LastOccurance = eventTimeStamp
 					PromScrapeErrorEvent[splitString].Count = existingErrorEvent.Count + 1
 				} else {
