@@ -90,9 +90,9 @@ var (
 	// ClientSet for querying KubeAPIs
 	ClientSet *kubernetes.Clientset
 	// Config error hash
-	ConfigErrorEvent map[string]KubeMonAgentEventDetails
+	ConfigErrorEvent map[string]KubeMonAgentEventTags
 	// Prometheus scraping error hash
-	PromScrapeErrorEvent map[string]KubeMonAgentEventDetails
+	PromScrapeErrorEvent map[string]KubeMonAgentEventTags
 	// EventHashUpdateMutex read and write mutex access to the event hash
 	EventHashUpdateMutex = &sync.Mutex{}
 )
@@ -342,7 +342,7 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 				// EventTime:   eventTimeStamp,
 				FirstOccurance: eventTimeStamp,
 				LastOccurance:  eventTimeStamp,
-				Count:          1
+				Count:          1,
 			}
 		}
 
@@ -355,19 +355,19 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 			splitString = strings.TrimSuffix(splitString, "\n")
 			if splitString != "" {
 				existingErrorEvent := PromScrapeErrorEvent[splitString]
-		if existingErrorEvent != nil {
-			existingErrorEvent.LastOccurance = eventTimeStamp
-			existingErrorEvent.Count = existingErrorEvent.Count + 1
-		} else {
-				PromScrapeErrorEvent[splitString] = KubeMonAgentEventTags{
-					PodName:        podName,
-					ContainerId:    containerID,
-					// ErrorTimeStamp: errorTimeStamp,
-					FirstOccurance: eventTimeStamp,
-				LastOccurance:  eventTimeStamp,
-				Count:          1
+				if existingErrorEvent != nil {
+					existingErrorEvent.LastOccurance = eventTimeStamp
+					existingErrorEvent.Count = existingErrorEvent.Count + 1
+				} else {
+					PromScrapeErrorEvent[splitString] = KubeMonAgentEventTags{
+						PodName:     podName,
+						ContainerId: containerID,
+						// ErrorTimeStamp: errorTimeStamp,
+						FirstOccurance: eventTimeStamp,
+						LastOccurance:  eventTimeStamp,
+						Count:          1,
+					}
 				}
-			}
 			}
 		}
 	}
