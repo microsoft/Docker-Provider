@@ -384,28 +384,41 @@ func flushKubeMonAgentEventRecords() {
 
 		EventHashUpdateMutex.Lock()
 		for k, v := range ConfigErrorEvent {
+			tagJson, err := json.Marshal(v)
+
+			// if err != nil {
+			// 	return nil, err
+			// }
+
 			laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
-				ConfigErrorMessage: k,
-				ContainerId:        v.ContainerId,
-				Computer:           v.Computer,
-				PodName:            v.PodName,
-				CollectionTime:     start.Format(time.RFC3339),
-				ConfigErrorTime:    v.ErrorTimeStamp,
-				ConfigErrorLevel:   "Error",
+				Computer:       Computer,
+				CollectionTime: start.Format(time.RFC3339),
+				Category:       "container.azm.ms/configmap",
+				Level:          "Error",
+				ClusterId:      ResourceID,
+				ClusterName:    ResourceName,
+				Message:        k,
+				Tags:           tagJson,
 			}
 			laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
 			// Log("key[%s] value[%s]\n", k, v)
 		}
 
 		for k, v := range PromScrapeErrorEvent {
+			tagJson, err := json.Marshal(v)
+			// if err != nil {
+			// 	return nil, err
+			// }
+
 			laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
-				ConfigErrorMessage: k,
-				ContainerId:        v.ContainerId,
-				Computer:           v.Computer,
-				PodName:            v.PodName,
-				CollectionTime:     start.Format(time.RFC3339),
-				ConfigErrorTime:    v.ErrorTimeStamp,
-				ConfigErrorLevel:   "Warning",
+				Computer:       Computer,
+				CollectionTime: start.Format(time.RFC3339),
+				Category:       "container.azm.ms/promscraping",
+				Level:          "Warning",
+				ClusterId:      ResourceID,
+				ClusterName:    ResourceName,
+				Message:        k,
+				Tags:           tagJson,
 			}
 			laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
 			// Log("key[%s] value[%s]\n", k, v)
