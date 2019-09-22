@@ -53,7 +53,7 @@ const ReplicaSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimp
 // IPName for Container Log
 const IPName = "Containers"
 const defaultContainerInventoryRefreshInterval = 60
-const kubeMonAgentConfigEventFlushInterval = 300
+const kubeMonAgentConfigEventFlushInterval = 60
 
 var (
 	// PluginConfiguration the plugins configuration
@@ -409,7 +409,7 @@ func flushKubeMonAgentEventRecords() {
 				Tags:           ToString(*v),
 			}
 			laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
-			// Log("key[%s] value[%s]\n", k, v)
+			Log("key[%s] value[%s]\n", k, *v)
 		}
 
 		for k, v := range PromScrapeErrorEvent {
@@ -429,7 +429,7 @@ func flushKubeMonAgentEventRecords() {
 				Tags:           ToString(*v),
 			}
 			laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
-			// Log("key[%s] value[%s]\n", k, v)
+			Log("key[%s] value[%s]\n", k, *v)
 		}
 		EventHashUpdateMutex.Unlock()
 
