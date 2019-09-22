@@ -334,8 +334,8 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 		// var existingErrorEvent = ConfigErrorEvent[logRecordString]
 		if val, ok := ConfigErrorEvent[logRecordString]; ok {
 			// existingErrorEvent := &ConfigErrorEvent[logRecordString]
-			*val.LastOccurance = eventTimeStamp
-			*val.Count = *val.Count + 1
+			(*val).LastOccurance = eventTimeStamp
+			(*val).Count = ((*val).Count) + 1
 			// if existingErrorEvent != nil {
 			// 	existingErrorEvent.LastOccurance = eventTimeStamp
 			// 	existingErrorEvent.Count = existingErrorEvent.Count + 1
