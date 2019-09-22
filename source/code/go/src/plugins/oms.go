@@ -364,8 +364,8 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 				// 	existingErrorEvent.Count = existingErrorEvent.Count + 1
 				if val, ok := PromScrapeErrorEvent[splitString]; ok {
 					// existingErrorEvent := &PromScrapeErrorEvent[splitString]
-					*val.LastOccurance = eventTimeStamp
-					*val.Count = *val.Count + 1
+					*(val).LastOccurance = eventTimeStamp
+					*(val).Count = ((*val).Count) + 1
 				} else {
 					PromScrapeErrorEvent[splitString] = &KubeMonAgentEventTags{
 						PodName:     podName,
@@ -392,7 +392,7 @@ func flushKubeMonAgentEventRecords() {
 
 		EventHashUpdateMutex.Lock()
 		for k, v := range ConfigErrorEvent {
-			tagJson, err := json.Marshal(*v)
+			// tagJson, err := json.Marshal(*v)
 
 			// if err != nil {
 			// 	return nil, err
@@ -406,14 +406,14 @@ func flushKubeMonAgentEventRecords() {
 				ClusterId:      ResourceID,
 				ClusterName:    ResourceName,
 				Message:        k,
-				Tags:           tagJson,
+				Tags:           *v,
 			}
 			laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
 			// Log("key[%s] value[%s]\n", k, v)
 		}
 
 		for k, v := range PromScrapeErrorEvent {
-			tagJson, err := json.Marshal(*v)
+			// tagJson, err := json.Marshal(*v)
 			// if err != nil {
 			// 	return nil, err
 			// }
@@ -426,7 +426,7 @@ func flushKubeMonAgentEventRecords() {
 				ClusterId:      ResourceID,
 				ClusterName:    ResourceName,
 				Message:        k,
-				Tags:           tagJson,
+				Tags:           *v,
 			}
 			laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
 			// Log("key[%s] value[%s]\n", k, v)
