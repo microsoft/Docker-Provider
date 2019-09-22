@@ -333,9 +333,9 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 
 		// var existingErrorEvent = ConfigErrorEvent[logRecordString]
 		if val, ok := ConfigErrorEvent[logRecordString]; ok {
-			existingErrorEvent := ConfigErrorEvent[logRecordString]
-			ConfigErrorEvent[logRecordString].LastOccurance = eventTimeStamp
-			ConfigErrorEvent[logRecordString].Count = existingErrorEvent.Count + 1
+			existingErrorEvent := &ConfigErrorEvent[logRecordString]
+			*ConfigErrorEvent[logRecordString].LastOccurance = eventTimeStamp
+			*ConfigErrorEvent[logRecordString].Count = existingErrorEvent.Count + 1
 			// if existingErrorEvent != nil {
 			// 	existingErrorEvent.LastOccurance = eventTimeStamp
 			// 	existingErrorEvent.Count = existingErrorEvent.Count + 1
@@ -358,14 +358,14 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 			// Trimming the newline character at the end since this is being added as the key
 			splitString = strings.TrimSuffix(splitString, "\n")
 			if splitString != "" {
-				existingErrorEvent := PromScrapeErrorEvent[splitString]
+				// existingErrorEvent := PromScrapeErrorEvent[splitString]
 				// if existingErrorEvent != nil {
 				// 	existingErrorEvent.LastOccurance = eventTimeStamp
 				// 	existingErrorEvent.Count = existingErrorEvent.Count + 1
 				if val, ok := PromScrapeErrorEvent[splitString]; ok {
-					existingErrorEvent := PromScrapeErrorEvent[splitString]
-					PromScrapeErrorEvent[splitString].LastOccurance = eventTimeStamp
-					PromScrapeErrorEvent[splitString].Count = existingErrorEvent.Count + 1
+					existingErrorEvent := &PromScrapeErrorEvent[splitString]
+					*PromScrapeErrorEvent[splitString].LastOccurance = eventTimeStamp
+					*PromScrapeErrorEvent[splitString].Count = existingErrorEvent.Count + 1
 				} else {
 					PromScrapeErrorEvent[splitString] = KubeMonAgentEventTags{
 						PodName:     podName,
