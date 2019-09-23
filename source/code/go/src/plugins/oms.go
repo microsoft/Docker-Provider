@@ -374,11 +374,11 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 				// if existingErrorEvent != nil {
 				// 	existingErrorEvent.LastOccurance = eventTimeStamp
 				// 	existingErrorEvent.Count = existingErrorEvent.Count + 1
-				Log("Trying to get existing value: \n")
-				for k, v := range PromScrapeErrorEvent {
-					Log("key[%s] value[%s]\n", k, v)
-					Log("splitString: %s", splitString)
-				}
+				// Log("Trying to get existing value: \n")
+				// for k, v := range PromScrapeErrorEvent {
+				// 	Log("key[%s] value[%s]\n", k, v)
+				// 	Log("splitString: %s", splitString)
+				// }
 
 				if val, ok := PromScrapeErrorEvent[splitString]; ok {
 					Log("In config error existing hash update\n")
@@ -414,116 +414,144 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 	Log("Updating config event hash - Unlocked after update \n ")
 }
 
+// Sends data to post config events and to App Insights Instance
+// func PostConfigEventsAndSendAITraces(records []map[interface{}]interface{}, severityLevel contracts.SeverityLevel, tag string) int {
+// 	var logLines []string
+// 	for _, record := range records {
+// 		logLines = append(logLines, ToString(record["log"]))
+// 		// If record contains config error or prometheus scraping errors send it to ****** table
+// 		var logEntry = ToString(record["log"])
+// 		if strings.Contains(logEntry, "config::error") {
+// 			populateKubeMonAgentEventHash(record, ConfigError)
+// 		} else if strings.Contains(logEntry, "E! [inputs.prometheus]") {
+// 			populateKubeMonAgentEventHash(record, PromScrapingError)
+// 		}
+// 	}
+
+// 	// Pushing traces to App Insights after joining the record lines
+// 	PushToAppInsightsTraces(logLines, severityLevel, tag)
+
+// 	// for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
+// 	// 	Log("Flushing config error records\n")
+// 	// flushConfigErrorRecords()
+// 	// }
+// 	// traceEntry := strings.Join(logLines, "\n")
+// 	// traceTelemetryItem := appinsights.NewTraceTelemetry(traceEntry, severityLevel)
+// 	// traceTelemetryItem.Properties["tag"] = tag
+// 	// TelemetryClient.Track(traceTelemetryItem)
+// 	// return output.FLB_OK
+// }
+
 // Function to get config error log records after iterating through the two hashes
 func flushKubeMonAgentEventRecords() {
-	for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
-		Log("In flushConfigErrorRecords\n")
-		var laKubeMonAgentEventsRecords []laKubeMonAgentEvents
-		start := time.Now()
+	// for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
+	Log("In flushConfigErrorRecords\n")
+	var laKubeMonAgentEventsRecords []laKubeMonAgentEvents
+	start := time.Now()
 
-		EventHashUpdateMutex.Lock()
-		for k, v := range ConfigErrorEvent {
-			tagJson, err := json.Marshal(v)
+	EventHashUpdateMutex.Lock()
+	for k, v := range ConfigErrorEvent {
+		tagJson, err := json.Marshal(v)
 
-			if err != nil {
-				// 	// return nil, err
-				Log(ToString(err))
-			} else {
-				laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
-					Computer:       Computer,
-					CollectionTime: start.Format(time.RFC3339),
-					Category:       "container.azm.ms/configmap",
-					Level:          "Error",
-					ClusterId:      ResourceID,
-					ClusterName:    ResourceName,
-					Message:        k,
-					// Tags:           fmt.Sprintf("%s", tagJson),
-					Tags: fmt.Sprintf("%s", tagJson),
-				}
-				laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
-				// Log("key[%s] value[%s]\n", k, v)
-				// }
+		if err != nil {
+			// 	// return nil, err
+			Log(ToString(err))
+		} else {
+			laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
+				Computer:       Computer,
+				CollectionTime: start.Format(time.RFC3339),
+				Category:       "container.azm.ms/configmap",
+				Level:          "Error",
+				ClusterId:      ResourceID,
+				ClusterName:    ResourceName,
+				Message:        k,
+				// Tags:           fmt.Sprintf("%s", tagJson),
+				Tags: fmt.Sprintf("%s", tagJson),
 			}
+			laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
+			// Log("key[%s] value[%s]\n", k, v)
+			// }
+		}
+	}
+
+	for k, v := range PromScrapeErrorEvent {
+		tagJson, err := json.Marshal(v)
+		if err != nil {
+			// 	// 	return nil, err
+			// 	// }
+			Log(ToString(err))
+		} else {
+			laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
+				Computer:       Computer,
+				CollectionTime: start.Format(time.RFC3339),
+				Category:       "container.azm.ms/promscraping",
+				Level:          "Warning",
+				ClusterId:      ResourceID,
+				ClusterName:    ResourceName,
+				Message:        k,
+				Tags:           fmt.Sprintf("%s", tagJson),
+				// Tags: fmt.Sprintf("%s", v),
+			}
+			laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
+			// Log("key[%s] value[%s]\n", k, v)
+			// }
+		}
+	}
+	EventHashUpdateMutex.Unlock()
+
+	if len(laKubeMonAgentEventsRecords) > 0 {
+		kubeMonAgentEventEntry := KubeMonAgentEventBlob{
+			DataType:  KubeMonAgentEventDataType,
+			IPName:    IPName,
+			DataItems: laKubeMonAgentEventsRecords}
+
+		marshalled, err := json.Marshal(kubeMonAgentEventEntry)
+
+		Log("configerrorlogdata-marshalled:\n" + ToString(marshalled))
+		if err != nil {
+			message := fmt.Sprintf("Error while Marshalling config error entry: %s", err.Error())
+			Log(message)
+			SendException(message)
+			// return output.FLB_OK
+		}
+		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
+		req.Header.Set("Content-Type", "application/json")
+		//expensive to do string len for every request, so use a flag
+		if ResourceCentric == true {
+			req.Header.Set("x-ms-AzureResourceId", ResourceID)
 		}
 
-		for k, v := range PromScrapeErrorEvent {
-			tagJson, err := json.Marshal(v)
-			if err != nil {
-				// 	// 	return nil, err
-				// 	// }
-				Log(ToString(err))
-			} else {
-				laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
-					Computer:       Computer,
-					CollectionTime: start.Format(time.RFC3339),
-					Category:       "container.azm.ms/promscraping",
-					Level:          "Warning",
-					ClusterId:      ResourceID,
-					ClusterName:    ResourceName,
-					Message:        k,
-					Tags:           fmt.Sprintf("%s", tagJson),
-					// Tags: fmt.Sprintf("%s", v),
-				}
-				laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
-				// Log("key[%s] value[%s]\n", k, v)
-				// }
+		resp, err := HTTPClient.Do(req)
+		elapsed := time.Since(start)
+
+		if err != nil {
+			message := fmt.Sprintf("Error when sending config error request %s \n", err.Error())
+			Log(message)
+			Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
+
+			// return output.FLB_RETRY
+		}
+
+		if resp == nil || resp.StatusCode != 200 {
+			if resp != nil {
+				Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
 			}
+			// return output.FLB_RETRY
+		}
+
+		defer resp.Body.Close()
+		numRecords := len(laKubeMonAgentEventsRecords)
+		Log("Successfully flushed %d records in %s", numRecords, elapsed)
+
+		//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
+		EventHashUpdateMutex.Lock()
+		for k := range PromScrapeErrorEvent {
+			delete(PromScrapeErrorEvent, k)
 		}
 		EventHashUpdateMutex.Unlock()
 
-		if len(laKubeMonAgentEventsRecords) > 0 {
-			kubeMonAgentEventEntry := KubeMonAgentEventBlob{
-				DataType:  KubeMonAgentEventDataType,
-				IPName:    IPName,
-				DataItems: laKubeMonAgentEventsRecords}
-
-			marshalled, err := json.Marshal(kubeMonAgentEventEntry)
-
-			Log("configerrorlogdata-marshalled:\n" + ToString(marshalled))
-			if err != nil {
-				message := fmt.Sprintf("Error while Marshalling config error entry: %s", err.Error())
-				Log(message)
-				SendException(message)
-				// return output.FLB_OK
-			}
-			req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
-			req.Header.Set("Content-Type", "application/json")
-			//expensive to do string len for every request, so use a flag
-			if ResourceCentric == true {
-				req.Header.Set("x-ms-AzureResourceId", ResourceID)
-			}
-
-			resp, err := HTTPClient.Do(req)
-			elapsed := time.Since(start)
-
-			if err != nil {
-				message := fmt.Sprintf("Error when sending config error request %s \n", err.Error())
-				Log(message)
-				Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
-
-				// return output.FLB_RETRY
-			}
-
-			if resp == nil || resp.StatusCode != 200 {
-				if resp != nil {
-					Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
-				}
-				// return output.FLB_RETRY
-			}
-
-			defer resp.Body.Close()
-			numRecords := len(laKubeMonAgentEventsRecords)
-			Log("Successfully flushed %d records in %s", numRecords, elapsed)
-
-			//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
-			EventHashUpdateMutex.Lock()
-			for k := range PromScrapeErrorEvent {
-				delete(PromScrapeErrorEvent, k)
-			}
-			EventHashUpdateMutex.Unlock()
-
-		}
 	}
+	// }
 }
 
 //Translates telegraf time series to one or more Azure loganalytics metric(s)

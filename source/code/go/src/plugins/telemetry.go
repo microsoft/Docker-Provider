@@ -204,23 +204,24 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 }
 
 // PushToAppInsightsTraces sends the log lines as trace messages to the configured App Insights Instance
-func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLevel contracts.SeverityLevel, tag string) int {
-	var logLines []string
-	for _, record := range records {
-		logLines = append(logLines, ToString(record["log"]))
-		// If record contains config error or prometheus scraping errors send it to ****** table
-		var logEntry = ToString(record["log"])
-		if strings.Contains(logEntry, "config::error") {
-			populateKubeMonAgentEventHash(record, ConfigError)
-		} else if strings.Contains(logEntry, "E! [inputs.prometheus]") {
-			populateKubeMonAgentEventHash(record, PromScrapingError)
-		}
-	}
+// func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLevel contracts.SeverityLevel, tag string) int {
+// var logLines []string
+// for _, record := range records {
+// 	logLines = append(logLines, ToString(record["log"]))
+// 	// If record contains config error or prometheus scraping errors send it to ****** table
+// 	var logEntry = ToString(record["log"])
+// 	if strings.Contains(logEntry, "config::error") {
+// 		populateKubeMonAgentEventHash(record, ConfigError)
+// 	} else if strings.Contains(logEntry, "E! [inputs.prometheus]") {
+// 		populateKubeMonAgentEventHash(record, PromScrapingError)
+// 	}
+// }
 
-	// for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
-	// 	Log("Flushing config error records\n")
-	// flushConfigErrorRecords()
-	// }
+// for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
+// 	Log("Flushing config error records\n")
+// flushConfigErrorRecords()
+// }
+func PushToAppInsightsTraces(logLines []string, severityLevel contracts.SeverityLevel, tag string) int {
 	traceEntry := strings.Join(logLines, "\n")
 	traceTelemetryItem := appinsights.NewTraceTelemetry(traceEntry, severityLevel)
 	traceTelemetryItem.Properties["tag"] = tag
