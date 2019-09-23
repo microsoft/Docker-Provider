@@ -501,7 +501,7 @@ func flushKubeMonAgentEventRecords() {
 			}
 			EventHashUpdateMutex.Unlock()
 		} else {
-			tagsValue = KubeMonAgentEventTags{
+			tagsValue := KubeMonAgentEventTags{
 				PodName:     "-",
 				ContainerId: "-",
 				// EventTime:   eventTimeStamp,
