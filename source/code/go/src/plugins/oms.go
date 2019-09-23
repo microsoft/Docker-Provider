@@ -374,6 +374,8 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 				// if existingErrorEvent != nil {
 				// 	existingErrorEvent.LastOccurance = eventTimeStamp
 				// 	existingErrorEvent.Count = existingErrorEvent.Count + 1
+				Log("Trying to get existing value: %s", PromScrapeErrorEvent[splitString])
+
 				if val, ok := PromScrapeErrorEvent[splitString]; ok {
 					Log("In config error existing hash update\n")
 					eventCount := val.Count
