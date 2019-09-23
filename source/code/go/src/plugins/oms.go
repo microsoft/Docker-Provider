@@ -423,13 +423,12 @@ func flushKubeMonAgentEventRecords() {
 
 		EventHashUpdateMutex.Lock()
 		for k, v := range ConfigErrorEvent {
-			// tagJson, err := json.Marshal(v)
+			tagJson, err := json.Marshal(v)
 
-			// if err != nil {
+			if err != nil {
 			// 	// return nil, err
-			// 	Log(ToString(err))
-			// } else {
-
+				Log(ToString(err))
+			} else {
 			laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
 				Computer:       Computer,
 				CollectionTime: start.Format(time.RFC3339),
@@ -439,21 +438,20 @@ func flushKubeMonAgentEventRecords() {
 				ClusterName:    ResourceName,
 				Message:        k,
 				// Tags:           fmt.Sprintf("%s", tagJson),
-				Tags: fmt.Sprintf("%s", v),
+				Tags: fmt.Sprintf("%s", tagJson),
 			}
 			laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
-			Log("key[%s] value[%s]\n", k, v)
+			// Log("key[%s] value[%s]\n", k, v)
 			// }
 		}
 
 		for k, v := range PromScrapeErrorEvent {
-			// tagJson, err := json.Marshal(v)
-			// if err != nil {
+			tagJson, err := json.Marshal(v)
+			if err != nil {
 			// 	// 	return nil, err
 			// 	// }
-			// 	Log(ToString(err))
-			// } else {
-
+				Log(ToString(err))
+			} else {
 			laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
 				Computer:       Computer,
 				CollectionTime: start.Format(time.RFC3339),
@@ -462,11 +460,11 @@ func flushKubeMonAgentEventRecords() {
 				ClusterId:      ResourceID,
 				ClusterName:    ResourceName,
 				Message:        k,
-				// Tags:           fmt.Sprintf("%s", tagJson),
-				Tags: fmt.Sprintf("%s", v),
+				Tags:           fmt.Sprintf("%s", tagJson),
+				// Tags: fmt.Sprintf("%s", v),
 			}
 			laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
-			Log("key[%s] value[%s]\n", k, v)
+			// Log("key[%s] value[%s]\n", k, v)
 			// }
 		}
 		EventHashUpdateMutex.Unlock()
@@ -516,11 +514,11 @@ func flushKubeMonAgentEventRecords() {
 			Log("Successfully flushed %d records in %s", numRecords, elapsed)
 
 			//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
-			EventHashUpdateMutex.Lock()
-			for k := range PromScrapeErrorEvent {
-				delete(PromScrapeErrorEvent, k)
-			}
-			EventHashUpdateMutex.Unlock()
+			// EventHashUpdateMutex.Lock()
+			// for k := range PromScrapeErrorEvent {
+			// 	delete(PromScrapeErrorEvent, k)
+			// }
+			// EventHashUpdateMutex.Unlock()
 
 		}
 	}
