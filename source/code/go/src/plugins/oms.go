@@ -426,46 +426,48 @@ func flushKubeMonAgentEventRecords() {
 			tagJson, err := json.Marshal(v)
 
 			if err != nil {
-			// 	// return nil, err
+				// 	// return nil, err
 				Log(ToString(err))
 			} else {
-			laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
-				Computer:       Computer,
-				CollectionTime: start.Format(time.RFC3339),
-				Category:       "container.azm.ms/configmap",
-				Level:          "Error",
-				ClusterId:      ResourceID,
-				ClusterName:    ResourceName,
-				Message:        k,
-				// Tags:           fmt.Sprintf("%s", tagJson),
-				Tags: fmt.Sprintf("%s", tagJson),
+				laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
+					Computer:       Computer,
+					CollectionTime: start.Format(time.RFC3339),
+					Category:       "container.azm.ms/configmap",
+					Level:          "Error",
+					ClusterId:      ResourceID,
+					ClusterName:    ResourceName,
+					Message:        k,
+					// Tags:           fmt.Sprintf("%s", tagJson),
+					Tags: fmt.Sprintf("%s", tagJson),
+				}
+				laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
+				// Log("key[%s] value[%s]\n", k, v)
+				// }
 			}
-			laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
-			// Log("key[%s] value[%s]\n", k, v)
-			// }
 		}
 
 		for k, v := range PromScrapeErrorEvent {
 			tagJson, err := json.Marshal(v)
 			if err != nil {
-			// 	// 	return nil, err
-			// 	// }
+				// 	// 	return nil, err
+				// 	// }
 				Log(ToString(err))
 			} else {
-			laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
-				Computer:       Computer,
-				CollectionTime: start.Format(time.RFC3339),
-				Category:       "container.azm.ms/promscraping",
-				Level:          "Warning",
-				ClusterId:      ResourceID,
-				ClusterName:    ResourceName,
-				Message:        k,
-				Tags:           fmt.Sprintf("%s", tagJson),
-				// Tags: fmt.Sprintf("%s", v),
+				laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
+					Computer:       Computer,
+					CollectionTime: start.Format(time.RFC3339),
+					Category:       "container.azm.ms/promscraping",
+					Level:          "Warning",
+					ClusterId:      ResourceID,
+					ClusterName:    ResourceName,
+					Message:        k,
+					Tags:           fmt.Sprintf("%s", tagJson),
+					// Tags: fmt.Sprintf("%s", v),
+				}
+				laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
+				// Log("key[%s] value[%s]\n", k, v)
+				// }
 			}
-			laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
-			// Log("key[%s] value[%s]\n", k, v)
-			// }
 		}
 		EventHashUpdateMutex.Unlock()
 
