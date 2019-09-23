@@ -449,92 +449,89 @@ func flushKubeMonAgentEventRecords() {
 		var laKubeMonAgentEventsRecords []laKubeMonAgentEvents
 		start := time.Now()
 
+		if (len(ConfigErrorEvent) > 0) || (len(PromScrapeErrorEvent) > 0) {
+			EventHashUpdateMutex.Lock()
+			for k, v := range ConfigErrorEvent {
+				tagJson, err := json.Marshal(v)
 
-if ((len(ConfigErrorEvent) > 0) || (len(PromScrapeErrorEvent) > 0)) {
-		EventHashUpdateMutex.Lock()
-		for k, v := range ConfigErrorEvent {
-			tagJson, err := json.Marshal(v)
-
-			if err != nil {
-				message := fmt.Sprintf("Error while Marshalling config error entry: %s", err.Error())
-				Log(message)
-				SendException(message)
-			} else {
-				laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
-					Computer:       Computer,
-					CollectionTime: start.Format(time.RFC3339),
-					Category:       "container.azm.ms/configmap",
-					Level:          "Error",
-					ClusterId:      ResourceID,
-					ClusterName:    ResourceName,
-					Message:        k,
-					// Tags:           fmt.Sprintf("%s", tagJson),
-					Tags: fmt.Sprintf("%s", tagJson),
+				if err != nil {
+					message := fmt.Sprintf("Error while Marshalling config error entry: %s", err.Error())
+					Log(message)
+					SendException(message)
+				} else {
+					laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
+						Computer:       Computer,
+						CollectionTime: start.Format(time.RFC3339),
+						Category:       "container.azm.ms/configmap",
+						Level:          "Error",
+						ClusterId:      ResourceID,
+						ClusterName:    ResourceName,
+						Message:        k,
+						// Tags:           fmt.Sprintf("%s", tagJson),
+						Tags: fmt.Sprintf("%s", tagJson),
+					}
+					laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
+					// Log("key[%s] value[%s]\n", k, v)
+					// }
 				}
-				laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
-				// Log("key[%s] value[%s]\n", k, v)
-				// }
 			}
-		}
 
-		for k, v := range PromScrapeErrorEvent {
-			tagJson, err := json.Marshal(v)
+			for k, v := range PromScrapeErrorEvent {
+				tagJson, err := json.Marshal(v)
+				if err != nil {
+					message := fmt.Sprintf("Error while Marshalling config error entry: %s", err.Error())
+					Log(message)
+					SendException(message)
+				} else {
+					laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
+						Computer:       Computer,
+						CollectionTime: start.Format(time.RFC3339),
+						Category:       "container.azm.ms/promscraping",
+						Level:          "Warning",
+						ClusterId:      ResourceID,
+						ClusterName:    ResourceName,
+						Message:        k,
+						Tags:           fmt.Sprintf("%s", tagJson),
+						// Tags: fmt.Sprintf("%s", v),
+					}
+					laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
+					// Log("key[%s] value[%s]\n", k, v)
+					// }
+				}
+			}
+			EventHashUpdateMutex.Unlock()
+		} else {
+			tagsValue = KubeMonAgentEventTags{
+				PodName:     "-",
+				ContainerId: "-",
+				// EventTime:   eventTimeStamp,
+				FirstOccurance: "-",
+				LastOccurance:  "-",
+				Count:          0,
+			}
+
+			tagJson, err := json.Marshal(tagsValue)
 			if err != nil {
 				message := fmt.Sprintf("Error while Marshalling config error entry: %s", err.Error())
 				Log(message)
 				SendException(message)
 			} else {
+
 				laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
 					Computer:       Computer,
 					CollectionTime: start.Format(time.RFC3339),
-					Category:       "container.azm.ms/promscraping",
-					Level:          "Warning",
+					Category:       "container.azm.ms/noerror",
+					Level:          "Info",
 					ClusterId:      ResourceID,
 					ClusterName:    ResourceName,
-					Message:        k,
+					Message:        "No errors in the past hour",
 					Tags:           fmt.Sprintf("%s", tagJson),
 					// Tags: fmt.Sprintf("%s", v),
 				}
 				laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
-				// Log("key[%s] value[%s]\n", k, v)
-				// }
 			}
+			//TODO
 		}
-		EventHashUpdateMutex.Unlock()
-	}
-	else {
-
-		tagsValue = KubeMonAgentEventTags{
-			PodName:     "-",
-			ContainerId: "-",
-			// EventTime:   eventTimeStamp,
-			FirstOccurance: "-",
-			LastOccurance:  "-",
-			Count:          0,
-		}
-
-		tagJson, err := json.Marshal(tagsValue)
-		if err != nil {
-			message := fmt.Sprintf("Error while Marshalling config error entry: %s", err.Error())
-			Log(message)
-			SendException(message)
-		} else {
-
-		laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
-			Computer:       Computer,
-			CollectionTime: start.Format(time.RFC3339),
-			Category:       "container.azm.ms/noerror",
-			Level:          "Info",
-			ClusterId:      ResourceID,
-			ClusterName:    ResourceName,
-			Message:        "No errors in the past hour",
-			Tags:           fmt.Sprintf("%s", tagJson),
-			// Tags: fmt.Sprintf("%s", v),
-		}
-		laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
-	}
-//TODO
-	}
 
 		if len(laKubeMonAgentEventsRecords) > 0 {
 			kubeMonAgentEventEntry := KubeMonAgentEventBlob{
