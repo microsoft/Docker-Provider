@@ -516,11 +516,11 @@ func flushKubeMonAgentEventRecords() {
 			Log("Successfully flushed %d records in %s", numRecords, elapsed)
 
 			//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
-			// EventHashUpdateMutex.Lock()
-			// for k := range PromScrapeErrorEvent {
-			// 	delete(PromScrapeErrorEvent, k)
-			// }
-			// EventHashUpdateMutex.Unlock()
+			EventHashUpdateMutex.Lock()
+			for k := range PromScrapeErrorEvent {
+				delete(PromScrapeErrorEvent, k)
+			}
+			EventHashUpdateMutex.Unlock()
 
 		}
 	}
@@ -919,7 +919,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	ContainerImageNameRefreshTicker = time.NewTicker(time.Second * time.Duration(containerInventoryRefreshInterval))
 
 	Log("kubeMonAgentConfigEventFlushInterval = %d \n", kubeMonAgentConfigEventFlushInterval)
-	KubeMonAgentConfigEventsSendTicker = time.NewTicker(time.Second * time.Duration(kubeMonAgentConfigEventFlushInterval))
+	KubeMonAgentConfigEventsSendTicker = time.NewTicker(time.Minute * time.Duration(kubeMonAgentConfigEventFlushInterval))
 
 	// Populate Computer field
 	containerHostName, err := ioutil.ReadFile(pluginConfig["container_host_file_path"])
