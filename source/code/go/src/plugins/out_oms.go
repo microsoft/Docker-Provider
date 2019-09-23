@@ -60,25 +60,8 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 
 	incomingTag := strings.ToLower(C.GoString(tag))
 	if strings.Contains(incomingTag, "oms.container.log.flbplugin") {
-		var logLines []string
-		for _, record := range records {
-			logLines = append(logLines, ToString(record["log"]))
-			// If record contains config error or prometheus scraping errors send it to ****** table
-			var logEntry = ToString(record["log"])
-			if strings.Contains(logEntry, "config::error") {
-				populateKubeMonAgentEventHash(record, ConfigError)
-			} else if strings.Contains(logEntry, "E! [inputs.prometheus]") {
-				populateKubeMonAgentEventHash(record, PromScrapingError)
-			}
-		}
-		for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
-			return flushKubeMonAgentEventRecords()
-		}
-
-		// This will also include routing to send data to OMS workspace for config errors
-		return PushToAppInsightsTraces(logLines, severityLevel, tag)
-		// return PostConfigEventsAndSendAITraces(records, appinsights.Information, incomingTag)
-		// return PushToAppInsightsTraces(records, appinsights.Information, incomingTag)
+		// This will also include populating cache to be sent as for config events
+		return PushToAppInsightsTraces(records, appinsights.Information, incomingTag)
 	} else if strings.Contains(incomingTag, "oms.container.perf.telegraf") {
 		return PostTelegrafMetricsToLA(records)
 	}
