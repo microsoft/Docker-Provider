@@ -579,7 +579,6 @@ func flushKubeMonAgentEventRecords() {
 								Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
 								retries -= 1
 							}
-							// return output.FLB_RETRY
 						} else {
 							flushSuccessful = true
 							break
