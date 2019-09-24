@@ -414,38 +414,6 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 	Log("Updating config event hash - Unlocked after update \n ")
 }
 
-// Sends data to post config events and to App Insights Instance
-// func PostConfigEventsAndSendAITraces(records []map[interface{}]interface{}, severityLevel contracts.SeverityLevel, tag string) int {
-// 	var logLines []string
-// 	for _, record := range records {
-// 		logLines = append(logLines, ToString(record["log"]))
-// 		// If record contains config error or prometheus scraping errors send it to ****** table
-// 		var logEntry = ToString(record["log"])
-// 		if strings.Contains(logEntry, "config::error") {
-// 			populateKubeMonAgentEventHash(record, ConfigError)
-// 		} else if strings.Contains(logEntry, "E! [inputs.prometheus]") {
-// 			populateKubeMonAgentEventHash(record, PromScrapingError)
-// 		}
-// 	}
-
-// 	// Pushing traces to App Insights after joining the record lines
-// 	PushToAppInsightsTraces(logLines, severityLevel, tag)
-
-// 	// for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
-// 	// 	Log("Flushing config error records\n")
-// 	// flushConfigErrorRecords()
-// 	// }
-// 	// traceEntry := strings.Join(logLines, "\n")
-// 	// traceTelemetryItem := appinsights.NewTraceTelemetry(traceEntry, severityLevel)
-// 	// traceTelemetryItem.Properties["tag"] = tag
-// 	// TelemetryClient.Track(traceTelemetryItem)
-// 	// return output.FLB_OK
-// }
-
-func checkResponseCodeAndRetry() {
-
-}
-
 // Function to get config error log records after iterating through the two hashes
 func flushKubeMonAgentEventRecords() {
 	for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
