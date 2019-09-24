@@ -28,6 +28,9 @@ const ContainerLogDataType = "CONTAINER_LOG_BLOB"
 // DataType for Insights metric
 const InsightsMetricsDataType = "INSIGHTS_METRICS_BLOB"
 
+// DataType for KubeMonAgentEvent
+const KubeMonAgentEventDataType = "KUBE_MON_AGENT_EVENTS_BLOB"
+
 //env varibale which has ResourceId for LA
 const ResourceIdEnv = "AKS_RESOURCE_ID"
 
@@ -45,6 +48,18 @@ const TelegrafTagClusterName = "clusterName"
 
 // clusterId tag
 const TelegrafTagClusterID = "clusterId"
+
+const ConfigErrorEventCategory = "container.azm.ms/configmap"
+
+const PromScrapingErrorEventCategory = "container.azm.ms/promscraping"
+
+const NoErrorEventCategory = "container.azm.ms/noerror"
+
+const KubeMonAgentEventError = "Error"
+
+const KubeMonAgentEventWarning = "Warning"
+
+const KubeMonAgentEventInfo = "Info"
 
 // ContainerLogPluginConfFilePath --> config file path for container log plugin
 const DaemonSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimprov/out_oms.conf"
@@ -161,17 +176,11 @@ type laKubeMonAgentEvents struct {
 	ClusterName    string `json:"ClusterName"`
 	Message        string `json:"Message"`
 	Tags           string `json:"Tags"`
-	// ConfigErrorMessage string `json:"ConfigErrorMessage"`
-	// ContainerId        string `json:"ContainerId"`
-	// PodName            string `json:"PodName"`
-	// ConfigErrorTime    string `json:"ConfigErrorTime"`
-	// ConfigErrorLevel   string `json:"ConfigErrorLevel"`
 }
 
 type KubeMonAgentEventTags struct {
-	PodName     string
-	ContainerId string
-	// EventTime      string
+	PodName        string
+	ContainerId    string
 	FirstOccurance string
 	LastOccurance  string
 	Count          int
@@ -191,9 +200,6 @@ const (
 	ConfigError KubeMonAgentEventType = iota
 	PromScrapingError
 )
-
-// DataType for Config error
-const KubeMonAgentEventDataType = "KUBE_MON_AGENT_EVENTS_BLOB"
 
 func createLogger() *log.Logger {
 	var logfile *os.File
@@ -325,7 +331,6 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 	EventHashUpdateMutex.Lock()
 	switch errType {
 	case ConfigError:
-		// Log("ConfigErrorEvent\n")
 		// Doing this since the error logger library is adding quotes around the string and a newline to the end because
 		// we are converting string to json to log lines in different lines as one record
 		logRecordString = strings.TrimSuffix(logRecordString, "\n")
@@ -339,23 +344,16 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 			eventFirstOccurance := val.FirstOccurance
 
 			ConfigErrorEvent[logRecordString] = KubeMonAgentEventTags{
-				PodName:     podName,
-				ContainerId: containerID,
-				// EventTime:   eventTimeStamp,
+				PodName:        podName,
+				ContainerId:    containerID,
 				FirstOccurance: eventFirstOccurance,
 				LastOccurance:  eventTimeStamp,
 				Count:          eventCount + 1,
 			}
-			// (*val).LastOccurance = eventTimeStamp
-			// (*val).Count = ((*val).Count) + 1
-			// if existingErrorEvent != nil {
-			// 	existingErrorEvent.LastOccurance = eventTimeStamp
-			// 	existingErrorEvent.Count = existingErrorEvent.Count + 1
 		} else {
 			ConfigErrorEvent[logRecordString] = KubeMonAgentEventTags{
-				PodName:     podName,
-				ContainerId: containerID,
-				// EventTime:   eventTimeStamp,
+				PodName:        podName,
+				ContainerId:    containerID,
 				FirstOccurance: eventTimeStamp,
 				LastOccurance:  eventTimeStamp,
 				Count:          1,
@@ -370,38 +368,22 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 			// Trimming the newline character at the end since this is being added as the key
 			splitString = strings.TrimSuffix(splitString, "\n")
 			if splitString != "" {
-				// existingErrorEvent := PromScrapeErrorEvent[splitString]
-				// if existingErrorEvent != nil {
-				// 	existingErrorEvent.LastOccurance = eventTimeStamp
-				// 	existingErrorEvent.Count = existingErrorEvent.Count + 1
-				// Log("Trying to get existing value: \n")
-				// for k, v := range PromScrapeErrorEvent {
-				// 	Log("key[%s] value[%s]\n", k, v)
-				// 	Log("splitString: %s", splitString)
-				// }
-
 				if val, ok := PromScrapeErrorEvent[splitString]; ok {
 					Log("In config error existing hash update\n")
 					eventCount := val.Count
 					eventFirstOccurance := val.FirstOccurance
 
 					PromScrapeErrorEvent[splitString] = KubeMonAgentEventTags{
-						PodName:     podName,
-						ContainerId: containerID,
-						// EventTime:   eventTimeStamp,
+						PodName:        podName,
+						ContainerId:    containerID,
 						FirstOccurance: eventFirstOccurance,
 						LastOccurance:  eventTimeStamp,
 						Count:          eventCount + 1,
 					}
-
-					// existingErrorEvent := &PromScrapeErrorEvent[splitString]
-					// (*val).LastOccurance = eventTimeStamp
-					// (*val).Count = ((*val).Count) + 1
 				} else {
 					PromScrapeErrorEvent[splitString] = KubeMonAgentEventTags{
-						PodName:     podName,
-						ContainerId: containerID,
-						// ErrorTimeStamp: errorTimeStamp,
+						PodName:        podName,
+						ContainerId:    containerID,
 						FirstOccurance: eventTimeStamp,
 						LastOccurance:  eventTimeStamp,
 						Count:          1,
@@ -439,13 +421,12 @@ func flushKubeMonAgentEventRecords() {
 					laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
 						Computer:       Computer,
 						CollectionTime: start.Format(time.RFC3339),
-						Category:       "container.azm.ms/configmap",
-						Level:          "Error",
+						Category:       ConfigErrorEventCategory,
+						Level:          KubeMonAgentEventError,
 						ClusterId:      ResourceID,
 						ClusterName:    ResourceName,
 						Message:        k,
-						// Tags:           fmt.Sprintf("%s", tagJson),
-						Tags: fmt.Sprintf("%s", tagJson),
+						Tags:           fmt.Sprintf("%s", tagJson),
 					}
 					laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
 					// Log("key[%s] value[%s]\n", k, v)
@@ -463,8 +444,8 @@ func flushKubeMonAgentEventRecords() {
 					laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
 						Computer:       Computer,
 						CollectionTime: start.Format(time.RFC3339),
-						Category:       "container.azm.ms/promscraping",
-						Level:          "Warning",
+						Category:       PromScrapingErrorEventCategory,
+						Level:          KubeMonAgentEventWarning,
 						ClusterId:      ResourceID,
 						ClusterName:    ResourceName,
 						Message:        k,
@@ -499,13 +480,12 @@ func flushKubeMonAgentEventRecords() {
 				laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
 					Computer:       Computer,
 					CollectionTime: start.Format(time.RFC3339),
-					Category:       "container.azm.ms/noerror",
-					Level:          "Info",
+					Category:       NoErrorEventCategory,
+					Level:          KubeMonAgentEventInfo,
 					ClusterId:      ResourceID,
 					ClusterName:    ResourceName,
 					Message:        "No errors",
 					Tags:           fmt.Sprintf("%s", tagJson),
-					// Tags: fmt.Sprintf("%s", v),
 				}
 				laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
 			}
@@ -556,7 +536,9 @@ func flushKubeMonAgentEventRecords() {
 					}
 				}
 
-				defer resp.Body.Close()
+				if resp != nil && resp.Body != nil {
+					defer resp.Body.Close()
+				}
 				if flushSuccessful {
 					numRecords := len(laKubeMonAgentEventsRecords)
 					Log("Successfully flushed %d records in %s", numRecords, elapsed)
@@ -566,6 +548,7 @@ func flushKubeMonAgentEventRecords() {
 					for k := range PromScrapeErrorEvent {
 						delete(PromScrapeErrorEvent, k)
 					}
+					Log("PromScrapeErrorEvent cache cleared\n")
 					EventHashUpdateMutex.Unlock()
 				}
 			}

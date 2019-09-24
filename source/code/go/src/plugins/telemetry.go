@@ -208,7 +208,7 @@ func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLeve
 	var logLines []string
 	for _, record := range records {
 		logLines = append(logLines, ToString(record["log"]))
-		// If record contains config error or prometheus scraping errors send it to ****** table
+		// If record contains config error or prometheus scraping errors send it to KubeMonAgentEvents table
 		var logEntry = ToString(record["log"])
 		if strings.Contains(logEntry, "config::error") {
 			populateKubeMonAgentEventHash(record, ConfigError)
