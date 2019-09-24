@@ -420,9 +420,9 @@ func flushKubeMonAgentEventRecords() {
 		Log("In flushConfigErrorRecords\n")
 		var retries = 2
 		var flushSuccessful = false
-		var resp *Response
+		var resp *http.Response
 		var err error
-		var elapsed Duration
+		var elapsed int64
 		var laKubeMonAgentEventsRecords []laKubeMonAgentEvents
 		start := time.Now()
 
