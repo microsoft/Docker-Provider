@@ -442,10 +442,17 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 // 	// return output.FLB_OK
 // }
 
+func checkResponseCodeAndRetry() {
+
+}
+
 // Function to get config error log records after iterating through the two hashes
 func flushKubeMonAgentEventRecords() {
 	for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
 		Log("In flushConfigErrorRecords\n")
+		var retries = 2
+		var flushSuccessful = false
+		var resp, err, elapsed
 		var laKubeMonAgentEventsRecords []laKubeMonAgentEvents
 		start := time.Now()
 
@@ -501,6 +508,8 @@ func flushKubeMonAgentEventRecords() {
 			}
 			EventHashUpdateMutex.Unlock()
 		} else {
+
+			//Sending a record in case there are no errors to be able to differentiate between no data vs no errors
 			tagsValue := KubeMonAgentEventTags{
 				PodName:     "-",
 				ContainerId: "-",
@@ -524,13 +533,12 @@ func flushKubeMonAgentEventRecords() {
 					Level:          "Info",
 					ClusterId:      ResourceID,
 					ClusterName:    ResourceName,
-					Message:        "No errors in the past hour",
+					Message:        "No errors",
 					Tags:           fmt.Sprintf("%s", tagJson),
 					// Tags: fmt.Sprintf("%s", v),
 				}
 				laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
 			}
-			//TODO
 		}
 
 		if len(laKubeMonAgentEventsRecords) > 0 {
@@ -547,43 +555,51 @@ func flushKubeMonAgentEventRecords() {
 				Log(message)
 				SendException(message)
 				// return output.FLB_OK
-			}
-			req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
-			req.Header.Set("Content-Type", "application/json")
-			//expensive to do string len for every request, so use a flag
-			if ResourceCentric == true {
-				req.Header.Set("x-ms-AzureResourceId", ResourceID)
-			}
-
-			resp, err := HTTPClient.Do(req)
-			elapsed := time.Since(start)
-
-			if err != nil {
-				message := fmt.Sprintf("Error when sending config error request %s \n", err.Error())
-				Log(message)
-				Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
-
-				// return output.FLB_RETRY
-			}
-
-			if resp == nil || resp.StatusCode != 200 {
-				if resp != nil {
-					Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
+			} else {
+				req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
+				req.Header.Set("Content-Type", "application/json")
+				//expensive to do string len for every request, so use a flag
+				if ResourceCentric == true {
+					req.Header.Set("x-ms-AzureResourceId", ResourceID)
 				}
-				// return output.FLB_RETRY
+
+				// Retry in case of failure
+				for retries > 0 {
+					resp, err = HTTPClient.Do(req)
+					elapsed = time.Since(start)
+
+					if err != nil {
+						message := fmt.Sprintf("Error when sending config error request %s \n", err.Error())
+						Log(message)
+						Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
+						retries -= 1
+					} else {
+						if resp == nil || resp.StatusCode != 200 {
+							if resp != nil {
+								Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
+								retries -= 1
+							}
+							// return output.FLB_RETRY
+						} else {
+							flushSuccessful = true
+							break
+						}
+					}
+				}
+
+				defer resp.Body.Close()
+				if flushSuccessful {
+					numRecords := len(laKubeMonAgentEventsRecords)
+					Log("Successfully flushed %d records in %s", numRecords, elapsed)
+
+					//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
+					EventHashUpdateMutex.Lock()
+					for k := range PromScrapeErrorEvent {
+						delete(PromScrapeErrorEvent, k)
+					}
+					EventHashUpdateMutex.Unlock()
+				}
 			}
-
-			defer resp.Body.Close()
-			numRecords := len(laKubeMonAgentEventsRecords)
-			Log("Successfully flushed %d records in %s", numRecords, elapsed)
-
-			//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
-			EventHashUpdateMutex.Lock()
-			for k := range PromScrapeErrorEvent {
-				delete(PromScrapeErrorEvent, k)
-			}
-			EventHashUpdateMutex.Unlock()
-
 		}
 	}
 }
