@@ -421,7 +421,7 @@ func flushKubeMonAgentEventRecords() {
 		var retries = 2
 		var flushSuccessful = false
 		var resp *http.Response
-		var err error
+		var postError error
 		var elapsed time.Duration
 		var laKubeMonAgentEventsRecords []laKubeMonAgentEvents
 		start := time.Now()
@@ -535,10 +535,10 @@ func flushKubeMonAgentEventRecords() {
 
 				// Retry in case of failure
 				for retries > 0 {
-					resp, err = HTTPClient.Do(req)
+					resp, postError = HTTPClient.Do(req)
 					elapsed = time.Since(start)
 
-					if err != nil {
+					if postError != nil {
 						message := fmt.Sprintf("Error when sending config error request %s \n", err.Error())
 						Log(message)
 						Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
