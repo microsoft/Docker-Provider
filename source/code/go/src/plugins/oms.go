@@ -422,7 +422,7 @@ func flushKubeMonAgentEventRecords() {
 		var flushSuccessful = false
 		var resp *http.Response
 		var err error
-		var elapsed int64
+		var elapsed time.Duration
 		var laKubeMonAgentEventsRecords []laKubeMonAgentEvents
 		start := time.Now()
 
