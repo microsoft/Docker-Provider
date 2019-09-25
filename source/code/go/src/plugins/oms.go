@@ -661,6 +661,8 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		return output.FLB_OK
 	}
 
+	Log("telegrafmetrics-marshalled:\n" + ToString(jsonBytes))
+
 	//Post metrics data to LA
 	req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(jsonBytes))
 
@@ -802,6 +804,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			SendException(message)
 			return output.FLB_OK
 		}
+		Log("containerlog-marshalled:\n" + ToString(marshalled))
+
 		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
 		req.Header.Set("Content-Type", "application/json")
 		//expensive to do string len for every request, so use a flag
