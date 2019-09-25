@@ -68,6 +68,7 @@ const ReplicaSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimp
 // IPName for Container Log
 const IPName = "Containers"
 const defaultContainerInventoryRefreshInterval = 60
+
 // const kubeMonAgentConfigEventFlushInterval = 60
 const kubeMonAgentConfigEventFlushInterval = 1
 
@@ -516,7 +517,9 @@ func flushKubeMonAgentEventRecords() {
 
 				// Retry in case of failure
 				for retries > 0 {
+					Log("In retry block with retry count: %d", retries)
 					resp, postError = HTTPClient.Do(req)
+					Log("Post response status %s status code %d", resp.Status, resp.StatusCode)
 					elapsed = time.Since(start)
 
 					if postError != nil {
@@ -531,6 +534,7 @@ func flushKubeMonAgentEventRecords() {
 								retries -= 1
 							}
 						} else {
+							Log("Setting flush successful to true\n")
 							flushSuccessful = true
 							break
 						}
@@ -538,9 +542,10 @@ func flushKubeMonAgentEventRecords() {
 				}
 
 				if resp != nil && resp.Body != nil {
+					Log("Closing response body")
 					defer resp.Body.Close()
 				}
-				if flushSuccessful {
+				if flushSuccessful == true {
 					numRecords := len(laKubeMonAgentEventsRecords)
 					Log("Successfully flushed %d records in %s", numRecords, elapsed)
 
