@@ -61,6 +61,8 @@ const KubeMonAgentEventWarning = "Warning"
 
 const KubeMonAgentEventInfo = "Info"
 
+const KubeMonAgentEventsFlushedEvent = "KubeMonAgentEventsFlushed"
+
 // ContainerLogPluginConfFilePath --> config file path for container log plugin
 const DaemonSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimprov/out_oms.conf"
 const ReplicaSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimprov/out_oms.conf"
@@ -407,7 +409,11 @@ func flushKubeMonAgentEventRecords() {
 		var postError error
 		var elapsed time.Duration
 		var laKubeMonAgentEventsRecords []laKubeMonAgentEvents
+		telemetryDimensions := make(map[string]string)
 		start := time.Now()
+
+		telemetryDimensions["ConfigErrorEventCount"] = ToString(len(ConfigErrorEvent))
+		telemetryDimensions["PromScrapeErrorEventCount"] = ToString(len(PromScrapeErrorEvent))
 
 		if (len(ConfigErrorEvent) > 0) || (len(PromScrapeErrorEvent) > 0) {
 			EventHashUpdateMutex.Lock()
@@ -547,6 +553,7 @@ func flushKubeMonAgentEventRecords() {
 				if flushSuccessful == true {
 					numRecords := len(laKubeMonAgentEventsRecords)
 					Log("Successfully flushed %d records in %s", numRecords, elapsed)
+					SendEvent(KubeMonAgentEventsFlushedEvent, telemetryDimensions)
 
 					//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
 					EventHashUpdateMutex.Lock()
