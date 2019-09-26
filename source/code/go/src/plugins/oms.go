@@ -69,8 +69,7 @@ const ReplicaSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimp
 const IPName = "Containers"
 const defaultContainerInventoryRefreshInterval = 60
 
-// const kubeMonAgentConfigEventFlushInterval = 60
-const kubeMonAgentConfigEventFlushInterval = 1
+const kubeMonAgentConfigEventFlushInterval = 60
 
 var (
 	// PluginConfiguration the plugins configuration
@@ -661,8 +660,6 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		return output.FLB_OK
 	}
 
-	Log("telegrafmetrics-marshalled:\n" + ToString(jsonBytes))
-
 	//Post metrics data to LA
 	req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(jsonBytes))
 
@@ -804,7 +801,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			SendException(message)
 			return output.FLB_OK
 		}
-		Log("containerlog-marshalled:\n" + ToString(marshalled))
 
 		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
 		req.Header.Set("Content-Type", "application/json")
