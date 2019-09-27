@@ -463,13 +463,7 @@ func flushKubeMonAgentEventRecords() {
 				EventHashUpdateMutex.Unlock()
 			} else {
 				//Sending a record in case there are no errors to be able to differentiate between no data vs no errors
-				tagsValue := KubeMonAgentEventTags{
-					PodName:        "-",
-					ContainerId:    "-",
-					FirstOccurance: "-",
-					LastOccurance:  "-",
-					Count:          0,
-				}
+				tagsValue := KubeMonAgentEventTags{}
 
 				tagJson, err := json.Marshal(tagsValue)
 				if err != nil {
@@ -477,7 +471,6 @@ func flushKubeMonAgentEventRecords() {
 					Log(message)
 					SendException(message)
 				} else {
-
 					laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
 						Computer:       Computer,
 						CollectionTime: start.Format(time.RFC3339),
