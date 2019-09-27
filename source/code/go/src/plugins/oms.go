@@ -412,8 +412,8 @@ func flushKubeMonAgentEventRecords() {
 		telemetryDimensions := make(map[string]string)
 		start := time.Now()
 
-		telemetryDimensions["ConfigErrorEventCount"] = ToString(len(ConfigErrorEvent))
-		telemetryDimensions["PromScrapeErrorEventCount"] = ToString(len(PromScrapeErrorEvent))
+		telemetryDimensions["ConfigErrorEventCount"] = strconv.Itoa(len(ConfigErrorEvent)
+		telemetryDimensions["PromScrapeErrorEventCount"] = strconv.Itoa(len(PromScrapeErrorEvent)
 
 		if (len(ConfigErrorEvent) > 0) || (len(PromScrapeErrorEvent) > 0) {
 			EventHashUpdateMutex.Lock()
