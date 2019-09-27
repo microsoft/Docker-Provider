@@ -341,9 +341,7 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 		logRecordString = strings.TrimSuffix(logRecordString, "\n")
 		logRecordString = logRecordString[1 : len(logRecordString)-1]
 
-		// var existingErrorEvent = ConfigErrorEvent[logRecordString]
 		if val, ok := ConfigErrorEvent[logRecordString]; ok {
-			// existingErrorEvent := &ConfigErrorEvent[logRecordString]
 			Log("In config error existing hash update\n")
 			eventCount := val.Count
 			eventFirstOccurance := val.FirstOccurance
@@ -502,7 +500,6 @@ func flushKubeMonAgentEventRecords() {
 
 				marshalled, err := json.Marshal(kubeMonAgentEventEntry)
 
-				// Log("configerrorlogdata-marshalled:\n" + ToString(marshalled))
 				if err != nil {
 					message := fmt.Sprintf("Error while marshalling kubemonagentevent entry: %s", err.Error())
 					Log(message)
