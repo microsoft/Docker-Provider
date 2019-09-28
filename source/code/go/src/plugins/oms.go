@@ -332,7 +332,7 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 	var eventTimeStamp = ToString(record["time"])
 	containerID, _, podName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
 
-	Log("Updating config event hash - Locking for update \n ")
+	Log("Locked EventHashUpdateMutex for updating hash \n ")
 	EventHashUpdateMutex.Lock()
 	switch errType {
 	case ConfigError:
@@ -396,7 +396,7 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 		}
 	}
 	EventHashUpdateMutex.Unlock()
-	Log("Updating config event hash - Unlocked after update \n ")
+	Log("Unlocked EventHashUpdateMutex after updating hash \n ")
 }
 
 // Function to get config error log records after iterating through the two hashes
@@ -404,20 +404,18 @@ func flushKubeMonAgentEventRecords() {
 	for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
 		if skipKubeMonEventsFlush != true {
 			Log("In flushConfigErrorRecords\n")
-			var retries = 2
-			var flushSuccessful = false
-			var resp *http.Response
-			var postError error
-			var elapsed time.Duration
+			// var resp *http.Response
+			// var postError error
+			// var elapsed time.Duration
 			var laKubeMonAgentEventsRecords []laKubeMonAgentEvents
 			telemetryDimensions := make(map[string]string)
-			start := time.Now()
 
 			telemetryDimensions["ConfigErrorEventCount"] = strconv.Itoa(len(ConfigErrorEvent))
 			telemetryDimensions["PromScrapeErrorEventCount"] = strconv.Itoa(len(PromScrapeErrorEvent))
 
 			if (len(ConfigErrorEvent) > 0) || (len(PromScrapeErrorEvent) > 0) {
 				EventHashUpdateMutex.Lock()
+				Log("Locked EventHashUpdateMutex for reading hashes\n")
 				for k, v := range ConfigErrorEvent {
 					tagJson, err := json.Marshal(v)
 
@@ -460,7 +458,14 @@ func flushKubeMonAgentEventRecords() {
 						laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
 					}
 				}
+
+				//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
+				for k := range PromScrapeErrorEvent {
+					delete(PromScrapeErrorEvent, k)
+				}
+				Log("PromScrapeErrorEvent cache cleared\n")
 				EventHashUpdateMutex.Unlock()
+				Log("Unlocked EventHashUpdateMutex for reading hashes\n")
 			} else {
 				//Sending a record in case there are no errors to be able to differentiate between no data vs no errors
 				tagsValue := KubeMonAgentEventTags{}
@@ -505,46 +510,29 @@ func flushKubeMonAgentEventRecords() {
 						req.Header.Set("x-ms-AzureResourceId", ResourceID)
 					}
 
-					// Retry in case of failure
-					for retries > 0 {
-						Log("In retry block with retry count: %d", retries)
-						resp, postError = HTTPClient.Do(req)
-						Log("Post response status %s status code %d", resp.Status, resp.StatusCode)
-						elapsed = time.Since(start)
+					start := time.Now()
+					resp, postError = HTTPClient.Do(req)
+					elapsed = time.Since(start)
 
-						if postError != nil {
-							message := fmt.Sprintf("Error when sending kubemonagentevent request %s \n", err.Error())
-							Log(message)
-							Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
-							retries -= 1
-						} else {
-							if resp == nil || resp.StatusCode != 200 {
-								if resp != nil {
-									Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
-									retries -= 1
-								}
-							} else {
-								flushSuccessful = true
-								break
-							}
+					if postError != nil {
+						message := fmt.Sprintf("Error when sending kubemonagentevent request %s \n", err.Error())
+						Log(message)
+						Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
+					} else if resp == nil || resp.StatusCode != 200 {
+						if resp != nil {
+							Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
 						}
-					}
-
-					if resp != nil && resp.Body != nil {
-						defer resp.Body.Close()
-					}
-					if flushSuccessful == true {
+						Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
+					} else {
 						numRecords := len(laKubeMonAgentEventsRecords)
 						Log("Successfully flushed %d records in %s", numRecords, elapsed)
+
+						// Send telemetry to AppInsights resource
 						SendEvent(KubeMonAgentEventsFlushedEvent, telemetryDimensions)
 
-						//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
-						EventHashUpdateMutex.Lock()
-						for k := range PromScrapeErrorEvent {
-							delete(PromScrapeErrorEvent, k)
-						}
-						Log("PromScrapeErrorEvent cache cleared\n")
-						EventHashUpdateMutex.Unlock()
+					}
+					if resp != nil && resp.Body != nil {
+						defer resp.Body.Close()
 					}
 				}
 			}

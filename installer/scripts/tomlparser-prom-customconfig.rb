@@ -41,7 +41,7 @@ def parseConfigMap
       return nil
     end
   rescue => errorStr
-    ConfigParseErrorLogger.logError("Exception while parsing config map for prometheus config: #{errorStr}, using defaults")
+    ConfigParseErrorLogger.logError("Exception while parsing config map for prometheus config: #{errorStr}, using defaults, please check config map for errors")
     return nil
   end
 end
@@ -182,7 +182,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               puts "config::Successfully created telemetry file for replicaset"
             end
           else
-            ConfigParseErrorLogger.logError("Typecheck failed for prometheus config settings for replicaset, using defaults")
+            ConfigParseErrorLogger.logError("Typecheck failed for prometheus config settings for replicaset, using defaults, please use right types for all settings")
           end # end of type check condition
         rescue => errorStr
           ConfigParseErrorLogger.logError("Exception while parsing config file for prometheus config for replicaset: #{errorStr}, using defaults")
@@ -237,10 +237,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               puts "config::Successfully created telemetry file for daemonset"
             end
           else
-            ConfigParseErrorLogger.logError("Typecheck failed for prometheus config settings for daemonset, using defaults")
+            ConfigParseErrorLogger.logError("Typecheck failed for prometheus config settings for daemonset, using defaults, please use right types for all settings")
           end # end of type check condition
         rescue => errorStr
-          ConfigParseErrorLogger.logError("Exception while parsing config file for prometheus config for daemonset: #{errorStr}, using defaults")
+          ConfigParseErrorLogger.logError("Exception while parsing config file for prometheus config for daemonset: #{errorStr}, using defaults, please check correctness of configmap")
           puts "****************End Prometheus Config Processing********************"
         end
       end # end of controller type check
@@ -259,7 +259,7 @@ if !@configSchemaVersion.nil? && !@configSchemaVersion.empty? && @configSchemaVe
   end
 else
   if (File.file?(@promConfigMapMountPath))
-    puts "config::unsupported/missing config schema version - '#{@configSchemaVersion}' , using defaults"
+    ConfigParseErrorLogger.logError("config::unsupported/missing config schema version - '#{@configSchemaVersion}' , using defaults, please use supported version")
   else
     puts "config::No configmap mounted for prometheus custom config, using defaults"
   end
