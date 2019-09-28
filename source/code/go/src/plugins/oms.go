@@ -404,9 +404,10 @@ func flushKubeMonAgentEventRecords() {
 	for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
 		if skipKubeMonEventsFlush != true {
 			Log("In flushConfigErrorRecords\n")
-			// var resp *http.Response
-			// var postError error
-			// var elapsed time.Duration
+			start := time.Now()
+			var resp *http.Response
+			var postError error
+			var elapsed time.Duration
 			var laKubeMonAgentEventsRecords []laKubeMonAgentEvents
 			telemetryDimensions := make(map[string]string)
 
@@ -510,7 +511,6 @@ func flushKubeMonAgentEventRecords() {
 						req.Header.Set("x-ms-AzureResourceId", ResourceID)
 					}
 
-					start := time.Now()
 					resp, postError = HTTPClient.Do(req)
 					elapsed = time.Since(start)
 
