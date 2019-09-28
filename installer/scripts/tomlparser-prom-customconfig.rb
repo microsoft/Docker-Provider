@@ -41,7 +41,7 @@ def parseConfigMap
       return nil
     end
   rescue => errorStr
-    ConfigParseErrorLogger.logError("Exception while parsing toml config file for prometheus config: #{errorStr}, using defaults")
+    ConfigParseErrorLogger.logError("Exception while parsing config map for prometheus config: #{errorStr}, using defaults")
     return nil
   end
 end
@@ -67,7 +67,7 @@ def replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
     new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
     new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
   rescue => errorStr
-    ConfigParseErrorLogger.logError("Exception while replacing default pod monitor settings: #{errorStr}")
+    puts "Exception while replacing default pod monitor settings: #{errorStr}"
   end
   return new_contents
 end
@@ -99,7 +99,7 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
     new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", pluginConfigsWithNamespaces)
     return new_contents
   rescue => errorStr
-    ConfigParseErrorLogger.logError("Exception while creating prometheus input plugins to filter namespaces: #{errorStr}, using defaults")
+    puts "Exception while creating prometheus input plugins to filter namespaces: #{errorStr}, using defaults"
     replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
   end
 end

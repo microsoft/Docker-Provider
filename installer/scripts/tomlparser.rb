@@ -34,7 +34,7 @@ def parseConfigMap(path)
       return nil
     end
   rescue => errorStr
-    ConfigParseErrorLogger.logError("Exception while parsing toml config file: #{errorStr}, using defaults")
+    ConfigParseErrorLogger.logError("Exception while parsing config map for log collection/env variable settings: #{errorStr}, using defaults")
     @excludePath = "*_kube-system_*.log"
     return nil
   end
@@ -71,7 +71,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         end
       end
     rescue => errorStr
-      ConfigParseErrorLogger.logError("Exception while reading config settings for stdout log collection - #{errorStr}, using defaults")
+      ConfigParseErrorLogger.logError("Exception while reading config map settings for stdout log collection - #{errorStr}, using defaults")
     end
 
     #Get stderr log config settings
@@ -108,7 +108,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         end
       end
     rescue => errorStr
-      ConfigParseErrorLogger.logError("Exception while reading config settings for stderr log collection - #{errorStr}, using defaults")
+      ConfigParseErrorLogger.logError("Exception while reading config map settings for stderr log collection - #{errorStr}, using defaults")
     end
 
     #Get environment variables log config settings
@@ -118,7 +118,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         puts "config::Using config map setting for cluster level environment variable collection"
       end
     rescue => errorStr
-      ConfigParseErrorLogger.logError("Exception while reading config settings for cluster level environment variable collection - #{errorStr}, using defaults")
+      ConfigParseErrorLogger.logError("Exception while reading config map settings for cluster level environment variable collection - #{errorStr}, using defaults")
     end
   end
 
@@ -130,7 +130,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
     end
     puts "enable_health_model = #{@enable_health_model}"
   rescue => errorStr
-    ConfigParseErrorLogger.logError("Exception while reading config settings for health_model enabled setting - #{errorStr}, using defaults")
+    ConfigParseErrorLogger.logError("Exception while reading config map settings for health_model enabled setting - #{errorStr}, using defaults")
     @enable_health_model = false
   end
 end
@@ -154,7 +154,7 @@ if !@configSchemaVersion.nil? && !@configSchemaVersion.empty? && @configSchemaVe
     populateSettingValuesFromConfigMap(configMapSettings)
   end
 else
-  puts "config::unsupported/missing config schema version - '#{@configSchemaVersion}' , using defaults"
+  ConfigParseErrorLogger.logError("config::unsupported/missing config schema version - '#{@configSchemaVersion}' , using defaults")
   @excludePath = "*_kube-system_*.log"
 end
 
@@ -187,6 +187,6 @@ if !file.nil?
   puts "Both stdout & stderr log collection are turned off for namespaces: '#{@excludePath}' "
   puts "****************End Config Processing********************"
 else
-  ConfigParseErrorLogger.logError("Exception while opening file for writing config environment variables")
+  puts "Exception while opening file for writing config environment variables"
   puts "****************End Config Processing********************"
 end
