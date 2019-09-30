@@ -195,7 +195,14 @@ func updateContainerImageNameMaps() {
 		}
 
 		for _, pod := range pods.Items {
-			for _, status := range pod.Status.ContainerStatuses {
+			// Doing this to include init container logs as well
+			podContainerStatuses, err := pod.Status.ContainerStatuses
+
+			podInitContainerStatuses, err := pod.Status.InitContainerStatuses
+			if (podInitContainerStatuses != nil) && (len(podInitContainerStatuses) > 0) {
+				podContainerStatuses = append(podContainerStatuses, podInitContainerStatuses...)
+			}
+			for _, status := range podContainerStatuses {
 				lastSlashIndex := strings.LastIndex(status.ContainerID, "/")
 				containerID := status.ContainerID[lastSlashIndex+1 : len(status.ContainerID)]
 				image := status.Image
