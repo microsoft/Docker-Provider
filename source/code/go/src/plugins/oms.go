@@ -199,7 +199,7 @@ func updateContainerImageNameMaps() {
 
 			// Doing this to include init container logs as well
 			podInitContainerStatuses := pod.Status.InitContainerStatuses
-
+			Log("Length of init containers %d", len(podInitContainerStatuses))
 			if (podInitContainerStatuses != nil) && (len(podInitContainerStatuses) > 0) {
 				podContainerStatuses = append(podContainerStatuses, podInitContainerStatuses...)
 			}
