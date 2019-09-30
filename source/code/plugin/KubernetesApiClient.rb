@@ -356,9 +356,20 @@ class KubernetesApiClient
           else
             podUid = pod["metadata"]["uid"]
           end
-          if (!pod["spec"]["containers"].nil? && !pod["spec"]["nodeName"].nil?)
+
+          podContainers = []
+          if !pod["spec"]["containers"].nil? && !pod["spec"]["containers"].empty?
+            podContainers = podContainers + pod["spec"]["containers"]
+          end
+          # Adding init containers to the record list as well.
+          if !pod["spec"]["initContainers"].nil? && !pod["spec"]["initContainers"].empty?
+            podContainers = podContainers + pod["spec"]["initContainers"]
+          end
+
+          # if (!pod["spec"]["containers"].nil? && !pod["spec"]["nodeName"].nil?)
+          if (!podContainers.nil? && !podContainers.empty? && !pod["spec"]["nodeName"].nil?)
             nodeName = pod["spec"]["nodeName"]
-            pod["spec"]["containers"].each do |container|
+            podContainers.each do |container|
               containerName = container["name"]
               metricTime = Time.now.utc.iso8601 #2018-01-30T19:36:14Z
               if (!container["resources"].nil? && !container["resources"].empty? && !container["resources"][metricCategory].nil? && !container["resources"][metricCategory][metricNameToCollect].nil?)

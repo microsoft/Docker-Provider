@@ -137,8 +137,16 @@ module Fluent
       begin
         podSpec = pod["spec"]
         containerEnvHash = {}
-        if !podSpec.nil? && !podSpec["containers"].nil?
-          podSpec["containers"].each do |container|
+        podContainersEnv = []
+        if !podSpec["containers"].nil? && !podSpec["containers"].empty?
+          podContainersEnv = podContainersEnv + podSpec["containers"]
+        end
+        # Adding init containers to the record list as well.
+        if !podSpec["initContainers"].nil? && !podSpec["initContainers"].empty?
+          podContainersEnv = podContainersEnv + podSpec["initContainers"]
+        end
+        if !podContainersEnv.nil? && !podContainersEnv.empty?
+          podContainersEnv.each do |container|
             if !clusterCollectEnvironmentVar.nil? && !clusterCollectEnvironmentVar.empty? && clusterCollectEnvironmentVar.casecmp("false") == 0
               containerEnvHash[container["name"]] = ["AZMON_CLUSTER_COLLECT_ENV_VAR=FALSE"]
             else
@@ -289,8 +297,19 @@ module Fluent
           end
           podRestartCount = 0
           record["PodRestartCount"] = 0
-          if items["status"].key?("containerStatuses") && !items["status"]["containerStatuses"].empty? #container status block start
-            items["status"]["containerStatuses"].each do |container|
+
+          podContainers = []
+          if items["status"].key?("containerStatuses") && !items["status"]["containerStatuses"].empty?
+            podContainers = podContainers + items["status"]["containerStatuses"]
+          end
+          # Adding init containers to the record list as well.
+          if items["status"].key?("initContainerStatuses") && !items["status"]["initContainerStatuses"].empty?
+            podContainers = podContainers + items["status"]["initContainerStatuses"]
+          end
+
+          # if items["status"].key?("containerStatuses") && !items["status"]["containerStatuses"].empty? #container status block start
+          if !podContainers.empty? #container status block start
+            podContainers.each do |container|
               containerRestartCount = 0
               #container Id is of the form
               #docker://dfd9da983f1fd27432fb2c1fe3049c0a1d25b1c697b2dc1a530c986e58b16527
