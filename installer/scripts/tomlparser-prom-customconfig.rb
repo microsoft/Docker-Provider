@@ -46,7 +46,7 @@ def parseConfigMap
 end
 
 def checkForTypeArray(arrayValue, arrayType)
-  if (arrayValue.nil? || (arrayValue.kind_of?(Array) && ((arrayValue.length == 0) || (arrayValue.length > 0 && arrayValue[0].kind_of?(arrayType))))
+  if (arrayValue.nil? || (arrayValue.kind_of?(Array) && ((arrayValue.length == 0) || (arrayValue.length > 0 && arrayValue[0].kind_of?(arrayType)))))
     return true
   else
     return false
