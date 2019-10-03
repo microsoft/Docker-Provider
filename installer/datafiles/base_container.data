@@ -30,7 +30,6 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/KubernetesApiClient.rb;			source/code/plugin/KubernetesApiClient.rb;			644; root; root
 
 /etc/opt/microsoft/docker-cimprov/container.conf;			    installer/conf/container.conf;                      644; root; root
-/etc/opt/microsoft/docker-cimprov/container-health.conf;		installer/conf/container-health.conf;               644; root; root
 
 /opt/microsoft/omsagent/plugin/CAdvisorMetricsAPIClient.rb;     source/code/plugin/CAdvisorMetricsAPIClient.rb;     644; root; root
 /opt/microsoft/omsagent/plugin/in_kube_perf.rb;			        source/code/plugin/in_kube_perf.rb;			    	644; root; root
@@ -119,18 +118,20 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/ConfigParseErrorLogger.rb;                                     installer/scripts/ConfigParseErrorLogger.rb;           755; root; root
 
 
-
+/opt/microsoft/omsagent/plugin/filter_cadvisor_health_container.rb;                                 source/code/plugin/filter_cadvisor_health_container.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/filter_cadvisor_health_node.rb;                                      source/code/plugin/filter_cadvisor_health_node.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/filter_health_model_builder.rb;                                      source/code/plugin/filter_health_model_builder.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/in_kube_health.rb;                                                   source/code/plugin/in_kube_health.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/out_health_forward.rb;                                               source/code/plugin/out_health_forward.rb; 644; root; root
 /etc/opt/microsoft/docker-cimprov/health/healthmonitorconfig.json;					                installer/conf/healthmonitorconfig.json; 644; root; root
 /etc/opt/microsoft/docker-cimprov/health/health_model_definition.json;					            installer/conf/health_model_definition.json; 644; root; root
 
-
 /opt/microsoft/omsagent/plugin/health/aggregate_monitor.rb;                                         source/code/plugin/health/aggregate_monitor.rb; 644; root; root
-/opt/microsoft/omsagent/plugin/health/agg_monitor_id_labels.rb;                      		    source/code/plugin/health/agg_monitor_id_labels.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/health/agg_monitor_id_labels.rb;                                     source/code/plugin/health/agg_monitor_id_labels.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/aggregate_monitor_state_finalizer.rb;                         source/code/plugin/health/aggregate_monitor_state_finalizer.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/cluster_health_state.rb;                                      source/code/plugin/health/cluster_health_state.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/health/health_container_cpu_memory_aggregator.rb;                    source/code/plugin/health/health_container_cpu_memory_aggregator.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/health/health_container_cpu_memory_record_formatter.rb;              source/code/plugin/health/health_container_cpu_memory_record_formatter.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/health_hierarchy_builder.rb;                                  source/code/plugin/health/health_hierarchy_builder.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/health_kubernetes_resources.rb;                               source/code/plugin/health/health_kubernetes_resources.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/health_kube_api_down_handler.rb;                              source/code/plugin/health/health_kube_api_down_handler.rb; 644; root; root
@@ -259,9 +260,6 @@ chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/fluent_forward_fai
 mv /etc/opt/microsoft/docker-cimprov/container.conf /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 chown omsagent:omsagent /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 
-mv /etc/opt/microsoft/docker-cimprov/container-health.conf /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container-health.conf
-chown omsagent:omsagent /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container-health.conf
-
 %Postuninstall_10
 # If we're an upgrade, skip all of this cleanup
 if ${{PERFORMING_UPGRADE_NOT}}; then
@@ -273,7 +271,6 @@ if ${{PERFORMING_UPGRADE_NOT}}; then
    rm -f /var/opt/microsoft/docker-cimprov/log/kubernetes_client_log.txt
    rm -f /var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt
    rm -f /etc/opt/microsoft/omsagent/conf/omsagent.d/container.conf
-   rm -f /etc/opt/microsoft/omsagent/conf/omsagent.d/container-health.conf
    rmdir /var/opt/microsoft/docker-cimprov/log 2> /dev/null
    rmdir /var/opt/microsoft/docker-cimprov/state/ContainerInventory 2> /dev/null
    rmdir /var/opt/microsoft/docker-cimprov/state/ImageInventory 2> /dev/null

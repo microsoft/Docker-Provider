@@ -2,80 +2,80 @@ module HealthModel
     class MonitorState
         CRITICAL = "fail"
         ERROR = "err"
-        WARNING = "warn"
-        NONE = "none"
         HEALTHY = "pass"
+        NONE = "none"
         UNKNOWN = "unknown"
+        WARNING = "warn"
     end
 
     class AggregationAlgorithm
-        WORSTOF = "worstOf"
         PERCENTAGE = "percentage"
+        WORSTOF = "worstOf"
     end
 
     class MonitorId
-        CLUSTER = 'cluster';
-        ALL_NODES = 'all_nodes';
-        K8S_INFRASTRUCTURE = 'k8s_infrastructure'
-
-        NODE = 'node';
         AGENT_NODE_POOL = 'agent_node_pool'
-        MASTER_NODE_POOL = 'master_node_pool'
         ALL_AGENT_NODE_POOLS = 'all_agent_node_pools'
-        ALL_NODE_POOLS = 'all_node_pools';
-
-        WORKLOAD = 'all_workloads';
-        CAPACITY = 'capacity';
-
-        USER_WORKLOAD = 'user_workload';
-        SYSTEM_WORKLOAD = 'system_workload'
+        ALL_NODE_POOLS = 'all_node_pools'
+        ALL_NODES = 'all_nodes'
+        CAPACITY = 'capacity'
+        CLUSTER = 'cluster'
+        CONTAINER = 'container'
+        CONTAINER_CPU_MONITOR_ID = "container_cpu_utilization"
+        CONTAINER_MEMORY_MONITOR_ID = "container_memory_utilization"
+        K8S_INFRASTRUCTURE = 'k8s_infrastructure'
+        KUBE_API_STATUS = "kube_api_status"
+        MASTER_NODE_POOL = 'master_node_pool'
         NAMESPACE = 'namespace';
+        NODE = 'node';
+        NODE_CONDITION_MONITOR_ID = "node_condition"
+        NODE_CPU_MONITOR_ID = "node_cpu_utilization"
+        NODE_MEMORY_MONITOR_ID = "node_memory_utilization"
+        SYSTEM_WORKLOAD = 'system_workload'
+        SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID = "system_workload_pods_ready"
+        USER_WORKLOAD = 'user_workload';
+        USER_WORKLOAD_PODS_READY_MONITOR_ID = "user_workload_pods_ready"
+        WORKLOAD = 'all_workloads';
+        WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID = "container_cpu_utilization"
+        WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID = "container_memory_utilization"
+        WORKLOAD_CPU_OVERSUBSCRIBED_MONITOR_ID = "subscribed_capacity_cpu"
+        WORKLOAD_MEMORY_OVERSUBSCRIBED_MONITOR_ID = "subscribed_capacity_memory"
     end
 
     class HealthMonitorRecordFields
         CLUSTER_ID = "ClusterId"
-        MONITOR_ID = "MonitorId"
+        DETAILS = "Details"
+        HEALTH_MODEL_DEFINITION_VERSION = "HealthModelDefinitionVersion"
+        MONITOR_CONFIG = "MonitorConfig"
+        MONITOR_ID = "MonitorTypeId"
         MONITOR_INSTANCE_ID = "MonitorInstanceId"
         MONITOR_LABELS = "MonitorLabels"
-        DETAILS = "Details"
-        MONITOR_CONFIG = "MonitorConfig"
-        OLD_STATE = "OldState"
         NEW_STATE = "NewState"
-        AGENT_COLLECTION_TIME = "AgentCollectionTime"
-        TIME_FIRST_OBSERVED = "TimeFirstObserved"
         NODE_NAME = "NodeName"
-        NAMESPACE = "Namespace"
-    end
-
-    class HealthMonitorConstants
-        NODE_CPU_MONITOR_ID = "node_cpu_utilization"
-        NODE_MEMORY_MONITOR_ID = "node_memory_utilization"
-        CONTAINER_CPU_MONITOR_ID = "container_cpu_utilization"
-        CONTAINER_MEMORY_MONITOR_ID = "container_memory_utilization"
-        NODE_CONDITION_MONITOR_ID = "node_condition"
-        WORKLOAD_CPU_OVERSUBSCRIBED_MONITOR_ID = "subscribed_capacity_cpu"
-        WORKLOAD_MEMORY_OVERSUBSCRIBED_MONITOR_ID = "subscribed_capacity_memory"
-        WORKLOAD_CONTAINER_CPU_PERCENTAGE_MONITOR_ID = "container_cpu_utilization"
-        WORKLOAD_CONTAINER_MEMORY_PERCENTAGE_MONITOR_ID = "container_memory_utilization"
-        KUBE_API_STATUS = "kube_api_status"
-        USER_WORKLOAD_PODS_READY_MONITOR_ID = "user_workload_pods_ready"
-        SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID = "system_workload_pods_ready"
+        OLD_STATE = "OldState"
+        PARENT_MONITOR_INSTANCE_ID = "ParentMonitorInstanceId"
+        TIME_FIRST_OBSERVED = "TimeFirstObserved"
+        TIME_GENERATED = "TimeGenerated"
     end
 
     class HealthMonitorStates
-        PASS = "pass"
         FAIL = "fail"
-        WARNING = "warn"
         NONE = "none"
+        PASS = "pass"
         UNKNOWN = "unknown"
+        WARNING = "warn"
     end
 
     class HealthMonitorLabels
-        WORKLOAD_NAME = "container.azm.ms/workload-name"
-        WORKLOAD_KIND = "container.azm.ms/workload-kind"
-        NAMESPACE = "container.azm.ms/namespace"
         AGENTPOOL = "agentpool"
-        ROLE = "kubernetes.io/role"
+        CONTAINER = "container.azm.ms/container"
         HOSTNAME = "kubernetes.io/hostname"
+        NAMESPACE = "container.azm.ms/namespace"
+        ROLE = "kubernetes.io/role"
+        WORKLOAD_KIND = "container.azm.ms/workload-kind"
+        WORKLOAD_NAME = "container.azm.ms/workload-name"
+        MASTERROLE = "node-role.kubernetes.io/master"
+        COMPUTEROLE = "node-role.kubernetes.io/compute"
+        INFRAROLE = "node-role.kubernetes.io/infra"
     end
 end

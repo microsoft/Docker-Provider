@@ -66,8 +66,9 @@ module HealthModel
             monitor_record[HealthMonitorRecordFields::OLD_STATE] = old_state
             monitor_record[HealthMonitorRecordFields::DETAILS] = details.to_json
             monitor_record[HealthMonitorRecordFields::MONITOR_CONFIG] = config.to_json
-            monitor_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] = Time.now.utc.iso8601
+            monitor_record[HealthMonitorRecordFields::TIME_GENERATED] = Time.now.utc.iso8601
             monitor_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] = time_first_observed
+            monitor_record[HealthMonitorRecordFields::PARENT_MONITOR_INSTANCE_ID] = ''
 
             return monitor_record
         end
@@ -87,17 +88,28 @@ module HealthModel
             }
             monitor_id = health_monitor_record[HealthMonitorRecordFields::MONITOR_ID]
             case monitor_id
-            when HealthMonitorConstants::CONTAINER_CPU_MONITOR_ID, HealthMonitorConstants::CONTAINER_MEMORY_MONITOR_ID, HealthMonitorConstants::USER_WORKLOAD_PODS_READY_MONITOR_ID, HealthMonitorConstants::SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID
+            when MonitorId::CONTAINER_CPU_MONITOR_ID, MonitorId::CONTAINER_MEMORY_MONITOR_ID, MonitorId::USER_WORKLOAD_PODS_READY_MONITOR_ID, MonitorId::SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID
 
                 namespace = health_monitor_record[HealthMonitorRecordFields::DETAILS]['details']['namespace']
-                workload_name = health_monitor_record[HealthMonitorRecordFields::DETAILS]['details']['workloadName']
-                workload_kind = health_monitor_record[HealthMonitorRecordFields::DETAILS]['details']['workloadKind']
+                workload_name = health_monitor_record[HealthMonitorRecordFields::DETAILS]['details']['workload_name']
+                workload_kind = health_monitor_record[HealthMonitorRecordFields::DETAILS]['details']['workload_kind']
 
                 monitor_labels[HealthMonitorLabels::WORKLOAD_NAME] = workload_name.split('~~')[1]
                 monitor_labels[HealthMonitorLabels::WORKLOAD_KIND] = workload_kind
                 monitor_labels[HealthMonitorLabels::NAMESPACE] = namespace
 
-            when HealthMonitorConstants::NODE_CPU_MONITOR_ID, HealthMonitorConstants::NODE_MEMORY_MONITOR_ID, HealthMonitorConstants::NODE_CONDITION_MONITOR_ID
+                # add the container name for container memory/cpu
+                if monitor_id == MonitorId::CONTAINER_CPU_MONITOR_ID || monitor_id == MonitorId::CONTAINER_MEMORY_MONITOR_ID
+                    container = health_monitor_record[HealthMonitorRecordFields::DETAILS]['details']['container']
+                    monitor_labels[HealthMonitorLabels::CONTAINER] = container
+                end
+
+                #TODO: This doesn't belong here. Move this elsewhere
+                health_monitor_record[HealthMonitorRecordFields::DETAILS]['details'].delete('namespace')
+                health_monitor_record[HealthMonitorRecordFields::DETAILS]['details'].delete('workload_name')
+                health_monitor_record[HealthMonitorRecordFields::DETAILS]['details'].delete('workload_kind')
+
+            when MonitorId::NODE_CPU_MONITOR_ID, MonitorId::NODE_MEMORY_MONITOR_ID, MonitorId::NODE_CONDITION_MONITOR_ID
                 node_name = health_monitor_record[HealthMonitorRecordFields::NODE_NAME]
                 @health_kubernetes_resources.get_node_inventory['items'].each do |node|
                     if !node_name.nil? && !node['metadata']['name'].nil? && node_name == node['metadata']['name']

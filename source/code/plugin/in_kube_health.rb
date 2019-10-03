@@ -26,7 +26,6 @@ module Fluent
         @@cluster_id = KubernetesApiClient.getClusterId
         @resources = HealthKubernetesResources.instance
         @provider = HealthMonitorProvider.new(@@cluster_id, HealthMonitorUtils.get_cluster_labels, @resources, @health_monitor_config_path)
-        @@cluster_health_model_enabled = HealthMonitorUtils.is_cluster_health_model_enabled
       rescue => e
         ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
       end
@@ -34,7 +33,7 @@ module Fluent
 
     include HealthModel
     config_param :run_interval, :time, :default => "1m"
-    config_param :tag, :string, :default => "oms.api.KubeHealth.ReplicaSet"
+    config_param :tag, :string, :default => "kubehealth.ReplicaSet"
 
     def configure(conf)
       super
@@ -55,9 +54,7 @@ module Fluent
                 @@clusterCpuCapacity = cluster_capacity[0]
                 @@clusterMemoryCapacity = cluster_capacity[1]
                 @@hmlog.info "Cluster CPU Capacity: #{@@clusterCpuCapacity} Memory Capacity: #{@@clusterMemoryCapacity}"
-                if @@cluster_health_model_enabled
-                    ApplicationInsightsUtility.sendCustomEvent("in_kube_health Plugin Start", {})
-                end
+                initialize_inventory
             end
         rescue => e
             ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
@@ -76,10 +73,6 @@ module Fluent
 
     def enumerate
       begin
-        if !@@cluster_health_model_enabled
-            @@hmlog.info "Cluster Health Model disabled in in_kube_health"
-            return
-        end
 
         currentTime = Time.now
         emitTime = currentTime.to_f
@@ -97,7 +90,8 @@ module Fluent
 
         @resources.node_inventory = node_inventory
         @resources.pod_inventory = pod_inventory
-        @resources.deployment_inventory = deployment_inventory
+        @resources.set_deployment_inventory(deployment_inventory)
+        @resources.build_pod_uid_lookup
 
         if node_inventory_response.code.to_i != 200
           record = process_kube_api_up_monitor("fail", node_inventory_response)
@@ -117,12 +111,12 @@ module Fluent
           system_pods = pods_ready_hash.select{|k,v| v['namespace'] == 'kube-system'}
           workload_pods = pods_ready_hash.select{|k,v| v['namespace'] != 'kube-system'}
 
-          system_pods_ready_percentage_records = process_pods_ready_percentage(system_pods, HealthMonitorConstants::SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID)
+          system_pods_ready_percentage_records = process_pods_ready_percentage(system_pods, MonitorId::SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID)
           system_pods_ready_percentage_records.each do |record|
             health_monitor_records.push(record) if record
           end
 
-          workload_pods_ready_percentage_records = process_pods_ready_percentage(workload_pods, HealthMonitorConstants::USER_WORKLOAD_PODS_READY_MONITOR_ID)
+          workload_pods_ready_percentage_records = process_pods_ready_percentage(workload_pods, MonitorId::USER_WORKLOAD_PODS_READY_MONITOR_ID)
           workload_pods_ready_percentage_records.each do |record|
             health_monitor_records.push(record) if record
           end
@@ -158,7 +152,7 @@ module Fluent
       state =  subscription > @@clusterCpuCapacity ? "fail" : "pass"
 
       #CPU
-      monitor_id = HealthMonitorConstants::WORKLOAD_CPU_OVERSUBSCRIBED_MONITOR_ID
+      monitor_id = MonitorId::WORKLOAD_CPU_OVERSUBSCRIBED_MONITOR_ID
       health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"clusterCpuCapacity" => @@clusterCpuCapacity/1000000.to_f, "clusterCpuRequests" => subscription/1000000.to_f}}
       # @@hmlog.info health_monitor_record
 
@@ -169,7 +163,7 @@ module Fluent
       health_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
       health_record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor_instance_id
       health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
-      health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
+      health_record[HealthMonitorRecordFields::TIME_GENERATED] =  time_now
       health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
       health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
       #@@hmlog.info "Successfully processed process_cpu_oversubscribed_monitor"
@@ -185,7 +179,7 @@ module Fluent
       #@@hmlog.debug "Memory Oversubscribed Monitor State : #{state}"
 
       #CPU
-      monitor_id = HealthMonitorConstants::WORKLOAD_MEMORY_OVERSUBSCRIBED_MONITOR_ID
+      monitor_id = MonitorId::WORKLOAD_MEMORY_OVERSUBSCRIBED_MONITOR_ID
       health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"clusterMemoryCapacity" => @@clusterMemoryCapacity.to_f, "clusterMemoryRequests" => subscription.to_f}}
       hmlog = HealthMonitorUtils.get_log_handle
 
@@ -195,7 +189,7 @@ module Fluent
       health_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
       health_record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor_instance_id
       health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
-      health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
+      health_record[HealthMonitorRecordFields::TIME_GENERATED] =  time_now
       health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
       health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
       #@@hmlog.info "Successfully processed process_memory_oversubscribed_monitor"
@@ -205,21 +199,21 @@ module Fluent
     def process_kube_api_up_monitor(state, response)
       timestamp = Time.now.utc.iso8601
 
-      monitor_id = HealthMonitorConstants::KUBE_API_STATUS
+      monitor_id = MonitorId::KUBE_API_STATUS
       details = response.each_header.to_h
       details['ResponseCode'] = response.code
       health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}
       hmlog = HealthMonitorUtils.get_log_handle
       #hmlog.info health_monitor_record
 
-      monitor_instance_id = HealthMonitorConstants::KUBE_API_STATUS
+      monitor_instance_id = MonitorId::KUBE_API_STATUS
       #hmlog.info "Monitor Instance Id: #{monitor_instance_id}"
       health_record = {}
       time_now = Time.now.utc.iso8601
       health_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
       health_record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor_instance_id
       health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
-      health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
+      health_record[HealthMonitorRecordFields::TIME_GENERATED] =  time_now
       health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
       health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
       #@@hmlog.info "Successfully processed process_kube_api_up_monitor"
@@ -240,15 +234,15 @@ module Fluent
         percent = pods_ready / total_pods * 100
         timestamp = Time.now.utc.iso8601
 
-        state = HealthMonitorUtils.compute_percentage_state((100-percent), monitor_config)
-        health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"totalPods" => total_pods, "podsReady" => pods_ready, "workloadName" => workload_name, "namespace" => namespace, "workloadKind" => workload_kind}}
+        state = HealthMonitorUtils.compute_percentage_state(percent, monitor_config)
+        health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => {"totalPods" => total_pods, "podsReady" => pods_ready, "workload_name" => workload_name, "namespace" => namespace, "workload_kind" => workload_kind}}
         monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(config_monitor_id, [@@cluster_id, namespace, workload_name])
         health_record = {}
         time_now = Time.now.utc.iso8601
         health_record[HealthMonitorRecordFields::MONITOR_ID] = config_monitor_id
         health_record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor_instance_id
         health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
-        health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
+        health_record[HealthMonitorRecordFields::TIME_GENERATED] =  time_now
         health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
         health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
         records.push(health_record)
@@ -258,7 +252,7 @@ module Fluent
     end
 
     def process_node_condition_monitor(node_inventory)
-      monitor_id = HealthMonitorConstants::NODE_CONDITION_MONITOR_ID
+      monitor_id = MonitorId::NODE_CONDITION_MONITOR_ID
       timestamp = Time.now.utc.iso8601
       monitor_config = @provider.get_config(monitor_id)
       node_condition_monitor_records = []
@@ -266,11 +260,12 @@ module Fluent
           node_inventory['items'].each do |node|
             node_name = node['metadata']['name']
             conditions = node['status']['conditions']
-            state = HealthMonitorUtils.get_node_state_from_node_conditions(conditions)
-            #hmlog.debug "Node Name = #{node_name} State = #{state}"
+            state = HealthMonitorUtils.get_node_state_from_node_conditions(monitor_config, conditions)
             details = {}
             conditions.each do |condition|
-              details[condition['type']] = {"Reason" => condition['reason'], "Message" => condition['message']}
+                state = !(condition['status'].downcase == 'true' && condition['type'].downcase != 'ready') ? HealthMonitorStates::PASS : HealthMonitorStates::FAIL
+                details[condition['type']] = {"Reason" => condition['reason'], "Message" => condition['message'], "State" => state}
+                #@@hmlog.info "Node Condition details: #{JSON.pretty_generate(details)}"
             end
             health_monitor_record = {"timestamp" => timestamp, "state" => state, "details" => details}
             monitor_instance_id = HealthMonitorUtils.get_monitor_instance_id(monitor_id, [@@cluster_id, node_name])
@@ -279,7 +274,7 @@ module Fluent
             health_record[HealthMonitorRecordFields::MONITOR_ID] = monitor_id
             health_record[HealthMonitorRecordFields::MONITOR_INSTANCE_ID] = monitor_instance_id
             health_record[HealthMonitorRecordFields::DETAILS] = health_monitor_record
-            health_record[HealthMonitorRecordFields::AGENT_COLLECTION_TIME] =  time_now
+            health_record[HealthMonitorRecordFields::TIME_GENERATED] =  time_now
             health_record[HealthMonitorRecordFields::TIME_FIRST_OBSERVED] =  time_now
             health_record[HealthMonitorRecordFields::CLUSTER_ID] = @@cluster_id
             health_record[HealthMonitorRecordFields::NODE_NAME] = node_name
@@ -288,6 +283,20 @@ module Fluent
       end
       #@@hmlog.info "Successfully processed process_node_condition_monitor #{node_condition_monitor_records.size}"
       return node_condition_monitor_records
+    end
+
+    def initialize_inventory
+        #this is required because there are other components, like the container cpu memory aggregator, that depends on the mapping being initialized
+        node_inventory_response = KubernetesApiClient.getKubeResourceInfo("nodes")
+        node_inventory = JSON.parse(node_inventory_response.body)
+        pod_inventory_response = KubernetesApiClient.getKubeResourceInfo("pods")
+        pod_inventory = JSON.parse(pod_inventory_response.body)
+        deployment_inventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("deployments", api_version: "extensions/v1beta1").body)
+
+        @resources.node_inventory = node_inventory
+        @resources.pod_inventory = pod_inventory
+        @resources.set_deployment_inventory(deployment_inventory)
+        @resources.build_pod_uid_lookup
     end
 
     def run_periodic

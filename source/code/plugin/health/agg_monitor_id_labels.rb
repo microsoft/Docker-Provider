@@ -1,5 +1,3 @@
-require_relative 'health_model_constants'
-
 module HealthModel
     class AggregateMonitorInstanceIdLabels
         @@id_labels_mapping = {
@@ -8,12 +6,9 @@ module HealthModel
             MonitorId::NODE => [HealthMonitorLabels::AGENTPOOL, HealthMonitorLabels::ROLE, HealthMonitorLabels::HOSTNAME],
             MonitorId::NAMESPACE => [HealthMonitorLabels::NAMESPACE],
             MonitorId::AGENT_NODE_POOL => [HealthMonitorLabels::AGENTPOOL],
-            # MonitorId::ALL_AGENT_NODE_POOLS => [],
-            # MonitorId::ALL_NODE_POOLS => [],
-            # MonitorId::ALL_NODES => [],
-            # MonitorId::K8S_INFRASTRUCTURE => [],
-            # MonitorId::CLUSTER => [],
-            # MonitorId::WORKLOAD => []
+            MonitorId::CONTAINER => [HealthMonitorLabels::NAMESPACE, HealthMonitorLabels::WORKLOAD_NAME, HealthMonitorLabels::CONTAINER],
+            MonitorId::CONTAINER_CPU_MONITOR_ID => [HealthMonitorLabels::NAMESPACE, HealthMonitorLabels::WORKLOAD_NAME],
+            MonitorId::CONTAINER_MEMORY_MONITOR_ID => [HealthMonitorLabels::NAMESPACE, HealthMonitorLabels::WORKLOAD_NAME],
         }
 
         def self.get_labels_for(monitor_id)

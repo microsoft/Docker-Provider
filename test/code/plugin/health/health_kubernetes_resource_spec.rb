@@ -207,7 +207,7 @@ describe "HealthKubernetesResources spec" do
         resources = HealthKubernetesResources.instance
         resources.node_inventory = nodes
         resources.pod_inventory = pods
-        resources.deployment_inventory = deployments
+        resources.set_deployment_inventory(deployments)
         #act
         parsed_nodes = resources.get_nodes
         parsed_workloads = resources.get_workload_names
@@ -217,6 +217,28 @@ describe "HealthKubernetesResources spec" do
         assert_equal parsed_workloads.size, 3
 
         assert_equal parsed_nodes, ['aks-nodepool1-19574989-0', 'aks-nodepool1-19574989-1']
-        assert_equal parsed_workloads, ['default~~diliprdeploymentnodeapps', 'default~~rss-site', 'kube-system~~kube-proxy']
+        parsed_workloads.sort.must_equal ['default~~diliprdeploymentnodeapps', 'default~~rss-site', 'kube-system~~kube-proxy'].sort
     end
+
+    # it 'builds the pod_uid lookup correctly' do
+    #     #arrange
+    #     f = File.read('C:/Users/dilipr/desktop/health/container_cpu_memory/nodes.json')
+    #     nodes = JSON.parse(f)
+    #     f = File.read('C:/Users/dilipr/desktop/health/container_cpu_memory/pods.json')
+    #     pods = JSON.parse(f)
+    #     f = File.read('C:/Users/dilipr/desktop/health/container_cpu_memory/deployments.json')
+    #     deployments = JSON.parse(f)
+
+    #     resources = HealthKubernetesResources.instance
+
+    #     resources.node_inventory = nodes
+    #     resources.pod_inventory = pods
+    #     resources.set_deployment_inventory(deployments) #resets deployment_lookup -- this was causing Unit test failures
+
+    #     resources.build_pod_uid_lookup
+
+    #     resources.pod_uid_lookup
+    #     resources.workload_container_count
+
+    # end
 end

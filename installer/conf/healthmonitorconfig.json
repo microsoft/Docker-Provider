@@ -2,30 +2,41 @@
     "node_cpu_utilization": {
         "WarnThresholdPercentage": 80.0,
         "FailThresholdPercentage": 90.0,
-        "ConsecutiveSamplesForStateTransition": 3
+        "ConsecutiveSamplesForStateTransition": 3,
+        "Operator": ">"
     },
     "node_memory_utilization": {
         "WarnThresholdPercentage": 80.0,
         "FailThresholdPercentage": 90.0,
-        "ConsecutiveSamplesForStateTransition": 3
+        "ConsecutiveSamplesForStateTransition": 3,
+        "Operator": ">"
     },
     "container_cpu_utilization": {
         "WarnThresholdPercentage": 80.0,
         "FailThresholdPercentage": 90.0,
-        "ConsecutiveSamplesForStateTransition": 3
+        "StateThresholdPercentage": 90.0,
+        "ConsecutiveSamplesForStateTransition": 3,
+        "Operator": ">"
     },
     "container_memory_utilization": {
         "WarnThresholdPercentage": 80.0,
         "FailThresholdPercentage": 90.0,
-        "ConsecutiveSamplesForStateTransition": 3
+        "StateThresholdPercentage": 90.0,
+        "ConsecutiveSamplesForStateTransition": 3,
+        "Operator": ">"
     },
     "user_workload_pods_ready": {
-        "WarnThresholdPercentage": 0.0,
-        "FailThresholdPercentage": 10.0,
-        "ConsecutiveSamplesForStateTransition": 2
+        "WarnThresholdPercentage": 100.0,
+        "FailThresholdPercentage": 90.0,
+        "ConsecutiveSamplesForStateTransition": 2,
+        "Operator": "<"
     },
     "system_workload_pods_ready": {
-        "FailThresholdPercentage": 0.0,
-        "ConsecutiveSamplesForStateTransition": 2
+        "FailThresholdPercentage": 100.0,
+        "ConsecutiveSamplesForStateTransition": 2,
+        "Operator": "<"
+    },
+    "node_condition": {
+        "NodeConditionTypesForFailedState": "outofdisk,networkunavailable"
     }
 }

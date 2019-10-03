@@ -24,14 +24,14 @@ module HealthModel
 
             node_signals_hash = {}
             nodes.each{|node|
-                node_signals_hash[node] = [HealthMonitorConstants::NODE_CPU_MONITOR_ID, HealthMonitorConstants::NODE_MEMORY_MONITOR_ID, HealthMonitorConstants::NODE_CONDITION_MONITOR_ID]
+                node_signals_hash[node] = [MonitorId::NODE_MEMORY_MONITOR_ID, MonitorId::NODE_CPU_MONITOR_ID, MonitorId::NODE_CONDITION_MONITOR_ID]
             }
             log = HealthMonitorHelpers.get_log_handle
             log.info "last_received_records #{@last_received_records.size} nodes #{nodes}"
             @last_received_records.each{|monitor_instance_id, monitor|
                 if !health_monitor_records_map.key?(monitor_instance_id)
                     if HealthMonitorHelpers.is_node_monitor(monitor.monitor_id)
-                        node_name = monitor.labels['kubernetes.io/hostname']
+                        node_name = monitor.labels[HealthMonitorLabels::HOSTNAME]
                         new_monitor = HealthMonitorRecord.new(
                             monitor.monitor_id,
                             monitor.monitor_instance_id,
@@ -83,7 +83,7 @@ module HealthModel
             health_monitor_records.each{|health_monitor_record|
                 # remove signals from the list of expected signals if we see them in the list of current signals
                 if HealthMonitorHelpers.is_node_monitor(health_monitor_record.monitor_id)
-                    node_name = health_monitor_record.labels['kubernetes.io/hostname']
+                    node_name = health_monitor_record.labels[HealthMonitorLabels::HOSTNAME]
                     if node_signals_hash.key?(node_name)
                         signals = node_signals_hash[node_name]
                         signals.delete(health_monitor_record.monitor_id)
@@ -111,7 +111,7 @@ module HealthModel
                             {"timestamp" => Time.now.utc.iso8601, "state" => HealthMonitorStates::UNKNOWN, "details" => "no signal received from node #{node}"}
                         )
                         missing_signals_map[monitor_instance_id] = new_monitor
-                        log.info "Added missing signal when node_signals_hash was not empty #{new_monitor.monitor_instance_id} #{new_monitor.state}"
+                        log.info "Added missing signal when node_signals_hash was not empty #{new_monitor.monitor_instance_id} #{new_monitor.state} #{new_monitor.labels.keys}"
                     }
                 }
             end

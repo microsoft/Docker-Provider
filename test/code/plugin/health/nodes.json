@@ -1,0 +1,1966 @@
+{
+    "apiVersion": "v1",
+    "items": [
+        {
+            "apiVersion": "v1",
+            "kind": "Node",
+            "metadata": {
+                "annotations": {
+                    "node.alpha.kubernetes.io/ttl": "0",
+                    "volumes.kubernetes.io/controller-managed-attach-detach": "true"
+                },
+                "creationTimestamp": "2019-03-12T16:40:36Z",
+                "labels": {
+                    "agentpool": "nodepool1",
+                    "beta.kubernetes.io/arch": "amd64",
+                    "beta.kubernetes.io/instance-type": "Standard_DS1_v2",
+                    "beta.kubernetes.io/os": "linux",
+                    "failure-domain.beta.kubernetes.io/region": "eastus",
+                    "failure-domain.beta.kubernetes.io/zone": "0",
+                    "kubernetes.azure.com/cluster": "MC_dilipr-health-test_dilipr-health-test_eastus",
+                    "kubernetes.io/hostname": "aks-nodepool1-19574989-0",
+                    "kubernetes.io/role": "agent",
+                    "node-role.kubernetes.io/agent": "",
+                    "storageprofile": "managed",
+                    "storagetier": "Premium_LRS"
+                },
+                "name": "aks-nodepool1-19574989-0",
+                "resourceVersion": "19068106",
+                "selfLink": "/api/v1/nodes/aks-nodepool1-19574989-0",
+                "uid": "9012b16c-44e5-11e9-9920-423525a6b683"
+            },
+            "spec": {
+                "podCIDR": "10.244.1.0/24",
+                "providerID": "azure:///subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourceGroups/MC_dilipr-health-test_dilipr-health-test_eastus/providers/Microsoft.Compute/virtualMachines/aks-nodepool1-19574989-0"
+            },
+            "status": {
+                "addresses": [
+                    {
+                        "address": "aks-nodepool1-19574989-0",
+                        "type": "Hostname"
+                    },
+                    {
+                        "address": "10.240.0.4",
+                        "type": "InternalIP"
+                    }
+                ],
+                "allocatable": {
+                    "cpu": "940m",
+                    "ephemeral-storage": "28043041951",
+                    "hugepages-1Gi": "0",
+                    "hugepages-2Mi": "0",
+                    "memory": "2504708Ki",
+                    "pods": "110"
+                },
+                "capacity": {
+                    "cpu": "1",
+                    "ephemeral-storage": "30428648Ki",
+                    "hugepages-1Gi": "0",
+                    "hugepages-2Mi": "0",
+                    "memory": "3524612Ki",
+                    "pods": "110"
+                },
+                "conditions": [
+                    {
+                        "lastHeartbeatTime": "2019-03-12T16:42:18Z",
+                        "lastTransitionTime": "2019-03-12T16:42:18Z",
+                        "message": "RouteController created a route",
+                        "reason": "RouteCreated",
+                        "status": "False",
+                        "type": "NetworkUnavailable"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:22Z",
+                        "lastTransitionTime": "2019-07-29T08:16:01Z",
+                        "message": "kubelet has sufficient disk space available",
+                        "reason": "KubeletHasSufficientDisk",
+                        "status": "False",
+                        "type": "OutOfDisk"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:22Z",
+                        "lastTransitionTime": "2019-07-29T08:16:01Z",
+                        "message": "kubelet has sufficient memory available",
+                        "reason": "KubeletHasSufficientMemory",
+                        "status": "False",
+                        "type": "MemoryPressure"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:22Z",
+                        "lastTransitionTime": "2019-07-29T08:16:01Z",
+                        "message": "kubelet has no disk pressure",
+                        "reason": "KubeletHasNoDiskPressure",
+                        "status": "False",
+                        "type": "DiskPressure"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:22Z",
+                        "lastTransitionTime": "2019-03-12T16:40:36Z",
+                        "message": "kubelet has sufficient PID available",
+                        "reason": "KubeletHasSufficientPID",
+                        "status": "False",
+                        "type": "PIDPressure"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:22Z",
+                        "lastTransitionTime": "2019-07-29T08:16:01Z",
+                        "message": "kubelet is posting ready status. AppArmor enabled",
+                        "reason": "KubeletReady",
+                        "status": "True",
+                        "type": "Ready"
+                    }
+                ],
+                "daemonEndpoints": {
+                    "kubeletEndpoint": {
+                        "Port": 10250
+                    }
+                },
+                "images": [
+                    {
+                        "names": [
+                            "nickchase/rss-php-nginx@sha256:48da56a77fe4ecff4917121365d8e0ce615ebbdfe31f48a996255f5592894e2b",
+                            "nickchase/rss-php-nginx:v1"
+                        ],
+                        "sizeBytes": 677038498
+                    },
+                    {
+                        "names": [
+                            "rdilip83/logeverysecond@sha256:6fe5624808609c507178a77f94384fb9794a4d6b7d102ed8016a4baf608164a1",
+                            "rdilip83/logeverysecond:v2"
+                        ],
+                        "sizeBytes": 674931590
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/mirror/hyperkube-amd64@sha256:1447d5b491fcee503c9f8fb712e1593dc3772c7e661251f54c297477cc716913",
+                            "k8s.gcr.io/hyperkube-amd64@sha256:1447d5b491fcee503c9f8fb712e1593dc3772c7e661251f54c297477cc716913",
+                            "aksrepos.azurecr.io/mirror/hyperkube-amd64:v1.11.8",
+                            "k8s.gcr.io/hyperkube-amd64:v1.11.8"
+                        ],
+                        "sizeBytes": 615263658
+                    },
+                    {
+                        "names": [
+                            "microsoft/oms@sha256:de83d1df24cb86a3a3110bd03abbd5704d7a7345565b1996f49ff001a3665385",
+                            "microsoft/oms:healthpreview04262019"
+                        ],
+                        "sizeBytes": 514907213
+                    },
+                    {
+                        "names": [
+                            "rdilip83/fixrubyerror@sha256:6b7f36cf6258b311015493ab025f06577d758c45bc5010d022ac160b9f40ea5d",
+                            "rdilip83/fixrubyerror:latest"
+                        ],
+                        "sizeBytes": 494068028
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:69b420bdb4081293c37e2d0f8ad2e4054bd516f5c08c7512d6b695660a36eccf",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08222019"
+                        ],
+                        "sizeBytes": 494067935
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:fb2b90ce9bf7186fd9dfae97f5f72f9b9c80c8a0493af3cff74179cd4ff847c0",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08212019"
+                        ],
+                        "sizeBytes": 494067572
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:c646e180483d295ffac114fb9df513db02553af7879681814d5910764653dd2d",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08202019"
+                        ],
+                        "sizeBytes": 494067210
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:c21b596a22a1338ed293d01681f327acc871ee502ed779ec1109d6a93375bb3b",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08192019"
+                        ],
+                        "sizeBytes": 494055088
+                    },
+                    {
+                        "names": [
+                            "rdilip83/cifeatureprod08192019@sha256:7815bba9a805e4e8df33356fd532671de45525ce9c6e936e14f9b126e2097ecd",
+                            "rdilip83/cifeatureprod08192019:v1"
+                        ],
+                        "sizeBytes": 494055088
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:59e34aab9f6e16a87e880b1ee1c9dd5434ee40dd29502e74aceefabf51443717",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:internaltesthealth08192019"
+                        ],
+                        "sizeBytes": 494053562
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:6387d0dedf4de0bab430f681ef61361f63a20e1c4c287a9b60ea5460283ac6cf",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ci_feature_prod_health08192019"
+                        ],
+                        "sizeBytes": 494053562
+                    },
+                    {
+                        "names": [
+                            "rdilip83/hc08192019@sha256:014d936771508d499ac4c15043e23b16bce8de0019fb2048b99540cbe9084895",
+                            "rdilip83/hc08192019:1"
+                        ],
+                        "sizeBytes": 494053562
+                    },
+                    {
+                        "names": [
+                            "rdilip83/health-rc@sha256:8ad12bce5ffd27b301bc6fe4355c8affa6fce080ae7e2291dec3a0ed11bb9483",
+                            "rdilip83/health-rc:3"
+                        ],
+                        "sizeBytes": 494052863
+                    },
+                    {
+                        "names": [
+                            "rdilip83/health_ci_feature_image@sha256:1a574d25884483083e8cbaacbf0cb7c4e442dc736d480615c65f5c71f8969b13",
+                            "rdilip83/health_ci_feature_image:v1"
+                        ],
+                        "sizeBytes": 494052147
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthrc@sha256:816c8cef09822daf050a0fca6f92e7ac19147ff4bf1a823d43fe70f73470cc0c",
+                            "rdilip83/healthrc:v3"
+                        ],
+                        "sizeBytes": 494052138
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:d35aac044d1adc3d02269fde78f8dfd923db94b81288447cf6fdd482970a333b",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:healthmerge08142019"
+                        ],
+                        "sizeBytes": 494052135
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthrc@sha256:a130780e56ac0edb3ca29477e12edd5e9b5d08b5732dbd59ede9beb58e21eca7",
+                            "rdilip83/healthrc:v2"
+                        ],
+                        "sizeBytes": 494051682
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthmerge@sha256:24d270b0f59fb484c283922474736c3cba50f8aad0270bc0a3acd14284694eea",
+                            "rdilip83/healthmerge:v8"
+                        ],
+                        "sizeBytes": 494010139
+                    },
+                    {
+                        "names": [
+                            "rdilip83/health-rc@sha256:b1d24728eb808d301da426b76b7f7b79606204c4c2b695a24ac670be8276d55d",
+                            "rdilip83/health-rc:1"
+                        ],
+                        "sizeBytes": 494000891
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:a0666957cccbfdf5784accd1133408bf017c28a6e694d9a2ae74da94eef2d285",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:healthpreview08012019"
+                        ],
+                        "sizeBytes": 493994261
+                    },
+                    {
+                        "names": [
+                            "rdilip83/mergehealth@sha256:32c9b35a6809c54d5296e2ca2b122b35a4ad8c852622174cc5a9f92cc27e56e4",
+                            "rdilip83/mergehealth:v3"
+                        ],
+                        "sizeBytes": 493988815
+                    },
+                    {
+                        "names": [
+                            "rdilip83/mergehealth@sha256:a3521e8f36e007b3cb949e0356a75394ac61fd2024ca1ec4827b8d54fb068534",
+                            "rdilip83/mergehealth:v1"
+                        ],
+                        "sizeBytes": 493981585
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:0438e4690e042b195917e160b8949aeb339520ee19c898a8bb9452f36d1f84f1",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:healthpreview07182019"
+                        ],
+                        "sizeBytes": 493977357
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:9ebc410a36856176921dba81b5bd43132469209b315f52be346690435419b9bb"
+                        ],
+                        "sizeBytes": 493946790
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:4e51195a9c77bd166fc90ee5f6143a4604b502ab7ef0f06431dec10c341b10f3",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:healthpreview06272019"
+                        ],
+                        "sizeBytes": 493893635
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06272019@sha256:d888ba5ff5e5810113a32f9c9812a5e28088cc81b902e95a185fe465a514029c",
+                            "rdilip83/healthpreview06272019:latest"
+                        ],
+                        "sizeBytes": 493893633
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06252019-1@sha256:1561876cffe94433a569f29f5231548e039193ebaa7ec640d22439675179e43f",
+                            "rdilip83/healthpreview06252019-1:latest"
+                        ],
+                        "sizeBytes": 493887387
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06252019@sha256:6597ff599a78ac452a4138dedb9e08c0ccd3e8b01594b033fd78ba9dbb41fe9e",
+                            "rdilip83/healthpreview06252019:latest"
+                        ],
+                        "sizeBytes": 493887384
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06242019@sha256:c4f565d92086d1ee56e6016178fed5c668352dc0ca0047f02910bdcb87a482c4",
+                            "rdilip83/healthpreview06242019:latest"
+                        ],
+                        "sizeBytes": 493850850
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06212019-1@sha256:937ce5801a0097a1cbc4eff5399c1973b4c6223ece9279b35207368b99f82b96",
+                            "rdilip83/healthpreview06212019-1:latest"
+                        ],
+                        "sizeBytes": 493850674
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06192019@sha256:f92cb5283814d446f0acde6a489648ea197496d5f85b27ca959ec97bce742d8a",
+                            "rdilip83/healthpreview06192019:latest"
+                        ],
+                        "sizeBytes": 493799437
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:0f798cb7d56931b231f71e38e7fa5bf898b69e611247a566701f70a5f29a9799",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod07092019"
+                        ],
+                        "sizeBytes": 467692116
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:3734a084fa9681c7e930eb90cad45a8f282c24af63065a720a2327b1683f3ba4",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod06142019"
+                        ],
+                        "sizeBytes": 466882569
+                    },
+                    {
+                        "names": [
+                            "rdilip83/mergehealth@sha256:16402c34e2d7de72c2ebc18ec8e9f7933fa25f6a7f83bceb84483ba95e3902f7",
+                            "rdilip83/mergehealth:v2"
+                        ],
+                        "sizeBytes": 448931997
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06212019@sha256:5860c9caaf544f2e7c46edad5cdfb69e22398e20dc87cb8a4cd630b5b7000074",
+                            "rdilip83/healthpreview06212019:latest"
+                        ],
+                        "sizeBytes": 448366491
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/mirror/hcp-tunnel-front@sha256:68878ee3ea1781b322ea3952c3370e31dd89be8bb0864e2bf27bdba6dc904c41",
+                            "aksrepos.azurecr.io/prod/hcp-tunnel-front@sha256:68878ee3ea1781b322ea3952c3370e31dd89be8bb0864e2bf27bdba6dc904c41",
+                            "aksrepos.azurecr.io/mirror/hcp-tunnel-front:v1.9.2-v4.0.7",
+                            "aksrepos.azurecr.io/prod/hcp-tunnel-front:v1.9.2-v4.0.7"
+                        ],
+                        "sizeBytes": 383483267
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/mirror/kubernetes-dashboard-amd64@sha256:0ae6b69432e78069c5ce2bcde0fe409c5c4d6f0f4d9cd50a17974fea38898747",
+                            "k8s.gcr.io/kubernetes-dashboard-amd64@sha256:0ae6b69432e78069c5ce2bcde0fe409c5c4d6f0f4d9cd50a17974fea38898747",
+                            "aksrepos.azurecr.io/mirror/kubernetes-dashboard-amd64:v1.10.1",
+                            "k8s.gcr.io/kubernetes-dashboard-amd64:v1.10.1"
+                        ],
+                        "sizeBytes": 121711221
+                    },
+                    {
+                        "names": [
+                            "nginx@sha256:23b4dcdf0d34d4a129755fc6f52e1c6e23bb34ea011b315d87e193033bcd1b68"
+                        ],
+                        "sizeBytes": 109331233
+                    },
+                    {
+                        "names": [
+                            "nginx@sha256:bdbf36b7f1f77ffe7bd2a32e59235dff6ecf131e3b6b5b96061c652f30685f3a",
+                            "nginx:latest"
+                        ],
+                        "sizeBytes": 109258867
+                    },
+                    {
+                        "names": [
+                            "nginx@sha256:b73f527d86e3461fd652f62cf47e7b375196063bbbd503e853af5be16597cb2e",
+                            "nginx:1.15.5"
+                        ],
+                        "sizeBytes": 109083698
+                    },
+                    {
+                        "names": [
+                            "debian@sha256:118cf8f3557e1ea766c02f36f05f6ac3e63628427ea8965fb861be904ec35a6f",
+                            "debian:latest"
+                        ],
+                        "sizeBytes": 100594230
+                    },
+                    {
+                        "names": [
+                            "nginx@sha256:e3456c851a152494c3e4ff5fcc26f240206abac0c9d794affb40e0714846c451",
+                            "nginx:1.7.9"
+                        ],
+                        "sizeBytes": 91664166
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/mirror/kube-svc-redirect@sha256:a448687b78d24dae388bd3d54591c179c891fa078404752bc9c9dfdaecdc02ef",
+                            "aksrepos.azurecr.io/prod/kube-svc-redirect@sha256:a448687b78d24dae388bd3d54591c179c891fa078404752bc9c9dfdaecdc02ef",
+                            "deis/kube-svc-redirect@sha256:a448687b78d24dae388bd3d54591c179c891fa078404752bc9c9dfdaecdc02ef",
+                            "aksrepos.azurecr.io/mirror/kube-svc-redirect:v1.0.2",
+                            "aksrepos.azurecr.io/prod/kube-svc-redirect:v1.0.2"
+                        ],
+                        "sizeBytes": 82897218
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/mirror/heapster-amd64@sha256:fc33c690a3a446de5abc24b048b88050810a58b9e4477fa763a43d7df029301a",
+                            "k8s.gcr.io/heapster-amd64@sha256:fc33c690a3a446de5abc24b048b88050810a58b9e4477fa763a43d7df029301a",
+                            "aksrepos.azurecr.io/mirror/heapster-amd64:v1.5.3",
+                            "k8s.gcr.io/heapster-amd64:v1.5.3"
+                        ],
+                        "sizeBytes": 75318342
+                    },
+                    {
+                        "names": [
+                            "vishiy/hello@sha256:99d60766e39df52d28fe8db9c659633d96ba1d84fd672298dce047d8a86c478a",
+                            "vishiy/hello:err100eps"
+                        ],
+                        "sizeBytes": 54649865
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/k8s-dns-kube-dns-amd64@sha256:618a82fa66cf0c75e4753369a6999032372be7308866fc9afb381789b1e5ad52",
+                            "k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.13"
+                        ],
+                        "sizeBytes": 51157394
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/metrics-server-amd64@sha256:49a9f12f7067d11f42c803dbe61ed2c1299959ad85cb315b25ff7eef8e6b8892",
+                            "k8s.gcr.io/metrics-server-amd64:v0.2.1"
+                        ],
+                        "sizeBytes": 42541759
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/k8s-dns-sidecar-amd64@sha256:4f1ab957f87b94a5ec1edc26fae50da2175461f00afecf68940c4aa079bd08a4",
+                            "k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.10"
+                        ],
+                        "sizeBytes": 41635309
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64@sha256:bbb2a290a568125b3b996028958eb773f33b5b87a6b37bf38a28f8b62dddb3c8",
+                            "k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.10"
+                        ],
+                        "sizeBytes": 40372149
+                    }
+                ],
+                "nodeInfo": {
+                    "architecture": "amd64",
+                    "bootID": "d8f6c00f-a085-450e-bf5c-12e651a0fcfc",
+                    "containerRuntimeVersion": "docker://3.0.4",
+                    "kernelVersion": "4.15.0-1037-azure",
+                    "kubeProxyVersion": "v1.11.8",
+                    "kubeletVersion": "v1.11.8",
+                    "machineID": "cc9ed99e383540a4b0379995bb779221",
+                    "operatingSystem": "linux",
+                    "osImage": "Ubuntu 16.04.5 LTS",
+                    "systemUUID": "301B3B88-C7BD-3D45-A3CB-3CD66A42EB6F"
+                }
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Node",
+            "metadata": {
+                "annotations": {
+                    "node.alpha.kubernetes.io/ttl": "0",
+                    "volumes.kubernetes.io/controller-managed-attach-detach": "true"
+                },
+                "creationTimestamp": "2019-03-12T16:40:33Z",
+                "labels": {
+                    "agentpool": "nodepool1",
+                    "beta.kubernetes.io/arch": "amd64",
+                    "beta.kubernetes.io/instance-type": "Standard_DS1_v2",
+                    "beta.kubernetes.io/os": "linux",
+                    "failure-domain.beta.kubernetes.io/region": "eastus",
+                    "failure-domain.beta.kubernetes.io/zone": "1",
+                    "kubernetes.azure.com/cluster": "MC_dilipr-health-test_dilipr-health-test_eastus",
+                    "kubernetes.io/hostname": "aks-nodepool1-19574989-1",
+                    "kubernetes.io/role": "agent",
+                    "node-role.kubernetes.io/agent": "",
+                    "storageprofile": "managed",
+                    "storagetier": "Premium_LRS"
+                },
+                "name": "aks-nodepool1-19574989-1",
+                "resourceVersion": "19068104",
+                "selfLink": "/api/v1/nodes/aks-nodepool1-19574989-1",
+                "uid": "8e1b5c77-44e5-11e9-9920-423525a6b683"
+            },
+            "spec": {
+                "podCIDR": "10.244.0.0/24",
+                "providerID": "azure:///subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourceGroups/MC_dilipr-health-test_dilipr-health-test_eastus/providers/Microsoft.Compute/virtualMachines/aks-nodepool1-19574989-1"
+            },
+            "status": {
+                "addresses": [
+                    {
+                        "address": "aks-nodepool1-19574989-1",
+                        "type": "Hostname"
+                    },
+                    {
+                        "address": "10.240.0.5",
+                        "type": "InternalIP"
+                    }
+                ],
+                "allocatable": {
+                    "cpu": "940m",
+                    "ephemeral-storage": "28043041951",
+                    "hugepages-1Gi": "0",
+                    "hugepages-2Mi": "0",
+                    "memory": "2504708Ki",
+                    "pods": "110"
+                },
+                "capacity": {
+                    "cpu": "1",
+                    "ephemeral-storage": "30428648Ki",
+                    "hugepages-1Gi": "0",
+                    "hugepages-2Mi": "0",
+                    "memory": "3524612Ki",
+                    "pods": "110"
+                },
+                "conditions": [
+                    {
+                        "lastHeartbeatTime": "2019-03-12T16:42:30Z",
+                        "lastTransitionTime": "2019-03-12T16:42:30Z",
+                        "message": "RouteController created a route",
+                        "reason": "RouteCreated",
+                        "status": "False",
+                        "type": "NetworkUnavailable"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:21Z",
+                        "lastTransitionTime": "2019-07-23T14:46:10Z",
+                        "message": "kubelet has sufficient disk space available",
+                        "reason": "KubeletHasSufficientDisk",
+                        "status": "False",
+                        "type": "OutOfDisk"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:21Z",
+                        "lastTransitionTime": "2019-07-23T14:46:10Z",
+                        "message": "kubelet has sufficient memory available",
+                        "reason": "KubeletHasSufficientMemory",
+                        "status": "False",
+                        "type": "MemoryPressure"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:21Z",
+                        "lastTransitionTime": "2019-07-23T14:46:10Z",
+                        "message": "kubelet has no disk pressure",
+                        "reason": "KubeletHasNoDiskPressure",
+                        "status": "False",
+                        "type": "DiskPressure"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:21Z",
+                        "lastTransitionTime": "2019-03-12T16:40:33Z",
+                        "message": "kubelet has sufficient PID available",
+                        "reason": "KubeletHasSufficientPID",
+                        "status": "False",
+                        "type": "PIDPressure"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:21Z",
+                        "lastTransitionTime": "2019-07-23T14:46:10Z",
+                        "message": "kubelet is posting ready status. AppArmor enabled",
+                        "reason": "KubeletReady",
+                        "status": "True",
+                        "type": "Ready"
+                    }
+                ],
+                "daemonEndpoints": {
+                    "kubeletEndpoint": {
+                        "Port": 10250
+                    }
+                },
+                "images": [
+                    {
+                        "names": [
+                            "perl@sha256:268e7af9853bcc6d2100e2ad76e928c2ca861518217c269b8a762849a8617c12",
+                            "perl:latest"
+                        ],
+                        "sizeBytes": 890592834
+                    },
+                    {
+                        "names": [
+                            "nickchase/rss-php-nginx@sha256:48da56a77fe4ecff4917121365d8e0ce615ebbdfe31f48a996255f5592894e2b",
+                            "nickchase/rss-php-nginx:v1"
+                        ],
+                        "sizeBytes": 677038498
+                    },
+                    {
+                        "names": [
+                            "rdilip83/jsonlogger@sha256:82b67ca5e0650cd5e47f5b51659d61cee035e5d8dcd8a79c50358cd2beb3b5a8",
+                            "rdilip83/jsonlogger:v12"
+                        ],
+                        "sizeBytes": 676594134
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/mirror/hyperkube-amd64@sha256:1447d5b491fcee503c9f8fb712e1593dc3772c7e661251f54c297477cc716913",
+                            "k8s.gcr.io/hyperkube-amd64@sha256:1447d5b491fcee503c9f8fb712e1593dc3772c7e661251f54c297477cc716913",
+                            "aksrepos.azurecr.io/mirror/hyperkube-amd64:v1.11.8",
+                            "k8s.gcr.io/hyperkube-amd64:v1.11.8"
+                        ],
+                        "sizeBytes": 615263658
+                    },
+                    {
+                        "names": [
+                            "rdilip83/fixrubyerror@sha256:6b7f36cf6258b311015493ab025f06577d758c45bc5010d022ac160b9f40ea5d",
+                            "rdilip83/fixrubyerror:latest"
+                        ],
+                        "sizeBytes": 494068028
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:69b420bdb4081293c37e2d0f8ad2e4054bd516f5c08c7512d6b695660a36eccf",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08222019"
+                        ],
+                        "sizeBytes": 494067935
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:fb2b90ce9bf7186fd9dfae97f5f72f9b9c80c8a0493af3cff74179cd4ff847c0",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08212019"
+                        ],
+                        "sizeBytes": 494067572
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:c646e180483d295ffac114fb9df513db02553af7879681814d5910764653dd2d",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08202019"
+                        ],
+                        "sizeBytes": 494067210
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:c21b596a22a1338ed293d01681f327acc871ee502ed779ec1109d6a93375bb3b",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08192019"
+                        ],
+                        "sizeBytes": 494055088
+                    },
+                    {
+                        "names": [
+                            "rdilip83/cifeatureprod08192019@sha256:7815bba9a805e4e8df33356fd532671de45525ce9c6e936e14f9b126e2097ecd",
+                            "rdilip83/cifeatureprod08192019:v1"
+                        ],
+                        "sizeBytes": 494055088
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:59e34aab9f6e16a87e880b1ee1c9dd5434ee40dd29502e74aceefabf51443717",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:internaltesthealth08192019"
+                        ],
+                        "sizeBytes": 494053562
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:6387d0dedf4de0bab430f681ef61361f63a20e1c4c287a9b60ea5460283ac6cf",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ci_feature_prod_health08192019"
+                        ],
+                        "sizeBytes": 494053562
+                    },
+                    {
+                        "names": [
+                            "rdilip83/hc08192019@sha256:014d936771508d499ac4c15043e23b16bce8de0019fb2048b99540cbe9084895",
+                            "rdilip83/hc08192019:1"
+                        ],
+                        "sizeBytes": 494053562
+                    },
+                    {
+                        "names": [
+                            "rdilip83/health-rc@sha256:8ad12bce5ffd27b301bc6fe4355c8affa6fce080ae7e2291dec3a0ed11bb9483",
+                            "rdilip83/health-rc:3"
+                        ],
+                        "sizeBytes": 494052863
+                    },
+                    {
+                        "names": [
+                            "rdilip83/health_ci_feature_image@sha256:1a574d25884483083e8cbaacbf0cb7c4e442dc736d480615c65f5c71f8969b13",
+                            "rdilip83/health_ci_feature_image:v1"
+                        ],
+                        "sizeBytes": 494052147
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthrc@sha256:816c8cef09822daf050a0fca6f92e7ac19147ff4bf1a823d43fe70f73470cc0c",
+                            "rdilip83/healthrc:v3"
+                        ],
+                        "sizeBytes": 494052138
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:d35aac044d1adc3d02269fde78f8dfd923db94b81288447cf6fdd482970a333b",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:healthmerge08142019"
+                        ],
+                        "sizeBytes": 494052135
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthrc@sha256:a130780e56ac0edb3ca29477e12edd5e9b5d08b5732dbd59ede9beb58e21eca7",
+                            "rdilip83/healthrc:v2"
+                        ],
+                        "sizeBytes": 494051682
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthmerge@sha256:24d270b0f59fb484c283922474736c3cba50f8aad0270bc0a3acd14284694eea",
+                            "rdilip83/healthmerge:v8"
+                        ],
+                        "sizeBytes": 494010139
+                    },
+                    {
+                        "names": [
+                            "rdilip83/health-rc@sha256:b1d24728eb808d301da426b76b7f7b79606204c4c2b695a24ac670be8276d55d",
+                            "rdilip83/health-rc:1"
+                        ],
+                        "sizeBytes": 494000891
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:a0666957cccbfdf5784accd1133408bf017c28a6e694d9a2ae74da94eef2d285",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:healthpreview08012019"
+                        ],
+                        "sizeBytes": 493994261
+                    },
+                    {
+                        "names": [
+                            "rdilip83/mergehealth@sha256:32c9b35a6809c54d5296e2ca2b122b35a4ad8c852622174cc5a9f92cc27e56e4",
+                            "rdilip83/mergehealth:v3"
+                        ],
+                        "sizeBytes": 493988815
+                    },
+                    {
+                        "names": [
+                            "rdilip83/mergehealth@sha256:a3521e8f36e007b3cb949e0356a75394ac61fd2024ca1ec4827b8d54fb068534",
+                            "rdilip83/mergehealth:v1"
+                        ],
+                        "sizeBytes": 493981585
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:0438e4690e042b195917e160b8949aeb339520ee19c898a8bb9452f36d1f84f1",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:healthpreview07182019"
+                        ],
+                        "sizeBytes": 493977357
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:9ebc410a36856176921dba81b5bd43132469209b315f52be346690435419b9bb"
+                        ],
+                        "sizeBytes": 493946790
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:4e51195a9c77bd166fc90ee5f6143a4604b502ab7ef0f06431dec10c341b10f3",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:healthpreview06272019"
+                        ],
+                        "sizeBytes": 493893635
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06272019@sha256:d888ba5ff5e5810113a32f9c9812a5e28088cc81b902e95a185fe465a514029c",
+                            "rdilip83/healthpreview06272019:latest"
+                        ],
+                        "sizeBytes": 493893633
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06252019-1@sha256:1561876cffe94433a569f29f5231548e039193ebaa7ec640d22439675179e43f",
+                            "rdilip83/healthpreview06252019-1:latest"
+                        ],
+                        "sizeBytes": 493887387
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06252019@sha256:6597ff599a78ac452a4138dedb9e08c0ccd3e8b01594b033fd78ba9dbb41fe9e",
+                            "rdilip83/healthpreview06252019:latest"
+                        ],
+                        "sizeBytes": 493887384
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06242019@sha256:c4f565d92086d1ee56e6016178fed5c668352dc0ca0047f02910bdcb87a482c4",
+                            "rdilip83/healthpreview06242019:latest"
+                        ],
+                        "sizeBytes": 493850850
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06212019-1@sha256:937ce5801a0097a1cbc4eff5399c1973b4c6223ece9279b35207368b99f82b96",
+                            "rdilip83/healthpreview06212019-1:latest"
+                        ],
+                        "sizeBytes": 493850674
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:0f798cb7d56931b231f71e38e7fa5bf898b69e611247a566701f70a5f29a9799",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod07092019"
+                        ],
+                        "sizeBytes": 467692116
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:3734a084fa9681c7e930eb90cad45a8f282c24af63065a720a2327b1683f3ba4",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod06142019"
+                        ],
+                        "sizeBytes": 466882569
+                    },
+                    {
+                        "names": [
+                            "rdilip83/mergehealth@sha256:16402c34e2d7de72c2ebc18ec8e9f7933fa25f6a7f83bceb84483ba95e3902f7",
+                            "rdilip83/mergehealth:v2"
+                        ],
+                        "sizeBytes": 448931997
+                    },
+                    {
+                        "names": [
+                            "deis/hcp-tunnel-front@sha256:68878ee3ea1781b322ea3952c3370e31dd89be8bb0864e2bf27bdba6dc904c41",
+                            "deis/hcp-tunnel-front:v1.9.2-v4.0.7"
+                        ],
+                        "sizeBytes": 383483267
+                    },
+                    {
+                        "names": [
+                            "nginx@sha256:23b4dcdf0d34d4a129755fc6f52e1c6e23bb34ea011b315d87e193033bcd1b68"
+                        ],
+                        "sizeBytes": 109331233
+                    },
+                    {
+                        "names": [
+                            "nginx@sha256:bdbf36b7f1f77ffe7bd2a32e59235dff6ecf131e3b6b5b96061c652f30685f3a",
+                            "nginx:latest"
+                        ],
+                        "sizeBytes": 109258867
+                    },
+                    {
+                        "names": [
+                            "debian@sha256:118cf8f3557e1ea766c02f36f05f6ac3e63628427ea8965fb861be904ec35a6f",
+                            "debian:latest"
+                        ],
+                        "sizeBytes": 100594230
+                    },
+                    {
+                        "names": [
+                            "nginx@sha256:e3456c851a152494c3e4ff5fcc26f240206abac0c9d794affb40e0714846c451",
+                            "nginx:1.7.9"
+                        ],
+                        "sizeBytes": 91664166
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/mirror/kube-svc-redirect@sha256:a448687b78d24dae388bd3d54591c179c891fa078404752bc9c9dfdaecdc02ef",
+                            "aksrepos.azurecr.io/prod/kube-svc-redirect@sha256:a448687b78d24dae388bd3d54591c179c891fa078404752bc9c9dfdaecdc02ef",
+                            "deis/kube-svc-redirect@sha256:a448687b78d24dae388bd3d54591c179c891fa078404752bc9c9dfdaecdc02ef",
+                            "aksrepos.azurecr.io/mirror/kube-svc-redirect:v1.0.2",
+                            "aksrepos.azurecr.io/prod/kube-svc-redirect:v1.0.2"
+                        ],
+                        "sizeBytes": 82897218
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/mirror/heapster-amd64@sha256:fc33c690a3a446de5abc24b048b88050810a58b9e4477fa763a43d7df029301a",
+                            "k8s.gcr.io/heapster-amd64@sha256:fc33c690a3a446de5abc24b048b88050810a58b9e4477fa763a43d7df029301a",
+                            "aksrepos.azurecr.io/mirror/heapster-amd64:v1.5.3",
+                            "k8s.gcr.io/heapster-amd64:v1.5.3"
+                        ],
+                        "sizeBytes": 75318342
+                    },
+                    {
+                        "names": [
+                            "vishiy/hello@sha256:99d60766e39df52d28fe8db9c659633d96ba1d84fd672298dce047d8a86c478a",
+                            "vishiy/hello:err100eps"
+                        ],
+                        "sizeBytes": 54649865
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/mirror/k8s-dns-kube-dns-amd64@sha256:618a82fa66cf0c75e4753369a6999032372be7308866fc9afb381789b1e5ad52",
+                            "k8s.gcr.io/k8s-dns-kube-dns-amd64@sha256:618a82fa66cf0c75e4753369a6999032372be7308866fc9afb381789b1e5ad52",
+                            "aksrepos.azurecr.io/mirror/k8s-dns-kube-dns-amd64:1.14.13",
+                            "k8s.gcr.io/k8s-dns-kube-dns-amd64:1.14.13"
+                        ],
+                        "sizeBytes": 51157394
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-proportional-autoscaler-amd64@sha256:003f98d9f411ddfa6ff6d539196355e03ddd69fa4ed38c7ffb8fec6f729afe2d",
+                            "k8s.gcr.io/cluster-proportional-autoscaler-amd64:1.1.2-r2"
+                        ],
+                        "sizeBytes": 49648481
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/mirror/metrics-server-amd64@sha256:220c0ed3451cb95e4b2f72dd5dc8d9d39d9f529722e5b29d8286373ce27b117e",
+                            "k8s.gcr.io/metrics-server-amd64@sha256:49a9f12f7067d11f42c803dbe61ed2c1299959ad85cb315b25ff7eef8e6b8892",
+                            "aksrepos.azurecr.io/mirror/metrics-server-amd64:v0.2.1",
+                            "k8s.gcr.io/metrics-server-amd64:v0.2.1"
+                        ],
+                        "sizeBytes": 42541759
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/mirror/k8s-dns-sidecar-amd64@sha256:4f1ab957f87b94a5ec1edc26fae50da2175461f00afecf68940c4aa079bd08a4",
+                            "k8s.gcr.io/k8s-dns-sidecar-amd64@sha256:4f1ab957f87b94a5ec1edc26fae50da2175461f00afecf68940c4aa079bd08a4",
+                            "aksrepos.azurecr.io/mirror/k8s-dns-sidecar-amd64:1.14.10",
+                            "k8s.gcr.io/k8s-dns-sidecar-amd64:1.14.10"
+                        ],
+                        "sizeBytes": 41635309
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/mirror/k8s-dns-dnsmasq-nanny-amd64@sha256:bbb2a290a568125b3b996028958eb773f33b5b87a6b37bf38a28f8b62dddb3c8",
+                            "k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64@sha256:bbb2a290a568125b3b996028958eb773f33b5b87a6b37bf38a28f8b62dddb3c8",
+                            "aksrepos.azurecr.io/mirror/k8s-dns-dnsmasq-nanny-amd64:1.14.10",
+                            "k8s.gcr.io/k8s-dns-dnsmasq-nanny-amd64:1.14.10"
+                        ],
+                        "sizeBytes": 40372149
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/mirror/addon-resizer@sha256:8ac3ffa4232046feb297cefc40734641fa2954c16308f9e0d70ec152f22231ca",
+                            "k8s.gcr.io/addon-resizer@sha256:507aa9845ecce1fdde4d61f530c802f4dc2974c700ce0db7730866e442db958d",
+                            "aksrepos.azurecr.io/mirror/addon-resizer:1.8.1",
+                            "k8s.gcr.io/addon-resizer:1.8.1"
+                        ],
+                        "sizeBytes": 32968591
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/mirror/nginx@sha256:91d22184f3f9b1be658c2cc2c12d324de7ff12c8b9c9a597905457b4d93b069d",
+                            "nginx@sha256:9d46fd628d54ebe1633ee3cf0fe2acfcc419cfae541c63056530e39cd5620366",
+                            "aksrepos.azurecr.io/mirror/nginx:1.13.12-alpine",
+                            "nginx:1.13.12-alpine"
+                        ],
+                        "sizeBytes": 18002931
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/mirror/exechealthz-amd64@sha256:34722333f0cd0b891b61c9e0efa31913f22157e341a3aabb79967305d4e78260",
+                            "k8s.gcr.io/exechealthz-amd64@sha256:503e158c3f65ed7399f54010571c7c977ade7fe59010695f48d9650d83488c0a",
+                            "aksrepos.azurecr.io/mirror/exechealthz-amd64:1.2",
+                            "k8s.gcr.io/exechealthz-amd64:1.2"
+                        ],
+                        "sizeBytes": 8374840
+                    }
+                ],
+                "nodeInfo": {
+                    "architecture": "amd64",
+                    "bootID": "4c822e6d-c2e5-4697-9a01-467e04804fc1",
+                    "containerRuntimeVersion": "docker://3.0.4",
+                    "kernelVersion": "4.15.0-1037-azure",
+                    "kubeProxyVersion": "v1.11.8",
+                    "kubeletVersion": "v1.11.8",
+                    "machineID": "1954026de5e6436788f214eb0dfd6a13",
+                    "operatingSystem": "linux",
+                    "osImage": "Ubuntu 16.04.5 LTS",
+                    "systemUUID": "17A6A78E-D3E2-2A4F-852B-C91D933C8D5B"
+                }
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Node",
+            "metadata": {
+                "annotations": {
+                    "node.alpha.kubernetes.io/ttl": "0",
+                    "volumes.kubernetes.io/controller-managed-attach-detach": "true"
+                },
+                "creationTimestamp": "2019-06-21T02:01:53Z",
+                "labels": {
+                    "agentpool": "nodepool1",
+                    "beta.kubernetes.io/arch": "amd64",
+                    "beta.kubernetes.io/instance-type": "Standard_DS1_v2",
+                    "beta.kubernetes.io/os": "linux",
+                    "failure-domain.beta.kubernetes.io/region": "eastus",
+                    "failure-domain.beta.kubernetes.io/zone": "0",
+                    "kubernetes.azure.com/cluster": "MC_dilipr-health-test_dilipr-health-test_eastus",
+                    "kubernetes.io/hostname": "aks-nodepool1-19574989-2",
+                    "kubernetes.io/role": "agent",
+                    "node-role.kubernetes.io/agent": "",
+                    "storageprofile": "managed",
+                    "storagetier": "Premium_LRS"
+                },
+                "name": "aks-nodepool1-19574989-2",
+                "resourceVersion": "19068101",
+                "selfLink": "/api/v1/nodes/aks-nodepool1-19574989-2",
+                "uid": "8a62e1bc-93c8-11e9-854d-ee76584a3c00"
+            },
+            "spec": {
+                "podCIDR": "10.244.12.0/24",
+                "providerID": "azure:///subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourceGroups/MC_dilipr-health-test_dilipr-health-test_eastus/providers/Microsoft.Compute/virtualMachines/aks-nodepool1-19574989-2"
+            },
+            "status": {
+                "addresses": [
+                    {
+                        "address": "aks-nodepool1-19574989-2",
+                        "type": "Hostname"
+                    },
+                    {
+                        "address": "10.240.0.7",
+                        "type": "InternalIP"
+                    }
+                ],
+                "allocatable": {
+                    "cpu": "940m",
+                    "ephemeral-storage": "28043041951",
+                    "hugepages-1Gi": "0",
+                    "hugepages-2Mi": "0",
+                    "memory": "2480548Ki",
+                    "pods": "110"
+                },
+                "capacity": {
+                    "cpu": "1",
+                    "ephemeral-storage": "30428648Ki",
+                    "hugepages-1Gi": "0",
+                    "hugepages-2Mi": "0",
+                    "memory": "3500452Ki",
+                    "pods": "110"
+                },
+                "conditions": [
+                    {
+                        "lastHeartbeatTime": "2019-06-21T02:02:24Z",
+                        "lastTransitionTime": "2019-06-21T02:02:24Z",
+                        "message": "RouteController created a route",
+                        "reason": "RouteCreated",
+                        "status": "False",
+                        "type": "NetworkUnavailable"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:20Z",
+                        "lastTransitionTime": "2019-07-23T14:46:10Z",
+                        "message": "kubelet has sufficient disk space available",
+                        "reason": "KubeletHasSufficientDisk",
+                        "status": "False",
+                        "type": "OutOfDisk"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:20Z",
+                        "lastTransitionTime": "2019-07-23T14:46:10Z",
+                        "message": "kubelet has sufficient memory available",
+                        "reason": "KubeletHasSufficientMemory",
+                        "status": "False",
+                        "type": "MemoryPressure"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:20Z",
+                        "lastTransitionTime": "2019-07-23T14:46:10Z",
+                        "message": "kubelet has no disk pressure",
+                        "reason": "KubeletHasNoDiskPressure",
+                        "status": "False",
+                        "type": "DiskPressure"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:20Z",
+                        "lastTransitionTime": "2019-06-21T02:01:53Z",
+                        "message": "kubelet has sufficient PID available",
+                        "reason": "KubeletHasSufficientPID",
+                        "status": "False",
+                        "type": "PIDPressure"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:20Z",
+                        "lastTransitionTime": "2019-07-23T14:46:10Z",
+                        "message": "kubelet is posting ready status. AppArmor enabled",
+                        "reason": "KubeletReady",
+                        "status": "True",
+                        "type": "Ready"
+                    }
+                ],
+                "daemonEndpoints": {
+                    "kubeletEndpoint": {
+                        "Port": 10250
+                    }
+                },
+                "images": [
+                    {
+                        "names": [
+                            "nickchase/rss-php-nginx@sha256:48da56a77fe4ecff4917121365d8e0ce615ebbdfe31f48a996255f5592894e2b",
+                            "nickchase/rss-php-nginx:v1"
+                        ],
+                        "sizeBytes": 677038498
+                    },
+                    {
+                        "names": [
+                            "rdilip83/jsonlogger@sha256:82b67ca5e0650cd5e47f5b51659d61cee035e5d8dcd8a79c50358cd2beb3b5a8",
+                            "rdilip83/jsonlogger:v12"
+                        ],
+                        "sizeBytes": 676594134
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/mirror/hyperkube-amd64@sha256:1447d5b491fcee503c9f8fb712e1593dc3772c7e661251f54c297477cc716913",
+                            "k8s.gcr.io/hyperkube-amd64@sha256:1447d5b491fcee503c9f8fb712e1593dc3772c7e661251f54c297477cc716913",
+                            "aksrepos.azurecr.io/mirror/hyperkube-amd64:v1.11.8",
+                            "k8s.gcr.io/hyperkube-amd64:v1.11.8"
+                        ],
+                        "sizeBytes": 615263658
+                    },
+                    {
+                        "names": [
+                            "rdilip83/fixrubyerror@sha256:6b7f36cf6258b311015493ab025f06577d758c45bc5010d022ac160b9f40ea5d",
+                            "rdilip83/fixrubyerror:latest"
+                        ],
+                        "sizeBytes": 494068028
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:69b420bdb4081293c37e2d0f8ad2e4054bd516f5c08c7512d6b695660a36eccf",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08222019"
+                        ],
+                        "sizeBytes": 494067935
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:fb2b90ce9bf7186fd9dfae97f5f72f9b9c80c8a0493af3cff74179cd4ff847c0",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08212019"
+                        ],
+                        "sizeBytes": 494067572
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:c646e180483d295ffac114fb9df513db02553af7879681814d5910764653dd2d",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08202019"
+                        ],
+                        "sizeBytes": 494067210
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:c21b596a22a1338ed293d01681f327acc871ee502ed779ec1109d6a93375bb3b",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08192019"
+                        ],
+                        "sizeBytes": 494055088
+                    },
+                    {
+                        "names": [
+                            "rdilip83/cifeatureprod08192019@sha256:7815bba9a805e4e8df33356fd532671de45525ce9c6e936e14f9b126e2097ecd",
+                            "rdilip83/cifeatureprod08192019:v1"
+                        ],
+                        "sizeBytes": 494055088
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:6387d0dedf4de0bab430f681ef61361f63a20e1c4c287a9b60ea5460283ac6cf",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ci_feature_prod_health08192019"
+                        ],
+                        "sizeBytes": 494053562
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:59e34aab9f6e16a87e880b1ee1c9dd5434ee40dd29502e74aceefabf51443717",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:internaltesthealth08192019"
+                        ],
+                        "sizeBytes": 494053562
+                    },
+                    {
+                        "names": [
+                            "rdilip83/hc08192019@sha256:014d936771508d499ac4c15043e23b16bce8de0019fb2048b99540cbe9084895",
+                            "rdilip83/hc08192019:1"
+                        ],
+                        "sizeBytes": 494053562
+                    },
+                    {
+                        "names": [
+                            "rdilip83/health-rc@sha256:8ad12bce5ffd27b301bc6fe4355c8affa6fce080ae7e2291dec3a0ed11bb9483",
+                            "rdilip83/health-rc:3"
+                        ],
+                        "sizeBytes": 494052863
+                    },
+                    {
+                        "names": [
+                            "rdilip83/health_ci_feature_image@sha256:1a574d25884483083e8cbaacbf0cb7c4e442dc736d480615c65f5c71f8969b13",
+                            "rdilip83/health_ci_feature_image:v1"
+                        ],
+                        "sizeBytes": 494052147
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthrc@sha256:816c8cef09822daf050a0fca6f92e7ac19147ff4bf1a823d43fe70f73470cc0c",
+                            "rdilip83/healthrc:v3"
+                        ],
+                        "sizeBytes": 494052138
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:d35aac044d1adc3d02269fde78f8dfd923db94b81288447cf6fdd482970a333b",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:healthmerge08142019"
+                        ],
+                        "sizeBytes": 494052135
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthrc@sha256:a130780e56ac0edb3ca29477e12edd5e9b5d08b5732dbd59ede9beb58e21eca7",
+                            "rdilip83/healthrc:v2"
+                        ],
+                        "sizeBytes": 494051682
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthmerge@sha256:24d270b0f59fb484c283922474736c3cba50f8aad0270bc0a3acd14284694eea",
+                            "rdilip83/healthmerge:v8"
+                        ],
+                        "sizeBytes": 494010139
+                    },
+                    {
+                        "names": [
+                            "rdilip83/health-rc@sha256:b1d24728eb808d301da426b76b7f7b79606204c4c2b695a24ac670be8276d55d",
+                            "rdilip83/health-rc:1"
+                        ],
+                        "sizeBytes": 494000891
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:a0666957cccbfdf5784accd1133408bf017c28a6e694d9a2ae74da94eef2d285",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:healthpreview08012019"
+                        ],
+                        "sizeBytes": 493994261
+                    },
+                    {
+                        "names": [
+                            "rdilip83/mergehealth@sha256:32c9b35a6809c54d5296e2ca2b122b35a4ad8c852622174cc5a9f92cc27e56e4",
+                            "rdilip83/mergehealth:v3"
+                        ],
+                        "sizeBytes": 493988815
+                    },
+                    {
+                        "names": [
+                            "rdilip83/mergehealth@sha256:a3521e8f36e007b3cb949e0356a75394ac61fd2024ca1ec4827b8d54fb068534",
+                            "rdilip83/mergehealth:v1"
+                        ],
+                        "sizeBytes": 493981585
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:0438e4690e042b195917e160b8949aeb339520ee19c898a8bb9452f36d1f84f1",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:healthpreview07182019"
+                        ],
+                        "sizeBytes": 493977357
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:9ebc410a36856176921dba81b5bd43132469209b315f52be346690435419b9bb"
+                        ],
+                        "sizeBytes": 493946790
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:4e51195a9c77bd166fc90ee5f6143a4604b502ab7ef0f06431dec10c341b10f3",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:healthpreview06272019"
+                        ],
+                        "sizeBytes": 493893635
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06272019@sha256:d888ba5ff5e5810113a32f9c9812a5e28088cc81b902e95a185fe465a514029c",
+                            "rdilip83/healthpreview06272019:latest"
+                        ],
+                        "sizeBytes": 493893633
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06252019-1@sha256:1561876cffe94433a569f29f5231548e039193ebaa7ec640d22439675179e43f",
+                            "rdilip83/healthpreview06252019-1:latest"
+                        ],
+                        "sizeBytes": 493887387
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06252019@sha256:6597ff599a78ac452a4138dedb9e08c0ccd3e8b01594b033fd78ba9dbb41fe9e",
+                            "rdilip83/healthpreview06252019:latest"
+                        ],
+                        "sizeBytes": 493887384
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06242019@sha256:c4f565d92086d1ee56e6016178fed5c668352dc0ca0047f02910bdcb87a482c4",
+                            "rdilip83/healthpreview06242019:latest"
+                        ],
+                        "sizeBytes": 493850850
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06212019-1@sha256:937ce5801a0097a1cbc4eff5399c1973b4c6223ece9279b35207368b99f82b96",
+                            "rdilip83/healthpreview06212019-1:latest"
+                        ],
+                        "sizeBytes": 493850674
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06192019@sha256:f92cb5283814d446f0acde6a489648ea197496d5f85b27ca959ec97bce742d8a",
+                            "rdilip83/healthpreview06192019:latest"
+                        ],
+                        "sizeBytes": 493799437
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:0f798cb7d56931b231f71e38e7fa5bf898b69e611247a566701f70a5f29a9799",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod07092019"
+                        ],
+                        "sizeBytes": 467692116
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:3734a084fa9681c7e930eb90cad45a8f282c24af63065a720a2327b1683f3ba4",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod06142019"
+                        ],
+                        "sizeBytes": 466882569
+                    },
+                    {
+                        "names": [
+                            "rdilip83/mergehealth@sha256:16402c34e2d7de72c2ebc18ec8e9f7933fa25f6a7f83bceb84483ba95e3902f7",
+                            "rdilip83/mergehealth:v2"
+                        ],
+                        "sizeBytes": 448931997
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06212019@sha256:5860c9caaf544f2e7c46edad5cdfb69e22398e20dc87cb8a4cd630b5b7000074",
+                            "rdilip83/healthpreview06212019:latest"
+                        ],
+                        "sizeBytes": 448366491
+                    },
+                    {
+                        "names": [
+                            "deis/hcp-tunnel-front@sha256:68878ee3ea1781b322ea3952c3370e31dd89be8bb0864e2bf27bdba6dc904c41",
+                            "deis/hcp-tunnel-front:v1.9.2-v4.0.7"
+                        ],
+                        "sizeBytes": 383483267
+                    },
+                    {
+                        "names": [
+                            "progrium/stress@sha256:e34d56d60f5caae79333cee395aae93b74791d50e3841986420d23c2ee4697bf",
+                            "progrium/stress:latest"
+                        ],
+                        "sizeBytes": 281783943
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:b6834bb69e8fad88110b1dc57097a45bc79e6f2c5f2c2773c871d07389794771",
+                            "k8s.gcr.io/cluster-autoscaler:v1.12.3"
+                        ],
+                        "sizeBytes": 232229241
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:dc5744fd8c22aebfe40d6b62ab97d18d7bfbfc7ab1782509d69a5a9ec514df2c",
+                            "k8s.gcr.io/cluster-autoscaler:v1.12.2"
+                        ],
+                        "sizeBytes": 232167833
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:e71851267764a068fbb091a4ef3bb874b5ce34db48cb757fcf77779f30ef0207",
+                            "k8s.gcr.io/cluster-autoscaler:v1.3.7"
+                        ],
+                        "sizeBytes": 217353965
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:36a369ca4643542d501bce0addf8b903f2141ae9e2608662b77a3d24f01d7780",
+                            "k8s.gcr.io/cluster-autoscaler:v1.2.2"
+                        ],
+                        "sizeBytes": 208688449
+                    },
+                    {
+                        "names": [
+                            "containernetworking/azure-npm@sha256:4735da6dc0d5393d68be72498f5ce563cb930fa21b26faec8fdc844001057a56",
+                            "containernetworking/azure-npm:v1.0.18"
+                        ],
+                        "sizeBytes": 170727162
+                    },
+                    {
+                        "names": [
+                            "containernetworking/networkmonitor@sha256:d875511410502c3e37804e1f313cc2b0a03d7a03d3d5e6adaf8994b753a76f8e",
+                            "containernetworking/networkmonitor:v0.0.6"
+                        ],
+                        "sizeBytes": 123663837
+                    },
+                    {
+                        "names": [
+                            "containernetworking/networkmonitor@sha256:944408a497c451b0e79d2596dc2e9fe5036cdbba7fa831bff024e1c9ed44190d",
+                            "containernetworking/networkmonitor:v0.0.5"
+                        ],
+                        "sizeBytes": 122043325
+                    },
+                    {
+                        "names": [
+                            "nginx@sha256:bdbf36b7f1f77ffe7bd2a32e59235dff6ecf131e3b6b5b96061c652f30685f3a",
+                            "nginx:latest"
+                        ],
+                        "sizeBytes": 109258867
+                    },
+                    {
+                        "names": [
+                            "debian@sha256:118cf8f3557e1ea766c02f36f05f6ac3e63628427ea8965fb861be904ec35a6f",
+                            "debian:latest"
+                        ],
+                        "sizeBytes": 100594230
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/kube-addon-manager-amd64@sha256:3da3f17cd4f02fe5696f29a5e6cd4aef7111f20dab9bec54ea35942346cfeb60",
+                            "k8s.gcr.io/kube-addon-manager-amd64:v8.8"
+                        ],
+                        "sizeBytes": 99631084
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/kube-addon-manager-amd64@sha256:672794ee3582521eb8bc4f257d0f70c92893f1989f39a200f9c84bcfe1aea7c9",
+                            "k8s.gcr.io/kube-addon-manager-amd64:v9.0"
+                        ],
+                        "sizeBytes": 83077558
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/mirror/kube-svc-redirect@sha256:a448687b78d24dae388bd3d54591c179c891fa078404752bc9c9dfdaecdc02ef",
+                            "aksrepos.azurecr.io/prod/kube-svc-redirect@sha256:a448687b78d24dae388bd3d54591c179c891fa078404752bc9c9dfdaecdc02ef",
+                            "deis/kube-svc-redirect@sha256:a448687b78d24dae388bd3d54591c179c891fa078404752bc9c9dfdaecdc02ef",
+                            "aksrepos.azurecr.io/mirror/kube-svc-redirect:v1.0.2",
+                            "aksrepos.azurecr.io/prod/kube-svc-redirect:v1.0.2"
+                        ],
+                        "sizeBytes": 82897218
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/heapster-amd64@sha256:dccaabb0c20cf05c29baefa1e9bf0358b083ccc0fab492b9b3b47fb7e4db5472",
+                            "k8s.gcr.io/heapster-amd64:v1.5.4"
+                        ],
+                        "sizeBytes": 75318342
+                    }
+                ],
+                "nodeInfo": {
+                    "architecture": "amd64",
+                    "bootID": "ee529550-afa8-43bb-90a6-f157e7e22e18",
+                    "containerRuntimeVersion": "docker://3.0.4",
+                    "kernelVersion": "4.15.0-1045-azure",
+                    "kubeProxyVersion": "v1.11.8",
+                    "kubeletVersion": "v1.11.8",
+                    "machineID": "0e5d932888da4e17a3c58210f6c8c9db",
+                    "operatingSystem": "linux",
+                    "osImage": "Ubuntu 16.04.6 LTS",
+                    "systemUUID": "5DBFC273-947F-0140-AD1F-BF6758D30B37"
+                }
+            }
+        },
+        {
+            "apiVersion": "v1",
+            "kind": "Node",
+            "metadata": {
+                "annotations": {
+                    "node.alpha.kubernetes.io/ttl": "0",
+                    "volumes.kubernetes.io/controller-managed-attach-detach": "true"
+                },
+                "creationTimestamp": "2019-08-07T18:57:56Z",
+                "labels": {
+                    "agentpool": "nodepool1",
+                    "beta.kubernetes.io/arch": "amd64",
+                    "beta.kubernetes.io/instance-type": "Standard_DS1_v2",
+                    "beta.kubernetes.io/os": "linux",
+                    "failure-domain.beta.kubernetes.io/region": "eastus",
+                    "failure-domain.beta.kubernetes.io/zone": "1",
+                    "kubernetes.azure.com/cluster": "MC_dilipr-health-test_dilipr-health-test_eastus",
+                    "kubernetes.io/hostname": "aks-nodepool1-19574989-3",
+                    "kubernetes.io/role": "agent",
+                    "node-role.kubernetes.io/agent": "",
+                    "storageprofile": "managed",
+                    "storagetier": "Premium_LRS"
+                },
+                "name": "aks-nodepool1-19574989-3",
+                "resourceVersion": "19068105",
+                "selfLink": "/api/v1/nodes/aks-nodepool1-19574989-3",
+                "uid": "448ea0a7-b945-11e9-a1b6-127094e7fd94"
+            },
+            "spec": {
+                "podCIDR": "10.244.2.0/24",
+                "providerID": "azure:///subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourceGroups/MC_dilipr-health-test_dilipr-health-test_eastus/providers/Microsoft.Compute/virtualMachines/aks-nodepool1-19574989-3"
+            },
+            "status": {
+                "addresses": [
+                    {
+                        "address": "aks-nodepool1-19574989-3",
+                        "type": "Hostname"
+                    },
+                    {
+                        "address": "10.240.0.6",
+                        "type": "InternalIP"
+                    }
+                ],
+                "allocatable": {
+                    "cpu": "940m",
+                    "ephemeral-storage": "28043041951",
+                    "hugepages-1Gi": "0",
+                    "hugepages-2Mi": "0",
+                    "memory": "2480544Ki",
+                    "pods": "110"
+                },
+                "capacity": {
+                    "cpu": "1",
+                    "ephemeral-storage": "30428648Ki",
+                    "hugepages-1Gi": "0",
+                    "hugepages-2Mi": "0",
+                    "memory": "3500448Ki",
+                    "pods": "110"
+                },
+                "conditions": [
+                    {
+                        "lastHeartbeatTime": "2019-08-07T18:59:32Z",
+                        "lastTransitionTime": "2019-08-07T18:59:32Z",
+                        "message": "RouteController created a route",
+                        "reason": "RouteCreated",
+                        "status": "False",
+                        "type": "NetworkUnavailable"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:22Z",
+                        "lastTransitionTime": "2019-08-07T18:57:56Z",
+                        "message": "kubelet has sufficient disk space available",
+                        "reason": "KubeletHasSufficientDisk",
+                        "status": "False",
+                        "type": "OutOfDisk"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:22Z",
+                        "lastTransitionTime": "2019-08-07T18:57:56Z",
+                        "message": "kubelet has sufficient memory available",
+                        "reason": "KubeletHasSufficientMemory",
+                        "status": "False",
+                        "type": "MemoryPressure"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:22Z",
+                        "lastTransitionTime": "2019-08-07T18:57:56Z",
+                        "message": "kubelet has no disk pressure",
+                        "reason": "KubeletHasNoDiskPressure",
+                        "status": "False",
+                        "type": "DiskPressure"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:22Z",
+                        "lastTransitionTime": "2019-08-07T18:57:56Z",
+                        "message": "kubelet has sufficient PID available",
+                        "reason": "KubeletHasSufficientPID",
+                        "status": "False",
+                        "type": "PIDPressure"
+                    },
+                    {
+                        "lastHeartbeatTime": "2019-08-23T20:43:22Z",
+                        "lastTransitionTime": "2019-08-07T18:58:06Z",
+                        "message": "kubelet is posting ready status. AppArmor enabled",
+                        "reason": "KubeletReady",
+                        "status": "True",
+                        "type": "Ready"
+                    }
+                ],
+                "daemonEndpoints": {
+                    "kubeletEndpoint": {
+                        "Port": 10250
+                    }
+                },
+                "images": [
+                    {
+                        "names": [
+                            "deis/hcp-tunnel-front@sha256:a067679f0ab376197a344cd410821cf07d69fc322dcd9af4a9229250da725ce2",
+                            "deis/hcp-tunnel-front:v1.9.2-v4.0.4"
+                        ],
+                        "sizeBytes": 640504769
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/mirror/hyperkube-amd64@sha256:1447d5b491fcee503c9f8fb712e1593dc3772c7e661251f54c297477cc716913",
+                            "k8s.gcr.io/hyperkube-amd64@sha256:1447d5b491fcee503c9f8fb712e1593dc3772c7e661251f54c297477cc716913",
+                            "aksrepos.azurecr.io/mirror/hyperkube-amd64:v1.11.8",
+                            "k8s.gcr.io/hyperkube-amd64:v1.11.8"
+                        ],
+                        "sizeBytes": 615263658
+                    },
+                    {
+                        "names": [
+                            "rdilip83/fixrubyerror@sha256:6b7f36cf6258b311015493ab025f06577d758c45bc5010d022ac160b9f40ea5d",
+                            "rdilip83/fixrubyerror:latest"
+                        ],
+                        "sizeBytes": 494068028
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:69b420bdb4081293c37e2d0f8ad2e4054bd516f5c08c7512d6b695660a36eccf",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08222019"
+                        ],
+                        "sizeBytes": 494067935
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:fb2b90ce9bf7186fd9dfae97f5f72f9b9c80c8a0493af3cff74179cd4ff847c0",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08212019"
+                        ],
+                        "sizeBytes": 494067572
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:c646e180483d295ffac114fb9df513db02553af7879681814d5910764653dd2d",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08202019"
+                        ],
+                        "sizeBytes": 494067210
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:c21b596a22a1338ed293d01681f327acc871ee502ed779ec1109d6a93375bb3b",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08192019"
+                        ],
+                        "sizeBytes": 494055088
+                    },
+                    {
+                        "names": [
+                            "rdilip83/cifeatureprod08192019@sha256:7815bba9a805e4e8df33356fd532671de45525ce9c6e936e14f9b126e2097ecd",
+                            "rdilip83/cifeatureprod08192019:v1"
+                        ],
+                        "sizeBytes": 494055088
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:6387d0dedf4de0bab430f681ef61361f63a20e1c4c287a9b60ea5460283ac6cf",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ci_feature_prod_health08192019"
+                        ],
+                        "sizeBytes": 494053562
+                    },
+                    {
+                        "names": [
+                            "rdilip83/hc08192019@sha256:014d936771508d499ac4c15043e23b16bce8de0019fb2048b99540cbe9084895",
+                            "rdilip83/hc08192019:1"
+                        ],
+                        "sizeBytes": 494053562
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:59e34aab9f6e16a87e880b1ee1c9dd5434ee40dd29502e74aceefabf51443717",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:internaltesthealth08192019"
+                        ],
+                        "sizeBytes": 494053562
+                    },
+                    {
+                        "names": [
+                            "rdilip83/health-rc@sha256:8ad12bce5ffd27b301bc6fe4355c8affa6fce080ae7e2291dec3a0ed11bb9483",
+                            "rdilip83/health-rc:3"
+                        ],
+                        "sizeBytes": 494052863
+                    },
+                    {
+                        "names": [
+                            "rdilip83/health_ci_feature_image@sha256:1a574d25884483083e8cbaacbf0cb7c4e442dc736d480615c65f5c71f8969b13",
+                            "rdilip83/health_ci_feature_image:v1"
+                        ],
+                        "sizeBytes": 494052147
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthrc@sha256:816c8cef09822daf050a0fca6f92e7ac19147ff4bf1a823d43fe70f73470cc0c",
+                            "rdilip83/healthrc:v3"
+                        ],
+                        "sizeBytes": 494052138
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:d35aac044d1adc3d02269fde78f8dfd923db94b81288447cf6fdd482970a333b",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:healthmerge08142019"
+                        ],
+                        "sizeBytes": 494052135
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthrc@sha256:a130780e56ac0edb3ca29477e12edd5e9b5d08b5732dbd59ede9beb58e21eca7",
+                            "rdilip83/healthrc:v2"
+                        ],
+                        "sizeBytes": 494051682
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthmerge@sha256:24d270b0f59fb484c283922474736c3cba50f8aad0270bc0a3acd14284694eea",
+                            "rdilip83/healthmerge:v8"
+                        ],
+                        "sizeBytes": 494010139
+                    },
+                    {
+                        "names": [
+                            "rdilip83/health-rc@sha256:b1d24728eb808d301da426b76b7f7b79606204c4c2b695a24ac670be8276d55d",
+                            "rdilip83/health-rc:1"
+                        ],
+                        "sizeBytes": 494000891
+                    },
+                    {
+                        "names": [
+                            "rdilip83/mergehealth@sha256:32c9b35a6809c54d5296e2ca2b122b35a4ad8c852622174cc5a9f92cc27e56e4",
+                            "rdilip83/mergehealth:v3"
+                        ],
+                        "sizeBytes": 493988815
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:0438e4690e042b195917e160b8949aeb339520ee19c898a8bb9452f36d1f84f1",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:healthpreview07182019"
+                        ],
+                        "sizeBytes": 493977357
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod@sha256:4e51195a9c77bd166fc90ee5f6143a4604b502ab7ef0f06431dec10c341b10f3",
+                            "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:healthpreview06272019"
+                        ],
+                        "sizeBytes": 493893635
+                    },
+                    {
+                        "names": [
+                            "rdilip83/healthpreview06272019@sha256:d888ba5ff5e5810113a32f9c9812a5e28088cc81b902e95a185fe465a514029c",
+                            "rdilip83/healthpreview06272019:latest"
+                        ],
+                        "sizeBytes": 493893633
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/prod/hcp-tunnel-front@sha256:68878ee3ea1781b322ea3952c3370e31dd89be8bb0864e2bf27bdba6dc904c41",
+                            "aksrepos.azurecr.io/prod/hcp-tunnel-front:v1.9.2-v4.0.7"
+                        ],
+                        "sizeBytes": 383483267
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:b6834bb69e8fad88110b1dc57097a45bc79e6f2c5f2c2773c871d07389794771",
+                            "k8s.gcr.io/cluster-autoscaler:v1.12.3"
+                        ],
+                        "sizeBytes": 232229241
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:dc5744fd8c22aebfe40d6b62ab97d18d7bfbfc7ab1782509d69a5a9ec514df2c",
+                            "k8s.gcr.io/cluster-autoscaler:v1.12.2"
+                        ],
+                        "sizeBytes": 232167833
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:193eaf37788dd5f971dd400b7e3d28e650bfd81c90fa46b234f03eb3d43880e3",
+                            "k8s.gcr.io/cluster-autoscaler:v1.12.5"
+                        ],
+                        "sizeBytes": 231543459
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:e71851267764a068fbb091a4ef3bb874b5ce34db48cb757fcf77779f30ef0207",
+                            "k8s.gcr.io/cluster-autoscaler:v1.3.7"
+                        ],
+                        "sizeBytes": 217353965
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:156b7b9bcba24ed474f67d0feaf27f2506013f15b030341bbd41c630283161b8",
+                            "k8s.gcr.io/cluster-autoscaler:v1.3.4"
+                        ],
+                        "sizeBytes": 217264129
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:97896235bf66bde573d6f2ee150e212ea7010d314eb5d2cfb2ff1af93335db30",
+                            "k8s.gcr.io/cluster-autoscaler:v1.3.3"
+                        ],
+                        "sizeBytes": 217259793
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:b416bf3b6687788b4da4c7ede2bcf067b34ad781862ee3d3dac1d720c5fa38b3",
+                            "k8s.gcr.io/cluster-autoscaler:v1.3.9"
+                        ],
+                        "sizeBytes": 216696035
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:f37a2c84614bdd02475ccb020182caec562cde97fdfd9dae58de66ff89614bc5",
+                            "k8s.gcr.io/cluster-autoscaler:v1.3.8"
+                        ],
+                        "sizeBytes": 216693526
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:b0777becbfc7a56e66b079d2767fdc173121a29165523bbbe309bcb2c0a226aa",
+                            "k8s.gcr.io/cluster-autoscaler:v1.2.5"
+                        ],
+                        "sizeBytes": 212991966
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:36a369ca4643542d501bce0addf8b903f2141ae9e2608662b77a3d24f01d7780",
+                            "k8s.gcr.io/cluster-autoscaler:v1.2.2"
+                        ],
+                        "sizeBytes": 208688449
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/containernetworking/azure-npm@sha256:7b9e7dec6b06a21595f9aa06b319c99b579950619fa869dd85dc637b2235d79f",
+                            "mcr.microsoft.com/containernetworking/azure-npm:v1.0.18"
+                        ],
+                        "sizeBytes": 170727162
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:760232bed2097b5ca742f05b15c94d56ff96ed6b5c93251edc613be045c8d78b",
+                            "k8s.gcr.io/cluster-autoscaler:v1.15.0"
+                        ],
+                        "sizeBytes": 152214996
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:a4e5a8e6d4dc011e6e7a104d6abdfda56274b90357ee9f6e42cc22b70482420b",
+                            "k8s.gcr.io/cluster-autoscaler:v1.14.0"
+                        ],
+                        "sizeBytes": 142102721
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:cbc61e0f6c3ef1c591a0f22ec483826110e2c10acddd5415c0cc2305fd085e69",
+                            "k8s.gcr.io/cluster-autoscaler:v1.14.2"
+                        ],
+                        "sizeBytes": 142099784
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:9dcbd91e79f33c44529de58a0024deb3da23a3a0bc7fd4d028c1255c68f62fb7",
+                            "k8s.gcr.io/cluster-autoscaler:v1.13.2"
+                        ],
+                        "sizeBytes": 136684274
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:e4140dc3ab54e115ab4464331b25022fc5ffb947b568aaf81089efb72506c895",
+                            "k8s.gcr.io/cluster-autoscaler:v1.13.4"
+                        ],
+                        "sizeBytes": 136681463
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/cluster-autoscaler@sha256:7ff5a60304b344f2f29c804c7253632bbc818794f6932236a56db107a6a8f5af",
+                            "k8s.gcr.io/cluster-autoscaler:v1.13.1"
+                        ],
+                        "sizeBytes": 136618018
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/containernetworking/networkmonitor@sha256:d875511410502c3e37804e1f313cc2b0a03d7a03d3d5e6adaf8994b753a76f8e",
+                            "mcr.microsoft.com/containernetworking/networkmonitor:v0.0.6"
+                        ],
+                        "sizeBytes": 123663837
+                    },
+                    {
+                        "names": [
+                            "mcr.microsoft.com/containernetworking/networkmonitor@sha256:944408a497c451b0e79d2596dc2e9fe5036cdbba7fa831bff024e1c9ed44190d",
+                            "mcr.microsoft.com/containernetworking/networkmonitor:v0.0.5"
+                        ],
+                        "sizeBytes": 122043325
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/kubernetes-dashboard-amd64@sha256:0ae6b69432e78069c5ce2bcde0fe409c5c4d6f0f4d9cd50a17974fea38898747",
+                            "k8s.gcr.io/kubernetes-dashboard-amd64:v1.10.1"
+                        ],
+                        "sizeBytes": 121711221
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/kube-addon-manager-amd64@sha256:3da3f17cd4f02fe5696f29a5e6cd4aef7111f20dab9bec54ea35942346cfeb60",
+                            "k8s.gcr.io/kube-addon-manager-amd64:v8.8"
+                        ],
+                        "sizeBytes": 99631084
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/kube-addon-manager-amd64@sha256:2fd1daf3d3cf0e94a753f2263b60dbb0d42b107b5cde0c75ee3fc5c830e016e4",
+                            "k8s.gcr.io/kube-addon-manager-amd64:v8.9"
+                        ],
+                        "sizeBytes": 99240637
+                    },
+                    {
+                        "names": [
+                            "microsoft/virtual-kubelet@sha256:efc397d741d7e590c892c0ea5dccc9a800656c3adb95da4dae25c1cdd5eb6d9f",
+                            "microsoft/virtual-kubelet:latest"
+                        ],
+                        "sizeBytes": 87436458
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/kube-addon-manager-amd64@sha256:672794ee3582521eb8bc4f257d0f70c92893f1989f39a200f9c84bcfe1aea7c9",
+                            "k8s.gcr.io/kube-addon-manager-amd64:v9.0"
+                        ],
+                        "sizeBytes": 83077558
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/kube-addon-manager-amd64@sha256:382c220b3531d9f95bf316a16b7282cc2ef929cd8a89a9dd3f5933edafc41a8e",
+                            "k8s.gcr.io/kube-addon-manager-amd64:v9.0.1"
+                        ],
+                        "sizeBytes": 83076194
+                    },
+                    {
+                        "names": [
+                            "aksrepos.azurecr.io/prod/kube-svc-redirect@sha256:a448687b78d24dae388bd3d54591c179c891fa078404752bc9c9dfdaecdc02ef",
+                            "deis/kube-svc-redirect@sha256:a448687b78d24dae388bd3d54591c179c891fa078404752bc9c9dfdaecdc02ef",
+                            "aksrepos.azurecr.io/prod/kube-svc-redirect:v1.0.2",
+                            "deis/kube-svc-redirect:v1.0.2"
+                        ],
+                        "sizeBytes": 82897218
+                    },
+                    {
+                        "names": [
+                            "k8s.gcr.io/kube-addon-manager-amd64@sha256:3519273916ba45cfc9b318448d4629819cb5fbccbb0822cce054dd8c1f68cb60",
+                            "k8s.gcr.io/kube-addon-manager-amd64:v8.6"
+                        ],
+                        "sizeBytes": 78384272
+                    }
+                ],
+                "nodeInfo": {
+                    "architecture": "amd64",
+                    "bootID": "47e7c02b-3741-42be-a2a1-76c76aa8ccde",
+                    "containerRuntimeVersion": "docker://3.0.6",
+                    "kernelVersion": "4.15.0-1050-azure",
+                    "kubeProxyVersion": "v1.11.8",
+                    "kubeletVersion": "v1.11.8",
+                    "machineID": "a4a4bc2f5a944cd38aba89365df05227",
+                    "operatingSystem": "linux",
+                    "osImage": "Ubuntu 16.04.6 LTS",
+                    "systemUUID": "BB102B43-9922-264C-8C23-22A7DE0F950F"
+                }
+            }
+        }
+    ],
+    "kind": "List",
+    "metadata": {
+        "resourceVersion": "",
+        "selfLink": ""
+    }
+}

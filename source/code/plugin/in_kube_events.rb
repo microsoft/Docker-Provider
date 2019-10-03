@@ -87,7 +87,7 @@ module Fluent
             else
               record["Computer"] = (OMS::Common.get_hostname)
             end
-            record["ClusterName"] = KubernetesApiClient.getClusterName
+                record['ClusterName'] = KubernetesApiClient.getClusterName
             record["ClusterId"] = KubernetesApiClient.getClusterId
             wrapper = {
               "DataType" => "KUBE_EVENTS_BLOB",

@@ -97,7 +97,7 @@ describe "ParentMonitorProvider spec" do
         assert_equal parent_id, "master_node_pool"
     end
 
-    it 'raises if conditions are not met' do
+    it 'returns defaultParentMonitorTypeId if conditions are not met' do
         #arrange
         definition = JSON.parse('{"conditional_monitor_id": {
             "conditions": [
@@ -123,6 +123,7 @@ describe "ParentMonitorProvider spec" do
               "container.azm.ms/cluster-resource-group",
               "container.azm.ms/cluster-name"
             ],
+            "default_parent_monitor_id": "default_parent_monitor_id",
             "aggregation_algorithm": "worstOf",
             "aggregation_algorithm_params": null
           }
@@ -137,8 +138,9 @@ describe "ParentMonitorProvider spec" do
         def monitor.labels; {HealthMonitorLabels::ROLE => "master1"}; end
 
         #act and assert
-        assert_raises do
-            parent_id = health_model_definition.get_parent_monitor_id(monitor)
-        end
+
+        parent_id = health_model_definition.get_parent_monitor_id(monitor)
+        parent_id.must_equal('default_parent_monitor_id')
+
     end
 end

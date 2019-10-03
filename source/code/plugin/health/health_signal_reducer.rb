@@ -20,7 +20,6 @@ module HealthModel
                 if reduced_signals_map.key?(monitor_instance_id)
                     record = reduced_signals_map[monitor_instance_id]
                     if health_monitor_record.transition_date_time > record.transition_date_time # always take the latest record for a monitor instance id
-                        puts 'Duplicate Daemon Set signal'
                         reduced_signals_map[monitor_instance_id] = health_monitor_record
                     end
                 elsif HealthMonitorHelpers.is_node_monitor(monitor_id)

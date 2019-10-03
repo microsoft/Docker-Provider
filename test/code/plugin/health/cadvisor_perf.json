@@ -1,0 +1,2540 @@
+[
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:39Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/sidecar",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 14061568
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:44Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/dnsmasq",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 7249920
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:45Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/kubedns",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 14442496
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:49Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/healthz",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 5988352
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:43Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/f65e6a62-c5c8-11e9-8736-86290fd7dd1f/kube-proxy",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 40284160
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:41Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/69e68b21-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 101965824
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:37Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/e690309f-a742-11e9-a38a-22d1c75c4357/redirector",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 3203072
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:42Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/e690309f-a742-11e9-a38a-22d1c75c4357/azureproxy",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 9658368
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:42Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/9543dbb7-a1f2-11e9-8b08-d602e29755d5/metrics-server",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 21491712
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:50Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/sidecar",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1562639906
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:50Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/dnsmasq",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1562639899
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:50Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/kubedns",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1562639895
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:50Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/healthz",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1562639903
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:50Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/f65e6a62-c5c8-11e9-8736-86290fd7dd1f/kube-proxy",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1566580259
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:50Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/69e68b21-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1566589936
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:50Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/e690309f-a742-11e9-a38a-22d1c75c4357/redirector",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1563224142
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:50Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/e690309f-a742-11e9-a38a-22d1c75c4357/azureproxy",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1563224144
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:50Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/9543dbb7-a1f2-11e9-8b08-d602e29755d5/metrics-server",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1562639893
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:39Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/sidecar",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 349987
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:44Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/dnsmasq",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 773186
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:45Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/kubedns",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 2718196
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:49Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/healthz",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 2007695
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:43Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/f65e6a62-c5c8-11e9-8736-86290fd7dd1f/kube-proxy",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 674463
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:41Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/69e68b21-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 2159553
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:37Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/e690309f-a742-11e9-a38a-22d1c75c4357/redirector",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 3575667
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:42Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/e690309f-a742-11e9-a38a-22d1c75c4357/azureproxy",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 0
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:42Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/9543dbb7-a1f2-11e9-8b08-d602e29755d5/metrics-server",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 633968
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:39Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/sidecar",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 11546624
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:39Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/sidecar",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 11546624
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:44Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/dnsmasq",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 5652480
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:45Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/kubedns",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 10981376
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:49Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/952488f3-a1f2-11e9-8b08-d602e29755d5/healthz",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 2875392
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:43Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/f65e6a62-c5c8-11e9-8736-86290fd7dd1f/kube-proxy",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 20627456
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:41Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/69e68b21-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 69353472
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:37Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/e690309f-a742-11e9-a38a-22d1c75c4357/redirector",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 462848
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:42Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/e690309f-a742-11e9-a38a-22d1c75c4357/azureproxy",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 8212480
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:42Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/9543dbb7-a1f2-11e9-8b08-d602e29755d5/metrics-server",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 16543744
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:45Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SNode",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/aks-nodepool1-19574989-1",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 814518272
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:45Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SNode",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/aks-nodepool1-19574989-1",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 82091339.40983607
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:45Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SNode",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/aks-nodepool1-19574989-1",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 2089115648
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:50Z",
+        "Host": "aks-nodepool1-19574989-1",
+        "ObjectName": "K8SNode",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/aks-nodepool1-19574989-1",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1552408751.22
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:56Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/b1e04e1c-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 85528576
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:54Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/49e373c8-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 25415680
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:53Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/65a6f978-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 111738880
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:55Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/24ab7e32-c5c9-11e9-8736-86290fd7dd1f/heapster-nanny",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 8417280
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:01Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/24ab7e32-c5c9-11e9-8736-86290fd7dd1f/heapster",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 19492864
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:57Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/9583b2ab-a1f2-11e9-8b08-d602e29755d5/main",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 12918784
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:46Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/bb3d3ef2-a742-11e9-a38a-22d1c75c4357/redirector",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 3379200
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:57Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/bb3d3ef2-a742-11e9-a38a-22d1c75c4357/azureproxy",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 9818112
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:03Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/b1e04e1c-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1566590024
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:03Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/49e373c8-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1566580398
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:03Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/65a6f978-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1566589942
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:03Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/24ab7e32-c5c9-11e9-8736-86290fd7dd1f/heapster-nanny",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1566580342
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:03Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/24ab7e32-c5c9-11e9-8736-86290fd7dd1f/heapster",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1566580337
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:03Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/9583b2ab-a1f2-11e9-8b08-d602e29755d5/main",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1562639936
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:03Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/bb3d3ef2-a742-11e9-a38a-22d1c75c4357/redirector",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1563224072
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:03Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/bb3d3ef2-a742-11e9-a38a-22d1c75c4357/azureproxy",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1563224077
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:56Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/b1e04e1c-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 4447595
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:54Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/49e373c8-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 2765529
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:53Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/65a6f978-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 5565414
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:55Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/24ab7e32-c5c9-11e9-8736-86290fd7dd1f/heapster-nanny",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 863810
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:01Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/24ab7e32-c5c9-11e9-8736-86290fd7dd1f/heapster",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 886196
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:57Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/9583b2ab-a1f2-11e9-8b08-d602e29755d5/main",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 855014
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:46Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/bb3d3ef2-a742-11e9-a38a-22d1c75c4357/redirector",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 1794634
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:57Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/bb3d3ef2-a742-11e9-a38a-22d1c75c4357/azureproxy",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 0
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:56Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/b1e04e1c-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 76308480
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:54Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/49e373c8-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 21319680
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:53Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/65a6f978-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 78180352
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:55Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/24ab7e32-c5c9-11e9-8736-86290fd7dd1f/heapster-nanny",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 7909376
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:01Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/24ab7e32-c5c9-11e9-8736-86290fd7dd1f/heapster",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 18968576
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:57Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/9583b2ab-a1f2-11e9-8b08-d602e29755d5/main",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 9871360
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:46Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/bb3d3ef2-a742-11e9-a38a-22d1c75c4357/redirector",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 462848
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:57Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/bb3d3ef2-a742-11e9-a38a-22d1c75c4357/azureproxy",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 8212480
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:57Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SNode",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/aks-nodepool1-19574989-0",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 865943552
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:57Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SNode",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/aks-nodepool1-19574989-0",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 95432166.25
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:12:57Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SNode",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/aks-nodepool1-19574989-0",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 2191216640
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:03Z",
+        "Host": "aks-nodepool1-19574989-0",
+        "ObjectName": "K8SNode",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/aks-nodepool1-19574989-0",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1552408749.66
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:07Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/b2a0e1b3-bd3f-11e9-b2a7-d61658c73830/tunnel-front",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 17743872
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:12Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/114f7246-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 24162304
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:07Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/44a61692-b945-11e9-a1b6-127094e7fd94/azureproxy",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 11472896
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:06Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/44a61692-b945-11e9-a1b6-127094e7fd94/redirector",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 3821568
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:15Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/8dbd5e8b-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 92057600
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:15Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/b2a0e1b3-bd3f-11e9-b2a7-d61658c73830/tunnel-front",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1565641691
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:15Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/114f7246-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1566580300
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:15Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/44a61692-b945-11e9-a1b6-127094e7fd94/azureproxy",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1565204288
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:15Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/44a61692-b945-11e9-a1b6-127094e7fd94/redirector",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1565204284
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:15Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/8dbd5e8b-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1566589995
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:07Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/b2a0e1b3-bd3f-11e9-b2a7-d61658c73830/tunnel-front",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 35140951
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:12Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/114f7246-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 983407
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:07Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/44a61692-b945-11e9-a1b6-127094e7fd94/azureproxy",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 0
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:06Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/44a61692-b945-11e9-a1b6-127094e7fd94/redirector",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 4221562
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:15Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/8dbd5e8b-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 1881274
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:07Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/b2a0e1b3-bd3f-11e9-b2a7-d61658c73830/tunnel-front",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 4161536
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:12Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/114f7246-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 18952192
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:07Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/44a61692-b945-11e9-a1b6-127094e7fd94/azureproxy",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 8224768
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:06Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/44a61692-b945-11e9-a1b6-127094e7fd94/redirector",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 483328
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:15Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/8dbd5e8b-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 74915840
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:14Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SNode",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/aks-nodepool1-19574989-3",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 554704896
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:14Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SNode",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/aks-nodepool1-19574989-3",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 88981130.86666666
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:14Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SNode",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/aks-nodepool1-19574989-3",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 1633976320
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:14:15Z",
+        "Host": "aks-nodepool1-19574989-3",
+        "ObjectName": "K8SNode",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/aks-nodepool1-19574989-3",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1565204130.6
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:37Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/be78d7f6-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 92954624
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:33Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/dnsmasq",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 7446528
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:22Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/sidecar",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 14811136
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:31Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/kubedns",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 15114240
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:35Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/healthz",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 5406720
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:32Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/94e52ab1-a1f2-11e9-8b08-d602e29755d5/autoscaler",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 10043392
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:37Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/2c3de48d-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 58052608
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:31Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/06fef5f6-a743-11e9-a38a-22d1c75c4357/azureproxy",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 9904128
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:31Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/06fef5f6-a743-11e9-a38a-22d1c75c4357/redirector",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 3645440
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:40Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/be78d7f6-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1566590079
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:40Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/dnsmasq",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1562639920
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:40Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/sidecar",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1562639940
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:40Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/kubedns",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1562639904
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:40Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/healthz",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1562639932
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:40Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/94e52ab1-a1f2-11e9-8b08-d602e29755d5/autoscaler",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1562639909
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:40Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/2c3de48d-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1566580349
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:40Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/06fef5f6-a743-11e9-a38a-22d1c75c4357/azureproxy",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1563224204
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:40Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/06fef5f6-a743-11e9-a38a-22d1c75c4357/redirector",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1563224199
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:37Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/be78d7f6-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 3004849
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:33Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/dnsmasq",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 796842
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:22Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/sidecar",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 708906
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:31Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/kubedns",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 3451625
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:35Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/healthz",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 2572419
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:32Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/94e52ab1-a1f2-11e9-8b08-d602e29755d5/autoscaler",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 548275
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:37Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/2c3de48d-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 1740316
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:31Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/06fef5f6-a743-11e9-a38a-22d1c75c4357/azureproxy",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 0
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:31Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/06fef5f6-a743-11e9-a38a-22d1c75c4357/redirector",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 3156661
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:37Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/be78d7f6-c5df-11e9-8736-86290fd7dd1f/omsagent",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 66428928
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:33Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/dnsmasq",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 5611520
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:22Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/sidecar",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 11833344
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:31Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/kubedns",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 11063296
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:35Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/95046bc6-a1f2-11e9-8b08-d602e29755d5/healthz",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 2551808
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:32Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/94e52ab1-a1f2-11e9-8b08-d602e29755d5/autoscaler",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 9244672
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:37Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/2c3de48d-c5c9-11e9-8736-86290fd7dd1f/kube-proxy",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 20402176
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:31Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/06fef5f6-a743-11e9-a38a-22d1c75c4357/azureproxy",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 8216576
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:31Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SContainer",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/06fef5f6-a743-11e9-a38a-22d1c75c4357/redirector",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 462848
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:30Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SNode",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/aks-nodepool1-19574989-2",
+        "Collections": [
+          {
+            "CounterName": "memoryRssBytes",
+            "Value": 853344256
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:30Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SNode",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/aks-nodepool1-19574989-2",
+        "Collections": [
+          {
+            "CounterName": "cpuUsageNanoCores",
+            "Value": 114265842.16
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:30Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SNode",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/aks-nodepool1-19574989-2",
+        "Collections": [
+          {
+            "CounterName": "memoryWorkingSetBytes",
+            "Value": 1892982784
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  },
+  {
+    "DataItems": [
+      {
+        "Timestamp": "2019-08-23T22:13:40Z",
+        "Host": "aks-nodepool1-19574989-2",
+        "ObjectName": "K8SNode",
+        "InstanceName": "/subscriptions/72c8e8ca-dc16-47dc-b65c-6b5875eb600a/resourcegroups/dilipr-health-test/providers/Microsoft.ContainerService/managedClusters/dilipr-health-test/aks-nodepool1-19574989-2",
+        "Collections": [
+          {
+            "CounterName": "restartTimeEpoch",
+            "Value": 1561082409.36
+          }
+        ]
+      }
+    ],
+    "DataType": "LINUX_PERF_BLOB",
+    "IPName": "LogManagement"
+  }
+]

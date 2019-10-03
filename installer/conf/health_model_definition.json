@@ -24,6 +24,61 @@
         ]
     },
     {
+        "monitor_id": "container",
+        "labels": [
+            "container.azm.ms/namespace",
+            "container.azm.ms/workload-name",
+            "container.azm.ms/workload-kind",
+            "container.azm.ms/container",
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
+        ],
+        "parent_monitor_id": [
+            {
+                "label": "container.azm.ms/namespace",
+                "operator": "==",
+                "value": "kube-system",
+                "id": "system_workload"
+            },
+            {
+                "label": "container.azm.ms/namespace",
+                "operator": "!=",
+                "value": "kube-system",
+                "id": "user_workload"
+            }
+        ]
+    },
+    {
+        "monitor_id": "container_cpu_utilization",
+        "parent_monitor_id": "container",
+        "labels": [
+            "container.azm.ms/namespace",
+            "container.azm.ms/workload-name",
+            "container.azm.ms/workload-kind",
+            "container.azm.ms/container",
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
+        ]
+    },
+    {
+        "monitor_id": "container_memory_utilization",
+        "parent_monitor_id": "container",
+        "labels": [
+            "container.azm.ms/namespace",
+            "container.azm.ms/workload-name",
+            "container.azm.ms/workload-kind",
+            "container.azm.ms/container",
+            "container.azm.ms/cluster-region",
+            "container.azm.ms/cluster-subscription-id",
+            "container.azm.ms/cluster-resource-group",
+            "container.azm.ms/cluster-name"
+        ]
+    },
+    {
         "monitor_id": "system_workload_pods_ready",
         "parent_monitor_id": "system_workload",
         "labels": [
@@ -104,6 +159,9 @@
             "kubernetes.io/hostname",
             "agentpool",
             "kubernetes.io/role",
+            "node-role.kubernetes.io/master",
+            "node-role.kubernetes.io/compute",
+            "node-role.kubernetes.io/infra",
             "container.azm.ms/cluster-region",
             "container.azm.ms/cluster-subscription-id",
             "container.azm.ms/cluster-resource-group",
@@ -117,6 +175,9 @@
             "kubernetes.io/hostname",
             "agentpool",
             "kubernetes.io/role",
+            "node-role.kubernetes.io/master",
+            "node-role.kubernetes.io/compute",
+            "node-role.kubernetes.io/infra",
             "container.azm.ms/cluster-region",
             "container.azm.ms/cluster-subscription-id",
             "container.azm.ms/cluster-resource-group",
@@ -130,6 +191,9 @@
             "kubernetes.io/hostname",
             "agentpool",
             "kubernetes.io/role",
+            "node-role.kubernetes.io/master",
+            "node-role.kubernetes.io/compute",
+            "node-role.kubernetes.io/infra",
             "container.azm.ms/cluster-region",
             "container.azm.ms/cluster-subscription-id",
             "container.azm.ms/cluster-resource-group",
@@ -143,12 +207,33 @@
             "kubernetes.io/hostname",
             "agentpool",
             "kubernetes.io/role",
+            "node-role.kubernetes.io/master",
+            "node-role.kubernetes.io/compute",
+            "node-role.kubernetes.io/infra",
             "container.azm.ms/cluster-region",
             "container.azm.ms/cluster-subscription-id",
             "container.azm.ms/cluster-resource-group",
             "container.azm.ms/cluster-name"
         ],
         "parent_monitor_id": [
+            {
+                "label": "node-role.kubernetes.io/master",
+                "operator": "==",
+                "value": "true",
+                "id": "master_node_pool"
+            },
+            {
+                "label": "node-role.kubernetes.io/compute",
+                "operator": "==",
+                "value": "true",
+                "id": "agent_node_pool"
+            },
+            {
+                "label": "node-role.kubernetes.io/infra",
+                "operator": "==",
+                "value": "true",
+                "id": "agent_node_pool"
+            },
             {
                 "label": "kubernetes.io/role",
                 "operator": "==",
@@ -161,14 +246,16 @@
                 "value": "agent",
                 "id": "agent_node_pool"
             }
-        ]
+        ],
+        "default_parent_monitor_id": "agent_node_pool"
     },
     {
         "monitor_id": "master_node_pool",
         "aggregation_algorithm": "percentage",
         "aggregation_algorithm_params": {
             "critical_threshold": 80.0,
-            "warning_threshold": 90.0
+            "warning_threshold": 90.0,
+            "state_threshold": 80.0
         },
         "parent_monitor_id": "all_nodes",
         "labels": [

@@ -36,21 +36,31 @@ module HealthModel
                 end
                 fail_percentage = config['FailThresholdPercentage'].to_f
 
-                if value > fail_percentage
-                    return HealthMonitorStates::FAIL
-                elsif !warn_percentage.nil? && value > warn_percentage
-                    return HealthMonitorStates::WARNING
+                if !config.nil? && !config['Operator'].nil? && config['Operator'] == '<'
+                    if value < fail_percentage
+                        return HealthMonitorStates::FAIL
+                    elsif !warn_percentage.nil? && value < warn_percentage
+                        return HealthMonitorStates::WARNING
+                    else
+                        return HealthMonitorStates::PASS
+                    end
                 else
-                    return HealthMonitorStates::PASS
+                    if value > fail_percentage
+                        return HealthMonitorStates::FAIL
+                    elsif !warn_percentage.nil? && value > warn_percentage
+                        return HealthMonitorStates::WARNING
+                    else
+                        return HealthMonitorStates::PASS
+                    end
                 end
             end
 
             def is_node_monitor(monitor_id)
-                return (monitor_id == HealthMonitorConstants::NODE_CPU_MONITOR_ID || monitor_id == HealthMonitorConstants::NODE_MEMORY_MONITOR_ID || monitor_id == HealthMonitorConstants::NODE_CONDITION_MONITOR_ID)
+                return (monitor_id == MonitorId::NODE_CPU_MONITOR_ID || monitor_id == MonitorId::NODE_MEMORY_MONITOR_ID || monitor_id == MonitorId::NODE_CONDITION_MONITOR_ID)
             end
 
             def is_pods_ready_monitor(monitor_id)
-                return (monitor_id == HealthMonitorConstants::USER_WORKLOAD_PODS_READY_MONITOR_ID || monitor_id == HealthMonitorConstants::SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID)
+                return (monitor_id == MonitorId::USER_WORKLOAD_PODS_READY_MONITOR_ID || monitor_id == MonitorId::SYSTEM_WORKLOAD_PODS_READY_MONITOR_ID)
             end
 
             def is_cluster_health_model_enabled
@@ -136,13 +146,23 @@ module HealthModel
                 return pods_ready_percentage_hash
             end
 
-            def get_node_state_from_node_conditions(node_conditions)
+            def get_node_state_from_node_conditions(monitor_config, node_conditions)
                 pass = false
+                failtypes = ['outofdisk', 'networkunavailable'].to_set #default fail types
+                if !monitor_config.nil? && !monitor_config["NodeConditionTypesForFailedState"].nil?
+                    failtypes = monitor_config["NodeConditionTypesForFailedState"]
+		    if !failtypes.nil?
+		    	failtypes = failtypes.split(',').map{|x| x.downcase}.map{|x| x.gsub(" ","")}.to_set
+		    end
+                end
+		log = get_log_handle
+		#log.info "Fail Types #{failtypes.inspect}"
                 node_conditions.each do |condition|
                     type = condition['type']
                     status = condition['status']
 
-                    if ((type == "NetworkUnavailable" || type == "OutOfDisk") && (status == 'True' || status == 'Unknown'))
+                    #for each condition in the configuration, check if the type is not false. If yes, update state to fail
+                    if (failtypes.include?(type.downcase) && (status == 'True' || status == 'Unknown'))
                         return "fail"
                     elsif ((type == "DiskPressure" || type == "MemoryPressure" || type == "PIDPressure") && (status == 'True' || status == 'Unknown'))
                         return "warn"
@@ -280,11 +300,12 @@ module HealthModel
             def ensure_cpu_memory_capacity_set(log, cpu_capacity, memory_capacity, hostname)
 
                 log.info "ensure_cpu_memory_capacity_set cpu_capacity #{cpu_capacity} memory_capacity #{memory_capacity}"
-                if cpu_capacity != 0.0 && memory_capacity != 0.0
+                if cpu_capacity != 1.0 && memory_capacity != 1.0
                     log.info "CPU And Memory Capacity are already set"
                     return [cpu_capacity, memory_capacity]
                 end
 
+                log.info "CPU and Memory Capacity Not set"
                 begin
                     @@nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("nodes").body)
                 rescue Exception => e

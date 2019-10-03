@@ -1,3 +1,4 @@
+require_relative 'health_model_constants'
 require 'json'
 
 module HealthModel
