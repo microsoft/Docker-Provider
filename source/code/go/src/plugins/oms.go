@@ -184,11 +184,11 @@ type laKubeMonAgentEvents struct {
 }
 
 type KubeMonAgentEventTags struct {
-	PodName        string
-	ContainerId    string
+	PodName         string
+	ContainerId     string
 	FirstOccurrence string
 	LastOccurrence  string
-	Count          int
+	Count           int
 }
 
 type KubeMonAgentEventBlob struct {
@@ -355,19 +355,19 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 			eventFirstOccurrence := val.FirstOccurrence
 
 			ConfigErrorEvent[logRecordString] = KubeMonAgentEventTags{
-				PodName:        podName,
-				ContainerId:    containerID,
+				PodName:         podName,
+				ContainerId:     containerID,
 				FirstOccurrence: eventFirstOccurrence,
 				LastOccurrence:  eventTimeStamp,
-				Count:          eventCount + 1,
+				Count:           eventCount + 1,
 			}
 		} else {
 			ConfigErrorEvent[logRecordString] = KubeMonAgentEventTags{
-				PodName:        podName,
-				ContainerId:    containerID,
+				PodName:         podName,
+				ContainerId:     containerID,
 				FirstOccurrence: eventTimeStamp,
 				LastOccurrence:  eventTimeStamp,
-				Count:          1,
+				Count:           1,
 			}
 		}
 
@@ -385,19 +385,19 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 					eventFirstOccurrence := val.FirstOccurrence
 
 					PromScrapeErrorEvent[splitString] = KubeMonAgentEventTags{
-						PodName:        podName,
-						ContainerId:    containerID,
+						PodName:         podName,
+						ContainerId:     containerID,
 						FirstOccurrence: eventFirstOccurrence,
 						LastOccurrence:  eventTimeStamp,
-						Count:          eventCount + 1,
+						Count:           eventCount + 1,
 					}
 				} else {
 					PromScrapeErrorEvent[splitString] = KubeMonAgentEventTags{
-						PodName:        podName,
-						ContainerId:    containerID,
+						PodName:         podName,
+						ContainerId:     containerID,
 						FirstOccurrence: eventTimeStamp,
 						LastOccurrence:  eventTimeStamp,
-						Count:          1,
+						Count:           1,
 					}
 				}
 			}
@@ -764,16 +764,17 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		FlushedRecordsSize += float64(len(stringMap["LogEntry"]))
 
 		dataItems = append(dataItems, dataItem)
-		loggedTime, e := time.Parse(time.RFC3339, dataItem.LogEntryTimeStamp)
-		if e != nil {
-			message := fmt.Sprintf("Error while converting LogEntryTimeStamp for telemetry purposes: %s", e.Error())
-			Log(message)
-			SendException(message)
-		} else {
-			ltncy := float64(start.Sub(loggedTime) / time.Millisecond)
-			if ltncy >= maxLatency {
-				maxLatency = ltncy
-				maxLatencyContainer = dataItem.Name + "=" + dataItem.ID
+		if (dataItem.LogEntryTimeStamp != nil) && (dataItem.LogEntryTimeStamp != "") {
+			loggedTime, e := time.Parse(time.RFC3339, dataItem.LogEntryTimeStamp)
+			if e != nil {
+				message := fmt.Sprintf("Error while converting LogEntryTimeStamp for telemetry purposes: %s", e.Error())
+				Log(message)
+			} else {
+				ltncy := float64(start.Sub(loggedTime) / time.Millisecond)
+				if ltncy >= maxLatency {
+					maxLatency = ltncy
+					maxLatencyContainer = dataItem.Name + "=" + dataItem.ID
+				}
 			}
 		}
 	}
