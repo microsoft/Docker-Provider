@@ -47,17 +47,20 @@ module Fluent
       currentTime = Time.now
       emitTime = currentTime.to_f
       batchTime = currentTime.utc.iso8601
-      if eventList.nil?
-        $log.info("in_kube_events::enumerate : Getting events from Kube API @ #{Time.now.utc.iso8601}")
-        events = JSON.parse(KubernetesApiClient.getKubeResourceInfo("events").body)
-        $log.info("in_kube_events::enumerate : Done getting events from Kube API @ #{Time.now.utc.iso8601}")
-      else
-        events = eventList
+
+      events = eventList
+      $log.info("in_kube_events::enumerate : Getting events from Kube API @ #{Time.now.utc.iso8601}")
+      eventInfo = KubernetesApiClient.getKubeResourceInfo("events")
+      $log.info("in_kube_events::enumerate : Done getting events from Kube API @ #{Time.now.utc.iso8601}")
+
+      if !eventInfo.nil?
+        events = JSON.parse(eventInfo.body)
       end
+
       eventQueryState = getEventQueryState
       newEventQueryState = []
       begin
-        if (!events.empty? && !events["items"].nil?)
+        if (!events.nil? && !events.empty? && !events["items"].nil?)
           eventStream = MultiEventStream.new
           events["items"].each do |items|
             record = {}

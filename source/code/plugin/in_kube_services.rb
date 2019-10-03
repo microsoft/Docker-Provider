@@ -46,11 +46,19 @@ module Fluent
       currentTime = Time.now
       emitTime = currentTime.to_f
       batchTime = currentTime.utc.iso8601
+
+      serviceList = nil
+      
       $log.info("in_kube_services::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
-      serviceList = JSON.parse(KubernetesApiClient.getKubeResourceInfo("services").body)
+      serviceInfo = KubernetesApiClient.getKubeResourceInfo("services")
       $log.info("in_kube_services::enumerate : Done getting services from Kube API @ #{Time.now.utc.iso8601}")
+
+      if !serviceInfo.nil?
+        serviceList = JSON.parse(serviceInfo.body)
+      end
+
       begin
-        if (!serviceList.empty?)
+        if (!serviceList.nil? && !serviceList.empty?)
           eventStream = MultiEventStream.new
           serviceList["items"].each do |items|
             record = {}
