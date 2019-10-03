@@ -764,7 +764,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		FlushedRecordsSize += float64(len(stringMap["LogEntry"]))
 
 		dataItems = append(dataItems, dataItem)
-		if (dataItem.LogEntryTimeStamp != nil) && (dataItem.LogEntryTimeStamp != "") {
+		if dataItem.LogEntryTimeStamp != "" {
 			loggedTime, e := time.Parse(time.RFC3339, dataItem.LogEntryTimeStamp)
 			if e != nil {
 				message := fmt.Sprintf("Error while converting LogEntryTimeStamp for telemetry purposes: %s", e.Error())
