@@ -48,13 +48,15 @@ module Fluent
     end
 
     def enumerate(podList = nil)
-      if podList.nil?
-        $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API @ #{Time.now.utc.iso8601}")
-        podInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("pods").body)
-        $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
-      else
-        podInventory = podList
+      podInventory = podList
+      $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API @ #{Time.now.utc.iso8601}")
+      podInfo = KubernetesApiClient.getKubeResourceInfo("pods")
+      $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
+
+      if !podInfo.nil?
+        podInventory = JSON.parse(podInfo.body)
       end
+
       begin
         if (!podInventory.empty? && podInventory.key?("items") && !podInventory["items"].empty?)
           #get pod inventory & services
