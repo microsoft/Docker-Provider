@@ -61,11 +61,19 @@ module Fluent
       emitTime = currentTime.to_f
       batchTime = currentTime.utc.iso8601
       telemetrySent = false
+
+      nodeInventory = nil
+
       $log.info("in_kube_nodes::enumerate : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
-      nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo("nodes").body)
+      nodeInfo = KubernetesApiClient.getKubeResourceInfo("nodes")
       $log.info("in_kube_nodes::enumerate : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
+
+      if !nodeInfo.nil?
+        nodeInventory = JSON.parse(nodeInfo.body)
+      end
+
       begin
-        if (!nodeInventory.empty?)
+        if (!nodeInventory.nil? && !nodeInventory.empty?)
           eventStream = MultiEventStream.new
           containerNodeInventoryEventStream = MultiEventStream.new
           if !nodeInventory["items"].nil?
@@ -94,7 +102,6 @@ module Fluent
               else
                 record["KubernetesProviderID"] = "onprem"
               end
-
 
               # Refer to https://kubernetes.io/docs/concepts/architecture/nodes/#condition for possible node conditions.
               # We check the status of each condition e.g. {"type": "OutOfDisk","status": "False"} . Based on this we
