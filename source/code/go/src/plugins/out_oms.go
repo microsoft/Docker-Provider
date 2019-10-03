@@ -1,14 +1,14 @@
 package main
 
 import (
-	"github.com/fluent/fluent-bit-go/output"
 	"github.com/Microsoft/ApplicationInsights-Go/appinsights"
+	"github.com/fluent/fluent-bit-go/output"
 )
 import (
 	"C"
+	"os"
 	"strings"
 	"unsafe"
-	"os"
 )
 
 //export FLBPluginRegister
@@ -61,6 +61,7 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 
 	incomingTag := strings.ToLower(C.GoString(tag))
 	if strings.Contains(incomingTag, "oms.container.log.flbplugin") {
+		// This will also include populating cache to be sent as for config events
 		return PushToAppInsightsTraces(records, appinsights.Information, incomingTag)
 	} else if strings.Contains(incomingTag, "oms.container.perf.telegraf") {
 		return PostTelegrafMetricsToLA(records)

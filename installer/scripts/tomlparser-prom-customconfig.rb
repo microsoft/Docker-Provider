@@ -1,6 +1,7 @@
 #!/usr/local/bin/ruby
 
 require_relative "tomlrb"
+require_relative "ConfigParseErrorLogger"
 require "fileutils"
 
 @promConfigMapMountPath = "/etc/config/settings/prometheus-data-collection-settings"
@@ -40,7 +41,7 @@ def parseConfigMap
       return nil
     end
   rescue => errorStr
-    puts "config::error::Exception while parsing toml config file for prometheus config: #{errorStr}, using defaults"
+    ConfigParseErrorLogger.logError("Exception while parsing config map for prometheus config: #{errorStr}, using defaults, please check config map for errors")
     return nil
   end
 end
@@ -66,7 +67,7 @@ def replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
     new_contents = new_contents.gsub("$AZMON_RS_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
     new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
   rescue => errorStr
-    puts "config::error::Exception while replacing default pod monitor settings: #{errorStr}"
+    puts "Exception while replacing default pod monitor settings: #{errorStr}"
   end
   return new_contents
 end
@@ -98,7 +99,7 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
     new_contents = new_contents.gsub("$AZMON_RS_PROM_PLUGINS_WITH_NAMESPACE_FILTER", pluginConfigsWithNamespaces)
     return new_contents
   rescue => errorStr
-    puts "config::error::Exception while creating prometheus input plugins to filter namespaces: #{errorStr}, using defaults"
+    puts "Exception while creating prometheus input plugins to filter namespaces: #{errorStr}, using defaults"
     replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods)
   end
 end
@@ -181,10 +182,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               puts "config::Successfully created telemetry file for replicaset"
             end
           else
-            puts "config::Typecheck failed for prometheus config settings for replicaset, using defaults"
+            ConfigParseErrorLogger.logError("Typecheck failed for prometheus config settings for replicaset, using defaults, please use right types for all settings")
           end # end of type check condition
         rescue => errorStr
-          puts "config::error::Exception while parsing config file for prometheus config for replicaset: #{errorStr}, using defaults"
+          ConfigParseErrorLogger.logError("Exception while parsing config file for prometheus config for replicaset: #{errorStr}, using defaults")
           setRsPromDefaults
           puts "****************End Prometheus Config Processing********************"
         end
@@ -236,16 +237,16 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               puts "config::Successfully created telemetry file for daemonset"
             end
           else
-            puts "config::Typecheck failed for prometheus config settings for daemonset, using defaults"
+            ConfigParseErrorLogger.logError("Typecheck failed for prometheus config settings for daemonset, using defaults, please use right types for all settings")
           end # end of type check condition
         rescue => errorStr
-          puts "config::error::Exception while parsing config file for prometheus config for daemonset: #{errorStr}, using defaults"
+          ConfigParseErrorLogger.logError("Exception while parsing config file for prometheus config for daemonset: #{errorStr}, using defaults, please check correctness of configmap")
           puts "****************End Prometheus Config Processing********************"
         end
       end # end of controller type check
     end
   else
-    puts "config::error:: Controller undefined while processing prometheus config, using defaults"
+    ConfigParseErrorLogger.logError("Controller undefined while processing prometheus config, using defaults")
   end
 end
 
@@ -258,7 +259,7 @@ if !@configSchemaVersion.nil? && !@configSchemaVersion.empty? && @configSchemaVe
   end
 else
   if (File.file?(@promConfigMapMountPath))
-    puts "config::unsupported/missing config schema version - '#{@configSchemaVersion}' , using defaults"
+    ConfigParseErrorLogger.logError("config::unsupported/missing config schema version - '#{@configSchemaVersion}' , using defaults, please use supported version")
   else
     puts "config::No configmap mounted for prometheus custom config, using defaults"
   end

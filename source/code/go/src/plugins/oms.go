@@ -28,6 +28,9 @@ const ContainerLogDataType = "CONTAINER_LOG_BLOB"
 // DataType for Insights metric
 const InsightsMetricsDataType = "INSIGHTS_METRICS_BLOB"
 
+// DataType for KubeMonAgentEvent
+const KubeMonAgentEventDataType = "KUBE_MON_AGENT_EVENTS_BLOB"
+
 //env varibale which has ResourceId for LA
 const ResourceIdEnv = "AKS_RESOURCE_ID"
 
@@ -46,6 +49,20 @@ const TelegrafTagClusterName = "clusterName"
 // clusterId tag
 const TelegrafTagClusterID = "clusterId"
 
+const ConfigErrorEventCategory = "container.azm.ms/configmap"
+
+const PromScrapingErrorEventCategory = "container.azm.ms/promscraping"
+
+const NoErrorEventCategory = "container.azm.ms/noerror"
+
+const KubeMonAgentEventError = "Error"
+
+const KubeMonAgentEventWarning = "Warning"
+
+const KubeMonAgentEventInfo = "Info"
+
+const KubeMonAgentEventsFlushedEvent = "KubeMonAgentEventsFlushed"
+
 // ContainerLogPluginConfFilePath --> config file path for container log plugin
 const DaemonSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimprov/out_oms.conf"
 const ReplicaSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimprov/out_oms.conf"
@@ -53,6 +70,8 @@ const ReplicaSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimp
 // IPName for Container Log
 const IPName = "Containers"
 const defaultContainerInventoryRefreshInterval = 60
+
+const kubeMonAgentConfigEventFlushInterval = 60
 
 var (
 	// PluginConfiguration the plugins configuration
@@ -71,6 +90,8 @@ var (
 	ResourceCentric bool
 	//ResourceName
 	ResourceName string
+	//KubeMonAgentEvents skip first flush
+	skipKubeMonEventsFlush bool
 )
 
 var (
@@ -88,11 +109,19 @@ var (
 	ContainerLogTelemetryMutex = &sync.Mutex{}
 	// ClientSet for querying KubeAPIs
 	ClientSet *kubernetes.Clientset
+	// Config error hash
+	ConfigErrorEvent map[string]KubeMonAgentEventTags
+	// Prometheus scraping error hash
+	PromScrapeErrorEvent map[string]KubeMonAgentEventTags
+	// EventHashUpdateMutex read and write mutex access to the event hash
+	EventHashUpdateMutex = &sync.Mutex{}
 )
 
 var (
 	// ContainerImageNameRefreshTicker updates the container image and names periodically
 	ContainerImageNameRefreshTicker *time.Ticker
+	// KubeMonAgentConfigEventsSendTicker to send config events every hour
+	KubeMonAgentConfigEventsSendTicker *time.Ticker
 )
 
 var (
@@ -141,6 +170,41 @@ type ContainerLogBlob struct {
 	IPName    string     `json:"IPName"`
 	DataItems []DataItem `json:"DataItems"`
 }
+
+// Config Error message to be sent to Log Analytics
+type laKubeMonAgentEvents struct {
+	Computer       string `json:"Computer"`
+	CollectionTime string `json:"CollectionTime"` //mapped to TimeGenerated
+	Category       string `json:"Category"`
+	Level          string `json:"Level"`
+	ClusterId      string `json:"ClusterId"`
+	ClusterName    string `json:"ClusterName"`
+	Message        string `json:"Message"`
+	Tags           string `json:"Tags"`
+}
+
+type KubeMonAgentEventTags struct {
+	PodName        string
+	ContainerId    string
+	FirstOccurance string
+	LastOccurance  string
+	Count          int
+}
+
+type KubeMonAgentEventBlob struct {
+	DataType  string                 `json:"DataType"`
+	IPName    string                 `json:"IPName"`
+	DataItems []laKubeMonAgentEvents `json:"DataItems"`
+}
+
+// KubeMonAgentEventType to be used as enum
+type KubeMonAgentEventType int
+
+const (
+	// KubeMonAgentEventType to be used as enum for ConfigError and ScrapingError
+	ConfigError KubeMonAgentEventType = iota
+	PromScrapingError
+)
 
 func createLogger() *log.Logger {
 	var logfile *os.File
@@ -267,6 +331,223 @@ func convert(in interface{}) (float64, bool) {
 	default:
 		Log("returning 0 for %v ", in)
 		return float64(0), false
+	}
+}
+
+// PostConfigErrorstoLA sends config/prometheus scraping error log lines to LA
+func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType KubeMonAgentEventType) {
+	var logRecordString = ToString(record["log"])
+	var eventTimeStamp = ToString(record["time"])
+	containerID, _, podName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
+
+	Log("Locked EventHashUpdateMutex for updating hash \n ")
+	EventHashUpdateMutex.Lock()
+	switch errType {
+	case ConfigError:
+		// Doing this since the error logger library is adding quotes around the string and a newline to the end because
+		// we are converting string to json to log lines in different lines as one record
+		logRecordString = strings.TrimSuffix(logRecordString, "\n")
+		logRecordString = logRecordString[1 : len(logRecordString)-1]
+
+		if val, ok := ConfigErrorEvent[logRecordString]; ok {
+			Log("In config error existing hash update\n")
+			eventCount := val.Count
+			eventFirstOccurance := val.FirstOccurance
+
+			ConfigErrorEvent[logRecordString] = KubeMonAgentEventTags{
+				PodName:        podName,
+				ContainerId:    containerID,
+				FirstOccurance: eventFirstOccurance,
+				LastOccurance:  eventTimeStamp,
+				Count:          eventCount + 1,
+			}
+		} else {
+			ConfigErrorEvent[logRecordString] = KubeMonAgentEventTags{
+				PodName:        podName,
+				ContainerId:    containerID,
+				FirstOccurance: eventTimeStamp,
+				LastOccurance:  eventTimeStamp,
+				Count:          1,
+			}
+		}
+
+	case PromScrapingError:
+		// Splitting this based on the string 'E! [inputs.prometheus]: ' since the log entry has timestamp and we want to remove that before building the hash
+		var scrapingSplitString = strings.Split(logRecordString, "E! [inputs.prometheus]: ")
+		if scrapingSplitString != nil && len(scrapingSplitString) == 2 {
+			var splitString = scrapingSplitString[1]
+			// Trimming the newline character at the end since this is being added as the key
+			splitString = strings.TrimSuffix(splitString, "\n")
+			if splitString != "" {
+				if val, ok := PromScrapeErrorEvent[splitString]; ok {
+					Log("In config error existing hash update\n")
+					eventCount := val.Count
+					eventFirstOccurance := val.FirstOccurance
+
+					PromScrapeErrorEvent[splitString] = KubeMonAgentEventTags{
+						PodName:        podName,
+						ContainerId:    containerID,
+						FirstOccurance: eventFirstOccurance,
+						LastOccurance:  eventTimeStamp,
+						Count:          eventCount + 1,
+					}
+				} else {
+					PromScrapeErrorEvent[splitString] = KubeMonAgentEventTags{
+						PodName:        podName,
+						ContainerId:    containerID,
+						FirstOccurance: eventTimeStamp,
+						LastOccurance:  eventTimeStamp,
+						Count:          1,
+					}
+				}
+			}
+		}
+	}
+	EventHashUpdateMutex.Unlock()
+	Log("Unlocked EventHashUpdateMutex after updating hash \n ")
+}
+
+// Function to get config error log records after iterating through the two hashes
+func flushKubeMonAgentEventRecords() {
+	for ; true; <-KubeMonAgentConfigEventsSendTicker.C {
+		if skipKubeMonEventsFlush != true {
+			Log("In flushConfigErrorRecords\n")
+			start := time.Now()
+			var resp *http.Response
+			var postError error
+			var elapsed time.Duration
+			var laKubeMonAgentEventsRecords []laKubeMonAgentEvents
+			telemetryDimensions := make(map[string]string)
+
+			telemetryDimensions["ConfigErrorEventCount"] = strconv.Itoa(len(ConfigErrorEvent))
+			telemetryDimensions["PromScrapeErrorEventCount"] = strconv.Itoa(len(PromScrapeErrorEvent))
+
+			if (len(ConfigErrorEvent) > 0) || (len(PromScrapeErrorEvent) > 0) {
+				EventHashUpdateMutex.Lock()
+				Log("Locked EventHashUpdateMutex for reading hashes\n")
+				for k, v := range ConfigErrorEvent {
+					tagJson, err := json.Marshal(v)
+
+					if err != nil {
+						message := fmt.Sprintf("Error while Marshalling config error event tags: %s", err.Error())
+						Log(message)
+						SendException(message)
+					} else {
+						laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
+							Computer:       Computer,
+							CollectionTime: start.Format(time.RFC3339),
+							Category:       ConfigErrorEventCategory,
+							Level:          KubeMonAgentEventError,
+							ClusterId:      ResourceID,
+							ClusterName:    ResourceName,
+							Message:        k,
+							Tags:           fmt.Sprintf("%s", tagJson),
+						}
+						laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
+					}
+				}
+
+				for k, v := range PromScrapeErrorEvent {
+					tagJson, err := json.Marshal(v)
+					if err != nil {
+						message := fmt.Sprintf("Error while Marshalling prom scrape error event tags: %s", err.Error())
+						Log(message)
+						SendException(message)
+					} else {
+						laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
+							Computer:       Computer,
+							CollectionTime: start.Format(time.RFC3339),
+							Category:       PromScrapingErrorEventCategory,
+							Level:          KubeMonAgentEventWarning,
+							ClusterId:      ResourceID,
+							ClusterName:    ResourceName,
+							Message:        k,
+							Tags:           fmt.Sprintf("%s", tagJson),
+						}
+						laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
+					}
+				}
+
+				//Clearing out the prometheus scrape hash so that it can be rebuilt with the errors in the next hour
+				for k := range PromScrapeErrorEvent {
+					delete(PromScrapeErrorEvent, k)
+				}
+				Log("PromScrapeErrorEvent cache cleared\n")
+				EventHashUpdateMutex.Unlock()
+				Log("Unlocked EventHashUpdateMutex for reading hashes\n")
+			} else {
+				//Sending a record in case there are no errors to be able to differentiate between no data vs no errors
+				tagsValue := KubeMonAgentEventTags{}
+
+				tagJson, err := json.Marshal(tagsValue)
+				if err != nil {
+					message := fmt.Sprintf("Error while Marshalling no error tags: %s", err.Error())
+					Log(message)
+					SendException(message)
+				} else {
+					laKubeMonAgentEventsRecord := laKubeMonAgentEvents{
+						Computer:       Computer,
+						CollectionTime: start.Format(time.RFC3339),
+						Category:       NoErrorEventCategory,
+						Level:          KubeMonAgentEventInfo,
+						ClusterId:      ResourceID,
+						ClusterName:    ResourceName,
+						Message:        "No errors",
+						Tags:           fmt.Sprintf("%s", tagJson),
+					}
+					laKubeMonAgentEventsRecords = append(laKubeMonAgentEventsRecords, laKubeMonAgentEventsRecord)
+				}
+			}
+
+			if len(laKubeMonAgentEventsRecords) > 0 {
+				kubeMonAgentEventEntry := KubeMonAgentEventBlob{
+					DataType:  KubeMonAgentEventDataType,
+					IPName:    IPName,
+					DataItems: laKubeMonAgentEventsRecords}
+
+				marshalled, err := json.Marshal(kubeMonAgentEventEntry)
+
+				if err != nil {
+					message := fmt.Sprintf("Error while marshalling kubemonagentevent entry: %s", err.Error())
+					Log(message)
+					SendException(message)
+				} else {
+					req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
+					req.Header.Set("Content-Type", "application/json")
+					//expensive to do string len for every request, so use a flag
+					if ResourceCentric == true {
+						req.Header.Set("x-ms-AzureResourceId", ResourceID)
+					}
+
+					resp, postError = HTTPClient.Do(req)
+					elapsed = time.Since(start)
+
+					if postError != nil {
+						message := fmt.Sprintf("Error when sending kubemonagentevent request %s \n", err.Error())
+						Log(message)
+						Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
+					} else if resp == nil || resp.StatusCode != 200 {
+						if resp != nil {
+							Log("Status %s Status Code %d", resp.Status, resp.StatusCode)
+						}
+						Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
+					} else {
+						numRecords := len(laKubeMonAgentEventsRecords)
+						Log("Successfully flushed %d records in %s", numRecords, elapsed)
+
+						// Send telemetry to AppInsights resource
+						SendEvent(KubeMonAgentEventsFlushedEvent, telemetryDimensions)
+
+					}
+					if resp != nil && resp.Body != nil {
+						defer resp.Body.Close()
+					}
+				}
+			}
+		} else {
+			// Setting this to false to allow for subsequent flushes after the first hour
+			skipKubeMonEventsFlush = false
+		}
 	}
 }
 
@@ -439,7 +720,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	DataUpdateMutex.Unlock()
 
 	for _, record := range tailPluginRecords {
-		containerID, k8sNamespace := GetContainerIDK8sNamespaceFromFileName(ToString(record["filepath"]))
+		containerID, k8sNamespace, _ := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
 		logEntrySource := ToString(record["stream"])
 
 		if strings.EqualFold(logEntrySource, "stdout") {
@@ -510,6 +791,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			SendException(message)
 			return output.FLB_OK
 		}
+
 		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
 		req.Header.Set("Content-Type", "application/json")
 		//expensive to do string len for every request, so use a flag
@@ -560,11 +842,12 @@ func containsKey(currentMap map[string]bool, key string) bool {
 	return c
 }
 
-// GetContainerIDK8sNamespaceFromFileName Gets the container ID From the file Name
+// GetContainerIDK8sNamespacePodNameFromFileName Gets the container ID, k8s namespace and pod name From the file Name
 // sample filename kube-proxy-dgcx7_kube-system_kube-proxy-8df7e49e9028b60b5b0d0547f409c455a9567946cf763267b7e6fa053ab8c182.log
-func GetContainerIDK8sNamespaceFromFileName(filename string) (string, string) {
+func GetContainerIDK8sNamespacePodNameFromFileName(filename string) (string, string, string) {
 	id := ""
 	ns := ""
+	podName := ""
 
 	start := strings.LastIndex(filename, "-")
 	end := strings.LastIndex(filename, ".")
@@ -584,7 +867,16 @@ func GetContainerIDK8sNamespaceFromFileName(filename string) (string, string) {
 		ns = filename[start+1 : end]
 	}
 
-	return id, ns
+	start = strings.Index(filename, "/containers/")
+	end = strings.Index(filename, "_")
+
+	if start >= end || start == -1 || end == -1 {
+		podName = ""
+	} else {
+		podName = filename[(start + len("/containers/")):end]
+	}
+
+	return id, ns, podName
 }
 
 // InitializePlugin reads and populates plugin configuration
@@ -594,6 +886,12 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	StderrIgnoreNsSet = make(map[string]bool)
 	ImageIDMap = make(map[string]string)
 	NameIDMap = make(map[string]string)
+	// Keeping the two error hashes separate since we need to keep the config error hash for the lifetime of the container
+	// whereas the prometheus scrape error hash needs to be refreshed every hour
+	ConfigErrorEvent = make(map[string]KubeMonAgentEventTags)
+	PromScrapeErrorEvent = make(map[string]KubeMonAgentEventTags)
+	// Initilizing this to true to skip the first kubemonagentevent flush since the errors are not populated at this time
+	skipKubeMonEventsFlush = true
 
 	pluginConfig, err := ReadConfiguration(pluginConfPath)
 	if err != nil {
@@ -648,6 +946,9 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	Log("containerInventoryRefreshInterval = %d \n", containerInventoryRefreshInterval)
 	ContainerImageNameRefreshTicker = time.NewTicker(time.Second * time.Duration(containerInventoryRefreshInterval))
 
+	Log("kubeMonAgentConfigEventFlushInterval = %d \n", kubeMonAgentConfigEventFlushInterval)
+	KubeMonAgentConfigEventsSendTicker = time.NewTicker(time.Minute * time.Duration(kubeMonAgentConfigEventFlushInterval))
+
 	// Populate Computer field
 	containerHostName, err := ioutil.ReadFile(pluginConfig["container_host_file_path"])
 	if err != nil {
@@ -690,7 +991,11 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		populateExcludedStdoutNamespaces()
 		populateExcludedStderrNamespaces()
 		go updateContainerImageNameMaps()
+
+		// Flush config error records every hour
+		go flushKubeMonAgentEventRecords()
 	} else {
 		Log("Running in replicaset. Disabling container enrichment caching & updates \n")
 	}
+
 }
