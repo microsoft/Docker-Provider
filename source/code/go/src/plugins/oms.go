@@ -186,8 +186,8 @@ type laKubeMonAgentEvents struct {
 type KubeMonAgentEventTags struct {
 	PodName        string
 	ContainerId    string
-	FirstOccurance string
-	LastOccurance  string
+	FirstOccurrence string
+	LastOccurrence  string
 	Count          int
 }
 
@@ -352,21 +352,21 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 		if val, ok := ConfigErrorEvent[logRecordString]; ok {
 			Log("In config error existing hash update\n")
 			eventCount := val.Count
-			eventFirstOccurance := val.FirstOccurance
+			eventFirstOccurrence := val.FirstOccurrence
 
 			ConfigErrorEvent[logRecordString] = KubeMonAgentEventTags{
 				PodName:        podName,
 				ContainerId:    containerID,
-				FirstOccurance: eventFirstOccurance,
-				LastOccurance:  eventTimeStamp,
+				FirstOccurrence: eventFirstOccurrence,
+				LastOccurrence:  eventTimeStamp,
 				Count:          eventCount + 1,
 			}
 		} else {
 			ConfigErrorEvent[logRecordString] = KubeMonAgentEventTags{
 				PodName:        podName,
 				ContainerId:    containerID,
-				FirstOccurance: eventTimeStamp,
-				LastOccurance:  eventTimeStamp,
+				FirstOccurrence: eventTimeStamp,
+				LastOccurrence:  eventTimeStamp,
 				Count:          1,
 			}
 		}
@@ -382,21 +382,21 @@ func populateKubeMonAgentEventHash(record map[interface{}]interface{}, errType K
 				if val, ok := PromScrapeErrorEvent[splitString]; ok {
 					Log("In config error existing hash update\n")
 					eventCount := val.Count
-					eventFirstOccurance := val.FirstOccurance
+					eventFirstOccurrence := val.FirstOccurrence
 
 					PromScrapeErrorEvent[splitString] = KubeMonAgentEventTags{
 						PodName:        podName,
 						ContainerId:    containerID,
-						FirstOccurance: eventFirstOccurance,
-						LastOccurance:  eventTimeStamp,
+						FirstOccurrence: eventFirstOccurrence,
+						LastOccurrence:  eventTimeStamp,
 						Count:          eventCount + 1,
 					}
 				} else {
 					PromScrapeErrorEvent[splitString] = KubeMonAgentEventTags{
 						PodName:        podName,
 						ContainerId:    containerID,
-						FirstOccurance: eventTimeStamp,
-						LastOccurance:  eventTimeStamp,
+						FirstOccurrence: eventTimeStamp,
+						LastOccurrence:  eventTimeStamp,
 						Count:          1,
 					}
 				}
