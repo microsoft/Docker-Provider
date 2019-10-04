@@ -769,6 +769,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			if e != nil {
 				message := fmt.Sprintf("Error while converting LogEntryTimeStamp for telemetry purposes: %s", e.Error())
 				Log(message)
+				SendException(message)
 			} else {
 				ltncy := float64(start.Sub(loggedTime) / time.Millisecond)
 				if ltncy >= maxLatency {
