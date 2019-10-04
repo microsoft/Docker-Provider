@@ -366,7 +366,6 @@ class KubernetesApiClient
             podContainers = podContainers + pod["spec"]["initContainers"]
           end
 
-          # if (!pod["spec"]["containers"].nil? && !pod["spec"]["nodeName"].nil?)
           if (!podContainers.nil? && !podContainers.empty? && !pod["spec"]["nodeName"].nil?)
             nodeName = pod["spec"]["nodeName"]
             podContainers.each do |container|
