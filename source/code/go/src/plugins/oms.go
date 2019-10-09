@@ -413,7 +413,6 @@ func flushKubeMonAgentEventRecords() {
 			Log("In flushConfigErrorRecords\n")
 			start := time.Now()
 			var resp *http.Response
-			var postError error
 			var elapsed time.Duration
 			var laKubeMonAgentEventsRecords []laKubeMonAgentEvents
 			telemetryDimensions := make(map[string]string)
@@ -518,10 +517,10 @@ func flushKubeMonAgentEventRecords() {
 						req.Header.Set("x-ms-AzureResourceId", ResourceID)
 					}
 
-					resp, postError = HTTPClient.Do(req)
+					resp, err = HTTPClient.Do(req)
 					elapsed = time.Since(start)
 
-					if postError != nil {
+					if err != nil {
 						message := fmt.Sprintf("Error when sending kubemonagentevent request %s \n", err.Error())
 						Log(message)
 						Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
@@ -532,7 +531,7 @@ func flushKubeMonAgentEventRecords() {
 						Log("Failed to flush %d records after %s", len(laKubeMonAgentEventsRecords), elapsed)
 					} else {
 						numRecords := len(laKubeMonAgentEventsRecords)
-						Log("Successfully flushed %d records in %s", numRecords, elapsed)
+						Log("FlushKubeMonAgentEventRecords::Info::Successfully flushed %d records in %s", numRecords, elapsed)
 
 						// Send telemetry to AppInsights resource
 						SendEvent(KubeMonAgentEventsFlushedEvent, telemetryDimensions)
@@ -822,7 +821,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 		defer resp.Body.Close()
 		numRecords := len(dataItems)
-		Log("Successfully flushed %d records in %s", numRecords, elapsed)
+		Log("PostDataHelper::Info::Successfully flushed %d records in %s", numRecords, elapsed)
 		ContainerLogTelemetryMutex.Lock()
 		FlushedRecordsCount += float64(numRecords)
 		FlushedRecordsTimeTaken += float64(elapsed / time.Millisecond)
