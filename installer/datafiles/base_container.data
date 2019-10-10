@@ -147,6 +147,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/health/health_monitor_provider.rb;                                   source/code/plugin/health/health_monitor_provider.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/health_monitor_record.rb;                                     source/code/plugin/health/health_monitor_record.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/health_monitor_state.rb;                                      source/code/plugin/health/health_monitor_state.rb; 644; root; root
+/opt/microsoft/omsagent/plugin/health/health_monitor_telemetry.rb;                                  source/code/plugin/health/health_monitor_telemetry.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/health_monitor_helpers.rb;                                    source/code/plugin/health/health_monitor_helpers.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/health_monitor_utils.rb;                                      source/code/plugin/health/health_monitor_utils.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/health/health_signal_reducer.rb;                                     source/code/plugin/health/health_signal_reducer.rb; 644; root; root

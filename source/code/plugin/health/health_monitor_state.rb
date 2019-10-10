@@ -16,6 +16,7 @@ module HealthModel
             @@monitor_states = {}
             @@first_record_sent = {}
             @@health_signal_timeout = 240
+
         end
 
         def get_state(monitor_instance_id)
@@ -46,7 +47,6 @@ module HealthModel
                 state.should_send = health_monitor_instance_state_hash["should_send"]
                 @@monitor_states[k] = state
                 @@first_record_sent[k] = true
-
             }
         end
 
@@ -61,8 +61,11 @@ when do u send?
 =end
         def update_state(monitor, #UnitMonitor/AggregateMonitor
             monitor_config, #Hash
-            is_aggregate_monitor = false)
+            is_aggregate_monitor = false,
+            telemetry = nil
+        )
             samples_to_keep = 1
+            monitor_id = monitor.monitor_id
             monitor_instance_id = monitor.monitor_instance_id
             log = HealthMonitorHelpers.get_log_handle
             current_time = Time.now.utc.iso8601
@@ -157,6 +160,11 @@ when do u send?
                     health_monitor_instance_state.state_change_time = current_time
                     health_monitor_instance_state.prev_sent_record_time = current_time
                     health_monitor_instance_state.should_send = true
+                    if !is_aggregate_monitor
+                        if !telemetry.nil?
+                            telemetry.add_monitor_to_telemetry(monitor_id, health_monitor_instance_state.old_state, health_monitor_instance_state.new_state)
+                        end
+                    end
                     if !@@first_record_sent.key?(monitor_instance_id)
                         @@first_record_sent[monitor_instance_id] = true
                     end
@@ -170,6 +178,11 @@ when do u send?
                     health_monitor_instance_state.state_change_time = current_time
                     health_monitor_instance_state.prev_sent_record_time = current_time
                     health_monitor_instance_state.should_send = true
+                    if !is_aggregate_monitor
+                        if !telemetry.nil?
+                            telemetry.add_monitor_to_telemetry(monitor_id, health_monitor_instance_state.old_state, health_monitor_instance_state.new_state)
+                        end
+                    end
                     if !@@first_record_sent.key?(monitor_instance_id)
                         @@first_record_sent[monitor_instance_id] = true
                     end
@@ -190,6 +203,11 @@ when do u send?
                         health_monitor_instance_state.new_state = latest_record_state
                         health_monitor_instance_state.prev_sent_record_time = current_time
                         health_monitor_instance_state.state_change_time = current_time
+                        if !is_aggregate_monitor
+                            if !telemetry.nil?
+                                telemetry.add_monitor_to_telemetry(monitor_id, health_monitor_instance_state.old_state, health_monitor_instance_state.new_state)
+                            end
+                        end
 
                         set_state(monitor_instance_id, health_monitor_instance_state)
 
@@ -223,10 +241,22 @@ when do u send?
             if !is_aggregate_monitor
                 return false
             end
-            if latest_details['details'] != last_sent_details['details']
-                log.info "Last Sent Details #{JSON.pretty_generate(last_sent_details)} \n Latest Details: #{JSON.pretty_generate(latest_details)}"
-                return true
-            end
+            # Do a deep comparison of the keys under details, since a shallow comparison is hit or miss.
+            # Actual bug was the array inside the keys were in random order and the previous equality comparison was failing
+            latest_details['details'].keys.each{|k|
+                if !last_sent_details['details'].key?(k)
+                    return true
+                end
+                if latest_details['details'][k].size != last_sent_details['details'][k].size
+                    return true
+                end
+            }
+            # Explanation: a = [1,2] b = [2,1] a & b = [1,2] , c = [2,3] d = [2] c & d = [2] c.size != (c&d).size
+            latest_details['details'].keys.each{|k|
+                if !(latest_details['details'][k].size == (last_sent_details['details'][k] & latest_details['details'][k]).size)
+                    return true
+                end
+            }
             return false
         end
     end

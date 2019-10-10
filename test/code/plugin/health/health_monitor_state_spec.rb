@@ -65,8 +65,8 @@ describe "HealthMonitorState spec" do
         def mock_monitor.details; {"state" => "pass", "timestamp" => Time.now.utc.iso8601, "details" => {}}; end
 
         config = JSON.parse('{
-            "WarnThresholdPercentage": 80.0,
-            "FailThresholdPercentage": 90.0,
+            "WarnIfGreaterThanPercentage": 80.0,
+            "FailIfGreaterThanPercentage": 90.0,
             "ConsecutiveSamplesForStateTransition": 3
         }')
         #act
@@ -96,8 +96,8 @@ describe "HealthMonitorState spec" do
         def mock_monitor.details; {"state" => "pass", "timestamp" => Time.now.utc.iso8601, "details" => {}}; end
 
         config = JSON.parse('{
-            "WarnThresholdPercentage": 80.0,
-            "FailThresholdPercentage": 90.0,
+            "WarnIfGreaterThanPercentage": 80.0,
+            "FailIfGreaterThanPercentage": 90.0,
             "ConsecutiveSamplesForStateTransition": 3
         }')
         #act
@@ -136,8 +136,8 @@ describe "HealthMonitorState spec" do
         def mock_monitor.details; {"state" => "pass", "timestamp" => Time.now.utc.iso8601, "details" => {}}; end
 
         config = JSON.parse('{
-            "WarnThresholdPercentage": 80.0,
-            "FailThresholdPercentage": 90.0,
+            "WarnIfGreaterThanPercentage": 80.0,
+            "FailIfGreaterThanPercentage": 90.0,
             "ConsecutiveSamplesForStateTransition": 3
         }')
         #act

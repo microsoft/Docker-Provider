@@ -43,11 +43,9 @@ module HealthModel
 
                     if labels_keys.include?(HealthMonitorLabels::AGENTPOOL)
                         @log.info "#{record.monitor_id} includes agentpool label. Value = #{record.labels[HealthMonitorLabels::AGENTPOOL]}"
-                        @log.info "Labels present = #{labels_keys}"
                         next
                     else
                         #@log.info "#{record} does not include agentpool label."
-                        @log.info "Labels present = #{labels_keys}"
                         role_name = 'unknown'
                         if record.labels.include?(HealthMonitorLabels::ROLE)
                             role_name = record.labels[HealthMonitorLabels::ROLE]

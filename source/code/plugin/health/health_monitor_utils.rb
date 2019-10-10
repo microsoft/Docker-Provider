@@ -27,16 +27,17 @@ module HealthModel
 
         class << self
             # compute the percentage state given a value and a monitor configuration
+            #TODO : Add Unit Tests for this method
             def compute_percentage_state(value, config)
-
-                if config.nil? || config['WarnThresholdPercentage'].nil?
+                if config.nil? || ( config['WarnIfGreaterThanPercentage'].nil? && config['WarnIfLesserThanPercentage'].nil? )
                     warn_percentage = nil
                 else
-                    warn_percentage = config['WarnThresholdPercentage'].to_f
+                    warn_percentage = !config['WarnIfGreaterThanPercentage'].nil? ? config['WarnIfGreaterThanPercentage'].to_f : config['WarnIfLesserThanPercentage'].to_f
                 end
-                fail_percentage = config['FailThresholdPercentage'].to_f
+                fail_percentage = !config['FailIfGreaterThanPercentage'].nil? ? config['FailIfGreaterThanPercentage'].to_f : config['FailIfLesserThanPercentage'].to_f
+                is_less_than_comparer = config['FailIfGreaterThanPercentage'].nil? ? true : false # Fail percentage config always present for percentage computation monitors
 
-                if !config.nil? && !config['Operator'].nil? && config['Operator'] == '<'
+                if !config.nil? && is_less_than_comparer
                     if value < fail_percentage
                         return HealthMonitorStates::FAIL
                     elsif !warn_percentage.nil? && value < warn_percentage

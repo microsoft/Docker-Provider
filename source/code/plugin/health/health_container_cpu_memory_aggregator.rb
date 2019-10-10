@@ -246,9 +246,9 @@ module HealthModel
 
         def calculate_container_instance_state(counter_value, limit, config)
             percent_value = counter_value * 100  / limit
-            if percent_value > config['FailThresholdPercentage']
+            if percent_value > config['FailIfGreaterThanPercentage']
                 return HealthMonitorStates::FAIL
-            elsif percent_value > config['WarnThresholdPercentage']
+            elsif percent_value > config['WarnIfGreaterThanPercentage']
                 return HealthMonitorStates::WARN
             else
                 return HealthMonitorStates::PASS

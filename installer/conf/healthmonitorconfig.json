@@ -1,40 +1,34 @@
 {
     "node_cpu_utilization": {
-        "WarnThresholdPercentage": 80.0,
-        "FailThresholdPercentage": 90.0,
-        "ConsecutiveSamplesForStateTransition": 3,
-        "Operator": ">"
+        "WarnIfGreaterThanPercentage": 80.0,
+        "FailIfGreaterThanPercentage": 90.0,
+        "ConsecutiveSamplesForStateTransition": 3
     },
     "node_memory_utilization": {
-        "WarnThresholdPercentage": 80.0,
-        "FailThresholdPercentage": 90.0,
-        "ConsecutiveSamplesForStateTransition": 3,
-        "Operator": ">"
+        "WarnIfGreaterThanPercentage": 80.0,
+        "FailIfGreaterThanPercentage": 90.0,
+        "ConsecutiveSamplesForStateTransition": 3
     },
     "container_cpu_utilization": {
-        "WarnThresholdPercentage": 80.0,
-        "FailThresholdPercentage": 90.0,
+        "WarnIfGreaterThanPercentage": 80.0,
+        "FailIfGreaterThanPercentage": 90.0,
         "StateThresholdPercentage": 90.0,
-        "ConsecutiveSamplesForStateTransition": 3,
-        "Operator": ">"
+        "ConsecutiveSamplesForStateTransition": 3
     },
     "container_memory_utilization": {
-        "WarnThresholdPercentage": 80.0,
-        "FailThresholdPercentage": 90.0,
+        "WarnIfGreaterThanPercentage": 80.0,
+        "FailIfGreaterThanPercentage": 90.0,
         "StateThresholdPercentage": 90.0,
-        "ConsecutiveSamplesForStateTransition": 3,
-        "Operator": ">"
+        "ConsecutiveSamplesForStateTransition": 3
     },
     "user_workload_pods_ready": {
-        "WarnThresholdPercentage": 100.0,
-        "FailThresholdPercentage": 90.0,
-        "ConsecutiveSamplesForStateTransition": 2,
-        "Operator": "<"
+        "WarnIfLesserThanPercentage": 100.0,
+        "FailIfLesserThanPercentage": 90.0,
+        "ConsecutiveSamplesForStateTransition": 2
     },
     "system_workload_pods_ready": {
-        "FailThresholdPercentage": 100.0,
-        "ConsecutiveSamplesForStateTransition": 2,
-        "Operator": "<"
+        "FailIfLesserThanPercentage": 100.0,
+        "ConsecutiveSamplesForStateTransition": 2
     },
     "node_condition": {
         "NodeConditionTypesForFailedState": "outofdisk,networkunavailable"

@@ -16,7 +16,7 @@ module Fluent
         config_param :model_definition_path, :default => '/etc/opt/microsoft/docker-cimprov/health/health_model_definition.json'
         config_param :health_monitor_config_path, :default => '/etc/opt/microsoft/docker-cimprov/health/healthmonitorconfig.json'
         config_param :health_state_serialized_path, :default => '/mnt/azure/health_model_state.json'
-        attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_finalizers, :monitor_set, :model_builder, :hierarchy_builder, :resources, :kube_api_down_handler, :provider, :reducer, :state, :generator
+        attr_reader :buffer, :model_builder, :health_model_definition, :monitor_factory, :state_finalizers, :monitor_set, :model_builder, :hierarchy_builder, :resources, :kube_api_down_handler, :provider, :reducer, :state, :generator, :telemetry
         include HealthModel
 
         @@rewrite_tag = 'kubehealth.Signals'
@@ -49,6 +49,7 @@ module Fluent
                 @cluster_old_state = 'none'
                 @cluster_new_state = 'none'
                 @container_cpu_memory_records = []
+                @telemetry = HealthMonitorTelemetry.new
             rescue => e
                 ApplicationInsightsUtility.sendExceptionTelemetry(e, {"FeatureArea" => "Health"})
             end
@@ -142,7 +143,9 @@ module Fluent
                     reduced_records = @reducer.reduce_signals(health_monitor_records, @resources)
                     reduced_records.each{|record|
                         @state.update_state(record,
-                            @provider.get_config(record.monitor_id)
+                            @provider.get_config(record.monitor_id),
+                            false,
+                            @telemetry
                             )
                         # get the health state based on the monitor's operational state
                         # update state calls updates the state of the monitor based on configuration and history of the the monitor records
@@ -160,7 +163,7 @@ module Fluent
                     #update state for missing signals
                     missing_signals.each{|signal|
 
-                        @state.update_state(signal, @provider.get_config(signal.monitor_id))
+                        @state.update_state(signal, @provider.get_config(signal.monitor_id), false, @telemetry)
                         @log.info "After Updating #{@state.get_state(signal.monitor_instance_id)} #{@state.get_state(signal.monitor_instance_id).new_state}"
                         # for unknown/none records, update the "monitor state" to be the latest state (new_state) of the monitor instance from the state
                         signal.state = @state.get_state(signal.monitor_instance_id).new_state
@@ -185,7 +188,8 @@ module Fluent
                         if monitor.is_aggregate_monitor
                             @state.update_state(monitor,
                                 @provider.get_config(monitor.monitor_id),
-                                true
+                                true,
+                                @telemetry
                                 )
                         end
 
@@ -242,7 +246,7 @@ module Fluent
 
                     #update cluster state custom resource
                     @cluster_health_state.update_state(@state.to_h)
-
+                    @telemetry.send
                     # return an empty event stream, else the match will throw a NoMethodError
                     return MultiEventStream.new
                 elsif tag.start_with?("kubehealth.Signals")
