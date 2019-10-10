@@ -412,7 +412,6 @@ func flushKubeMonAgentEventRecords() {
 		if skipKubeMonEventsFlush != true {
 			Log("In flushConfigErrorRecords\n")
 			start := time.Now()
-			var resp *http.Response
 			var elapsed time.Duration
 			var laKubeMonAgentEventsRecords []laKubeMonAgentEvents
 			telemetryDimensions := make(map[string]string)
