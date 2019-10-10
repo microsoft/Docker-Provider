@@ -517,7 +517,7 @@ func flushKubeMonAgentEventRecords() {
 						req.Header.Set("x-ms-AzureResourceId", ResourceID)
 					}
 
-					resp, err = HTTPClient.Do(req)
+					resp, err := HTTPClient.Do(req)
 					elapsed = time.Since(start)
 
 					if err != nil {
