@@ -65,14 +65,11 @@ class CAdvisorMetricsAPIClient
         cAdvisorUri = getCAdvisorUri(winNode)
         if !cAdvisorUri.nil?
           uri = URI.parse(cAdvisorUri)
-          http = Net::HTTP.new(uri.host, uri.port)
-          http.use_ssl = false
-          http.open_timeout = 20
-          http.read_timeout = 40
-
-          cAdvisorApiRequest = Net::HTTP::Get.new(uri.request_uri)
-          response = http.request(cAdvisorApiRequest)
-          @Log.info "Got response code #{response.code} from #{uri.request_uri}"
+          Net::HTTP.start(uri.host, uri.port, :use_ssl => false, :open_timeout => 20, :read_timeout => 40 ) do |http|
+            cAdvisorApiRequest = Net::HTTP::Get.new(uri.request_uri)
+            response = http.request(cAdvisorApiRequest)
+            @Log.info "Got response code #{response.code} from #{uri.request_uri}"
+          end
         end
       rescue => error
         @Log.warn("CAdvisor api request failed: #{error}")

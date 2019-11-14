@@ -40,23 +40,16 @@ class KubernetesApiClient
         resourceUri = getResourceUri(resource, api_group)
         if !resourceUri.nil?
           uri = URI.parse(resourceUri)
-          http = Net::HTTP.new(uri.host, uri.port)
-          http.use_ssl = true
-          http.open_timeout = 20
-          http.read_timeout = 40
-          
           if !File.exist?(@@CaFile)
             raise "#{@@CaFile} doesnt exist"
           else
-            http.ca_file = @@CaFile if File.exist?(@@CaFile)
+            Net::HTTP.start(uri.host, uri.port, :use_ssl => true, :ca_file => @@CaFile, :verify_mode => OpenSSL::SSL::VERIFY_PEER ) do |http|
+              kubeApiRequest = Net::HTTP::Get.new(uri.request_uri)
+              kubeApiRequest["Authorization"] = "Bearer " + getTokenStr
+              @Log.info "KubernetesAPIClient::getKubeResourceInfo : Making request to #{uri.request_uri} @ #{Time.now.utc.iso8601}"
+              response = http.request(kubeApiRequest)
+              @Log.info "KubernetesAPIClient::getKubeResourceInfo : Got response of #{response.code} for #{uri.request_uri} @ #{Time.now.utc.iso8601}"
           end
-          http.verify_mode = OpenSSL::SSL::VERIFY_PEER
-
-          kubeApiRequest = Net::HTTP::Get.new(uri.request_uri)
-          kubeApiRequest["Authorization"] = "Bearer " + getTokenStr
-          @Log.info "KubernetesAPIClient::getKubeResourceInfo : Making request to #{uri.request_uri} @ #{Time.now.utc.iso8601}"
-          response = http.request(kubeApiRequest)
-          @Log.info "KubernetesAPIClient::getKubeResourceInfo : Got response of #{response.code} for #{uri.request_uri} @ #{Time.now.utc.iso8601}"
         end
       rescue => error
         @Log.warn("kubernetes api request failed: #{error} for #{resource} @ #{Time.now.utc.iso8601}")
