@@ -40,7 +40,6 @@ class DockerApiClient
           end
           break if (isVersion) ? (responseChunk.length < @@ChunkSize) : (responseChunk.end_with? "0\r\n\r\n")
         end
-        socket.close
         return (isTimeOut) ? nil : parseResponse(dockerResponse, isMultiJson)
       rescue => errorStr
         $log.warn("Socket call failed for request: #{request} error: #{errorStr} , isMultiJson: #{isMultiJson} @ #{Time.now.utc.iso8601}")
@@ -49,6 +48,10 @@ class DockerApiClient
           ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
         end
         return nil
+      ensure
+        ## REMOVE LOG BEFORE MERGE
+        $log.warn "Closing docker socket connection"
+        socket.close
       end
     end
 
