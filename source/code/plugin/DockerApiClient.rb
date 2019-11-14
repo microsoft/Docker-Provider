@@ -3,7 +3,7 @@
 
 class DockerApiClient
   require "socket"
-  require 'yajl/json_gem'
+  require "yajl/json_gem"
   require "timeout"
   require_relative "omslog"
   require_relative "DockerApiRestHelper"
@@ -51,7 +51,9 @@ class DockerApiClient
       ensure
         ## REMOVE LOG BEFORE MERGE
         $log.warn "Closing docker socket connection"
-        socket.close
+        if !socket.nil?
+          socket.close
+        end
       end
     end
 
