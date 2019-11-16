@@ -9,11 +9,16 @@ module Fluent
     @@hostName = (OMS::Common.get_hostname)
     @@kubeperfTag = "oms.api.KubePerf"
     @@kubeservicesTag = "oms.containerinsights.KubeServices"
+    @PODS_CHUNK_SIZE = "1500"
+    @podCount = 0
+    @controllerSet = Set.new []
+    @winContainerCount = 0
+    @controllerData = {}
 
     def initialize
       super
       require "yaml"
-      require 'yajl/json_gem'
+      require "yajl/json_gem"
       require "set"
       require "time"
 
@@ -50,34 +55,85 @@ module Fluent
       end
     end
 
-    def enumerate(podList = nil)
-      podInventory = podList
-      currentTime = Time.now
-      $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API @ #{Time.now.utc.iso8601}")
-      podInfo = KubernetesApiClient.getKubeResourceInfo("pods")
-      $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
-
-      if !podInfo.nil?
-        podInventory = JSON.parse(podInfo.body)
-      end
-
+    def processPodChunks(podInventory, serviceList)
       begin
         if (!podInventory.empty? && podInventory.key?("items") && !podInventory["items"].empty?)
           batchTime = currentTime.utc.iso8601
-          #get pod inventory & services
-          $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
-          serviceList = JSON.parse(KubernetesApiClient.getKubeResourceInfo("services").body)
-          $log.info("in_kube_podinventory::enumerate : Done getting services from Kube API @ #{Time.now.utc.iso8601}")
-          parse_and_emit_records(podInventory, serviceList, batchTime )
+          parse_and_emit_records(podInventory, serviceList, batchTime)
         else
           $log.warn "Received empty podInventory"
         end
         podInfo = nil
         podInventory = nil
       rescue => errorStr
-        $log.warn "Failed in enumerate pod inventory: #{errorStr}"
+        $log.warn "Failed in process pod chunks: #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      end
+    end
+
+    def parsePodsJsonAndProcess(podInfo, serviceList)
+      if !podInfo.nil?
+        # podInventory = JSON.parse(podInfo.body)
+        podInventory = Yajl::Parser.parse(StringIO.new(podInfo.body))
+      end
+      if (!podInventory.nil? && !podInventory["metadata"].nil?)
+        continuationToken = podInventory["metadata"]["continue"]
+      end
+      processPodChunks(podInventory, serviceList)
+      return continuationToken
+    end
+
+    def enumerate(podList = nil)
+      podInventory = podList
+      currentTime = Time.now
+      telemetryFlush = false
+      @podCount = 0
+      @controllerSet = Set.new []
+      @winContainerCount = 0
+      @controllerData = {}
+
+      # Get services first so that we dont need to make a call for very chunk
+      $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
+      serviceList = JSON.parse(KubernetesApiClient.getKubeResourceInfo("services").body)
+      $log.info("in_kube_podinventory::enumerate : Done getting services from Kube API @ #{Time.now.utc.iso8601}")
+
+      # Initializing continuation token to nil
+      continuationToken = nil
+      $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API @ #{Time.now.utc.iso8601}")
+      podInfo = KubernetesApiClient.getKubeResourceInfo("pods?limit=#{@PODS_CHUNK_SIZE}")
+      $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
+
+      continuationToken = parsePodsJsonAndProcess(podInfo, serviceList)
+
+      #If we receive a continuation token, make calls, process and flush data until we have processed all data
+      while (!continuationToken.nil? && !continuationToken.empty?)
+        $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API using continuation token @ #{Time.now.utc.iso8601}")
+        podInfo = KubernetesApiClient.getKubeResourceInfo("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}")
+        $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API using continuation token @ #{Time.now.utc.iso8601}")
+        parsePodsJsonAndProcess(podInfo, serviceList)
+      end
+
+      # Adding telemetry to send pod telemetry every 5 minutes
+      timeDifference = (DateTime.now.to_time.to_i - @@podTelemetryTimeTracker).abs
+      timeDifferenceInMinutes = timeDifference / 60
+      if (timeDifferenceInMinutes >= 5)
+        telemetryFlush = true
+      end
+
+      # Flush AppInsights telemetry once all the processing is done
+      if telemetryFlush == true
+        telemetryProperties = {}
+        telemetryProperties["Computer"] = @@hostName
+        ApplicationInsightsUtility.sendCustomEvent("KubePodInventoryHeartBeatEvent", telemetryProperties)
+        ApplicationInsightsUtility.sendMetricTelemetry("PodCount", @podCount, {})
+        telemetryProperties["ControllerData"] = @controllerData.to_json
+        ApplicationInsightsUtility.sendMetricTelemetry("ControllerCount", @controllerSet.length, telemetryProperties)
+        if @winContainerCount > 0
+          telemetryProperties["ClusterWideWindowsContainersCount"] = @winContainerCount
+          ApplicationInsightsUtility.sendCustomEvent("WindowsContainerInventoryEvent", telemetryProperties)
+        end
+        @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
       end
     end
 
@@ -193,15 +249,12 @@ module Fluent
       end
     end
 
-    def parse_and_emit_records(podInventory, serviceList,  batchTime = Time.utc.iso8601)
+    def parse_and_emit_records(podInventory, serviceList, batchTime = Time.utc.iso8601)
       currentTime = Time.now
       emitTime = currentTime.to_f
       #batchTime = currentTime.utc.iso8601
       eventStream = MultiEventStream.new
-      controllerSet = Set.new []
-      controllerData = {}
-      telemetryFlush = false
-      winContainerCount = 0
+
       begin #begin block start
         # Getting windows nodes from kubeapi
         winNodes = KubernetesApiClient.getWindowsNodesArray
@@ -284,24 +337,17 @@ module Fluent
           record["ClusterId"] = KubernetesApiClient.getClusterId
           record["ClusterName"] = KubernetesApiClient.getClusterName
           record["ServiceName"] = getServiceNameFromLabels(items["metadata"]["namespace"], items["metadata"]["labels"], serviceList)
-          # Adding telemetry to send pod telemetry every 5 minutes
-          timeDifference = (DateTime.now.to_time.to_i - @@podTelemetryTimeTracker).abs
-          timeDifferenceInMinutes = timeDifference / 60
-          if (timeDifferenceInMinutes >= 5)
-            telemetryFlush = true
-          end
+
           if !items["metadata"]["ownerReferences"].nil?
             record["ControllerKind"] = items["metadata"]["ownerReferences"][0]["kind"]
             record["ControllerName"] = items["metadata"]["ownerReferences"][0]["name"]
-            if telemetryFlush == true
-              controllerSet.add(record["ControllerKind"] + record["ControllerName"])
-              #Adding controller kind to telemetry ro information about customer workload
-              if (controllerData[record["ControllerKind"]].nil?)
-                controllerData[record["ControllerKind"]] = 1
-              else
-                controllerValue = controllerData[record["ControllerKind"]]
-                controllerData[record["ControllerKind"]] += 1
-              end
+            @controllerSet.add(record["ControllerKind"] + record["ControllerName"])
+            #Adding controller kind to telemetry ro information about customer workload
+            if (@controllerData[record["ControllerKind"]].nil?)
+              @controllerData[record["ControllerKind"]] = 1
+            else
+              controllerValue = @controllerData[record["ControllerKind"]]
+              @controllerData[record["ControllerKind"]] += 1
             end
           end
           podRestartCount = 0
@@ -419,7 +465,7 @@ module Fluent
             end
           end
           # Send container inventory records for containers on windows nodes
-          winContainerCount += containerInventoryRecords.length
+          @winContainerCount += containerInventoryRecords.length
           containerInventoryRecords.each do |cirecord|
             if !cirecord.nil?
               ciwrapper = {
@@ -436,25 +482,24 @@ module Fluent
         router.emit_stream(@@MDMKubePodInventoryTag, eventStream) if eventStream
         #:optimize:kubeperf merge
         begin
-          #if(!podInventory.empty?) 
+          #if(!podInventory.empty?)
           containerMetricDataItems = []
           #hostName = (OMS::Common.get_hostname)
-          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "requests", "cpu","cpuRequestNanoCores", batchTime))
-          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "requests", "memory","memoryRequestBytes", batchTime))
-          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "cpu","cpuLimitNanoCores", batchTime))
-          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "memory","memoryLimitBytes", batchTime))
+          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "requests", "cpu", "cpuRequestNanoCores", batchTime))
+          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "requests", "memory", "memoryRequestBytes", batchTime))
+          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "cpu", "cpuLimitNanoCores", batchTime))
+          containerMetricDataItems.concat(KubernetesApiClient.getContainerResourceRequestsAndLimits(podInventory, "limits", "memory", "memoryLimitBytes", batchTime))
 
           kubePerfEventStream = MultiEventStream.new
 
           containerMetricDataItems.each do |record|
-            record['DataType'] = "LINUX_PERF_BLOB"
-            record['IPName'] = "LogManagement"
+            record["DataType"] = "LINUX_PERF_BLOB"
+            record["IPName"] = "LogManagement"
             kubePerfEventStream.add(emitTime, record) if record
-            #router.emit(@tag, time, record) if record  
+            #router.emit(@tag, time, record) if record
           end
           #end
           router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
-          
         rescue => errorStr
           $log.warn "Failed in parse_and_emit_record for KubePerf from in_kube_podinventory : #{errorStr}"
           $log.debug_backtrace(errorStr.backtrace)
@@ -493,19 +538,9 @@ module Fluent
         end
         #:optimize:end kubeservices merge
 
-        if telemetryFlush == true
-          telemetryProperties = {}
-          telemetryProperties["Computer"] = @@hostName
-          ApplicationInsightsUtility.sendCustomEvent("KubePodInventoryHeartBeatEvent", telemetryProperties)
-          ApplicationInsightsUtility.sendMetricTelemetry("PodCount", podInventory["items"].length, {})
-          telemetryProperties["ControllerData"] = controllerData.to_json
-          ApplicationInsightsUtility.sendMetricTelemetry("ControllerCount", controllerSet.length, telemetryProperties)
-          if winContainerCount > 0
-            telemetryProperties["ClusterWideWindowsContainersCount"] = winContainerCount
-            ApplicationInsightsUtility.sendCustomEvent("WindowsContainerInventoryEvent", telemetryProperties)
-          end
-          @@podTelemetryTimeTracker = DateTime.now.to_time.to_i
-        end
+        #Updating value for AppInsights telemetry
+        @podCount += podInventory["items"].length
+
         @@istestvar = ENV["ISTEST"]
         if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
           $log.info("kubePodInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
