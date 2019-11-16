@@ -23,6 +23,7 @@ module Fluent
       super
       require "yaml"
       require 'yajl/json_gem'
+      require 'yajl'
       require "time"
 
       require_relative "KubernetesApiClient"
@@ -71,7 +72,7 @@ module Fluent
       $log.info("in_kube_nodes::enumerate : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")
 
       if !nodeInfo.nil?
-        nodeInventory = JSON.parse(nodeInfo.body)
+        nodeInventory = Yajl::Parser.parse(StringIO.new(nodeInfo.body))
       end
 
       begin

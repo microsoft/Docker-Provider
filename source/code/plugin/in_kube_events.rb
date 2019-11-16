@@ -10,6 +10,7 @@ module Fluent
     def initialize
       super
       require 'yajl/json_gem'
+      require 'yajl'
       require "time"
 
       require_relative "KubernetesApiClient"
@@ -55,7 +56,7 @@ module Fluent
       $log.info("in_kube_events::enumerate : Done getting events from Kube API @ #{Time.now.utc.iso8601}")
 
       if !eventInfo.nil?
-        events = JSON.parse(eventInfo.body)
+        events = Yajl::Parser.parse(StringIO.new(eventInfo.body))
       end
 
       eventQueryState = getEventQueryState
