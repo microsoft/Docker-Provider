@@ -74,8 +74,9 @@ module Fluent
 
     def parsePodsJsonAndProcess(podInfo, serviceList)
       if !podInfo.nil?
-        # podInventory = JSON.parse(podInfo.body)
+      $log.info("in_kube_podinventory::parsePodsJsonAndProcess : Start::Parsing chunked data using yajl @ #{Time.now.utc.iso8601}")
         podInventory = Yajl::Parser.parse(StringIO.new(podInfo.body))
+      $log.info("in_kube_podinventory::parsePodsJsonAndProcess : End::Parsing chunked data using yajl @ #{Time.now.utc.iso8601}")
       end
       if (!podInventory.nil? && !podInventory["metadata"].nil?)
         continuationToken = podInventory["metadata"]["continue"]
