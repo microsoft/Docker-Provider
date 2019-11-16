@@ -9,16 +9,12 @@ module Fluent
     @@hostName = (OMS::Common.get_hostname)
     @@kubeperfTag = "oms.api.KubePerf"
     @@kubeservicesTag = "oms.containerinsights.KubeServices"
-    @PODS_CHUNK_SIZE = "1500"
-    @podCount = 0
-    @controllerSet = Set.new []
-    @winContainerCount = 0
-    @controllerData = {}
 
     def initialize
       super
       require "yaml"
       require "yajl/json_gem"
+      require "yajl"
       require "set"
       require "time"
 
@@ -26,6 +22,12 @@ module Fluent
       require_relative "ApplicationInsightsUtility"
       require_relative "oms_common"
       require_relative "omslog"
+
+      @PODS_CHUNK_SIZE = "1500"
+      @podCount = 0
+      @controllerSet = Set.new []
+      @winContainerCount = 0
+      @controllerData = {}
     end
 
     config_param :run_interval, :time, :default => 60
@@ -55,44 +57,44 @@ module Fluent
       end
     end
 
-    def processPodChunks(podInventory, serviceList)
+    def processPodChunks(podInventory, serviceList, batchTime)
       begin
+        currentTime = Time.now
         if (!podInventory.empty? && podInventory.key?("items") && !podInventory["items"].empty?)
-          batchTime = currentTime.utc.iso8601
           parse_and_emit_records(podInventory, serviceList, batchTime)
         else
-          $log.warn "Received empty podInventory"
+          $log.warn "in_kube_podinventory::processPodChunks:Received empty podInventory"
         end
         podInfo = nil
         podInventory = nil
       rescue => errorStr
-        $log.warn "Failed in process pod chunks: #{errorStr}"
+        $log.warn "in_kube_podinventory::processPodChunks:Failed in process pod chunks: #{errorStr}"
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
 
-    def parsePodsJsonAndProcess(podInfo, serviceList)
+    def parsePodsJsonAndProcess(podInfo, serviceList, batchTime)
       if !podInfo.nil?
-      $log.info("in_kube_podinventory::parsePodsJsonAndProcess : Start::Parsing chunked data using yajl @ #{Time.now.utc.iso8601}")
+        $log.info("in_kube_podinventory::parsePodsJsonAndProcess:Start:Parsing chunked data using yajl @ #{Time.now.utc.iso8601}")
         podInventory = Yajl::Parser.parse(StringIO.new(podInfo.body))
-      $log.info("in_kube_podinventory::parsePodsJsonAndProcess : End::Parsing chunked data using yajl @ #{Time.now.utc.iso8601}")
+        $log.info("in_kube_podinventory::parsePodsJsonAndProcess:End:Parsing chunked data using yajl @ #{Time.now.utc.iso8601}")
       end
       if (!podInventory.nil? && !podInventory["metadata"].nil?)
         continuationToken = podInventory["metadata"]["continue"]
       end
-      processPodChunks(podInventory, serviceList)
+      processPodChunks(podInventory, serviceList, batchTime)
       return continuationToken
     end
 
     def enumerate(podList = nil)
       podInventory = podList
-      currentTime = Time.now
       telemetryFlush = false
       @podCount = 0
       @controllerSet = Set.new []
       @winContainerCount = 0
       @controllerData = {}
+      batchTime = currentTime.utc.iso8601
 
       # Get services first so that we dont need to make a call for very chunk
       $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
@@ -105,14 +107,14 @@ module Fluent
       podInfo = KubernetesApiClient.getKubeResourceInfo("pods?limit=#{@PODS_CHUNK_SIZE}")
       $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API @ #{Time.now.utc.iso8601}")
 
-      continuationToken = parsePodsJsonAndProcess(podInfo, serviceList)
+      continuationToken = parsePodsJsonAndProcess(podInfo, serviceList, batchTime)
 
       #If we receive a continuation token, make calls, process and flush data until we have processed all data
       while (!continuationToken.nil? && !continuationToken.empty?)
         $log.info("in_kube_podinventory::enumerate : Getting pods from Kube API using continuation token @ #{Time.now.utc.iso8601}")
         podInfo = KubernetesApiClient.getKubeResourceInfo("pods?limit=#{@PODS_CHUNK_SIZE}&continue=#{continuationToken}")
         $log.info("in_kube_podinventory::enumerate : Done getting pods from Kube API using continuation token @ #{Time.now.utc.iso8601}")
-        parsePodsJsonAndProcess(podInfo, serviceList)
+        continuationToken = parsePodsJsonAndProcess(podInfo, serviceList, batchTime)
       end
 
       # Adding telemetry to send pod telemetry every 5 minutes
