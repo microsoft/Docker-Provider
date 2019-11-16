@@ -59,7 +59,6 @@ module Fluent
 
     def processPodChunks(podInventory, serviceList, batchTime)
       begin
-        currentTime = Time.now
         if (!podInventory.empty? && podInventory.key?("items") && !podInventory["items"].empty?)
           parse_and_emit_records(podInventory, serviceList, batchTime)
         else
@@ -94,6 +93,7 @@ module Fluent
       @controllerSet = Set.new []
       @winContainerCount = 0
       @controllerData = {}
+      currentTime = Time.now
       batchTime = currentTime.utc.iso8601
 
       # Get services first so that we dont need to make a call for very chunk
