@@ -58,8 +58,10 @@ class KubernetesApiClient
       rescue => error
         @Log.warn("kubernetes api request failed: #{error} for #{resource} @ #{Time.now.utc.iso8601}")
       end
-      if (!response.nil? && !response.body.nil? && response.body.empty?)
-        @Log.warn("KubernetesAPIClient::getKubeResourceInfo : Got empty response from Kube API for #{resource} @ #{Time.now.utc.iso8601}")
+      if (!response.nil?)
+        if (!response.body.nil? && response.body.empty?)
+          @Log.warn("KubernetesAPIClient::getKubeResourceInfo : Got empty response from Kube API for #{resource} @ #{Time.now.utc.iso8601}")
+        end
       end
       return response
     end

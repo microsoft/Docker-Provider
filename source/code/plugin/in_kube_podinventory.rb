@@ -58,10 +58,16 @@ module Fluent
       end
 
       begin
-        if (!podInventory.empty? && podInventory.key?("items") && !podInventory["items"].empty?)
+        if (!podInventory.nil? && !podInventory.empty? && podInventory.key?("items") && !podInventory["items"].empty?)
           #get pod inventory & services
           $log.info("in_kube_podinventory::enumerate : Getting services from Kube API @ #{Time.now.utc.iso8601}")
-          serviceList = JSON.parse(KubernetesApiClient.getKubeResourceInfo("services").body)
+          serviceList = nil
+          serviceInfo = KubernetesApiClient.getKubeResourceInfo("services")
+
+          if !serviceInfo.nil?
+            serviceList = JSON.parse(serviceInfo.body)
+          end
+          
           $log.info("in_kube_podinventory::enumerate : Done getting services from Kube API @ #{Time.now.utc.iso8601}")
           parse_and_emit_records(podInventory, serviceList)
         else
