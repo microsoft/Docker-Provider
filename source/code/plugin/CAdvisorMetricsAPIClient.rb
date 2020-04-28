@@ -134,15 +134,17 @@ class CAdvisorMetricsAPIClient
           operatingSystem = "Linux"
         end
         if !metricInfo.nil?
-          metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", "memoryWorkingSetBytes", metricTime))
           metricDataItems.concat(getContainerStartTimeMetricItems(metricInfo, hostName, "restartTimeEpoch", metricTime))
 
           if operatingSystem == "Linux"
             metricDataItems.concat(getContainerCpuMetricItems(metricInfo, hostName, "usageNanoCores", "cpuUsageNanoCores", metricTime))
-            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "rssBytes", "memoryRssBytes", metricTime))
+            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "rssBytes", "memoryRssBytes", metricTime, operatingSystem))
+            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", "memoryWorkingSetBytes", metricTime, operatingSystem))
             metricDataItems.push(getNodeMetricItem(metricInfo, hostName, "memory", "rssBytes", "memoryRssBytes", metricTime))
+            
           elsif operatingSystem == "Windows"
             containerCpuUsageNanoSecondsRate = getContainerCpuMetricItemRate(metricInfo, hostName, "usageCoreNanoSeconds", "cpuUsageNanoCores", metricTime)
+            metricDataItems.concat(getContainerMemoryMetricItems(metricInfo, hostName, "workingSetBytes", "memoryWorkingSetBytes", metricTime, operatingSystem))
             if containerCpuUsageNanoSecondsRate && !containerCpuUsageNanoSecondsRate.empty? && !containerCpuUsageNanoSecondsRate.nil?
               metricDataItems.concat(containerCpuUsageNanoSecondsRate)
             end
@@ -510,7 +512,7 @@ class CAdvisorMetricsAPIClient
       return metricItems
     end
 
-    def getContainerMemoryMetricItems(metricJSON, hostName, memoryMetricNameToCollect, metricNametoReturn, metricPollTime)
+    def getContainerMemoryMetricItems(metricJSON, hostName, memoryMetricNameToCollect, metricNametoReturn, metricPollTime, operatingSystem)
       metricItems = []
       clusterId = KubernetesApiClient.getClusterId
       timeDifference = (DateTime.now.to_time.to_i - @@telemetryMemoryMetricTimeTracker).abs
@@ -548,14 +550,20 @@ class CAdvisorMetricsAPIClient
               begin
                 # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
                 # cadvisor does not have pod/container metadata. so would need more work to cache as pv & use
-                if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent"))
-                  if (timeDifferenceInMinutes >= 10)
-                    telemetryProps = {}
-                    telemetryProps["PodName"] = podName
-                    telemetryProps["ContainerName"] = containerName
-                    telemetryProps["Computer"] = hostName
-                    ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
-                  end
+                if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent") &&
+                    (
+                      (metricNametoReturn.eql?("memoryRssBytes") && operatingSystem == "Linux")
+                      ||
+                      (metricNametoReturn.eql?("memoryWorkingSetBytes") && operatingSystem == "Windows")
+                    )
+                   )
+                    if (timeDifferenceInMinutes >= 10)
+                      telemetryProps = {}
+                      telemetryProps["PodName"] = podName
+                      telemetryProps["ContainerName"] = containerName
+                      telemetryProps["Computer"] = hostName
+                      ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
+                    end
                 end
               rescue => errorStr
                 $log.warn("Exception while generating Telemetry from getcontainerMemoryMetricItems failed: #{errorStr} for metric #{memoryMetricNameToCollect}")
