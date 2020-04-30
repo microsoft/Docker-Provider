@@ -550,13 +550,7 @@ class CAdvisorMetricsAPIClient
               begin
                 # we can only do this much now. Ideally would like to use the docker image repository to find our pods/containers
                 # cadvisor does not have pod/container metadata. so would need more work to cache as pv & use
-                if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent") &&
-                    (
-                      (metricNametoReturn.eql?("memoryRssBytes") && operatingSystem == "Linux")
-                      ||
-                      (metricNametoReturn.eql?("memoryWorkingSetBytes") && operatingSystem == "Windows")
-                    )
-                   )
+                if (podName.downcase.start_with?("omsagent-") && podNamespace.eql?("kube-system") && containerName.downcase.start_with?("omsagent") && ((metricNametoReturn.eql?("memoryRssBytes") && operatingSystem == "Linux") || (metricNametoReturn.eql?("memoryWorkingSetBytes") && operatingSystem == "Windows")))
                     if (timeDifferenceInMinutes >= 10)
                       telemetryProps = {}
                       telemetryProps["PodName"] = podName
