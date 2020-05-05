@@ -4,6 +4,7 @@
 class KubernetesContainerInventory
   require "yajl/json_gem"
   require "time"
+  require "json"
   require_relative "omslog"
   require_relative "ApplicationInsightsUtility"
   
@@ -203,7 +204,7 @@ class KubernetesContainerInventory
               envVars = File.read(environFilePath, 200000)             
               if !envVars.nil? && !envVars.empty?
                 envVars = envVars.split("\0")
-                envValueString = envVars.join('')
+                envValueString = envVars.to_json
                 envValueStringLength = envValueString.length
                 $log.info("KubernetesContainerInventory::environment vars filename @ #{environFilePath} envVars size @ #{envValueStringLength}")
                 if envValueStringLength >= 200000
@@ -273,12 +274,12 @@ class KubernetesContainerInventory
                   value = "secretKeyRef_#{secretName}_#{secretKey}"
                 end
               else
-                value = envVar["valueFrom"].join('')
+                value = envVar["valueFrom"].to_s
               end
             end
             envVars.push("#{key}=#{value}")
           end
-          envValueString = envVars.join('')
+          envValueString = envVars.to_json
           containerName = container["name"]
           # Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
           # Check to see if the environment variable collection is disabled for this container.
