@@ -208,7 +208,7 @@ class KubernetesContainerInventory
                 envValueStringLength = envValueString.length
                 $log.info("KubernetesContainerInventory::environment vars filename @ #{environFilePath} envVars size @ #{envValueStringLength}")
                 if envValueStringLength >= 200000
-                  lastIndex = envValueString.rindex("\", ")
+                  lastIndex = envValueString.rindex("\",")
                   if !lastIndex.nil?
                     envValueStringTruncated = envValueString.slice(0..lastIndex) + "]"
                     envValueString = envValueStringTruncated
@@ -290,7 +290,7 @@ class KubernetesContainerInventory
             # Restricting the ENV string value to 200kb since the size of this string can go very high
             if envValueString.length > 200000
               envValueStringTruncated = envValueString.slice(0..200000)
-              lastIndex = envValueStringTruncated.rindex("\", ")
+              lastIndex = envValueStringTruncated.rindex("\",")
               if !lastIndex.nil?
                 envValueString = envValueStringTruncated.slice(0..lastIndex) + "]"
               else
