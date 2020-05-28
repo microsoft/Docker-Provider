@@ -13,7 +13,7 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 
 ### 05/26/2020 -
 ##### Version microsoft/oms:ciprod05262020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05262020 (linux)
-##### Version microsoft/oms:win-ciprod05262020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod05262020 (windows)
+##### Version microsoft/oms:win-ciprod05262020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod05262020-2 (windows)
 ##### Code change log
 - Windows Daemonset - Collection of Windows std/stderr logs
 - More Alerable Metrics (going to Metrics Store/custom metrics - see Customer Impact section below for metrics list)
