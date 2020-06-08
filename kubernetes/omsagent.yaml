@@ -385,14 +385,16 @@ spec:
                 - /opt/livenessprobe.sh
             initialDelaySeconds: 60
             periodSeconds: 60
-      nodeSelector:
-        beta.kubernetes.io/os: linux
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - labelSelector:
                 matchExpressions:
+                  - key: beta.kubernetes.io/os
+                    operator: In
+                    values:
+                    - linux
                   - key: type
                     operator: NotIn
                     values:
@@ -520,14 +522,16 @@ spec:
                 - /opt/livenessprobe.sh
             initialDelaySeconds: 60
             periodSeconds: 60
-      nodeSelector:
-        beta.kubernetes.io/os: linux
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - labelSelector:
                 matchExpressions:
+                  - key: beta.kubernetes.io/os
+                    operator: In
+                    values:
+                    - linux
                   - key: type
                     operator: NotIn
                     values:
@@ -642,8 +646,15 @@ spec:
               - C:\opt\omsagentwindows\scripts\cmd\livenessProbe.cmd
           periodSeconds: 60
           initialDelaySeconds: 180
-     nodeSelector:
-      beta.kubernetes.io/os: windows
+     affinity:
+       nodeAffinity:
+         requiredDuringSchedulingIgnoredDuringExecution:
+           nodeSelectorTerms:
+           - matchExpressions:
+             - key: beta.kubernetes.io/os
+               operator: In
+               values:
+               - windows
      volumes:
       - name: docker-windows-kuberenetes-container-logs
         hostPath:
