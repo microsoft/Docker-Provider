@@ -101,7 +101,7 @@ class ApplicationInsightsUtility
             end
             queue = ApplicationInsights::Channel::AsynchronousQueue.new sender
             channel = ApplicationInsights::Channel::TelemetryChannel.new nil, queue
-            @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey, telemetryChannel
+            @@Tc = ApplicationInsights::TelemetryClient.new decodedAppInsightsKey, channel
           else
             if !isProxyConfigured
               sender = ApplicationInsights::Channel::AsynchronousSender.new

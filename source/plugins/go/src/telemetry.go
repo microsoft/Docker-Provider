@@ -192,7 +192,7 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 	// endpoint override required only for sovereign clouds
 	if appInsightsEndpoint != "" {
 		Log("Overriding the default AppInsights EndpointUrl with %s", appInsightsEndpoint)
-		telemetryClientConfig.EndpointUrl = envAppInsightsEndpoint
+		telemetryClientConfig.EndpointUrl = appInsightsEndpoint
 	}
 	// if the proxy configured set the customized httpclient with proxy
 	isProxyConfigured := false
