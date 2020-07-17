@@ -30,7 +30,7 @@ module Fluent
       @@plugin_name = "AKSCustomMetricsMDM"
       @@record_batch_size = 2000 #2600 at times exceeds 1MB, not safe
 
-      @@token_refresh_back_off_interval = 30
+      @@token_refresh_back_off_interval = 5
 
       @data_hash = {}
       @parsed_token_uri = nil
@@ -113,7 +113,7 @@ module Fluent
         http_access_token = nil
         retries = 0
         begin
-          if @cached_access_token.to_s.empty? || (Time.now + 5 * 60 > @token_expiry_time) # Refresh token 5 minutes from expiration
+          if @cached_access_token.to_s.empty? || (Time.now + 1 * 60 > @token_expiry_time) # Refresh token 1 minute from expiration
             @log.info "Refreshing access token for out_mdm plugin.."
 
             if (!!@useMsi)
@@ -145,7 +145,7 @@ module Fluent
             token_response = http_access_token.request(token_request)
             # Handle the case where the response is not 200
             parsed_json = JSON.parse(token_response.body)
-            @token_expiry_time = Time.now + @@token_refresh_back_off_interval * 60 # set the expiry time to be ~thirty minutes from current time
+            @token_expiry_time = Time.now + @@token_refresh_back_off_interval * 60 # set the expiry time to be ~ five minutes from current time
             @cached_access_token = parsed_json["access_token"]
             @log.info "Successfully got access token"
           end
