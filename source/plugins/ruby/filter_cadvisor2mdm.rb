@@ -249,7 +249,9 @@ module Fluent
       begin
         ensure_cpu_memory_capacity_set
         # Getting container limits hash
-        @containerCpuLimitHash, @containerMemoryLimitHash, @containerResourceDimensionHash = KubeletUtils.get_all_container_limits
+        if @process_incoming_stream
+          @containerCpuLimitHash, @containerMemoryLimitHash, @containerResourceDimensionHash = KubeletUtils.get_all_container_limits
+        end
 
         es.each { |time, record|
           filtered_records = filter(tag, time, record)

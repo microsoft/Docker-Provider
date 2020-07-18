@@ -48,17 +48,19 @@ module Fluent
     end
 
     def filter(tag, time, record)
-      begin
-        if !record.nil? && !record["name"].nil? && record["name"].downcase == Constants::TELEGRAF_DISK_METRICS
-          return MdmMetricsGenerator.getDiskUsageMetricRecords(record)
-        else 
-          return MdmMetricsGenerator.getMetricRecords(record)
+      if @process_incoming_stream
+        begin
+          if !record.nil? && !record["name"].nil? && record["name"].downcase == Constants::TELEGRAF_DISK_METRICS
+            return MdmMetricsGenerator.getDiskUsageMetricRecords(record)
+          else
+            return MdmMetricsGenerator.getMetricRecords(record)
+          end
+          return []
+        rescue Exception => errorStr
+          @log.info "Error processing telegraf record Exception: #{errorStr}"
+          ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+          return [] #return empty array if we ran into any errors
         end
-        return []
-      rescue Exception => errorStr
-        @log.info "Error processing telegraf record Exception: #{errorStr}"
-        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
-        return [] #return empty array if we ran into any errors
       end
     end
 
