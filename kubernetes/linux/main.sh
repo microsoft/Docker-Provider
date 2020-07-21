@@ -81,13 +81,13 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
 
       if [ -e "/etc/omsagent-secret/PROXY" ]; then
             export PROXY_ENDPOINT=$(cat /etc/omsagent-secret/PROXY)
-            # Validate Proxy Endpoint URL 
+            # Validate Proxy Endpoint URL
             # extract the protocol://
             proto="$(echo $PROXY_ENDPOINT | grep :// | sed -e's,^\(.*://\).*,\1,g')"
             # convert the protocol prefix in lowercase for validation
             proxyprotocol=$(echo $proto | tr "[:upper:]" "[:lower:]")
             if [ "$proxyprotocol" != "http://" -a "$proxyprotocol" != "https://" ]; then
-               echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"           
+               echo "-e error proxy endpoint should be in this format http(s)://<user>:<pwd>@<hostOrIP>:<port>"
             fi
             # remove the protocol
             url="$(echo ${PROXY_ENDPOINT/$proto/})"
@@ -97,7 +97,7 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             pwd="$(echo $creds | cut -d':' -f2)"
             # extract the host and port
             hostport="$(echo ${url/$creds@/} | cut -d/ -f1)"
-            # extract host without port    
+            # extract host without port
             host="$(echo $hostport | sed -e 's,:.*,,g')"
             # extract the port
             port="$(echo $hostport | sed -e 's,^.*:,:,g' -e 's,.*:\([0-9]*\).*,\1,g' -e 's,[^0-9],,g')"
@@ -283,12 +283,11 @@ fi
 echo "configured container runtime on kubelet is : "$CONTAINER_RUNTIME
 echo "export CONTAINER_RUNTIME="$CONTAINER_RUNTIME >> ~/.bashrc
 
-# _total metrics will be available starting from k8s version 1.18 and current _docker_* and _runtime metrics will be deprecated
-# enable these when we add support for 1.18
-# export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="kubelet_runtime_operations_total"
-# echo "export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC >> ~/.bashrc
-# export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="kubelet_runtime_operations_errors_total"
-# echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC >> ~/.bashrc
+# these metrics available from k8s 1.18 or up
+export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="kubelet_runtime_operations_total"
+echo "export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC >> ~/.bashrc
+export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="kubelet_runtime_operations_errors_total"
+echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_TOTAL_METRIC >> ~/.bashrc
 
 # default to docker metrics
 export KUBELET_RUNTIME_OPERATIONS_METRIC="kubelet_docker_operations"
@@ -497,9 +496,9 @@ if [ ! -e "/etc/config/kube.conf" ]; then
             echo "export CIWORKSPACE_id=$CIWORKSPACE_id" >> ~/.bashrc
             export CIWORKSPACE_key=$CIWORKSPACE_key
             echo "export CIWORKSPACE_key=$CIWORKSPACE_key" >> ~/.bashrc
-            
+
             source ~/.bashrc
-            
+
             dpkg -l | grep mdsd | awk '{print $2 " " $3}'
 
             echo "starting mdsd ..."
