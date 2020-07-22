@@ -138,7 +138,10 @@ Write-Host("cleanup existing .so and .h file")
 if ($isCDPxEnvironment) {
      go build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -buildmode=c-shared -o out_oms.so .
 }  else {
-   $platform = $PSVersionTable.Platform.ToLower()
+   $platform = "windows"
+   if (![string]::IsNullOrEmpty($PSVersionTable) -and ![string]::IsNullOrEmpty($PSVersionTable.Platform)) {
+      $platform = $PSVersionTable.Platform.ToLower()
+   }
    Write-Host("Running non CDPX environment, Platform:$platform")
    if ($platform -eq "unix") {
     Write-Host("Using cross-platform compiler since detected running on UNIX style platform")
