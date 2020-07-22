@@ -79,10 +79,14 @@ module OMS
 
     # create an HTTP object which uses HTTPS
     def create_secure_http(uri)
-      if @proxy_endpoint.empty?
+      proxy = {}
+      if !@proxy_endpoint.nil? && !@proxy_endpoint.empty?
+        proxy = parseProxyConfiguration(@proxy_endpoint)
+      end
+
+      if proxy.nil? || proxy.empty?
         http = Net::HTTP.new(uri.host, uri.port)
       else
-        proxy = parseProxyConfiguration(@proxy_endpoint)
         http = Net::HTTP.new(uri.host, uri.port,
                              proxy[:addr], proxy[:port], proxy[:user], proxy[:pass])
       end

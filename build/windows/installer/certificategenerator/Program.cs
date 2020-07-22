@@ -169,11 +169,11 @@ namespace certificategenerator
         }
 
         public static void RegisterWithOms(X509Certificate2 cert,
-         string AgentGuid,
-         string logAnalyticsWorkspaceId,
-         string logAnalyticsWorkspaceKey,
-         string logAnalyticsWorkspaceDomain,
-         string proxyEndpoint)
+        string AgentGuid,
+        string logAnalyticsWorkspaceId,
+        string logAnalyticsWorkspaceKey,
+        string logAnalyticsWorkspaceDomain,
+        string proxyEndpoint)
         {
 
             string rawCert = Convert.ToBase64String(cert.GetRawCertData()); //base64 binary
