@@ -18,6 +18,7 @@ module OMS
     @@cert_path = ""
     @@key_path = ""
     @@agent_guid = ""
+    @@proxy_endpoint = {}
 
     # Initialize onboarding helper, If these values do not exist fail horribly
     def initialize(workspace_id, domain, agent_guid)
@@ -27,6 +28,12 @@ module OMS
       @certificate_update_endpoint = "https://" + workspace_id + "." + domain + "/ConfigurationService.Svc/RenewCertificate"
       @cert_path = ENV["CI_CERT_LOCATION"]
       @key_path = ENV["CI_KEY_LOCATION"]
+      proxy_conf = ENV["PROXY"]
+      if !proxy_conf.nil? && !proxy_conf.empty?
+        @proxy_endpoint = proxy_conf
+      else
+        @proxy_endpoint = {}
+      end
       @agent_guid = agent_guid #let's get this from certificate : more reliable?
     end
 
@@ -71,10 +78,11 @@ module OMS
     end
 
     # create an HTTP object which uses HTTPS
-    def create_secure_http(uri, proxy = {})
-      if proxy.empty?
+    def create_secure_http(uri)
+      if @proxy_endpoint.empty?
         http = Net::HTTP.new(uri.host, uri.port)
       else
+        proxy = parseProxyConfiguration(@proxy_endpoint)
         http = Net::HTTP.new(uri.host, uri.port,
                              proxy[:addr], proxy[:port], proxy[:user], proxy[:pass])
       end
@@ -180,6 +188,26 @@ module OMS
         return OMS::ERROR_SENDING_HTTP
       end
     end
+
+    # parse proxy configuration
+    def parseProxyConfiguration(proxy_conf_str)
+      # Remove the http(s) protocol
+      proxy_conf_str = proxy_conf_str.gsub(/^(https?:\/\/)?/, "")
+
+      # Check for unsupported protocol
+      if proxy_conf_str[/^[a-z]+:\/\//]
+        return nil
+      end
+
+      re = /^(?:(?<user>[^:]+):(?<pass>[^@]+)@)?(?<addr>[^:@]+)(?::(?<port>\d+))?$/
+      matches = re.match(proxy_conf_str)
+      if matches.nil? or matches[:addr].nil?
+        return nil
+      end
+      # Convert nammed matches to a hash
+      Hash[ matches.names.map{ |name| name.to_sym}.zip( matches.captures ) ]
+    end
+
   end
 end
 

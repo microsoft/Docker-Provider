@@ -22,7 +22,7 @@ class ApplicationInsightsUtility
   @@EnvApplicationInsightsEndpoint = "APPLICATIONINSIGHTS_ENDPOINT"
   @@EnvControllerType = "CONTROLLER_TYPE"
   @@EnvContainerRuntime = "CONTAINER_RUNTIME"
-  
+
   @@CustomProperties = {}
   @@Tc = nil
   @@hostName = (OMS::Common.get_hostname)
