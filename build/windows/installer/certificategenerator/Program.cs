@@ -200,41 +200,53 @@ namespace certificategenerator
 
             string authKey = string.Format("{0}; {1}", logAnalyticsWorkspaceId, Sign(date, contentHash, logAnalyticsWorkspaceKey));
 
-
             HttpClientHandler clientHandler = new HttpClientHandler();
 
             clientHandler.ClientCertificates.Add(cert);
 
             if (!string.IsNullOrEmpty(proxyEndpoint))
             {
-                string protocol = "http";
-                if (proxyEndpoint.StartsWith("https://"))
-                {
-                    protocol = "https";
-                }
-
-                string[] parts = proxyEndpoint.Split("@");
+                var parts = proxyEndpoint.Split("@");
                 if (parts.Length != 2)
                 {
-                    Console.WriteLine("Invalid proxy endpoint. Supported format should be http(s)://<user>:<pwd>@<proxyhost>:<proxyport>");
+                    Console.WriteLine("Invalid proxy endpoint configured hence ignoring the proxy configuration. Supported format should be http(s)://<user>:<pwd>@<hostOrIP>:<port>");
                 }
                 else
                 {
-                    string proxyhostAndPort = parts[1];
-                    var proxyURI = new Uri(string.Format("{0}://{1}", protocol, proxyhostAndPort));
-                    var tempParts = parts[0].Split("//");
-                    var userNameAndPassword = tempParts[1].Split(":");
-                    if (parts.Length != 2)
+                    var protocol = "";
+                    if (!string.IsNullOrWhiteSpace(parts[0]))
                     {
-                        Console.WriteLine("Invalid proxy endpoint. Supported format should be http(s)://<user>:<pwd>@<proxyhost>:<proxyport>");
+                        var tempProtocolPrefix = parts[0].Split("//");
+                        if (tempProtocolPrefix.Length == 2)
+                        {
+                            protocol = tempProtocolPrefix[0].Split(":")[0];
+                            protocol = protocol.ToLower();
+                        }
+                    }
+
+                    if (protocol != "http" && protocol != "https")
+                    {
+                        Console.WriteLine("Unsupported protocol in the proxy endpoint hence ignoring the proxy configuration. Supported protocol for the Proxy endpoint is http or https");
                     }
                     else
                     {
-                        var username = userNameAndPassword[0];
-                        var password = userNameAndPassword[1];
-                        var credentials = new NetworkCredential(username, password);
-                        //set proxy
-                        clientHandler.Proxy = new WebProxy(proxyURI, true, null, credentials);
+
+                        string proxyhostAndPort = parts[1];
+                        var proxyURI = new Uri(string.Format("{0}://{1}", protocol, proxyhostAndPort));
+                        var tempParts = parts[0].Split("//");
+                        if (tempParts.Length != 2)
+                        {
+                            Console.WriteLine("Invalid proxy endpoint hence ignoring the proxy configuration. Supported format should be http(s)://<user>:<pwd>@<hostOrIP>:<port>");
+                        }
+                        else
+                        {
+                            var userNameAndPassword = tempParts[1].Split(":");
+                            var username = userNameAndPassword[0];
+                            var password = userNameAndPassword[1];
+                            var credentials = new NetworkCredential(username, password);
+                            //set proxy
+                            clientHandler.Proxy = new WebProxy(proxyURI, true, null, credentials);
+                        }
                     }
                 }
             }
@@ -442,12 +454,6 @@ namespace certificategenerator
                 {
                     Console.WriteLine("Proxy configured");
                     proxyEndpoint = Environment.GetEnvironmentVariable("PROXY");
-                    proxyEndpoint = proxyEndpoint.Trim().ToLower();
-                    if (!proxyEndpoint.StartsWith("http://") && !proxyEndpoint.StartsWith("https://"))
-                    {
-                        Console.WriteLine("Unsupported protocol in the proxy endpoint. Supported protocol for the Proxy endpoint is http or https");
-                        proxyEndpoint = "";
-                    }
                 }
             }
             catch (Exception ex)
