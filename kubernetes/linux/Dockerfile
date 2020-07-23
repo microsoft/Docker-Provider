@@ -2,7 +2,7 @@ FROM ubuntu:18.04
 MAINTAINER OMSContainers@microsoft.com
 LABEL vendor=Microsoft\ Corp \
     com.microsoft.product="Azure Monitor for containers"
-ARG IMAGE_TAG=ciprod05262020
+ARG IMAGE_TAG=ciprod07152020
 ENV AGENT_VERSION ${IMAGE_TAG}
 ENV tmpdir /opt
 ENV APPLICATIONINSIGHTS_AUTH NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi
