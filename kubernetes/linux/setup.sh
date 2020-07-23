@@ -45,6 +45,7 @@ sudo apt-get update
 sudo apt-get install inotify-tools -y
 
 #used to parse response of kubelet apis
+#ref: https://packages.ubuntu.com/search?keywords=jq
 sudo apt-get install jq=1.5+dfsg-2 -y
 
 #used to setcaps for ruby process to read /proc/env
