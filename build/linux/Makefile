@@ -70,7 +70,8 @@ endif
 
 SOURCE_DIR := $(BASE_DIR)/source
 
-INTERMEDIATE_DIR := $(BASE_DIR)/intermediate/$(BUILD_CONFIGURATION)
+INTERMEDIATE_BASE_DIR := $(BASE_DIR)/intermediate
+INTERMEDIATE_DIR := $(INTERMEDIATE_BASE_DIR)/$(BUILD_CONFIGURATION)
 INTERMEDIATE_TESTFILES := $(INTERMEDIATE_DIR)/testfiles
 TARGET_DIR := $(BASE_DIR)/kubernetes/linux/$(BUILD_CONFIGURATION)
 PROVIDER_LIBRARY := $(INTERMEDIATE_DIR)/libcontainer.so
@@ -100,6 +101,7 @@ else
 	DPKG_LOCATION=
 endif
 
+
 #--------------------------------------------------------------------------------
 # Build targets
 # TODO - fix plugintests and enable it back
@@ -115,6 +117,8 @@ distclean : clean
 
 PROVIDER_STATUS:
 	@echo "========================= Performing Building provider"
+	@echo "clean up everything under: $(INTERMEDIATE_BASE_DIR) to avoid picking up old binaries"
+	$(RMDIR) $(INTERMEDIATE_BASE_DIR)
 
 KIT_STATUS:
 	@echo "========================= Performing Building provider tests"
