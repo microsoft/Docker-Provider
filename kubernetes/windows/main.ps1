@@ -59,7 +59,7 @@ function Set-EnvironmentVariables
     if (Test-Path /etc/omsagent-secret/PROXY) {
         # TODO: Change to omsagent-secret before merging
         $proxy =  Get-Content /etc/omsagent-secret/PROXY
-        Write-Host "Proxy configuration. Validating the proxy configuration"
+        Write-Host "Validating the proxy configuration since proxy configuration provided"
         # valide the proxy endpoint configuration
         if (![string]::IsNullOrEmpty($proxy)) {
             $proxy = [string]$proxy.Trim();
@@ -91,7 +91,7 @@ function Set-EnvironmentVariables
                 }
             }
         }
-        Write-Host "Provided Proxy configuration valid"
+        Write-Host "Provided Proxy configuration is valid"
     }
 
     # Set PROXY
