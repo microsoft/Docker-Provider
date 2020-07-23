@@ -236,7 +236,7 @@ data:
       retry_limit 10
       retry_wait 5s
       max_retry_wait 5m
-      retry_mdm_post_wait_minutes 30
+      retry_mdm_post_wait_minutes 5
      </match>
 
      <match oms.api.wincadvisorperf**>
@@ -267,7 +267,7 @@ data:
       retry_limit 10
       retry_wait 5s
       max_retry_wait 5m
-      retry_mdm_post_wait_minutes 30
+      retry_mdm_post_wait_minutes 5
      </match>
 
     <match kubehealth.Signals**>
