@@ -112,7 +112,7 @@ module Fluent
         http_access_token = nil
         retries = 0
         begin
-          if @cached_access_token.to_s.empty? || (Time.now + 1 * 60 > @token_expiry_time) # Refresh token 1 minute from expiration
+          if @cached_access_token.to_s.empty? || (Time.now > @token_expiry_time) # Refresh token when time is greater than token expiry time
             @log.info "Refreshing access token for out_mdm plugin.."
 
             if (!!@useMsi)
@@ -248,7 +248,7 @@ module Fluent
         end
         #@log.info "MDM request : #{post_body}"
         @log.debug_backtrace(e.backtrace)
-        if !response.code.empty? && response.code.start_with?("4")
+        if !response.code.empty? && response.code == 403.to_s
           @log.info "Response Code #{response.code} Updating @last_post_attempt_time"
           @last_post_attempt_time = Time.now
           @first_post_attempt_made = true
