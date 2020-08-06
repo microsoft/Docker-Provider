@@ -93,67 +93,71 @@ class Inventory2MdmConvertor
   end
 
   def get_pod_inventory_mdm_records(batch_time)
+    records = []
     begin
-      # generate all possible values of non_phase_dim_values X pod Phases and zero-fill the ones that are not already present
-      @no_phase_dim_values_hash.each { |key, value|
-        @@pod_phase_values.each { |phase|
-          pod_key = [key, phase].join("~~")
-          if !@pod_count_hash.key?(pod_key)
-            @pod_count_hash[pod_key] = 0
-          else
+      if @process_incoming_stream
+        # generate all possible values of non_phase_dim_values X pod Phases and zero-fill the ones that are not already present
+        @no_phase_dim_values_hash.each { |key, value|
+          @@pod_phase_values.each { |phase|
+            pod_key = [key, phase].join("~~")
+            if !@pod_count_hash.key?(pod_key)
+              @pod_count_hash[pod_key] = 0
+            else
+              next
+            end
+          }
+        }
+        @pod_count_hash.each { |key, value|
+          key_elements = key.split("~~")
+          if key_elements.length != 4
             next
           end
+
+          # get dimension values by key
+          podNodeDimValue = key_elements[0]
+          podNamespaceDimValue = key_elements[1]
+          podControllerNameDimValue = key_elements[2]
+          podPhaseDimValue = key_elements[3]
+
+          record = @@pod_inventory_custom_metrics_template % {
+            timestamp: batch_time,
+            metricName: @@pod_count_metric_name,
+            phaseDimValue: podPhaseDimValue,
+            namespaceDimValue: podNamespaceDimValue,
+            nodeDimValue: podNodeDimValue,
+            controllerNameDimValue: podControllerNameDimValue,
+            podCountMetricValue: value,
+          }
+          records.push(JSON.parse(record))
         }
-      }
-      records = []
-      @pod_count_hash.each { |key, value|
-        key_elements = key.split("~~")
-        if key_elements.length != 4
-          next
+
+        #Add pod metric records
+        records = MdmMetricsGenerator.appendAllPodMetrics(records, batch_time)
+
+        #Send telemetry for pod metrics
+        timeDifference = (DateTime.now.to_time.to_i - @@metricTelemetryTimeTracker).abs
+        timeDifferenceInMinutes = timeDifference / 60
+        if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
+          MdmMetricsGenerator.flushPodMdmMetricTelemetry
+          @@metricTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
 
-        # get dimension values by key
-        podNodeDimValue = key_elements[0]
-        podNamespaceDimValue = key_elements[1]
-        podControllerNameDimValue = key_elements[2]
-        podPhaseDimValue = key_elements[3]
-
-        record = @@pod_inventory_custom_metrics_template % {
-          timestamp: batch_time,
-          metricName: @@pod_count_metric_name,
-          phaseDimValue: podPhaseDimValue,
-          namespaceDimValue: podNamespaceDimValue,
-          nodeDimValue: podNodeDimValue,
-          controllerNameDimValue: podControllerNameDimValue,
-          podCountMetricValue: value,
-        }
-        records.push(JSON.parse(record))
-      }
-
-      #Add pod metric records
-      records = MdmMetricsGenerator.appendAllPodMetrics(records, batch_time)
-
-      #Send telemetry for pod metrics
-      timeDifference = (DateTime.now.to_time.to_i - @@metricTelemetryTimeTracker).abs
-      timeDifferenceInMinutes = timeDifference / 60
-      if (timeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
-        MdmMetricsGenerator.flushPodMdmMetricTelemetry
-        @@metricTelemetryTimeTracker = DateTime.now.to_time.to_i
+        # Clearing out all hashes after telemetry is flushed
+        MdmMetricsGenerator.clearPodHashes
       end
-
-      # Clearing out all hashes after telemetry is flushed
-      MdmMetricsGenerator.clearPodHashes
     rescue Exception => e
       @log.info "Error processing pod inventory record Exception: #{e.class} Message: #{e.message}"
       ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
       return []
     end
-    @log.info "Pod Count To Phase #{@pod_count_by_phase} "
-    @log.info "resetting convertor state "
-    @pod_count_hash = {}
-    @no_phase_dim_values_hash = {}
-    @pod_count_by_phase = {}
-    @pod_uids = {}
+    if @process_incoming_stream
+      @log.info "Pod Count To Phase #{@pod_count_by_phase} "
+      @log.info "resetting convertor state "
+      @pod_count_hash = {}
+      @no_phase_dim_values_hash = {}
+      @pod_count_by_phase = {}
+      @pod_uids = {}
+    end
     return records
   end
 
