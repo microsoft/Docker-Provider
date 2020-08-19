@@ -263,6 +263,27 @@ function Generate-Certificates {
     C:\\opt\\omsagentwindows\\certgenerator\\certificategenerator.exe
 }
 
+function Bootstrap-CACertificates {
+    try {
+        $caCerts=Invoke-WebRequest 'http://168.63.129.16/machine?comp=acmspackage&type=cacertificates&ext=json' -UseBasicParsing | ConvertFrom-Json
+        if (![string]::IsNullOrEmpty($caCerts)) {
+            $certificates = $caCerts.Certificates
+            for ($index = 0; $index -lt $certificates.Length ; $index++) {
+                $name=$certificates[$index].Name
+                # Write-Host "certificate-object: $($certificates[$index])"
+                $certificates[$index].CertBody > $name
+                Write-Host "name: $($name)"
+                Import-Certificate -FilePath .\$name  -CertStoreLocation 'Cert:\LocalMachine\Root' -Verbose
+            }
+        }
+    }
+    catch {
+        $e = $_.Exception
+        Write-Host $e
+        Write-Host "exception occured in Bootstrap-CACertificates..."
+    }
+}
+
 function Test-CertificatePath {
     $certLocation = $env:CI_CERT_LOCATION
     $keyLocation = $env:CI_KEY_LOCATION
@@ -288,6 +309,10 @@ Start-Transcript -Path main.txt
 Remove-WindowsServiceIfItExists "fluentdwinaks"
 Set-EnvironmentVariables
 Start-FileSystemWatcher
+
+#Bootstrapping CA certs for non public clouds
+Bootstrap-CACertificates
+
 Generate-Certificates
 Test-CertificatePath
 Start-Fluent
