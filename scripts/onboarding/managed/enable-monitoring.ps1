@@ -254,7 +254,7 @@ Write-Host("Cluster SubscriptionId : '" + $clusterSubscriptionId + "' ") -Foregr
 if ($isUsingServicePrincipal) {
     $spSecret = ConvertTo-SecureString -String $servicePrincipalClientSecret -AsPlainText -Force
     $spCreds = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $servicePrincipalClientId,$spSecret
-    Connect-AzAccount -Credential $spCreds -Tenant $tenantId -Subscription $clusterSubscriptionId
+    Connect-AzAccount -ServicePrincipal -Credential $spCreds -Tenant $tenantId -Subscription $clusterSubscriptionId
 }
 
 try {
@@ -276,7 +276,7 @@ if ($null -eq $account.Account) {
         if ($isUsingServicePrincipal) {
             $spSecret = ConvertTo-SecureString -String $servicePrincipalClientSecret -AsPlainText -Force
             $spCreds = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $servicePrincipalClientId,$spSecret
-            Connect-AzAccount -Credential $spCreds -Tenant $tenantId -Subscription $clusterSubscriptionId
+            Connect-AzAccount -ServicePrincipal -Credential $spCreds -Tenant $tenantId -Subscription $clusterSubscriptionId
         } else {
          Write-Host("Please login...")
          Connect-AzAccount -subscriptionid $clusterSubscriptionId
