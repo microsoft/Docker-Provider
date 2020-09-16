@@ -37,6 +37,7 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 - Add region check before sending alertable metrics to MDM
 - Telemetry fix for agent telemetry for sov. clouds
 
+
 ### 07/15/2020 -
 ##### Version microsoft/oms:ciprod07152020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod07152020 (linux)
 ##### Version microsoft/oms:win-ciprod05262020-2 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod05262020-2 (windows)
