@@ -23,7 +23,6 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 - Support for multiple container log mount paths when docker is updated through knode
 - Bug fix related to MDM telemetry
 
-
 ### 08/07/2020 -
 ##### Version microsoft/oms:ciprod08072020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08072020 (linux)
 ##### Version microsoft/oms:win-ciprod08072020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod08072020 (windows)
@@ -38,7 +37,6 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 - oneagent integration (disabled by default)
 - Add region check before sending alertable metrics to MDM
 - Telemetry fix for agent telemetry for sov. clouds
-
 
 ### 07/15/2020 -
 ##### Version microsoft/oms:ciprod07152020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod07152020 (linux)
