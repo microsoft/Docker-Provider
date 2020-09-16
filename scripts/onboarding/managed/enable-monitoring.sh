@@ -620,7 +620,7 @@ add_container_insights_solution $workspaceResourceId
 # get workspace guid and key
 get_workspace_guid_and_key $workspaceResourceId
 
-if [ "$isClusterAndWorkspaceInSameSubscription" = true ] ; then
+if [ "$isClusterAndWorkspaceInSameSubscription" = false ] ; then
   echo "switch to cluster subscription id as active subscription for cli: ${clusterSubscriptionId}"
   set_azure_subscription $clusterSubscriptionId
 fi
