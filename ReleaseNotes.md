@@ -19,7 +19,6 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 - Collection of Azure Network Policy Manager Basic and Advanced metrics
 - Add support in Windows Agent for Container log collection of CRI runtimes such as ContainerD
 - Alertable metrics support Arc K8s cluster to parity with AKS
-- Bug fixes related to zero filled metrics
 - Support for multiple container log mount paths when docker is updated through knode
 - Bug fix related to MDM telemetry
 
