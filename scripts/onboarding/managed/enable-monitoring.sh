@@ -499,7 +499,7 @@ install_helm_chart()
  fi
 
  echo "getting the region of the cluster"
- clusterRegion=$(az resource show --ids ${clusterResourceId} --query location)
+ clusterRegion=$(az resource show --ids ${clusterResourceId} --query location -o tsv)
  echo "cluster region is : ${clusterRegion}"
 
  echo "adding helm repo:" $helmRepoName
