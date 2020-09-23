@@ -39,6 +39,7 @@ class MdmMetricsGenerator
 
   # Setting this to true since we need to send zero filled metrics at startup. If metrics are absent alert creation fails
   @sendZeroFilledMetrics = true
+  @zeroFilledMetricsTimeTracker = DateTime.now.to_time.to_i
 
   def initialize
   end
@@ -185,10 +186,13 @@ class MdmMetricsGenerator
     def appendAllPodMetrics(records, batch_time)
       begin
         @log.info "in appendAllPodMetrics..."
-        if @sendZeroFilledMetrics == true
+        timeDifference = (DateTime.now.to_time.to_i - @zeroFilledMetricsTimeTracker).abs
+        timeDifferenceInMinutes = timeDifference / 60
+        if @sendZeroFilledMetrics == true || (timeDifferenceInMinutes >= Constants::ZERO_FILL_METRICS_INTERVAL_IN_MINUTES)
           records = zeroFillMetricRecords(records, batch_time)
           # Setting it to false after startup
           @sendZeroFilledMetrics = false
+          @zeroFilledMetricsTimeTracker = DateTime.now.to_time.to_i
         end
         records = appendPodMetrics(records,
                                    Constants::MDM_OOM_KILLED_CONTAINER_COUNT,
@@ -296,22 +300,22 @@ class MdmMetricsGenerator
       begin
         dimNames = String.new "" #mutable string
         dimValues = String.new ""
-        noDimVal ="-"
+        noDimVal = "-"
         metricValue = 0
         if !record["tags"].nil?
-            dimCount = 0
-            record["tags"].each { |k, v| 
-            dimCount = dimCount+1
-              if (dimCount <= 10) #MDM = 10 dims
-                dimNames.concat("\"#{k}\"")
-                dimNames.concat(",")
-                if !v.nil? && v.length >0
-                  dimValues.concat("\"#{v}\"")
-                else
-                  dimValues.concat("\"#{noDimVal}\"")
-                end
-                dimValues.concat(",")
+          dimCount = 0
+          record["tags"].each { |k, v|
+            dimCount = dimCount + 1
+            if (dimCount <= 10) #MDM = 10 dims
+              dimNames.concat("\"#{k}\"")
+              dimNames.concat(",")
+              if !v.nil? && v.length > 0
+                dimValues.concat("\"#{v}\"")
+              else
+                dimValues.concat("\"#{noDimVal}\"")
               end
+              dimValues.concat(",")
+            end
           }
           if (dimNames.end_with?(","))
             dimNames.chomp!(",")
@@ -324,19 +328,19 @@ class MdmMetricsGenerator
         convertedTimestamp = Time.at(timestamp.to_i).utc.iso8601
         if !record["fields"].nil?
           record["fields"].each { |k, v|
-          if is_numeric(v)
-            metricRecord = MdmAlertTemplates::Generic_metric_template % {
-              timestamp: convertedTimestamp,
-              metricName: k,
-              namespaceSuffix: record["name"],
-              dimNames: dimNames,
-              dimValues: dimValues,
-              metricValue: v,
-            }
-            records.push(Yajl::Parser.parse(StringIO.new(metricRecord)))
-            #@log.info "pushed mdmgenericmetric: #{k},#{v}"
-          end
-            }
+            if is_numeric(v)
+              metricRecord = MdmAlertTemplates::Generic_metric_template % {
+                timestamp: convertedTimestamp,
+                metricName: k,
+                namespaceSuffix: record["name"],
+                dimNames: dimNames,
+                dimValues: dimValues,
+                metricValue: v,
+              }
+              records.push(Yajl::Parser.parse(StringIO.new(metricRecord)))
+              #@log.info "pushed mdmgenericmetric: #{k},#{v}"
+            end
+          }
         end
       rescue => errorStr
         @log.info "getMetricRecords:Error: #{errorStr} for record #{record}"
@@ -346,7 +350,7 @@ class MdmMetricsGenerator
     end
 
     def is_numeric(o)
-        true if Float(o) rescue false
+      true if Float(o) rescue false
     end
 
     def getContainerResourceUtilizationThresholds
