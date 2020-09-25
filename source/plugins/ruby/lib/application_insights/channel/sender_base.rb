@@ -66,12 +66,12 @@ module ApplicationInsights
         request.body = compressed_data
         if @proxy.nil? || @proxy.empty?
           http = Net::HTTP.new uri.hostname, uri.port
-        else 
+        else
           http = Net::HTTP.new(uri.hostname, uri.port, @proxy[:addr], @proxy[:port], @proxy[:user], @proxy[:pass])
         end
         if uri.scheme.downcase == 'https'
           http.use_ssl = true
-          http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+          http.verify_mode = OpenSSL::SSL::VERIFY_PEER
         end
 
         response = http.request(request)

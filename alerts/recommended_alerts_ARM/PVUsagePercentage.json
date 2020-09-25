@@ -1,0 +1,174 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+      "alertName": {
+          "type": "string",
+          "minLength": 1,
+          "metadata": {
+              "description": "Name of the alert"
+          }
+      },
+      "alertDescription": {
+          "type": "string",
+          "defaultValue": "This is a metric alert",
+          "metadata": {
+              "description": "Description of alert"
+          }
+      },
+      "alertSeverity": {
+          "type": "int",
+          "defaultValue": 3,
+          "allowedValues": [
+              0,
+              1,
+              2,
+              3,
+              4
+          ],
+          "metadata": {
+              "description": "Severity of alert {0,1,2,3,4}"
+          }
+      },
+      "isEnabled": {
+          "type": "bool",
+          "defaultValue": true,
+          "metadata": {
+              "description": "Specifies whether the alert is enabled"
+          }
+      },
+      "clusterResourceId": {
+          "type": "string",
+          "minLength": 1,
+          "metadata": {
+              "description": "Full Resource ID of the kubernetes cluster emitting the metric that will be used for the comparison. For example /subscriptions/00000000-0000-0000-0000-0000-00000000/resourceGroups/ResourceGroupName/providers/Microsoft.ContainerService/managedClusters/cluster-xyz"
+          }
+      },
+      "operator": {
+          "type": "string",
+          "defaultValue": "GreaterThan",
+          "allowedValues": [
+              "Equals",
+              "NotEquals",
+              "GreaterThan",
+              "GreaterThanOrEqual",
+              "LessThan",
+              "LessThanOrEqual"
+          ],
+          "metadata": {
+              "description": "Operator comparing the current value with the threshold value."
+          }
+      },
+      "threshold": {
+          "type": "int",
+          "defaultValue": 80,
+          "metadata": {
+              "description": "The threshold value at which the alert is activated."
+          },
+          "minValue": 1,
+          "maxValue": 100
+      },
+      "timeAggregation": {
+          "type": "string",
+          "defaultValue": "Average",
+          "allowedValues": [
+              "Average",
+              "Minimum",
+              "Maximum",
+              "Count"
+          ],
+          "metadata": {
+              "description": "How the data that is collected should be combined over time."
+          }
+      },
+      "windowSize": {
+          "type": "string",
+          "defaultValue": "PT5M",
+          "allowedValues": [
+              "PT1M",
+              "PT5M",
+              "PT15M",
+              "PT30M",
+              "PT1H",
+              "PT6H",
+              "PT12H",
+              "PT24H"
+          ],
+          "metadata": {
+              "description": "Period of time used to monitor alert activity based on the threshold. Must be between one minute and one day. ISO 8601 duration format."
+          }
+      },
+      "evaluationFrequency": {
+          "type": "string",
+          "defaultValue": "PT1M",
+          "allowedValues": [
+              "PT1M",
+              "PT5M",
+              "PT15M",
+              "PT30M",
+              "PT1H"
+          ],
+          "metadata": {
+              "description": "how often the metric alert is evaluated represented in ISO 8601 duration format"
+          }
+      },
+      "actionGroupId": {
+          "type": "string",
+          "defaultValue": "",
+          "metadata": {
+              "description": "The ID of the action group that is triggered when the alert is activated or deactivated"
+          }
+      }
+  },
+  "variables": {},
+  "resources": [
+      {
+          "name": "[parameters('alertName')]",
+          "type": "Microsoft.Insights/metricAlerts",
+          "location": "global",
+          "apiVersion": "2018-03-01",
+          "tags": {},
+          "properties": {
+              "description": "[parameters('alertDescription')]",
+              "severity": "[parameters('alertSeverity')]",
+              "enabled": "[parameters('isEnabled')]",
+              "scopes": [
+                  "[parameters('clusterResourceId')]"
+              ],
+              "evaluationFrequency": "[parameters('evaluationFrequency')]",
+              "windowSize": "[parameters('windowSize')]",
+              "criteria": {
+                  "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+                  "allOf": [
+                      {
+                          "name": "1st criterion",
+                          "metricName": "pvUsageExceededPercentage",
+                          "metricNamespace": "Insights.Container/persistentvolumes",
+                          "dimensions": [
+                              {
+                                  "name": "kubernetesNamespace",
+                                  "operator": "Include",
+                                  "values": [
+                                      "*"
+                                  ]
+                              },
+                              {
+                                  "name": "podName",
+                                  "operator": "Include",
+                                  "values": [
+                                      "*"
+                                  ]
+                              }
+                          ],
+                          "operator": "[parameters('operator')]",
+                          "threshold": "[parameters('threshold')]",
+                          "timeAggregation": "[parameters('timeAggregation')]",
+                          "skipMetricValidation": true
+                      }
+                  ]
+              },
+              "actions": "[if(empty(parameters('actionGroupId')), json('null'), json(concat('[{\"actionGroupId\": \"',parameters('actionGroupId'),'\"}]')))]"
+          }
+      }
+  ]
+}

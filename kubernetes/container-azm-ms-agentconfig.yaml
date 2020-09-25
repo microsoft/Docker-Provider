@@ -42,6 +42,7 @@ data:
           # When the setting is set to false, only the kube events with !normal event type will be collected
           enabled = false
           # When this is enabled (enabled = true), all kube events including normal events will be collected
+
   prometheus-data-collection-settings: |-
     # Custom Prometheus metrics data collection settings
     [prometheus_data_collection_settings.cluster]
@@ -90,6 +91,15 @@ data:
         #fieldpass = ["metric_to_pass1", "metric_to_pass12"]
 
         #fielddrop = ["metric_to_drop"]
+
+  metric_collection_settings: |-
+    # Metrics collection settings for metrics sent to Log Analytics and MDM
+    [metric_collection_settings.collect_kube_system_pv_metrics]
+      # In the absense of this configmap, default value for collect_kube_system_pv_metrics is false
+      # When the setting is set to false, only the persistent volume metrics outside the kube-system namespace will be collected
+      enabled = false
+      # When this is enabled (enabled = true), persistent volume metrics including those in the kube-system namespace will be collected
+
   alertable-metrics-configuration-settings: |-
     # Alertable metrics configuration settings for container resource utilization
     [alertable_metrics_configuration_settings.container_resource_utilization_thresholds]
@@ -100,6 +110,11 @@ data:
         container_memory_rss_threshold_percentage = 95.0
         # Threshold for container memoryWorkingSet, metric will be sent only when memory working set exceeds or becomes equal to the following percentage
         container_memory_working_set_threshold_percentage = 95.0
+
+    # Alertable metrics configuration settings for persistent volume utilization
+    [alertable_metrics_configuration_settings.pv_utilization_thresholds]
+        # Threshold for persistent volume usage bytes, metric will be sent only when persistent volume utilization exceeds or becomes equal to the following percentage
+        pv_usage_threshold_percentage = 60.0
   integrations: |-
     [integrations.azure_network_policy_manager]
         collect_basic_metrics = false

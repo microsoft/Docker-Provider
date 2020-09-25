@@ -234,7 +234,17 @@ $MdmCustomMetricAvailabilityLocations = (
     'eastasia',
     'centralindia',
     'uksouth',
-    'canadacentral'
+    'canadacentral',
+    'francecentral',
+    'japaneast',
+    'australiaeast',
+    'eastus2',
+    'westus',
+    'australiasoutheast',
+    'brazilsouth',
+    'germanywestcentral',
+    'northcentralus',
+    'switzerlandnorth'
 );
 
 try {

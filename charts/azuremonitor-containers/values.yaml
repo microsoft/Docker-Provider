@@ -59,6 +59,17 @@ omsagent:
           nodeSelectorTerms:
             - labelSelector:
               matchExpressions:
+                - key: kubernetes.io/os
+                  operator: In
+                  values:
+                    - linux
+                - key: type
+                  operator: NotIn
+                  values:
+                    - virtual-kubelet
+          nodeSelectorTerms:
+            - labelSelector:
+              matchExpressions:
                 - key: beta.kubernetes.io/os
                   operator: In
                   values:
@@ -71,6 +82,21 @@ omsagent:
     affinity:
       nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+            - labelSelector:
+              matchExpressions:
+                - key: kubernetes.io/os
+                  operator: In
+                  values:
+                    - linux
+                - key: type
+                  operator: NotIn
+                  values:
+                    - virtual-kubelet
+                - key: kubernetes.io/role
+                  operator: NotIn
+                  values:
+                    - master
           nodeSelectorTerms:
             - labelSelector:
               matchExpressions:

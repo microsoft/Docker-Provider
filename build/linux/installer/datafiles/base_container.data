@@ -120,6 +120,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/livenessprobe.sh;                                          build/linux/installer/scripts/livenessprobe.sh;      755; root; root
 /opt/tomlparser-prom-customconfig.rb;                           build/linux/installer/scripts/tomlparser-prom-customconfig.rb;     755; root; root
 /opt/tomlparser-mdm-metrics-config.rb;                          build/linux/installer/scripts/tomlparser-mdm-metrics-config.rb;     755; root; root
+/opt/tomlparser-metric-collection-config.rb;                    build/linux/installer/scripts/tomlparser-metric-collection-config.rb;     755; root; root
 
 /opt/tomlparser-health-config.rb;                               build/linux/installer/scripts/tomlparser-health-config.rb;     755; root; root
 /opt/tomlparser.rb;                                             build/common/installer/scripts/tomlparser.rb;     755; root; root
