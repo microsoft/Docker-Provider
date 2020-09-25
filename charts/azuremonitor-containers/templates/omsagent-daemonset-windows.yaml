@@ -25,12 +25,13 @@ spec:
     dockerProviderVersion: {{ .Values.omsagent.image.dockerProviderVersion }}
     schema-versions: "v1"
   spec:
-    nodeSelector:
-    {{- if semverCompare "^1.14-0" .Capabilities.KubeVersion.GitVersion -}}
+{{- if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion }}
+   nodeSelector:
       kubernetes.io/os: windows
-    {{- else -}}
+{{- else }}
+   nodeSelector:
       beta.kubernetes.io/os: windows
-    {{- end }}
+{{- end }}
    {{- if .Values.omsagent.rbac }}
    serviceAccountName: omsagent
    {{- end }}

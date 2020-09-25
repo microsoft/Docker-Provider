@@ -59,11 +59,18 @@ omsagent:
           nodeSelectorTerms:
             - labelSelector:
               matchExpressions:
-              {{- if semverCompare "^1.14-0" .Capabilities.KubeVersion.GitVersion -}}
                 - key: kubernetes.io/os
-              {{- else -}}
+                  operator: In
+                  values:
+                    - linux
+                - key: type
+                  operator: NotIn
+                  values:
+                    - virtual-kubelet
+          nodeSelectorTerms:
+            - labelSelector:
+              matchExpressions:
                 - key: beta.kubernetes.io/os
-              {{- end }}
                   operator: In
                   values:
                     - linux
@@ -78,11 +85,22 @@ omsagent:
           nodeSelectorTerms:
             - labelSelector:
               matchExpressions:
-              {{- if semverCompare "^1.14-0" .Capabilities.KubeVersion.GitVersion -}}
                 - key: kubernetes.io/os
-              {{- else -}}
+                  operator: In
+                  values:
+                    - linux
+                - key: type
+                  operator: NotIn
+                  values:
+                    - virtual-kubelet
+                - key: kubernetes.io/role
+                  operator: NotIn
+                  values:
+                    - master
+          nodeSelectorTerms:
+            - labelSelector:
+              matchExpressions:
                 - key: beta.kubernetes.io/os
-              {{- end }}
                   operator: In
                   values:
                     - linux
