@@ -11,6 +11,13 @@ additional questions or comments.
 
 Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate the agent build dates (not release dates)
 
+### 09/25/2020 -
+> Note: This is hotfix agent release targetted ONLY for non-AKS clusters via Azure Monitor for containers HELM chart update
+##### Version microsoft/oms:ciprod09252020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod09252020 (linux)
+##### Version microsoft/oms:win-ciprod09252020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod09252020 (windows)
+##### Code change log
+- Fix azure json file crash in MDM path for azure arc k8s connected clusters
+
 ### 09/16/2020 -
 > Note: This agent release targetted ONLY for non-AKS clusters via Azure Monitor for containers HELM chart update
 ##### Version microsoft/oms:ciprod09162020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod09162020 (linux)
