@@ -1,9 +1,9 @@
-require "yajl/json_gem"
-require "net/http"
-require "openssl"
-require "stringio"
-require "zlib"
-require "logger"
+require 'yajl/json_gem'
+require 'net/http'
+require 'openssl'
+require 'stringio'
+require 'zlib'
+require 'logger'
 
 module ApplicationInsights
   module Channel
@@ -53,9 +53,9 @@ module ApplicationInsights
       def send(data_to_send)
         uri = URI(@service_endpoint_uri)
         headers = {
-          "Accept" => "application/json",
-          "Content-Type" => "application/json; charset=utf-8",
-          "Content-Encoding" => "gzip",
+          'Accept' => 'application/json',
+          'Content-Type' => 'application/json; charset=utf-8',
+          'Content-Encoding' => 'gzip'
         }
         request = Net::HTTP::Post.new(uri.path, headers)
 
@@ -69,7 +69,7 @@ module ApplicationInsights
         else
           http = Net::HTTP.new(uri.hostname, uri.port, @proxy[:addr], @proxy[:port], @proxy[:user], @proxy[:pass])
         end
-        if uri.scheme.downcase == "https"
+        if uri.scheme.downcase == 'https'
           http.use_ssl = true
           http.verify_mode = OpenSSL::SSL::VERIFY_PEER
         end
@@ -78,7 +78,7 @@ module ApplicationInsights
         http.finish if http.started?
 
         if !response.kind_of? Net::HTTPSuccess
-          @logger.warn("application_insights") { "Failed to send data: #{response.message}" }
+          @logger.warn('application_insights') { "Failed to send data: #{response.message}" }
         end
       end
 
