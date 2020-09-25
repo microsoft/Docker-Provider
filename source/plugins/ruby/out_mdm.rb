@@ -67,18 +67,15 @@ module Fluent
         if aks_resource_id.to_s.empty?
           @log.info "Environment Variable AKS_RESOURCE_ID is not set.. "
           @can_send_data_to_mdm = false
+        elsif !aks_resource_id.downcase.include?("/microsoft.kubernetes/connectedclusters/") && !aks_resource_id.downcase.include?("/microsoft.containerservice/managedclusters/")
+          @log.info "MDM Metris not supported for this cluster type resource: #{aks_resource_id}"
+          @can_send_data_to_mdm = false
         end
         if aks_region.to_s.empty?
           @log.info "Environment Variable AKS_REGION is not set.. "
           @can_send_data_to_mdm = false
         else
           aks_region = aks_region.gsub(" ", "")
-        end
-
-        if !aks_resource_id.to_s.empty? && !aks_resource_id.downcase.include?("microsoft.kubernetes/connectedclusters")
-          && !aks_resource_id.downcase.include?("microsoft.containerservice/managedclusters")
-          @log.info "MDM Metris not supported for this cluster type resource: #{aks_resource_id}"
-          @can_send_data_to_mdm = false
         end
 
         if @can_send_data_to_mdm
