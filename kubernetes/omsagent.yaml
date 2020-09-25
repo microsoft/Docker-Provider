@@ -419,7 +419,8 @@ spec:
             nodeSelectorTerms:
               - labelSelector:
                 matchExpressions:
-                  - key: beta.kubernetes.io/os
+      # kubernetes.io/os label doesnt exist in k8s versions < 1.14  so make sure to choose label based on k8s version in aks yaml
+                  - key: kubernetes.io/os
                     operator: In
                     values:
                     - linux

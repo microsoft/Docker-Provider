@@ -59,7 +59,11 @@ omsagent:
           nodeSelectorTerms:
             - labelSelector:
               matchExpressions:
+              {{- if semverCompare "^1.14-0" .Capabilities.KubeVersion.GitVersion -}}
+                - key: kubernetes.io/os
+              {{- else -}}
                 - key: beta.kubernetes.io/os
+              {{- end }}
                   operator: In
                   values:
                     - linux
@@ -74,7 +78,11 @@ omsagent:
           nodeSelectorTerms:
             - labelSelector:
               matchExpressions:
+              {{- if semverCompare "^1.14-0" .Capabilities.KubeVersion.GitVersion -}}
+                - key: kubernetes.io/os
+              {{- else -}}
                 - key: beta.kubernetes.io/os
+              {{- end }}
                   operator: In
                   values:
                     - linux
