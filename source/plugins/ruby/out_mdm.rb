@@ -61,8 +61,6 @@ module Fluent
     def start
       super
       begin
-        file = File.read(@@azure_json_path)
-        @data_hash = JSON.parse(file)
         aks_resource_id = ENV["AKS_RESOURCE_ID"]
         aks_region = ENV["AKS_REGION"]
 
@@ -75,6 +73,12 @@ module Fluent
           @can_send_data_to_mdm = false
         else
           aks_region = aks_region.gsub(" ", "")
+        end
+
+        if !aks_resource_id.to_s.empty? && !aks_resource_id.downcase.include?("microsoft.kubernetes/connectedclusters")
+          && !aks_resource_id.downcase.include?("microsoft.containerservice/managedclusters")
+          @log.info "MDM Metris not supported for this cluster type resource: #{aks_resource_id}"
+          @can_send_data_to_mdm = false
         end
 
         if @can_send_data_to_mdm
@@ -106,6 +110,9 @@ module Fluent
             @cluster_identity = ArcK8sClusterIdentity.new
             @cached_access_token = @cluster_identity.get_cluster_identity_token
           else
+            # azure json file only used for aks
+            file = File.read(@@azure_json_path)
+            @data_hash = JSON.parse(file)
             # Check to see if SP exists, if it does use SP. Else, use msi
             sp_client_id = @data_hash["aadClientId"]
             sp_client_secret = @data_hash["aadClientSecret"]
