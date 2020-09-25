@@ -104,6 +104,7 @@ module Fluent
             @cluster_identity = ArcK8sClusterIdentity.new
             @cached_access_token = @cluster_identity.get_cluster_identity_token
           else
+            # azure json file only used for aks and doesnt exist in non-azure envs
             file = File.read(@@azure_json_path)
             @data_hash = JSON.parse(file)
             # Check to see if SP exists, if it does use SP. Else, use msi
