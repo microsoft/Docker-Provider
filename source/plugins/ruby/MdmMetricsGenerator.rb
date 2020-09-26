@@ -38,7 +38,7 @@ class MdmMetricsGenerator
   }
 
   @@pod_metric_name_metric_percentage_name_hash = {
-    Constants::PV_USED_BYTES => Constants::MDM_PV_UTILIZATION_METRIC
+    Constants::PV_USED_BYTES => Constants::MDM_PV_UTILIZATION_METRIC,
   }
 
   # Setting this to true since we need to send zero filled metrics at startup. If metrics are absent alert creation fails
@@ -179,6 +179,19 @@ class MdmMetricsGenerator
                                                                                 metric_threshold_hash[Constants::MEMORY_WORKING_SET_BYTES])
         if !containerMemoryWorkingSetRecord.nil? && !containerMemoryWorkingSetRecord.empty? && !containerMemoryWorkingSetRecord[0].nil? && !containerMemoryWorkingSetRecord[0].empty?
           records.push(containerMemoryWorkingSetRecord[0])
+        end
+
+        pvZeroFillDims = {}
+        pvZeroFillDims[Constants::INSIGHTSMETRICS_TAGS_PVC_NAMESPACE] = Constants::KUBESYSTEM_NAMESPACE_ZERO_FILL
+        pvZeroFillDims[Constants::INSIGHTSMETRICS_TAGS_POD_NAME] = Constants::OMSAGENT_ZERO_FILL
+        pvResourceUtilMetricRecord = getPVResourceUtilMetricRecords(batch_time,
+                                                                    Constants::PV_USED_BYTES,
+                                                                    Constants::OMSAGENT_ZERO_FILL,
+                                                                    0,
+                                                                    pvZeroFillDims,
+                                                                    metric_threshold_hash[Constants::PV_USED_BYTES])
+        if !pvResourceUtilMetricRecord.nil? && !pvResourceUtilMetricRecord.empty? && !pvResourceUtilMetricRecord[0].nil? && !pvResourceUtilMetricRecord[0].empty?
+          records.push(pvResourceUtilMetricRecord[0])
         end
       rescue => errorStr
         @log.info "Error in zeroFillMetricRecords: #{errorStr}"
