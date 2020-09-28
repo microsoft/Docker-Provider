@@ -515,7 +515,7 @@ install_helm_chart() {
     helm repo add $helmRepoName $helmRepoUrl
     echo "updating helm repo to get latest charts"
     helm repo update
-    helmChartRepoPath=$helmChartRepoPath
+    helmChartRepoPath=$helmRepoName/$helmChartName
   fi
 
   echo "helm chart repo path: ${helmChartRepoPath}"

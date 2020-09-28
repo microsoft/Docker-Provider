@@ -57,21 +57,29 @@ param(
     [string]$helmRepoUrl
 )
 
-$solutionTemplateUri= "https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_dev/scripts/onboarding/templates/azuremonitor-containerSolution.json"
+$solutionTemplateUri = "https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_dev/scripts/onboarding/templates/azuremonitor-containerSolution.json"
 $helmChartReleaseName = "azmon-containers-release-1"
 $helmChartName = "azuremonitor-containers"
 $helmChartRepoName = "incubator"
 $helmChartRepoUrl = "https://kubernetes-charts-incubator.storage.googleapis.com/"
 # flags to indicate the cluster types
 $isArcK8sCluster = $false
-$isAksCluster =  $false
+$isAksCluster = $false
 $isUsingServicePrincipal = $false
 
-if([string]::IsNullOrEmpty($helmRepoName) -eq $false){
+# released chart version for azure arc k8s public preview
+$mcr = "mcr.microsoft.com"
+$mcrChartVersion = "2.7.5"
+$mcrChartRepoPath = "azuremonitor/containerinsights/preview/azuremonitor-containers"
+# for arc k8s, mcr will be used hence the local repo name is .
+$helmLocalRepoName = "."
+
+
+if ([string]::IsNullOrEmpty($helmRepoName) -eq $false) {
     $helmChartRepoName = $helmRepoName
 }
 
-if([string]::IsNullOrEmpty($helmRepoUrl) -eq $false){
+if ([string]::IsNullOrEmpty($helmRepoUrl) -eq $false) {
     $helmChartRepoUrl = $helmRepoUrl
 }
 
@@ -220,30 +228,31 @@ if ($clusterResourceId.StartsWith("/") -eq $false) {
     $clusterResourceId = "/" + $clusterResourceId
 }
 
-if ($clusterResourceId.Split("/").Length -ne 9){
-     Write-Host("Provided Cluster Resource Id is not in expected format") -ForegroundColor Red
+if ($clusterResourceId.Split("/").Length -ne 9) {
+    Write-Host("Provided Cluster Resource Id is not in expected format") -ForegroundColor Red
     exit
 }
 
 if (($clusterResourceId.ToLower().Contains("microsoft.kubernetes/connectedclusters") -ne $true) -and
     ($clusterResourceId.ToLower().Contains("microsoft.redhatopenshift/openshiftclusters") -ne $true) -and
     ($clusterResourceId.ToLower().Contains("microsoft.containerservice/managedclusters") -ne $true)
-  ) {
+) {
     Write-Host("Provided cluster ResourceId is not supported cluster type: $clusterResourceId") -ForegroundColor Red
     exit
 }
 
-if(([string]::IsNullOrEmpty($servicePrincipalClientId) -eq $false) -and
-   ([string]::IsNullOrEmpty($servicePrincipalClientSecret) -eq $false) -and
-   ([string]::IsNullOrEmpty($tenantId) -eq $false)) {
-   Write-Host("Using service principal creds for the azure login since these provided.")
-   $isUsingServicePrincipal = $true
+if (([string]::IsNullOrEmpty($servicePrincipalClientId) -eq $false) -and
+    ([string]::IsNullOrEmpty($servicePrincipalClientSecret) -eq $false) -and
+    ([string]::IsNullOrEmpty($tenantId) -eq $false)) {
+    Write-Host("Using service principal creds for the azure login since these provided.")
+    $isUsingServicePrincipal = $true
 }
 
 if ($clusterResourceId.ToLower().Contains("microsoft.kubernetes/connectedclusters") -eq $true) {
-   $isArcK8sCluster = $true
-} elseif ($clusterResourceId.ToLower().Contains("microsoft.containerservice/managedclusters") -eq $true) {
-   $isAksCluster =  $true
+    $isArcK8sCluster = $true
+}
+elseif ($clusterResourceId.ToLower().Contains("microsoft.containerservice/managedclusters") -eq $true) {
+    $isAksCluster = $true
 }
 
 $resourceParts = $clusterResourceId.Split("/")
@@ -253,7 +262,7 @@ Write-Host("Cluster SubscriptionId : '" + $clusterSubscriptionId + "' ") -Foregr
 
 if ($isUsingServicePrincipal) {
     $spSecret = ConvertTo-SecureString -String $servicePrincipalClientSecret -AsPlainText -Force
-    $spCreds = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $servicePrincipalClientId,$spSecret
+    $spCreds = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $servicePrincipalClientId, $spSecret
     Connect-AzAccount -ServicePrincipal -Credential $spCreds -Tenant $tenantId -Subscription $clusterSubscriptionId
 }
 
@@ -275,12 +284,13 @@ if ($null -eq $account.Account) {
     try {
         if ($isUsingServicePrincipal) {
             $spSecret = ConvertTo-SecureString -String $servicePrincipalClientSecret -AsPlainText -Force
-            $spCreds = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $servicePrincipalClientId,$spSecret
+            $spCreds = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $servicePrincipalClientId, $spSecret
             Connect-AzAccount -ServicePrincipal -Credential $spCreds -Tenant $tenantId -Subscription $clusterSubscriptionId
-        } else {
-         Write-Host("Please login...")
-         Connect-AzAccount -subscriptionid $clusterSubscriptionId
-       }
+        }
+        else {
+            Write-Host("Please login...")
+            Connect-AzAccount -subscriptionid $clusterSubscriptionId
+        }
     }
     catch {
         Write-Host("")
@@ -322,12 +332,12 @@ if ($null -eq $clusterResource) {
 $clusterRegion = $clusterResource.Location.ToLower()
 
 if ($isArcK8sCluster -eq $true) {
-   # validate identity
-   $clusterIdentity = $clusterResource.identity.type.ToString().ToLower()
-   if ($clusterIdentity.contains("systemassigned") -eq $false) {
-     Write-Host("Identity of Azure Arc K8s cluster should be systemassigned but it has identity: $clusterIdentity") -ForegroundColor Red
-     exit
-   }
+    # validate identity
+    $clusterIdentity = $clusterResource.identity.type.ToString().ToLower()
+    if ($clusterIdentity.contains("systemassigned") -eq $false) {
+        Write-Host("Identity of Azure Arc K8s cluster should be systemassigned but it has identity: $clusterIdentity") -ForegroundColor Red
+        exit
+    }
 }
 
 if ([string]::IsNullOrEmpty($workspaceResourceId)) {
@@ -514,7 +524,8 @@ if ($account.Subscription.Id -eq $clusterSubscriptionId) {
 if ($isAksCluster -eq $true) {
     Write-Host ("Enabling AKS Monitoring Addon ..")
     # TBD
-} else {
+}
+else {
     Write-Host("Attaching workspaceResourceId tag on the cluster ResourceId")
     $clusterResource.Tags["logAnalyticsWorkspaceResourceId"] = $WorkspaceInformation.ResourceId
     Set-AzResource -Tag $clusterResource.Tags -ResourceId $clusterResource.ResourceId -Force
@@ -526,20 +537,44 @@ Write-Host "Helm version" : $helmVersion
 Write-Host("Installing or upgrading if exists, Azure Monitor for containers HELM chart ...")
 try {
 
-    Write-Host("Adding $helmChartRepoName repo to helm: $helmChartRepoUrl")
-    helm repo add $helmChartRepoName $helmChartRepoUrl
-    Write-Host("updating helm repo to get latest version of charts")
-    helm repo update
+    if ($isArcK8sCluster -eq $true) {
+
+        Write-Host("since cluster is azure arc k8s hence using chart from: ${mcr}")
+        [System.Environment]::SetEnvironmentVariable("HELM_EXPERIMENTAL_OCI", 1, "Process")
+
+        Write-Host("removing chart version already exist in the local cache")
+        helm chart remove ${mcr}/${mcrChartRepoPath}:${mcrChartVersion}
+
+        Write-Host("pull the chart from mcr.microsoft.com")
+        helm chart pull ${mcr}/${mcrChartRepoPath}:${mcrChartVersion}
+
+        Write-Host("export the chart from local cache to current directory")
+        helm chart export ${mcr}/${mcrChartRepoPath}:${mcrChartVersion} --destination .
+
+        helmChartRepoPath = ${helmLocalRepoName}/${helmChartName}
+
+    }
+    else {
+        Write-Host("Adding $helmChartRepoName repo to helm: $helmChartRepoUrl")
+        helm repo add $helmChartRepoName $helmChartRepoUrl
+        Write-Host("updating helm repo to get latest version of charts")
+        helm repo update
+        helmChartRepoPath = ${helmChartRepoName}/${helmChartName}
+    }
+
+    Write-Host("helmChartRepoPath is : ${helmChartRepoPath}")
+
     $helmParameters = "omsagent.secret.wsid=$workspaceGUID,omsagent.secret.key=$workspacePrimarySharedKey,omsagent.env.clusterId=$clusterResourceId,omsagent.env.clusterRegion=$clusterRegion"
-    if([string]::IsNullOrEmpty($proxyEndpoint) -eq $false) {
+    if ([string]::IsNullOrEmpty($proxyEndpoint) -eq $false) {
         Write-Host("using proxy endpoint since its provided")
         $helmParameters = $helmParameters + ",omsagent.proxy=$proxyEndpoint"
     }
     if ([string]::IsNullOrEmpty($kubeContext)) {
-        helm upgrade --install $helmChartReleaseName --set $helmParameters $helmChartRepoName/$helmChartName
-    } else {
-      Write-Host("using provided kube-context: $kubeContext")
-      helm upgrade --install $helmChartReleaseName --set $helmParameters $helmChartRepoName/$helmChartName --kube-context $kubeContext
+        helm upgrade --install $helmChartReleaseName --set $helmParameters $helmChartRepoPath
+    }
+    else {
+        Write-Host("using provided kube-context: $kubeContext")
+        helm upgrade --install $helmChartReleaseName --set $helmParameters $helmChartRepoPath --kube-context $kubeContext
     }
 }
 catch {
