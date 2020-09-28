@@ -24,6 +24,8 @@ spec:
     agentVersion: {{ .Values.omsagent.image.tagWindows }}
     dockerProviderVersion: {{ .Values.omsagent.image.dockerProviderVersion }}
     schema-versions: "v1"
+    checksum/secret: {{ include (print $.Template.BasePath "/omsagent-secret.yaml") . | sha256sum }}
+    checksum/config: {{ toYaml .Values.omsagent.resources | sha256sum }}
   spec:
 {{- if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion }}
    nodeSelector:
