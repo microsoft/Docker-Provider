@@ -499,10 +499,7 @@ install_helm_chart() {
     echo "since cluster is azure arc k8s hence using chart from: ${mcr}"
     export HELM_EXPERIMENTAL_OCI=1
 
-    echo "removing chart version already exist in the local cache"
-    helm chart remove $mcr/$mcrChartRepoPath:$mcrChartVersion
-
-    echo "pull the chart from mcr.microsoft.com"
+    echo "pull the chart version ${mcrChartVersion} from ${mcr}/${mcrChartRepoPath}"
     helm chart pull $mcr/$mcrChartRepoPath:$mcrChartVersion
 
     echo "export the chart from local cache to current directory"
