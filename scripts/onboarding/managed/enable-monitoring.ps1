@@ -527,7 +527,7 @@ try {
     Write-Host("export the chart from local cache to current directory")
     helm chart export ${mcr}/${mcrChartRepoPath}:${mcrChartVersion} --destination .
 
-    helmChartRepoPath = ${helmLocalRepoName}/${helmChartName}
+    $helmChartRepoPath = ${helmLocalRepoName}/${helmChartName}
 
     Write-Host("helmChartRepoPath is : ${helmChartRepoPath}")
 
