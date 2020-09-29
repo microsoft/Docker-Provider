@@ -46,7 +46,8 @@ Make PR against [AKS-Engine](https://github.com/Azure/aks-engine). Refer PR http
 ## ARO v4, On-prem K8s, Azure Arc K8s and OpenShift v4 clusters
 
 Make sure azuremonitor-containers chart yamls updates with all changes going with the release and also make sure to bump the chart version, imagetag and docker provider version etc.
-Similar to agent container image, chart will be automatically pushed container insights prod acr for canary and prod repos accordingly.
+Similar to agent container image, build pipeline automatically push the chart to container insights prod acr for canary and prod repos accordingly.
+Both the agent and helm chart will be replicated to `mcr.microsoft.com`.
 
 # 4. Monitor agent roll-out status
 
