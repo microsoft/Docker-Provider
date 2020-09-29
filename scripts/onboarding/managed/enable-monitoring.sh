@@ -48,10 +48,6 @@ mcrChartRepoPath="azuremonitor/containerinsights/preview/azuremonitor-containers
 
 # for arc k8s, mcr will be used hence the local repo name is .
 helmLocalRepoName="."
-
-# helm repo details
-helmRepoName="incubator"
-helmRepoUrl="https://kubernetes-charts-incubator.storage.googleapis.com/"
 helmChartName="azuremonitor-containers"
 
 # default release name used during onboarding
@@ -496,25 +492,14 @@ install_helm_chart() {
   clusterRegion=$(az resource show --ids ${clusterResourceId} --query location -o tsv)
   echo "cluster region is : ${clusterRegion}"
 
-  if [ "$isArcK8sCluster" = true ]; then
-    echo "since cluster is azure arc k8s hence using chart from: ${mcr}"
-    export HELM_EXPERIMENTAL_OCI=1
+  echo "pull the chart version ${mcrChartVersion} from ${mcr}/${mcrChartRepoPath}"
+  export HELM_EXPERIMENTAL_OCI=1
+  helm chart pull $mcr/$mcrChartRepoPath:$mcrChartVersion
 
-    echo "pull the chart version ${mcrChartVersion} from ${mcr}/${mcrChartRepoPath}"
-    helm chart pull $mcr/$mcrChartRepoPath:$mcrChartVersion
+  echo "export the chart from local cache to current directory"
+  helm chart export $mcr/$mcrChartRepoPath:$mcrChartVersion --destination .
 
-    echo "export the chart from local cache to current directory"
-    helm chart export $mcr/$mcrChartRepoPath:$mcrChartVersion --destination .
-
-    helmChartRepoPath=$helmLocalRepoName/$helmChartName
-
-  else
-    echo "adding helm repo:" $helmRepoName
-    helm repo add $helmRepoName $helmRepoUrl
-    echo "updating helm repo to get latest charts"
-    helm repo update
-    helmChartRepoPath=$helmRepoName/$helmChartName
-  fi
+  helmChartRepoPath=$helmLocalRepoName/$helmChartName
 
   echo "helm chart repo path: ${helmChartRepoPath}"
 

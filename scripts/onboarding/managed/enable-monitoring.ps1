@@ -22,10 +22,6 @@
     .PARAMETER proxyEndpoint (optional)
         Provide Proxy endpoint if you have K8s cluster behind the proxy and would like to route Azure Monitor for containers outbound traffic via proxy.
         Format of the proxy endpoint should be http(s://<user>:<password>@<proxyhost>:<port>
-    .PARAMETER helmRepoName (optional)
-        helm repo name. should be used only for the private preview features
-    .PARAMETER helmRepoUrl (optional)
-        helm repo url. should be used only for the private preview features
 
      Pre-requisites:
       -  Azure Managed cluster Resource Id
@@ -50,18 +46,13 @@ param(
     [Parameter(mandatory = $false)]
     [string]$workspaceResourceId,
     [Parameter(mandatory = $false)]
-    [string]$proxyEndpoint,
-    [Parameter(mandatory = $false)]
-    [string]$helmRepoName,
-    [Parameter(mandatory = $false)]
-    [string]$helmRepoUrl
+    [string]$proxyEndpoint
 )
 
 $solutionTemplateUri = "https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_dev/scripts/onboarding/templates/azuremonitor-containerSolution.json"
 $helmChartReleaseName = "azmon-containers-release-1"
 $helmChartName = "azuremonitor-containers"
-$helmChartRepoName = "incubator"
-$helmChartRepoUrl = "https://kubernetes-charts-incubator.storage.googleapis.com/"
+
 # flags to indicate the cluster types
 $isArcK8sCluster = $false
 $isAksCluster = $false
@@ -73,15 +64,6 @@ $mcrChartVersion = "2.7.6"
 $mcrChartRepoPath = "azuremonitor/containerinsights/preview/azuremonitor-containers"
 # for arc k8s, mcr will be used hence the local repo name is .
 $helmLocalRepoName = "."
-
-
-if ([string]::IsNullOrEmpty($helmRepoName) -eq $false) {
-    $helmChartRepoName = $helmRepoName
-}
-
-if ([string]::IsNullOrEmpty($helmRepoUrl) -eq $false) {
-    $helmChartRepoUrl = $helmRepoUrl
-}
 
 # checks the required Powershell modules exist and if not exists, request the user permission to install
 $azAccountModule = Get-Module -ListAvailable -Name Az.Accounts
@@ -537,30 +519,16 @@ Write-Host "Helm version" : $helmVersion
 Write-Host("Installing or upgrading if exists, Azure Monitor for containers HELM chart ...")
 try {
 
-    if ($isArcK8sCluster -eq $true) {
+     Write-Host("pull the chart from mcr.microsoft.com")
+    [System.Environment]::SetEnvironmentVariable("HELM_EXPERIMENTAL_OCI", 1, "Process")
 
-        Write-Host("since cluster is azure arc k8s hence using chart from: ${mcr}")
-        [System.Environment]::SetEnvironmentVariable("HELM_EXPERIMENTAL_OCI", 1, "Process")
+    Write-Host("pull the chart from mcr.microsoft.com")
+    helm chart pull ${mcr}/${mcrChartRepoPath}:${mcrChartVersion}
 
-        Write-Host("removing chart version already exist in the local cache")
-        helm chart remove ${mcr}/${mcrChartRepoPath}:${mcrChartVersion}
+    Write-Host("export the chart from local cache to current directory")
+    helm chart export ${mcr}/${mcrChartRepoPath}:${mcrChartVersion} --destination .
 
-        Write-Host("pull the chart from mcr.microsoft.com")
-        helm chart pull ${mcr}/${mcrChartRepoPath}:${mcrChartVersion}
-
-        Write-Host("export the chart from local cache to current directory")
-        helm chart export ${mcr}/${mcrChartRepoPath}:${mcrChartVersion} --destination .
-
-        helmChartRepoPath = ${helmLocalRepoName}/${helmChartName}
-
-    }
-    else {
-        Write-Host("Adding $helmChartRepoName repo to helm: $helmChartRepoUrl")
-        helm repo add $helmChartRepoName $helmChartRepoUrl
-        Write-Host("updating helm repo to get latest version of charts")
-        helm repo update
-        helmChartRepoPath = ${helmChartRepoName}/${helmChartName}
-    }
+    helmChartRepoPath = ${helmLocalRepoName}/${helmChartName}
 
     Write-Host("helmChartRepoPath is : ${helmChartRepoPath}")
 

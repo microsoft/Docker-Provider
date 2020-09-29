@@ -40,6 +40,12 @@ resourceProvider="Microsoft.Kubernetes/connectedClusters"
 # arc k8s cluster resource
 isArcK8sCluster=false
 
+# openshift project name for aro v4 cluster
+openshiftProjectName="azure-monitor-for-containers"
+
+# arc k8s cluster resource
+isAroV4Cluster=false
+
 # default global params
 clusterResourceId=""
 kubeconfigContext=""
@@ -157,13 +163,20 @@ parse_args() {
   fi
 
   # detect the resource provider from the provider name in the cluster resource id
-  # detect the resource provider from the provider name in the cluster resource id
   if [ $providerName = "microsoft.kubernetes/connectedclusters" ]; then
     echo "provider cluster resource is of Azure ARC K8s cluster type"
     isArcK8sCluster=true
     resourceProvider=$arcK8sResourceProvider
+  elif [ $providerName = "microsoft.redhatopenshift/openshiftclusters" ]; then
+    echo "provider cluster resource is of AROv4 cluster type"
+    resourceProvider=$aroV4ResourceProvider
+    isAroV4Cluster=true
+  elif [ $providerName = "microsoft.containerservice/managedclusters" ]; then
+    echo "provider cluster resource is of AKS cluster type"
+    isAksCluster=true
+    resourceProvider=$aksResourceProvider
   else
-    echo "-e not supported managed cluster type"
+    echo "-e unsupported azure managed cluster type"
     exit 1
   fi
 
@@ -214,24 +227,37 @@ validate_monitoring_tags() {
 
 upgrade_helm_chart_release() {
 
+  # get the config-context for ARO v4 cluster
+  if [ "$isAroV4Cluster" = true ]; then
+    echo "getting config-context of ARO v4 cluster "
+    echo "getting admin user creds for aro v4 cluster"
+    adminUserName=$(az aro list-credentials -g $clusterResourceGroup -n $clusterName --query 'kubeadminUsername' -o tsv)
+    adminPassword=$(az aro list-credentials -g $clusterResourceGroup -n $clusterName --query 'kubeadminPassword' -o tsv)
+    apiServer=$(az aro show -g $clusterResourceGroup -n $clusterName --query apiserverProfile.url -o tsv)
+    echo "login to the cluster via oc login"
+    oc login $apiServer -u $adminUserName -p $adminPassword
+    echo "creating project azure-monitor-for-containers"
+    oc new-project $openshiftProjectName
+    echo "getting config-context of aro v4 cluster"
+    kubeconfigContext=$(oc config current-context)
+  fi
+
   if [ -z "$kubeconfigContext" ]; then
     echo "installing Azure Monitor for containers HELM chart on to the cluster and using current kube context ..."
   else
     echo "installing Azure Monitor for containers HELM chart on to the cluster with kubecontext:${kubeconfigContext} ..."
   fi
 
-  if [ "$isArcK8sCluster" = true ]; then
-    echo "since cluster is azure arc k8s hence using chart from: ${mcr}"
-    export HELM_EXPERIMENTAL_OCI=1
+  echo "since cluster is azure arc k8s hence using chart from: ${mcr}"
+  export HELM_EXPERIMENTAL_OCI=1
 
-    echo "pull the chart from mcr.microsoft.com"
-    helm chart pull $mcr/$mcrChartRepoPath:$mcrChartVersion
+  echo "pull the chart from ${mcr}/${mcrChartRepoPath}:${mcrChartVersion}"
+  helm chart pull ${mcr}/${mcrChartRepoPath}:${mcrChartVersion}
 
-    echo "export the chart from local cache to current directory"
-    helm chart export $mcr/$mcrChartRepoPath:$mcrChartVersion --destination .
+  echo "export the chart from local cache to current directory"
+  helm chart export ${mcr}/${mcrChartRepoPath}:${mcrChartVersion} --destination .
 
-    helmChartRepoPath=$helmLocalRepoName/$helmChartName
-  fi
+  helmChartRepoPath=$helmLocalRepoName/$helmChartName
 
   echo "upgrading the release: $releaseName to chart version : ${mcrChartVersion}"
   helm get values $releaseName -o yaml | helm upgrade --install $releaseName $helmChartRepoPath -f -
