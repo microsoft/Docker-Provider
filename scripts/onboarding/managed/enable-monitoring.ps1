@@ -58,11 +58,10 @@ $isArcK8sCluster = $false
 $isAksCluster = $false
 $isUsingServicePrincipal = $false
 
-# released chart version for azure arc k8s public preview
+# released chart version in mcr
 $mcr = "mcr.microsoft.com"
 $mcrChartVersion = "2.7.6"
 $mcrChartRepoPath = "azuremonitor/containerinsights/preview/azuremonitor-containers"
-# for arc k8s, mcr will be used hence the local repo name is .
 $helmLocalRepoName = "."
 
 # checks the required Powershell modules exist and if not exists, request the user permission to install
