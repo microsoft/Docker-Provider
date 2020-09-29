@@ -8,9 +8,11 @@ class MdmMetricsGenerator
   require_relative "MdmAlertTemplates"
   require_relative "ApplicationInsightsUtility"
   require_relative "constants"
+  require_relative "oms_common"
 
   @log_path = "/var/opt/microsoft/docker-cimprov/log/mdm_metrics_generator.log"
   @log = Logger.new(@log_path, 1, 5000000)
+  @@hostName = (OMS::Common.get_hostname)
 
   @oom_killed_container_count_hash = {}
   @container_restart_count_hash = {}
@@ -186,7 +188,7 @@ class MdmMetricsGenerator
         pvZeroFillDims[Constants::INSIGHTSMETRICS_TAGS_POD_NAME] = Constants::OMSAGENT_ZERO_FILL
         pvResourceUtilMetricRecord = getPVResourceUtilMetricRecords(batch_time,
                                                                     Constants::PV_USED_BYTES,
-                                                                    Constants::OMSAGENT_ZERO_FILL,
+                                                                    @@hostName,
                                                                     0,
                                                                     pvZeroFillDims,
                                                                     metric_threshold_hash[Constants::PV_USED_BYTES])
