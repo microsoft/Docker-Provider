@@ -127,7 +127,7 @@ baseDir=$(dirname $kubernetsDir)
 buildDir=$baseDir/build/linux
 dockerFileDir=$baseDir/kubernetes/linux
 
-echo "sour code base directory: $baseDir"
+echo "source code base directory: $baseDir"
 echo "build directory for docker provider: $buildDir"
 echo "docker file directory: $dockerFileDir"
 

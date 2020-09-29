@@ -37,6 +37,10 @@ class MdmMetricsGenerator
     Constants::MEMORY_WORKING_SET_BYTES => Constants::MDM_CONTAINER_MEMORY_WORKING_SET_UTILIZATION_METRIC,
   }
 
+  @@pod_metric_name_metric_percentage_name_hash = {
+    Constants::PV_USED_BYTES => Constants::MDM_PV_UTILIZATION_METRIC
+  }
+
   # Setting this to true since we need to send zero filled metrics at startup. If metrics are absent alert creation fails
   @sendZeroFilledMetrics = true
 
@@ -259,6 +263,31 @@ class MdmMetricsGenerator
       return records
     end
 
+    def getPVResourceUtilMetricRecords(recordTimeStamp, metricName, computer, percentageMetricValue, dims, thresholdPercentage)
+      records = []
+      begin
+        containerName = dims[Constants::INSIGHTSMETRICS_TAGS_CONTAINER_NAME]
+        pvcNamespace = dims[Constants::INSIGHTSMETRICS_TAGS_PVC_NAMESPACE]
+        podName = dims[Constants::INSIGHTSMETRICS_TAGS_POD_NAME]
+        podUid = dims[Constants::INSIGHTSMETRICS_TAGS_POD_UID]
+
+        resourceUtilRecord = MdmAlertTemplates::PV_resource_utilization_template % {
+          timestamp: recordTimeStamp,
+          metricName: @@pod_metric_name_metric_percentage_name_hash[metricName],
+          podNameDimValue: podName,
+          computerNameDimValue: computer,
+          namespaceDimValue: pvcNamespace,
+          pvResourceUtilizationPercentage: percentageMetricValue,
+          thresholdPercentageDimValue: thresholdPercentage,
+        }
+        records.push(Yajl::Parser.parse(StringIO.new(resourceUtilRecord)))
+      rescue => errorStr
+        @log.info "Error in getPVResourceUtilMetricRecords: #{errorStr}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      end
+      return records
+    end
+
     def getDiskUsageMetricRecords(record)
       records = []
       usedPercent = nil
@@ -356,6 +385,7 @@ class MdmMetricsGenerator
         metric_threshold_hash[Constants::CPU_USAGE_NANO_CORES] = Constants::DEFAULT_MDM_CPU_UTILIZATION_THRESHOLD
         metric_threshold_hash[Constants::MEMORY_RSS_BYTES] = Constants::DEFAULT_MDM_MEMORY_RSS_THRESHOLD
         metric_threshold_hash[Constants::MEMORY_WORKING_SET_BYTES] = Constants::DEFAULT_MDM_MEMORY_WORKING_SET_THRESHOLD
+        metric_threshold_hash[Constants::PV_USED_BYTES] = Constants::DEFAULT_MDM_PV_UTILIZATION_THRESHOLD
 
         cpuThreshold = ENV["AZMON_ALERT_CONTAINER_CPU_THRESHOLD"]
         if !cpuThreshold.nil? && !cpuThreshold.empty?
@@ -374,6 +404,12 @@ class MdmMetricsGenerator
         if !memoryWorkingSetThreshold.nil? && !memoryWorkingSetThreshold.empty?
           memoryWorkingSetThresholdFloat = (memoryWorkingSetThreshold.to_f).round(2)
           metric_threshold_hash[Constants::MEMORY_WORKING_SET_BYTES] = memoryWorkingSetThresholdFloat
+        end
+
+        pvUsagePercentageThreshold = ENV["AZMON_ALERT_PV_USAGE_THRESHOLD"]
+        if !pvUsagePercentageThreshold.nil? && !pvUsagePercentageThreshold.empty?
+          pvUsagePercentageThresholdFloat = (pvUsagePercentageThreshold.to_f).round(2)
+          metric_threshold_hash[Constants::PV_USED_BYTES] = pvUsagePercentageThresholdFloat
         end
       rescue => errorStr
         @log.info "Error in getContainerResourceUtilizationThresholds: #{errorStr}"

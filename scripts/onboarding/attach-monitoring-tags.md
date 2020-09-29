@@ -10,7 +10,7 @@ If you are not familiar with the concepts of azure resource tags (https://docs.m
 ## Attach tags using Powershell
 
 Get the below powershell script files to your local computer.
-   - Powershell script file [AddMonitoringWorkspaceTags.ps1](https://github.com/Microsoft/OMS-docker/blob/ci_feature/docs/aksengine/kubernetes/AddMonitoringWorkspaceTags.ps1)
+   - Powershell script file [AddMonitoringWorkspaceTags.ps1](https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/scripts/onboarding/aksengine/kubernetes/AddMonitoringWorkspaceTags.ps1)
    - Refer for updating the Powershell execution policy (https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.security/set-executionpolicy?view=powershell-6)
    - Log analytics workspace resource Id can retrieved either Azure CLI or Powershell or Azure Portal
       Azure CLI
@@ -50,14 +50,14 @@ The configuration change can take a few minutes to complete. When it finishes, y
 
 ``` sh
 
-curl -sL https://raw.githubusercontent.com/microsoft/OMS-docker/ci_feature/docs/aksengine/kubernetes/AddMonitoringOnboardingTags.sh | bash -s <nameoftheCloud> <subscriptionId> <clusterResourceGroup> <logAnalyticsWorkspaceResourceId> <clusterName>
+curl -sL https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/scripts/onboarding/aksengine/kubernetes/AddMonitoringOnboardingTags.sh | bash -s <nameoftheCloud> <subscriptionId> <clusterResourceGroup> <logAnalyticsWorkspaceResourceId> <clusterName>
 
 Example for AKS-Engine clusters in Azure Public cloud
 
-curl -sL https://raw.githubusercontent.com/microsoft/OMS-docker/ci_feature/docs/aksengine/kubernetes/AddMonitoringOnboardingTags.sh | bash -s "AzureCloud" "00000000-0000-0000-0000-000000000000"  "my-aks-engine-cluster-rg"  "/subscriptions/<SubscriptionId>/resourceGroups/workspaceRg/providers/Microsoft.OperationalInsights/workspaces/workspaceName" "my-aks-engine-cluster"
+curl -sL https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/scripts/onboarding/aksengine/kubernetes/AddMonitoringOnboardingTags.sh | bash -s "AzureCloud" "00000000-0000-0000-0000-000000000000"  "my-aks-engine-cluster-rg"  "/subscriptions/<SubscriptionId>/resourceGroups/workspaceRg/providers/Microsoft.OperationalInsights/workspaces/workspaceName" "my-aks-engine-cluster"
 
 Example for AKS-Engine clusters in Azure China cloud
 
-curl -sL https://raw.githubusercontent.com/microsoft/OMS-docker/ci_feature/docs/aksengine/kubernetes/AddMonitoringOnboardingTags.sh | bash -s "AzureChinaCloud" "00000000-0000-0000-0000-000000000000"  "my-aks-engine-cluster-rg"  "/subscriptions/<SubscriptionId>/resourceGroups/workspaceRg/providers/Microsoft.OperationalInsights/workspaces/workspaceName" "my-aks-engine-cluster"
+curl -sL https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/scripts/onboarding/aksengine/kubernetes/AddMonitoringOnboardingTags.sh | bash -s "AzureChinaCloud" "00000000-0000-0000-0000-000000000000"  "my-aks-engine-cluster-rg"  "/subscriptions/<SubscriptionId>/resourceGroups/workspaceRg/providers/Microsoft.OperationalInsights/workspaces/workspaceName" "my-aks-engine-cluster"
 
 ```

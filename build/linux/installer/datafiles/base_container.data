@@ -50,7 +50,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/omsagent/plugin/kubernetes_container_inventory.rb;							source/plugins/ruby/kubernetes_container_inventory.rb;		644; root; root
 /opt/microsoft/omsagent/plugin/proxy_utils.rb;						                  	source/plugins/ruby/proxy_utils.rb;		644; root; root
 
-
+/opt/microsoft/omsagent/plugin/arc_k8s_cluster_identity.rb;                                 source/plugins/ruby/arc_k8s_cluster_identity.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/out_mdm.rb;                                                  source/plugins/ruby/out_mdm.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/filter_cadvisor2mdm.rb;                                      source/plugins/ruby/filter_cadvisor2mdm.rb; 644; root; root
 /opt/microsoft/omsagent/plugin/filter_telegraf2mdm.rb;                                      source/plugins/ruby/filter_telegraf2mdm.rb; 644; root; root
@@ -120,6 +120,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/livenessprobe.sh;                                          build/linux/installer/scripts/livenessprobe.sh;      755; root; root
 /opt/tomlparser-prom-customconfig.rb;                           build/linux/installer/scripts/tomlparser-prom-customconfig.rb;     755; root; root
 /opt/tomlparser-mdm-metrics-config.rb;                          build/linux/installer/scripts/tomlparser-mdm-metrics-config.rb;     755; root; root
+/opt/tomlparser-metric-collection-config.rb;                    build/linux/installer/scripts/tomlparser-metric-collection-config.rb;     755; root; root
 
 /opt/tomlparser-health-config.rb;                               build/linux/installer/scripts/tomlparser-health-config.rb;     755; root; root
 /opt/tomlparser.rb;                                             build/common/installer/scripts/tomlparser.rb;     755; root; root
@@ -275,6 +276,10 @@ chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/filter_health_mode
 touch /var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log
 chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log
+
+touch /var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log
+chmod 666 /var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log
+chown omsagent:omiusers /var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log
 
 mv /etc/opt/microsoft/docker-cimprov/container.conf /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 chown omsagent:omsagent /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf

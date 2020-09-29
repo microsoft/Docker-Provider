@@ -194,6 +194,9 @@ module Fluent
 
           if podReadyCondition == false
             record["PodStatus"] = "Unknown"
+          # ICM - https://portal.microsofticm.com/imp/v3/incidents/details/187091803/home
+          elsif !items["metadata"]["deletionTimestamp"].nil? && !items["metadata"]["deletionTimestamp"].empty?
+            record["PodStatus"] = Constants::POD_STATUS_TERMINATING
           else
             record["PodStatus"] = items["status"]["phase"]
           end

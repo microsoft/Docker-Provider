@@ -3,14 +3,19 @@
 # Declare variables to be passed into your templates.
 
 ## Microsoft OMS Agent image for kubernetes cluster monitoring
-## ref: https://github.com/Microsoft/OMS-docker/tree/ci_feature_prod
+## ref: https://github.com/microsoft/Docker-Provider/tree/ci_prod
+## Values of ResourceId and Region under Azure->Cluster being populated by Azure Arc K8s RP during the installation of the extension
+Azure:
+  Cluster:
+    Region: <your_cluster_region>
+    ResourceId: <your_cluster_id>
 omsagent:
   image:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
-    tag: "ciprod08072020"
-    tagWindows: "win-ciprod08072020"
+    tag: "ciprod09162020"
+    tagWindows: "win-ciprod09162020"
     pullPolicy: IfNotPresent
-    dockerProviderVersion: "10.0.0-4"
+    dockerProviderVersion: "10.0.0-5"
     agentVersion: "1.10.0.1"
   ## To get your workspace id and key do the following
   ## You can create a Azure Loganalytics workspace from portal.azure.com and get its ID & PRIMARY KEY from 'Advanced Settings' tab in the Ux.
@@ -54,6 +59,17 @@ omsagent:
           nodeSelectorTerms:
             - labelSelector:
               matchExpressions:
+                - key: kubernetes.io/os
+                  operator: In
+                  values:
+                    - linux
+                - key: type
+                  operator: NotIn
+                  values:
+                    - virtual-kubelet
+          nodeSelectorTerms:
+            - labelSelector:
+              matchExpressions:
                 - key: beta.kubernetes.io/os
                   operator: In
                   values:
@@ -69,6 +85,21 @@ omsagent:
           nodeSelectorTerms:
             - labelSelector:
               matchExpressions:
+                - key: kubernetes.io/os
+                  operator: In
+                  values:
+                    - linux
+                - key: type
+                  operator: NotIn
+                  values:
+                    - virtual-kubelet
+                - key: kubernetes.io/role
+                  operator: NotIn
+                  values:
+                    - master
+          nodeSelectorTerms:
+            - labelSelector:
+              matchExpressions:
                 - key: beta.kubernetes.io/os
                   operator: In
                   values:
@@ -81,17 +112,6 @@ omsagent:
                   operator: NotIn
                   values:
                     - master
-  daemonsetwindows:
-    affinity:
-      nodeAffinity:
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-            - labelSelector:
-              matchExpressions:
-                - key: beta.kubernetes.io/os
-                  operator: In
-                  values:
-                    - windows
   ## Configure resource requests and limits
   ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
   ##

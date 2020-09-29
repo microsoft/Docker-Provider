@@ -35,7 +35,7 @@ $imagerepo = $imageparts[0]
 if ($imagetag.StartsWith("win-") -eq $false)
 {
     Write-Host "adding win- prefix image tag since its not provided"
-    $imagetag = "win"-$imagetag
+    $imagetag = "win-$imagetag"
 }
 
 Write-Host "image tag used is :$imagetag"

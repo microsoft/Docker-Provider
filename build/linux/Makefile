@@ -118,7 +118,7 @@ distclean : clean
 PROVIDER_STATUS:
 	@echo "========================= Performing Building provider"
 	@echo "clean up everything under: $(INTERMEDIATE_BASE_DIR) to avoid picking up old binaries"
-	$(RMDIR) $(INTERMEDIATE_BASE_DIR)
+	sudo $(RMDIR) $(INTERMEDIATE_BASE_DIR)
 
 KIT_STATUS:
 	@echo "========================= Performing Building provider tests"

@@ -20,17 +20,19 @@
 # 1. Using Default Azure Log Analytics and no-proxy with current kube config context
 # bash enable-monitoring.sh --resource-id <clusterResourceId>
 
-# 2. Using Default Azure Log Analytics and no-proxy
+# 2. Using Default Azure Log Analytics and no-proxy with current kube config context, and using service principal creds for the azure login
+# bash enable-monitoring.sh --resource-id <clusterResourceId> --client-id <sp client id> --client-secret <sp client secret> --tenant-id <tenant id of the service principal>
+
+# 3. Using Default Azure Log Analytics and no-proxy
 # bash enable-monitoring.sh  --resource-id <clusterResourceId> --kube-context <kube-context>
 
-# 3. Using Default Azure Log Analytics and with proxy endpoint configuration
+# 4. Using Default Azure Log Analytics and with proxy endpoint configuration
 # bash enable-monitoring.sh  --resource-id <clusterResourceId> --kube-context <kube-context> --proxy <proxy-endpoint>
 
-
-# 4. Using Existing Azure Log Analytics and no-proxy
+# 5. Using Existing Azure Log Analytics and no-proxy
 # bash enable-monitoring.sh  --resource-id <clusterResourceId> --kube-context <kube-context> --workspace-id <workspace-resource-id>
 
-# 5. Using Existing Azure Log Analytics and proxy
+# 6. Using Existing Azure Log Analytics and proxy
 # bash enable-monitoring.sh  --resource-id <clusterResourceId> --kube-context <kube-context> --workspace-id <workspace-resource-id> --proxy <proxy-endpoint>
 
 set -e
@@ -95,12 +97,18 @@ workspaceResourceGroup="DefaultResourceGroup-"$workspaceRegionCode
 workspaceGuid=""
 workspaceKey=""
 
+# sp details for the login if provided
+servicePrincipalClientId=""
+servicePrincipalClientSecret=""
+servicePrincipalTenantId=""
+isUsingServicePrincipal=false
+
 usage()
 {
     local basename=`basename $0`
     echo
     echo "Enable Azure Monitor for containers:"
-    echo "$basename --resource-id <cluster resource id> [--kube-context <name of the kube context >] [--workspace-id <resource id of existing workspace>] [--proxy <proxy endpoint>]"
+    echo "$basename --resource-id <cluster resource id> [--client-id <clientId of service principal>] [--client-secret <client secret of service principal>] [--tenant-id <tenant id of the service principal>] [--kube-context <name of the kube context >] [--workspace-id <resource id of existing workspace>] [--proxy <proxy endpoint>]"
 }
 
 parse_args()
@@ -120,8 +128,12 @@ for arg in "$@"; do
     "--kube-context") set -- "$@" "-k" ;;
     "--workspace-id") set -- "$@" "-w" ;;
     "--proxy") set -- "$@" "-p" ;;
+    "--client-id") set -- "$@" "-c" ;;
+    "--client-secret") set -- "$@" "-s" ;;
+    "--tenant-id") set -- "$@" "-t" ;;
     "--helm-repo-name") set -- "$@" "-n" ;;
     "--helm-repo-url") set -- "$@" "-u" ;;
+    "--container-log-volume") set -- "$@" "-v" ;;
     "--"*)   usage ;;
     *)        set -- "$@" "$arg"
   esac
@@ -129,7 +141,7 @@ done
 
 local OPTIND opt
 
-while getopts 'hk:r:w:p:n:u:' opt; do
+while getopts 'hk:r:w:p:c:s:t:n:u:v:' opt; do
     case "$opt" in
       h)
       usage
@@ -153,6 +165,21 @@ while getopts 'hk:r:w:p:n:u:' opt; do
       p)
         proxyEndpoint="$OPTARG"
         echo "proxyEndpoint is $OPTARG"
+        ;;
+
+      c)
+        servicePrincipalClientId="$OPTARG"
+        echo "servicePrincipalClientId is $OPTARG"
+        ;;
+
+      s)
+        servicePrincipalClientSecret="$OPTARG"
+        echo "clientSecret is *****"
+        ;;
+
+      t)
+        servicePrincipalTenantId="$OPTARG"
+        echo "service principal tenantId is $OPTARG"
         ;;
 
       n)
@@ -277,6 +304,11 @@ if [ ! -z "$proxyEndpoint" ]; then
     fi
 fi
 
+if [ ! -z "$servicePrincipalClientId" -a  ! -z "$servicePrincipalClientSecret"  -a  ! -z "$servicePrincipalTenantId" ]; then
+   echo "using service principal creds (clientId, secret and tenantId) for azure login since provided"
+   isUsingServicePrincipal=true
+fi
+
 }
 
 configure_to_public_cloud()
@@ -309,7 +341,9 @@ create_default_log_analytics_workspace()
 
   # extract subscription from cluster resource id
   local subscriptionId="$(echo $clusterResourceId | cut -d'/' -f3)"
-  local clusterRegion=$(az resource show --ids ${clusterResourceId} --query location)
+  local clusterRegion=$(az resource show --ids ${clusterResourceId} --query location -o tsv)
+  # convert cluster region to lower case
+  clusterRegion=$(echo $clusterRegion | tr "[:upper:]" "[:lower:]")
   echo "cluster region:" $clusterRegion
 
   # mapping fors for default Azure Log Analytics workspace
@@ -464,6 +498,10 @@ install_helm_chart()
   echo "installing Azure Monitor for containers HELM chart on to the cluster with kubecontext:${kubeconfigContext} ..."
  fi
 
+ echo "getting the region of the cluster"
+ clusterRegion=$(az resource show --ids ${clusterResourceId} --query location -o tsv)
+ echo "cluster region is : ${clusterRegion}"
+
  echo "adding helm repo:" $helmRepoName
  helm repo add $helmRepoName $helmRepoUrl
 
@@ -474,18 +512,18 @@ install_helm_chart()
    echo "using proxy endpoint since proxy configuration passed in"
    if [ -z "$kubeconfigContext" ]; then
      echo "using current kube-context since --kube-context/-k parameter not passed in"
-     helm upgrade --install azmon-containers-release-1 --set omsagent.proxy=$proxyEndpoint,omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId $helmRepoName/$helmChartName
+     helm upgrade --install azmon-containers-release-1 --set omsagent.proxy=$proxyEndpoint,omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId,omsagent.env.clusterRegion=$clusterRegion $helmRepoName/$helmChartName
    else
      echo "using --kube-context:${kubeconfigContext} since passed in"
-     helm upgrade --install azmon-containers-release-1 --set omsagent.proxy=$proxyEndpoint,omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId $helmRepoName/$helmChartName --kube-context ${kubeconfigContext}
+     helm upgrade --install azmon-containers-release-1 --set omsagent.proxy=$proxyEndpoint,omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId,omsagent.env.clusterRegion=$clusterRegion $helmRepoName/$helmChartName --kube-context ${kubeconfigContext}
    fi
  else
    if [ -z "$kubeconfigContext" ]; then
      echo "using current kube-context since --kube-context/-k parameter not passed in"
-     helm upgrade --install azmon-containers-release-1 --set omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId $helmRepoName/$helmChartName
+     helm upgrade --install azmon-containers-release-1 --set omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId,omsagent.env.clusterRegion=$clusterRegion $helmRepoName/$helmChartName
    else
      echo "using --kube-context:${kubeconfigContext} since passed in"
-     helm upgrade --install azmon-containers-release-1 --set omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId $helmRepoName/$helmChartName --kube-context ${kubeconfigContext}
+     helm upgrade --install azmon-containers-release-1 --set omsagent.secret.wsid=$workspaceGuid,omsagent.secret.key=$workspaceKey,omsagent.env.clusterId=$clusterResourceId,omsagent.env.clusterRegion=$clusterRegion $helmRepoName/$helmChartName --kube-context ${kubeconfigContext}
    fi
  fi
 
@@ -495,8 +533,13 @@ install_helm_chart()
 
 login_to_azure()
 {
-  echo "login to the azure interactively"
-  az login --use-device-code
+  if [ "$isUsingServicePrincipal" = true ] ; then
+     echo "login to the azure using provided service principal creds"
+     az login --service-principal --username $servicePrincipalClientId --password $servicePrincipalClientSecret --tenant $servicePrincipalTenantId
+  else
+    echo "login to the azure interactively"
+    az login --use-device-code
+  fi
 }
 
 set_azure_subscription()
@@ -577,7 +620,7 @@ add_container_insights_solution $workspaceResourceId
 # get workspace guid and key
 get_workspace_guid_and_key $workspaceResourceId
 
-if [ "$isClusterAndWorkspaceInSameSubscription" = true ] ; then
+if [ "$isClusterAndWorkspaceInSameSubscription" = false ] ; then
   echo "switch to cluster subscription id as active subscription for cli: ${clusterSubscriptionId}"
   set_azure_subscription $clusterSubscriptionId
 fi

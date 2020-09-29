@@ -14,7 +14,7 @@
 #  [Required]  ${5} clusterName                       Name of the cluster configured on the omsAgent (for omsagent.env.clusterName) of specified acs-engine Kubernetes cluster
 #
 #  For example
-# https://raw.githubusercontent.com/microsoft/OMS-docker/ci_feature/docs/aksengine/kubernetes/AddMonitoringOnboardingTags.sh | bash -s "name of the cloud" "00000000-0000-0000-0000-000000000000"  "Resource Group Name of AKS-Engine cluster"  "/subscriptions/<SubscriptionId>/resourceGroups/<resourceGroup>/providers/Microsoft.OperationalInsights/workspaces/<workspaceName>" "clusterName of AKS-Engine cluster"
+# https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/scripts/onboarding/aksengine/kubernetes/AddMonitoringOnboardingTags.sh | bash -s "name of the cloud" "00000000-0000-0000-0000-000000000000"  "Resource Group Name of AKS-Engine cluster"  "/subscriptions/<SubscriptionId>/resourceGroups/<resourceGroup>/providers/Microsoft.OperationalInsights/workspaces/<workspaceName>" "clusterName of AKS-Engine cluster"
 #
 
 nameoftheCloud=${1}

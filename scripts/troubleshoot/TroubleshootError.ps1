@@ -234,7 +234,17 @@ $MdmCustomMetricAvailabilityLocations = (
     'eastasia',
     'centralindia',
     'uksouth',
-    'canadacentral'
+    'canadacentral',
+    'francecentral',
+    'japaneast',
+    'australiaeast',
+    'eastus2',
+    'westus',
+    'australiasoutheast',
+    'brazilsouth',
+    'germanywestcentral',
+    'northcentralus',
+    'switzerlandnorth'
 );
 
 try {
@@ -671,7 +681,7 @@ else {
             try {
                 New-AzResourceGroupDeployment -Name $DeploymentName `
                     -ResourceGroupName $workspaceResourceGroupName `
-                    -TemplateUri  https://raw.githubusercontent.com/Microsoft/OMS-docker/ci_feature/docs/templates/azuremonitor-containerSolution.json `
+                    -TemplateUri  https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/scripts/onboarding/templates/azuremonitor-containerSolution.json `
                     -TemplateParameterObject $Parameters -ErrorAction Stop`
 
                 Write-Host("")

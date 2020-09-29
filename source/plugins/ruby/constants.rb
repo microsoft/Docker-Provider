@@ -13,6 +13,13 @@ class Constants
     INSIGHTSMETRICS_TAGS_K8SNAMESPACE = "k8sNamespace"
     INSIGHTSMETRICS_TAGS_CONTROLLER_NAME = "controllerName"
     INSIGHTSMETRICS_TAGS_CONTROLLER_KIND = "controllerKind"
+    INSIGHTSMETRICS_TAGS_POD_UID = "podUid"
+    INSIGTHTSMETRICS_TAGS_PV_NAMESPACE = "container.azm.ms/pv"
+    INSIGHTSMETRICS_TAGS_PVC_NAME = "pvcName"
+    INSIGHTSMETRICS_TAGS_PVC_NAMESPACE = "pvcNamespace"
+    INSIGHTSMETRICS_TAGS_POD_NAME = "podName"
+    INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES = "pvCapacityBytes"
+    INSIGHTSMETRICS_TAGS_VOLUME_NAME = "volumeName"
     INSIGHTSMETRICS_FLUENT_TAG = "oms.api.InsightsMetrics"
     REASON_OOM_KILLED = "oomkilled"
     #Kubestate (common)
@@ -45,6 +52,7 @@ class Constants
     MDM_CONTAINER_CPU_UTILIZATION_METRIC = "cpuExceededPercentage"
     MDM_CONTAINER_MEMORY_RSS_UTILIZATION_METRIC = "memoryRssExceededPercentage"
     MDM_CONTAINER_MEMORY_WORKING_SET_UTILIZATION_METRIC = "memoryWorkingSetExceededPercentage"
+    MDM_PV_UTILIZATION_METRIC = "pvUsageExceededPercentage"
     MDM_NODE_CPU_USAGE_PERCENTAGE = "cpuUsagePercentage"
     MDM_NODE_MEMORY_RSS_PERCENTAGE = "memoryRssPercentage"
     MDM_NODE_MEMORY_WORKING_SET_PERCENTAGE = "memoryWorkingSetPercentage"
@@ -56,9 +64,11 @@ class Constants
     CPU_USAGE_MILLI_CORES = "cpuUsageMillicores"
     MEMORY_WORKING_SET_BYTES= "memoryWorkingSetBytes"
     MEMORY_RSS_BYTES = "memoryRssBytes"
+    PV_USED_BYTES = "pvUsedBytes"
     DEFAULT_MDM_CPU_UTILIZATION_THRESHOLD = 95.0
     DEFAULT_MDM_MEMORY_RSS_THRESHOLD = 95.0
     DEFAULT_MDM_MEMORY_WORKING_SET_THRESHOLD = 95.0
+    DEFAULT_MDM_PV_UTILIZATION_THRESHOLD = 60.0
     CONTROLLER_KIND_JOB = "job"
     CONTAINER_TERMINATION_REASON_COMPLETED = "completed"
     CONTAINER_STATE_TERMINATED = "terminated"
@@ -71,7 +81,12 @@ class Constants
     CONTAINER_METRICS_HEART_BEAT_EVENT = "ContainerMetricsMdmHeartBeatEvent"
     POD_READY_PERCENTAGE_HEART_BEAT_EVENT = "PodReadyPercentageMdmHeartBeatEvent"
     CONTAINER_RESOURCE_UTIL_HEART_BEAT_EVENT = "ContainerResourceUtilMdmHeartBeatEvent"
+    PV_USAGE_HEART_BEAT_EVENT = "PVUsageMdmHeartBeatEvent"
+    PV_KUBE_SYSTEM_METRICS_ENABLED_EVENT = "CollectPVKubeSystemMetricsEnabled"
     TELEMETRY_FLUSH_INTERVAL_IN_MINUTES = 10
     KUBE_STATE_TELEMETRY_FLUSH_INTERVAL_IN_MINUTES = 15
     MDM_TIME_SERIES_FLUSHED_IN_LAST_HOUR = "MdmTimeSeriesFlushedInLastHour"
+
+    #Pod Statuses
+    POD_STATUS_TERMINATING = "Terminating"
 end

@@ -16,7 +16,7 @@ module Fluent
     config_param :enable_log, :integer, :default => 0
     config_param :log_path, :string, :default => "/var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log"
     config_param :custom_metrics_azure_regions, :string
-    config_param :metrics_to_collect, :string, :default => "Constants::CPU_USAGE_NANO_CORES,Constants::MEMORY_WORKING_SET_BYTES,Constants::MEMORY_RSS_BYTES"
+    config_param :metrics_to_collect, :string, :default => "Constants::CPU_USAGE_NANO_CORES,Constants::MEMORY_WORKING_SET_BYTES,Constants::MEMORY_RSS_BYTES,Constants::PV_USED_BYTES"
 
     @@hostName = (OMS::Common.get_hostname)
 
@@ -46,11 +46,13 @@ module Fluent
         @metrics_to_collect_hash = build_metrics_hash
         @log.debug "After check_custom_metrics_availability process_incoming_stream #{@process_incoming_stream}"
         @@containerResourceUtilTelemetryTimeTracker = DateTime.now.to_time.to_i
+        @@pvUsageTelemetryTimeTracker = DateTime.now.to_time.to_i
 
         # These variables keep track if any resource utilization threshold exceeded in the last 10 minutes
         @containersExceededCpuThreshold = false
         @containersExceededMemRssThreshold = false
         @containersExceededMemWorkingSetThreshold = false
+        @pvExceededUsageThreshold = false
 
         # initialize cpu and memory limit
         if @process_incoming_stream
@@ -60,6 +62,7 @@ module Fluent
           @containerCpuLimitHash = {}
           @containerMemoryLimitHash = {}
           @containerResourceDimensionHash = {}
+          @pvUsageHash = {}
           @@metric_threshold_hash = MdmMetricsGenerator.getContainerResourceUtilizationThresholds
         end
       rescue => e
@@ -87,6 +90,8 @@ module Fluent
           @containersExceededMemRssThreshold = true
         elsif metricName == Constants::MEMORY_WORKING_SET_BYTES
           @containersExceededMemWorkingSetThreshold = true
+        elsif metricName == Constants::PV_USED_BYTES
+          @pvExceededUsageThreshold = true
         end
       rescue => errorStr
         @log.info "Error in setThresholdExceededTelemetry: #{errorStr}"
@@ -109,13 +114,30 @@ module Fluent
           properties["MemRssThresholdExceededInLastFlushInterval"] = @containersExceededMemRssThreshold
           properties["MemWSetThresholdExceededInLastFlushInterval"] = @containersExceededMemWorkingSetThreshold
           ApplicationInsightsUtility.sendCustomEvent(Constants::CONTAINER_RESOURCE_UTIL_HEART_BEAT_EVENT, properties)
-          @@containerResourceUtilTelemetryTimeTracker = DateTime.now.to_time.to_i
           @containersExceededCpuThreshold = false
           @containersExceededMemRssThreshold = false
           @containersExceededMemWorkingSetThreshold = false
+          @@containerResourceUtilTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
       rescue => errorStr
-        @log.info "Error in flushMetricTelemetry: #{errorStr}"
+        @log.info "Error in flushMetricTelemetry: #{errorStr} for container resource util telemetry"
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      end
+
+      # Also send for PV usage metrics
+      begin
+        pvTimeDifference = (DateTime.now.to_time.to_i - @@pvUsageTelemetryTimeTracker).abs
+        pvTimeDifferenceInMinutes = pvTimeDifference / 60
+        if (pvTimeDifferenceInMinutes >= Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
+          pvProperties = {}
+          pvProperties["PVUsageThresholdPercentage"] = @@metric_threshold_hash[Constants::PV_USED_BYTES]
+          pvProperties["PVUsageThresholdExceededInLastFlushInterval"] = @pvExceededUsageThreshold
+          ApplicationInsightsUtility.sendCustomEvent(Constants::PV_USAGE_HEART_BEAT_EVENT, pvProperties)
+          @pvExceededUsageThreshold = false
+          @@pvUsageTelemetryTimeTracker = DateTime.now.to_time.to_i
+        end
+      rescue => errorStr
+        @log.info "Error in flushMetricTelemetry: #{errorStr} for PV usage telemetry"
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
@@ -123,6 +145,13 @@ module Fluent
     def filter(tag, time, record)
       begin
         if @process_incoming_stream
+
+          # Check if insights metrics for PV metrics
+          data_type = record["DataType"]
+          if data_type == "INSIGHTS_METRICS_BLOB"
+            return filterPVInsightsMetrics(record)
+          end
+
           object_name = record["DataItems"][0]["ObjectName"]
           counter_name = record["DataItems"][0]["Collections"][0]["CounterName"]
           percentage_metric_value = 0.0
@@ -199,6 +228,47 @@ module Fluent
         end #end if block for process incoming stream check
       rescue Exception => e
         @log.info "Error processing cadvisor record Exception: #{e.class} Message: #{e.message}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
+        return [] #return empty array if we ran into any errors
+      end
+    end
+
+    def filterPVInsightsMetrics(record)
+      begin
+        mdmMetrics = []
+        record["DataItems"].each do |dataItem|
+
+          if dataItem["Name"] == Constants::PV_USED_BYTES && @metrics_to_collect_hash.key?(dataItem["Name"].downcase)
+            metricName = dataItem["Name"]
+            usage = dataItem["Value"]
+            capacity = dataItem["Tags"][Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES]
+            if capacity != 0
+              percentage_metric_value = (usage * 100.0) / capacity
+            end
+            @log.info "percentage_metric_value for metric: #{metricName} percentage: #{percentage_metric_value}"
+            @log.info "@@metric_threshold_hash for #{metricName}: #{@@metric_threshold_hash[metricName]}"
+
+            computer = dataItem["Computer"]
+            resourceDimensions = dataItem["Tags"]
+            thresholdPercentage = @@metric_threshold_hash[metricName]
+
+            flushMetricTelemetry
+            if percentage_metric_value >= thresholdPercentage
+              setThresholdExceededTelemetry(metricName)
+              return MdmMetricsGenerator.getPVResourceUtilMetricRecords(dataItem["CollectionTime"],
+                                                                       metricName,
+                                                                       computer,
+                                                                       percentage_metric_value,
+                                                                       resourceDimensions,
+                                                                       thresholdPercentage)
+            else
+              return []
+            end # end if block for percentage metric > configured threshold % check
+          end # end if block for dataItem name check
+        end # end for block of looping through data items
+        return []
+      rescue Exception => e
+        @log.info "Error processing cadvisor insights metrics record Exception: #{e.class} Message: #{e.message}"
         ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
         return [] #return empty array if we ran into any errors
       end

@@ -1,5 +1,5 @@
 version: 1.0-preview-1
 steps:
   - build: -t {{.Run.Registry}}/public/azuremonitor/containerinsights/cidev:{{.Run.Branch}}-{{.Run.Date}}-{{.Run.Commit | substr 0 7 }} .
-    workingDirectory: ci_feature
-  - push: ["{{.Run.Registry}}/public/azuremonitor/containerinsights/cidev:{{.Run.Branch}}-{{.Run.Date}}-{{.Run.Commit | substr 0 7 }}"] 
+    workingDirectory: ci_dev
+  - push: ["{{.Run.Registry}}/public/azuremonitor/containerinsights/cidev:{{.Run.Branch}}-{{.Run.Date}}-{{.Run.Commit | substr 0 7 }}"]

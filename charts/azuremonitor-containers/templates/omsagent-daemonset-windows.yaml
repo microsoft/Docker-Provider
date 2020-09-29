@@ -25,6 +25,13 @@ spec:
     dockerProviderVersion: {{ .Values.omsagent.image.dockerProviderVersion }}
     schema-versions: "v1"
   spec:
+{{- if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion }}
+   nodeSelector:
+      kubernetes.io/os: windows
+{{- else }}
+   nodeSelector:
+      beta.kubernetes.io/os: windows
+{{- end }}
    {{- if .Values.omsagent.rbac }}
    serviceAccountName: omsagent
    {{- end }}
@@ -45,6 +52,13 @@ spec:
        {{- if ne .Values.omsagent.env.clusterRegion "<your_cluster_region>" }}
        - name: AKS_REGION
          value: {{ .Values.omsagent.env.clusterRegion | quote }}
+       {{- end }}
+       {{- else if ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>" }}
+       - name: AKS_RESOURCE_ID
+         value: {{ .Values.Azure.Cluster.ResourceId | quote }}
+       {{- if ne .Values.Azure.Cluster.Region "<your_cluster_region>" }}
+       - name: AKS_REGION
+         value: {{ .Values.Azure.Cluster.Region | quote }}
        {{- end }}
        {{- else }}
        - name: ACS_RESOURCE_NAME
@@ -80,9 +94,6 @@ spec:
               - C:\opt\omsagentwindows\scripts\cmd\livenessProbe.cmd
           periodSeconds: 60
           initialDelaySeconds: 180
-   {{- with .Values.omsagent.daemonsetwindows.affinity }}
-   affinity: {{- toYaml . | nindent 8 }}
-   {{- end }}
    {{- with .Values.omsagent.tolerations }}
    tolerations: {{- toYaml . | nindent 8 }}
    {{- end }}

@@ -9,6 +9,12 @@
 
     .PARAMETER clusterResourceId
         Id of the Azure Managed Cluster such as Azure ARC K8s, ARO v4 etc.
+    .PARAMETER servicePrincipalClientId
+        Client Id of the service principal which will be used for the azure login
+    .PARAMETER servicePrincipalClientSecret
+        Client secret of the service principal which will be used for the azure login
+    .PARAMETER tenantId
+        Azure TenantId of the service principal which will be used for the azure login
     .PARAMETER kubeContext (optional)
         kube-context of the k8 cluster to install Azure Monitor for containers HELM chart
     .PARAMETER workspaceResourceId (optional)
@@ -34,6 +40,12 @@ param(
     [Parameter(mandatory = $true)]
     [string]$clusterResourceId,
     [Parameter(mandatory = $false)]
+    [string]$servicePrincipalClientId,
+    [Parameter(mandatory = $false)]
+    [string]$servicePrincipalClientSecret,
+    [Parameter(mandatory = $false)]
+    [string]$tenantId,
+    [Parameter(mandatory = $false)]
     [string]$kubeContext,
     [Parameter(mandatory = $false)]
     [string]$workspaceResourceId,
@@ -53,6 +65,7 @@ $helmChartRepoUrl = "https://kubernetes-charts-incubator.storage.googleapis.com/
 # flags to indicate the cluster types
 $isArcK8sCluster = $false
 $isAksCluster =  $false
+$isUsingServicePrincipal = $false
 
 if([string]::IsNullOrEmpty($helmRepoName) -eq $false){
     $helmChartRepoName = $helmRepoName
@@ -220,6 +233,13 @@ if (($clusterResourceId.ToLower().Contains("microsoft.kubernetes/connectedcluste
     exit
 }
 
+if(([string]::IsNullOrEmpty($servicePrincipalClientId) -eq $false) -and
+   ([string]::IsNullOrEmpty($servicePrincipalClientSecret) -eq $false) -and
+   ([string]::IsNullOrEmpty($tenantId) -eq $false)) {
+   Write-Host("Using service principal creds for the azure login since these provided.")
+   $isUsingServicePrincipal = $true
+}
+
 if ($clusterResourceId.ToLower().Contains("microsoft.kubernetes/connectedclusters") -eq $true) {
    $isArcK8sCluster = $true
 } elseif ($clusterResourceId.ToLower().Contains("microsoft.containerservice/managedclusters") -eq $true) {
@@ -230,6 +250,12 @@ $resourceParts = $clusterResourceId.Split("/")
 $clusterSubscriptionId = $resourceParts[2]
 
 Write-Host("Cluster SubscriptionId : '" + $clusterSubscriptionId + "' ") -ForegroundColor Green
+
+if ($isUsingServicePrincipal) {
+    $spSecret = ConvertTo-SecureString -String $servicePrincipalClientSecret -AsPlainText -Force
+    $spCreds = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $servicePrincipalClientId,$spSecret
+    Connect-AzAccount -ServicePrincipal -Credential $spCreds -Tenant $tenantId -Subscription $clusterSubscriptionId
+}
 
 try {
     Write-Host("")
@@ -247,8 +273,14 @@ catch {
 
 if ($null -eq $account.Account) {
     try {
-        Write-Host("Please login...")
-        Connect-AzAccount -subscriptionid $clusterSubscriptionId
+        if ($isUsingServicePrincipal) {
+            $spSecret = ConvertTo-SecureString -String $servicePrincipalClientSecret -AsPlainText -Force
+            $spCreds = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $servicePrincipalClientId,$spSecret
+            Connect-AzAccount -ServicePrincipal -Credential $spCreds -Tenant $tenantId -Subscription $clusterSubscriptionId
+        } else {
+         Write-Host("Please login...")
+         Connect-AzAccount -subscriptionid $clusterSubscriptionId
+       }
     }
     catch {
         Write-Host("")
@@ -498,7 +530,7 @@ try {
     helm repo add $helmChartRepoName $helmChartRepoUrl
     Write-Host("updating helm repo to get latest version of charts")
     helm repo update
-    $helmParameters = "omsagent.secret.wsid=$workspaceGUID,omsagent.secret.key=$workspacePrimarySharedKey,omsagent.env.clusterId=$clusterResourceId"
+    $helmParameters = "omsagent.secret.wsid=$workspaceGUID,omsagent.secret.key=$workspacePrimarySharedKey,omsagent.env.clusterId=$clusterResourceId,omsagent.env.clusterRegion=$clusterRegion"
     if([string]::IsNullOrEmpty($proxyEndpoint) -eq $false) {
         Write-Host("using proxy endpoint since its provided")
         $helmParameters = $helmParameters + ",omsagent.proxy=$proxyEndpoint"

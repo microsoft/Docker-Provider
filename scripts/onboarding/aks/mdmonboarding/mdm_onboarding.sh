@@ -15,7 +15,7 @@
 #
 # For example:
 #
-# https://raw.githubusercontent.com/Microsoft/OMS-docker/ci_feature/docs/aks/mdmonboarding/mdm_onboarding.sh | bash -s "00000000-0000-0000-0000-000000000000" "MyAKSClusterRG" "MyAKSCluster"
+# https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/scripts/onboarding/aks/mdmonboarding/mdm_onboarding.sh | bash -s "00000000-0000-0000-0000-000000000000" "MyAKSClusterRG" "MyAKSCluster"
 #
 
 echo "subscriptionId"= ${1}

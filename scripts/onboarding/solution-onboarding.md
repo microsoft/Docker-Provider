@@ -6,8 +6,8 @@ You can either use the Azure Powershell or Azure cli to deploy the solution.
 If you are not familiar with the concepts of deploying resources using a template with PowerShell, see [Deploy resources with Resource Manager templates and Azure PowerShell](https://review.docs.microsoft.com/en-us/azure/azure-resource-manager/resource-group-template-deploy)
 
 1. Get the below template files to your local computer.
-   - Template file [azuremonitor-containerSolution.json](https://github.com/Microsoft/OMS-docker/blob/ci_feature_prod/docs/templates/azuremonitor-containerSolution.json)
-   - TemplateParams file [azuremonitor-containerSolutionParams.json](https://github.com/Microsoft/OMS-docker/blob/ci_feature_prod/docs/templates/azuremonitor-containerSolutionParams.json)
+   - Template file [azuremonitor-containerSolution.json](https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/scripts/onboarding/templates/azuremonitor-containerSolution.json)
+   - TemplateParams file [azuremonitor-containerSolutionParams.json](https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/scripts/onboarding/templates/azuremonitor-containerSolutionParams.json)
 2. Edit the TemplateParams file in your local computer.
    * workspaceResourceId parameter :
        - Replace `<SubscriptionId>` with Azure subscriptionID for your Workspace

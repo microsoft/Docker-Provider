@@ -7,6 +7,12 @@
 
     .PARAMETER clusterResourceId
         Id of the Azure Managed Cluster such as Azure ARC K8s, ARO v4 etc.
+    .PARAMETER servicePrincipalClientId
+        client Id of the service principal which will be used for the azure login
+    .PARAMETER servicePrincipalClientSecret
+        client secret of the service principal which will be used for the azure login
+    .PARAMETER tenantId
+        tenantId of the service principal which will be used for the azure login
     .PARAMETER kubeContext (optional)
         kube-context of the k8 cluster to install Azure Monitor for containers HELM chart
 
@@ -22,6 +28,11 @@
 param(
     [Parameter(mandatory = $true)]
     [string]$clusterResourceId,
+    [string]$servicePrincipalClientId,
+    [Parameter(mandatory = $false)]
+    [string]$servicePrincipalClientSecret,
+    [Parameter(mandatory = $false)]
+    [string]$tenantId,
     [Parameter(mandatory = $false)]
     [string]$kubeContext
 )
@@ -33,6 +44,7 @@ $helmChartName = "azuremonitor-containers"
 $isArcK8sCluster = $false
 $isAksCluster =  $false
 $isAroV4Cluster = $false
+$isUsingServicePrincipal = $false
 
 # checks the required Powershell modules exist and if not exists, request the user permission to install
 $azAccountModule = Get-Module -ListAvailable -Name Az.Accounts
@@ -199,10 +211,23 @@ if ($clusterResourceId.ToLower().Contains("microsoft.kubernetes/connectedcluster
    $isAroV4Cluster = $true
 }
 
+if(([string]::IsNullOrEmpty($servicePrincipalClientId) -eq $false) -and
+   ([string]::IsNullOrEmpty($servicePrincipalClientSecret) -eq $false) -and
+   ([string]::IsNullOrEmpty($tenantId) -eq $false)) {
+    Write-Host("Using service principal creds for the azure login since provided.")
+    $isUsingServicePrincipal = $true
+ }
+
 $resourceParts = $clusterResourceId.Split("/")
 $clusterSubscriptionId = $resourceParts[2]
 
 Write-Host("Cluster SubscriptionId : '" + $clusterSubscriptionId + "' ") -ForegroundColor Green
+
+if ($isUsingServicePrincipal) {
+    $spSecret = ConvertTo-SecureString -String $servicePrincipalClientSecret -AsPlainText -Force
+    $spCreds = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $servicePrincipalClientId,$spSecret
+    Connect-AzAccount -ServicePrincipal -Credential $spCreds -Tenant $tenantId -Subscription $clusterSubscriptionId
+}
 
 try {
     Write-Host("")
@@ -220,8 +245,15 @@ catch {
 
 if ($null -eq $account.Account) {
     try {
-        Write-Host("Please login...")
-        Connect-AzAccount -subscriptionid $clusterSubscriptionId
+
+        if ($isUsingServicePrincipal) {
+            $spSecret = ConvertTo-SecureString -String $servicePrincipalClientSecret -AsPlainText -Force
+            $spCreds = New-Object -TypeName "System.Management.Automation.PSCredential" -ArgumentList $servicePrincipalClientId,$spSecret
+            Connect-AzAccount -ServicePrincipal -Credential $spCreds -Tenant $tenantId -Subscription $clusterSubscriptionId
+        } else {
+           Write-Host("Please login...")
+          Connect-AzAccount -subscriptionid $clusterSubscriptionId
+        }
     }
     catch {
         Write-Host("")

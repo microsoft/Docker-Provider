@@ -64,7 +64,7 @@ data:
       tag oms.containerinsights.KubePodInventory
       run_interval 60
       log_level debug
-      custom_metrics_azure_regions eastus,southcentralus,westcentralus,westus2,southeastasia,northeurope,westeurope,southafricanorth,centralus,northcentralus,eastus2,koreacentral,eastasia,centralindia,uksouth,canadacentral,francecentral,japaneast,australiaeast
+      custom_metrics_azure_regions eastus,southcentralus,westcentralus,westus2,southeastasia,northeurope,westeurope,southafricanorth,centralus,northcentralus,eastus2,koreacentral,eastasia,centralindia,uksouth,canadacentral,francecentral,japaneast,australiaeast,eastus2,westus,australiasoutheast,brazilsouth,germanywestcentral,northcentralus,switzerlandnorth
      </source>
 
      #Kubernetes events
@@ -117,15 +117,15 @@ data:
 
      <filter mdm.kubenodeinventory**>
       type filter_inventory2mdm
-      custom_metrics_azure_regions eastus,southcentralus,westcentralus,westus2,southeastasia,northeurope,westeurope,southafricanorth,centralus,northcentralus,eastus2,koreacentral,eastasia,centralindia,uksouth,canadacentral,francecentral,japaneast,australiaeast
+      custom_metrics_azure_regions eastus,southcentralus,westcentralus,westus2,southeastasia,northeurope,westeurope,southafricanorth,centralus,northcentralus,eastus2,koreacentral,eastasia,centralindia,uksouth,canadacentral,francecentral,japaneast,australiaeast,eastus2,westus,australiasoutheast,brazilsouth,germanywestcentral,northcentralus,switzerlandnorth
       log_level info
      </filter>
 
      #custom_metrics_mdm filter plugin for perf data from windows nodes
      <filter mdm.cadvisorperf**>
       type filter_cadvisor2mdm
-      custom_metrics_azure_regions eastus,southcentralus,westcentralus,westus2,southeastasia,northeurope,westeurope,southafricanorth,centralus,northcentralus,eastus2,koreacentral,eastasia,centralindia,uksouth,canadacentral,francecentral,japaneast,australiaeast
-      metrics_to_collect cpuUsageNanoCores,memoryWorkingSetBytes
+      custom_metrics_azure_regions eastus,southcentralus,westcentralus,westus2,southeastasia,northeurope,westeurope,southafricanorth,centralus,northcentralus,eastus2,koreacentral,eastasia,centralindia,uksouth,canadacentral,francecentral,japaneast,australiaeast,eastus2,westus,australiasoutheast,brazilsouth,germanywestcentral,northcentralus,switzerlandnorth
+      metrics_to_collect cpuUsageNanoCores,memoryWorkingSetBytes,pvUsedBytes
       log_level info
      </filter>
 
@@ -337,13 +337,13 @@ spec:
         tier: node
       annotations:
         agentVersion: "1.10.0.1"
-        dockerProviderVersion: "10.0.0-4"
+        dockerProviderVersion: "10.0.0-5"
         schema-versions: "v1"
     spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08072020"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod09162020"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -387,6 +387,13 @@ spec:
               name: host-log
             - mountPath: /var/lib/docker/containers
               name: containerlog-path
+              readOnly: true
+            - mountPath: /mnt/docker
+              name: containerlog-path-2
+              readOnly: true
+            - mountPath: /mnt/containers
+              name: containerlog-path-3
+              readOnly: true
             - mountPath: /etc/kubernetes/host
               name: azure-json-path
             - mountPath: /etc/omsagent-secret
@@ -412,7 +419,8 @@ spec:
             nodeSelectorTerms:
               - labelSelector:
                 matchExpressions:
-                  - key: beta.kubernetes.io/os
+      # kubernetes.io/os label doesnt exist in k8s versions < 1.14  so make sure to choose label based on k8s version in aks yaml
+                  - key: kubernetes.io/os
                     operator: In
                     values:
                     - linux
@@ -444,6 +452,12 @@ spec:
         - name: containerlog-path
           hostPath:
             path: /var/lib/docker/containers
+        - name: containerlog-path-2
+          hostPath:
+            path: /mnt/docker
+        - name: containerlog-path-3
+          hostPath:
+            path: /mnt/containers
         - name: azure-json-path
           hostPath:
             path: /etc/kubernetes
@@ -480,13 +494,13 @@ spec:
         rsName: "omsagent-rs"
       annotations:
         agentVersion: "1.10.0.1"
-        dockerProviderVersion: "10.0.0-4"
+        dockerProviderVersion: "10.0.0-5"
         schema-versions: "v1"
     spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod08072020"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod09162020"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -528,8 +542,6 @@ spec:
               name: docker-sock
             - mountPath: /var/log
               name: host-log
-            - mountPath: /var/lib/docker/containers
-              name: containerlog-path
             - mountPath: /etc/kubernetes/host
               name: azure-json-path
             - mountPath: /etc/omsagent-secret
@@ -588,9 +600,6 @@ spec:
         - name: host-log
           hostPath:
             path: /var/log
-        - name: containerlog-path
-          hostPath:
-            path: /var/lib/docker/containers
         - name: azure-json-path
           hostPath:
             path: /etc/kubernetes
@@ -631,13 +640,13 @@ spec:
         tier: node-win
       annotations:
         agentVersion: "1.10.0.1"
-        dockerProviderVersion: "10.0.0-4"
+        dockerProviderVersion: "10.0.0-5"
         schema-versions: "v1"
     spec:
      serviceAccountName: omsagent
      containers:
        - name: omsagent-win
-         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod08072020"
+         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod09162020"
          imagePullPolicy: IfNotPresent
          resources:
           limits:

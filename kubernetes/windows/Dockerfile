@@ -1,9 +1,9 @@
-FROM mcr.microsoft.com/windows/servercore@sha256:921bed01c2a023310bdbaa288edebd82c4910e536ff206b87e9cbe703ca27505
+FROM mcr.microsoft.com/windows/servercore:ltsc2019
 MAINTAINER OMSContainers@microsoft.com
 LABEL vendor=Microsoft\ Corp \
     com.microsoft.product="Azure Monitor for containers"
 
-ARG IMAGE_TAG=win-ciprod08072020
+ARG IMAGE_TAG=win-ciprod09162020
 
 # Do not split this into multiple RUN!
 # Docker creates a layer for every RUN-Statement
