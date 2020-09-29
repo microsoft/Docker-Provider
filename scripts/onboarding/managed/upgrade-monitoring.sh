@@ -16,13 +16,14 @@
 set -e
 set -o pipefail
 
+# released chart version for azure arc k8s public preview
+mcrChartVersion="2.7.6"
+mcr="mcr.microsoft.com"
+mcrChartRepoPath="azuremonitor/containerinsights/preview/azuremonitor-containers"
+
 # default to public cloud since only supported cloud is azure public clod
 defaultAzureCloud="AzureCloud"
 
-# released chart version for azure arc k8s public preview
-mcr="mcr.microsoft.com"
-mcrChartVersion="2.7.5"
-mcrChartRepoPath="azuremonitor/containerinsights/preview/azuremonitor-containers"
 # for arc k8s, mcr will be used hence the local repo name is .
 helmLocalRepoName="."
 helmChartName="azuremonitor-containers"

@@ -69,7 +69,7 @@ $isUsingServicePrincipal = $false
 
 # released chart version for azure arc k8s public preview
 $mcr = "mcr.microsoft.com"
-$mcrChartVersion = "2.7.5"
+$mcrChartVersion = "2.7.6"
 $mcrChartRepoPath = "azuremonitor/containerinsights/preview/azuremonitor-containers"
 # for arc k8s, mcr will be used hence the local repo name is .
 $helmLocalRepoName = "."
