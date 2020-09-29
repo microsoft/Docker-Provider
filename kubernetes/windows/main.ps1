@@ -265,12 +265,12 @@ function Generate-Certificates {
 
 function Bootstrap-CACertificates {
     try {
+        # This is required when the root CA certs are different for some clouds.
         $caCerts=Invoke-WebRequest 'http://168.63.129.16/machine?comp=acmspackage&type=cacertificates&ext=json' -UseBasicParsing | ConvertFrom-Json
         if (![string]::IsNullOrEmpty($caCerts)) {
             $certificates = $caCerts.Certificates
             for ($index = 0; $index -lt $certificates.Length ; $index++) {
                 $name=$certificates[$index].Name
-                # Write-Host "certificate-object: $($certificates[$index])"
                 $certificates[$index].CertBody > $name
                 Write-Host "name: $($name)"
                 Import-Certificate -FilePath .\$name  -CertStoreLocation 'Cert:\LocalMachine\Root' -Verbose
