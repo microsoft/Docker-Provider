@@ -6,7 +6,7 @@
        2. Deletes logAnalyticsWorkspaceResourceId tag on the provided Managed cluster
 
     .PARAMETER clusterResourceId
-        Id of the Azure Managed Cluster such as Azure Arc enabled Kubernetes K8s, ARO v4 etc.
+        Id of the Azure Managed Cluster such as Azure Arc enabled Kubernetes, ARO v4 etc.
     .PARAMETER servicePrincipalClientId
         client Id of the service principal which will be used for the azure login
     .PARAMETER servicePrincipalClientSecret

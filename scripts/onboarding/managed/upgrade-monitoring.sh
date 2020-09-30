@@ -26,8 +26,6 @@ mcrChartRepoPath="azuremonitor/containerinsights/preview/azuremonitor-containers
 
 # default to public cloud since only supported cloud is azure public clod
 defaultAzureCloud="AzureCloud"
-
-# for arc k8s, mcr will be used hence the local repo name is .
 helmLocalRepoName="."
 helmChartName="azuremonitor-containers"
 
@@ -37,16 +35,16 @@ releaseName="azmon-containers-release-1"
 # resource provider for azure arc connected cluster
 arcK8sResourceProvider="Microsoft.Kubernetes/connectedClusters"
 
-# default of resourceProvider is arc k8s and this will get updated based on the provider cluster resource
+# default of resourceProvider is Azure Arc enabled Kubernetes and this will get updated based on the provider cluster resource
 resourceProvider="Microsoft.Kubernetes/connectedClusters"
 
-# arc k8s cluster resource
+# Azure Arc enabled Kubernetes cluster resource
 isArcK8sCluster=false
 
 # openshift project name for aro v4 cluster
 openshiftProjectName="azure-monitor-for-containers"
 
-# arc k8s cluster resource
+# Azure Arc enabled Kubernetes cluster resource
 isAroV4Cluster=false
 
 # default global params
@@ -301,7 +299,7 @@ login_to_azure
 # set the cluster subscription id as active sub for azure cli
 set_azure_subscription $clusterSubscriptionId
 
-# validate cluster identity if its ARC k8s cluster
+# validate cluster identity if its Azure Arc enabled Kubernetes cluster
 if [ "$isArcK8sCluster" = true ]; then
   validate_cluster_identity $clusterResourceGroup $clusterName
 fi

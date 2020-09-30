@@ -60,7 +60,7 @@ aroV4ResourceProvider="Microsoft.RedHatOpenShift/OpenShiftClusters"
 # resource provider for aks cluster
 aksResourceProvider="Microsoft.ContainerService/managedClusters"
 
-# default of resourceProvider is arc k8s and this will get updated based on the provider cluster resource
+# default of resourceProvider is Azure Arc enabled Kubernetes and this will get updated based on the provider cluster resource
 resourceProvider="Microsoft.Kubernetes/connectedClusters"
 
 # resource type for azure log analytics workspace
@@ -68,10 +68,10 @@ workspaceResourceProvider="Microsoft.OperationalInsights/workspaces"
 
 # openshift project name for aro v4 cluster
 openshiftProjectName="azure-monitor-for-containers"
-# arc k8s cluster resource
+# AROv4 cluster resource
 isAroV4Cluster=false
 
-# arc k8s cluster resource
+# Azure Arc enabled Kubernetes cluster resource
 isArcK8sCluster=false
 
 # aks cluster resource
@@ -231,7 +231,6 @@ parse_args() {
     exit 1
   fi
 
-  # detect the resource provider from the provider name in the cluster resource id
   # detect the resource provider from the provider name in the cluster resource id
   if [ $providerName = "microsoft.kubernetes/connectedclusters" ]; then
     echo "provider cluster resource is of Azure Arc enabled Kubernetes cluster type"
