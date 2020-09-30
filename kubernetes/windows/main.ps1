@@ -310,8 +310,10 @@ Remove-WindowsServiceIfItExists "fluentdwinaks"
 Set-EnvironmentVariables
 Start-FileSystemWatcher
 
-#Bootstrapping CA certs for non public clouds
-Bootstrap-CACertificates
+#Bootstrapping CA certs for non public clouds and AKS clusters
+if (![string]::IsNullOrEmpty([System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID"))) {
+    Bootstrap-CACertificates
+}
 
 Generate-Certificates
 Test-CertificatePath
