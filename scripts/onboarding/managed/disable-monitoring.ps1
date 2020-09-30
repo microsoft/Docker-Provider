@@ -1,12 +1,12 @@
 <#
     .DESCRIPTION
 
-     Disables Azure Monitor for containers to monitoring enabled Azure Managed K8s cluster such as Azure Arc K8s, ARO v4 and AKS etc.
+     Disables Azure Monitor for containers to monitoring enabled Azure Managed K8s cluster such as Azure Arc enabled Kubernetes, ARO v4 and AKS etc.
        1. Deletes the existing Azure Monitor for containers helm release
        2. Deletes logAnalyticsWorkspaceResourceId tag on the provided Managed cluster
 
     .PARAMETER clusterResourceId
-        Id of the Azure Managed Cluster such as Azure ARC K8s, ARO v4 etc.
+        Id of the Azure Managed Cluster such as Azure Arc enabled Kubernetes K8s, ARO v4 etc.
     .PARAMETER servicePrincipalClientId
         client Id of the service principal which will be used for the azure login
     .PARAMETER servicePrincipalClientSecret
@@ -18,7 +18,7 @@
 
     Pre-requisites:
       -  Azure Managed cluster Resource Id
-      -  Contributor role permission on the Subscription of the Azure Arc Cluster
+      -  Contributor role permission on the Subscription of the Azure Arc enabled Kubernetes Cluster
       -  Helm v3.0.0 or higher  https://github.com/helm/helm/releases
       -  kube-context of the K8s cluster
  Note: 1. Please make sure you have all the pre-requisistes before running this script.
@@ -298,7 +298,7 @@ if ($isArcK8sCluster -eq $true) {
    # validate identity
    $clusterIdentity = $clusterResource.identity.type.ToString().ToLower()
    if ($clusterIdentity.Contains("systemassigned") -eq $false) {
-     Write-Host("Identity of Azure Arc K8s cluster should be systemassigned but it has identity: $clusterIdentity") -ForegroundColor Red
+     Write-Host("Identity of Azure Arc enabled Kubernetes cluster should be systemassigned but it has identity: $clusterIdentity") -ForegroundColor Red
      exit
    }
 }
@@ -354,7 +354,3 @@ catch {
 }
 
 Write-Host("Successfully disabled Azure Monitor for containers for cluster: $clusteResourceId") -ForegroundColor Green
-
-
-
-

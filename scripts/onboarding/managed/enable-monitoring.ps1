@@ -1,14 +1,14 @@
 <#
     .DESCRIPTION
 
-     Onboards Azure Monitor for containers to Azure Managed Kuberenetes such as Azure Arc K8s, ARO v4 and AKS etc.
+     Onboards Azure Monitor for containers to Azure Managed Kuberenetes such as Azure Arc enabled Kubernetes, ARO v4 and AKS etc.
        1. Creates the Default Azure log analytics workspace if doesn't exist one in specified subscription
        2. Adds the ContainerInsights solution to the Azure log analytics workspace
        3. Adds the workspaceResourceId tag or enable addon (if the cluster is AKS) on the provided Managed cluster resource id
        4. Installs Azure Monitor for containers HELM chart to the K8s cluster in provided via --kube-context
 
     .PARAMETER clusterResourceId
-        Id of the Azure Managed Cluster such as Azure ARC K8s, ARO v4 etc.
+        Id of the Azure Managed Cluster such as Azure Arc enabled Kubernetes, ARO v4 etc.
     .PARAMETER servicePrincipalClientId
         Client Id of the service principal which will be used for the azure login
     .PARAMETER servicePrincipalClientSecret
@@ -189,7 +189,7 @@ if (($null -eq $azAccountModule) -or ($null -eq $azResourcesModule) -or ($null -
 }
 
 if ([string]::IsNullOrEmpty($clusterResourceId)) {
-    Write-Host("Specified Azure Arc ClusterResourceId should not be NULL or empty") -ForegroundColor Red
+    Write-Host("Specified Azure Arc enabled Kubernetes ClusterResourceId should not be NULL or empty") -ForegroundColor Red
     exit
 }
 
@@ -316,7 +316,7 @@ if ($isArcK8sCluster -eq $true) {
     # validate identity
     $clusterIdentity = $clusterResource.identity.type.ToString().ToLower()
     if ($clusterIdentity.contains("systemassigned") -eq $false) {
-        Write-Host("Identity of Azure Arc K8s cluster should be systemassigned but it has identity: $clusterIdentity") -ForegroundColor Red
+        Write-Host("Identity of Azure Arc enabled Kubernetes cluster should be systemassigned but it has identity: $clusterIdentity") -ForegroundColor Red
         exit
     }
 }
@@ -550,7 +550,3 @@ catch {
 
 Write-Host("Successfully enabled Azure Monitor for containers for cluster: $clusterResourceId") -ForegroundColor Green
 Write-Host("Proceed to https://aka.ms/azmon-containers to view your newly onboarded Azure Managed cluster") -ForegroundColor Green
-
-
-
-

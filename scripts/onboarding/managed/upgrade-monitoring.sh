@@ -2,7 +2,7 @@
 #
 # Execute this directly in Azure Cloud Shell (https://shell.azure.com) by pasting (SHIFT+INS on Windows, CTRL+V on Mac or Linux)
 # the following line (beginning with curl...) at the command prompt and then replacing the args:
-#  This scripts upgrades the existing Azure Monitor for containers release on Azure Arc K8s cluster
+#  This scripts upgrades the existing Azure Monitor for containers release on Azure Arc enabled Kubernetes cluster
 #
 #  1. Upgrades existing Azure Monitor for containers release to the K8s cluster in provided via --kube-context
 # Prerequisites :
@@ -11,12 +11,15 @@
 
 # download script
 # curl -o enable-monitoring.sh -L https://aka.ms/upgrade-monitoring-bash-script
+# 1. Using Service Principal for Azure Login
+## bash upgrade-monitoring.sh --client-id <sp client id> --client-secret <sp client secret> --tenant-id <tenant id of the service principal>
+# 2. Using Interactive device login
 # bash upgrade-monitoring.sh --resource-id <clusterResourceId>
 
 set -e
 set -o pipefail
 
-# released chart version for azure arc k8s public preview
+# released chart version for Azure Arc enabled Kubernetes public preview
 mcrChartVersion="2.7.6"
 mcr="mcr.microsoft.com"
 mcrChartRepoPath="azuremonitor/containerinsights/preview/azuremonitor-containers"
@@ -164,7 +167,7 @@ parse_args() {
 
   # detect the resource provider from the provider name in the cluster resource id
   if [ $providerName = "microsoft.kubernetes/connectedclusters" ]; then
-    echo "provider cluster resource is of Azure ARC K8s cluster type"
+    echo "provider cluster resource is of Azure Arc enabled Kubernetes cluster type"
     isArcK8sCluster=true
     resourceProvider=$arcK8sResourceProvider
   elif [ $providerName = "microsoft.redhatopenshift/openshiftclusters" ]; then
@@ -206,7 +209,7 @@ validate_cluster_identity() {
   echo "cluster identity type:" $identitytype
 
   if [[ "$identitytype" != "systemassigned" ]]; then
-    echo "-e only supported cluster identity is systemassigned for Azure ARC K8s cluster type"
+    echo "-e only supported cluster identity is systemassigned for Azure Arc enabled Kubernetes cluster type"
     exit 1
   fi
 
@@ -248,7 +251,6 @@ upgrade_helm_chart_release() {
     echo "installing Azure Monitor for containers HELM chart on to the cluster with kubecontext:${kubeconfigContext} ..."
   fi
 
-  echo "since cluster is azure arc k8s hence using chart from: ${mcr}"
   export HELM_EXPERIMENTAL_OCI=1
 
   echo "pull the chart from ${mcr}/${mcrChartRepoPath}:${mcrChartVersion}"

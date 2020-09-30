@@ -234,7 +234,7 @@ parse_args() {
   # detect the resource provider from the provider name in the cluster resource id
   # detect the resource provider from the provider name in the cluster resource id
   if [ $providerName = "microsoft.kubernetes/connectedclusters" ]; then
-    echo "provider cluster resource is of Azure ARC K8s cluster type"
+    echo "provider cluster resource is of Azure Arc enabled Kubernetes cluster type"
     isArcK8sCluster=true
     resourceProvider=$arcK8sResourceProvider
   elif [ $providerName = "microsoft.redhatopenshift/openshiftclusters" ]; then
@@ -324,7 +324,7 @@ validate_cluster_identity() {
   echo "cluster identity type:" $identitytype
 
   if [[ "$identitytype" != "systemassigned" ]]; then
-    echo "-e only supported cluster identity is systemassigned for Azure ARC K8s cluster type"
+    echo "-e only supported cluster identity is systemassigned for Azure Arc enabled Kubernetes cluster type"
     exit 1
   fi
 
@@ -576,7 +576,7 @@ login_to_azure
 # set the cluster subscription id as active sub for azure cli
 set_azure_subscription $clusterSubscriptionId
 
-# validate cluster identity if its ARC k8s cluster
+# validate cluster identity if its Azure Arc enabled Kubernetes cluster
 if [ "$isArcK8sCluster" = true ]; then
   validate_cluster_identity $clusterResourceGroup $clusterName
 fi
