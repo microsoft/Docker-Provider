@@ -311,7 +311,9 @@ Set-EnvironmentVariables
 Start-FileSystemWatcher
 
 #Bootstrapping CA certs for non public clouds and AKS clusters
-if (![string]::IsNullOrEmpty([System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID"))) {
+$aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID")
+if (![string]::IsNullOrEmpty($aksResourceId) && $aksResourceId.ToLower() -contains "/microsoft.containerservice/managedclusters/")
+{
     Bootstrap-CACertificates
 }
 
