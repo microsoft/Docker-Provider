@@ -312,7 +312,7 @@ Start-FileSystemWatcher
 
 #Bootstrapping CA certs for non public clouds and AKS clusters
 $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID")
-if (![string]::IsNullOrEmpty($aksResourceId) && $aksResourceId.ToLower() -contains "/microsoft.containerservice/managedclusters/")
+if (![string]::IsNullOrEmpty($aksResourceId) -and $aksResourceId.ToLower().Contains("/microsoft.containerservice/managedclusters/"))
 {
     Bootstrap-CACertificates
 }
