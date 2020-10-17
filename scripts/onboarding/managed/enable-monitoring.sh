@@ -42,7 +42,7 @@ set -o pipefail
 defaultAzureCloud="AzureCloud"
 
 # released chart version in mcr
-mcrChartVersion="2.7.6"
+mcrChartVersion="2.7.7"
 mcr="mcr.microsoft.com"
 mcrChartRepoPath="azuremonitor/containerinsights/preview/azuremonitor-containers"
 helmLocalRepoName="."
