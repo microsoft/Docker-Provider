@@ -10,7 +10,7 @@ ARG IMAGE_TAG=win-ciprod10272020
 RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
 # Fluentd depends on cool.io whose fat gem is only available for Ruby < 2.5, so need to specify --platform ruby when install Ruby > 2.5 and install msys2 to get dev tools
 RUN choco install -y ruby --version 2.6.5.1 --params "'/InstallDir:C:\ruby26'" \
-&& choco install -y msys2 --version 20190524.0.0.20191030 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby26\msys64'" \
+&& choco install -y msys2 --version 20200903.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby26\msys64'" \
 && choco install -y vim
 
 # gangams - optional MSYS2 update via ridk failing in merged docker file so skipping that since we dont need optional update
