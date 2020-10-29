@@ -52,7 +52,6 @@ module Fluent
     def enumerate()
       time = Time.now.to_f
       begin
-        insightsMetricsEventStream = MultiEventStream.new
         timeDifference = (DateTime.now.to_time.to_i - @@winNodeQueryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
         @@istestvar = ENV["ISTEST"]
@@ -89,6 +88,7 @@ module Fluent
           begin
             containerGPUusageInsightsMetricsDataItems = []
             containerGPUusageInsightsMetricsDataItems.concat(CAdvisorMetricsAPIClient.getInsightsMetrics(winNode: winNode, metricTime: Time.now.utc.iso8601))
+            insightsMetricsEventStream = MultiEventStream.new
 
             containerGPUusageInsightsMetricsDataItems.each do |insightsMetricsRecord|
               wrapper = {
