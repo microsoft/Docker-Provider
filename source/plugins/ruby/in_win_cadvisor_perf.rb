@@ -10,7 +10,7 @@ module Fluent
     def initialize
       super
       require "yaml"
-      require 'yajl/json_gem'
+      require "yajl/json_gem"
       require "time"
 
       require_relative "CAdvisorMetricsAPIClient"
@@ -52,7 +52,6 @@ module Fluent
     def enumerate()
       time = Time.now.to_f
       begin
-        eventStream = MultiEventStream.new
         insightsMetricsEventStream = MultiEventStream.new
         timeDifference = (DateTime.now.to_time.to_i - @@winNodeQueryTimeTracker).abs
         timeDifferenceInMinutes = timeDifference / 60
@@ -70,6 +69,7 @@ module Fluent
           @@winNodeQueryTimeTracker = DateTime.now.to_time.to_i
         end
         @@winNodes.each do |winNode|
+          eventStream = MultiEventStream.new
           metricData = CAdvisorMetricsAPIClient.getMetrics(winNode: winNode, metricTime: Time.now.utc.iso8601)
           metricData.each do |record|
             if !record.empty?
@@ -81,7 +81,6 @@ module Fluent
           router.emit_stream(@tag, eventStream) if eventStream
           router.emit_stream(@mdmtag, eventStream) if eventStream
 
-          
           if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && eventStream.count > 0)
             $log.info("winCAdvisorPerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
           end
@@ -104,12 +103,12 @@ module Fluent
             router.emit_stream(@mdmtag, insightsMetricsEventStream) if insightsMetricsEventStream
             if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0 && insightsMetricsEventStream.count > 0)
               $log.info("winCAdvisorInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
-            end 
+            end
           rescue => errorStr
             $log.warn "Failed when processing GPU Usage metrics in_win_cadvisor_perf : #{errorStr}"
             $log.debug_backtrace(errorStr.backtrace)
             ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
-          end 
+          end
           #end GPU InsightsMetrics items
 
         end
