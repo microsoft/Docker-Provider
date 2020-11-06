@@ -50,6 +50,10 @@ module Fluent
       @cluster_identity = nil
       @isArcK8sCluster = false
       @get_access_token_backoff_expiry = Time.now
+
+      @mdm_server_exceptions_hash = {}
+      @mdm_server_exception_count = 0
+      @@mdm_exception_telemetry_time_tracker = DateTime.now.to_time.to_i
     end
 
     def configure(conf)
@@ -221,6 +225,20 @@ module Fluent
       end
     end
 
+    def exception_aggregator(response_code)
+      begin
+        if (@mdm_exceptions_hash[response_code].nil?)
+          @mdm_exceptions_hash[response_code] = 1
+        else
+          @mdm_exceptions_hash[response_code] += 1
+        end
+        @mdm_server_exception_count += 1
+      rescue => error
+        @log.info "Error in MDM exception_aggregator method: #{error}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(error)
+      end
+    end
+
     # This method is called every flush interval. Send the buffer chunk to MDM.
     # 'chunk' is a buffer chunk that includes multiple formatted records
     def write(chunk)
@@ -245,6 +263,16 @@ module Fluent
           else
             @log.info "Last Failed POST attempt to MDM was made #{((Time.now - @last_post_attempt_time) / 60).round(1)} min ago. This is less than the current retry threshold of #{@retry_mdm_post_wait_minutes} min. NO-OP"
           end
+        end
+        timeDifference = (DateTime.now.to_time.to_i - @@mdm_exception_telemetry_time_tracker).abs
+        timeDifferenceInMinutes = timeDifference / 60
+        if (timeDifferenceInMinutes >= 60)
+          telemetryProperties = {}
+          telemetryProperties["ExceptionsCountForLastHour"] = @mdm_exceptions_hash.to_json
+          ApplicationInsightsUtility.sendMetricTelemetry(Constants::MDM_EXCEPTION_TELEMETRY_METRIC, @mdm_server_exception_count, telemetryProperties)
+          # Resetting values after flushing
+          @mdm_server_exception_count = 0
+          @mdm_exceptions_hash = {}
         end
       rescue Exception => e
         ApplicationInsightsUtility.sendExceptionTelemetry(e)
@@ -295,8 +323,12 @@ module Fluent
         else
           # raise if the response code is non-400
           @log.info "HTTPServerException when POSTing Metrics to MDM #{e} Response: #{response}"
+          # Adding server exceptions to hash to aggregate and send telemetry
+          exception_aggregator(response.code)
           raise e
         end
+        # Adding exceptions to hash to aggregate and send telemetry
+        exception_aggregator(response.code)
       rescue Errno::ETIMEDOUT => e
         @log.info "Timed out when POSTing Metrics to MDM : #{e} Response: #{response}"
         @log.debug_backtrace(e.backtrace)
