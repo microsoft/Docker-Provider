@@ -51,9 +51,9 @@ module Fluent
       @isArcK8sCluster = false
       @get_access_token_backoff_expiry = Time.now
 
-      @mdm_server_exceptions_hash = {}
+      @mdm_exceptions_hash = {}
       @mdm_exceptions_count = 0
-      @@mdm_exception_telemetry_time_tracker = DateTime.now.to_time.to_i
+      @mdm_exception_telemetry_time_tracker = DateTime.now.to_time.to_i
     end
 
     def configure(conf)
@@ -244,7 +244,7 @@ module Fluent
     def flush_mdm_exception_telemetry
       begin
         #Flush out exception telemetry as a metric for the last 30 minutes
-        timeDifference = (DateTime.now.to_time.to_i - @@mdm_exception_telemetry_time_tracker).abs
+        timeDifference = (DateTime.now.to_time.to_i - @mdm_exception_telemetry_time_tracker).abs
         timeDifferenceInMinutes = timeDifference / 60
         if (timeDifferenceInMinutes >= Constants::MDM_EXCEPTIONS_METRIC_FLUSH_INTERVAL)
           telemetryProperties = {}
@@ -254,6 +254,7 @@ module Fluent
           # Resetting values after flushing
           @mdm_exceptions_count = 0
           @mdm_exceptions_hash = {}
+          @mdm_exception_telemetry_time_tracker = DateTime.now.to_time.to_i
         end
       rescue => error
         @log.info "Error in flush_mdm_exception_telemetry method: #{error}"
