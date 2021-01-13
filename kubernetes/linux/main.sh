@@ -1,5 +1,40 @@
 #!/bin/bash
 
+# check to see if Ikey is properly formatted an instrumentation key
+if [[ $APPLICATIONINSIGHTS_AUTH_ENCODED =~ ^[A-Za-z0-9=]+$ ]]  # regex for base64 encoded data
+then
+      # base64 encoded ikey was passed, decode ikey and write to environment variable
+      export APPLICATIONINSIGHTS_AUTH=$(echo $APPLICATIONINSIGHTS_AUTH_ENCODED )
+else
+      # need to fetch ikey from storage account
+      KEY=$(curl $APPLICATIONINSIGHTS_AUTH_ENCODED )
+
+      # validate that the retrieved data is an instrumentation key
+      if [[ $KEY =~ ^[A-Za-z0-9=]+$ ]]
+      then
+            export APPLICATIONINSIGHTS_AUTH=$(echo $KEY)
+      else
+            # no ikey can be retrieved. Put some value in the ikey and disable telemetry
+            export APPLICATIONINSIGHTS_AUTH=NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi
+            export DISABLE_TELEMETRY=true
+      fi
+fi
+
+echo "export APPLICATIONINSIGHTS_AUTH=$APPLICATIONINSIGHTS_AUTH" >> ~/.bashrc
+
+export TELEMETRY_APPLICATIONINSIGHTS_KEY=$( echo $APPLICATIONINSIGHTS_AUTH | base64 -d )
+echo "export TELEMETRY_APPLICATIONINSIGHTS_KEY=$TELEMETRY_APPLICATIONINSIGHTS_KEY" >> ~/.bashrc
+
+source ~/.bashrc
+
+
+# # old IKey code:
+# aikey=$(echo $APPLICATIONINSIGHTS_AUTH | base64 --decode)
+# export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey
+# echo "export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey" >> ~/.bashrc
+# source ~/.bashrc
+
+
 if [ -e "/etc/config/kube.conf" ]; then
     cat /etc/config/kube.conf > /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 else
@@ -581,11 +616,6 @@ echo "export HOST_ETC=/hostfs/etc" >> ~/.bashrc
 export HOST_VAR=/hostfs/var
 echo "export HOST_VAR=/hostfs/var" >> ~/.bashrc
 
-aikey=$(echo $APPLICATIONINSIGHTS_AUTH | base64 --decode)
-export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey
-echo "export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey" >> ~/.bashrc
-
-source ~/.bashrc
 
 #start telegraf
 /opt/telegraf --config $telegrafConfFile &
@@ -608,4 +638,6 @@ shutdown() {
 
 trap "shutdown" SIGTERM
 
+
+# TODO: why sleep inf and wait? Won't wait wait for sleep inf to exit, which it never will? so just sleep inf should do the same thing?
 sleep inf & wait

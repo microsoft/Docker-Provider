@@ -120,9 +120,34 @@ function Set-EnvironmentVariables {
     }
 
     # Set environment variable for TELEMETRY_APPLICATIONINSIGHTS_KEY
-    $aiKey = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:APPLICATIONINSIGHTS_AUTH))
-    [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKey, "Process")
-    [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKey, "Machine")
+    # (or fetch a custom telemetry key if set)
+    $aiKeyPassed = [System.Environment]::GetEnvironmentVariable('APPLICATIONINSIGHTS_AUTH_ENCODED')
+    if ( $aiKeyPassed -match '^[A-Za-z0-9=]+$') {
+        # instrumentation key directly passed, set environment variable
+        [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", $aiKeyPassed, "Process")
+        [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", $aiKeyPassed, "Machine")
+    }
+    else {
+        $aiKeyFetched = Invoke_WebRequest $aiKeyPassed
+        
+        # make sure the fetched AI key is properly encoded
+        if ($aiKeyFetched -match '^[A-Za-z0-9=]+$') {
+            [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", $aiKeyFetched, "Process")
+            [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", $aiKeyFetched, "Machine")
+        }
+        else {
+            # couldn't fetch the Ikey. Use the default key and turn telemetry off
+            [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", "NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi", "Process")
+            [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", "NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi", "Machine")
+            [System.Environment]::SetEnvironmentVariable("DISABLE_TELEMETRY", "True", "Process")
+            [System.Environment]::SetEnvironmentVariable("DISABLE_TELEMETRY", "True", "Machine")
+        }
+    }
+
+    $aiKeyDecoded = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:APPLICATIONINSIGHTS_AUTH))
+    [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKeyDecoded, "Process")
+    [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKeyDecoded, "Machine")
+
 
     # run config parser
     ruby /opt/omsagentwindows/scripts/ruby/tomlparser.rb

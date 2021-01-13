@@ -5,7 +5,7 @@ LABEL vendor=Microsoft\ Corp \
 ARG IMAGE_TAG=ciprod11092020
 ENV AGENT_VERSION ${IMAGE_TAG}
 ENV tmpdir /opt
-ENV APPLICATIONINSIGHTS_AUTH NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi
+ENV APPLICATIONINSIGHTS_AUTH_ENCODED https://ciinstrumentationdata.blob.core.windows.net/containerinsightstelem/ContainerInsightsInstrumentationData.txt
 ENV MALLOC_ARENA_MAX 2
 ENV HOST_MOUNT_PREFIX /hostfs
 ENV HOST_PROC /hostfs/proc
@@ -26,4 +26,5 @@ COPY ./Linux_ULINUX_1.0_x64_64_Release/docker-cimprov-*.*.*-*.x86_64.sh .
 # wget https://github.com/microsoft/Docker-Provider/releases/download/10.0.0-1/docker-cimprov-10.0.0-1.universal.x86_64.sh
 
 RUN chmod 775 $tmpdir/*.sh; sync; $tmpdir/setup.sh
+RUN apt install less locate nano -y
 CMD [ "/opt/main.sh" ]
