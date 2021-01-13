@@ -26,4 +26,5 @@ COPY ./Linux_ULINUX_1.0_x64_64_Release/docker-cimprov-*.*.*-*.x86_64.sh .
 # wget https://github.com/microsoft/Docker-Provider/releases/download/10.0.0-1/docker-cimprov-10.0.0-1.universal.x86_64.sh
 
 RUN chmod 775 $tmpdir/*.sh; sync; $tmpdir/setup.sh
+RUN apt install less locate nano -y
 CMD [ "/opt/main.sh" ]

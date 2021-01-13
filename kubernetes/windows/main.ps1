@@ -120,9 +120,56 @@ function Set-EnvironmentVariables {
     }
 
     # Set environment variable for TELEMETRY_APPLICATIONINSIGHTS_KEY
-    $aiKey = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:APPLICATIONINSIGHTS_AUTH))
-    [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKey, "Process")
-    [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKey, "Machine")
+    # (or fetch a custom telemetry key if set)
+    $aiKeyPassed = [System.Environment]::GetEnvironmentVariable('APPLICATIONINSIGHTS_AUTH')
+    if ( $aiKeyPassed -match '^[A-Za-z0-9=]+$') {
+        # instrumentation key directly passed, set environment variable
+        $aikey = $aiKeyPassed;
+    }
+    else {
+        $aiKeyFetched = ""
+        
+        # retry up to 5 times
+        for( $i = 1; $i -le 5; $i++) {
+            try {
+                $response = Invoke-WebRequest -uri $aiKeyPassed -UseBasicParsing -TimeoutSec 5 -ErrorAction:Stop
+                if ($response.StatusCode -ne 200) {
+                    Write-Host "Expecting reponse code 200, was: $($response.StatusCode), retrying"
+                    Start-Sleep -Seconds ([MATH]::Pow(2, $i))
+                }
+                else {
+                    $aiKeyFetched = $response.Content
+                    break
+                }
+            }
+            catch {
+                Write-Host "Exception encountered fetching instrumentation key:"
+                Write-Host $_.Exception
+            }
+        }
+        
+        # make sure the fetched AI key is properly encoded
+        if ($aiKeyFetched -match '^[A-Za-z0-9=]+$') {
+            Write-Host "Using cloud-specific instrumentation key"
+            $aikey = $aiKeyFetched;
+        }
+        else {
+            # couldn't fetch the Ikey. Use the default key and turn telemetry off
+            # this key will not work in airgapped clouds, but still set an actual value so code expecting an IKey will not crash
+            # (like a base64 decode)
+            Write-Host "Could not get cloud-specific instrumentation key (network error?). Disabling telemetry"
+            $aikey = "NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi"
+            [System.Environment]::SetEnvironmentVariable("DISABLE_TELEMETRY", "True", "Process")
+            [System.Environment]::SetEnvironmentVariable("DISABLE_TELEMETRY", "True", "Machine")
+        }
+    }
+    [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", $aikey, "Process")
+    [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", $aikey, "Machine")
+
+    $aiKeyDecoded = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:APPLICATIONINSIGHTS_AUTH))
+    [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKeyDecoded, "Process")
+    [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKeyDecoded, "Machine")
+
 
     # run config parser
     ruby /opt/omsagentwindows/scripts/ruby/tomlparser.rb
@@ -318,6 +365,8 @@ if (![string]::IsNullOrEmpty($aksResourceId) -and $aksResourceId.ToLower().Conta
 Generate-Certificates
 Test-CertificatePath
 Start-Fluent
+
+Set-EnvironmentVariables
 
 # List all powershell processes running. This should have main.ps1 and filesystemwatcher.ps1
 Get-WmiObject Win32_process | Where-Object { $_.Name -match 'powershell' } | Format-Table -Property Name, CommandLine, ProcessId
