@@ -358,7 +358,7 @@ spec:
         tier: node
       annotations:
         agentVersion: "1.10.0.1"
-        dockerProviderVersion: "11.0.0-1"
+        dockerProviderVersion: "12.0.0-0"
         schema-versions: "v1"
     spec:
       serviceAccountName: omsagent
@@ -368,7 +368,7 @@ spec:
             value: "3"       
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod11092020"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod01112021"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -521,13 +521,13 @@ spec:
         rsName: "omsagent-rs"
       annotations:
         agentVersion: "1.10.0.1"
-        dockerProviderVersion: "11.0.0-1"
+        dockerProviderVersion: "12.0.0-0"
         schema-versions: "v1"
     spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod11092020"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod01112021"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -675,7 +675,7 @@ spec:
         tier: node-win
       annotations:
         agentVersion: "1.10.0.1"
-        dockerProviderVersion: "11.0.0-1"
+        dockerProviderVersion: "12.0.0-0"
         schema-versions: "v1"
     spec:
      serviceAccountName: omsagent
@@ -685,7 +685,7 @@ spec:
             value: "3"     
      containers:
        - name: omsagent-win
-         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod11092020"
+         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod01112021"
          imagePullPolicy: IfNotPresent
          resources:
           limits:
