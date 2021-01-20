@@ -642,6 +642,4 @@ shutdown() {
 
 trap "shutdown" SIGTERM
 
-
-# TODO: why sleep inf and wait? Won't wait wait for sleep inf to exit, which it never will? so just sleep inf should do the same thing?
 sleep inf & wait
