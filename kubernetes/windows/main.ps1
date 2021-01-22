@@ -119,12 +119,12 @@ function Set-EnvironmentVariables {
         $env:AZMON_AGENT_CFG_SCHEMA_VERSION
     }
 
-    # Check if the instrumentation key needs to be fetched from a storage account (as in arigapped clouds)
+    # Check if the instrumentation key needs to be fetched from a storage account (as in airgapped clouds)
     $aiKeyURl = [System.Environment]::GetEnvironmentVariable('APPLICATIONINSIGHTS_AUTH_URL')
     if ($aiKeyURl) {
         $aiKeyFetched = ""
         # retry up to 5 times
-        for( $i = 1; $i -le 5; $i++) {
+        for( $i = 1; $i -le 4; $i++) {
             try {
                 $response = Invoke-WebRequest -uri $aiKeyURl -UseBasicParsing -TimeoutSec 5 -ErrorAction:Stop
 

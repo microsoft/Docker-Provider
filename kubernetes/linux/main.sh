@@ -163,7 +163,7 @@ echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >> ~/.bashrc
 
 # Check if the instrumentation key needs to be fetched from a storage account (as in airgapped clouds)
 if [ ${#APPLICATIONINSIGHTS_AUTH_URL} -ge 1 ]; then  # (check if APPLICATIONINSIGHTS_AUTH_URL has length >=1)
-      for BACKOFF in {1..5}; do
+      for BACKOFF in {1..4}; do
             KEY=$(curl -sS $APPLICATIONINSIGHTS_AUTH_URL )
             # there's no easy way to get the HTTP status code from curl, so just check if the result is well formatted
             if [[ $KEY =~ ^[A-Za-z0-9=]+$ ]]; then
