@@ -161,7 +161,7 @@ fi
 export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT
 echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >> ~/.bashrc
 
-# Check if the instrumentation key needs to be fetched from a storage account (as in arigapped clouds)
+# Check if the instrumentation key needs to be fetched from a storage account (as in airgapped clouds)
 if [ ${#APPLICATIONINSIGHTS_AUTH_URL} -ge 1 ]; then  # (check if APPLICATIONINSIGHTS_AUTH_URL has length >=1)
       for BACKOFF in {1..5}; do
             KEY=$(curl -sS $APPLICATIONINSIGHTS_AUTH_URL )
