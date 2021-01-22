@@ -119,23 +119,18 @@ function Set-EnvironmentVariables {
         $env:AZMON_AGENT_CFG_SCHEMA_VERSION
     }
 
-    # Set environment variable for TELEMETRY_APPLICATIONINSIGHTS_KEY
-    # (or fetch a custom telemetry key if set)
-    $aiKeyPassed = [System.Environment]::GetEnvironmentVariable('APPLICATIONINSIGHTS_AUTH')
-    if ( $aiKeyPassed -match '^[A-Za-z0-9=]+$') {
-        # instrumentation key directly passed, set environment variable
-        $aikey = $aiKeyPassed;
-    }
-    else {
+    # Check if the instrumentation key needs to be fetched from a storage account (as in arigapped clouds)
+    $aiKeyURl = [System.Environment]::GetEnvironmentVariable('APPLICATIONINSIGHTS_AUTH_URL')
+    if ($aiKeyURl) {
         $aiKeyFetched = ""
-        
         # retry up to 5 times
         for( $i = 1; $i -le 5; $i++) {
             try {
-                $response = Invoke-WebRequest -uri $aiKeyPassed -UseBasicParsing -TimeoutSec 5 -ErrorAction:Stop
+                $response = Invoke-WebRequest -uri $aiKeyURl -UseBasicParsing -TimeoutSec 5 -ErrorAction:Stop
+
                 if ($response.StatusCode -ne 200) {
                     Write-Host "Expecting reponse code 200, was: $($response.StatusCode), retrying"
-                    Start-Sleep -Seconds ([MATH]::Pow(2, $i))
+                    Start-Sleep -Seconds ([MATH]::Pow(2, $i) / 4)
                 }
                 else {
                     $aiKeyFetched = $response.Content
@@ -148,23 +143,19 @@ function Set-EnvironmentVariables {
             }
         }
         
-        # make sure the fetched AI key is properly encoded
+        # Check if the fetched IKey was properly encoded. if not then turn off telemetry
         if ($aiKeyFetched -match '^[A-Za-z0-9=]+$') {
             Write-Host "Using cloud-specific instrumentation key"
-            $aikey = $aiKeyFetched;
+            [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", $aiKeyFetched, "Process")
+            [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", $aiKeyFetched, "Machine")
         }
         else {
-            # couldn't fetch the Ikey. Use the default key and turn telemetry off
-            # this key will not work in airgapped clouds, but still set an actual value so code expecting an IKey will not crash
-            # (like a base64 decode)
+            # Couldn't fetch the Ikey, turn telemetry off
             Write-Host "Could not get cloud-specific instrumentation key (network error?). Disabling telemetry"
-            $aikey = "NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi"
             [System.Environment]::SetEnvironmentVariable("DISABLE_TELEMETRY", "True", "Process")
             [System.Environment]::SetEnvironmentVariable("DISABLE_TELEMETRY", "True", "Machine")
         }
     }
-    [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", $aikey, "Process")
-    [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", $aikey, "Machine")
 
     $aiKeyDecoded = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:APPLICATIONINSIGHTS_AUTH))
     [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKeyDecoded, "Process")
@@ -371,7 +362,3 @@ Get-WmiObject Win32_process | Where-Object { $_.Name -match 'powershell' } | For
 
 #check if fluentd service is running
 Get-Service fluentdwinaks
-
-
-
-

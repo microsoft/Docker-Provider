@@ -1,44 +1,5 @@
 #!/bin/bash
 
-# check to see if Ikey is properly formatted an instrumentation key
-if [[ $APPLICATIONINSIGHTS_AUTH =~ ^[A-Za-z0-9=]+$ ]]  # regex for base64 encoded data
-then
-      # base64 encoded ikey was passed, decode ikey and write to environment variable
-      export APPLICATIONINSIGHTS_AUTH=$(echo $APPLICATIONINSIGHTS_AUTH )
-else
-      # need to fetch ikey from storage account
-      for BACKOFF in {0..5}; do
-            KEY=$(curl -sS $APPLICATIONINSIGHTS_AUTH )
-
-            # there's no easy way to get the HTTP status code from curl, so just check if the result is well formatted
-            if [[ $KEY =~ ^[A-Za-z0-9=]+$ ]]; then
-                  break
-            else
-                  # (exponential backoff)
-                  sleep $((2**$BACKOFF / 4))
-            fi
-      done
-
-      # validate that the retrieved data is an instrumentation key
-      if [[ $KEY =~ ^[A-Za-z0-9=]+$ ]]; then
-            export APPLICATIONINSIGHTS_AUTH=$(echo $KEY)
-            echo "Using cloud-specific instrumentation key"
-      else
-            # no ikey can be retrieved. Put some value in the ikey and disable telemetry
-            export APPLICATIONINSIGHTS_AUTH=NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi
-            export DISABLE_TELEMETRY=true
-            echo "Could not get cloud-specific instrumentation key (network error?). Disabling telemetry"
-      fi
-fi
-
-echo "export APPLICATIONINSIGHTS_AUTH=$APPLICATIONINSIGHTS_AUTH" >> ~/.bashrc
-
-export TELEMETRY_APPLICATIONINSIGHTS_KEY=$( echo $APPLICATIONINSIGHTS_AUTH | base64 -d )
-echo "export TELEMETRY_APPLICATIONINSIGHTS_KEY=$TELEMETRY_APPLICATIONINSIGHTS_KEY" >> ~/.bashrc
-
-source ~/.bashrc
-
-
 if [ -e "/etc/config/kube.conf" ]; then
     cat /etc/config/kube.conf > /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 else
@@ -199,6 +160,39 @@ else
 fi
 export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT
 echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >> ~/.bashrc
+
+# Check if the instrumentation key needs to be fetched from a storage account (as in arigapped clouds)
+if [ ${#APPLICATIONINSIGHTS_AUTH_URL} -ge 1 ]; then  # (check if APPLICATIONINSIGHTS_AUTH_URL has length >=1)
+      for BACKOFF in {1..5}; do
+            KEY=$(curl -sS $APPLICATIONINSIGHTS_AUTH_URL )
+            # there's no easy way to get the HTTP status code from curl, so just check if the result is well formatted
+            if [[ $KEY =~ ^[A-Za-z0-9=]+$ ]]; then
+                  break
+            else
+                  sleep $((2**$BACKOFF / 4))  # (exponential backoff)
+            fi
+      done
+
+      # validate that the retrieved data is an instrumentation key
+      if [[ $KEY =~ ^[A-Za-z0-9=]+$ ]]; then
+            export APPLICATIONINSIGHTS_AUTH=$(echo $KEY)
+            echo "export APPLICATIONINSIGHTS_AUTH=$APPLICATIONINSIGHTS_AUTH" >> ~/.bashrc
+            echo "Using cloud-specific instrumentation key"
+      else
+            # no ikey can be retrieved. Disable telemetry and continue
+            export DISABLE_TELEMETRY=true
+            echo "export DISABLE_TELEMETRY=true" >> ~/.bashrc
+            echo "Could not get cloud-specific instrumentation key (network error?). Disabling telemetry"
+      fi
+fi
+
+
+aikey=$(echo $APPLICATIONINSIGHTS_AUTH | base64 --decode)	
+export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey	
+echo "export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey" >> ~/.bashrc	
+
+source ~/.bashrc
+
 
 #Parse the configmap to set the right environment variables.
 /opt/microsoft/omsagent/ruby/bin/ruby tomlparser.rb
