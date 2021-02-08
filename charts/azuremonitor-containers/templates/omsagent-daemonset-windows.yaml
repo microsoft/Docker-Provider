@@ -27,10 +27,11 @@ spec:
     checksum/secret: {{ include (print $.Template.BasePath "/omsagent-secret.yaml") . | sha256sum }}
     checksum/config: {{ toYaml .Values.omsagent.resources | sha256sum }}
   spec:
-   dnsConfig:    
+   priorityClassName: omsagent
+   dnsConfig:
      options:
        - name: ndots
-         value: "3"     
+         value: "3"
 {{- if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion }}
    nodeSelector:
       kubernetes.io/os: windows
