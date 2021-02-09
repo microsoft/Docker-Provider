@@ -2,7 +2,7 @@
 # This pod priority class is used for daemonsets to allow them to have priority
 # over pods that can be scheduled elsewhere.  Without a priority class, it is
 # possible for a node to fill up with pods before the daemonset pods get to be
-# created for the pod or get scheduled.  Note that pods are not "daemonset"
+# created for the node or get scheduled.  Note that pods are not "daemonset"
 # pods - they are just pods created by the daemonset controller but they have
 # a specific affinity set during creation to the specific node each pod was
 # created to run on (daemonset controller takes care of that)
