@@ -32,19 +32,16 @@ import (
 // DataType for Container Log
 const ContainerLogDataType = "CONTAINER_LOG_BLOB"
 
+//DataType for Container Log v2
+const ContainerLogV2DataType = "CONTAINERINSIGHTS_CONTAINERLOGV2"
+
 // DataType for Insights metric
 const InsightsMetricsDataType = "INSIGHTS_METRICS_BLOB"
-
-// DataType for ApplicationInsights AppRequests
-const AppRequestsDataType = "APPLICATIONINSIGHTS_APPREQUESTS"
-
-// DataType for ApplicationInsights AppDependencies
-const AppDependenciesDataType = "APPLICATIONINSIGHTS_APPDEPENDENCIES"
 
 // DataType for KubeMonAgentEvent
 const KubeMonAgentEventDataType = "KUBE_MON_AGENT_EVENTS_BLOB"
 
-//env varibale which has ResourceId for LA
+//env variable which has ResourceId for LA
 const ResourceIdEnv = "AKS_RESOURCE_ID"
 
 //env variable which has ResourceName for NON-AKS
@@ -84,19 +81,25 @@ const DaemonSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimpr
 const ReplicaSetContainerLogPluginConfFilePath = "/etc/opt/microsoft/docker-cimprov/out_oms.conf"
 const WindowsContainerLogPluginConfFilePath = "/etc/omsagentwindows/out_oms.conf"
 
-// IPName for Container Log
-const IPName = "Containers"
+// IPName
+const IPName = "ContainerInsights"
+
+
 const defaultContainerInventoryRefreshInterval = 60
 
 const kubeMonAgentConfigEventFlushInterval = 60
 
 //Eventsource name in mdsd
-const MdsdSourceName = "ContainerLogSource"
+const MdsdContainerLogSourceName = "ContainerLogSource"
+const MdsdContainerLogV2SourceName = "ContainerLogV2Source"
 
-//container logs route - v2 (v2=flush to oneagent, adx= flush to adx ingestion, anything else flush to ODS[default])
+//container logs route (v2=flush to oneagent, adx= flush to adx ingestion, anything else flush to ODS[default])
 const ContainerLogsV2Route = "v2"
 
 const ContainerLogsADXRoute = "adx"
+
+//container logs schema (v2=ContainerLogsV2 table in LA, anything else ContainerLogs table in LA. This is applicable only if Container logs route is NOT ADX)
+const ContainerLogV2SchemaVersion = "v2"
 
 var (
 	// PluginConfiguration the plugins configuration
@@ -131,6 +134,8 @@ var (
 	ContainerLogsRouteV2 bool
 	// container log route for routing thru ADX
 	ContainerLogsRouteADX bool
+	// container log schema (applicable only for non-ADX route)
+	ContainerLogSchemaV2 bool
 	//ADX Cluster URI
 	AdxClusterUri string
 	// ADX clientID
@@ -186,8 +191,8 @@ var (
 	userAgent            = ""
 )
 
-// DataItem represents the object corresponding to the json that is sent by fluentbit tail plugin
-type DataItem struct {
+// DataItemLAv1 == ContainerLog table in LA
+type DataItemLAv1 struct {
 	LogEntry              string `json:"LogEntry"`
 	LogEntrySource        string `json:"LogEntrySource"`
 	LogEntryTimeStamp     string `json:"LogEntryTimeStamp"`
@@ -199,17 +204,32 @@ type DataItem struct {
 	Computer              string `json:"Computer"`
 }
 
-type DataItemADX struct {
-	TimeGenerated string `json:"TimeGenerated"`
-	Computer      string `json:"Computer"`
-	ContainerID   string `json:"ContainerID"`
-	ContainerName string `json:"ContainerName"`
-	PodName       string `json:"PodName"`
-	PodNamespace  string `json:"PodNamespace"`
-	LogMessage    string `json:"LogMessage"`
-	LogSource     string `json:"LogSource"`
+// DataItemLAv2 == ContainerLogV2 table in LA
+// Please keep the names same as destination column names, to avoid transforming one to another in the pipeline
+type DataItemLAv2 struct {
+	TimeGenerated         string `json:"TimeGenerated"`
+	Computer              string `json:"Computer"`
+	ContainerId           string `json:"ContainerId"`
+	ContainerName         string `json:"ContainerName"`
+	PodName				  string `json:"PodName"`
+	PodNamespace          string `json:"PodNamespace"`
+	LogMessage            string `json:"LogMessage"`
+	LogSource             string `json:"LogSource"`
 	//PodLabels			  string `json:"PodLabels"`
-	AzureResourceId string `json:"AzureResourceId"`
+}
+
+// DataItemADX == ContainerLogV2 table in ADX
+type DataItemADX struct {
+	TimeGenerated         string `json:"TimeGenerated"`
+	Computer              string `json:"Computer"`
+	ContainerId           string `json:"ContainerId"`
+	ContainerName         string `json:"ContainerName"`
+	PodName				  string `json:"PodName"`
+	PodNamespace          string `json:"PodNamespace"`
+	LogMessage            string `json:"LogMessage"`
+	LogSource             string `json:"LogSource"`
+	//PodLabels			  string `json:"PodLabels"`
+	AzureResourceId       string `json:"AzureResourceId"`
 }
 
 // telegraf metric DataItem represents the object corresponding to the json that is sent by fluentbit tail plugin
@@ -225,85 +245,6 @@ type laTelegrafMetric struct {
 	Computer       string `json:"Computer"`
 }
 
-type appMapOsmRequestMetric struct {
-	time                  string  `json:"time"`
-	Id                    string  `json:"Id"`
-	Source                string  `json:"Source"`
-	Name                  string  `json:"Name"`
-	Url                   string  `json:"Url"`
-	Success               bool    `json:"Success"`
-	ResultCode            string  `json:"ResultCode"`
-	DurationMs            float64 `json:"DurationMs"`
-	PerformanceBucket     string  `json:"PerformanceBucket"`
-	Properties            string  `json:"Properties"`
-	Measurements          string  `json:"Measurements"`
-	OperationName         string  `json:"OperationName"`
-	OperationId           string  `json:"OperationId"`
-	ParentId              string  `json:"ParentId"`
-	SyntheticSource       string  `json:"SyntheticSource"`
-	SessionId             string  `json:"SessionId"`
-	UserId                string  `json:"UserId"`
-	UserAuthenticatedId   string  `json:"UserAuthenticatedId"`
-	UserAccountId         string  `json:"UserAccountId"`
-	AppVersion            string  `json:"AppVersion"`
-	AppRoleName           string  `json:"AppRoleName"`
-	AppRoleInstance       string  `json:"AppRoleInstance"`
-	ClientType            string  `json:"ClientType"`
-	ClientModel           string  `json:"ClientModel"`
-	ClientOS              string  `json:"ClientOS"`
-	ClientIP              string  `json:"ClientIP"`
-	ClientCity            string  `json:"ClientCity"`
-	ClientStateOrProvince string  `json:"ClientStateOrProvince"`
-	ClientCountryOrRegion string  `json:"ClientCountryOrRegion"`
-	ClientBrowser         string  `json:"ClientBrowser"`
-	ResourceGUID          string  `json:"ResourceGUID"`
-	IKey                  string  `json:"IKey"`
-	SDKVersion            string  `json:"SDKVersion"`
-	ItemCount             int64   `json:"ItemCount"`
-	ReferencedItemId      string  `json:"ReferencedItemId"`
-	ReferencedType        string  `json:"ReferencedType"`
-}
-
-type appMapOsmDependencyMetric struct {
-	time                  string  `json:"time"`
-	Id                    string  `json:"Id"`
-	Target                string  `json:"Target"`
-	DependencyType        string  `json:"DependencyType"`
-	Name                  string  `json:"Name"`
-	Data                  string  `json:"Data"`
-	Success               bool    `json:"Success"`
-	ResultCode            string  `json:"ResultCode"`
-	DurationMs            float64 `json:"DurationMs"`
-	PerformanceBucket     string  `json:"PerformanceBucket"`
-	Properties            string  `json:"Properties"`
-	Measurements          string  `json:"Measurements"`
-	OperationName         string  `json:"OperationName"`
-	OperationId           string  `json:"OperationId"`
-	ParentId              string  `json:"ParentId"`
-	SyntheticSource       string  `json:"SyntheticSource"`
-	SessionId             string  `json:"SessionId"`
-	UserId                string  `json:"UserId"`
-	UserAuthenticatedId   string  `json:"UserAuthenticatedId"`
-	UserAccountId         string  `json:"UserAccountId"`
-	AppVersion            string  `json:"AppVersion"`
-	AppRoleName           string  `json:"AppRoleName"`
-	AppRoleInstance       string  `json:"AppRoleInstance"`
-	ClientType            string  `json:"ClientType"`
-	ClientModel           string  `json:"ClientModel"`
-	ClientOS              string  `json:"ClientOS"`
-	ClientIP              string  `json:"ClientIP"`
-	ClientCity            string  `json:"ClientCity"`
-	ClientStateOrProvince string  `json:"ClientStateOrProvince"`
-	ClientCountryOrRegion string  `json:"ClientCountryOrRegion"`
-	ClientBrowser         string  `json:"ClientBrowser"`
-	ResourceGUID          string  `json:"ResourceGUID"`
-	IKey                  string  `json:"IKey"`
-	SDKVersion            string  `json:"SDKVersion"`
-	ItemCount             int64   `json:"ItemCount"`
-	ReferencedItemId      string  `json:"ReferencedItemId"`
-	ReferencedType        string  `json:"ReferencedType"`
-}
-
 // ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
 type InsightsMetricsBlob struct {
 	DataType  string             `json:"DataType"`
@@ -311,23 +252,18 @@ type InsightsMetricsBlob struct {
 	DataItems []laTelegrafMetric `json:"DataItems"`
 }
 
-type AppMapOsmRequestBlob struct {
-	DataType  string                   `json:"DataType"`
-	IPName    string                   `json:"IPName"`
-	DataItems []appMapOsmRequestMetric `json:"DataItems"`
-}
-
-type AppMapOsmDependencyBlob struct {
-	DataType  string                      `json:"DataType"`
-	IPName    string                      `json:"IPName"`
-	DataItems []appMapOsmDependencyMetric `json:"DataItems"`
+// ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
+type ContainerLogBlobLAv1 struct {
+	DataType  string     `json:"DataType"`
+	IPName    string     `json:"IPName"`
+	DataItems []DataItemLAv1 `json:"DataItems"`
 }
 
 // ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
-type ContainerLogBlob struct {
+type ContainerLogBlobLAv2 struct {
 	DataType  string     `json:"DataType"`
 	IPName    string     `json:"IPName"`
-	DataItems []DataItem `json:"DataItems"`
+	DataItems []DataItemLAv2 `json:"DataItems"`
 }
 
 // MsgPackEntry represents the object corresponding to a single messagepack event in the messagepack stream
@@ -422,20 +358,6 @@ func createLogger() *log.Logger {
 	logger.SetFlags(log.Ltime | log.Lshortfile | log.LstdFlags)
 	return logger
 }
-
-// newUUID generates a random UUID according to RFC 4122
-// func newUUID() (string, error) {
-// 	uuid := make([]byte, 16)
-// 	n, err := io.ReadFull(rand.Reader, uuid)
-// 	if n != len(uuid) || err != nil {
-// 		return "", err
-// 	}
-// 	// variant bits; see section 4.1.1
-// 	uuid[8] = uuid[8]&^0xc0 | 0x80
-// 	// version 4 (pseudo-random); see section 4.1.3
-// 	uuid[6] = uuid[6]&^0xf0 | 0x40
-// 	return fmt.Sprintf("%x-%x-%x-%x-%x", uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:]), nil
-// }
 
 func updateContainerImageNameMaps() {
 	for ; true; <-ContainerImageNameRefreshTicker.C {
@@ -748,18 +670,12 @@ func flushKubeMonAgentEventRecords() {
 }
 
 //Translates telegraf time series to one or more Azure loganalytics metric(s)
-func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetric, []*appMapOsmRequestMetric, []*appMapOsmDependencyMetric, error) {
+func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetric, error) {
+
 	var laMetrics []*laTelegrafMetric
-	var appMapOsmRequestMetrics []*appMapOsmRequestMetric
-	var appMapOsmDependencyMetrics []*appMapOsmDependencyMetric
 	var tags map[interface{}]interface{}
-	// string appName
-	// string destinationAppName
-	// string id
-	// string operationId
 	tags = m["tags"].(map[interface{}]interface{})
 	tagMap := make(map[string]string)
-	metricNamespace := fmt.Sprintf("%s", m["name"])
 	for k, v := range tags {
 		key := fmt.Sprintf("%s", k)
 		if key == "" {
@@ -778,7 +694,7 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 	tagJson, err := json.Marshal(&tagMap)
 
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
 	for k, v := range fieldMap {
@@ -800,145 +716,13 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 
 		//Log ("la metric:%v", laMetric)
 		laMetrics = append(laMetrics, &laMetric)
-
-		// OSM metric population for AppMap
-		metricName := fmt.Sprintf("%s", k)
-		propertyMap := make(map[string]string)
-		propertyMap[fmt.Sprintf("DeploymentId")] = "523a92fea186461581efca83b7b66a0d"
-		propertyMap[fmt.Sprintf("Stamp")] = "Breeze-INT-SCUS"
-		propertiesJson, err := json.Marshal(&propertyMap)
-
-		if err != nil {
-			return nil, nil, nil, err
-		}
-
-		measurementsMap := make(map[string]string)
-		measurementsMap[fmt.Sprintf("AvailableMemory")] = "423"
-		measurementsJson, err := json.Marshal(&measurementsMap)
-
-		if err != nil {
-			return nil, nil, nil, err
-		}
-
-		if (metricName == "envoy_cluster_upstream_rq_active") && (strings.HasPrefix(metricNamespace, "container.azm.ms.osm")) {
-			if fv > 0 {
-				appName := tagMap["app"]
-				destinationAppName := tagMap["envoy_cluster_name"]
-				itemCount := int64(1)
-				success := true
-				// durationMs := float64(1.0)
-				operationId := uuid.New().String()
-				// if err != nil {
-				// 	Log("translateTelegrafMetrics::error while generating operationId GUID: %v\n", err)
-				// }
-				// Log("translateTelegrafMetrics::%s\n", operationId)
-
-				id := uuid.New().String()
-				// if err != nil {
-				// 	Log("translateTelegrafMetrics::error while generating id GUID: %v\n", err)
-				// }
-				Log("translateTelegrafMetrics::%s\n", id)
-				collectionTimeValue := m["timestamp"].(uint64)
-				osmRequestMetric := appMapOsmRequestMetric{
-					// Absolutely needed metrics for topology generation for AppMap
-					time:        time.Unix(int64(collectionTimeValue), 0).Format(time.RFC3339),
-					OperationId: fmt.Sprintf("%s", operationId),
-					ParentId:    fmt.Sprintf("%s", id),
-					AppRoleName: fmt.Sprintf("%s", destinationAppName),
-					DurationMs:  898.42,
-					Success:     success,
-					ItemCount:   42,
-					//metrics to get ingestion working
-					Id:                    fmt.Sprintf("%s", "8be927b9-0bde-4357-87ee-73c13b6f6a05"),
-					Source:                fmt.Sprintf("%s", "Application"),
-					Name:                  fmt.Sprintf("%s", "TestData-Request-DataGen"),
-					Url:                   fmt.Sprintf("%s", "https://portal.azure.com"),
-					ResultCode:            fmt.Sprintf("%s", "200"),
-					PerformanceBucket:     fmt.Sprintf("%s", "500ms-1sec"),
-					Properties:            fmt.Sprintf("%s", propertiesJson),
-					Measurements:          fmt.Sprintf("%s", measurementsJson),
-					OperationName:         fmt.Sprintf("%s", "POST /v2/passthrough"),
-					SyntheticSource:       fmt.Sprintf("%s", "Windows"),
-					SessionId:             fmt.Sprintf("%s", "e357297720214cdc818565f89cfad359"),
-					UserId:                fmt.Sprintf("%s", "5bfb5187ff9742fbaec5b19dd7217f40"),
-					UserAuthenticatedId:   fmt.Sprintf("%s", "somebody@microsoft.com"),
-					UserAccountId:         fmt.Sprintf("%s", "e357297720214cdc818565f89cfad359"),
-					AppVersion:            fmt.Sprintf("%s", "4.2-alpha"),
-					AppRoleInstance:       fmt.Sprintf("%s", "Breeze_IN_42"),
-					ClientType:            fmt.Sprintf("%s", "PC"),
-					ClientModel:           fmt.Sprintf("%s", "Other"),
-					ClientOS:              fmt.Sprintf("%s", "Windows 7"),
-					ClientIP:              fmt.Sprintf("%s", "0.0.0.0"),
-					ClientCity:            fmt.Sprintf("%s", "Sydney"),
-					ClientStateOrProvince: fmt.Sprintf("%s", "New South Wales"),
-					ClientCountryOrRegion: fmt.Sprintf("%s", "Australia"),
-					ClientBrowser:         fmt.Sprintf("%s", "Internet Explorer 9.0"),
-					ResourceGUID:          fmt.Sprintf("%s", "d4e6868c-02e8-41d2-a09d-bbb5ae35af5c"),
-					IKey:                  fmt.Sprintf("%s", "0539013c-a321-46fd-b831-1cc16729b449"),
-					SDKVersion:            fmt.Sprintf("%s", "dotnet:2.2.0-54037"),
-					ReferencedItemId:      fmt.Sprintf("%s", "905812ce-48c3-44ee-ab93-33e8768f59f9"),
-					ReferencedType:        fmt.Sprintf("%s", "IoTRequests"),
-					// Computer:       Computer, //this is the collection agent's computer name, not necessarily to which computer the metric applies to
-				}
-
-				Log("osm request metric:%v", osmRequestMetric)
-				appMapOsmRequestMetrics = append(appMapOsmRequestMetrics, &osmRequestMetric)
-
-				osmDependencyMetric := appMapOsmDependencyMetric{
-					// Absolutely needed metrics for topology generation for AppMap
-					time:        time.Unix(int64(collectionTimeValue), 0).Format(time.RFC3339),
-					Id:          fmt.Sprintf("%s", id),
-					Target:      fmt.Sprintf("%s", destinationAppName),
-					Success:     success,
-					DurationMs:  898.42,
-					OperationId: fmt.Sprintf("%s", operationId),
-					AppRoleName: fmt.Sprintf("%s", appName),
-					ItemCount:   itemCount,
-					//metrics to get ingestion working
-					DependencyType:        fmt.Sprintf("%s", "Ajax"),
-					Name:                  fmt.Sprintf("%s", "TestData-Request-DataGen"),
-					Data:                  fmt.Sprintf("%s", "GET https://n9440-fpj.gmbeelopm.com/HhjmlogpEhiLLL/ECO//GhoppnaBeAelhaekm/3944-40-42J92:22:19.750D/MehgKepmpnlegoDboghnMaedd"),
-					ResultCode:            fmt.Sprintf("%s", "200"),
-					PerformanceBucket:     fmt.Sprintf("%s", "500ms-1sec"),
-					Properties:            fmt.Sprintf("%s", propertiesJson),
-					Measurements:          fmt.Sprintf("%s", measurementsJson),
-					OperationName:         fmt.Sprintf("%s", "POST /v2/passthrough"),
-					ParentId:              fmt.Sprintf("%s", "b1bb1e27-4204-096e-9e89-1f1dfac718fc"),
-					SyntheticSource:       fmt.Sprintf("%s", "Windows"),
-					SessionId:             fmt.Sprintf("%s", "e357297720214cdc818565f89cfad359"),
-					UserId:                fmt.Sprintf("%s", "5bfb5187ff9742fbaec5b19dd7217f40"),
-					UserAuthenticatedId:   fmt.Sprintf("%s", "somebody@microsoft.com"),
-					UserAccountId:         fmt.Sprintf("%s", "e357297720214cdc818565f89cfad359"),
-					AppVersion:            fmt.Sprintf("%s", "4.2-alpha"),
-					AppRoleInstance:       fmt.Sprintf("%s", "Breeze_IN_42"),
-					ClientType:            fmt.Sprintf("%s", "PC"),
-					ClientModel:           fmt.Sprintf("%s", "Other"),
-					ClientOS:              fmt.Sprintf("%s", "Windows 7"),
-					ClientIP:              fmt.Sprintf("%s", "0.0.0.0"),
-					ClientCity:            fmt.Sprintf("%s", "Sydney"),
-					ClientStateOrProvince: fmt.Sprintf("%s", "New South Wales"),
-					ClientCountryOrRegion: fmt.Sprintf("%s", "Australia"),
-					ClientBrowser:         fmt.Sprintf("%s", "Internet Explorer 9.0"),
-					ResourceGUID:          fmt.Sprintf("%s", "d4e6868c-02e8-41d2-a09d-bbb5ae35af5c"),
-					IKey:                  fmt.Sprintf("%s", "0539013c-a321-46fd-b831-1cc16729b449"),
-					SDKVersion:            fmt.Sprintf("%s", "dotnet:2.2.0-54037"),
-					ReferencedItemId:      fmt.Sprintf("%s", "905812ce-48c3-44ee-ab93-33e8768f59f9"),
-					ReferencedType:        fmt.Sprintf("%s", "IoTRequests"),
-				}
-
-				Log("osm dependency metric:%v", osmDependencyMetric)
-				appMapOsmDependencyMetrics = append(appMapOsmDependencyMetrics, &osmDependencyMetric)
-			}
-		}
 	}
-	return laMetrics, appMapOsmRequestMetrics, appMapOsmDependencyMetrics, nil
+	return laMetrics, nil
 }
 
 // send metrics from Telegraf to LA. 1) Translate telegraf timeseries to LA metric(s) 2) Send it to LA as 'InsightsMetrics' fixed type
 func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int {
 	var laMetrics []*laTelegrafMetric
-	var appMapOsmRequestMetrics []*appMapOsmRequestMetric
-	var appMapOsmDependencyMetrics []*appMapOsmDependencyMetric
 
 	if (telegrafRecords == nil) || !(len(telegrafRecords) > 0) {
 		Log("PostTelegrafMetricsToLA::Error:no timeseries to derive")
@@ -946,15 +730,13 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	}
 
 	for _, record := range telegrafRecords {
-		translatedMetrics, osmRequestMetrics, osmDependencyMetrics, err := translateTelegrafMetrics(record)
+		translatedMetrics, err := translateTelegrafMetrics(record)
 		if err != nil {
 			message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when translating telegraf metric to log analytics metric %q", err)
 			Log(message)
 			//SendException(message) //This will be too noisy
 		}
 		laMetrics = append(laMetrics, translatedMetrics...)
-		appMapOsmRequestMetrics = append(appMapOsmRequestMetrics, osmRequestMetrics...)
-		appMapOsmDependencyMetrics = append(appMapOsmDependencyMetrics, osmDependencyMetrics...)
 	}
 
 	if (laMetrics == nil) || !(len(laMetrics) > 0) {
@@ -962,22 +744,6 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		return output.FLB_OK
 	} else {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Info:derived %v metrics from %v timeseries", len(laMetrics), len(telegrafRecords))
-		Log(message)
-	}
-
-	if (appMapOsmRequestMetrics == nil) || !(len(appMapOsmRequestMetrics) > 0) {
-		Log("PostTelegrafMetricsToLA::Info:no OSM request metrics derived from timeseries data")
-		return output.FLB_OK
-	} else {
-		message := fmt.Sprintf("PostTelegrafMetricsToLA::Info:derived osm request %v metrics from %v timeseries", len(appMapOsmRequestMetrics), len(telegrafRecords))
-		Log(message)
-	}
-
-	if (appMapOsmDependencyMetrics == nil) || !(len(appMapOsmDependencyMetrics) > 0) {
-		Log("PostTelegrafMetricsToLA::Info:no OSM dependency metrics derived from timeseries data")
-		return output.FLB_OK
-	} else {
-		message := fmt.Sprintf("PostTelegrafMetricsToLA::Info:derived osm dependency %v metrics from %v timeseries", len(appMapOsmDependencyMetrics), len(telegrafRecords))
 		Log(message)
 	}
 
@@ -994,7 +760,6 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		DataItems: metrics}
 
 	jsonBytes, err := json.Marshal(laTelegrafMetrics)
-	//Log("laTelegrafMetrics-json:%v", laTelegrafMetrics)
 
 	if err != nil {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling json %q", err)
@@ -1005,7 +770,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 	//Post metrics data to LA
 	req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(jsonBytes))
-	//Log("LA request json bytes: %v", jsonBytes)
+
 	//req.URL.Query().Add("api-version","2016-04-01")
 
 	//set headers
@@ -1044,170 +809,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 	numMetrics := len(laMetrics)
 	UpdateNumTelegrafMetricsSentTelemetry(numMetrics, 0, 0)
-	Log("PostTelegrafMetricsToLA::Info:LArequests:Http Request: %v", req)
 	Log("PostTelegrafMetricsToLA::Info:Successfully flushed %v records in %v", numMetrics, elapsed)
-
-	// AppMap Requests
-	var requestMetrics []appMapOsmRequestMetric
-	var j int
-
-	for j = 0; j < len(appMapOsmRequestMetrics); j++ {
-		requestMetrics = append(requestMetrics, *appMapOsmRequestMetrics[j])
-	}
-
-	osmRequestMetrics := AppMapOsmRequestBlob{
-		DataType:  AppRequestsDataType,
-		IPName:    "LogManagement",
-		DataItems: requestMetrics}
-
-	requestJsonBytes, err := json.Marshal(osmRequestMetrics)
-	//Log("app request json bytes: %v", requestJsonBytes)
-
-	if err != nil {
-		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling app requests json %q", err)
-		Log(message)
-		SendException(message)
-		return output.FLB_OK
-	}
-	Log("AppMapOSMRequestMetrics-json:%v", osmRequestMetrics)
-
-	//Post metrics data to LA
-	appRequestReq, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(requestJsonBytes))
-	// appRequestReq, _ := http.NewRequest("POST", OMSEndpoint+"?api-version=2016-04-01", bytes.NewBuffer(requestJsonBytes))
-	//appRequestReq, _ := http.NewRequest("POST", "https://dd513101-45ad-4dc0-b6dd-42d88361399e.ods.opinsights.azure.com/collector?api-version=2018-05-01", bytes.NewBuffer(requestJsonBytes))
-
-	//appRequestReq.URL.Query().Add("api-version", "2016-04-01")
-
-	//set headers
-	appRequestReq.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
-	appRequestReq.Header.Set("User-Agent", userAgent)
-	//appRequestReq.Header.Set("Log-Type", AppRequestsDataType)
-	appRequestReq.Header.Set("ocp-workspace-id", WorkspaceID)
-	appRequestReq.Header.Set("ocp-is-dynamic-data-type", "False")
-	appRequestReq.Header.Set("ocp-intelligence-pack-name", "Azure")
-	appRequestReq.Header.Set("ocp-json-nesting-resolution", "records")
-	appRequestReq.Header.Set("time-generated-field", time.Now().Format(time.RFC3339))
-	appRequestReq.Header.Set("data-available-time", time.Now().Format(time.RFC3339))
-	appRequestReq.Header.Set("x-ms-OboLocation", "North Europe")
-	appRequestReq.Header.Set("x-ms-ServiceIdentity", "ApplicationInsights")
-	appRequestReq.Header.Set("Content-Type", "application/json")
-	// appRequestReq.Header.Set("Content-Encoding", "gzip")
-
-	// appRequestReq.Header.Set("x-ms-ResourceLocation", "records")
-
-	appRequestReqID := uuid.New().String()
-	appRequestReq.Header.Set("X-Request-ID", appRequestReqID)
-
-	//expensive to do string len for every request, so use a flag
-	if ResourceCentric == true {
-		appRequestReq.Header.Set("x-ms-AzureResourceId", ResourceID)
-	}
-
-	reqStart := time.Now()
-	appRequestResp, err := HTTPClient.Do(appRequestReq)
-	reqElapsed := time.Since(reqStart)
-
-	if err != nil {
-		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending apprequest %v metrics. duration:%v err:%q \n", len(appMapOsmRequestMetrics), reqElapsed, err.Error())
-		Log(message)
-		UpdateNumTelegrafMetricsSentTelemetry(0, 1, 0)
-		return output.FLB_RETRY
-	}
-
-	if appRequestResp == nil || appRequestResp.StatusCode != 200 {
-		if appRequestResp != nil {
-			Log("PostTelegrafMetricsToLA::Error:(retriable) app requests RequestID %s Response Status %v Status Code %v", appRequestReqID, appRequestResp.Status, appRequestResp.StatusCode)
-		}
-		if appRequestResp != nil && appRequestResp.StatusCode == 429 {
-			UpdateNumTelegrafMetricsSentTelemetry(0, 1, 1)
-		}
-		return output.FLB_RETRY
-	}
-
-	defer appRequestResp.Body.Close()
-
-	appRequestNumMetrics := len(appMapOsmRequestMetrics)
-	UpdateNumTelegrafMetricsSentTelemetry(appRequestNumMetrics, 0, 0)
-	Log("PostTelegrafMetricsToLA::Info:AppRequests:Http Request: %v", appRequestReq)
-	Log("PostTelegrafMetricsToLA::Info:AppRequests:Successfully flushed %v records in %v with status code %v", appRequestNumMetrics, reqElapsed, appRequestResp.StatusCode)
-
-	// AppMap Dependencies
-	var dependencyMetrics []appMapOsmDependencyMetric
-	var myint int
-
-	for myint = 0; myint < len(appMapOsmDependencyMetrics); myint++ {
-		dependencyMetrics = append(dependencyMetrics, *appMapOsmDependencyMetrics[myint])
-	}
-
-	osmDependencyMetrics := AppMapOsmDependencyBlob{
-		DataType:  AppDependenciesDataType,
-		IPName:    "LogManagement",
-		DataItems: dependencyMetrics}
-
-	dependencyJsonBytes, err := json.Marshal(osmDependencyMetrics)
-	Log("AppMapOSMDependencyMetrics-json:%v", osmDependencyMetrics)
-	//Log("app dependency json bytes: %v", dependencyJsonBytes)
-
-	if err != nil {
-		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling app dependencies json %q", err)
-		Log(message)
-		SendException(message)
-		return output.FLB_OK
-	}
-
-	//Post metrics data to LA
-	appDependencyReq, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(dependencyJsonBytes))
-
-	//req.URL.Query().Add("api-version","2016-04-01")
-
-	//set headers
-	appDependencyReq.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
-	appDependencyReq.Header.Set("User-Agent", userAgent)
-	//appDependencyReq.Header.Set("Log-Type", AppDependenciesDataType)
-	appDependencyReq.Header.Set("ocp-workspace-id", WorkspaceID)
-	appDependencyReq.Header.Set("ocp-is-dynamic-data-type", "False")
-	appDependencyReq.Header.Set("ocp-intelligence-pack-name", "Azure")
-	appDependencyReq.Header.Set("ocp-json-nesting-resolution", "records")
-	appDependencyReq.Header.Set("time-generated-field", time.Now().Format(time.RFC3339))
-	appDependencyReq.Header.Set("data-available-time", time.Now().Format(time.RFC3339))
-	appDependencyReq.Header.Set("x-ms-OboLocation", "North Europe")
-	appDependencyReq.Header.Set("x-ms-ServiceIdentity", "ApplicationInsights")
-	appDependencyReq.Header.Set("Content-Type", "application/json")
-	appDependencyReqID := uuid.New().String()
-	appDependencyReq.Header.Set("X-Request-ID", appDependencyReqID)
-
-	//expensive to do string len for every request, so use a flag
-	if ResourceCentric == true {
-		appDependencyReq.Header.Set("x-ms-AzureResourceId", ResourceID)
-	}
-
-	depStart := time.Now()
-	appDependencyResp, err := HTTPClient.Do(appDependencyReq)
-	depElapsed := time.Since(depStart)
-
-	if err != nil {
-		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending appdependency %v metrics. duration:%v err:%q \n", len(appMapOsmDependencyMetrics), elapsed, err.Error())
-		Log(message)
-		UpdateNumTelegrafMetricsSentTelemetry(0, 1, 0)
-		return output.FLB_RETRY
-	}
-
-	if appDependencyResp == nil || appDependencyResp.StatusCode != 200 {
-		if appDependencyResp != nil {
-			Log("PostTelegrafMetricsToLA::Error:(retriable) app dependency RequestID %s Response Status %v Status Code %v", appDependencyReqID, appDependencyResp.Status, appDependencyResp.StatusCode)
-		}
-		if appDependencyResp != nil && appDependencyResp.StatusCode == 429 {
-			UpdateNumTelegrafMetricsSentTelemetry(0, 1, 1)
-		}
-		return output.FLB_RETRY
-	}
-
-	defer appDependencyResp.Body.Close()
-
-	appDependencyNumMetrics := len(appMapOsmDependencyMetrics)
-	UpdateNumTelegrafMetricsSentTelemetry(appDependencyNumMetrics, 0, 0)
-	Log("PostTelegrafMetricsToLA::Info:AppDependency:Http Request: %v", appDependencyReq)
-	Log("PostTelegrafMetricsToLA::Info:AppDependency:Successfully flushed %v records in %v with status code - %v", appDependencyNumMetrics, depElapsed, appDependencyResp.StatusCode)
 
 	return output.FLB_OK
 }
@@ -1223,7 +825,8 @@ func UpdateNumTelegrafMetricsSentTelemetry(numMetricsSent int, numSendErrors int
 // PostDataHelper sends data to the ODS endpoint or oneagent or ADX
 func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	start := time.Now()
-	var dataItems []DataItem
+	var dataItemsLAv1 []DataItemLAv1
+	var dataItemsLAv2 []DataItemLAv2
 	var dataItemsADX []DataItemADX
 
 	var msgPackEntries []MsgPackEntry
@@ -1261,26 +864,42 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		}
 
 		stringMap = make(map[string]string)
+		//below id & name are used by latency telemetry in both v1 & v2 LA schemas
+		id := ""
+	    name := ""
 
 		logEntry := ToString(record["log"])
 		logEntryTimeStamp := ToString(record["time"])
-		stringMap["LogEntry"] = logEntry
-		stringMap["LogEntrySource"] = logEntrySource
-		stringMap["LogEntryTimeStamp"] = logEntryTimeStamp
-		stringMap["SourceSystem"] = "Containers"
-		stringMap["Id"] = containerID
+		//ADX Schema & LAv2 schema are almost the same (except resourceId)
+		if (ContainerLogSchemaV2 == true || ContainerLogsRouteADX == true) {
+			stringMap["Computer"] = Computer
+			stringMap["ContainerId"] = containerID
+			stringMap["ContainerName"] = containerName
+			stringMap["PodName"] = k8sPodName
+			stringMap["PodNamespace"] = k8sNamespace
+			stringMap["LogMessage"] = logEntry
+			stringMap["LogSource"] = logEntrySource
+			stringMap["TimeGenerated"] = logEntryTimeStamp
+		} else {
+			stringMap["LogEntry"] = logEntry
+			stringMap["LogEntrySource"] = logEntrySource
+			stringMap["LogEntryTimeStamp"] = logEntryTimeStamp
+			stringMap["SourceSystem"] = "Containers"
+			stringMap["Id"] = containerID
 
-		if val, ok := imageIDMap[containerID]; ok {
-			stringMap["Image"] = val
+			if val, ok := imageIDMap[containerID]; ok {
+				stringMap["Image"] = val
+			}
+
+			if val, ok := nameIDMap[containerID]; ok {
+				stringMap["Name"] = val
+			}
+
+			stringMap["TimeOfCommand"] = start.Format(time.RFC3339)
+			stringMap["Computer"] = Computer
 		}
-
-		if val, ok := nameIDMap[containerID]; ok {
-			stringMap["Name"] = val
-		}
-
-		stringMap["TimeOfCommand"] = start.Format(time.RFC3339)
-		stringMap["Computer"] = Computer
-		var dataItem DataItem
+		var dataItemLAv1 DataItemLAv1
+		var dataItemLAv2 DataItemLAv2
 		var dataItemADX DataItemADX
 		var msgPackEntry MsgPackEntry
 
@@ -1297,50 +916,68 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		} else if ContainerLogsRouteADX == true {
 			if ResourceCentric == true {
 				stringMap["AzureResourceId"] = ResourceID
+			} else {
+				stringMap["AzureResourceId"] = ""
 			}
-			stringMap["PodName"] = k8sPodName
-			stringMap["PodNamespace"] = k8sNamespace
-			stringMap["ContainerName"] = containerName
 			dataItemADX = DataItemADX{
-				TimeGenerated:   stringMap["LogEntryTimeStamp"],
-				Computer:        stringMap["Computer"],
-				ContainerID:     stringMap["Id"],
-				ContainerName:   stringMap["ContainerName"],
-				PodName:         stringMap["PodName"],
-				PodNamespace:    stringMap["PodNamespace"],
-				LogMessage:      stringMap["LogEntry"],
-				LogSource:       stringMap["LogEntrySource"],
-				AzureResourceId: stringMap["AzureResourceId"],
+				TimeGenerated:         stringMap["TimeGenerated"],
+				Computer:              stringMap["Computer"],
+				ContainerId:           stringMap["ContainerId"],
+				ContainerName:         stringMap["ContainerName"],
+				PodName:               stringMap["PodName"],
+				PodNamespace:          stringMap["PodNamespace"],
+				LogMessage:            stringMap["LogMessage"],
+				LogSource:             stringMap["LogSource"],
+				AzureResourceId:       stringMap["AzureResourceId"],
 			}
 			//ADX
 			dataItemsADX = append(dataItemsADX, dataItemADX)
 		} else {
-			dataItem = DataItem{
-				ID:                    stringMap["Id"],
-				LogEntry:              stringMap["LogEntry"],
-				LogEntrySource:        stringMap["LogEntrySource"],
-				LogEntryTimeStamp:     stringMap["LogEntryTimeStamp"],
-				LogEntryTimeOfCommand: stringMap["TimeOfCommand"],
-				SourceSystem:          stringMap["SourceSystem"],
-				Computer:              stringMap["Computer"],
-				Image:                 stringMap["Image"],
-				Name:                  stringMap["Name"],
+			if (ContainerLogSchemaV2 == true) {
+				dataItemLAv2 = DataItemLAv2{
+					TimeGenerated:         stringMap["TimeGenerated"],
+					Computer:              stringMap["Computer"],
+					ContainerId:           stringMap["ContainerId"],
+					ContainerName:         stringMap["ContainerName"],
+					PodName:               stringMap["PodName"],
+					PodNamespace:          stringMap["PodNamespace"],
+					LogMessage:            stringMap["LogMessage"],
+					LogSource:             stringMap["LogSource"],
+				}
+				//ODS-v2 schema
+				dataItemsLAv2 = append(dataItemsLAv2, dataItemLAv2)
+				name = stringMap["ContainerName"]
+				id = stringMap["ContainerId"]
+			} else {
+				dataItemLAv1 = DataItemLAv1{
+					ID:                    stringMap["Id"],
+					LogEntry:              stringMap["LogEntry"],
+					LogEntrySource:        stringMap["LogEntrySource"],
+					LogEntryTimeStamp:     stringMap["LogEntryTimeStamp"],
+					LogEntryTimeOfCommand: stringMap["TimeOfCommand"],
+					SourceSystem:          stringMap["SourceSystem"],
+					Computer:              stringMap["Computer"],
+					Image:                 stringMap["Image"],
+					Name:                  stringMap["Name"],
+				}
+			//ODS-v1 schema
+			dataItemsLAv1 = append(dataItemsLAv1, dataItemLAv1)
+			name = stringMap["Name"]
+			id = stringMap["Id"]
 			}
-			//ODS
-			dataItems = append(dataItems, dataItem)
 		}
 
-		if stringMap["LogEntryTimeStamp"] != "" {
-			loggedTime, e := time.Parse(time.RFC3339, stringMap["LogEntryTimeStamp"])
+		if logEntryTimeStamp != "" {
+			loggedTime, e := time.Parse(time.RFC3339, logEntryTimeStamp)
 			if e != nil {
-				message := fmt.Sprintf("Error while converting LogEntryTimeStamp for telemetry purposes: %s", e.Error())
+				message := fmt.Sprintf("Error while converting logEntryTimeStamp for telemetry purposes: %s", e.Error())
 				Log(message)
 				SendException(message)
 			} else {
 				ltncy := float64(start.Sub(loggedTime) / time.Millisecond)
 				if ltncy >= maxLatency {
 					maxLatency = ltncy
-					maxLatencyContainer = dataItem.Name + "=" + dataItem.ID
+					maxLatencyContainer = name + "=" + id
 				}
 			}
 		}
@@ -1350,8 +987,12 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	if len(msgPackEntries) > 0 && ContainerLogsRouteV2 == true {
 		//flush to mdsd
+		mdsdSourceName := MdsdContainerLogSourceName
+		if (ContainerLogSchemaV2 == true) {
+			mdsdSourceName = MdsdContainerLogV2SourceName
+		}
 		fluentForward := MsgPackForward{
-			Tag:     MdsdSourceName,
+			Tag:     mdsdSourceName,
 			Entries: msgPackEntries,
 		}
 
@@ -1398,7 +1039,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		elapsed = time.Since(start)
 
 		if er != nil {
-			Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(dataItems), elapsed, er.Error())
+			Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(msgPackEntries), elapsed, er.Error())
 			if MdsdMsgpUnixSocketClient != nil {
 				MdsdMsgpUnixSocketClient.Close()
 				MdsdMsgpUnixSocketClient = nil
@@ -1444,14 +1085,14 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			}
 		}
 
-		// Setup a maximum time for completion to be 15 Seconds.
+		// Setup a maximum time for completion to be 30 Seconds.
 		ctx, cancel := context.WithTimeout(ParentContext, 30*time.Second)
 		defer cancel()
 
 		//ADXFlushMutex.Lock()
 		//defer ADXFlushMutex.Unlock()
 		//MultiJSON support is not there yet
-		if ingestionErr := ADXIngestor.FromReader(ctx, r, ingest.IngestionMappingRef("ContainerLogv2Mapping", ingest.JSON), ingest.FileFormat(ingest.JSON)); ingestionErr != nil {
+		if ingestionErr := ADXIngestor.FromReader(ctx, r, ingest.IngestionMappingRef("ContainerLogV2Mapping", ingest.JSON), ingest.FileFormat(ingest.JSON)); ingestionErr != nil {
 			Log("Error when streaming to ADX Ingestion: %s", ingestionErr.Error())
 			//ADXIngestor = nil  //not required as per ADX team. Will keep it to indicate that we tried this approach
 
@@ -1466,58 +1107,75 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		numContainerLogRecords = len(dataItemsADX)
 		Log("Success::ADX::Successfully wrote %d container log records to ADX in %s", numContainerLogRecords, elapsed)
 
-	} else {
-		//flush to ODS
-		if len(dataItems) > 0 {
-			logEntry := ContainerLogBlob{
-				DataType:  ContainerLogDataType,
+	} else { //ODS
+		var logEntry interface{}
+		recordType := ""
+		loglinesCount := 0
+		//schema v2
+		if (len(dataItemsLAv2) > 0 && ContainerLogSchemaV2 == true) {
+			logEntry = ContainerLogBlobLAv2{
+				DataType:  ContainerLogV2DataType,
 				IPName:    IPName,
-				DataItems: dataItems}
-
-			marshalled, err := json.Marshal(logEntry)
-			if err != nil {
-				message := fmt.Sprintf("Error while Marshalling log Entry: %s", err.Error())
-				Log(message)
-				SendException(message)
-				return output.FLB_OK
+				DataItems: dataItemsLAv2}
+				loglinesCount = len(dataItemsLAv2)
+				recordType = "ContainerLogV2"
+		} else {
+			//schema v1
+			if len(dataItemsLAv1) > 0 {
+				logEntry = ContainerLogBlobLAv1{
+					DataType:  ContainerLogDataType,
+					IPName:    IPName,
+					DataItems: dataItemsLAv1}
+					loglinesCount = len(dataItemsLAv1)
+					recordType = "ContainerLog"
 			}
+		}
 
-			req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
-			req.Header.Set("Content-Type", "application/json")
-			req.Header.Set("User-Agent", userAgent)
-			reqId := uuid.New().String()
-			req.Header.Set("X-Request-ID", reqId)
-			//expensive to do string len for every request, so use a flag
-			if ResourceCentric == true {
-				req.Header.Set("x-ms-AzureResourceId", ResourceID)
+		marshalled, err := json.Marshal(logEntry)
+		//Log("LogEntry::e %s", marshalled)
+		if err != nil {
+			message := fmt.Sprintf("Error while Marshalling log Entry: %s", err.Error())
+			Log(message)
+			SendException(message)
+			return output.FLB_OK
+		}
+
+		req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(marshalled))
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("User-Agent", userAgent)
+		reqId := uuid.New().String()
+		req.Header.Set("X-Request-ID", reqId)
+		//expensive to do string len for every request, so use a flag
+		if ResourceCentric == true {
+			req.Header.Set("x-ms-AzureResourceId", ResourceID)
+		}
+		
+		resp, err := HTTPClient.Do(req)
+		elapsed = time.Since(start)
+
+		if err != nil {
+			message := fmt.Sprintf("Error when sending request %s \n", err.Error())
+			Log(message)
+			// Commenting this out for now. TODO - Add better telemetry for ods errors using aggregation
+			//SendException(message)
+			
+			Log("Failed to flush %d records after %s", loglinesCount, elapsed)
+
+			return output.FLB_RETRY
+		}
+
+		if resp == nil || resp.StatusCode != 200 {
+			if resp != nil {
+				Log("RequestId %s Status %s Status Code %d", reqId, resp.Status, resp.StatusCode)
 			}
+			return output.FLB_RETRY
+		}
 
-			resp, err := HTTPClient.Do(req)
-			elapsed = time.Since(start)
-
-			if err != nil {
-				message := fmt.Sprintf("Error when sending request %s \n", err.Error())
-				Log(message)
-				// Commenting this out for now. TODO - Add better telemetry for ods errors using aggregation
-				//SendException(message)
-				Log("Failed to flush %d records after %s", len(dataItems), elapsed)
-
-				return output.FLB_RETRY
-			}
-
-			if resp == nil || resp.StatusCode != 200 {
-				if resp != nil {
-					Log("RequestId %s Status %s Status Code %d", reqId, resp.Status, resp.StatusCode)
-				}
-				return output.FLB_RETRY
-			}
-
-			defer resp.Body.Close()
-			numContainerLogRecords = len(dataItems)
-			Log("PostDataHelper::Info::Successfully flushed %d container log records to ODS in %s", numContainerLogRecords, elapsed)
+		defer resp.Body.Close()
+		numContainerLogRecords = loglinesCount
+		Log("PostDataHelper::Info::Successfully flushed %d %s records to ODS in %s", numContainerLogRecords, recordType, elapsed)
 
 		}
-	}
 
 	ContainerLogTelemetryMutex.Lock()
 	defer ContainerLogTelemetryMutex.Unlock()
@@ -1805,10 +1463,22 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		CreateADXClient()
 	}
 
+	ContainerLogSchemaVersion := strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION")))
+	Log("AZMON_CONTAINER_LOG_SCHEMA_VERSION:%s", ContainerLogSchemaVersion)
+
+	ContainerLogSchemaV2 = false  //default is v1 schema
+
+	if strings.Compare(ContainerLogSchemaVersion, ContainerLogV2SchemaVersion) == 0  && ContainerLogsRouteADX != true {
+		ContainerLogSchemaV2 = true
+		Log("Container logs schema=%s", ContainerLogV2SchemaVersion)
+		fmt.Fprintf(os.Stdout, "Container logs schema=%s... \n", ContainerLogV2SchemaVersion)
+	}
+
 	if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
 		populateExcludedStdoutNamespaces()
 		populateExcludedStderrNamespaces()
-		if enrichContainerLogs == true && ContainerLogsRouteADX != true {
+		//enrichment not applicable for ADX and v2 schema
+		if enrichContainerLogs == true && ContainerLogsRouteADX != true && ContainerLogSchemaV2 != true {
 			Log("ContainerLogEnrichment=true; starting goroutine to update containerimagenamemaps \n")
 			go updateContainerImageNameMaps()
 		} else {
