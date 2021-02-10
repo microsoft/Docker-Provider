@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -35,6 +34,12 @@ const ContainerLogDataType = "CONTAINER_LOG_BLOB"
 
 // DataType for Insights metric
 const InsightsMetricsDataType = "INSIGHTS_METRICS_BLOB"
+
+// DataType for ApplicationInsights AppRequests
+const AppRequestsDataType = "APPLICATIONINSIGHTS_APPREQUESTS"
+
+// DataType for ApplicationInsights AppDependencies
+const AppDependenciesDataType = "APPLICATIONINSIGHTS_APPDEPENDENCIES"
 
 // DataType for KubeMonAgentEvent
 const KubeMonAgentEventDataType = "KUBE_MON_AGENT_EVENTS_BLOB"
@@ -221,24 +226,82 @@ type laTelegrafMetric struct {
 }
 
 type appMapOsmRequestMetric struct {
-	CollectionTime string  `json:"CollectionTime"`
-	OperationId    string  `json:"OperationId"`
-	ParentId       string  `json:"ParentId"`
-	AppRoleName    string  `json:"AppRoleName"`
-	DurationMs     float64 `json:"DurationMs"`
-	Success        bool    `json:"Success"`
-	ItemCount      int64   `json:"ItemCount"`
+	time                  string  `json:"time"`
+	Id                    string  `json:"Id"`
+	Source                string  `json:"Source"`
+	Name                  string  `json:"Name"`
+	Url                   string  `json:"Url"`
+	Success               bool    `json:"Success"`
+	ResultCode            string  `json:"ResultCode"`
+	DurationMs            float64 `json:"DurationMs"`
+	PerformanceBucket     string  `json:"PerformanceBucket"`
+	Properties            string  `json:"Properties"`
+	Measurements          string  `json:"Measurements"`
+	OperationName         string  `json:"OperationName"`
+	OperationId           string  `json:"OperationId"`
+	ParentId              string  `json:"ParentId"`
+	SyntheticSource       string  `json:"SyntheticSource"`
+	SessionId             string  `json:"SessionId"`
+	UserId                string  `json:"UserId"`
+	UserAuthenticatedId   string  `json:"UserAuthenticatedId"`
+	UserAccountId         string  `json:"UserAccountId"`
+	AppVersion            string  `json:"AppVersion"`
+	AppRoleName           string  `json:"AppRoleName"`
+	AppRoleInstance       string  `json:"AppRoleInstance"`
+	ClientType            string  `json:"ClientType"`
+	ClientModel           string  `json:"ClientModel"`
+	ClientOS              string  `json:"ClientOS"`
+	ClientIP              string  `json:"ClientIP"`
+	ClientCity            string  `json:"ClientCity"`
+	ClientStateOrProvince string  `json:"ClientStateOrProvince"`
+	ClientCountryOrRegion string  `json:"ClientCountryOrRegion"`
+	ClientBrowser         string  `json:"ClientBrowser"`
+	ResourceGUID          string  `json:"ResourceGUID"`
+	IKey                  string  `json:"IKey"`
+	SDKVersion            string  `json:"SDKVersion"`
+	ItemCount             int64   `json:"ItemCount"`
+	ReferencedItemId      string  `json:"ReferencedItemId"`
+	ReferencedType        string  `json:"ReferencedType"`
 }
 
 type appMapOsmDependencyMetric struct {
-	CollectionTime string  `json:"CollectionTime"`
-	OperationId    string  `json:"OperationId"`
-	Id             string  `json:"Id"`
-	Target         string  `json:"Target"`
-	AppRoleName    string  `json:"AppRoleName"`
-	DurationMs     float64 `json:"DurationMs"`
-	Success        bool    `json:"Success"`
-	ItemCount      int64   `json:"ItemCount"`
+	time                  string  `json:"time"`
+	Id                    string  `json:"Id"`
+	Target                string  `json:"Target"`
+	DependencyType        string  `json:"DependencyType"`
+	Name                  string  `json:"Name"`
+	Data                  string  `json:"Data"`
+	Success               bool    `json:"Success"`
+	ResultCode            string  `json:"ResultCode"`
+	DurationMs            float64 `json:"DurationMs"`
+	PerformanceBucket     string  `json:"PerformanceBucket"`
+	Properties            string  `json:"Properties"`
+	Measurements          string  `json:"Measurements"`
+	OperationName         string  `json:"OperationName"`
+	OperationId           string  `json:"OperationId"`
+	ParentId              string  `json:"ParentId"`
+	SyntheticSource       string  `json:"SyntheticSource"`
+	SessionId             string  `json:"SessionId"`
+	UserId                string  `json:"UserId"`
+	UserAuthenticatedId   string  `json:"UserAuthenticatedId"`
+	UserAccountId         string  `json:"UserAccountId"`
+	AppVersion            string  `json:"AppVersion"`
+	AppRoleName           string  `json:"AppRoleName"`
+	AppRoleInstance       string  `json:"AppRoleInstance"`
+	ClientType            string  `json:"ClientType"`
+	ClientModel           string  `json:"ClientModel"`
+	ClientOS              string  `json:"ClientOS"`
+	ClientIP              string  `json:"ClientIP"`
+	ClientCity            string  `json:"ClientCity"`
+	ClientStateOrProvince string  `json:"ClientStateOrProvince"`
+	ClientCountryOrRegion string  `json:"ClientCountryOrRegion"`
+	ClientBrowser         string  `json:"ClientBrowser"`
+	ResourceGUID          string  `json:"ResourceGUID"`
+	IKey                  string  `json:"IKey"`
+	SDKVersion            string  `json:"SDKVersion"`
+	ItemCount             int64   `json:"ItemCount"`
+	ReferencedItemId      string  `json:"ReferencedItemId"`
+	ReferencedType        string  `json:"ReferencedType"`
 }
 
 // ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
@@ -246,6 +309,18 @@ type InsightsMetricsBlob struct {
 	DataType  string             `json:"DataType"`
 	IPName    string             `json:"IPName"`
 	DataItems []laTelegrafMetric `json:"DataItems"`
+}
+
+type AppMapOsmRequestBlob struct {
+	DataType  string                   `json:"DataType"`
+	IPName    string                   `json:"IPName"`
+	DataItems []appMapOsmRequestMetric `json:"DataItems"`
+}
+
+type AppMapOsmDependencyBlob struct {
+	DataType  string                      `json:"DataType"`
+	IPName    string                      `json:"IPName"`
+	DataItems []appMapOsmDependencyMetric `json:"DataItems"`
 }
 
 // ContainerLogBlob represents the object corresponding to the payload that is sent to the ODS end point
@@ -349,18 +424,18 @@ func createLogger() *log.Logger {
 }
 
 // newUUID generates a random UUID according to RFC 4122
-func newUUID() (string, error) {
-	uuid := make([]byte, 16)
-	n, err := io.ReadFull(rand.Reader, uuid)
-	if n != len(uuid) || err != nil {
-		return "", err
-	}
-	// variant bits; see section 4.1.1
-	uuid[8] = uuid[8]&^0xc0 | 0x80
-	// version 4 (pseudo-random); see section 4.1.3
-	uuid[6] = uuid[6]&^0xf0 | 0x40
-	return fmt.Sprintf("%x-%x-%x-%x-%x", uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:]), nil
-}
+// func newUUID() (string, error) {
+// 	uuid := make([]byte, 16)
+// 	n, err := io.ReadFull(rand.Reader, uuid)
+// 	if n != len(uuid) || err != nil {
+// 		return "", err
+// 	}
+// 	// variant bits; see section 4.1.1
+// 	uuid[8] = uuid[8]&^0xc0 | 0x80
+// 	// version 4 (pseudo-random); see section 4.1.3
+// 	uuid[6] = uuid[6]&^0xf0 | 0x40
+// 	return fmt.Sprintf("%x-%x-%x-%x-%x", uuid[0:4], uuid[4:6], uuid[6:8], uuid[8:10], uuid[10:]), nil
+// }
 
 func updateContainerImageNameMaps() {
 	for ; true; <-ContainerImageNameRefreshTicker.C {
@@ -673,9 +748,10 @@ func flushKubeMonAgentEventRecords() {
 }
 
 //Translates telegraf time series to one or more Azure loganalytics metric(s)
-func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetric, error) {
-
+func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetric, []*appMapOsmRequestMetric, []*appMapOsmDependencyMetric, error) {
 	var laMetrics []*laTelegrafMetric
+	var appMapOsmRequestMetrics []*appMapOsmRequestMetric
+	var appMapOsmDependencyMetrics []*appMapOsmDependencyMetric
 	var tags map[interface{}]interface{}
 	// string appName
 	// string destinationAppName
@@ -702,7 +778,7 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 	tagJson, err := json.Marshal(&tagMap)
 
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
 	for k, v := range fieldMap {
@@ -725,24 +801,144 @@ func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetri
 		//Log ("la metric:%v", laMetric)
 		laMetrics = append(laMetrics, &laMetric)
 
+		// OSM metric population for AppMap
 		metricName := fmt.Sprintf("%s", k)
-		if (metricName == "envoy_cluster_upstream_rq_active") && (strings.HasPrefix(metricNamespace, "container.azm.ms.osm")) {
-			appName := tagMap["app"]
-			destinationAppName := tagMap["envoy_cluster_name"]
-			uuid, err := newUUID()
-			if err != nil {
-				Log("translateTelegrafMetrics::error while generating GUID: %v\n", err)
-			}
-			Log("translateTelegrafMetrics::%s\n", uuid)
+		propertyMap := make(map[string]string)
+		propertyMap[fmt.Sprintf("DeploymentId")] = "523a92fea186461581efca83b7b66a0d"
+		propertyMap[fmt.Sprintf("Stamp")] = "Breeze-INT-SCUS"
+		propertiesJson, err := json.Marshal(&propertyMap)
 
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		measurementsMap := make(map[string]string)
+		measurementsMap[fmt.Sprintf("AvailableMemory")] = "423"
+		measurementsJson, err := json.Marshal(&measurementsMap)
+
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		if (metricName == "envoy_cluster_upstream_rq_active") && (strings.HasPrefix(metricNamespace, "container.azm.ms.osm")) {
+			if fv > 0 {
+				appName := tagMap["app"]
+				destinationAppName := tagMap["envoy_cluster_name"]
+				itemCount := int64(1)
+				success := true
+				// durationMs := float64(1.0)
+				operationId := uuid.New().String()
+				// if err != nil {
+				// 	Log("translateTelegrafMetrics::error while generating operationId GUID: %v\n", err)
+				// }
+				// Log("translateTelegrafMetrics::%s\n", operationId)
+
+				id := uuid.New().String()
+				// if err != nil {
+				// 	Log("translateTelegrafMetrics::error while generating id GUID: %v\n", err)
+				// }
+				Log("translateTelegrafMetrics::%s\n", id)
+				collectionTimeValue := m["timestamp"].(uint64)
+				osmRequestMetric := appMapOsmRequestMetric{
+					// Absolutely needed metrics for topology generation for AppMap
+					time:        time.Unix(int64(collectionTimeValue), 0).Format(time.RFC3339),
+					OperationId: fmt.Sprintf("%s", operationId),
+					ParentId:    fmt.Sprintf("%s", id),
+					AppRoleName: fmt.Sprintf("%s", destinationAppName),
+					DurationMs:  898.42,
+					Success:     success,
+					ItemCount:   42,
+					//metrics to get ingestion working
+					Id:                    fmt.Sprintf("%s", "8be927b9-0bde-4357-87ee-73c13b6f6a05"),
+					Source:                fmt.Sprintf("%s", "Application"),
+					Name:                  fmt.Sprintf("%s", "TestData-Request-DataGen"),
+					Url:                   fmt.Sprintf("%s", "https://portal.azure.com"),
+					ResultCode:            fmt.Sprintf("%s", "200"),
+					PerformanceBucket:     fmt.Sprintf("%s", "500ms-1sec"),
+					Properties:            fmt.Sprintf("%s", propertiesJson),
+					Measurements:          fmt.Sprintf("%s", measurementsJson),
+					OperationName:         fmt.Sprintf("%s", "POST /v2/passthrough"),
+					SyntheticSource:       fmt.Sprintf("%s", "Windows"),
+					SessionId:             fmt.Sprintf("%s", "e357297720214cdc818565f89cfad359"),
+					UserId:                fmt.Sprintf("%s", "5bfb5187ff9742fbaec5b19dd7217f40"),
+					UserAuthenticatedId:   fmt.Sprintf("%s", "somebody@microsoft.com"),
+					UserAccountId:         fmt.Sprintf("%s", "e357297720214cdc818565f89cfad359"),
+					AppVersion:            fmt.Sprintf("%s", "4.2-alpha"),
+					AppRoleInstance:       fmt.Sprintf("%s", "Breeze_IN_42"),
+					ClientType:            fmt.Sprintf("%s", "PC"),
+					ClientModel:           fmt.Sprintf("%s", "Other"),
+					ClientOS:              fmt.Sprintf("%s", "Windows 7"),
+					ClientIP:              fmt.Sprintf("%s", "0.0.0.0"),
+					ClientCity:            fmt.Sprintf("%s", "Sydney"),
+					ClientStateOrProvince: fmt.Sprintf("%s", "New South Wales"),
+					ClientCountryOrRegion: fmt.Sprintf("%s", "Australia"),
+					ClientBrowser:         fmt.Sprintf("%s", "Internet Explorer 9.0"),
+					ResourceGUID:          fmt.Sprintf("%s", "d4e6868c-02e8-41d2-a09d-bbb5ae35af5c"),
+					IKey:                  fmt.Sprintf("%s", "0539013c-a321-46fd-b831-1cc16729b449"),
+					SDKVersion:            fmt.Sprintf("%s", "dotnet:2.2.0-54037"),
+					ReferencedItemId:      fmt.Sprintf("%s", "905812ce-48c3-44ee-ab93-33e8768f59f9"),
+					ReferencedType:        fmt.Sprintf("%s", "IoTRequests"),
+					// Computer:       Computer, //this is the collection agent's computer name, not necessarily to which computer the metric applies to
+				}
+
+				Log("osm request metric:%v", osmRequestMetric)
+				appMapOsmRequestMetrics = append(appMapOsmRequestMetrics, &osmRequestMetric)
+
+				osmDependencyMetric := appMapOsmDependencyMetric{
+					// Absolutely needed metrics for topology generation for AppMap
+					time:        time.Unix(int64(collectionTimeValue), 0).Format(time.RFC3339),
+					Id:          fmt.Sprintf("%s", id),
+					Target:      fmt.Sprintf("%s", destinationAppName),
+					Success:     success,
+					DurationMs:  898.42,
+					OperationId: fmt.Sprintf("%s", operationId),
+					AppRoleName: fmt.Sprintf("%s", appName),
+					ItemCount:   itemCount,
+					//metrics to get ingestion working
+					DependencyType:        fmt.Sprintf("%s", "Ajax"),
+					Name:                  fmt.Sprintf("%s", "TestData-Request-DataGen"),
+					Data:                  fmt.Sprintf("%s", "GET https://n9440-fpj.gmbeelopm.com/HhjmlogpEhiLLL/ECO//GhoppnaBeAelhaekm/3944-40-42J92:22:19.750D/MehgKepmpnlegoDboghnMaedd"),
+					ResultCode:            fmt.Sprintf("%s", "200"),
+					PerformanceBucket:     fmt.Sprintf("%s", "500ms-1sec"),
+					Properties:            fmt.Sprintf("%s", propertiesJson),
+					Measurements:          fmt.Sprintf("%s", measurementsJson),
+					OperationName:         fmt.Sprintf("%s", "POST /v2/passthrough"),
+					ParentId:              fmt.Sprintf("%s", "b1bb1e27-4204-096e-9e89-1f1dfac718fc"),
+					SyntheticSource:       fmt.Sprintf("%s", "Windows"),
+					SessionId:             fmt.Sprintf("%s", "e357297720214cdc818565f89cfad359"),
+					UserId:                fmt.Sprintf("%s", "5bfb5187ff9742fbaec5b19dd7217f40"),
+					UserAuthenticatedId:   fmt.Sprintf("%s", "somebody@microsoft.com"),
+					UserAccountId:         fmt.Sprintf("%s", "e357297720214cdc818565f89cfad359"),
+					AppVersion:            fmt.Sprintf("%s", "4.2-alpha"),
+					AppRoleInstance:       fmt.Sprintf("%s", "Breeze_IN_42"),
+					ClientType:            fmt.Sprintf("%s", "PC"),
+					ClientModel:           fmt.Sprintf("%s", "Other"),
+					ClientOS:              fmt.Sprintf("%s", "Windows 7"),
+					ClientIP:              fmt.Sprintf("%s", "0.0.0.0"),
+					ClientCity:            fmt.Sprintf("%s", "Sydney"),
+					ClientStateOrProvince: fmt.Sprintf("%s", "New South Wales"),
+					ClientCountryOrRegion: fmt.Sprintf("%s", "Australia"),
+					ClientBrowser:         fmt.Sprintf("%s", "Internet Explorer 9.0"),
+					ResourceGUID:          fmt.Sprintf("%s", "d4e6868c-02e8-41d2-a09d-bbb5ae35af5c"),
+					IKey:                  fmt.Sprintf("%s", "0539013c-a321-46fd-b831-1cc16729b449"),
+					SDKVersion:            fmt.Sprintf("%s", "dotnet:2.2.0-54037"),
+					ReferencedItemId:      fmt.Sprintf("%s", "905812ce-48c3-44ee-ab93-33e8768f59f9"),
+					ReferencedType:        fmt.Sprintf("%s", "IoTRequests"),
+				}
+
+				Log("osm dependency metric:%v", osmDependencyMetric)
+				appMapOsmDependencyMetrics = append(appMapOsmDependencyMetrics, &osmDependencyMetric)
+			}
 		}
 	}
-	return laMetrics, nil
+	return laMetrics, appMapOsmRequestMetrics, appMapOsmDependencyMetrics, nil
 }
 
 // send metrics from Telegraf to LA. 1) Translate telegraf timeseries to LA metric(s) 2) Send it to LA as 'InsightsMetrics' fixed type
 func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int {
 	var laMetrics []*laTelegrafMetric
+	var appMapOsmRequestMetrics []*appMapOsmRequestMetric
+	var appMapOsmDependencyMetrics []*appMapOsmDependencyMetric
 
 	if (telegrafRecords == nil) || !(len(telegrafRecords) > 0) {
 		Log("PostTelegrafMetricsToLA::Error:no timeseries to derive")
@@ -750,13 +946,15 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 	}
 
 	for _, record := range telegrafRecords {
-		translatedMetrics, err := translateTelegrafMetrics(record)
+		translatedMetrics, osmRequestMetrics, osmDependencyMetrics, err := translateTelegrafMetrics(record)
 		if err != nil {
 			message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when translating telegraf metric to log analytics metric %q", err)
 			Log(message)
 			//SendException(message) //This will be too noisy
 		}
 		laMetrics = append(laMetrics, translatedMetrics...)
+		appMapOsmRequestMetrics = append(appMapOsmRequestMetrics, osmRequestMetrics...)
+		appMapOsmDependencyMetrics = append(appMapOsmDependencyMetrics, osmDependencyMetrics...)
 	}
 
 	if (laMetrics == nil) || !(len(laMetrics) > 0) {
@@ -764,6 +962,22 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		return output.FLB_OK
 	} else {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Info:derived %v metrics from %v timeseries", len(laMetrics), len(telegrafRecords))
+		Log(message)
+	}
+
+	if (appMapOsmRequestMetrics == nil) || !(len(appMapOsmRequestMetrics) > 0) {
+		Log("PostTelegrafMetricsToLA::Info:no OSM request metrics derived from timeseries data")
+		return output.FLB_OK
+	} else {
+		message := fmt.Sprintf("PostTelegrafMetricsToLA::Info:derived osm request %v metrics from %v timeseries", len(appMapOsmRequestMetrics), len(telegrafRecords))
+		Log(message)
+	}
+
+	if (appMapOsmDependencyMetrics == nil) || !(len(appMapOsmDependencyMetrics) > 0) {
+		Log("PostTelegrafMetricsToLA::Info:no OSM dependency metrics derived from timeseries data")
+		return output.FLB_OK
+	} else {
+		message := fmt.Sprintf("PostTelegrafMetricsToLA::Info:derived osm dependency %v metrics from %v timeseries", len(appMapOsmDependencyMetrics), len(telegrafRecords))
 		Log(message)
 	}
 
@@ -780,6 +994,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		DataItems: metrics}
 
 	jsonBytes, err := json.Marshal(laTelegrafMetrics)
+	//Log("laTelegrafMetrics-json:%v", laTelegrafMetrics)
 
 	if err != nil {
 		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling json %q", err)
@@ -790,7 +1005,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 	//Post metrics data to LA
 	req, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(jsonBytes))
-
+	//Log("LA request json bytes: %v", jsonBytes)
 	//req.URL.Query().Add("api-version","2016-04-01")
 
 	//set headers
@@ -829,7 +1044,170 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 
 	numMetrics := len(laMetrics)
 	UpdateNumTelegrafMetricsSentTelemetry(numMetrics, 0, 0)
+	Log("PostTelegrafMetricsToLA::Info:LArequests:Http Request: %v", req)
 	Log("PostTelegrafMetricsToLA::Info:Successfully flushed %v records in %v", numMetrics, elapsed)
+
+	// AppMap Requests
+	var requestMetrics []appMapOsmRequestMetric
+	var j int
+
+	for j = 0; j < len(appMapOsmRequestMetrics); j++ {
+		requestMetrics = append(requestMetrics, *appMapOsmRequestMetrics[j])
+	}
+
+	osmRequestMetrics := AppMapOsmRequestBlob{
+		DataType:  AppRequestsDataType,
+		IPName:    "LogManagement",
+		DataItems: requestMetrics}
+
+	requestJsonBytes, err := json.Marshal(osmRequestMetrics)
+	//Log("app request json bytes: %v", requestJsonBytes)
+
+	if err != nil {
+		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling app requests json %q", err)
+		Log(message)
+		SendException(message)
+		return output.FLB_OK
+	}
+	Log("AppMapOSMRequestMetrics-json:%v", osmRequestMetrics)
+
+	//Post metrics data to LA
+	appRequestReq, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(requestJsonBytes))
+	// appRequestReq, _ := http.NewRequest("POST", OMSEndpoint+"?api-version=2016-04-01", bytes.NewBuffer(requestJsonBytes))
+	//appRequestReq, _ := http.NewRequest("POST", "https://dd513101-45ad-4dc0-b6dd-42d88361399e.ods.opinsights.azure.com/collector?api-version=2018-05-01", bytes.NewBuffer(requestJsonBytes))
+
+	//appRequestReq.URL.Query().Add("api-version", "2016-04-01")
+
+	//set headers
+	appRequestReq.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
+	appRequestReq.Header.Set("User-Agent", userAgent)
+	//appRequestReq.Header.Set("Log-Type", AppRequestsDataType)
+	appRequestReq.Header.Set("ocp-workspace-id", WorkspaceID)
+	appRequestReq.Header.Set("ocp-is-dynamic-data-type", "False")
+	appRequestReq.Header.Set("ocp-intelligence-pack-name", "Azure")
+	appRequestReq.Header.Set("ocp-json-nesting-resolution", "records")
+	appRequestReq.Header.Set("time-generated-field", time.Now().Format(time.RFC3339))
+	appRequestReq.Header.Set("data-available-time", time.Now().Format(time.RFC3339))
+	appRequestReq.Header.Set("x-ms-OboLocation", "North Europe")
+	appRequestReq.Header.Set("x-ms-ServiceIdentity", "ApplicationInsights")
+	appRequestReq.Header.Set("Content-Type", "application/json")
+	// appRequestReq.Header.Set("Content-Encoding", "gzip")
+
+	// appRequestReq.Header.Set("x-ms-ResourceLocation", "records")
+
+	appRequestReqID := uuid.New().String()
+	appRequestReq.Header.Set("X-Request-ID", appRequestReqID)
+
+	//expensive to do string len for every request, so use a flag
+	if ResourceCentric == true {
+		appRequestReq.Header.Set("x-ms-AzureResourceId", ResourceID)
+	}
+
+	reqStart := time.Now()
+	appRequestResp, err := HTTPClient.Do(appRequestReq)
+	reqElapsed := time.Since(reqStart)
+
+	if err != nil {
+		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending apprequest %v metrics. duration:%v err:%q \n", len(appMapOsmRequestMetrics), reqElapsed, err.Error())
+		Log(message)
+		UpdateNumTelegrafMetricsSentTelemetry(0, 1, 0)
+		return output.FLB_RETRY
+	}
+
+	if appRequestResp == nil || appRequestResp.StatusCode != 200 {
+		if appRequestResp != nil {
+			Log("PostTelegrafMetricsToLA::Error:(retriable) app requests RequestID %s Response Status %v Status Code %v", appRequestReqID, appRequestResp.Status, appRequestResp.StatusCode)
+		}
+		if appRequestResp != nil && appRequestResp.StatusCode == 429 {
+			UpdateNumTelegrafMetricsSentTelemetry(0, 1, 1)
+		}
+		return output.FLB_RETRY
+	}
+
+	defer appRequestResp.Body.Close()
+
+	appRequestNumMetrics := len(appMapOsmRequestMetrics)
+	UpdateNumTelegrafMetricsSentTelemetry(appRequestNumMetrics, 0, 0)
+	Log("PostTelegrafMetricsToLA::Info:AppRequests:Http Request: %v", appRequestReq)
+	Log("PostTelegrafMetricsToLA::Info:AppRequests:Successfully flushed %v records in %v with status code %v", appRequestNumMetrics, reqElapsed, appRequestResp.StatusCode)
+
+	// AppMap Dependencies
+	var dependencyMetrics []appMapOsmDependencyMetric
+	var myint int
+
+	for myint = 0; myint < len(appMapOsmDependencyMetrics); myint++ {
+		dependencyMetrics = append(dependencyMetrics, *appMapOsmDependencyMetrics[myint])
+	}
+
+	osmDependencyMetrics := AppMapOsmDependencyBlob{
+		DataType:  AppDependenciesDataType,
+		IPName:    "LogManagement",
+		DataItems: dependencyMetrics}
+
+	dependencyJsonBytes, err := json.Marshal(osmDependencyMetrics)
+	Log("AppMapOSMDependencyMetrics-json:%v", osmDependencyMetrics)
+	//Log("app dependency json bytes: %v", dependencyJsonBytes)
+
+	if err != nil {
+		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:when marshalling app dependencies json %q", err)
+		Log(message)
+		SendException(message)
+		return output.FLB_OK
+	}
+
+	//Post metrics data to LA
+	appDependencyReq, _ := http.NewRequest("POST", OMSEndpoint, bytes.NewBuffer(dependencyJsonBytes))
+
+	//req.URL.Query().Add("api-version","2016-04-01")
+
+	//set headers
+	appDependencyReq.Header.Set("x-ms-date", time.Now().Format(time.RFC3339))
+	appDependencyReq.Header.Set("User-Agent", userAgent)
+	//appDependencyReq.Header.Set("Log-Type", AppDependenciesDataType)
+	appDependencyReq.Header.Set("ocp-workspace-id", WorkspaceID)
+	appDependencyReq.Header.Set("ocp-is-dynamic-data-type", "False")
+	appDependencyReq.Header.Set("ocp-intelligence-pack-name", "Azure")
+	appDependencyReq.Header.Set("ocp-json-nesting-resolution", "records")
+	appDependencyReq.Header.Set("time-generated-field", time.Now().Format(time.RFC3339))
+	appDependencyReq.Header.Set("data-available-time", time.Now().Format(time.RFC3339))
+	appDependencyReq.Header.Set("x-ms-OboLocation", "North Europe")
+	appDependencyReq.Header.Set("x-ms-ServiceIdentity", "ApplicationInsights")
+	appDependencyReq.Header.Set("Content-Type", "application/json")
+	appDependencyReqID := uuid.New().String()
+	appDependencyReq.Header.Set("X-Request-ID", appDependencyReqID)
+
+	//expensive to do string len for every request, so use a flag
+	if ResourceCentric == true {
+		appDependencyReq.Header.Set("x-ms-AzureResourceId", ResourceID)
+	}
+
+	depStart := time.Now()
+	appDependencyResp, err := HTTPClient.Do(appDependencyReq)
+	depElapsed := time.Since(depStart)
+
+	if err != nil {
+		message := fmt.Sprintf("PostTelegrafMetricsToLA::Error:(retriable) when sending appdependency %v metrics. duration:%v err:%q \n", len(appMapOsmDependencyMetrics), elapsed, err.Error())
+		Log(message)
+		UpdateNumTelegrafMetricsSentTelemetry(0, 1, 0)
+		return output.FLB_RETRY
+	}
+
+	if appDependencyResp == nil || appDependencyResp.StatusCode != 200 {
+		if appDependencyResp != nil {
+			Log("PostTelegrafMetricsToLA::Error:(retriable) app dependency RequestID %s Response Status %v Status Code %v", appDependencyReqID, appDependencyResp.Status, appDependencyResp.StatusCode)
+		}
+		if appDependencyResp != nil && appDependencyResp.StatusCode == 429 {
+			UpdateNumTelegrafMetricsSentTelemetry(0, 1, 1)
+		}
+		return output.FLB_RETRY
+	}
+
+	defer appDependencyResp.Body.Close()
+
+	appDependencyNumMetrics := len(appMapOsmDependencyMetrics)
+	UpdateNumTelegrafMetricsSentTelemetry(appDependencyNumMetrics, 0, 0)
+	Log("PostTelegrafMetricsToLA::Info:AppDependency:Http Request: %v", appDependencyReq)
+	Log("PostTelegrafMetricsToLA::Info:AppDependency:Successfully flushed %v records in %v with status code - %v", appDependencyNumMetrics, depElapsed, appDependencyResp.StatusCode)
 
 	return output.FLB_OK
 }
