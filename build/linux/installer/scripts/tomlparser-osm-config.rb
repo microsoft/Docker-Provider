@@ -21,8 +21,7 @@ require_relative "ConfigParseErrorLogger"
 @metricVersion = 2
 @monitorKubernetesPodsVersion = 2
 #@fieldPassSetting = "[\"envoy_cluster_upstream_rq_xx\", \"envoy_cluster_upstream_rq\"]"
-@fieldPassSetting = "[\"go_goroutines\"]"
-
+@fieldPassSetting = "[\"envoy_cluster_upstream_rq_xx\", \"envoy_cluster_upstream_rq\", \"envoy_cluster_upstream_rq_active\", \"envoy_cluster_upstream_rq_total\", \"envoy_cluster_upstream_rq_time\", \"envoy_http_downstream_rq_xx\", \"envoy_cluster_downstream_rq\", \"envoy_http_no_route\", \"envoy_server_live\", \"envoy_server_memory_heap_size\", \"envoy_server_memory_physical_size\", \"envoy_server_memory_allocated\", \"envoy_cluster_external_upstream_rq_xx\"]"
 @scrapeInterval = "1m"
 @urlTag = "scrapeUrl"
 @bearerToken = "/var/run/secrets/kubernetes.io/serviceaccount/token"
@@ -140,13 +139,13 @@ puts "config::osm::Successfully substituted the OSM placeholders in #{@tgfTestCo
 
 # Set OSM namespaces as environment variable so that prometheus custom config parser can read it and add necessary fielddrops to avoid data duplication
 # of OSM metrics
-promSettingsSharedfile = File.open("prom_config_shared_settings_env_var", "w")
-if !promSettingsSharedfile.nil?
-  promSettingsSharedfile.write("export AZMON_OSM_METRIC_NAMESPACES=#{@osmMetricNamespaces}\n")
-  # Close file after writing all environment variables
-  promSettingsSharedfile.close
-  puts "config::Successfully created prom_config_shared_settings_env_var file for prometheus sidecar"
-end
+# promSettingsSharedfile = File.open("prom_config_shared_settings_env_var", "w")
+# if !promSettingsSharedfile.nil?
+#   promSettingsSharedfile.write("export AZMON_OSM_METRIC_NAMESPACES=#{@osmMetricNamespaces}\n")
+#   # Close file after writing all environment variables
+#   promSettingsSharedfile.close
+#   puts "config::Successfully created prom_config_shared_settings_env_var file for prometheus sidecar"
+# end
 
 # Write the telemetry to file, so that they can be set as environment variables
 telemetryFile = File.open("integration_osm_config_env_var", "w")
