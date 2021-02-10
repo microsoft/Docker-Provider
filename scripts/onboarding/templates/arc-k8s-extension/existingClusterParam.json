@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "clusterResourceId": {
+      "value": "/subscriptions/<subscriptionId>/resourceGroups/<resourceGroupName>/providers/Microsoft.Kubernetes/connectedClusters/<clusterName>"
+    },
+    "clusterRegion": {
+      "value": "<clusterRegion>"
+    },
+    "proxyEndpointUrl": {
+      "value": "<your_proxy_config>"
+    },
+    "workspaceResourceId": {
+      "value": "/subscriptions/<subscriptionId>/resourcegroups/<resourceGroupName>/providers/microsoft.operationalinsights/workspaces/<workspaceName>"
+    },
+    "workspaceRegion": {
+      "value": "<workspaceRegion>"
+    },
+    "workspaceDomain": {
+      "value": "<workspaceDomainName>"
+    }    
+  }
+}

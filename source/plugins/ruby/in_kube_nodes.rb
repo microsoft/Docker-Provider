@@ -447,7 +447,7 @@ module Fluent
         properties["Computer"] = item["metadata"]["name"]
         nodeInfo = item["status"]["nodeInfo"]
         properties["KubeletVersion"] = nodeInfo["kubeletVersion"]
-        properties["OperatingSystem"] = nodeInfo["osImage"]
+        properties["OperatingSystem"] = nodeInfo["operatingSystem"]
         properties["KernelVersion"] = nodeInfo["kernelVersion"]
         properties["OSImage"] = nodeInfo["osImage"]
         containerRuntimeVersion = nodeInfo["containerRuntimeVersion"]

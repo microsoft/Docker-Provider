@@ -25,6 +25,7 @@ class CAdvisorMetricsAPIClient
   @clusterLogTailPath = ENV["AZMON_LOG_TAIL_PATH"]
   @clusterAgentSchemaVersion = ENV["AZMON_AGENT_CFG_SCHEMA_VERSION"]
   @clusterContainerLogEnrich = ENV["AZMON_CLUSTER_CONTAINER_LOG_ENRICH"]
+  @clusterContainerLogSchemaVersion = ENV["AZMON_CONTAINER_LOG_SCHEMA_VERSION"]
 
   @dsPromInterval = ENV["TELEMETRY_DS_PROM_INTERVAL"]
   @dsPromFieldPassCount = ENV["TELEMETRY_DS_PROM_FIELDPASS_LENGTH"]
@@ -247,7 +248,7 @@ class CAdvisorMetricsAPIClient
                       telemetryProps["dsPromFDC"] = @dsPromFieldDropCount
                       telemetryProps["dsPromUrl"] = @dsPromUrlCount
                     end
-                    #telemetry about containerlogs Routing for daemonset
+                    #telemetry about containerlog Routing for daemonset
                     if File.exist?(Constants::AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2_FILENAME)
                       telemetryProps["containerLogsRoute"] = "v2"
                     elsif (!@containerLogsRoute.nil? && !@containerLogsRoute.empty?)
@@ -262,6 +263,10 @@ class CAdvisorMetricsAPIClient
                        telemetryProps["int-npm-a"] = "1"
                      elsif (!@npmIntegrationBasic.nil? && !@npmIntegrationBasic.empty?)
                        telemetryProps["int-npm-b"] = "1"
+                     end
+                     #telemetry for Container log schema version clusterContainerLogSchemaVersion
+                     if (!@clusterContainerLogSchemaVersion.nil? && !@clusterContainerLogSchemaVersion.empty?)
+                      telemetryProps["containerLogVer"] = @clusterContainerLogSchemaVersion
                      end
                     ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
                   end

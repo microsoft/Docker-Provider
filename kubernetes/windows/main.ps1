@@ -119,10 +119,48 @@ function Set-EnvironmentVariables {
         $env:AZMON_AGENT_CFG_SCHEMA_VERSION
     }
 
-    # Set environment variable for TELEMETRY_APPLICATIONINSIGHTS_KEY
-    $aiKey = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:APPLICATIONINSIGHTS_AUTH))
-    [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKey, "Process")
-    [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKey, "Machine")
+    # Check if the instrumentation key needs to be fetched from a storage account (as in airgapped clouds)
+    $aiKeyURl = [System.Environment]::GetEnvironmentVariable('APPLICATIONINSIGHTS_AUTH_URL')
+    if ($aiKeyURl) {
+        $aiKeyFetched = ""
+        # retry up to 5 times
+        for( $i = 1; $i -le 4; $i++) {
+            try {
+                $response = Invoke-WebRequest -uri $aiKeyURl -UseBasicParsing -TimeoutSec 5 -ErrorAction:Stop
+
+                if ($response.StatusCode -ne 200) {
+                    Write-Host "Expecting reponse code 200, was: $($response.StatusCode), retrying"
+                    Start-Sleep -Seconds ([MATH]::Pow(2, $i) / 4)
+                }
+                else {
+                    $aiKeyFetched = $response.Content
+                    break
+                }
+            }
+            catch {
+                Write-Host "Exception encountered fetching instrumentation key:"
+                Write-Host $_.Exception
+            }
+        }
+        
+        # Check if the fetched IKey was properly encoded. if not then turn off telemetry
+        if ($aiKeyFetched -match '^[A-Za-z0-9=]+$') {
+            Write-Host "Using cloud-specific instrumentation key"
+            [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", $aiKeyFetched, "Process")
+            [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", $aiKeyFetched, "Machine")
+        }
+        else {
+            # Couldn't fetch the Ikey, turn telemetry off
+            Write-Host "Could not get cloud-specific instrumentation key (network error?). Disabling telemetry"
+            [System.Environment]::SetEnvironmentVariable("DISABLE_TELEMETRY", "True", "Process")
+            [System.Environment]::SetEnvironmentVariable("DISABLE_TELEMETRY", "True", "Machine")
+        }
+    }
+
+    $aiKeyDecoded = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:APPLICATIONINSIGHTS_AUTH))
+    [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKeyDecoded, "Process")
+    [System.Environment]::SetEnvironmentVariable("TELEMETRY_APPLICATIONINSIGHTS_KEY", $aiKeyDecoded, "Machine")
+
 
     # run config parser
     ruby /opt/omsagentwindows/scripts/ruby/tomlparser.rb
@@ -324,7 +362,3 @@ Get-WmiObject Win32_process | Where-Object { $_.Name -match 'powershell' } | For
 
 #check if fluentd service is running
 Get-Service fluentdwinaks
-
-
-
-

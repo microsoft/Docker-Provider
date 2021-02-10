@@ -28,10 +28,11 @@ spec:
     checksum/config: {{ toYaml .Values.omsagent.resources | sha256sum }}
     checksum/logsettings: {{ toYaml .Values.omsagent.logsettings | sha256sum }}
   spec:
-   dnsConfig:    
+   priorityClassName: omsagent
+   dnsConfig:
      options:
        - name: ndots
-         value: "3"     
+         value: "3"
    {{- if .Values.omsagent.rbac }}
    serviceAccountName: omsagent
    {{- end }}
@@ -70,6 +71,10 @@ spec:
          valueFrom:
             fieldRef:
               fieldPath: status.hostIP
+       {{- if not (empty .Values.Azure.Extension.Name) }}
+       - name: ARC_K8S_EXTENSION_NAME
+         value: {{ .Values.Azure.Extension.Name | quote }}
+       {{- end }}
        - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
          value: ""
        {{- if .Values.omsagent.logsettings.logflushintervalsecs }}

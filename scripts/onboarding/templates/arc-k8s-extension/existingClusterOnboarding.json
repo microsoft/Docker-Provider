@@ -1,0 +1,135 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "clusterResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource Id of the Azure Arc Connected Cluster"
+      }
+    },
+    "clusterRegion": {
+      "type": "string",
+      "metadata": {
+        "description": "Location of the Azure Arc Connected Cluster Resource e.g. \"eastus\""
+      }
+    },
+    "proxyEndpointUrl": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "If the cluster behind forward proxy, then specify Proxy Endpoint URL in this format: http(s)://<user>:<password>@<proxyhost>:<port>"
+      }
+    },
+    "workspaceResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure Monitor Log Analytics Resource ID"
+      }
+    },
+    "workspaceRegion": {
+      "type": "string",
+      "metadata": {
+          "description": "Azure Monitor Log Analytics Workspace region e.g. \"eastus\""
+      }
+    },
+    "workspaceDomain": {
+      "type": "string",
+      "allowedValues": [
+        "opinsights.azure.com",
+        "opinsights.azure.cn",
+        "opinsights.azure.us",
+        "opinsights.azure.eaglex.ic.gov",
+        "opinsights.azure.microsoft.scloud"
+      ],
+      "defaultValue": "opinsights.azure.com",
+      "metadata": {
+        "description": "Azure Monitor Log Analytics Workspace Domain e.g. opinsights.azure.com"
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "name": "[Concat('ContainerInsights', '-',  uniqueString(parameters('workspaceResourceId')))]",
+      "apiVersion": "2017-05-10",
+      "subscriptionId": "[split(parameters('workspaceResourceId'),'/')[2]]",
+      "resourceGroup": "[split(parameters('workspaceResourceId'),'/')[4]]",
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "variables": {},
+          "resources": [
+            {
+              "apiVersion": "2015-11-01-preview",
+              "type": "Microsoft.OperationsManagement/solutions",
+              "location": "[parameters('workspaceRegion')]",
+              "name": "[Concat('ContainerInsights', '(', split(parameters('workspaceResourceId'),'/')[8], ')')]",
+              "properties": {
+                "workspaceResourceId": "[parameters('workspaceResourceId')]"
+              },
+              "plan": {
+                "name": "[Concat('ContainerInsights', '(', split(parameters('workspaceResourceId'),'/')[8], ')')]",
+                "product": "[Concat('OMSGallery/', 'ContainerInsights')]",
+                "promotionCode": "",
+                "publisher": "Microsoft"
+              }
+            }
+          ]
+        },
+        "parameters": {}
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "name": "[Concat('arc-k8s-ci-extension', '-',  uniqueString(parameters('clusterResourceId')))]",
+      "apiVersion": "2019-05-01",
+      "subscriptionId": "[split(parameters('clusterResourceId'),'/')[2]]",
+      "resourceGroup": "[split(parameters('clusterResourceId'),'/')[4]]",
+      "dependsOn": [
+        "[Concat('ContainerInsights', '-',  uniqueString(parameters('workspaceResourceId')))]"        
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "variables": {},
+          "resources": [
+            {
+              "type": "Microsoft.KubernetesConfiguration/extensions",
+              "apiVersion": "2020-07-01-preview",
+              "name": "azuremonitor-containers",
+              "location": "[parameters('clusterRegion')]",
+              "identity": {"type": "systemassigned"},
+              "properties": {
+                "extensionType": "Microsoft.AzureMonitor.Containers",
+                "configurationSettings": {
+                  "logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]",
+                  "omsagent.domain": "[parameters('workspaceDomain')]"
+                },
+                "configurationProtectedSettings": {
+                  "omsagent.secret.wsid": "[reference(parameters('workspaceResourceId'), '2015-03-20').customerId]",
+                  "omsagent.secret.key": "[listKeys(parameters('workspaceResourceId'), '2015-03-20').primarySharedKey]" ,
+                  "omsagent.proxy": "[if(equals(parameters('proxyEndpointUrl'), ''), '<your_proxy_config>', parameters('proxyEndpointUrl'))]"             
+                },
+                "autoUpgradeMinorVersion": true,
+                "releaseTrain": "Stable",
+                "scope": {
+                  "Cluster": {
+                    "releaseNamespace": "azuremonitor-containers"
+                  }
+                }
+              },
+              "scope": "[concat('Microsoft.Kubernetes/connectedClusters/', split(parameters('clusterResourceId'),'/')[8])]"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

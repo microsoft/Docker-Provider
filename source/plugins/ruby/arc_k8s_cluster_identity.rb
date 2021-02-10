@@ -18,7 +18,7 @@ class ArcK8sClusterIdentity
   @@crd_resource_uri_template = "%{kube_api_server_url}/apis/%{cluster_config_crd_api_version}/namespaces/%{cluster_identity_resource_namespace}/azureclusteridentityrequests/%{cluster_identity_resource_name}"
   @@secret_resource_uri_template = "%{kube_api_server_url}/api/v1/namespaces/%{cluster_identity_token_secret_namespace}/secrets/%{token_secret_name}"
   @@azure_monitor_custom_metrics_audience = "https://monitoring.azure.com/"
-  @@cluster_identity_request_kind = "AzureClusterIdentityRequest"
+  @@cluster_identity_request_kind = "AzureClusterIdentityRequest" 
 
   def initialize
     @LogPath = "/var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log"
@@ -33,7 +33,9 @@ class ArcK8sClusterIdentity
       @log.warn "got api server url nil from KubernetesApiClient.getKubeAPIServerUrl @ #{Time.now.utc.iso8601}"
     end
     @http_client = get_http_client
-    @service_account_token = get_service_account_token
+    @service_account_token = get_service_account_token 
+    @extensionName = ENV["ARC_K8S_EXTENSION_NAME"]   
+    @log.info "extension name:#{@extensionName} @ #{Time.now.utc.iso8601}"
     @log.info "initialize complete @ #{Time.now.utc.iso8601}"
   end
 
@@ -148,7 +150,7 @@ class ArcK8sClusterIdentity
       update_response = @http_client.request(update_request)
       @log.info "Got response of #{update_response.code} for PATCH #{crd_request_uri} @ #{Time.now.utc.iso8601}"
       if update_response.code.to_i == 404
-        @log.info "since crd resource doesnt exist since creating crd resource : #{@@cluster_identity_resource_name} @ #{Time.now.utc.iso8601}"
+        @log.info "since crd resource doesnt exist hence creating crd resource : #{@@cluster_identity_resource_name} @ #{Time.now.utc.iso8601}"
         create_request = Net::HTTP::Post.new(crd_request_uri)
         create_request["Content-Type"] = "application/json"
         create_request["Authorization"] = "Bearer #{@service_account_token}"
@@ -211,6 +213,9 @@ class ArcK8sClusterIdentity
     body["metadata"]["namespace"] = @@cluster_identity_resource_namespace
     body["spec"] = {}
     body["spec"]["audience"] = @@azure_monitor_custom_metrics_audience
+    if !@extensionName.nil? && !@extensionName.empty? 
+        body["spec"]["resourceId"] = @extensionName      
+    end 
     return body
   end
 end

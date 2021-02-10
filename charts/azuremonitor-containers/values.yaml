@@ -4,19 +4,36 @@
 
 ## Microsoft OMS Agent image for kubernetes cluster monitoring
 ## ref: https://github.com/microsoft/Docker-Provider/tree/ci_prod
-## Values of ResourceId and Region under Azure->Cluster being populated by Azure Arc K8s RP during the installation of the extension
+## Values of under Azure are being populated by Azure Arc K8s RP during the installation of the extension
 Azure:
   Cluster:
     Region: <your_cluster_region>
     ResourceId: <your_cluster_id>
+  Extension:
+    Name: ""
+    ResourceId: ""
 omsagent:
   image:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
-    tag: "ciprod11092020"
-    tagWindows: "win-ciprod11092020"
+    tag: "ciprod01112021"
+    tagWindows: "win-ciprod01112021"
     pullPolicy: IfNotPresent
-    dockerProviderVersion: "11.0.0-1"
+    dockerProviderVersion: "12.0.0-0"
     agentVersion: "1.10.0.1"
+
+  # The priority used by the omsagent priority class for the daemonset pods
+  # Note that this is not execution piority - it is scheduling priority, as
+  # in getting scheduled to the node.  This needs to be greater than 0 such
+  # that the daemonset pods, which can not schedule onto different nodes as
+  # they are defined to run on specific nodes, are not accidentally frozen
+  # out of a node due to other pods showing up earlier in scheduling.
+  # (DaemonSet pods by definition only are created once the node exists for
+  # them to be created for and thus it is possible to have "normal" pods
+  # already in line to run on the node before the DeamonSet controller got a
+  # chance to build pod for the node and give it to the scheduler)
+  # Should be some number greater than default (0)
+  priority: 10
+
   ## To get your workspace id and key do the following
   ## You can create a Azure Loganalytics workspace from portal.azure.com and get its ID & PRIMARY KEY from 'Advanced Settings' tab in the Ux.
 
@@ -58,7 +75,7 @@ omsagent:
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
             - labelSelector:
-              matchExpressions:           
+              matchExpressions:
                 - key: kubernetes.io/os
                   operator: In
                   values:
@@ -67,10 +84,10 @@ omsagent:
                   operator: NotIn
                   values:
                     - virtual-kubelet
-                - key: kubernetes.io/arch 
+                - key: kubernetes.io/arch
                   operator: In
                   values:
-                    - amd64   
+                    - amd64
           nodeSelectorTerms:
             - labelSelector:
               matchExpressions:
@@ -82,10 +99,10 @@ omsagent:
                   operator: NotIn
                   values:
                     - virtual-kubelet
-                - key: beta.kubernetes.io/arch 
+                - key: beta.kubernetes.io/arch
                   operator: In
                   values:
-                    - amd64       
+                    - amd64
   deployment:
     affinity:
       nodeAffinity:
@@ -114,10 +131,10 @@ omsagent:
                   operator: NotIn
                   values:
                     - master
-                - key: kubernetes.io/arch 
+                - key: kubernetes.io/arch
                   operator: In
                   values:
-                    - amd64       
+                    - amd64
           nodeSelectorTerms:
             - labelSelector:
               matchExpressions:
@@ -133,10 +150,10 @@ omsagent:
                   operator: NotIn
                   values:
                     - master
-                - key: beta.kubernetes.io/arch 
+                - key: beta.kubernetes.io/arch
                   operator: In
                   values:
-                    - amd64           
+                    - amd64
   ## Configure resource requests and limits
   ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
   ##

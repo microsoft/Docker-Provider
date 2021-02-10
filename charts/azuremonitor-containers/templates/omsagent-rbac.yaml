@@ -33,10 +33,14 @@ rules:
   verbs: ["get", "create", "patch"]
 - nonResourceURLs: ["/metrics"]
   verbs: ["get"]
+#arc k8s extension model grants access as part of the extension msi 
+#remove this explicit permission once the extension available in public preview
+{{- if (empty .Values.Azure.Extension.Name) }}
 - apiGroups: [""]
   resources: ["secrets"]
   resourceNames: ["container-insights-clusteridentityrequest-token"]
   verbs: ["get"]
+{{- end }}
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1

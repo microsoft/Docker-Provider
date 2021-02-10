@@ -1,0 +1,101 @@
+{
+	"if": {
+		"field": "type",
+		"equals": "Microsoft.ContainerService/managedClusters"
+	},
+	"then": {
+		"effect": "deployIfNotExists",
+		"details": {
+			"type": "Microsoft.ContainerService/managedClusters",
+			"name": "[field('name')]",
+			"roleDefinitionIds": [
+				"/providers/Microsoft.Authorization/roleDefinitions/ed7f3fbd-7b88-4dd4-9017-9adb7ce333f8",
+				"/providers/Microsoft.Authorization/roleDefinitions/92aaf0da-9dab-42b6-94a3-d43ce8d16293"
+			],
+			"existenceCondition": {
+				"field": "Microsoft.ContainerService/managedClusters/addonProfiles.omsagent.enabled",
+				"equals": "true"
+			},
+			"deployment": {
+				"properties": {
+					"mode": "incremental",
+					"template": {
+						"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+						"contentVersion": "1.0.0.0",
+						"parameters": {
+							"clusterName": {
+								"type": "string"
+							},
+							"clusterResourceGroupName": {
+								"type": "string"
+							},
+							"clusterLocation": {
+								"type": "string"
+							},
+							"clusterTags": {
+								"type": "object"
+							},
+							"workspaceResourceId": {
+								"type": "string"
+							}
+						},
+						"resources": [
+							{
+								"type": "Microsoft.Resources/deployments",
+								"name": "[Concat('aks-monitoring-policy', '-',  uniqueString(parameters('clusterName')))]",
+								"apiVersion": "2019-05-01",
+								"properties": {
+									"mode": "Incremental",
+									"template": {
+										"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+										"contentVersion": "1.0.0.0",
+										"parameters": {},
+										"variables": {},
+										"resources": [
+											{
+												"name": "[parameters('clusterName')]",
+												"type": "Microsoft.ContainerService/managedClusters",
+												"location": "[parameters('clusterLocation')]",
+												"tags": "[parameters('clusterTags')]",
+												"apiVersion": "2018-03-31",
+												"properties": {
+													"mode": "Incremental",
+													"id": "[resourceId(parameters('clusterResourceGroupName'), 'Microsoft.ContainerService/managedClusters', parameters('clusterName'))]",
+													"addonProfiles": {
+														"omsagent": {
+															"enabled": true,
+															"config": {
+																"logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]"
+															}
+														}
+													}
+												}
+											}
+										]
+									}
+								}
+							}
+						]
+					},
+					"parameters": {
+						"clusterName": {
+							"value": "[field('name')]"
+						},
+						"clusterResourceGroupName": {
+							"value": "[resourceGroup().name]"
+						},
+						"clusterLocation": {
+							"value": "[field('location')]"
+						},
+						"clusterTags": {
+							"value": "[field('tags')]"
+						},
+						"workspaceResourceId": {
+							"value": "[parameters('workspaceResourceId')]"
+						}
+					}
+				}
+			}
+		}
+	}
+}

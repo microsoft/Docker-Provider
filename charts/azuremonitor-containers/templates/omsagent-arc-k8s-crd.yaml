@@ -1,4 +1,18 @@
 {{- if or ( contains "microsoft.kubernetes/connectedclusters" (.Values.Azure.Cluster.ResourceId | lower) ) ( contains "microsoft.kubernetes/connectedclusters" (.Values.omsagent.env.clusterId | lower)) }}
+#extension model
+{{- if not (empty .Values.Azure.Extension.Name) }}
+apiVersion: clusterconfig.azure.com/v1beta1
+kind: AzureExtensionIdentity
+metadata:
+  name: {{ .Values.Azure.Extension.Name }}
+  namespace: azure-arc
+spec:
+  serviceAccounts:
+    - name: omsagent
+      namespace: kube-system
+  tokenNamespace: azure-arc
+---
+{{- end }}
 apiVersion:  clusterconfig.azure.com/v1beta1
 kind: AzureClusterIdentityRequest
 metadata:
@@ -6,4 +20,7 @@ metadata:
   namespace: azure-arc
 spec:
   audience: https://monitoring.azure.com/
+  {{- if not (empty .Values.Azure.Extension.Name) }}
+  resourceId: {{ .Values.Azure.Extension.Name }} 
+  {{- end }}
 {{- end }}

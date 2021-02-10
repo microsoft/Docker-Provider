@@ -23,6 +23,7 @@ require_relative "ConfigParseErrorLogger"
 @logExclusionRegexPattern = "(^((?!stdout|stderr).)*$)"
 @excludePath = "*.csv2" #some invalid path
 @enrichContainerLogs = false
+@containerLogSchemaVersion = ""
 @collectAllKubeEvents = false
 @containerLogsRoute = ""
 
@@ -138,6 +139,16 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       ConfigParseErrorLogger.logError("Exception while reading config map settings for cluster level container log enrichment - #{errorStr}, using defaults, please check config map for errors")
     end
 
+     #Get container log schema version setting
+     begin
+      if !parsedConfig[:log_collection_settings][:schema].nil? && !parsedConfig[:log_collection_settings][:schema][:containerlog_schema_version].nil?
+        @containerLogSchemaVersion = parsedConfig[:log_collection_settings][:schema][:containerlog_schema_version]
+        puts "config::Using config map setting for container log schema version"
+      end
+    rescue => errorStr
+      ConfigParseErrorLogger.logError("Exception while reading config map settings for container log schema version - #{errorStr}, using defaults, please check config map for errors")
+    end
+
     #Get kube events enrichment setting
     begin
       if !parsedConfig[:log_collection_settings][:collect_all_kube_events].nil? && !parsedConfig[:log_collection_settings][:collect_all_kube_events][:enabled].nil?
@@ -200,6 +211,7 @@ if !file.nil?
   file.write("export AZMON_CLUSTER_CONTAINER_LOG_ENRICH=#{@enrichContainerLogs}\n")
   file.write("export AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS=#{@collectAllKubeEvents}\n")
   file.write("export AZMON_CONTAINER_LOGS_ROUTE=#{@containerLogsRoute}\n")
+  file.write("export AZMON_CONTAINER_LOG_SCHEMA_VERSION=#{@containerLogSchemaVersion}\n")
   # Close file after writing all environment variables
   file.close
   puts "Both stdout & stderr log collection are turned off for namespaces: '#{@excludePath}' "
@@ -245,6 +257,8 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     commands = get_command_windows('AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS', @collectAllKubeEvents)
     file.write(commands)
     commands = get_command_windows('AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE', @containerLogsRoute)
+    file.write(commands)
+    commands = get_command_windows('AZMON_CONTAINER_LOG_SCHEMA_VERSION', @containerLogSchemaVersion)
     file.write(commands)
 
     # Close file after writing all environment variables

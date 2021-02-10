@@ -48,20 +48,31 @@
   -->
   <Schemas>
     <Schema name="ContainerLogSchema">
-		<Column name="Id" type="str" mdstype="mt:wstr" />
-		<Column name="LogEntry" type="str" mdstype="mt:wstr" />
-		<Column name="LogEntrySource" type="str" mdstype="mt:wstr" />
-		<Column name="LogEntryTimeStamp" type="str" mdstype="mt:wstr" />
-		<Column name="TimeOfCommand" type="str-rfc3339" mdstype="mt:utc" />
-		<Column name="SourceSystem" type="str" mdstype="mt:wstr" />
-		<Column name="Computer" type="str" mdstype="mt:wstr" />
-		<Column name="Image" type="str" mdstype="mt:wstr" />
-		<Column name="Name" type="str" mdstype="mt:wstr" />
-  </Schema>
+      <Column name="Id" type="str" mdstype="mt:wstr" />
+      <Column name="LogEntry" type="str" mdstype="mt:wstr" />
+      <Column name="LogEntrySource" type="str" mdstype="mt:wstr" />
+      <Column name="LogEntryTimeStamp" type="str" mdstype="mt:wstr" />
+      <Column name="TimeOfCommand" type="str-rfc3339" mdstype="mt:utc" />
+      <Column name="SourceSystem" type="str" mdstype="mt:wstr" />
+      <Column name="Computer" type="str" mdstype="mt:wstr" />
+      <Column name="Image" type="str" mdstype="mt:wstr" />
+      <Column name="Name" type="str" mdstype="mt:wstr" />
+    </Schema>
+    <Schema name="ContainerLogV2Schema">
+      <Column name="ContainerId" type="str" mdstype="mt:wstr" />
+      <Column name="LogMessage" type="str" mdstype="mt:wstr" />
+      <Column name="LogSource" type="str" mdstype="mt:wstr" />
+      <Column name="TimeGenerated" type="str" mdstype="mt:wstr" />
+      <Column name="PodName" type="str" mdstype="mt:wstr" />
+      <Column name="PodNamespace" type="str" mdstype="mt:wstr" />
+      <Column name="Computer" type="str" mdstype="mt:wstr" />
+      <Column name="ContainerName" type="str" mdstype="mt:wstr" />
+    </Schema>
   </Schemas>
 
   <Sources>
-    <Source name="ContainerLogSource" schema="ContainerLogSchema" />  	
+    <Source name="ContainerLogSource" schema="ContainerLogSchema" />
+    <Source name="ContainerLogV2Source" schema="ContainerLogV2Schema" /> 	
   </Sources>
   
   
@@ -97,15 +108,22 @@
     priority events to be delivered sooner than the next five-minute interval.
     -->
     <MdsdEvents>
-	  <MdsdEventSource source="ContainerLogSource">
-        <RouteEvent eventName="ContainerLogEvent" duration="PT10S" priority="High" storeType="Local" disabled="true">          
-        </RouteEvent> 
-		    <!-- 
-        <RouteEvent eventName="ContainerLogEvent2File" duration="PT1S" priority="High" storeType="File">          
-        </RouteEvent>
-        -->
+      <MdsdEventSource source="ContainerLogSource">
+          <RouteEvent eventName="ContainerLogEvent" duration="PT10S" priority="High" storeType="Local" disabled="true">          
+          </RouteEvent> 
+          <!-- 
+          <RouteEvent eventName="ContainerLogEvent2File" duration="PT1S" priority="High" storeType="File">          
+          </RouteEvent>
+          -->
       </MdsdEventSource>
-	  
+       <MdsdEventSource source="ContainerLogV2Source">
+          <RouteEvent eventName="ContainerLogV2Event" duration="PT10S" priority="High" storeType="Local" disabled="true">          
+          </RouteEvent> 
+          <!-- 
+          <RouteEvent eventName="ContainerLogEvent2File" duration="PT1S" priority="High" storeType="File">          
+          </RouteEvent>
+          -->
+      </MdsdEventSource>
     </MdsdEvents>
 
 
@@ -118,7 +136,16 @@
          <Content>
            <!-- <![CDATA[<Config workspaceName="CIWORKSPACE" workspaceId="7ab0f4bc-0d3e-4d05-8a19-e2b5c5bf2dc8" logType="CONTAINER_LOG_BLOB" ipName="Containers"/>]]> -->
            <!--<![CDATA[<Config workspaceName="CIWORKSPACE" logType="CONTAINER_LOG_BLOB" flushFrequencyInSeconds="20" ipName="Containers"/>]]>-->
-           <![CDATA[<Config workspaceName="CIWORKSPACE" logType="CONTAINER_LOG_BLOB" ipName="Containers"/>]]>
+           <![CDATA[<Config workspaceName="CIWORKSPACE" logType="CONTAINER_LOG_BLOB" ipName="ContainerInsights"/>]]>
+         </Content>
+       </OMS>
+    </EventStreamingAnnotation>
+    <EventStreamingAnnotation name="ContainerLogV2Event">
+       <OMS>
+         <Content>
+           <!-- <![CDATA[<Config workspaceName="CIWORKSPACE" workspaceId="7ab0f4bc-0d3e-4d05-8a19-e2b5c5bf2dc8" logType="CONTAINER_LOG_BLOB" ipName="Containers"/>]]> -->
+           <!--<![CDATA[<Config workspaceName="CIWORKSPACE" logType="CONTAINER_LOG_BLOB" flushFrequencyInSeconds="20" ipName="Containers"/>]]>-->
+           <![CDATA[<Config workspaceName="CIWORKSPACE" logType="CONTAINERINSIGHTS_CONTAINERLOGV2" ipName="ContainerInsights"/>]]>
          </Content>
        </OMS>
     </EventStreamingAnnotation>
