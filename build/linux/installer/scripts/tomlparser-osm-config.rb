@@ -113,7 +113,7 @@ if @osmMetricNamespaces.length > 0
       namespace.strip!
       if namespace.length > 0
         osmPluginConfigsWithNamespaces += "\n[[inputs.prometheus]]
-  name_prefix=\"container.azm.ms.osm\"
+  name_prefix=\"container.azm.ms.osm/\"
   interval = \"#{@scrapeInterval}\"
   monitor_kubernetes_pods = true
   monitor_kubernetes_pods_version = #{@monitorKubernetesPodsVersion}
