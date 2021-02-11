@@ -81,6 +81,45 @@ def populateSettingValuesFromConfigMap(parsedConfig)
   end
 end
 
+def replaceOsmTelegrafConfigPlaceHolders
+  begin
+    #replace place holders in configuration file
+    tgfConfig = File.read(@tgfTestConfigFile) #read returns only after closing the file
+
+    if @osmMetricNamespaces.length > 0
+      osmPluginConfigsWithNamespaces = ""
+      @osmMetricNamespaces.each do |namespace|
+        if !namespace.nil?
+          #Stripping namespaces to remove leading and trailing whitespaces
+          namespace.strip!
+          if namespace.length > 0
+            osmPluginConfigsWithNamespaces += "\n[[inputs.prometheus]]
+  name_prefix=\"container.azm.ms.osm/\"
+  interval = \"#{@scrapeInterval}\"
+  monitor_kubernetes_pods = true
+  monitor_kubernetes_pods_version = #{@monitorKubernetesPodsVersion}
+  monitor_kubernetes_pods_namespace = \"#{namespace}\"
+  fieldpass = #{@fieldPassSetting}
+  metric_version = #{@metricVersion}
+  url_tag = \"#{@urlTag}\"
+  bearer_token = \"#{@bearerToken}\"
+  response_timeout = \"#{@responseTimeout}\"
+  tls_ca = \"#{@tlsCa}\"
+  insecure_skip_verify = #{@insecureSkipVerify}\n"
+          end
+        end
+      end
+      tgfConfig = tgfConfig.gsub("$AZMON_SIDECAR_OSM_PROM_PLUGINS", osmPluginConfigsWithNamespaces)
+    else
+      puts "Using defaults for OSM configuration since there was an error in OSM config map or no namespaces were set"
+      tgfConfig = tgfConfig.gsub("$AZMON_SIDECAR_OSM_PROM_PLUGINS", "")
+    end
+  rescue => errorStr
+    # TODO: test this scenario out
+    puts "config::osm::error:Exception while replacing telegraf configuration settings for osm - #{errorStr}, using defaults"
+  end
+end
+
 @osmConfigSchemaVersion = ENV["AZMON_OSM_CFG_SCHEMA_VERSION"]
 puts "****************Start OSM Config Processing********************"
 if !@osmConfigSchemaVersion.nil? && !@osmConfigSchemaVersion.empty? && @osmConfigSchemaVersion.strip.casecmp("v1") == 0 #note v1 is the only supported schema version , so hardcoding it
@@ -102,50 +141,42 @@ if (!File.exist?(@tgfTestConfigFile))
   FileUtils.cp(@tgfConfigFileSidecar, @tgfTestConfigFile)
 end
 
-#replace place holders in configuration file
-tgfConfig = File.read(@tgfTestConfigFile) #read returns only after closing the file
+replaceOsmTelegrafConfigPlaceHolders()
 
-if @osmMetricNamespaces.length > 0
-  osmPluginConfigsWithNamespaces = ""
-  @osmMetricNamespaces.each do |namespace|
-    if !namespace.nil?
-      #Stripping namespaces to remove leading and trailing whitespaces
-      namespace.strip!
-      if namespace.length > 0
-        osmPluginConfigsWithNamespaces += "\n[[inputs.prometheus]]
-  name_prefix=\"container.azm.ms.osm/\"
-  interval = \"#{@scrapeInterval}\"
-  monitor_kubernetes_pods = true
-  monitor_kubernetes_pods_version = #{@monitorKubernetesPodsVersion}
-  monitor_kubernetes_pods_namespace = \"#{namespace}\"
-  fieldpass = #{@fieldPassSetting}
-  metric_version = #{@metricVersion}
-  url_tag = \"#{@urlTag}\"
-  bearer_token = \"#{@bearerToken}\"
-  response_timeout = \"#{@responseTimeout}\"
-  tls_ca = \"#{@tlsCa}\"
-  insecure_skip_verify = #{@insecureSkipVerify}\n"
-      end
-    end
-  end
-  tgfConfig = tgfConfig.gsub("$AZMON_SIDECAR_OSM_PROM_PLUGINS", osmPluginConfigsWithNamespaces)
-else
-  puts "Using defaults for OSM configuration since there was an error in OSM config map or no namespaces were set"
-  tgfConfig = tgfConfig.gsub("$AZMON_SIDECAR_OSM_PROM_PLUGINS", "")
-end
+# #replace place holders in configuration file
+# tgfConfig = File.read(@tgfTestConfigFile) #read returns only after closing the file
+
+# if @osmMetricNamespaces.length > 0
+#   osmPluginConfigsWithNamespaces = ""
+#   @osmMetricNamespaces.each do |namespace|
+#     if !namespace.nil?
+#       #Stripping namespaces to remove leading and trailing whitespaces
+#       namespace.strip!
+#       if namespace.length > 0
+#         osmPluginConfigsWithNamespaces += "\n[[inputs.prometheus]]
+#   name_prefix=\"container.azm.ms.osm/\"
+#   interval = \"#{@scrapeInterval}\"
+#   monitor_kubernetes_pods = true
+#   monitor_kubernetes_pods_version = #{@monitorKubernetesPodsVersion}
+#   monitor_kubernetes_pods_namespace = \"#{namespace}\"
+#   fieldpass = #{@fieldPassSetting}
+#   metric_version = #{@metricVersion}
+#   url_tag = \"#{@urlTag}\"
+#   bearer_token = \"#{@bearerToken}\"
+#   response_timeout = \"#{@responseTimeout}\"
+#   tls_ca = \"#{@tlsCa}\"
+#   insecure_skip_verify = #{@insecureSkipVerify}\n"
+#       end
+#     end
+#   end
+#   tgfConfig = tgfConfig.gsub("$AZMON_SIDECAR_OSM_PROM_PLUGINS", osmPluginConfigsWithNamespaces)
+# else
+#   puts "Using defaults for OSM configuration since there was an error in OSM config map or no namespaces were set"
+#   tgfConfig = tgfConfig.gsub("$AZMON_SIDECAR_OSM_PROM_PLUGINS", "")
+# end
 
 File.open(@tgfTestConfigFile, "w") { |file| file.puts tgfConfig } # 'file' will be closed here after it goes out of scope
 puts "config::osm::Successfully substituted the OSM placeholders in #{@tgfTestConfigFile} file in sidecar container"
-
-# Set OSM namespaces as environment variable so that prometheus custom config parser can read it and add necessary fielddrops to avoid data duplication
-# of OSM metrics
-# promSettingsSharedfile = File.open("prom_config_shared_settings_env_var", "w")
-# if !promSettingsSharedfile.nil?
-#   promSettingsSharedfile.write("export AZMON_OSM_METRIC_NAMESPACES=#{@osmMetricNamespaces}\n")
-#   # Close file after writing all environment variables
-#   promSettingsSharedfile.close
-#   puts "config::Successfully created prom_config_shared_settings_env_var file for prometheus sidecar"
-# end
 
 # Write the telemetry to file, so that they can be set as environment variables
 telemetryFile = File.open("integration_osm_config_env_var", "w")
@@ -155,6 +186,6 @@ if !telemetryFile.nil?
   # Close file after writing all environment variables
   telemetryFile.close
 else
-  puts "config::npm::Exception while opening file for writing OSM telemetry environment variables"
+  puts "config::osm::Exception while opening file for writing OSM telemetry environment variables"
 end
 puts "****************End OSM Config Processing********************"
