@@ -21,7 +21,7 @@ require_relative "ConfigParseErrorLogger"
 @metricVersion = 2
 @monitorKubernetesPodsVersion = 2
 #@fieldPassSetting = "[\"envoy_cluster_upstream_rq_xx\", \"envoy_cluster_upstream_rq\"]"
-@fieldPassSetting = "[\"envoy_cluster_upstream_rq_xx\", \"envoy_cluster_upstream_rq\", \"envoy_cluster_upstream_rq_active\", \"envoy_cluster_upstream_rq_total\", \"envoy_cluster_upstream_rq_time\", \"envoy_http_downstream_rq_xx\", \"envoy_cluster_downstream_rq\", \"envoy_http_no_route\", \"envoy_server_live\", \"envoy_server_memory_heap_size\", \"envoy_server_memory_physical_size\", \"envoy_server_memory_allocated\", \"envoy_cluster_external_upstream_rq_xx\"]"
+@fieldPassSetting = "[\"envoy_cluster_upstream_cx_total\", \"envoy_cluster_upstream_cx_connect_fail\", \"envoy_cluster_upstream_rq\", \"envoy_cluster_upstream_rq_xx\", \"envoy_cluster_upstream_rq_total\", \"envoy_cluster_upstream_rq_time\"]"
 @scrapeInterval = "1m"
 @urlTag = "scrapeUrl"
 @bearerToken = "/var/run/secrets/kubernetes.io/serviceaccount/token"
