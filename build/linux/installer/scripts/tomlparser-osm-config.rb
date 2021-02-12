@@ -114,6 +114,8 @@ def replaceOsmTelegrafConfigPlaceHolders
       puts "Using defaults for OSM configuration since there was an error in OSM config map or no namespaces were set"
       tgfConfig = tgfConfig.gsub("$AZMON_SIDECAR_OSM_PROM_PLUGINS", "")
     end
+    File.open(@tgfTestConfigFile, "w") { |file| file.puts tgfConfig } # 'file' will be closed here after it goes out of scope
+    puts "config::osm::Successfully substituted the OSM placeholders in #{@tgfTestConfigFile} file in sidecar container"
   rescue => errorStr
     # TODO: test this scenario out
     puts "config::osm::error:Exception while replacing telegraf configuration settings for osm - #{errorStr}, using defaults"
@@ -175,8 +177,8 @@ replaceOsmTelegrafConfigPlaceHolders()
 #   tgfConfig = tgfConfig.gsub("$AZMON_SIDECAR_OSM_PROM_PLUGINS", "")
 # end
 
-File.open(@tgfTestConfigFile, "w") { |file| file.puts tgfConfig } # 'file' will be closed here after it goes out of scope
-puts "config::osm::Successfully substituted the OSM placeholders in #{@tgfTestConfigFile} file in sidecar container"
+# File.open(@tgfTestConfigFile, "w") { |file| file.puts tgfConfig } # 'file' will be closed here after it goes out of scope
+# puts "config::osm::Successfully substituted the OSM placeholders in #{@tgfTestConfigFile} file in sidecar container"
 
 # Write the telemetry to file, so that they can be set as environment variables
 telemetryFile = File.open("integration_osm_config_env_var", "w")
