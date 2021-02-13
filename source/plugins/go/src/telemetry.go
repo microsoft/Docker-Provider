@@ -138,24 +138,20 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 				telemetryDimensions := make(map[string]string)
 				telemetryDimensions["ContainerType"] = "prometheus-sidecar"
 				telemetryDimensions["SidecarPromMonitorPods"] = PromMonitorPods
-				if (PromMonitorPodsNamespaceLength > 0)
-				{
-				telemetryDimensions["SidecarPromMonitorPodsNamespaceLength"] = PromMonitorPodsNamespaceLength
+				if promMonitorPodsNamespaceLength > 0 {
+					telemetryDimensions["SidecarPromMonitorPodsNamespaceLength"] = promMonitorPodsNamespaceLength
 				}
-				if (promMonitorPodsLabelSelectorLength > 0)
-				{
+				if promMonitorPodsLabelSelectorLength > 0 {
 					telemetryDimensions["SidecarPromMonitorPodsLabelSelectorLength"] = promMonitorPodsLabelSelectorLength
 				}
-				if (promMonitorPodsFieldSelectorLength > 0)
-				{
+				if promMonitorPodsFieldSelectorLength > 0 {
 					telemetryDimensions["SidecarPromMonitorPodsFieldSelectorLength"] = promMonitorPodsFieldSelectorLength
 				}
-				if (osmNamespaceCount > 0)
-				{
+				if osmNamespaceCount > 0 {
 					telemetryDimensions["OsmNamespaceCount"] = osmNamespaceCount
 				}
 
-					SendEvent(eventNamePrometheusSidecarHeartbeat, telemetryDimensions)
+				SendEvent(eventNamePrometheusSidecarHeartbeat, telemetryDimensions)
 
 			} else {
 				SendEvent(eventNameDaemonSetHeartbeat, make(map[string]string))
@@ -330,7 +326,7 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 		Log("Prometheus sidecar field selector count string to int conversion error %s", err.Error())
 		PromMonitorPodsFieldSelectorLength = 0
 	}
-	
+
 	return 0, nil
 }
 
