@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fluent/fluent-bit-go/output"
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
-	"github.com/fluent/fluent-bit-go/output"
 )
 
 var (
@@ -44,33 +44,44 @@ var (
 	ContainerLogsMDSDClientCreateErrors float64
 	//Tracks the number of write/send errors to ADX for containerlogs (uses ContainerLogTelemetryTicker)
 	ContainerLogsSendErrorsToADXFromFluent float64
-	 //Tracks the number of ADX client create errors for containerlogs (uses ContainerLogTelemetryTicker)
+	//Tracks the number of ADX client create errors for containerlogs (uses ContainerLogTelemetryTicker)
 	ContainerLogsADXClientCreateErrors float64
+	//Tracks the number of OSM namespaces and sent only from prometheus sidecar (uses ContainerLogTelemetryTicker)
+	OSMNamespaceCount int64
+	//Tracks whether monitor kubernetes pods is set to true and sent only from prometheus sidecar (uses ContainerLogTelemetryTicker)
+	PromMonitorPods string
+	//Tracks the number of monitor kubernetes pods namespaces and sent only from prometheus sidecar (uses ContainerLogTelemetryTicker)
+	PromMonitorPodsNamespaceLength int64
+	//Tracks the number of monitor kubernetes pods label selectors and sent only from prometheus sidecar (uses ContainerLogTelemetryTicker)
+	PromMonitorPodsLabelSelectorLength int64
+	//Tracks the number of monitor kubernetes pods field selectors and sent only from prometheus sidecar (uses ContainerLogTelemetryTicker)
+	PromMonitorPodsFieldSelectorLength int64
 )
 
 const (
-	clusterTypeACS                                    = "ACS"
-	clusterTypeAKS                                    = "AKS"
-	envAKSResourceID                                  = "AKS_RESOURCE_ID"
-	envACSResourceName                                = "ACS_RESOURCE_NAME"
-	envAppInsightsAuth                                = "APPLICATIONINSIGHTS_AUTH"
-	envAppInsightsEndpoint                            = "APPLICATIONINSIGHTS_ENDPOINT"
-	metricNameAvgFlushRate                            = "ContainerLogAvgRecordsFlushedPerSec"
-	metricNameAvgLogGenerationRate                    = "ContainerLogsGeneratedPerSec"
-	metricNameLogSize                                 = "ContainerLogsSize"
-	metricNameAgentLogProcessingMaxLatencyMs          = "ContainerLogsAgentSideLatencyMs"
-	metricNameNumberofTelegrafMetricsSentSuccessfully = "TelegrafMetricsSentCount"
-	metricNameNumberofSendErrorsTelegrafMetrics       = "TelegrafMetricsSendErrorCount"
-	metricNameNumberofSend429ErrorsTelegrafMetrics    = "TelegrafMetricsSend429ErrorCount"
-	metricNameErrorCountContainerLogsSendErrorsToMDSDFromFluent	  = "ContainerLogs2MdsdSendErrorCount"
-	metricNameErrorCountContainerLogsMDSDClientCreateError	  = "ContainerLogsMdsdClientCreateErrorCount"
-	metricNameErrorCountContainerLogsSendErrorsToADXFromFluent	  = "ContainerLogs2ADXSendErrorCount"
-	metricNameErrorCountContainerLogsADXClientCreateError	  = "ContainerLogsADXClientCreateErrorCount"
+	clusterTypeACS                                              = "ACS"
+	clusterTypeAKS                                              = "AKS"
+	envAKSResourceID                                            = "AKS_RESOURCE_ID"
+	envACSResourceName                                          = "ACS_RESOURCE_NAME"
+	envAppInsightsAuth                                          = "APPLICATIONINSIGHTS_AUTH"
+	envAppInsightsEndpoint                                      = "APPLICATIONINSIGHTS_ENDPOINT"
+	metricNameAvgFlushRate                                      = "ContainerLogAvgRecordsFlushedPerSec"
+	metricNameAvgLogGenerationRate                              = "ContainerLogsGeneratedPerSec"
+	metricNameLogSize                                           = "ContainerLogsSize"
+	metricNameAgentLogProcessingMaxLatencyMs                    = "ContainerLogsAgentSideLatencyMs"
+	metricNameNumberofTelegrafMetricsSentSuccessfully           = "TelegrafMetricsSentCount"
+	metricNameNumberofSendErrorsTelegrafMetrics                 = "TelegrafMetricsSendErrorCount"
+	metricNameNumberofSend429ErrorsTelegrafMetrics              = "TelegrafMetricsSend429ErrorCount"
+	metricNameErrorCountContainerLogsSendErrorsToMDSDFromFluent = "ContainerLogs2MdsdSendErrorCount"
+	metricNameErrorCountContainerLogsMDSDClientCreateError      = "ContainerLogsMdsdClientCreateErrorCount"
+	metricNameErrorCountContainerLogsSendErrorsToADXFromFluent  = "ContainerLogs2ADXSendErrorCount"
+	metricNameErrorCountContainerLogsADXClientCreateError       = "ContainerLogsADXClientCreateErrorCount"
 
 	defaultTelemetryPushIntervalSeconds = 300
 
-	eventNameContainerLogInit   = "ContainerLogPluginInitialized"
-	eventNameDaemonSetHeartbeat = "ContainerLogDaemonSetHeartbeatEvent"
+	eventNameContainerLogInit           = "ContainerLogPluginInitialized"
+	eventNameDaemonSetHeartbeat         = "ContainerLogDaemonSetHeartbeatEvent"
+	eventNamePrometheusSidecarHeartbeat = "PrometheusSidecarHeartbeatEvent"
 )
 
 // SendContainerLogPluginMetrics is a go-routine that flushes the data periodically (every 5 mins to App Insights)
@@ -100,6 +111,11 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		containerLogsMDSDClientCreateErrors := ContainerLogsMDSDClientCreateErrors
 		containerLogsSendErrorsToADXFromFluent := ContainerLogsSendErrorsToADXFromFluent
 		containerLogsADXClientCreateErrors := ContainerLogsADXClientCreateErrors
+		osmNamespaceCount := OSMNamespaceCount
+		promMonitorPods := PromMonitorPods
+		promMonitorPodsNamespaceLength := PromMonitorPodsNamespaceLength
+		promMonitorPodsLabelSelectorLength := PromMonitorPodsLabelSelectorLength
+		promMonitorPodsFieldSelectorLength := PromMonitorPodsFieldSelectorLength
 
 		TelegrafMetricsSentCount = 0.0
 		TelegrafMetricsSendErrorCount = 0.0
@@ -118,17 +134,42 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		ContainerLogTelemetryMutex.Unlock()
 
 		if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
-			SendEvent(eventNameDaemonSetHeartbeat, make(map[string]string))
-			flushRateMetric := appinsights.NewMetricTelemetry(metricNameAvgFlushRate, flushRate)
-			TelemetryClient.Track(flushRateMetric)
-			logRateMetric := appinsights.NewMetricTelemetry(metricNameAvgLogGenerationRate, logRate)
-			logSizeMetric := appinsights.NewMetricTelemetry(metricNameLogSize, logSizeRate)
-			TelemetryClient.Track(logRateMetric)
-			Log("Log Size Rate: %f\n", logSizeRate)
-			TelemetryClient.Track(logSizeMetric)
-			logLatencyMetric := appinsights.NewMetricTelemetry(metricNameAgentLogProcessingMaxLatencyMs, logLatencyMs)
-			logLatencyMetric.Properties["Container"] = logLatencyMsContainer
-			TelemetryClient.Track(logLatencyMetric)
+			if strings.Compare(strings.ToLower(os.Getenv("CONTAINER_TYPE")), "prometheus-sidecar") == 0 {
+				telemetryDimensions := make(map[string]string)
+				telemetryDimensions["ContainerType"] = "prometheus-sidecar"
+				telemetryDimensions["SidecarPromMonitorPods"] = PromMonitorPods
+				if (PromMonitorPodsNamespaceLength > 0)
+				{
+				telemetryDimensions["SidecarPromMonitorPodsNamespaceLength"] = PromMonitorPodsNamespaceLength
+				}
+				if (promMonitorPodsLabelSelectorLength > 0)
+				{
+					telemetryDimensions["SidecarPromMonitorPodsLabelSelectorLength"] = promMonitorPodsLabelSelectorLength
+				}
+				if (promMonitorPodsFieldSelectorLength > 0)
+				{
+					telemetryDimensions["SidecarPromMonitorPodsFieldSelectorLength"] = promMonitorPodsFieldSelectorLength
+				}
+				if (osmNamespaceCount > 0)
+				{
+					telemetryDimensions["OsmNamespaceCount"] = osmNamespaceCount
+				}
+
+					SendEvent(eventNamePrometheusSidecarHeartbeat, telemetryDimensions)
+
+			} else {
+				SendEvent(eventNameDaemonSetHeartbeat, make(map[string]string))
+				flushRateMetric := appinsights.NewMetricTelemetry(metricNameAvgFlushRate, flushRate)
+				TelemetryClient.Track(flushRateMetric)
+				logRateMetric := appinsights.NewMetricTelemetry(metricNameAvgLogGenerationRate, logRate)
+				logSizeMetric := appinsights.NewMetricTelemetry(metricNameLogSize, logSizeRate)
+				TelemetryClient.Track(logRateMetric)
+				Log("Log Size Rate: %f\n", logSizeRate)
+				TelemetryClient.Track(logSizeMetric)
+				logLatencyMetric := appinsights.NewMetricTelemetry(metricNameAgentLogProcessingMaxLatencyMs, logLatencyMs)
+				logLatencyMetric.Properties["Container"] = logLatencyMsContainer
+				TelemetryClient.Track(logLatencyMetric)
+			}
 		}
 		TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameNumberofTelegrafMetricsSentSuccessfully, telegrafMetricsSentCount))
 		if telegrafMetricsSendErrorCount > 0.0 {
@@ -255,12 +296,41 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 	}
 
 	if isProxyConfigured == true {
-	  CommonProperties["IsProxyConfigured"] = "true"
+		CommonProperties["IsProxyConfigured"] = "true"
 	} else {
-  	   CommonProperties["IsProxyConfigured"] = "false"
-    }
+		CommonProperties["IsProxyConfigured"] = "false"
+	}
 
 	TelemetryClient.Context().CommonProperties = CommonProperties
+
+	// Getting the namespace count, monitor kubernetes pods values and namespace count once at start because it wont change unless the configmap is applied and the container is restarted
+	osmNsCount, err := os.Getenv("TELEMETRY_OSM_CONFIGURATION_NAMESPACES_COUNT")
+	OSMNamespaceCount, err = strconv.Atoi(osmNsCount)
+	if err != nil {
+		Log("OSM namespace count string to int conversion error %s", err.Error())
+		OSMNamespaceCount = 0
+	}
+	PromMonitorPods = os.Getenv("TELEMETRY_SIDECAR_PROM_MONITOR_PODS")
+	promMonPodsNamespaceLength := os.Getenv("TELEMETRY_SIDECAR_PROM_MONITOR_PODS_NS_LENGTH")
+	PromMonitorPodsNamespaceLength, err = strconv.Atoi(promMonPodsNamespaceLength)
+	if err != nil {
+		Log("Prometheus sidecar monitor kubernetes pods namespace count string to int conversion error %s", err.Error())
+		PromMonitorPodsNamespaceLength = 0
+	}
+	promLabelSelectorLength := os.Getenv("TELEMETRY_SIDECAR_PROM_KUBERNETES_LABEL_SELECTOR_LENGTH")
+	PromMonitorPodsLabelSelectorLength, err = strconv.Atoi(promLabelSelectorLength)
+	if err != nil {
+		Log("Prometheus sidecar label selector count string to int conversion error %s", err.Error())
+		PromMonitorPodsLabelSelectorLength = 0
+	}
+
+	promFieldSelectorLength := os.Getenv("TELEMETRY_SIDECAR_PROM_KUBERNETES_FIELD_SELECTOR_LENGTH")
+	PromMonitorPodsFieldSelectorLength, err = strconv.Atoi(promFieldSelectorLength)
+	if err != nil {
+		Log("Prometheus sidecar field selector count string to int conversion error %s", err.Error())
+		PromMonitorPodsFieldSelectorLength = 0
+	}
+	
 	return 0, nil
 }
 

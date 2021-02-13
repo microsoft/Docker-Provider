@@ -273,10 +273,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             #Set environment variables for telemetry
             file = File.open("telemetry_prom_config_env_var", "w")
             if !file.nil?
-              file.write("export TELEMETRY_SIDECAR_PROM_INTERVAL=\"#{interval}\"\n")
               #Setting array lengths as environment variables for telemetry purposes
-              file.write("export TELEMETRY_SIDECAR_PROM_FIELDPASS_LENGTH=\"#{fieldPass.length}\"\n")
-              file.write("export TELEMETRY_SIDECAR_PROM_FIELDDROP_LENGTH=\"#{fieldDrop.length}\"\n")
               file.write("export TELEMETRY_SIDECAR_PROM_MONITOR_PODS=\"#{monitorKubernetesPods}\"\n")
               file.write("export TELEMETRY_SIDECAR_PROM_MONITOR_PODS_NS_LENGTH=\"#{monitorKubernetesPodsNamespacesLength}\"\n")
               file.write("export TELEMETRY_SIDECAR_PROM_KUBERNETES_LABEL_SELECTOR_LENGTH=\"#{kubernetesLabelSelectors.length}\"\n")
