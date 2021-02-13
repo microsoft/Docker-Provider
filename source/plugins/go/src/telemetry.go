@@ -300,7 +300,7 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 	TelemetryClient.Context().CommonProperties = CommonProperties
 
 	// Getting the namespace count, monitor kubernetes pods values and namespace count once at start because it wont change unless the configmap is applied and the container is restarted
-	osmNsCount, err := os.Getenv("TELEMETRY_OSM_CONFIGURATION_NAMESPACES_COUNT")
+	osmNsCount := os.Getenv("TELEMETRY_OSM_CONFIGURATION_NAMESPACES_COUNT")
 	OSMNamespaceCount, err = strconv.Atoi(osmNsCount)
 	if err != nil {
 		Log("OSM namespace count string to int conversion error %s", err.Error())
