@@ -47,15 +47,15 @@ var (
 	//Tracks the number of ADX client create errors for containerlogs (uses ContainerLogTelemetryTicker)
 	ContainerLogsADXClientCreateErrors float64
 	//Tracks the number of OSM namespaces and sent only from prometheus sidecar (uses ContainerLogTelemetryTicker)
-	OSMNamespaceCount int64
+	OSMNamespaceCount int
 	//Tracks whether monitor kubernetes pods is set to true and sent only from prometheus sidecar (uses ContainerLogTelemetryTicker)
 	PromMonitorPods string
 	//Tracks the number of monitor kubernetes pods namespaces and sent only from prometheus sidecar (uses ContainerLogTelemetryTicker)
-	PromMonitorPodsNamespaceLength int64
+	PromMonitorPodsNamespaceLength int
 	//Tracks the number of monitor kubernetes pods label selectors and sent only from prometheus sidecar (uses ContainerLogTelemetryTicker)
-	PromMonitorPodsLabelSelectorLength int64
+	PromMonitorPodsLabelSelectorLength int
 	//Tracks the number of monitor kubernetes pods field selectors and sent only from prometheus sidecar (uses ContainerLogTelemetryTicker)
-	PromMonitorPodsFieldSelectorLength int64
+	PromMonitorPodsFieldSelectorLength int
 )
 
 const (
