@@ -137,7 +137,7 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 			if strings.Compare(strings.ToLower(os.Getenv("CONTAINER_TYPE")), "prometheus-sidecar") == 0 {
 				telemetryDimensions := make(map[string]string)
 				telemetryDimensions["ContainerType"] = "prometheus-sidecar"
-				telemetryDimensions["SidecarPromMonitorPods"] = PromMonitorPods
+				telemetryDimensions["SidecarPromMonitorPods"] = promMonitorPods
 				if promMonitorPodsNamespaceLength > 0 {
 					telemetryDimensions["SidecarPromMonitorPodsNamespaceLength"] = strconv.Itoa(promMonitorPodsNamespaceLength)
 				}
