@@ -139,16 +139,16 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 				telemetryDimensions["ContainerType"] = "prometheus-sidecar"
 				telemetryDimensions["SidecarPromMonitorPods"] = PromMonitorPods
 				if promMonitorPodsNamespaceLength > 0 {
-					telemetryDimensions["SidecarPromMonitorPodsNamespaceLength"] = promMonitorPodsNamespaceLength
+					telemetryDimensions["SidecarPromMonitorPodsNamespaceLength"] = strconv.Itoa(promMonitorPodsNamespaceLength)
 				}
 				if promMonitorPodsLabelSelectorLength > 0 {
-					telemetryDimensions["SidecarPromMonitorPodsLabelSelectorLength"] = promMonitorPodsLabelSelectorLength
+					telemetryDimensions["SidecarPromMonitorPodsLabelSelectorLength"] = strconv.Itoa(promMonitorPodsLabelSelectorLength)
 				}
 				if promMonitorPodsFieldSelectorLength > 0 {
-					telemetryDimensions["SidecarPromMonitorPodsFieldSelectorLength"] = promMonitorPodsFieldSelectorLength
+					telemetryDimensions["SidecarPromMonitorPodsFieldSelectorLength"] = strconv.Itoa(promMonitorPodsFieldSelectorLength)
 				}
 				if osmNamespaceCount > 0 {
-					telemetryDimensions["OsmNamespaceCount"] = osmNamespaceCount
+					telemetryDimensions["OsmNamespaceCount"] = strconv.Itoa(osmNamespaceCount)
 				}
 
 				SendEvent(eventNamePrometheusSidecarHeartbeat, telemetryDimensions)
