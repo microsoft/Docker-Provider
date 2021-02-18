@@ -267,6 +267,8 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               new_contents = replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods, kubernetesLabelSelectors, kubernetesFieldSelectors)
               monitorKubernetesPodsNamespacesLength = 0
             end
+            kubernetesLabelSelectorsLength = kubernetesLabelSelectors.split(/,\s*(?=[^()]*(?:\(|$))/).length
+            kubernetesFieldSelectorsLength = kubernetesFieldSelectors.split(',').length
 
             File.open(file_name, "w") { |file| file.puts new_contents }
             puts "config::Successfully substituted the placeholders in telegraf conf file for prometheus side car"
@@ -276,8 +278,8 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               #Setting array lengths as environment variables for telemetry purposes
               file.write("export TELEMETRY_SIDECAR_PROM_MONITOR_PODS=\"#{monitorKubernetesPods}\"\n")
               file.write("export TELEMETRY_SIDECAR_PROM_MONITOR_PODS_NS_LENGTH=\"#{monitorKubernetesPodsNamespacesLength}\"\n")
-              file.write("export TELEMETRY_SIDECAR_PROM_KUBERNETES_LABEL_SELECTOR_LENGTH=\"#{kubernetesLabelSelectors.length}\"\n")
-              file.write("export TELEMETRY_SIDECAR_PROM_KUBERNETES_FIELD_SELECTOR_LENGTH=\"#{kubernetesFieldSelectors.length}\"\n")
+              file.write("export TELEMETRY_SIDECAR_PROM_KUBERNETES_LABEL_SELECTOR_LENGTH=\"#{kubernetesLabelSelectorsLength}\"\n")
+              file.write("export TELEMETRY_SIDECAR_PROM_KUBERNETES_FIELD_SELECTOR_LENGTH=\"#{kubernetesFieldSelectorsLength}\"\n")
 
               # Close file after writing all environment variables
               file.close
