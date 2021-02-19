@@ -267,6 +267,9 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               new_contents = replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods, kubernetesLabelSelectors, kubernetesFieldSelectors)
               monitorKubernetesPodsNamespacesLength = 0
             end
+            
+            # Label and field selectors are passed as strings. For field selectors, split by commas to get the number of key-value pairs.
+            # Label selectors can be formatted as "app in (app1, app2, app3)", so split by commas only outside parentheses to get the number of key-value pairs.
             kubernetesLabelSelectorsLength = kubernetesLabelSelectors.split(/,\s*(?=[^()]*(?:\(|$))/).length
             kubernetesFieldSelectorsLength = kubernetesFieldSelectors.split(',').length
 
