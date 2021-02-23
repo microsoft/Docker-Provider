@@ -32,6 +32,22 @@ Write-Host ('Installing Fluent Bit');
     }
 Write-Host ('Finished Installing Fluentbit')
 
+Write-Host ('Installing Telegraf');
+
+    try {
+        $telegrafUri='https://github.com/microsoft/Docker-Provider/releases/download/telegraf-test-win/telegraf-win.zip'
+        Invoke-WebRequest -Uri $telegrafUri -OutFile /installation/telegraf-win.zip
+        Expand-Archive -Path /installation/telegraf-win.zip -Destination /installation/telegraf-win
+        Move-Item -Path /installation/telegraf-win/*/* -Destination /opt/telegraf-win/ -ErrorAction SilentlyContinue
+    }
+    catch {
+        $ex = $_.Exception
+        Write-Host "exception while downloading telegraf for windows"
+        Write-Host $ex
+        exit 1
+    }
+Write-Host ('Finished downloading Telegraf')
+
 
 Write-Host ('Installing Visual C++ Redistributable Package')
     $vcRedistLocation = 'https://aka.ms/vs/16/release/vc_redist.x64.exe'

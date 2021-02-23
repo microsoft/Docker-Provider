@@ -299,26 +299,27 @@ function Generate-Certificates {
     C:\\opt\\omsagentwindows\\certgenerator\\certificategenerator.exe
 }
 
-function Bootstrap-CACertificates {
-    try {
-        # This is required when the root CA certs are different for some clouds.
-        $caCerts=Invoke-WebRequest 'http://168.63.129.16/machine?comp=acmspackage&type=cacertificates&ext=json' -UseBasicParsing | ConvertFrom-Json
-        if (![string]::IsNullOrEmpty($caCerts)) {
-            $certificates = $caCerts.Certificates
-            for ($index = 0; $index -lt $certificates.Length ; $index++) {
-                $name=$certificates[$index].Name
-                $certificates[$index].CertBody > $name
-                Write-Host "name: $($name)"
-                Import-Certificate -FilePath .\$name  -CertStoreLocation 'Cert:\LocalMachine\Root' -Verbose
-            }
-        }
-    }
-    catch {
-        $e = $_.Exception
-        Write-Host $e
-        Write-Host "exception occured in Bootstrap-CACertificates..."
-    }
-}
+#Commenting this out since wireserver access is no longer available
+# function Bootstrap-CACertificates {
+#     try {
+#         # This is required when the root CA certs are different for some clouds.
+#         $caCerts=Invoke-WebRequest 'http://168.63.129.16/machine?comp=acmspackage&type=cacertificates&ext=json' -UseBasicParsing | ConvertFrom-Json
+#         if (![string]::IsNullOrEmpty($caCerts)) {
+#             $certificates = $caCerts.Certificates
+#             for ($index = 0; $index -lt $certificates.Length ; $index++) {
+#                 $name=$certificates[$index].Name
+#                 $certificates[$index].CertBody > $name
+#                 Write-Host "name: $($name)"
+#                 Import-Certificate -FilePath .\$name  -CertStoreLocation 'Cert:\LocalMachine\Root' -Verbose
+#             }
+#         }
+#     }
+#     catch {
+#         $e = $_.Exception
+#         Write-Host $e
+#         Write-Host "exception occured in Bootstrap-CACertificates..."
+#     }
+# }
 
 function Test-CertificatePath {
     $certLocation = $env:CI_CERT_LOCATION
@@ -346,12 +347,12 @@ Remove-WindowsServiceIfItExists "fluentdwinaks"
 Set-EnvironmentVariables
 Start-FileSystemWatcher
 
-#Bootstrapping CA certs for non public clouds and AKS clusters
-$aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID")
-if (![string]::IsNullOrEmpty($aksResourceId) -and $aksResourceId.ToLower().Contains("/microsoft.containerservice/managedclusters/"))
-{
-    Bootstrap-CACertificates
-}
+#Bootstrapping CA certs for non public clouds and AKS clusters -Commenting this out since wireserver access is no longer available
+# $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID")
+# if (![string]::IsNullOrEmpty($aksResourceId) -and $aksResourceId.ToLower().Contains("/microsoft.containerservice/managedclusters/"))
+# {
+#     Bootstrap-CACertificates
+# }
 
 Generate-Certificates
 Test-CertificatePath
