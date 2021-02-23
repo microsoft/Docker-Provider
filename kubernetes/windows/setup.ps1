@@ -40,7 +40,7 @@ Write-Host ('Installing Telegraf');
         $telegrafUri='https://github.com/microsoft/Docker-Provider/releases/download/telegraf-test-win/telegraf-win.zip'
         Invoke-WebRequest -Uri $telegrafUri -OutFile /installation/telegraf-win.zip
         Expand-Archive -Path /installation/telegraf-win.zip -Destination /installation/telegraf-win
-        Move-Item -Path /installation/telegraf-win/*/* -Destination /opt/telegraf/ -ErrorAction SilentlyContinue
+        Move-Item -Path /installation/telegraf-win -Destination /opt/telegraf/ -ErrorAction SilentlyContinue
     }
     catch {
         $ex = $_.Exception
