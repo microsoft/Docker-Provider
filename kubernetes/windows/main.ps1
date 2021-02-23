@@ -294,6 +294,15 @@ function Start-Fluent {
     Notepad.exe | Out-Null
 }
 
+function Start-Telegraf {
+    Write-Host "Installing telegraf service"
+    C:\opt\telegraf\telegraf-win\telegraf.exe --service install --config "C:\etc\telegraf\telegraf.conf"
+    Write-Host "Running telegraf service in test mode"
+    C:\opt\telegraf\telegraf-win\telegraf.exe --config "C:\etc\telegraf\telegraf.conf" --test
+    Write-Host "Starting telegraf service"
+    C:\opt\telegraf\telegraf-win\telegraf.exe --service start
+}
+
 function Generate-Certificates {
     Write-Host "Generating Certificates"
     C:\\opt\\omsagentwindows\\certgenerator\\certificategenerator.exe
@@ -357,6 +366,7 @@ Start-FileSystemWatcher
 Generate-Certificates
 Test-CertificatePath
 Start-Fluent
+Start-Telegraf
 
 # List all powershell processes running. This should have main.ps1 and filesystemwatcher.ps1
 Get-WmiObject Win32_process | Where-Object { $_.Name -match 'powershell' } | Format-Table -Property Name, CommandLine, ProcessId
