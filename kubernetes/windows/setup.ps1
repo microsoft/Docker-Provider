@@ -8,10 +8,12 @@ Write-Host ('Creating folder structure')
 
     New-Item -Type Directory -Path /opt/fluent-bit
     New-Item -Type Directory -Path /opt/scripts/ruby
+    New-Item -Type Directory -Path /opt/telegraf
 
     New-Item -Type Directory -Path /etc/fluent-bit
     New-Item -Type Directory -Path /etc/fluent
     New-Item -Type Directory -Path /etc/omsagentwindows
+    New-Item -Type Directory -Path /etc/telegraf
 
     New-Item -Type Directory -Path /etc/config/settings/
     New-Item -Type Directory -Path /etc/config/adx/
@@ -38,7 +40,7 @@ Write-Host ('Installing Telegraf');
         $telegrafUri='https://github.com/microsoft/Docker-Provider/releases/download/telegraf-test-win/telegraf-win.zip'
         Invoke-WebRequest -Uri $telegrafUri -OutFile /installation/telegraf-win.zip
         Expand-Archive -Path /installation/telegraf-win.zip -Destination /installation/telegraf-win
-        Move-Item -Path /installation/telegraf-win/*/* -Destination /opt/telegraf-win/ -ErrorAction SilentlyContinue
+        Move-Item -Path /installation/telegraf-win/*/* -Destination /opt/telegraf/ -ErrorAction SilentlyContinue
     }
     catch {
         $ex = $_.Exception

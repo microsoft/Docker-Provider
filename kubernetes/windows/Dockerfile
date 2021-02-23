@@ -62,6 +62,9 @@ COPY ./omsagentwindows/installer/conf/fluent-docker-parser.conf /etc/fluent/
 COPY ./omsagentwindows/installer/conf/fluent-bit.conf /etc/fluent-bit
 COPY ./omsagentwindows/installer/conf/out_oms.conf /etc/omsagentwindows
 
+# copy telegraf conf file
+COPY ./omsagentwindows/installer/conf/telegraf.conf /etc/telegraf/
+
 # copy keepcert alive ruby scripts
 COPY ./omsagentwindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluent/plugin/
 
