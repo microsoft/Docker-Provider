@@ -297,18 +297,31 @@ function Start-Fluent {
 function Start-Telegraf {
     Write-Host "Setting required environment variables for telegraf prometheus input plugin to run properly..."
     $kubernetesServiceHost = [System.Environment]::GetEnvironmentVariable("KUBERNETES_SERVICE_HOST", "process")
-    [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_HOST", $kubernetesServiceHost, 'machine')
-    Write-Host "Successfully set environment variable KUBERNETES_SERVICE_HOST - $($kubernetesServiceHost) for target 'machine'..."
+    if (![string]::IsNullOrEmpty($kubernetesServiceHost)) {
+        [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_HOST", $kubernetesServiceHost, 'machine')
+        Write-Host "Successfully set environment variable KUBERNETES_SERVICE_HOST - $($kubernetesServiceHost) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable KUBERNETES_SERVICE_HOST for target 'machine' since it is either null or empty"
+    }
 
     $kubernetesServicePort = [System.Environment]::GetEnvironmentVariable("KUBERNETES_SERVICE_PORT", "process")
-    [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_PORT", $kubernetesServicePort, 'machine')
-    Write-Host "Successfully set environment variable KUBERNETES_SERVICE_PORT - $($kubernetesServicePort) for target 'machine'..."
-
-
+    if (![string]::IsNullOrEmpty($kubernetesServicePort)) {
+        [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_PORT", $kubernetesServicePort, 'machine')
+        Write-Host "Successfully set environment variable KUBERNETES_SERVICE_PORT - $($kubernetesServicePort) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable KUBERNETES_SERVICE_PORT for target 'machine' since it is either null or empty"
+    }
+    
     $nodeIp = [System.Environment]::GetEnvironmentVariable("NODE_IP", "process")
-    [System.Environment]::SetEnvironmentVariable("NODE_IP", $nodeIp, 'machine')
-    Write-Host "Successfully set environment variable NODE_IP - $($nodeIp) for target 'machine'..."
-
+    if (![string]::IsNullOrEmpty($nodeIp)) {
+        [System.Environment]::SetEnvironmentVariable("NODE_IP", $nodeIp, 'machine')
+        Write-Host "Successfully set environment variable NODE_IP - $($nodeIp) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable NODE_IP for target 'machine' since it is either null or empty"
+    }
 
     Write-Host "Installing telegraf service"
     C:\opt\telegraf\telegraf-win\telegraf.exe --service install --config "C:\etc\telegraf\telegraf.conf"
