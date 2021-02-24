@@ -295,6 +295,21 @@ function Start-Fluent {
 }
 
 function Start-Telegraf {
+    Write-Host "Setting required environment variables for telegraf prometheus input plugin to run properly..."
+    $kubernetesServiceHost = [System.Environment]::GetEnvironmentVariable("KUBERNETES_SERVICE_HOST", "process")
+    [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_HOST", $kubernetesServiceHost, 'machine')
+    Write-Host "Successfully set environment variable KUBERNETES_SERVICE_HOST - $($kubernetesServiceHost) for target 'machine'..."
+
+    $kubernetesServicePort = [System.Environment]::GetEnvironmentVariable("KUBERNETES_SERVICE_PORT", "process")
+    [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_PORT", $kubernetesServicePort, 'machine')
+    Write-Host "Successfully set environment variable KUBERNETES_SERVICE_PORT - $($kubernetesServicePort) for target 'machine'..."
+
+
+    $nodeIp = [System.Environment]::GetEnvironmentVariable("NODE_IP", "process")
+    [System.Environment]::SetEnvironmentVariable("NODE_IP", $nodeIp, 'machine')
+    Write-Host "Successfully set environment variable NODE_IP - $($nodeIp) for target 'machine'..."
+
+
     Write-Host "Installing telegraf service"
     C:\opt\telegraf\telegraf-win\telegraf.exe --service install --config "C:\etc\telegraf\telegraf.conf"
     Write-Host "Running telegraf service in test mode"
