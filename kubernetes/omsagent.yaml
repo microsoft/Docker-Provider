@@ -783,8 +783,8 @@ spec:
           #  value: "my_acs_cluster_name"
           - name: CONTROLLER_TYPE
             value: "DaemonSet"
-          - name: CONTAINER_OS
-            value: "Windows"
+          # - name: CONTAINER_OS
+          #   value: "Windows"
           - name: HOSTNAME
             valueFrom:
                fieldRef:

@@ -1,6 +1,12 @@
 #!/usr/local/bin/ruby
 
-require_relative "tomlrb"
+@os_type = ENV["OS_TYPE"]
+if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
+  require "tomlrb"
+else
+  require_relative "tomlrb"
+end
+# require_relative "tomlrb"
 require_relative "ConfigParseErrorLogger"
 require "fileutils"
 
@@ -129,7 +135,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
   # Checking to see if this is the daemonset or replicaset to parse config accordingly
   controller = ENV["CONTROLLER_TYPE"]
   containerType = ENV["CONTAINER_TYPE"]
-  containerOs = ENV["CONTAINER_OS"]
+  # containerOs = ENV["CONTAINER_OS"]
   if !controller.nil?
     if !parsedConfig.nil? && !parsedConfig[:prometheus_data_collection_settings].nil?
       if controller.casecmp(@replicaset) == 0 && !parsedConfig[:prometheus_data_collection_settings][:cluster].nil?
@@ -212,7 +218,8 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           puts "****************End Prometheus Config Processing********************"
         end
       elsif controller.casecmp(@daemonset) == 0 &&
-            ((!containerType.nil? && containerType.casecmp(@promSideCar) == 0) || ((!containerOs.nil? && containerOs.casecmp(@windows) == 0))) &&
+            ((!containerType.nil? && containerType.casecmp(@promSideCar) == 0) ||
+             (!@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0)) &&
             !parsedConfig[:prometheus_data_collection_settings][:cluster].nil?
         #Get prometheus custom config settings for monitor kubernetes pods
         begin
@@ -240,7 +247,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             kubernetesLabelSelectors = (kubernetesLabelSelectors.nil?) ? @defaultCustomPrometheusLabelSelectors : kubernetesLabelSelectors
             kubernetesFieldSelectors = (kubernetesFieldSelectors.nil?) ? @defaultCustomPrometheusFieldSelectors : kubernetesFieldSelectors
 
-            if (!containerOs.nil? && containerOs.casecmp(@windows) == 0)
+            if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
               file_name = "/etc/telegraf/telegraf.conf"
             else
               file_name = "/opt/telegraf-test-prom-side-car.conf"
