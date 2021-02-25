@@ -122,7 +122,7 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/opt/microsoft/docker-cimprov/telegraf-rs.conf;			            build/linux/installer/conf/telegraf-rs.conf;                    644; root; root
 /opt/microsoft/docker-cimprov/bin/TelegrafTCPErrorTelemetry.sh;         build/linux/installer/scripts/TelegrafTCPErrorTelemetry.sh;      755; root; root
 /opt/livenessprobe.sh;                                                  build/linux/installer/scripts/livenessprobe.sh;      755; root; root
-/opt/tomlparser-prom-customconfig.rb;                                   build/linux/installer/scripts/tomlparser-prom-customconfig.rb;     755; root; root
+/opt/tomlparser-prom-customconfig.rb;                                   build/common/installer/scripts/tomlparser-prom-customconfig.rb;     755; root; root
 /opt/tomlparser-mdm-metrics-config.rb;                                  build/linux/installer/scripts/tomlparser-mdm-metrics-config.rb;     755; root; root
 /opt/tomlparser-metric-collection-config.rb;                            build/linux/installer/scripts/tomlparser-metric-collection-config.rb;     755; root; root
 

@@ -295,10 +295,21 @@ function Start-Fluent {
 }
 
 function Start-Telegraf {
+    # Set default telegraf environment variables for prometheus scraping
+    Write-Host "**********Setting default environment variables for telegraf prometheus plugin..."
+    .\setdefaulttelegrafenvvariables.ps1
+
+    # run prometheus custom config parser
+    Write-Host "**********Running config parser for custom prometheus scraping**********"
+    ruby /opt/omsagentwindows/scripts/ruby/tomlparser-prom-customconfig.rb
+    Write-Host "**********End running config parser for custom prometheus scraping**********"
+
+
+    # Set required environment variable for telegraf prometheus plugin to run properly
     Write-Host "Setting required environment variables for telegraf prometheus input plugin to run properly..."
     $kubernetesServiceHost = [System.Environment]::GetEnvironmentVariable("KUBERNETES_SERVICE_HOST", "process")
     if (![string]::IsNullOrEmpty($kubernetesServiceHost)) {
-        [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_HOST", $kubernetesServiceHost, 'machine')
+        [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_HOST", $kubernetesServiceHost, "machine")
         Write-Host "Successfully set environment variable KUBERNETES_SERVICE_HOST - $($kubernetesServiceHost) for target 'machine'..."
     }
     else {
@@ -307,7 +318,7 @@ function Start-Telegraf {
 
     $kubernetesServicePort = [System.Environment]::GetEnvironmentVariable("KUBERNETES_SERVICE_PORT", "process")
     if (![string]::IsNullOrEmpty($kubernetesServicePort)) {
-        [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_PORT", $kubernetesServicePort, 'machine')
+        [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_PORT", $kubernetesServicePort, "machine")
         Write-Host "Successfully set environment variable KUBERNETES_SERVICE_PORT - $($kubernetesServicePort) for target 'machine'..."
     }
     else {
@@ -316,7 +327,7 @@ function Start-Telegraf {
     
     $nodeIp = [System.Environment]::GetEnvironmentVariable("NODE_IP", "process")
     if (![string]::IsNullOrEmpty($nodeIp)) {
-        [System.Environment]::SetEnvironmentVariable("NODE_IP", $nodeIp, 'machine')
+        [System.Environment]::SetEnvironmentVariable("NODE_IP", $nodeIp, "machine")
         Write-Host "Successfully set environment variable NODE_IP - $($nodeIp) for target 'machine'..."
     }
     else {
