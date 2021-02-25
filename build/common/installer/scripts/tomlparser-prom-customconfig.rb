@@ -74,12 +74,12 @@ end
 def replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods, kubernetesLabelSelectors, kubernetesFieldSelectors)
   begin
     puts "config::Starting to substitute the placeholders in telegraf conf copy file for prometheus side car with no namespace filters"
-    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
-    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
-    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_KUBERNETES_LABEL_SELECTOR", ("kubernetes_label_selector = \"#{kubernetesLabelSelectors}\""))
-    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_KUBERNETES_FIELD_SELECTOR", ("kubernetes_field_selector = \"#{kubernetesFieldSelectors}\""))
+    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
+    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
+    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_LABEL_SELECTOR", ("kubernetes_label_selector = \"#{kubernetesLabelSelectors}\""))
+    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR", ("kubernetes_field_selector = \"#{kubernetesFieldSelectors}\""))
   rescue => errorStr
-    puts "Exception while replacing default pod monitor settings for sidecar: #{errorStr}"
+    puts "Exception while replacing default pod monitor settings for custom prometheus scraping: #{errorStr}"
   end
   return new_contents
 end
@@ -88,9 +88,9 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
   begin
     puts "config::Starting to substitute the placeholders in telegraf conf copy file for prometheus side car with namespace filters"
 
-    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_MONITOR_PODS", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_SIDECAR_PROM_MONITOR_PODS")
-    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_KUBERNETES_LABEL_SELECTOR", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_SIDECAR_PROM_KUBERNETES_LABEL_SELECTOR")
-    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_KUBERNETES_FIELD_SELECTOR", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_SIDECAR_PROM_KUBERNETES_FIELD_SELECTOR")
+    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS")
+    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_LABEL_SELECTOR", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_LABEL_SELECTOR")
+    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR")
 
     pluginConfigsWithNamespaces = ""
     monitorKubernetesPodsNamespaces.each do |namespace|
@@ -116,10 +116,10 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
         end
       end
     end
-    new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_PLUGINS_WITH_NAMESPACE_FILTER", pluginConfigsWithNamespaces)
+    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_PLUGINS_WITH_NAMESPACE_FILTER", pluginConfigsWithNamespaces)
     return new_contents
   rescue => errorStr
-    puts "Exception while creating prometheus input plugins to filter namespaces in sidecar: #{errorStr}, using defaults"
+    puts "Exception while creating prometheus input plugins to filter namespaces for custom prometheus: #{errorStr}, using defaults"
     replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods, kubernetesLabelSelectors, kubernetesFieldSelectors)
   end
 end
@@ -214,7 +214,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       elsif controller.casecmp(@daemonset) == 0 &&
             ((!containerType.nil? && containerType.casecmp(@promSideCar) == 0) || ((!containerOs.nil? && containerOs.casecmp(@windows) == 0))) &&
             !parsedConfig[:prometheus_data_collection_settings][:cluster].nil?
-        #Get prometheus sidecar custom config settings for monitor kubernetes pods
+        #Get prometheus custom config settings for monitor kubernetes pods
         begin
           interval = parsedConfig[:prometheus_data_collection_settings][:cluster][:interval]
           fieldPass = parsedConfig[:prometheus_data_collection_settings][:cluster][:fieldpass]
@@ -250,11 +250,11 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             puts "config::Starting to substitute the placeholders in telegraf conf copy file for linux or conf file for windows for custom prometheus scraping"
             #Replace the placeholder config values with values from custom config
             text = File.read(file_name)
-            new_contents = text.gsub("$AZMON_SIDECAR_PROM_INTERVAL", interval)
+            new_contents = text.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_INTERVAL", interval)
             fieldPassSetting = (fieldPass.length > 0) ? ("[\"" + fieldPass.join("\",\"") + "\"]") : "[]"
-            new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_FIELDPASS", fieldPassSetting)
+            new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_FIELDPASS", fieldPassSetting)
             fieldDropSetting = (fieldDrop.length > 0) ? ("[\"" + fieldDrop.join("\",\"") + "\"]") : "[]"
-            #new_contents = new_contents.gsub("$AZMON_SIDECAR_PROM_FIELDDROP", fieldDropSetting)
+            new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_FIELDDROP", fieldDropSetting)
 
             # Check to see if monitor_kubernetes_pods is set to true with a valid setting for monitor_kubernetes_namespaces to enable scraping for specific namespaces
             # Adding nil check here as well since checkForTypeArray returns true even if setting is nil to accomodate for other settings to be able -
@@ -282,18 +282,20 @@ def populateSettingValuesFromConfigMap(parsedConfig)
 
             File.open(file_name, "w") { |file| file.puts new_contents }
             puts "config::Successfully substituted the placeholders in telegraf conf file for custom prometheus scraping"
-            #Set environment variables for telemetry
-            file = File.open("telemetry_prom_config_env_var", "w")
-            if !file.nil?
-              #Setting array lengths as environment variables for telemetry purposes
-              file.write("export TELEMETRY_SIDECAR_PROM_MONITOR_PODS=\"#{monitorKubernetesPods}\"\n")
-              file.write("export TELEMETRY_SIDECAR_PROM_MONITOR_PODS_NS_LENGTH=\"#{monitorKubernetesPodsNamespacesLength}\"\n")
-              file.write("export TELEMETRY_SIDECAR_PROM_KUBERNETES_LABEL_SELECTOR_LENGTH=\"#{kubernetesLabelSelectorsLength}\"\n")
-              file.write("export TELEMETRY_SIDECAR_PROM_KUBERNETES_FIELD_SELECTOR_LENGTH=\"#{kubernetesFieldSelectorsLength}\"\n")
+            #Set environment variables for telemetry in the sidecar container
+            if (!containerType.nil? && containerType.casecmp(@promSideCar) == 0)
+              file = File.open("telemetry_prom_config_env_var", "w")
+              if !file.nil?
+                #Setting array lengths as environment variables for telemetry purposes
+                file.write("export TELEMETRY_CUSTOM_PROM_MONITOR_PODS=\"#{monitorKubernetesPods}\"\n")
+                file.write("export TELEMETRY_CUSTOM_PROM_MONITOR_PODS_NS_LENGTH=\"#{monitorKubernetesPodsNamespacesLength}\"\n")
+                file.write("export TELEMETRY_CUSTOM_PROM_KUBERNETES_LABEL_SELECTOR_LENGTH=\"#{kubernetesLabelSelectorsLength}\"\n")
+                file.write("export TELEMETRY_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR_LENGTH=\"#{kubernetesFieldSelectorsLength}\"\n")
 
-              # Close file after writing all environment variables
-              file.close
-              puts "config::Successfully created telemetry file for prometheus sidecar"
+                # Close file after writing all environment variables
+                file.close
+                puts "config::Successfully created telemetry file for prometheus sidecar"
+              end
             end
           else
             ConfigParseErrorLogger.logError("Typecheck failed for prometheus config settings for prometheus side car, using defaults, please use right types for all settings")

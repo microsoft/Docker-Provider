@@ -109,10 +109,10 @@ def replaceOsmTelegrafConfigPlaceHolders
           end
         end
       end
-      tgfConfig = tgfConfig.gsub("$AZMON_SIDECAR_OSM_PROM_PLUGINS", osmPluginConfigsWithNamespaces)
+      tgfConfig = tgfConfig.gsub("$AZMON_TELEGRAF_OSM_PROM_PLUGINS", osmPluginConfigsWithNamespaces)
     else
       puts "Using defaults for OSM configuration since there was an error in OSM config map or no namespaces were set"
-      tgfConfig = tgfConfig.gsub("$AZMON_SIDECAR_OSM_PROM_PLUGINS", "")
+      tgfConfig = tgfConfig.gsub("$AZMON_TELEGRAF_OSM_PROM_PLUGINS", "")
     end
     File.open(@tgfTestConfigFile, "w") { |file| file.puts tgfConfig } # 'file' will be closed here after it goes out of scope
     puts "config::osm::Successfully substituted the OSM placeholders in #{@tgfTestConfigFile} file in sidecar container"
@@ -171,10 +171,10 @@ replaceOsmTelegrafConfigPlaceHolders()
 #       end
 #     end
 #   end
-#   tgfConfig = tgfConfig.gsub("$AZMON_SIDECAR_OSM_PROM_PLUGINS", osmPluginConfigsWithNamespaces)
+#   tgfConfig = tgfConfig.gsub("$AZMON_TELEGRAF_OSM_PROM_PLUGINS", osmPluginConfigsWithNamespaces)
 # else
 #   puts "Using defaults for OSM configuration since there was an error in OSM config map or no namespaces were set"
-#   tgfConfig = tgfConfig.gsub("$AZMON_SIDECAR_OSM_PROM_PLUGINS", "")
+#   tgfConfig = tgfConfig.gsub("$AZMON_TELEGRAF_OSM_PROM_PLUGINS", "")
 # end
 
 # File.open(@tgfTestConfigFile, "w") { |file| file.puts tgfConfig } # 'file' will be closed here after it goes out of scope

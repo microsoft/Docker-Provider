@@ -79,9 +79,9 @@ const (
 
 	defaultTelemetryPushIntervalSeconds = 300
 
-	eventNameContainerLogInit           = "ContainerLogPluginInitialized"
-	eventNameDaemonSetHeartbeat         = "ContainerLogDaemonSetHeartbeatEvent"
-	eventNamePrometheusSidecarHeartbeat = "PrometheusSidecarHeartbeatEvent"
+	eventNameContainerLogInit                 = "ContainerLogPluginInitialized"
+	eventNameDaemonSetHeartbeat               = "ContainerLogDaemonSetHeartbeatEvent"
+	eventNameCustomPrometheusSidecarHeartbeat = "CustomPrometheusSidecarHeartbeatEvent"
 )
 
 // SendContainerLogPluginMetrics is a go-routine that flushes the data periodically (every 5 mins to App Insights)
@@ -137,21 +137,21 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 			if strings.Compare(strings.ToLower(os.Getenv("CONTAINER_TYPE")), "prometheus-sidecar") == 0 {
 				telemetryDimensions := make(map[string]string)
 				telemetryDimensions["ContainerType"] = "prometheus-sidecar"
-				telemetryDimensions["SidecarPromMonitorPods"] = promMonitorPods
+				telemetryDimensions["CustomPromMonitorPods"] = promMonitorPods
 				if promMonitorPodsNamespaceLength > 0 {
-					telemetryDimensions["SidecarPromMonitorPodsNamespaceLength"] = strconv.Itoa(promMonitorPodsNamespaceLength)
+					telemetryDimensions["CustomPromMonitorPodsNamespaceLength"] = strconv.Itoa(promMonitorPodsNamespaceLength)
 				}
 				if promMonitorPodsLabelSelectorLength > 0 {
-					telemetryDimensions["SidecarPromMonitorPodsLabelSelectorLength"] = strconv.Itoa(promMonitorPodsLabelSelectorLength)
+					telemetryDimensions["CustomPromMonitorPodsLabelSelectorLength"] = strconv.Itoa(promMonitorPodsLabelSelectorLength)
 				}
 				if promMonitorPodsFieldSelectorLength > 0 {
-					telemetryDimensions["SidecarPromMonitorPodsFieldSelectorLength"] = strconv.Itoa(promMonitorPodsFieldSelectorLength)
+					telemetryDimensions["CustomPromMonitorPodsFieldSelectorLength"] = strconv.Itoa(promMonitorPodsFieldSelectorLength)
 				}
 				if osmNamespaceCount > 0 {
 					telemetryDimensions["OsmNamespaceCount"] = strconv.Itoa(osmNamespaceCount)
 				}
 
-				SendEvent(eventNamePrometheusSidecarHeartbeat, telemetryDimensions)
+				SendEvent(eventNameCustomPrometheusSidecarHeartbeat, telemetryDimensions)
 
 			} else {
 				SendEvent(eventNameDaemonSetHeartbeat, make(map[string]string))
@@ -306,24 +306,24 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 		Log("OSM namespace count string to int conversion error %s", err.Error())
 		OSMNamespaceCount = 0
 	}
-	PromMonitorPods = os.Getenv("TELEMETRY_SIDECAR_PROM_MONITOR_PODS")
-	promMonPodsNamespaceLength := os.Getenv("TELEMETRY_SIDECAR_PROM_MONITOR_PODS_NS_LENGTH")
+	PromMonitorPods = os.Getenv("TELEMETRY_CUSTOM_PROM_MONITOR_PODS")
+	promMonPodsNamespaceLength := os.Getenv("TELEMETRY_CUSTOM_PROM_MONITOR_PODS_NS_LENGTH")
 	PromMonitorPodsNamespaceLength, err = strconv.Atoi(promMonPodsNamespaceLength)
 	if err != nil {
-		Log("Prometheus sidecar monitor kubernetes pods namespace count string to int conversion error %s", err.Error())
+		Log("Custom prometheus monitor kubernetes pods namespace count string to int conversion error %s", err.Error())
 		PromMonitorPodsNamespaceLength = 0
 	}
-	promLabelSelectorLength := os.Getenv("TELEMETRY_SIDECAR_PROM_KUBERNETES_LABEL_SELECTOR_LENGTH")
+	promLabelSelectorLength := os.Getenv("TELEMETRY_CUSTOM_PROM_KUBERNETES_LABEL_SELECTOR_LENGTH")
 	PromMonitorPodsLabelSelectorLength, err = strconv.Atoi(promLabelSelectorLength)
 	if err != nil {
-		Log("Prometheus sidecar label selector count string to int conversion error %s", err.Error())
+		Log("Custom prometheus label selector count string to int conversion error %s", err.Error())
 		PromMonitorPodsLabelSelectorLength = 0
 	}
 
-	promFieldSelectorLength := os.Getenv("TELEMETRY_SIDECAR_PROM_KUBERNETES_FIELD_SELECTOR_LENGTH")
+	promFieldSelectorLength := os.Getenv("TELEMETRY_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR_LENGTH")
 	PromMonitorPodsFieldSelectorLength, err = strconv.Atoi(promFieldSelectorLength)
 	if err != nil {
-		Log("Prometheus sidecar field selector count string to int conversion error %s", err.Error())
+		Log("Custom prometheus field selector count string to int conversion error %s", err.Error())
 		PromMonitorPodsFieldSelectorLength = 0
 	}
 
