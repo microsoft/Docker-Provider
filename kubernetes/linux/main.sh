@@ -248,7 +248,7 @@ done
 source integration_npm_config_env_var
 
 #Replace the placeholders in td-agent-bit.conf file for fluentbit with custom/default values in daemonset
-if [ ! -e "/etc/config/kube.conf" ]; then
+if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "Prometheus-Sidecar" ]; then
       /opt/microsoft/omsagent/ruby/bin/ruby td-agent-bit-conf-customizer.rb
 fi
 
@@ -563,7 +563,7 @@ fi
 
 
 #start oneagent
-if [ ! -e "/etc/config/kube.conf" ]; then
+if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "Prometheus-Sidecar" ]; then
    if [ ! -z $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE ]; then
       echo "container logs configmap route is $AZMON_CONTAINER_LOGS_ROUTE"
       echo "container logs effective route is $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
