@@ -5,6 +5,10 @@ if [ -e "/etc/config/kube.conf" ]; then
 elif [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
     echo "rashmi-in-ds-prom-omsagent-conf"
     cat /etc/opt/microsoft/docker-cimprov/prometheus-side-car.conf > /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
+    # omsadmin.sh replaces %MONITOR_AGENT_PORT% in the monitor.conf with default port 25324. Since we are running 2 omsagents in the same pod, 
+    # we need to use a different port for the sidecar, else we will see the  Address already in use - bind(2) for 0.0.0.0:25324 error.
+    # Look into omsadmin.sh scripts's configure_monitor_agent() and find_available_port() methods for more info.
+    sed -i -e 's/port %MONITOR_AGENT_PORT%/port 25325/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/monitor.conf
 else
     echo "rashmi-in-ds-omsagent-conf"
     sed -i -e 's/bind 127.0.0.1/bind 0.0.0.0/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
