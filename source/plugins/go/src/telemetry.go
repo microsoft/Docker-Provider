@@ -82,6 +82,7 @@ const (
 	eventNameContainerLogInit                 = "ContainerLogPluginInitialized"
 	eventNameDaemonSetHeartbeat               = "ContainerLogDaemonSetHeartbeatEvent"
 	eventNameCustomPrometheusSidecarHeartbeat = "CustomPrometheusSidecarHeartbeatEvent"
+	eventNameWindowsFluentBitHeartbeat        = "WindowsFluentBitHeartbeatEvent"
 )
 
 // SendContainerLogPluginMetrics is a go-routine that flushes the data periodically (every 5 mins to App Insights)
@@ -153,6 +154,8 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 
 				SendEvent(eventNameCustomPrometheusSidecarHeartbeat, telemetryDimensions)
 
+			} else if strings.Compare(strings.ToLower(os.Getenv("OS_TYPE")), "windows") == 0 {
+				SendEvent(eventNameWindowsFluentBitHeartbeat, make(map[string]string))
 			} else {
 				SendEvent(eventNameDaemonSetHeartbeat, make(map[string]string))
 				flushRateMetric := appinsights.NewMetricTelemetry(metricNameAvgFlushRate, flushRate)
