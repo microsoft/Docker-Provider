@@ -9,8 +9,8 @@ elif [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
     # Since we are running 2 omsagents in the same pod, we need to use a different port for the sidecar, 
     # else we will see the  Address already in use - bind(2) for 0.0.0.0:253(2)24 error.
     # Look into omsadmin.sh scripts's configure_monitor_agent()/configure_syslog() and find_available_port() methods for more info.
-    sed -i -e 's/port %MONITOR_AGENT_PORT%/port 25325/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/monitor.conf
-    sed -i -e 's/port %SYSLOG_PORT%/port 25225/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/syslog.conf
+    sed -i -e 's/port %MONITOR_AGENT_PORT%/port 25326/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/monitor.conf
+    sed -i -e 's/port %SYSLOG_PORT%/port 25226/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/syslog.conf
 else
     echo "rashmi-in-ds-omsagent-conf"
     sed -i -e 's/bind 127.0.0.1/bind 0.0.0.0/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
