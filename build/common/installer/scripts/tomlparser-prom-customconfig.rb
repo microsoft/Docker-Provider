@@ -173,13 +173,13 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             puts "config::Starting to substitute the placeholders in telegraf conf copy file for replicaset"
             #Replace the placeholder config values with values from custom config
             text = File.read(file_name)
-            new_contents = text.gsub("$AZMON_RS_PROM_INTERVAL", interval)
+            new_contents = text.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_INTERVAL", interval)
             fieldPassSetting = (fieldPass.length > 0) ? ("[\"" + fieldPass.join("\",\"") + "\"]") : "[]"
-            new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDPASS", fieldPassSetting)
+            new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_FIELDPASS", fieldPassSetting)
             fieldDropSetting = (fieldDrop.length > 0) ? ("[\"" + fieldDrop.join("\",\"") + "\"]") : "[]"
-            new_contents = new_contents.gsub("$AZMON_RS_PROM_FIELDDROP", fieldDropSetting)
-            new_contents = new_contents.gsub("$AZMON_RS_PROM_URLS", ((urls.length > 0) ? ("[\"" + urls.join("\",\"") + "\"]") : "[]"))
-            new_contents = new_contents.gsub("$AZMON_RS_PROM_K8S_SERVICES", ((kubernetesServices.length > 0) ? ("[\"" + kubernetesServices.join("\",\"") + "\"]") : "[]"))
+            new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_FIELDDROP", fieldDropSetting)
+            new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_URLS", ((urls.length > 0) ? ("[\"" + urls.join("\",\"") + "\"]") : "[]"))
+            new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_K8S_SERVICES", ((kubernetesServices.length > 0) ? ("[\"" + kubernetesServices.join("\",\"") + "\"]") : "[]"))
 
             # Check to see if monitor_kubernetes_pods is set to true with a valid setting for monitor_kubernetes_namespaces to enable scraping for specific namespaces
             # Adding nil check here as well since checkForTypeArray returns true even if setting is nil to accomodate for other settings to be able -
