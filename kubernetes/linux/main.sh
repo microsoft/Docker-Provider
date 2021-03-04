@@ -39,7 +39,8 @@ sudo setfacl -m user:omsagent:rwx /var/opt/microsoft/docker-cimprov/log
 inotifywait /etc/config/settings --daemon --recursive --outfile "/opt/inotifyoutput.txt" --event create,delete --format '%e : %T' --timefmt '+%s'
 
 #Run inotify as a daemon to track changes to the mounted configmap for OSM settings.
-if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
+if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ) ) ||
+      ( ( -e "/etc/config/kube.conf" ) && ( ( ! -z "${SIDECAR_SCRAPING_ENABLED}" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ) ]]; then
       inotifywait /etc/config/osm-settings --daemon --recursive --outfile "/opt/inotifyoutput-osm.txt" --event create,delete --format '%e : %T' --timefmt '+%s'
 fi
 
@@ -84,18 +85,21 @@ if [  -e "/etc/config/settings/config-version" ] && [  -s "/etc/config/settings/
 fi
 
 #set OSM config schema version
-if [  -e "/etc/config/osm-settings/schema-version" ] && [  -s "/etc/config/osm-settings/schema-version" ]; then
-      #trim
-      osm_config_schema_version="$(cat /etc/config/osm-settings/schema-version | xargs)"
-      #remove all spaces
-      osm_config_schema_version="${osm_config_schema_version//[[:space:]]/}"
-      #take first 10 characters
-      osm_config_schema_version="$(echo $osm_config_schema_version| cut -c1-10)"
+if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ) ) ||
+      ( ( -e "/etc/config/kube.conf" ) && ( ( ! -z "${SIDECAR_SCRAPING_ENABLED}" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ) ]]; then
+      if [  -e "/etc/config/osm-settings/schema-version" ] && [  -s "/etc/config/osm-settings/schema-version" ]; then
+            #trim
+            osm_config_schema_version="$(cat /etc/config/osm-settings/schema-version | xargs)"
+            #remove all spaces
+            osm_config_schema_version="${osm_config_schema_version//[[:space:]]/}"
+            #take first 10 characters
+            osm_config_schema_version="$(echo $osm_config_schema_version| cut -c1-10)"
 
-      export AZMON_OSM_CFG_SCHEMA_VERSION=$osm_config_schema_version
-      echo "export AZMON_OSM_CFG_SCHEMA_VERSION=$osm_config_schema_version" >> ~/.bashrc
-      source ~/.bashrc
-      echo "AZMON_OSM_CFG_SCHEMA_VERSION:$AZMON_OSM_CFG_SCHEMA_VERSION"
+            export AZMON_OSM_CFG_SCHEMA_VERSION=$osm_config_schema_version
+            echo "export AZMON_OSM_CFG_SCHEMA_VERSION=$osm_config_schema_version" >> ~/.bashrc
+            source ~/.bashrc
+            echo "AZMON_OSM_CFG_SCHEMA_VERSION:$AZMON_OSM_CFG_SCHEMA_VERSION"
+      fi
 fi
 
 export PROXY_ENDPOINT=""
@@ -327,7 +331,10 @@ cat config_metric_collection_env_var | while read line; do
 done
 source config_metric_collection_env_var
 
-if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
+
+# OSM scraping to be done in replicaset if sidecar car scraping is disabled and always do the scraping from the sidecar (It will always be either one of the two)
+if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ) ) ||
+      ( ( -e "/etc/config/kube.conf" ) && ( ( ! -z "${SIDECAR_SCRAPING_ENABLED}" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ) ]]; then
       /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-osm-config.rb
 
       cat integration_osm_config_env_var | while read line; do

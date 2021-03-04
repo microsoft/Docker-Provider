@@ -33,8 +33,9 @@ then
   exit 1
 fi
 
-# Perform the following check only for prometheus sidecar that does OSM scraping
-if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
+# Perform the following check only for prometheus sidecar that does OSM scraping or for replicaset when sidecar scraping is disabled
+if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ) ) ||
+      ( ( -e "/etc/config/kube.conf" ) && ( ( ! -z "${SIDECAR_SCRAPING_ENABLED}" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ) ]]; then
     if [ -s "inotifyoutput-osm.txt" ]
     then
       # inotifyoutput-osm file has data(config map was applied)
