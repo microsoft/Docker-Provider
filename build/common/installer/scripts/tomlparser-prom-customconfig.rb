@@ -253,7 +253,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         end
       elsif @controller.casecmp(@daemonset) == 0 &&
             ((!@containerType.nil? && @containerType.casecmp(@promSideCar) == 0) ||
-             (!@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0)) &&
+             (!@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0) && @sidecarScrapingEnabled.strip.casecmp("true") == 0) &&
             !parsedConfig[:prometheus_data_collection_settings][:cluster].nil?
         #Get prometheus custom config settings for monitor kubernetes pods
         begin

@@ -796,6 +796,8 @@ spec:
             valueFrom:
                fieldRef:
                  fieldPath: status.hostIP
+          - name: SIDECAR_SCRAPING_ENABLED
+            value: "true"
          volumeMounts:
           - mountPath: C:\ProgramData\docker\containers
             name: docker-windows-containers
