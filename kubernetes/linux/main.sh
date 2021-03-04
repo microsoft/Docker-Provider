@@ -2,7 +2,7 @@
 
 if [ -e "/etc/config/kube.conf" ]; then
     cat /etc/config/kube.conf > /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
-elif [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
+elif [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
     echo "rashmi-in-ds-prom-omsagent-conf"
     cat /etc/opt/microsoft/docker-cimprov/prometheus-side-car.conf > /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
     # omsadmin.sh replaces %MONITOR_AGENT_PORT% and %SYSLOG_PORT% in the monitor.conf and syslog.conf with default ports 25324 and 25224. 
@@ -39,7 +39,7 @@ sudo setfacl -m user:omsagent:rwx /var/opt/microsoft/docker-cimprov/log
 inotifywait /etc/config/settings --daemon --recursive --outfile "/opt/inotifyoutput.txt" --event create,delete --format '%e : %T' --timefmt '+%s'
 
 #Run inotify as a daemon to track changes to the mounted configmap for OSM settings.
-if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ) ) ||
+if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) ) ||
       ( ( -e "/etc/config/kube.conf" ) && ( ( ! -z "${SIDECAR_SCRAPING_ENABLED}" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ) ]]; then
       inotifywait /etc/config/osm-settings --daemon --recursive --outfile "/opt/inotifyoutput-osm.txt" --event create,delete --format '%e : %T' --timefmt '+%s'
 fi
@@ -85,7 +85,7 @@ if [  -e "/etc/config/settings/config-version" ] && [  -s "/etc/config/settings/
 fi
 
 #set OSM config schema version
-if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ) ) ||
+if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) ) ||
       ( ( -e "/etc/config/kube.conf" ) && ( ( ! -z "${SIDECAR_SCRAPING_ENABLED}" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ) ]]; then
       if [  -e "/etc/config/osm-settings/schema-version" ] && [  -s "/etc/config/osm-settings/schema-version" ]; then
             #trim
@@ -258,14 +258,14 @@ done
 source integration_npm_config_env_var
 
 #Replace the placeholders in td-agent-bit.conf file for fluentbit with custom/default values in daemonset
-if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "Prometheus-Sidecar" ]; then
+if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       /opt/microsoft/omsagent/ruby/bin/ruby td-agent-bit-conf-customizer.rb
 fi
 
 #Parse the OSM configmap to set the right environment variables for metric collection settings
 #This needs to be done before the prometheus custom config map parsing since we have namespace duplication logic in place.
 # if [ ! -e "/etc/config/kube.conf" ]; then
-#       if [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
+#       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
 #             /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-osm-config.rb
 
 #             cat integration_osm_config_env_var | while read line; do
@@ -288,7 +288,7 @@ fi
 
 #Setting default environment variables to be used in any case of failure in the above steps
 if [ ! -e "/etc/config/kube.conf" ]; then
-      if [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
+      if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
             cat defaultpromenvvariables-sidecar | while read line; do
                   echo $line >> ~/.bashrc
             done
@@ -333,7 +333,7 @@ source config_metric_collection_env_var
 
 
 # OSM scraping to be done in replicaset if sidecar car scraping is disabled and always do the scraping from the sidecar (It will always be either one of the two)
-if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ) ) ||
+if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) ) ||
       ( ( -e "/etc/config/kube.conf" ) && ( ( ! -z "${SIDECAR_SCRAPING_ENABLED}" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ) ]]; then
       /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-osm-config.rb
 
@@ -566,7 +566,7 @@ fi
 
 
 #start oneagent
-if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "Prometheus-Sidecar" ]; then
+if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
    if [ ! -z $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE ]; then
       echo "container logs configmap route is $AZMON_CONTAINER_LOGS_ROUTE"
       echo "container logs effective route is $AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE"
@@ -609,7 +609,7 @@ echo "************end oneagent log routing checks************"
 
 #If config parsing was successful, a copy of the conf file with replaced custom settings file is created
 if [ ! -e "/etc/config/kube.conf" ]; then
-      if [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ] && [ -e "/opt/telegraf-test-prom-side-car.conf" ]; then
+      if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ] && [ -e "/opt/telegraf-test-prom-side-car.conf" ]; then
             echo "****************Start Telegraf in Test Mode**************************"
             /opt/telegraf --config /opt/telegraf-test-prom-side-car.conf -test
             if [ $? -eq 0 ]; then
@@ -639,7 +639,7 @@ fi
 
 #telegraf & fluentbit requirements
 if [ ! -e "/etc/config/kube.conf" ]; then
-      if [ "${CONTAINER_TYPE}" == "Prometheus-Sidecar" ]; then
+      if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
             echo "in side car................"
             /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-prom-side-car.conf -e /opt/td-agent-bit/bin/out_oms.so &
             telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"

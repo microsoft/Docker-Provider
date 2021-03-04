@@ -4,6 +4,18 @@ require_relative "tomlrb"
 require "fileutils"
 require_relative "ConfigParseErrorLogger"
 
+@controllerType = ENV["CONTROLLER_TYPE"]
+@containerType = ENV["CONTAINER_TYPE"]
+@sidecarScrapingEnabled = ENV["SIDECAR_SCRAPING_ENABLED"]
+
+if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.casecmp("replicaset") == 0 &&
+   !@sidecarScrapingEnabled.nil? && !@sidecarScrapingEnabled.empty? && @sidecarScrapingEnabled.strip.casecmp("false") == 0
+  require "tomlrb"
+elsif !@containerType.nil? && !@containerType.empty? && @containerType.strip.casecmp("prometheussidecar") == 0 &&
+      !@sidecarScrapingEnabled.nil? && !@sidecarScrapingEnabled.empty? && @sidecarScrapingEnabled.strip.casecmp("false") == 0
+  require_relative "tomlrb"
+end
+
 @configMapMountPath = "/etc/config/osm-settings/osm-metric-collection-configuration"
 @configSchemaVersion = ""
 @tgfConfigFileSidecar = "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"

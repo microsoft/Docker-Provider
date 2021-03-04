@@ -460,7 +460,7 @@ spec:
             #- name: ACS_RESOURCE_NAME
             #  value: "my_acs_cluster_name"
             - name: CONTAINER_TYPE
-              value: "Prometheus-Sidecar"
+              value: "PrometheusSidecar"
             - name: CONTROLLER_TYPE
               value: "DaemonSet"
             - name: NODE_IP

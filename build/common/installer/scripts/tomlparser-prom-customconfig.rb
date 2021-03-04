@@ -14,7 +14,7 @@ require "fileutils"
 @promConfigMapMountPath = "/etc/config/settings/prometheus-data-collection-settings"
 @replicaset = "replicaset"
 @daemonset = "daemonset"
-@promSideCar = "prometheus-sidecar"
+@promSideCar = "prometheussidecar"
 @windows = "windows"
 @configSchemaVersion = ""
 @defaultDsInterval = "1m"
@@ -198,7 +198,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             # Adding nil check here as well since checkForTypeArray returns true even if setting is nil to accomodate for other settings to be able -
             # - to use defaults in case of nil settings
             # Remove below block after phased rollout
-            if (@sidecarScrapingEnabled.nil? || (!@sidecarScrapingEnabled.nil? && @sidecarScrapingEnabled.casecmp("false") == 0))
+            if ((!@sidecarScrapingEnabled.nil? && @sidecarScrapingEnabled.casecmp("false") == 0))
               monitorKubernetesPodsNSConfig = []
               if monitorKubernetesPods && !monitorKubernetesPodsNamespaces.nil? && checkForTypeArray(monitorKubernetesPodsNamespaces, String)
                 # Adding a check to see if an empty array is passed for kubernetes namespaces
