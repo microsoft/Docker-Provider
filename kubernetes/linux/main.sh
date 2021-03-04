@@ -262,27 +262,6 @@ if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidec
       /opt/microsoft/omsagent/ruby/bin/ruby td-agent-bit-conf-customizer.rb
 fi
 
-#Parse the OSM configmap to set the right environment variables for metric collection settings
-#This needs to be done before the prometheus custom config map parsing since we have namespace duplication logic in place.
-# if [ ! -e "/etc/config/kube.conf" ]; then
-#       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
-#             /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-osm-config.rb
-
-#             cat integration_osm_config_env_var | while read line; do
-#                   echo $line >> ~/.bashrc
-#             done
-#             source integration_osm_config_env_var
-
-#             #Sourcing prometheus side car config settings if it exists
-#             # if [ -e "prom_config_shared_settings_env_var" ]; then
-#             #       cat prom_config_shared_settings_env_var | while read line; do
-#             #             echo $line >> ~/.bashrc
-#             #       done
-#             #       source prom_config_shared_settings_env_var
-#             # fi
-#       fi
-# fi
-
 #Parse the prometheus configmap to create a file with new custom settings.
 /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-prom-customconfig.rb
 

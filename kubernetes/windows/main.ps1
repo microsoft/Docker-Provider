@@ -402,9 +402,16 @@ Start-FileSystemWatcher
 #     Bootstrap-CACertificates
 # }
 
+
 Generate-Certificates
 Test-CertificatePath
-Start-Telegraf
+# Start telegraf only in sidecar scraping mode
+$sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
+if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true')
+{
+    Start-Telegraf
+}
+
 Start-Fluent
 
 # List all powershell processes running. This should have main.ps1 and filesystemwatcher.ps1

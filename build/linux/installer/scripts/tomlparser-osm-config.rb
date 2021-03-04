@@ -8,18 +8,23 @@ require_relative "ConfigParseErrorLogger"
 @containerType = ENV["CONTAINER_TYPE"]
 @sidecarScrapingEnabled = ENV["SIDECAR_SCRAPING_ENABLED"]
 
-if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.casecmp("replicaset") == 0 &&
+@replicaset = "replicaset"
+@prometheusSidecar = "prometheussidecar"
+
+if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.casecmp(@replicaset) == 0 &&
    !@sidecarScrapingEnabled.nil? && !@sidecarScrapingEnabled.empty? && @sidecarScrapingEnabled.strip.casecmp("false") == 0
-  require "tomlrb"
-elsif !@containerType.nil? && !@containerType.empty? && @containerType.strip.casecmp("prometheussidecar") == 0 &&
+  @tgfConfigFile = "/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
+  @tgfTestConfigFile = "/opt/telegraf-test-rs.conf"
+elsif !@containerType.nil? && !@containerType.empty? && @containerType.strip.casecmp(@prometheusSidecar) == 0 &&
       !@sidecarScrapingEnabled.nil? && !@sidecarScrapingEnabled.empty? && @sidecarScrapingEnabled.strip.casecmp("false") == 0
-  require_relative "tomlrb"
+  @tgfConfigFile = "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
+  @tgfTestConfigFile = "/opt/telegraf-test-prom-side-car.conf"
 end
 
 @configMapMountPath = "/etc/config/osm-settings/osm-metric-collection-configuration"
 @configSchemaVersion = ""
-@tgfConfigFileSidecar = "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
-@tgfTestConfigFile = "/opt/telegraf-test-prom-side-car.conf"
+# @tgfConfigFileSidecar = "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
+# @tgfTestConfigFile = "/opt/telegraf-test-prom-side-car.conf"
 @osmMetricNamespaces = []
 
 #Configurations to be used for the auto-generated input prometheus plugins for namespace filtering
@@ -102,7 +107,7 @@ def replaceOsmTelegrafConfigPlaceHolders
   name_prefix=\"container.azm.ms.osm/\"
   interval = \"#{@scrapeInterval}\"
   monitor_kubernetes_pods = true
-  monitor_kubernetes_pods_version = #{@monitorKubernetesPodsVersion}
+  pod_scrape_scope = #{(@controllerType.casecmp(@replicaset) == 0) ? "cluster" : "node"}
   monitor_kubernetes_pods_namespace = \"#{namespace}\"
   fieldpass = #{@fieldPassSetting}
   metric_version = #{@metricVersion}
@@ -141,11 +146,11 @@ else
 end
 
 # Check to see if the prometheus custom config parser has created a test config file so that we can replace the settings in the test file and run it, If not create
-# a test config file by copying contents of the actual sidecar telegraf config file.
+# a test config file by copying contents of the actual telegraf config file.
 if (!File.exist?(@tgfTestConfigFile))
   # Copy the telegraf config file to a temp file to run telegraf in test mode with this config
-  puts "test telegraf sidecar config file #{@tgfTestConfigFile} does not exist, creating new one"
-  FileUtils.cp(@tgfConfigFileSidecar, @tgfTestConfigFile)
+  puts "test telegraf config file #{@tgfTestConfigFile} does not exist, creating new one"
+  FileUtils.cp(@tgfConfigFile, @tgfTestConfigFile)
 end
 
 replaceOsmTelegrafConfigPlaceHolders()
