@@ -17,6 +17,10 @@ module Fluent
     @@rsPromFieldDropCount = ENV["TELEMETRY_RS_PROM_FIELDDROP_LENGTH"]
     @@rsPromK8sServiceCount = ENV["TELEMETRY_RS_PROM_K8S_SERVICES_LENGTH"]
     @@rsPromUrlCount = ENV["TELEMETRY_RS_PROM_URLS_LENGTH"]
+    @@rsPromMonitorPods = ENV["TELEMETRY_RS_PROM_MONITOR_PODS"]
+    @@rsPromMonitorPodsNamespaceLength = ENV["TELEMETRY_RS_PROM_MONITOR_PODS_NS_LENGTH"]
+    @@rsPromMonitorPodsLabelSelectorLength = ENV["TELEMETRY_RS_PROM_LABEL_SELECTOR_LENGTH"]
+    @@rsPromMonitorPodsFieldSelectorLength = ENV["TELEMETRY_RS_PROM_FIELD_SELECTOR_LENGTH"]
     @@collectAllKubeEvents = ENV["AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS"]
 
     def initialize
@@ -283,6 +287,10 @@ module Fluent
               properties["rsPromFDC"] = @@rsPromFieldDropCount
               properties["rsPromServ"] = @@rsPromK8sServiceCount
               properties["rsPromUrl"] = @@rsPromUrlCount
+              properties["rsPromMonPods"] = @@rsPromMonitorPods
+              properties["rsPromMonPodsNs"] = @@rsPromMonitorPodsNamespaceLength
+              properties["rsPromMonPodsLabelSelectorLength"] = @@rsPromMonitorPodsLabelSelectorLength
+              properties["rsPromMonPodsFieldSelectorLength"] = @@rsPromMonitorPodsFieldSelectorLength
             end
             ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
             telemetrySent = true

@@ -635,6 +635,9 @@ spec:
             # Update this with the user assigned msi client id for omsagent
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
               value: ""
+            # Add the below environment variable to true only in sidecar enabled regions, else set it to false
+            - name: SIDECAR_SCRAPING_ENABLED
+              value: "true"
           securityContext:
             privileged: true
           ports:

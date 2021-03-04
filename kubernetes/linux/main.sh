@@ -335,14 +335,6 @@ if [ ! -e "/etc/config/kube.conf" ]; then
                   echo $line >> ~/.bashrc
             done
             source integration_osm_config_env_var
-
-            #Sourcing prometheus side car config settings if it exists
-            # if [ -e "prom_config_shared_settings_env_var" ]; then
-            #       cat prom_config_shared_settings_env_var | while read line; do
-            #             echo $line >> ~/.bashrc
-            #       done
-            #       source prom_config_shared_settings_env_var
-            # fi
       fi
 fi
 

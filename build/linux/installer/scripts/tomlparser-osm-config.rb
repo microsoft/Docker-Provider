@@ -1,13 +1,6 @@
 #!/usr/local/bin/ruby
 
-#this should be require relative in Linux and require in windows, since it is a gem install on windows
-@os_type = ENV["OS_TYPE"]
-if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
-  require "tomlrb"
-else
-  require_relative "tomlrb"
-end
-
+require_relative "tomlrb"
 require "fileutils"
 require_relative "ConfigParseErrorLogger"
 
@@ -144,41 +137,6 @@ if (!File.exist?(@tgfTestConfigFile))
 end
 
 replaceOsmTelegrafConfigPlaceHolders()
-
-# #replace place holders in configuration file
-# tgfConfig = File.read(@tgfTestConfigFile) #read returns only after closing the file
-
-# if @osmMetricNamespaces.length > 0
-#   osmPluginConfigsWithNamespaces = ""
-#   @osmMetricNamespaces.each do |namespace|
-#     if !namespace.nil?
-#       #Stripping namespaces to remove leading and trailing whitespaces
-#       namespace.strip!
-#       if namespace.length > 0
-#         osmPluginConfigsWithNamespaces += "\n[[inputs.prometheus]]
-#   name_prefix=\"container.azm.ms.osm/\"
-#   interval = \"#{@scrapeInterval}\"
-#   monitor_kubernetes_pods = true
-#   monitor_kubernetes_pods_version = #{@monitorKubernetesPodsVersion}
-#   monitor_kubernetes_pods_namespace = \"#{namespace}\"
-#   fieldpass = #{@fieldPassSetting}
-#   metric_version = #{@metricVersion}
-#   url_tag = \"#{@urlTag}\"
-#   bearer_token = \"#{@bearerToken}\"
-#   response_timeout = \"#{@responseTimeout}\"
-#   tls_ca = \"#{@tlsCa}\"
-#   insecure_skip_verify = #{@insecureSkipVerify}\n"
-#       end
-#     end
-#   end
-#   tgfConfig = tgfConfig.gsub("$AZMON_TELEGRAF_OSM_PROM_PLUGINS", osmPluginConfigsWithNamespaces)
-# else
-#   puts "Using defaults for OSM configuration since there was an error in OSM config map or no namespaces were set"
-#   tgfConfig = tgfConfig.gsub("$AZMON_TELEGRAF_OSM_PROM_PLUGINS", "")
-# end
-
-# File.open(@tgfTestConfigFile, "w") { |file| file.puts tgfConfig } # 'file' will be closed here after it goes out of scope
-# puts "config::osm::Successfully substituted the OSM placeholders in #{@tgfTestConfigFile} file in sidecar container"
 
 # Write the telemetry to file, so that they can be set as environment variables
 telemetryFile = File.open("integration_osm_config_env_var", "w")

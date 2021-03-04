@@ -316,14 +316,14 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 		Log("Custom prometheus monitor kubernetes pods namespace count string to int conversion error %s", err.Error())
 		PromMonitorPodsNamespaceLength = 0
 	}
-	promLabelSelectorLength := os.Getenv("TELEMETRY_CUSTOM_PROM_KUBERNETES_LABEL_SELECTOR_LENGTH")
+	promLabelSelectorLength := os.Getenv("TELEMETRY_CUSTOM_PROM_LABEL_SELECTOR_LENGTH")
 	PromMonitorPodsLabelSelectorLength, err = strconv.Atoi(promLabelSelectorLength)
 	if err != nil {
 		Log("Custom prometheus label selector count string to int conversion error %s", err.Error())
 		PromMonitorPodsLabelSelectorLength = 0
 	}
 
-	promFieldSelectorLength := os.Getenv("TELEMETRY_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR_LENGTH")
+	promFieldSelectorLength := os.Getenv("TELEMETRY_CUSTOM_PROM_FIELD_SELECTOR_LENGTH")
 	PromMonitorPodsFieldSelectorLength, err = strconv.Atoi(promFieldSelectorLength)
 	if err != nil {
 		Log("Custom prometheus field selector count string to int conversion error %s", err.Error())
