@@ -87,7 +87,7 @@ def replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods, kubern
   begin
     puts "config::Starting to substitute the placeholders in telegraf conf copy file with no namespace filters"
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
-    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS_SCOPE", ("pod_scrape_scope = #{(@controller.casecmp(@replicaset) == 0) ? "cluster" : "node"}"))
+    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE", ("pod_scrape_scope = #{(@controller.casecmp(@replicaset) == 0) ? "cluster" : "node"}"))
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_LABEL_SELECTOR", ("kubernetes_label_selector = \"#{kubernetesLabelSelectors}\""))
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR", ("kubernetes_field_selector = \"#{kubernetesFieldSelectors}\""))
@@ -104,7 +104,7 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS")
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_LABEL_SELECTOR", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_LABEL_SELECTOR")
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR")
-    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS_SCOPE", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS_SCOPE")
+    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE")
 
     pluginConfigsWithNamespaces = ""
     monitorKubernetesPodsNamespaces.each do |namespace|
