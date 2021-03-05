@@ -106,7 +106,7 @@ def replaceOsmTelegrafConfigPlaceHolders
   name_prefix=\"container.azm.ms.osm/\"
   interval = \"#{@scrapeInterval}\"
   monitor_kubernetes_pods = true
-  pod_scrape_scope = #{(@controllerType.casecmp(@replicaset) == 0) ? "cluster" : "node"}
+  pod_scrape_scope = \"#{(@controllerType.casecmp(@replicaset) == 0) ? "cluster" : "node"}\"
   monitor_kubernetes_pods_namespace = \"#{namespace}\"
   fieldpass = #{@fieldPassSetting}
   metric_version = #{@metricVersion}
