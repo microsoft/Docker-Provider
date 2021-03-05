@@ -41,7 +41,7 @@ if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabl
     Write-Host ('Installing Telegraf');
 
         try {
-            $telegrafUri='https://github.com/microsoft/Docker-Provider/releases/download/telegraf-test-win/telegraf-win-debug.zip'
+            $telegrafUri='https://github.com/microsoft/Docker-Provider/releases/download/telegraf-test-pr/telegraf-win.zip'
             Invoke-WebRequest -Uri $telegrafUri -OutFile /installation/telegraf-win.zip
             Expand-Archive -Path /installation/telegraf-win.zip -Destination /installation/telegraf-win
             Move-Item -Path /installation/telegraf-win -Destination /opt/telegraf/ -ErrorAction SilentlyContinue
