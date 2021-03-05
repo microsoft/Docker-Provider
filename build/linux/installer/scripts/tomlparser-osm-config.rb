@@ -15,8 +15,7 @@ if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.cas
    !@sidecarScrapingEnabled.nil? && !@sidecarScrapingEnabled.empty? && @sidecarScrapingEnabled.strip.casecmp("false") == 0
   @tgfConfigFile = "/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
   @tgfTestConfigFile = "/opt/telegraf-test-rs.conf"
-elsif !@containerType.nil? && !@containerType.empty? && @containerType.strip.casecmp(@prometheusSidecar) == 0 &&
-      !@sidecarScrapingEnabled.nil? && !@sidecarScrapingEnabled.empty? && @sidecarScrapingEnabled.strip.casecmp("false") == 0
+elsif !@containerType.nil? && !@containerType.empty? && @containerType.strip.casecmp(@prometheusSidecar) == 0
   @tgfConfigFile = "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
   @tgfTestConfigFile = "/opt/telegraf-test-prom-side-car.conf"
 end

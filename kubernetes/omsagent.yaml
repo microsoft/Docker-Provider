@@ -440,6 +440,7 @@ spec:
                 - /opt/livenessprobe.sh
             initialDelaySeconds: 60
             periodSeconds: 60
+#Only in sidecar scraping mode
         - name: omsagent-prometheus
           image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod11092020"
           imagePullPolicy: IfNotPresent
@@ -666,6 +667,7 @@ spec:
             - mountPath: /etc/config/settings/adx
               name: omsagent-adx-secret
               readOnly: true
+# only in sidecar scraping mode
             - mountPath: /etc/config/osm-settings
               name: osm-settings-vol-config
               readOnly: true
@@ -740,6 +742,7 @@ spec:
           secret:
             secretName: omsagent-adx-secret
             optional: true
+# only in sidecar scraping mode
         - name: osm-settings-vol-config
           configMap:
             name: container-azm-ms-osmconfig

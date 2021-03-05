@@ -85,7 +85,7 @@ end
 
 def replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods, kubernetesLabelSelectors, kubernetesFieldSelectors)
   begin
-    puts "config::Starting to substitute the placeholders in telegraf conf copy file for prometheus side car with no namespace filters"
+    puts "config::Starting to substitute the placeholders in telegraf conf copy file with no namespace filters"
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS_SCOPE", ("pod_scrape_scope = #{(@controller.casecmp(@replicaset) == 0) ? "cluster" : "node"}"))
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
@@ -99,7 +99,7 @@ end
 
 def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKubernetesPodsNamespaces, new_contents, interval, fieldPassSetting, fieldDropSetting, kubernetesLabelSelectors, kubernetesFieldSelectors)
   begin
-    puts "config::Starting to substitute the placeholders in telegraf conf copy file for prometheus side car with namespace filters"
+    puts "config::Starting to substitute the placeholders in telegraf conf copy file with namespace filters"
 
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS")
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_LABEL_SELECTOR", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_LABEL_SELECTOR")
@@ -140,7 +140,6 @@ end
 
 # Use the ruby structure created after config parsing to set the right values to be used as environment variables
 def populateSettingValuesFromConfigMap(parsedConfig)
-  # containerOs = ENV["CONTAINER_OS"]
   if !@controller.nil?
     if !parsedConfig.nil? && !parsedConfig[:prometheus_data_collection_settings].nil?
       if @controller.casecmp(@replicaset) == 0 && !parsedConfig[:prometheus_data_collection_settings][:cluster].nil?
@@ -158,7 +157,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           kubernetesLabelSelectors = parsedConfig[:prometheus_data_collection_settings][:cluster][:kubernetes_label_selector]
           kubernetesFieldSelectors = parsedConfig[:prometheus_data_collection_settings][:cluster][:kubernetes_field_selector]
 
-          # Check for the right datattypes to enforce right setting values
+          # Check for the right datatypes to enforce right setting values
           if checkForType(interval, String) &&
              checkForTypeArray(fieldPass, String) &&
              checkForTypeArray(fieldDrop, String) &&
@@ -233,7 +232,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               file.write("export TELEMETRY_RS_PROM_K8S_SERVICES_LENGTH=#{kubernetesServices.length}\n")
               file.write("export TELEMETRY_RS_PROM_URLS_LENGTH=#{urls.length}\n")
               # Remove below block after phased rollout
-              if (@sidecarScrapingEnabled.nil? || (!@sidecarScrapingEnabled.nil? && @sidecarScrapingEnabled.casecmp("false") == 0))
+              if (!@sidecarScrapingEnabled.nil? && @sidecarScrapingEnabled.casecmp("false") == 0)
                 file.write("export TELEMETRY_RS_PROM_MONITOR_PODS=\"#{monitorKubernetesPods}\"\n")
                 file.write("export TELEMETRY_RS_PROM_MONITOR_PODS_NS_LENGTH=\"#{monitorKubernetesPodsNamespacesLength}\"\n")
                 file.write("export TELEMETRY_RS_PROM_LABEL_SELECTOR_LENGTH=\"#{kubernetesLabelSelectorsLength}\"\n")
