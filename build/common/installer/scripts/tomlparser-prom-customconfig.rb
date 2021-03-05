@@ -198,7 +198,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             # Adding nil check here as well since checkForTypeArray returns true even if setting is nil to accomodate for other settings to be able -
             # - to use defaults in case of nil settings
             # Remove below block after phased rollout
-            if ((!@sidecarScrapingEnabled.nil? && @sidecarScrapingEnabled.casecmp("false") == 0))
+            if (@sidecarScrapingEnabled.nil? || (!@sidecarScrapingEnabled.nil? && (@sidecarScrapingEnabled.casecmp("false") == 0)))
               monitorKubernetesPodsNSConfig = []
               if monitorKubernetesPods && !monitorKubernetesPodsNamespaces.nil? && checkForTypeArray(monitorKubernetesPodsNamespaces, String)
                 # Adding a check to see if an empty array is passed for kubernetes namespaces
@@ -232,7 +232,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               file.write("export TELEMETRY_RS_PROM_K8S_SERVICES_LENGTH=#{kubernetesServices.length}\n")
               file.write("export TELEMETRY_RS_PROM_URLS_LENGTH=#{urls.length}\n")
               # Remove below block after phased rollout
-              if (!@sidecarScrapingEnabled.nil? && @sidecarScrapingEnabled.casecmp("false") == 0)
+              if (@sidecarScrapingEnabled.nil? || (!@sidecarScrapingEnabled.nil? && (@sidecarScrapingEnabled.casecmp("false") == 0)))
                 file.write("export TELEMETRY_RS_PROM_MONITOR_PODS=\"#{monitorKubernetesPods}\"\n")
                 file.write("export TELEMETRY_RS_PROM_MONITOR_PODS_NS_LENGTH=\"#{monitorKubernetesPodsNamespacesLength}\"\n")
                 file.write("export TELEMETRY_RS_PROM_LABEL_SELECTOR_LENGTH=\"#{kubernetesLabelSelectorsLength}\"\n")
