@@ -227,35 +227,37 @@ echo "export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey" >> ~/.bashrc
 
 source ~/.bashrc
 
+if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
+      #Parse the configmap to set the right environment variables.
+      /opt/microsoft/omsagent/ruby/bin/ruby tomlparser.rb
 
-#Parse the configmap to set the right environment variables.
-/opt/microsoft/omsagent/ruby/bin/ruby tomlparser.rb
-
-cat config_env_var | while read line; do
-    #echo $line
-    echo $line >> ~/.bashrc
-done
-source config_env_var
-
+      cat config_env_var | while read line; do
+            #echo $line
+            echo $line >> ~/.bashrc
+      done
+      source config_env_var
+fi
 
 #Parse the configmap to set the right environment variables for agent config.
 #Note > tomlparser-agent-config.rb has to be parsed first before td-agent-bit-conf-customizer.rb for fbit agent settings
-/opt/microsoft/omsagent/ruby/bin/ruby tomlparser-agent-config.rb
+if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
+      /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-agent-config.rb
 
-cat agent_config_env_var | while read line; do
-    #echo $line
-    echo $line >> ~/.bashrc
-done
-source agent_config_env_var
+      cat agent_config_env_var | while read line; do
+            #echo $line
+            echo $line >> ~/.bashrc
+      done
+      source agent_config_env_var
 
-#Parse the configmap to set the right environment variables for network policy manager (npm) integration.
-/opt/microsoft/omsagent/ruby/bin/ruby tomlparser-npm-config.rb
+      #Parse the configmap to set the right environment variables for network policy manager (npm) integration.
+      /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-npm-config.rb
 
-cat integration_npm_config_env_var | while read line; do
-    #echo $line
-    echo $line >> ~/.bashrc
-done
-source integration_npm_config_env_var
+      cat integration_npm_config_env_var | while read line; do
+            #echo $line
+            echo $line >> ~/.bashrc
+      done
+      source integration_npm_config_env_var
+fi
 
 #Replace the placeholders in td-agent-bit.conf file for fluentbit with custom/default values in daemonset
 if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
@@ -295,21 +297,22 @@ fi
 
 
 #Parse the configmap to set the right environment variables for MDM metrics configuration for Alerting.
-/opt/microsoft/omsagent/ruby/bin/ruby tomlparser-mdm-metrics-config.rb
+if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
+      /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-mdm-metrics-config.rb
 
-cat config_mdm_metrics_env_var | while read line; do
-    echo $line >> ~/.bashrc
-done
-source config_mdm_metrics_env_var
+      cat config_mdm_metrics_env_var | while read line; do
+            echo $line >> ~/.bashrc
+      done
+      source config_mdm_metrics_env_var
 
-#Parse the configmap to set the right environment variables for metric collection settings
-/opt/microsoft/omsagent/ruby/bin/ruby tomlparser-metric-collection-config.rb
+      #Parse the configmap to set the right environment variables for metric collection settings
+      /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-metric-collection-config.rb
 
-cat config_metric_collection_env_var | while read line; do
-    echo $line >> ~/.bashrc
-done
-source config_metric_collection_env_var
-
+      cat config_metric_collection_env_var | while read line; do
+            echo $line >> ~/.bashrc
+      done
+      source config_metric_collection_env_var
+fi
 
 # OSM scraping to be done in replicaset if sidecar car scraping is disabled and always do the scraping from the sidecar (It will always be either one of the two)
 if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) ) ||
