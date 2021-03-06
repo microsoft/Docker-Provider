@@ -303,31 +303,43 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 	TelemetryClient.Context().CommonProperties = CommonProperties
 
 	// Getting the namespace count, monitor kubernetes pods values and namespace count once at start because it wont change unless the configmap is applied and the container is restarted
+
+	OSMNamespaceCount = 0
 	osmNsCount := os.Getenv("TELEMETRY_OSM_CONFIGURATION_NAMESPACES_COUNT")
-	OSMNamespaceCount, err = strconv.Atoi(osmNsCount)
-	if err != nil {
-		Log("OSM namespace count string to int conversion error %s", err.Error())
-		OSMNamespaceCount = 0
-	}
-	PromMonitorPods = os.Getenv("TELEMETRY_CUSTOM_PROM_MONITOR_PODS")
-	promMonPodsNamespaceLength := os.Getenv("TELEMETRY_CUSTOM_PROM_MONITOR_PODS_NS_LENGTH")
-	PromMonitorPodsNamespaceLength, err = strconv.Atoi(promMonPodsNamespaceLength)
-	if err != nil {
-		Log("Custom prometheus monitor kubernetes pods namespace count string to int conversion error %s", err.Error())
-		PromMonitorPodsNamespaceLength = 0
-	}
-	promLabelSelectorLength := os.Getenv("TELEMETRY_CUSTOM_PROM_LABEL_SELECTOR_LENGTH")
-	PromMonitorPodsLabelSelectorLength, err = strconv.Atoi(promLabelSelectorLength)
-	if err != nil {
-		Log("Custom prometheus label selector count string to int conversion error %s", err.Error())
-		PromMonitorPodsLabelSelectorLength = 0
+	if osmNsCount != nil && osmNsCount != "" {
+		OSMNamespaceCount, err = strconv.Atoi(osmNsCount)
+		if err != nil {
+			Log("OSM namespace count string to int conversion error %s", err.Error())
+		}
 	}
 
+	PromMonitorPods = os.Getenv("TELEMETRY_CUSTOM_PROM_MONITOR_PODS")
+
+	PromMonitorPodsNamespaceLength = 0
+	promMonPodsNamespaceLength := os.Getenv("TELEMETRY_CUSTOM_PROM_MONITOR_PODS_NS_LENGTH")
+	if promMonPodsNamespaceLength != nil && promMonPodsNamespaceLength != "" {
+		PromMonitorPodsNamespaceLength, err = strconv.Atoi(promMonPodsNamespaceLength)
+		if err != nil {
+			Log("Custom prometheus monitor kubernetes pods namespace count string to int conversion error %s", err.Error())
+		}
+	}
+
+	PromMonitorPodsLabelSelectorLength = 0
+	promLabelSelectorLength := os.Getenv("TELEMETRY_CUSTOM_PROM_LABEL_SELECTOR_LENGTH")
+	if promLabelSelectorLength != nil && promLabelSelectorLength != "" {
+		PromMonitorPodsLabelSelectorLength, err = strconv.Atoi(promLabelSelectorLength)
+		if err != nil {
+			Log("Custom prometheus label selector count string to int conversion error %s", err.Error())
+		}
+	}
+
+	PromMonitorPodsFieldSelectorLength = 0
 	promFieldSelectorLength := os.Getenv("TELEMETRY_CUSTOM_PROM_FIELD_SELECTOR_LENGTH")
-	PromMonitorPodsFieldSelectorLength, err = strconv.Atoi(promFieldSelectorLength)
-	if err != nil {
-		Log("Custom prometheus field selector count string to int conversion error %s", err.Error())
-		PromMonitorPodsFieldSelectorLength = 0
+	if promFieldSelectorLength != nil && promFieldSelectorLength != "" {
+		PromMonitorPodsFieldSelectorLength, err = strconv.Atoi(promFieldSelectorLength)
+		if err != nil {
+			Log("Custom prometheus field selector count string to int conversion error %s", err.Error())
+		}
 	}
 
 	return 0, nil
