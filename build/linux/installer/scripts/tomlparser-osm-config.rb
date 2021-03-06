@@ -161,6 +161,8 @@ if !@osmConfigSchemaVersion.nil? && !@osmConfigSchemaVersion.empty? && @osmConfi
 else
   if (File.file?(@configMapMountPath))
     ConfigParseErrorLogger.logError("config::osm::unsupported/missing config schema version - '#{@osmConfigSchemaVersion}' , using defaults, please use supported schema version")
+  else
+    puts "config::No configmap mounted for OSM config, using defaults"
   end
 end
 puts "****************End OSM Config Processing********************"
