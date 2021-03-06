@@ -137,31 +137,30 @@ if !@osmConfigSchemaVersion.nil? && !@osmConfigSchemaVersion.empty? && @osmConfi
   configMapSettings = parseConfigMap
   if !configMapSettings.nil?
     populateSettingValuesFromConfigMap(configMapSettings)
+    # Check to see if the prometheus custom config parser has created a test config file so that we can replace the settings in the test file and run it, If not create
+    # a test config file by copying contents of the actual telegraf config file.
+    if (!File.exist?(@tgfTestConfigFile))
+      # Copy the telegraf config file to a temp file to run telegraf in test mode with this config
+      puts "test telegraf config file #{@tgfTestConfigFile} does not exist, creating new one"
+      FileUtils.cp(@tgfConfigFile, @tgfTestConfigFile)
+    end
+
+    replaceOsmTelegrafConfigPlaceHolders()
+
+    # Write the telemetry to file, so that they can be set as environment variables
+    telemetryFile = File.open("integration_osm_config_env_var", "w")
+
+    if !telemetryFile.nil?
+      telemetryFile.write("export TELEMETRY_OSM_CONFIGURATION_NAMESPACES_COUNT=#{@osmMetricNamespaces.length}\n")
+      # Close file after writing all environment variables
+      telemetryFile.close
+    else
+      puts "config::osm::Exception while opening file for writing OSM telemetry environment variables"
+    end
   end
 else
   if (File.file?(@configMapMountPath))
     ConfigParseErrorLogger.logError("config::osm::unsupported/missing config schema version - '#{@osmConfigSchemaVersion}' , using defaults, please use supported schema version")
   end
-end
-
-# Check to see if the prometheus custom config parser has created a test config file so that we can replace the settings in the test file and run it, If not create
-# a test config file by copying contents of the actual telegraf config file.
-if (!File.exist?(@tgfTestConfigFile))
-  # Copy the telegraf config file to a temp file to run telegraf in test mode with this config
-  puts "test telegraf config file #{@tgfTestConfigFile} does not exist, creating new one"
-  FileUtils.cp(@tgfConfigFile, @tgfTestConfigFile)
-end
-
-replaceOsmTelegrafConfigPlaceHolders()
-
-# Write the telemetry to file, so that they can be set as environment variables
-telemetryFile = File.open("integration_osm_config_env_var", "w")
-
-if !telemetryFile.nil?
-  telemetryFile.write("export TELEMETRY_OSM_CONFIGURATION_NAMESPACES_COUNT=#{@osmMetricNamespaces.length}\n")
-  # Close file after writing all environment variables
-  telemetryFile.close
-else
-  puts "config::osm::Exception while opening file for writing OSM telemetry environment variables"
 end
 puts "****************End OSM Config Processing********************"
