@@ -319,10 +319,12 @@ if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus
       ( ( -e "/etc/config/kube.conf" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ]]; then
       /opt/microsoft/omsagent/ruby/bin/ruby tomlparser-osm-config.rb
 
-      cat integration_osm_config_env_var | while read line; do
-            echo $line >> ~/.bashrc
-      done
-      source integration_osm_config_env_var
+      if [ -e "integration_osm_config_env_var" ]; then
+            cat integration_osm_config_env_var | while read line; do
+                  echo $line >> ~/.bashrc
+            done
+            source integration_osm_config_env_var
+      fi
 fi
 
 #Setting environment variable for CAdvisor metrics to use port 10255/10250 based on curl request
