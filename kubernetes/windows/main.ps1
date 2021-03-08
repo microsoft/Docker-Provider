@@ -335,11 +335,11 @@ function Start-Telegraf {
     }
 
     Write-Host "Installing telegraf service"
-    C:\opt\telegraf\telegraf-win\telegraf.exe --service install --config "C:\etc\telegraf\telegraf.conf"
+    C:\opt\telegraf\telegraf-win\telegraf-win.exe --service install --config "C:\etc\telegraf\telegraf.conf"
     Write-Host "Running telegraf service in test mode"
-    C:\opt\telegraf\telegraf-win\telegraf.exe --config "C:\etc\telegraf\telegraf.conf" --test
+    C:\opt\telegraf\telegraf-win\telegraf-win.exe --config "C:\etc\telegraf\telegraf.conf" --test
     Write-Host "Starting telegraf service"
-    C:\opt\telegraf\telegraf-win\telegraf.exe --service start
+    C:\opt\telegraf\telegraf-win\telegraf-win.exe --service start
 }
 
 function Generate-Certificates {
