@@ -292,7 +292,7 @@ module Fluent
               properties["rsPromMonPodsNs"] = @@rsPromMonitorPodsNamespaceLength
               properties["rsPromMonPodsLabelSelectorLength"] = @@rsPromMonitorPodsLabelSelectorLength
               properties["rsPromMonPodsFieldSelectorLength"] = @@rsPromMonitorPodsFieldSelectorLength
-              properties["osmNamespaceCount"] == @@osmNamespaceCount
+              properties["osmNamespaceCount"] = @@osmNamespaceCount
             end
             ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
             telemetrySent = true
