@@ -30,7 +30,7 @@ end
 @metricVersion = 2
 @monitorKubernetesPodsVersion = 2
 #@fieldPassSetting = "[\"envoy_cluster_upstream_rq_xx\", \"envoy_cluster_upstream_rq\"]"
-@fieldPassSetting = "[\"envoy_cluster_upstream_cx_total\", \"envoy_cluster_upstream_cx_connect_fail\", \"envoy_cluster_upstream_rq\", \"envoy_cluster_upstream_rq_xx\", \"envoy_cluster_upstream_rq_total\", \"envoy_cluster_upstream_rq_time_bucket\", \"envoy_cluster_upstream_cx_rx_bytes_total\", \"envoy_cluster_upstream_cx_tx_bytes_total\"]"
+@fieldPassSetting = "[\"envoy_cluster_upstream_cx_total\", \"envoy_cluster_upstream_cx_connect_fail\", \"envoy_cluster_upstream_rq\", \"envoy_cluster_upstream_rq_xx\", \"envoy_cluster_upstream_rq_total\", \"envoy_cluster_upstream_rq_time_bucket\", \"envoy_cluster_upstream_cx_rx_bytes_total\", \"envoy_cluster_upstream_cx_tx_bytes_total\", \"envoy_cluster_upstream_cx_active\"]"
 @scrapeInterval = "1m"
 @urlTag = "scrapeUrl"
 @bearerToken = "/var/run/secrets/kubernetes.io/serviceaccount/token"
