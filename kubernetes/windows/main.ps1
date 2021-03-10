@@ -405,6 +405,20 @@ Start-FileSystemWatcher
 
 Generate-Certificates
 Test-CertificatePath
+# # Start telegraf only in sidecar scraping mode
+# $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
+# if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true')
+# {
+#     Start-Telegraf
+# }
+try {
+    Start-Fluent
+} catch {
+        $e = $_.Exception
+        Write-Host $e
+        Write-Host "exception occured while starting fluent..."
+    }
+
 # Start telegraf only in sidecar scraping mode
 $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
 if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true')
@@ -412,7 +426,6 @@ if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabl
     Start-Telegraf
 }
 
-Start-Fluent
 
 # List all powershell processes running. This should have main.ps1 and filesystemwatcher.ps1
 Get-WmiObject Win32_process | Where-Object { $_.Name -match 'powershell' } | Format-Table -Property Name, CommandLine, ProcessId
