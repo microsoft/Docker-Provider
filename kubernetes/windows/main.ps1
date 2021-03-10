@@ -351,7 +351,7 @@ function Start-Telegraf {
 
     # Trying to start telegraf again if it did not start due to fluent bit not being ready at startup
     Get-Service telegraf | findstr Running
-    if ($? -eq false)
+    if ($? -eq $false)
     {
         Write-Host "trying to start telegraf in again in 30 seconds, since fluentbit might not have been ready..."
         Start-Sleep -s 30
