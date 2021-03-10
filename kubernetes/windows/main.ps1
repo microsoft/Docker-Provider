@@ -273,7 +273,7 @@ function Get-ContainerRuntime {
     return $containerRuntime
 }
 
-function Start-Fluent {
+function Start-Fluent-Telegraf {
 
     # Run fluent-bit service first so that we do not miss any logs being forwarded by the fluentd service.
     # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
@@ -287,6 +287,14 @@ function Start-Fluent {
         # change parser from docker to cri if the container runtime is not docker
         Write-Host "changing parser from Docker to CRI since container runtime : $($containerRuntime) and which is non-docker"
         (Get-Content -Path C:/etc/fluent/fluent.conf -Raw)  -replace 'fluent-docker-parser.conf','fluent-cri-parser.conf' | Set-Content C:/etc/fluent/fluent.conf
+    }
+
+    # Start telegraf only in sidecar scraping mode
+    $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
+    if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true')
+    {
+        Write-Host "Starting telegraf..."
+        Start-Telegraf
     }
 
     fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
@@ -340,6 +348,16 @@ function Start-Telegraf {
     C:\opt\telegraf\telegraf-win\telegraf-win.exe --config "C:\etc\telegraf\telegraf.conf" --test
     Write-Host "Starting telegraf service"
     C:\opt\telegraf\telegraf-win\telegraf-win.exe --service start
+
+    # Trying to start telegraf again if it did not start due to fluent bit not being ready at startup
+    Get-Service telegraf | findstr Running
+    if ($? -eq false)
+    {
+        Write-Host "trying to start telegraf in again in 30 seconds, since fluentbit might not have been ready..."
+        Start-Sleep -s 30
+        C:\opt\telegraf\telegraf-win\telegraf-win.exe --service start
+        Get-Service telegraf
+    }
 }
 
 function Generate-Certificates {
@@ -411,20 +429,14 @@ Test-CertificatePath
 # {
 #     Start-Telegraf
 # }
-try {
-    Start-Fluent
-} catch {
-        $e = $_.Exception
-        Write-Host $e
-        Write-Host "exception occured while starting fluent..."
-    }
+Start-Fluent-Telegraf
 
-# Start telegraf only in sidecar scraping mode
-$sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
-if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true')
-{
-    Start-Telegraf
-}
+# # Start telegraf only in sidecar scraping mode
+# $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
+# if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true')
+# {
+#     Start-Telegraf
+# }
 
 
 # List all powershell processes running. This should have main.ps1 and filesystemwatcher.ps1
