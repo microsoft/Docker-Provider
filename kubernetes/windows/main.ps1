@@ -343,6 +343,25 @@ function Start-Telegraf {
     }
 
     Write-Host "Installing telegraf service"
+    # Setting delay auto start for telegraf since there have been known issues with windows server and telegraf -
+    # https://github.com/influxdata/telegraf/issues/4081
+    # https://github.com/influxdata/telegraf/issues/3601
+    try {
+        $serverName = [System.Environment]::GetEnvironmentVariable("PODNAME", "process")
+        if (![string]::IsNullOrEmpty($serverName)) {
+            sc.exe \\$serverName config telegraf start= delayed-auto
+            Write-Host "Successfully set delayed start for telegraf"
+
+        } else {
+            Write-Host "Failed to get environment variable PODNAME to set delayed telegraf start"
+        }
+    }
+    catch {
+            $e = $_.Exception
+            Write-Host $e
+            Write-Host "exception occured in delayed telegraf start.. continuing without exiting"
+    }
+    
     # C:\opt\telegraf\telegraf-win\telegraf-win.exe --service install --config "C:\etc\telegraf\telegraf.conf"
     C:\opt\telegraf\telegraf-1.18.0\telegraf.exe --service install --config "C:\etc\telegraf\telegraf.conf"
     Write-Host "Running telegraf service in test mode"

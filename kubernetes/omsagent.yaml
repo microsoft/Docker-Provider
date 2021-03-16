@@ -802,6 +802,10 @@ spec:
             valueFrom:
                fieldRef:
                  fieldPath: spec.nodeName
+          - name: PODNAME
+            valueFrom:
+               fieldRef:
+                 fieldPath: metadata.name
           - name: NODE_IP
             valueFrom:
                fieldRef:
