@@ -40,7 +40,7 @@ try {
     $telegrafUri='https://dl.influxdata.com/telegraf/releases/telegraf-1.18.0~rc1_windows_amd64.zip'
     Invoke-WebRequest -Uri $telegrafUri -OutFile /installation/telegraf.zip
     Expand-Archive -Path /installation/telegraf.zip -Destination /installation/telegraf
-    Move-Item -Path /installation/telegraf -Destination /opt/telegraf -ErrorAction SilentlyContinue
+    Move-Item -Path /installation/telegraf -Destination /opt/ -ErrorAction SilentlyContinue
 }
 catch {
     $ex = $_.Exception

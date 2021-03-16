@@ -343,6 +343,8 @@ function Start-Telegraf {
     }
 
     Write-Host "Installing telegraf service"
+    C:\opt\telegraf\telegraf-1.18.0\telegraf.exe --service install --config "C:\etc\telegraf\telegraf.conf"
+    
     # Setting delay auto start for telegraf since there have been known issues with windows server and telegraf -
     # https://github.com/influxdata/telegraf/issues/4081
     # https://github.com/influxdata/telegraf/issues/3601
@@ -361,9 +363,6 @@ function Start-Telegraf {
             Write-Host $e
             Write-Host "exception occured in delayed telegraf start.. continuing without exiting"
     }
-    
-    # C:\opt\telegraf\telegraf-win\telegraf-win.exe --service install --config "C:\etc\telegraf\telegraf.conf"
-    C:\opt\telegraf\telegraf-1.18.0\telegraf.exe --service install --config "C:\etc\telegraf\telegraf.conf"
     Write-Host "Running telegraf service in test mode"
     C:\opt\telegraf\telegraf-1.18.0\telegraf.exe --config "C:\etc\telegraf\telegraf.conf" --test
     Write-Host "Starting telegraf service"
