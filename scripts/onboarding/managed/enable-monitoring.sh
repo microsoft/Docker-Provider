@@ -311,7 +311,7 @@ parse_args() {
 
 validate_and_configure_supported_cloud() {
   echo "get active azure cloud name configured to azure cli"
-  azureCloudName=$(az cloud show --query name -o tsv | tr "[:upper:]" "[:lower:]")
+  azureCloudName=$(az cloud show --query name -o tsv | tr "[:upper:]" "[:lower:]" | tr -d "[:space:]")
   echo "active azure cloud name configured to azure cli: ${azureCloudName}"
   if [ "$isArcK8sCluster" = true ]; then
     if [ "$azureCloudName" != "azurecloud" -a  "$azureCloudName" != "azureusgovernment" ]; then
@@ -340,7 +340,7 @@ validate_cluster_identity() {
   local clusterName="$(echo ${2})"
 
   local identitytype=$(az resource show -g ${rgName} -n ${clusterName} --resource-type $resourceProvider --query identity.type)
-  identitytype=$(echo $identitytype | tr "[:upper:]" "[:lower:]" | tr -d '"')
+  identitytype=$(echo $identitytype | tr "[:upper:]" "[:lower:]" | tr -d '"' | tr -d "[:space:]")
   echo "cluster identity type:" $identitytype
 
   if [[ "$identitytype" != "systemassigned" ]]; then
