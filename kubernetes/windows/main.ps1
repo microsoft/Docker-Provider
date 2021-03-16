@@ -343,11 +343,12 @@ function Start-Telegraf {
     }
 
     Write-Host "Installing telegraf service"
-    C:\opt\telegraf\telegraf-win\telegraf-win.exe --service install --config "C:\etc\telegraf\telegraf.conf"
+    # C:\opt\telegraf\telegraf-win\telegraf-win.exe --service install --config "C:\etc\telegraf\telegraf.conf"
+    C:\opt\telegraf\telegraf-1.18.0\telegraf.exe --service install --config "C:\etc\telegraf\telegraf.conf"
     Write-Host "Running telegraf service in test mode"
-    C:\opt\telegraf\telegraf-win\telegraf-win.exe --config "C:\etc\telegraf\telegraf.conf" --test
+    C:\opt\telegraf\telegraf-1.18.0\telegraf.exe --config "C:\etc\telegraf\telegraf.conf" --test
     Write-Host "Starting telegraf service"
-    C:\opt\telegraf\telegraf-win\telegraf-win.exe --service start
+    C:\opt\telegraf\telegraf-1.18.0\telegraf.exe --service start
 
     # Trying to start telegraf again if it did not start due to fluent bit not being ready at startup
     Get-Service telegraf | findstr Running
@@ -355,7 +356,7 @@ function Start-Telegraf {
     {
         Write-Host "trying to start telegraf in again in 30 seconds, since fluentbit might not have been ready..."
         Start-Sleep -s 30
-        C:\opt\telegraf\telegraf-win\telegraf-win.exe --service start
+        C:\opt\telegraf\telegraf-1.18.0\telegraf.exe --service start
         Get-Service telegraf
     }
 }
