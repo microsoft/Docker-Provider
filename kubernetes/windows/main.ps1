@@ -343,8 +343,8 @@ function Start-Telegraf {
     }
 
     Write-Host "Installing telegraf service"
-    C:\opt\telegraf\telegraf-1.18.0\telegraf.exe --service install --config "C:\etc\telegraf\telegraf.conf"
-    
+    C:\opt\telegraf\telegraf.exe --service install --config "C:\etc\telegraf\telegraf.conf"
+
     # Setting delay auto start for telegraf since there have been known issues with windows server and telegraf -
     # https://github.com/influxdata/telegraf/issues/4081
     # https://github.com/influxdata/telegraf/issues/3601
@@ -364,9 +364,9 @@ function Start-Telegraf {
             Write-Host "exception occured in delayed telegraf start.. continuing without exiting"
     }
     Write-Host "Running telegraf service in test mode"
-    C:\opt\telegraf\telegraf-1.18.0\telegraf.exe --config "C:\etc\telegraf\telegraf.conf" --test
+    C:\opt\telegraf\telegraf.exe --config "C:\etc\telegraf\telegraf.conf" --test
     Write-Host "Starting telegraf service"
-    C:\opt\telegraf\telegraf-1.18.0\telegraf.exe --service start
+    C:\opt\telegraf\telegraf.exe --service start
 
     # Trying to start telegraf again if it did not start due to fluent bit not being ready at startup
     Get-Service telegraf | findstr Running
@@ -374,7 +374,7 @@ function Start-Telegraf {
     {
         Write-Host "trying to start telegraf in again in 30 seconds, since fluentbit might not have been ready..."
         Start-Sleep -s 30
-        C:\opt\telegraf\telegraf-1.18.0\telegraf.exe --service start
+        C:\opt\telegraf\telegraf.exe --service start
         Get-Service telegraf
     }
 }
