@@ -232,7 +232,6 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       /opt/microsoft/omsagent/ruby/bin/ruby tomlparser.rb
 
       cat config_env_var | while read line; do
-            #echo $line
             echo $line >> ~/.bashrc
       done
       source config_env_var
@@ -357,7 +356,6 @@ else
       echo "Making curl request to cadvisor endpoint with port 10255 to get the configured container runtime on kubelet"
       podWithValidContainerId=$(curl -s http://$NODE_IP:10255/pods | jq -R 'fromjson? | [ .items[] | select( any(.status.phase; contains("Running")) ) ] | .[0]')
 fi
-#podWithValidContainerId=$(curl -s -k -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" https://$NODE_IP:10250/pods | jq -R 'fromjson? | [ .items[] | .metadata.namespace ] ' )
 
 if [ ! -z "$podWithValidContainerId" ]; then
       containerRuntime=$(echo $podWithValidContainerId | jq -r '.status.containerStatuses[0].containerID' | cut -d ':' -f 1)

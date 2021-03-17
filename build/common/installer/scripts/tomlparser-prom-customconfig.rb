@@ -343,8 +343,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           end # end of type check condition
         rescue => errorStr
           ConfigParseErrorLogger.logError("Exception while parsing config file for prometheus config for promethues side car: #{errorStr}, using defaults")
-          # look into this
-          #setRsPromDefaults
           puts "****************End Prometheus Config Processing********************"
         end
       elsif @controller.casecmp(@daemonset) == 0 && !parsedConfig[:prometheus_data_collection_settings][:node].nil?
