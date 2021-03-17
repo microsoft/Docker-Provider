@@ -89,6 +89,8 @@ spec:
        - name: FBIT_TAIL_BUFFER_MAX_SIZE
          value: {{ .Values.omsagent.logsettings.tailbufmaxsizemegabytes | quote }}
        {{- end }}
+       - name: ISTEST
+         value: {{ .Values.omsagent.ISTEST | quote }}
        securityContext:
          privileged: true
        ports:

@@ -50,30 +50,7 @@ class KubernetesContainerInventory
               if !atLocation.nil?
                 containerInventoryRecord["ImageId"] = imageIdValue[(atLocation + 1)..-1]
               end
-            end
-            # image is of the format - repository/image:imagetag
-            imageValue = containerStatus["image"]
-            if !imageValue.nil? && !imageValue.empty?
-              # Find delimiters in the string of format repository/image:imagetag
-              slashLocation = imageValue.index("/")
-              colonLocation = imageValue.index(":")
-              if !colonLocation.nil?
-                if slashLocation.nil?
-                  # image:imagetag
-                  containerInventoryRecord["Image"] = imageValue[0..(colonLocation - 1)]
-                else
-                  # repository/image:imagetag
-                  containerInventoryRecord["Repository"] = imageValue[0..(slashLocation - 1)]
-                  containerInventoryRecord["Image"] = imageValue[(slashLocation + 1)..(colonLocation - 1)]
-                end
-                containerInventoryRecord["ImageTag"] = imageValue[(colonLocation + 1)..-1]
-              end
-            elsif !imageIdValue.nil? && !imageIdValue.empty?
-              # Getting repo information from imageIdValue when no tag in ImageId
-              if !atLocation.nil?
-                containerInventoryRecord["Repository"] = imageIdValue[0..(atLocation - 1)]
-              end
-            end
+            end            
             containerInventoryRecord["ExitCode"] = 0
             isContainerTerminated = false
             isContainerWaiting = false
@@ -107,6 +84,51 @@ class KubernetesContainerInventory
             end
 
             containerInfoMap = containersInfoMap[containerName]
+            # image can be in any one of below format in spec 
+            # repository/image[:imagetag | @digest], repository/image:imagetag@digest, repo/image, image:imagetag, image@digest, image                       
+            imageValue = containerInfoMap["image"]
+            if !imageValue.nil? && !imageValue.empty?
+              # Find delimiters in image format
+              atLocation = imageValue.index("@")
+              isDigestSpecified = false 
+              if !atLocation.nil?
+                # repository/image@digest or repository/image:imagetag@digest, image@digest
+                imageValue = imageValue[0..(atLocation - 1)]
+                # Use Digest from the spec's image in case when the status doesnt get populated i.e. container in pending or image pull back etc.
+                if containerInventoryRecord["ImageId"].nil? || containerInventoryRecord["ImageId"].empty?
+                   containerInventoryRecord["ImageId"] = imageValue[(atLocation + 1)..-1] 
+                end
+                isDigestSpecified = true
+              end
+              slashLocation = imageValue.index("/")
+              colonLocation = imageValue.index(":")
+              if !colonLocation.nil?
+                if slashLocation.nil?
+                  # image:imagetag
+                  containerInventoryRecord["Image"] = imageValue[0..(colonLocation - 1)]                 
+                else
+                  # repository/image:imagetag
+                  containerInventoryRecord["Repository"] = imageValue[0..(slashLocation - 1)]
+                  containerInventoryRecord["Image"] = imageValue[(slashLocation + 1)..(colonLocation - 1)]
+                end
+                containerInventoryRecord["ImageTag"] = imageValue[(colonLocation + 1)..-1]
+              else 
+                if slashLocation.nil?
+                  # image
+                  containerInventoryRecord["Image"] = imageValue
+                else
+                  # repo/image
+                  containerInventoryRecord["Repository"] = imageValue[0..(slashLocation - 1)]
+                  containerInventoryRecord["Image"] = imageValue[(slashLocation + 1)..-1]
+                end 
+                # if no tag specified, k8s assumes latest as imagetag and this is same behavior from docker API and from status.
+                # Ref - https://kubernetes.io/docs/concepts/containers/images/#image-names
+                if isDigestSpecified == false 
+                  containerInventoryRecord["ImageTag"] = "latest"
+                end
+              end           
+            end
+           
             podName = containerInfoMap["PodName"]
             namespace = containerInfoMap["Namespace"]
             # containername in the format what docker sees
@@ -165,6 +187,7 @@ class KubernetesContainerInventory
             podContainers.each do |container|
               containerInfoMap = {}
               containerName = container["name"]
+              containerInfoMap["image"] = container["image"]
               containerInfoMap["ElementName"] = containerName
               containerInfoMap["Computer"] = nodeName
               containerInfoMap["PodName"] = podName

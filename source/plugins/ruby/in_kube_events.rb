@@ -129,6 +129,7 @@ module Fluent
     def parse_and_emit_records(events, eventQueryState, newEventQueryState, batchTime = Time.utc.iso8601)
       currentTime = Time.now
       emitTime = currentTime.to_f
+      @@istestvar = ENV["ISTEST"]
       begin
         eventStream = MultiEventStream.new
         events["items"].each do |items|
@@ -171,6 +172,9 @@ module Fluent
           @eventsCount += 1
         end
         router.emit_stream(@tag, eventStream) if eventStream
+        if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+          $log.info("kubeEventsInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+        end
       rescue => errorStr
         $log.debug_backtrace(errorStr.backtrace)
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)

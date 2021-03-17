@@ -191,6 +191,9 @@ module Fluent
             $log.info("in_kube_node::parse_and_emit_records: number of container node inventory records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
             router.emit_stream(@@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
             containerNodeInventoryEventStream = MultiEventStream.new
+            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+              $log.info("containerNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            end
           end
 
           # node metrics records
@@ -220,6 +223,9 @@ module Fluent
             $log.info("in_kube_nodes::parse_and_emit_records: number of node perf metric records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
             router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
             kubePerfEventStream = MultiEventStream.new
+            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+              $log.info("kubeNodePerfEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            end
           end
 
           # node GPU metrics record
@@ -252,6 +258,9 @@ module Fluent
             $log.info("in_kube_nodes::parse_and_emit_records: number of GPU node perf metric records emitted #{@NODES_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
             router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
             insightsMetricsEventStream = MultiEventStream.new
+            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+              $log.info("kubeNodeInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            end
           end
           # Adding telemetry to send node telemetry every 10 minutes
           timeDifference = (DateTime.now.to_time.to_i - @@nodeTelemetryTimeTracker).abs
@@ -306,23 +315,35 @@ module Fluent
           router.emit_stream(@tag, eventStream) if eventStream
           $log.info("in_kube_node::parse_and_emit_records: number of mdm node inventory records emitted #{eventStream.count} @ #{Time.now.utc.iso8601}")
           router.emit_stream(@@MDMKubeNodeInventoryTag, eventStream) if eventStream
+          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+            $log.info("kubeNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+          end
           eventStream = nil
         end
         if containerNodeInventoryEventStream.count > 0
           $log.info("in_kube_node::parse_and_emit_records: number of container node inventory records emitted #{containerNodeInventoryEventStream.count} @ #{Time.now.utc.iso8601}")
           router.emit_stream(@@ContainerNodeInventoryTag, containerNodeInventoryEventStream) if containerNodeInventoryEventStream
           containerNodeInventoryEventStream = nil
+          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+            $log.info("containerNodeInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+          end
         end
 
         if kubePerfEventStream.count > 0
           $log.info("in_kube_nodes::parse_and_emit_records: number of node perf metric records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
           router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
           kubePerfEventStream = nil
+          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+            $log.info("kubeNodePerfInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+          end
         end
         if insightsMetricsEventStream.count > 0
           $log.info("in_kube_nodes::parse_and_emit_records: number of GPU node perf metric records emitted #{insightsMetricsEventStream.count} @ #{Time.now.utc.iso8601}")
           router.emit_stream(Constants::INSIGHTSMETRICS_FLUENT_TAG, insightsMetricsEventStream) if insightsMetricsEventStream
           insightsMetricsEventStream = nil
+          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+            $log.info("kubeNodeInsightsMetricsEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+          end
         end
       rescue => errorStr
         $log.warn "Failed to retrieve node inventory: #{errorStr}"

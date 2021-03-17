@@ -92,6 +92,7 @@ The general directory structure is:
 │   │   |   ...                               - plugins in, out and filters code in ruby
 │   ├── toml-parser/                          - code for parsing of toml configuration files
 ├── test/                                     - source code for tests
+│   ├── e2e/                                  - e2e tests to validate agent and e2e workflow(s)
 │   ├── unit-tests/                           - unit tests code
 │   ├── scenario/                             - scenario tests code
 ├── !_README.md                               - this file
@@ -272,6 +273,36 @@ For DEV and PROD branches, automatically deployed latest yaml with latest agent 
 
 # E2E Tests
 
+## For executing tests
+
+1. Deploy the omsagent.yaml with your agent image. In the yaml, make sure `ISTEST` environment variable set to `true` if its not set already
+2. Update the Service Principal CLIENT_ID, CLIENT_SECRET and TENANT_ID placeholder values and apply e2e-tests.yaml to execute the tests 
+    > Note: Service Principal requires reader role on log analytics workspace and cluster resource to query LA and metrics
+   ```
+   cd ~/Docker-Provider/test/e2e # based on your repo path    
+   kubectl apply -f e2e-tests.yaml # this will trigger job to run the tests in sonobuoy namespace 
+   kubectl get po -n sonobuoy # to check the pods and jobs associated to tests   
+   ``` 
+3. Download (sonobuoy)[https://github.com/vmware-tanzu/sonobuoy/releases] on your dev box to view the results of the tests
+   ```
+   results=$(sonobuoy retrieve) # downloads tar file which has logs and test results
+   sonobuoy results $results # get the summary of the results
+   tar -xzvf <downloaded-tar-file> # extract downloaded tar file and look for pod logs, results and other k8s resources if there are any failures
+   ```
+
+## For adding new tests
+
+1. Add the test python file with your test code under `tests` directory
+2. Build the docker image, recommended to use ACR & MCR 
+  ```
+   cd ~/Docker-Provider/test/e2e/src # based on your repo path 
+   docker login <acr> -u <user> -p <pwd> # login to acr
+   docker build -f ./core/Dockerfile -t <repo>/<imagename>:<imagetag> .
+   docker push <repo>/<imagename>:<imagetag>
+  ```
+3. update existing agentest image tag in e2e-tests.yaml with newly built image tag with MCR repo
+
+# Scenario Tests
 Clusters are used in release pipeline already has the yamls under test\scenario deployed. Make sure to validate these scenarios.
 If you have new interesting scenarios, please add/update them.
 

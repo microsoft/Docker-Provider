@@ -15,10 +15,10 @@ Azure:
 omsagent:
   image:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
-    tag: "ciprod01112021"
-    tagWindows: "win-ciprod01112021"
+    tag: "ciprod02232021"
+    tagWindows: "win-ciprod02232021"
     pullPolicy: IfNotPresent
-    dockerProviderVersion: "12.0.0-0"
+    dockerProviderVersion: "13.0.0-0"
     agentVersion: "1.10.0.1"
 
   # The priority used by the omsagent priority class for the daemonset pods
@@ -33,6 +33,10 @@ omsagent:
   # chance to build pod for the node and give it to the scheduler)
   # Should be some number greater than default (0)
   priority: 10
+  
+  # This used for running agent pods in test mode.
+  # if set to true additional agent workflow logs will be emitted which are used for e2e and arc k8s conformance testing
+  ISTEST: false
 
   ## To get your workspace id and key do the following
   ## You can create a Azure Loganalytics workspace from portal.azure.com and get its ID & PRIMARY KEY from 'Advanced Settings' tab in the Ux.

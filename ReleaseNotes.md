@@ -10,6 +10,20 @@ additional questions or comments.
 ## Release History
 
 Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate the agent build dates (not release dates)
+### 02/23/2021 -
+##### Version microsoft/oms:ciprod02232021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod02232021 (linux)
+##### Version microsoft/oms:win-ciprod02232021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod02232021 (windows)
+##### Code change log
+- ContainerLogV2 schema support for LogAnalytics & ADX (not usable externally yet)
+- Fix nodemetrics (cpuusageprecentage & memoryusagepercentage) metrics not flowing. This is fixed upstream for k8s versions >= 1.19.7 and >=1.20.2.
+- Fix cpu & memory usage exceeded threshold container metrics not flowing when requests and/or limits were not set
+- Mute some unused exceptions from going to telemetry
+- Collect containerimage (repository, image & imagetag) from spec (instead of runtime)
+- Add support for extension MSI for k8s arc
+- Use cloud specific instrumentation keys for telemetry
+- Picked up newer version for apt
+- Add priority class to daemonset (in our chart only)
+
 ### 01/11/2021 -
 ##### Version microsoft/oms:ciprod01112021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod01112021 (linux)
 ##### Version microsoft/oms:win-ciprod01112021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod01112021 (windows)
@@ -27,7 +41,6 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 - Enable ADX route for windows container logs
 - Remove logging to termination log in windows agent liveness probe
 
-
 ### 11/09/2020 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod11092020 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod11092020 (windows)
@@ -36,7 +49,7 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 
 ### 10/27/2020 -
 ##### Version microsoft/oms:ciprod10272020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod10272020 (linux)
-##### Version microsoft/oms:win-ciprod10272020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod10052020 (windows)
+##### Version microsoft/oms:win-ciprod10272020 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod10272020 (windows)
 ##### Code change log
 - Activate oneagent in few AKS regions (koreacentral,norwayeast)
 - Disable syslog

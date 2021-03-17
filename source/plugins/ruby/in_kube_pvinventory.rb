@@ -106,7 +106,7 @@ module Fluent
       currentTime = Time.now
       emitTime = currentTime.to_f
       eventStream = MultiEventStream.new
-
+      @@istestvar = ENV["ISTEST"]
       begin
         records = []
         pvInventory["items"].each do |item|
@@ -156,6 +156,9 @@ module Fluent
         end
 
         router.emit_stream(@tag, eventStream) if eventStream
+        if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+          $log.info("kubePVInventoryEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+        end
 
       rescue => errorStr
         $log.warn "Failed in parse_and_emit_record for in_kube_pvinventory: #{errorStr}"

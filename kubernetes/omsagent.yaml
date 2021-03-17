@@ -358,7 +358,7 @@ spec:
         tier: node
       annotations:
         agentVersion: "1.10.0.1"
-        dockerProviderVersion: "12.0.0-0"
+        dockerProviderVersion: "13.0.0-0"
         schema-versions: "v1"
     spec:
       serviceAccountName: omsagent
@@ -368,7 +368,7 @@ spec:
             value: "3"       
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod01112021"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod02232021"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -383,6 +383,9 @@ spec:
               value: "VALUE_AKS_RESOURCE_ID_VALUE"
             - name: AKS_REGION
               value: "VALUE_AKS_RESOURCE_REGION_VALUE"
+            # this used for e2e test and setting this just emits some additional log statements which used for the e2e tests
+            - name: ISTEST  
+              value: "true"
             #Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
             #- name: ACS_RESOURCE_NAME
             #  value: "my_acs_cluster_name"
@@ -604,13 +607,13 @@ spec:
         rsName: "omsagent-rs"
       annotations:
         agentVersion: "1.10.0.1"
-        dockerProviderVersion: "12.0.0-0"
+        dockerProviderVersion: "13.0.0-0"
         schema-versions: "v1"
     spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod01112021"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod02232021"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -624,6 +627,9 @@ spec:
               value: "VALUE_AKS_RESOURCE_ID_VALUE"
             - name: AKS_REGION
               value: "VALUE_AKS_RESOURCE_REGION_VALUE"
+            # this used for e2e test and setting this just emits some additional log statements which used for the e2e tests
+            - name: ISTEST  
+              value: "true"  
             # Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
             #- name: ACS_RESOURCE_NAME
             #  value: "my_acs_cluster_name"
@@ -770,7 +776,7 @@ spec:
         tier: node-win
       annotations:
         agentVersion: "1.10.0.1"
-        dockerProviderVersion: "12.0.0-0"
+        dockerProviderVersion: "13.0.0-0"
         schema-versions: "v1"
     spec:
      serviceAccountName: omsagent
@@ -780,7 +786,7 @@ spec:
             value: "3"     
      containers:
        - name: omsagent-win
-         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod01112021"
+         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod02232021"
          imagePullPolicy: IfNotPresent
          resources:
           limits:

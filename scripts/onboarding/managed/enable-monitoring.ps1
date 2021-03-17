@@ -64,7 +64,7 @@ $isUsingServicePrincipal = $false
 
 # released chart version in mcr
 $mcr = "mcr.microsoft.com"
-$mcrChartVersion = "2.8.0"
+$mcrChartVersion = "2.8.1"
 $mcrChartRepoPath = "azuremonitor/containerinsights/preview/azuremonitor-containers"
 $helmLocalRepoName = "."
 $omsAgentDomainName="opinsights.azure.com"

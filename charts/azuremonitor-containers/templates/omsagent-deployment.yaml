@@ -72,7 +72,9 @@ spec:
          value: {{ .Values.Azure.Extension.Name | quote }} 
        {{- end }}                       
        - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-         value: ""   
+         value: ""       
+       - name: ISTEST
+         value: {{ .Values.omsagent.ISTEST | quote }}       
        securityContext:
          privileged: true
        ports:

@@ -265,6 +265,9 @@ module Fluent
           if @PODS_EMIT_STREAM_BATCH_SIZE > 0 && kubePerfEventStream.count >= @PODS_EMIT_STREAM_BATCH_SIZE
             $log.info("in_kube_podinventory::parse_and_emit_records: number of container perf records emitted #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
             router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
+            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+              $log.info("kubeContainerPerfEventEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            end
             kubePerfEventStream = MultiEventStream.new
           end
 
@@ -306,6 +309,9 @@ module Fluent
           $log.info("in_kube_podinventory::parse_and_emit_records: number of perf records emitted #{kubePerfEventStream.count} @ #{Time.now.utc.iso8601}")
           router.emit_stream(@@kubeperfTag, kubePerfEventStream) if kubePerfEventStream
           kubePerfEventStream = nil
+          if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+            $log.info("kubeContainerPerfEventEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+          end
         end
 
         if insightsMetricsEventStream.count > 0
@@ -345,6 +351,9 @@ module Fluent
                 $log.info("in_kube_podinventory::parse_and_emit_records: number of service records emitted #{@PODS_EMIT_STREAM_BATCH_SIZE} @ #{Time.now.utc.iso8601}")
                 router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
                 kubeServicesEventStream = MultiEventStream.new
+                if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+                  $log.info("kubeServicesEventEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+                end
               end
             end
           end
@@ -352,6 +361,9 @@ module Fluent
           if kubeServicesEventStream.count > 0
             $log.info("in_kube_podinventory::parse_and_emit_records : number of service records emitted #{kubeServicesEventStream.count} @ #{Time.now.utc.iso8601}")
             router.emit_stream(@@kubeservicesTag, kubeServicesEventStream) if kubeServicesEventStream
+            if (!@@istestvar.nil? && !@@istestvar.empty? && @@istestvar.casecmp("true") == 0)
+              $log.info("kubeServicesEventEmitStreamSuccess @ #{Time.now.utc.iso8601}")
+            end
           end
           kubeServicesEventStream = nil
         end

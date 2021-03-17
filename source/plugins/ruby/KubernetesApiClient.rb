@@ -791,7 +791,7 @@ class KubernetesApiClient
     def getKubeServicesInventoryRecords(serviceList, batchTime = Time.utc.iso8601)
       kubeServiceRecords = []
       begin
-        if (!serviceList.nil? && !serviceList.empty?)
+        if (!serviceList.nil? && !serviceList.empty? && serviceList.key?("items") && !serviceList["items"].nil? && !serviceList["items"].empty? )
           servicesCount = serviceList["items"].length
           @Log.info("KubernetesApiClient::getKubeServicesInventoryRecords : number of services in serviceList  #{servicesCount} @ #{Time.now.utc.iso8601}")
           serviceList["items"].each do |item|

@@ -20,7 +20,7 @@ set -e
 set -o pipefail
 
 # released chart version for Azure Arc enabled Kubernetes public preview
-mcrChartVersion="2.8.0"
+mcrChartVersion="2.8.1"
 mcr="mcr.microsoft.com"
 mcrChartRepoPath="azuremonitor/containerinsights/preview/azuremonitor-containers"
 
