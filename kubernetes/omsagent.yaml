@@ -630,12 +630,22 @@ spec:
               protocol: TCP
               name: in-rs-tcp
           volumeMounts:
+            - mountPath: /var/run/host
+              name: docker-sock
+            - mountPath: /var/log
+              name: host-log
+            - mountPath: /etc/kubernetes/host
+              name: azure-json-path
             - mountPath: /etc/omsagent-secret
               name: omsagent-secret
               readOnly: true
+            - mountPath: /etc/config
+              name: omsagent-rs-config
             - mountPath: /etc/config/settings
               name: settings-vol-config
               readOnly: true
+            - mountPath: /etc/config/settings/adx
+              name: omsagent-adx-secret
             # only in sidecar scraping mode
             - mountPath: /etc/config/osm-settings
               name: osm-settings-vol-config
