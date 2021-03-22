@@ -474,32 +474,9 @@ spec:
             # Update this with the user assigned msi client id for omsagent
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
               value: ""
-            - name: AZMON_CONTAINERLOGS_ONEAGENT_REGIONS
-              value: "koreacentral,norwayeast"
           securityContext:
             privileged: true
-          ports:
-            - containerPort: 25225
-              protocol: TCP
-            - containerPort: 25224
-              protocol: UDP
           volumeMounts:
-            - mountPath: /hostfs
-              name: host-root
-              readOnly: true
-            - mountPath: /var/run/host
-              name: docker-sock
-            - mountPath: /var/log
-              name: host-log
-            - mountPath: /var/lib/docker/containers
-              name: containerlog-path
-              readOnly: true
-            - mountPath: /mnt/docker
-              name: containerlog-path-2
-              readOnly: true
-            - mountPath: /mnt/containers
-              name: containerlog-path-3
-              readOnly: true
             - mountPath: /etc/kubernetes/host
               name: azure-json-path
             - mountPath: /etc/omsagent-secret
@@ -507,9 +484,6 @@ spec:
               readOnly: true
             - mountPath: /etc/config/settings
               name: settings-vol-config
-              readOnly: true
-            - mountPath: /etc/config/settings/adx
-              name: omsagent-adx-secret
               readOnly: true
             - mountPath: /etc/config/osm-settings
               name: osm-settings-vol-config
@@ -662,7 +636,7 @@ spec:
             - mountPath: /etc/config/settings
               name: settings-vol-config
               readOnly: true
-# only in sidecar scraping mode
+            # only in sidecar scraping mode
             - mountPath: /etc/config/osm-settings
               name: osm-settings-vol-config
               readOnly: true
