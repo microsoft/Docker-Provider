@@ -202,7 +202,7 @@ validate_cluster_identity() {
   local rgName="$(echo ${1})"
   local clusterName="$(echo ${2})"
 
-  local identitytype=$(az resource show -g ${rgName} -n ${clusterName} --resource-type $resourceProvider --query identity.type)
+  local identitytype=$(az resource show -g ${rgName} -n ${clusterName} --resource-type $resourceProvider --query identity.type -o json)
   identitytype=$(echo $identitytype | tr "[:upper:]" "[:lower:]" | tr -d '"')
   echo "cluster identity type:" $identitytype
 
@@ -216,7 +216,7 @@ validate_cluster_identity() {
 
 validate_monitoring_tags() {
   echo "get loganalyticsworkspaceResourceId tag on to cluster resource"
-  logAnalyticsWorkspaceResourceIdTag=$(az resource show --query tags.logAnalyticsWorkspaceResourceId -g $clusterResourceGroup -n $clusterName --resource-type $resourceProvider)
+  logAnalyticsWorkspaceResourceIdTag=$(az resource show --query tags.logAnalyticsWorkspaceResourceId -g $clusterResourceGroup -n $clusterName --resource-type $resourceProvider -o json)
   echo "configured log analytics workspace: ${logAnalyticsWorkspaceResourceIdTag}"
   echo "successfully got logAnalyticsWorkspaceResourceId tag on the cluster resource"
   if [ -z "$logAnalyticsWorkspaceResourceIdTag" ]; then

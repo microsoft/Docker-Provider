@@ -12,6 +12,12 @@ Azure:
   Extension:
     Name: ""
     ResourceId: ""
+  proxySettings:
+    isProxyEnabled: false
+    httpProxy: ""
+    httpsProxy: ""
+    noProxy: ""
+    proxyCert: ""   
 omsagent:
   image:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"

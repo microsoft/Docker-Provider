@@ -28,7 +28,7 @@ rules:
   resources: ["healthstates"]
   verbs: ["get", "create", "patch"]
 - apiGroups: ["clusterconfig.azure.com"]
-  resources: ["azureclusteridentityrequests"]
+  resources: ["azureclusteridentityrequests", "azureclusteridentityrequests/status"]
   resourceNames: ["container-insights-clusteridentityrequest"]
   verbs: ["get", "create", "patch"]
 - nonResourceURLs: ["/metrics"]

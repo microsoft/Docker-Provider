@@ -127,7 +127,7 @@ remove_monitoring_tags()
 
   # validate cluster identity for Azure Arc enabled Kubernetes cluster
   if [ "$isArcK8sCluster" = true ] ; then
-   identitytype=$(az resource show -g ${clusterResourceGroup} -n ${clusterName} --resource-type $resourceProvider --query identity.type)
+   identitytype=$(az resource show -g ${clusterResourceGroup} -n ${clusterName} --resource-type $resourceProvider --query identity.type -o json)
    identitytype=$(echo $identitytype | tr "[:upper:]" "[:lower:]" | tr -d '"')
    echo "cluster identity type:" $identitytype
     if [[ "$identitytype" != "systemassigned" ]]; then

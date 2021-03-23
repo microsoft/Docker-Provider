@@ -157,5 +157,5 @@ spec:
     - name: omsagent-adx-secret
       secret:
        secretName: omsagent-adx-secret
-       optional: true
+       optional: true 
 {{- end }}
