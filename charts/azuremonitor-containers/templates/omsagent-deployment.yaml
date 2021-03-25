@@ -72,7 +72,9 @@ spec:
          value: {{ .Values.Azure.Extension.Name | quote }} 
        {{- end }}                       
        - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-         value: ""       
+         value: ""
+       - name: SIDECAR_SCRAPING_ENABLED
+         value: "false"
        - name: ISTEST
          value: {{ .Values.omsagent.ISTEST | quote }}       
        securityContext:
@@ -108,6 +110,9 @@ spec:
         {{- end }}
         - mountPath: /etc/config/settings/adx
           name: omsagent-adx-secret
+          readOnly: true
+        - mountPath: /etc/config/osm-settings
+          name: osm-settings-vol-config
           readOnly: true
        livenessProbe:
         exec:
@@ -158,4 +163,8 @@ spec:
       secret:
        secretName: omsagent-adx-secret
        optional: true
+    - name: osm-settings-vol-config
+      configMap:
+        name: container-azm-ms-osmconfig
+        optional: true
 {{- end }}

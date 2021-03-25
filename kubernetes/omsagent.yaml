@@ -646,7 +646,6 @@ spec:
               readOnly: true
             - mountPath: /etc/config/settings/adx
               name: omsagent-adx-secret
-            # only in sidecar scraping mode
             - mountPath: /etc/config/osm-settings
               name: osm-settings-vol-config
               readOnly: true
@@ -721,7 +720,6 @@ spec:
           secret:
             secretName: omsagent-adx-secret
             optional: true
-# only in sidecar scraping mode
         - name: osm-settings-vol-config
           configMap:
             name: container-azm-ms-osmconfig

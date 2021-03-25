@@ -275,7 +275,7 @@ function Get-ContainerRuntime {
 
 function Start-Fluent-Telegraf {
 
-    # Run fluent-bit service first so that we do not miss any logs being forwarded by the fluentd service.
+    # Run fluent-bit service first so that we do not miss any logs being forwarded by the fluentd service and telegraf service.
     # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
     Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\fluent-bit\bin\fluent-bit.exe" -ArgumentList @("-c", "C:\etc\fluent-bit\fluent-bit.conf", "-e", "C:\opt\omsagentwindows\out_oms.so") }
 
