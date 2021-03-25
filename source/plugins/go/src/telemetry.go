@@ -137,7 +137,6 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
 			if strings.Compare(strings.ToLower(os.Getenv("CONTAINER_TYPE")), "prometheussidecar") == 0 {
 				telemetryDimensions := make(map[string]string)
-				telemetryDimensions["ContainerType"] = "prometheussidecar"
 				telemetryDimensions["CustomPromMonitorPods"] = promMonitorPods
 				if promMonitorPodsNamespaceLength > 0 {
 					telemetryDimensions["CustomPromMonitorPodsNamespaceLength"] = strconv.Itoa(promMonitorPodsNamespaceLength)
@@ -298,6 +297,13 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 		CommonProperties["IsProxyConfigured"] = "true"
 	} else {
 		CommonProperties["IsProxyConfigured"] = "false"
+	}
+
+	// Adding container type to telemetry
+	if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
+		if strings.Compare(strings.ToLower(os.Getenv("CONTAINER_TYPE")), "prometheussidecar") == 0 {
+			CommonProperties["ContainerType"] = "prometheussidecar"
+		}
 	}
 
 	TelemetryClient.Context().CommonProperties = CommonProperties

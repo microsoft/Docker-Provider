@@ -63,8 +63,6 @@ sudo apt-get install libcap2-bin -y
 #wget https://github.com/microsoft/Docker-Provider/releases/download/5.0.0.0/telegraf
 
 #1.18 pre-release
-wget https://dl.influxdata.com/telegraf/releases/telegraf-1.18.0~rc1_linux_amd64.tar.gz
-
 wget https://dl.influxdata.com/telegraf/releases/telegraf-1.18.0_linux_amd64.tar.gz
 tar -zxvf telegraf-1.18.0_linux_amd64.tar.gz
 
