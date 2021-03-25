@@ -3,7 +3,7 @@
 if [ -e "/etc/config/kube.conf" ]; then
     cat /etc/config/kube.conf > /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 elif [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
-    echo "rashmi-in-ds-prom-omsagent-conf"
+    echo "setting omsagent conf file for prometheus sidecar"
     cat /etc/opt/microsoft/docker-cimprov/prometheus-side-car.conf > /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
     # omsadmin.sh replaces %MONITOR_AGENT_PORT% and %SYSLOG_PORT% in the monitor.conf and syslog.conf with default ports 25324 and 25224. 
     # Since we are running 2 omsagents in the same pod, we need to use a different port for the sidecar, 
@@ -12,7 +12,7 @@ elif [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
     sed -i -e 's/port %MONITOR_AGENT_PORT%/port 25326/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/monitor.conf
     sed -i -e 's/port %SYSLOG_PORT%/port 25226/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/syslog.conf
 else
-    echo "rashmi-in-ds-omsagent-conf"
+    echo "setting omsagent conf file for daemonset"
     sed -i -e 's/bind 127.0.0.1/bind 0.0.0.0/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/container.conf
 fi
 sed -i -e 's/bind 127.0.0.1/bind 0.0.0.0/g' /etc/opt/microsoft/omsagent/sysconf/omsagent.d/syslog.conf
@@ -622,11 +622,11 @@ fi
 #telegraf & fluentbit requirements
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
-            echo "in side car................"
+            echo "starting fluent-bit and setting telegraf conf file for prometheus sidecar"
             /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-prom-side-car.conf -e /opt/td-agent-bit/bin/out_oms.so &
             telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
       else
-            echo "in ds................"
+            echo "starting fluent-bit and setting telegraf conf file for daemonset"
             if [ "$CONTAINER_RUNTIME" == "docker" ]; then
                   /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit.conf -e /opt/td-agent-bit/bin/out_oms.so &
                   telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
@@ -638,7 +638,7 @@ if [ ! -e "/etc/config/kube.conf" ]; then
             fi
       fi
 else
-      echo "in rs..............."
+      echo "starting fluent-bit and setting telegraf conf file for replicaset"
       /opt/td-agent-bit/bin/td-agent-bit -c /etc/opt/microsoft/docker-cimprov/td-agent-bit-rs.conf -e /opt/td-agent-bit/bin/out_oms.so &
       telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
 fi

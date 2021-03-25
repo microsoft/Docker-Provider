@@ -11,7 +11,7 @@ data:
     # OSM metric collection settings
     [osm_metric_collection_configuration.settings]
         # Namespaces to monitor
-        monitor_namespaces = ["namespace1", "namespace2"]
+        # monitor_namespaces = ["namespace1", "namespace2"]
 metadata:
   name: container-azm-ms-osmconfig
   namespace: kube-system
