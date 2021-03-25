@@ -13,14 +13,7 @@
       "metadata": {
         "description": "Location of the Azure Arc Connected Cluster Resource e.g. \"eastus\""
       }
-    },
-    "proxyEndpointUrl": {
-      "type": "string",
-      "defaultValue": "",
-      "metadata": {
-        "description": "If the cluster behind forward proxy, then specify Proxy Endpoint URL in this format: http(s)://<user>:<password>@<proxyhost>:<port>"
-      }
-    },
+    },  
     "workspaceResourceId": {
       "type": "string",
       "metadata": {
@@ -114,8 +107,7 @@
                 },
                 "configurationProtectedSettings": {
                   "omsagent.secret.wsid": "[reference(parameters('workspaceResourceId'), '2015-03-20').customerId]",
-                  "omsagent.secret.key": "[listKeys(parameters('workspaceResourceId'), '2015-03-20').primarySharedKey]" ,
-                  "omsagent.proxy": "[if(equals(parameters('proxyEndpointUrl'), ''), '<your_proxy_config>', parameters('proxyEndpointUrl'))]"             
+                  "omsagent.secret.key": "[listKeys(parameters('workspaceResourceId'), '2015-03-20').primarySharedKey]"              
                 },
                 "autoUpgradeMinorVersion": true,
                 "releaseTrain": "Stable",
