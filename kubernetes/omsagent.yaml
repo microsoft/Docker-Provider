@@ -358,7 +358,7 @@ spec:
         tier: node
       annotations:
         agentVersion: "1.10.0.1"
-        dockerProviderVersion: "13.0.0-0"
+        dockerProviderVersion: "14.0.0-0"
         schema-versions: "v1"
     spec:
       serviceAccountName: omsagent
@@ -368,7 +368,7 @@ spec:
             value: "3"       
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod02232021"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03262021"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -446,7 +446,7 @@ spec:
             timeoutSeconds: 15
 #Only in sidecar scraping mode
         - name: omsagent-prometheus
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod11092020"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03262021"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -583,13 +583,13 @@ spec:
         rsName: "omsagent-rs"
       annotations:
         agentVersion: "1.10.0.1"
-        dockerProviderVersion: "13.0.0-0"
+        dockerProviderVersion: "14.0.0-0"
         schema-versions: "v1"
     spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod02232021"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03262021"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -750,7 +750,7 @@ spec:
         tier: node-win
       annotations:
         agentVersion: "1.10.0.1"
-        dockerProviderVersion: "13.0.0-0"
+        dockerProviderVersion: "14.0.0-0"
         schema-versions: "v1"
     spec:
      serviceAccountName: omsagent
@@ -760,7 +760,7 @@ spec:
             value: "3"     
      containers:
        - name: omsagent-win
-         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod02232021"
+         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod03262021"
          imagePullPolicy: IfNotPresent
          resources:
           limits:

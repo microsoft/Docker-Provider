@@ -10,6 +10,23 @@ additional questions or comments.
 ## Release History
 
 Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate the agent build dates (not release dates)
+
+### 03/26/2021 -
+##### Version microsoft/oms:ciprod03262021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03262021 (linux)
+##### Version microsoft/oms:win-ciprod03262021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod03262021 (windows)
+##### Code change log
+- Started collecting new metric - kubelet running pods count  
+- Onboarding script fixes to add explicit json output
+- Proxy and token updates for ARC
+- Doc updates for Microsoft charts repo release
+- Bug fixes for trailing whitespaces in enable-monitoring.sh script
+- Support for higher volume of prometheus metrics by scraping metrics from sidecar
+- Update to get new version of telegraf - 1.18
+- Add label and field selectors for prometheus scraping using annotations
+- Support for OSM integration
+- Removed wireserver calls to get CA certs since access is removed
+- Added liveness timeout for exec for linux containers
+
 ### 02/23/2021 -
 ##### Version microsoft/oms:ciprod02232021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod02232021 (linux)
 ##### Version microsoft/oms:win-ciprod02232021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod02232021 (windows)
