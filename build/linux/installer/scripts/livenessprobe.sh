@@ -26,15 +26,22 @@ then
  exit 1
 fi
 
-if [ ! -s "inotifyoutput.txt" ]
+if [ -s "inotifyoutput.txt" ]
 then
-  # inotifyoutput file is empty and the grep commands for omsagent and td-agent-bit succeeded
-  exit 0
-else
-  if [ -s "inotifyoutput.txt" ]
-  then
-    # inotifyoutput file has data(config map was applied)
-    echo "inotifyoutput.txt has been updated - config changed" > /dev/termination-log
-    exit 1
-  fi
+  # inotifyoutput file has data(config map was applied)
+  echo "inotifyoutput.txt has been updated - config changed" > /dev/termination-log
+  exit 1
 fi
+
+# Perform the following check only for prometheus sidecar that does OSM scraping or for replicaset when sidecar scraping is disabled
+if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "PrometheusSidecar" ) ) ||
+      ( ( -e "/etc/config/kube.conf" ) && ( ( ! -z "${SIDECAR_SCRAPING_ENABLED}" ) && ( "${SIDECAR_SCRAPING_ENABLED}" == "false" ) ) ) ]]; then
+    if [ -s "inotifyoutput-osm.txt" ]
+    then
+      # inotifyoutput-osm file has data(config map was applied)
+      echo "inotifyoutput-osm.txt has been updated - config changed" > /dev/termination-log
+      exit 1
+    fi
+fi
+
+exit 0

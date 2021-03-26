@@ -358,7 +358,7 @@ spec:
         tier: node
       annotations:
         agentVersion: "1.10.0.1"
-        dockerProviderVersion: "13.0.0-0"
+        dockerProviderVersion: "14.0.0-0"
         schema-versions: "v1"
     spec:
       serviceAccountName: omsagent
@@ -368,7 +368,7 @@ spec:
             value: "3"       
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod02232021"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03262021"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -443,6 +443,61 @@ spec:
                 - /opt/livenessprobe.sh
             initialDelaySeconds: 60
             periodSeconds: 60
+            timeoutSeconds: 15
+#Only in sidecar scraping mode
+        - name: omsagent-prometheus
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03262021"
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: 500m
+              memory: 400Mi
+            requests:
+              cpu: 75m
+              memory: 225Mi
+          env:
+            # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
+            - name: AKS_RESOURCE_ID
+              value: "VALUE_AKS_RESOURCE_ID_VALUE"
+            - name: AKS_REGION
+              value: "VALUE_AKS_RESOURCE_REGION_VALUE"
+            #Uncomment below two lines for ACS clusters and set the cluster names manually. Also comment out the above two lines for ACS clusters
+            #- name: ACS_RESOURCE_NAME
+            #  value: "my_acs_cluster_name"
+            - name: CONTAINER_TYPE
+              value: "PrometheusSidecar"
+            - name: CONTROLLER_TYPE
+              value: "DaemonSet"
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            # Update this with the user assigned msi client id for omsagent
+            - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+              value: ""
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - mountPath: /etc/kubernetes/host
+              name: azure-json-path
+            - mountPath: /etc/omsagent-secret
+              name: omsagent-secret
+              readOnly: true
+            - mountPath: /etc/config/settings
+              name: settings-vol-config
+              readOnly: true
+            - mountPath: /etc/config/osm-settings
+              name: osm-settings-vol-config
+              readOnly: true
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - /opt/livenessprobe.sh
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            timeoutSeconds: 15
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
@@ -502,6 +557,10 @@ spec:
           secret:
             secretName: omsagent-adx-secret
             optional: true
+        - name: osm-settings-vol-config
+          configMap:
+            name: container-azm-ms-osmconfig
+            optional: true
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -524,13 +583,13 @@ spec:
         rsName: "omsagent-rs"
       annotations:
         agentVersion: "1.10.0.1"
-        dockerProviderVersion: "13.0.0-0"
+        dockerProviderVersion: "14.0.0-0"
         schema-versions: "v1"
     spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod02232021"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03262021"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -559,6 +618,9 @@ spec:
             # Update this with the user assigned msi client id for omsagent
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
               value: ""
+            # Add the below environment variable to true only in sidecar enabled regions, else set it to false
+            - name: SIDECAR_SCRAPING_ENABLED
+              value: "true"
           securityContext:
             privileged: true
           ports:
@@ -586,6 +648,8 @@ spec:
               readOnly: true
             - mountPath: /etc/config/settings/adx
               name: omsagent-adx-secret
+            - mountPath: /etc/config/osm-settings
+              name: osm-settings-vol-config
               readOnly: true
           livenessProbe:
             exec:
@@ -595,6 +659,7 @@ spec:
                 - /opt/livenessprobe.sh
             initialDelaySeconds: 60
             periodSeconds: 60
+            timeoutSeconds: 15
       affinity:
         nodeAffinity:
           # affinity to schedule on to ephemeral os node if its available
@@ -658,6 +723,10 @@ spec:
           secret:
             secretName: omsagent-adx-secret
             optional: true
+        - name: osm-settings-vol-config
+          configMap:
+            name: container-azm-ms-osmconfig
+            optional: true
 ---
   apiVersion: apps/v1
   kind: DaemonSet
@@ -681,7 +750,7 @@ spec:
         tier: node-win
       annotations:
         agentVersion: "1.10.0.1"
-        dockerProviderVersion: "13.0.0-0"
+        dockerProviderVersion: "14.0.0-0"
         schema-versions: "v1"
     spec:
      serviceAccountName: omsagent
@@ -691,7 +760,7 @@ spec:
             value: "3"     
      containers:
        - name: omsagent-win
-         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod02232021"
+         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod03262021"
          imagePullPolicy: IfNotPresent
          resources:
           limits:
@@ -711,10 +780,16 @@ spec:
             valueFrom:
                fieldRef:
                  fieldPath: spec.nodeName
+          - name: PODNAME
+            valueFrom:
+               fieldRef:
+                 fieldPath: metadata.name
           - name: NODE_IP
             valueFrom:
                fieldRef:
                  fieldPath: status.hostIP
+          - name: SIDECAR_SCRAPING_ENABLED
+            value: "true"
          volumeMounts:
           - mountPath: C:\ProgramData\docker\containers
             name: docker-windows-containers

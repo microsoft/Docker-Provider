@@ -131,6 +131,7 @@ spec:
          - "/opt/livenessprobe.sh"
         initialDelaySeconds: 60
         periodSeconds: 60
+        timeoutSeconds: 15
    {{- with .Values.omsagent.daemonset.affinity }}
    affinity: {{- toYaml . | nindent 8 }}
    {{- end }}

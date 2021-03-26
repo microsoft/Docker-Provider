@@ -81,6 +81,12 @@ spec:
          valueFrom:
             fieldRef:
               fieldPath: status.hostIP
+       - name: PODNAME
+         valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+       - name: SIDECAR_SCRAPING_ENABLED
+         value: "false"
        volumeMounts:
         - mountPath: C:\ProgramData\docker\containers
           name: docker-windows-containers

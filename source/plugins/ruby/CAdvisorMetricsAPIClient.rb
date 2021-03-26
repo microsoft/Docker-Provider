@@ -370,7 +370,7 @@ class CAdvisorMetricsAPIClient
                   metricTags[Constants::INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES] = volume["capacityBytes"]
 
                   metricItem["Tags"] = metricTags
-                  
+
                   metricItems.push(metricItem)
                 end
               end

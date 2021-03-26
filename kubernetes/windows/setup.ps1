@@ -8,10 +8,12 @@ Write-Host ('Creating folder structure')
 
     New-Item -Type Directory -Path /opt/fluent-bit
     New-Item -Type Directory -Path /opt/scripts/ruby
+    New-Item -Type Directory -Path /opt/telegraf
 
     New-Item -Type Directory -Path /etc/fluent-bit
     New-Item -Type Directory -Path /etc/fluent
     New-Item -Type Directory -Path /etc/omsagentwindows
+    New-Item -Type Directory -Path /etc/telegraf
 
     New-Item -Type Directory -Path /etc/config/settings/
     New-Item -Type Directory -Path /etc/config/adx/
@@ -32,6 +34,20 @@ Write-Host ('Installing Fluent Bit');
     }
 Write-Host ('Finished Installing Fluentbit')
 
+Write-Host ('Installing Telegraf');
+try {
+    $telegrafUri='https://dl.influxdata.com/telegraf/releases/telegraf-1.18.0_windows_amd64.zip'
+    Invoke-WebRequest -Uri $telegrafUri -OutFile /installation/telegraf.zip
+    Expand-Archive -Path /installation/telegraf.zip -Destination /installation/telegraf
+    Move-Item -Path /installation/telegraf/*/* -Destination /opt/telegraf/ -ErrorAction SilentlyContinue
+}
+catch {
+    $ex = $_.Exception
+    Write-Host "exception while downloading telegraf for windows"
+    Write-Host $ex
+    exit 1
+}
+Write-Host ('Finished downloading Telegraf')
 
 Write-Host ('Installing Visual C++ Redistributable Package')
     $vcRedistLocation = 'https://aka.ms/vs/16/release/vc_redist.x64.exe'

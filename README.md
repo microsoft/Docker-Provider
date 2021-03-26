@@ -67,6 +67,7 @@ The general directory structure is:
 │   │   ├── acrworkflows/                     - acr work flows for the Linux Agent container image
 │   │   ├── defaultpromenvvariables           - default environment variables for Prometheus scraping
 │   │   ├── defaultpromenvvariables-rs        - cluster level default environment variables for Prometheus scraping
+│   │   ├── defaultpromenvvariables-sidecar   - cluster level default environment variables for Prometheus scraping in sidecar
 │   ├── windows/                              - scripts to build the Docker image for Windows Agent
 │   │   ├── dockerbuild                       - script to build the code and docker imag, and publish docker image
 │   │   ├── acrworkflows/                     - acr work flows for the Windows Agent container image

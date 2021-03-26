@@ -110,24 +110,28 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/tomlrb/string_utils.rb;                                    source/toml-parser/tomlrb/string_utils.rb; 644; root; root
 /opt/tomlrb/version.rb;                                         source/toml-parser/tomlrb/version.rb; 644; root; root
 
-/opt/td-agent-bit/bin/out_oms.so;                               intermediate/${{BUILD_CONFIGURATION}}/out_oms.so;  	755; root; root
-/etc/opt/microsoft/docker-cimprov/td-agent-bit.conf;			    build/linux/installer/conf/td-agent-bit.conf;                    644; root; root
-/etc/opt/microsoft/docker-cimprov/td-agent-bit-rs.conf;			 build/linux/installer/conf/td-agent-bit-rs.conf;                    644; root; root
-/etc/opt/microsoft/docker-cimprov/azm-containers-parser.conf;	 build/linux/installer/conf/azm-containers-parser.conf;                    644; root; root
-/etc/opt/microsoft/docker-cimprov/out_oms.conf;			          build/linux/installer/conf/out_oms.conf;                    644; root; root
-/etc/opt/microsoft/docker-cimprov/telegraf.conf;			       build/linux/installer/conf/telegraf.conf;                    644; root; root
-/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf;			    build/linux/installer/conf/telegraf-rs.conf;                    644; root; root
-/opt/microsoft/docker-cimprov/bin/TelegrafTCPErrorTelemetry.sh; build/linux/installer/scripts/TelegrafTCPErrorTelemetry.sh;      755; root; root
-/opt/livenessprobe.sh;                                          build/linux/installer/scripts/livenessprobe.sh;      755; root; root
-/opt/tomlparser-prom-customconfig.rb;                           build/linux/installer/scripts/tomlparser-prom-customconfig.rb;     755; root; root
-/opt/tomlparser-mdm-metrics-config.rb;                          build/linux/installer/scripts/tomlparser-mdm-metrics-config.rb;     755; root; root
-/opt/tomlparser-metric-collection-config.rb;                    build/linux/installer/scripts/tomlparser-metric-collection-config.rb;     755; root; root
+/opt/td-agent-bit/bin/out_oms.so;                                       intermediate/${{BUILD_CONFIGURATION}}/out_oms.so;  	755; root; root
+/etc/opt/microsoft/docker-cimprov/prometheus-side-car.conf;		         build/linux/installer/conf/prometheus-side-car.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/td-agent-bit.conf;			            build/linux/installer/conf/td-agent-bit.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/td-agent-bit-prom-side-car.conf;	   build/linux/installer/conf/td-agent-bit-prom-side-car.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/td-agent-bit-rs.conf;			         build/linux/installer/conf/td-agent-bit-rs.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/azm-containers-parser.conf;	         build/linux/installer/conf/azm-containers-parser.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/out_oms.conf;			                  build/linux/installer/conf/out_oms.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/telegraf.conf;			               build/linux/installer/conf/telegraf.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf;			   build/linux/installer/conf/telegraf-prom-side-car.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf;			            build/linux/installer/conf/telegraf-rs.conf;                    644; root; root
+/opt/microsoft/docker-cimprov/bin/TelegrafTCPErrorTelemetry.sh;         build/linux/installer/scripts/TelegrafTCPErrorTelemetry.sh;      755; root; root
+/opt/livenessprobe.sh;                                                  build/linux/installer/scripts/livenessprobe.sh;      755; root; root
+/opt/tomlparser-prom-customconfig.rb;                                   build/common/installer/scripts/tomlparser-prom-customconfig.rb;     755; root; root
+/opt/tomlparser-mdm-metrics-config.rb;                                  build/linux/installer/scripts/tomlparser-mdm-metrics-config.rb;     755; root; root
+/opt/tomlparser-metric-collection-config.rb;                            build/linux/installer/scripts/tomlparser-metric-collection-config.rb;     755; root; root
 
 /opt/tomlparser-agent-config.rb;                                build/linux/installer/scripts/tomlparser-agent-config.rb;     755; root; root
 /opt/tomlparser.rb;                                             build/common/installer/scripts/tomlparser.rb;     755; root; root
 /opt/td-agent-bit-conf-customizer.rb;                           build/common/installer/scripts/td-agent-bit-conf-customizer.rb;     755; root; root
 /opt/ConfigParseErrorLogger.rb;                                 build/common/installer/scripts/ConfigParseErrorLogger.rb;           755; root; root
 /opt/tomlparser-npm-config.rb;                                  build/linux/installer/scripts/tomlparser-npm-config.rb;     755; root; root
+/opt/tomlparser-osm-config.rb;                                  build/linux/installer/scripts/tomlparser-osm-config.rb;     755; root; root
 
 
 /opt/microsoft/omsagent/plugin/filter_cadvisor_health_container.rb;                                 source/plugins/ruby/filter_cadvisor_health_container.rb; 644; root; root

@@ -12,13 +12,19 @@ Azure:
   Extension:
     Name: ""
     ResourceId: ""
+  proxySettings:
+    isProxyEnabled: false
+    httpProxy: ""
+    httpsProxy: ""
+    noProxy: ""
+    proxyCert: ""   
 omsagent:
   image:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
-    tag: "ciprod02232021"
-    tagWindows: "win-ciprod02232021"
+    tag: "ciprod03262021"
+    tagWindows: "win-ciprod03262021"
     pullPolicy: IfNotPresent
-    dockerProviderVersion: "13.0.0-0"
+    dockerProviderVersion: "14.0.0-0"
     agentVersion: "1.10.0.1"
 
   # The priority used by the omsagent priority class for the daemonset pods
