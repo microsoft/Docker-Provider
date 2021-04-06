@@ -9,7 +9,7 @@ module Fluent
     @@MDMKubeNodeInventoryTag = "mdm.kubenodeinventory"
     @@configMapMountPath = "/etc/config/settings/log-data-collection-settings"
     @@promConfigMountPath = "/etc/config/settings/prometheus-data-collection-settings"
-    @@osmConfigMountPath = "/etc/config/osm-settings"
+    @@osmConfigMountPath = "/etc/config/osm-settings/osm-metric-collection-configuration"
     @@AzStackCloudFileName = "/etc/kubernetes/host/azurestackcloud.json"
     @@kubeperfTag = "oms.api.KubePerf"
 
