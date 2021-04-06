@@ -9,6 +9,7 @@ module Fluent
     @@MDMKubeNodeInventoryTag = "mdm.kubenodeinventory"
     @@configMapMountPath = "/etc/config/settings/log-data-collection-settings"
     @@promConfigMountPath = "/etc/config/settings/prometheus-data-collection-settings"
+    @@osmConfigMountPath = "/etc/config/osm-settings"
     @@AzStackCloudFileName = "/etc/kubernetes/host/azurestackcloud.json"
     @@kubeperfTag = "oms.api.KubePerf"
 
@@ -301,6 +302,9 @@ module Fluent
               properties["rsPromMonPodsNs"] = @@rsPromMonitorPodsNamespaceLength
               properties["rsPromMonPodsLabelSelectorLength"] = @@rsPromMonitorPodsLabelSelectorLength
               properties["rsPromMonPodsFieldSelectorLength"] = @@rsPromMonitorPodsFieldSelectorLength
+            end
+            # telemetry about osm metric settings for replicaset
+            if (File.file?(@@osmConfigMountPath))
               properties["osmNamespaceCount"] = @@osmNamespaceCount
             end
             ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
