@@ -1,0 +1,125 @@
+{
+    "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",
+    "contentVersion": "0.0.0.1",
+    "scopeBindings": [       
+        {
+            "scopeTagName": "Canary",
+            "bindings": [
+                {
+                    "find": "__RELEASE_STAGE__",
+                    "replaceWith": "Canary"
+                },               
+                {
+                    "find": "__ACR_NAME__",
+                    "replaceWith": "$(ACRName)"
+                },            
+                {
+                    "find": "__CHART_VERSION__",
+                    "replaceWith": "$(ChartVersion)"
+                }               
+            ]
+        },
+        {
+            "scopeTagName": "Pilot",
+            "bindings": [
+                {
+                    "find": "__RELEASE_STAGE__",
+                    "replaceWith": "Pilot"
+                },                
+                {
+                    "find": "__ACR_NAME__",
+                    "replaceWith": "$(ACRName)"
+                },              
+                {
+                    "find": "__CHART_VERSION__",
+                    "replaceWith": "$(ChartVersion)"
+                }       
+            ]
+        },
+        {
+            "scopeTagName": "LightLoad",
+            "bindings": [
+                {
+                    "find": "__RELEASE_STAGE__",
+                    "replaceWith": "MediumLow"
+                },               
+                {
+                    "find": "__ACR_NAME__",
+                    "replaceWith": "$(ACRName)"
+                },              
+                {
+                    "find": "__CHART_VERSION__",
+                    "replaceWith": "$(ChartVersion)"
+                }                           
+            ]
+        },
+        {
+            "scopeTagName": "MediumLoad",
+            "bindings": [
+                {
+                    "find": "__RELEASE_STAGE__",
+                    "replaceWith": "MediumHigh"
+                },                
+                {
+                    "find": "__ACR_NAME__",
+                    "replaceWith": "$(ACRName)"
+                },              
+                {
+                    "find": "__CHART_VERSION__",
+                    "replaceWith": "$(ChartVersion)"
+                }                     
+            ]
+        },
+        {
+            "scopeTagName": "HighLoad",
+            "bindings": [
+                {
+                    "find": "__RELEASE_STAGE__",
+                    "replaceWith": "HighLoad"
+                },               
+                {
+                    "find": "__ACR_NAME__",
+                    "replaceWith": "$(ACRName)"
+                },              
+                {
+                    "find": "__CHART_VERSION__",
+                    "replaceWith": "$(ChartVersion)"
+                }                                 
+            ]
+        },
+        {
+            "scopeTagName": "FF",
+            "bindings": [
+                {
+                    "find": "__RELEASE_STAGE__",
+                    "replaceWith": "FF"
+                },              
+                {
+                    "find": "__ACR_NAME__",
+                    "replaceWith": "$(ACRName)"
+                },              
+                {
+                    "find": "__CHART_VERSION__",
+                    "replaceWith": "$(ChartVersion)"
+                }                          
+            ]
+        },
+        {
+            "scopeTagName": "MC",
+            "bindings": [
+                {
+                    "find": "__RELEASE_STAGE__",
+                    "replaceWith": "MC"
+                },              
+                {
+                    "find": "__ACR_NAME__",
+                    "replaceWith": "$(ACRName)"
+                },              
+                {
+                    "find": "__CHART_VERSION__",
+                    "replaceWith": "$(ChartVersion)"
+                }                
+            ]
+        }                                                                                                                                                   
+    ]
+}

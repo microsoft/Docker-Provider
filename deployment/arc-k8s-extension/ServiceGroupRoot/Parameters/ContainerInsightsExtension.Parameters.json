@@ -1,0 +1,66 @@
+{
+  "$schema": "http://schema.express.azure.com/schemas/2015-01-01-alpha/RolloutParameters.json",
+  "contentVersion": "1.0.0.0",
+  "wait": [
+    {
+      "name": "waitSdpBakeTime",
+      "properties": {
+        "duration": "PT24H"
+      }
+    }
+  ],
+  "shellExtensions": [
+    {
+      "name": "PushChartToACR",
+      "type": "ShellExtensionType",
+      "properties": {
+        "maxexecutiontime": "PT1H"
+      },
+      "package": {
+        "reference": {
+          "path": "artifacts.tar.gz"
+        }
+      },
+      "launch": {
+        "command": [
+          "/bin/bash",
+          "pushChartToAcr.sh"
+        ],
+        "environmentVariables": [
+          {
+            "name": "RELEASE_STAGE",
+            "value": "__RELEASE_STAGE__"
+          },
+          {
+            "name": "ACR_APP_ID",
+            "reference": {
+              "provider": "AzureKeyVault",
+              "parameters": {
+                "secretId": "https://cibuildandreleasekv.vault.azure.net/secrets/ciprodacrappid/e8f47bf7505741ebaf65a4db16ff9fa7"
+              }
+            },
+            "asSecureValue": "true"
+          },
+          {
+            "name": "ACR_APP_SECRET",
+            "reference": {
+              "provider": "AzureKeyVault",
+              "parameters": {
+                "secretId": "https://cibuildandreleasekv.vault.azure.net/secrets/ciprodacrappsecret/8718afcdac114accb8b26f613cef1e1e"
+              }
+            },
+            "asSecureValue": "true"
+          },
+          {
+            "name": "ACR_NAME",
+            "value": "__ACR_NAME__"
+          },
+          {
+            "name": "CHART_VERSION",
+            "value": "__CHART_VERSION__"
+          }
+        ]
+      }
+    }
+  ]
+}

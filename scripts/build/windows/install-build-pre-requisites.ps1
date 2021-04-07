@@ -21,7 +21,7 @@ function Install-Go {
 
    # install go lang
    Write-Host("installing go ...")
-   Start-Process msiexec.exe -Wait -ArgumentList '/I ' + $output + '/quiet'
+   Start-Process msiexec.exe -Wait -ArgumentList '/I ', $output, '/quiet'
    Write-Host("installing go completed")
 
    Write-Host "updating PATH variable"
@@ -102,7 +102,7 @@ function Install-DotNetCoreSDK() {
 
    # install dotNet core sdk
    Write-Host("installing .net core sdk 3.1 ...")
-   Start-Process msiexec.exe -Wait -ArgumentList '/I ' + $output + '/quiet'
+   Start-Process msiexec.exe -Wait -ArgumentList '/I ', $output, '/quiet'
    Write-Host("installing .net core sdk 3.1 completed")
 }
 
@@ -129,7 +129,7 @@ function Install-Docker() {
 
    # install docker
    Write-Host("installing docker for desktop ...")
-   Start-Process msiexec.exe -Wait -ArgumentList '/I ' + $output + '/quiet'
+   Start-Process msiexec.exe -Wait -ArgumentList '/I ', $output, '/quiet'
    Write-Host("installing docker for desktop completed")
 }
 

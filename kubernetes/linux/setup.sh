@@ -60,7 +60,13 @@ sudo apt-get install libcap2-bin -y
 
 #service telegraf stop
 
-wget https://github.com/microsoft/Docker-Provider/releases/download/5.0.0.0/telegraf
+#wget https://github.com/microsoft/Docker-Provider/releases/download/5.0.0.0/telegraf
+
+#1.18 pre-release
+wget https://dl.influxdata.com/telegraf/releases/telegraf-1.18.0_linux_amd64.tar.gz
+tar -zxvf telegraf-1.18.0_linux_amd64.tar.gz
+
+mv /opt/telegraf-1.18.0/usr/bin/telegraf /opt/telegraf
 
 chmod 777 /opt/telegraf
 
@@ -79,3 +85,7 @@ rm -f $TMPDIR/docker-cimprov*.sh
 rm -f $TMPDIR/azure-mdsd*.deb
 rm -f $TMPDIR/mdsd.xml
 rm -f $TMPDIR/envmdsd
+
+# Remove settings for cron.daily that conflict with the node's cron.daily. Since both are trying to rotate the same files
+# in /var/log at the same time, the rotation doesn't happen correctly and then the *.1 file is forever logged to.
+rm /etc/logrotate.d/alternatives /etc/logrotate.d/apt /etc/logrotate.d/azure-mdsd /etc/logrotate.d/rsyslog

@@ -2,7 +2,7 @@ FROM ubuntu:18.04
 MAINTAINER OMSContainers@microsoft.com
 LABEL vendor=Microsoft\ Corp \
     com.microsoft.product="Azure Monitor for containers"
-ARG IMAGE_TAG=ciprod02232021
+ARG IMAGE_TAG=ciprod03262021
 ENV AGENT_VERSION ${IMAGE_TAG}
 ENV tmpdir /opt
 ENV APPLICATIONINSIGHTS_AUTH NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi
@@ -17,7 +17,7 @@ ENV KUBE_CLIENT_BACKOFF_BASE 1
 ENV KUBE_CLIENT_BACKOFF_DURATION 0
 ENV RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR 0.9
 RUN /usr/bin/apt-get update && /usr/bin/apt-get install -y libc-bin wget openssl curl sudo python-ctypes init-system-helpers  net-tools rsyslog cron vim dmidecode apt-transport-https gnupg && rm -rf /var/lib/apt/lists/*
-COPY setup.sh main.sh defaultpromenvvariables defaultpromenvvariables-rs mdsd.xml envmdsd $tmpdir/
+COPY setup.sh main.sh defaultpromenvvariables defaultpromenvvariables-rs defaultpromenvvariables-sidecar mdsd.xml envmdsd $tmpdir/
 WORKDIR ${tmpdir}
 
 # copy docker provider shell bundle to use the agent image

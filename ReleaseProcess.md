@@ -35,20 +35,55 @@ Image automatically synched to MCR CN from Public cloud MCR.
 
 - Refer to internal docs for the release process and instructions.
 
-## ARO v3
-
-This needs to be co-ordinated with Red hat  and ARO-RP team for the release and Red hat team will pick up the changes for the release.
-
 ## AKS-Engine
 
 Make PR against [AKS-Engine](https://github.com/Azure/aks-engine). Refer PR https://github.com/Azure/aks-engine/pull/2318
 
-## ARO v4, On-prem K8s, Azure Arc K8s and OpenShift v4 clusters
+## Arc for Kubernetes 
 
-Make sure azuremonitor-containers chart yamls updates with all changes going with the release and also make sure to bump the chart version, imagetag and docker provider version etc. Similar to agent container image, build pipeline automatically push the chart to container insights prod acr for canary and prod repos accordingly.
-Both the agent and helm chart will be replicated to `mcr.microsoft.com`.
+Ev2 pipeline used to deploy the chart of the Arc K8s Container Insights Extension as per Safe Deployment Process. 
+Here is the high level process
+```
+ 1. Specify chart version of the release candidate and trigger [container-insights-arc-k8s-extension-ci_prod-release](https://github-private.visualstudio.com/microsoft/_release?_a=releases&view=all)
+ 2. Get the approval from one of team member for the release
+ 3. Once the approved, release should be triggered automatically 
+ 4. use `cimon-arck8s-eastus2euap` for validating latest release in canary region
+ 5. TBD - Notify vendor team for the validation on all Arc K8s supported platforms
+```
 
-The way, customers will be onboard the monitoring to these clusters using onboarding scripts under `onboarding\managed` directory so please bump chart version for prod release. Once we move to Arc K8s Monitoring extension Public preview, these will be taken care so at that point of time no manual changes like this required.
+## Microsoft Charts Repo release for On-prem K8s
+
+Since HELM charts repo being deprecated, Microsoft charts repo being used for HELM chart release of on-prem K8s clusters. 
+To make chart release PR, fork [Microsoft-charts-repo]([https://github.com/microsoft/charts/tree/gh-pages) and make the PR against `gh-pages` branch of the upstream repo. 
+
+Refer PR - https://github.com/microsoft/charts/pull/23 for example.
+Once the PR merged, latest version of HELM chart should be available in couple of mins in https://microsoft.github.io/charts/repo and https://artifacthub.io/.
+
+Instructions to create PR
+```
+# 1. create helm package for the release candidate 
+   git clone git@github.com:microsoft/Docker-Provider.git
+   git checkout ci_prod
+   cd ~/Docker-Provider/charts/azuremonitor-containers # this path based on where you have cloned the repo
+   helm package . 
+
+# 2. clone your fork repo and checkout gh_pages branch # gh_pages branch used as release branch 
+   cd ~ 
+   git clone <your-forked-repo-of-microsoft-charts-repo>
+   cd  ~/charts # assumed the root dir of the clone is charts
+   git checkout gh_pages
+
+# 3. copy release candidate helm package 
+   cd ~/charts/repo/azuremonitor-containers 
+   # update chart version value with the version of chart being released
+   cp ~/Docker-Provider/charts/azuremonitor-containers/azuremonitor-containers-<chart-version>.tgz  .  
+   cd ~/charts/repo
+   # update repo index file 
+   helm repo index  .
+    
+# 4. Review the changes and make PR. Please note, you may need to revert unrelated changes automatically added by `helm repo index .` command
+
+```
 
 # 4. Monitor agent roll-out status
 

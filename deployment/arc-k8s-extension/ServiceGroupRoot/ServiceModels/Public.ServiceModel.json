@@ -1,0 +1,159 @@
+{
+    "$schema": "http://schema.express.azure.com/schemas/2015-01-01-alpha/ServiceModel.json",
+    "ContentVersion": "0.0.0.1",
+    "ServiceMetadata": {
+      "ServiceGroup": "ContainerInsightsExtension",
+      "Environment": "Prod"
+    },
+    "ServiceResourceGroupDefinitions": [
+      {
+        "Name": "ARC-Extension-ServiceResourceGroupDefinition",
+        "ServiceResourceDefinitions": [
+          {
+            "Name": "ShellExtension",
+            "ComposedOf": {
+              "Extension": {
+                "Shell": [
+                  {
+                    "type": "ShellExtensionType",
+                    "properties": {
+                      "imageName": "adm-ubuntu-1804-l",
+                      "imageVersion": "v18"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "ServiceResourceGroups": [     
+      {
+        "AzureResourceGroupName": "ContainerInsightsExtension-Canary-Release",
+        "Location": "eastus2",
+        "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+        "AzureSubscriptionId": "5fab7b6f-6150-42fe-89e1-0f07a0a9a46f",  
+        "ScopeTags": [
+          {
+            "Name": "Canary"
+          }
+        ],     
+        "ServiceResources": [
+          {
+            "Name": "PushChartToACR-Canary",
+            "InstanceOf": "ShellExtension",
+            "RolloutParametersPath": "Parameters\\ContainerInsightsExtension.Parameters.json"
+          }
+        ]
+      },
+      {
+        "AzureResourceGroupName": "ContainerInsightsExtension-Pilot-Release",
+        "Location": "eastus2",
+        "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+        "AzureSubscriptionId": "5fab7b6f-6150-42fe-89e1-0f07a0a9a46f",  
+        "ScopeTags": [
+          {
+            "Name": "Pilot"
+          }
+        ],     
+        "ServiceResources": [
+          {
+            "Name": "PushChartToACR-Pilot",
+            "InstanceOf": "ShellExtension",
+            "RolloutParametersPath": "Parameters\\ContainerInsightsExtension.Parameters.json"
+          }
+        ]
+      },
+      {
+        "AzureResourceGroupName": "ContainerInsightsExtension-LightLoad-Release",
+        "Location": "eastus2",
+        "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+        "AzureSubscriptionId": "5fab7b6f-6150-42fe-89e1-0f07a0a9a46f",  
+        "ScopeTags": [
+          {
+            "Name": "LightLoad"
+          }
+        ],     
+        "ServiceResources": [
+          {
+            "Name": "PushChartToACR-LightLoad",
+            "InstanceOf": "ShellExtension",
+            "RolloutParametersPath": "Parameters\\ContainerInsightsExtension.Parameters.json"
+          }
+        ]
+      },
+      {
+        "AzureResourceGroupName": "ContainerInsightsExtension-MediumLoad-Release",
+        "Location": "eastus2",
+        "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+        "AzureSubscriptionId": "5fab7b6f-6150-42fe-89e1-0f07a0a9a46f",  
+        "ScopeTags": [
+          {
+            "Name": "MediumLoad"
+          }
+        ],     
+        "ServiceResources": [
+          {
+            "Name": "PushChartToACR-MediumLoad",
+            "InstanceOf": "ShellExtension",
+            "RolloutParametersPath": "Parameters\\ContainerInsightsExtension.Parameters.json"
+          }
+        ]
+      },
+      {
+        "AzureResourceGroupName": "ContainerInsightsExtension-HighLoad-Release",
+        "Location": "eastus2",
+        "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+        "AzureSubscriptionId": "5fab7b6f-6150-42fe-89e1-0f07a0a9a46f",  
+        "ScopeTags": [
+          {
+            "Name": "HighLoad"
+          }
+        ],     
+        "ServiceResources": [
+          {
+            "Name": "PushChartToACR-HighLoad",
+            "InstanceOf": "ShellExtension",
+            "RolloutParametersPath": "Parameters\\ContainerInsightsExtension.Parameters.json"
+          }
+        ]
+      },
+      {
+        "AzureResourceGroupName": "ContainerInsightsExtension-FF-Release",
+        "Location": "eastus2",
+        "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+        "AzureSubscriptionId": "5fab7b6f-6150-42fe-89e1-0f07a0a9a46f",  
+        "ScopeTags": [
+          {
+            "Name": "FF"
+          }
+        ],     
+        "ServiceResources": [
+          {
+            "Name": "PushChartToACR-FF",
+            "InstanceOf": "ShellExtension",
+            "RolloutParametersPath": "Parameters\\ContainerInsightsExtension.Parameters.json"
+          }
+        ]
+      },
+      {
+        "AzureResourceGroupName": "ContainerInsightsExtension-MC-Release",
+        "Location": "eastus2",
+        "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
+        "AzureSubscriptionId": "5fab7b6f-6150-42fe-89e1-0f07a0a9a46f",  
+        "ScopeTags": [
+          {
+            "Name": "MC"
+          }
+        ],     
+        "ServiceResources": [
+          {
+            "Name": "PushChartToACR-MC",
+            "InstanceOf": "ShellExtension",
+            "RolloutParametersPath": "Parameters\\ContainerInsightsExtension.Parameters.json"
+          }
+        ]
+      }                                                                                                  
+    ]
+  }

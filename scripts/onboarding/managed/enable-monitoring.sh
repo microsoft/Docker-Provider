@@ -44,7 +44,7 @@ defaultAzureCloud="AzureCloud"
 omsAgentDomainName="opinsights.azure.com"
 
 # released chart version in mcr
-mcrChartVersion="2.8.1"
+mcrChartVersion="2.8.2"
 mcr="mcr.microsoft.com"
 mcrChartRepoPath="azuremonitor/containerinsights/preview/azuremonitor-containers"
 helmLocalRepoName="."
@@ -311,7 +311,7 @@ parse_args() {
 
 validate_and_configure_supported_cloud() {
   echo "get active azure cloud name configured to azure cli"
-  azureCloudName=$(az cloud show --query name -o tsv | tr "[:upper:]" "[:lower:]")
+  azureCloudName=$(az cloud show --query name -o tsv | tr "[:upper:]" "[:lower:]" | tr -d "[:space:]")
   echo "active azure cloud name configured to azure cli: ${azureCloudName}"
   if [ "$isArcK8sCluster" = true ]; then
     if [ "$azureCloudName" != "azurecloud" -a  "$azureCloudName" != "azureusgovernment" ]; then
@@ -339,8 +339,8 @@ validate_cluster_identity() {
   local rgName="$(echo ${1})"
   local clusterName="$(echo ${2})"
 
-  local identitytype=$(az resource show -g ${rgName} -n ${clusterName} --resource-type $resourceProvider --query identity.type)
-  identitytype=$(echo $identitytype | tr "[:upper:]" "[:lower:]" | tr -d '"')
+  local identitytype=$(az resource show -g ${rgName} -n ${clusterName} --resource-type $resourceProvider --query identity.type -o json)
+  identitytype=$(echo $identitytype | tr "[:upper:]" "[:lower:]" | tr -d '"' | tr -d "[:space:]")
   echo "cluster identity type:" $identitytype
 
   if [[ "$identitytype" != "systemassigned" ]]; then
@@ -454,7 +454,7 @@ create_default_log_analytics_workspace() {
     echo "using existing default workspace:"$workspaceName
   fi
 
-  workspaceResourceId=$(az resource show -g $workspaceResourceGroup -n $workspaceName --resource-type $workspaceResourceProvider --query id)
+  workspaceResourceId=$(az resource show -g $workspaceResourceGroup -n $workspaceName --resource-type $workspaceResourceProvider --query id -o json)
   workspaceResourceId=$(echo $workspaceResourceId | tr -d '"')
   echo "workspace resource Id: ${workspaceResourceId}"
 }
@@ -477,12 +477,12 @@ get_workspace_guid_and_key() {
   local wsName="$(echo ${resourceId} | cut -d'/' -f9)"
 
   # get the workspace guid
-  workspaceGuid=$(az resource show -g $rgName -n $wsName --resource-type $workspaceResourceProvider --query properties.customerId)
+  workspaceGuid=$(az resource show -g $rgName -n $wsName --resource-type $workspaceResourceProvider --query properties.customerId -o json)
   workspaceGuid=$(echo $workspaceGuid | tr -d '"')
   echo "workspaceGuid:"$workspaceGuid
 
   echo "getting workspace primaryshared key"
-  workspaceKey=$(az rest --method post --uri $workspaceResourceId/sharedKeys?api-version=2015-11-01-preview --query primarySharedKey)
+  workspaceKey=$(az rest --method post --uri $workspaceResourceId/sharedKeys?api-version=2015-11-01-preview --query primarySharedKey -o json)
   workspaceKey=$(echo $workspaceKey | tr -d '"')
 }
 
@@ -621,7 +621,7 @@ else
     set_azure_subscription $workspaceSubscriptionId
   fi
 
-  workspaceRegion=$(az resource show --ids ${workspaceResourceId} --query location)
+  workspaceRegion=$(az resource show --ids ${workspaceResourceId} --query location -o json)
   workspaceRegion=$(echo $workspaceRegion | tr -d '"')
   echo "Workspace Region:"$workspaceRegion
 fi

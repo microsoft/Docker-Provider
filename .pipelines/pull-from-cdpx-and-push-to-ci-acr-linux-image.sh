@@ -35,12 +35,22 @@ echo "end: read appid and appsecret which has read access on cdpx acr"
 # suffix 00 primary and 01 secondary, and we only use primary
 # This configured via pipeline variable
 echo "login to cdpxlinux acr:${CDPX_ACR}"
-docker login $CDPX_ACR  --username $CDPX_ACR_APP_ID --password $CDPX_ACR_APP_SECRET
-echo "login to cdpxlinux acr completed: ${CDPX_ACR}"
+echo $CDPX_ACR_APP_SECRET | docker login $CDPX_ACR  --username $CDPX_ACR_APP_ID --password-stdin
+if [ $? -eq 0 ]; then         
+   echo "login to cdpxlinux acr: ${CDPX_ACR} completed successfully."
+else     
+   echo "-e error login to cdpxlinux acr: ${CDPX_ACR} failed.Please see release task logs."
+   exit 1
+fi  
 
 echo "pull agent image from cdpxlinux acr: ${CDPX_ACR}"
 docker pull ${CDPX_ACR}/official/${CDPX_REPO_NAME}:${CDPX_AGENT_IMAGE_TAG}
-echo "pull image from cdpxlinux acr completed: ${CDPX_ACR}"
+if [ $? -eq 0 ]; then
+   echo "pulling of agent image from cdpxlinux acr: ${CDPX_ACR} completed successfully."
+else
+   echo "-e error pulling of agent image from cdpxlinux acr: ${CDPX_ACR} failed.Please see release task logs."
+   exit 1
+fi  
 
 echo "CI Release name is:"$CI_RELEASE
 imagetag=$CI_RELEASE$CI_IMAGE_TAG_SUFFIX
@@ -51,13 +61,29 @@ echo "CI AGENT REPOSITORY NAME : ${CI_AGENT_REPO}"
 
 echo "tag linux agent image"
 docker tag ${CDPX_ACR}/official/${CDPX_REPO_NAME}:${CDPX_AGENT_IMAGE_TAG} ${CI_ACR}/public/azuremonitor/containerinsights/${CI_AGENT_REPO}:${imagetag}
+if [ $? -eq 0 ]; then         
+   echo "tagging of linux agent image completed successfully."
+else     
+    echo "-e error tagging of linux agent image failed. Please see release task logs."
+   exit 1
+fi  
 
 echo "login ciprod acr":$CI_ACR
-docker login $CI_ACR --username $ACR_APP_ID --password $ACR_APP_SECRET
-echo "login to ${CI_ACR} acr completed"
+echo $ACR_APP_SECRET | docker login $CI_ACR --username $ACR_APP_ID --password-stdin 
+if [ $? -eq 0 ]; then         
+   echo "login to ciprod acr: ${CI_ACR} completed successfully"
+else     
+   echo "-e error login to ciprod acr: ${CI_ACR} failed. Please see release task logs."
+   exit 1
+fi  
 
 echo "pushing the image to ciprod acr:${CI_ACR}"
 docker push ${CI_ACR}/public/azuremonitor/containerinsights/${CI_AGENT_REPO}:${imagetag}
-echo "pushing the image to ciprod acr completed"
+if [ $? -eq 0 ]; then
+   echo "pushing of the image to ciprod acr completed successfully"
+else     
+   echo "-e error pushing of image to ciprod acr failed. Please see release task logs."
+   exit 1
+fi  
 
 echo "end: pull linux agent image from cdpx and push to ciprod acr"

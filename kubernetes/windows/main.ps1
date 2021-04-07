@@ -273,9 +273,9 @@ function Get-ContainerRuntime {
     return $containerRuntime
 }
 
-function Start-Fluent {
+function Start-Fluent-Telegraf {
 
-    # Run fluent-bit service first so that we do not miss any logs being forwarded by the fluentd service.
+    # Run fluent-bit service first so that we do not miss any logs being forwarded by the fluentd service and telegraf service.
     # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
     Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\fluent-bit\bin\fluent-bit.exe" -ArgumentList @("-c", "C:\etc\fluent-bit\fluent-bit.conf", "-e", "C:\opt\omsagentwindows\out_oms.so") }
 
@@ -289,35 +289,99 @@ function Start-Fluent {
         (Get-Content -Path C:/etc/fluent/fluent.conf -Raw)  -replace 'fluent-docker-parser.conf','fluent-cri-parser.conf' | Set-Content C:/etc/fluent/fluent.conf
     }
 
+    # Start telegraf only in sidecar scraping mode
+    $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
+    if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true')
+    {
+        Write-Host "Starting telegraf..."
+        Start-Telegraf
+    }
+
     fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
 
     Notepad.exe | Out-Null
 }
 
-function Generate-Certificates {
-    Write-Host "Generating Certificates"
-    C:\\opt\\omsagentwindows\\certgenerator\\certificategenerator.exe
-}
+function Start-Telegraf {
+    # Set default telegraf environment variables for prometheus scraping
+    Write-Host "**********Setting default environment variables for telegraf prometheus plugin..."
+    .\setdefaulttelegrafenvvariables.ps1
 
-function Bootstrap-CACertificates {
+    # run prometheus custom config parser
+    Write-Host "**********Running config parser for custom prometheus scraping**********"
+    ruby /opt/omsagentwindows/scripts/ruby/tomlparser-prom-customconfig.rb
+    Write-Host "**********End running config parser for custom prometheus scraping**********"
+
+
+    # Set required environment variable for telegraf prometheus plugin to run properly
+    Write-Host "Setting required environment variables for telegraf prometheus input plugin to run properly..."
+    $kubernetesServiceHost = [System.Environment]::GetEnvironmentVariable("KUBERNETES_SERVICE_HOST", "process")
+    if (![string]::IsNullOrEmpty($kubernetesServiceHost)) {
+        [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_HOST", $kubernetesServiceHost, "machine")
+        Write-Host "Successfully set environment variable KUBERNETES_SERVICE_HOST - $($kubernetesServiceHost) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable KUBERNETES_SERVICE_HOST for target 'machine' since it is either null or empty"
+    }
+
+    $kubernetesServicePort = [System.Environment]::GetEnvironmentVariable("KUBERNETES_SERVICE_PORT", "process")
+    if (![string]::IsNullOrEmpty($kubernetesServicePort)) {
+        [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_PORT", $kubernetesServicePort, "machine")
+        Write-Host "Successfully set environment variable KUBERNETES_SERVICE_PORT - $($kubernetesServicePort) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable KUBERNETES_SERVICE_PORT for target 'machine' since it is either null or empty"
+    }
+    
+    $nodeIp = [System.Environment]::GetEnvironmentVariable("NODE_IP", "process")
+    if (![string]::IsNullOrEmpty($nodeIp)) {
+        [System.Environment]::SetEnvironmentVariable("NODE_IP", $nodeIp, "machine")
+        Write-Host "Successfully set environment variable NODE_IP - $($nodeIp) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable NODE_IP for target 'machine' since it is either null or empty"
+    }
+
+    Write-Host "Installing telegraf service"
+    C:\opt\telegraf\telegraf.exe --service install --config "C:\etc\telegraf\telegraf.conf"
+
+    # Setting delay auto start for telegraf since there have been known issues with windows server and telegraf -
+    # https://github.com/influxdata/telegraf/issues/4081
+    # https://github.com/influxdata/telegraf/issues/3601
     try {
-        # This is required when the root CA certs are different for some clouds.
-        $caCerts=Invoke-WebRequest 'http://168.63.129.16/machine?comp=acmspackage&type=cacertificates&ext=json' -UseBasicParsing | ConvertFrom-Json
-        if (![string]::IsNullOrEmpty($caCerts)) {
-            $certificates = $caCerts.Certificates
-            for ($index = 0; $index -lt $certificates.Length ; $index++) {
-                $name=$certificates[$index].Name
-                $certificates[$index].CertBody > $name
-                Write-Host "name: $($name)"
-                Import-Certificate -FilePath .\$name  -CertStoreLocation 'Cert:\LocalMachine\Root' -Verbose
-            }
+        $serverName = [System.Environment]::GetEnvironmentVariable("PODNAME", "process")
+        if (![string]::IsNullOrEmpty($serverName)) {
+            sc.exe \\$serverName config telegraf start= delayed-auto
+            Write-Host "Successfully set delayed start for telegraf"
+
+        } else {
+            Write-Host "Failed to get environment variable PODNAME to set delayed telegraf start"
         }
     }
     catch {
-        $e = $_.Exception
-        Write-Host $e
-        Write-Host "exception occured in Bootstrap-CACertificates..."
+            $e = $_.Exception
+            Write-Host $e
+            Write-Host "exception occured in delayed telegraf start.. continuing without exiting"
     }
+    Write-Host "Running telegraf service in test mode"
+    C:\opt\telegraf\telegraf.exe --config "C:\etc\telegraf\telegraf.conf" --test
+    Write-Host "Starting telegraf service"
+    C:\opt\telegraf\telegraf.exe --service start
+
+    # Trying to start telegraf again if it did not start due to fluent bit not being ready at startup
+    Get-Service telegraf | findstr Running
+    if ($? -eq $false)
+    {
+        Write-Host "trying to start telegraf in again in 30 seconds, since fluentbit might not have been ready..."
+        Start-Sleep -s 30
+        C:\opt\telegraf\telegraf.exe --service start
+        Get-Service telegraf
+    }
+}
+
+function Generate-Certificates {
+    Write-Host "Generating Certificates"
+    C:\\opt\\omsagentwindows\\certgenerator\\certificategenerator.exe
 }
 
 function Test-CertificatePath {
@@ -346,16 +410,9 @@ Remove-WindowsServiceIfItExists "fluentdwinaks"
 Set-EnvironmentVariables
 Start-FileSystemWatcher
 
-#Bootstrapping CA certs for non public clouds and AKS clusters
-$aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID")
-if (![string]::IsNullOrEmpty($aksResourceId) -and $aksResourceId.ToLower().Contains("/microsoft.containerservice/managedclusters/"))
-{
-    Bootstrap-CACertificates
-}
-
 Generate-Certificates
 Test-CertificatePath
-Start-Fluent
+Start-Fluent-Telegraf
 
 # List all powershell processes running. This should have main.ps1 and filesystemwatcher.ps1
 Get-WmiObject Win32_process | Where-Object { $_.Name -match 'powershell' } | Format-Table -Property Name, CommandLine, ProcessId

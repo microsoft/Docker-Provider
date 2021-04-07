@@ -1,0 +1,29 @@
+{
+  "$schema": "http://schema.express.azure.com/schemas/2015-01-01-alpha/RolloutSpec.json",
+  "ContentVersion": "1.0.0.0",
+  "RolloutMetadata": {
+    "ServiceModelPath": "ServiceModels//Public.ServiceModel.json",   
+    "ScopeBindingsPath": "ScopeBindings//Public.ScopeBindings.json", 
+    "Name": "ContainerInsightsExtension-Pilot",
+    "RolloutType": "Major",
+    "BuildSource": {
+      "Parameters": {
+        "VersionFile": "buildver.txt"
+      }
+    },
+    "notification": {
+      "email": {
+        "to": "omscontainers@microsoft.com"
+      }
+    }
+  },
+  "orchestratedSteps": [
+    {
+      "name": "PushChartToACR",
+      "targetType": "ServiceResource",
+      "targetName": "PushChartToACR-Pilot",
+      "actions": [ "wait/waitSdpBakeTime", "Shell/PushChartToACR"],
+      "dependsOn": [ ]
+    }
+  ]
+}
