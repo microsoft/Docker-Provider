@@ -7,6 +7,13 @@ IF ERRORLEVEL 1 (
     exit /b 1
 )
 
+tasklist /fi "imagename eq telegraf.exe" /fo "table"  | findstr telegraf
+
+IF ERRORLEVEL 1 (
+    echo "Telegraf is not running"
+    exit /b 1
+)
+
 REM "Checking if config map has been updated since agent start"
 
 IF EXIST C:\etc\omsagentwindows\filesystemwatcher.txt (
