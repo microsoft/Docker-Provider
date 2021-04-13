@@ -64,5 +64,6 @@ InsightsMetrics
 ### Known Issues
 1.	The workbook has scale limits of 50 pods per namespace. If you have more than 50 pods in mesh you can have workbook loading issues.
 2.	When source or destination is osmcontroller we show no latency & for internal services we show no resource utilization. 
+3.  When both prometheus scraping using pod annotations and OSM monitoring are enabled on the same set of namespaces, the default set of metrics (envoy_cluster_upstream_cx_total, envoy_cluster_upstream_cx_connect_fail, envoy_cluster_upstream_rq, envoy_cluster_upstream_rq_xx, envoy_cluster_upstream_rq_total, envoy_cluster_upstream_rq_time_bucket, envoy_cluster_upstream_cx_rx_bytes_total, envoy_cluster_upstream_cx_tx_bytes_total, envoy_cluster_upstream_cx_active) will be collected twice. You can follow [this](https://docs.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-prometheus-integration#prometheus-scraping-settings) documentation to exclude these namespaces from pod annotation scraping using the setting monitor_kubernetes_pods_namespaces to work around this issue.
 
 This is private preview, the goal for us is to get feedback. Please feel free to reach out to us at [askcoin@microsoft.com](mailto:askcoin@microsoft.com) for any feedback and questions!
