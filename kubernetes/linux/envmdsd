@@ -12,3 +12,7 @@ export HOSTNAME_OVERRIDE="${NODE_NAME}"
 export MDSD_TCMALLOC_RELEASE_FREQ_SEC=1
 export MDSD_COMPRESSION_ALGORITHM=LZ4
 export SSL_CERT_DIR="/etc/ssl/certs"
+# increase the size of msgpack items mdsd will accept, otherwise they will be silently dropped. These values were arbitrairly chosen to be 10 or 100 times larger than the defaults.
+export MDSD_MSGPACK_ARRAY_SIZE_ITEMS=10000000
+export MDSD_MSGPACK_MAP_SIZE_ITEMS=10000000
+export MDSD_MSGPACK_NESTING_LEVEL=100

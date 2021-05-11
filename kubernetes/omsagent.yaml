@@ -358,7 +358,7 @@ spec:
         tier: node
       annotations:
         agentVersion: "1.10.0.1"
-        dockerProviderVersion: "15.0.0-0"
+        dockerProviderVersion: "15.1.0-0"
         schema-versions: "v1"
     spec:
       serviceAccountName: omsagent
@@ -399,7 +399,7 @@ spec:
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
               value: ""
             - name: AZMON_CONTAINERLOGS_ONEAGENT_REGIONS
-              value: "koreacentral,norwayeast"
+              value: "koreacentral,norwayeast,eastus2"
           securityContext:
             privileged: true
           ports:
