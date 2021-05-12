@@ -1,0 +1,60 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ci-log-scale
+spec:
+  parallelism: 1    
+  completions: 1    
+  template:         
+    metadata:
+      name: ci-log-scale
+    spec:
+      volumes:
+      - name: ci-log-scale-scripts-volume
+        configMap:
+          name: test-scripts
+      containers:
+      - name: ci-log-scale
+        image: ubuntu
+        volumeMounts:
+          - mountPath: /test-scripts
+            name: ci-log-scale-scripts-volume
+        env:
+          - name: HOME
+            value: /tmp
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "scripts in /test-scripts"
+          ls -lh /test-scripts
+          echo "copy scripts to /tmp"
+          cp /test-scripts/*.sh /tmp
+          echo "apply 'chmod +x' to /tmp/*.sh"
+          chmod +x /tmp/*.sh
+          echo "script.sh in /tmp"
+          ls -lh /tmp
+          /tmp/script.sh 
+      restartPolicy: Never
+---
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    script.sh: |
+      #!/bin/bash
+      logentry=''
+      for var in {1..1024..1}
+      do
+        logentry="${logentry}Test-"
+      done
+      for var in {1..200000..1}
+      do
+        echo $(date "+%Y/%m/%d %H:%M:%S.%3N") ${var}: $logentry
+      done
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: null
+    name:  test-scripts
+kind: List
+metadata: {}
