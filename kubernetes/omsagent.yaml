@@ -368,7 +368,7 @@ spec:
             value: "3"       
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod04222021"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05122021"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -446,7 +446,7 @@ spec:
             timeoutSeconds: 15
 #Only in sidecar scraping mode
         - name: omsagent-prometheus
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod04222021"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05122021"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -589,7 +589,7 @@ spec:
       serviceAccountName: omsagent
       containers:
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod04222021"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05122021"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
