@@ -1,0 +1,60 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: logs-400persec-2kentrysize
+spec:
+  parallelism: 1    
+  completions: 1    
+  template:         
+    metadata:
+      name: logs-400persec-2kentrysize
+    spec:
+      volumes:
+      - name: logs-400persec-2kentrysize-scripts-volume
+        configMap:
+          name: logs-400persec-test-scripts
+      containers:
+      - name: logs-400persec-2kentrysize
+        image: ubuntu
+        volumeMounts:
+          - mountPath: /logs-400persec-test-scripts
+            name: logs-400persec-2kentrysize-scripts-volume
+        env:
+          - name: HOME
+            value: /tmp
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "scripts in /logs-400persec-test-scripts"
+          ls -lh /logs-400persec-test-scripts
+          echo "copy scripts to /tmp"
+          cp /logs-400persec-test-scripts/*.sh /tmp
+          echo "apply 'chmod +x' to /tmp/*.sh"
+          chmod +x /tmp/*.sh
+          echo "script.sh in /tmp"
+          ls -lh /tmp
+          /tmp/script.sh    
+      restartPolicy: Never
+---
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    script.sh: |
+      #!/bin/bash
+      logentry=''
+      for var in {1..400..1}
+      do
+        logentry="${logentry}Test-"
+      done
+      for var in {1..200000..1}
+      do
+        echo $(date "+%Y/%m/%d %H:%M:%S.%3N") ${var}: $logentry
+      done
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: null
+    name:  logs-400persec-test-scripts
+kind: List
+metadata: {}
