@@ -581,7 +581,7 @@ if [ ! -e "/etc/config/kube.conf" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidec
             dpkg -l | grep mdsd | awk '{print $2 " " $3}'
 
             echo "starting mdsd ..."
-            mdsd -l -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+            mdsd -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
 
             touch /opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2
       fi

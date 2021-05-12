@@ -10,7 +10,7 @@ fi
 
 #optionally test to exit non zero value if oneagent is not running
 if [ -e "/opt/AZMON_CONTAINER_LOGS_EFFECTIVE_ROUTE_V2" ]; then
-  (ps -ef | grep "mdsd -l" | grep -v "grep")
+  (ps -ef | grep "mdsd" | grep -v "grep")
   if [ $? -ne 0 ]
   then
    echo "oneagent is not running" > /dev/termination-log
