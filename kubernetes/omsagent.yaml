@@ -583,7 +583,7 @@ spec:
         rsName: "omsagent-rs"
       annotations:
         agentVersion: "1.10.0.1"
-        dockerProviderVersion: "15.0.0-0"
+        dockerProviderVersion: "15.1.0-0"
         schema-versions: "v1"
     spec:
       serviceAccountName: omsagent
@@ -750,7 +750,7 @@ spec:
         tier: node-win
       annotations:
         agentVersion: "1.10.0.1"
-        dockerProviderVersion: "15.0.0-0"
+        dockerProviderVersion: "15.1.0-0"
         schema-versions: "v1"
     spec:
      serviceAccountName: omsagent
