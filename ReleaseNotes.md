@@ -13,7 +13,7 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 
 
 ### 05/12/2021 -
-##### Version microsoft/oms:ciprod00512021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod0512021 (linux)
+##### Version microsoft/oms:ciprod00512021 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod05122021 (linux)
 ##### No Windows changes with this release, win-ciprod04222021 still current.
 ##### Code change log
 - Upgrading oneagent to version 1.8 (only for Linux)
