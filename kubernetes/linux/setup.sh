@@ -50,7 +50,7 @@ sudo apt-add-repository ppa:brightbox/ruby-ng -y
 sudo apt-get update
 sudo apt-get install ruby2.6 ruby2.6-dev gcc make -y
 # to fix CVE-2020-10663
-gem update json -v 2.5.1
+gem install json -v 2.5.1
 # fluentd v1 gem
 gem install fluentd -v "1.12.2" --no-document
 fluentd --setup ./fluent
