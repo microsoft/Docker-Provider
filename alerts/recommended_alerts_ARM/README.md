@@ -24,7 +24,7 @@ Completed job count|Calculates number of jobs completed more than six hours ago.
 
 ### How to enable with a Resource Manager template
 1. Download one or all of the available templates that describe how to create the alert.
-2. Create and use a [parameters file](https://review.docs.microsoft.com/azure/azure-resource-manager/templates/parameter-files) as a JSON to set the values required to create the alert rule.
+2. Create and use a [parameters file](https://docs.microsoft.com/en-us/azure/azure-resource-manager/templates/parameter-files) as a JSON to set the values required to create the alert rule.
 3. Deploy the template from the Azure portal, PowerShell, or Azure CLI.
 
 For step by step procedures on how to enable alerts via Resource manager, please go [here.](https://aka.ms/ci_alerts_arm)
