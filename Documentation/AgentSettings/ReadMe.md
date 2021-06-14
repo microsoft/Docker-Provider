@@ -5,15 +5,15 @@ The metrics scraped from the telegraf plugin are sent to the fluent bit tcp list
 In order to support higher volumes of prometheus metrics scraping some of the tcp listener settings can be tuned.
 [Fluent Bit TCP listener](https://docs.fluentbit.io/manual/pipeline/inputs/tcp)
 
-Chunk Size - This can be increased to process bigger chunks of data.
+* Chunk Size - This can be increased to process bigger chunks of data.
 
-Buffer Size - This should be greater than or equal to the chunk size.
+* Buffer Size - This should be greater than or equal to the chunk size.
 
-Mem Buf Limit - This can be increased to increase the buffer size. But the memory limit on the sidecar also needs to be increased accordingly.
+* Mem Buf Limit - This can be increased to increase the buffer size. But the memory limit on the sidecar also needs to be increased accordingly.
 Note that this can only be achieved using helm chart today.
 
 
-* Note - The LA ingestion team also states that higher chunk sizes might not necessarily mean higher throughput since there are pipeline limitations.
+** Note - The LA ingestion team also states that higher chunk sizes might not necessarily mean higher throughput since there are pipeline limitations.
 
 ```
   agent-settings: |-
