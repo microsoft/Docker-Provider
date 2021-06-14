@@ -136,6 +136,7 @@ data:
         collect_basic_metrics = false
         collect_advanced_metrics = false
 
+# Doc - https://github.com/microsoft/Docker-Provider/blob/ci_prod/Documentation/AgentSettings/ReadMe.md
   agent-settings: |-
     # prometheus scrape fluent bit settings for high scale
     # buffer size should be greater than or equal to chunk size else we set it to chunk size. 
