@@ -224,6 +224,11 @@ powershell -ExecutionPolicy bypass  # switch to powershell if you are not on pow
 .\build-dev-base-image.ps1  # builds base image and dependencies
 ```
 
+And then run the script to build the image consisting of code and conf changes.
+```
+.\build-and-publish-dev-docker-image.ps1 -image <repo>/<imagename>:<imagetag> # trigger build code and image and publish docker hub or acr
+```
+
 For the subsequent builds, you can just run - 
 
 ```
