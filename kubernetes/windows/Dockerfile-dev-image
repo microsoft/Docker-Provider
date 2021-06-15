@@ -2,6 +2,10 @@ FROM omsagent-win-base
 MAINTAINER OMSContainers@microsoft.com
 LABEL vendor=Microsoft\ Corp \
     com.microsoft.product="Azure Monitor for containers"
+
+#Uncomment below to test setup.ps1 changes
+#COPY setup.ps1 /opt/omsagentwindows/scripts/powershell
+#RUN ./setup.ps1
 COPY main.ps1 /opt/omsagentwindows/scripts/powershell
 COPY ./omsagentwindows/installer/scripts/filesystemwatcher.ps1 /opt/omsagentwindows/scripts/powershell
 COPY ./omsagentwindows/installer/scripts/livenessprobe.cmd /opt/omsagentwindows/scripts/cmd/

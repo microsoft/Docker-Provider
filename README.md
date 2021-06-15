@@ -216,7 +216,7 @@ If you do not want to build the image from scratch every time you make changes d
 * Agent conf and plugin changes
 
 To do this, the very first time you start developing you would need to execute below instructions in elevated command prompt of powershell.
-This builds the base image with all the package dependencies
+This builds the base image(omsagent-win-base) with all the package dependencies
 ```
 cd %userprofile%\Docker-Provider\kubernetes\windows\dockerbuild # based on your repo path
 docker login # if you want to publish the image to acr then login to acr via `docker login <acr-name>`
@@ -229,8 +229,7 @@ For the subsequent builds, you can just run -
 ```
 .\build-and-publish-dev-docker-image.ps1 -image <repo>/<imagename>:<imagetag> # trigger build code and image and publish docker hub or acr
 ```
-Note - If you have changes in setup.ps1 and want to test those changes, move the section consisting of setup.ps1 from Dockerfile-dev-base-image file to
-the beginning of build-and-publish-dev-docker-image.ps1
+######Note - If you have changes in setup.ps1 and want to test those changes, uncomment the section consisting of setup.ps1 in the Dockerfile-dev-image file.
 
 #### Option 2 - Using WSL2 to Build the Windows agent
 
