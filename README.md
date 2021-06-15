@@ -229,7 +229,7 @@ For the subsequent builds, you can just run -
 ```
 .\build-and-publish-dev-docker-image.ps1 -image <repo>/<imagename>:<imagetag> # trigger build code and image and publish docker hub or acr
 ```
-######Note - If you have changes in setup.ps1 and want to test those changes, uncomment the section consisting of setup.ps1 in the Dockerfile-dev-image file.
+###### Note - If you have changes in setup.ps1 and want to test those changes, uncomment the section consisting of setup.ps1 in the Dockerfile-dev-image file.
 
 #### Option 2 - Using WSL2 to Build the Windows agent
 
