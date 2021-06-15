@@ -1,0 +1,41 @@
+FROM omsagent-win-base
+MAINTAINER OMSContainers@microsoft.com
+LABEL vendor=Microsoft\ Corp \
+    com.microsoft.product="Azure Monitor for containers"
+COPY main.ps1 /opt/omsagentwindows/scripts/powershell
+COPY ./omsagentwindows/installer/scripts/filesystemwatcher.ps1 /opt/omsagentwindows/scripts/powershell
+COPY ./omsagentwindows/installer/scripts/livenessprobe.cmd /opt/omsagentwindows/scripts/cmd/
+COPY setdefaulttelegrafenvvariables.ps1 /opt/omsagentwindows/scripts/powershell
+
+# copy ruby scripts to /opt folder
+COPY ./omsagentwindows/installer/scripts/*.rb /opt/omsagentwindows/scripts/ruby/
+
+# copy out_oms.so file
+COPY ./omsagentwindows/out_oms.so /opt/omsagentwindows/out_oms.so
+
+# copy fluent, fluent-bit and out_oms conf files
+COPY ./omsagentwindows/installer/conf/fluent.conf /etc/fluent/
+# copy fluent docker and cri parser conf files
+COPY ./omsagentwindows/installer/conf/fluent-cri-parser.conf /etc/fluent/
+COPY ./omsagentwindows/installer/conf/fluent-docker-parser.conf /etc/fluent/
+COPY ./omsagentwindows/installer/conf/fluent-bit.conf /etc/fluent-bit
+COPY ./omsagentwindows/installer/conf/out_oms.conf /etc/omsagentwindows
+
+# copy telegraf conf file
+COPY ./omsagentwindows/installer/conf/telegraf.conf /etc/telegraf/
+
+# copy keepcert alive ruby scripts
+COPY ./omsagentwindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluent/plugin/
+
+#Copy fluentd ruby plugins
+COPY ./omsagentwindows/ruby/ /etc/fluent/plugin/
+COPY ./omsagentwindows/utils/*.rb /etc/fluent/plugin/
+
+ENV AGENT_VERSION ${IMAGE_TAG}
+ENV OS_TYPE "windows"
+ENV APPLICATIONINSIGHTS_AUTH "NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi"
+ENV AZMON_COLLECT_ENV False
+ENV CI_CERT_LOCATION "C://oms.crt"
+ENV CI_KEY_LOCATION "C://oms.key"
+
+ENTRYPOINT ["powershell", "C:\\opt\\omsagentwindows\\scripts\\powershell\\main.ps1"]
