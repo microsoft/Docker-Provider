@@ -31,4 +31,5 @@ require (
 	k8s.io/api v0.0.0-20180628040859-072894a440bd // indirect
 	k8s.io/apimachinery v0.0.0-20180621070125-103fd098999d
 	k8s.io/client-go v8.0.0+incompatible
+	golang.org/x/crypto v0.0.0-20201216223049-8b5274cf687f
 )

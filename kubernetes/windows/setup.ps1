@@ -65,6 +65,16 @@ Write-Host ('Extracting Certificate Generator Package')
     Expand-Archive -Path /opt/omsagentwindows/certificategenerator.zip -Destination /opt/omsagentwindows/certgenerator/ -Force
 Write-Host ('Finished Extracting Certificate Generator Package')
 
+Write-Host ("Removing Install folder")
+
 Remove-Item /installation -Recurse
 
-Write-Host ("Removing Install folder")
+#Remove gemfile.lock for http_parser gem 0.6.0
+#see  - https://github.com/fluent/fluentd/issues/3374 https://github.com/tmm1/http_parser.rb/issues/70
+
+$gemfile = "\ruby26\lib\ruby\gems\2.6.0\gems\http_parser.rb-0.6.0\Gemfile.lock"
+$gemfileFullPath = $Env:SYSTEMDRIVE + "\" + $gemfile
+If (Test-Path -Path $gemfile ) {
+    Write-Host ("Renaming unused gemfile.lock for http_parser 0.6.0")
+    Rename-Item -Path $gemfileFullPath -NewName  "renamed_Gemfile_lock.renamed"
+}
