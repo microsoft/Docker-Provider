@@ -36,7 +36,7 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/opt/microsoft/docker-cimprov/td-agent-bit-rs.conf;			         build/linux/installer/conf/td-agent-bit-rs.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/azm-containers-parser.conf;	         build/linux/installer/conf/azm-containers-parser.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/out_oms.conf;			                  build/linux/installer/conf/out_oms.conf;                    644; root; root
-/etc/opt/microsoft/docker-cimprov/test.json;			               build/linux/installer/conf/test.json;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/test.json;			                     build/linux/installer/conf/test.json;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/telegraf.conf;			               build/linux/installer/conf/telegraf.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf;			   build/linux/installer/conf/telegraf-prom-side-car.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/telegraf-rs.conf;			            build/linux/installer/conf/telegraf-rs.conf;                    644; root; root
@@ -54,6 +54,8 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/ConfigParseErrorLogger.rb;                                 build/common/installer/scripts/ConfigParseErrorLogger.rb;           755; root; root
 /opt/tomlparser-npm-config.rb;                                  build/linux/installer/scripts/tomlparser-npm-config.rb;     755; root; root
 /opt/tomlparser-osm-config.rb;                                  build/linux/installer/scripts/tomlparser-osm-config.rb;     755; root; root
+/opt/test.json;			                                        build/linux/installer/conf/test.json;                    644; root; root
+
 
 
 /etc/opt/microsoft/docker-cimprov/health/healthmonitorconfig.json;					                   build/linux/installer/conf/healthmonitorconfig.json; 644; root; root
