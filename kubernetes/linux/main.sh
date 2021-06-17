@@ -507,6 +507,7 @@ if [ ! -e "/etc/config/kube.conf" ]; then
             /opt/telegraf --config /opt/telegraf-test-prom-side-car.conf --input-filter file -test
             if [ $? -eq 0 ]; then
                   mv "/opt/telegraf-test-prom-side-car.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
+                  echo "Moving test conf file to telegraf side-car conf since test run succeeded"
             fi
             echo "****************End Telegraf Run in Test Mode**************************"
       else
@@ -515,6 +516,7 @@ if [ ! -e "/etc/config/kube.conf" ]; then
                   /opt/telegraf --config /opt/telegraf-test.conf --input-filter file -test
                   if [ $? -eq 0 ]; then
                         mv "/opt/telegraf-test.conf" "/etc/opt/microsoft/docker-cimprov/telegraf.conf"
+                        echo "Moving test conf file to telegraf daemonset conf since test run succeeded"
                   fi
                   echo "****************End Telegraf Run in Test Mode**************************"
             fi
@@ -525,6 +527,7 @@ else
                   /opt/telegraf --config /opt/telegraf-test-rs.conf --input-filter file -test
                   if [ $? -eq 0 ]; then
                         mv "/opt/telegraf-test-rs.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
+                        echo "Moving test conf file to telegraf replicaset conf since test run succeeded"
                   fi
                   echo "****************End Telegraf Run in Test Mode**************************"
       fi
