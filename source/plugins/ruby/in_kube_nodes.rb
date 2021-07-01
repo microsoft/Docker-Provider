@@ -559,10 +559,10 @@ module Fluent::Plugin
             end
           end
 
-          nodes_to_remove.each do node_name
+          nodes_to_remove.each {|node_name|
             @cacheHash.delete(node_name)
             @timeAdded.delete(node_name)
-          end
+          }
         end
       end
     end  # NodeCache
