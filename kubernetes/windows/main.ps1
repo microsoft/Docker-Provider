@@ -140,7 +140,7 @@ function Set-EnvironmentVariables {
     if ($aiKeyURl) {
         $aiKeyFetched = ""
         # retry up to 5 times
-        for( $i = 1; $i -le 4; $i++) {
+        for ( $i = 1; $i -le 4; $i++) {
             try {
                 $response = Invoke-WebRequest -uri $aiKeyURl -UseBasicParsing -TimeoutSec 5 -ErrorAction:Stop
 
@@ -227,6 +227,24 @@ function Set-EnvironmentVariables {
     }
     else {
         Write-Host "Failed to set environment variable HOSTNAME for target 'machine' since it is either null or empty"
+    }
+
+    $nodeIp = [System.Environment]::GetEnvironmentVariable("NODE_IP", "process")
+    if (![string]::IsNullOrEmpty($nodeIp)) {
+        [System.Environment]::SetEnvironmentVariable("NODE_IP", $nodeIp, "machine")
+        Write-Host "Successfully set environment variable NODE_IP - $($nodeIp) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable NODE_IP for target 'machine' since it is either null or empty"
+    }
+
+    $agentVersion = [System.Environment]::GetEnvironmentVariable("AGENT_VERSION", "process")
+    if (![string]::IsNullOrEmpty($agentVersion)) {
+        [System.Environment]::SetEnvironmentVariable("AGENT_VERSION", $agentVersion, "machine")
+        Write-Host "Successfully set environment variable AGENT_VERSION - $($agentVersion) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable AGENT_VERSION for target 'machine' since it is either null or empty"
     }
 
     # run config parser
@@ -364,13 +382,12 @@ function Start-Fluent-Telegraf {
     if (![string]::IsNullOrEmpty($containerRuntime) -and [string]$containerRuntime.StartsWith('docker') -eq $false) {
         # change parser from docker to cri if the container runtime is not docker
         Write-Host "changing parser from Docker to CRI since container runtime : $($containerRuntime) and which is non-docker"
-        (Get-Content -Path C:/etc/fluent/fluent.conf -Raw)  -replace 'fluent-docker-parser.conf','fluent-cri-parser.conf' | Set-Content C:/etc/fluent/fluent.conf
+        (Get-Content -Path C:/etc/fluent/fluent.conf -Raw) -replace 'fluent-docker-parser.conf', 'fluent-cri-parser.conf' | Set-Content C:/etc/fluent/fluent.conf
     }
 
     # Start telegraf only in sidecar scraping mode
     $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
-    if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true')
-    {
+    if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true') {
         Write-Host "Starting telegraf..."
         Start-Telegraf
     }
@@ -411,15 +428,6 @@ function Start-Telegraf {
         Write-Host "Failed to set environment variable KUBERNETES_SERVICE_PORT for target 'machine' since it is either null or empty"
     }
     
-    $nodeIp = [System.Environment]::GetEnvironmentVariable("NODE_IP", "process")
-    if (![string]::IsNullOrEmpty($nodeIp)) {
-        [System.Environment]::SetEnvironmentVariable("NODE_IP", $nodeIp, "machine")
-        Write-Host "Successfully set environment variable NODE_IP - $($nodeIp) for target 'machine'..."
-    }
-    else {
-        Write-Host "Failed to set environment variable NODE_IP for target 'machine' since it is either null or empty"
-    }
-
     Write-Host "Installing telegraf service"
     C:\opt\telegraf\telegraf.exe --service install --config "C:\etc\telegraf\telegraf.conf"
 
@@ -432,14 +440,15 @@ function Start-Telegraf {
             sc.exe \\$serverName config telegraf start= delayed-auto
             Write-Host "Successfully set delayed start for telegraf"
 
-        } else {
+        }
+        else {
             Write-Host "Failed to get environment variable PODNAME to set delayed telegraf start"
         }
     }
     catch {
-            $e = $_.Exception
-            Write-Host $e
-            Write-Host "exception occured in delayed telegraf start.. continuing without exiting"
+        $e = $_.Exception
+        Write-Host $e
+        Write-Host "exception occured in delayed telegraf start.. continuing without exiting"
     }
     Write-Host "Running telegraf service in test mode"
     C:\opt\telegraf\telegraf.exe --config "C:\etc\telegraf\telegraf.conf" --test
@@ -448,8 +457,7 @@ function Start-Telegraf {
 
     # Trying to start telegraf again if it did not start due to fluent bit not being ready at startup
     Get-Service telegraf | findstr Running
-    if ($? -eq $false)
-    {
+    if ($? -eq $false) {
         Write-Host "trying to start telegraf in again in 30 seconds, since fluentbit might not have been ready..."
         Start-Sleep -s 30
         C:\opt\telegraf\telegraf.exe --service start
@@ -488,7 +496,7 @@ function Bootstrap-CACertificates {
         $certMountPath = "C:\ca"
         Get-ChildItem $certMountPath |
         Foreach-Object {
-            $absolutePath=$_.FullName
+            $absolutePath = $_.FullName
             Write-Host "cert path: $($absolutePath)"
             Import-Certificate -FilePath $absolutePath -CertStoreLocation 'Cert:\LocalMachine\Root' -Verbose
         }
@@ -510,10 +518,9 @@ Start-FileSystemWatcher
 $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID")
 $requiresCertBootstrap = [System.Environment]::GetEnvironmentVariable("REQUIRES_CERT_BOOTSTRAP")
 if (![string]::IsNullOrEmpty($requiresCertBootstrap) -and `
-    $requiresCertBootstrap.ToLower() -eq 'true' -and `
-    ![string]::IsNullOrEmpty($aksResourceId) -and `
-    $aksResourceId.ToLower().Contains("/microsoft.containerservice/managedclusters/"))
-{
+        $requiresCertBootstrap.ToLower() -eq 'true' -and `
+        ![string]::IsNullOrEmpty($aksResourceId) -and `
+        $aksResourceId.ToLower().Contains("/microsoft.containerservice/managedclusters/")) {
     Bootstrap-CACertificates
 }
 
