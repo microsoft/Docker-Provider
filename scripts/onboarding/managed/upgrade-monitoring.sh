@@ -266,7 +266,7 @@ upgrade_helm_chart_release() {
 login_to_azure() {
   if [ "$isUsingServicePrincipal" = true ]; then
     echo "login to the azure using provided service principal creds"
-    az login --service-principal --username $servicePrincipalClientId --password $servicePrincipalClientSecret --tenant $servicePrincipalTenantId
+    az login --service-principal --username="$servicePrincipalClientId" --password="$servicePrincipalClientSecret" --tenant="$servicePrincipalTenantId"
   else
     echo "login to the azure interactively"
     az login --use-device-code
