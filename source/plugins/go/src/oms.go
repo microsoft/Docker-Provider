@@ -417,7 +417,9 @@ func updateContainerImageNameMaps() {
 
 		listOptions := metav1.ListOptions{}
 		listOptions.FieldSelector = fmt.Sprintf("spec.nodeName=%s", Computer)
-		pods, err := ClientSet.CoreV1().Pods("").List(listOptions)
+
+		// Context was added as a parameter, but we want the same behavior as before: see https://pkg.go.dev/context#TODO
+		pods, err := ClientSet.CoreV1().Pods("").List(context.TODO(), listOptions)
 
 		if err != nil {
 			message := fmt.Sprintf("Error getting pods %s\nIt is ok to log here and continue, because the logs will be missing image and Name, but the logs will still have the containerID", err.Error())

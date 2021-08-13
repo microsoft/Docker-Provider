@@ -23,9 +23,6 @@ cp -f $TMPDIR/logrotate.conf /etc/logrotate.d/ci-agent
 sudo apt-get update
 sudo apt-get install inotify-tools -y
 
-#upgrade libsystemd0 to address CVE-2021-33910
-apt-get upgrade libsystemd0 -y
-
 #used to parse response of kubelet apis
 #ref: https://packages.ubuntu.com/search?keywords=jq
 sudo apt-get install jq=1.5+dfsg-2 -y
