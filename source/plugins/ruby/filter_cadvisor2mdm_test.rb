@@ -1,8 +1,3 @@
-# TODO: can we get rid of this global flag
-$in_unit_test = true
-
-# TODO: get rid of require test-unit if we switch to minitest
-# require "test-unit"
 require 'minitest/autorun'
 #
 require 'fluent/test'

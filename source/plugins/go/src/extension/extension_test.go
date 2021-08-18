@@ -42,8 +42,8 @@ func Test_getDataTypeToStreamIdMapping(t *testing.T) {
 			mock := NewMockIFluentSocketWriter(mockCtrl)
 			sock := &FluentSocket{}
 			sock.sockAddress = "/var/run/mdsd/default_fluent.socket"
-			mock.EXPECT().WriteAndRead(sock, gomock.Any()).Return([]byte(tt.mdsdResponse), nil).Times(1)
-			mock.EXPECT().disConnect(sock).Return(nil).Times(1)
+			mock.EXPECT().writeAndRead(sock, gomock.Any()).Return([]byte(tt.mdsdResponse), nil).Times(1)
+			mock.EXPECT().disconnect(sock).Return(nil).Times(1)
 
 			// This is where calls to the normal socket writer calls are redirected to the mock.
 			ActualFluentSocketWriter := FluentSocketWriter // save the old struct so that we can put it back later

@@ -21,13 +21,13 @@ var extensionconfiglock sync.Mutex
 var logger *log.Logger
 var containerType string
 
-func GetInstance(flbLogger *log.Logger, containerType string) *Extension {
+func GetInstance(flbLogger *log.Logger, containertype string) *Extension {
 	once.Do(func() {
 		singleton = &Extension{make(map[string]string)}
 		flbLogger.Println("Extension Instance created")
 	})
 	logger = flbLogger
-	containerType = containerType
+	containerType = containertype
 	return singleton
 }
 
@@ -55,6 +55,7 @@ func getDataTypeToStreamIdMapping() (map[string]string, error) {
 
 	taggedData := map[string]interface{}{"Request": "AgentTaggedData", "RequestId": guid.String(), "Tag": "ContainerInsights", "Version": "1"}
 	jsonBytes, err := json.Marshal(taggedData)
+	// TODO: this error is unhandled
 
 	var data []byte
 	enc := codec.NewEncoderBytes(&data, new(codec.MsgpackHandle))
@@ -67,8 +68,8 @@ func getDataTypeToStreamIdMapping() (map[string]string, error) {
 	if containerType != "" && strings.Compare(strings.ToLower(containerType), "prometheussidecar") == 0 {
 		fs.sockAddress = fmt.Sprintf("/var/run/mdsd-%s/default_fluent.socket", containerType)
 	}
-	responseBytes, err := FluentSocketWriter.WriteAndRead(fs, data)
-	defer FluentSocketWriter.disConnect(fs)
+	responseBytes, err := FluentSocketWriter.writeAndRead(fs, data)
+	defer FluentSocketWriter.disconnect(fs)
 	logger.Printf("Info::mdsd::Making call to FluentSocket: %s to write and read the config data", fs.sockAddress)
 	if err != nil {
 		return datatypeOutputStreamMap, err

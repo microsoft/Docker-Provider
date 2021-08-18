@@ -185,9 +185,9 @@ Write-Host("copying ruby source files from :" + $rubyplugindir + "  to  :" + $pu
 Copy-Item -Path $rubyplugindir -Destination $publishdir -Recurse -Force
 Write-Host("successfully copied ruby source files from :" + $rubyplugindir + "  to  :" + $publishdir + " ") -ForegroundColor Green
 
-$utilsplugindir = Join-Path -Path $rootdir -ChildPath "source\plugins\utils"
-Write-Host("copying ruby util files from :" + $utilsplugindir + "  to  :" + $publishdir + " ...")
-Copy-Item -Path $utilsplugindir -Destination $publishdir -Recurse -Force
-Write-Host("successfully copied ruby util files from :" + $utilsplugindir + "  to  :" + $publishdir + " ") -ForegroundColor Green
+# $utilsplugindir = Join-Path -Path $rootdir -ChildPath "source\plugins\utils"
+# Write-Host("copying ruby util files from :" + $utilsplugindir + "  to  :" + $publishdir + " ...")
+# Copy-Item -Path $utilsplugindir -Destination $publishdir -Recurse -Force
+# Write-Host("successfully copied ruby util files from :" + $utilsplugindir + "  to  :" + $publishdir + " ") -ForegroundColor Green
 
 Set-Location $currentdir

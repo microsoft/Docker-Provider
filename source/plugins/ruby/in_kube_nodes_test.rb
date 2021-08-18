@@ -1,6 +1,3 @@
-# TODO: can we get rid of this global flag
-$in_unit_test = true
-
 require 'minitest/autorun'
 
 require 'fluent/test'

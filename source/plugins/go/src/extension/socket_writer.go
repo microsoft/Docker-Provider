@@ -22,11 +22,11 @@ type FluentSocket struct {
 // begin mocking boilerplate
 type IFluentSocketWriter interface {
 	connect(fluentSocket *FluentSocket) error
-	disConnect(fluentSocket *FluentSocket) error
+	disconnect(fluentSocket *FluentSocket) error
 	writeWithRetries(fluentSocket *FluentSocket, data []byte) (int, error)
 	read(fluentSocket *FluentSocket) ([]byte, error)
-	Write(fluentSocket *FluentSocket, payload []byte) (int, error)
-	WriteAndRead(fluentSocket *FluentSocket, payload []byte) ([]byte, error)
+	write(fluentSocket *FluentSocket, payload []byte) (int, error)
+	writeAndRead(fluentSocket *FluentSocket, payload []byte) ([]byte, error)
 }
 
 type FluentSocketWriterImpl struct{}
@@ -51,7 +51,7 @@ func (FluentSocketWriterImpl) connect(fs *FluentSocket) error {
 	return nil
 }
 
-func (FluentSocketWriterImpl) disConnect(fs *FluentSocket) error {
+func (FluentSocketWriterImpl) disconnect(fs *FluentSocket) error {
 	if fs.socket != nil {
 		fs.socket.Close()
 		fs.socket = nil
@@ -89,7 +89,7 @@ func (FluentSocketWriterImpl) read(fs *FluentSocket) ([]byte, error) {
 
 }
 
-func (FluentSocketWriterImpl) Write(fs *FluentSocket, payload []byte) (int, error) {
+func (FluentSocketWriterImpl) write(fs *FluentSocket, payload []byte) (int, error) {
 	if fs.socket == nil {
 		// previous write failed with permanent error and socket was closed.
 		if err := FluentSocketWriter.connect(fs); err != nil {
@@ -100,9 +100,9 @@ func (FluentSocketWriterImpl) Write(fs *FluentSocket, payload []byte) (int, erro
 	return FluentSocketWriter.writeWithRetries(fs, payload)
 }
 
-//WriteAndRead writes data to the socket and sends the response back
-func (FluentSocketWriterImpl) WriteAndRead(fs *FluentSocket, payload []byte) ([]byte, error) {
-	_, err := FluentSocketWriter.Write(fs, payload)
+//writeAndRead writes data to the socket and sends the response back
+func (FluentSocketWriterImpl) writeAndRead(fs *FluentSocket, payload []byte) ([]byte, error) {
+	_, err := FluentSocketWriter.write(fs, payload)
 	if err != nil {
 		return nil, err
 	}
