@@ -44,7 +44,7 @@ end
 
 
 
-class MyInputTest < Minitest::Test
+class FilterCadvisor2MdmTests < Minitest::Test
     include Fluent::Test::Helpers
 
     def setup

@@ -13,7 +13,6 @@ module Fluent::Plugin
   require_relative "MdmMetricsGenerator"
   require_relative "in_kube_nodes"
   require_relative "constants"
-  require 'byebug'
 
   class CAdvisor2MdmFilter < Filter
     Fluent::Plugin.register_filter("cadvisor2mdm", self)
@@ -53,7 +52,6 @@ module Fluent::Plugin
       @AplicationInsightsUtility = applicationInsightsUtility
       @KubernetesAPIClient = kubernetesApiClient
       @KubeletUtils = kubeletUtils
-      byebug
       super()
 
       @@isWindows = false
@@ -360,7 +358,6 @@ module Fluent::Plugin
         @Log.info "ensure_cpu_memory_capacity_set @cpu_capacity #{@cpu_capacity} @memory_capacity #{@memory_capacity}"
 
         begin
-          byebug
           resourceUri = @KubernetesAPIClient.getNodesResourceUri("nodes?fieldSelector=metadata.name%3D#{@@hostName}")
           nodeInventory = JSON.parse(@KubernetesAPIClient.getKubeResourceInfo(resourceUri).body)  
         rescue Exception => e
@@ -415,7 +412,6 @@ module Fluent::Plugin
     end
 
     def filter_stream(tag, es)
-      byebug
       new_es = Fluent::MultiEventStream.new
       begin
         ensure_cpu_memory_capacity_and_allocatable_set

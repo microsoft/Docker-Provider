@@ -147,6 +147,7 @@ module Fluent::Plugin
         # Initializing continuation token to nil
         continuationToken = nil
         $log.info("in_kube_nodes::enumerate : Getting nodes from Kube API @ #{Time.now.utc.iso8601}")
+        # KubernetesApiClient.getNodesResourceUri is a pure function, so call it from the actual module instead of from the mock
         resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?limit=#{@NODES_CHUNK_SIZE}")
         continuationToken, nodeInventory = @kubernetesApiClient.getResourcesAndContinuationToken(resourceUri)
         $log.info("in_kube_nodes::enumerate : Done getting nodes from Kube API @ #{Time.now.utc.iso8601}")

@@ -4,7 +4,7 @@ import (
 	"net"
 )
 
-//go:generate mockgen -destination=mock_socket_writer.go -package=extension Docker-Provider/source/plugins/go/src/extension IFluentSocketWriter
+//go:generate mockgen -destination=socket_writer_mock.go -package=extension Docker-Provider/source/plugins/go/src/extension IFluentSocketWriter
 
 //MaxRetries for trying to write data to the socket
 const MaxRetries = 5
