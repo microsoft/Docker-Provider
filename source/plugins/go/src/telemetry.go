@@ -145,8 +145,8 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		ContainerLogTelemetryMutex.Unlock()
 
 		if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
+			telemetryDimensions := make(map[string]string)
 			if strings.Compare(strings.ToLower(os.Getenv("CONTAINER_TYPE")), "prometheussidecar") == 0 {
-				telemetryDimensions := make(map[string]string)
 				telemetryDimensions["CustomPromMonitorPods"] = promMonitorPods
 				if promMonitorPodsNamespaceLength > 0 {
 					telemetryDimensions["CustomPromMonitorPodsNamespaceLength"] = strconv.Itoa(promMonitorPodsNamespaceLength)
@@ -168,7 +168,23 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 				SendEvent(eventNameCustomPrometheusSidecarHeartbeat, telemetryDimensions)
 
 			} else {
-				SendEvent(eventNameDaemonSetHeartbeat, make(map[string]string))
+				fbitFlushIntervalSecs := os.Getenv("FBIT_SERVICE_FLUSH_INTERVAL")
+				if fbitFlushIntervalSecs != "" {
+					telemetryDimensions["FbitServiceFlushIntervalSecs"] = fbitFlushIntervalSecs
+				}
+				fbitTailBufferChunkSizeMBs := os.Getenv("FBIT_TAIL_BUFFER_CHUNK_SIZE")
+				if fbitTailBufferChunkSizeMBs != "" {
+					telemetryDimensions["FbitBufferChunkSizeMBs"] = fbitTailBufferChunkSizeMBs
+				}
+				fbitTailBufferMaxSizeMBs := os.Getenv("FBIT_TAIL_BUFFER_MAX_SIZE")
+				if fbitTailBufferMaxSizeMBs != "" {
+					telemetryDimensions["FbitBufferMaxSizeMBs"] = fbitTailBufferMaxSizeMBs
+				}
+				fbitTailMemBufLimitMBs := os.Getenv("FBIT_TAIL_MEM_BUF_LIMIT")
+				if fbitTailMemBufLimitMBs != "" {
+					telemetryDimensions["FbitMemBufLimitSizeMBs"] = fbitTailMemBufLimitMBs
+				}
+				SendEvent(eventNameDaemonSetHeartbeat, telemetryDimensions)
 				flushRateMetric := appinsights.NewMetricTelemetry(metricNameAvgFlushRate, flushRate)
 				TelemetryClient.Track(flushRateMetric)
 				logRateMetric := appinsights.NewMetricTelemetry(metricNameAvgLogGenerationRate, logRate)
