@@ -17,7 +17,7 @@ module Fluent::Plugin
 
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
-      # TODO: oms_common and omslog appear to be unused. 
+      # TODO: oms_common and omslog appear to be unused. Remove them if they are
       # require_relative "oms_common"
       # require_relative "omslog"
       require_relative "extension_utils"

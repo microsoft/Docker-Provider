@@ -21,17 +21,11 @@ module Fluent::Plugin
     config_param :log_path, :string, :default => Constants::LINUX_LOG_PATH + "filter_cadvisor2mdm.log"
     config_param :metrics_to_collect, :string, :default => "Constants::CPU_USAGE_NANO_CORES,Constants::MEMORY_WORKING_SET_BYTES,Constants::MEMORY_RSS_BYTES,Constants::PV_USED_BYTES"
 
-    @@hostName = (OMS::Common.get_hostname)  # TODO: mock this
-
     @process_incoming_stream = true
     @metrics_to_collect_hash = {}
 
     @@metric_threshold_hash = {}
     @@controller_type = ""
-
-    def set_hostname (hostname)
-      @@hostname = hostname
-    end
 
     def initialize
       super
@@ -47,12 +41,15 @@ module Fluent::Plugin
       end
     end
 
-    def start(env=ENV, applicationInsightsUtility=ApplicationInsightsUtility, kubernetesApiClient=KubernetesApiClient, kubeletUtils=KubeletUtils)
+    def start(env=ENV, applicationInsightsUtility=ApplicationInsightsUtility, kubernetesApiClient=KubernetesApiClient, kubeletUtils=KubeletUtils, oms_common=OMS::Common)
       @env = env
       @AplicationInsightsUtility = applicationInsightsUtility
       @KubernetesAPIClient = kubernetesApiClient
       @KubeletUtils = kubeletUtils
+      @oms_common = oms_common
       super()
+
+      @@hostName = (@oms_common.get_hostname)
 
       @@isWindows = false
       @@os_type = @env["OS_TYPE"]

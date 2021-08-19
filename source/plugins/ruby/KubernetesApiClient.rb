@@ -26,12 +26,6 @@ class KubernetesApiClient
   #@@IsLinuxCluster = nil
   @@KubeSystemNamespace = "kube-system"
 
-  # TODO: refactor this so that env can be passed in (For unit tests)
-  # options:
-    # 1. make it a singleton, first call to a function which uses the logger initializes it with the correct OS type
-    # 2. don't change anything. (do we care if unit tests can tell which OS they're running on?)
-    # 3. Keep some global state (like the object registry)
-  # this also needs to be changed in MdmMetricsGenerator.rb (and probably most other places which use the logger)
   @os_type = ENV["OS_TYPE"]
   if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     @LogPath = Constants::WINDOWS_LOG_PATH + "kubernetes_client_log.txt"

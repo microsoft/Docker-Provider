@@ -48,7 +48,7 @@ class InKubeNodesTests < Minitest::Test
         false
     end
 
-    nodes_api_response = eval(File.open("../../../test/unit-tests/canned-api-responses/kube-nodes.txt").read)
+    nodes_api_response = eval(File.open("test/unit-tests/canned-api-responses/kube-nodes.txt").read)
     kubeApiClient.expect(:getResourcesAndContinuationToken, [nil, nodes_api_response], ["nodes?limit=200"])
     kubeApiClient.expect(:getClusterName, "/cluster-name")
     kubeApiClient.expect(:getClusterId, "/cluster-id")
@@ -110,7 +110,7 @@ class InKubeNodesTests < Minitest::Test
     # state other than their arguments), so there is no need to mock them (this test file would be far longer and
     # more brittle). Instead, in_kube_nodes bypasses the mock and directly calls these functions in KubernetesApiClient.
     # Ideally the pure functions in KubernetesApiClient would be refactored into their own file.
-    nodes_api_response = eval(File.open("../../../test/unit-tests/canned-api-responses/kube-nodes-malformed.txt").read)
+    nodes_api_response = eval(File.open("test/unit-tests/canned-api-responses/kube-nodes-malformed.txt").read)
     kubeApiClient.expect(:getResourcesAndContinuationToken, [nil, nodes_api_response], ["nodes?limit=200"])
     kubeApiClient.expect(:getClusterName, "/cluster-name")
     kubeApiClient.expect(:getClusterName, "/cluster-name")

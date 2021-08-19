@@ -214,9 +214,6 @@ class KubeletUtils
         @log.info "Error in get_all_container_limits: #{errorStr}"
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
-      @log.info "containerCpuLimitHash: #{containerCpuLimitHash}"
-      @log.info "containerMemoryLimitHash: #{containerMemoryLimitHash}"
-      @log.info "containerResourceDimensionHash: #{containerResourceDimensionHash}"
 
       return [containerCpuLimitHash, containerMemoryLimitHash, containerResourceDimensionHash]
     end
