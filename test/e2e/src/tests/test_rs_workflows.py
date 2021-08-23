@@ -1,5 +1,6 @@
 import pytest
 import constants
+import time
 
 from kubernetes import client, config
 from kubernetes_pod_utility import get_pod_list, get_log_file_content
@@ -35,9 +36,20 @@ def test_rs_workflows(env_dict):
     rspodName = pod_list.items[0].metadata.name
     if not rspodName:
         pytest.fail("replicaset pod name should not be null or empty")
-        
+
+
+    waitTimeSeconds = env_dict['AGENT_WAIT_TIME_SECS']
+    print("start: waiting for seconds: {} for agent workflows to get emitted".format(waitTimeSeconds))
+    time.sleep(int(waitTimeSeconds))
+    print("complete: waiting for seconds: {} for agent workflows to get emitted".format(waitTimeSeconds))
+
+    isOMSBaseAgent = env_dict.get('USING_OMSAGENT_BASE_AGENT')
+    agentLogPath = constants.AGENT_FLUENTD_LOG_PATH
+    if isOMSBaseAgent:
+        agentLogPath = constants.AGENT_OMSAGENT_LOG_PATH
+
     logcontent = get_log_file_content(
-        api_instance, constants.AGENT_RESOURCES_NAMESPACE, rspodName, constants.AGENT_OMSAGENT_LOG_PATH)
+        api_instance, constants.AGENT_RESOURCES_NAMESPACE, rspodName, agentLogPath)
     if not logcontent:
         pytest.fail("logcontent should not be null or empty for rs pod: {}".format(rspodName))
     loglines = logcontent.split("\n")
@@ -78,7 +90,7 @@ def test_rs_workflows(env_dict):
 
     if IsKubeContainerPerfInventorySuccessful == False:
         pytest.fail("KubeContainerPerfInventory stream not emitted successfully from pod:" + rspodName)
-   
+
     if IsKubeServicesInventorySuccessful == False:
         pytest.fail("KubeServicesInventory stream not emitted successfully from pod:" + rspodName)
 

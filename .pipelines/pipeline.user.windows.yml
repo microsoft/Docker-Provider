@@ -5,7 +5,7 @@ environment:
     version: '2019'
   runtime:
     provider: 'appcontainer'
-    image: 'cdpxwin1809.azurecr.io/user/azure-monitor/container-insights:6.0'
+    image: 'cdpxwin1809.azurecr.io/user/azure-monitor/container-insights:latest'
     source_mode: 'map'
 
 version:

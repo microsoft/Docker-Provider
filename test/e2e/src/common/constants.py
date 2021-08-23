@@ -40,6 +40,8 @@ AZURE_CLOUD_DICT = {"AZURE_PUBLIC_CLOUD" : AZURE_PUBLIC_CLOUD_ENDPOINTS, "AZURE_
 
 TIMEOUT = 300
 
+# WAIT TIME BEFORE READING THE AGENT LOGS
+AGENT_WAIT_TIME_SECS = "180"
 # Azure Monitor for Container Extension related
 AGENT_RESOURCES_NAMESPACE = 'kube-system'
 AGENT_DEPLOYMENT_NAME = 'omsagent-rs'
@@ -47,7 +49,9 @@ AGENT_DAEMONSET_NAME = 'omsagent'
 AGENT_WIN_DAEMONSET_NAME = 'omsagent-win'
 
 AGENT_DEPLOYMENT_PODS_LABEL_SELECTOR = 'rsName=omsagent-rs'
-AGENT_DAEMON_SET_PODS_LABEL_SELECTOR = 'component=oms-agent'
+AGENT_DAEMON_SET_PODS_LABEL_SELECTOR = 'dsName=omsagent-ds'
+AGENT_DAEMON_SET_PODS_LABEL_SELECTOR_NON_ARC = 'component=oms-agent'
+AGENT_FLUENTD_LOG_PATH = '/var/opt/microsoft/docker-cimprov/log/fluentd.log'
 AGENT_OMSAGENT_LOG_PATH = '/var/opt/microsoft/omsagent/log/omsagent.log'
 AGENT_REPLICASET_WORKFLOWS = ["kubePodInventoryEmitStreamSuccess", "kubeNodeInventoryEmitStreamSuccess"]
 
