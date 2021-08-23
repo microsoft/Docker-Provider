@@ -5,7 +5,6 @@ require 'fluent/test/driver/input'
 require 'fluent/test/helpers'
 
 require_relative 'in_kube_nodes.rb'
-require 'byebug'
 
 class InKubeNodesTests < Minitest::Test
   include Fluent::Test::Helpers

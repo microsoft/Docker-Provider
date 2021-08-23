@@ -22,7 +22,6 @@ jobs:
         uses: actions/checkout@v2
       - name: install fluent
         run: |
-          whoami
           sudo gem install fluentd -v "1.12.2" --no-document
           sudo fluentd --setup ./fluent
       - name: Run unit tests
