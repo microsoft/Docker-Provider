@@ -13,7 +13,7 @@ To run all unit tests run the commands `test/unit-tests/run_go_tests.sh` and `te
 1. Unit tests should go in their own file, but in the same folder as the source code their testing. For example, the tests for `in_kube_nodes.rb` are in `in_kube_nodes_test.rb`. Both files are in the folder `source/plugin/ruby`.
 
 ### Ruby
-Sample tests are provided in [in_kube_nodes_test.rb](source/plugin/ruby/in_kube_nodes_test.rb) and [filter_cadvisor2mdm_test.rb](source/plugin/ruby/filter_cadvisor2mdm_test.rb). They are meant to demo the tooling used for unit tests (as opposed to being comprehensive tests). Basic techniques like mocking are demonstrated there.
+Sample tests are provided in [in_kube_nodes_test.rb](source/plugin/ruby/in_kube_nodes_test.rb). They are meant to demo the tooling used for unit tests (as opposed to being comprehensive tests). Basic techniques like mocking are demonstrated there.
 
 #### Conventions:
 1. When modifying a fluentd plugin for unit testing, any mocked classes (like KubernetesApiClient, applicationInsightsUtility, env, etc.) should be passed in as optional arguments of initialize. For example:

@@ -12,14 +12,15 @@ module Fluent::Plugin
   require_relative "kubelet_utils"
   require_relative "MdmMetricsGenerator"
   require_relative "in_kube_nodes"
-  require_relative "constants"
 
   class CAdvisor2MdmFilter < Filter
     Fluent::Plugin.register_filter("cadvisor2mdm", self)
 
     config_param :enable_log, :integer, :default => 0
-    config_param :log_path, :string, :default => Constants::LINUX_LOG_PATH + "filter_cadvisor2mdm.log"
+    config_param :log_path, :string, :default => "/var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log"
     config_param :metrics_to_collect, :string, :default => "Constants::CPU_USAGE_NANO_CORES,Constants::MEMORY_WORKING_SET_BYTES,Constants::MEMORY_RSS_BYTES,Constants::PV_USED_BYTES"
+
+    @@hostName = (OMS::Common.get_hostname)
 
     @process_incoming_stream = true
     @metrics_to_collect_hash = {}
@@ -27,40 +28,32 @@ module Fluent::Plugin
     @@metric_threshold_hash = {}
     @@controller_type = ""
 
+    @@isWindows = false
+    @@os_type = ENV["OS_TYPE"]
+    if !@@os_type.nil? && !@@os_type.empty? && @@os_type.strip.casecmp("windows") == 0
+      @@isWindows = true
+    end
+
     def initialize
       super
     end
 
     def configure(conf)
       super
-      @Log = nil
+      @log = nil
 
       if @enable_log
-        @Log = Logger.new(@log_path, 1, 5000000)
-        @Log.debug { "Starting filter_cadvisor2mdm plugin" }
+        @log = Logger.new(@log_path, 1, 5000000)
+        @log.debug { "Starting filter_cadvisor2mdm plugin" }
       end
     end
 
-    def start(env=ENV, applicationInsightsUtility=ApplicationInsightsUtility, kubernetesApiClient=KubernetesApiClient, kubeletUtils=KubeletUtils, oms_common=OMS::Common)
-      @env = env
-      @AplicationInsightsUtility = applicationInsightsUtility
-      @KubernetesAPIClient = kubernetesApiClient
-      @KubeletUtils = kubeletUtils
-      @oms_common = oms_common
-      super()
-
-      @@hostName = (@oms_common.get_hostname)
-
-      @@isWindows = false
-      @@os_type = @env["OS_TYPE"]
-      if !@@os_type.nil? && !@@os_type.empty? && @@os_type.strip.casecmp("windows") == 0
-        @@isWindows = true
-      end
-
+    def start
+      super
       begin
-        @process_incoming_stream = CustomMetricsUtils.check_custom_metrics_availability(env=@env)
-        @metrics_to_collect_hash = build_metrics_hash(@metrics_to_collect)
-        @Log.debug "After check_custom_metrics_availability process_incoming_stream #{@process_incoming_stream}"
+        @process_incoming_stream = CustomMetricsUtils.check_custom_metrics_availability
+        @metrics_to_collect_hash = build_metrics_hash
+        @log.debug "After check_custom_metrics_availability process_incoming_stream #{@process_incoming_stream}"
         @@containerResourceUtilTelemetryTimeTracker = DateTime.now.to_time.to_i
         @@pvUsageTelemetryTimeTracker = DateTime.now.to_time.to_i
 
@@ -81,19 +74,19 @@ module Fluent::Plugin
           @containerMemoryLimitHash = {}
           @containerResourceDimensionHash = {}
           @pvUsageHash = {}
-          @@metric_threshold_hash = MdmMetricsGenerator.getContainerResourceUtilizationThresholds(env=@env)
+          @@metric_threshold_hash = MdmMetricsGenerator.getContainerResourceUtilizationThresholds
           @NodeCache = Fluent::Plugin::NodeStatsCache.new()
         end
       rescue => e
-        @Log.info "Error initializing plugin #{e}"
+        @log.info "Error initializing plugin #{e}"
       end
     end
 
-    def build_metrics_hash metrics_to_collect_list
-      @Log.debug "Building Hash of Metrics to Collect"
-      metrics_to_collect_arr = metrics_to_collect_list.split(",").map(&:strip)
+    def build_metrics_hash
+      @log.debug "Building Hash of Metrics to Collect"
+      metrics_to_collect_arr = @metrics_to_collect.split(",").map(&:strip)
       metrics_hash = metrics_to_collect_arr.map { |x| [x.downcase, true] }.to_h
-      @Log.info "Metrics Collected : #{metrics_hash}"
+      @log.info "Metrics Collected : #{metrics_hash}"
       return metrics_hash
     end
 
@@ -113,8 +106,8 @@ module Fluent::Plugin
           @pvExceededUsageThreshold = true
         end
       rescue => errorStr
-        @Log.info "Error in setThresholdExceededTelemetry: #{errorStr}"
-        @ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+        @log.info "Error in setThresholdExceededTelemetry: #{errorStr}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
 
@@ -132,15 +125,15 @@ module Fluent::Plugin
           properties["CpuThresholdExceededInLastFlushInterval"] = @containersExceededCpuThreshold
           properties["MemRssThresholdExceededInLastFlushInterval"] = @containersExceededMemRssThreshold
           properties["MemWSetThresholdExceededInLastFlushInterval"] = @containersExceededMemWorkingSetThreshold
-          @ApplicationInsightsUtility.sendCustomEvent(Constants::CONTAINER_RESOURCE_UTIL_HEART_BEAT_EVENT, properties)
+          ApplicationInsightsUtility.sendCustomEvent(Constants::CONTAINER_RESOURCE_UTIL_HEART_BEAT_EVENT, properties)
           @containersExceededCpuThreshold = false
           @containersExceededMemRssThreshold = false
           @containersExceededMemWorkingSetThreshold = false
           @@containerResourceUtilTelemetryTimeTracker = DateTime.now.to_time.to_i
         end
       rescue => errorStr
-        @Log.info "Error in flushMetricTelemetry: #{errorStr} for container resource util telemetry"
-        @ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+        @log.info "Error in flushMetricTelemetry: #{errorStr} for container resource util telemetry"
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
 
       # Also send for PV usage metrics
@@ -152,14 +145,14 @@ module Fluent::Plugin
             pvProperties = {}
             pvProperties["PVUsageThresholdPercentage"] = @@metric_threshold_hash[Constants::PV_USED_BYTES]
             pvProperties["PVUsageThresholdExceededInLastFlushInterval"] = @pvExceededUsageThreshold
-            @ApplicationInsightsUtility.sendCustomEvent(Constants::PV_USAGE_HEART_BEAT_EVENT, pvProperties)
+            ApplicationInsightsUtility.sendCustomEvent(Constants::PV_USAGE_HEART_BEAT_EVENT, pvProperties)
             @pvExceededUsageThreshold = false
             @@pvUsageTelemetryTimeTracker = DateTime.now.to_time.to_i
           end
         end
       rescue => errorStr
-        @Log.info "Error in flushMetricTelemetry: #{errorStr} for PV usage telemetry"
-        @ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+        @log.info "Error in flushMetricTelemetry: #{errorStr} for PV usage telemetry"
+        ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
       end
     end
 
@@ -191,7 +184,7 @@ module Fluent::Plugin
                 target_node_cpu_capacity_mc = @cpu_capacity
                 target_node_cpu_allocatable_mc = @cpu_allocatable
               end
-              @Log.info "Metric_value: #{metric_value} CPU Capacity #{target_node_cpu_capacity_mc} CPU Allocatable #{target_node_cpu_allocatable_mc} "
+              @log.info "Metric_value: #{metric_value} CPU Capacity #{target_node_cpu_capacity_mc} CPU Allocatable #{target_node_cpu_allocatable_mc} "
               if target_node_cpu_capacity_mc != 0.0
                 percentage_metric_value = (metric_value) * 100 / target_node_cpu_capacity_mc
               end
@@ -212,7 +205,7 @@ module Fluent::Plugin
                 target_node_mem_allocatable = @memory_allocatable # We do not need this value in the replicaset
               end
 
-              @Log.info "Metric_value: #{metric_value} Memory Capacity #{target_node_mem_capacity} Memory Allocatable #{target_node_mem_allocatable}"
+              @log.info "Metric_value: #{metric_value} Memory Capacity #{target_node_mem_capacity} Memory Allocatable #{target_node_mem_allocatable}"
               if target_node_mem_capacity != 0.0
                 percentage_metric_value = metric_value * 100 / target_node_mem_capacity
               end
@@ -223,7 +216,7 @@ module Fluent::Plugin
                 allocatable_percentage_metric_value = 0.0
               end
             end            
-            @Log.info "percentage_metric_value for metric: #{metric_name} for instance: #{record["Host"]} percentage: #{percentage_metric_value} allocatable_percentage: #{allocatable_percentage_metric_value}"
+            @log.info "percentage_metric_value for metric: #{metric_name} for instance: #{record["Host"]} percentage: #{percentage_metric_value} allocatable_percentage: #{allocatable_percentage_metric_value}"
 
             # do some sanity checking.
             if percentage_metric_value > 100.0
@@ -231,14 +224,14 @@ module Fluent::Plugin
               telemetryProperties["Computer"] = record["Host"]
               telemetryProperties["MetricName"] = metric_name
               telemetryProperties["MetricPercentageValue"] = percentage_metric_value
-              @ApplicationInsightsUtility.sendCustomEvent("ErrorPercentageOutOfBounds", telemetryProperties)
+              ApplicationInsightsUtility.sendCustomEvent("ErrorPercentageOutOfBounds", telemetryProperties)
             end
             if allocatable_percentage_metric_value > 100.0
               telemetryProperties = {}
               telemetryProperties["Computer"] = record["Host"]
               telemetryProperties["MetricName"] = metric_name
               telemetryProperties["MetricAllocatablePercentageValue"] = allocatable_percentage_metric_value
-              @ApplicationInsightsUtility.sendCustomEvent("ErrorPercentageOutOfBounds", telemetryProperties)
+              ApplicationInsightsUtility.sendCustomEvent("ErrorPercentageOutOfBounds", telemetryProperties)
             end
 
             return MdmMetricsGenerator.getNodeResourceMetricRecords(record, metric_name, metric_value, percentage_metric_value, allocatable_percentage_metric_value)
@@ -270,8 +263,8 @@ module Fluent::Plugin
             end
 
             # Send this metric only if resource utilization is greater than configured threshold
-            @Log.info "percentage_metric_value for metric: #{metricName} for instance: #{instanceName} percentage: #{percentage_metric_value}"
-            @Log.info "@@metric_threshold_hash for #{metricName}: #{@@metric_threshold_hash[metricName]}"
+            @log.info "percentage_metric_value for metric: #{metricName} for instance: #{instanceName} percentage: #{percentage_metric_value}"
+            @log.info "@@metric_threshold_hash for #{metricName}: #{@@metric_threshold_hash[metricName]}"
             thresholdPercentage = @@metric_threshold_hash[metricName]
 
             # Flushing telemetry here since, we return as soon as we generate the metric
@@ -293,8 +286,8 @@ module Fluent::Plugin
           return []
         end #end if block for process incoming stream check
       rescue Exception => e
-        @Log.info "Error processing cadvisor record Exception: #{e.class} Message: #{e.message}"
-        @ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
+        @log.info "Error processing cadvisor record Exception: #{e.class} Message: #{e.message}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
         return [] #return empty array if we ran into any errors
       end
     end
@@ -309,8 +302,8 @@ module Fluent::Plugin
           if capacity != 0
             percentage_metric_value = (usage * 100.0) / capacity
           end
-          @Log.info "percentage_metric_value for metric: #{metricName} percentage: #{percentage_metric_value}"
-          @Log.info "@@metric_threshold_hash for #{metricName}: #{@@metric_threshold_hash[metricName]}"
+          @log.info "percentage_metric_value for metric: #{metricName} percentage: #{percentage_metric_value}"
+          @log.info "@@metric_threshold_hash for #{metricName}: #{@@metric_threshold_hash[metricName]}"
 
           computer = record["Computer"]
           resourceDimensions = record["Tags"]
@@ -331,60 +324,60 @@ module Fluent::Plugin
         end # end if block for dataItem name check
         return []
       rescue Exception => e
-        @Log.info "Error processing cadvisor insights metrics record Exception: #{e.class} Message: #{e.message}"
-        @ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
+        @log.info "Error processing cadvisor insights metrics record Exception: #{e.class} Message: #{e.message}"
+        ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
         return [] #return empty array if we ran into any errors
       end
     end
 
     def ensure_cpu_memory_capacity_and_allocatable_set
-      @@controller_type = @env["CONTROLLER_TYPE"]
+      @@controller_type = ENV["CONTROLLER_TYPE"]
 
       if @cpu_capacity != 0.0 && @memory_capacity != 0.0 && @@controller_type.downcase == "replicaset"
-        @Log.info "CPU And Memory Capacity are already set and their values are as follows @cpu_capacity : #{@cpu_capacity}, @memory_capacity: #{@memory_capacity}"
+        @log.info "CPU And Memory Capacity are already set and their values are as follows @cpu_capacity : #{@cpu_capacity}, @memory_capacity: #{@memory_capacity}"
         return
       end
 
       if @@controller_type.downcase == "daemonset" && @cpu_capacity != 0.0 && @memory_capacity != 0.0 && @cpu_allocatable != 0.0 && @memory_allocatable != 0.0
-        @Log.info "CPU And Memory Capacity are already set and their values are as follows @cpu_capacity : #{@cpu_capacity}, @memory_capacity: #{@memory_capacity}"
-        @Log.info "CPU And Memory Allocatable are already set and their values are as follows @cpu_allocatable : #{@cpu_allocatable}, @memory_allocatable: #{@memory_allocatable}"
+        @log.info "CPU And Memory Capacity are already set and their values are as follows @cpu_capacity : #{@cpu_capacity}, @memory_capacity: #{@memory_capacity}"
+        @log.info "CPU And Memory Allocatable are already set and their values are as follows @cpu_allocatable : #{@cpu_allocatable}, @memory_allocatable: #{@memory_allocatable}"
         return
       end
 
       if @@controller_type.downcase == "replicaset"
-        @Log.info "ensure_cpu_memory_capacity_set @cpu_capacity #{@cpu_capacity} @memory_capacity #{@memory_capacity}"
+        @log.info "ensure_cpu_memory_capacity_set @cpu_capacity #{@cpu_capacity} @memory_capacity #{@memory_capacity}"
 
         begin
-          resourceUri = @KubernetesAPIClient.getNodesResourceUri("nodes?fieldSelector=metadata.name%3D#{@@hostName}")
-          nodeInventory = JSON.parse(@KubernetesAPIClient.getKubeResourceInfo(resourceUri).body)  
+          resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?fieldSelector=metadata.name%3D#{@@hostName}")
+          nodeInventory = JSON.parse(KubernetesApiClient.getKubeResourceInfo(resourceUri).body)
         rescue Exception => e
-          @Log.info "Error when getting nodeInventory from kube API. Exception: #{e.class} Message: #{e.message} "
-          @ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
+          @log.info "Error when getting nodeInventory from kube API. Exception: #{e.class} Message: #{e.message} "
+          ApplicationInsightsUtility.sendExceptionTelemetry(e.backtrace)
         end
         if !nodeInventory.nil?
-          cpu_capacity_json = @KubernetesAPIClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores")
+          cpu_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "cpu", "cpuCapacityNanoCores")
           if !cpu_capacity_json.nil? 
              metricVal = JSON.parse(cpu_capacity_json[0]["json_Collections"])[0]["Value"]
             if !metricVal.to_s.nil?
               @cpu_capacity = metricVal
-              @Log.info "CPU Limit #{@cpu_capacity}"
+              @log.info "CPU Limit #{@cpu_capacity}"
             end
           else
-            @Log.info "Error getting cpu_capacity"
+            @log.info "Error getting cpu_capacity"
           end
-          memory_capacity_json = @KubernetesAPIClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes")
+          memory_capacity_json = KubernetesApiClient.parseNodeLimits(nodeInventory, "capacity", "memory", "memoryCapacityBytes")
           if !memory_capacity_json.nil? 
             metricVal = JSON.parse(cpu_capacity_json[0]["json_Collections"])[0]["Value"]          
             if !metricVal.to_s.nil?
               @memory_capacity = metricVal
-              @Log.info "Memory Limit #{@memory_capacity}"
+              @log.info "Memory Limit #{@memory_capacity}"
             end
           else
-            @Log.info "Error getting memory_capacity"
+            @log.info "Error getting memory_capacity"
           end
         end
       elsif @@controller_type.downcase == "daemonset"
-        capacity_from_kubelet = @KubeletUtils.get_node_capacity
+        capacity_from_kubelet = KubeletUtils.get_node_capacity
 
         # Error handling in case /metrics/cadvsior endpoint fails
         if !capacity_from_kubelet.nil? && capacity_from_kubelet.length > 1
@@ -392,10 +385,10 @@ module Fluent::Plugin
           @memory_capacity = capacity_from_kubelet[1]
         else
           # cpu_capacity and memory_capacity keep initialized value of 0.0
-          @Log.error "Error getting capacity_from_kubelet: cpu_capacity and memory_capacity"
+          @log.error "Error getting capacity_from_kubelet: cpu_capacity and memory_capacity"
         end
 
-        allocatable_from_kubelet = @KubeletUtils.get_node_allocatable(@cpu_capacity, @memory_capacity)
+        allocatable_from_kubelet = KubeletUtils.get_node_allocatable(@cpu_capacity, @memory_capacity)
 
         # Error handling in case /configz endpoint fails
         if !allocatable_from_kubelet.nil? && allocatable_from_kubelet.length > 1
@@ -403,7 +396,7 @@ module Fluent::Plugin
           @memory_allocatable = allocatable_from_kubelet[1]
         else
           # cpu_allocatable and memory_allocatable keep initialized value of 0.0
-          @Log.error "Error getting allocatable_from_kubelet: cpu_allocatable and memory_allocatable"
+          @log.error "Error getting allocatable_from_kubelet: cpu_allocatable and memory_allocatable"
         end
       end
     end
@@ -414,7 +407,7 @@ module Fluent::Plugin
         ensure_cpu_memory_capacity_and_allocatable_set
         # Getting container limits hash
         if @process_incoming_stream
-          @containerCpuLimitHash, @containerMemoryLimitHash, @containerResourceDimensionHash = KubeletUtils.get_all_container_limits  # TODO: mock this
+          @containerCpuLimitHash, @containerMemoryLimitHash, @containerResourceDimensionHash = KubeletUtils.get_all_container_limits
         end
 
         es.each { |time, record|
@@ -424,7 +417,7 @@ module Fluent::Plugin
           } if filtered_records
         }
       rescue => e
-        @Log.info "Error in filter_stream #{e.message}"
+        @log.info "Error in filter_stream #{e.message}"
       end
       new_es
     end
