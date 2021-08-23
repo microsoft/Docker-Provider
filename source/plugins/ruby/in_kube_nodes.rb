@@ -11,7 +11,7 @@ module Fluent::Plugin
                     applicationInsightsUtility=nil, 
                     extensionUtils=nil, 
                     env=nil, 
-                    TELEMETRY_FLUSH_INTERVAL_IN_MINUTES=Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
+                    telemetry_flush_interval=nil)
       super()
 
       require "yaml"
@@ -30,6 +30,7 @@ module Fluent::Plugin
       @applicationInsightsUtility = applicationInsightsUtility == nil ? ApplicationInsightsUtility : applicationInsightsUtility
       @extensionUtils = extensionUtils == nil ? ExtensionUtils : extensionUtils
       @env = env == nil ? ENV : env
+      @TELEMETRY_FLUSH_INTERVAL_IN_MINUTES = telemetry_flush_interval == nil ? Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES : telemetry_flush_interval
 
       # these defines were previously at class scope Moving them into the constructor so that they can be set by unit tests
       @@configMapMountPath = "/etc/config/settings/log-data-collection-settings"
@@ -64,9 +65,6 @@ module Fluent::Plugin
       require_relative "constants"
 
       @NodeCache = NodeStatsCache.new()
-
-      # this is so that telemetry can be unit tested in a reasonable amount of time
-      @TELEMETRY_FLUSH_INTERVAL_IN_MINUTES = TELEMETRY_FLUSH_INTERVAL_IN_MINUTES
     end
 
     config_param :run_interval, :time, :default => 60

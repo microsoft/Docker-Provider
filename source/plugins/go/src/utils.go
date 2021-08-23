@@ -201,7 +201,6 @@ func CreateADXClient() {
 	}
 }
 
-// option 1
 func ReadFileContents(fullPathToFileName string) (string, error) {
 	return ReadFileContentsImpl(fullPathToFileName, ioutil.ReadFile)
 }

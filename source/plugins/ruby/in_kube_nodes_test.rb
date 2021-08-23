@@ -14,7 +14,7 @@ class InKubeNodesTests < Minitest::Test
     Fluent::Test.setup
   end
 
-  def create_driver(conf = {}, kubernetesApiClient=nil, applicationInsightsUtility=nil, extensionUtils=nil, env=nil)
+  def create_driver(conf = {}, kubernetesApiClient=nil, applicationInsightsUtility=nil, extensionUtils=nil, env=nil, telemetry_flush_interval=nil)
     Fluent::Test::Driver::Input.new(Fluent::Plugin::Kube_nodeInventory_Input.new(kubernetesApiClient=kubernetesApiClient,
                                                                              applicationInsightsUtility=applicationInsightsUtility,
                                                                              extensionUtils=extensionUtils,
@@ -129,7 +129,7 @@ class InKubeNodesTests < Minitest::Test
 
     config = "run_interval 999999999"  # only run once
 
-    d = create_driver(config, kubernetesApiClient=kubeApiClient, applicationInsightsUtility=appInsightsUtil, extensionUtils=extensionUtils, env=env, TELEMETRY_FLUSH_INTERVAL_IN_MINUTES=0)
+    d = create_driver(config, kubernetesApiClient=kubeApiClient, applicationInsightsUtility=appInsightsUtil, extensionUtils=extensionUtils, env=env, telemetry_flush_interval=0)
     d.instance.start
 
     d.instance.enumerate
