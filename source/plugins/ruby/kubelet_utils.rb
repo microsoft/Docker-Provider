@@ -11,9 +11,9 @@ require "bigdecimal"
 class KubeletUtils
   @os_type = ENV["OS_TYPE"]
   if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
-    @log_path = Constants::WINDOWS_LOG_PATH + "filter_cadvisor2mdm.log"
+    @log_path = "/etc/omsagentwindows/filter_cadvisor2mdm.log"
   else
-    @log_path = Constants::LINUX_LOG_PATH + "filter_cadvisor2mdm.log"
+    @log_path = "/var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log"
   end
   @log = Logger.new(@log_path, 1, 5000000)
 

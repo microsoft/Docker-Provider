@@ -7,7 +7,11 @@ module Fluent::Plugin
   class Kube_nodeInventory_Input < Input
     Fluent::Plugin.register_input("kube_nodes", self)
 
-    def initialize (kubernetesApiClient=nil, applicationInsightsUtility=nil, extensionUtils=nil, env=nil)
+    def initialize (kubernetesApiClient=nil, 
+                    applicationInsightsUtility=nil, 
+                    extensionUtils=nil, 
+                    env=nil, 
+                    TELEMETRY_FLUSH_INTERVAL_IN_MINUTES=Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES)
       super()
 
       require "yaml"
@@ -62,7 +66,7 @@ module Fluent::Plugin
       @NodeCache = NodeStatsCache.new()
 
       # this is so that telemetry can be unit tested in a reasonable amount of time
-      @TELEMETRY_FLUSH_INTERVAL_IN_MINUTES = Constants::TELEMETRY_FLUSH_INTERVAL_IN_MINUTES
+      @TELEMETRY_FLUSH_INTERVAL_IN_MINUTES = TELEMETRY_FLUSH_INTERVAL_IN_MINUTES
     end
 
     config_param :run_interval, :time, :default => 60
@@ -569,11 +573,6 @@ module Fluent::Plugin
         $log.warn "in_kube_nodes::getContainerNodeIngetNodeTelemetryPropsventoryRecord:Failed: #{errorStr}"
       end
       return properties
-    end
-
-    # this is used in 
-    def set_telemetry_flush_interval(interval)
-      @TELEMETRY_FLUSH_INTERVAL_IN_MINUTES = interval
     end
   end # Kube_Node_Input
 

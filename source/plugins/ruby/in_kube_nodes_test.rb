@@ -21,7 +21,7 @@ class InKubeNodesTests < Minitest::Test
                                                                              env=env)).configure(conf)
   end
 
-  def overwrite_collection_time(data) 
+  def overwrite_collection_time(data)
     if data.key?("CollectionTime")
         data["CollectionTime"] = "~CollectionTime~"
     end
@@ -75,7 +75,7 @@ class InKubeNodesTests < Minitest::Test
         if expected_responses.key?([tag, cleaned_record])
             expected_responses[[tag, cleaned_record]] = true
         else
-            assert_equal(true, false) 
+            assert_equal(true, false)
         end
     end
 
@@ -129,14 +129,13 @@ class InKubeNodesTests < Minitest::Test
 
     config = "run_interval 999999999"  # only run once
 
-    d = create_driver(config, kubernetesApiClient=kubeApiClient, applicationInsightsUtility=appInsightsUtil, extensionUtils=extensionUtils, env=env)
+    d = create_driver(config, kubernetesApiClient=kubeApiClient, applicationInsightsUtility=appInsightsUtil, extensionUtils=extensionUtils, env=env, TELEMETRY_FLUSH_INTERVAL_IN_MINUTES=0)
     d.instance.start
-    d.instance.set_telemetry_flush_interval(0)
 
     d.instance.enumerate
     d.run(timeout: 99999)  #TODO: is this necessary?
 
-    expected_responses = { 
+    expected_responses = {
         ["oneagent.containerInsights.KUBE_NODE_INVENTORY_BLOB", {"CollectionTime"=>"~CollectionTime~", "Computer"=>"correct-node", "ClusterName"=>"/cluster-name", "ClusterId"=>"/cluster-id", "CreationTimeStamp"=>"2021-07-21T23:40:14Z", "Labels"=>[{"agentpool"=>"nodepool1", "beta.kubernetes.io/arch"=>"amd64", "beta.kubernetes.io/instance-type"=>"Standard_DS2_v2", "beta.kubernetes.io/os"=>"linux", "failure-domain.beta.kubernetes.io/region"=>"westus2", "failure-domain.beta.kubernetes.io/zone"=>"0", "kubernetes.azure.com/cluster"=>"MC_davidaks16_davidaks16_westus2", "kubernetes.azure.com/mode"=>"system", "kubernetes.azure.com/node-image-version"=>"AKSUbuntu-1804gen2containerd-2021.07.03", "kubernetes.azure.com/os-sku"=>"Ubuntu", "kubernetes.azure.com/role"=>"agent", "kubernetes.io/arch"=>"amd64", "kubernetes.io/hostname"=>"correct-node", "kubernetes.io/os"=>"linux", "kubernetes.io/role"=>"agent", "node-role.kubernetes.io/agent"=>"", "node.kubernetes.io/instance-type"=>"Standard_DS2_v2", "storageprofile"=>"managed", "storagetier"=>"Premium_LRS", "topology.kubernetes.io/region"=>"westus2", "topology.kubernetes.io/zone"=>"0"}], "Status"=>"Ready", "KubernetesProviderID"=>"azure", "LastTransitionTimeReady"=>"2021-07-21T23:40:24Z", "KubeletVersion"=>"v1.19.11", "KubeProxyVersion"=>"v1.19.11"}] => false,
         ["mdm.kubenodeinventory", {"CollectionTime"=>"~CollectionTime~", "Computer"=>"correct-node", "ClusterName"=>"/cluster-name", "ClusterId"=>"/cluster-id", "CreationTimeStamp"=>"2021-07-21T23:40:14Z", "Labels"=>[{"agentpool"=>"nodepool1", "beta.kubernetes.io/arch"=>"amd64", "beta.kubernetes.io/instance-type"=>"Standard_DS2_v2", "beta.kubernetes.io/os"=>"linux", "failure-domain.beta.kubernetes.io/region"=>"westus2", "failure-domain.beta.kubernetes.io/zone"=>"0", "kubernetes.azure.com/cluster"=>"MC_davidaks16_davidaks16_westus2", "kubernetes.azure.com/mode"=>"system", "kubernetes.azure.com/node-image-version"=>"AKSUbuntu-1804gen2containerd-2021.07.03", "kubernetes.azure.com/os-sku"=>"Ubuntu", "kubernetes.azure.com/role"=>"agent", "kubernetes.io/arch"=>"amd64", "kubernetes.io/hostname"=>"correct-node", "kubernetes.io/os"=>"linux", "kubernetes.io/role"=>"agent", "node-role.kubernetes.io/agent"=>"", "node.kubernetes.io/instance-type"=>"Standard_DS2_v2", "storageprofile"=>"managed", "storagetier"=>"Premium_LRS", "topology.kubernetes.io/region"=>"westus2", "topology.kubernetes.io/zone"=>"0"}], "Status"=>"Ready", "KubernetesProviderID"=>"azure", "LastTransitionTimeReady"=>"2021-07-21T23:40:24Z", "KubeletVersion"=>"v1.19.11", "KubeProxyVersion"=>"v1.19.11"}] => false,
         ["oneagent.containerInsights.CONTAINER_NODE_INVENTORY_BLOB", {"CollectionTime"=>"~CollectionTime~", "Computer"=>"correct-node", "OperatingSystem"=>"Ubuntu 18.04.5 LTS", "DockerVersion"=>"containerd://1.4.4+azure"}] => false,
