@@ -21,9 +21,8 @@ module Fluent::Plugin
 
       require_relative "KubernetesApiClient"
       require_relative "ApplicationInsightsUtility"
-      # TODO: oms_common and omslog appear to be unused. Remove them if they are
-      # require_relative "oms_common"
-      # require_relative "omslog"
+      require_relative "oms_common"
+      require_relative "omslog"
       require_relative "extension_utils"
 
       @kubernetesApiClient = kubernetesApiClient == nil ? KubernetesApiClient : kubernetesApiClient
@@ -573,8 +572,6 @@ module Fluent::Plugin
       return properties
     end
   end # Kube_Node_Input
-
-
   class NodeStatsCache
     # inner class for caching implementation (CPU and memory caching is handled the exact same way, so logic to do so is moved to a private inner class)
     # (to reduce code duplication)

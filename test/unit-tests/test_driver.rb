@@ -1,4 +1,3 @@
-# TODO: can we get rid of this global flag?
 $in_unit_test = true
 
 script_path = __dir__

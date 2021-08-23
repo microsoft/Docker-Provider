@@ -21,6 +21,7 @@ class InKubeNodesTests < Minitest::Test
                                                                              env=env)).configure(conf)
   end
 
+  # Collection time of scrapped data will always be different. Overwrite it in any records returned by in_kube_ndes.rb
   def overwrite_collection_time(data)
     if data.key?("CollectionTime")
         data["CollectionTime"] = "~CollectionTime~"
@@ -69,13 +70,12 @@ class InKubeNodesTests < Minitest::Test
     ["oneagent.containerInsights.LINUX_PERF_BLOB", overwrite_collection_time({"Timestamp"=>"2021-08-17T20:24:18Z", "Host"=>"aks-nodepool1-24816391-vmss000000", "Computer"=>"aks-nodepool1-24816391-vmss000000", "ObjectName"=>"K8SNode", "InstanceName"=>"None/aks-nodepool1-24816391-vmss000000", "json_Collections"=>"[{\"CounterName\":\"cpuCapacityNanoCores\",\"Value\":2000000000.0}]"})] => true,
     ["oneagent.containerInsights.LINUX_PERF_BLOB", overwrite_collection_time({"Timestamp"=>"2021-08-17T20:24:18Z", "Host"=>"aks-nodepool1-24816391-vmss000000", "Computer"=>"aks-nodepool1-24816391-vmss000000", "ObjectName"=>"K8SNode", "InstanceName"=>"None/aks-nodepool1-24816391-vmss000000", "json_Collections"=>"[{\"CounterName\":\"memoryCapacityBytes\",\"Value\":7291510784.0}]"})] => true}
 
-    #TODO: remove records from expected_responses as they are recieved (to make sure that they are all recieved exactly once)
     d.events.each do |tag, time, record|
         cleaned_record = overwrite_collection_time record
         if expected_responses.key?([tag, cleaned_record])
             expected_responses[[tag, cleaned_record]] = true
         else
-            assert_equal(true, false)
+            assert(false, "got unexpected record")
         end
     end
 
@@ -83,12 +83,14 @@ class InKubeNodesTests < Minitest::Test
         assert(val, "expected record not emitted: #{key}")
     end
 
+    # make sure all mocked methods were called the expected number of times
     kubeApiClient.verify
     appInsightsUtil.verify
     extensionUtils.verify
   end
 
-
+  # Sometimes customer tooling creates invalid node specs in the Kube API server (its happened more than once).
+  # This test makes sure that it doesn't creash the entire input plugin and other nodes are still collected
   def test_malformed_node_spec
     kubeApiClient = Minitest::Mock.new
     appInsightsUtil = Minitest::Mock.new
@@ -109,7 +111,7 @@ class InKubeNodesTests < Minitest::Test
     # Set up the KubernetesApiClient Mock. Note: most of the functions in KubernetesApiClient are pure (access no
     # state other than their arguments), so there is no need to mock them (this test file would be far longer and
     # more brittle). Instead, in_kube_nodes bypasses the mock and directly calls these functions in KubernetesApiClient.
-    # Ideally the pure functions in KubernetesApiClient would be refactored into their own file.
+    # Ideally the pure functions in KubernetesApiClient would be refactored into their own file to reduce confusion.
     nodes_api_response = eval(File.open("test/unit-tests/canned-api-responses/kube-nodes-malformed.txt").read)
     kubeApiClient.expect(:getResourcesAndContinuationToken, [nil, nodes_api_response], ["nodes?limit=200"])
     kubeApiClient.expect(:getClusterName, "/cluster-name")
@@ -144,6 +146,7 @@ class InKubeNodesTests < Minitest::Test
         ["oneagent.containerInsights.LINUX_PERF_BLOB", {"Timestamp"=>"~Timestamp~", "Host"=>"correct-node", "Computer"=>"correct-node", "ObjectName"=>"K8SNode", "InstanceName"=>"None/correct-node", "json_Collections"=>"[{\"CounterName\":\"cpuCapacityNanoCores\",\"Value\":2000000.0}]"}] => false,
         ["oneagent.containerInsights.LINUX_PERF_BLOB", {"Timestamp"=>"~Timestamp~", "Host"=>"correct-node", "Computer"=>"correct-node", "ObjectName"=>"K8SNode", "InstanceName"=>"None/correct-node", "json_Collections"=>"[{\"CounterName\":\"memoryCapacityBytes\",\"Value\":555.0}]"}] => false,
 
+        # these records are for the malformed node (it doesn't have limits or requests set so there are no PERF records)
         ["oneagent.containerInsights.KUBE_NODE_INVENTORY_BLOB", {"CollectionTime"=>"~CollectionTime~", "Computer"=>"malformed-node", "ClusterName"=>"/cluster-name", "ClusterId"=>"/cluster-id", "CreationTimeStamp"=>"2021-07-21T23:40:14Z", "Labels"=>[{"agentpool"=>"nodepool1", "beta.kubernetes.io/arch"=>"amd64", "beta.kubernetes.io/instance-type"=>"Standard_DS2_v2", "beta.kubernetes.io/os"=>"linux", "failure-domain.beta.kubernetes.io/region"=>"westus2", "failure-domain.beta.kubernetes.io/zone"=>"0", "kubernetes.azure.com/cluster"=>"MC_davidaks16_davidaks16_westus2", "kubernetes.azure.com/mode"=>"system", "kubernetes.azure.com/node-image-version"=>"AKSUbuntu-1804gen2containerd-2021.07.03", "kubernetes.azure.com/os-sku"=>"Ubuntu", "kubernetes.azure.com/role"=>"agent", "kubernetes.io/arch"=>"amd64", "kubernetes.io/hostname"=>"malformed-node", "kubernetes.io/os"=>"linux", "kubernetes.io/role"=>"agent", "node-role.kubernetes.io/agent"=>"", "node.kubernetes.io/instance-type"=>"Standard_DS2_v2", "storageprofile"=>"managed", "storagetier"=>"Premium_LRS", "topology.kubernetes.io/region"=>"westus2", "topology.kubernetes.io/zone"=>"0"}], "Status"=>"Ready", "KubernetesProviderID"=>"azure", "LastTransitionTimeReady"=>"2021-07-21T23:40:24Z", "KubeletVersion"=>"v1.19.11", "KubeProxyVersion"=>"v1.19.11"}] => false,
         ["mdm.kubenodeinventory", {"CollectionTime"=>"~CollectionTime~", "Computer"=>"malformed-node", "ClusterName"=>"/cluster-name", "ClusterId"=>"/cluster-id", "CreationTimeStamp"=>"2021-07-21T23:40:14Z", "Labels"=>[{"agentpool"=>"nodepool1", "beta.kubernetes.io/arch"=>"amd64", "beta.kubernetes.io/instance-type"=>"Standard_DS2_v2", "beta.kubernetes.io/os"=>"linux", "failure-domain.beta.kubernetes.io/region"=>"westus2", "failure-domain.beta.kubernetes.io/zone"=>"0", "kubernetes.azure.com/cluster"=>"MC_davidaks16_davidaks16_westus2", "kubernetes.azure.com/mode"=>"system", "kubernetes.azure.com/node-image-version"=>"AKSUbuntu-1804gen2containerd-2021.07.03", "kubernetes.azure.com/os-sku"=>"Ubuntu", "kubernetes.azure.com/role"=>"agent", "kubernetes.io/arch"=>"amd64", "kubernetes.io/hostname"=>"malformed-node", "kubernetes.io/os"=>"linux", "kubernetes.io/role"=>"agent", "node-role.kubernetes.io/agent"=>"", "node.kubernetes.io/instance-type"=>"Standard_DS2_v2", "storageprofile"=>"managed", "storagetier"=>"Premium_LRS", "topology.kubernetes.io/region"=>"westus2", "topology.kubernetes.io/zone"=>"0"}], "Status"=>"Ready", "KubernetesProviderID"=>"azure", "LastTransitionTimeReady"=>"2021-07-21T23:40:24Z", "KubeletVersion"=>"v1.19.11", "KubeProxyVersion"=>"v1.19.11"}] => false,
         ["oneagent.containerInsights.CONTAINER_NODE_INVENTORY_BLOB", {"CollectionTime"=>"~CollectionTime~", "Computer"=>"malformed-node", "OperatingSystem"=>"Ubuntu 18.04.5 LTS", "DockerVersion"=>"containerd://1.4.4+azure"}] => false
