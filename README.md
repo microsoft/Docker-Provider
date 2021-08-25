@@ -259,7 +259,7 @@ docker push <repo>/<imagename>:<imagetag>
 
 # Azure DevOps Build Pipeline
 
-Navigate to https://github-private.visualstudio.com/microsoft/_build?view=pipelines to see Linux and Windows Agent build pipelines. These pipelines are configured with CI triggers for ci_dev and ci_prod.
+Navigate to https://github-private.visualstudio.com/microsoft/_build?definitionScope=%5CCDPX%5Cdocker-provider to see Linux and Windows Agent build pipelines. These pipelines are configured with CI triggers for ci_dev and ci_prod.
 
 Docker Images will be pushed to CDPX ACR repos and these needs to retagged and pushed to corresponding ACR or docker hub. Only onboarded Azure AD AppId has permission to pull the images from CDPx ACRs.
 
