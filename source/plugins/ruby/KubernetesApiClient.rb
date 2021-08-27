@@ -25,11 +25,12 @@ class KubernetesApiClient
   #@@IsValidRunningNode = nil
   #@@IsLinuxCluster = nil
   @@KubeSystemNamespace = "kube-system"
+
   @os_type = ENV["OS_TYPE"]
   if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
-    @LogPath = "/etc/omsagentwindows/kubernetes_client_log.txt"
+    @LogPath = Constants::WINDOWS_LOG_PATH + "kubernetes_client_log.txt"
   else
-    @LogPath = "/var/opt/microsoft/docker-cimprov/log/kubernetes_client_log.txt"
+    @LogPath = Constants::LINUX_LOG_PATH + "kubernetes_client_log.txt"
   end
   @Log = Logger.new(@LogPath, 2, 10 * 1048576) #keep last 2 files, max log file size = 10M
   @@TokenFileName = "/var/run/secrets/kubernetes.io/serviceaccount/token"
@@ -87,42 +88,42 @@ class KubernetesApiClient
       end
     end
 
-    def getClusterRegion
-      if ENV["AKS_REGION"]
-        return ENV["AKS_REGION"]
+    def getClusterRegion(env=ENV)
+      if env["AKS_REGION"]
+        return env["AKS_REGION"]
       else
         @Log.warn ("Kubernetes environment variable not set AKS_REGION. Unable to get cluster region.")
         return nil
       end
     end
 
-    def getResourceUri(resource, api_group)
+    def getResourceUri(resource, api_group, env=ENV)
       begin
-        if ENV["KUBERNETES_SERVICE_HOST"] && ENV["KUBERNETES_PORT_443_TCP_PORT"]
+        if env["KUBERNETES_SERVICE_HOST"] && env["KUBERNETES_PORT_443_TCP_PORT"]
           if api_group.nil?
-            return "https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/api/" + @@ApiVersion + "/" + resource
+            return "https://#{env["KUBERNETES_SERVICE_HOST"]}:#{env["KUBERNETES_PORT_443_TCP_PORT"]}/api/" + @@ApiVersion + "/" + resource
           elsif api_group == @@ApiGroupApps
-            return "https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/apis/apps/" + @@ApiVersionApps + "/" + resource
+            return "https://#{env["KUBERNETES_SERVICE_HOST"]}:#{env["KUBERNETES_PORT_443_TCP_PORT"]}/apis/apps/" + @@ApiVersionApps + "/" + resource
           elsif api_group == @@ApiGroupHPA
-            return "https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}/apis/" + @@ApiGroupHPA + "/" + @@ApiVersionHPA + "/" + resource
+            return "https://#{env["KUBERNETES_SERVICE_HOST"]}:#{env["KUBERNETES_PORT_443_TCP_PORT"]}/apis/" + @@ApiGroupHPA + "/" + @@ApiVersionHPA + "/" + resource
           end
         else
-          @Log.warn ("Kubernetes environment variable not set KUBERNETES_SERVICE_HOST: #{ENV["KUBERNETES_SERVICE_HOST"]} KUBERNETES_PORT_443_TCP_PORT: #{ENV["KUBERNETES_PORT_443_TCP_PORT"]}. Unable to form resourceUri")
+          @Log.warn ("Kubernetes environment variable not set KUBERNETES_SERVICE_HOST: #{env["KUBERNETES_SERVICE_HOST"]} KUBERNETES_PORT_443_TCP_PORT: #{env["KUBERNETES_PORT_443_TCP_PORT"]}. Unable to form resourceUri")
           return nil
         end
       end
     end
 
-    def getClusterName
+    def getClusterName(env=ENV)
       return @@ClusterName if !@@ClusterName.nil?
       @@ClusterName = "None"
       begin
         #try getting resource ID for aks
-        cluster = ENV["AKS_RESOURCE_ID"]
+        cluster = env["AKS_RESOURCE_ID"]
         if cluster && !cluster.nil? && !cluster.empty?
           @@ClusterName = cluster.split("/").last
         else
-          cluster = ENV["ACS_RESOURCE_NAME"]
+          cluster = env["ACS_RESOURCE_NAME"]
           if cluster && !cluster.nil? && !cluster.empty?
             @@ClusterName = cluster
           else
@@ -147,7 +148,7 @@ class KubernetesApiClient
       return @@ClusterName
     end
 
-    def getClusterId
+    def getClusterId(env=ENV)
       return @@ClusterId if !@@ClusterId.nil?
       #By default initialize ClusterId to ClusterName.
       #<TODO> In ACS/On-prem, we need to figure out how we can generate ClusterId
@@ -155,7 +156,7 @@ class KubernetesApiClient
       # e.g. md5 digest is 128 bits = 32 character in hex. Get first 16 and get a guid, and the next 16 to get resource id
       @@ClusterId = getClusterName
       begin
-        cluster = ENV["AKS_RESOURCE_ID"]
+        cluster = env["AKS_RESOURCE_ID"]
         if cluster && !cluster.nil? && !cluster.empty?
           @@ClusterId = cluster
         end
@@ -777,13 +778,13 @@ class KubernetesApiClient
       return continuationToken, resourceInventory
     end #getResourcesAndContinuationToken
 
-    def getKubeAPIServerUrl
+    def getKubeAPIServerUrl(env=ENV)
       apiServerUrl = nil
       begin
-        if ENV["KUBERNETES_SERVICE_HOST"] && ENV["KUBERNETES_PORT_443_TCP_PORT"]
-          apiServerUrl = "https://#{ENV["KUBERNETES_SERVICE_HOST"]}:#{ENV["KUBERNETES_PORT_443_TCP_PORT"]}"
+        if env["KUBERNETES_SERVICE_HOST"] && env["KUBERNETES_PORT_443_TCP_PORT"]
+          apiServerUrl = "https://#{env["KUBERNETES_SERVICE_HOST"]}:#{env["KUBERNETES_PORT_443_TCP_PORT"]}"
         else
-          @Log.warn "Kubernetes environment variable not set KUBERNETES_SERVICE_HOST: #{ENV["KUBERNETES_SERVICE_HOST"]} KUBERNETES_PORT_443_TCP_PORT: #{ENV["KUBERNETES_PORT_443_TCP_PORT"]}. Unable to form resourceUri"
+          @Log.warn "Kubernetes environment variable not set KUBERNETES_SERVICE_HOST: #{env["KUBERNETES_SERVICE_HOST"]} KUBERNETES_PORT_443_TCP_PORT: #{env["KUBERNETES_PORT_443_TCP_PORT"]}. Unable to form resourceUri"
         end
       rescue => errorStr
         @Log.warn "KubernetesApiClient::getKubeAPIServerUrl:Failed  #{errorStr}"

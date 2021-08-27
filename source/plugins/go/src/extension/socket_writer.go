@@ -4,20 +4,45 @@ import (
 	"net"
 )
 
+//go:generate mockgen -destination=socket_writer_mock.go -package=extension Docker-Provider/source/plugins/go/src/extension IFluentSocketWriter
+
 //MaxRetries for trying to write data to the socket
 const MaxRetries = 5
 
 //ReadBufferSize for reading data from sockets
 //Current CI extension config size is ~5KB and going with 20KB to handle any future scenarios
-const ReadBufferSize = 20480 
+const ReadBufferSize = 20480
 
 //FluentSocketWriter writes data to AMA's default fluent socket
-type FluentSocketWriter struct {
-	socket net.Conn
-	sockAddress string 
+type FluentSocket struct {
+	socket      net.Conn
+	sockAddress string
 }
 
-func (fs *FluentSocketWriter) connect() error {
+// begin mocking boilerplate
+type IFluentSocketWriter interface {
+	connect(fluentSocket *FluentSocket) error
+	disconnect(fluentSocket *FluentSocket) error
+	writeWithRetries(fluentSocket *FluentSocket, data []byte) (int, error)
+	read(fluentSocket *FluentSocket) ([]byte, error)
+	write(fluentSocket *FluentSocket, payload []byte) (int, error)
+	writeAndRead(fluentSocket *FluentSocket, payload []byte) ([]byte, error)
+}
+
+type FluentSocketWriterImpl struct{}
+
+// Methods in this file can by mocked by replacing FluentSocketWriter with a different struct. The methods
+// in this file are all tied to the FluentSocketWriterImpl struct, but other structs could implement
+// IFluentSocketWriter and be used instead
+var FluentSocketWriter IFluentSocketWriter
+
+func init() {
+	FluentSocketWriter = FluentSocketWriterImpl{}
+}
+
+// end mocking boilerplate
+
+func (FluentSocketWriterImpl) connect(fs *FluentSocket) error {
 	c, err := net.Dial("unix", fs.sockAddress)
 	if err != nil {
 		return err
@@ -26,15 +51,15 @@ func (fs *FluentSocketWriter) connect() error {
 	return nil
 }
 
-func (fs *FluentSocketWriter) disConnect() error {
-	if (fs.socket != nil) {
-		fs.socket.Close()		
+func (FluentSocketWriterImpl) disconnect(fs *FluentSocket) error {
+	if fs.socket != nil {
+		fs.socket.Close()
 		fs.socket = nil
 	}
 	return nil
 }
 
-func (fs *FluentSocketWriter) writeWithRetries(data []byte) (int, error) {
+func (FluentSocketWriterImpl) writeWithRetries(fs *FluentSocket, data []byte) (int, error) {
 	var (
 		err error
 		n   int
@@ -54,7 +79,7 @@ func (fs *FluentSocketWriter) writeWithRetries(data []byte) (int, error) {
 	return 0, err
 }
 
-func (fs *FluentSocketWriter) read() ([]byte, error) {
+func (FluentSocketWriterImpl) read(fs *FluentSocket) ([]byte, error) {
 	buf := make([]byte, ReadBufferSize)
 	n, err := fs.socket.Read(buf)
 	if err != nil {
@@ -64,22 +89,22 @@ func (fs *FluentSocketWriter) read() ([]byte, error) {
 
 }
 
-func (fs *FluentSocketWriter) Write(payload []byte) (int, error) {
+func (FluentSocketWriterImpl) write(fs *FluentSocket, payload []byte) (int, error) {
 	if fs.socket == nil {
 		// previous write failed with permanent error and socket was closed.
-		if err := fs.connect(); err != nil {
+		if err := FluentSocketWriter.connect(fs); err != nil {
 			return 0, err
 		}
 	}
 
-	return fs.writeWithRetries(payload)
+	return FluentSocketWriter.writeWithRetries(fs, payload)
 }
 
-//WriteAndRead writes data to the socket and sends the response back
-func (fs *FluentSocketWriter) WriteAndRead(payload []byte) ([]byte, error) {
-	_, err := fs.Write(payload)
+//writeAndRead writes data to the socket and sends the response back
+func (FluentSocketWriterImpl) writeAndRead(fs *FluentSocket, payload []byte) ([]byte, error) {
+	_, err := FluentSocketWriter.write(fs, payload)
 	if err != nil {
 		return nil, err
 	}
-	return fs.read()
+	return FluentSocketWriter.read(fs)
 }
