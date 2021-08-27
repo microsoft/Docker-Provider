@@ -183,6 +183,7 @@ Write-Host("successfully copied installer files conf and scripts from :" + $inst
 $rubyplugindir = Join-Path -Path $rootdir -ChildPath "source\plugins\ruby"
 Write-Host("copying ruby source files from :" + $rubyplugindir + "  to  :" + $publishdir + " ...")
 Copy-Item -Path $rubyplugindir -Destination $publishdir -Recurse -Force
+Get-ChildItem $Path | Where{$_.Name -Match ".*_test\.rb"} | Remove-Item
 Write-Host("successfully copied ruby source files from :" + $rubyplugindir + "  to  :" + $publishdir + " ") -ForegroundColor Green
 
 Set-Location $currentdir
