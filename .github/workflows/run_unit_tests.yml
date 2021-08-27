@@ -5,6 +5,10 @@ on:
     branches:
       - ci_dev
       - ci_prod
+  push:
+    branches:
+      - ci_dev
+      - ci_prod
 jobs:
   Golang-Tests:
     runs-on: ubuntu-latest
