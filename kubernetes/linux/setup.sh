@@ -11,7 +11,7 @@ sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
 
 #install oneagent - Official bits (06/24/2021)
 # wget https://github.com/microsoft/Docker-Provider/releases/download/06242021-oneagent/azure-mdsd_1.10.3-build.master.241_x86_64.deb
-wget https://github.com/microsoft/Docker-Provider/releases/download/0.1/azure-mdsd_1.11.0-build.develop.2091_x86_64.deb  # has proxy support
+wget https://github.com/microsoft/Docker-Provider/releases/download/oneagent-beta/azure-mdsd_1.13.0-build.develop.2282_x86_64.deb  # has proxy support?
 
 /usr/bin/dpkg -i $TMPDIR/azure-mdsd*.deb
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
