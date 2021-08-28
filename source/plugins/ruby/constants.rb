@@ -129,5 +129,7 @@ class Constants
   ONEAGENT_FLUENT_SOCKET_NAME = "/var/run/mdsd/default_fluent.socket" 
   #Tag prefix for output stream
   EXTENSION_OUTPUT_STREAM_ID_TAG_PREFIX = "dcr-"
-  
+
+  LINUX_LOG_PATH = $in_unit_test.nil? ? "/var/opt/microsoft/docker-cimprov/log/" : "./"
+  WINDOWS_LOG_PATH = $in_unit_test.nil? ? "/etc/omsagentwindows/" : "./"
 end

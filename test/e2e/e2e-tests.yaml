@@ -68,7 +68,7 @@ data:
       containers: []
       restartPolicy: Never
       serviceAccountName: sonobuoy-serviceaccount
-      nodeSelector:    
+      nodeSelector:
         kubernetes.io/os: linux
       tolerations:
       - effect: NoSchedule
@@ -84,8 +84,11 @@ data:
       result-format: junit
     spec:
       env:
+      # this should be false if the test environment is non ARC K8s for example AKS
+      - name: IS_NON_ARC_K8S_TEST_ENVIRONMENT
+        value: "true"
       # Update values of CLIENT_ID, CLIENT_SECRET of the service principal which has permission to query LA ad Metrics API
-      # Update value of TENANT_ID corresponding your Azure Service principal          
+      # Update value of TENANT_ID corresponding your Azure Service principal
       - name: CLIENT_ID
         value: "SP_CLIENT_ID_VALUE"
       - name: CLIENT_SECRET
@@ -93,15 +96,15 @@ data:
       - name: TENANT_ID
         value: "SP_TENANT_ID_VALUE"
       - name: DEFAULT_QUERY_TIME_INTERVAL_IN_MINUTES
-        value: "10"  
+        value: "10"
       - name: DEFAULT_METRICS_QUERY_TIME_INTERVAL_IN_MINUTES
-        value: "10" 
+        value: "10"
       - name: AGENT_POD_EXPECTED_RESTART_COUNT
-        value: "0"   
+        value: "0"
       - name: AZURE_CLOUD
-        value: "AZURE_PUBLIC_CLOUD"  
-      # image tag should be updated if new tests being added after this image   
-      image: mcr.microsoft.com/azuremonitor/containerinsights/cidev:ciagenttest02152021
+        value: "AZURE_PUBLIC_CLOUD"
+      # image tag should be updated if new tests being added after this image
+      image: mcr.microsoft.com/azuremonitor/containerinsights/cidev:ciconftest08142021
       imagePullPolicy: IfNotPresent
       name: plugin
       resources: {}
@@ -144,7 +147,7 @@ spec:
       name: output-volume
   restartPolicy: Never
   serviceAccountName: sonobuoy-serviceaccount
-  nodeSelector:    
+  nodeSelector:
     kubernetes.io/os: linux
   tolerations:
   - key: "kubernetes.io/e2e-evict-taint-key"

@@ -38,6 +38,51 @@ waitforlisteneronTCPport() {
       fi
 }
 
+checkAgentOnboardingStatus() {
+      local sleepdurationsecs=1
+      local totalsleptsecs=0
+      local isaadmsiauthmode=$1
+      local waittimesecs=$2
+      local numeric='^[0-9]+$'
+
+      if [ -z "$1" ] || [ -z "$2" ]; then
+            echo "${FUNCNAME[0]} called with incorrect arguments<$1 , $2>. Required arguments <#isaadmsiauthmode, #wait-time-in-seconds>"
+            return -1
+      else
+
+            if [[ $waittimesecs =~ $numeric ]]; then
+                  successMessage="Onboarding success"
+                  failureMessage="Failed to register certificate with OMS Homing service, giving up"
+                  if [ "${isaadmsiauthmode}" == "true" ]; then
+                        successMessage="Loaded data sources"
+                        failureMessage="Failed to load data sources into config"
+                  fi
+                  while true
+                  do
+                     if [ $totalsleptsecs -gt $waittimesecs ]; then
+                        echo "${FUNCNAME[0]} giving up checking agent onboarding status after $totalsleptsecs secs"
+                        return 1
+                     fi
+
+                     if grep "$successMessage" "${MDSD_LOG}/mdsd.info"; then
+                        echo "Onboarding success"
+                        return 0
+                     elif  grep "$failureMessage" "${MDSD_LOG}/mdsd.err"; then
+                        echo "Onboarding Failure: Reason: Failed to onboard the agent"
+                        echo "Onboarding Failure: Please verify log analytics workspace configuration such as existence of the workspace, workspace key and workspace enabled for public ingestion"
+                        return 1
+                     fi
+                     sleep $sleepdurationsecs
+                     totalsleptsecs=$(($totalsleptsecs+1))
+                  done
+            else
+                  echo "${FUNCNAME[0]} called with non-numeric arguments<$2>. Required arguments <#wait-time-in-seconds>"
+                  return -1
+            fi
+      fi
+}
+
+
 #using /var/opt/microsoft/docker-cimprov/state instead of /var/opt/microsoft/omsagent/state since the latter gets deleted during onboarding
 mkdir -p /var/opt/microsoft/docker-cimprov/state
 
@@ -537,6 +582,12 @@ else
     mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
 fi
 
+# Set up a cron job for logrotation
+if [ ! -f /etc/cron.d/ci-agent ]; then
+    echo "setting up cronjob for ci agent log rotation"
+    echo "*/5 * * * * root /usr/sbin/logrotate -s /var/lib/logrotate/ci-agent-status /etc/logrotate.d/ci-agent >/dev/null 2>&1" > /etc/cron.d/ci-agent
+fi
+
 # no dependency on fluentd for prometheus side car container
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       if [ ! -e "/etc/config/kube.conf" ]; then
@@ -681,6 +732,8 @@ service rsyslog stop
 
 echo "getting rsyslog status..."
 service rsyslog status
+
+checkAgentOnboardingStatus $AAD_MSI_AUTH_MODE 30
 
 shutdown() {
 	 pkill -f mdsd

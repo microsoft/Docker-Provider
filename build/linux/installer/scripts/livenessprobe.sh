@@ -11,11 +11,27 @@ fi
 
 #optionally test to exit non zero value if fluentd is not running
 #fluentd not used in sidecar container
-if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then   
+if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
   (ps -ef | grep "fluentd" | grep -v "grep")
   if [ $? -ne 0 ]
   then
    echo "fluentd is not running" > /dev/termination-log
+   exit 1
+  fi
+  # fluentd launches by default supervisor and worker process
+  # so adding the liveness checks individually to handle scenario if any of the process dies
+  # supervisor process
+  (ps -ef | grep "fluentd" | grep "supervisor" | grep -v "grep")
+  if [ $? -ne 0 ]
+  then
+   echo "fluentd supervisor is not running" > /dev/termination-log
+   exit 1
+  fi
+  # worker process
+  (ps -ef | grep "fluentd" | grep -v "supervisor" | grep -v "grep" )
+  if [ $? -ne 0 ]
+  then
+   echo "fluentd worker is not running" > /dev/termination-log
    exit 1
   fi
 fi

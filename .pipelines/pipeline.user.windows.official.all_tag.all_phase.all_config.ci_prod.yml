@@ -5,7 +5,7 @@ environment:
     version: '2019'
   runtime:
     provider: 'appcontainer'
-    image: 'cdpxwin1809.azurecr.io/user/azure-monitor/container-insights:6.0'
+    image: 'cdpxwin1809.azurecr.io/user/azure-monitor/container-insights:latest'
     source_mode: 'map'
 
 version:
@@ -53,3 +53,4 @@ package:
       repository_name: 'cdpxwin1809'                      # only supported ones are cdpx acr repos
       tag: 'win-ciprod'                                    # OPTIONAL: Defaults to latest. The tag for the built image. Final tag will be 1.0.0alpha, 1.0.0-timestamp-commitID.
       latest: false                                       # OPTIONAL: Defaults to false. If tag is not set to latest and this flag is set, then tag as latest as well and push latest as well.
+      export_to_artifact_path: 'agentimage.tar.zip'   # path for exported image and use this instead of fixed tag

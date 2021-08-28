@@ -40,9 +40,9 @@ class CAdvisorMetricsAPIClient
 
   @os_type = ENV["OS_TYPE"]
   if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
-    @LogPath = "/etc/omsagentwindows/kubernetes_perf_log.txt"
+    @LogPath = Constants::WINDOWS_LOG_PATH + "kubernetes_perf_log.txt"
   else
-    @LogPath = "/var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt"
+    @LogPath = Constants::LINUX_LOG_PATH + "kubernetes_perf_log.txt"
   end
   @Log = Logger.new(@LogPath, 2, 10 * 1048576) #keep last 2 files, max log file size = 10M
   #   @@rxBytesLast = nil

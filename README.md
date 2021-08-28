@@ -259,7 +259,7 @@ docker push <repo>/<imagename>:<imagetag>
 
 # Azure DevOps Build Pipeline
 
-Navigate to https://github-private.visualstudio.com/microsoft/_build?view=pipelines to see Linux and Windows Agent build pipelines. These pipelines are configured with CI triggers for ci_dev and ci_prod.
+Navigate to https://github-private.visualstudio.com/microsoft/_build?definitionScope=%5CCDPX%5Cdocker-provider to see Linux and Windows Agent build pipelines. These pipelines are configured with CI triggers for ci_dev and ci_prod.
 
 Docker Images will be pushed to CDPX ACR repos and these needs to retagged and pushed to corresponding ACR or docker hub. Only onboarded Azure AD AppId has permission to pull the images from CDPx ACRs.
 
@@ -326,7 +326,7 @@ For DEV and PROD branches, automatically deployed latest yaml with latest agent 
    docker build -f ./core/Dockerfile -t <repo>/<imagename>:<imagetag> .
    docker push <repo>/<imagename>:<imagetag>
   ```
-3. update existing agentest image tag in e2e-tests.yaml with newly built image tag with MCR repo
+3. update existing agentest image tag in e2e-tests.yaml & conformance.yaml with newly built image tag with MCR repo
 
 # Scenario Tests
 Clusters are used in release pipeline already has the yamls under test\scenario deployed. Make sure to validate these scenarios.
