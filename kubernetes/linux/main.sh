@@ -197,13 +197,15 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
                echo "successfully validated provided proxy endpoint is valid and expected format"
             fi
 
-            # Write environment variables so mdsd can use the proxy. Do this regardless of if using mdsd or not because nothing will break because these environment variables are written
             echo $pwd > /opt/proxy_password
 
             echo "export MDSD_PROXY_MODE=application" >> ~/.bashrc
             echo "export MDSD_PROXY_ADDRESS=$proto$hostport" >> ~/.bashrc
             echo "export MDSD_PROXY_USERNAME=$user" >> ~/.bashrc
             echo "export MDSD_PROXY_PASSWORD_FILE=/opt/proxy_password" >> ~/.bashrc
+            
+            #TODO: Compression + proxy creates a deserialization error in ODS. Not sure why
+            echo "export MDSD_ODS_COMPRESSION_LEVEL=0" >> ~/.bashrc
 
             # TODO: set proxy in go. It's possible that setting $PROXY_ENDPOINT is good enough, but double check
             # go and ruby should automatically use this env variable
