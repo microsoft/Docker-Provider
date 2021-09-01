@@ -1,7 +1,9 @@
 #!/bin/bash
 
-
 # This script pulls logs from the replicaset agent pod and a random daemonset pod. This script is to make troubleshooting faster
+
+mkdir azure-monitor-logs-tmp
+cd azure-monitor-logs-tmp
 
 export ds_pod=$(kubectl get pods -n kube-system -o custom-columns=NAME:.metadata.name | grep -E omsagent-[a-z0-9]{5} | head -n 1)
 export ds_win_pod=$(kubectl get pods -n kube-system -o custom-columns=NAME:.metadata.name | grep -E omsagent-win-[a-z0-9]{5} | head -n 1)
@@ -9,6 +11,23 @@ export rs_pod=$(kubectl get pods -n kube-system -o custom-columns=NAME:.metadata
 
 echo "collecting logs from ${ds_pod}, ${ds_win_pod}, and ${rs_pod}"
 echo "    note: some erros are expected for clusters without windows nodes, they can safely be disregarded (filespec must match the canonical format:, zip warning: name not matched: omsagent-win-daemonset-fbit)"
+
+# grab `kubectl describe` and `kubectl log`
+echo "collecting kubectl describe and kubectl log output"
+
+kubectl describe pod ${ds_pod} --namespace=kube-system > describe_${ds_pod}.txt
+kubectl logs ${ds_pod} --container omsagent --namespace=kube-system > logs_${ds_pod}.txt
+kubectl logs ${ds_pod} --container omsagent-prometheus --namespace=kube-system > logs_${ds_pod}_prom.txt
+
+kubectl describe pod ${ds_win_pod} --namespace=kube-system > describe_${ds_win_pod}.txt
+kubectl logs ${ds_win_pod} --container omsagent-win --namespace=kube-system > logs_${ds_win_pod}.txt
+
+kubectl describe pod ${rs_pod} --namespace=kube-system > describe_${rs_pod}.txt
+kubectl logs ${rs_pod} --container omsagent --namespace=kube-system > logs_${rs_pod}.txt
+
+
+# now collect log files from in containers
+echo "collecting log files from inside agent containers"
 
 kubectl cp ${ds_pod}:/var/opt/microsoft/docker-cimprov/log omsagent-daemonset --namespace=kube-system --container omsagent
 kubectl cp ${ds_pod}:/var/opt/microsoft/linuxmonagent/log omsagent-daemonset-mdsd --namespace=kube-system --container omsagent
@@ -24,9 +43,9 @@ kubectl cp ${ds_win_pod}:/etc/fluent-bit omsagent-win-daemonset-fbit --namespace
 kubectl cp ${rs_pod}:/var/opt/microsoft/docker-cimprov/log omsagent-replicaset --namespace=kube-system
 kubectl cp ${rs_pod}:/var/opt/microsoft/linuxmonagent/log omsagent-replicaset-mdsd --namespace=kube-system
 
-zip -r azure-monitor-logs.zip omsagent-daemonset omsagent-daemonset-mdsd omsagent-prom-daemonset omsagent-prom-daemonset-mdsd omsagent-win-daemonset-fbit omsagent-replicaset omsagent-replicaset-mdsd
+zip -r -q ../azure-monitor-logs.zip *
 
-rm -rf omsagent-daemonset omsagent-daemonset-mdsd omsagent-prom-daemonset omsagent-prom-daemonset-mdsd omsagent-win-daemonset-fbit omsagent-replicaset omsagent-replicaset-mdsd
-
+cd ..
+rm -rf azure-monitor-logs-tmp
 echo
 echo "log files have been written to azure-monitor-logs.zip"
