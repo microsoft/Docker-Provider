@@ -2,6 +2,9 @@
 
 # This script pulls logs from the replicaset agent pod and a random daemonset pod. This script is to make troubleshooting faster
 
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
 mkdir azure-monitor-logs-tmp
 cd azure-monitor-logs-tmp
 
@@ -9,8 +12,8 @@ export ds_pod=$(kubectl get pods -n kube-system -o custom-columns=NAME:.metadata
 export ds_win_pod=$(kubectl get pods -n kube-system -o custom-columns=NAME:.metadata.name | grep -E omsagent-win-[a-z0-9]{5} | head -n 1)
 export rs_pod=$(kubectl get pods -n kube-system -o custom-columns=NAME:.metadata.name | grep -E omsagent-rs-[a-z0-9]{5} | head -n 1)
 
-echo "collecting logs from ${ds_pod}, ${ds_win_pod}, and ${rs_pod}"
-echo "    note: some erros are expected for clusters without windows nodes, they can safely be disregarded (filespec must match the canonical format:, zip warning: name not matched: omsagent-win-daemonset-fbit)"
+echo -e "Collecting logs from ${ds_pod}, ${ds_win_pod}, and ${rs_pod}"
+echo -e "${CYAN}Note: some errors about pods and files not existing are expected in clusters without windows nodes or sidecar prometheus scraping. They can safely be disregarded ${NC}"
 
 # grab `kubectl describe` and `kubectl log`
 echo "collecting kubectl describe and kubectl log output"
@@ -27,7 +30,7 @@ kubectl logs ${rs_pod} --container omsagent --namespace=kube-system > logs_${rs_
 
 
 # now collect log files from in containers
-echo "collecting log files from inside agent containers"
+echo "Collecting log files from inside agent containers"
 
 kubectl cp ${ds_pod}:/var/opt/microsoft/docker-cimprov/log omsagent-daemonset --namespace=kube-system --container omsagent
 kubectl cp ${ds_pod}:/var/opt/microsoft/linuxmonagent/log omsagent-daemonset-mdsd --namespace=kube-system --container omsagent
