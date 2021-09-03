@@ -15,6 +15,11 @@ if [ -z ${AGENT_IMAGE_TAR_FILE_NAME+x} ]; then
     exit 1;
 fi
 
+if [ ! -f $AGENT_IMAGE_TAR_FILE_NAME ]; then
+    echo "Agent tarfile: ${AGENT_IMAGE_TAR_FILE_NAME} does not exist, unable to continue"
+    exit 1
+fi
+
 if [ -z $AGENT_IMAGE_TAG_SUFFIX ]; then
   echo "-e error value of AGENT_IMAGE_TAG_SUFFIX variable shouldnt be empty"
   exit 1

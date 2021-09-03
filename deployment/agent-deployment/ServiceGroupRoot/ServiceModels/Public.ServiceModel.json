@@ -2,12 +2,12 @@
     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/serviceModel.json",
     "contentVersion": "1.0.0.2",
       "ServiceMetadata": {
-        "ServiceGroup": "ContainerInsightsExtension",
-        "Environment": "Prod"
+        "ServiceGroup": "ContainerInsightsAgent",
+        "Environment": "Dev"
       },
       "ServiceResourceGroupDefinitions": [
         {
-          "Name": "CI-Extension-ServiceResourceGroupDefinition",
+          "Name": "CI-Agent-ServiceResourceGroupDefinition",
           "ServiceResourceDefinitions": [
             {
               "Name": "ShellExtension",
@@ -30,9 +30,9 @@
       ],
       "ServiceResourceGroups": [     
         {
-          "AzureResourceGroupName": "ContainerInsightsExtension-Global-Release",
+          "AzureResourceGroupName": "ContainerInsightsAgent-Global-Release",
           "Location": "eastus2",
-          "InstanceOf": "CI-Extension-ServiceResourceGroupDefinition",
+          "InstanceOf": "CI-Agent-ServiceResourceGroupDefinition",
           "AzureSubscriptionId": "728bbd23-3b47-40c1-8c9a-c6c5ccd674fc",  
           "ScopeTags": [
             {
