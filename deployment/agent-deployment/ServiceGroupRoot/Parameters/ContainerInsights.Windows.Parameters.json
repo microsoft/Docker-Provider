@@ -29,7 +29,7 @@
           "environmentVariables": [
             {
               "name": "AGENT_IMAGE_TAR_FILE_NAME",
-              "value": "/drop/outputs/package/agentimage.tar.zip"
+              "value": "agentimage.tar.zip"
             },
             {
               "name": "ACR_NAME",

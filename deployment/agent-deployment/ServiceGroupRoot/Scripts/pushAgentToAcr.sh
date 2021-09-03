@@ -15,6 +15,14 @@ if [ -z ${AGENT_IMAGE_TAR_FILE_NAME+x} ]; then
     exit 1;
 fi
 
+CWD=$PWD
+echo "current working directory"
+echo $CWD
+
+cd ..
+ls
+cd Scripts
+
 if [ ! -f $AGENT_IMAGE_TAR_FILE_NAME ]; then
     echo "Agent tarfile: ${AGENT_IMAGE_TAR_FILE_NAME} does not exist, unable to continue"
     exit 1
