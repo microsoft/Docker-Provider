@@ -43,12 +43,12 @@
             {
               "Name": "PushLinuxAgent",
               "InstanceOf": "ShellExtension",
-              "RolloutParametersPath": "Parameters\\ContainerInsightsLinux.Parameters.json"
+              "RolloutParametersPath": "Parameters\\ContainerInsights.Linux.Parameters.json"
             },
             {
               "Name": "PushWindowsAgent",
               "InstanceOf": "ShellExtension",
-              "RolloutParametersPath": "Parameters\\ContainerInsightsWindows.Parameters.json"
+              "RolloutParametersPath": "Parameters\\ContainerInsights.Windows.Parameters.json"
             }
           ]
         }                                                                                                 
