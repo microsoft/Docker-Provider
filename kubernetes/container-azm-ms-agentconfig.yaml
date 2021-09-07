@@ -151,6 +151,7 @@ data:
     #   log_flush_interval_secs = "1"
     #   tail_buf_chunksize_megabytes= "1"
     #   tail_buf_maxsize_megabytes = "1"
+    #   tail_mem_buf_limit_megabytes = "10"
 
 metadata:
   name: container-azm-ms-agentconfig
