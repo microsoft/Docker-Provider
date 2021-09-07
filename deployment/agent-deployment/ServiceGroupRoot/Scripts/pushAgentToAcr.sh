@@ -40,6 +40,14 @@ if [ -z $AGENT_RELEASE ]; then
   exit 1
 fi
 
+echo $AGENT_IMAGE_TAG_SUFFIX
+
+echo $AGENT_IMAGE_URI
+
+echo $AGENT_IMAGE_SAS
+
+echo "${AGENT_IMAGE_URI}"
+
 echo "Downloading docker tarball image from $TARBALL_IMAGE_FILE_SAS"
 wget -O $AGENT_IMAGE_TAR_FILE_NAME "${AGENT_IMAGE_URI}?${AGENT_IMAGE_SAS}"
 
