@@ -16,7 +16,11 @@
                 {
                     "find": "__AGENT_IMAGE_TAG_SUFFIX__",
                     "replaceWith": "$(AgentImageTagSuffix)"
-                }, 
+                },
+                {
+                    "find": "__RELEASE_ID__",
+                    "replaceWith": "$(Release.ReleaseId)"
+                },
                 {
                     "find": "__MANAGED_IDENTITY__",
                     "replaceWith": "$(ManagedIdentity)"

@@ -40,6 +40,10 @@
               "value": "agentimage.tar.gz"
             },
             {
+              "name": "RELEASE_ID",
+              "value": "__RELEASE_ID__"
+            },
+            {
               "name": "ACR_NAME",
               "value": "__ACR_NAME__"
             },

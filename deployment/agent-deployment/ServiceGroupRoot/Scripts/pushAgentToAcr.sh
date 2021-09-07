@@ -46,10 +46,11 @@ echo $AGENT_IMAGE_URI
 
 echo $AGENT_IMAGE_SAS
 
-echo "${AGENT_IMAGE_URI}"
+echo $RELEASE_ID
+
 
 echo "Downloading docker tarball image from $TARBALL_IMAGE_FILE_SAS"
-wget -O $AGENT_IMAGE_TAR_FILE_NAME "${AGENT_IMAGE_URI}${AGENT_IMAGE_TAG_SUFFIX}${AGENT_IMAGE_SAS}"
+wget -O $AGENT_IMAGE_TAR_FILE_NAME "${AGENT_IMAGE_URI}${RELEASE_ID}${AGENT_IMAGE_SAS}"
 
 ls
 
@@ -84,3 +85,9 @@ fi
 
 echo "Pushing file $TARBALL_IMAGE_FILE to $AGENT_IMAGE_FULL_PATH"
 ./crane push *.tar "$AGENT_IMAGE_FULL_PATH"
+
+echo "Deleting agentimage copy from blob storage"
+
+az storage blob delete --container-name agent --name $RELEASE_ID --account-name cipipelinestorageev2 --sas-token $AGENT_IMAGE_SAS
+
+echo "Deleted agentimate copy from blob storage"
