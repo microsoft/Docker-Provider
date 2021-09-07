@@ -88,6 +88,8 @@ echo "Pushing file $TARBALL_IMAGE_FILE to $AGENT_IMAGE_FULL_PATH"
 
 echo "Deleting agentimage copy from blob storage"
 
-az storage blob delete --container-name agent --name $RELEASE_ID --account-name cipipelinestorageev2 --sas-token $AGENT_IMAGE_SAS
+echo $RELEASE_ID
+
+az storage blob delete --container-name "agent" --name "${RELEASE_ID}" --account-name "cipipelinestorageev2" --sas-token "${AGENT_IMAGE_SAS}"
 
 echo "Deleted agentimate copy from blob storage"
