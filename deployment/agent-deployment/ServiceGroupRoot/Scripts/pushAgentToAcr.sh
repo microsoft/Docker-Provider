@@ -10,23 +10,20 @@ set -e
 # LINUX_AGENT_IMAGE_FULL_PATH=${ACR_NAME}/public/azuremonitor/containerinsights/${AGENT_RELEASE}:${AGENT_RELEASE}${AGENT_IMAGE_TAG_SUFFIX}
 # WINDOWS_AGENT_IMAGE_FULL_PATH=${ACR_NAME}/public/azuremonitor/containerinsights/${AGENT_RELEASE}:win-${AGENT_RELEASE}${AGENT_IMAGE_TAG_SUFFIX}
 
-if [ -z ${AGENT_IMAGE_TAR_FILE_NAME+x} ]; then
-    echo "AGENT_IMAGE_TAR_FILE_NAME is unset, unable to continue"
-    exit 1;
-fi
+# if [ -z ${AGENT_IMAGE_TAR_FILE_NAME+x} ]; then
+#     echo "AGENT_IMAGE_TAR_FILE_NAME is unset, unable to continue"
+#     exit 1;
+# fi
 
-CWD=$PWD
-echo "current working directory"
-echo $CWD
+# CWD=$PWD
+# echo "current working directory"
+# echo $CWD
 
-cd ..
-ls
-cd Scripts
+# cd ..
+# ls
+# cd Scripts
 
-if [ ! -f $AGENT_IMAGE_TAR_FILE_NAME ]; then
-    echo "Agent tarfile: ${AGENT_IMAGE_TAR_FILE_NAME} does not exist, unable to continue"
-    exit 1
-fi
+
 
 if [ -z $AGENT_IMAGE_TAG_SUFFIX ]; then
   echo "-e error value of AGENT_IMAGE_TAG_SUFFIX variable shouldnt be empty"
@@ -41,6 +38,16 @@ fi
 if [ -z $AGENT_RELEASE ]; then
   echo "-e error AGENT_RELEASE shouldnt be empty"
   exit 1
+fi
+
+echo "Downloading docker tarball image from $TARBALL_IMAGE_FILE_SAS"
+wget -O $AGENT_IMAGE_TAR_FILE_NAME "${AGENT_IMAGE_URI}?${AGENT_IMAGE_SAS}"
+
+ls
+
+if [ ! -f $AGENT_IMAGE_TAR_FILE_NAME ]; then
+    echo "Agent tarfile: ${AGENT_IMAGE_TAR_FILE_NAME} does not exist, unable to continue"
+    exit 1
 fi
 
 #Install crane

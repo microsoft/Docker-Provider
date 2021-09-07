@@ -28,6 +28,14 @@
           ],
           "environmentVariables": [
             {
+              "name": "AGENT_IMAGE_URI",
+              "value": "__CONTAINER_URI__"
+            },
+            {
+              "name": "AGENT_IMAGE_SAS",
+              "value": "__CONTAINER_SAS_TOKEN__"
+            },
+            {
               "name": "AGENT_IMAGE_TAR_FILE_NAME",
               "value": "agentimage.tar.gz"
             },
