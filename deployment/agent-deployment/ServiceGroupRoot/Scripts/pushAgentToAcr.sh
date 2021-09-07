@@ -90,6 +90,12 @@ echo "Deleting agentimage copy from blob storage"
 
 echo $RELEASE_ID
 
-az storage blob delete --container-name "agent" --name "${RELEASE_ID}" --account-name "cipipelinestorageev2" --sas-token "${AGENT_IMAGE_SAS}"
+$RESULT=$(az storage blob exists --container-name agent --name ${RELEASE_ID} --account-name cipipelinestorageev2 --sas-token ${AGENT_IMAGE_SAS})
+echo $RESULT
 
-echo "Deleted agentimate copy from blob storage"
+if [[ -z $(az storage blob exists --container-name agent --name ${RELEASE_ID} --account-name cipipelinestorageev2 --sas-token ${AGENT_IMAGE_SAS}) ]]; then
+  az storage blob delete --container-name "agent" --name "${RELEASE_ID}" --account-name "cipipelinestorageev2" --sas-token "${AGENT_IMAGE_SAS}"
+  echo "Deleted agentimate copy from blob storage"
+else 
+    echo "Agentimage has already been deleted from blob storage"
+fi
