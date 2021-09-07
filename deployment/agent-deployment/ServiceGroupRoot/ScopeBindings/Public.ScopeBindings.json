@@ -23,11 +23,11 @@
                 }, 
                 {
                     "find": "__CONTAINER_URI__",
-                    "replaceWith": "$(Storage.StorageContainerUri)"
+                    "replaceWith": "$(StorageContainerUri)"
                 }, 
                 {
                     "find": "__CONTAINER_SAS_TOKEN__",
-                    "replaceWith": "$(Storage.StorageContainerSasToken)"
+                    "replaceWith": "$(StorageContainerSasToken)"
                 }
 
             ]
