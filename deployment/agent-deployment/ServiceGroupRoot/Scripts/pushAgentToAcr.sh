@@ -95,7 +95,7 @@ BLOB_EXIST=$(echo "$BLOB_EXIST_RESULT" | jq -r '.exists')
 echo $BLOB_EXIST_RESULT
 echo $BLOB_EXIST
 
-if [[ $BLOB_EXIST ]]; then
+if $BLOB_EXIST; then
   az storage blob delete --container-name "agent" --name "${RELEASE_ID}" --account-name "cipipelinestorageev2" --sas-token "${AGENT_IMAGE_SAS}"
   echo "Deleted agentimate copy from blob storage"
 else 
