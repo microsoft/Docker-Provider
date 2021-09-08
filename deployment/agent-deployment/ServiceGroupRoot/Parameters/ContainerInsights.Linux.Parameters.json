@@ -36,6 +36,14 @@
               "value": "__CONTAINER_SAS_TOKEN__"
             },
             {
+              "name": "STORAGE_CONTAINER_NAME",
+              "value": "__STORAGE_CONTAINER_NAME__"
+            },
+            {
+              "name": "STORAGE_ACCOUNT_NAME",
+              "value": "__STORAGE_ACCOUNT_NAME__"
+            },
+            {
               "name": "AGENT_IMAGE_TAR_FILE_NAME",
               "value": "agentimage.tar.gz"
             },

@@ -32,6 +32,14 @@
                 {
                     "find": "__CONTAINER_SAS_TOKEN__",
                     "replaceWith": "$(Storage.StorageContainerSasToken)"
+                }, 
+                {
+                    "find": "__STORAGE_CONTAINER_NAME__",
+                    "replaceWith": "$(StorageContainerName)"
+                },
+                {
+                    "find": "__STORAGE_ACCOUNT_NAME__",
+                    "replaceWith": "$(StorageAccountName)"
                 }
 
             ]
