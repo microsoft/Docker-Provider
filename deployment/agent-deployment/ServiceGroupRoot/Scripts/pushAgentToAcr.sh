@@ -20,7 +20,7 @@ fi
 
 #Download agentimage tarball from blob storage account
 echo "Downloading tarball image from $AGENT_IMAGE_URI"
-wget -O $AGENT_IMAGE_TAR_FILE_NAME "${AGENT_IMAGE_URI}${RELEASE_ID}${AGENT_IMAGE_SAS}"
+wget -O $AGENT_IMAGE_TAR_FILE_NAME "${AGENT_IMAGE_URI}${WINDOWS}${RELEASE_ID}${AGENT_IMAGE_SAS}"
 
 
 if [ ! -f $AGENT_IMAGE_TAR_FILE_NAME ]; then

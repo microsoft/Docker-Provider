@@ -28,6 +28,10 @@
           ],
           "environmentVariables": [
             {
+              "name": "WINDOWS",
+              "value": "win-"
+            },
+            {
               "name": "AGENT_IMAGE_URI",
               "value": "__CONTAINER_URI__"
             },
@@ -45,7 +49,7 @@
             },
             {
               "name": "AGENT_IMAGE_TAR_FILE_NAME",
-              "value": "agentimage.tar.gz"
+              "value": "agentimage.tar.zip"
             },
             {
               "name": "RELEASE_ID",
