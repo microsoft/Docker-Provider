@@ -13,7 +13,7 @@
       },
       "Notification": {
         "Email": {
-          "To": "sarahpeiffer@microsoft.com"
+          "To": "omscontainers@microsoft.com"
         }
       }  
     },
@@ -34,4 +34,3 @@
       }
     ]
   }
-  
