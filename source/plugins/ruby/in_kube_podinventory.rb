@@ -40,7 +40,7 @@ module Fluent
       @podInventoryE2EProcessingLatencyMs = 0
       @podsAPIE2ELatencyMs = 0
       @isDisablePodReadyMetric = false
-      @isDisableKPIMDM = false
+      @isDisableKPIMDM = true
 
     end
 
