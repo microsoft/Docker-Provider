@@ -148,10 +148,10 @@ data:
     # The following settings are "undocumented", we don't recommend uncommenting them unless directed by Microsoft.
     # They increase the maximum stdout/stderr log collection rate but will also cause higher cpu/memory usage.
     # [agent_settings.fbit_config]
-    #   log_flush_interval_secs = "1"
+    #   log_flush_interval_secs = "15"
+    #   tail_mem_buf_limit_megabytes = "10"
     #   tail_buf_chunksize_megabytes= "1"
     #   tail_buf_maxsize_megabytes = "1"
-    #   tail_mem_buf_limit_megabytes = "10"
 
 metadata:
   name: container-azm-ms-agentconfig
