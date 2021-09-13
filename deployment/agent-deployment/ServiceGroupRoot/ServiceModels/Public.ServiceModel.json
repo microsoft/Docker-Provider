@@ -1,0 +1,56 @@
+{
+    "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/serviceModel.json",
+    "contentVersion": "1.0.0.2",
+      "ServiceMetadata": {
+        "ServiceGroup": "ContainerInsightsAgent",
+        "Environment": "Dev"
+      },
+      "ServiceResourceGroupDefinitions": [
+        {
+          "Name": "CI-Agent-ServiceResourceGroupDefinition",
+          "ServiceResourceDefinitions": [
+            {
+              "Name": "ShellExtension",
+              "ComposedOf": {
+                "Extension": {
+                  "Shell": [
+                    {
+                      "type": "ShellExtensionType",
+                      "properties": {
+                        "imageName": "adm-ubuntu-1804-l",
+                        "imageVersion": "v18"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "ServiceResourceGroups": [     
+        {
+          "AzureResourceGroupName": "ContainerInsightsAgent-Global-Release",
+          "Location": "eastus2",
+          "InstanceOf": "CI-Agent-ServiceResourceGroupDefinition",
+          "AzureSubscriptionId": "728bbd23-3b47-40c1-8c9a-c6c5ccd674fc",  
+          "ScopeTags": [
+            {
+              "Name": "Global"
+            }
+          ],     
+          "ServiceResources": [
+            {
+              "Name": "PushLinuxAgent",
+              "InstanceOf": "ShellExtension",
+              "RolloutParametersPath": "Parameters\\ContainerInsights.Linux.Parameters.json"
+            },
+            {
+              "Name": "PushWindowsAgent",
+              "InstanceOf": "ShellExtension",
+              "RolloutParametersPath": "Parameters\\ContainerInsights.Windows.Parameters.json"
+            }
+          ]
+        }                                                                                                 
+      ]
+    } 

@@ -1,0 +1,84 @@
+{
+    "$schema": "http://schema.express.azure.com/schemas/2015-01-01-alpha/RolloutParameters.json",
+    "contentVersion": "1.0.0.0",
+    "wait": [
+      {
+        "name": "waitSdpBakeTime",
+        "properties": {
+          "duration": "PT24H"
+        }
+      }
+    ],
+    "shellExtensions": [
+      {
+        "name": "PushAgentToACR",
+        "type": "ShellExtensionType",
+        "properties": {
+          "maxexecutiontime": "PT1H"
+        },
+        "package": {
+          "reference": {
+            "path": "artifacts.tar.gz"
+          }
+        },
+        "launch": {
+          "command": [
+            "/bin/bash",
+            "pushAgentToAcr.sh"
+          ],
+          "environmentVariables": [
+            {
+              "name": "WINDOWS",
+              "value": "win-"
+            },
+            {
+              "name": "AGENT_IMAGE_URI",
+              "value": "__CONTAINER_URI__"
+            },
+            {
+              "name": "AGENT_IMAGE_SAS",
+              "value": "__CONTAINER_SAS_TOKEN__"
+            },
+            {
+              "name": "STORAGE_CONTAINER_NAME",
+              "value": "__STORAGE_CONTAINER_NAME__"
+            },
+            {
+              "name": "STORAGE_ACCOUNT_NAME",
+              "value": "__STORAGE_ACCOUNT_NAME__"
+            },
+            {
+              "name": "AGENT_IMAGE_TAR_FILE_NAME",
+              "value": "agentimage.tar.zip"
+            },
+            {
+              "name": "RELEASE_ID",
+              "value": "__RELEASE_ID__"
+            },
+            {
+              "name": "ACR_NAME",
+              "value": "__ACR_NAME__"
+            },
+            {
+              "name": "AGENT_RELEASE",
+              "value": "__AGENT_RELEASE__"
+            },
+            {
+              "name": "AGENT_IMAGE_TAG_SUFFIX",
+              "value": "__AGENT_IMAGE_TAG_SUFFIX__"
+            },
+            {
+                "name": "AGENT_IMAGE_FULL_PATH",
+                "value": "__ACR_NAME__/public/azuremonitor/containerinsights/__AGENT_RELEASE__:win-__AGENT_RELEASE____AGENT_IMAGE_TAG_SUFFIX__"
+            }
+          ], 
+          "identity": {
+            "type": "userAssigned",
+            "userAssignedIdentities": [
+              "__MANAGED_IDENTITY__"
+            ]
+          }
+        }
+      }
+    ]
+  }

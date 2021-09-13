@@ -1,0 +1,48 @@
+{
+    "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",
+    "contentVersion": "0.0.0.1",
+    "scopeBindings": [       
+        {
+            "scopeTagName": "Global",
+            "bindings": [        
+                {
+                    "find": "__ACR_NAME__",
+                    "replaceWith": "$(ACRName)"
+                },            
+                {
+                    "find": "__AGENT_RELEASE__",
+                    "replaceWith": "$(AgentRelease)"
+                }, 
+                {
+                    "find": "__AGENT_IMAGE_TAG_SUFFIX__",
+                    "replaceWith": "$(AgentImageTagSuffix)"
+                },
+                {
+                    "find": "__RELEASE_ID__",
+                    "replaceWith": "$(Release.ReleaseId)"
+                },
+                {
+                    "find": "__MANAGED_IDENTITY__",
+                    "replaceWith": "$(ManagedIdentity)"
+                }, 
+                {
+                    "find": "__CONTAINER_URI__",
+                    "replaceWith": "$(Storage.StorageContainerUri)"
+                }, 
+                {
+                    "find": "__CONTAINER_SAS_TOKEN__",
+                    "replaceWith": "$(Storage.StorageContainerSasToken)"
+                }, 
+                {
+                    "find": "__STORAGE_CONTAINER_NAME__",
+                    "replaceWith": "$(StorageContainerName)"
+                },
+                {
+                    "find": "__STORAGE_ACCOUNT_NAME__",
+                    "replaceWith": "$(StorageAccountName)"
+                }
+
+            ]
+        }                                                                                                                                                
+    ]
+}

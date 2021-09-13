@@ -144,6 +144,14 @@ data:
       tcp_listener_chunk_size = 10
       tcp_listener_buffer_size = 10
       tcp_listener_mem_buf_limit = 200
+    
+    # The following settings are "undocumented", we don't recommend uncommenting them unless directed by Microsoft.
+    # They increase the maximum stdout/stderr log collection rate but will also cause higher cpu/memory usage.
+    # [agent_settings.fbit_config]
+    #   log_flush_interval_secs = "1"                 # default value is 15
+    #   tail_mem_buf_limit_megabytes = "10"           # default value is 10
+    #   tail_buf_chunksize_megabytes = "1"            # default value is 32kb (comment out this line for default)
+    #   tail_buf_maxsize_megabytes = "1"              # defautl value is 32kb (comment out this line for default)
 
 metadata:
   name: container-azm-ms-agentconfig
