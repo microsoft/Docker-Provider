@@ -87,7 +87,13 @@ if [[ "$AGENT_IMAGE_TAR_FILE_NAME" == *"tar.gz"* ]]; then
 fi
 
 if [[ "$AGENT_IMAGE_TAR_FILE_NAME" == *"tar.zip"* ]]; then
-  unzip $AGENT_IMAGE_TAR_FILE_NAME
+  sudo apt-get install unzip
+  if [ $? -eq 0 ]; then         
+    unzip $AGENT_IMAGE_TAR_FILE_NAME
+  else     
+    echo "-e error failed to install unzip package and cannot unzip windows agent tarball"
+    exit 1
+  fi
 fi
 
 echo "Pushing file $TARBALL_IMAGE_FILE to $AGENT_IMAGE_FULL_PATH"

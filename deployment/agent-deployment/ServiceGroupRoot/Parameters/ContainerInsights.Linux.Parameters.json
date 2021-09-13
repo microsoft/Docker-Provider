@@ -28,10 +28,6 @@
           ],
           "environmentVariables": [
             {
-              "name": "WINDOWS",
-              "value": ""
-            },
-            {
               "name": "AGENT_IMAGE_URI",
               "value": "__CONTAINER_URI__"
             },
