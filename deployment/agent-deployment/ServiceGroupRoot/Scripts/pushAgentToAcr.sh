@@ -87,7 +87,7 @@ if [[ "$AGENT_IMAGE_TAR_FILE_NAME" == *"tar.gz"* ]]; then
 fi
 
 if [[ "$AGENT_IMAGE_TAR_FILE_NAME" == *"tar.zip"* ]]; then
-  sudo apt-get install unzip
+  apt-get -y install unzip
   if [ $? -eq 0 ]; then         
     unzip $AGENT_IMAGE_TAR_FILE_NAME
   else     
