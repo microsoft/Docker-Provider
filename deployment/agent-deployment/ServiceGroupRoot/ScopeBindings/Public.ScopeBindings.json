@@ -38,8 +38,12 @@
                     "replaceWith": "$(CDPXWindowsRegistry)"
                 },
                 {
-                    "find": "__CDPX_TAG__",
-                    "replaceWith": "$(CDPXTag)"
+                    "find": "__CDPX_LINUX_TAG__",
+                    "replaceWith": "$(CDPXLinuxTag)"
+                },
+                {
+                    "find": "__CDPX_WINDOWS_TAG",
+                    "replaceWith": "$(CDPXWindowsTag)"
                 }
             ]
         }                                                                                                                                                

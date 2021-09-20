@@ -53,7 +53,7 @@
             },
             {
               "name": "CDPX_TAG",
-              "value": "__CDPX_TAG__"
+              "value": "__CDPX_WINDOWS_TAG__"
             }
           ], 
           "identity": {
