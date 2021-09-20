@@ -42,8 +42,16 @@
                     "replaceWith": "$(CDPXLinuxTag)"
                 },
                 {
-                    "find": "__CDPX_WINDOWS_TAG",
+                    "find": "__CDPX_WINDOWS_TAG__",
                     "replaceWith": "$(CDPXWindowsTag)"
+                },
+                {
+                    "find": "__CDPX_LINUX_REPO_NAME__",
+                    "replaceWith": "$(CDPXLinuxRepoName)"
+                },
+                {
+                    "find": "__CDPX_WINDOWS_REPO_NAME__",
+                    "replaceWith": "$(CDPXWindowsRepoName)"
                 }
             ]
         }                                                                                                                                                
