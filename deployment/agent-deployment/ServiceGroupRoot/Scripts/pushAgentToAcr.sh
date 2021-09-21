@@ -33,6 +33,11 @@ if [ -z $CDPX_REGISTRY ]; then
   exit 1
 fi
 
+if [ -z $CDPX_REPO_NAME ]; then
+  echo "-e error value of CDPX_REPO_NAME shouldn't be empty. check release variables"
+  exit 1
+fi
+
 if [ -z $ACR_NAME ]; then
   echo "-e error value of ACR_NAME shouldn't be empty. check release variables"
   exit 1
