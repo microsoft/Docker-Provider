@@ -3,7 +3,7 @@
     "contentVersion": "1.0.0.2",
       "ServiceMetadata": {
         "ServiceGroup": "ContainerInsightsAgent",
-        "Environment": "Dev"
+        "Environment": "Prod"
       },
       "ServiceResourceGroupDefinitions": [
         {
@@ -30,10 +30,10 @@
       ],
       "ServiceResourceGroups": [     
         {
-          "AzureResourceGroupName": "ContainerInsightsAgent-Global-Release",
+          "AzureResourceGroupName": "ContainerInsights-Agent-Release",
           "Location": "eastus2",
           "InstanceOf": "CI-Agent-ServiceResourceGroupDefinition",
-          "AzureSubscriptionId": "728bbd23-3b47-40c1-8c9a-c6c5ccd674fc",  
+          "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",  
           "ScopeTags": [
             {
               "Name": "Global"
