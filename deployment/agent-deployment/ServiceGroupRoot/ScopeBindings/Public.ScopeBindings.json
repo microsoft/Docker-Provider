@@ -22,14 +22,6 @@
                     "replaceWith": "$(ManagedIdentity)"
                 }, 
                 {
-                    "find": "__CDPX_LINUX_ACR__",
-                    "replaceWith": "$(CDPXLinuxACR)"
-                },
-                {
-                    "find": "__CDPX_WINDOWS_ACR__",
-                    "replaceWith": "$(CDPXWindowsACR)"
-                },
-                {
                     "find": "__CDPX_LINUX_REGISTRY__",
                     "replaceWith": "$(CDPXLinuxRegistry)"
                 },

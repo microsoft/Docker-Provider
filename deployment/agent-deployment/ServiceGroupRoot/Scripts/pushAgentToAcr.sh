@@ -18,11 +18,6 @@ if [ -z $AGENT_IMAGE_FULL_PATH ]; then
   exit 1
 fi
 
-if [ -z $CDPX_ACR ]; then
-  echo "-e error value of CDPX_ACR shouldn't be empty. check release variables"
-  exit 1
-fi
-
 if [ -z $CDPX_TAG ]; then
   echo "-e error value of CDPX_TAG shouldn't be empty. check release variables"
   exit 1
@@ -55,7 +50,7 @@ else
 fi     
 
 echo "Pushing ${AGENT_IMAGE_FULL_PATH} to ${ACR_NAME}"
-az acr import --name $ACR_NAME --registry $CDPX_REGISTRY --source ${CDPX_ACR}/official/${CDPX_REPO_NAME}:${CDPX_TAG} --image $AGENT_IMAGE_FULL_PATH
+az acr import --name $ACR_NAME --registry $CDPX_REGISTRY --source official/${CDPX_REPO_NAME}:${CDPX_TAG} --image $AGENT_IMAGE_FULL_PATH
 if [ $? -eq 0 ]; then
   echo "Retagged and pushed image successfully"
 else

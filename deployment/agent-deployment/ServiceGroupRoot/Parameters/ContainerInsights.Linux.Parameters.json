@@ -44,10 +44,6 @@
               "value": "__ACR_NAME__/public/azuremonitor/containerinsights/__AGENT_RELEASE__:__AGENT_RELEASE____AGENT_IMAGE_TAG_SUFFIX__"
             }, 
             {
-              "name": "CDPX_ACR",
-              "value": "__CDPX_LINUX_ACR__"
-            },
-            {
               "name": "CDPX_REGISTRY",
               "value": "__CDPX_LINUX_REGISTRY__"
             },
