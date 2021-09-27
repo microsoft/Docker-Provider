@@ -8,11 +8,20 @@ if [ -z $AGENT_IMAGE_TAG_SUFFIX ]; then
   exit 1
 fi
 
+#Make sure that tag being pushed will not overwrite an existing tag in mcr
+MCR_TAG_RESULT="`wget -qO- https://mcr.microsoft.com/v2/azuremonitor/containerinsights/ciprod/tags/list`"
+TAG_EXISTS=$(echo $MCR_TAG_RESULT | jq '.tags | contains(["'"$AGENT_IMAGE_TAG_SUFFIX"'"])')
+
+if $TAG_EXISTS; then
+  echo "-e error ${AGENT_IMAGE_TAG_SUFFIX} already exists in mcr. make sure the image tag is unique"
+  exit 1
+fi
+
 if [ -z $AGENT_RELEASE ]; then
   echo "-e error AGENT_RELEASE shouldnt be empty. check release variables"
   exit 1
 fi
-#!
+
 if [ -z $AGENT_IMAGE_FULL_PATH ]; then
   echo "-e error AGENT_IMAGE_FULL_PATH shouldnt be empty. check release variables"
   exit 1
