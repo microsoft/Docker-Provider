@@ -41,7 +41,7 @@
             },
             {
               "name": "AGENT_IMAGE_FULL_PATH",
-              "value": "__ACR_NAME__/public/azuremonitor/containerinsights/__AGENT_RELEASE__:__AGENT_RELEASE____AGENT_IMAGE_TAG_SUFFIX__"
+              "value": "public/azuremonitor/containerinsights/__AGENT_RELEASE__:__AGENT_RELEASE____AGENT_IMAGE_TAG_SUFFIX__"
             }, 
             {
               "name": "CDPX_REGISTRY",
