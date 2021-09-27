@@ -10,6 +10,10 @@ fi
 
 #Make sure that tag being pushed will not overwrite an existing tag in mcr
 MCR_TAG_RESULT="`wget -qO- https://mcr.microsoft.com/v2/azuremonitor/containerinsights/ciprod/tags/list`"
+if [ $? -ne 0 ]; then         
+   echo "-e error unable to get list of mcr tags for azuremonitor/containerinsights/ciprod repository"
+   exit 1
+fi
 TAG_EXISTS=$(echo $MCR_TAG_RESULT | jq '.tags | contains(["'"$AGENT_IMAGE_TAG_SUFFIX"'"])')
 
 if $TAG_EXISTS; then
