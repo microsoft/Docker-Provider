@@ -36,12 +36,16 @@
               "value": "__AGENT_RELEASE__"
             },
             {
+              "name": "AGENT_RELEASE_TAG",
+              "value": "__AGENT_RELEASE_TAG__"
+            },
+            {
               "name": "AGENT_IMAGE_TAG_SUFFIX",
               "value": "__AGENT_IMAGE_TAG_SUFFIX__"
             },
             {
               "name": "AGENT_IMAGE_FULL_PATH",
-              "value": "public/azuremonitor/containerinsights/__AGENT_RELEASE__:__AGENT_RELEASE____AGENT_IMAGE_TAG_SUFFIX__"
+              "value": "public/azuremonitor/containerinsights/__AGENT_RELEASE__:__AGENT_RELEASE_TAG____AGENT_IMAGE_TAG_SUFFIX__"
             }, 
             {
               "name": "CDPX_REGISTRY",

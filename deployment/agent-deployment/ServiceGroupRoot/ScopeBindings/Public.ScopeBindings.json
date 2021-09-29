@@ -12,6 +12,10 @@
                 {
                     "find": "__AGENT_RELEASE__",
                     "replaceWith": "$(AgentRelease)"
+                },
+                {
+                    "find": "__AGENT_RELEASE_TAG__",
+                    "replaceWith": "$(AgentReleaseTag)"
                 }, 
                 {
                     "find": "__AGENT_IMAGE_TAG_SUFFIX__",
