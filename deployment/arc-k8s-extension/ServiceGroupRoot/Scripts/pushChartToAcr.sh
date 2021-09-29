@@ -106,14 +106,24 @@ echo "START - Release stage : ${RELEASE_STAGE}"
 echo "Using acr : ${ACR_NAME}"
 echo "Using acr repo type: ${REPO_TYPE}"
 
-echo "login to acr:${ACR_NAME} using helm ..."
-echo $ACR_APP_SECRET | helm registry login $ACR_NAME  --username $ACR_APP_ID --password-stdin 
+#Login to az cli and authenticate to acr
+echo "Login cli using managed identity"
+az login --identity
 if [ $? -eq 0 ]; then
-  echo "login to acr:${ACR_NAME} using helm completed successfully."
+  echo "Logged in successfully"
 else
-  echo "-e error login to acr:${ACR_NAME} using helm failed. Please review Ev2 pipeline logs for more details on the error."
+  echo "-e error failed to login to az with managed identity credentials"
   exit 1
 fi   
+
+# echo "login to acr:${ACR_NAME} using helm ..."
+# echo $ACR_APP_SECRET | helm registry login $ACR_NAME  --username $ACR_APP_ID --password-stdin 
+# if [ $? -eq 0 ]; then
+#   echo "login to acr:${ACR_NAME} using helm completed successfully."
+# else
+#   echo "-e error login to acr:${ACR_NAME} using helm failed. Please review Ev2 pipeline logs for more details on the error."
+#   exit 1
+# fi   
 
 case $RELEASE_STAGE in
 
