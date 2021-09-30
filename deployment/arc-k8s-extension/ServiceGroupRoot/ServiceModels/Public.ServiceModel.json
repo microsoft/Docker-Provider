@@ -33,7 +33,7 @@
         "AzureResourceGroupName": "ContainerInsightsExtension-Canary-Release",
         "Location": "eastus2",
         "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
-        "AzureSubscriptionId": "5fab7b6f-6150-42fe-89e1-0f07a0a9a46f",  
+        "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",  
         "ScopeTags": [
           {
             "Name": "Canary"
@@ -51,7 +51,7 @@
         "AzureResourceGroupName": "ContainerInsightsExtension-Pilot-Release",
         "Location": "eastus2",
         "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
-        "AzureSubscriptionId": "5fab7b6f-6150-42fe-89e1-0f07a0a9a46f",  
+        "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",  
         "ScopeTags": [
           {
             "Name": "Pilot"
@@ -69,7 +69,7 @@
         "AzureResourceGroupName": "ContainerInsightsExtension-LightLoad-Release",
         "Location": "eastus2",
         "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
-        "AzureSubscriptionId": "5fab7b6f-6150-42fe-89e1-0f07a0a9a46f",  
+        "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",  
         "ScopeTags": [
           {
             "Name": "LightLoad"
@@ -87,7 +87,7 @@
         "AzureResourceGroupName": "ContainerInsightsExtension-MediumLoad-Release",
         "Location": "eastus2",
         "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
-        "AzureSubscriptionId": "5fab7b6f-6150-42fe-89e1-0f07a0a9a46f",  
+        "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",  
         "ScopeTags": [
           {
             "Name": "MediumLoad"
@@ -105,7 +105,7 @@
         "AzureResourceGroupName": "ContainerInsightsExtension-HighLoad-Release",
         "Location": "eastus2",
         "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
-        "AzureSubscriptionId": "5fab7b6f-6150-42fe-89e1-0f07a0a9a46f",  
+        "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",  
         "ScopeTags": [
           {
             "Name": "HighLoad"
@@ -123,7 +123,7 @@
         "AzureResourceGroupName": "ContainerInsightsExtension-FF-Release",
         "Location": "eastus2",
         "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
-        "AzureSubscriptionId": "5fab7b6f-6150-42fe-89e1-0f07a0a9a46f",  
+        "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",  
         "ScopeTags": [
           {
             "Name": "FF"
@@ -141,7 +141,7 @@
         "AzureResourceGroupName": "ContainerInsightsExtension-MC-Release",
         "Location": "eastus2",
         "InstanceOf": "ARC-Extension-ServiceResourceGroupDefinition",
-        "AzureSubscriptionId": "5fab7b6f-6150-42fe-89e1-0f07a0a9a46f",  
+        "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",  
         "ScopeTags": [
           {
             "Name": "MC"
