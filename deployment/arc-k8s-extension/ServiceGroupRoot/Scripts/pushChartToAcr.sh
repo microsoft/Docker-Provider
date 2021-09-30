@@ -112,18 +112,24 @@ az login --identity
 if [ $? -eq 0 ]; then
   echo "Logged in successfully"
 else
-  echo "-e error failed to login to az with managed identity credentials"
+  echo "-e error az login with managed identity credentials failed. Please review the Ev2 pipeline logs for more details on the error."
+  exit 1
+fi
+
+ACCESS_TOKEN=$(az acr login --name ${ACR_NAME} --expose-token --output tsv --query accessToken)
+if [ $? -ne 0 ]; then         
+   echo "-e error az acr login failed. Please review the Ev2 pipeline logs for more details on the error."
+   exit 1
+fi
+
+echo "login to acr:${ACR_NAME} using helm ..."
+echo $ACCESS_TOKEN | helm registry login $ACR_NAME -u 00000000-0000-0000-0000-000000000000 --password-stdin
+if [ $? -eq 0 ]; then
+  echo "login to acr:${ACR_NAME} using helm completed successfully."
+else
+  echo "-e error login to acr:${ACR_NAME} using helm failed. Please review Ev2 pipeline logs for more details on the error."
   exit 1
 fi   
-
-# echo "login to acr:${ACR_NAME} using helm ..."
-# echo $ACR_APP_SECRET | helm registry login $ACR_NAME  --username $ACR_APP_ID --password-stdin 
-# if [ $? -eq 0 ]; then
-#   echo "login to acr:${ACR_NAME} using helm completed successfully."
-# else
-#   echo "-e error login to acr:${ACR_NAME} using helm failed. Please review Ev2 pipeline logs for more details on the error."
-#   exit 1
-# fi   
 
 case $RELEASE_STAGE in
 
