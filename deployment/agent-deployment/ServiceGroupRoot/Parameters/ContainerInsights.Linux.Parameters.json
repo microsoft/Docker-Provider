@@ -28,30 +28,6 @@
           ],
           "environmentVariables": [
             {
-              "name": "AGENT_IMAGE_URI",
-              "value": "__CONTAINER_URI__"
-            },
-            {
-              "name": "AGENT_IMAGE_SAS",
-              "value": "__CONTAINER_SAS_TOKEN__"
-            },
-            {
-              "name": "STORAGE_CONTAINER_NAME",
-              "value": "__STORAGE_CONTAINER_NAME__"
-            },
-            {
-              "name": "STORAGE_ACCOUNT_NAME",
-              "value": "__STORAGE_ACCOUNT_NAME__"
-            },
-            {
-              "name": "AGENT_IMAGE_TAR_FILE_NAME",
-              "value": "agentimage.tar.gz"
-            },
-            {
-              "name": "RELEASE_ID",
-              "value": "__RELEASE_ID__"
-            },
-            {
               "name": "ACR_NAME",
               "value": "__ACR_NAME__"
             },
@@ -65,7 +41,19 @@
             },
             {
               "name": "AGENT_IMAGE_FULL_PATH",
-              "value": "__ACR_NAME__/public/azuremonitor/containerinsights/__AGENT_RELEASE__:__AGENT_RELEASE____AGENT_IMAGE_TAG_SUFFIX__"
+              "value": "public/azuremonitor/containerinsights/__AGENT_RELEASE__:__AGENT_RELEASE____AGENT_IMAGE_TAG_SUFFIX__"
+            }, 
+            {
+              "name": "CDPX_REGISTRY",
+              "value": "__CDPX_LINUX_REGISTRY__"
+            },
+            {
+              "name": "CDPX_REPO_NAME",
+              "value": "__CDPX_LINUX_REPO_NAME__"
+            },
+            {
+              "name": "CDPX_TAG",
+              "value": "__CDPX_LINUX_TAG__"
             }
           ], 
           "identity": {

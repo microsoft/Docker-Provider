@@ -243,6 +243,9 @@ class ApplicationInsightsUtility
           getContainerRuntimeInfo()
         end
         @@CustomProperties["Computer"] = properties["Computer"]
+        if !properties["addonTokenAdapterImageTag"].nil? && !properties["addonTokenAdapterImageTag"].empty?
+          @@CustomProperties["addonTokenAdapterImageTag"] = properties["addonTokenAdapterImageTag"]
+        end
         sendHeartBeatEvent(pluginName)
         sendLastProcessedContainerInventoryCountMetric(pluginName, properties)
       rescue => errorStr

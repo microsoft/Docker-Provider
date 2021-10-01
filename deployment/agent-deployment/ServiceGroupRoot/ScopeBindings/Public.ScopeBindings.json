@@ -18,30 +18,33 @@
                     "replaceWith": "$(AgentImageTagSuffix)"
                 },
                 {
-                    "find": "__RELEASE_ID__",
-                    "replaceWith": "$(Release.ReleaseId)"
-                },
-                {
                     "find": "__MANAGED_IDENTITY__",
                     "replaceWith": "$(ManagedIdentity)"
                 }, 
                 {
-                    "find": "__CONTAINER_URI__",
-                    "replaceWith": "$(Storage.StorageContainerUri)"
-                }, 
-                {
-                    "find": "__CONTAINER_SAS_TOKEN__",
-                    "replaceWith": "$(Storage.StorageContainerSasToken)"
-                }, 
-                {
-                    "find": "__STORAGE_CONTAINER_NAME__",
-                    "replaceWith": "$(StorageContainerName)"
+                    "find": "__CDPX_LINUX_REGISTRY__",
+                    "replaceWith": "$(CDPXLinuxRegistry)"
                 },
                 {
-                    "find": "__STORAGE_ACCOUNT_NAME__",
-                    "replaceWith": "$(StorageAccountName)"
+                    "find": "__CDPX_WINDOWS_REGISTRY__",
+                    "replaceWith": "$(CDPXWindowsRegistry)"
+                },
+                {
+                    "find": "__CDPX_LINUX_TAG__",
+                    "replaceWith": "$(CDPXLinuxTag)"
+                },
+                {
+                    "find": "__CDPX_WINDOWS_TAG__",
+                    "replaceWith": "$(CDPXWindowsTag)"
+                },
+                {
+                    "find": "__CDPX_LINUX_REPO_NAME__",
+                    "replaceWith": "$(CDPXLinuxRepoName)"
+                },
+                {
+                    "find": "__CDPX_WINDOWS_REPO_NAME__",
+                    "replaceWith": "$(CDPXWindowsRepoName)"
                 }
-
             ]
         }                                                                                                                                                
     ]

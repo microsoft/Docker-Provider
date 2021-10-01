@@ -833,7 +833,11 @@ spec:
             command:
               - cmd
               - /c
-              - C:\opt\omsagentwindows\scripts\cmd\livenessProbe.cmd
+              - C:\opt\omsagentwindows\scripts\cmd\livenessprobe.exe
+              - fluent-bit.exe
+              - fluentdwinaks
+              - "C:\\etc\\omsagentwindows\\filesystemwatcher.txt"
+              - "C:\\etc\\omsagentwindows\\renewcertificate.txt"
           periodSeconds: 60
           initialDelaySeconds: 180
           timeoutSeconds: 15

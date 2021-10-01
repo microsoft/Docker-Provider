@@ -16,6 +16,10 @@
                 {
                     "find": "__CHART_VERSION__",
                     "replaceWith": "$(ChartVersion)"
+                },
+                {
+                    "find": "__MANAGED_IDENTITY__",
+                    "replaceWith": "$(ManagedIdentity)"
                 }               
             ]
         },
@@ -33,6 +37,10 @@
                 {
                     "find": "__CHART_VERSION__",
                     "replaceWith": "$(ChartVersion)"
+                },
+                {
+                    "find": "__MANAGED_IDENTITY__",
+                    "replaceWith": "$(ManagedIdentity)"
                 }       
             ]
         },
@@ -50,6 +58,10 @@
                 {
                     "find": "__CHART_VERSION__",
                     "replaceWith": "$(ChartVersion)"
+                },
+                {
+                    "find": "__MANAGED_IDENTITY__",
+                    "replaceWith": "$(ManagedIdentity)"
                 }                           
             ]
         },
@@ -67,6 +79,10 @@
                 {
                     "find": "__CHART_VERSION__",
                     "replaceWith": "$(ChartVersion)"
+                },
+                {
+                    "find": "__MANAGED_IDENTITY__",
+                    "replaceWith": "$(ManagedIdentity)"
                 }                     
             ]
         },
@@ -84,6 +100,10 @@
                 {
                     "find": "__CHART_VERSION__",
                     "replaceWith": "$(ChartVersion)"
+                },
+                {
+                    "find": "__MANAGED_IDENTITY__",
+                    "replaceWith": "$(ManagedIdentity)"
                 }                                 
             ]
         },
@@ -101,6 +121,10 @@
                 {
                     "find": "__CHART_VERSION__",
                     "replaceWith": "$(ChartVersion)"
+                },
+                {
+                    "find": "__MANAGED_IDENTITY__",
+                    "replaceWith": "$(ManagedIdentity)"
                 }                          
             ]
         },
@@ -118,6 +142,10 @@
                 {
                     "find": "__CHART_VERSION__",
                     "replaceWith": "$(ChartVersion)"
+                },
+                {
+                    "find": "__MANAGED_IDENTITY__",
+                    "replaceWith": "$(ManagedIdentity)"
                 }                
             ]
         }                                                                                                                                                   
