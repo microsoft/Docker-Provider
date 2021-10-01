@@ -101,11 +101,11 @@ if [ -z $AKS_RESOURCE_ID ]; then
 else
       export customResourceId=$AKS_RESOURCE_ID
       echo "export customResourceId=$AKS_RESOURCE_ID" >> ~/.bashrc
-      source ~/.bashrc
+      # source ~/.bashrc
       echo "customResourceId:$customResourceId"
       export customRegion=$AKS_REGION
       echo "export customRegion=$AKS_REGION" >> ~/.bashrc
-      source ~/.bashrc
+      # source ~/.bashrc
       echo "customRegion:$customRegion"
 fi
 
@@ -120,7 +120,7 @@ if [  -e "/etc/config/settings/schema-version" ] && [  -s "/etc/config/settings/
 
       export AZMON_AGENT_CFG_SCHEMA_VERSION=$config_schema_version
       echo "export AZMON_AGENT_CFG_SCHEMA_VERSION=$config_schema_version" >> ~/.bashrc
-      source ~/.bashrc
+      # source ~/.bashrc
       echo "AZMON_AGENT_CFG_SCHEMA_VERSION:$AZMON_AGENT_CFG_SCHEMA_VERSION"
 fi
 
@@ -135,7 +135,7 @@ if [  -e "/etc/config/settings/config-version" ] && [  -s "/etc/config/settings/
 
       export AZMON_AGENT_CFG_FILE_VERSION=$config_file_version
       echo "export AZMON_AGENT_CFG_FILE_VERSION=$config_file_version" >> ~/.bashrc
-      source ~/.bashrc
+      # source ~/.bashrc
       echo "AZMON_AGENT_CFG_FILE_VERSION:$AZMON_AGENT_CFG_FILE_VERSION"
 fi
 
@@ -152,7 +152,7 @@ if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus
 
             export AZMON_OSM_CFG_SCHEMA_VERSION=$osm_config_schema_version
             echo "export AZMON_OSM_CFG_SCHEMA_VERSION=$osm_config_schema_version" >> ~/.bashrc
-            source ~/.bashrc
+            # source ~/.bashrc
             echo "AZMON_OSM_CFG_SCHEMA_VERSION:$AZMON_OSM_CFG_SCHEMA_VERSION"
       fi
 fi
@@ -199,20 +199,23 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
 
             echo $pwd > /opt/proxy_password
 
+            export MDSD_PROXY_MODE=application
             echo "export MDSD_PROXY_MODE=application" >> ~/.bashrc
+            export MDSD_PROXY_ADDRESS=$proto$hostport
             echo "export MDSD_PROXY_ADDRESS=$proto$hostport" >> ~/.bashrc
+            export MDSD_PROXY_USERNAME=$user
             echo "export MDSD_PROXY_USERNAME=$user" >> ~/.bashrc
+            export MDSD_PROXY_PASSWORD_FILE=/opt/proxy_password
             echo "export MDSD_PROXY_PASSWORD_FILE=/opt/proxy_password" >> ~/.bashrc
             
             #TODO: Compression + proxy creates a deserialization error in ODS. Not sure why
+            export MDSD_ODS_COMPRESSION_LEVEL=0
             echo "export MDSD_ODS_COMPRESSION_LEVEL=0" >> ~/.bashrc
 
-            # TODO: set proxy in go. It's possible that setting $PROXY_ENDPOINT is good enough, but double check
-            # go and ruby should automatically use this env variable
-            echo "export http_proxy=$PROXY_ENDPOINT" >> ~/.bashrc
-            echo "export https_proxy=$PROXY_ENDPOINT" >> ~/.bashrc
-
-            source ~/.bashrc
+            # # TODO: set proxy in go. It's possible that setting $PROXY_ENDPOINT is good enough, but double check
+            # # go and ruby should automatically use this env variable
+            # echo "export http_proxy=$PROXY_ENDPOINT" >> ~/.bashrc
+            # echo "export https_proxy=$PROXY_ENDPOINT" >> ~/.bashrc
       fi
 
       if [ ! -z "$PROXY_ENDPOINT" ]; then
@@ -310,7 +313,7 @@ aikey=$(echo $APPLICATIONINSIGHTS_AUTH | base64 --decode)
 export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey
 echo "export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey" >> ~/.bashrc
 
-source ~/.bashrc
+# source ~/.bashrc
 
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
       #Parse the configmap to set the right environment variables.
@@ -502,7 +505,7 @@ sudo setcap cap_sys_ptrace,cap_dac_read_search+ep /usr/bin/ruby2.6
 echo "export KUBELET_RUNTIME_OPERATIONS_METRIC="$KUBELET_RUNTIME_OPERATIONS_METRIC >> ~/.bashrc
 echo "export KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC="$KUBELET_RUNTIME_OPERATIONS_ERRORS_METRIC >> ~/.bashrc
 
-source ~/.bashrc
+# source ~/.bashrc
 
 echo $NODE_NAME > /var/opt/microsoft/docker-cimprov/state/containerhostname
 #check if file was written successfully.
@@ -562,7 +565,7 @@ else
   export MDSD_FLUENT_SOCKET_PORT="29230"
   echo "export MDSD_FLUENT_SOCKET_PORT=$MDSD_FLUENT_SOCKET_PORT" >> ~/.bashrc
 fi
-source ~/.bashrc
+# source ~/.bashrc
 
 dpkg -l | grep mdsd | awk '{print $2 " " $3}'
 
@@ -574,7 +577,7 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
     echo "export TENANT_NAME=$TENANT_NAME" >> ~/.bashrc
     export MDSD_ROLE_PREFIX=/var/run/mdsd-${CONTAINER_TYPE}/default
     echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >> ~/.bashrc
-    source ~/.bashrc
+    # source ~/.bashrc
     mkdir /var/run/mdsd-${CONTAINER_TYPE}
     # add -T 0xFFFF for full traces
     mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
