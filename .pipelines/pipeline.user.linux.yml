@@ -41,6 +41,10 @@ build:
           to: 'build'
           include:
             - '*.yaml'
+        - from: 'charts'
+          to: 'build'
+          include:
+            - '**'
 
 package:
   commands:
