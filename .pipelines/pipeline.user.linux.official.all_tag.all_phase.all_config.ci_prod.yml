@@ -40,7 +40,7 @@ build:
         - from: 'kubernetes'
           to: 'build'
           include:
-            - 'omsagent.yaml'
+            - '*.yaml'
 
 package:
   commands:
