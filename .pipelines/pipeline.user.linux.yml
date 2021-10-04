@@ -33,6 +33,14 @@ build:
           to: 'build'
           include:
             - '**'
+        - from: '.pipelines'
+          to: 'build'
+          include:
+            - '**'
+        - from: 'kubernetes'
+          to: 'build'
+          include:
+            - 'omsagent.yaml'
 
 package:
   commands:
