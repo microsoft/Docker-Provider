@@ -45,6 +45,10 @@ build:
           to: 'build'
           include:
             - '**'
+        - from: 'test/e2e'
+          to: 'build'
+          include:
+            - '*.yaml'
 
 package:
   commands:
