@@ -158,7 +158,6 @@ if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus
 fi
 
 export PROXY_ENDPOINT=""
-# TODO: here
 # Check for internet connectivity or workspace deletion
 if [ -e "/etc/omsagent-secret/WSID" ]; then
       workspaceId=$(cat /etc/omsagent-secret/WSID)
