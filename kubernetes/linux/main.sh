@@ -199,17 +199,17 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             echo $pwd > /opt/proxy_password
 
             export MDSD_PROXY_MODE=application
-            echo "export MDSD_PROXY_MODE=application" >> ~/.bashrc
+            echo "export MDSD_PROXY_MODE=$MDSD_PROXY_MODE" >> ~/.bashrc
             export MDSD_PROXY_ADDRESS=$proto$hostport
-            echo "export MDSD_PROXY_ADDRESS=$proto$hostport" >> ~/.bashrc
+            echo "export MDSD_PROXY_ADDRESS=$MDSD_PROXY_ADDRESS" >> ~/.bashrc
             export MDSD_PROXY_USERNAME=$user
-            echo "export MDSD_PROXY_USERNAME=$user" >> ~/.bashrc
+            echo "export MDSD_PROXY_USERNAME=$MDSD_PROXY_USERNAME" >> ~/.bashrc
             export MDSD_PROXY_PASSWORD_FILE=/opt/proxy_password
-            echo "export MDSD_PROXY_PASSWORD_FILE=/opt/proxy_password" >> ~/.bashrc
+            echo "export MDSD_PROXY_PASSWORD_FILE=$MDSD_PROXY_PASSWORD_FILE" >> ~/.bashrc
             
             #TODO: Compression + proxy creates a deserialization error in ODS. This needs a fix in MDSD
             export MDSD_ODS_COMPRESSION_LEVEL=0
-            echo "export MDSD_ODS_COMPRESSION_LEVEL=0" >> ~/.bashrc
+            echo "export MDSD_ODS_COMPRESSION_LEVEL=$MDSD_ODS_COMPRESSION_LEVEL" >> ~/.bashrc
       fi
 
       if [ ! -z "$PROXY_ENDPOINT" ]; then
@@ -578,7 +578,7 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
 else
     echo "starting mdsd mode in main container..."
     # add -T 0xFFFF for full traces
-    mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+    mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos 2>> /dev/null &
 fi
 
 # Set up a cron job for logrotation
