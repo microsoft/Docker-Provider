@@ -196,7 +196,7 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
                echo "successfully validated provided proxy endpoint is valid and expected format"
             fi
 
-            echo $pwd > /opt/proxy_password
+            echo $pwd > /opt/microsoft/docker-cimprov/proxy_password
 
             export MDSD_PROXY_MODE=application
             echo "export MDSD_PROXY_MODE=$MDSD_PROXY_MODE" >> ~/.bashrc
@@ -204,7 +204,7 @@ if [ -e "/etc/omsagent-secret/WSID" ]; then
             echo "export MDSD_PROXY_ADDRESS=$MDSD_PROXY_ADDRESS" >> ~/.bashrc
             export MDSD_PROXY_USERNAME=$user
             echo "export MDSD_PROXY_USERNAME=$MDSD_PROXY_USERNAME" >> ~/.bashrc
-            export MDSD_PROXY_PASSWORD_FILE=/opt/proxy_password
+            export MDSD_PROXY_PASSWORD_FILE=/opt/microsoft/docker-cimprov/proxy_password
             echo "export MDSD_PROXY_PASSWORD_FILE=$MDSD_PROXY_PASSWORD_FILE" >> ~/.bashrc
             
             #TODO: Compression + proxy creates a deserialization error in ODS. This needs a fix in MDSD
