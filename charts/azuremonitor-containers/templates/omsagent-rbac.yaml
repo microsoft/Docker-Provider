@@ -10,7 +10,11 @@ metadata:
     heritage: {{ .Release.Service }}
 ---
 kind: ClusterRole
+{{- if .Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1" }}
+apiVersion: rbac.authorization.k8s.io/v1
+{{- else }}
 apiVersion: rbac.authorization.k8s.io/v1beta1
+{{- end }}
 metadata:
   name: omsagent-reader
   labels:
@@ -33,7 +37,7 @@ rules:
   verbs: ["get", "create", "patch"]
 - nonResourceURLs: ["/metrics"]
   verbs: ["get"]
-#arc k8s extension model grants access as part of the extension msi 
+#arc k8s extension model grants access as part of the extension msi
 #remove this explicit permission once the extension available in public preview
 {{- if (empty .Values.Azure.Extension.Name) }}
 - apiGroups: [""]
@@ -43,7 +47,11 @@ rules:
 {{- end }}
 ---
 kind: ClusterRoleBinding
+{{- if .Capabilities.APIVersions.Has "rbac.authorization.k8s.io/v1" }}
+apiVersion: rbac.authorization.k8s.io/v1
+{{- else }}
 apiVersion: rbac.authorization.k8s.io/v1beta1
+{{- end }}
 metadata:
   name: omsagentclusterrolebinding
   labels:

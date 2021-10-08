@@ -1,4 +1,4 @@
-{{- if and (ne .Values.omsagent.secret.key "<your_workspace_key>") (ne .Values.omsagent.secret.wsid "<your_workspace_id>") (or (ne .Values.omsagent.env.clusterName "<your_cluster_name>") (ne .Values.omsagent.env.clusterId "<your_cluster_id>"))}}
+{{- if and (ne .Values.omsagent.secret.key "<your_workspace_key>") (ne .Values.omsagent.secret.wsid "<your_workspace_id>") (or (ne .Values.omsagent.env.clusterName "<your_cluster_name>") (ne .Values.omsagent.env.clusterId "<your_cluster_id>") (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>") )}}
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -32,7 +32,7 @@ spec:
      options:
        - name: ndots
          value: "3"
-{{- if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion }}
+{{- if semverCompare ">=1.14-0" .Capabilities.KubeVersion.Version }}
    nodeSelector:
       kubernetes.io/os: windows
 {{- else }}

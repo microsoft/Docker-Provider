@@ -33,6 +33,22 @@ build:
           to: 'build'
           include:
             - '**'
+        - from: '.pipelines'
+          to: 'build'
+          include:
+            - '*.sh'
+        - from: 'kubernetes'
+          to: 'build'
+          include:
+            - '*.yaml'
+        - from: 'charts'
+          to: 'build'
+          include:
+            - '**'
+        - from: 'test/e2e'
+          to: 'build'
+          include:
+            - '*.yaml'
 
 package:
   commands:
