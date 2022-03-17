@@ -70,6 +70,7 @@ steps:
     TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
 - task: AzureCLI@2
+  displayName: "Docker multi-arch linux build"
   inputs:
     azureSubscription: ${{ variables.armServiceConnectionName }}
     scriptType: bash
@@ -95,7 +96,7 @@ steps:
   displayName: 'Generation Task'
   inputs:
     BuildDropPath: '$(Build.ArtifactStagingDirectory)'
-    DockerImagesToScan: 'golang:1.14, ubuntu:18.04, ${{ variables.repoImageName }}:$(datetime)-$(commit)'
+    DockerImagesToScan: 'golang:1.15, ubuntu:18.04, ${{ variables.repoImageName }}:$(datetime)-$(commit)'
 
 - task: PublishBuildArtifacts@1
   inputs:
