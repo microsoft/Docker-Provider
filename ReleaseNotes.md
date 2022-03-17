@@ -16,13 +16,13 @@ Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate t
 ##### Version microsoft/oms:win-ciprod03172022 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod03172022 (windows)
 ##### Code change log
 - Linux Agent
-  - Multi-Arch Image to supports amd64 and arm64
+  - Multi-Arch Image to support both AMD64 and ARM64
   - Ruby upgraded to version 2.7 from 2.6
   - Fix Telegraf Permissions
   - Fix ADX bug with database name
   - Vulnerability fixes
   - MDSD updated to 1.17.0
-    - Proxy support
+    - HTTP Proxy support
     - Retries for Log Analytics Ingestion
     - ARM64 support
     - Memory leak fixes for network failure scenario
