@@ -11,16 +11,28 @@ additional questions or comments.
 
 Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate the agent build dates (not release dates)
 
-### 3/11/2022 -
-##### Version microsoft/oms:ciprod03112022 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03112022 (linux)
-##### Version microsoft/oms:win-ciprod03112022 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod03112022 (windows)
+### 3/17/2022 -
+##### Version microsoft/oms:ciprod03172022 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod03172022 (linux)
+##### Version microsoft/oms:win-ciprod03172022 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-ciprod03172022 (windows)
 ##### Code change log
 - Linux Agent
+  - Multi-Arch Image to supports amd64 and arm64
+  - Ruby upgraded to version 2.7 from 2.6
+  - Fix Telegraf Permissions
+  - Fix ADX bug with database name
   - Vulnerability fixes
+  - MDSD updated to 1.17.0
+    - Proxy support
+    - Retries for Log Analytics Ingestion
+    - ARM64 support
+    - Memory leak fixes for network failure scenario
 - Windows Agent
   - Bug fix for FluentBit stdout and stderr log filtering
 - Common
-    - Upgrade Go lang version from 1.14.1 to 1.15.14
+  - Upgrade Go lang version from 1.14.1 to 1.15.14
+  - MSI onboarding ARM template update
+  - AKS HTTP Proxy support
+  - Go packages upgrade to address vulnerabilities
 
 ### 1/31/2022 -
 ##### Version microsoft/oms:ciprod01312022 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod01312022 (linux)
