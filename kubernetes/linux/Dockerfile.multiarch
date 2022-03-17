@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.15 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.15.14 AS builder
 ARG TARGETOS TARGETARCH
 RUN /usr/bin/apt-get update && /usr/bin/apt-get install git g++ make pkg-config libssl-dev libpam0g-dev rpm librpm-dev uuid-dev libkrb5-dev python sudo gcc-aarch64-linux-gnu -y
 
