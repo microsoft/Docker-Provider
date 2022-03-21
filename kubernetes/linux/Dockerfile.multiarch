@@ -35,5 +35,9 @@ ENV AGENT_VERSION ${IMAGE_TAG}
 WORKDIR ${tmpdir}
 
 RUN chmod 775 $tmpdir/*.sh; sync; $tmpdir/setup.sh ${TARGETARCH}
-CMD [ "/opt/main.sh" ]
 
+COPY --from=aquasec/trivy:latest /usr/local/bin/trivy /usr/local/bin/trivy
+RUN trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL --skip-files "/usr/sbin/telegraf" --skip-files "/opt/telegraf" --skip-files "/usr/local/bin/trivy" /
+RUN rm /usr/local/bin/trivy
+
+CMD [ "/opt/main.sh" ]

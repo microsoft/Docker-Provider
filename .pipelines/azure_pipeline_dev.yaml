@@ -14,13 +14,14 @@ variables:
   subscription: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
   containerRegistry: 'containerinsightsprod'
   repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/containerinsights/cidev'
+  IS_PR: $[eq(variables['Build.Reason'], 'PullRequest')]
 
 steps:
 - bash: |
     commit=$(git rev-parse --short HEAD)
     echo "##vso[task.setvariable variable=commit;]$commit"
 
-    datetime=$(date +'%Y%m%d%s')
+    datetime=$(date +'%m%d%Y')
     echo "##vso[task.setvariable variable=datetime;]$datetime"
 
     cd $(Build.SourcesDirectory)/deployment/multiarch-agent-deployment/ServiceGroupRoot/Scripts
@@ -42,7 +43,7 @@ steps:
   inputs:
     SourceFolder: "$(Build.SourcesDirectory)/.pipelines"
     Contents: |
-      *.sh
+      **/*.sh
     TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
 - task: CopyFiles@2
@@ -88,12 +89,24 @@ steps:
       az account set -s ${{ variables.subscription }}
       az acr login -n ${{ variables.containerRegistry }}
 
-      docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/metadata.json --build-arg IMAGE_TAG=$(datetime)-$(commit) --push .
+      if [ "$(Build.Reason)" != "PullRequest" ]; then
+        docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/metadata.json --build-arg IMAGE_TAG=$(datetime)-$(commit) --push .
 
-      docker pull ${{ variables.repoImageName }}:$(datetime)-$(commit)
+        docker pull ${{ variables.repoImageName }}:$(datetime)-$(commit)
+      else
+        docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/metadata.json --build-arg IMAGE_TAG=$(datetime)-$(commit) .
+      fi
 
 - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
   displayName: 'Generation Task'
+  condition: eq(variables.IS_PR, true)
+  inputs:
+    BuildDropPath: '$(Build.ArtifactStagingDirectory)'
+    DockerImagesToScan: 'golang:1.15.14, ubuntu:18.04'
+
+- task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+  displayName: 'Generation Task'
+  condition: eq(variables.IS_PR, false)
   inputs:
     BuildDropPath: '$(Build.ArtifactStagingDirectory)'
     DockerImagesToScan: 'golang:1.15.14, ubuntu:18.04, ${{ variables.repoImageName }}:$(datetime)-$(commit)'

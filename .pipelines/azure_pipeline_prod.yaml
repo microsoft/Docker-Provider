@@ -20,7 +20,7 @@ steps:
     commit=$(git rev-parse --short HEAD)
     echo "##vso[task.setvariable variable=commit;]$commit"
 
-    datetime=$(date +'%Y%m%d%s')
+    datetime=$(date +'%m%d%Y')
     echo "##vso[task.setvariable variable=datetime;]$datetime"
 
     cd $(Build.SourcesDirectory)/deployment/multiarch-agent-deployment/ServiceGroupRoot/Scripts
