@@ -4,7 +4,15 @@
 # https://aka.ms/yaml
 
 trigger:
-- ci_dev
+  batch: true
+  branches:
+    include:
+    - ci_dev
+
+pr:
+  branches:
+    include:
+    - ci_dev
 
 pool:
   name: Azure-Pipelines-CI-Test-EO
