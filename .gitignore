@@ -23,7 +23,7 @@ intermediate
 *.dll
 *.obj
 # ignore docker provider shell bundle
-kubernetes/linux/Linux_ULINUX_1.0_x64_64_Release
+kubernetes/linux/Linux_ULINUX_1.0_*_64_Release
 # ignore generated .h files for go
 source/plugins/go/src/*.h
 *_mock.go
