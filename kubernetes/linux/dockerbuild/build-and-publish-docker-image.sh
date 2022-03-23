@@ -138,7 +138,7 @@ echo "source code base directory: $baseDir"
 echo "build directory for docker provider: $buildDir"
 echo "docker file directory: $dockerFileDir"
 
-if [ "$multi" -eq "1" ]; then
+if [ -n "$multi" ] && [ "$multi" -eq "1" ]; then
   echo "building multiarch"
   cd $baseDir
   docker buildx build --platform linux/arm64/v8,linux/amd64 -t $image --build-arg IMAGE_TAG=$imageTag -f $linuxDir/Dockerfile.multiarch --push .
