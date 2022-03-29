@@ -98,11 +98,11 @@ steps:
       az acr login -n ${{ variables.containerRegistry }}
 
       if [ "$(Build.Reason)" != "PullRequest" ]; then
-        docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:ciprod-$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/metadata.json --build-arg IMAGE_TAG=ciprod-$(datetime)-$(commit) --push .
+        docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:ciprod-$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/metadata.json --push .
 
         docker pull ${{ variables.repoImageName }}:ciprod-$(datetime)-$(commit)
       else
-        docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:ciprod-$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/metadata.json --build-arg IMAGE_TAG=ciprod-$(datetime)-$(commit) .
+        docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:ciprod-$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/metadata.json .
       fi
 
 
