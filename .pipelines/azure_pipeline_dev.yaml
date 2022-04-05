@@ -23,6 +23,8 @@ variables:
 
 jobs:
 - job: common
+  pool:
+    name: Azure-Pipelines-CI-Test-EO
   steps:
   - bash: |
       commit=$(git rev-parse --short HEAD)
