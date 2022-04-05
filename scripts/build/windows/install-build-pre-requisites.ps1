@@ -133,6 +133,8 @@ function Install-Docker() {
    Write-Host("installing docker for desktop completed")
 }
 
+$ProgressPreference = 'SilentlyContinue'
+
 Write-Host "Install GO 1.15.14 version"
 Install-Go
 Write-Host "Install Build dependencies"
