@@ -87,6 +87,7 @@ jobs:
     commit: $[ dependencies.common.outputs['setup.commit'] ]  
     datetime: $[ dependencies.common.outputs['setup.datetime'] ]  
 
+  steps:
   - task: AzureCLI@2
     displayName: "Docker multi-arch linux build"
     inputs:
