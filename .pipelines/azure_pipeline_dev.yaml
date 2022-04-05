@@ -139,7 +139,15 @@ jobs:
 
   - script: |
       setlocal enabledelayedexpansion
-      powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "%~dp0..\build\windows\Makefile.ps1"
+      powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\windows\Makefile.ps1"
       endlocal
       exit /B %ERRORLEVEL%
     displayName: 'build base'
+
+  - task: PowerShell@2
+    inputs:
+      targetType: 'inline'
+      script: |
+        cd kubernetes/windows
+        docker build -t test:test --build-arg IMAGE_TAG=test .
+    displayName: 'build docker'
