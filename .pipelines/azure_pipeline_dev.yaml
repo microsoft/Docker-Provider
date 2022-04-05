@@ -128,8 +128,7 @@ jobs:
 
 - job: build_windows
   pool:
-    name: Azure-Pipelines-CI-Test-EO
-    demands: agent.os -equals Windows_NT
+    name: Azure-Pipelines-Windows-CI-Test-EO
   
   steps:
   - task: PowerShell@2
