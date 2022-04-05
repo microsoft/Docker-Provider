@@ -14,9 +14,6 @@ pr:
     include:
     - ci_dev
 
-pool:
-  name: Azure-Pipelines-CI-Test-EO
-
 variables:
   armServiceConnectionName: 'ci-1es-acr-connection'
   subscription: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
@@ -138,5 +135,5 @@ jobs:
   - task: PowerShell@2
     inputs:
       targetType: 'filePath'
-      filePath: $(System.DefaultWorkingDirectory)\scripts\build\windows\install-build-pre-requisites.ps1
+      filePath: $(System.DefaultWorkingDirectory)/scripts/build/windows/install-build-pre-requisites.ps1
     displayName: 'prereqs'
