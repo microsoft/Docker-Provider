@@ -135,4 +135,11 @@ jobs:
     inputs:
       targetType: 'filePath'
       filePath: $(System.DefaultWorkingDirectory)/scripts/build/windows/install-build-pre-requisites.ps1
-    displayName: 'prereqs'
+    displayName: 'install prereqs'
+
+  - script: |
+      setlocal enabledelayedexpansion
+      powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "%~dp0..\build\windows\Makefile.ps1"
+      endlocal
+      exit /B %ERRORLEVEL%
+    displayName: 'build base'
