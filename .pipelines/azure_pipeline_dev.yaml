@@ -16,6 +16,7 @@ pr:
 
 pool:
   name: Azure-Pipelines-CI-Test-EO
+  vmImage: ci-1es-windows-2019-compliant
 
 variables:
   armServiceConnectionName: 'ci-1es-acr-connection'
