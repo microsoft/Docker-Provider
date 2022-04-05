@@ -163,11 +163,12 @@ jobs:
       targetType: 'inline'
       script: |
         cd kubernetes/windows
-        if [ "$(Build.Reason)" != "PullRequest" ]; then
+        if ("$(Build.Reason)" -ne "PullRequest") {
           docker build --tag ${{ variables.repoImageName }}:win-$(datetime)-$(commit) --metadata-file $(Build.ArtifactStagingDirectory)/windows/metadata.json --build-arg IMAGE_TAG=win-$(datetime)-$(commit) --push .
-        else
+        }
+        else {
           docker build --tag ${{ variables.repoImageName }}:win-$(datetime)-$(commit) --metadata-file $(Build.ArtifactStagingDirectory)/windows/metadata.json --build-arg IMAGE_TAG=win-$(datetime)-$(commit) .
-        fi
+        }
     displayName: 'build docker'
 
   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
