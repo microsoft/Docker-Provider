@@ -1,3 +1,7 @@
+# speed up Invoke-WebRequest 
+# https://stackoverflow.com/questions/28682642/powershell-why-is-using-invoke-webrequest-much-slower-than-a-browser-download
+$ProgressPreference = 'SilentlyContinue'
+
 Write-Host ('Creating folder structure')
     New-Item -Type Directory -Path /installation -ErrorAction SilentlyContinue
 

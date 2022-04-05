@@ -22,23 +22,21 @@ variables:
   IS_PR: $[eq(variables['Build.Reason'], 'PullRequest')]
 
 jobs:
-- job: build_linux
-  pool:
-    name: Azure-Pipelines-CI-Test-EO
-
+- job: common
   steps:
   - bash: |
       commit=$(git rev-parse --short HEAD)
-      echo "##vso[task.setvariable variable=commit;]$commit"
+      echo "##vso[task.setvariable variable=commit;isOutput=true]$commit"
 
       datetime=$(date +'%m%d%Y')
-      echo "##vso[task.setvariable variable=datetime;]$datetime"
+      echo "##vso[task.setvariable variable=datetime;isOutput=true]$datetime"
 
       cd $(Build.SourcesDirectory)/deployment/multiarch-agent-deployment/ServiceGroupRoot/Scripts
       tar -czvf ../artifacts.tar.gz pushAgentToAcr.sh
 
       cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension/ServiceGroupRoot/Scripts
       tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ pushChartToAcr.sh
+    name: setup
 
   - task: CopyFiles@2
     displayName: "Copy ev2 deployment artifacts"
@@ -80,6 +78,15 @@ jobs:
         *.yaml
       TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
+
+- job: build_linux
+  dependsOn: common
+  pool:
+    name: Azure-Pipelines-CI-Test-EO
+  variables:
+    commit: $[ dependencies.common.outputs['setup.commit'] ]  
+    datetime: $[ dependencies.common.outputs['setup.datetime'] ]  
+
   - task: AzureCLI@2
     displayName: "Docker multi-arch linux build"
     inputs:
@@ -100,25 +107,25 @@ jobs:
         az acr login -n ${{ variables.containerRegistry }}
 
         if [ "$(Build.Reason)" != "PullRequest" ]; then
-          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/metadata.json --build-arg IMAGE_TAG=$(datetime)-$(commit) --push .
+          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(datetime)-$(commit) --push .
 
           docker pull ${{ variables.repoImageName }}:$(datetime)-$(commit)
         else
-          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/metadata.json --build-arg IMAGE_TAG=$(datetime)-$(commit) .
+          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(datetime)-$(commit) .
         fi
 
   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
     displayName: 'Generation Task'
     condition: eq(variables.IS_PR, true)
     inputs:
-      BuildDropPath: '$(Build.ArtifactStagingDirectory)'
+      BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
       DockerImagesToScan: 'golang:1.15.14, ubuntu:18.04'
 
   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
     displayName: 'Generation Task'
     condition: eq(variables.IS_PR, false)
     inputs:
-      BuildDropPath: '$(Build.ArtifactStagingDirectory)'
+      BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
       DockerImagesToScan: 'golang:1.15.14, ubuntu:18.04, ${{ variables.repoImageName }}:$(datetime)-$(commit)'
 
   - task: PublishBuildArtifacts@1
@@ -127,8 +134,12 @@ jobs:
       artifactName: drop
 
 - job: build_windows
+  dependsOn: common
   pool:
     name: Azure-Pipelines-Windows-CI-Test-EO
+  variables:
+    commit: $[ dependencies.common.outputs['setup.commit'] ]  
+    datetime: $[ dependencies.common.outputs['setup.datetime'] ]  
   
   steps:
   - task: PowerShell@2
@@ -149,5 +160,28 @@ jobs:
       targetType: 'inline'
       script: |
         cd kubernetes/windows
-        docker build -t test:test --build-arg IMAGE_TAG=test .
+        if [ "$(Build.Reason)" != "PullRequest" ]; then
+          docker build --tag ${{ variables.repoImageName }}:win-$(datetime)-$(commit) --metadata-file $(Build.ArtifactStagingDirectory)/windows/metadata.json --build-arg IMAGE_TAG=win-$(datetime)-$(commit) --push .
+        else
+          docker build --tag ${{ variables.repoImageName }}:win-$(datetime)-$(commit) --metadata-file $(Build.ArtifactStagingDirectory)/windows/metadata.json --build-arg IMAGE_TAG=win-$(datetime)-$(commit) .
+        fi
     displayName: 'build docker'
+
+  - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+    displayName: 'Generation Task'
+    condition: eq(variables.IS_PR, true)
+    inputs:
+      BuildDropPath: '$(Build.ArtifactStagingDirectory)/windows'
+      DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019'
+
+  - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+    displayName: 'Generation Task'
+    condition: eq(variables.IS_PR, false)
+    inputs:
+      BuildDropPath: '$(Build.ArtifactStagingDirectory)/windows'
+      DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019, ${{ variables.repoImageName }}:win-$(datetime)-$(commit)'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: drop
