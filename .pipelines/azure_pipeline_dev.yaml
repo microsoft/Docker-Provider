@@ -163,13 +163,14 @@ jobs:
     inputs:
       targetType: 'inline'
       script: |
+        # todo add metadata
         mkdir -p $(Build.ArtifactStagingDirectory)/windows
         cd kubernetes/windows
         if ("$(Build.Reason)" -ne "PullRequest") {
-          docker build --tag ${{ variables.repoImageName }}:win-$(datetime)-$(commit) --metadata-file $(Build.ArtifactStagingDirectory)/windows/metadata.json --build-arg IMAGE_TAG=win-$(datetime)-$(commit) --push .
+          docker build --tag ${{ variables.repoImageName }}:win-$(datetime)-$(commit)  --build-arg IMAGE_TAG=win-$(datetime)-$(commit) --push .
         }
         else {
-          docker build --tag ${{ variables.repoImageName }}:win-$(datetime)-$(commit) --metadata-file $(Build.ArtifactStagingDirectory)/windows/metadata.json --build-arg IMAGE_TAG=win-$(datetime)-$(commit) .
+          docker build --tag ${{ variables.repoImageName }}:win-$(datetime)-$(commit)  --build-arg IMAGE_TAG=win-$(datetime)-$(commit) .
         }
     displayName: 'build docker'
 
