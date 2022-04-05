@@ -13,8 +13,8 @@ function Install-Go {
         exit 1
     }
 
-   $url = "https://dl.google.com/go/go0.15.14.windows-amd64.msi"
-   $output = Join-Path -Path $tempGo -ChildPath "go0.15.14.windows-amd64.msi"
+   $url = "https://go.dev/dl/go1.15.14.windows-amd64.msi"
+   $output = Join-Path -Path $tempGo -ChildPath "go1.15.14.windows-amd64.msi"
    Write-Host("downloading go msi into directory path : " + $output + "  ...")
    Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
    Write-Host("downloading of go msi into directory path : " + $output + "  completed")
@@ -102,7 +102,7 @@ function Install-DotNetCoreSDK() {
 
    # install dotNet core sdk
    Write-Host("installing .net core sdk 3.1 ...")
-   Start-Process msiexec.exe -Wait -ArgumentList '/I ', $output, '/quiet'
+   Start-Process -Wait $output -ArgumentList " /q /norestart"
    Write-Host("installing .net core sdk 3.1 completed")
 }
 
@@ -121,8 +121,8 @@ function Install-Docker() {
         exit 1
     }
 
-   $url = "https://download.docker.com/win/stable/Docker%20Desktop%20Installer.exe"
-   $output = Join-Path -Path $dockerTemp -ChildPath "docker-desktop-installer.exe"
+   $url = "https://download.docker.com/win/enterprise/DockerDesktop.msi"
+   $output = Join-Path -Path $dockerTemp -ChildPath "docker-desktop-installer.msi"
    Write-Host("downloading docker-desktop-installer: " + $dockerTemp + "  ...")
    Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
    Write-Host("downloading docker-desktop-installer: " + $dockerTemp + "  completed")
