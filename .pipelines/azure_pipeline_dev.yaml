@@ -137,6 +137,6 @@ jobs:
   steps:
   - task: PowerShell@2
     inputs:
-    targetType: 'filePath'
-    filePath: $(System.DefaultWorkingDirectory)\install-build-pre-requisites.ps1
+      targetType: 'filePath'
+      filePath: $(System.DefaultWorkingDirectory)\install-build-pre-requisites.ps1
     displayName: 'prereqs'
