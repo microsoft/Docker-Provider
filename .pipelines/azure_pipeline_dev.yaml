@@ -28,10 +28,11 @@ jobs:
   steps:
   - bash: |
       commit=$(git rev-parse --short HEAD)
-      echo "##vso[task.setvariable variable=commit;isOutput=true]$commit"
-
       datetime=$(date +'%m%d%Y')
-      echo "##vso[task.setvariable variable=datetime;isOutput=true]$datetime"
+      linuxImagetag="$datetime"-"$commit"
+      windowsImageTag=win-"$datetime"-"$commit"
+      echo "##vso[task.setvariable variable=linuxImagetag;isOutput=true]$linuxImagetag"
+      echo "##vso[task.setvariable variable=windowsImageTag;isOutput=true]$windowsImageTag"
 
       cd $(Build.SourcesDirectory)/deployment/multiarch-agent-deployment/ServiceGroupRoot/Scripts
       tar -czvf ../artifacts.tar.gz pushAgentToAcr.sh
@@ -90,8 +91,7 @@ jobs:
   pool:
     name: Azure-Pipelines-CI-Test-EO
   variables:
-    commit: $[ dependencies.common.outputs['setup.commit'] ]  
-    datetime: $[ dependencies.common.outputs['setup.datetime'] ]  
+    linuxImagetag: $[ dependencies.common.outputs['setup.linuxImagetag'] ]  
 
   steps:
   - task: AzureCLI@2
@@ -115,11 +115,11 @@ jobs:
         az acr login -n ${{ variables.containerRegistry }}
 
         if [ "$(Build.Reason)" != "PullRequest" ]; then
-          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(datetime)-$(commit) --push .
+          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxImagetag) --push .
 
-          docker pull ${{ variables.repoImageName }}:$(datetime)-$(commit)
+          docker pull ${{ variables.repoImageName }}:$(linuxImagetag)
         else
-          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(datetime)-$(commit) .
+          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxImagetag) .
         fi
 
   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
@@ -134,7 +134,7 @@ jobs:
     condition: eq(variables.IS_PR, false)
     inputs:
       BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
-      DockerImagesToScan: 'golang:1.15.14, ubuntu:18.04, ${{ variables.repoImageName }}:$(datetime)-$(commit)'
+      DockerImagesToScan: 'golang:1.15.14, ubuntu:18.04, ${{ variables.repoImageName }}:$(linuxImagetag)'
 
   - task: PublishBuildArtifacts@1
     inputs:
@@ -146,8 +146,7 @@ jobs:
   pool:
     name: Azure-Pipelines-Windows-CI-Test-EO
   variables:
-    commit: $[ dependencies.common.outputs['setup.commit'] ]  
-    datetime: $[ dependencies.common.outputs['setup.datetime'] ]  
+    windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]  
   
   steps:
   - task: PowerShell@2
@@ -170,7 +169,6 @@ jobs:
       scriptType: ps
       scriptLocation: inlineScript
       inlineScript: |
-        # todo add metadata
         mkdir -p $(Build.ArtifactStagingDirectory)/windows
         cd kubernetes/windows
 
@@ -179,12 +177,12 @@ jobs:
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
 
-        @{"image.name"="${{ variables.repoImageName }}:win-$(datetime)-$(commit)"} | ConvertTo-Json -Compress | Out-File -Encoding ascii $(Build.ArtifactStagingDirectory)/windows/metadata.json
+        @{"image.name"="${{ variables.repoImageName }}:$(windowsImageTag)"} | ConvertTo-Json -Compress | Out-File -Encoding ascii $(Build.ArtifactStagingDirectory)/windows/metadata.json
 
-        docker build --tag ${{ variables.repoImageName }}:win-$(datetime)-$(commit) --build-arg IMAGE_TAG=win-$(datetime)-$(commit) .
+        docker build --tag ${{ variables.repoImageName }}:$(windowsImageTag) --build-arg IMAGE_TAG=$(windowsImageTag) .
 
         if ("$(Build.Reason)" -ne "PullRequest") {
-          docker push ${{ variables.repoImageName }}:win-$(datetime)-$(commit)
+          docker push ${{ variables.repoImageName }}:$(windowsImageTag)
         }
 
   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
@@ -199,7 +197,7 @@ jobs:
     condition: eq(variables.IS_PR, false)
     inputs:
       BuildDropPath: '$(Build.ArtifactStagingDirectory)/windows'
-      DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019, ${{ variables.repoImageName }}:win-$(datetime)-$(commit)'
+      DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019, ${{ variables.repoImageName }}:$(windowsImageTag)'
 
   - task: PublishBuildArtifacts@1
     inputs:
