@@ -179,6 +179,8 @@ jobs:
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
 
+        @{"image.name"="${{ variables.repoImageName }}:win-$(datetime)-$(commit)"} | ConvertTo-Json -Compress | Out-File -Encoding ascii $(Build.ArtifactStagingDirectory)/windows/metadata.json
+
         docker build --tag ${{ variables.repoImageName }}:win-$(datetime)-$(commit) --build-arg IMAGE_TAG=win-$(datetime)-$(commit) .
 
         if ("$(Build.Reason)" -ne "PullRequest") {
