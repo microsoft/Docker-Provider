@@ -21,106 +21,190 @@ variables:
   armServiceConnectionName: 'ci-1es-acr-connection-prod'
   subscription: '30c56c3a-54da-46ea-b004-06eb33432687'
   containerRegistry: 'containerinsightsbuild'
-  repoImageName: '${{ variables.containerRegistry }}.azurecr.io/official/linux'
+  repoImageNameLinux: '${{ variables.containerRegistry }}.azurecr.io/official/linux'
+  repoImageNameWindows: '${{ variables.containerRegistry }}.azurecr.io/official/windows'
   IS_PR: $[eq(variables['Build.Reason'], 'PullRequest')]
 
-steps:
-- bash: |
-    commit=$(git rev-parse --short HEAD)
-    echo "##vso[task.setvariable variable=commit;]$commit"
+jobs:
+- job: common
+  pool:
+    name: Azure-Pipelines-CI-Prod-EO
+  steps:
+  - bash: |
+      commit=$(git rev-parse --short HEAD)
+      datetime=$(date +'%m%d%Y')
+      linuxImagetag="ciprod-$datetime"-"$commit"
+      windowsImageTag=ciprod-win-"$datetime"-"$commit"
+      echo "##vso[task.setvariable variable=linuxImagetag;isOutput=true]$linuxImagetag"
+      echo "##vso[task.setvariable variable=windowsImageTag;isOutput=true]$windowsImageTag"
 
-    datetime=$(date +'%m%d%Y')
-    echo "##vso[task.setvariable variable=datetime;]$datetime"
+      cd $(Build.SourcesDirectory)/deployment/multiarch-agent-deployment/ServiceGroupRoot/Scripts
+      tar -czvf ../artifacts.tar.gz pushAgentToAcr.sh
 
-    cd $(Build.SourcesDirectory)/deployment/multiarch-agent-deployment/ServiceGroupRoot/Scripts
-    tar -czvf ../artifacts.tar.gz pushAgentToAcr.sh
+      cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension/ServiceGroupRoot/Scripts
+      tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ pushChartToAcr.sh
+    name: setup
 
-    cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension/ServiceGroupRoot/Scripts
-    tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ pushChartToAcr.sh
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment artifacts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/deployment"
+      Contents: |
+        **/*
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
-- task: CopyFiles@2
-  displayName: "Copy ev2 deployment artifacts"
-  inputs:
-    SourceFolder: "$(Build.SourcesDirectory)/deployment"
-    Contents: |
-      **/*
-    TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment scripts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/.pipelines"
+      Contents: |
+        **/*.sh
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
-- task: CopyFiles@2
-  displayName: "Copy ev2 deployment scripts"
-  inputs:
-    SourceFolder: "$(Build.SourcesDirectory)/.pipelines"
-    Contents: |
-      **/*.sh
-    TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment scripts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/kubernetes"
+      Contents: |
+        *.yaml
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
-- task: CopyFiles@2
-  displayName: "Copy ev2 deployment scripts"
-  inputs:
-    SourceFolder: "$(Build.SourcesDirectory)/kubernetes"
-    Contents: |
-      *.yaml
-    TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment scripts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/charts"
+      Contents: |
+        **/*
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
-- task: CopyFiles@2
-  displayName: "Copy ev2 deployment scripts"
-  inputs:
-    SourceFolder: "$(Build.SourcesDirectory)/charts"
-    Contents: |
-      **/*
-    TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment scripts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/test/e2e"
+      Contents: |
+        *.yaml
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
-- task: CopyFiles@2
-  displayName: "Copy ev2 deployment scripts"
-  inputs:
-    SourceFolder: "$(Build.SourcesDirectory)/test/e2e"
-    Contents: |
-      *.yaml
-    TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: drop
 
-- task: AzureCLI@2
-  displayName: "Docker multi-arch linux build"
-  inputs:
-    azureSubscription: ${{ variables.armServiceConnectionName }}
-    scriptType: bash
-    scriptLocation: inlineScript
-    inlineScript: |
+- job: build_linux
+  dependsOn: common
+  pool:
+    name: Azure-Pipelines-CI-Prod-EO
+  variables:
+    linuxImagetag: $[ dependencies.common.outputs['setup.linuxImagetag'] ]  
 
-      sudo apt-get update && sudo apt-get -y install qemu binfmt-support qemu-user-static
-      docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+  steps:
+  - task: AzureCLI@2
+    displayName: "Docker multi-arch linux build"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        mkdir -p $(Build.ArtifactStagingDirectory)/linux
 
-      docker buildx create --name testbuilder
-      docker buildx use testbuilder
+        sudo apt-get update && sudo apt-get -y install qemu binfmt-support qemu-user-static
+        docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
-      az --version
-      az account show
-      az account set -s ${{ variables.subscription }}
-      az acr login -n ${{ variables.containerRegistry }}
+        docker buildx create --name testbuilder
+        docker buildx use testbuilder
 
-      if [ "$(Build.Reason)" != "PullRequest" ]; then
-        docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:ciprod-$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/metadata.json --push .
+        az --version
+        az account show
+        az account set -s ${{ variables.subscription }}
+        az acr login -n ${{ variables.containerRegistry }}
 
-        docker pull ${{ variables.repoImageName }}:ciprod-$(datetime)-$(commit)
-      else
-        docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:ciprod-$(datetime)-$(commit) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/metadata.json .
-      fi
+        if [ "$(Build.Reason)" != "PullRequest" ]; then
+          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageNameLinux }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --push .
+
+          docker pull ${{ variables.repoImageNameLinux }}:$(linuxImagetag)
+        else
+          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageNameLinux }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json .
+        fi
 
 
-- task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-  displayName: 'Generation Task'
-  condition: eq(variables.IS_PR, true)
-  inputs:
-    BuildDropPath: '$(Build.ArtifactStagingDirectory)'
-    DockerImagesToScan: 'golang:1.15.14, ubuntu:18.04'
+  - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+    displayName: 'Generation Task'
+    condition: eq(variables.IS_PR, true)
+    inputs:
+      BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
+      DockerImagesToScan: 'golang:1.15.14, ubuntu:18.04'
 
-- task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-  displayName: 'Generation Task'
-  condition: eq(variables.IS_PR, false)
-  inputs:
-    BuildDropPath: '$(Build.ArtifactStagingDirectory)'
-    DockerImagesToScan: 'golang:1.15.14, ubuntu:18.04, ${{ variables.repoImageName }}:ciprod-$(datetime)-$(commit)'
+  - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+    displayName: 'Generation Task'
+    condition: eq(variables.IS_PR, false)
+    inputs:
+      BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
+      DockerImagesToScan: 'golang:1.15.14, ubuntu:18.04, ${{ variables.repoImageNameLinux }}:$(linuxImagetag)'
 
-- task: PublishBuildArtifacts@1
-  inputs:
-    pathToPublish: '$(Build.ArtifactStagingDirectory)'
-    artifactName: drop
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: drop
+
+- job: build_windows
+  dependsOn: common
+  pool:
+    name: Azure-Pipelines-Windows-CI-Prod-EO
+  variables:
+    windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]  
+  
+  steps:
+  - task: PowerShell@2
+    inputs:
+      targetType: 'filePath'
+      filePath: $(System.DefaultWorkingDirectory)/scripts/build/windows/install-build-pre-requisites.ps1
+    displayName: 'install prereqs'
+
+  - script: |
+      setlocal enabledelayedexpansion
+      powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\windows\Makefile.ps1"
+      endlocal
+      exit /B %ERRORLEVEL%
+    displayName: 'build base'
+
+  - task: AzureCLI@2
+    displayName: "Docker windows build"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: ps
+      scriptLocation: inlineScript
+      inlineScript: |
+        mkdir -p $(Build.ArtifactStagingDirectory)/windows
+        cd kubernetes/windows
+
+        az --version
+        az account show
+        az account set -s ${{ variables.subscription }}
+        az acr login -n ${{ variables.containerRegistry }}
+
+        @{"image.name"="${{ variables.repoImageNameWindows }}:$(windowsImageTag)"} | ConvertTo-Json -Compress | Out-File -Encoding ascii $(Build.ArtifactStagingDirectory)/windows/metadata.json
+
+        docker build --tag ${{ variables.repoImageNameWindows }}:$(windowsImageTag) .
+
+        if ("$(Build.Reason)" -ne "PullRequest") {
+          docker push ${{ variables.repoImageNameWindows }}:$(windowsImageTag)
+        }
+
+  - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+    displayName: 'Generation Task'
+    condition: eq(variables.IS_PR, true)
+    inputs:
+      BuildDropPath: '$(Build.ArtifactStagingDirectory)/windows'
+      DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019'
+
+  - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+    displayName: 'Generation Task'
+    condition: eq(variables.IS_PR, false)
+    inputs:
+      BuildDropPath: '$(Build.ArtifactStagingDirectory)/windows'
+      DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019, ${{ variables.repoImageNameWindows }}:$(windowsImageTag)'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: drop

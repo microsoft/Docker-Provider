@@ -28,24 +28,29 @@
           ]
         }
       ],
-      "ServiceResourceGroups": [     
+      "ServiceResourceGroups": [
         {
           "AzureResourceGroupName": "ContainerInsights-MultiArch-Agent-Release",
           "Location": "eastus2",
           "InstanceOf": "CI-Agent-ServiceResourceGroupDefinition",
-          "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",  
+          "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",
           "ScopeTags": [
             {
               "Name": "Global"
             }
-          ],     
+          ],
           "ServiceResources": [
             {
               "Name": "PushLinuxAgent",
               "InstanceOf": "ShellExtension",
               "RolloutParametersPath": "Parameters\\ContainerInsights.Linux.Parameters.json"
+            },
+            {
+              "Name": "PushWindowsAgent",
+              "InstanceOf": "ShellExtension",
+              "RolloutParametersPath": "Parameters\\ContainerInsights.Windows.Parameters.json"
             }
           ]
-        }                                                                                                 
+        }
       ]
-    } 
+    }

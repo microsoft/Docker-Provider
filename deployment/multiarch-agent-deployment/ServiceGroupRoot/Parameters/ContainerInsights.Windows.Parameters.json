@@ -1,0 +1,68 @@
+{
+    "$schema": "http://schema.express.azure.com/schemas/2015-01-01-alpha/RolloutParameters.json",
+    "contentVersion": "1.0.0.0",
+    "wait": [
+      {
+        "name": "waitSdpBakeTime",
+        "properties": {
+          "duration": "PT24H"
+        }
+      }
+    ],
+    "shellExtensions": [
+      {
+        "name": "PushAgentToACR",
+        "type": "ShellExtensionType",
+        "properties": {
+          "maxexecutiontime": "PT1H"
+        },
+        "package": {
+          "reference": {
+            "path": "artifacts.tar.gz"
+          }
+        },
+        "launch": {
+          "command": [
+            "/bin/bash",
+            "pushAgentToAcr.sh"
+          ],
+          "environmentVariables": [
+            {
+              "name": "ACR_NAME",
+              "value": "__ACR_NAME__"
+            },
+            {
+              "name": "AGENT_RELEASE",
+              "value": "__AGENT_RELEASE__"
+            },
+            {
+              "name": "AGENT_IMAGE_TAG_SUFFIX",
+              "value": "__AGENT_IMAGE_TAG_SUFFIX__"
+            },
+            {
+              "name": "AGENT_IMAGE_FULL_PATH",
+              "value": "public/azuremonitor/containerinsights/__AGENT_RELEASE__:win-__AGENT_RELEASE____AGENT_IMAGE_TAG_SUFFIX__"
+            },
+            {
+              "name": "CDPX_REGISTRY",
+              "value": "__CDPX_WINDOWS_REGISTRY__"
+            },
+            {
+              "name": "CDPX_REPO_NAME",
+              "value": "__CDPX_WINDOWS_REPO_NAME__"
+            },
+            {
+              "name": "CDPX_TAG",
+              "value": "__CDPX_WINDOWS_TAG__"
+            }
+          ], 
+          "identity": {
+            "type": "userAssigned",
+            "userAssignedIdentities": [
+              "__MANAGED_IDENTITY__"
+            ]
+          }
+        }
+      }
+    ]
+  }

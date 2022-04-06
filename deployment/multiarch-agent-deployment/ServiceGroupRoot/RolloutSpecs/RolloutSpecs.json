@@ -2,8 +2,8 @@
     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/rolloutSpecification.json",
     "ContentVersion": "1.0.0.0",
     "RolloutMetadata": {
-      "ServiceModelPath": "ServiceModels//Public.ServiceModel.json",   
-      "ScopeBindingsPath": "ScopeBindings//Public.ScopeBindings.json", 
+      "ServiceModelPath": "ServiceModels//Public.ServiceModel.json",
+      "ScopeBindingsPath": "ScopeBindings//Public.ScopeBindings.json",
       "Name": "ContainerInsightsAgent",
       "RolloutType": "Major",
       "BuildSource": {
@@ -15,13 +15,20 @@
         "Email": {
           "To": "omscontainers@microsoft.com"
         }
-      }  
+      }
     },
     "OrchestratedSteps": [
       {
         "name": "PushLinuxAgent",
         "targetType": "ServiceResource",
         "targetName": "PushLinuxAgent",
+        "actions": [ "Shell/PushAgentToACR" ],
+        "dependsOn": [ ]
+      },
+      {
+        "name": "PushWindowsAgent",
+        "targetType": "ServiceResource",
+        "targetName": "PushWindowsAgent",
         "actions": [ "Shell/PushAgentToACR" ],
         "dependsOn": [ ]
       }
