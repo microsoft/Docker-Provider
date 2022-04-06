@@ -80,6 +80,10 @@ jobs:
         *.yaml
       TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: drop
 
 - job: build_linux
   dependsOn: common
@@ -159,10 +163,13 @@ jobs:
       exit /B %ERRORLEVEL%
     displayName: 'build base'
 
-  - task: PowerShell@2
+  - task: AzureCLI@2
+    displayName: "Docker windows build"
     inputs:
-      targetType: 'inline'
-      script: |
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: ps
+      scriptLocation: inlineScript
+      inlineScript: |
         # todo add metadata
         mkdir -p $(Build.ArtifactStagingDirectory)/windows
         cd kubernetes/windows
@@ -172,7 +179,6 @@ jobs:
         if ("$(Build.Reason)" -ne "PullRequest") {
           docker push ${{ variables.repoImageName }}:win-$(datetime)-$(commit)
         }
-    displayName: 'build docker'
 
   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
     displayName: 'Generation Task'
