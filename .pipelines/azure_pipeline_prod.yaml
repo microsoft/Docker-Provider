@@ -33,8 +33,8 @@ jobs:
   - bash: |
       commit=$(git rev-parse --short HEAD)
       datetime=$(date +'%m%d%Y')
-      linuxImagetag="ciprod-$datetime"-"$commit"
-      windowsImageTag=ciprod-win-"$datetime"-"$commit"
+      linuxImagetag=ciprod-"$datetime"-"$commit"
+      windowsImageTag=win-ciprod-"$datetime"-"$commit"
       echo "##vso[task.setvariable variable=linuxImagetag;isOutput=true]$linuxImagetag"
       echo "##vso[task.setvariable variable=windowsImageTag;isOutput=true]$windowsImageTag"
 
