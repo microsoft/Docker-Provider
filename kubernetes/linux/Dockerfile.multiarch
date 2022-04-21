@@ -43,4 +43,10 @@ RUN trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CR
 
 # Revert to base layer before vulnscan
 FROM base_image AS ContainerInsights
+# force the trivy stage to run
+# docker buildx (BUILDKIT) does not build stages which do not affect the final stage
+# by copying over a file we create a dependency
+# see: https://github.com/docker/build-push-action/issues/377
+COPY --from=vulnscan /usr/local/bin/trivy /usr/local/bin/trivy
+RUN rm /usr/local/bin/trivy
 CMD [ "/opt/main.sh" ]
