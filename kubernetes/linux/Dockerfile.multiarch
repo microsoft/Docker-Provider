@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM golang:1.15.14 AS builder
+FROM --platform=$BUILDPLATFORM golang:1.18.1 AS builder
 ARG TARGETOS TARGETARCH
 RUN /usr/bin/apt-get update && /usr/bin/apt-get install git g++ make pkg-config libssl-dev libpam0g-dev rpm librpm-dev uuid-dev libkrb5-dev python sudo gcc-aarch64-linux-gnu -y
 
@@ -39,7 +39,10 @@ RUN chmod 775 $tmpdir/*.sh; sync; $tmpdir/setup.sh ${TARGETARCH}
 # Do vulnerability scan in a seperate stage to avoid adding layer
 FROM base_image AS vulnscan
 COPY --from=aquasec/trivy:latest /usr/local/bin/trivy /usr/local/bin/trivy
-RUN trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL --skip-files "/usr/sbin/telegraf" --skip-files "/opt/telegraf" --skip-files "/usr/local/bin/trivy" /
+COPY .pipelines/.trivyignore .trivyignore
+RUN trivy rootfs --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --skip-files "/usr/local/bin/trivy" /
+RUN trivy rootfs --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM /usr/lib
+RUN trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --skip-files "/usr/local/bin/trivy" / > /dev/null 2>&1 && trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM /usr/lib > /dev/null 2>&1
 
 # Revert to base layer before vulnscan
 FROM base_image AS ContainerInsights
