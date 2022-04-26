@@ -121,15 +121,15 @@ function Install-Docker() {
         exit 1
     }
 
-   $url = "https://download.docker.com/win/enterprise/DockerDesktop.msi"
-   $output = Join-Path -Path $dockerTemp -ChildPath "docker-desktop-installer.msi"
+   $url = "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe"
+   $output = Join-Path -Path $dockerTemp -ChildPath "docker-desktop-installer.exe"
    Write-Host("downloading docker-desktop-installer: " + $dockerTemp + "  ...")
    Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
    Write-Host("downloading docker-desktop-installer: " + $dockerTemp + "  completed")
 
    # install docker
    Write-Host("installing docker for desktop ...")
-   Start-Process msiexec.exe -Wait -ArgumentList '/I ', $output, '/quiet'
+   Start-Process $output -Wait -ArgumentList 'install --quiet'
    Write-Host("installing docker for desktop completed")
 }
 
