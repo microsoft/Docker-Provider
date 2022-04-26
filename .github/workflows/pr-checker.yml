@@ -56,8 +56,6 @@ jobs:
           format: 'table'
           severity: 'CRITICAL,HIGH'
           vuln-type: 'os,library'
-          #[vishwa] - Fix telegraf & test all for next release - see work item #https://msazure.visualstudio.com/InfrastructureInsights/_workitems/edit/13322134
-          skip-files: '/usr/sbin/telegraf,/opt/telegraf'
           exit-code: '1'
           timeout: '5m0s'
           ignore-unfixed: true
