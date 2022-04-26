@@ -4,14 +4,17 @@ go 1.14
 
 require (
 	github.com/Azure/azure-kusto-go v0.5.2
+	github.com/Azure/go-autorest/autorest v0.11.27 // indirect
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11
 	github.com/fluent/fluent-bit-go v0.0.0-20171103221316-c4a158a6e3a7
+	github.com/golang-jwt/jwt/v4 v4.4.1 // indirect
 	github.com/golang/mock v1.4.1
 	github.com/google/uuid v1.3.0
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
 	github.com/philhofer/fwd v1.1.1 // indirect
 	github.com/tinylib/msgp v1.1.2
 	github.com/ugorji/go v1.1.2-0.20180813092308-00b869d2f4a5
+	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0-20170531160350-a96e63847dc3
 	k8s.io/apimachinery v0.21.0
 	k8s.io/client-go v0.21.0
