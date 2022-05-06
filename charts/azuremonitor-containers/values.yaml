@@ -49,6 +49,9 @@ omsagent:
   # This flag used to determine whether to use AAD MSI auth or not for Arc K8s cluster
   useAADAuth: false
 
+  # This flag used to determine whether this cluster is connected to ArcA control plane. This value will be setup before pushed into on-premise ArcA ACR.
+  isArcACluster: false
+
   ## To get your workspace id and key do the following
   ## You can create a Azure Loganalytics workspace from portal.azure.com and get its ID & PRIMARY KEY from 'Advanced Settings' tab in the Ux.
 
@@ -57,6 +60,8 @@ omsagent:
     key: <your_workspace_key>
   domain: opinsights.azure.com
   proxy: <your_proxy_config>
+  # This metricsEndpoint used to define the endpoint custom metrics emit to. If not defined, default public Azure monitoring endpoint '{aks_region}.monitoring.azure.com' will be used.
+  metricsEndpoint: <your_metrics_endpoint>
   env:
     clusterName: <your_cluster_name>
     ## Applicable for only managed clusters hosted in Azure

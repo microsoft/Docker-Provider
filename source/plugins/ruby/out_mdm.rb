@@ -26,7 +26,8 @@ module Fluent::Plugin
       @@token_resource_audience = "https://monitor.azure.com/"
       @@grant_type = "client_credentials"
       @@azure_json_path = "/etc/kubernetes/host/azure.json"
-      @@post_request_url_template = "https://%{aks_region}.monitoring.azure.com%{aks_resource_id}/metrics"
+      @@public_metrics_endpoint_template = "https://%{aks_region}.monitoring.azure.com"
+      @@post_request_url_template = "%{metrics_endpoint}%{aks_resource_id}/metrics"
       @@aad_token_url_template = "https://login.microsoftonline.com/%{tenant_id}/oauth2/token"
 
       # msiEndpoint is the well known endpoint for getting MSI authentications tokens
@@ -98,7 +99,16 @@ module Fluent::Plugin
           if aks_resource_id.downcase.include?("microsoft.kubernetes/connectedclusters")
             @isArcK8sCluster = true
           end
-          @@post_request_url = @@post_request_url_template % { aks_region: aks_region, aks_resource_id: aks_resource_id }
+
+          # If CUSTOM_METRICS_ENDPOINT provided, the url format shall be validated before emitting metrics into given endpoint.
+          custom_metrics_endpoint = ENV['CUSTOM_METRICS_ENDPOINT']
+          if !custom_metrics_endpoint.to_s.empty?
+            metrics_endpoint = custom_metrics_endpoint.strip
+            URI.parse(metrics_endpoint)
+          else
+            metrics_endpoint = @@public_metrics_endpoint_template % { aks_region: aks_region }
+          end
+          @@post_request_url = @@post_request_url_template % { metrics_endpoint: metrics_endpoint, aks_resource_id: aks_resource_id }
           @post_request_uri = URI.parse(@@post_request_url)
           proxy = (ProxyUtils.getProxyConfiguration)
           if proxy.nil? || proxy.empty?

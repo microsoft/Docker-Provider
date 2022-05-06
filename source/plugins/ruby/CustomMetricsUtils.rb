@@ -13,6 +13,11 @@ class CustomMetricsUtils
             if aks_region.to_s.empty? || aks_resource_id.to_s.empty?
                 return false # This will also take care of AKS-Engine Scenario. AKS_REGION/AKS_RESOURCE_ID is not set for AKS-Engine. Only ACS_RESOURCE_NAME is set
             end
+            # If this is cluster is connected to ArcA control plane and metrics endpoint provided, custom metrics shall be emitted.
+            is_arca_cluster = ENV['IS_ARCA_CLUSTER']
+            if is_arca_cluster.to_s.downcase == "true" && !ENV['CUSTOM_METRICS_ENDPOINT'].to_s.empty?
+                return true
+            end
 
             return aks_cloud_environment.to_s.downcase == 'azurepubliccloud'
         end
