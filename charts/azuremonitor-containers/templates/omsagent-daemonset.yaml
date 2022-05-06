@@ -103,6 +103,14 @@ spec:
        {{- end }}
        - name: ISTEST
          value: {{ .Values.omsagent.ISTEST | quote }}
+       {{ if .Values.omsagent.arcasettings.isArcACluster }}
+       - name: IS_ARCA_CLUSTER
+         value: {{ .Values.omsagent.arcasettings.isArcACluster | quote }}
+       {{- if ne .Values.omsagent.arcasettings.metricsEndpoint "<your_metrics_endpoint>" }}
+       - name: ARCA_Metrics_Endpoint
+         value: {{ .Values.omsagent.arcasettings.metricsEndpoint | quote }}
+       {{- end }}
+       {{- end }}
        securityContext:
          privileged: true
        ports:
