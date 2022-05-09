@@ -1,9 +1,11 @@
 # Limitations
 
 
-## MAC (Monitoring Account) limitations: 
-* The default limit on the number of timeseries is 1M.  
-* The default limit on the number of events is 1M.  
+## Azure Managed Service for Prometheus ingestion limitations: 
+* These limits are enforced by the Monitoring account you created to store your Prometheus metrics.
+* The default limit on the number of active time series is 1 Million.  
+* The default limit on the number of events is 1 Million.
+* These limits can be increased if requested.
   
 <br/>
 
@@ -32,6 +34,7 @@ You can find full specification of [OSS prom APIs](https://prometheus.io/docs/pr
 
 [Label values](https://prometheus.io/docs/prometheus/latest/querying/api/#querying-label-values): /api/v1/label/\_\_name\_\_\/values. It’s the only supported version of this API which effectively means GET all metric names. Any other /api/v1/label/{name}/values **are not supported**.
 
+<br/>
 
 ### **API limitations (differing from prom specification)**
 **Case sensitivity**
