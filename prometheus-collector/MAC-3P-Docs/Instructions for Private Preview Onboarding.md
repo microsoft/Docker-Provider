@@ -1,6 +1,6 @@
 # Instructions for Azure Managed Service for Prometheus Private Preview onboarding
 
-**1. The steps need to be executed in the order shown below.**
+**1. The steps need to be executed in the order shown below. If not, step 1 has to be rerun after executing step 2.**
 
 **2. Both your Resource Group and Azure Kubernetes (AKS) cluster need to be in the same region as the preview resources these instructions will create.**
 
@@ -23,7 +23,7 @@
 
 ## **Step 1**: Create your Azure Prometheus and Azure Grafana resources.
 
-This step creates the Monitoring account used to store your Promethems metrics. It also creates your Azure Managed Grafana workspace. These resources are regional, therefore this step needs to be run once for each region where you want to create these resources (East US, East US2, West Europe). Onboarding to more than one region is optional.
+This step creates the Monitoring account used to store your Prometheus metrics. It also creates your Azure Managed Grafana workspace. These resources are regional, therefore this step needs to be run once for each region where you want to create these resources (East US, East US2, West Europe). Onboarding to more than one region is optional.
 
 >Note: the script takes about 10 minutes to complete due to the many resources created sequentially by the templates. Please make sure that your az cli session does not timeout by continuing to navigate while in the Azure Portal. If the az cli session times out you won't see error or confirmation messages.
 
