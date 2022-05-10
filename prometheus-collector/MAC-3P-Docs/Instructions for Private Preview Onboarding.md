@@ -31,11 +31,13 @@ This step creates the Monitoring account used to store your Prometheus metrics. 
 
 1.	In the Azure Cloud Shell use the wget command to download the Onboarding-script.sh, RootTemplate.json and RoleDefinition.json. 
 
-    wget https://raw.githubusercontent.com/microsoft/Docker-Provider/prometheus-collector/prometheus-collector/MAC-3P-Docs/Onboarding-script.sh    
+        wget https://raw.githubusercontent.com/microsoft/Docker-Provider/prometheus-collector/prometheus-collector/MAC-3P-Docs/Onboarding-script.sh
+<br/> 
+
+        wget https://raw.githubusercontent.com/microsoft/Docker-Provider/prometheus-collector/prometheus-collector/MAC-3P-Docs/RoleDefinition.json
 <br/>
-    wget https://raw.githubusercontent.com/microsoft/Docker-Provider/prometheus-collector/prometheus-collector/MAC-3P-Docs/RoleDefinition.json    
-<br/>
-    wget https://raw.githubusercontent.com/microsoft/Docker-Provider/prometheus-collector/prometheus-collector/MAC-3P-Docs/RootTemplate.json
+
+        wget https://raw.githubusercontent.com/microsoft/Docker-Provider/prometheus-collector/prometheus-collector/MAC-3P-Docs/RootTemplate.json
 
 2.	Update Onboarding-script.sh to have execute permissions by running the following in the Azure Cloud Shell:
 
