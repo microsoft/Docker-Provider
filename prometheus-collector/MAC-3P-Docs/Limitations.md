@@ -53,7 +53,7 @@ Any time series fetch queries (**/series** or **/query** or **/query_range)** mu
 
 **/series** API fetches data only for 12 hours time range. If endTime is not provided, endTime = time.now().
 
-**range selectors** (time range baked in query itself) supports 15d. We are evaluating if we can increase this to 30d.
+**range selectors** (lookback/time range baked in query itself) supports 30d. Note that time range selected via time picker in Grafana adds up to the lookback present in range selector in the query. The total time range shouldn't exceed 30 days.
 
     Note: These supported time ranges are subject to change as we are still experimenting.
 
