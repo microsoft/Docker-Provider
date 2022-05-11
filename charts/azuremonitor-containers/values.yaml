@@ -19,6 +19,9 @@ Azure:
     httpsProxy: ""
     noProxy: ""
     proxyCert: ""
+  arcaSettings:
+    isArcACluster: false
+    metricsEndpoint: <your_metrics_endpoint>
 omsagent:
   image:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
@@ -71,9 +74,6 @@ omsagent:
     ## Applicable for only Azure Stack Edge K8s since it has custom mount path for container logs which will have symlink to /var/log path
     custommountpath: ""
 
-  arcasettings:
-    isArcACluster: false
-    metricsEndpoint: <your_metrics_endpoint>
 
   ## Configure node tolerations for scheduling onto nodes with taints
   ## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/

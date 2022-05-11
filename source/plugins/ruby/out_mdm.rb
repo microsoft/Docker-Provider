@@ -103,7 +103,7 @@ module Fluent::Plugin
           is_ArcA_Cluster = ENV['IS_ARCA_CLUSTER']
           arcA_metrics_endpoint = ENV['ARCA_Metrics_Endpoint']
           if is_ArcA_Cluster.to_s.downcase == "true" && !arcA_metrics_endpoint.to_s.empty?
-            metrics_endpoint = arcA_metrics_endpoint
+            metrics_endpoint = arcA_metrics_endpoint.lstrip.rstrip.delete_prefix('http://').delete_prefix('https://')
           else
             metrics_endpoint = @@public_metrics_endpoint_template % { aks_region: aks_region }
           end
