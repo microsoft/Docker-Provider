@@ -103,7 +103,12 @@ module Fluent::Plugin
           is_ArcA_Cluster = ENV['IS_ARCA_CLUSTER']
           arcA_metrics_endpoint = ENV['ARCA_Metrics_Endpoint']
           if is_ArcA_Cluster.to_s.downcase == "true" && !arcA_metrics_endpoint.to_s.empty?
-            metrics_endpoint = arcA_metrics_endpoint.lstrip.rstrip.delete_prefix('http://').delete_prefix('https://')
+            metrics_endpoint = arcA_metrics_endpoint.lstrip.rstrip
+            if !valid_url?(metrics_endpoint)
+              invalid_url_message = "The ARCA_Metrics_Endpoint (#{arcA_metrics_endpoint}) from environment vaiable is invalid."
+              @log.warn invalid_url_message
+              raise invalid_url_message
+            end
           else
             metrics_endpoint = @@public_metrics_endpoint_template % { aks_region: aks_region }
           end
@@ -416,6 +421,15 @@ module Fluent::Plugin
         @log.warn "Error in MDM isWindows method: #{error}"
       end
       return isWindows
+    end
+
+    def valid_url?(string)
+      uri = URI.parse(string)
+      %w( http https ).include?(uri.scheme)
+    rescue URI::BadURIError
+      false
+    rescue URI::InvalidURIError
+      false
     end
   end # class OutputMDM
 end # module Fluent
