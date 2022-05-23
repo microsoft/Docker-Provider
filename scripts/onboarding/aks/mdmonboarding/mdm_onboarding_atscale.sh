@@ -38,7 +38,7 @@ for cluster in $(echo $CLUSTERS_LIST | jq -c '.[]'); do
     export SP_ID=$(az aks show -g $clusterRG -n $clusterName --query servicePrincipalProfile.clientId -o tsv)
 
     if [ -z $SP_ID ]; then
-        export MSI_ID=$(az aks show -g $clusterRG -n $clusterName --query addonProfiles.omsagent.identity.clientId -o tsv)
+        export MSI_ID=$(az aks show -g $clusterRG -n $clusterName --query addonProfiles.omsAgent.identity.clientId -o tsv)
         if [ -z $MSI_ID ]; then
             echo "No service principal or msi found"
         else
