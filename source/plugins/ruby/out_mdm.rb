@@ -100,12 +100,12 @@ module Fluent::Plugin
             @isArcK8sCluster = true
           end
 
-          is_ArcA_Cluster = ENV['IS_ARCA_CLUSTER']
-          arcA_metrics_endpoint = ENV['ARCA_Metrics_Endpoint']
-          if is_ArcA_Cluster.to_s.downcase == "true" && !arcA_metrics_endpoint.to_s.empty?
-            metrics_endpoint = arcA_metrics_endpoint.lstrip.rstrip
+          # If Custom_Metrics_Endpoint provided, the url format shall be validated before emitting metrics into given endpoint.
+          Custom_Metrics_Endpoint = ENV['Custom_Metrics_Endpoint']
+          if !Custom_Metrics_Endpoint.to_s.empty?
+            metrics_endpoint = Custom_Metrics_Endpoint.lstrip.rstrip
             if !valid_url?(metrics_endpoint)
-              invalid_url_message = "The ARCA_Metrics_Endpoint (#{arcA_metrics_endpoint}) from environment vaiable is invalid."
+              invalid_url_message = "The Custom_Metrics_Endpoint (#{Custom_Metrics_Endpoint}) from environment vaiable is invalid."
               @log.warn invalid_url_message
               raise invalid_url_message
             end

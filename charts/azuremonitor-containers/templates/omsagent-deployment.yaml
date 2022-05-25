@@ -89,13 +89,13 @@ spec:
          value: {{ .Values.omsagent.sidecarscraping | quote }}
        - name: ISTEST
          value: {{ .Values.omsagent.ISTEST | quote }}
-       {{ if .Values.Azure.arcaSettings.isArcACluster }}
+       {{ if .Values.omsagent.isArcACluster }}
        - name: IS_ARCA_CLUSTER
-         value: {{ .Values.Azure.arcaSettings.isArcACluster | quote }}
-       {{- if ne .Values.Azure.arcaSettings.metricsEndpoint "<your_metrics_endpoint>" }}
-       - name: ARCA_Metrics_Endpoint
-         value: {{ .Values.Azure.arcaSettings.metricsEndpoint | quote }}
+         value: {{ .Values.omsagent.isArcACluster | quote }}
        {{- end }}
+       {{- if ne .Values.omsagent.metricsEndpoint "<your_metrics_endpoint>" }}
+       - name: Custom_Metrics_Endpoint
+         value: {{ .Values.omsagent.metricsEndpoint | quote }}
        {{- end }}
        securityContext:
          privileged: true
