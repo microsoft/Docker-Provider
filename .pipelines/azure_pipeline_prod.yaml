@@ -99,7 +99,7 @@ jobs:
 
   steps:
   - task: AzureCLI@2
-    displayName: "Docker multi-arch linux build"
+    displayName: "Multi-arch Linux build and Vulnerability Scan"
     inputs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: bash
@@ -124,8 +124,14 @@ jobs:
           docker pull ${{ variables.repoImageNameLinux }}:$(linuxImagetag)
         else
           docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageNameLinux }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json .
+
+          # load the multi-arch image to run tests
+          docker buildx build --tag ${{ variables.repoImageNameLinux }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --load .
         fi
 
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+        trivy image --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 ${{ variables.repoImageNameLinux }}:$(linuxImagetag)
 
   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
     displayName: 'Generation Task'
