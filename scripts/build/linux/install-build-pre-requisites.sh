@@ -8,17 +8,17 @@ TEMP_DIR=temp-$RANDOM
 install_go_lang()
 {
   export goVersion="$(echo $(go version))"
-  if [[ $goVersion == *go1.15.14* ]] ; then
-    echo "found existing installation of go version 1.15.14 so skipping the installation of go"
+  if [[ $goVersion == *go1.18.3* ]] ; then
+    echo "found existing installation of go version 1.18.3 so skipping the installation of go"
   else
-    echo "installing go 1.15.14 version ..."
-    sudo curl -O https://dl.google.com/go/go1.15.14.linux-amd64.tar.gz
-    sudo tar -xvf go1.15.14.linux-amd64.tar.gz
+    echo "installing go 1.18.3 version ..."
+    sudo curl -O https://dl.google.com/go/go1.18.3.linux-amd64.tar.gz
+    sudo tar -xvf go1.18.3.linux-amd64.tar.gz
     sudo mv -f go /usr/local
     echo "set file permission for go bin"
     sudo chmod 744 /usr/local/go/bin
-    echo "installation of go 1.15.14 completed."
-    echo "installation of go 1.15.14 completed."
+    echo "installation of go 1.18.3 completed."
+    echo "installation of go 1.18.3 completed."
   fi
 
 }
@@ -173,4 +173,4 @@ sudo rm -rf $TEMP_DIR
 # set go env vars
 install_go_env_vars
 
-echo "installing build pre-requisites python, go 1.15.14, dotnet, powershell, build dependencies and docker completed"
+echo "installing build pre-requisites python, go 1.18.3, dotnet, powershell, build dependencies and docker completed"

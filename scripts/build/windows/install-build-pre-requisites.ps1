@@ -13,8 +13,8 @@ function Install-Go {
         exit 1
     }
 
-   $url = "https://go.dev/dl/go1.15.14.windows-amd64.msi"
-   $output = Join-Path -Path $tempGo -ChildPath "go1.15.14.windows-amd64.msi"
+   $url = "https://go.dev/dl/go1.18.3.windows-amd64.msi"
+   $output = Join-Path -Path $tempGo -ChildPath "go1.18.3.windows-amd64.msi"
    Write-Host("downloading go msi into directory path : " + $output + "  ...")
    Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
    Write-Host("downloading of go msi into directory path : " + $output + "  completed")
@@ -137,7 +137,7 @@ function Install-Docker() {
 # https://stackoverflow.com/questions/28682642/powershell-why-is-using-invoke-webrequest-much-slower-than-a-browser-download
 $ProgressPreference = 'SilentlyContinue'
 
-Write-Host "Install GO 1.15.14 version"
+Write-Host "Install GO 1.18.3 version"
 Install-Go
 Write-Host "Install Build dependencies"
 Build-Dependencies
