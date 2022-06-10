@@ -1,4 +1,5 @@
-FROM ubuntu:18.04
+ARG UBUNTU_BASE_IMAGE=ubuntu:18.04
+FROM ${UBUNTU_BASE_IMAGE}
 MAINTAINER OMSContainers@microsoft.com
 LABEL vendor=Microsoft\ Corp \
     com.microsoft.product="Azure Monitor for containers"
