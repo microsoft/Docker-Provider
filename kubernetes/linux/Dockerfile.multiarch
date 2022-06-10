@@ -1,6 +1,6 @@
 # Default base images. If you update them don't forgot to update variables in our build pipelines
-ARG GOLANG_BASE_IMAGE=golang:1.15.14
-ARG UBUNTU_BASE_IMAGE=ubuntu:18.04
+ARG GOLANG_BASE_IMAGE
+ARG UBUNTU_BASE_IMAGE
 
 FROM --platform=$BUILDPLATFORM ${GOLANG_BASE_IMAGE} AS builder
 ARG TARGETOS TARGETARCH
@@ -42,8 +42,8 @@ RUN chmod 775 $tmpdir/*.sh; sync; $tmpdir/setup.sh ${TARGETARCH}
 
 # Do vulnerability scan in a seperate stage to avoid adding layer
 FROM base_image AS vulnscan
-COPY --from=aquasec/trivy:latest /usr/local/bin/trivy /usr/local/bin/trivy
 COPY .trivyignore .trivyignore
+RUN curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.28.1
 RUN trivy rootfs --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --skip-files "/usr/local/bin/trivy" /
 RUN trivy rootfs --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM /usr/lib
 RUN trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --skip-files "/usr/local/bin/trivy" / > /dev/null 2>&1 && trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM /usr/lib > /dev/null 2>&1
