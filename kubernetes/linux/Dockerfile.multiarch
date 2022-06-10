@@ -1,4 +1,8 @@
-FROM --platform=$BUILDPLATFORM golang:1.15.14 AS builder
+# Default base images. If you update them don't forgot to update variables in our build pipelines
+ARG GOLANG_BASE_IMAGE=golang:1.15.14
+ARG UBUNTU_BASE_IMAGE=ubuntu:18.04
+
+FROM --platform=$BUILDPLATFORM ${GOLANG_BASE_IMAGE} AS builder
 ARG TARGETOS TARGETARCH
 RUN /usr/bin/apt-get update && /usr/bin/apt-get install git g++ make pkg-config libssl-dev libpam0g-dev rpm librpm-dev uuid-dev libkrb5-dev python sudo gcc-aarch64-linux-gnu -y
 
@@ -7,7 +11,7 @@ COPY source /src/source
 RUN cd /src/build/linux && make arch=${TARGETARCH}
 
 
-FROM ubuntu:18.04 AS base_image
+FROM ${UBUNTU_BASE_IMAGE} AS base_image
 ARG TARGETOS TARGETARCH
 MAINTAINER OMSContainers@microsoft.com
 LABEL vendor=Microsoft\ Corp \
