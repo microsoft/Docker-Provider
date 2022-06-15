@@ -1,4 +1,5 @@
-ARG PYTHON_BASE_IMAGE=python:3.6
+# default value can be found in internal wiki. External can use python 3.6 base image
+ARG PYTHON_BASE_IMAGE=
 FROM ${PYTHON_BASE_IMAGE}
 
 RUN pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org pytest pytest-xdist filelock requests kubernetes adal msrestazure

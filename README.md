@@ -10,7 +10,7 @@ Feel free to contact engineering team owners in case you have any questions abou
 
 ## Common
 - [Visual Studio Code](https://code.visualstudio.com/) for authoring
-- [Go lang](https://golang.org/) for building go code. Go lang version 1.15.14 (both Linux & Windows)
+- [Go lang](https://golang.org/) for building go code. Go lang version 1.18.3 (both Linux & Windows)
 
 > Note: If you are using WSL2, make sure you have cloned the code onto ubuntu not onto windows
 
@@ -121,7 +121,7 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 
 ### Install Pre-requisites
 
-1. Install go1.15.14, dotnet, powershell, docker and build dependencies to build go code for both Linux and Windows platforms
+1. Install go1.18.3, dotnet, powershell, docker and build dependencies to build go code for both Linux and Windows platforms
 ```
 bash ~/Docker-Provider/scripts/build/linux/install-build-pre-requisites.sh
 ```
@@ -143,31 +143,34 @@ bash ~/Docker-Provider/scripts/build/linux/install-build-pre-requisites.sh
 
 > Note: If you are using WSL2, ensure `Docker for windows` running with Linux containers mode on your windows machine to build Linux agent image successfully
 
+> Note: format of the imagetag will be `ci<release><MMDDYYYY>`. possible values for release are test, dev, preview, dogfood, prod etc. Please use MCR urls while building internally.
+
+Preferred Way: You can build and push images for multiple architectures. This is powered by docker buildx
+Directly use the docker buildx commands (the MCR images can be found in our internal wiki to be used as arguments)
+```
+# multiple platforms
+cd ~/Docker-Provider
+docker buildx build --platform linux/arm64/v8,linux/amd64 -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> --build-arg UBUNTU_BASE_IMAGE=<ubuntuimage> --build-arg GOLANG_BASE_IMAGE=<golangimage> -f kubernetes/linux/Dockerfile.multiarch --push .
+
+# single platform
+cd ~/Docker-Provider
+docker buildx build --platform linux/amd64 -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> --build-arg UBUNTU_BASE_IMAGE=<ubuntuimage> --build-arg GOLANG_BASE_IMAGE=<golangimage> -f kubernetes/linux/Dockerfile.multiarch --push .
+```
+
+Using the build and publish script
+
 ```
 cd ~/Docker-Provider/kubernetes/linux/dockerbuild
 sudo docker login # if you want to publish the image to acr then login to acr via `docker login <acr-name>`
 # build provider, docker image and publish to docker image
-bash build-and-publish-docker-image.sh --image <repo>/<imagename>:<imagetag>
+bash build-and-publish-docker-image.sh --image <repo>/<imagename>:<imagetag> --ubuntu <ubuntu image url> --golang <golang image url>
 ```
-> Note: format of the imagetag will be `ci<release><MMDDYYYY>`. possible values for release are test, dev, preview, dogfood, prod etc.
 
-You can also build and push images for multiple architectures. This is powered by docker buildx
 ```
 cd ~/Docker-Provider/kubernetes/linux/dockerbuild
 sudo docker login # if you want to publish the image to acr then login to acr via `docker login <acr-name>`
 # build and publish using docker buildx
-bash build-and-publish-docker-image.sh --image <repo>/<imagename>:<imagetag> --multiarch
-```
-
-or directly use the docker buildx commands
-```
-# multiple platforms
-cd ~/Docker-Provider
-docker buildx build --platform linux/arm64/v8,linux/amd64 -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> -f kubernetes/linux/Dockerfile.multiarch --push .
-
-# single platform
-cd ~/Docker-Provider
-docker buildx build --platform linux/amd64 -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> -f kubernetes/linux/Dockerfile.multiarch --push .
+bash build-and-publish-docker-image.sh --image <repo>/<imagename>:<imagetag> --ubuntu <ubuntu image url> --golang <golang image url> --multiarch
 ```
 
 If you prefer to build docker provider shell bundle and image separately, then you can follow below instructions
@@ -182,7 +185,7 @@ make
 
 ```
 cd ~/Docker-Provider/kubernetes/linux/
-docker build -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> .
+docker build -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> --build-arg UBUNTU_BASE_IMAGE=<ubuntuimage> .
 docker push <repo>/<imagename>:<imagetag>
 ```
 ## Windows Agent

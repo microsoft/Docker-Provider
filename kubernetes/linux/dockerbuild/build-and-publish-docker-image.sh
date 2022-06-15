@@ -13,8 +13,8 @@ usage()
     local basename=`basename $0`
     echo
     echo "Build and publish docker image:"
-    echo "$basename --image <name of docker image> "
-    echo "$basename --image <name of docker image> --multiarch"
+    echo "$basename --image <name of docker image> --ubuntu <mcr url of ubuntu image> --golang <mcr url of golang image>"
+    echo "$basename --image <name of docker image> --ubuntu <mcr url of ubuntu image> --golang <mcr url of golang image> --multiarch"
 }
 
 parse_args()
@@ -32,6 +32,8 @@ for arg in "$@"; do
   case "$arg" in
     "--image")  set -- "$@" "-i" ;;
     "--multiarch")  set -- "$@" "-m" ;;
+    "--ubuntu")  set -- "$@" "-u" ;;
+    "--golang")  set -- "$@" "-g" ;;
     "--"*)   usage ;;
     *)        set -- "$@" "$arg"
   esac
@@ -39,7 +41,7 @@ done
 
 local OPTIND opt
 
-while getopts 'hi:m' opt; do
+while getopts 'hi:u:g:m' opt; do
     case "$opt" in
       h)
       usage
@@ -54,7 +56,12 @@ while getopts 'hi:m' opt; do
         multi=1
         echo "using multiarch dockerfile"
         ;;
-
+      u)
+        ubuntu_base_image=$OPTARG
+        ;;
+      g)
+        golang_base_image=$OPTARG
+        ;;
       ?)
         usage
         exit 1
@@ -66,6 +73,16 @@ while getopts 'hi:m' opt; do
 
  if [ -z "$image" ]; then
     echo "-e invalid image. please try with valid values"
+    exit 1
+ fi
+
+ if [ -z "$ubuntu_base_image" ]; then
+    echo "-e invalid ubuntu image url. please try with valid values from internal wiki. do not use 3P entries"
+    exit 1
+ fi
+
+ if [ -z "$golang_base_image" ]; then
+    echo "-e invalid golang image url. please try with valid values from internal wiki. do not use 3P entries"
     exit 1
  fi
 
@@ -89,39 +106,6 @@ fi
 
 }
 
-build_docker_provider()
-{
-  echo "building docker provider shell bundle"
-  cd $buildDir
-  echo "trigger make to build docker build provider shell bundle"
-  make
-  echo "building docker provider shell bundle completed"
-}
-
-login_to_docker()
-{
-  echo "login to docker with provided creds"
-  # sudo docker login --username=$dockerUser
-  sudo docker login
-  echo "login to docker with provided creds completed"
-}
-
-build_docker_image()
-{
-  echo "build docker image: $image and image tage is $imageTag"
-  cd $baseDir/kubernetes/linux
-  sudo docker build -t $image --build-arg IMAGE_TAG=$imageTag  .
-
-  echo "build docker image completed"
-}
-
-publish_docker_image()
-{
-  echo "publishing docker image: $image"
-  sudo docker push  $image
-  echo "publishing docker image: $image done."
-}
-
 # parse and validate args
 parse_args $@
 
@@ -138,22 +122,18 @@ echo "source code base directory: $baseDir"
 echo "build directory for docker provider: $buildDir"
 echo "docker file directory: $dockerFileDir"
 
+echo "build docker image: $image and image tage is $imageTag"
+
 if [ -n "$multi" ] && [ "$multi" -eq "1" ]; then
   echo "building multiarch"
   cd $baseDir
-  docker buildx build --platform linux/arm64/v8,linux/amd64 -t $image --build-arg IMAGE_TAG=$imageTag -f $linuxDir/Dockerfile.multiarch --push .
-  exit 0
+  docker buildx build --platform linux/arm64/v8,linux/amd64 -t $image --build-arg IMAGE_TAG=$imageTag --build-arg UBUNTU_BASE_IMAGE="$ubuntu_base_image" --build-arg GOLANG_BASE_IMAGE="$golang_base_image" -f $linuxDir/Dockerfile.multiarch --push .
+else
+  echo "building amd64"
+  cd $baseDir
+  docker buildx build --platform linux/amd64 -t $image --build-arg IMAGE_TAG=$imageTag --build-arg UBUNTU_BASE_IMAGE="$ubuntu_base_image" --build-arg GOLANG_BASE_IMAGE="$golang_base_image" -f $linuxDir/Dockerfile.multiarch --push .
 fi
 
-# build docker provider shell bundle
-build_docker_provider
-
-# build docker image
-build_docker_image
-
-# publish docker image
-publish_docker_image
+echo "build and push docker image completed"
 
 cd $currentDir
-
-

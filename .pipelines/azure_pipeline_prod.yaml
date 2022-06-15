@@ -119,14 +119,14 @@ jobs:
         az acr login -n ${{ variables.containerRegistry }}
 
         if [ "$(Build.Reason)" != "PullRequest" ]; then
-          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageNameLinux }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --push .
+          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageNameLinux }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg UBUNTU_BASE_IMAGE=$(UBUNTU_BASE_IMAGE) --push .
 
           docker pull ${{ variables.repoImageNameLinux }}:$(linuxImagetag)
         else
-          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageNameLinux }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json .
+          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageNameLinux }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg UBUNTU_BASE_IMAGE=$(UBUNTU_BASE_IMAGE) .
 
           # load the multi-arch image to run tests
-          docker buildx build --tag ${{ variables.repoImageNameLinux }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --load .
+          docker buildx build --tag ${{ variables.repoImageNameLinux }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg UBUNTU_BASE_IMAGE=$(UBUNTU_BASE_IMAGE) --load .
         fi
 
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
@@ -138,14 +138,14 @@ jobs:
     condition: eq(variables.IS_PR, true)
     inputs:
       BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
-      DockerImagesToScan: 'golang:1.15.14, ubuntu:18.04'
+      DockerImagesToScan: '$(GOLANG_BASE_IMAGE), $(UBUNTU_BASE_IMAGE)'
 
   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
     displayName: 'Generation Task'
     condition: eq(variables.IS_PR, false)
     inputs:
       BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
-      DockerImagesToScan: 'golang:1.15.14, ubuntu:18.04, ${{ variables.repoImageNameLinux }}:$(linuxImagetag)'
+      DockerImagesToScan: '$(GOLANG_BASE_IMAGE), $(UBUNTU_BASE_IMAGE), ${{ variables.repoImageNameLinux }}:$(linuxImagetag)'
 
   - task: PublishBuildArtifacts@1
     inputs:
