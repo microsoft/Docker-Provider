@@ -18,21 +18,22 @@ This is the otel config that will be applied to the prometheus collector which i
 ## Create a configmap from your configuration file
 
 Your prometheus-config file now contains the additional scrape targets you want.  
-For the prometheus collector to consume these additional scrape configs, you create and deploy this config file as a configmap in your cluster in the kube-system namespace. Note that your configuration file name must be `prometheus-config` for the configmap to be setup properly. See example below as well. 
+For the prometheus collector to consume these additional scrape configs, you create and deploy this config file as a configmap in your cluster in the `kube-system` namespace. Note that your configuration file name must be `prometheus-config` for the configmap to be setup properly. See example below as well. 
+
 **For full configmap refrence see prometheus-config-configmap.yaml**
 
 ```shell
-kubectl create configmap <prometheus_collector_chart_release_name>-prometheus-config --from-file=prometheus-config -n kube-system
-```
-
-**Example** :-
-
-```shell
-kubectl create configmap my-collector-dev-release-prometheus-config --from-file=prometheus-config -n kube-system
+kubectl create configmap <helm-release-name>-prometheus-config --from-file=prometheus-config -n kube-system
 ```  
 
 > [!Note]
-> The release name 'my-collector-dev-release-' is used as prefix to the configmap name below
+> The ConfigMap must be prefixed with the name of the Helm release (`<helm-release-name>`) and use `prometheus-config` as a key for the configuration or it will not be picked up.
+
+Here's an example to create a new configuration where the Helm release name is `my-collector-dev-release-` :-
+
+```shell
+kubectl create configmap my-collector-dev-release-prometheus-config --from-file=prometheus-config -n kube-system
+```
 
 ## Troubleshoot scrape configuration and targets with the Prometheus Web UI
 
