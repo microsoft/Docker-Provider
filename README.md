@@ -150,11 +150,11 @@ Directly use the docker buildx commands (the MCR images can be found in our inte
 ```
 # multiple platforms
 cd ~/Docker-Provider
-docker buildx build --platform linux/arm64/v8,linux/amd64 -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> --build-arg UBUNTU_BASE_IMAGE=<ubuntuimage> --build-arg GOLANG_BASE_IMAGE=<golangimage> -f kubernetes/linux/Dockerfile.multiarch --push .
+docker buildx build --platform linux/arm64/v8,linux/amd64 -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> --build-arg CI_BASE_IMAGE=<ciimage> --build-arg GOLANG_BASE_IMAGE=<golangimage> -f kubernetes/linux/Dockerfile.multiarch --push .
 
 # single platform
 cd ~/Docker-Provider
-docker buildx build --platform linux/amd64 -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> --build-arg UBUNTU_BASE_IMAGE=<ubuntuimage> --build-arg GOLANG_BASE_IMAGE=<golangimage> -f kubernetes/linux/Dockerfile.multiarch --push .
+docker buildx build --platform linux/amd64 -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> --build-arg CI_BASE_IMAGE=<ciimage> --build-arg GOLANG_BASE_IMAGE=<golangimage> -f kubernetes/linux/Dockerfile.multiarch --push .
 ```
 
 Using the build and publish script
@@ -185,7 +185,7 @@ make
 
 ```
 cd ~/Docker-Provider/kubernetes/linux/
-docker build -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> --build-arg UBUNTU_BASE_IMAGE=<ubuntuimage> .
+docker build -t <repo>/<imagename>:<imagetag> --build-arg IMAGE_TAG=<imagetag> --build-arg CI_BASE_IMAGE=<ciimage> .
 docker push <repo>/<imagename>:<imagetag>
 ```
 ## Windows Agent

@@ -57,7 +57,7 @@ while getopts 'hi:u:g:m' opt; do
         echo "using multiarch dockerfile"
         ;;
       u)
-        ubuntu_base_image=$OPTARG
+        ci_base_image=$OPTARG
         ;;
       g)
         golang_base_image=$OPTARG
@@ -76,7 +76,7 @@ while getopts 'hi:u:g:m' opt; do
     exit 1
  fi
 
- if [ -z "$ubuntu_base_image" ]; then
+ if [ -z "$ci_base_image" ]; then
     echo "-e invalid ubuntu image url. please try with valid values from internal wiki. do not use 3P entries"
     exit 1
  fi
@@ -127,11 +127,11 @@ echo "build docker image: $image and image tage is $imageTag"
 if [ -n "$multi" ] && [ "$multi" -eq "1" ]; then
   echo "building multiarch"
   cd $baseDir
-  docker buildx build --platform linux/arm64/v8,linux/amd64 -t $image --build-arg IMAGE_TAG=$imageTag --build-arg UBUNTU_BASE_IMAGE="$ubuntu_base_image" --build-arg GOLANG_BASE_IMAGE="$golang_base_image" -f $linuxDir/Dockerfile.multiarch --push .
+  docker buildx build --platform linux/arm64/v8,linux/amd64 -t $image --build-arg IMAGE_TAG=$imageTag --build-arg CI_BASE_IMAGE="$ci_base_image" --build-arg GOLANG_BASE_IMAGE="$golang_base_image" -f $linuxDir/Dockerfile.multiarch --push .
 else
   echo "building amd64"
   cd $baseDir
-  docker buildx build --platform linux/amd64 -t $image --build-arg IMAGE_TAG=$imageTag --build-arg UBUNTU_BASE_IMAGE="$ubuntu_base_image" --build-arg GOLANG_BASE_IMAGE="$golang_base_image" -f $linuxDir/Dockerfile.multiarch --push .
+  docker buildx build --platform linux/amd64 -t $image --build-arg IMAGE_TAG=$imageTag --build-arg CI_BASE_IMAGE="$ci_base_image" --build-arg GOLANG_BASE_IMAGE="$golang_base_image" -f $linuxDir/Dockerfile.multiarch --push .
 fi
 
 echo "build and push docker image completed"

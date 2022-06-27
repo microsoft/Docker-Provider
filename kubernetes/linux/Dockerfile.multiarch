@@ -1,6 +1,6 @@
 # Default base images. If you update them don't forgot to update variables in our build pipelines. Default values can be found in internal wiki. External can use ubuntu 18.04 and golang 1.18.3
 ARG GOLANG_BASE_IMAGE=
-ARG UBUNTU_BASE_IMAGE=
+ARG CI_BASE_IMAGE=
 
 FROM --platform=$BUILDPLATFORM ${GOLANG_BASE_IMAGE} AS builder
 ARG TARGETOS TARGETARCH
@@ -11,7 +11,7 @@ COPY source /src/source
 RUN cd /src/build/linux && make arch=${TARGETARCH}
 
 
-FROM ${UBUNTU_BASE_IMAGE} AS base_image
+FROM ${CI_BASE_IMAGE} AS base_image
 ARG TARGETOS TARGETARCH
 MAINTAINER OMSContainers@microsoft.com
 LABEL vendor=Microsoft\ Corp \

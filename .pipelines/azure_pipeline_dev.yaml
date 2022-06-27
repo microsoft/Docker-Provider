@@ -115,14 +115,14 @@ jobs:
         az acr login -n ${{ variables.containerRegistry }}
 
         if [ "$(Build.Reason)" != "PullRequest" ]; then
-          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxImagetag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg UBUNTU_BASE_IMAGE=$(UBUNTU_BASE_IMAGE) --push .
+          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxImagetag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --push .
 
           docker pull ${{ variables.repoImageName }}:$(linuxImagetag)
         else
-          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxImagetag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg UBUNTU_BASE_IMAGE=$(UBUNTU_BASE_IMAGE) .
+          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxImagetag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) .
 
           # load the multi-arch image to run tests
-          docker buildx build --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxImagetag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg UBUNTU_BASE_IMAGE=$(UBUNTU_BASE_IMAGE) --load .
+          docker buildx build --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxImagetag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --load .
         fi
 
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
@@ -135,14 +135,14 @@ jobs:
     condition: eq(variables.IS_PR, true)
     inputs:
       BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
-      DockerImagesToScan: '$(GOLANG_BASE_IMAGE), $(UBUNTU_BASE_IMAGE)'
+      DockerImagesToScan: '$(GOLANG_BASE_IMAGE), $(CI_BASE_IMAGE)'
 
   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
     displayName: 'Generation Task'
     condition: eq(variables.IS_PR, false)
     inputs:
       BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
-      DockerImagesToScan: '$(GOLANG_BASE_IMAGE), $(UBUNTU_BASE_IMAGE), ${{ variables.repoImageName }}:$(linuxImagetag)'
+      DockerImagesToScan: '$(GOLANG_BASE_IMAGE), $(CI_BASE_IMAGE), ${{ variables.repoImageName }}:$(linuxImagetag)'
 
   - task: PublishBuildArtifacts@1
     inputs:

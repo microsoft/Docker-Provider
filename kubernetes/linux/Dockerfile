@@ -1,5 +1,5 @@
-ARG UBUNTU_BASE_IMAGE=
-FROM ${UBUNTU_BASE_IMAGE}
+ARG CI_BASE_IMAGE=
+FROM ${CI_BASE_IMAGE}
 MAINTAINER OMSContainers@microsoft.com
 LABEL vendor=Microsoft\ Corp \
     com.microsoft.product="Azure Monitor for containers"
