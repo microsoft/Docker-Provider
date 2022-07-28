@@ -517,7 +517,7 @@ class KubernetesApiClient
               #No container level limit for the given metric, so default to node level limit
             else
               if (metricCategory == "limits" && !nodeAllocatableRecord.nil? && !nodeAllocatableRecord.empty? && nodeAllocatableRecord.has_key?(metricNameToCollect))
-                metricValue = nodeAllocatableRecord[metricNameToCollect]
+                metricValue = getMetricNumericValue(metricNameToCollect, nodeAllocatableRecord[metricNameToCollect])
                 metricProps = {}
                 metricProps["Timestamp"] = metricTime
                 metricProps["Host"] = nodeName
