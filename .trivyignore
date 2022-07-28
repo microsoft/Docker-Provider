@@ -1,9 +1,25 @@
 # telegraf vulnerabilities
 CVE-2019-3826
-CVE-2022-29190
-CVE-2022-29222
-CVE-2022-29189
 CVE-2022-1996
 
-#dpkg vulnerability in ubuntu
+# still present in mdsd telegraf
+CVE-2021-42836
+
+# ruby in /usr/lib
+CVE-2020-36327
+CVE-2021-43809
+CVE-2021-41816
+CVE-2021-41819
+CVE-2021-31799
+CVE-2021-28965
+
+# dpkg vulnerability in ubuntu
 CVE-2022-1304
+
+# Adding for Hotfix : This needs to be fixed
+CVE-2022-27191
+CVE-2022-29190
+CVE-2022-29222
+CVE-2022-31030  
+CVE-2022-29189 
+CVE-2022-29526

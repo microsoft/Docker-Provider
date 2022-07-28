@@ -11,6 +11,10 @@ additional questions or comments.
 
 Note : The agent version(s) below has dates (ciprod<mmddyyyy>), which indicate the agent build dates (not release dates)
 
+### 07/27/2022 -
+##### Version microsoft/oms:ciprod06272022-hotfix Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod06272022-hotfix (linux)
+- Fixes for sending the proper node allocatable cpu and memory value for the container which does not specify limits.
+
 ### 06/27/2022 -
 ##### Version microsoft/oms:ciprod06272022 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod06272022 (linux)
 ##### Code change log
