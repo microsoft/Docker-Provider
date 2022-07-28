@@ -379,7 +379,7 @@ spec:
         #         - NET_ADMIN
         #         - NET_RAW
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod06272022"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod06272022-hotfix"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -468,7 +468,7 @@ spec:
             timeoutSeconds: 15
 #Only in sidecar scraping mode
         - name: omsagent-prometheus
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod06272022"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod06272022-hotfix"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -653,7 +653,7 @@ spec:
         #         - NET_ADMIN
         #         - NET_RAW
         - name: omsagent
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod06272022"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:ciprod06272022-hotfix"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
