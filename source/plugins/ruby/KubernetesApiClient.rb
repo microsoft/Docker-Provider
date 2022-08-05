@@ -757,6 +757,7 @@ class KubernetesApiClient
               metricValue = Float(metricValue) * 1000.0 ** 2
             else
               metricValue = Float(metricValue) / 1000.0
+            end
           elsif (metricValue.end_with?("g"))
             metricValue.chomp!("g")
             metricValue = Float(metricValue) * 1000.0 ** 3
