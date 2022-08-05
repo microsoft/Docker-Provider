@@ -751,8 +751,12 @@ class KubernetesApiClient
             metricValue.chomp!("k")
             metricValue = Float(metricValue) * 1000.0 ** 1
           elsif (metricValue.end_with?("m"))
+            #original value before downcase ending with M is megabyte and value ending with m is milli-byte
             metricValue.chomp!("m")
-            metricValue = Float(metricValue) * 1000.0 ** 2
+            if (metricVal.end_with?("M"))
+              metricValue = Float(metricValue) * 1000.0 ** 2
+            else
+              metricValue = Float(metricValue) / 1000.0
           elsif (metricValue.end_with?("g"))
             metricValue.chomp!("g")
             metricValue = Float(metricValue) * 1000.0 ** 3
