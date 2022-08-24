@@ -102,7 +102,12 @@ data:
 
         ## Uncomment the following settings with valid string arrays for prometheus scraping
 
-        # An array of urls to scrape metrics from. $NODE_IP (all upper case) will substitute of running Node's IP address
+        # An array of urls to scrape metrics from. The string $NODE_IP (all upper case) will make sure the agent will scrape all the Kubernetes nodes in the cluster. Do NOT change the string with actual IP addresses.
+
+        # Example: Scrape the default kubelet prometheus endpoints:
+        # urls = ["https://$NODE_IP:10250/metrics","https://$NODE_IP:10250/metrics/cadvisor","https://$NODE_IP:10250/metrics/probes"]
+
+        # Example: Scrape your custom DaemonSet endpoint:
         # urls = ["http://$NODE_IP:9103/metrics"]
 
         #fieldpass = ["metric_to_pass1", "metric_to_pass12"]
