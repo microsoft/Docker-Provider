@@ -66,6 +66,9 @@ data:
         # An array of urls to scrape metrics from.
         # urls = ["http://myurl:9101/metrics"]
 
+        # Example: to scrape the metrics from the Kubernetes API uncomment this line
+        # urls = ["https://kubernetes.default.svc.cluster.local/metrics"]
+
         # An array of Kubernetes services to scrape metrics from.
         # kubernetes_services = ["http://my-service-dns.my-namespace:9102/metrics"]
 
