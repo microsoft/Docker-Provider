@@ -85,6 +85,8 @@ jobs:
     inputs:
       pathToPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: drop
+  
+  - task: ComponentGovernanceComponentDetection@0
 
 - job: build_linux
   dependsOn: common
