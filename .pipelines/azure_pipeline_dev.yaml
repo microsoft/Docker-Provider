@@ -26,6 +26,8 @@ jobs:
   pool:
     name: Azure-Pipelines-CI-Test-EO
   steps:
+  - task: ComponentGovernanceComponentDetection@0
+
   - bash: |
       commit=$(git rev-parse --short HEAD)
       datetime=$(date +'%m%d%Y')
@@ -142,6 +144,16 @@ jobs:
     condition: eq(variables.IS_PR, false)
     inputs:
       BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
+      DockerImagesToScan: '$(GOLANG_BASE_IMAGE), $(CI_BASE_IMAGE), ${{ variables.repoImageName }}:$(linuxImagetag)'
+
+  - task: ComponentGovernanceComponentDetection@0
+    condition: eq(variables.IS_PR, true)
+    inputs:
+      DockerImagesToScan: '$(GOLANG_BASE_IMAGE), $(CI_BASE_IMAGE)'
+
+  - task: ComponentGovernanceComponentDetection@0
+    condition: eq(variables.IS_PR, false)
+    inputs:
       DockerImagesToScan: '$(GOLANG_BASE_IMAGE), $(CI_BASE_IMAGE), ${{ variables.repoImageName }}:$(linuxImagetag)'
 
   - task: PublishBuildArtifacts@1

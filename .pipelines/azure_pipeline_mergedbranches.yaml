@@ -26,6 +26,8 @@ jobs:
   pool:
     name: Azure-Pipelines-CI-Test-EO
   steps:
+  - task: ComponentGovernanceComponentDetection@0
+
   - bash: |
       commit=$(git rev-parse --short HEAD)
       datetime=$(date +'%m%d%Y')
@@ -86,8 +88,6 @@ jobs:
       pathToPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: drop
   
-  - task: ComponentGovernanceComponentDetection@0
-
 - job: build_linux
   dependsOn: common
   pool:
