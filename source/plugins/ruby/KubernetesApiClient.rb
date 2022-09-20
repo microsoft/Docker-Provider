@@ -1267,6 +1267,7 @@ class KubernetesApiClient
             nodeInfo["containerRuntimeVersion"] = resourceItem["status"]["nodeInfo"]["containerRuntimeVersion"]
             nodeInfo["operatingSystem"] = resourceItem["status"]["nodeInfo"]["operatingSystem"]
             nodeInfo["kernelVersion"] = resourceItem["status"]["nodeInfo"]["kernelVersion"]
+            nodeInfo["architecture"] = resourceItem["status"]["nodeInfo"]["architecture"]
           end
           item["status"]["nodeInfo"] = nodeInfo
 
