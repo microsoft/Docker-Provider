@@ -574,19 +574,6 @@ class MdmMetricsGenerator
           records.push(JSON.parse(additional_record))
         end
 
-        if !allocatable_percentage_metric_value.nil?
-          additional_record = MdmAlertTemplates::Node_resource_metrics_template % {
-            timestamp: record["Timestamp"],
-            metricName: @@node_metric_name_metric_allocatable_percentage_name_hash[metric_name],
-            hostvalue: record["Host"],
-            objectnamevalue: record["ObjectName"],
-            instancenamevalue: record["InstanceName"],
-            metricminvalue: allocatable_percentage_metric_value,
-            metricmaxvalue: allocatable_percentage_metric_value,
-            metricsumvalue: allocatable_percentage_metric_value,
-          }
-          records.push(Yajl::Parser.parse(StringIO.new(additional_record)))
-        end
       rescue => errorStr
         @log.info "Error in getNodeResourceMetricRecords: #{errorStr}"
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
