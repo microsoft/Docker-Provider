@@ -193,9 +193,6 @@ jobs:
         mkdir -p $(Build.ArtifactStagingDirectory)/windows
         cd kubernetes/windows
 
-        # workaround for https://github.com/actions/runner-images/issues/6181
-        New-Item -ItemType SymbolicLink -Path "C:\Windows\SysWOW64\docker.exe" -Target "C:\Windows\System32\docker.exe"
-
         az --version
         az account show
         az account set -s ${{ variables.subscription }}
@@ -238,9 +235,6 @@ jobs:
         mkdir -p $(Build.ArtifactStagingDirectory)/windows
         cd kubernetes/windows
 
-        # workaround for https://github.com/actions/runner-images/issues/6181
-        New-Item -ItemType SymbolicLink -Path "C:\Windows\SysWOW64\docker.exe" -Target "C:\Windows\System32\docker.exe"
-
         az --version
         az account show
         az account set -s ${{ variables.subscription }}
@@ -272,9 +266,6 @@ jobs:
       inlineScript: |
         mkdir -p $(Build.ArtifactStagingDirectory)/windows
         cd kubernetes/windows
-
-        # workaround for https://github.com/actions/runner-images/issues/6181
-        New-Item -ItemType SymbolicLink -Path "C:\Windows\SysWOW64\docker.exe" -Target "C:\Windows\System32\docker.exe"
 
         az --version
         az account show
