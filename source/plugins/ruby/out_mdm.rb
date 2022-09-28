@@ -119,6 +119,10 @@ module Fluent::Plugin
             if @isAADMSIAuth && !@isWindows
               @log.info "using IMDS sidecar endpoint for MSI token since its Arc k8s and Linux node"
               @useMsi = true
+              custom_resource_endpoint = ENV["customResourceEndpoint"]
+              if !custom_resource_endpoint.nil? && !custom_resource_endpoint.empty?
+                @@token_resource_audience = custom_resource_endpoint.strip
+              end
               msi_endpoint = @@imds_msi_endpoint_template % { resource: @@token_resource_audience }
               @parsed_token_uri = URI.parse(msi_endpoint)
             else
