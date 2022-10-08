@@ -111,9 +111,9 @@ spec:
        - name: CUSTOM_METRICS_ENDPOINT
          value: {{ .Values.amalogs.metricsEndpoint | quote }}
        {{- end }}
-       {{- if ne .Values.omsagent.resourceEndpoint "<your_resource_endpoint>" }}
+       {{- if ne .Values.amalogs.resourceEndpoint "<your_resource_endpoint>" }}
        - name: customResourceEndpoint
-         value: {{ .Values.omsagent.resourceEndpoint | quote }}
+         value: {{ .Values.amalogs.resourceEndpoint | quote }}
        {{- end }}
        securityContext:
          privileged: true
