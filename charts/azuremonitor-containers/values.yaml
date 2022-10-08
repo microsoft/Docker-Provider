@@ -65,7 +65,7 @@ amalogs:
   proxy: <your_proxy_config>
   # This metricsEndpoint used to define the endpoint custom metrics emit to. If not defined, default public Azure monitoring endpoint '{aks_region}.monitoring.azure.com' will be used.
   metricsEndpoint: <your_metrics_endpoint>
-  resourceEndpoint: <your_resource_endpoint>
+  tokenAudience: <your_token_audience>
   env:
     clusterName: <your_cluster_name>
     ## Applicable for only managed clusters hosted in Azure
