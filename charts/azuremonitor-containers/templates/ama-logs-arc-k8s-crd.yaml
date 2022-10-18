@@ -25,6 +25,8 @@ spec:
   audience: https://monitor.azure.cn/
   {{- else if eq (.Values.Azure.Cluster.Cloud | lower) "azureusgovernmentcloud" }}
   audience: https://monitor.azure.us/
+  {{- if and (eq (.Values.Azure.Cluster.Cloud | lower) "arcautonomous") (ne .Values.amalogs.tokenAudience "<your_token_audience>") }}
+  audience: {{ .Values.amalogs.tokenAudience | quote }}
   {{- else }}
   audience: https://monitor.azure.com/
   {{- end }}
