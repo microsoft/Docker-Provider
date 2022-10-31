@@ -68,6 +68,17 @@ require_relative "ConfigParseErrorLogger"
 @promFbitBufferSize = 0
 @promFbitMemBufLimit = 0
 
+# set defaults
+if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.casecmp(@daemonset) == 0
+  @promFbitChunkSize = 32
+  @promFbitBufferSize = 64
+  @promFbitMemBufLimit = 5
+elsif !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.casecmp(@daemonset) != 0
+  @promFbitChunkSize = 32
+  @promFbitBufferSize = 64
+  @promFbitMemBufLimit = 10
+end
+
 def is_number?(value)
   true if Integer(value) rescue false
 end
