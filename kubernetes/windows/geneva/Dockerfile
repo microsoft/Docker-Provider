@@ -11,9 +11,9 @@ SHELL ["powershell"]
 
 ENV tmpdir /opt/amalogswindows/scripts/powershell
 
-WORKDIR /opt/amalogswindows/scripts/powershell
+COPY setup.ps1 /opt/amalogswindows/scripts/powershell/setup.ps1
+RUN ./opt/amalogswindows/scripts/powershell/setup.ps1
 
-COPY setup.ps1 /opt/amalogswindows/scripts/powershell
-RUN ./setup.ps1
+COPY main.ps1 /opt/amalogswindows/scripts/powershell/main.ps1
 
-COPY main.ps1 /opt/amalogswindows/scripts/powershell
+ENTRYPOINT ["powershell", ".\\opt\\amalogswindows\\scripts\\powershell\\main.ps1"]

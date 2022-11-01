@@ -1,6 +1,4 @@
-# Get path of C:/ folder within the container
-$containerRoot = [System.Environment]::GetEnvironmentVariable("CONTAINER_ROOT", "process")
-
+$rootDir = Get-Location
 
 function Set-EnvironmentVariables {
 
@@ -38,7 +36,7 @@ function Set-EnvironmentVariables {
 
     # Set env vars for geneva monitor
     $envVars = @{
-        MONITORING_DATA_DIRECTORY = (Join-Path $containerRoot "opt\genevamonitoringagent\datadirectory")
+        MONITORING_DATA_DIRECTORY = (Join-Path $rootDir "opt\genevamonitoringagent\datadirectory")
         MONITORING_GCS_AUTH_ID_TYPE = "AuthMSIToken"
         MONITORING_MANAGED_ID_IDENTIFIER = "object_id"
         MONITORING_GCS_REGION = $aksregion
@@ -52,7 +50,7 @@ function Set-EnvironmentVariables {
         MONITORING_GCS_ACCOUNT = "VALUE_GCS_ACCOUNT"
         MONITORING_GCS_NAMESPACE = "VALUE_GCS_NAMESPACE"              
         MONITORING_GCS_ENVIRONMENT = "VALUE_GCS_ENVIRONMENT}"
-        MONITORING_CONFIG_VERSION = "VALUE_GCS_CONFIG_VERSION"         
+        MONITORING_CONFIG_VERSION = "VALUE_GCS_CONFIG_VERSION"
     }
 
     foreach($key in $envVars.PSBase.Keys) {
@@ -65,4 +63,4 @@ Start-Transcript -Path main.txt
 
 Set-EnvironmentVariables
 
-Invoke-Expression ((Join-Path $containerRoot \opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe) + " -useenv")
+Invoke-Expression ".\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe -useenv"
