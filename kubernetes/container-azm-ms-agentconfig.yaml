@@ -150,25 +150,25 @@ data:
     # buffer size should be greater than or equal to chunk size else we set it to chunk size.
     # settings scoped to prometheus sidecar container
     [agent_settings.prometheus_fbit_settings]
-      tcp_listener_chunk_size = 10
-      tcp_listener_buffer_size = 10
-      tcp_listener_mem_buf_limit = 200
+      tcp_listener_chunk_size = 10 #in mb
+      tcp_listener_buffer_size = 10 #in mb
+      tcp_listener_mem_buf_limit = 200 #in mb
 
     # prometheus scrape fluent bit settings for high scale
     # buffer size should be greater than or equal to chunk size else we set it to chunk size.
     # settings scoped to daemonset container
-    [agent_settings.node_prometheus_fbit_settings]
-      tcp_listener_chunk_size = 32
-      tcp_listener_buffer_size = 64
-      tcp_listener_mem_buf_limit = 5
+    # [agent_settings.node_prometheus_fbit_settings]
+      # tcp_listener_chunk_size = 32 #in kb
+      # tcp_listener_buffer_size = 64 in kb
+      # tcp_listener_mem_buf_limit = 10 #in mb
 
     # prometheus scrape fluent bit settings for high scale
     # buffer size should be greater than or equal to chunk size else we set it to chunk size.
     # settings scoped to replicaset container
-    [agent_settings.cluster_prometheus_fbit_settings]
-      tcp_listener_chunk_size = 32
-      tcp_listener_buffer_size = 64
-      tcp_listener_mem_buf_limit = 10
+    # [agent_settings.cluster_prometheus_fbit_settings]
+      # tcp_listener_chunk_size = 32 #in kb
+      # tcp_listener_buffer_size = 64 in kb
+      # tcp_listener_mem_buf_limit = 10 #in mb
 
     # The following settings are "undocumented", we don't recommend uncommenting them unless directed by Microsoft.
     # They increase the maximum stdout/stderr log collection rate but will also cause higher cpu/memory usage.
