@@ -39,23 +39,7 @@ spec:
        resources:
         limits:
          cpu: 500m
-      #    memory: 600Mi
-      #  command:
-      #  - powershell
-      #  - -command
-      #  - |
-      #    $mainScriptPath = "opt\amalogswindows\scripts\powershell\main.ps1"
-      #    $containerRoot = Get-Location
-      #    while(($containerRoot -ne "") -and (!(Test-Path (Join-Path $containerRoot $mainScriptPath)))){
-      #      $containerRoot = Split-Path -Path $containerRoot
-      #    }
-      #    if ($containerRoot -eq ""){
-      #      Write-Host "Unable to find host process container root path"
-      #      exit
-      #    }
-      #    Write-Host "Container root: $containerRoot"
-      #    [System.Environment]::SetEnvironmentVariable("CONTAINER_ROOT", $containerRoot , "Process")
-      #    powershell (Join-Path $containerRoot $mainScriptPath)
+         memory: 600Mi
        env:
         # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
         - name: AKS_RESOURCE_ID

@@ -1,6 +1,6 @@
 <#
     .DESCRIPTION
-     Builds the Windows Geneva Agent code and Docker Image and pushes the docker image to specified repo
+     Builds the windows host container image containing the Geneva Agent and pushes the image to specified repo
 
     .PARAMETER image
         docker image. format should be <repo>/<image-name>:<tag>
