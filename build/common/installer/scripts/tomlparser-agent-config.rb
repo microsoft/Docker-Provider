@@ -64,9 +64,13 @@ require_relative "ConfigParseErrorLogger"
 # CONTAINER_TYPE is populated only for prometheus sidecar container.
 @containerType = ENV["CONTAINER_TYPE"]
 
-@promFbitChunkSize = 32 #in kb
-@promFbitBufferSize = 64 #in kb
-@promFbitMemBufLimit = 10 #in mb
+@promFbitChunkSize = 0
+@promFbitBufferSize = 0
+@promFbitMemBufLimit = 0
+
+@promFbitChunkSizeDefault = "32" #kb
+@promFbitBufferSizeDefault  = "64" #kb
+@promFbitMemBufLimitDefault  = "10m" #mb
 
 def is_number?(value)
   true if Integer(value) rescue false
@@ -201,15 +205,15 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         chunk_size = prom_fbit_config[:tcp_listener_chunk_size]
         if !chunk_size.nil? && is_number?(chunk_size) && chunk_size.to_i > 0
           @promFbitChunkSize = chunk_size.to_i
-          puts "Using config map value: AZMON_FBIT_CHUNK_SIZE = #{@promFbitChunkSize}"
+          puts "Using config map value: AZMON_FBIT_CHUNK_SIZE = #{@promFbitChunkSize.to_s + "m"}"
         end
         buffer_size = prom_fbit_config[:tcp_listener_buffer_size]
         if !buffer_size.nil? && is_number?(buffer_size) && buffer_size.to_i > 0
           @promFbitBufferSize = buffer_size.to_i
-          puts "Using config map value: AZMON_FBIT_BUFFER_SIZE = #{@promFbitBufferSize}"
+          puts "Using config map value: AZMON_FBIT_BUFFER_SIZE = #{@promFbitBufferSize.to_s + "m"}"
           if @promFbitBufferSize < @promFbitChunkSize
             @promFbitBufferSize = @promFbitChunkSize
-            puts "Setting Fbit buffer size equal to chunk size since it is set to less than chunk size - AZMON_FBIT_BUFFER_SIZE = #{@promFbitBufferSize}"
+            puts "Setting Fbit buffer size equal to chunk size since it is set to less than chunk size - AZMON_FBIT_BUFFER_SIZE = #{@promFbitBufferSize.to_s + "m"}"
           end
         end
         mem_buf_limit = prom_fbit_config[:tcp_listener_mem_buf_limit]
@@ -267,13 +271,21 @@ if !file.nil?
   end
 
   if @promFbitChunkSize > 0
-    file.write("export AZMON_FBIT_CHUNK_SIZE=#{@promFbitChunkSize}\n")
+    file.write("export AZMON_FBIT_CHUNK_SIZE=#{@promFbitChunkSize.to_s + "m"}\n")
+  else
+    file.write("export AZMON_FBIT_CHUNK_SIZE=#{@promFbitChunkSizeDefault}\n")
   end
+
   if @promFbitBufferSize > 0
-    file.write("export AZMON_FBIT_BUFFER_SIZE=#{@promFbitBufferSize}\n")
+    file.write("export AZMON_FBIT_BUFFER_SIZE=#{@promFbitBufferSize.to_s + "m"}\n")
+  else
+    file.write("export AZMON_FBIT_BUFFER_SIZE=#{@promFbitBufferSizeDefault}\n")
   end
+
   if @promFbitMemBufLimit > 0
     file.write("export AZMON_FBIT_MEM_BUF_LIMIT=#{@promFbitMemBufLimit.to_s + "m"}\n")
+  else
+    file.write("export AZMON_FBIT_MEM_BUF_LIMIT=#{@promFbitMemBufLimitDefault}\n")
   end
 
   # Close file after writing all environment variables
@@ -313,15 +325,24 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
       file.write(commands)
     end
     if @promFbitChunkSize > 0
-      commands = get_command_windows("AZMON_FBIT_CHUNK_SIZE", @promFbitChunkSize)
+      commands = get_command_windows("AZMON_FBIT_CHUNK_SIZE", @promFbitChunkSize.to_s + "m")
+      file.write(commands)
+    else
+      commands = get_command_windows("AZMON_FBIT_CHUNK_SIZE", @promFbitChunkSizeDefault)
       file.write(commands)
     end
     if @promFbitBufferSize > 0
-      commands = get_command_windows("AZMON_FBIT_BUFFER_SIZE", @promFbitBufferSize)
+      commands = get_command_windows("AZMON_FBIT_BUFFER_SIZE", @promFbitBufferSize.to_s + "m")
+      file.write(commands)
+    else
+      commands = get_command_windows("AZMON_FBIT_BUFFER_SIZE", @promFbitBufferSizeDefault)
       file.write(commands)
     end
     if @promFbitMemBufLimit > 0
       commands = get_command_windows("AZMON_FBIT_MEM_BUF_LIMIT", @promFbitMemBufLimit.to_s + "m")
+      file.write(commands)
+    else
+      commands = get_command_windows("AZMON_FBIT_MEM_BUF_LIMIT", @promFbitMemBufLimitDefault)
       file.write(commands)
     end
     # Close file after writing all environment variables
