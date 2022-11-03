@@ -68,8 +68,8 @@ require_relative "ConfigParseErrorLogger"
 @promFbitBufferSize = 0
 @promFbitMemBufLimit = 0
 
-@promFbitChunkSizeDefault = "32" #kb
-@promFbitBufferSizeDefault  = "64" #kb
+@promFbitChunkSizeDefault = "32k" #kb
+@promFbitBufferSizeDefault  = "64k" #kb
 @promFbitMemBufLimitDefault  = "10m" #mb
 
 def is_number?(value)
