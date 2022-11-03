@@ -60,6 +60,10 @@ spec:
           valueFrom:
              fieldRef:
                fieldPath: status.hostIP
+       volumeMounts:
+        - mountPath: C:\etc\config\settings
+          name: settings-vol-config
+          readOnly: true
     affinity:
      nodeAffinity:
        requiredDuringSchedulingIgnoredDuringExecution:
@@ -78,3 +82,8 @@ spec:
       effect: NoSchedule
     - operator: "Exists"
       effect: PreferNoSchedule
+    volumes:
+      - name: settings-vol-config
+        configMap:
+          name: container-azm-ms-agentconfig
+          optional: true

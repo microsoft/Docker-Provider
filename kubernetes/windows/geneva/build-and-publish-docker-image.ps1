@@ -40,6 +40,34 @@ if ($imagetag.StartsWith("win-") -eq $false)
 }
 
 Write-Host "image tag used is :$imagetag"
+
+# Install scripts
+$rootdir = Join-Path $PSScriptRoot "../../../"
+$builddir = Join-Path $rootdir "build"
+$publishdir = $publishdir = Join-Path -Path $rootdir -ChildPath "kubernetes\windows\amalogswindows"
+if(!(Test-Path $publishdir)){
+    New-Item -Path $publishdir -ItemType Directory
+}
+
+$installerdir = Join-Path -Path $builddir -ChildPath "common\installer"
+Write-Host("copying common installer files conf and scripts from :" + $installerdir + "  to  :" + $publishdir + " ...")
+$exclude = @('*.cs','*.csproj', '*.cpp')
+Copy-Item  -Path $installerdir  -Destination $publishdir -Recurse -Force -Exclude $exclude
+Write-Host("successfully copied installer files conf and scripts from :" + $installerdir + "  to  :" + $publishdir + " ") -ForegroundColor Green
+
+$installerdir = Join-Path -Path $builddir -ChildPath "windows\installer"
+Write-Host("copying installer files conf and scripts from :" + $installerdir + "  to  :" + $publishdir + " ...")
+$exclude = @('*.cs','*.csproj', '*.cpp')
+Copy-Item  -Path $installerdir  -Destination $publishdir -Recurse -Force -Exclude $exclude
+Write-Host("successfully copied installer files conf and scripts from :" + $installerdir + "  to  :" + $publishdir + " ") -ForegroundColor Green
+
+$rubyplugindir = Join-Path -Path $rootdir -ChildPath "source\plugins\ruby"
+Write-Host("copying ruby source files from :" + $rubyplugindir + "  to  :" + $publishdir + " ...")
+Copy-Item -Path $rubyplugindir -Destination $publishdir -Recurse -Force
+Get-ChildItem $Path | Where{$_.Name -Match ".*_test\.rb"} | Remove-Item
+Write-Host("successfully copied ruby source files from :" + $rubyplugindir + "  to  :" + $publishdir + " ") -ForegroundColor Green
+
+
 Write-Host $currentdir
 $dockerFileDir = $currentdir
 Write-Host("builddir dir : " + $dockerFileDir + " ")

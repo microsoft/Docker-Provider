@@ -32,7 +32,7 @@ function Set-EnvironmentVariables {
     $podName = [System.Environment]::GetEnvironmentVariable("PODNAME", "process")
     if ([string]::IsNullOrEmpty($podName)) {
         Write-Host "Failed to get environment variable PODNAME"
-    }
+    } 
 
     # Set env vars for geneva monitor
     $envVars = @{
@@ -44,19 +44,35 @@ function Set-EnvironmentVariables {
         MA_RoleEnvironment_ResourceId = $aksResourceId
         MONITORING_TENANT = "CloudAgent"
         MONITORING_ROLE = "Windows-HPC-Geneva"
-        MONITORING_ROLE_INSTANCE = "$hostName-$podName"
-
-        MONITORING_MANAGED_ID_VALUE="VALUE_MSI_OBJECT_ID"
-        MONITORING_GCS_ACCOUNT = "VALUE_GCS_ACCOUNT"
-        MONITORING_GCS_NAMESPACE = "VALUE_GCS_NAMESPACE"              
-        MONITORING_GCS_ENVIRONMENT = "VALUE_GCS_ENVIRONMENT}"
-        MONITORING_CONFIG_VERSION = "VALUE_GCS_CONFIG_VERSION"
+        MONITORING_ROLE_INSTANCE = "$hostName-$podName"       
     }
 
     foreach($key in $envVars.PSBase.Keys) {
         [System.Environment]::SetEnvironmentVariable($key, $envVars[$key], "Process")
         [System.Environment]::SetEnvironmentVariable($key, $envVars[$key], "Machine")
     }
+
+    # run config parser
+    $rubypath = (Join-Path $containerRoot ruby31/bin/ruby.exe)
+    & $rubypath (Join-Path $containerRoot /opt/amalogswindows/scripts/ruby/tomlparser.rb)
+    .\setenv.ps1
+    #Parse the configmap to set the right environment variables for geneva config.
+    & $rubypath (Join-Path $containerRoot /opt/amalogswindows/scripts/ruby/tomlparser-geneva-config.rb)
+    .\setagentenv.ps1
+}
+
+function Get-GenevaEnabled {
+  $gcsEnvironment = [System.Environment]::GetEnvironmentVariable("MONITORING_GCS_ENVIRONMENT", "process")
+  $gcsAccount = [System.Environment]::GetEnvironmentVariable("MONITORING_GCS_ACCOUNT", "process")
+  $gcsNamespace = [System.Environment]::GetEnvironmentVariable("MONITORING_GCS_NAMESPACE", "process")
+  $gcsConfigVersion = [System.Environment]::GetEnvironmentVariable("MONITORING_CONFIG_VERSION", "process")
+  $gcsAuthId = [System.Environment]::GetEnvironmentVariable("MONITORING_GCS_AUTH_ID", "process")
+
+  return (![string]::IsNullOrEmpty($gcsEnvironment)) -and 
+    (![string]::IsNullOrEmpty($gcsAccount)) -and 
+    (![string]::IsNullOrEmpty($gcsNamespace)) -and 
+    (![string]::IsNullOrEmpty($gcsConfigVersion)) -and 
+    (![string]::IsNullOrEmpty($gcsAuthId)) 
 }
 
 Start-Transcript -Path main.txt
