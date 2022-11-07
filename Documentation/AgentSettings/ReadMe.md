@@ -18,9 +18,26 @@ Note that this can only be achieved using helm chart today.
 ```
   agent-settings: |-
     # prometheus scrape fluent bit settings for high scale
-    # buffer size should be greater than or equal to chunk size else we set it to chunk size. 
+    # buffer size should be greater than or equal to chunk size else we set it to chunk size.
+    # settings scoped to prometheus sidecar container. all values in mb
     [agent_settings.prometheus_fbit_settings]
       tcp_listener_chunk_size = 10
       tcp_listener_buffer_size = 10
       tcp_listener_mem_buf_limit = 200
+
+    # prometheus scrape fluent bit settings for high scale
+    # buffer size should be greater than or equal to chunk size else we set it to chunk size.
+    # settings scoped to daemonset container. all values in mb
+    # [agent_settings.node_prometheus_fbit_settings]
+      # tcp_listener_chunk_size = 1
+      # tcp_listener_buffer_size = 1
+      # tcp_listener_mem_buf_limit = 10
+
+    # prometheus scrape fluent bit settings for high scale
+    # buffer size should be greater than or equal to chunk size else we set it to chunk size.
+    # settings scoped to replicaset container. all values in mb
+    # [agent_settings.cluster_prometheus_fbit_settings]
+      # tcp_listener_chunk_size = 1
+      # tcp_listener_buffer_size = 1
+      # tcp_listener_mem_buf_limit = 10
 ```

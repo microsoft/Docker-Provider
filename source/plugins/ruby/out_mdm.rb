@@ -356,6 +356,7 @@ module Fluent::Plugin
         if @proxy.nil? || @proxy.empty?
           http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port)
         else
+          aks_resource_id = ENV["AKS_RESOURCE_ID"]
           @log.info "Proxy configured on this cluster: #{aks_resource_id}"
           http_client = Net::HTTP.new(@post_request_uri.host, @post_request_uri.port, @proxy[:addr], @proxy[:port], @proxy[:user], @proxy[:pass])
         end
