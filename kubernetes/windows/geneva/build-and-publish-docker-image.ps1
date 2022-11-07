@@ -44,7 +44,7 @@ Write-Host "image tag used is :$imagetag"
 # Install scripts
 $rootdir = Join-Path $PSScriptRoot "../../../"
 $builddir = Join-Path $rootdir "build"
-$publishdir = $publishdir = Join-Path -Path $rootdir -ChildPath "kubernetes\windows\amalogswindows"
+$publishdir = $publishdir = Join-Path -Path $rootdir -ChildPath "kubernetes\windows\geneva\amalogswindows"
 if(!(Test-Path $publishdir)){
     New-Item -Path $publishdir -ItemType Directory
 }

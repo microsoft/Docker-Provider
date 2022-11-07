@@ -1,12 +1,10 @@
 #!/usr/local/bin/ruby
 
-#this should be require relative in Linux and require in windows, since it is a gem install on windows
-@os_type = ENV["OS_TYPE"]
 require "tomlrb"
 
 require_relative "ConfigParseErrorLogger"
 
-@configMapMountPath = "/etc/config/settings/agent-settings"
+@configMapMountPath = "./etc/config/settings/agent-settings"
 @configSchemaVersion = ""
 
 # configmap settings related to geneva logs config
@@ -58,7 +56,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             @genevaAccount = genevaAccount
             @genevaNamespace = genevaNamespace
             @genevaConfigVersion = genevaConfigVersion
-            @genevaLogsConfig = true
           else
             puts "config::error:unsupported geneva config environment"
           end
@@ -94,26 +91,38 @@ else
   end
 end
 
-# Write the settings to file, so that they can be set as environment variables
-file = File.open("agent_config_env_var", "w")
-
-if !file.nil?
-  if !@genevaEnvironment.empty? && !@genevaAccount.empty? && !@genevaNamespace.empty? && !@genevaConfigVersion.empty? && !@genevaAuthId.empty?
-    file.write("export MONITORING_GCS_ENVIRONMENT=#{@genevaEnvironment}\n")
-    file.write("export MONITORING_GCS_ACCOUNT=#{@genevaAccount}\n")
-    file.write("export MONITORING_GCS_NAMESPACE=#{@genevaNamespace}\n")
-    file.write("export MONITORING_CONFIG_VERSION=#{@genevaConfigVersion}\n")
-    file.write("export MONITORING_GCS_AUTH_ID=#{@genevaAuthId}\n")
-  end
-
-  # Close file after writing all environment variables
-  file.close
-else
-  puts "Exception while opening file for writing config environment variables"
-  puts "****************End Config Processing********************"
-end
-
 def get_command_windows(env_variable_name, env_variable_value)
   return "[System.Environment]::SetEnvironmentVariable(\"#{env_variable_name}\", \"#{env_variable_value}\", \"Process\")" + "\n" + "[System.Environment]::SetEnvironmentVariable(\"#{env_variable_name}\", \"#{env_variable_value}\", \"Machine\")" + "\n"
 end
 
+# Write the settings to file, so that they can be set as environment variables
+file = File.open("setagentenv.ps1", "w")
+
+if !file.nil?
+
+  if !@genevaEnvironment.empty? && !@genevaAccount.empty? && !@genevaNamespace.empty? && !@genevaConfigVersion.empty? && !@genevaAuthId.empty?
+    file.write(get_command_windows("MONITORING_GCS_ENVIRONMENT", @genevaEnvironment))
+    file.write(get_command_windows("MONITORING_GCS_ACCOUNT", @genevaAccount))
+    file.write(get_command_windows("MONITORING_GCS_NAMESPACE", @genevaNamespace))
+    file.write(get_command_windows("MONITORING_CONFIG_VERSION", @genevaConfigVersion))
+
+    authIdParts =  @genevaAuthId.split('#', 2)
+    file.write(get_command_windows("MONITORING_MANAGED_ID_IDENTIFIER", authIdParts[0]))
+    file.write(get_command_windows("MONITORING_MANAGED_ID_VALUE", authIdParts[1]))
+
+    puts "Using config map value: MONITORING_GCS_ENVIRONMENT = #{@genevaEnvironment}"
+    puts "Using config map value: MONITORING_GCS_ACCOUNT = #{@genevaAccount}"
+    puts "Using config map value: MONITORING_GCS_NAMESPACE = #{@genevaNamespace}"
+    puts "Using config map value: MONITORING_CONFIG_VERSION = #{@genevaConfigVersion}"
+    puts "Using config map value: MONITORING_MANAGED_ID_IDENTIFIER = #{authIdParts[0]}"
+    puts "Using config map value: MONITORING_MANAGED_ID_VALUE= #{authIdParts[1]}"
+
+  end
+
+  # Close file after writing all environment variables
+  file.close
+  puts "****************End Config Processing********************"
+else
+  puts "Exception while opening file for writing config environment variables"
+  puts "****************End Config Processing********************"
+end

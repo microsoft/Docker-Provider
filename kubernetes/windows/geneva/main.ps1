@@ -34,14 +34,21 @@ function Set-EnvironmentVariables {
         Write-Host "Failed to get environment variable PODNAME"
     } 
 
+    $schemaVersionFile = './etc/config/settings/schema-version'
+    if (Test-Path $schemaVersionFile) {
+        $schemaVersion = Get-Content $schemaVersionFile | ForEach-Object { $_.TrimEnd() }
+        if ($schemaVersion.GetType().Name -eq 'String') {
+            [System.Environment]::SetEnvironmentVariable("AZMON_AGENT_CFG_SCHEMA_VERSION", $schemaVersion, "Process")
+            [System.Environment]::SetEnvironmentVariable("AZMON_AGENT_CFG_SCHEMA_VERSION", $schemaVersion, "Machine")
+        }
+        $env:AZMON_AGENT_CFG_SCHEMA_VERSION
+    }
+
     # Set env vars for geneva monitor
     $envVars = @{
         MONITORING_DATA_DIRECTORY = (Join-Path $rootDir "opt\genevamonitoringagent\datadirectory")
         MONITORING_GCS_AUTH_ID_TYPE = "AuthMSIToken"
-        MONITORING_MANAGED_ID_IDENTIFIER = "object_id"
         MONITORING_GCS_REGION = $aksregion
-        MA_RoleEnvironment_Location = $aksregion
-        MA_RoleEnvironment_ResourceId = $aksResourceId
         MONITORING_TENANT = "CloudAgent"
         MONITORING_ROLE = "Windows-HPC-Geneva"
         MONITORING_ROLE_INSTANCE = "$hostName-$podName"       
@@ -53,11 +60,10 @@ function Set-EnvironmentVariables {
     }
 
     # run config parser
-    $rubypath = (Join-Path $containerRoot ruby31/bin/ruby.exe)
-    & $rubypath (Join-Path $containerRoot /opt/amalogswindows/scripts/ruby/tomlparser.rb)
-    .\setenv.ps1
+    $rubypath =  "./ruby31/bin/ruby.exe"
+
     #Parse the configmap to set the right environment variables for geneva config.
-    & $rubypath (Join-Path $containerRoot /opt/amalogswindows/scripts/ruby/tomlparser-geneva-config.rb)
+    & $rubypath ./opt/amalogswindows/scripts/ruby/tomlparser-geneva-config.rb
     .\setagentenv.ps1
 }
 
@@ -66,13 +72,15 @@ function Get-GenevaEnabled {
   $gcsAccount = [System.Environment]::GetEnvironmentVariable("MONITORING_GCS_ACCOUNT", "process")
   $gcsNamespace = [System.Environment]::GetEnvironmentVariable("MONITORING_GCS_NAMESPACE", "process")
   $gcsConfigVersion = [System.Environment]::GetEnvironmentVariable("MONITORING_CONFIG_VERSION", "process")
-  $gcsAuthId = [System.Environment]::GetEnvironmentVariable("MONITORING_GCS_AUTH_ID", "process")
+  $gcsAuthIdIdentifier = [System.Environment]::GetEnvironmentVariable("MONITORING_MANAGED_ID_IDENTIFIER", "process")
+  $gcsAuthIdValue = [System.Environment]::GetEnvironmentVariable("MONITORING_MANAGED_ID_VALUE", "process")
 
   return (![string]::IsNullOrEmpty($gcsEnvironment)) -and 
     (![string]::IsNullOrEmpty($gcsAccount)) -and 
     (![string]::IsNullOrEmpty($gcsNamespace)) -and 
     (![string]::IsNullOrEmpty($gcsConfigVersion)) -and 
-    (![string]::IsNullOrEmpty($gcsAuthId)) 
+    (![string]::IsNullOrEmpty($gcsAuthIdIdentifier))  -and 
+    (![string]::IsNullOrEmpty($gcsAuthIdValue)) 
 }
 
 Start-Transcript -Path main.txt

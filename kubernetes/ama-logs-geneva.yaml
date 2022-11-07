@@ -61,7 +61,7 @@ spec:
              fieldRef:
                fieldPath: status.hostIP
        volumeMounts:
-        - mountPath: C:\etc\config\settings
+        - mountPath: \etc\config\settings
           name: settings-vol-config
           readOnly: true
     affinity:
