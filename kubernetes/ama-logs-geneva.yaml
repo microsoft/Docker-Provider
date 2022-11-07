@@ -64,6 +64,13 @@ spec:
         - mountPath: \etc\config\settings
           name: settings-vol-config
           readOnly: true
+       livenessProbe:
+          exec:
+            command:
+              - cmd
+              - /c
+              - .\opt\amalogswindows\scripts\cmd\livenessprobe.exe
+              - ".\\etc\\amalogswindows\\filesystemwatcher.txt"
     affinity:
      nodeAffinity:
        requiredDuringSchedulingIgnoredDuringExecution:

@@ -1,5 +1,9 @@
 $rootDir = Get-Location
 
+function Start-FileSystemWatcher {
+    Start-Process powershell -NoNewWindow .\opt\amalogswindows\scripts\powershell\filesystemwatcher.ps1
+}
+
 function Set-EnvironmentVariables {
 
     $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID", "process")
@@ -86,5 +90,6 @@ function Get-GenevaEnabled {
 Start-Transcript -Path main.txt
 
 Set-EnvironmentVariables
+Start-FileSystemWatcher
 
 Invoke-Expression ".\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe -useenv"

@@ -2,8 +2,11 @@ $ProgressPreference = 'SilentlyContinue'
 
 Write-Host ('Creating folder structure')
   New-Item -Type Directory -Path /installation -ErrorAction SilentlyContinue
+  
   New-Item -Type Directory -Path /opt/genevamonitoringagent
   New-Item -Type Directory -Path /opt/genevamonitoringagent/datadirectory
+
+  New-Item -Type Directory -Path /etc/amalogswindows
 
 Write-Host ('Installing GenevaMonitoringAgent');
   try {

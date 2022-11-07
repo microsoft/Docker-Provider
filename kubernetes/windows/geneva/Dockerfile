@@ -35,5 +35,7 @@ RUN ./opt/amalogswindows/scripts/powershell/setup.ps1
 COPY ./amalogswindows/installer/scripts/*.rb /opt/amalogswindows/scripts/ruby/
 
 COPY main.ps1 /opt/amalogswindows/scripts/powershell/main.ps1
+COPY ./amalogswindows/installer/scripts/filesystemwatcher.ps1 /opt/amalogswindows/scripts/powershell
+COPY ./amalogswindows/installer/livenessprobe/livenessprobe.exe /opt/amalogswindows/scripts/cmd/
 
 ENTRYPOINT ["powershell", ".\\opt\\amalogswindows\\scripts\\powershell\\main.ps1"]
