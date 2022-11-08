@@ -15,10 +15,6 @@ require_relative "ConfigParseErrorLogger"
 @genevaAuthId = ""
 GENEVA_SUPPORTED_ENVIRONMENTS = ["Test", "Stage", "DiagnosticsProd", "FirstpartyProd", "BillingProd", "ExternalProd", "CaMooncake", "CaFairfax", "CaBlackforest"]
 
-def is_number?(value)
-  true if Integer(value) rescue false
-end
-
 # Use parser to parse the configmap toml file to a ruby structure
 def parseConfigMap
   begin
@@ -78,6 +74,38 @@ def populateSettingValuesFromConfigMap(parsedConfig)
   end
 end
 
+# Write the settings to file, so that they can be set as environment variables
+def writeEnvScript(filepath)
+  file = File.open(filepath, "w")
+
+  if !file.nil?
+
+    if !@genevaEnvironment.empty? && !@genevaAccount.empty? && !@genevaNamespace.empty? && !@genevaConfigVersion.empty? && !@genevaAuthId.empty?
+      file.write(get_command_windows("MONITORING_GCS_ENVIRONMENT", @genevaEnvironment))
+      file.write(get_command_windows("MONITORING_GCS_ACCOUNT", @genevaAccount))
+      file.write(get_command_windows("MONITORING_GCS_NAMESPACE", @genevaNamespace))
+      file.write(get_command_windows("MONITORING_CONFIG_VERSION", @genevaConfigVersion))
+
+      authIdParts =  @genevaAuthId.split('#', 2)
+      file.write(get_command_windows("MONITORING_MANAGED_ID_IDENTIFIER", authIdParts[0]))
+      file.write(get_command_windows("MONITORING_MANAGED_ID_VALUE", authIdParts[1]))
+
+      puts "Using config map value: MONITORING_GCS_ENVIRONMENT = #{@genevaEnvironment}"
+      puts "Using config map value: MONITORING_GCS_ACCOUNT = #{@genevaAccount}"
+      puts "Using config map value: MONITORING_GCS_NAMESPACE = #{@genevaNamespace}"
+      puts "Using config map value: MONITORING_CONFIG_VERSION = #{@genevaConfigVersion}"
+      puts "Using config map value: MONITORING_MANAGED_ID_IDENTIFIER = #{authIdParts[0]}"
+      puts "Using config map value: MONITORING_MANAGED_ID_VALUE= #{authIdParts[1]}"
+
+    end
+
+    # Close file after writing all environment variables
+    file.close
+  else
+    puts "Exception while opening file for writing config environment variables"
+  end
+end
+
 @configSchemaVersion = ENV["AZMON_AGENT_CFG_SCHEMA_VERSION"]
 puts "****************Start Config Processing********************"
 if !@configSchemaVersion.nil? && !@configSchemaVersion.empty? && @configSchemaVersion.strip.casecmp("v1") == 0 #note v1 is the only supported schema version , so hardcoding it
@@ -95,34 +123,8 @@ def get_command_windows(env_variable_name, env_variable_value)
   return "[System.Environment]::SetEnvironmentVariable(\"#{env_variable_name}\", \"#{env_variable_value}\", \"Process\")" + "\n" + "[System.Environment]::SetEnvironmentVariable(\"#{env_variable_name}\", \"#{env_variable_value}\", \"Machine\")" + "\n"
 end
 
-# Write the settings to file, so that they can be set as environment variables
-file = File.open("setagentenv.ps1", "w")
+writeEnvScript("setagentenv.ps1")
+puts "****************End Config Processing********************"
 
-if !file.nil?
 
-  if !@genevaEnvironment.empty? && !@genevaAccount.empty? && !@genevaNamespace.empty? && !@genevaConfigVersion.empty? && !@genevaAuthId.empty?
-    file.write(get_command_windows("MONITORING_GCS_ENVIRONMENT", @genevaEnvironment))
-    file.write(get_command_windows("MONITORING_GCS_ACCOUNT", @genevaAccount))
-    file.write(get_command_windows("MONITORING_GCS_NAMESPACE", @genevaNamespace))
-    file.write(get_command_windows("MONITORING_CONFIG_VERSION", @genevaConfigVersion))
 
-    authIdParts =  @genevaAuthId.split('#', 2)
-    file.write(get_command_windows("MONITORING_MANAGED_ID_IDENTIFIER", authIdParts[0]))
-    file.write(get_command_windows("MONITORING_MANAGED_ID_VALUE", authIdParts[1]))
-
-    puts "Using config map value: MONITORING_GCS_ENVIRONMENT = #{@genevaEnvironment}"
-    puts "Using config map value: MONITORING_GCS_ACCOUNT = #{@genevaAccount}"
-    puts "Using config map value: MONITORING_GCS_NAMESPACE = #{@genevaNamespace}"
-    puts "Using config map value: MONITORING_CONFIG_VERSION = #{@genevaConfigVersion}"
-    puts "Using config map value: MONITORING_MANAGED_ID_IDENTIFIER = #{authIdParts[0]}"
-    puts "Using config map value: MONITORING_MANAGED_ID_VALUE= #{authIdParts[1]}"
-
-  end
-
-  # Close file after writing all environment variables
-  file.close
-  puts "****************End Config Processing********************"
-else
-  puts "Exception while opening file for writing config environment variables"
-  puts "****************End Config Processing********************"
-end
