@@ -11,7 +11,7 @@ build/windows/installer/certificategenerator/bin
 build/windows/installer/certificategenerator/obj
 # files under amalogswindows dir since this temp directory to build the docker image
 kubernetes/windows/amalogswindows
-kubernetes/windows/geneva/amalogswindows
+kubernetes/windows/hostlogs/hostlogswindows
 # ignore everything under intermediate directory
 intermediate
 # ignore files which are having these extensions

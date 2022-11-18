@@ -1,6 +1,6 @@
 #  Build script to build the liveness probe and copy installers for geneva ama
-#  1. copy the files under installer directory to ..\..\kubernetes\windows\hostlogswindows
-#  2. Builds the livenessprobe cpp and copy the executable to the under directory ..\..\kubernetes\windows\hostlogswindows
+#  1. copy the files under installer directory to ..\..\kubernetes\windows\hostlogs\hostlogswindows
+#  2. Builds the livenessprobe cpp and copy the executable to the under directory ..\..\kubernetes\windows\hostlogs\hostlogswindows
 
 $currentdir =  $PSScriptRoot
 Write-Host("current script dir : " + $currentdir + " ")
@@ -23,7 +23,7 @@ if ($false -eq (Test-Path -Path $rootdir)) {
     exit 1
 }
 
-$publishdir = Join-Path -Path $rootdir -ChildPath "kubernetes\windows\hostlogswindows"
+$publishdir = Join-Path -Path $rootdir -ChildPath "kubernetes\windows\hostlogs\hostlogswindows"
 if ($true -eq (Test-Path -Path $publishdir)) {
     Write-Host("publish dir exist hence deleting: " + $publishdir + " ")
     Remove-Item -Path $publishdir  -Recurse -Force

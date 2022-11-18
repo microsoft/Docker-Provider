@@ -32,7 +32,7 @@ COPY setup.ps1 /opt/hostlogswindows/scripts/powershell/setup.ps1
 RUN ./opt/hostlogswindows/scripts/powershell/setup.ps1
 
 # copy ruby scripts to /opt folder
-COPY ./hostlogswindows/installer/scripts/*.rb /opt/hostlogswindows/scripts/ruby/
+COPY ./hostlogswindows/installer/scripts/tomlparser-agent-config.rb /opt/hostlogswindows/scripts/ruby/
 
 COPY main.ps1 /opt/hostlogswindows/scripts/powershell/main.ps1
 COPY ./hostlogswindows/installer/scripts/filesystemwatcher.ps1 /opt/hostlogswindows/scripts/powershell
