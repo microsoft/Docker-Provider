@@ -42,7 +42,7 @@ if ($imagetag.StartsWith("win-") -eq $false)
 Write-Host "image tag used is :$imagetag"
 
 Write-Host "start:Building the livenessprobe code via Makefile.ps1"
-..\..\..\build\windowsGeneva\Makefile.ps1
+..\..\..\build\hostlogswindows\Makefile.ps1
 Write-Host "end:Building the livenessprobe code via Makefile.ps1"
 
 
@@ -96,7 +96,7 @@ if ([string]::IsNullOrEmpty($windowsBaseImageVersion)) {
     }
 
     Write-Host "START:Triggering docker image build: $image with baseImage version: ${windowsBaseImageVersion}"
-    docker build --isolation=hyperv -t $updateImage  --build-arg WINDOWS_VERSION=$windowsBaseImageVersion  --build-arg IMAGE_TAG=$imageTag  .
+    docker build --isolation=hyperv -t $updateImage  --build-arg WINDOWS_VERSION=$windowsBaseImageVersion  --build-arg IMAGE_TAG=$imageTag  . --network "Default Switch"
     Write-Host "END:Triggering docker image build: $updateImage"
 
     Write-Host "START:pushing docker image : $updateImage"

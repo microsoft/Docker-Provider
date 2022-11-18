@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
- name: geneva-logs-windows
+ name: host-logs-windows
  namespace: kube-system
  labels:
-  component: geneva-logs-agent-windows
+  component: geneva-agent-windows
   tier: node-win
 spec:
  updateStrategy:
   type: RollingUpdate
  selector:
   matchLabels:
-    component: geneva-logs-agent-windows
+    component: geneva-agent-windows
     tier: node-win
  template:
   metadata:
     labels:
-      component: geneva-logs-agent-windows
+      component: geneva-agent-windows
       tier: node-win
     annotations:
       agentVersion: "0.0.0-0"
@@ -30,10 +30,10 @@ spec:
     securityContext:
       windowsOptions:
         hostProcess: true
-        runAsUserName: "NT AUTHORITY\\SYSTEM"
+        runAsUserName: "NT AUTHORITY\\LocalService"
     hostNetwork: true
     containers:
-     - name: geneva-logs-windows
+     - name: host-logs-windows
        image: "VALUE_IMAGE_NAME"
        imagePullPolicy: IfNotPresent
        resources:

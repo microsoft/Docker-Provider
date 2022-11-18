@@ -1,6 +1,6 @@
 #  Build script to build the liveness probe and copy installers for geneva ama
-#  1. copy the files under installer directory to ..\..\kubernetes\windows\amalogswindows
-#  2. Builds the livenessprobe cpp and copy the executable to the under directory ..\..\kubernetes\windows\amalogswindows
+#  1. copy the files under installer directory to ..\..\kubernetes\windows\hostlogswindows
+#  2. Builds the livenessprobe cpp and copy the executable to the under directory ..\..\kubernetes\windows\hostlogswindows
 
 $currentdir =  $PSScriptRoot
 Write-Host("current script dir : " + $currentdir + " ")
@@ -23,7 +23,7 @@ if ($false -eq (Test-Path -Path $rootdir)) {
     exit 1
 }
 
-$publishdir = Join-Path -Path $rootdir -ChildPath "kubernetes\windows\geneva\amalogswindows"
+$publishdir = Join-Path -Path $rootdir -ChildPath "kubernetes\windows\hostlogswindows"
 if ($true -eq (Test-Path -Path $publishdir)) {
     Write-Host("publish dir exist hence deleting: " + $publishdir + " ")
     Remove-Item -Path $publishdir  -Recurse -Force
@@ -34,8 +34,8 @@ New-Item -Path $publishdir -ItemType "directory" -Force
 
 # compile and build the liveness probe cpp code
 Write-Host("Start:build livenessprobe cpp code")
-$livenessprobesrcpath = Join-Path -Path $builddir  -ChildPath "windowsGeneva\installer\livenessprobe\livenessprobe.cpp"
-$livenessprobeexepath = Join-Path -Path $builddir  -ChildPath "windowsGeneva\installer\livenessprobe\livenessprobe.exe"
+$livenessprobesrcpath = Join-Path -Path $builddir  -ChildPath "hostlogswindows\installer\livenessprobe\livenessprobe.cpp"
+$livenessprobeexepath = Join-Path -Path $builddir  -ChildPath "hostlogswindows\installer\livenessprobe\livenessprobe.exe"
 g++ $livenessprobesrcpath -o $livenessprobeexepath -municode
 Write-Host("End:build livenessprobe cpp code")
 if (Test-Path -Path $livenessprobeexepath){
@@ -51,7 +51,7 @@ $exclude = @('*.cs','*.csproj', '*.cpp')
 Copy-Item  -Path $installerdir  -Destination $publishdir -Recurse -Force -Exclude $exclude
 Write-Host("successfully copied installer files conf and scripts from :" + $installerdir + "  to  :" + $publishdir + " ") -ForegroundColor Green
 
-$installerdir = Join-Path -Path $builddir -ChildPath "windowsGeneva\installer"
+$installerdir = Join-Path -Path $builddir -ChildPath "hostlogswindows\installer"
 Write-Host("copying installer files conf and scripts from :" + $installerdir + "  to  :" + $publishdir + " ...")
 $exclude = @('*.cs','*.csproj', '*.cpp')
 Copy-Item  -Path $installerdir  -Destination $publishdir -Recurse -Force -Exclude $exclude

@@ -5,7 +5,7 @@ MAINTAINER OMSContainers@microsoft.com
 LABEL vendor=Microsoft\ Corp \
     com.microsoft.product="Azure Monitor for containers"
 
-ARG IMAGE_TAG=win-ciprod10042022-3c05dd1b
+ARG IMAGE_TAG=hostlogsv1.0.0-beta
 
 # Do not split this into multiple RUN!
 # Docker creates a layer for every RUN-Statement
@@ -26,16 +26,16 @@ RUN powershell -Command "Remove-Item -Force C:\ruby31\lib\ruby\gems\3.1.0\cache\
 
 SHELL ["powershell"]
 
-ENV tmpdir /opt/amalogswindows/scripts/powershell
+ENV tmpdir /opt/hostlogswindows/scripts/powershell
 
-COPY setup.ps1 /opt/amalogswindows/scripts/powershell/setup.ps1
-RUN ./opt/amalogswindows/scripts/powershell/setup.ps1
+COPY setup.ps1 /opt/hostlogswindows/scripts/powershell/setup.ps1
+RUN ./opt/hostlogswindows/scripts/powershell/setup.ps1
 
 # copy ruby scripts to /opt folder
-COPY ./amalogswindows/installer/scripts/*.rb /opt/amalogswindows/scripts/ruby/
+COPY ./hostlogswindows/installer/scripts/*.rb /opt/hostlogswindows/scripts/ruby/
 
-COPY main.ps1 /opt/amalogswindows/scripts/powershell/main.ps1
-COPY ./amalogswindows/installer/scripts/filesystemwatcher.ps1 /opt/amalogswindows/scripts/powershell
-COPY ./amalogswindows/installer/livenessprobe/livenessprobe.exe /opt/amalogswindows/scripts/cmd/
+COPY main.ps1 /opt/hostlogswindows/scripts/powershell/main.ps1
+COPY ./hostlogswindows/installer/scripts/filesystemwatcher.ps1 /opt/hostlogswindows/scripts/powershell
+COPY ./hostlogswindows/installer/livenessprobe/livenessprobe.exe /opt/hostlogswindows/scripts/cmd/
 
-ENTRYPOINT ["powershell", ".\\opt\\amalogswindows\\scripts\\powershell\\main.ps1"]
+ENTRYPOINT ["powershell", ".\\opt\\hostlogswindows\\scripts\\powershell\\main.ps1"]
