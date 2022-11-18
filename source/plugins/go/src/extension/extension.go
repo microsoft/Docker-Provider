@@ -64,7 +64,7 @@ func getDataTypeToStreamIdMapping() (map[string]string, error) {
 	}
 
 	fs := &FluentSocket{}
-	fs.sockAddress = "/var/run/mdsd/default_fluent.socket"
+	fs.sockAddress = "/var/run/mdsd-ci/default_fluent.socket"
 	if containerType != "" && strings.Compare(strings.ToLower(containerType), "prometheussidecar") == 0 {
 		fs.sockAddress = fmt.Sprintf("/var/run/mdsd-%s/default_fluent.socket", containerType)
 	}

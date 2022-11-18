@@ -9,10 +9,9 @@
       2. Azure Log Analytics configured with the Container Insights solution. If not, configures
       3. ama-logs replicaset pod are running
       4. ama-logs daemonset pod are running
-      5. ama-logs Health service running correctly
-      6. Azure Log AnalyticsWorkspaceGuid and key configured on the agent matching with configured log analytics workspace
-      7. Advises the user to check the version of the ama-logs running on the cluster, and update it to the latest version if it isn't the latest version already
-      8. Provide the warn message to validate  Kubelet's cAdvisor configured with either secure port:10250 or unsecure port: 10255
+      5. Azure Log AnalyticsWorkspaceGuid and key configured on the agent matching with configured log analytics workspace
+      6. Advises the user to check the version of the ama-logs running on the cluster, and update it to the latest version if it isn't the latest version already
+      7. Provide the warn message to validate  Kubelet's cAdvisor configured with either secure port:10250 or unsecure port: 10255
 
     .PARAMETER azureLogAnalyticsWorkspaceResourceId
         Id of the Azure Log Analytics Workspace
@@ -431,23 +430,6 @@ try {
 }
 catch {
     Write-Host ("Failed to execute the script  : '" + $Error[0] + "' ") -ForegroundColor Red
-    Stop-Transcript
-    exit 1
-}
-
-Write-Host("Checking whether the ama-logs heatlhservice  running correctly ...")
-try {
-    $healthservice = kubectl get services -n kube-system -o json --field-selector metadata.name=healthmodel-replicaset-service | ConvertFrom-Json
-    if ($healthservice.Items.Length -ne 1) {
-        Write-Host( "ama-logs healthservice  not scheduled or failed to schedule." + $contactUSMessage)
-        Stop-Transcript
-        exit 1
-    }
-
-    Write-Host( "ama-logs healthservice pod running OK.") -ForegroundColor Green
-}
-catch {
-    Write-Host ("Failed to execute kubectl get services command : '" + $Error[0] + "' ") -ForegroundColor Red
     Stop-Transcript
     exit 1
 }

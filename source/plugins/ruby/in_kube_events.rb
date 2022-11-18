@@ -153,7 +153,10 @@ module Fluent::Plugin
             next
           end
 
-          nodeName = items["source"].key?("host") ? items["source"]["host"] : (OMS::Common.get_hostname)
+          nodeName = ""
+          if items.key?("source") && items["source"].key?("host")
+            nodeName = items["source"]["host"]
+          end
           # For ARO v3 cluster, drop the master and infra node sourced events to ingest
           if KubernetesApiClient.isAROV3Cluster && !nodeName.nil? && !nodeName.empty? &&
              (nodeName.downcase.start_with?("infra-") || nodeName.downcase.start_with?("master-"))
@@ -167,7 +170,10 @@ module Fluent::Plugin
           record["Message"] = items["message"]
           record["KubeEventType"] = items["type"]
           record["TimeGenerated"] = items["metadata"]["creationTimestamp"]
-          record["SourceComponent"] = items["source"]["component"]
+          record["SourceComponent"] = ""
+          if items.key?("source") && items["source"].key?("component")
+            record["SourceComponent"] = items["source"]["component"]
+          end
           record["FirstSeen"] = items["firstTimestamp"]
           record["LastSeen"] = items["lastTimestamp"]
           record["Count"] = items["count"]

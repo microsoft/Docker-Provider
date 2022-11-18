@@ -327,9 +327,10 @@ function Set-EnvironmentVariables {
 }
 
 function Get-ContainerRuntime {
-    # default container runtime and make default as containerd when containerd becomes default in AKS
-    $containerRuntime = "docker"
-    $cAdvisorIsSecure = "false"
+    # containerd is the default runtime on AKS windows
+    $containerRuntime = "containerd"
+    #Defaults to use secure port: 10250
+    $cAdvisorIsSecure = "true"
     $response = ""
     $NODE_IP = ""
     try {
@@ -347,33 +348,33 @@ function Get-ContainerRuntime {
             $isPodsAPISuccess = $false
             Write-Host "Value of NODE_IP environment variable : $($NODE_IP)"
             try {
-                Write-Host "Making API call to http://$($NODE_IP):10255/pods"
-                $response = Invoke-WebRequest -uri http://$($NODE_IP):10255/pods  -UseBasicParsing
-                Write-Host "Response status code of API call to http://$($NODE_IP):10255/pods : $($response.StatusCode)"
+                Write-Host "Making API call to https://$($NODE_IP):10250/pods"
+                # ignore certificate validation since kubelet uses self-signed cert
+                [ServerCertificateValidationCallback]::Ignore()
+                $response = Invoke-WebRequest -Uri https://$($NODE_IP):10250/pods  -Headers @{'Authorization' = "Bearer $(Get-Content /var/run/secrets/kubernetes.io/serviceaccount/token)" } -UseBasicParsing
+                Write-Host "Response status code of API call to https://$($NODE_IP):10250/pods : $($response.StatusCode)"
             }
             catch {
-                Write-Host "API call to http://$($NODE_IP):10255/pods failed"
+                Write-Host "API call to https://$($NODE_IP):10250/pods failed"
             }
 
             if (![string]::IsNullOrEmpty($response) -and $response.StatusCode -eq 200) {
-                Write-Host "API call to http://$($NODE_IP):10255/pods succeeded"
+                Write-Host "API call to https://$($NODE_IP):10250/pods succeeded"
                 $isPodsAPISuccess = $true
             }
             else {
                 try {
-                    Write-Host "Making API call to https://$($NODE_IP):10250/pods"
-                    # ignore certificate validation since kubelet uses self-signed cert
-                    [ServerCertificateValidationCallback]::Ignore()
-                    $response = Invoke-WebRequest -Uri https://$($NODE_IP):10250/pods  -Headers @{'Authorization' = "Bearer $(Get-Content /var/run/secrets/kubernetes.io/serviceaccount/token)" } -UseBasicParsing
-                    Write-Host "Response status code of API call to https://$($NODE_IP):10250/pods : $($response.StatusCode)"
+                    Write-Host "Making API call to http://$($NODE_IP):10255/pods"
+                    $response = Invoke-WebRequest -uri http://$($NODE_IP):10255/pods  -UseBasicParsing
+                    Write-Host "Response status code of API call to http://$($NODE_IP):10255/pods : $($response.StatusCode)"
                     if (![string]::IsNullOrEmpty($response) -and $response.StatusCode -eq 200) {
-                        Write-Host "API call to https://$($NODE_IP):10250/pods succeeded"
+                        Write-Host "API call to http://$($NODE_IP):10255/pods succeeded"
                         $isPodsAPISuccess = $true
-                        $cAdvisorIsSecure = "true"
+                        $cAdvisorIsSecure = "false"
                     }
                 }
                 catch {
-                    Write-Host "API call to https://$($NODE_IP):10250/pods failed"
+                    Write-Host "API call to http://$($NODE_IP):10255/pods failed"
                 }
             }
 
@@ -400,7 +401,7 @@ function Get-ContainerRuntime {
                                     $containerID = $pod.status.ContainerStatuses[0].containerID
                                     $detectedContainerRuntime = $containerID.split(":")[0].trim()
                                     Write-Host "detected containerRuntime as : $($detectedContainerRuntime)"
-                                    if (![string]::IsNullOrEmpty($detectedContainerRuntime) -and [string]$detectedContainerRuntime.StartsWith('docker') -eq $false) {
+                                    if (![string]::IsNullOrEmpty($detectedContainerRuntime)) {
                                         $containerRuntime = $detectedContainerRuntime
                                     }
                                     Write-Host "using containerRuntime as : $($containerRuntime)"
@@ -411,8 +412,6 @@ function Get-ContainerRuntime {
                         else {
                             Write-Host "got podItems count is 0 hence using default container runtime:  $($containerRuntime)"
                         }
-
-
                     }
                     else {
                         Write-Host "got podList null or empty hence using default container runtime:  $($containerRuntime)"
@@ -443,17 +442,15 @@ function Start-Fluent-Telegraf {
 
     $containerRuntime = Get-ContainerRuntime
 
-    # Run fluent-bit service first so that we do not miss any logs being forwarded by the telegraf service.
-    # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
-    Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\fluent-bit\bin\fluent-bit.exe" -ArgumentList @("-c", "C:\etc\fluent-bit\fluent-bit.conf", "-e", "C:\opt\amalogswindows\out_oms.so") }
-
-    #register fluentd as a service and start
-    # there is a known issues with win32-service https://github.com/chef/win32-service/issues/70
     if (![string]::IsNullOrEmpty($containerRuntime) -and [string]$containerRuntime.StartsWith('docker') -eq $false) {
         # change parser from docker to cri if the container runtime is not docker
         Write-Host "changing parser from Docker to CRI since container runtime : $($containerRuntime) and which is non-docker"
         (Get-Content -Path C:/etc/fluent-bit/fluent-bit.conf -Raw) -replace 'docker', 'cri' | Set-Content C:/etc/fluent-bit/fluent-bit.conf
     }
+
+    # Run fluent-bit service first so that we do not miss any logs being forwarded by the telegraf service.
+    # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
+    Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\fluent-bit\bin\fluent-bit.exe" -ArgumentList @("-c", "C:\etc\fluent-bit\fluent-bit.conf", "-e", "C:\opt\amalogswindows\out_oms.so") }
 
     # Start telegraf only in sidecar scraping mode
     $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')

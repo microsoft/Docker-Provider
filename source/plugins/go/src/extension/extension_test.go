@@ -41,7 +41,7 @@ func Test_getDataTypeToStreamIdMapping(t *testing.T) {
 			defer mockCtrl.Finish()
 			mock := NewMockIFluentSocketWriter(mockCtrl)
 			sock := &FluentSocket{}
-			sock.sockAddress = "/var/run/mdsd/default_fluent.socket"
+			sock.sockAddress = "/var/run/mdsd-ci/default_fluent.socket"
 			mock.EXPECT().writeAndRead(sock, gomock.Any()).Return([]byte(tt.mdsdResponse), nil).Times(1)
 			mock.EXPECT().disconnect(sock).Return(nil).Times(1)
 

@@ -1,4 +1,4 @@
-export MDSD_ROLE_PREFIX="/var/run/mdsd/default"
+#export MDSD_ROLE_PREFIX="/var/run/mdsd-ci/default"
 #export MDSD_OPTIONS="-d -A -r ${MDSD_ROLE_PREFIX}"
 export MDSD_LOG="/var/opt/microsoft/linuxmonagent/log"
 export MDSD_SPOOL_DIRECTORY="/var/opt/microsoft/linuxmonagent"
