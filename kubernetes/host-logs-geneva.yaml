@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
- name: geneva-logs-windows
+ name: host-logs-windows
  namespace: kube-system
  labels:
-  component: geneva-logs-agent-windows
+  component: geneva-agent-windows
   tier: node-win
 spec:
  updateStrategy:
   type: RollingUpdate
  selector:
   matchLabels:
-    component: geneva-logs-agent-windows
+    component: geneva-agent-windows
     tier: node-win
  template:
   metadata:
     labels:
-      component: geneva-logs-agent-windows
+      component: geneva-agent-windows
       tier: node-win
     annotations:
       agentVersion: "0.0.0-0"
@@ -33,7 +33,7 @@ spec:
         runAsUserName: "NT AUTHORITY\\SYSTEM"
     hostNetwork: true
     containers:
-     - name: geneva-logs-windows
+     - name: host-logs-windows
        image: "VALUE_IMAGE_NAME"
        imagePullPolicy: IfNotPresent
        resources:
@@ -69,8 +69,8 @@ spec:
             command:
               - cmd
               - /c
-              - .\opt\amalogswindows\scripts\cmd\livenessprobe.exe
-              - ".\\etc\\amalogswindows\\filesystemwatcher.txt"
+              - .\opt\hostlogswindows\scripts\cmd\livenessprobe.exe
+              - ".\\etc\\hostlogswindows\\filesystemwatcher.txt"
     affinity:
      nodeAffinity:
        requiredDuringSchedulingIgnoredDuringExecution:
@@ -92,5 +92,5 @@ spec:
     volumes:
       - name: settings-vol-config
         configMap:
-          name: container-azm-ms-agentconfig
+          name: container-azm-ms-hostlogsconfig
           optional: true

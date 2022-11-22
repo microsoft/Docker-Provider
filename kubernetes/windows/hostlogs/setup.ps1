@@ -6,7 +6,7 @@ Write-Host ('Creating folder structure')
   New-Item -Type Directory -Path /opt/genevamonitoringagent
   New-Item -Type Directory -Path /opt/genevamonitoringagent/datadirectory
 
-  New-Item -Type Directory -Path /etc/amalogswindows
+  New-Item -Type Directory -Path /etc/hostlogswindows
 
 Write-Host ('Installing GenevaMonitoringAgent');
   try {

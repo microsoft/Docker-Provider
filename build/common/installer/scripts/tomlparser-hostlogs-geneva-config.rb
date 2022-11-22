@@ -4,7 +4,7 @@ require "tomlrb"
 
 require_relative "ConfigParseErrorLogger"
 
-@configMapMountPath = "./etc/config/settings/agent-settings"
+@configMapMountPath = "./etc/config/settings/hostlogs-settings"
 @configSchemaVersion = ""
 
 # configmap settings related to geneva logs config
@@ -20,12 +20,12 @@ def parseConfigMap
   begin
     # Check to see if config map is created
     if (File.file?(@configMapMountPath))
-      puts "config::configmap container-azm-ms-agentconfig for agent settings mounted, parsing values"
+      puts "config::configmap container-azm-ms-hostlogsconfig for agent settings mounted, parsing values"
       parsedConfig = Tomlrb.load_file(@configMapMountPath, symbolize_keys: true)
       puts "config::Successfully parsed mounted config map"
       return parsedConfig
     else
-      puts "config::configmap container-azm-ms-agentconfig for agent settings not mounted, using defaults"
+      puts "config::configmap container-azm-ms-hostlogsconfig for agent settings not mounted, using defaults"
       return nil
     end
   rescue => errorStr
@@ -37,9 +37,9 @@ end
 # Use the ruby structure created after config parsing to set the right values to be used as environment variables
 def populateSettingValuesFromConfigMap(parsedConfig)
   begin
-    if !parsedConfig.nil? && !parsedConfig[:agent_settings].nil?
+    if !parsedConfig.nil? && !parsedConfig[:hostlogs_settings].nil?
       
-      geneva_logs_config = parsedConfig[:agent_settings][:geneva_logs_config]
+      geneva_logs_config = parsedConfig[:hostlogs_settings][:geneva_logs_config]
       if !geneva_logs_config.nil?
         puts "config: parsing geneva_logs_config settings"
         genevaEnvironment = geneva_logs_config[:environment]

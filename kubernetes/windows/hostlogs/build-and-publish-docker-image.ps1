@@ -42,7 +42,7 @@ if ($imagetag.StartsWith("win-") -eq $false)
 Write-Host "image tag used is :$imagetag"
 
 Write-Host "start:Building the livenessprobe code via Makefile.ps1"
-..\..\..\build\windowsGeneva\Makefile.ps1
+..\..\..\build\hostlogswindows\Makefile.ps1
 Write-Host "end:Building the livenessprobe code via Makefile.ps1"
 
 

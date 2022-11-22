@@ -1,7 +1,7 @@
 $rootDir = Get-Location
 
 function Start-FileSystemWatcher {
-    Start-Process powershell -NoNewWindow .\opt\amalogswindows\scripts\powershell\filesystemwatcher.ps1
+    Start-Process powershell -NoNewWindow .\opt\hostlogswindows\scripts\powershell\filesystemwatcher.ps1
 }
 
 function Set-EnvironmentVariables {
@@ -67,7 +67,7 @@ function Set-EnvironmentVariables {
     $rubypath =  "./ruby31/bin/ruby.exe"
 
     #Parse the configmap to set the right environment variables for geneva config.
-    & $rubypath ./opt/amalogswindows/scripts/ruby/tomlparser-geneva-config.rb
+    & $rubypath ./opt/hostlogswindows/scripts/ruby/tomlparser-hostlogs-geneva-config.rb
     .\setagentenv.ps1
 }
 

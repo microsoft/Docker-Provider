@@ -1,7 +1,7 @@
 require "minitest/autorun"
 require 'tempfile'
 
-require_relative "tomlparser-geneva-config.rb"
+require_relative "tomlparser-hostlogs-geneva-config.rb"
 
 class TestGenevaConfigParser < Minitest::Unit::TestCase
 
