@@ -34,6 +34,7 @@ echo "Collecting log files from inside agent containers"
 
 kubectl cp ${ds_pod}:/var/opt/microsoft/docker-cimprov/log ama-logs-daemonset --namespace=kube-system --container ama-logs
 kubectl cp ${ds_pod}:/var/opt/microsoft/linuxmonagent/log ama-logs-daemonset-mdsd --namespace=kube-system --container ama-logs
+kubectl cp ${ds_pod}:/etc/mdsd.d/config-cache/configchunks/ ama-logs-daemonset-dcr --namespace=kube-system --container ama-logs >/dev/null 2>&1
 
 kubectl cp ${ds_pod}:/var/opt/microsoft/docker-cimprov/log ama-logs-prom-daemonset --namespace=kube-system --container ama-logs-prometheus
 kubectl cp ${ds_pod}:/var/opt/microsoft/linuxmonagent/log ama-logs-prom-daemonset-mdsd --namespace=kube-system --container ama-logs-prometheus

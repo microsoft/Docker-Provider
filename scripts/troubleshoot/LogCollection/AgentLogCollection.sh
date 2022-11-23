@@ -80,6 +80,7 @@ ds_logCollection()
         kubectl cp ${ds_pod}:/var/opt/microsoft/docker-cimprov/log ama-logs-prom-daemonset --namespace=kube-system --container ama-logs-prometheus > /dev/null
         kubectl cp ${ds_pod}:/var/opt/microsoft/linuxmonagent/log ama-logs-daemonset-mdsd --namespace=kube-system --container ama-logs > /dev/null
         kubectl cp ${ds_pod}:/var/opt/microsoft/linuxmonagent/log ama-logs-prom-daemonset-mdsd --namespace=kube-system --container ama-logs-prometheus > /dev/null
+        kubectl cp ${ds_pod}:/etc/mdsd.d/config-cache/configchunks/ ama-logs-daemonset-dcr --namespace=kube-system --container ama-logs >/dev/null 2>&1
     fi
 
     kubectl exec ${ds_pod} --namespace=kube-system -- ls /var/opt/microsoft/docker-cimprov/state/ContainerInventory > containerID_${ds_pod}.txt 2>&1
@@ -184,6 +185,9 @@ other_logCollection()
     fi
 
     kubectl get nodes > node.txt
+    # contains info regarding node image version, images present on disk, etc
+    kubectl get nodes -o json > node-detailed.json
+
     echo -e "Complete onboard log collection!" | tee -a Tool.log
 }
 
