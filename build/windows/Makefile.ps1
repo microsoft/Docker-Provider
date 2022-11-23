@@ -187,7 +187,7 @@ $exclude = @('*.cs','*.csproj', '*.cpp')
 Copy-Item  -Path $installerdir  -Destination $publishdir -Recurse -Force -Exclude $exclude
 Write-Host("successfully copied installer files conf and scripts from :" + $installerdir + "  to  :" + $publishdir + " ") -ForegroundColor Green
 
-$installerdir = Join-Path -Path $builddir -ChildPath "hostlogswindows\installer"
+$installerdir = Join-Path -Path $builddir -ChildPath "windows\installer"
 Write-Host("copying installer files conf and scripts from :" + $installerdir + "  to  :" + $publishdir + " ...")
 $exclude = @('*.cs','*.csproj', '*.cpp')
 Copy-Item  -Path $installerdir  -Destination $publishdir -Recurse -Force -Exclude $exclude
