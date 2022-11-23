@@ -9,21 +9,21 @@ class TestGenevaConfigParser < Minitest::Unit::TestCase
   end
 
   CONFIG_MAP_VARIABLES = Hash[
-    :authid => "object_id#abcd1234", 
     :environment => "Test", 
     :account => "TestAccount",
     :namespace => "TestNamespace",
-    :configversion => "2.0" 
+    :configversion => "2.0" ,
+    :authid => "object_id#abcd1234"
   ]
 
   def getConfigFileContent 
     return <<-CONFIGMAP
       [agent_settings.geneva_logs_config]
-        authid =  "#{CONFIG_MAP_VARIABLES[:authid]}"
         environment = "#{CONFIG_MAP_VARIABLES[:environment]}" 
         account = "#{CONFIG_MAP_VARIABLES[:account]}"
         namespace = "#{CONFIG_MAP_VARIABLES[:namespace]}"
         configversion = "#{CONFIG_MAP_VARIABLES[:configversion]}" 
+        authid =  "#{CONFIG_MAP_VARIABLES[:authid]}"
     CONFIGMAP
   end
 
@@ -45,11 +45,11 @@ class TestGenevaConfigParser < Minitest::Unit::TestCase
 
       geneva_logs_config = parsedConfig[:agent_settings][:geneva_logs_config]
 
-      assert_equal(CONFIG_MAP_VARIABLES[:authid], geneva_logs_config[:authid], "Unexpected value for geneva authid")
       assert_equal(CONFIG_MAP_VARIABLES[:environment], geneva_logs_config[:environment], "Unexpected value for geneva environment")
       assert_equal(CONFIG_MAP_VARIABLES[:account], geneva_logs_config[:account], "Unexpected value for geneva account")
       assert_equal(CONFIG_MAP_VARIABLES[:namespace], geneva_logs_config[:namespace], "Unexpected value for geneva namespace")
       assert_equal(CONFIG_MAP_VARIABLES[:configversion], geneva_logs_config[:configversion], "Unexpected value for geneva configversion")
+      assert_equal(CONFIG_MAP_VARIABLES[:authid], geneva_logs_config[:authid], "Unexpected value for geneva authid")
     }
   end
 
@@ -66,22 +66,22 @@ class TestGenevaConfigParser < Minitest::Unit::TestCase
     populateSettingValuesFromConfigMap(testConfig)
 
     # verify results
-    assert_equal(CONFIG_MAP_VARIABLES[:authid], @genevaAuthId, "Unexpected value for geneva authid")
-    assert_equal(CONFIG_MAP_VARIABLES[:environment], @genevaEnvironment, "Unexpected value for geneva environment")
-    assert_equal(CONFIG_MAP_VARIABLES[:account], @genevaAccount, "Unexpected value for geneva account")
-    assert_equal(CONFIG_MAP_VARIABLES[:namespace], @genevaNamespace, "Unexpected value for geneva namespace")
-    assert_equal(CONFIG_MAP_VARIABLES[:configversion], @genevaConfigVersion, "Unexpected value for geneva configversion")
+    assert_equal(CONFIG_MAP_VARIABLES[:environment], @geneva_account_environment, "Unexpected value for geneva environment")
+    assert_equal(CONFIG_MAP_VARIABLES[:account], @geneva_account_name, "Unexpected value for geneva account")
+    assert_equal(CONFIG_MAP_VARIABLES[:namespace], @geneva_account_namespace, "Unexpected value for geneva namespace")
+    assert_equal(CONFIG_MAP_VARIABLES[:configversion], @geneva_logs_config_version, "Unexpected value for geneva configversion")
+    assert_equal(CONFIG_MAP_VARIABLES[:authid], @geneva_gcs_authid, "Unexpected value for geneva authid")
   end
 
   # This test verifies that an env variable script is written
   # It does not verify that the script is valid and correctly sets env vars
   def test_writeEnvScript
     # set values to write
-    @genevaAuthId = CONFIG_MAP_VARIABLES[:authid]
-    @genevaEnvironment = CONFIG_MAP_VARIABLES[:environment]
-    @genevaAccount = CONFIG_MAP_VARIABLES[:account]
-    @genevaNamespace = CONFIG_MAP_VARIABLES[:namespace]
-    @genevaConfigVersion = CONFIG_MAP_VARIABLES[:configversion]
+    @geneva_account_environment = CONFIG_MAP_VARIABLES[:environment]
+    @geneva_account_name = CONFIG_MAP_VARIABLES[:account]
+    @geneva_account_namespace = CONFIG_MAP_VARIABLES[:namespace]
+    @geneva_logs_config_version = CONFIG_MAP_VARIABLES[:configversion]
+    @geneva_gcs_authid = CONFIG_MAP_VARIABLES[:authid]
 
     # create temp file to write into
     Tempfile.open("foo") { |f|
