@@ -913,23 +913,6 @@ if ("AKS" -eq $ClusterType ) {
         exit 1
     }
 
-    Write-Host("Checking whether the ama-logs heatlhservice  running correctly ...")
-    try {
-        $healthservice = kubectl get services -n kube-system -o json --field-selector metadata.name=healthmodel-replicaset-service | ConvertFrom-Json
-        if ($healthservice.Items.Length -ne 1) {
-            Write-Host( "ama-logs healthservice  not scheduled or failed to schedule." + $contactUSMessage)
-            Stop-Transcript
-            exit 1
-        }
-
-        Write-Host( "ama-logs healthservice running OK.") -ForegroundColor Green
-    }
-    catch {
-        Write-Host ("Failed to execute kubectl get services command : '" + $Error[0] + "' ") -ForegroundColor Red
-        Stop-Transcript
-        exit 1
-    }
-
     if ($isClusterAndWorkspaceInDifferentSubs) {
        Write-Host("Changing to workspace's subscription")
        Select-AzSubscription -SubscriptionId $workspaceSubscriptionId

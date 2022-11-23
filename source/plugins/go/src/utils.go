@@ -123,7 +123,7 @@ func ToString(s interface{}) string {
 
 //mdsdSocketClient to write msgp messages
 func CreateMDSDClient(dataType DataType, containerType string) {
-	mdsdfluentSocket := "/var/run/mdsd/default_fluent.socket"
+	mdsdfluentSocket := "/var/run/mdsd-ci/default_fluent.socket"
 	if containerType != "" && strings.Compare(strings.ToLower(containerType), "prometheussidecar") == 0 {
 		mdsdfluentSocket = fmt.Sprintf("/var/run/mdsd-%s/default_fluent.socket", containerType)
 	}
@@ -134,7 +134,7 @@ func CreateMDSDClient(dataType DataType, containerType string) {
 			MdsdMsgpUnixSocketClient = nil
 		}
 		/*conn, err := fluent.New(fluent.Config{FluentNetwork:"unix",
-		FluentSocketPath:"/var/run/mdsd/default_fluent.socket",
+		FluentSocketPath:"/var/run/mdsd-ci/default_fluent.socket",
 		WriteTimeout: 5 * time.Second,
 		RequestAck: true}) */
 		conn, err := net.DialTimeout("unix",

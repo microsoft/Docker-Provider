@@ -9,6 +9,13 @@ require_relative "ConfigParseErrorLogger"
 @configMapMountPath = "/etc/config/settings/agent-settings"
 @configSchemaVersion = ""
 
+# Checking to see if this is the daemonset or replicaset to parse config accordingly
+@controllerType = ENV["CONTROLLER_TYPE"]
+@daemonset = "daemonset"
+# Checking to see if container is not prometheus sidecar.
+# CONTAINER_TYPE is populated only for prometheus sidecar container.
+@containerType = ENV["CONTAINER_TYPE"]
+
 # 250 Node items (15KB per node) account to approximately 4MB
 @nodesChunkSize = 250
 # 1000 pods (10KB per pod) account to approximately 10MB
@@ -56,6 +63,23 @@ require_relative "ConfigParseErrorLogger"
 @fbitTailBufferMaxSizeMBs = 0
 @fbitTailMemBufLimitMBs = 0
 @fbitTailIgnoreOlder = ""
+
+# configmap settings related to mdsd
+@mdsdMonitoringMaxEventRate = 0
+# Checking to see if this is the daemonset or replicaset to parse config accordingly
+@controllerType = ENV["CONTROLLER_TYPE"]
+@daemonset = "daemonset"
+# Checking to see if container is not prometheus sidecar.
+# CONTAINER_TYPE is populated only for prometheus sidecar container.
+@containerType = ENV["CONTAINER_TYPE"]
+
+@promFbitChunkSize = 0
+@promFbitBufferSize = 0
+@promFbitMemBufLimit = 0
+
+@promFbitChunkSizeDefault = "32k" #kb
+@promFbitBufferSizeDefault  = "64k" #kb
+@promFbitMemBufLimitDefault  = "10m" #mb
 
 def is_number?(value)
   true if Integer(value) rescue false
@@ -178,6 +202,48 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           end
         end
       end
+
+      # ama-logs daemonset only settings
+      if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.casecmp(@daemonset) == 0 && @containerType.nil?
+        # mdsd settings
+        mdsd_config = parsedConfig[:agent_settings][:mdsd_config]
+        if !mdsd_config.nil?
+          mdsdMonitoringMaxEventRate = mdsd_config[:monitoring_max_event_rate]
+          if !mdsdMonitoringMaxEventRate.nil? && is_number?(mdsdMonitoringMaxEventRate) && mdsdMonitoringMaxEventRate.to_i > 0
+            @mdsdMonitoringMaxEventRate = mdsdMonitoringMaxEventRate.to_i
+            puts "Using config map value: monitoring_max_event_rate  = #{@mdsdMonitoringMaxEventRate}"
+          end
+        end
+      end
+    
+      prom_fbit_config = nil
+      if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.casecmp(@daemonset) == 0 && @containerType.nil?
+        prom_fbit_config = parsedConfig[:agent_settings][:node_prometheus_fbit_settings]
+      elsif !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.casecmp(@daemonset) != 0
+        prom_fbit_config = parsedConfig[:agent_settings][:cluster_prometheus_fbit_settings]
+      end
+
+      if !prom_fbit_config.nil?
+        chunk_size = prom_fbit_config[:tcp_listener_chunk_size]
+        if !chunk_size.nil? && is_number?(chunk_size) && chunk_size.to_i > 0
+          @promFbitChunkSize = chunk_size.to_i
+          puts "Using config map value: AZMON_FBIT_CHUNK_SIZE = #{@promFbitChunkSize.to_s + "m"}"
+        end
+        buffer_size = prom_fbit_config[:tcp_listener_buffer_size]
+        if !buffer_size.nil? && is_number?(buffer_size) && buffer_size.to_i > 0
+          @promFbitBufferSize = buffer_size.to_i
+          puts "Using config map value: AZMON_FBIT_BUFFER_SIZE = #{@promFbitBufferSize.to_s + "m"}"
+          if @promFbitBufferSize < @promFbitChunkSize
+            @promFbitBufferSize = @promFbitChunkSize
+            puts "Setting Fbit buffer size equal to chunk size since it is set to less than chunk size - AZMON_FBIT_BUFFER_SIZE = #{@promFbitBufferSize.to_s + "m"}"
+          end
+        end
+        mem_buf_limit = prom_fbit_config[:tcp_listener_mem_buf_limit]
+        if !mem_buf_limit.nil? && is_number?(mem_buf_limit) && mem_buf_limit.to_i > 0
+          @promFbitMemBufLimit = mem_buf_limit.to_i
+          puts "Using config map value: AZMON_FBIT_MEM_BUF_LIMIT = #{@promFbitMemBufLimit.to_s + "m"}"
+        end
+      end
     end
   rescue => errorStr
     puts "config::error:Exception while reading config settings for agent configuration setting - #{errorStr}, using defaults"
@@ -221,9 +287,31 @@ if !file.nil?
   if @fbitTailMemBufLimitMBs > 0
     file.write("export FBIT_TAIL_MEM_BUF_LIMIT=#{@fbitTailMemBufLimitMBs}\n")
   end
-
   if !@fbitTailIgnoreOlder.nil? && !@fbitTailIgnoreOlder.empty?
     file.write("export FBIT_TAIL_IGNORE_OLDER=#{@fbitTailIgnoreOlder}\n")
+  end
+
+  #mdsd settings
+  if @mdsdMonitoringMaxEventRate > 0
+    file.write("export MONITORING_MAX_EVENT_RATE=#{@mdsdMonitoringMaxEventRate}\n")
+  end
+
+  if @promFbitChunkSize > 0
+    file.write("export AZMON_FBIT_CHUNK_SIZE=#{@promFbitChunkSize.to_s + "m"}\n")
+  else
+    file.write("export AZMON_FBIT_CHUNK_SIZE=#{@promFbitChunkSizeDefault}\n")
+  end
+
+  if @promFbitBufferSize > 0
+    file.write("export AZMON_FBIT_BUFFER_SIZE=#{@promFbitBufferSize.to_s + "m"}\n")
+  else
+    file.write("export AZMON_FBIT_BUFFER_SIZE=#{@promFbitBufferSizeDefault}\n")
+  end
+
+  if @promFbitMemBufLimit > 0
+    file.write("export AZMON_FBIT_MEM_BUF_LIMIT=#{@promFbitMemBufLimit.to_s + "m"}\n")
+  else
+    file.write("export AZMON_FBIT_MEM_BUF_LIMIT=#{@promFbitMemBufLimitDefault}\n")
   end
 
   # Close file after writing all environment variables
@@ -260,6 +348,27 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     end
     if !@fbitTailIgnoreOlder.nil? && !@fbitTailIgnoreOlder.empty?
       commands = get_command_windows("FBIT_TAIL_IGNORE_OLDER", @fbitTailIgnoreOlder)
+      file.write(commands)
+    end
+    if @promFbitChunkSize > 0
+      commands = get_command_windows("AZMON_FBIT_CHUNK_SIZE", @promFbitChunkSize.to_s + "m")
+      file.write(commands)
+    else
+      commands = get_command_windows("AZMON_FBIT_CHUNK_SIZE", @promFbitChunkSizeDefault)
+      file.write(commands)
+    end
+    if @promFbitBufferSize > 0
+      commands = get_command_windows("AZMON_FBIT_BUFFER_SIZE", @promFbitBufferSize.to_s + "m")
+      file.write(commands)
+    else
+      commands = get_command_windows("AZMON_FBIT_BUFFER_SIZE", @promFbitBufferSizeDefault)
+      file.write(commands)
+    end
+    if @promFbitMemBufLimit > 0
+      commands = get_command_windows("AZMON_FBIT_MEM_BUF_LIMIT", @promFbitMemBufLimit.to_s + "m")
+      file.write(commands)
+    else
+      commands = get_command_windows("AZMON_FBIT_MEM_BUF_LIMIT", @promFbitMemBufLimitDefault)
       file.write(commands)
     end
     # Close file after writing all environment variables

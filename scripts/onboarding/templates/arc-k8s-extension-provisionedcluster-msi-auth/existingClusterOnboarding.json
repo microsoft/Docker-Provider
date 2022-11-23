@@ -45,7 +45,25 @@
       "metadata": {
         "description": "Existing or new tags to use on Arc K8s ContainerInsights extension resources"
       }
-   }
+   },
+    "enableSyslog": {
+      "type": "bool",
+      "metadata": {
+        "description": "Enable Syslog in Data Collection Rule"
+      }
+    },
+    "syslogLevels": {
+      "type": "array",
+      "metadata": {
+        "description": "Array of allowed syslog levels"
+      }
+    },
+    "syslogFacilities": {
+      "type": "array",
+      "metadata": {
+        "description": "Array of allowed syslog facilities"
+      }
+    }
   },
   "variables": {
     "clusterSubscriptionId": "[split(parameters('clusterResourceId'),'/')[2]]",
@@ -54,7 +72,112 @@
     "clusterLocation": "[replace(parameters('clusterRegion'),' ', '')]",
     "dcrName": "[Concat('MSCI', '-', variables('clusterName'), '-', variables('clusterLocation'))]",
     "associationName": "ContainerInsightsExtension",
-    "dataCollectionRuleId": "[resourceId(variables('clusterSubscriptionId'), variables('clusterResourceGroup'), 'Microsoft.Insights/dataCollectionRules', variables('dcrName'))]"
+    "dataCollectionRuleId": "[resourceId(variables('clusterSubscriptionId'), variables('clusterResourceGroup'), 'Microsoft.Insights/dataCollectionRules', variables('dcrName'))]",
+    "ciOnlyTemplate": {
+                "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "parameters": {},
+                "variables": {},
+                "resources": [
+                    {
+                        "type": "Microsoft.Insights/dataCollectionRules",
+                        "apiVersion": "2021-04-01",
+                        "name": "[variables('dcrName')]",
+                        "location": "[parameters('workspaceRegion')]",
+                        "tags": "[parameters('resourceTagValues')]",
+                        "kind": "Linux",
+                        "properties": {
+                            "dataSources": {
+                                "extensions": [
+                                    {
+                                        "name": "ContainerInsightsExtension",
+                                        "streams": [
+                                           "Microsoft-ContainerInsights-Group-Default"
+                                        ],
+                                        "extensionName": "ContainerInsights"
+                                    }
+                                ]
+                            },
+                            "destinations": {
+                                "logAnalytics": [
+                                    {
+                                        "workspaceResourceId": "[parameters('workspaceResourceId')]",
+                                        "name": "ciworkspace"
+                                    }
+                                ]
+                            },
+                            "dataFlows": [
+                                {
+                                    "streams": [
+                                        "Microsoft-ContainerInsights-Group-Default"
+                                    ],
+                                    "destinations": [
+                                        "ciworkspace"
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+              },
+        "syslogAndCITemplate": {
+                "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "parameters": {},
+                "variables": {},
+                "resources": [
+                    {
+                        "type": "Microsoft.Insights/dataCollectionRules",
+                        "apiVersion": "2021-04-01",
+                        "name": "[variables('dcrName')]",
+                        "location": "[parameters('workspaceRegion')]",
+                        "tags": "[parameters('resourceTagValues')]",
+                        "kind": "Linux",
+                        "properties": {
+                            "dataSources": {
+                                "syslog": [
+                                    {
+                                        "streams": [
+                                            "Microsoft-Syslog"
+                                        ],
+                                        "facilityNames": "[parameters('syslogFacilities')]",
+                                        "logLevels": "[parameters('syslogLevels')]",
+                                        "name": "sysLogsDataSource"
+                                    }
+                                ],
+                                "extensions": [
+                                    {
+                                        "name": "ContainerInsightsExtension",
+                                        "streams": [
+                                            "Microsoft-ContainerInsights-Group-Default"
+                                        ],
+                                        "extensionName": "ContainerInsights"
+                                    }
+                                ]
+                            },
+                            "destinations": {
+                                "logAnalytics": [
+                                    {
+                                        "workspaceResourceId": "[parameters('workspaceResourceId')]",
+                                        "name": "ciworkspace"
+                                    }
+                                ]
+                            },
+                            "dataFlows": [
+                                {
+                                    "streams": [
+                                        "Microsoft-ContainerInsights-Group-Default",
+                                        "Microsoft-Syslog"
+                                    ],
+                                    "destinations": [
+                                        "ciworkspace"
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+              }
   },
   "resources": [
     {
@@ -65,53 +188,7 @@
       "resourceGroup": "[variables('clusterResourceGroup')]",
       "properties": {
         "mode": "Incremental",
-        "template": {
-          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-          "contentVersion": "1.0.0.0",
-          "parameters": {},
-          "variables": {},
-          "resources": [
-            {
-              "type": "Microsoft.Insights/dataCollectionRules",
-              "apiVersion": "2021-04-01",
-              "name": "[variables('dcrName')]",
-              "location": "[parameters('workspaceRegion')]",
-              "tags": "[parameters('resourceTagValues')]",
-              "kind": "Linux",
-              "properties": {
-                "dataSources": {
-                  "extensions": [
-                    {
-                      "name": "ContainerInsightsExtension",
-                      "streams": [
-                        "Microsoft-ContainerInsights-Group-Default"
-                      ],
-                      "extensionName": "ContainerInsights"
-                    }
-                  ]
-                },
-                "destinations": {
-                  "logAnalytics": [
-                    {
-                      "workspaceResourceId": "[parameters('workspaceResourceId')]",
-                      "name": "ciworkspace"
-                    }
-                  ]
-                },
-                "dataFlows": [
-                  {
-                    "streams": [
-                      "Microsoft-ContainerInsights-Group-Default"
-                    ],
-                    "destinations": [
-                      "ciworkspace"
-                    ]
-                  }
-                ]
-              }
-            }
-          ]
-        },
+        "template": "[if(parameters('enableSyslog'), variables('syslogAndCITemplate'), variables('ciOnlyTemplate'))]",
         "parameters": {}
       }
     },
@@ -175,12 +252,12 @@
                 "extensionType": "Microsoft.AzureMonitor.Containers",
                 "configurationSettings": {
                   "logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]",
-                  "omsagent.domain": "[parameters('workspaceDomain')]",
-                  "omsagent.useAADAuth": "true"
+                  "amalogs.domain": "[parameters('workspaceDomain')]",
+                  "amalogs.useAADAuth": "true"
                 },
                 "configurationProtectedSettings": {
-                  "omsagent.secret.wsid": "[reference(parameters('workspaceResourceId'), '2015-03-20').customerId]",
-                  "omsagent.secret.key": "[listKeys(parameters('workspaceResourceId'), '2015-03-20').primarySharedKey]"
+                  "amalogs.secret.wsid": "[reference(parameters('workspaceResourceId'), '2015-03-20').customerId]",
+                  "amalogs.secret.key": "[listKeys(parameters('workspaceResourceId'), '2015-03-20').primarySharedKey]"
                 },
                 "autoUpgradeMinorVersion": true,
                 "releaseTrain": "Stable",

@@ -51,7 +51,7 @@ function Build-Dependencies {
     New-Item -Path $destinationPath -ItemType "directory" -Force -ErrorAction Stop
 
     Write-Host("downloading gcc : " + $destinationPath + "  ...")
-    $gccDownLoadUrl = "https://ciwinagentbuildgcc.blob.core.windows.net/tdm-gcc-64/TDM-GCC-64.zip"
+    $gccDownLoadUrl = "https://github.com/microsoft/Docker-Provider/releases/download/tdm-gcc/TDM-GCC-64.zip"
     $gccPath =  Join-Path -Path $destinationPath -ChildPath "gcc.zip"
     Invoke-WebRequest -UserAgent "BuildAgent" -Uri $gccDownLoadUrl -OutFile $gccPath
     Write-Host("downloading gcc zip  file completed")
@@ -133,7 +133,7 @@ function Install-Docker() {
    Write-Host("installing docker for desktop completed")
 }
 
-# speed up Invoke-WebRequest 
+# speed up Invoke-WebRequest
 # https://stackoverflow.com/questions/28682642/powershell-why-is-using-invoke-webrequest-much-slower-than-a-browser-download
 $ProgressPreference = 'SilentlyContinue'
 

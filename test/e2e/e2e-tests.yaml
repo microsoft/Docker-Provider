@@ -104,7 +104,7 @@ data:
       - name: AZURE_CLOUD
         value: "AZURE_PUBLIC_CLOUD"
       # image tag should be updated if new tests being added after this image
-      image: mcr.microsoft.com/azuremonitor/containerinsights/cidev:ciconftest08142021
+      image: mcr.microsoft.com/azuremonitor/containerinsights/cidev:ciconftest11082022
       imagePullPolicy: IfNotPresent
       name: plugin
       resources: {}

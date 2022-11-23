@@ -31,6 +31,24 @@
             "metadata": {
                 "description": "Full Resource ID of the log analitycs workspace that will be used for data destination. For example /subscriptions/00000000-0000-0000-0000-0000-00000000/resourceGroups/ResourceGroupName/providers/Microsoft.operationalinsights/workspaces/ws_xyz"
             }
+        },
+        "enableSyslog": {
+            "type": "bool",
+            "metadata": {
+                "description": "Enable Syslog in Data Collection Rule"
+            }
+        },
+        "syslogLevels": {
+            "type": "array",
+            "metadata": {
+                "description": "Array of allowed syslog levels"
+            }
+        },
+        "syslogFacilities": {
+            "type": "array",
+            "metadata": {
+                "description": "Array of allowed syslog facilities"
+            }
         }
     },
     "variables": {
@@ -40,18 +58,8 @@
         "clusterLocation": "[replace(parameters('aksResourceLocation'),' ', '')]",
         "dcrName": "[Concat('MSCI', '-', variables('clusterName'), '-', variables('clusterLocation'))]",
         "associationName":  "ContainerInsightsExtension",
-        "dataCollectionRuleId": "[resourceId(variables('clusterSubscriptionId'), variables('clusterResourceGroup'), 'Microsoft.Insights/dataCollectionRules', variables('dcrName'))]"
-    },
-    "resources": [
-        {
-            "type": "Microsoft.Resources/deployments",
-            "name": "[Concat('aks-monitoring-msi-dcr', '-',  uniqueString(variables('dcrName')))]",
-            "apiVersion": "2017-05-10",
-            "subscriptionId": "[variables('clusterSubscriptionId')]",
-            "resourceGroup": "[variables('clusterResourceGroup')]",
-            "properties": {
-              "mode": "Incremental",
-              "template": {
+        "dataCollectionRuleId": "[resourceId(variables('clusterSubscriptionId'), variables('clusterResourceGroup'), 'Microsoft.Insights/dataCollectionRules', variables('dcrName'))]",
+        "ciOnlyTemplate": {
                 "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
                 "contentVersion": "1.0.0.0",
                 "parameters": {},
@@ -98,6 +106,75 @@
                     }
                 ]
               },
+        "syslogAndCITemplate": {
+                "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+                "contentVersion": "1.0.0.0",
+                "parameters": {},
+                "variables": {},
+                "resources": [
+                    {
+                        "type": "Microsoft.Insights/dataCollectionRules",
+                        "apiVersion": "2021-04-01",
+                        "name": "[variables('dcrName')]",
+                        "location": "[parameters('workspaceLocation')]",
+                        "tags": "[parameters('resourceTagValues')]",
+                        "kind": "Linux",
+                        "properties": {
+                            "dataSources": {
+                                "syslog": [
+                                    {
+                                        "streams": [
+                                            "Microsoft-Syslog"
+                                        ],
+                                        "facilityNames": "[parameters('syslogFacilities')]",
+                                        "logLevels": "[parameters('syslogLevels')]",
+                                        "name": "sysLogsDataSource"
+                                    }
+                                ],
+                                "extensions": [
+                                    {
+                                        "name": "ContainerInsightsExtension",
+                                        "streams": [
+                                            "Microsoft-ContainerInsights-Group-Default"
+                                        ],
+                                        "extensionName": "ContainerInsights"
+                                    }
+                                ]
+                            },
+                            "destinations": {
+                                "logAnalytics": [
+                                    {
+                                        "workspaceResourceId": "[parameters('workspaceResourceId')]",
+                                        "name": "ciworkspace"
+                                    }
+                                ]
+                            },
+                            "dataFlows": [
+                                {
+                                    "streams": [
+                                        "Microsoft-ContainerInsights-Group-Default",
+                                        "Microsoft-Syslog"
+                                    ],
+                                    "destinations": [
+                                        "ciworkspace"
+                                    ]
+                                }
+                            ]
+                        }
+                    }
+                ]
+              }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Resources/deployments",
+            "name": "[Concat('aks-monitoring-msi-dcr', '-',  uniqueString(variables('dcrName')))]",
+            "apiVersion": "2017-05-10",
+            "subscriptionId": "[variables('clusterSubscriptionId')]",
+            "resourceGroup": "[variables('clusterResourceGroup')]",
+            "properties": {
+              "mode": "Incremental",
+              "template": "[if(parameters('enableSyslog'), variables('syslogAndCITemplate'), variables('ciOnlyTemplate'))]",
               "parameters": {}
             }
         },

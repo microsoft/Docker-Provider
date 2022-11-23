@@ -31,6 +31,7 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/opt/microsoft/docker-cimprov/telegraf.conf;			               build/linux/installer/conf/telegraf.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf;			   build/linux/installer/conf/telegraf-prom-side-car.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/telegraf-rs.conf;			            build/linux/installer/conf/telegraf-rs.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/70-rsyslog-forward-mdsd-ci.conf;      build/linux/installer/conf/70-rsyslog-forward-mdsd-ci.conf;     644; root; root
 /opt/microsoft/docker-cimprov/bin/TelegrafTCPErrorTelemetry.sh;         build/linux/installer/scripts/TelegrafTCPErrorTelemetry.sh;      755; root; root
 /opt/livenessprobe.sh;                                                  build/linux/installer/scripts/livenessprobe.sh;      755; root; root
 /opt/tomlparser-prom-customconfig.rb;                                   build/common/installer/scripts/tomlparser-prom-customconfig.rb;     755; root; root
