@@ -18,7 +18,7 @@ class TestGenevaConfigParser < Minitest::Unit::TestCase
 
   def getConfigFileContent 
     return <<-CONFIGMAP
-      [agent_settings.geneva_logs_config]
+      [hostlogs.geneva_logs_config]
         environment = "#{CONFIG_MAP_VARIABLES[:environment]}" 
         account = "#{CONFIG_MAP_VARIABLES[:account]}"
         namespace = "#{CONFIG_MAP_VARIABLES[:namespace]}"
@@ -40,10 +40,10 @@ class TestGenevaConfigParser < Minitest::Unit::TestCase
 
       # verify results
       refute_nil(parsedConfig, "parsedConfig is nil")
-      refute_nil(parsedConfig[:agent_settings], "parsedConfig[:agent_settings] is nil")
-      refute_nil(parsedConfig[:agent_settings][:geneva_logs_config], "parsedConfig[:agent_settings][:geneva_logs_config] is nil")
+      refute_nil(parsedConfig[:hostlogs], "parsedConfig[:hostlogs] is nil")
+      refute_nil(parsedConfig[:hostlogs][:geneva_logs_config], "parsedConfig[:hostlogs][:geneva_logs_config] is nil")
 
-      geneva_logs_config = parsedConfig[:agent_settings][:geneva_logs_config]
+      geneva_logs_config = parsedConfig[:hostlogs][:geneva_logs_config]
 
       assert_equal(CONFIG_MAP_VARIABLES[:environment], geneva_logs_config[:environment], "Unexpected value for geneva environment")
       assert_equal(CONFIG_MAP_VARIABLES[:account], geneva_logs_config[:account], "Unexpected value for geneva account")
@@ -57,7 +57,7 @@ class TestGenevaConfigParser < Minitest::Unit::TestCase
   def test_populateSettingValuesFromConfigMap
     # Create sample config to be parsed
     testConfig = Hash[
-      :agent_settings => Hash[
+      :hostlogs_settings => Hash[
         :geneva_logs_config => CONFIG_MAP_VARIABLES
       ]
     ]

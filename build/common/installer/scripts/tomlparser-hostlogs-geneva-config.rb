@@ -40,7 +40,6 @@ end
 def populateSettingValuesFromConfigMap(parsedConfig)
   begin
     if !parsedConfig.nil? && !parsedConfig[:hostlogs_settings].nil?
-
       geneva_logs_config = parsedConfig[:hostlogs_settings][:geneva_logs_config]
       if !geneva_logs_config.nil?
         puts "config: parsing geneva_logs_config settings"
@@ -74,12 +73,13 @@ def populateSettingValuesFromConfigMap(parsedConfig)
                 !user_assigned_client_id.nil? &&
                 !user_assigned_client_id.empty?)
               geneva_gcs_authid = "client_id##{user_assigned_client_id}"
-
               puts "using authid for geneva integration: #{geneva_gcs_authid}"
             end
           rescue => errorStr
             puts "failed to get user assigned client id with an error: #{errorStr}"
           end
+        elsif !geneva_gcs_authid.start_with?("client_id#") || !geneva_gcs_authid.start_with?("object_id#") || !geneva_gcs_authid.start_with?("mi_res_id#")
+            puts "improper usgage of the auth id configuration"
         end
         @geneva_gcs_authid = geneva_gcs_authid
         puts "config::info:successfully parsed geneva_logs_config settings"
