@@ -74,15 +74,16 @@ def populateSettingValuesFromConfigMap(parsedConfig)
                 !user_assigned_client_id.empty?)
               geneva_gcs_authid = "client_id##{user_assigned_client_id}"
               puts "using authid for geneva integration: #{geneva_gcs_authid}"
+              @geneva_gcs_authid = geneva_gcs_authid
             end
           rescue => errorStr
             puts "failed to get user assigned client id with an error: #{errorStr}"
           end
-        elsif !geneva_gcs_authid.start_with?("client_id#") || !geneva_gcs_authid.start_with?("object_id#") || !geneva_gcs_authid.start_with?("mi_res_id#")
-            puts "improper usgage of the auth id configuration"
+        elsif !geneva_gcs_authid.start_with?("client_id#") && !geneva_gcs_authid.start_with?("object_id#") && !geneva_gcs_authid.start_with?("mi_res_id#")
+            puts "config::error:auth id must be in one of the suppported formats: object_id#<guid> or client_id#<guid> or mi_res_id#<identity resource id>"
+        else
+          @geneva_gcs_authid = geneva_gcs_authid
         end
-        @geneva_gcs_authid = geneva_gcs_authid
-        puts "config::info:successfully parsed geneva_logs_config settings"
       end
     end
   rescue => errorStr
@@ -113,6 +114,7 @@ def writeEnvScript(filepath)
       puts "Using config map value: MONITORING_MANAGED_ID_IDENTIFIER = #{authIdParts[0]}"
       puts "Using config map value: MONITORING_MANAGED_ID_VALUE= #{authIdParts[1]}"
 
+      puts "config::info:successfully parsed geneva_logs_config settings"
     end
 
     # Close file after writing all environment variables
