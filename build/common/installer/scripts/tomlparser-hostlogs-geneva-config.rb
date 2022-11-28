@@ -9,7 +9,6 @@ require_relative "ConfigParseErrorLogger"
 @configSchemaVersion = ""
 
 # configmap settings related to geneva logs config
-GENEVA_SUPPORTED_ENVIRONMENTS = ["Test", "Stage", "DiagnosticsProd", "FirstpartyProd", "BillingProd", "ExternalProd", "CaMooncake", "CaFairfax", "CaBlackforest"]
 @geneva_account_environment = ""
 @geneva_account_name = ""
 @geneva_account_namespace = ""
@@ -48,14 +47,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         geneva_account_namespace = geneva_logs_config[:namespace]
         geneva_logs_config_version = geneva_logs_config[:configversion]
         if !geneva_account_environment.nil? && !geneva_account_name.nil? && !geneva_account_namespace.nil? && !geneva_logs_config_version.nil?
-          if GENEVA_SUPPORTED_ENVIRONMENTS.include?(geneva_account_environment)
-            @geneva_account_environment = geneva_account_environment
-            @geneva_account_name = geneva_account_name
-            @geneva_account_namespace = geneva_account_namespace
-            @geneva_logs_config_version = geneva_logs_config_version
-          else
-            puts "config::error:unsupported geneva config environment"
-          end
+          @geneva_account_environment = geneva_account_environment
+          @geneva_account_name = geneva_account_name
+          @geneva_account_namespace = geneva_account_namespace
+          @geneva_logs_config_version = geneva_logs_config_version
         else
           puts "config::error:invalid geneva logs config"
         end
