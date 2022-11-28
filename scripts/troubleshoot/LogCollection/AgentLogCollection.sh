@@ -186,6 +186,9 @@ other_logCollection()
 
     kubectl get nodes > node.txt
     # contains info regarding node image version, images present on disk, etc
+    # TODO: add syslog doc link
+    echo -e "If syslog collection is enabled please make sure that the node pool image is Nov 2022 or later.\
+        To check current version and upgrade: https://learn.microsoft.com/en-us/azure/aks/node-image-upgrade"
     kubectl get nodes -o json > node-detailed.json
 
     echo -e "Complete onboard log collection!" | tee -a Tool.log
