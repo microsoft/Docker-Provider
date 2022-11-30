@@ -41,25 +41,14 @@ spec:
          cpu: 500m
          memory: 600Mi
        env:
-        # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
         - name: AKS_RESOURCE_ID
           value: "VALUE_AKS_RESOURCE_ID_VALUE"
         - name: AKS_REGION
           value: "VALUE_AKS_RESOURCE_REGION_VALUE"
-        - name: CONTROLLER_TYPE
-          value: "DaemonSet"
         - name: HOSTNAME
           valueFrom:
              fieldRef:
                fieldPath: spec.nodeName
-        - name: PODNAME
-          valueFrom:
-             fieldRef:
-              fieldPath: metadata.name
-        - name: NODE_IP
-          valueFrom:
-             fieldRef:
-               fieldPath: status.hostIP
        volumeMounts:
         - mountPath: \etc\config\settings
           name: settings-vol-config

@@ -33,10 +33,6 @@ function Set-EnvironmentVariables {
         Write-Host "Failed to set environment variable HOSTNAME for target 'machine' since it is either null or empty"
     }
 
-    $podName = [System.Environment]::GetEnvironmentVariable("PODNAME", "process")
-    if ([string]::IsNullOrEmpty($podName)) {
-        Write-Host "Failed to get environment variable PODNAME"
-    } 
 
     $schemaVersionFile = './etc/config/settings/schema-version'
     if (Test-Path $schemaVersionFile) {
@@ -52,10 +48,7 @@ function Set-EnvironmentVariables {
     $envVars = @{
         MONITORING_DATA_DIRECTORY = (Join-Path $rootDir "opt\genevamonitoringagent\datadirectory")
         MONITORING_GCS_AUTH_ID_TYPE = "AuthMSIToken"
-        MONITORING_GCS_REGION = $aksregion
-        MONITORING_TENANT = "CloudAgent"
-        MONITORING_ROLE = "Windows-HPC-Geneva"
-        MONITORING_ROLE_INSTANCE = "$hostName-$podName"       
+        MONITORING_GCS_REGION = "$aksregion"    
     }
 
     foreach($key in $envVars.PSBase.Keys) {
