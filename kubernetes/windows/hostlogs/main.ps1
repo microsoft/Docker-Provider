@@ -92,7 +92,7 @@ if(Get-GenevaEnabled){
     # Infinite loop keeps container alive while waiting for config map
     # Otherwise when the process ends, kubernetes sees this as a crash and the container will enter a crash loop
     while($true){
-        Start-Sleep 5
+        Start-Sleep 3600
     }
 }
 
