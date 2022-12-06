@@ -1,0 +1,238 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  batch: true
+  branches:
+    include:
+    - sky-dev
+    - ci_prod
+
+pr:
+  branches:
+    include:
+    - sky-dev
+    - ci_prod
+
+variables:
+  armServiceConnectionName: 'ci-1es-acr-connection'
+  subscription: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
+  containerRegistry: 'containerinsightsprod'
+  repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/containerinsights/cidev'
+  IS_PR: $[eq(variables['Build.Reason'], 'PullRequest')]
+  TEMP: $(Agent.TempDirectory)
+
+jobs:
+- job: common
+  pool:
+    name: Azure-Pipelines-CI-Test-EO
+  steps:
+  - task: ComponentGovernanceComponentDetection@0
+
+  - bash: |
+      commit=$(git rev-parse --short HEAD)
+      datetime=$(date +'%m%d%Y')
+      windowsImageTag=win-"$datetime"-"$commit"
+      echo "##vso[task.setvariable variable=windowsImageTag;isOutput=true]$windowsImageTag"
+
+      cd $(Build.SourcesDirectory)/deployment/mergebranch-multiarch-agent-deployment/ServiceGroupRoot/Scripts
+      tar -czvf ../artifacts.tar.gz pushAgentToAcr.sh
+
+      cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension/ServiceGroupRoot/Scripts
+      tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ pushChartToAcr.sh
+    name: setup
+
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment artifacts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/deployment"
+      Contents: |
+        **/*
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment scripts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/.pipelines"
+      Contents: |
+        **/*.sh
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment scripts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/kubernetes"
+      Contents: |
+        *.yaml
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment scripts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/charts"
+      Contents: |
+        **/*
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment scripts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/test/e2e"
+      Contents: |
+        *.yaml
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: drop
+
+- job: build_windows_2019
+  dependsOn:
+  -  common
+  pool:
+    name: Azure-Pipelines-Windows-CI-Test-EO
+  variables:
+    windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
+    windows2019BaseImageVersion: ltsc2019
+  steps:
+  - task: PowerShell@2
+    inputs:
+      targetType: 'inline'
+      script: |
+        write-host $env:TEMP
+        
+  
+  - task: PowerShell@2
+    inputs:
+      targetType: 'filePath'
+      filePath: $(System.DefaultWorkingDirectory)/scripts/build/windows/install-build-pre-requisites.ps1
+    displayName: 'install prereqs'
+
+  - script: |
+      setlocal enabledelayedexpansion
+      powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\hostlogswindows\Makefile.ps1"
+      endlocal
+      exit /B %ERRORLEVEL%
+    displayName: 'build base'
+
+  - task: AzureCLI@2
+    displayName: "Docker windows build for ltsc2019"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: ps
+      scriptLocation: inlineScript
+      inlineScript: |
+        mkdir -p $(Build.ArtifactStagingDirectory)/hostlogswindows
+        cd kubernetes/windows/hostlogs
+
+        az --version
+        az account show
+        az account set -s ${{ variables.subscription }}
+        az acr login -n ${{ variables.containerRegistry }}
+
+        docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:sky-dev-0.1.0-$(windowsImageTag)-$(windows2019BaseImageVersion) --build-arg WINDOWS_VERSION=$(windows2019BaseImageVersion) --build-arg IMAGE_TAG=$(windowsImageTag) .
+        if ("$(Build.Reason)" -ne "PullRequest") {
+           docker push ${{ variables.repoImageName }}:sky-dev-0.1.0-$(windowsImageTag)-$(windows2019BaseImageVersion)
+        }
+
+- job: build_windows_2022
+  dependsOn:
+  -  common
+  pool:
+    name: Azure-Pipelines-Windows-CI-Test-EO
+  variables:
+    windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
+    windows2022BaseImageVersion: ltsc2022
+  steps:
+  - task: PowerShell@2
+    inputs:
+      targetType: 'inline'
+      script: |
+        write-host $env:TEMP
+
+  - task: PowerShell@2
+    inputs:
+      targetType: 'filePath'
+      filePath: $(System.DefaultWorkingDirectory)/scripts/build/windows/install-build-pre-requisites.ps1
+    displayName: 'install prereqs'
+
+  - script: |
+      setlocal enabledelayedexpansion
+      powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\hostlogswindows\Makefile.ps1"
+      endlocal
+      exit /B %ERRORLEVEL%
+    displayName: 'build base'
+
+  - task: AzureCLI@2
+    displayName: "Docker windows build for ltsc2022"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: ps
+      scriptLocation: inlineScript
+      inlineScript: |
+        mkdir -p $(Build.ArtifactStagingDirectory)/hostlogswindows
+        cd kubernetes/windows/hostlogs
+
+        az --version
+        az account show
+        az account set -s ${{ variables.subscription }}
+        az acr login -n ${{ variables.containerRegistry }}
+
+        docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:sky-dev-0.1.0-$(windowsImageTag)-$(windows2022BaseImageVersion) --build-arg WINDOWS_VERSION=$(windows2022BaseImageVersion) --build-arg IMAGE_TAG=$(windowsImageTag) .
+        if ("$(Build.Reason)" -ne "PullRequest") {
+           docker push ${{ variables.repoImageName }}:sky-dev-0.1.0-$(windowsImageTag)-$(windows2022BaseImageVersion)
+        }
+
+- job: build_windows_multi_arc
+  dependsOn:
+  - common
+  - build_windows_2019
+  - build_windows_2022
+  pool:
+    name: Azure-Pipelines-Windows-CI-Test-EO
+  variables:
+    windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
+    windows2019BaseImageVersion: ltsc2019
+    windows2022BaseImageVersion: ltsc2022
+  steps:
+  - task: AzureCLI@2
+    displayName: "Docker windows build for multi-arc image"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: ps
+      scriptLocation: inlineScript
+      inlineScript: |
+        mkdir -p $(Build.ArtifactStagingDirectory)/hostlogswindows
+        cd kubernetes/windows/hostlogs
+
+        az --version
+        az account show
+        az account set -s ${{ variables.subscription }}
+        az acr login -n ${{ variables.containerRegistry }}
+
+        @{"image.name"="${{ variables.repoImageName }}:sky-dev-0.1.0-$(windowsImageTag)"} | ConvertTo-Json -Compress | Out-File -Encoding ascii $(Build.ArtifactStagingDirectory)/hostlogswindows/metadata.json
+
+        if ("$(Build.Reason)" -ne "PullRequest") {
+           docker manifest create ${{ variables.repoImageName }}:sky-dev-0.1.0-$(windowsImageTag) ${{ variables.repoImageName }}:sky-dev-0.1.0-$(windowsImageTag)-$(windows2019BaseImageVersion) ${{ variables.repoImageName }}:sky-dev-0.1.0-$(windowsImageTag)-$(windows2022BaseImageVersion)
+           docker manifest push ${{ variables.repoImageName }}:sky-dev-0.1.0-$(windowsImageTag)
+        }
+  - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+    displayName: 'Generation Task'
+    condition: eq(variables.IS_PR, true)
+    inputs:
+      BuildDropPath: '$(Build.ArtifactStagingDirectory)/hostlogswindows'
+      DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019, mcr.microsoft.com/windows/servercore:ltsc2022'
+
+  - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+    displayName: 'Generation Task'
+    condition: eq(variables.IS_PR, false)
+    inputs:
+      BuildDropPath: '$(Build.ArtifactStagingDirectory)/hostlogswindows'
+      DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019, mcr.microsoft.com/windows/servercore:ltsc2022, ${{ variables.repoImageName }}:$(windowsImageTag)'
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: drop
