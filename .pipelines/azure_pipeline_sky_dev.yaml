@@ -8,13 +8,11 @@ trigger:
   branches:
     include:
     - sky-dev
-    - ci_prod
 
 pr:
   branches:
     include:
     - sky-dev
-    - ci_prod
 
 variables:
   armServiceConnectionName: 'ci-1es-acr-connection'
@@ -22,7 +20,6 @@ variables:
   containerRegistry: 'containerinsightsprod'
   repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/containerinsights/cidev'
   IS_PR: $[eq(variables['Build.Reason'], 'PullRequest')]
-  TEMP: $(Agent.TempDirectory)
 
 jobs:
 - job: common
@@ -98,12 +95,6 @@ jobs:
     windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
     windows2019BaseImageVersion: ltsc2019
   steps:
-  - task: PowerShell@2
-    inputs:
-      targetType: 'inline'
-      script: |
-        write-host $env:TEMP
-        
   
   - task: PowerShell@2
     inputs:
@@ -147,11 +138,6 @@ jobs:
     windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
     windows2022BaseImageVersion: ltsc2022
   steps:
-  - task: PowerShell@2
-    inputs:
-      targetType: 'inline'
-      script: |
-        write-host $env:TEMP
 
   - task: PowerShell@2
     inputs:
