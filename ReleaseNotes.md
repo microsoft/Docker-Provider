@@ -24,7 +24,7 @@ Note: Starting 02/21/2023 we have moved to the semver versioning system for nami
   - Fix bug wherein sidecar container was not muted by default
   - Removed labelSelector from ama-logs.yaml and helm charts
   - Update fluent-bit to version 2.0.5
-  - Enabled multiline support in ContainerLogsV2 via configmap
+  - Enabled multiline support for ContainerLogV2 via configmap
 - Linux Agent
   - Update mdsd to version 1.25.0
   - Update ruby to version 3.1.3
