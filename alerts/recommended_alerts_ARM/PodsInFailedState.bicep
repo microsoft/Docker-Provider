@@ -111,6 +111,6 @@ resource alert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
         }
       ]
     }
-    actions: (empty(actionGroupId) ? json('null') : json('[{"actionGroupId": "${actionGroupId}"}]'))
+    actions: (empty(actionGroupId) ? null : [{actionGroupId: actionGroupId}])
   }
 }
