@@ -662,7 +662,7 @@ else {
         # Check existence of the ContainerInsightsExtension DCR
         #
         try {
-            $dcrRuleName = "MSCI-" + $ClusterName + "-" + $ClusterRegion
+            $dcrRuleName = "MSCI-" + $ClusterRegion + "-" + $ClusterName
             $dcrRule = Get-AzDataCollectionRule -ResourceGroupName $workspaceResourceGroupName -RuleName $dcrRuleName -ErrorAction Stop -WarningAction silentlyContinue
             Write-Host("Successfully fetched Data Collection Rule...") -ForegroundColor Green
             $extensionNameInDCR =  $dcrRule.DataSources.Extensions.ExtensionName
