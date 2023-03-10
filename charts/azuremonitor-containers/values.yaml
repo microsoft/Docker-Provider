@@ -20,6 +20,7 @@ Azure:
     noProxy: ""
     proxyCert: ""
     isCustomCert: false
+    autonomousFqdn: "<arca_autonomous_fqdn>"
 amalogs:
   image:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"

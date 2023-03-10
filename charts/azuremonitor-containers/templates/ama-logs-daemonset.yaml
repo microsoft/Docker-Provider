@@ -110,6 +110,9 @@ spec:
        {{- if ne .Values.amalogs.metricsEndpoint "<your_metrics_endpoint>" }}
        - name: CUSTOM_METRICS_ENDPOINT
          value: {{ .Values.amalogs.metricsEndpoint | quote }}
+       {{- else if ne .Values.Azure.proxySettings.autonomousFqdn "<arca_autonomous_fqdn>" }}
+       - name: CUSTOM_METRICS_ENDPOINT
+         value: "https://metricsingestiongateway.monitoring.{{ .Values.Azure.proxySettings.autonomousFqdn }}"
        {{- end }}
        - name: IS_CUSTOM_CERT
          value: {{ .Values.Azure.proxySettings.isCustomCert | quote }}
