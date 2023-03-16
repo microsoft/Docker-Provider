@@ -932,8 +932,8 @@ fi
 
 #start telegraf
 if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
-    if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ "${AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS}" == "monitor_kubernetes_pods = false" ]; then
-        echo "not starting telegraf since monitor_kubernetes_pods is false"
+    if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ "${SIDECAR_SCRAPING_ENABLED}" == "true" ]; then
+        echo "not starting telegraf since sidecar scraping is true"
     else
         /opt/telegraf --config $telegrafConfFile &
         echo "telegraf version: $(/opt/telegraf --version)"

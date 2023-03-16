@@ -85,9 +85,14 @@ fi
 (ps -ef | grep telegraf | grep -v "grep")
 if [ $? -ne 0 ]
 then
- # echo "Telegraf is not running" > /dev/termination-log
- echo "Telegraf is not running (controller: ${CONTROLLER_TYPE}, container type: ${CONTAINER_TYPE})" > /dev/write-to-traces  # this file is tailed and sent to traces
- # exit 1
+ if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ ! -z "${SIDECAR_SCRAPING_ENABLED}" ] && [ "${SIDECAR_SCRAPING_ENABLED}" == "true" ]; then
+   # telegraf is disabed on replicaset if sidecar scraping is enabled
+   exit 0
+ else :
+  # echo "Telegraf is not running" > /dev/termination-log
+  echo "Telegraf is not running (controller: ${CONTROLLER_TYPE}, container type: ${CONTAINER_TYPE})" > /dev/write-to-traces  # this file is tailed and sent to traces
+  # exit 1
+ fi
 fi
 
 exit 0
