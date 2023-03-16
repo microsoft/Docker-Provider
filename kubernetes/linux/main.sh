@@ -932,11 +932,15 @@ fi
 
 #start telegraf
 if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
-      /opt/telegraf --config $telegrafConfFile &
-      echo "telegraf version: $(/opt/telegraf --version)"
-      dpkg -l | grep fluent-bit | awk '{print $2 " " $3}'
+    if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ "${AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS}" == "monitor_kubernetes_pods = false" ]; then
+        echo "not starting telegraf since monitor_kubernetes_pods is false"
+    else
+        /opt/telegraf --config $telegrafConfFile &
+        echo "telegraf version: $(/opt/telegraf --version)"
+        dpkg -l | grep fluent-bit | awk '{print $2 " " $3}'
+    fi
 else
-      echo "not starting telegraf (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
+    echo "not starting telegraf (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
 fi
 
 #dpkg -l | grep telegraf | awk '{print $2 " " $3}'
