@@ -85,8 +85,8 @@ fi
 (ps -ef | grep telegraf | grep -v "grep")
 if [ $? -ne 0 ]
 then
- if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ ! -z "${SIDECAR_SCRAPING_ENABLED}" ] && [ "${SIDECAR_SCRAPING_ENABLED}" == "true" ]; then
-   # telegraf is disabed on replicaset if sidecar scraping is enabled
+ if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ ! -z "${TELEMETRY_RS_TELEGRAF_DISABLED}" ] && [ "${TELEMETRY_RS_TELEGRAF_DISABLED}" == "true" ]; then
+   # telegraf is disabed on replicaset if prom scraping is disabled
    exit 0
  else :
   # echo "Telegraf is not running" > /dev/termination-log

@@ -45,6 +45,8 @@ require "fileutils"
 @containerType = ENV["CONTAINER_TYPE"]
 @sidecarScrapingEnabled = ENV["SIDECAR_SCRAPING_ENABLED"]
 
+@disableRSTelegraf = false
+
 # Use parser to parse the configmap toml file to a ruby structure
 def parseConfigMap
   begin
@@ -149,6 +151,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           urls = parsedConfig[:prometheus_data_collection_settings][:cluster][:urls]
           kubernetesServices = parsedConfig[:prometheus_data_collection_settings][:cluster][:kubernetes_services]
 
+          if fieldPass.nil? && fieldDrop.nil? && urls.nil? && kubernetesServices.nil?
+            @disableRSTelegraf = true
+          end
+
           # Remove below 4 lines after phased rollout
           monitorKubernetesPods = parsedConfig[:prometheus_data_collection_settings][:cluster][:monitor_kubernetes_pods]
           monitorKubernetesPodsNamespaces = parsedConfig[:prometheus_data_collection_settings][:cluster][:monitor_kubernetes_pods_namespaces]
@@ -223,6 +229,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             #Set environment variables for telemetry
             file = File.open("telemetry_prom_config_env_var", "w")
             if !file.nil?
+              file.write("export TELEMETRY_RS_TELEGRAF_DISABLED=\"#{@disableRSTelegraf}\"\n")
               file.write("export TELEMETRY_RS_PROM_INTERVAL=\"#{interval}\"\n")
               #Setting array lengths as environment variables for telemetry purposes
               file.write("export TELEMETRY_RS_PROM_FIELDPASS_LENGTH=\"#{fieldPass.length}\"\n")

@@ -538,6 +538,7 @@ if [ -e "telemetry_prom_config_env_var" ]; then
       done
       source telemetry_prom_config_env_var
 else
+      setGlobalEnvVar TELEMETRY_RS_TELEGRAF_DISABLED true
       setGlobalEnvVar TELEMETRY_CUSTOM_PROM_MONITOR_PODS false
 fi
 
@@ -932,8 +933,8 @@ fi
 
 #start telegraf
 if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
-    if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ "${SIDECAR_SCRAPING_ENABLED}" == "true" ]; then
-        echo "not starting telegraf since sidecar scraping is true"
+    if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ "${TELEMETRY_RS_TELEGRAF_DISABLED}" == "true" ]; then
+        echo "not starting telegraf since prom scraping is disabled for replicaset"
     else
         /opt/telegraf --config $telegrafConfFile &
         echo "telegraf version: $(/opt/telegraf --version)"
