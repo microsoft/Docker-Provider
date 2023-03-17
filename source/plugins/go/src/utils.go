@@ -147,6 +147,10 @@ func CreateMDSDClient(dataType DataType, containerType string) {
 			MdsdMsgpUnixSocketClient = conn
 		}
 	case KubeMonAgentEvents:
+		// incase of geneva logs integration mode, KubeMonAgentEvents ingested via sidecar container socket
+		if IsGenevaLogsIntegrationEnabled {
+			mdsdfluentSocket = "/var/run/mdsd-PrometheusSidecar/default_fluent.socket"
+		}
 		if MdsdKubeMonMsgpUnixSocketClient != nil {
 			MdsdKubeMonMsgpUnixSocketClient.Close()
 			MdsdKubeMonMsgpUnixSocketClient = nil
@@ -161,6 +165,10 @@ func CreateMDSDClient(dataType DataType, containerType string) {
 			MdsdKubeMonMsgpUnixSocketClient = conn
 		}
 	case InsightsMetrics:
+		// incase of geneva logs integration mode, InsightsMetrics ingested via sidecar container socket
+		if IsGenevaLogsIntegrationEnabled {
+			mdsdfluentSocket = "/var/run/mdsd-PrometheusSidecar/default_fluent.socket"
+		}
 		if MdsdInsightsMetricsMsgpUnixSocketClient != nil {
 			MdsdInsightsMetricsMsgpUnixSocketClient.Close()
 			MdsdInsightsMetricsMsgpUnixSocketClient = nil
@@ -259,4 +267,16 @@ func convertMsgPackEntriesToMsgpBytes(fluentForwardTag string, msgPackEntries []
 	}
 
 	return msgpBytes
+}
+
+//namedpipe format => CAgentStream_<pipeNamedDefinedXMLConfig>_<genevaNamespace>
+func getGenevaWindowsNamedPipeName() string {
+	gcsNameSpace := os.Getenv("MONITORING_GCS_NAMESPACE")
+	var namedPipeName string
+	if gcsNameSpace == "" {
+		Log("Error:GetWindowsNamedPipeName: gcsNameSpace is empty")
+	} else {
+		namedPipeName = "CAgentStream_ContainerLogV2Pipe_" + gcsNameSpace
+	}
+	return namedPipeName
 }

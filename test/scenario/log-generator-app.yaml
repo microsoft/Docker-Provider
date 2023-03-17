@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-gen
+  labels:
+    app: log-gen
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: log-gen
+  template:
+    metadata:
+      labels:
+        name: log-gen
+    spec:
+      nodeSelector:
+        kubernetes.io/os: "linux"
+      containers:
+      - name: log-gen
+        image: docker.io/mffiedler/ocp-logtest:latest
+        command:
+          - python
+        args:
+          - ocp_logtest.py
+          - --line-length=1024
+          - --num-lines=300000
+          - --rate=60000
+          - --fixed-line
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 250Mi
+          requests:
+            cpu: 1000m
+            memory: 50Mi

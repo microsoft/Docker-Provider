@@ -48,7 +48,7 @@ fi
 
 #optionally test to exit non zero value if fluentd is not running
 #fluentd not used in sidecar container
-if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
+if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]  && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
   (ps -ef | grep "fluentd" | grep -v "grep")
   if [ $? -ne 0 ]
   then
@@ -82,17 +82,21 @@ then
 fi
 
 #test to exit non zero value if telegraf is not running
-(ps -ef | grep telegraf | grep -v "grep")
-if [ $? -ne 0 ]
-then
- if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ ! -z "${TELEMETRY_RS_TELEGRAF_DISABLED}" ] && [ "${TELEMETRY_RS_TELEGRAF_DISABLED}" == "true" ]; then
-   # telegraf is disabed on replicaset if prom scraping is disabled
-   exit 0
- else :
-  # echo "Telegraf is not running" > /dev/termination-log
-  echo "Telegraf is not running (controller: ${CONTROLLER_TYPE}, container type: ${CONTAINER_TYPE})" > /dev/write-to-traces  # this file is tailed and sent to traces
-  # exit 1
- fi
+if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ]; then
+  exit 0
+else
+  (ps -ef | grep telegraf | grep -v "grep")
+  if [ $? -ne 0 ]
+  then
+    if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ ! -z "${TELEMETRY_RS_TELEGRAF_DISABLED}" ] && [ "${TELEMETRY_RS_TELEGRAF_DISABLED}" == "true" ]; then
+      # telegraf is disabed on replicaset if prom scraping is disabled
+      exit 0
+    else
+      # echo "Telegraf is not running" > /dev/termination-log
+      echo "Telegraf is not running (controller: ${CONTROLLER_TYPE}, container type: ${CONTAINER_TYPE})" > /dev/write-to-traces  # this file is tailed and sent to traces
+      # exit 1
+    fi
+  fi
 fi
 
 exit 0

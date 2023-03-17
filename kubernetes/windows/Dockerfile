@@ -60,6 +60,11 @@ COPY ./amalogswindows/installer/conf/fluent-bit.conf /etc/fluent-bit
 COPY ./amalogswindows/installer/conf/azm-containers-parser.conf /etc/fluent-bit/
 COPY ./amalogswindows/installer/conf/azm-containers-parser-multiline.conf /etc/fluent-bit/
 COPY ./amalogswindows/installer/conf/out_oms.conf /etc/amalogswindows
+COPY ./amalogswindows/installer/conf/fluent-bit-geneva-logs_*.conf /etc/fluent-bit/
+COPY ./amalogswindows/installer/conf/fluent-bit-geneva.conf /etc/fluent-bit/
+COPY ./amalogswindows/installer/conf/fluent-bit-common.conf /etc/fluent-bit/
+COPY ./amalogswindows/installer/conf/fluent-bit-internal-metrics.conf /etc/fluent-bit/
+
 
 # copy telegraf conf file
 COPY ./amalogswindows/installer/conf/telegraf.conf /etc/telegraf/
@@ -70,7 +75,7 @@ COPY ./amalogswindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluen
 #Copy fluentd ruby plugins
 COPY ./amalogswindows/ruby/ /etc/fluent/plugin/
 
-# default value will be overwritten by pipeline 
+# default value will be overwritten by pipeline
 ARG IMAGE_TAG=win-3.1.4
 ENV AGENT_VERSION ${IMAGE_TAG}
 

@@ -44,6 +44,10 @@ var (
 	ContainerLogsSendErrorsToMDSDFromFluent float64
 	//Tracks the number of mdsd client create errors for containerlogs (uses ContainerLogTelemetryTicker)
 	ContainerLogsMDSDClientCreateErrors float64
+	//Tracks the number of write/send errors to windows ama for containerlogs (uses ContainerLogTelemetryTicker)
+	ContainerLogsSendErrorsToWindowsAMAFromFluent float64
+	//Tracks the number of windows ama client create errors for containerlogs (uses ContainerLogTelemetryTicker)
+	ContainerLogsWindowsAMAClientCreateErrors float64
 	//Tracks the number of mdsd client create errors for insightsmetrics (uses ContainerLogTelemetryTicker)
 	InsightsMetricsMDSDClientCreateErrors float64
 	//Tracks the number of mdsd client create errors for kubemonevents (uses ContainerLogTelemetryTicker)
@@ -67,27 +71,29 @@ var (
 )
 
 const (
-	clusterTypeACS                                              = "ACS"
-	clusterTypeAKS                                              = "AKS"
-	envAKSResourceID                                            = "AKS_RESOURCE_ID"
-	envACSResourceName                                          = "ACS_RESOURCE_NAME"
-	envAppInsightsAuth                                          = "APPLICATIONINSIGHTS_AUTH"
-	envAppInsightsEndpoint                                      = "APPLICATIONINSIGHTS_ENDPOINT"
-	metricNameAvgFlushRate                                      = "ContainerLogAvgRecordsFlushedPerSec"
-	metricNameAvgLogGenerationRate                              = "ContainerLogsGeneratedPerSec"
-	metricNameLogSize                                           = "ContainerLogsSize"
-	metricNameAgentLogProcessingMaxLatencyMs                    = "ContainerLogsAgentSideLatencyMs"
-	metricNameNumberofTelegrafMetricsSentSuccessfully           = "TelegrafMetricsSentCount"
-	metricNameNumberofSendErrorsTelegrafMetrics                 = "TelegrafMetricsSendErrorCount"
-	metricNameNumberofSend429ErrorsTelegrafMetrics              = "TelegrafMetricsSend429ErrorCount"
-	metricNameNumberofWinTelegrafMetricsWithTagsSize64KBorMore  = "WinTelegrafMetricsCountWithTagsSize64KBorMore"
-	metricNameErrorCountContainerLogsSendErrorsToMDSDFromFluent = "ContainerLogs2MdsdSendErrorCount"
-	metricNameErrorCountContainerLogsMDSDClientCreateError      = "ContainerLogsMdsdClientCreateErrorCount"
-	metricNameErrorCountInsightsMetricsMDSDClientCreateError    = "InsightsMetricsMDSDClientCreateErrorsCount"
-	metricNameErrorCountKubeMonEventsMDSDClientCreateError      = "KubeMonEventsMDSDClientCreateErrorsCount"
-	metricNameErrorCountContainerLogsSendErrorsToADXFromFluent  = "ContainerLogs2ADXSendErrorCount"
-	metricNameErrorCountContainerLogsADXClientCreateError       = "ContainerLogsADXClientCreateErrorCount"
-	metricNameContainerLogRecordCountWithEmptyTimeStamp         = "ContainerLogRecordCountWithEmptyTimeStamp"
+	clusterTypeACS                                                    = "ACS"
+	clusterTypeAKS                                                    = "AKS"
+	envAKSResourceID                                                  = "AKS_RESOURCE_ID"
+	envACSResourceName                                                = "ACS_RESOURCE_NAME"
+	envAppInsightsAuth                                                = "APPLICATIONINSIGHTS_AUTH"
+	envAppInsightsEndpoint                                            = "APPLICATIONINSIGHTS_ENDPOINT"
+	metricNameAvgFlushRate                                            = "ContainerLogAvgRecordsFlushedPerSec"
+	metricNameAvgLogGenerationRate                                    = "ContainerLogsGeneratedPerSec"
+	metricNameLogSize                                                 = "ContainerLogsSize"
+	metricNameAgentLogProcessingMaxLatencyMs                          = "ContainerLogsAgentSideLatencyMs"
+	metricNameNumberofTelegrafMetricsSentSuccessfully                 = "TelegrafMetricsSentCount"
+	metricNameNumberofSendErrorsTelegrafMetrics                       = "TelegrafMetricsSendErrorCount"
+	metricNameNumberofSend429ErrorsTelegrafMetrics                    = "TelegrafMetricsSend429ErrorCount"
+	metricNameNumberofWinTelegrafMetricsWithTagsSize64KBorMore        = "WinTelegrafMetricsCountWithTagsSize64KBorMore"
+	metricNameErrorCountContainerLogsSendErrorsToMDSDFromFluent       = "ContainerLogs2MdsdSendErrorCount"
+	metricNameErrorCountContainerLogsMDSDClientCreateError            = "ContainerLogsMdsdClientCreateErrorCount"
+	metricNameErrorCountInsightsMetricsMDSDClientCreateError          = "InsightsMetricsMDSDClientCreateErrorsCount"
+	metricNameErrorCountContainerLogsSendErrorsToWindowsAMAFromFluent = "ContainerLogsSendErrorsToWindowsAMAFromFluent"
+	metricNameErrorCountContainerLogsWindowsAMAClientCreateError      = "ContainerLogsWindowsAMAClientCreateErrors"
+	metricNameErrorCountKubeMonEventsMDSDClientCreateError            = "KubeMonEventsMDSDClientCreateErrorsCount"
+	metricNameErrorCountContainerLogsSendErrorsToADXFromFluent        = "ContainerLogs2ADXSendErrorCount"
+	metricNameErrorCountContainerLogsADXClientCreateError             = "ContainerLogsADXClientCreateErrorCount"
+	metricNameContainerLogRecordCountWithEmptyTimeStamp               = "ContainerLogRecordCountWithEmptyTimeStamp"
 
 	defaultTelemetryPushIntervalSeconds = 300
 
@@ -125,6 +131,8 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		containerLogsMDSDClientCreateErrors := ContainerLogsMDSDClientCreateErrors
 		containerLogsSendErrorsToADXFromFluent := ContainerLogsSendErrorsToADXFromFluent
 		containerLogsADXClientCreateErrors := ContainerLogsADXClientCreateErrors
+		containerLogsSendErrorsToWindowsAMAFromFluent := ContainerLogsSendErrorsToWindowsAMAFromFluent
+		containerLogsWindowsAMAClientCreateErrors := ContainerLogsWindowsAMAClientCreateErrors
 		insightsMetricsMDSDClientCreateErrors := InsightsMetricsMDSDClientCreateErrors
 		kubeMonEventsMDSDClientCreateErrors := KubeMonEventsMDSDClientCreateErrors
 		osmNamespaceCount := OSMNamespaceCount
@@ -148,6 +156,8 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		ContainerLogsSendErrorsToMDSDFromFluent = 0.0
 		ContainerLogsMDSDClientCreateErrors = 0.0
 		ContainerLogsSendErrorsToADXFromFluent = 0.0
+		ContainerLogsSendErrorsToWindowsAMAFromFluent = 0.0
+		ContainerLogsWindowsAMAClientCreateErrors = 0.0
 		ContainerLogsADXClientCreateErrors = 0.0
 		InsightsMetricsMDSDClientCreateErrors = 0.0
 		KubeMonEventsMDSDClientCreateErrors = 0.0
@@ -227,6 +237,12 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		}
 		if containerLogsMDSDClientCreateErrors > 0.0 {
 			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameErrorCountContainerLogsMDSDClientCreateError, containerLogsMDSDClientCreateErrors))
+		}
+		if containerLogsSendErrorsToWindowsAMAFromFluent > 0.0 {
+			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameErrorCountContainerLogsSendErrorsToWindowsAMAFromFluent, containerLogsSendErrorsToWindowsAMAFromFluent))
+		}
+		if containerLogsWindowsAMAClientCreateErrors > 0.0 {
+			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameErrorCountContainerLogsWindowsAMAClientCreateError, containerLogsWindowsAMAClientCreateErrors))
 		}
 		if containerLogsSendErrorsToADXFromFluent > 0.0 {
 			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricNameErrorCountContainerLogsSendErrorsToADXFromFluent, containerLogsSendErrorsToADXFromFluent))
@@ -362,6 +378,31 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 	if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
 		if strings.Compare(strings.ToLower(os.Getenv("CONTAINER_TYPE")), "prometheussidecar") == 0 {
 			CommonProperties["ContainerType"] = "prometheussidecar"
+		} else {
+			genevaLogsIntegration := os.Getenv("GENEVA_LOGS_INTEGRATION")
+			if genevaLogsIntegration != "" && strings.Compare(strings.ToLower(genevaLogsIntegration), "true") == 0 {
+				CommonProperties["IsGenevaLogsIntegrationEnabled"] = "true"
+				genevaLogsMultitenancy := os.Getenv("GENEVA_LOGS_MULTI_TENANCY")
+				if genevaLogsMultitenancy != "" && strings.Compare(strings.ToLower(genevaLogsMultitenancy), "true") == 0 {
+					CommonProperties["IsGenevaLogsMultiTenancyEnabled"] = "true"
+					genevaLogsTenantNamespaces := os.Getenv("GENEVA_LOGS_TENANT_NAMESPACES")
+					if genevaLogsTenantNamespaces != "" {
+						CommonProperties["GenevaLogsTenantNamespaces"] = genevaLogsTenantNamespaces
+					}
+					genevaLogsInfraNamespaces := os.Getenv("GENEVA_LOGS_INFRA_NAMESPACES")
+					if genevaLogsInfraNamespaces != "" {
+						CommonProperties["GenevaLogsInfraNamespaces"] = genevaLogsInfraNamespaces
+					}
+				}
+				genevaLogsConfigVersion := os.Getenv("MONITORING_CONFIG_VERSION")
+				if genevaLogsConfigVersion != "" {
+					CommonProperties["GENEVA_LOGS_CONFIG_VERSION"] = genevaLogsConfigVersion
+				}
+			}
+            genevaLogsIntegrationServiceMode := os.Getenv("GENEVA_LOGS_INTEGRATION_SERVICE_MODE")
+			if genevaLogsIntegrationServiceMode != "" && strings.Compare(strings.ToLower(genevaLogsIntegrationServiceMode), "true") == 0 {
+				CommonProperties["IsGenevaLogsIntegrationServiceMode"] = "true"
+			}
 		}
 	}
 

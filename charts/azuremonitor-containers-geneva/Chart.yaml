@@ -1,0 +1,19 @@
+apiVersion: v2
+description: Helm chart for deploying Azure Monitor container monitoring agent in Kubernetes for Geneva Logs Integration
+name: azuremonitor-containers-geneva
+version: 0.7.0
+kubeVersion: "^1.16.0-0"
+keywords:
+  - monitoring
+  - azuremonitor
+  - azure
+  - ama
+  - containerinsights
+  - geneva Logs
+home: https://docs.microsoft.com/en-us/azure/monitoring/monitoring-container-health
+icon: https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/img/azuremonitor-containers.svg
+sources:
+  - https://github.com/microsoft/Docker-Provider/tree/ci_prod
+maintainers:
+  - name: ganga1980
+    email: gangams@microsoft.com

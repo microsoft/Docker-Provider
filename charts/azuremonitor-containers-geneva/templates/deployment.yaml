@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ama-logs-geneva-deployment
+  labels:
+   chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+   release: {{ .Release.Name }}
+spec:
+{{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      rsName: "ama-logs-geneva"
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+     annotations:
+       agentVersion: {{ .Values.image.agentVersion }}
+       prometheus.io/scrape: "true"
+       prometheus.io/port: "9102"
+     labels:
+       rsName: "ama-logs-geneva"
+       aadpodidbinding: {{ .Values.genevaLogsConfig.aadpodidbinding }}
+    spec:
+     {{- with .Values.affinity }}
+     affinity: {{- toYaml . | nindent 8 }}
+     {{- end }}
+    #  terminationGracePeriodSeconds: 45
+     containers:
+       - name: ama-logs-geneva
+         image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag }}
+         imagePullPolicy: {{ .Values.image.pullPolicy }}
+         resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+         env:
+         - name: ENABLE_FBIT_INTERNAL_METRICS
+           value: {{ .Values.enableInternalMetrics | quote }}
+         - name: FBIT_SERVICE_GRACE_INTERVAL_SECONDS
+           value: "10"
+         - name: GENEVA_LOGS_INTEGRATION_SERVICE_MODE
+           value: "true"
+         - name: CONTAINER_TYPE
+           value: "geneva-container"
+         - name: AZMON_CONTAINER_LOG_SCHEMA_VERSION
+           value: "v2"
+         - name: ClOUD_ENVIRONMENT
+           value:  {{ .Values.genevaLogsConfig.environment | quote }}
+         - name: MONITORING_GCS_ENVIRONMENT
+           value:  {{ .Values.genevaLogsConfig.environment | quote }}
+         - name: MONITORING_GCS_ACCOUNT
+           value: {{ .Values.genevaLogsConfig.account | quote }}
+         - name: MONITORING_GCS_NAMESPACE
+           value: {{ .Values.genevaLogsConfig.namespace  | quote }}
+         - name: MONITORING_CONFIG_VERSION
+           value: {{ .Values.genevaLogsConfig.configversion  | quote }}
+         - name: MONITORING_GCS_AUTH_ID_TYPE
+           value: "AuthMSIToken"
+         - name: MONITORING_GCS_AUTH_ID
+           value: {{ .Values.genevaLogsConfig.authid  | quote }}
+         - name: MONITORING_GCS_REGION
+           value: {{ .Values.genevaLogsConfig.region | quote }}
+         - name: MONITORING_USE_GENEVA_CONFIG_SERVICE
+           value: "true"
+         - name: MONITORING_MAX_EVENT_RATE
+           value: "100000" # default MDSD EPS is 20K which is not enough for large scale
+         - name: FBIT_INPUT_FORWARD_BUFFER_CHUNK_SIZE
+           value: "15m"
+         - name: FBIT_INPUT_FORWARD_BUFFER_CHUNK_MAX_SIZE
+           value: "30m"
+         - name: MDSD_MSGPACK_SORT_COLUMNS # confirm this setting with AMA team
+           value: "1"
+         - name: NODE_IP
+           valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+         ports:
+         - name: http
+           containerPort: 24224
+           protocol: TCP
+         lifecycle:
+            preStop:
+              exec:
+               command: [
+                  "sh", "-c",
+                  # Introduce a delay to the shutdown sequence to wait for the
+                  # pod eviction event to propagate. Then, gracefully shutdown
+                  "sleep 5"
+                ]
+         livenessProbe:
+          exec:
+            command:
+              - /bin/bash
+              - -c
+              - /opt/livenessprobe.sh
+          initialDelaySeconds: 60
+          periodSeconds: 60
+          timeoutSeconds: 15

@@ -1,0 +1,56 @@
+{{- if eq .Values.genevaLogsConfig.aadpodidbinding "<AAD_POD_IDENTITY_NAME>" }}
+
+##############################################################################
+####   ERROR: You did not provide AAD POD IDENTITY NAME                   ####
+##############################################################################
+
+{{- end }}
+
+
+{{- if eq .Values.genevaLogsConfig.authid "<object_id#<guid> or client_id#<guid> or mi_res_id#<identity resource id>>"  }}
+
+##############################################################################
+####   ERROR: You did not provide Auth Id of Managed Identity.       ####
+##############################################################################
+
+{{- end }}
+
+{{- if eq .Values.genevaLogsConfig.account "<your_geneva_account_name>" }}
+
+##############################################################################
+####   ERROR: You did not provide Geneva Logs Account Name      ####
+##############################################################################
+
+{{- end }}
+
+
+{{- if eq .Values.genevaLogsConfig.namespace "<your_geneva_account_namespace>" }}
+
+##############################################################################
+####   ERROR: You did not provide Geneva Logs Account Namespace      ####
+##############################################################################
+
+{{- end }}
+
+
+{{- if eq .Values.genevaLogsConfig.region "<your_geneva_account_gcs_region>" }}
+
+##############################################################################
+####   ERROR: Provided Geneva Logs Account GCS Region is not valid    ####
+##############################################################################
+
+{{- end }}
+
+
+{{- if eq .Values.genevaLogsConfig.configversion "<your_geneva_config_version>" }}
+
+##############################################################################
+####   ERROR: Provided Geneva Logs Account Config Version is not valid    ####
+##############################################################################
+
+{{- end }}
+
+
+
+
+{{ .Release.Name }} deployment is complete.

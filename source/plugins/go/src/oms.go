@@ -180,6 +180,12 @@ var (
 	ContainerType string
 	// flag to check whether LA AAD MSI Auth Enabled or not
 	IsAADMSIAuthMode bool
+	// flag to check whether Geneva Logs Integration enabled or not
+	IsGenevaLogsIntegrationEnabled bool
+	// flag to check whether Geneva Logs ServiceMode enabled or not
+	IsGenevaLogsTelemetryServiceMode bool
+	// named pipe connection to ContainerLog for AMA
+	ContainerLogNamedPipe net.Conn
 )
 
 var (
@@ -1121,6 +1127,14 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		//below id & name are used by latency telemetry in both v1 & v2 LA schemas
 		id := ""
 		name := ""
+		if IsGenevaLogsTelemetryServiceMode == true {
+			//Incase of GenevaLogs Service mode, use the source Computer name from which log line originated
+			// And the ClusterResourceId in the receiving record
+			Computer = ToString(record["Computer"])
+			stringMap["AzureResourceId"] = ToString(record["AzureResourceId"])
+		} else if IsGenevaLogsIntegrationEnabled == true {
+			stringMap["AzureResourceId"] = ResourceID
+		}
 
 		logEntry := ToString(record["log"])
 		logEntryTimeStamp := ToString(record["time"])
@@ -1245,7 +1259,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	if len(msgPackEntries) > 0 && ContainerLogsRouteV2 == true {
 		//flush to mdsd
-		if IsAADMSIAuthMode == true && strings.HasPrefix(MdsdContainerLogTagName, MdsdOutputStreamIdTagPrefix) == false {
+		if IsAADMSIAuthMode == true && !IsGenevaLogsIntegrationEnabled && strings.HasPrefix(MdsdContainerLogTagName, MdsdOutputStreamIdTagPrefix) == false {
 			Log("Info::mdsd::obtaining output stream id")
 			if ContainerLogSchemaV2 == true {
 				MdsdContainerLogTagName = extension.GetInstance(FLBLogger, ContainerType).GetOutputStreamId(ContainerLogV2DataType)
@@ -1280,43 +1294,70 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			msgpBytes = msgp.AppendInt64(msgpBytes, batchTime)
 			msgpBytes = msgp.AppendMapStrStr(msgpBytes, fluentForward.Entries[entry].Record)
 		}
-
-		if MdsdMsgpUnixSocketClient == nil {
-			Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
-			CreateMDSDClient(ContainerLogV2, ContainerType)
+		if IsWindows && IsGenevaLogsIntegrationEnabled {
+			if ContainerLogNamedPipe == nil {
+				Log("Error::AMA:: The connection to named pipe was nil. re-connecting...")
+				CreateWindowsNamedPipesClient(getGenevaWindowsNamedPipeName())
+			}
+			if ContainerLogNamedPipe == nil {
+				Log("Error::AMA::Cannot create the named pipe connection")
+				ContainerLogTelemetryMutex.Lock()
+				defer ContainerLogTelemetryMutex.Unlock()
+				ContainerLogsWindowsAMAClientCreateErrors += 1
+				return output.FLB_RETRY
+			}
+			Log("Info::AMA::Starting to write container logs to named pipe")
+			deadline := 10 * time.Second
+			ContainerLogNamedPipe.SetWriteDeadline(time.Now().Add(deadline))
+			n, err := ContainerLogNamedPipe.Write(msgpBytes)
+			if err != nil {
+				Log("Error::AMA::Failed to write to AMA %d records. Will retry ... error : %s", len(msgPackEntries), err.Error())
+				ContainerLogTelemetryMutex.Lock()
+				defer ContainerLogTelemetryMutex.Unlock()
+				ContainerLogsSendErrorsToWindowsAMAFromFluent += 1
+				return output.FLB_RETRY
+			} else {
+				numContainerLogRecords = len(msgPackEntries)
+				Log("Success::AMA::Successfully flushed %d container log records that was %d bytes to AMA ", numContainerLogRecords, n)
+			}
+		} else {
 			if MdsdMsgpUnixSocketClient == nil {
-				Log("Error::mdsd::Unable to create mdsd client. Please check error log.")
+				Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
+				CreateMDSDClient(ContainerLogV2, ContainerType)
+				if MdsdMsgpUnixSocketClient == nil {
+					Log("Error::mdsd::Unable to create mdsd client. Please check error log.")
+
+					ContainerLogTelemetryMutex.Lock()
+					defer ContainerLogTelemetryMutex.Unlock()
+					ContainerLogsMDSDClientCreateErrors += 1
+
+					return output.FLB_RETRY
+				}
+			}
+
+			deadline := 10 * time.Second
+			MdsdMsgpUnixSocketClient.SetWriteDeadline(time.Now().Add(deadline)) //this is based of clock time, so cannot reuse
+
+			bts, er := MdsdMsgpUnixSocketClient.Write(msgpBytes)
+
+			elapsed = time.Since(start)
+
+			if er != nil {
+				Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(msgPackEntries), elapsed, er.Error())
+				if MdsdMsgpUnixSocketClient != nil {
+					MdsdMsgpUnixSocketClient.Close()
+					MdsdMsgpUnixSocketClient = nil
+				}
 
 				ContainerLogTelemetryMutex.Lock()
 				defer ContainerLogTelemetryMutex.Unlock()
-				ContainerLogsMDSDClientCreateErrors += 1
+				ContainerLogsSendErrorsToMDSDFromFluent += 1
 
 				return output.FLB_RETRY
+			} else {
+				numContainerLogRecords = len(msgPackEntries)
+				Log("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numContainerLogRecords, bts, elapsed)
 			}
-		}
-
-		deadline := 10 * time.Second
-		MdsdMsgpUnixSocketClient.SetWriteDeadline(time.Now().Add(deadline)) //this is based of clock time, so cannot reuse
-
-		bts, er := MdsdMsgpUnixSocketClient.Write(msgpBytes)
-
-		elapsed = time.Since(start)
-
-		if er != nil {
-			Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(msgPackEntries), elapsed, er.Error())
-			if MdsdMsgpUnixSocketClient != nil {
-				MdsdMsgpUnixSocketClient.Close()
-				MdsdMsgpUnixSocketClient = nil
-			}
-
-			ContainerLogTelemetryMutex.Lock()
-			defer ContainerLogTelemetryMutex.Unlock()
-			ContainerLogsSendErrorsToMDSDFromFluent += 1
-
-			return output.FLB_RETRY
-		} else {
-			numContainerLogRecords = len(msgPackEntries)
-			Log("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numContainerLogRecords, bts, elapsed)
 		}
 	} else if ContainerLogsRouteADX == true && len(dataItemsADX) > 0 {
 		// Route to ADX
@@ -1571,8 +1612,12 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	osType := os.Getenv("OS_TYPE")
 	IsWindows = false
-	// Linux
-	if strings.Compare(strings.ToLower(osType), "windows") != 0 {
+	IsGenevaLogsTelemetryServiceMode = false
+	genevaLogsIntegrationServiceMode := os.Getenv("GENEVA_LOGS_INTEGRATION_SERVICE_MODE")
+	if strings.Compare(strings.ToLower(genevaLogsIntegrationServiceMode), "true") == 0 {
+		IsGenevaLogsTelemetryServiceMode = true
+		Log("IsGenevaLogsTelemetryServiceMode %v", IsGenevaLogsTelemetryServiceMode)
+	} else if strings.Compare(strings.ToLower(osType), "windows") != 0 {
 		Log("Reading configuration for Linux from %s", pluginConfPath)
 		WorkspaceID = os.Getenv("WSID")
 		if WorkspaceID == "" {
@@ -1718,7 +1763,13 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	ContainerLogsRouteV2 = false
 	ContainerLogsRouteADX = false
-
+	IsGenevaLogsIntegrationEnabled = false
+	genevaLogsIntegrationEnabled := strings.TrimSpace(strings.ToLower(os.Getenv("GENEVA_LOGS_INTEGRATION")))
+	if genevaLogsIntegrationEnabled != "" && strings.Compare(strings.ToLower(genevaLogsIntegrationEnabled), "true") == 0 {
+		IsGenevaLogsIntegrationEnabled = true
+		Log("Geneva Logs Integration Enabled")
+		ContainerLogsRouteV2 = true // AMA route for geneva logs integration
+	}
 	if strings.Compare(ContainerLogsRoute, ContainerLogsADXRoute) == 0 {
 		// Try to read the ADX database name from environment variables. Default to DefaultAdsDatabaseName if not set.
 		// This SHOULD be set by tomlparser.rb so it's a highly unexpected event if it isn't.
@@ -1770,7 +1821,13 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	}
 
 	if ContainerLogsRouteV2 == true {
-		CreateMDSDClient(ContainerLogV2, ContainerType)
+		if IsWindows {
+			if IsGenevaLogsIntegrationEnabled {
+				CreateWindowsNamedPipesClient(getGenevaWindowsNamedPipeName())
+			}
+		} else {
+			CreateMDSDClient(ContainerLogV2, ContainerType)
+		}
 	} else if ContainerLogsRouteADX == true {
 		CreateADXClient()
 	} else { // v1 or windows
@@ -1820,8 +1877,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	MdsdInsightsMetricsTagName = MdsdInsightsMetricsSourceName
 	MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName
-	Log("ContainerLogsRouteADX: %v, IsWindows: %v, IsAADMSIAuthMode = %v \n", ContainerLogsRouteADX, IsWindows, IsAADMSIAuthMode)
-	if !ContainerLogsRouteADX && IsWindows && IsAADMSIAuthMode {
+	Log("ContainerLogsRouteADX: %v, IsWindows: %v, IsAADMSIAuthMode = %v IsGenevaLogsIntegrationEnabled = %v \n", ContainerLogsRouteADX, IsWindows, IsAADMSIAuthMode, IsGenevaLogsIntegrationEnabled)
+	if !ContainerLogsRouteADX && IsWindows && IsAADMSIAuthMode && !IsGenevaLogsIntegrationEnabled {
 		Log("defaultIngestionAuthTokenRefreshIntervalSeconds = %d \n", defaultIngestionAuthTokenRefreshIntervalSeconds)
 		IngestionAuthTokenRefreshTicker = time.NewTicker(time.Second * time.Duration(defaultIngestionAuthTokenRefreshIntervalSeconds))
 		go refreshIngestionAuthToken()

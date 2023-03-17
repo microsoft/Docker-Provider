@@ -40,6 +40,15 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/tomlparser-mdm-metrics-config.rb;                                  build/common/installer/scripts/tomlparser-mdm-metrics-config.rb;     755; root; root
 /opt/tomlparser-metric-collection-config.rb;                            build/linux/installer/scripts/tomlparser-metric-collection-config.rb;     755; root; root
 
+/opt/tomlparser-geneva-config.rb;                                       build/common/installer/scripts/tomlparser-geneva-config.rb;     755; root; root
+
+/opt/fluent-bit-geneva-conf-customizer.rb;                            build/common/installer/scripts/fluent-bit-geneva-conf-customizer.rb;     755; root; root
+/etc/opt/microsoft/docker-cimprov/fluent-bit-common.conf;			    build/linux/installer/conf/fluent-bit-common.conf;                644; root; root
+/etc/opt/microsoft/docker-cimprov/fluent-bit-geneva.conf;			    build/linux/installer/conf/fluent-bit-geneva.conf;                644; root; root
+/etc/opt/microsoft/docker-cimprov/fluent-bit-geneva-logs_infra.conf;  build/linux/installer/conf/fluent-bit-geneva-logs_infra.conf;   644; root; root
+/etc/opt/microsoft/docker-cimprov/fluent-bit-geneva-logs_tenant.conf; build/linux/installer/conf/fluent-bit-geneva-logs_tenant.conf;   644; root; root
+/etc/opt/microsoft/docker-cimprov/fluent-bit-geneva-telemetry-svc.conf;          build/linux/installer/conf/fluent-bit-geneva-telemetry-svc.conf;   644; root; root
+/etc/opt/microsoft/docker-cimprov/fluent-bit-internal-metrics.conf;    build/linux/installer/conf/fluent-bit-internal-metrics.conf; 644; root; root
 
 /opt/tomlparser-agent-config.rb;                                build/common/installer/scripts/tomlparser-agent-config.rb;     755; root; root
 /opt/tomlparser.rb;                                             build/common/installer/scripts/tomlparser.rb;     755; root; root
@@ -48,7 +57,6 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/tomlparser-npm-config.rb;                                  build/linux/installer/scripts/tomlparser-npm-config.rb;     755; root; root
 /opt/tomlparser-osm-config.rb;                                  build/linux/installer/scripts/tomlparser-osm-config.rb;     755; root; root
 /opt/test.json;			                                        build/linux/installer/conf/test.json;                    644; root; root
-
 
 /etc/fluent/plugin/lib/application_insights/version.rb;								   source/plugins/ruby/lib/application_insights/version.rb; 644; root; root
 /etc/fluent/plugin/lib/application_insights/rack/track_request.rb;					source/plugins/ruby/lib/application_insights/rack/track_request.rb;      644; root; root
@@ -95,7 +103,6 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/fluent/plugin/lib/application_insights/channel/event.rb;						   source/plugins/ruby/lib/application_insights/channel/event.rb;   644; root; root
 /etc/fluent/plugin/lib/application_insights.rb;                                  source/plugins/ruby/lib/application_insights.rb; 644; root; root
 
-
 /etc/fluent/plugin/ApplicationInsightsUtility.rb;								             	source/plugins/ruby/ApplicationInsightsUtility.rb;	644; root; root
 /etc/fluent/plugin/arc_k8s_cluster_identity.rb;                                        source/plugins/ruby/arc_k8s_cluster_identity.rb; 644; root; root
 /etc/fluent/plugin/CAdvisorMetricsAPIClient.rb;                                        source/plugins/ruby/CAdvisorMetricsAPIClient.rb;     644; root; root
@@ -115,7 +122,6 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/fluent/plugin/oms_common.rb;                                                       source/plugins/ruby/oms_common.rb; 644; root; root
 /etc/fluent/plugin/extension.rb;                                                        source/plugins/ruby/extension.rb; 644; root; root
 /etc/fluent/plugin/extension_utils.rb;                                                  source/plugins/ruby/extension_utils.rb; 644; root; root
-
 
 /etc/fluent/kube.conf;			                                                          build/linux/installer/conf/kube.conf;                  644; root; root
 /etc/fluent/container.conf;			                                                    build/linux/installer/conf/container.conf;                  644; root; root
@@ -140,8 +146,6 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/fluent/plugin/out_mdm.rb;			                                                 source/plugins/ruby/out_mdm.rb;	644; root; root
 /etc/fluent/plugin/WatchStream.rb;                                                      source/plugins/ruby/WatchStream.rb;	644; root; root
 
-
-
 %Links
 
 %Directories
@@ -161,7 +165,6 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/microsoft/docker-cimprov;                          755; root; root
 /opt/microsoft/docker-cimprov/bin;                      755; root; root
 /opt/microsoft/docker-cimprov/lib;                      755; root; root
-
 
 /var/opt/microsoft;                                     755; root; root; sysdir
 /var/opt/microsoft/docker-cimprov;                      755; root; root
@@ -205,10 +208,8 @@ chmod 644 /var/opt/microsoft/docker-cimprov/state/KubeEventQueryState.yaml
 touch /var/opt/microsoft/docker-cimprov/state/KubeLogQueryState.yaml
 chmod 644 /var/opt/microsoft/docker-cimprov/state/KubeLogQueryState.yaml
 
-
 touch /var/opt/microsoft/docker-cimprov/log/kubernetes_client_log.txt
 chmod 666 /var/opt/microsoft/docker-cimprov/log/kubernetes_client_log.txt
-
 
 touch /var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt
 chmod 666 /var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt
@@ -217,21 +218,17 @@ chmod 666 /var/opt/microsoft/docker-cimprov/log/kubernetes_perf_log.txt
 touch /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/filter_cadvisor2mdm.log
 
-
 touch /var/opt/microsoft/docker-cimprov/log/filter_telegraf2mdm.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/filter_telegraf2mdm.log
 
-
 touch /var/opt/microsoft/docker-cimprov/log/filter_inventory2mdm.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/filter_inventory2mdm.log
-
 
 touch /var/opt/microsoft/docker-cimprov/log/mdm_metrics_generator.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/mdm_metrics_generator.log
 
 touch /var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log
-
 
 touch /var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/arc_k8s_cluster_identity.log
@@ -241,7 +238,6 @@ chmod 666 /var/opt/microsoft/docker-cimprov/log/appinsights_error.log
 
 touch /var/opt/microsoft/docker-cimprov/log/fluentd.log
 chmod 666 /var/opt/microsoft/docker-cimprov/log/fluentd.log
-
 
 %Postuninstall_10
 # If we're an upgrade, skip all of this cleanup

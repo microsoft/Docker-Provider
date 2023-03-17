@@ -39,6 +39,54 @@ function Start-FileSystemWatcher {
     Start-Process powershell -NoNewWindow .\filesystemwatcher.ps1
 }
 
+function Set-ProcessAndMachineEnvVariables($name, $value) {
+    [System.Environment]::SetEnvironmentVariable($name, $value, "Process")
+    [System.Environment]::SetEnvironmentVariable($name, $value, "Machine")
+}
+
+function Set-GenevaAMAEnvironmentVariables {
+    Set-ProcessAndMachineEnvVariables "MONITORING_DATA_DIRECTORY" "C:\\opt\\windowsazuremonitoragent\\datadirectory"
+    Set-ProcessAndMachineEnvVariables "MONITORING_ROLE_INSTANCE" "MONITORING_ROLE_INSTANCE"
+    Set-ProcessAndMachineEnvVariables "MA_RoleEnvironment_OsType" "Windows"
+    Set-ProcessAndMachineEnvVariables "MONITORING_VERSION" "2.0"
+    Set-ProcessAndMachineEnvVariables "MONITORING_ROLE" "cloudAgentRoleIdentity"
+    Set-ProcessAndMachineEnvVariables "MONITORING_IDENTITY" "use_ip_address"
+    $aksRegion = [System.Environment]::GetEnvironmentVariable("AKS_REGION", "process")
+    Set-ProcessAndMachineEnvVariables "MA_RoleEnvironment_Location" $aksRegion
+    $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID", "process")
+    Set-ProcessAndMachineEnvVariables "MA_RoleEnvironment_ResourceId" $aksResourceId
+    Set-ProcessAndMachineEnvVariables "MA_ENABLE_LARGE_EVENTS" "1"
+}
+
+function Generate-GenevaTenantNameSpaceConfig {
+     $genevaLogsTenantNameSpaces = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_TENANT_NAMESPACES", "process")
+    if (![string]::IsNullOrEmpty($genevaLogsTenantNameSpaces)) {
+        [System.Environment]::SetEnvironmentVariable("GENEVA_LOGS_TENANT_NAMESPACES", $genevaLogsTenantNameSpaces, "machine")
+        $genevaLogsTenantNameSpacesArray = $genevaLogsTenantNameSpaces.Split(",")
+        for ($i = 0; $i -lt $genevaLogsTenantNameSpacesArray.Length; $i = $i + 1) {
+          $tenantName = $genevaLogsTenantNameSpacesArray[$i]
+          Copy-Item C:/etc/fluent-bit/fluent-bit-geneva-logs_tenant.conf -Destination C:/etc/fluent-bit/fluent-bit-geneva-logs_$tenantName.conf
+          (Get-Content -Path C:/etc/fluent-bit/fluent-bit-geneva-logs_$tenantName.conf  -Raw) -replace '<TENANT_NAMESPACE>', $tenantName | Set-Content C:/etc/fluent-bit/fluent-bit-geneva-logs_$tenantName.conf
+        }
+    }
+    Remove-Item C:/etc/fluent-bit/fluent-bit-geneva-logs_tenant.conf
+}
+
+function Generate-GenevaInfraNameSpaceConfig {
+   $genevaLogsInfraNameSpaces = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_INFRA_NAMESPACES", "process")
+   if (![string]::IsNullOrEmpty($genevaLogsInfraNameSpaces)) {
+       [System.Environment]::SetEnvironmentVariable("GENEVA_LOGS_INFRA_NAMESPACES", $genevaLogsInfraNameSpaces, "machine")
+       $genevaLogsInfraNameSpacesArray = $genevaLogsInfraNameSpaces.Split(",")
+       for ($i = 0; $i -lt $genevaLogsInfraNameSpacesArray.Length; $i = $i + 1) {
+         $infraNameSpaceName = $genevaLogsInfraNameSpacesArray[$i]
+         $infraNamespaceWithoutSuffix = $infraNameSpaceName.TrimEnd("_*")
+         Copy-Item C:/etc/fluent-bit/fluent-bit-geneva-logs_infra.conf -Destination C:/etc/fluent-bit/fluent-bit-geneva-logs_$infraNamespaceWithoutSuffix.conf
+         (Get-Content -Path C:/etc/fluent-bit/fluent-bit-geneva-logs_$infraNamespaceWithoutSuffix.conf  -Raw) -replace '<INFRA_NAMESPACE>', $infraNameSpaceName | Set-Content C:/etc/fluent-bit/fluent-bit-geneva-logs_$infraNamespaceWithoutSuffix.conf
+       }
+   }
+   Remove-Item C:/etc/fluent-bit/fluent-bit-geneva-logs_infra.conf
+}
+
 #register fluentd as a windows service
 
 function Set-EnvironmentVariables {
@@ -322,6 +370,53 @@ function Read-Configs {
     #Replace placeholders in fluent-bit.conf
     ruby /opt/amalogswindows/scripts/ruby/fluent-bit-conf-customizer.rb
 
+    ruby /opt/amalogswindows/scripts/ruby/tomlparser-geneva-config.rb
+    .\setgenevaconfigenv.ps1
+
+    $genevaLogsIntegration = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_INTEGRATION", "process")
+    if (![string]::IsNullOrEmpty($genevaLogsIntegration)) {
+        [System.Environment]::SetEnvironmentVariable("GENEVA_LOGS_INTEGRATION", $genevaLogsIntegration, "machine")
+        Write-Host "Successfully set environment variable GENEVA_LOGS_INTEGRATION - $($genevaLogsIntegration) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable GENEVA_LOGS_INTEGRATION for target 'machine' since it is either null or empty"
+    }
+
+    $enableFbitInternalMetrics = [System.Environment]::GetEnvironmentVariable("ENABLE_FBIT_INTERNAL_METRICS", "process")
+    if (![string]::IsNullOrEmpty($enableFbitInternalMetrics)) {
+        [System.Environment]::SetEnvironmentVariable("ENABLE_FBIT_INTERNAL_METRICS", $enableFbitInternalMetrics, "machine")
+        Write-Host "Successfully set environment variable ENABLE_FBIT_INTERNAL_METRICS - $($enableFbitInternalMetrics) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable ENABLE_FBIT_INTERNAL_METRICS for target 'machine' since it is either null or empty"
+    }
+
+    if (![string]::IsNullOrEmpty($enableFbitInternalMetrics) -and $enableFbitInternalMetrics.ToLower() -eq 'true') {
+        Write-Host "Fluent-bit Internal metrics configured"
+    } else {
+        Clear-Content C:/etc/fluent-bit/fluent-bit-internal-metrics.conf
+    }
+
+    $genevaLogsMultitenancy = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_MULTI_TENANCY", "process")
+    if (![string]::IsNullOrEmpty($genevaLogsMultitenancy)) {
+        [System.Environment]::SetEnvironmentVariable("GENEVA_LOGS_MULTI_TENANCY", $genevaLogsMultitenancy, "machine")
+        Write-Host "Successfully set environment variable GENEVA_LOGS_MULTI_TENANCY - $($genevaLogsMultitenancy) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable GENEVA_LOGS_MULTI_TENANCY for target 'machine' since it is either null or empty"
+    }
+    if (![string]::IsNullOrEmpty($genevaLogsIntegration) -and $genevaLogsIntegration.ToLower() -eq 'true') {
+        Write-Host "Setting Geneva Windows AMA Environment variables"
+        Set-GenevaAMAEnvironmentVariables
+        if (![string]::IsNullOrEmpty($genevaLogsMultitenancy) -and $genevaLogsMultitenancy.ToLower() -eq 'true') {
+            ruby /opt/amalogswindows/scripts/ruby/fluent-bit-geneva-conf-customizer.rb "common"
+            ruby /opt/amalogswindows/scripts/ruby/fluent-bit-geneva-conf-customizer.rb "tenant"
+            ruby /opt/amalogswindows/scripts/ruby/fluent-bit-geneva-conf-customizer.rb "infra"
+            Generate-GenevaTenantNameSpaceConfig
+            Generate-GenevaInfraNameSpaceConfig
+        }
+    }
+
     # run mdm config parser
     ruby /opt/amalogswindows/scripts/ruby/tomlparser-mdm-metrics-config.rb
     .\setmdmenv.ps1
@@ -459,11 +554,23 @@ function Start-Fluent-Telegraf {
         # change parser from docker to cri if the container runtime is not docker
         Write-Host "changing parser from Docker to CRI since container runtime : $($containerRuntime) and which is non-docker"
         (Get-Content -Path C:/etc/fluent-bit/fluent-bit.conf -Raw) -replace 'docker', 'cri' | Set-Content C:/etc/fluent-bit/fluent-bit.conf
+        (Get-Content -Path C:/etc/fluent-bit/fluent-bit-common.conf -Raw) -replace 'docker', 'cri' | Set-Content C:/etc/fluent-bit/fluent-bit-common.conf
     }
-
-    # Run fluent-bit service first so that we do not miss any logs being forwarded by the telegraf service.
-    # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
-    Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\fluent-bit\bin\fluent-bit.exe" -ArgumentList @("-c", "C:\etc\fluent-bit\fluent-bit.conf", "-e", "C:\opt\amalogswindows\out_oms.so") }
+    $genevaLogsIntegration = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_INTEGRATION", "process")
+    $genevaLogsMultitenancy = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_MULTI_TENANCY", "process")
+    if (![string]::IsNullOrEmpty($genevaLogsIntegration) -and $genevaLogsIntegration.ToLower() -eq 'true' -and ![string]::IsNullOrEmpty($genevaLogsMultitenancy) -and $genevaLogsMultitenancy.ToLower() -eq 'true') {
+        $fluentbitConfFile = "C:/etc/fluent-bit/fluent-bit-geneva.conf"
+        Write-Host "Using fluent-bit config: $($fluentbitConfFile)"
+        # Run fluent-bit service first so that we do not miss any logs being forwarded by the telegraf service.
+        # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
+        Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\fluent-bit\bin\fluent-bit.exe" -ArgumentList @("-c", "C:/etc/fluent-bit/fluent-bit-geneva.conf", "-e", "C:\opt\amalogswindows\out_oms.so") }
+    } else {
+        $fluentbitConfFile = "C:/etc/fluent-bit/fluent-bit.conf"
+        Write-Host "Using fluent-bit config: $($fluentbitConfFile)"
+        # Run fluent-bit service first so that we do not miss any logs being forwarded by the telegraf service.
+        # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
+        Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\fluent-bit\bin\fluent-bit.exe" -ArgumentList @("-c", "C:/etc/fluent-bit/fluent-bit.conf", "-e", "C:\opt\amalogswindows\out_oms.so") }
+    }
 
     # Start telegraf only in sidecar scraping mode
     $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
@@ -619,14 +726,20 @@ if (![string]::IsNullOrEmpty($requiresCertBootstrap) -and `
     Bootstrap-CACertificates
 }
 
+$isGenevaLogsIntegration = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_INTEGRATION")
 $isAADMSIAuth = [System.Environment]::GetEnvironmentVariable("USING_AAD_MSI_AUTH")
-if (![string]::IsNullOrEmpty($isAADMSIAuth) -and $isAADMSIAuth.ToLower() -eq 'true') {
+if (![string]::IsNullOrEmpty($isGenevaLogsIntegration) -and $isGenevaLogsIntegration.ToLower() -eq 'true') {
+    Write-Host "Starting Windows AMA in 1P Mode"
+    #start Windows AMA
+    Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\windowsazuremonitoragent\windowsazuremonitoragent\Monitoring\Agent\MonAgentLauncher.exe" -ArgumentList @("-useenv")}
+} elseif (![string]::IsNullOrEmpty($isAADMSIAuth) -and $isAADMSIAuth.ToLower() -eq 'true') {
     Write-Host "skipping agent onboarding via cert since AAD MSI Auth configured"
 }
 else {
     Generate-Certificates
     Test-CertificatePath
 }
+
 
 Start-Fluent-Telegraf
 

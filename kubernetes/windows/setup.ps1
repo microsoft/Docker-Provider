@@ -1,4 +1,4 @@
-# speed up Invoke-WebRequest 
+# speed up Invoke-WebRequest
 # https://stackoverflow.com/questions/28682642/powershell-why-is-using-invoke-webrequest-much-slower-than-a-browser-download
 $ProgressPreference = 'SilentlyContinue'
 
@@ -8,11 +8,14 @@ Write-Host ('Creating folder structure')
     New-Item -Type Directory -Path /opt/fluent-bit
     New-Item -Type Directory -Path /opt/scripts/ruby
     New-Item -Type Directory -Path /opt/telegraf
+    New-Item -Type Directory -Path /opt/windowsazuremonitoragent
+    New-Item -Type Directory -Path /opt/windowsazuremonitoragent/datadirectory
 
     New-Item -Type Directory -Path /etc/fluent-bit
     New-Item -Type Directory -Path /etc/fluent
     New-Item -Type Directory -Path /etc/amalogswindows
     New-Item -Type Directory -Path /etc/telegraf
+    New-Item -Type Directory -Path /etc/windowsazuremonitoragent
 
     New-Item -Type Directory -Path /etc/config/settings/
     New-Item -Type Directory -Path /etc/config/adx/
@@ -64,9 +67,21 @@ Write-Host ('Extracting Certificate Generator Package')
     Expand-Archive -Path /opt/amalogswindows/certificategenerator.zip -Destination /opt/amalogswindows/certgenerator/ -Force
 Write-Host ('Finished Extracting Certificate Generator Package')
 
+Write-Host ('Installing Windows Azure Monitor Agent');
+try {
+    $windowsazuremonitoragent='https://github.com/microsoft/Docker-Provider/releases/download/windows-ama-bits/genevamonitoringagent.46.3.2.zip'
+    Invoke-WebRequest -Uri $windowsazuremonitoragent -OutFile /installation/windowsazuremonitoragent.zip
+    Expand-Archive -Path /installation/windowsazuremonitoragent.zip -Destination /installation/windowsazuremonitoragent
+    Move-Item -Path /installation/windowsazuremonitoragent -Destination /opt/windowsazuremonitoragent/ -ErrorAction SilentlyContinue
+}
+catch {
+    $ex = $_.Exception
+    Write-Host "exception while downloading windowsazuremonitoragent"
+    Write-Host $ex
+    exit 1
+}
+Write-Host ('Finished downloading Windows Azure Monitor Agent')
 Write-Host ("Removing Install folder")
-
 Remove-Item /installation -Recurse
-
 #Remove gemfile.lock for http_parser gem 0.6.0
 #see  - https://github.com/fluent/fluentd/issues/3374 https://github.com/tmm1/http_parser.rb/issues/70
