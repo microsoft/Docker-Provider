@@ -1,8 +1,8 @@
-# Azure Monitor for containers reccomended alerts Resource Manager templates(Preview)
+# Azure Monitor for containers recommended alerts Resource Manager templates(Preview)
 
-Azure Monitor for containers now support reccomended alerts which are pre-configured metric alert rules for your AKS cluster. This feature is currently in private preview. These alerts can be enabled via Azure monitor for containers portal experience or via Resource Manager templates.
+Azure Monitor for containers now support recommended alerts which are pre-configured metric alert rules for your AKS cluster. This feature is currently in private preview. These alerts can be enabled via Azure monitor for containers portal experience or via Resource Manager templates.
 
-Learn more about reccomended alerts [here.](https://aka.ms/ci_reccomended_alerts)
+Learn more about recommended alerts [here.](https://aka.ms/ci_reccomended_alerts)
 
 Below are the supported alerts templates available in this repo
 
