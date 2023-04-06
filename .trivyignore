@@ -14,3 +14,7 @@ CVE-2022-41723
 # ubuntu base vulnerabilities
 CVE-2022-48303
 CVE-2022-3821
+
+# ruby vulnerabilities
+CVE-2023-28756
+CVE-2023-28755
