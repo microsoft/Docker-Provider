@@ -29,7 +29,7 @@ else
 fi
 
 if [[ "$OVERRIDETAG" == "true" ]]; then
-  echo "OverrideTag set to true. Will override $AGENT_IMAGE_TAG_SUFFIX image"
+  echo "OverrideTag set to true. Will override ${AGENT_IMAGE_TAG_SUFFIX} image"
 elif $TAG_EXISTS; then
   echo "-e error ${AGENT_IMAGE_TAG_SUFFIX} already exists in mcr. make sure the image tag is unique"
   exit 1
