@@ -50,6 +50,10 @@
           {
             "name": "SOURCE_IMAGE_FULL_PATH",
             "value": "mcr.microsoft.com/azuremonitor/containerinsights/cidev:__CDPX_WINDOWS_TAG__"
+          },
+          {
+            "name": "OVERRIDE_TAG",
+            "value": "__OVERRIDE_TAG__"
           }
         ], 
         "identity": {

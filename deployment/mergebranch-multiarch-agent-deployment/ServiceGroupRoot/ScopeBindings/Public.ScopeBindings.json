@@ -28,6 +28,10 @@
                 {
                     "find": "__CDPX_WINDOWS_TAG__",
                     "replaceWith": "$(CDPXWindowsTag)"
+                },
+                {
+                    "find": "__OVERRIDE_TAG__",
+                    "replaceWith": "$(OverrideTag)"
                 }
             ]
         }                                                                                                                                                

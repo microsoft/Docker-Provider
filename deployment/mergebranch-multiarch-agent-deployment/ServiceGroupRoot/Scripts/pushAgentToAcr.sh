@@ -22,15 +22,17 @@ fi
 
 if [[ "$AGENT_IMAGE_FULL_PATH" == *"win-"* ]]; then
   echo "checking windows tags"
-  TAG_EXISTS=$(echo $MCR_TAG_RESULT | jq '.tags | contains(["'"win-$AGENT_IMAGE_TAG_SUFFIX"'"])')
+  echo $MCR_TAG_RESULT | jq '.tags' | grep -q \"win-"$AGENT_IMAGE_TAG_SUFFIX"\"
 else
   echo "checking linux tags"
-  TAG_EXISTS=$(echo $MCR_TAG_RESULT | jq '.tags | contains(["'":$AGENT_IMAGE_TAG_SUFFIX"'"])')
+  echo $MCR_TAG_RESULT | jq '.tags' | grep -q \""$AGENT_IMAGE_TAG_SUFFIX"\"
 fi
 
-if [[ "$OVERRIDETAG" == "true" ]]; then
+TAG_EXISTS_STATUS=$?
+
+if [[ "$OVERRIDE_TAG" == "true" ]]; then
   echo "OverrideTag set to true. Will override ${AGENT_IMAGE_TAG_SUFFIX} image"
-elif $TAG_EXISTS; then
+elif [ "$TAG_EXISTS_STATUS" -eq 0 ]; then
   echo "-e error ${AGENT_IMAGE_TAG_SUFFIX} already exists in mcr. make sure the image tag is unique"
   exit 1
 fi
