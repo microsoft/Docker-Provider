@@ -28,7 +28,9 @@ else
   TAG_EXISTS=$(echo $MCR_TAG_RESULT | jq '.tags | contains(["'":$AGENT_IMAGE_TAG_SUFFIX"'"])')
 fi
 
-if $TAG_EXISTS; then
+if [[ "$OVERRIDETAG" == "true" ]]; then
+  echo "OverrideTag set to true. Will override $AGENT_IMAGE_TAG_SUFFIX image"
+elif $TAG_EXISTS; then
   echo "-e error ${AGENT_IMAGE_TAG_SUFFIX} already exists in mcr. make sure the image tag is unique"
   exit 1
 fi
