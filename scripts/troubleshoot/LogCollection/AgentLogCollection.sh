@@ -197,20 +197,28 @@ other_logCollection()
         kubectl get deployment $deploy --namespace=kube-system -o yaml > deployment_${deploy}.txt
     fi
 
-    export config=$(kubectl get configmaps --namespace=kube-system | grep -E container-azm-ms-aks-k8scluster | head -n 1 | awk '{print $1}')
+    export config=$(kubectl get configmaps --namespace=kube-system | grep -E container-azm-ms-agentconfig | head -n 1 | awk '{print $1}')
     if [ -z "$config" ];then
-        echo -e "${Red}configMap named container-azm-ms-aks-k8scluster is not found, if you created configMap for ama-logs, please manually save your custom configMap of ama-logs by command: kubectl get configmaps <configMap name> --namespace=kube-system -o yaml > configMap.yaml${NC}" | tee -a Tool.log
+        echo -e "${Red}configMap named container-azm-ms-configmap is not found, if you created configMap for ama-logs, please manually save your custom configMap of ama-logs by command: kubectl get configmaps <configMap name> --namespace=kube-system -o yaml > configMap.yaml${NC}" | tee -a Tool.log
     else
-        echo -e "Collecting container-azm-ms-aks-k8scluster configmap..."
+        echo -e "Collecting container-azm-ms-configmap configmap..."
         kubectl get configmaps $config --namespace=kube-system -o yaml > ${config}.yaml
     fi
 
-    export config2=$(kubectl get configmaps --namespace=kube-system | grep -E ama-logs-rs-config | head -n 1 | awk '{print $1}')
+    export config2=$(kubectl get configmaps --namespace=kube-system | grep -E container-azm-ms-aks-k8scluster | head -n 1 | awk '{print $1}')
     if [ -z "$config2" ];then
+        echo -e "${Red}configMap named container-azm-ms-aks-k8scluster is not found, if you created configMap for ama-logs, please manually save your custom configMap of ama-logs by command: kubectl get configmaps <configMap name> --namespace=kube-system -o yaml > configMap.yaml${NC}" | tee -a Tool.log
+    else
+        echo -e "Collecting container-azm-ms-aks-k8scluster configmap..."
+        kubectl get configmaps $config2 --namespace=kube-system -o yaml > ${config2}.yaml
+    fi
+
+    export config3=$(kubectl get configmaps --namespace=kube-system | grep -E ama-logs-rs-config | head -n 1 | awk '{print $1}')
+    if [ -z "$config3" ];then
         echo -e "${Red}configMap named ama-logs-rs-config is not found, if you created configMap for ama-logs, please manually save your custom configMap of ama-logs by command: kubectl get configmaps <configMap name> --namespace=kube-system -o yaml > configMap.yaml${NC}" | tee -a Tool.log
     else
         echo -e "Collecting ama-logs-rs-config configmap..."
-        kubectl get configmaps $config2 --namespace=kube-system -o yaml > ${config2}.yaml
+        kubectl get configmaps $config3 --namespace=kube-system -o yaml > ${config3}.yaml
     fi
 
     kubectl get nodes > node.txt
