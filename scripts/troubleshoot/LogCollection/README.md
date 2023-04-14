@@ -1,24 +1,36 @@
-# Container Insights Log collector
+# Container Insights Log Collector
 
 This tool will collect:
-* agent logs from linux ds and rs pods;
-* agent logs from windows pod if enabled;
-* cluster/node info, pod deployment, configMap, process logs etc..
+* Agent logs from Linux ds (ama-logs-) and rs (ama-logs-rs-) pods
+* Agent logs from Windows pod if enabled
+* Cluster/node info, pod deployment, configMap, process logs etc.
+* Note: Script can collect logs from both AKS Clusters as well as ARO Clusters
 
 ## Prerequisites
 * kubectl: az aks install-cli
 * tar (installed by default)
-* all nodes should be running on AKS
-* AKS Insights are enabled: https://docs.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-onboard
+* OpenShift CLI (For ARO Clusters Only) https://learn.microsoft.com/en-us/azure/openshift/tutorial-connect-cluster#install-the-openshift-cli
+* Container Insights is enabled: https://docs.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-onboard
 
 Otherwise, script will report error message and exit.
 
-## How to run
+## How to run on AKS Cluster
 ```
 az login --use-device-code # login to azure
 az account set --subscription <subscriptionIdOftheCluster>
 az aks get-credentials --resource-group <clusterResourceGroup> --name <clusterName> --file ~/ClusterKubeConfig
 export KUBECONFIG=~/ClusterKubeConfig
+
+wget https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/scripts/troubleshoot/LogCollection/AgentLogCollection.sh && bash ./AgentLogCollection.sh
+```
+
+## How to run on ARO Cluster From Azure Cloud Shell
+```
+#Retrieve server API address
+apiServer=$(az aro show -g $RESOURCEGROUP -n $CLUSTER --query apiserverProfile.url -o tsv)
+
+#login
+oc login $apiServer -u kubeadmin -p <kubeadmin password>
 
 wget https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/scripts/troubleshoot/LogCollection/AgentLogCollection.sh && bash ./AgentLogCollection.sh
 ```
