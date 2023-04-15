@@ -9,6 +9,7 @@ This tool will collect:
 ## Prerequisites
 * kubectl: az aks install-cli
 * tar (installed by default)
+* All nodes should be on AKS or running ARO
 * OpenShift CLI (For ARO Clusters Only) https://learn.microsoft.com/en-us/azure/openshift/tutorial-connect-cluster#install-the-openshift-cli
 * Container Insights is enabled: https://docs.microsoft.com/en-us/azure/azure-monitor/containers/container-insights-onboard
 
