@@ -27,13 +27,13 @@ jobs:
           version: v1.29
 
           # Optional: working directory, useful for monorepos
-          # working-directory: source/plugins/go
+          working-directory: source/plugins/go
 
           # Optional: golangci-lint command line arguments.
           args: -E gofmt
 
           # Optional: show only new issues if it's a pull request. The default value is `false`.
-          only-new-issues: true
+          # only-new-issues: true
 
           # Optional: if set to true then the all caching functionality will be complete disabled,
           #           takes precedence over all other caching options.
