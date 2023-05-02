@@ -27,7 +27,7 @@ jobs:
           version: v1.29
 
           # Optional: working directory, useful for monorepos
-          working-directory: source/plugins/go
+          # working-directory: source/plugins/go
 
           # Optional: golangci-lint command line arguments.
           args: -E gofmt
