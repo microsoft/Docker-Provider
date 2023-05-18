@@ -1,0 +1,33 @@
+{
+  "name": "mutating-webhook",
+  "version": "0.0.0",
+  "description": "MutatingWebhook",
+  "license": "MIT",
+  "repository": "https://github.com/microsoft/Application-Insights-K8s-Codeless-Attach/",
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node server",
+    "lint": "tslint --fix -c tslint.json *.ts"
+  },
+  "author": {
+    "name": ""
+  },
+  "dependencies": {
+    "@kubernetes/client-node": "^0.18.1",
+    "@types/node": "14.0.27",
+    "applicationinsights": "^1.8.3",
+    "chai": "4.2.0",
+    "dot-prop": "5.1.1",
+    "http-proxy-agent": "2.1.0",
+    "https-proxy-agent": "2.2.3",
+    "log4js": "^6.6.1",
+    "mocha": "8.1.0",
+    "toml": "3.0.0",
+    "ts-node": "8.10.2",
+    "tsc": "^2.0.4",
+    "typings": "2.1.1"
+  },
+  "engines": {
+    "node": "^8.0.0"
+  }
+}
