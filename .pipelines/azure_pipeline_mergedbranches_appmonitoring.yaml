@@ -102,45 +102,58 @@ jobs:
       pathToPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: drop
 
-- job: build_windows_2022
-  dependsOn:
-  -  common
+- job: build_linux
+  timeoutInMinutes: 120
+  dependsOn: common
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
   variables:
-    imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
-    telemetryTag: $[ dependencies.common.outputs['setup.telemetryTag'] ]
-    Codeql.SkipTaskAutoInjection: true
+    linuxImagetag: $[ dependencies.common.outputs['setup.imagetag'] ]
+    linuxTelemetryTag: $[ dependencies.common.outputs['setup.telemetryTag'] ]
+    Codeql.Enabled: true
+    Codeql.BuildIdentifier: 'linuxbuild'
+    # This is necessary because of: https://github.com/moby/moby/issues/37965
+    DOCKER_BUILDKIT: 1
+
   steps:
-  - task: PowerShell@2
-    inputs:
-      targetType: 'filePath'
-      filePath: $(System.DefaultWorkingDirectory)/scripts/build/windows/install-build-pre-requisites.ps1
-    displayName: 'install prereqs'
-
-  - script: |
-      setlocal enabledelayedexpansion
-      powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\windows\Makefile.ps1"
-      endlocal
-      exit /B %ERRORLEVEL%
-    displayName: 'build base'
-
+  - task: CodeQL3000Init@0
   - task: AzureCLI@2
-    displayName: "Docker windows build for ltsc2022"
+    displayName: "Multi-arch Linux build and Vulnerability Scan"
     inputs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
-      scriptType: ps
+      scriptType: bash
       scriptLocation: inlineScript
       inlineScript: |
-        mkdir -p $(Build.ArtifactStagingDirectory)/windows
-        cd appmonitoring/ts/src
+        mkdir -p $(Build.ArtifactStagingDirectory)/linux
+
+        sudo apt-get update && sudo apt-get -y install qemu binfmt-support qemu-user-static
+        docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
+        docker buildx create --name testbuilder
+        docker buildx use testbuilder
 
         az --version
         az account show
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
 
-        docker build --platform linux/amd64,linux/arm64 --isolation=hyperv --tag ${{ variables.repoImageName }}:$(imageTag) --build-arg IMAGE_TAG=$(telemetryTag) .
-        if ("$(Build.Reason)" -ne "PullRequest") {
-           docker push ${{ variables.repoImageName }}:$(imageTag)
-        }
+        if [ "$(Build.Reason)" != "PullRequest" ]; then
+          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(imagetag) -f appmonitoring/ts/src/Dockerfile --build-arg IMAGE_TAG=$(telemetryTag) --push --provenance=false .
+
+          docker pull ${{ variables.repoImageName }}:$(imagetag)
+        else
+          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(imagetag) -f appmonitoring/ts/src/Dockerfile --build-arg IMAGE_TAG=$(telemetryTag) --provenance=false .
+
+          # load the multi-arch image to run tests
+          docker buildx build --tag ${{ variables.repoImageName }}:$(imagetag) -f appmonitoring/ts/src/Dockerfile --build-arg IMAGE_TAG=$(telemetryTag) --load --provenance=false .
+        fi
+
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+        trivy image --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 ${{ variables.repoImageName }}:$(imagetag)
+  - task: CodeQL3000Finalize@0
+ 
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: drop
