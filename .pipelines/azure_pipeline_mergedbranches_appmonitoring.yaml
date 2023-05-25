@@ -108,8 +108,8 @@ jobs:
   pool:
     name: Azure-Pipelines-CI-Test-EO
   variables:
-    linuxImagetag: $[ dependencies.common.outputs['setup.imagetag'] ]
-    linuxTelemetryTag: $[ dependencies.common.outputs['setup.telemetryTag'] ]
+    imagetag: $[ dependencies.common.outputs['setup.imagetag'] ]
+    telemetryTag: $[ dependencies.common.outputs['setup.telemetryTag'] ]
     Codeql.Enabled: true
     Codeql.BuildIdentifier: 'linuxbuild'
     # This is necessary because of: https://github.com/moby/moby/issues/37965
@@ -152,7 +152,6 @@ jobs:
 
         trivy image --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 ${{ variables.repoImageName }}:$(imagetag)
   - task: CodeQL3000Finalize@0
- 
   - task: PublishBuildArtifacts@1
     inputs:
       pathToPublish: '$(Build.ArtifactStagingDirectory)'
