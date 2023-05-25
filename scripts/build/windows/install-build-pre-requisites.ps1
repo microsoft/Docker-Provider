@@ -31,6 +31,41 @@ function Install-Go {
    [System.Environment]::SetEnvironmentVariable("PATH", $path, "USER")
 }
 
+function Install-Node {
+    $tempDir =  $env:TEMP
+    if ($false -eq (Test-Path -Path $tempDir)) {
+        Write-Host("Invalid TEMP dir PATH : " + $tempDir + " ") -ForegroundColor Red
+        exit 1
+    }
+
+    $tempNode = Join-Path -Path $tempDir -ChildPath "nodetemp"
+    Write-Host("creating nodetemp dir : " + $tempNode + " ")
+    New-Item -Path $tempNode -ItemType "directory" -Force -ErrorAction Stop
+    if ($false -eq (Test-Path -Path $tempNode)) {
+        Write-Host("Invalid tempNode : " + $tempNode + " ") -ForegroundColor Red
+        exit 1
+    }
+
+   $url = "https://nodejs.org/dist/v18.16.0/node-v18.16.0-x64.msi"
+   $output = Join-Path -Path $tempNode -ChildPath "node-v18.16.0-x64.msi"
+   Write-Host("downloading node msi into directory path : " + $output + "  ...")
+   Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
+   Write-Host("downloading of node msi into directory path : " + $output + "  completed")
+
+   # install node
+   Write-Host("installing node ...")
+   Start-Process msiexec.exe -Wait -ArgumentList '/I ', $output, '/quiet'
+   Write-Host("installing node completed")
+
+   <#
+   Write-Host "updating PATH variable"
+   $NodePath = Join-Path -Path $env:SYSTEMDRIVE -ChildPath "Node"
+   $path = $env:PATH + ";=" + $NodePath
+   [System.Environment]::SetEnvironmentVariable("PATH", $path, "PROCESS")
+   [System.Environment]::SetEnvironmentVariable("PATH", $path, "USER")
+   #>
+}
+
 function Build-Dependencies {
     $tempDir =  $env:TEMP
     if ($false -eq (Test-Path -Path $tempDir)) {

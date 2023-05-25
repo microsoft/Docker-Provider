@@ -28,8 +28,8 @@ export class AddedTypes {
                     configMapKeyRef: {
                         name: "otlp",
                         key: "otlpMetricsEndpoint",
-                    }
-                }
+                    },
+                },
             },
             // {
             //     name: "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT",
@@ -49,9 +49,9 @@ export class AddedTypes {
                 valueFrom: {
                     configMapKeyRef: {
                         name: "otlp",
-                        key: "connectionString"
+                        key: "connectionString",
                     },
-                }
+                },
             },
             {
                 name: "TELEMETRY_IKEY",

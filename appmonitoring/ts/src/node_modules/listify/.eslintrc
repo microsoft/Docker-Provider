@@ -1,0 +1,19 @@
+{
+	"root": true,
+
+	"extends": "@ljharb",
+
+	"rules": {
+		"max-statements": [2, 16]
+	},
+
+	"overrides": [
+		{
+			"files": "test/**",
+			"rules": {
+				"array-bracket-newline": 0,
+				"max-statements-per-line": 0,
+			},
+		},
+	],
+}

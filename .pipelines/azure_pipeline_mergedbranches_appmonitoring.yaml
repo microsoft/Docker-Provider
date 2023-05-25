@@ -32,11 +32,11 @@ jobs:
   ## dev builds are in format Major.Minor.Patch-CommitAheadCount-CommitId
   ## prod release are in format Major.Minor.Patch
   ## preview release are in format preview-Major.Minor.Patch
-  - bash: |
+  - name: setup
+    bash: |
       commit=$(git describe) 
-      linuxImagetag="$commit"
-      windowsImageTag=win-"$commit"
-
+      imagetag="$commit"
+      
       telemetryTag=$commit
       if [ -z "$TELEMETRY_TAG" ]
         then
@@ -46,28 +46,17 @@ jobs:
           echo "\$TELEMETRY_TAG is $TELEMETRY_TAG"
       fi
 
-      linuxTelemetryTag="$telemetryTag"
-      windowsTelemetryTag=win-"$telemetryTag"
+      telemetryTag="$telemetryTag"
+      
+      echo "imagetag is $imagetag"
+      echo "telemetryTag is $telemetryTag"
+      
+      echo "##vso[task.setvariable variable=imagetag;isOutput=true]$imagetag"
+      echo "##vso[task.setvariable variable=telemetryTag;isOutput=true]$telemetryTag"
+      
+      cd $(Build.SourcesDirectory)/deployment/mergebranch-webhook-deployment/ServiceGroupRoot/Scripts
+      tar -czvf ../artifacts.tar.gz pushWebhookToAcr.sh
 
-      echo "linuxImagetag is $linuxImagetag"
-      echo "windowsImageTag is $windowsImageTag"
-      echo "linuxTelemetryTag is $linuxTelemetryTag"
-      echo "windowsTelemetryTag is $windowsTelemetryTag"
-
-      echo "##vso[task.setvariable variable=linuxImagetag;isOutput=true]$linuxImagetag"
-      echo "##vso[task.setvariable variable=windowsImageTag;isOutput=true]$windowsImageTag"
-      echo "##vso[task.setvariable variable=linuxTelemetryTag;isOutput=true]$linuxTelemetryTag"
-      echo "##vso[task.setvariable variable=windowsTelemetryTag;isOutput=true]$windowsTelemetryTag"
-
-      cd $(Build.SourcesDirectory)/deployment/mergebranch-multiarch-agent-deployment/ServiceGroupRoot/Scripts
-      tar -czvf ../artifacts.tar.gz pushAgentToAcr.sh
-
-      cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension/ServiceGroupRoot/Scripts
-      tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ pushChartToAcr.sh
-    
-      cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension-release-v2/ServiceGroupRoot/Scripts
-      tar -czvf ../artifacts.tar.gz arcExtensionRelease.sh
-    name: setup
 
   - task: CopyFiles@2
     displayName: "Copy ev2 deployment artifacts"
@@ -113,133 +102,6 @@ jobs:
     inputs:
       pathToPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: drop
-  
-- job: build_linux
-  timeoutInMinutes: 120
-  dependsOn: common
-  pool:
-    name: Azure-Pipelines-CI-Test-EO
-  variables:
-    linuxImagetag: $[ dependencies.common.outputs['setup.linuxImagetag'] ]
-    linuxTelemetryTag: $[ dependencies.common.outputs['setup.linuxTelemetryTag'] ]
-    Codeql.Enabled: true
-    Codeql.BuildIdentifier: 'linuxbuild'
-    # This is necessary because of: https://github.com/moby/moby/issues/37965
-    DOCKER_BUILDKIT: 1
-
-  steps:
-  - task: CodeQL3000Init@0
-  - task: AzureCLI@2
-    displayName: "Multi-arch Linux build and Vulnerability Scan"
-    inputs:
-      azureSubscription: ${{ variables.armServiceConnectionName }}
-      scriptType: bash
-      scriptLocation: inlineScript
-      inlineScript: |
-        mkdir -p $(Build.ArtifactStagingDirectory)/linux
-
-        sudo apt-get update && sudo apt-get -y install qemu binfmt-support qemu-user-static
-        docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-
-        docker buildx create --name testbuilder
-        docker buildx use testbuilder
-
-        az --version
-        az account show
-        az account set -s ${{ variables.subscription }}
-        az acr login -n ${{ variables.containerRegistry }}
-
-        if [ "$(Build.Reason)" != "PullRequest" ]; then
-          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --push --provenance=false .
-
-          docker pull ${{ variables.repoImageName }}:$(linuxImagetag)
-        else
-          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --provenance=false .
-
-          # load the multi-arch image to run tests
-          docker buildx build --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --load --provenance=false .
-        fi
-
-        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-
-        trivy image --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 ${{ variables.repoImageName }}:$(linuxImagetag)
-  - task: CodeQL3000Finalize@0
-
-  - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-    displayName: 'Generation Task'
-    condition: eq(variables.IS_PR, true)
-    inputs:
-      BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
-      DockerImagesToScan: '$(GOLANG_BASE_IMAGE), $(CI_BASE_IMAGE)'
-
-  - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-    displayName: 'Generation Task'
-    condition: eq(variables.IS_PR, false)
-    inputs:
-      BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
-      DockerImagesToScan: '$(GOLANG_BASE_IMAGE), $(CI_BASE_IMAGE), ${{ variables.repoImageName }}:$(linuxImagetag)'
-
-  - task: ComponentGovernanceComponentDetection@0
-    condition: eq(variables.IS_PR, true)
-    inputs:
-      DockerImagesToScan: '$(GOLANG_BASE_IMAGE), $(CI_BASE_IMAGE)'
-
-  - task: ComponentGovernanceComponentDetection@0
-    condition: eq(variables.IS_PR, false)
-    inputs:
-      DockerImagesToScan: '$(GOLANG_BASE_IMAGE), $(CI_BASE_IMAGE), ${{ variables.repoImageName }}:$(linuxImagetag)'
-
-  - task: PublishBuildArtifacts@1
-    inputs:
-      pathToPublish: '$(Build.ArtifactStagingDirectory)'
-      artifactName: drop
-
-- job: build_windows_2019
-  dependsOn:
-  -  common
-  pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
-  variables:
-    windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
-    windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
-    windows2019BaseImageVersion: ltsc2019
-    Codeql.Enabled: true
-    Codeql.BuildIdentifier: 'windowsbuild'
-  steps:
-  - task: PowerShell@2
-    inputs:
-      targetType: 'filePath'
-      filePath: $(System.DefaultWorkingDirectory)/scripts/build/windows/install-build-pre-requisites.ps1
-    displayName: 'install prereqs'
-
-  - script: |
-      setlocal enabledelayedexpansion
-      powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\windows\Makefile.ps1"
-      endlocal
-      exit /B %ERRORLEVEL%
-    displayName: 'build base'
-
-  - task: CodeQL3000Init@0
-  - task: AzureCLI@2
-    displayName: "Docker windows build for ltsc2019"
-    inputs:
-      azureSubscription: ${{ variables.armServiceConnectionName }}
-      scriptType: ps
-      scriptLocation: inlineScript
-      inlineScript: |
-        mkdir -p $(Build.ArtifactStagingDirectory)/windows
-        cd kubernetes/windows
-
-        az --version
-        az account show
-        az account set -s ${{ variables.subscription }}
-        az acr login -n ${{ variables.containerRegistry }}
-
-        docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion) --build-arg WINDOWS_VERSION=$(windows2019BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) .
-        if ("$(Build.Reason)" -ne "PullRequest") {
-           docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
-        }
-  - task: CodeQL3000Finalize@0
 
 - job: build_windows_2022
   dependsOn:
@@ -247,9 +109,8 @@ jobs:
   pool:
     name: Azure-Pipelines-Windows-CI-Test-EO
   variables:
-    windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
-    windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
-    windows2022BaseImageVersion: ltsc2022
+    imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
+    telemetryTag: $[ dependencies.common.outputs['setup.telemetryTag'] ]
     Codeql.SkipTaskAutoInjection: true
   steps:
   - task: PowerShell@2
@@ -273,67 +134,14 @@ jobs:
       scriptLocation: inlineScript
       inlineScript: |
         mkdir -p $(Build.ArtifactStagingDirectory)/windows
-        cd kubernetes/windows
+        cd appmonitoring/ts/src
 
         az --version
         az account show
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
 
-        docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion) --build-arg WINDOWS_VERSION=$(windows2022BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) .
+        docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(imageTag) --build-arg IMAGE_TAG=$(telemetryTag) .
         if ("$(Build.Reason)" -ne "PullRequest") {
-           docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
+           docker push ${{ variables.repoImageName }}:$(imageTag)
         }
-
-- job: build_windows_multi_arc
-  dependsOn:
-  - common
-  - build_windows_2019
-  - build_windows_2022
-  pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
-  variables:
-    windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
-    windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
-    windows2019BaseImageVersion: ltsc2019
-    windows2022BaseImageVersion: ltsc2022
-    Codeql.SkipTaskAutoInjection: true
-  steps:
-  - task: AzureCLI@2
-    displayName: "Docker windows build for multi-arc image"
-    inputs:
-      azureSubscription: ${{ variables.armServiceConnectionName }}
-      scriptType: ps
-      scriptLocation: inlineScript
-      inlineScript: |
-        mkdir -p $(Build.ArtifactStagingDirectory)/windows
-        cd kubernetes/windows
-
-        az --version
-        az account show
-        az account set -s ${{ variables.subscription }}
-        az acr login -n ${{ variables.containerRegistry }}
-
-        @{"image.name"="${{ variables.repoImageName }}:$(windowsImageTag)"} | ConvertTo-Json -Compress | Out-File -Encoding ascii $(Build.ArtifactStagingDirectory)/windows/metadata.json
-
-        if ("$(Build.Reason)" -ne "PullRequest") {
-           docker manifest create ${{ variables.repoImageName }}:$(windowsImageTag) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
-           docker manifest push ${{ variables.repoImageName }}:$(windowsImageTag)
-        }
-  - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-    displayName: 'Generation Task'
-    condition: eq(variables.IS_PR, true)
-    inputs:
-      BuildDropPath: '$(Build.ArtifactStagingDirectory)/windows'
-      DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019, mcr.microsoft.com/windows/servercore:ltsc2022'
-
-  - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-    displayName: 'Generation Task'
-    condition: eq(variables.IS_PR, false)
-    inputs:
-      BuildDropPath: '$(Build.ArtifactStagingDirectory)/windows'
-      DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019, mcr.microsoft.com/windows/servercore:ltsc2022, ${{ variables.repoImageName }}:$(windowsImageTag)'
-  - task: PublishBuildArtifacts@1
-    inputs:
-      pathToPublish: '$(Build.ArtifactStagingDirectory)'
-      artifactName: drop

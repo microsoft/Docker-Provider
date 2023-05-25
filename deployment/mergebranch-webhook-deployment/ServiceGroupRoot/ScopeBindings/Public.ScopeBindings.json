@@ -1,0 +1,35 @@
+{
+    "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",
+    "contentVersion": "0.0.0.1",
+    "scopeBindings": [       
+        {
+            "scopeTagName": "Global",
+            "bindings": [        
+                {
+                    "find": "__ACR_NAME__",
+                    "replaceWith": "$(ACRName)"
+                },            
+                {
+                    "find": "__WEBHOOK_RELEASE__",
+                    "replaceWith": "$(AgentRelease)"
+                }, 
+                {
+                    "find": "__WEBHOOK_IMAGE_TAG_SUFFIX__",
+                    "replaceWith": "$(WebhookImageTagSuffix)"
+                },
+                {
+                    "find": "__MANAGED_IDENTITY__",
+                    "replaceWith": "$(ManagedIdentity)"
+                }, 
+                {
+                    "find": "__CDPX_TAG__",
+                    "replaceWith": "$(CDPXTag)"
+                },
+                {
+                    "find": "__OVERRIDE_TAG__",
+                    "replaceWith": "$(OverrideTag)"
+                }
+            ]
+        }                                                                                                                                                
+    ]
+}
