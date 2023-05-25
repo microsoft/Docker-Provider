@@ -1,5 +1,16 @@
 # date-format Changelog
 
+## 4.0.14
+
+- [chore(deps-dev): updated dependencies](https://github.com/nomiddlename/date-format/pull/86) - thanks [@lamweili](https://github.com/lamweili)
+  - chore(deps-dev): bump eslint from 4.19.1 to 8.24.0
+  - chore(deps-dev): bump eslint-plugin-mocha from 4.12.1 to 10.1.0
+  - chore(deps-dev): bump mocha from 5.2.0 to 10.0.0
+  - chore(deps-dev): bump nyc from 13.0.0 to 15.1.0
+- [ci: manually downgrade dev dependencies for older versions](https://github.com/nomiddlename/date-format/pull/87) - thanks [@lamweili](https://github.com/lamweili)
+- [ci: separated npm audit](https://github.com/nomiddlename/date-format/pull/85) - thanks [@lamweili](https://github.com/lamweili)
+- [ci: updated codeql from v1 to v2](https://github.com/nomiddlename/date-format/pull/80) - thanks [@lamweili](https://github.com/lamweili)
+
 ## 4.0.13
 
 - [ci: added tests for Node.js 4.x, 6.x, 8.x, 10.x, 18.x](https://github.com/nomiddlename/date-format/pull/75) - thanks [@lamweili](https://github.com/lamweili)

@@ -43,10 +43,10 @@ class RollingFileWriteStream extends Writable {
       throw new Error(`Invalid filename: ${filePath}`);
     } else if (filePath.endsWith(path.sep)) {
       throw new Error(`Filename is a directory: ${filePath}`);
-    } else {
+    } else if (filePath.indexOf(`~${path.sep}`) === 0) {
       // handle ~ expansion: https://github.com/nodejs/node/issues/684
       // exclude ~ and ~filename as these can be valid files
-      filePath = filePath.replace(new RegExp(`^~(?=${path.sep}.+)`), os.homedir());
+      filePath = filePath.replace("~", os.homedir());
     }
     super(options);
     this.options = this._parseOption(options);

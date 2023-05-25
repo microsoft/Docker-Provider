@@ -88,9 +88,16 @@ const moveAndMaybeCompressFile = async (
         await fs.move(sourceFilePath, targetFilePath, { overwrite: true });
       } catch (e) {
         debug(`moveAndMaybeCompressFile: error renaming ${sourceFilePath} to ${targetFilePath}`, e);
-        debug(`moveAndMaybeCompressFile: trying copy+truncate instead`);
-        await fs.copy(sourceFilePath, targetFilePath, { overwrite: true });
-        await fs.truncate(sourceFilePath);
+        /* istanbul ignore else: no need to do anything if file does not exist */
+        if (e.code !== "ENOENT") {
+          debug(`moveAndMaybeCompressFile: trying copy+truncate instead`);
+          try {
+            await fs.copy(sourceFilePath, targetFilePath, { overwrite: true });
+            await fs.truncate(sourceFilePath);
+          } catch (e) {
+            debug(`moveAndMaybeCompressFile: error copy+truncate`, e);
+          }
+        }
       }
     }
   }

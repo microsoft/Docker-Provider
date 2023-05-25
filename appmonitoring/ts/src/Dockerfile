@@ -1,4 +1,4 @@
-FROM mhart/alpine-node:slim-8
+FROM mhart/alpine-node:slim-16.4.2
 
 WORKDIR  /mutating-webhook
 
