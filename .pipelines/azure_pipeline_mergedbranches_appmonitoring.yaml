@@ -140,7 +140,7 @@ jobs:
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
 
-        docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(imageTag) --build-arg IMAGE_TAG=$(telemetryTag) .
+        docker build --platform linux/amd64,linux/arm64 --isolation=hyperv --tag ${{ variables.repoImageName }}:$(imageTag) --build-arg IMAGE_TAG=$(telemetryTag) .
         if ("$(Build.Reason)" -ne "PullRequest") {
            docker push ${{ variables.repoImageName }}:$(imageTag)
         }
