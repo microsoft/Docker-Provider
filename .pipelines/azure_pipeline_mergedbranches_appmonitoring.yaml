@@ -150,7 +150,7 @@ jobs:
 
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-        trivy image --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 ${{ variables.repoImageName }}:$(imagetag)
+        trivy image --ignore-unfixed --no-progress --format json --severity HIGH,CRITICAL,MEDIUM --exit-code 1 ${{ variables.repoImageName }}:$(imagetag)
   - task: CodeQL3000Finalize@0
   - task: PublishBuildArtifacts@1
     inputs:
