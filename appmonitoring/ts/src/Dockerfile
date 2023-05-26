@@ -13,9 +13,9 @@ RUN npm outdated
 RUN npm update --save
 RUN npm outdated
 
-RUN pwd && cd ./mutating-webhook && rm *.js.map -f
-RUN pwd && cd ./mutating-webhook && rm *.js -f
-RUN pwd && cd ./mutating-webhook && tsc --build
+RUN pwd
+RUN rm *.js.map -f && rm *.js -f
+RUN tsc --build
 
 EXPOSE 1337
 CMD [ "node", "server" ]
