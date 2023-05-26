@@ -7,7 +7,7 @@ RUN apk -U upgrade
 
 WORKDIR  /mutating-webhook
 
-COPY ./appmonitoring /mutating-webhook
+COPY . /mutating-webhook
 
 #RUN npm outdated
 #RUN npm update --save
