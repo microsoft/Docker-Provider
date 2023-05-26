@@ -7,17 +7,17 @@ RUN apk -U upgrade
 
 WORKDIR  /mutating-webhook
 
-COPY . /mutating-webhook
+COPY ./appmonitoring /mutating-webhook
 
-RUN npm outdated
-RUN npm update --save
-RUN npm outdated
-RUN npm install typescript
+#RUN npm outdated
+#RUN npm update --save
+#RUN npm outdated
+#RUN npm install typescript
 
 RUN pwd
 RUN ls -a
-RUN rm *.js.map -f && rm *.js -f
-RUN tsc --build
+#RUN rm *.js.map -f && rm *.js -f
+#RUN tsc --build
 
 EXPOSE 1337
 CMD [ "node", "server" ]
