@@ -13,8 +13,8 @@ RUN npm outdated
 RUN npm update --save
 RUN npm outdated
 
-RUN cd /mutating-webhook && del *.js.map
-RUN cd /mutating-webhook && del *.js
+RUN cd /mutating-webhook && rm *.js.map
+RUN cd /mutating-webhook && rm *.js
 RUN cd /mutating-webhook && tsc --build
 
 EXPOSE 1337
