@@ -12,6 +12,7 @@ COPY . /mutating-webhook
 RUN npm outdated
 RUN npm update --save
 RUN npm outdated
+RUN npm install -g typescript
 
 RUN pwd
 RUN rm *.js.map -f && rm *.js -f
