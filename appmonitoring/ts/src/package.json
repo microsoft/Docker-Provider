@@ -25,6 +25,7 @@
     "toml": "3.0.0",
     "ts-node": "10.9.1",
     "tsc": "^2.0.4",
+    "typescript": "^5.0.4",
     "typings": "2.1.1"
   },
   "engines": {
