@@ -1,6 +1,6 @@
 FROM node:16
 
-RUN /usr/bin/apt-get update
+RUN apt-get update && apt-get upgrade -y && apt-get autoremove && apt-get autoclean
 
 WORKDIR  /mutating-webhook
 
