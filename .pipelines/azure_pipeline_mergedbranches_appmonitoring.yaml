@@ -147,7 +147,7 @@ jobs:
         npm outdated
 
         echo "Building the typescript project..."
-        tsc --build
+        tsc --build --force
         echo "Build is done"
 
         pwd
