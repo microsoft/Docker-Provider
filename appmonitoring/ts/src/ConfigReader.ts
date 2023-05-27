@@ -4,9 +4,6 @@ import { AddonConfig} from "./AddonConfig";
 import { logger } from "./LoggerWrapper";
 
 export class ConfigReader {
-    private readonly configPath = "/mnt/settings/application-monitoring-settings";
-    private static CurrentConfig: AddonConfig;
-
     public static async ReadConfig(file?: string): Promise<AddonConfig> {
         if (this.CurrentConfig == null) {
             this.CurrentConfig = new AddonConfig(new Date(-1), null);
@@ -49,4 +46,8 @@ export class ConfigReader {
         });
 
     }
+
+    private static CurrentConfig: AddonConfig;
+
+    private readonly configPath = "/mnt/settings/application-monitoring-settings";
 }

@@ -32,13 +32,14 @@ https.createServer(options, (req, res) => {
             body += chunk.toString(); // convert Buffer to string
         });
         req.on("end", () => {
-            let uid: string = "";
+            let uid = "";
             try {
                 const message: IRootObject = JSON.parse(body);
                 if (message && message.request && message.request.uid) {
                     uid = message.request.uid;
                 }
             } catch (ex) {
+                // swallow
             }
             ContentProcessor.TryUpdateConfig(body).then((updatedConfig) => {
                 logger.info("done processing request", uid);

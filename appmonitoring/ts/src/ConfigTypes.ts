@@ -1,9 +1,9 @@
-﻿export interface Namespaces {
+﻿export interface INamespaces {
     excluded: string[];
 }
 
-export interface ApplicationMonitoringSettings {
-    namespaces: Namespaces;
+export interface IApplicationMonitoringSettings {
+    namespaces: INamespaces;
 }
 
 export interface IKEY {
@@ -11,7 +11,7 @@ export interface IKEY {
     ikey: string;
 }
 
-export interface SettingsRoot {
-    "application-monitoring-settings": ApplicationMonitoringSettings;
+export interface ISettingsRoot {
+    "application-monitoring-settings": IApplicationMonitoringSettings;
     IKEYS: IKEY[];
 }

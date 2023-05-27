@@ -1,10 +1,10 @@
-﻿import { SettingsRoot } from "./ConfigTypes";
+﻿import { ISettingsRoot } from "./ConfigTypes";
 
 export class AddonConfig {
     private namespaces: string[] = ["kube-system"];
     private iKeys: Map<string, string> = new Map<string, string>();
     private timestamp: Date;
-    public constructor(timestamp: Date, entries: SettingsRoot) {
+    public constructor(timestamp: Date, entries: ISettingsRoot) {
         this.timestamp = timestamp;
         this.iKeys.set("ALL_DEFAULT", process.env.ALL_APPINSIGHTS_INSTRUMENTATIONKEY);
         if (entries != null &&

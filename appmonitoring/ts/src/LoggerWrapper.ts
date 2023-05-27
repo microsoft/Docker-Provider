@@ -27,10 +27,6 @@ configure({
 });
 
 class LocalLogger {
-    private log: Logger = getLogger("default");
-    private static instance: LocalLogger;
-    private client: applicationInsights.TelemetryClient;
-
     public static Instance() {
         if (!LocalLogger.instance) {
             LocalLogger.instance = new LocalLogger();
@@ -38,6 +34,11 @@ class LocalLogger {
 
         return LocalLogger.instance;
     }
+
+    private static instance: LocalLogger;
+
+    private log: Logger = getLogger("default");
+    private client: applicationInsights.TelemetryClient;
 
     public trace(message: any, uid: string, ...args: any[]) {
         this.log.trace(message, JSON.stringify(args, undefined, 2));
@@ -74,6 +75,30 @@ class LocalLogger {
         this.fireEvent("MARK", message, uid, args);
     }
 
+    public telemetry(metric: Metrics, value: number, uid: string) {
+        if (metric == null) {
+            this.log.error("invalid metric");
+        }
+
+        if (this.client == null) {
+            this.client = new applicationInsights.TelemetryClient(this.getKey());
+        }
+
+        const telemetryItem: MetricTelemetry = {
+            name: metric,
+            value,
+            count: 1,
+            properties: {
+                KUBERNETES_SERVICE_HOST: process.env.KUBERNETES_SERVICE_HOST,
+                CLUSTER_RESOURCE_ID: process.env.CLUSTER_RESOURCE_ID,
+                UID: uid,
+            },
+        };
+
+        this.client.trackMetric(telemetryItem);
+        this.client.flush();
+    }
+
     private fireEvent(level: string, message: any, uid: string, ...args: any[]) {
         if (this.client == null) {
             this.client = new applicationInsights.TelemetryClient(this.getKey());
@@ -104,30 +129,6 @@ class LocalLogger {
             return process.env.TELEMETRY_CONN_STRING;
         }
         return "320dcf98-173f-429b-ab39-df8b4951fb94";
-    }
-
-    public telemetry(metric: Metrics, value: number, uid: string) {
-        if (metric == null) {
-            this.log.error("invalid metric");
-        }
-
-        if (this.client == null) {
-            this.client = new applicationInsights.TelemetryClient(this.getKey());
-        }
-
-        const telemetryItem: MetricTelemetry = {
-            name: metric,
-            value,
-            count: 1,
-            properties: {
-                KUBERNETES_SERVICE_HOST: process.env.KUBERNETES_SERVICE_HOST,
-                CLUSTER_RESOURCE_ID: process.env.CLUSTER_RESOURCE_ID,
-                UID: uid,
-            },
-        };
-
-        this.client.trackMetric(telemetryItem);
-        this.client.flush();
     }
 }
 
