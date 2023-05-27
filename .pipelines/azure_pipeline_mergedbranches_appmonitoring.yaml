@@ -141,11 +141,9 @@ jobs:
         rm *.js.map -f
         rm *.js -f
       
-        echo "Checking packages..."
-        npm outdated
+        echo "Updating packages..."
         npm update
-        npm outdated
-
+        
         echo "Building the typescript project..."
         tsc --build --force
         echo "Build is done"
