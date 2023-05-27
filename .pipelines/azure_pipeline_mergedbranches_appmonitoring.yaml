@@ -137,10 +137,6 @@ jobs:
         echo "Installing typescript..."
         sudo npm install typescript
 
-        echo "Cleaning *.js and *.js.map files..."
-        rm *.js.map -f
-        rm *.js -f
-      
         echo "Updating packages..."
         npm update
         
