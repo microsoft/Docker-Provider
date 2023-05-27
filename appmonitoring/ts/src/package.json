@@ -1,6 +1,6 @@
 {
   "name": "mutating-webhook",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "MutatingWebhook",
   "license": "MIT",
   "repository": "https://github.com/microsoft/Application-Insights-K8s-Codeless-Attach/",
@@ -10,7 +10,7 @@
     "lint": "tslint --fix -c tslint.json *.ts"
   },
   "author": {
-    "name": ""
+    "name": "Microsoft Corp"
   },
   "dependencies": {
     "@kubernetes/client-node": "^0.18.1",
@@ -29,6 +29,6 @@
     "typings": "2.1.1"
   },
   "engines": {
-    "node": "^8.0.0"
+    "node": "^16.19.1"
   }
 }
