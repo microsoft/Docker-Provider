@@ -30,3 +30,5 @@ source/plugins/go/src/*.h
 *_log.txt
 *.log
 *.byebug_history
+#node_modules for the typescript project
+appmonitoring\ts\src\node_modules/
