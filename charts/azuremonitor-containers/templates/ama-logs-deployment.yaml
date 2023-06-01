@@ -163,7 +163,7 @@ spec:
    {{- with .Values.amalogs.deployment.affinity }}
    affinity: {{- toYaml . | nindent 8 }}
    {{- end }}
-   {{- if .Values.amalogs.scheduleOnTaints }}
+   {{- if .Values.amalogs.scheduleOnTaintedNodes }}
    {{- with .Values.amalogs.tolerationsUnrestricted }}
    tolerations: {{- toYaml . | nindent 8 }}
    {{- end }}

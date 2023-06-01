@@ -120,7 +120,7 @@ spec:
           periodSeconds: 60
           initialDelaySeconds: 180
           timeoutSeconds: 15
-   {{- if .Values.amalogs.scheduleOnTaints }}
+   {{- if .Values.amalogs.scheduleOnTaintedNodes }}
    {{- with .Values.amalogs.tolerationsUnrestricted }}
    tolerations: {{- toYaml . | nindent 8 }}
    {{- end }}
