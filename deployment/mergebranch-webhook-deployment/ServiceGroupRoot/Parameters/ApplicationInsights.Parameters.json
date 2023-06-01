@@ -11,7 +11,7 @@
   ],
   "shellExtensions": [
     {
-      "name": "PushAgentToACR",
+      "name": "PushWebhookToACR",
       "type": "ShellExtensionType",
       "properties": {
         "maxexecutiontime": "PT1H"
