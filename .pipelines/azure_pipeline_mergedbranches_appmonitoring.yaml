@@ -163,14 +163,14 @@ jobs:
         az acr login -n ${{ variables.containerRegistry }}
 
         if [ "$(Build.Reason)" != "PullRequest" ]; then
-          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(imagetag) -f ./Dockerfile --build-arg IMAGE_TAG=$(telemetryTag) --push --provenance=false .
+          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(imagetag) -f ./Dockerfile --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(telemetryTag) --push --provenance=false .
 
           docker pull ${{ variables.repoImageName }}:$(imagetag)
         else
-          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(imagetag) -f ./Dockerfile --build-arg IMAGE_TAG=$(telemetryTag) --provenance=false .
+          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(imagetag) -f ./Dockerfile --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(telemetryTag) --provenance=false .
 
           # load the multi-arch image to run tests
-          docker buildx build --tag ${{ variables.repoImageName }}:$(imagetag) -f ./Dockerfile --build-arg IMAGE_TAG=$(telemetryTag) --load --provenance=false .
+          docker buildx build --tag ${{ variables.repoImageName }}:$(imagetag) -f ./Dockerfile --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(telemetryTag) --load --provenance=false .
         fi
 
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
