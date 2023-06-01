@@ -45,11 +45,11 @@
           }, 
           {
             "name": "CDPX_TAG",
-            "value": "__CDPX_LINUX_TAG__"
+            "value": "__IMAGE_TAG__"
           },
           {
             "name": "SOURCE_IMAGE_FULL_PATH",
-            "value": "mcr.microsoft.com/azuremonitor/applicationinsights/aidev:__CDPX_LINUX_TAG__"
+            "value": "mcr.microsoft.com/azuremonitor/applicationinsights/aidev:__IMAGE_TAG__"
           },
           {
             "name": "OVERRIDE_TAG",
