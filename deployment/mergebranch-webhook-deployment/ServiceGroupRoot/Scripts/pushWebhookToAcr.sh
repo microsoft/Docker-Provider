@@ -14,9 +14,10 @@ if [ -z $WEBHOOK_RELEASE ]; then
 fi
 
 #Make sure that tag being pushed will not overwrite an existing tag in mcr
-MCR_TAG_RESULT="`wget -qO- https://mcr.microsoft.com/v2/azuremonitor/applicationinsights/aiprod/tags/list`"
+echo "Reading existing tags from MCR..."
+MCR_TAG_RESULT="`wget -qO- https://mcr.microsoft.com/v2/azuremonitor/containerinsights/aiprod/tags/list`"
 if [ $? -ne 0 ]; then         
-   echo "-e error unable to get list of mcr tags for azuremonitor/applicationinsights/aiprod repository"
+   echo "-e error unable to get list of mcr tags for azuremonitor/containerinsights/aiprod repository"
    exit 1
 fi
 
