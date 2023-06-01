@@ -120,8 +120,14 @@ spec:
           periodSeconds: 60
           initialDelaySeconds: 180
           timeoutSeconds: 15
+   {{- if .Values.amalogs.scheduleOnTaints }}
+   {{- with .Values.amalogs.tolerationsUnrestricted }}
+   tolerations: {{- toYaml . | nindent 8 }}
+   {{- end }}
+   {{- else }}
    {{- with .Values.amalogs.tolerations }}
    tolerations: {{- toYaml . | nindent 8 }}
+   {{- end }}
    {{- end }}
    volumes:
     - name: docker-windows-kuberenetes-container-logs
