@@ -11,7 +11,7 @@
                 },            
                 {
                     "find": "__WEBHOOK_RELEASE__",
-                    "replaceWith": "$(AgentRelease)"
+                    "replaceWith": "$(WebhookRelease)"
                 }, 
                 {
                     "find": "__WEBHOOK_IMAGE_TAG_SUFFIX__",
