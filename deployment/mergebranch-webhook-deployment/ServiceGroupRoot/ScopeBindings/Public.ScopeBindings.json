@@ -22,8 +22,8 @@
                     "replaceWith": "$(ManagedIdentity)"
                 }, 
                 {
-                    "find": "__IMAGE_TAG__",
-                    "replaceWith": "$(ImageTag)"
+                    "find": "__SOURCE_IMAGE_TAG__",
+                    "replaceWith": "$(SourceImageTag)"
                 },
                 {
                     "find": "__OVERRIDE_TAG__",

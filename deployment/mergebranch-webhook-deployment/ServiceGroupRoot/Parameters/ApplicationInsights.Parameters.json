@@ -44,12 +44,12 @@
             "value": "public/azuremonitor/applicationinsights/__WEBHOOK_RELEASE__:__WEBHOOK_IMAGE_TAG_SUFFIX__"
           }, 
           {
-            "name": "CDPX_TAG",
-            "value": "__IMAGE_TAG__"
+            "name": "SOURCE_IMAGE_TAG",
+            "value": "__SOURCE_IMAGE_TAG__"
           },
           {
             "name": "SOURCE_IMAGE_FULL_PATH",
-            "value": "mcr.microsoft.com/azuremonitor/applicationinsights/aidev:__IMAGE_TAG__"
+            "value": "mcr.microsoft.com/azuremonitor/applicationinsights/aidev:__SOURCE_IMAGE_TAG__"
           },
           {
             "name": "OVERRIDE_TAG",

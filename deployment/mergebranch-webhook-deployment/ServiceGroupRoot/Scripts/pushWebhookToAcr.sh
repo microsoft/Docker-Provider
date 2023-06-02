@@ -15,7 +15,7 @@ fi
 
 #Make sure that tag being pushed will not overwrite an existing tag in mcr
 echo "Reading existing tags from MCR..."
-MCR_TAG_RESULT="{'name': 'azuremonitor/applicationinsights/aiprod',  'tags': []}"
+MCR_TAG_RESULT="{\"name\": \"azuremonitor/applicationinsights/aiprod\",  \"tags\": []}"
 #MCR_TAG_RESULT="`wget -qO- https://mcr.microsoft.com/v2/azuremonitor/applicationinsights/aiprod/tags/list`"
 #if [ $? -ne 0 ]; then         
 #   echo "-e error unable to get list of mcr tags for azuremonitor/applicationinsights/aiprod repository"
@@ -43,8 +43,8 @@ if [ -z $WEBHOOK_IMAGE_FULL_PATH ]; then
   exit 1
 fi
 
-if [ -z $CDPX_TAG ]; then
-  echo "-e error value of CDPX_TAG shouldn't be empty. check release variables"
+if [ -z $SOURCE_IMAGE_TAG ]; then
+  echo "-e error value of SOURCE_IMAGE_TAG shouldn't be empty. check release variables"
   exit 1
 fi
 
@@ -69,7 +69,7 @@ else
   exit 1
 fi     
 
-echo "Pushing ${WEBHOOK_IMAGE_FULL_PATH} to ${ACR_NAME} with force option set to ${AZ_ACR_IMPORT_FORCE}"
+echo "Pushing ${WEBHOOK_IMAGE_FULL_PATH} to ${ACR_NAME} with source ${SOURCE_IMAGE_FULL_PATH} and force option set to ${AZ_ACR_IMPORT_FORCE}"
 az acr import --name $ACR_NAME --source $SOURCE_IMAGE_FULL_PATH --image $WEBHOOK_IMAGE_FULL_PATH $AZ_ACR_IMPORT_FORCE
 if [ $? -eq 0 ]; then
   echo "Retagged and pushed image successfully"
