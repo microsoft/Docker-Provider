@@ -33,25 +33,12 @@ jobs:
   ## prod release are in format Major.Minor.Patch
   ## preview release are in format preview-Major.Minor.Patch
   - bash: |
-      commit=$(git describe) 
-      imagetag="$commit"
+      commit=$(git describe)
+      imageTag="$commit"
+            
+      echo "imageTag is $imageTag"
       
-      telemetryTag=$commit
-      if [ -z "$TELEMETRY_TAG" ]
-        then
-          echo "\$TELEMETRY_TAG variable is not set"
-        else
-          telemetryTag=$TELEMETRY_TAG
-          echo "\$TELEMETRY_TAG is $TELEMETRY_TAG"
-      fi
-
-      telemetryTag="$telemetryTag"
-      
-      echo "imagetag is $imagetag"
-      echo "telemetryTag is $telemetryTag"
-      
-      echo "##vso[task.setvariable variable=imagetag;isOutput=true]$imagetag"
-      echo "##vso[task.setvariable variable=telemetryTag;isOutput=true]$telemetryTag"
+      echo "##vso[task.setvariable variable=imageTag;isOutput=true]$imageTag"
       
       cd $(Build.SourcesDirectory)/deployment/mergebranch-webhook-deployment/ServiceGroupRoot/Scripts
       tar -czvf ../artifacts.tar.gz pushWebhookToAcr.sh
@@ -108,8 +95,7 @@ jobs:
   pool:
     name: Azure-Pipelines-CI-Test-EO
   variables:
-    imagetag: $[ dependencies.common.outputs['setup.imagetag'] ]
-    telemetryTag: $[ dependencies.common.outputs['setup.telemetryTag'] ]
+    imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
     Codeql.Enabled: true
     Codeql.BuildIdentifier: 'linuxbuild'
     # This is necessary because of: https://github.com/moby/moby/issues/37965
@@ -163,19 +149,19 @@ jobs:
         az acr login -n ${{ variables.containerRegistry }}
 
         if [ "$(Build.Reason)" != "PullRequest" ]; then
-          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(imagetag) -f ./Dockerfile --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(telemetryTag) --push --provenance=false .
+          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(imageTag) -f ./Dockerfile --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --push --provenance=false .
 
-          docker pull ${{ variables.repoImageName }}:$(imagetag)
+          docker pull ${{ variables.repoImageName }}:$(imageTag)
         else
-          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(imagetag) -f ./Dockerfile --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(telemetryTag) --provenance=false .
+          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(imageTag) -f ./Dockerfile --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --provenance=false .
 
           # load the multi-arch image to run tests
-          docker buildx build --tag ${{ variables.repoImageName }}:$(imagetag) -f ./Dockerfile --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(telemetryTag) --load --provenance=false .
+          docker buildx build --tag ${{ variables.repoImageName }}:$(imageTag) -f ./Dockerfile --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --load --provenance=false .
         fi
 
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-        trivy image --ignore-unfixed --format json --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 ${{ variables.repoImageName }}:$(imagetag)
+        trivy image --ignore-unfixed --format json --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 ${{ variables.repoImageName }}:$(imageTag)
   - task: CodeQL3000Finalize@0
   - task: PublishBuildArtifacts@1
     inputs:
