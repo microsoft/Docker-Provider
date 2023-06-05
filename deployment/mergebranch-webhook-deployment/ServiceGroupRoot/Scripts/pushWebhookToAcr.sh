@@ -15,12 +15,12 @@ fi
 
 #Make sure that tag being pushed will not overwrite an existing tag in mcr
 echo "Reading existing tags from MCR..."
-MCR_TAG_RESULT="{\"name\": \"azuremonitor/applicationinsights/aiprod\",  \"tags\": []}"
-#MCR_TAG_RESULT="`wget -qO- https://mcr.microsoft.com/v2/azuremonitor/applicationinsights/aiprod/tags/list`"
-#if [ $? -ne 0 ]; then         
-#   echo "-e error unable to get list of mcr tags for azuremonitor/applicationinsights/aiprod repository"
-#   exit 1
-#fi
+#MCR_TAG_RESULT="{\"name\": \"azuremonitor/applicationinsights/aiprod\",  \"tags\": []}"
+MCR_TAG_RESULT="`wget -qO- https://mcr.microsoft.com/v2/azuremonitor/applicationinsights/aiprod/tags/list`"
+if [ $? -ne 0 ]; then         
+   echo "-e error unable to get list of mcr tags for azuremonitor/applicationinsights/aiprod repository"
+   exit 1
+fi
 
 TAG_EXISTS_STATUS=0 #Default value for the condition when the echo fails below
 AZ_ACR_IMPORT_FORCE=""
