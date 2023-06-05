@@ -17,7 +17,7 @@ pr:
 variables:
   armServiceConnectionName: 'ci-1es-acr-connection'
   subscription: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
-  containerRegistry: 'containerinsightsprod'
+  containerRegistry: 'containerinsightsprod' # this build pushes the aidev image to the dev ACR (caution: ACR that has "prod" in its name is the dev one, the one without "prod" is prod AME)
   repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/applicationinsights/aidev'
   IS_PR: $[eq(variables['Build.Reason'], 'PullRequest')]
 
