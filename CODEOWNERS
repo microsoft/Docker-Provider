@@ -12,6 +12,6 @@
 # You can also use email addresses if you prefer.
 #docs/*  docs@example.com
 
-appmonitoring/*                                                 @application-insights-for-aks
-.pipelines/azure_pipeline_mergedbranches_appmonitoring.yaml     @application-insights-for-aks
-deployment/mergebranch-webhook-deployment/*                     @application-insights-for-aks
+appmonitoring/*                                                 @microsoft/application-insights-for-aks
+.pipelines/azure_pipeline_mergedbranches_appmonitoring.yaml     @microsoft/application-insights-for-aks
+deployment/mergebranch-webhook-deployment/*                     @microsoft/application-insights-for-aks
