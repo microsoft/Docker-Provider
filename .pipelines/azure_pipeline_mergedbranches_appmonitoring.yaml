@@ -148,6 +148,8 @@ jobs:
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
 
+        echo "Build reason = $(Build.Reason)"
+        
         if [ "$(Build.Reason)" != "PullRequest" ]; then
           docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(imageTag) -f ./Dockerfile --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --push --provenance=false .
 
