@@ -139,7 +139,6 @@ $ProgressPreference = 'SilentlyContinue'
 
 Write-Host "Install GO 1.18.3 version"
 Install-Go
-
 Write-Host "Install Build dependencies"
 Build-Dependencies
 
