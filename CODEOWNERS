@@ -11,3 +11,7 @@
 
 # You can also use email addresses if you prefer.
 #docs/*  docs@example.com
+
+appmonitoring/* teamsword@microsoft.com
+.pipelines/azure_pipeline_mergedbranches_appmonitoring.yaml teamsword@microsoft.com
+deployment/mergebranch-webhook-deployment/* teamsword@microsoft.com
