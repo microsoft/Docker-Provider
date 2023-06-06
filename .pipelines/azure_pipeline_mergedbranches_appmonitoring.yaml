@@ -28,6 +28,9 @@ jobs:
   pool:
     name: Azure-Pipelines-CI-Test-EO
   steps:
+  - checkout: self
+    fetchDepth: 0 
+
   - task: ComponentGovernanceComponentDetection@0
   ## dev builds are in format Major.Minor.Patch-CommitAheadCount-CommitId
   ## prod release are in format Major.Minor.Patch
