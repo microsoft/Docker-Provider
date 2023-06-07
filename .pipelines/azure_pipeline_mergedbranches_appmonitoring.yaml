@@ -7,12 +7,12 @@ trigger:
   batch: true
   branches:
     include:
-    - ci_prod
+    - ai_prod
 
 pr:
   branches:
     include:
-    - ci_prod
+    - ai_prod
 
 variables:
   armServiceConnectionName: 'ci-1es-acr-connection'
