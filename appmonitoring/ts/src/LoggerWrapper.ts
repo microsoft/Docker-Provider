@@ -1,5 +1,5 @@
 ﻿import applicationInsights = require("applicationinsights");
-import { MetricTelemetry, Telemetry } from "applicationinsights/out/Declarations/Contracts";
+import { MetricTelemetry } from "applicationinsights/out/Declarations/Contracts";
 import { configure, getLogger, Logger } from "log4js";
 
 configure({
@@ -20,7 +20,7 @@ configure({
     },
     categories: {
         default: {
-            appenders: [/*"file"*/, "console"],
+            appenders: [/*"file",*/ "console"],
             level: "debug",
         },
     },

@@ -22,7 +22,7 @@ export class ContentProcessor {
         let instance: ContentProcessor;
 
         /* tslint:disable */
-        return new Promise<object>((resolve, reject) => {
+        return new Promise<object>((resolve) => {
             /* tslint:enable */
             instance = new ContentProcessor(message);
             logger.telemetry(Metrics.CPStart, 1, instance.uid);

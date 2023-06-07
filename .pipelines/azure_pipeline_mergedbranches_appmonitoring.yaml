@@ -133,9 +133,9 @@ jobs:
         tsc --build --force
         echo "Build is done"
 
-        # echo "Running ESLint..."
-        # npx eslint .
-        # echo "ESLint is done"
+        echo "Running ESLint..."
+        npx eslint *.ts
+        echo "ESLint is done"
 
         pwd
         ls -a

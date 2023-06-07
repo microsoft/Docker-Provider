@@ -1,5 +1,4 @@
-﻿import { config } from "chai";
-import { isNullOrUndefined } from "util";
+﻿import { isNullOrUndefined } from "util";
 import { logger, Metrics } from "./LoggerWrapper";
 import { IRootObject } from "./RequestDefinition";
 
