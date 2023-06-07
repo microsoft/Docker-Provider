@@ -99,10 +99,10 @@ export class ContentProcessor {
         if (!this.content.request.object.metadata.ownerReferences
             || !this.content.request.object.metadata.ownerReferences[0]
             || !this.content.request.object.metadata.ownerReferences[0].name) {
-            return Promise.reject("missing owner refference");
+            return Promise.reject("missing owner reference");
         }
         const replicaName = this.content.request.object.metadata.ownerReferences[0].name;
-        logger.info(`calling API with namespace ${namespaceName} and replicaset ${replicaName}`, this.uid, namespaceName, replicaName);
+        logger.info(`calling API with namespace ${namespaceName} and replica set ${replicaName}`, this.uid, namespaceName, replicaName);
 
         return k8sApi.readNamespacedReplicaSet(replicaName, namespaceName).then((result) => {
             extraData.deploymentName = result.body.metadata.ownerReferences[0].name;
