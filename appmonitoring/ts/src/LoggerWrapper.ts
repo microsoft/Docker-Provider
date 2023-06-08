@@ -40,42 +40,42 @@ class LocalLogger {
     private log: Logger = getLogger("default");
     private client: applicationInsights.TelemetryClient;
 
-    public trace(message: any, uid: string, ...args: any[]) {
+    public trace(message: any, uid = "", ...args: any[]) {
         this.log.trace(message, JSON.stringify(args, undefined, 2));
         this.fireEvent("TRACE", message, uid, args);
     }
 
-    public debug(message: any, uid: string, ...args: any[]) {
+    public debug(message: any, uid = "", ...args: any[]) {
         this.log.debug(message, JSON.stringify(args, undefined, 2));
         this.fireEvent("DEBUG", message, uid, args);
     }
 
-    public info(message: any, uid: string, ...args: any[]) {
+    public info(message: any, uid = "", ...args: any[]) {
         this.log.info(message, JSON.stringify(args, undefined, 2));
         this.fireEvent("INFO", message, uid, args);
     }
 
-    public warn(message: any, uid: string, ...args: any[]) {
+    public warn(message: any, uid = "", ...args: any[]) {
         this.log.warn(message, JSON.stringify(args, undefined, 2));
         this.fireEvent("WARN", message, uid, args);
     }
 
-    public error(message: any, uid: string, ...args: any[]) {
+    public error(message: any, uid = "", ...args: any[]) {
         this.log.error(message, JSON.stringify(args, undefined, 2));
         this.fireEvent("ERROR", message, uid, args);
     }
 
-    public fatal(message: any, uid: string, ...args: any[]) {
+    public fatal(message: any, uid = "", ...args: any[]) {
         this.log.fatal(message, JSON.stringify(args, undefined, 2));
         this.fireEvent("FATAL", message, uid, args);
     }
 
-    public mark(message: any, uid: string, ...args: any[]) {
+    public mark(message: any, uid = "", ...args: any[]) {
         this.log.mark(message, args);
         this.fireEvent("MARK", message, uid, args);
     }
 
-    public telemetry(metric: Metrics, value: number, uid: string) {
+    public telemetry(metric: Metrics, value: number, uid = "") {
         if (metric == null) {
             this.log.error("invalid metric");
         }
@@ -99,7 +99,7 @@ class LocalLogger {
         this.client.flush();
     }
 
-    private fireEvent(level: string, message: any, uid: string, ...args: any[]) {
+    private fireEvent(level: string, message: any, uid = "", ...args: any[]) {
         if (this.client == null) {
             this.client = new applicationInsights.TelemetryClient(this.getKey());
         }

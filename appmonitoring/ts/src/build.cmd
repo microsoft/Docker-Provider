@@ -1,5 +1,10 @@
 rem call npm i @types/node
 del *.js.map
 del *.js
+
+rem call npm install
+
 call tsc --build
-rem call npm run lint 
+call npx eslint *.ts
+
+rem call rm -r node_modules

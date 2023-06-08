@@ -1,0 +1,133 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+ # name must match the spec fields below, and be in the form: <plural>.<group>
+ name: appmonitoringconfigs.azmon.app.monitoring
+spec:
+ # group name to use for REST API: /apis/<group>/<version>
+ group: azmon.app.monitoring
+ names:
+   # plural name to be used in the URL: /apis/<group>/<version>/<plural>
+   plural: appmonitoringconfigs
+   # singular name to be used as an alias on the CLI and for display
+   singular: appmonitoringconfig
+   # kind is normally the CamelCased singular type. Your resource manifests use this.
+   kind: appmonitoringconfig
+   # shortNames allow shorter string to match your resource on the CLI
+   shortNames:
+   - appmonitoring
+ # either Namespaced or Cluster
+ scope: Namespaced
+ versions:
+   - name: v1
+     # Each version can be enabled/disabled by Served flag.
+     served: true
+     # One and only one version must be marked as the storage version.
+     storage: true
+     schema:
+       openAPIV3Schema:
+         type: object
+         properties:
+           spec:
+             type: object
+             properties:
+               aiConnectionString:
+                 type: string
+               autoInstrumentation:
+                 type: string
+                 enum:
+                 - AzureNative
+                 - OTELNative
+                 - None
+               appMonitoringScope:
+                  type: array
+                  items:
+                    type: string
+             required: ["aiConnectionString", "autoInstrumentation"]
+         required: ["spec"]
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: webhook-account
+  namespace: default
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: crd-watcher
+  namespace: default
+rules:
+- apiGroups: ["azmon.app.monitoring"]
+  resources: ["appmonitoringconfigs"]
+  verbs: ["get", "watch", "list"]
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: webhook-account-binding
+  namespace: default
+subjects:
+- kind: ServiceAccount
+  name: webhook-account
+  namespace: default
+roleRef:
+  kind: Role
+  name: crd-watcher
+  apiGroup: rbac.authorization.k8s.io
+---
+
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-monitoring-webhook-cert
+  namespace: default
+data:
+  ca.cert: Y2FDZXJ0
+  tls.cert: dGxzQ2VydA==
+  tls.key: dGxzS2V5
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook
+  labels:
+    app: webhook
+spec:
+  selector:
+    matchLabels:
+      app: webhook
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: webhook
+    spec:
+      containers:
+        - name: container-main
+          image: aicommon.azurecr.io/aidev:v0
+          imagePullPolicy: Always
+          env: 
+            - name: AGENTS_IMAGE
+              value: "blah"
+          ports:
+            - containerPort: 1337
+          resources:
+            requests:
+              cpu: 200m
+            limits:
+              cpu: 300m
+          volumeMounts:
+            - name: webhook-certs
+              mountPath: /mnt/webhook
+              readOnly: true
+      serviceAccount: webhook-account
+      volumes:
+        - name: webhook-certs
+          secret:
+            secretName: app-monitoring-webhook-cert
+---

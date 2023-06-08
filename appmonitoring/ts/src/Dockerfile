@@ -1,15 +1,15 @@
 #FROM node:16
-FROM node:alpine
 
+#FROM node:slim
 # RUN apt-get update && apt-get upgrade -y && apt-get autoremove && apt-get autoclean
-# RUN apt-get install --only-upgrade libpython2.7-minimal -y
-RUN apk -U upgrade
+
+FROM node:alpine
+#RUN apk -U upgrade
 
 WORKDIR  /mutating-webhook
 
 COPY . /mutating-webhook
 
-#RUN npm outdated
 #RUN npm update --save
 #RUN npm outdated
 #RUN npm install typescript
