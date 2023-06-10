@@ -1,11 +1,11 @@
 ﻿import assert = require("assert");
-import { AddedTypes } from "./AddedTypes";
-import { ContentProcessor } from "./ContentProcessor";
-import { DiffCalculator } from "./DiffCalculator";
-import { IRootObject } from "./RequestDefinition";
-import { TemplateValidator } from "./TemplateValidator";
+import { AddedTypes } from "./AddedTypes.js";
+import { ContentProcessor } from "./ContentProcessor.js";
+import { DiffCalculator } from "./DiffCalculator.js";
+import { IRootObject } from "./RequestDefinition.js";
+import { TemplateValidator } from "./TemplateValidator.js";
 
-import Test = require("./testConsts");
+import * as Test from "./testConsts.js";
 describe("ContentProcessor", () => {
     it("Null", async () => {
         assert.deepEqual('{"apiVersion":"admission.k8s.io/v1beta1","kind":"AdmissionReview","response":{"allowed":false,"patchtype":"JSONPATCH","uid":""}}',

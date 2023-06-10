@@ -1,11 +1,12 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
-    "target": "es6",
+    "module": "ES2022",
+    "target": "ES2022",
     "lib": [ "es6" ],
     "sourceMap": true,
     "allowJs": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "moduleResolution": "nodenext",
   },
   "exclude": [
     "node_modules"

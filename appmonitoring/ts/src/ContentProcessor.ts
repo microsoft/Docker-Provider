@@ -1,9 +1,8 @@
-﻿import k8s = require("@kubernetes/client-node");
-import { isNullOrUndefined } from "util";
-import { DiffCalculator } from "./DiffCalculator";
-import { logger, Metrics } from "./LoggerWrapper";
-import { DeployReplica, IRootObject } from "./RequestDefinition";
-import { TemplateValidator } from "./TemplateValidator";
+﻿import { isNullOrUndefined } from "util";
+import { DiffCalculator } from "./DiffCalculator.js";
+import { logger, Metrics } from "./LoggerWrapper.js";
+import { DeployReplica, IRootObject } from "./RequestDefinition.js";
+import { TemplateValidator } from "./TemplateValidator.js";
 export class ContentProcessor {
 
     public static async TryUpdateConfig(message: string): Promise<string> {
@@ -46,10 +45,10 @@ export class ContentProcessor {
             }
 
             const finalResult = JSON.stringify(response);
-            logger.info(`determined final response`, instance.uid, finalResult);
+            logger.info(`Determined final response ${instance.uid}, ${finalResult}`);
             return finalResult;
         }).catch((ex) => {
-            logger.error(`exception encountered `, "", ex);
+            logger.error(`Exception encountered: ${ex}`);
             logger.telemetry(Metrics.CPError, 1, "");
             return JSON.stringify(response);
         });
@@ -65,9 +64,9 @@ export class ContentProcessor {
 
         try {
             this.content = JSON.parse(message);
-            logger.info(`parsed incoming message content, Initialized ContentProcessor.`, this.uid, message);
+            logger.info(`Parsed incoming message content, Initialized ContentProcessor. ${this.uid}, ${message}`);
         } catch (ex) {
-            logger.error(`exception encountered parsing input`, this.uid, ex, message);
+            logger.error(`Exception encountered parsing input ${this.uid}, ${ex}, ${message}`);
             throw ex;
         }
     }
@@ -80,15 +79,10 @@ export class ContentProcessor {
     }
 
     private getPodExtraData(): Promise<DeployReplica> {
-
-        logger.info("attempting to get owner info", this.uid);
+        logger.info(`Attempting to get owner info ${this.uid}`);
         const extraData: DeployReplica = new DeployReplica();
         extraData.podName = this.content.request.object.metadata.generateName;
         const namespaceName = this.content.request.namespace;
-
-        const kc = new k8s.KubeConfig();
-        kc.loadFromDefault();
-        const k8sApi = kc.makeApiClient(k8s.AppsV1Api);
 
         if (this.content.kind === "Testing") {
             extraData.deploymentName = extraData.podName;
@@ -101,19 +95,5 @@ export class ContentProcessor {
             || !this.content.request.object.metadata.ownerReferences[0].name) {
             return Promise.reject("missing owner reference");
         }
-        const replicaName = this.content.request.object.metadata.ownerReferences[0].name;
-        logger.info(`calling API with namespace ${namespaceName} and replica set ${replicaName}`, this.uid, namespaceName, replicaName);
-
-        return k8sApi.readNamespacedReplicaSet(replicaName, namespaceName).then((result) => {
-            extraData.deploymentName = result.body.metadata.ownerReferences[0].name;
-            extraData.replicaName = result.body.metadata.name;
-            extraData.namespace = result.body.metadata.namespace;
-
-            logger.info(`got the extra data `, this.uid, extraData);
-            return extraData;
-        }).catch((error) => {
-            logger.info(`failed to get extra data`, this.uid, error);
-            throw (error);
-        });
     }
 }

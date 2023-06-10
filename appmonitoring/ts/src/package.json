@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "MutatingWebhook",
   "license": "MIT",
+  "type": "module",
   "repository": "https://github.com/microsoft/Application-Insights-K8s-Codeless-Attach/",
   "scripts": {
     "build": "tsc -b",
@@ -22,7 +23,6 @@
     "http-proxy-agent": "7.0.0",
     "https-proxy-agent": "7.0.0",
     "log4js": "^6.9.1",
-    "mocha": "10.2.0",
     "toml": "3.0.0",
     "ts-node": "10.9.1",
     "tsc": "^2.0.4",
@@ -32,8 +32,10 @@
     "node": "^16.19.1"
   },
   "devDependencies": {
+    "@types/mocha": "^10.0.1",
     "@typescript-eslint/eslint-plugin": "^5.59.7",
     "@typescript-eslint/parser": "^5.59.7",
-    "eslint": "^8.41.0"
+    "eslint": "^8.41.0",
+    "mocha": "^10.2.0"
   }
 }

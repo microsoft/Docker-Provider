@@ -1,6 +1,8 @@
-﻿import applicationInsights = require("applicationinsights");
-import { MetricTelemetry } from "applicationinsights/out/Declarations/Contracts";
-import { configure, getLogger, Logger } from "log4js";
+﻿import * as applicationInsights from "applicationinsights";
+import { EventTelemetry, MetricTelemetry } from "applicationinsights/out/Declarations/Contracts";
+
+import log4js from "log4js";
+const { configure, getLogger } = log4js;
 
 configure({
     appenders: {
@@ -37,42 +39,42 @@ class LocalLogger {
 
     private static instance: LocalLogger;
 
-    private log: Logger = getLogger("default");
+    private log: log4js.Logger = getLogger("default");
     private client: applicationInsights.TelemetryClient;
 
-    public trace(message: any, uid = "", ...args: any[]) {
-        this.log.trace(message, JSON.stringify(args, undefined, 2));
-        this.fireEvent("TRACE", message, uid, args);
+    public trace(message: string) {
+        this.log.trace(message);
+        this.fireEvent("TRACE", message);
     }
 
-    public debug(message: any, uid = "", ...args: any[]) {
-        this.log.debug(message, JSON.stringify(args, undefined, 2));
-        this.fireEvent("DEBUG", message, uid, args);
+    public debug(message: string) {
+        this.log.debug(message);
+        this.fireEvent("DEBUG", message);
     }
 
-    public info(message: any, uid = "", ...args: any[]) {
-        this.log.info(message, JSON.stringify(args, undefined, 2));
-        this.fireEvent("INFO", message, uid, args);
+    public info(message: string) {
+        this.log.info(message);
+        this.fireEvent("INFO", message);
     }
 
-    public warn(message: any, uid = "", ...args: any[]) {
-        this.log.warn(message, JSON.stringify(args, undefined, 2));
-        this.fireEvent("WARN", message, uid, args);
+    public warn(message: string) {
+        this.log.warn(message);
+        this.fireEvent("WARN", message);
     }
 
-    public error(message: any, uid = "", ...args: any[]) {
-        this.log.error(message, JSON.stringify(args, undefined, 2));
-        this.fireEvent("ERROR", message, uid, args);
+    public error(message: string) {
+        this.log.error(message);
+        this.fireEvent("ERROR", message);
     }
 
-    public fatal(message: any, uid = "", ...args: any[]) {
-        this.log.fatal(message, JSON.stringify(args, undefined, 2));
-        this.fireEvent("FATAL", message, uid, args);
+    public fatal(message: string) {
+        this.log.fatal(message);
+        this.fireEvent("FATAL", message);
     }
 
-    public mark(message: any, uid = "", ...args: any[]) {
-        this.log.mark(message, args);
-        this.fireEvent("MARK", message, uid, args);
+    public mark(message: string) {
+        this.log.mark(message);
+        this.fireEvent("MARK", message);
     }
 
     public telemetry(metric: Metrics, value: number, uid = "") {
@@ -99,12 +101,12 @@ class LocalLogger {
         this.client.flush();
     }
 
-    private fireEvent(level: string, message: any, uid = "", ...args: any[]) {
+    private fireEvent(level: string, message: unknown, uid = "", ...args: unknown[]) {
         if (this.client == null) {
             this.client = new applicationInsights.TelemetryClient(this.getKey());
         }
 
-        const event: any = {
+        const event: EventTelemetry = {
             name: "AppplicationMonitoring",
             properties: {
                 time: Date.now(),

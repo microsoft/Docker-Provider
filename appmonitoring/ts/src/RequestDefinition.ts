@@ -1,3 +1,4 @@
+import * as http from "http"
 
 export interface IKind {
     group: string;
@@ -149,4 +150,19 @@ export class DeployReplica {
     public replicaName: string;
     public deploymentName: string;
     public namespace: string;
+}
+
+export class ListResponse {
+    response: http.IncomingMessage;
+    body: {
+        metadata: {
+            resourceVersion: string
+        },
+        items: {
+            metadata: {
+                name: string,
+                namespace: string
+            }
+        }[]
+    }
 }

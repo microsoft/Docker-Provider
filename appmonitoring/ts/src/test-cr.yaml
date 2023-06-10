@@ -1,10 +1,10 @@
 apiVersion: azmon.app.monitoring/v1
 kind: appmonitoringconfig
 metadata:
- name: cr
- namespace: default
+ name: appmonitoring
+ namespace: default1
 spec:
- aiConnectionString: "applicationInsightsConnectionString1"
- autoInstrumentation: "AzureNative"
- #appMonitoringScope: [ "<deployment1>", "<deployment2>" , "<deploymentN>"]   # optional, specify list deployments to target app monitoring
+ autoInstrumentationPlatforms: [ C#, Java, NodeJs, OpenTelemetry ]
+ aiConnectionString: applicationInsightsConnectionString1
+ deployments: [ deployment1, deployment2 ]
 ---

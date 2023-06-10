@@ -1,10 +1,4 @@
-rem call npm i @types/node
-del *.js.map
-del *.js
+call del *.js.map
+call del *.js
 
-rem call npm install
-
-call tsc --build
-call npx eslint *.ts
-
-rem call rm -r node_modules
+call tsc --build && npx eslint *.ts

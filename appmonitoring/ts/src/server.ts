@@ -1,56 +1,14 @@
-﻿import fs = require("fs");
-import https = require("https");
-import { ContentProcessor } from "./ContentProcessor";
-import { logger, Metrics } from "./LoggerWrapper";
-import { IRootObject } from "./RequestDefinition";
-import * as k8s from "@kubernetes/client-node";
+﻿//import * as fs from "fs";
+import * as https from "https";
+import { ContentProcessor } from "./ContentProcessor.js";
+import { logger, Metrics } from "./LoggerWrapper.js";
+import { IRootObject } from "./RequestDefinition.js";
+import { K8sWatcher } from "./K8sWatcher.js";
 
-const port = process.env.port || 1337;
+// don't await, this runs an infinite loop
+K8sWatcher.StartWatchingCRs();
 
-logger.info(`listening on port ${port}`, "");
-
-try {
-    logger.info("setting up a k8s watch to get updates about CRD changes...");
-
-    const kc = new k8s.KubeConfig();
-    kc.loadFromDefault();
-
-    const watch = new k8s.Watch(kc);
-    // /api/v1/namespaces
-    watch.watch("/apis/azmon.app.monitoring/v1/namespaces/default/appmonitoringconfigs",
-        // optional query parameters can go here.
-        {
-            allowWatchBookmarks: true,
-        },
-        // callback is called for each received object.
-        (type, apiObj, watchObj) => {
-            if (type === "ADDED") {
-                logger.info("new object:");
-            } else if (type === "MODIFIED") {
-                logger.info("modified object:");
-            } else if (type === "DELETED") {
-                logger.info("deleted object:");
-            } else if (type === "BOOKMARK") {
-                logger.info(`bookmark: ${watchObj.metadata?.resourceVersion}`);
-            } else {
-                logger.info(`unknown type: ${type}`);
-            }
-            logger.info(apiObj);
-        },
-        // done callback is called if the watch terminates normally
-        (err) => {
-            logger.error(err);
-        })
-        .then((req) => {
-            // watch returns a request object which you can use to abort the watch.
-            //setTimeout(() => { req.abort(); }, 10 * 1000);
-        });
-} catch (e) {
-    logger.error(`Failed to set a k8s watch: ${e}`);
-    throw "Failed to set a k8 watch";
-}
-
-let options: https.ServerOptions;
+/*let options: https.ServerOptions;
 try {
     options = {
         cert: fs.readFileSync("/mnt/webhook/tls.cert"),
@@ -58,10 +16,13 @@ try {
     };
 } catch (e) {
     logger.error(`Failed to load certs: ${e}`);
-}
+}*/
+
+const port = process.env.port || 1337;
+logger.info(`listening on port ${port}`);
 
 https.createServer(/*options*/null, (req, res) => {
-    logger.info(`received request with url: ${req.url}, method: ${req.method}, content-type: ${req.headers["content-type"]}`, "");
+    logger.info(`Received request with url: ${req.url}, method: ${req.method}, content-type: ${req.headers["content-type"]}`);
     logger.telemetry(Metrics.Request, 1, "");
     if (req.method === "POST" && req.headers["content-type"] === "application/json") {
         let body = "";
@@ -79,17 +40,17 @@ https.createServer(/*options*/null, (req, res) => {
                 // swallow
             }
             ContentProcessor.TryUpdateConfig(body).then((updatedConfig) => {
-                logger.info("done processing request", uid);
+                logger.info(`Done processing request ${uid}`);
                 res.writeHead(200, { "Content-Type": "application/json" });
                 res.end(updatedConfig);
                 logger.telemetry(Metrics.Success, 1, uid);
             }).catch((error) => {
-                logger.error(`error while processing request`, uid, error);
+                logger.error(`Error while processing request: ${uid}, ${error}`);
                 logger.telemetry(Metrics.Fail, 1, uid);
             });
         });
     } else {
-        logger.error("unaccepable method, returning 404", "", req.method);
+        logger.error(`Unacceptable method, returning 404, method: ${req.method}`);
         res.writeHead(404);
         res.end();
         logger.telemetry(Metrics.Error, 1, "");

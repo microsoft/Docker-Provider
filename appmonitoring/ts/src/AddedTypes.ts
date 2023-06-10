@@ -1,4 +1,4 @@
-﻿import { DeployReplica } from "./RequestDefinition";
+﻿import { DeployReplica } from "./RequestDefinition.js";
 
 export class AddedTypes {
     public static init_containers() {

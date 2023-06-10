@@ -1,29 +1,29 @@
 ﻿import { isNullOrUndefined } from "util";
-import { AddedTypes } from "./AddedTypes";
-import { logger, Metrics } from "./LoggerWrapper";
-import { DeployReplica, IRootObject } from "./RequestDefinition";
+import { AddedTypes } from "./AddedTypes.js";
+import { logger, Metrics } from "./LoggerWrapper.js";
+import { DeployReplica, IRootObject } from "./RequestDefinition.js";
 
 export class DiffCalculator {
     public static async CalculateDiff(content: IRootObject, extraData: DeployReplica): Promise<object> {
 
         if (isNullOrUndefined(content)) {
-            logger.error("null content", this.uid(content));
+            logger.error(`Null content ${this.uid(content)}`);
             return null;
         }
 
         /* tslint:disable */
-        logger.info(`calculating diff`, this.uid(content), content);
+        logger.info(`Calculating diff ${this.uid(content)}, ${content}`);
         const updatedContent: IRootObject = JSON.parse(JSON.stringify(content));
 
         let updateTarget: object;
 
         try {
             updateTarget = updatedContent.request.object.spec.template.spec;
-            logger.info(`updating request.object.spec.template.spec`, this.uid(content), content);
+            logger.info(`Updating request.object.spec.template.spec ${this.uid(content)}, ${content}`);
         }
         catch (ex) {
             updateTarget = updatedContent.request.object.spec;
-            logger.info(`updating request.object.spec`, this.uid(content), content);
+            logger.info(`Updating request.object.spec ${this.uid(content)}, ${content}`);
         }
 
         if (updateTarget["initContainers"]) {
@@ -62,7 +62,7 @@ export class DiffCalculator {
                 value: updatedContent.request.object.spec
             }];
         /* tslint:enable */
-        logger.info(`determined diff`, this.uid(content), jsonDiff);
+        logger.info(`Determined diff ${this.uid(content)}, ${jsonDiff}`);
         return jsonDiff;
     }
 

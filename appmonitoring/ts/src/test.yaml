@@ -1,50 +1,51 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
- # name must match the spec fields below, and be in the form: <plural>.<group>
- name: appmonitoringconfigs.azmon.app.monitoring
+  name: appmonitoringconfigs.azmon.app.monitoring # name must match the spec fields below, and be in the form: <plural>.<group>
 spec:
- # group name to use for REST API: /apis/<group>/<version>
- group: azmon.app.monitoring
- names:
-   # plural name to be used in the URL: /apis/<group>/<version>/<plural>
-   plural: appmonitoringconfigs
-   # singular name to be used as an alias on the CLI and for display
-   singular: appmonitoringconfig
-   # kind is normally the CamelCased singular type. Your resource manifests use this.
-   kind: appmonitoringconfig
-   # shortNames allow shorter string to match your resource on the CLI
-   shortNames:
-   - appmonitoring
- # either Namespaced or Cluster
- scope: Namespaced
- versions:
-   - name: v1
-     # Each version can be enabled/disabled by Served flag.
-     served: true
-     # One and only one version must be marked as the storage version.
-     storage: true
-     schema:
-       openAPIV3Schema:
-         type: object
-         properties:
-           spec:
-             type: object
-             properties:
-               aiConnectionString:
-                 type: string
-               autoInstrumentation:
-                 type: string
-                 enum:
-                 - AzureNative
-                 - OTELNative
-                 - None
-               appMonitoringScope:
+  group: azmon.app.monitoring # group name to use for REST API: /apis/<group>/<version>
+  names:
+    plural: appmonitoringconfigs # plural name to be used in the URL: /apis/<group>/<version>/<plural>
+    singular: appmonitoringconfig # singular name to be used as an alias on the CLI and for display
+    kind: appmonitoringconfig # kind is normally the CamelCased singular type. Your resource manifests use this.
+    shortNames: # shortNames allow shorter string to match your resource on the CLI
+    - appmonitoring
+  scope: Namespaced # either Namespaced or Cluster
+  versions:
+    - name: v1
+      served: true # Each version can be enabled/disabled by Served flag.
+      storage: true # One and only one version must be marked as the storage version.
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                autoInstrumentationPlatforms:
                   type: array
+                  default: [ C#, Java, NodeJs, OpenTelemetry ]
+                  nullable: false
+                  minItems: 0
+                  maxItems: 4
                   items:
                     type: string
-             required: ["aiConnectionString", "autoInstrumentation"]
-         required: ["spec"]
+                    enum:
+                    - C#
+                    - Java
+                    - NodeJs
+                    - OpenTelemetry
+                aiConnectionString:
+                  type: string
+                  nullable: false
+                deployments:
+                  type: array
+                  default: []
+                  nullable: false
+                  items:
+                    type: string
+              required: [ aiConnectionString ]
+          required: [ spec ]
 ---
 
 apiVersion: v1
@@ -55,10 +56,9 @@ metadata:
 ---
 
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
-  name: crd-watcher
-  namespace: default
+  name: appmonitoringconfig-crd-watcher
 rules:
 - apiGroups: ["azmon.app.monitoring"]
   resources: ["appmonitoringconfigs"]
@@ -66,7 +66,7 @@ rules:
 ---
 
 apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
+kind: ClusterRoleBinding
 metadata:
   name: webhook-account-binding
   namespace: default
@@ -75,8 +75,8 @@ subjects:
   name: webhook-account
   namespace: default
 roleRef:
-  kind: Role
-  name: crd-watcher
+  kind: ClusterRole
+  name: appmonitoringconfig-crd-watcher
   apiGroup: rbac.authorization.k8s.io
 ---
 
