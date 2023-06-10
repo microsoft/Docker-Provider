@@ -32,9 +32,9 @@ export class K8sWatcher {
     }
 
     private static async WatchCRs(k8sApi: k8s.CustomObjectsApi, watch: k8s.Watch, latestResourceVersion: string): Promise<string> {
-        logger.info(`Listing CRs, resourceVersion=${latestResourceVersion}...`);
-
         const fieldSelector = `metadata.name=${K8sWatcher.crName}`;
+
+        logger.info(`Listing CRs, resourceVersion=${latestResourceVersion}, fieldSelector=${fieldSelector}...`);
 
         const crsResult: ListResponse = <ListResponse>await k8sApi.listClusterCustomObject(
             K8sWatcher.crdApiGroup,
@@ -54,7 +54,7 @@ export class K8sWatcher {
 
         crsResult.body.items.forEach(item => logger.info(`CR returned: ${item.metadata.name} (${item.metadata.namespace})`));
 
-        logger.info("Starting a watch...");
+        logger.info(`Starting a watch, resourceVersion=${latestResourceVersion}, fieldSelector=${fieldSelector}...`);
         
         // watch() doesn't block (it starts the loop and returns immediately), so we can't just return the promise it returns to our caller
         // we must instead create our own promise and resolve it manually when the watch informs us that it stopped via a callback
@@ -67,7 +67,7 @@ export class K8sWatcher {
                     resourceVersion: latestResourceVersion,
                     fieldSelector: fieldSelector
                 },
-                (type, apiObj, watchObj) => {
+                (type, apiObj) => {
                     try {
                         if (type === "ADDED") {
                             logger.info(`NEW object: ${apiObj.metadata?.name} (${apiObj.metadata?.namespace})`);
@@ -76,14 +76,13 @@ export class K8sWatcher {
                         } else if (type === "DELETED") {
                             logger.info(`DELETED object: ${apiObj.metadata?.name} (${apiObj.metadata?.namespace})`);
                         } else if (type === "BOOKMARK") {
-                            logger.info(`Bookmark: ${watchObj.metadata?.resourceVersion}`);
-                            latestResourceVersion = watchObj.metadata?.resourceVersion ?? latestResourceVersion;
+                            logger.info(`BOOKMARK resourceVersion=${apiObj.metadata?.resourceVersion}`);
+                            latestResourceVersion = apiObj.metadata?.resourceVersion ?? latestResourceVersion;
                         } else {
                             logger.info(`Unknown object type: ${type}`);
                         }
 
                         //logger.info(`apiObj: ${JSON.stringify(apiObj)}`);
-                        //logger.info(`watchObj: ${JSON.stringify(watchObj)}`);
                     } catch (e) {
                         logger.error(`Failed to process a watched item: ${e}`);
                     }
