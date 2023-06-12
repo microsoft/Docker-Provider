@@ -1,5 +1,5 @@
 FROM node:alpine
-#RUN apk -U upgrade
+RUN apk -U upgrade
 
 #FROM node:16
 #FROM node:slim
