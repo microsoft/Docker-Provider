@@ -1,6 +1,6 @@
 ﻿import { logger } from "./LoggerWrapper.js";
 import * as k8s from "@kubernetes/client-node";
-import { ListResponse } from "./RequestDefinition.js"
+import { AppMonitoringConfigCR as AppMonitoringConfigCR, ListResponse } from "./RequestDefinition.js"
 
 export class K8sWatcher {
 
@@ -9,7 +9,7 @@ export class K8sWatcher {
     private static crdApiVersion = "v1";
     private static crName = "appmonitoring";
 
-    public static async StartWatchingCRs(): Promise<void> {
+    public static async StartWatchingCRs(onNewCR: (cr: AppMonitoringConfigCR, isRemoved: boolean) => void): Promise<void> {
         const kc = new k8s.KubeConfig();
         kc.loadFromDefault();
 
@@ -19,7 +19,7 @@ export class K8sWatcher {
         let latestResourceVersion = "0";
         while (true) { // eslint-disable-line
             try {
-                latestResourceVersion = await K8sWatcher.WatchCRs(k8sApi, watch, latestResourceVersion);
+                latestResourceVersion = await K8sWatcher.WatchCRs(k8sApi, watch, latestResourceVersion, onNewCR);
             } catch (e) {
                 logger.error(`K8s watch failure: ${e}`);
 
@@ -31,7 +31,7 @@ export class K8sWatcher {
         }
     }
 
-    private static async WatchCRs(k8sApi: k8s.CustomObjectsApi, watch: k8s.Watch, latestResourceVersion: string): Promise<string> {
+    private static async WatchCRs(k8sApi: k8s.CustomObjectsApi, watch: k8s.Watch, latestResourceVersion: string, onNewCR: (cr: AppMonitoringConfigCR, isRemoved: boolean) => void): Promise<string> {
         const fieldSelector = `metadata.name=${K8sWatcher.crName}`;
 
         logger.info(`Listing CRs, resourceVersion=${latestResourceVersion}, fieldSelector=${fieldSelector}...`);
@@ -52,7 +52,9 @@ export class K8sWatcher {
 
         latestResourceVersion = crsResult.body.metadata?.resourceVersion;
 
-        crsResult.body.items.forEach(item => logger.info(`CR returned: ${item.metadata.name} (${item.metadata.namespace})`));
+        crsResult.body.items.forEach((cr: AppMonitoringConfigCR) => { 
+            onNewCR(cr, false);
+        });
 
         logger.info(`Starting a watch, resourceVersion=${latestResourceVersion}, fieldSelector=${fieldSelector}...`);
         
@@ -71,10 +73,13 @@ export class K8sWatcher {
                     try {
                         if (type === "ADDED") {
                             logger.info(`NEW object: ${apiObj.metadata?.name} (${apiObj.metadata?.namespace})`);
+                            onNewCR(apiObj, false);
                         } else if (type === "MODIFIED") {
                             logger.info(`MODIFIED object: ${apiObj.metadata?.name} (${apiObj.metadata?.namespace})`);
+                            onNewCR(apiObj, false);
                         } else if (type === "DELETED") {
                             logger.info(`DELETED object: ${apiObj.metadata?.name} (${apiObj.metadata?.namespace})`);
+                            onNewCR(apiObj, true);
                         } else if (type === "BOOKMARK") {
                             logger.info(`BOOKMARK resourceVersion=${apiObj.metadata?.resourceVersion}`);
                             latestResourceVersion = apiObj.metadata?.resourceVersion ?? latestResourceVersion;

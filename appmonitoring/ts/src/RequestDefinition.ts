@@ -146,10 +146,22 @@ export interface IRootObject {
 }
 
 export class DeployReplica {
-    public podName: string;
-    public replicaName: string;
-    public deploymentName: string;
-    public namespace: string;
+    podName: string;
+    replicaName: string;
+    deploymentName: string;
+    namespace: string;
+}
+
+export class AppMonitoringConfigCR {
+    metadata: {
+        name: string,
+        namespace: string
+    };
+    spec: {
+        autoInstrumentationPlatforms: string[];
+        aiConnectionString: string;
+        deployments: string[]
+    }
 }
 
 export class ListResponse {
@@ -157,12 +169,7 @@ export class ListResponse {
     body: {
         metadata: {
             resourceVersion: string
-        },
-        items: {
-            metadata: {
-                name: string,
-                namespace: string
-            }
-        }[]
+        };
+        items: AppMonitoringConfigCR[]
     }
 }

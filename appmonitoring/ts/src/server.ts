@@ -2,11 +2,30 @@
 import * as https from "https";
 import { ContentProcessor } from "./ContentProcessor.js";
 import { logger, Metrics } from "./LoggerWrapper.js";
-import { IRootObject } from "./RequestDefinition.js";
+import { AppMonitoringConfigCR, IRootObject } from "./RequestDefinition.js";
 import { K8sWatcher } from "./K8sWatcher.js";
+import { AppMonitoringConfigCRsCollection } from "./AppMonitoringConfigCRsCollection.js"
+
+const crs: AppMonitoringConfigCRsCollection = new AppMonitoringConfigCRsCollection();
 
 // don't await, this runs an infinite loop
-K8sWatcher.StartWatchingCRs();
+K8sWatcher.StartWatchingCRs((cr: AppMonitoringConfigCR, isRemoved: boolean) => {
+    if (isRemoved) {
+        crs.Remove(cr);
+    } else {
+        crs.Upsert(cr);
+    }
+
+    const items: AppMonitoringConfigCR[] = crs.ListCRs();
+    let log = "CRs: [";
+    for (let i = 0; i < items.length; i++) {
+        log += `${items[i].metadata.namespace}/${items[i].metadata.name}, autoInstrumentationPlatforms=${items[i].spec.autoInstrumentationPlatforms}, aiConnectionString=${items[i].spec.aiConnectionString}}, `;
+    }
+
+    log += "]"
+
+    logger.info(log);
+});
 
 /*let options: https.ServerOptions;
 try {
