@@ -34,14 +34,14 @@ data:
           # In the absense of this configmap, default value for enabled is true
           enabled = true
        [log_collection_settings.enrich_container_logs]
-          # In the absense of this configmap, default value for enrich_container_logs is false
+          # In the absense of this configmap, default value for enrich_container_logs is false
           enabled = false
-          # When this is enabled (enabled = true), every container log entry (both stdout & stderr) will be enriched with container Name & container Image
+          # When this is enabled (enabled = true), every container log entry (both stdout & stderr) will be enriched with container Name & container Image
        [log_collection_settings.collect_all_kube_events]
-          # In the absense of this configmap, default value for collect_all_kube_events is false
+          # In the absense of this configmap, default value for collect_all_kube_events is false
           # When the setting is set to false, only the kube events with !normal event type will be collected
           enabled = false
-          # When this is enabled (enabled = true), all kube events including normal events will be collected
+          # When this is enabled (enabled = true), all kube events including normal events will be collected
        #[log_collection_settings.schema]
           # In the absence of this configmap, default value for containerlog_schema_version is "v1"
           # Supported values for this setting are "v1","v2"
@@ -115,10 +115,10 @@ data:
   metric_collection_settings: |-
     # Metrics collection settings for metrics sent to Log Analytics and MDM
     [metric_collection_settings.collect_kube_system_pv_metrics]
-      # In the absense of this configmap, default value for collect_kube_system_pv_metrics is false
+      # In the absense of this configmap, default value for collect_kube_system_pv_metrics is false
       # When the setting is set to false, only the persistent volume metrics outside the kube-system namespace will be collected
       enabled = false
-      # When this is enabled (enabled = true), persistent volume metrics including those in the kube-system namespace will be collected
+      # When this is enabled (enabled = true), persistent volume metrics including those in the kube-system namespace will be collected
 
   alertable-metrics-configuration-settings: |-
     # Alertable metrics configuration settings for container resource utilization
