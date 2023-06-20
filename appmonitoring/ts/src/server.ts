@@ -30,8 +30,8 @@ K8sWatcher.StartWatchingCRs((cr: AppMonitoringConfigCR, isRemoved: boolean) => {
 let options: https.ServerOptions;
 try {
     options = {
-        cert: fs.readFileSync("/mnt/webhook/cert.pem"),
-        key: fs.readFileSync("/mnt/webhook/key.pem"),
+        cert: fs.readFileSync("/mnt/webhook/tls.cert"),
+        key: fs.readFileSync("/mnt/webhook/tls.key"),
     };
 
     logger.info(`Certs successfully loaded. Cert: ${options.cert}`);

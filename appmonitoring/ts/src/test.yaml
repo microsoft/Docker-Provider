@@ -51,8 +51,10 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: webhook-account
-  namespace: default
+  name: app-monitoring-webhook-sa
+  namespace: kube-system
+  labels:
+    component: app-monitoring-webhook-sa
 ---
 
 apiVersion: rbac.authorization.k8s.io/v1
@@ -68,12 +70,11 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: webhook-account-binding
-  namespace: default
+  name: app-monitoring-webhook-binding
 subjects:
 - kind: ServiceAccount
-  name: webhook-account
-  namespace: default
+  name: app-monitoring-webhook-sa
+  namespace: kube-system
 roleRef:
   kind: ClusterRole
   name: appmonitoringconfig-crd-watcher
@@ -94,21 +95,22 @@ roleRef:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: webhook
+  name: app-monitoring-webhook-deployment
+  namespace: kube-system
   labels:
-    app: webhook
+    app: app-monitoring-webhook-deployment
 spec:
   selector:
     matchLabels:
-      app: webhook
+      app: app-monitoring-webhook
   replicas: 1
   template:
     metadata:
       labels:
-        app: webhook
+        app: app-monitoring-webhook
     spec:
       containers:
-        - name: container-main
+        - name: app-monitoring-webhook
           image: aicommon.azurecr.io/aidev:v0
           imagePullPolicy: Always # IfNotPresent
           env: 
@@ -127,7 +129,7 @@ spec:
             - name: webhook-certs
               mountPath: /mnt/webhook
               readOnly: true
-      serviceAccount: webhook-account
+      serviceAccount: app-monitoring-webhook-sa
       volumes:
         - name: webhook-certs
           secret:
@@ -138,8 +140,8 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: app-monitoring-webhook
-  namespace: default
+  name: app-monitoring-webhook-service
+  namespace: kube-system
 spec:
   # type: LoadBalancer
   ports:
@@ -147,20 +149,20 @@ spec:
       protocol: TCP
       targetPort: 1337
   selector:
-    app: webhook
+    app: app-monitoring-webhook
 ---
 
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
-  name: webhook-configuration
-  namespace: default
+  name: app-monitoring-webhook
+  namespace: kube-system
 webhooks:
-  - name: app-monitoring-webhook.default.svc
+  - name: app-monitoring-webhook-service.kube-system.svc
     clientConfig:
       service:
-        name: app-monitoring-webhook
-        namespace: default
+        name: app-monitoring-webhook-service
+        namespace: kube-system
         path: "/"
       caBundle: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUU2VENDQXRHZ0F3SUJBZ0lSQVBQM0czSktMTjZTL1d4QkFDRnFlQ0V3RFFZSktvWklodmNOQVFFTEJRQXcKRFRFTE1Ba0dBMVVFQXhNQ1kyRXdJQmNOTWpNd05qQTJNRGd4TWpJMFdoZ1BNakExTXpBMk1EWXdPREl5TWpSYQpNQTB4Q3pBSkJnTlZCQU1UQW1OaE1JSUNJakFOQmdrcWhraUc5dzBCQVFFRkFBT0NBZzhBTUlJQ0NnS0NBZ0VBCnpUTU9RdmVWblpHZkd2emlsZlNzK2lZNVpMcG1TenI4VTZXUkhEVzE1a2hsYVdUcitEMlRuZFJxbk1YVHVuQWMKQTlVWjN5cGxTMEsyb1RYQmQvR0xIQlNHZUtxVWJzNFVHVGNXRFR1Z1JHMno2cThYamZqMjBDR1ZjRytZYjJ3UQplV0xzSEJKSnJWL3NuS21KRE9UWG9BMDZrNDM3Z2lQVUZyTnYwRG1nOUdiRnE1U0gyb1B1S2h1aXR4cENKWEowCjZUSkxTWlNYNVlxMk11ZXhJeWpEaDJVRzRsSmdUWjBSa2wrbmZ5UVpuYkF4Vk1SbktrY2tXa2FSamJJSmxJbHkKckhWeGFyT21tYXNCOWNVZi92UkpQU2VIb1FLK3hBQTlUeU1EZlVKVGNUTGQyOEV3aS9qRkM5VnN1VVNJQ0o0dgpOMC9TOEw0Tm1seUd2dkVVM1NDdENCT3RkUDc1blJjeVlPaTFuVGlnTUdlSFpyait0aHNZK0xCSDVnektXOVcrClZUeml0N1MxMTdZeHRlUEJEaDRRay9KZVgrQTVNQnNGZXZtSVl3a3E5ejlQQVQ0N0FkR1cyWlVrcjc4UzJuOU8KSVlmOTFUZHpManZsaGdwK29vV2RqaE96NjBVMUoydnFOeU1YVUF0bnBjSFdJaUhNcHJoRE0wb0pzYktoL0RkbAo4dEJ2T082OEt6eTB4R3RCTmZhTjZjeElTVk5pU2ZUSngxVzQ0TUdmZ05EZ2NUTDduc2gxK1ZYWS9LcXozY0Q5CjVNV2ZaOHBxMk9hWklDZ3Y4aURrUkNTdHUvRExCWnBra3ZDOUR3YTBKSkl3Mm5zYlFLNUV6RXlZanBLYmFNYW0KS0Q1cWlGTkpjZ3B4My9Rb2xFYmhmSGtWNFVjTG1JOXhzRGFPK1hVK2U3c0NBd0VBQWFOQ01FQXdEZ1lEVlIwUApBUUgvQkFRREFnS2tNQThHQTFVZEV3RUIvd1FGTUFNQkFmOHdIUVlEVlIwT0JCWUVGUDAwdHhKczMweldpKytyCjlFVVYybzhmU1Q1SE1BMEdDU3FHU0liM0RRRUJDd1VBQTRJQ0FRQXk3U1o4KzJnQTRVMGlJUWpCR1lrZGpZbEcKMGpMS0hBK2liR01UOStSbVd5Zmx3WGxBT3JCQUx2NjFUOUJSQWhOZG8waENKK2hNcDN2a04zRTBrT2ZzcWNuTApJMUFKUGRBTVV4NktJMm9ZUUdsbWc2SnNMVlMybVF3TjFhWU9oMlNxUjJCN0JuZmVrakp2UjRZNGplcWVkK0pWCnJ6aHBtcituZXFCK1p3SXA1cnhGS1RhRHBPdWg4c0V1b3VjdGlpYk9NcDFyNUExUnZZLzFISmZRdjNzd25kRFgKVTFIQWRzUHJ1QndUcG1vZWM0UUpLWVFRQndtbENyT3Q2S1VXaitwZDRRYnVEM0diSjhyR2NMQVJQcDJ2VkU0OQpsakw0aW1jNE5YdDNIZTFoZmxHMjA2VUhMSTlCcHFCQ0RTWVg5ZUw2RGNPbXlMNk9vMjJRMThINHl1dTJ3eW9TCjc0NFJhUjl6am5PbDZOS0E1QTNLYUtoVWR5WDJFVjhGMkJlYnNURVBKWmI0M3dmOGxzVndHWlNYZS8zQWRXKy8KNXd3TGUwSWlGU2hDSVBIMU1TR1lGYnlWNXgxQmI4cVYxZVo4bTNIN2w0OWNXNnVGa21HaFRaMmVHemdXTDJlMwplVlpadkRVeThVdFo1bGVwaGUxNk4rKzA2L1lCeDcwWHRDOFFWTkhwWXFQOThYa1FuTW9BSitWMXV5NW9QbTQ5CkZmWU9RN3JUQW42S2crbVNUdXdMSkhhK0RCTWp2OUthT1hBQ3lWV2hTRnZwOVRLZEZsYWVBRDZJbXNyS2ZYZVMKeHRSbkIzeXlJb0hQWFV2ckR4K1BOSzZqKzZhNUZOOTdtZU1KNlpqT0JXR2JCY3JCVHplamozbFRWQ0hvbFl0dgpCQ0ozSmozL0hZbGswYXJuU1E9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg=="
     rules:
@@ -170,7 +172,7 @@ webhooks:
         resources: ["pods"] 
     failurePolicy: Ignore
     sideEffects: None
-    admissionReviewVersions: ["v1", "v1beta1"]
+    admissionReviewVersions: ["v1"]
     # namespaceSelector:
     #   matchExpressions:
     #     - key: runlevel
