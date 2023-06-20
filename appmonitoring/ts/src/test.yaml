@@ -133,8 +133,7 @@ spec:
       volumes:
         - name: webhook-certs
           secret:
-            #secretName: app-monitoring-webhook-cert
-            secretName: app-monitoring-webhook
+            secretName: app-monitoring-webhook-cert
 ---
 
 apiVersion: v1
