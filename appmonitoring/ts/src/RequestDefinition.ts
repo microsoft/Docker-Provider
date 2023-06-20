@@ -21,6 +21,12 @@ export interface ILabels {
     app: string;
 }
 
+export interface IOwnerReference {
+    kind: string;
+    name: string;
+    uid: string;
+}
+
 export interface IMetadata {
     name: string;
     namespace: string;
@@ -28,7 +34,7 @@ export interface IMetadata {
     labels: ILabels;
     annotations: object;
     generateName?: string;
-    ownerReferences?: object;
+    ownerReferences?: IOwnerReference[];
 }
 
 export interface IMatchLabels {
@@ -145,11 +151,12 @@ export interface IRootObject {
     response?: object;
 }
 
-export class DeployReplica {
-    podName: string;
-    replicaName: string;
-    deploymentName: string;
+export class PodInfo {
     namespace: string;
+    name: string;
+    deploymentName: string;
+    onlyContainerName: string;
+    ownerReference: IOwnerReference;
 }
 
 export class AppMonitoringConfigCR {

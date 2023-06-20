@@ -1,4 +1,4 @@
-﻿//import * as fs from "fs";
+﻿import * as fs from "fs";
 import * as https from "https";
 import { ContentProcessor } from "./ContentProcessor.js";
 import { logger, Metrics } from "./LoggerWrapper.js";
@@ -27,52 +27,63 @@ K8sWatcher.StartWatchingCRs((cr: AppMonitoringConfigCR, isRemoved: boolean) => {
     logger.info(log);
 });
 
-/*let options: https.ServerOptions;
+let options: https.ServerOptions;
 try {
     options = {
-        cert: fs.readFileSync("/mnt/webhook/tls.cert"),
-        key: fs.readFileSync("/mnt/webhook/tls.key"),
+        cert: fs.readFileSync("/mnt/webhook/cert.pem"),
+        key: fs.readFileSync("/mnt/webhook/key.pem"),
     };
+
+    logger.info(`Certs successfully loaded. Cert: ${options.cert}`);
 } catch (e) {
     logger.error(`Failed to load certs: ${e}`);
-}*/
+}
 
 const port = process.env.port || 1337;
 logger.info(`listening on port ${port}`);
 
-https.createServer(/*options*/null, (req, res) => {
+https.createServer(options, (req, res) => {
     logger.info(`Received request with url: ${req.url}, method: ${req.method}, content-type: ${req.headers["content-type"]}`);
     logger.telemetry(Metrics.Request, 1, "");
+    
     if (req.method === "POST" && req.headers["content-type"] === "application/json") {
         let body = "";
+
         req.on("data", (chunk) => {
             body += chunk.toString(); // convert Buffer to string
         });
-        req.on("end", () => {
+
+        req.on("end", async () => {
             let uid = "";
             try {
                 const message: IRootObject = JSON.parse(body);
-                if (message && message.request && message.request.uid) {
+                if (message?.request?.uid) {
                     uid = message.request.uid;
                 }
-            } catch (ex) {
+            } catch (e) {
                 // swallow
+                logger.error(JSON.stringify(e));
             }
-            ContentProcessor.TryUpdateConfig(body).then((updatedConfig) => {
+
+            try {
+                const updatedConfig: string = await ContentProcessor.TryUpdateConfig(body, crs);
+                
                 logger.info(`Done processing request ${uid}`);
+                logger.telemetry(Metrics.Success, 1, uid);
+
                 res.writeHead(200, { "Content-Type": "application/json" });
                 res.end(updatedConfig);
-                logger.telemetry(Metrics.Success, 1, uid);
-            }).catch((error) => {
-                logger.error(`Error while processing request: ${uid}, ${error}`);
+            } catch (e) {
+                logger.error(`Error while processing request: ${uid}, ${JSON.stringify(e)}`);
                 logger.telemetry(Metrics.Fail, 1, uid);
-            });
+            }
         });
     } else {
         logger.error(`Unacceptable method, returning 404, method: ${req.method}`);
+        logger.telemetry(Metrics.Error, 1, "");
+
         res.writeHead(404);
         res.end();
-        logger.telemetry(Metrics.Error, 1, "");
     }
 
 }).listen(port);

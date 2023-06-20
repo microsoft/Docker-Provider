@@ -35,3 +35,5 @@ node_modules
 appmonitoring/ts/src/node_modules
 appmonitoring/ts/src/*.js
 appmonitoring/ts/src/*.js.map
+appmonitoring/ts/src/test-app/*.js
+appmonitoring/ts/src/test-app/*.js.map

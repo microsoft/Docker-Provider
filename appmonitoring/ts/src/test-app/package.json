@@ -1,0 +1,31 @@
+{
+  "name": "test-app",
+  "version": "1.0.0",
+  "description": "Test app",
+  "license": "MIT",
+  "type": "module",
+  "repository": "https://github.com/microsoft/Application-Insights-K8s-Codeless-Attach/",
+  "scripts": {
+    "build": "tsc -b",
+    "start": "node server",
+    "lint": "npx eslint ."
+  },
+  "author": {
+    "name": "Microsoft Corp"
+  },
+  "dependencies": {
+    "@kubernetes/client-node": "^0.18.1",
+    "@types/node": "20.2.4",
+    "@types/npm": "^7.19.0",
+    "http-proxy-agent": "7.0.0",
+    "https-proxy-agent": "7.0.0",
+    "ts-node": "10.9.1",
+    "tsc": "^2.0.4",
+    "typescript": "^5.0.4"
+  },
+  "engines": {
+    "node": "^16.19.1"
+  },
+  "devDependencies": {
+  }
+}

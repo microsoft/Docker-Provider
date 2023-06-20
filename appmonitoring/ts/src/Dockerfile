@@ -1,5 +1,9 @@
-FROM node:alpine
+FROM alpine:latest
 RUN apk -U upgrade
+RUN apk add --update nodejs npm
+
+#FROM node:alpine
+#RUN apk -U upgrade
 
 #FROM node:16
 #FROM node:slim

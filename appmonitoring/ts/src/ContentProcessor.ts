@@ -1,11 +1,12 @@
 ﻿import { isNullOrUndefined } from "util";
 import { DiffCalculator } from "./DiffCalculator.js";
 import { logger, Metrics } from "./LoggerWrapper.js";
-import { DeployReplica, IRootObject } from "./RequestDefinition.js";
+import { PodInfo, IOwnerReference, IRootObject, AppMonitoringConfigCR } from "./RequestDefinition.js";
 import { TemplateValidator } from "./TemplateValidator.js";
-export class ContentProcessor {
+import { AppMonitoringConfigCRsCollection } from "./AppMonitoringConfigCRsCollection.js";
 
-    public static async TryUpdateConfig(message: string): Promise<string> {
+export class ContentProcessor {
+    public static async TryUpdateConfig(message: string, crs: AppMonitoringConfigCRsCollection): Promise<string> {
         const response = {
             apiVersion: "admission.k8s.io/v1",
             kind: "AdmissionReview",
@@ -13,32 +14,48 @@ export class ContentProcessor {
             response: {
                 allowed: false, // when error it is ignored as per the config
                 patch: undefined,
-                patchtype: "JSONPATCH",
                 patchType: "JSONPatch",
                 uid: "",
             },
         };
-        let instance: ContentProcessor;
 
-        /* tslint:disable */
-        return new Promise<object>((resolve) => {
-            /* tslint:enable */
-            instance = new ContentProcessor(message);
+        try {
+            const instance: ContentProcessor = new ContentProcessor(message);
+
             logger.telemetry(Metrics.CPStart, 1, instance.uid);
+
             response.request = instance.content.request;
             response.apiVersion = instance.content.apiVersion;
             response.response.uid = instance.content.request.uid;
             response.kind = instance.content.kind;
             response.response.allowed = TemplateValidator.ValidateContent(instance.content);
 
-            resolve(instance.getPodExtraData());
-        }).then(async (extraData) => {
+            const podInfo: PodInfo = await instance.getPodInfo();
+
+            const namespace: string = instance.content.request.object.metadata.namespace;
+            if (!namespace) {
+                throw `Could not determine the namespace of the incoming object: ${namespace}`;
+            }
 
             if (response.response.allowed) {
-                response.response.patch = Buffer.from(
-                    JSON.stringify(
-                        await DiffCalculator.CalculateDiff(instance.content, extraData as DeployReplica)))
-                    .toString("base64");
+                const armIdMatches = /^\/subscriptions\/(?<SubscriptionId>[^/]+)\/resourceGroups\/(?<ResourceGroup>[^/]+)\/providers\/(?<Provider>[^/]+)\/(?<ResourceType>[^/]+)\/(?<ResourceName>[^/]+).*$/i.exec(process.env.ARM_ID);
+                if(!armIdMatches || armIdMatches.length != 6) {
+                    throw `ARM ID is in a wrong format: ${process.env.ARM_ID}`;
+                }    
+
+                const clusterName = armIdMatches[5];
+                
+                const cr: AppMonitoringConfigCR = crs.GetCR(namespace, podInfo.deploymentName);
+                logger.info(`Governing CR for the object to be processed (namespace: ${namespace}, deploymentName: ${podInfo.deploymentName}): ${JSON.stringify(cr)}`);
+                response.response.patch = Buffer.from(JSON.stringify(await DiffCalculator.CalculateDiff(
+                    instance.content, 
+                    podInfo as PodInfo, 
+                    cr.spec.autoInstrumentationPlatforms, 
+                    cr.spec.aiConnectionString,
+                    process.env.ARM_ID,
+                    process.env.ARM_REGION,
+                    clusterName))).toString("base64");
+
                 logger.telemetry(Metrics.CPSuccess, 1, instance.uid);
             } else {
                 logger.telemetry(Metrics.CPFail, 1, instance.uid);
@@ -47,11 +64,12 @@ export class ContentProcessor {
             const finalResult = JSON.stringify(response);
             logger.info(`Determined final response ${instance.uid}, ${finalResult}`);
             return finalResult;
-        }).catch((ex) => {
-            logger.error(`Exception encountered: ${ex}`);
+
+        } catch (e) {
+            logger.error(`Exception encountered: ${e}`);
             logger.telemetry(Metrics.CPError, 1, "");
             return JSON.stringify(response);
-        });
+        }
     }
 
     public readonly content: IRootObject;
@@ -78,22 +96,31 @@ export class ContentProcessor {
         return "";
     }
 
-    private getPodExtraData(): Promise<DeployReplica> {
+    private async getPodInfo(): Promise<PodInfo> {
         logger.info(`Attempting to get owner info ${this.uid}`);
-        const extraData: DeployReplica = new DeployReplica();
-        extraData.podName = this.content.request.object.metadata.generateName;
-        const namespaceName = this.content.request.namespace;
 
-        if (this.content.kind === "Testing") {
-            extraData.deploymentName = extraData.podName;
-            extraData.replicaName = extraData.podName;
-            extraData.namespace = namespaceName;
-            return Promise.resolve(extraData);
+        const podInfo: PodInfo = new PodInfo();
+
+        podInfo.namespace = this.content.request.namespace;
+        podInfo.name = this.content.request.object.metadata.name;
+
+        podInfo.onlyContainerName = this.content.request.object.spec.containers?.length == 1 ? this.content.request.object.spec.containers[0].name : null;
+
+        const ownerReference: IOwnerReference | null = this.content.request.object.metadata?.ownerReferences[0];
+
+        if(ownerReference?.kind) {
+            podInfo.ownerReference = ownerReference;
+            
+            if(ownerReference.kind.localeCompare("ReplicaSet", undefined, { sensitivity: 'accent' }) === 0) {
+                // the owner is a replica set, so we need to try to get to the deployment
+                // while it is possible to name a bare ReplicaSet (not produced by a Deployment) in a way that will fool the regex, we are ignoring that corner case
+                const matches = /^\b(?<!-)(?<role_name>[a-z0-9]+(?:-[a-z0-9]+)*?)(?:-([a-f0-9]{8-12}))?-([a-z0-9]+)$/i.exec(ownerReference.name);
+                if(matches && matches.length > 0) {
+                    podInfo.deploymentName = matches[1];
+                }                                
+            }
         }
-        if (!this.content.request.object.metadata.ownerReferences
-            || !this.content.request.object.metadata.ownerReferences[0]
-            || !this.content.request.object.metadata.ownerReferences[0].name) {
-            return Promise.reject("missing owner reference");
-        }
+                
+        return Promise.resolve(podInfo);
     }
 }

@@ -8,6 +8,10 @@ export class AppMonitoringConfigCRsCollection {
         return this.crs;
     }
 
+    public GetCR(namespace: string, deploymentName: string): AppMonitoringConfigCR {
+        return this.crs.find(cr => cr.metadata.namespace === namespace && (!cr.spec.deployments || cr.spec.deployments.length === 0 || cr.spec.deployments.some(deployment => deployment === deploymentName)), this);
+    }
+
     public Upsert(cr: AppMonitoringConfigCR): void {
         // remove equivalent element if present
         for (let i = 0; i < this.crs.length; i++) {

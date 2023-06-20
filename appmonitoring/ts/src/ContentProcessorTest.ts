@@ -6,48 +6,52 @@ import { IRootObject } from "./RequestDefinition.js";
 import { TemplateValidator } from "./TemplateValidator.js";
 
 import * as Test from "./testConsts.js";
+import { AppMonitoringConfigCRsCollection } from "./AppMonitoringConfigCRsCollection.js";
+
+const crs: AppMonitoringConfigCRsCollection = new AppMonitoringConfigCRsCollection();
+
 describe("ContentProcessor", () => {
     it("Null", async () => {
         assert.deepEqual('{"apiVersion":"admission.k8s.io/v1beta1","kind":"AdmissionReview","response":{"allowed":false,"patchtype":"JSONPATCH","uid":""}}',
-            await ContentProcessor.TryUpdateConfig(null));
+            await ContentProcessor.TryUpdateConfig(null, crs));
     });
 
     it("Constructor", async () => {
         assert.deepEqual('{"kind":"AdmissionReview","response":{"allowed":false,"patchtype":"JSONPATCH","uid":""}}',
-            await ContentProcessor.TryUpdateConfig("{}"),
+            await ContentProcessor.TryUpdateConfig("{}", crs),
             "should return json");
     });
 
     it("InvalidJSON", async () => {
         const something = "dsasda";
         assert.deepEqual('{"apiVersion":"admission.k8s.io/v1beta1","kind":"AdmissionReview","response":{"allowed":false,"patchtype":"JSONPATCH","uid":""}}',
-            await ContentProcessor.TryUpdateConfig(something),
+            await ContentProcessor.TryUpdateConfig(something, crs),
             "expect something");
     });
 
     it("ValidObject", async () => {
-        const result = JSON.parse(await ContentProcessor.TryUpdateConfig(Test.TestObject));
+        const result = JSON.parse(await ContentProcessor.TryUpdateConfig(Test.TestObject, crs));
         assert.equal(true, result.response.allowed);
         assert.equal("JSONPATCH", result.response.patchtype);
         assert.equal(result.request.uid, result.response.uid);
     });
 
     it("ValidObject2", async () => {
-        const result = JSON.parse(await ContentProcessor.TryUpdateConfig(Test.TestObject2));
+        const result = JSON.parse(await ContentProcessor.TryUpdateConfig(Test.TestObject2, crs));
         assert.equal(true, result.response.allowed);
         assert.equal("JSONPATCH", result.response.patchtype);
         assert.equal(result.request.uid, result.response.uid);
     });
 
     it("ValidObject3", async () => {
-        const result = JSON.parse(await ContentProcessor.TryUpdateConfig(Test.TestObject3));
+        const result = JSON.parse(await ContentProcessor.TryUpdateConfig(Test.TestObject3, crs));
         assert.equal(true, result.response.allowed);
         assert.equal("JSONPATCH", result.response.patchtype);
         assert.equal(result.request.uid, result.response.uid);
     });
 
     it("ValidObject4", async () => {
-        const result = JSON.parse(await ContentProcessor.TryUpdateConfig(Test.TestObject4));
+        const result = JSON.parse(await ContentProcessor.TryUpdateConfig(Test.TestObject4, crs));
         assert.equal(true, result.response.allowed);
         assert.equal("JSONPATCH", result.response.patchtype);
         assert.equal(result.request.uid, result.response.uid);
@@ -108,19 +112,19 @@ describe("ContentProcessor", () => {
     });
 
     it("DiffCalculatorNull1", async () => {
-        assert.equal(null, await DiffCalculator.CalculateDiff(null, null),
+        assert.equal(null, await DiffCalculator.CalculateDiff(null, null, [], null, null, null, null),
             "should be null here");
     });
 
     it("DiffCalculatorTestContent", async () => {
         const testSubject: IRootObject = JSON.parse(Test.TestObject);
-        const result = await DiffCalculator.CalculateDiff(testSubject, null);
+        const result = await DiffCalculator.CalculateDiff(testSubject, null, [], null, null, null, null);
         assert.equal("replace", result[0].op);
         assert.equal("/spec", result[0].path);
         assert.notEqual(null, result[0].value);
-        assert.deepEqual(AddedTypes.init_containers(), result[0].value.template.spec.initContainers,
+        assert.deepEqual(AddedTypes.init_containers([]), result[0].value.template.spec.initContainers,
             "should match containers");
-        assert.deepEqual(AddedTypes.volumes(), result[0].value.template.spec.volumes,
+        assert.deepEqual(AddedTypes.volumes([]), result[0].value.template.spec.volumes,
             "should match volumes");
     });
 
