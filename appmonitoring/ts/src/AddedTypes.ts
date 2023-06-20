@@ -8,7 +8,7 @@ export class AddedTypes {
     
     // agent image
     private static agentImageDotNet = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/dotnet:1.0.0-beta1";
-    private static agentImageJava = "mcr.microsoft.com/applicationinsights/auto-instrumentation/java:3.4.13";
+    private static agentImageJava = "mcr.microsoft.com/applicationinsights/auto-instrumentation/java:3.4.14";
     private static agentImageNodeJs = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/nodejs:3.0.0-beta.3";
     
     // path on agent image to copy from
