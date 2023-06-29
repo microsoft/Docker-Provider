@@ -5,7 +5,7 @@ import { IRootObject } from "./RequestDefinition.js";
 export class TemplateValidator {
     public static ValidateContent(content: IRootObject) {
         let returnValue = true;
-        logger.info(`Validating content ${this.uid(content)}, ${content}`);
+        logger.info(`Validating content ${this.uid(content)}, ${JSON.stringify(content)}`);
 
         if (isNullOrUndefined(content)) {
             logger.error(`Null content ${this.uid(content)}`);

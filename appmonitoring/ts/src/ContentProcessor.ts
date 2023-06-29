@@ -31,6 +31,7 @@ export class ContentProcessor {
             response.response.allowed = TemplateValidator.ValidateContent(instance.content);
 
             const podInfo: PodInfo = await instance.getPodInfo();
+            logger.info(`Extracted PodInfo: ${JSON.stringify(podInfo)}`);
 
             const namespace: string = instance.content.request.object.metadata.namespace;
             if (!namespace) {
@@ -38,25 +39,32 @@ export class ContentProcessor {
             }
 
             if (response.response.allowed) {
-                const armIdMatches = /^\/subscriptions\/(?<SubscriptionId>[^/]+)\/resourceGroups\/(?<ResourceGroup>[^/]+)\/providers\/(?<Provider>[^/]+)\/(?<ResourceType>[^/]+)\/(?<ResourceName>[^/]+).*$/i.exec(process.env.ARM_ID);
-                if(!armIdMatches || armIdMatches.length != 6) {
-                    throw `ARM ID is in a wrong format: ${process.env.ARM_ID}`;
-                }    
-
-                const clusterName = armIdMatches[5];
-                
                 const cr: AppMonitoringConfigCR = crs.GetCR(namespace, podInfo.deploymentName);
-                logger.info(`Governing CR for the object to be processed (namespace: ${namespace}, deploymentName: ${podInfo.deploymentName}): ${JSON.stringify(cr)}`);
-                response.response.patch = Buffer.from(JSON.stringify(await DiffCalculator.CalculateDiff(
-                    instance.content, 
-                    podInfo as PodInfo, 
-                    cr.spec.autoInstrumentationPlatforms, 
-                    cr.spec.aiConnectionString,
-                    process.env.ARM_ID,
-                    process.env.ARM_REGION,
-                    clusterName))).toString("base64");
+                if (!cr) {
+                    // no relevant CR found, do not mutate and return with no modifications
+                    // do not block the request though, allowed should remain true
+                    logger.info(`No governing CR found, will not mutate`);
+                    response.response.patch = Buffer.from(JSON.stringify([])).toString("base64");
+                } else {
+                    const armIdMatches = /^\/subscriptions\/(?<SubscriptionId>[^/]+)\/resourceGroups\/(?<ResourceGroup>[^/]+)\/providers\/(?<Provider>[^/]+)\/(?<ResourceType>[^/]+)\/(?<ResourceName>[^/]+).*$/i.exec(process.env.ARM_ID);
+                    if (!armIdMatches || armIdMatches.length != 6) {
+                        throw `ARM ID is in a wrong format: ${process.env.ARM_ID}`;
+                    }
 
-                logger.telemetry(Metrics.CPSuccess, 1, instance.uid);
+                    const clusterName = armIdMatches[5];
+
+                    logger.info(`Governing CR for the object to be processed (namespace: ${namespace}, deploymentName: ${podInfo.deploymentName}): ${JSON.stringify(cr)}`);
+                    response.response.patch = Buffer.from(JSON.stringify(await DiffCalculator.CalculateDiff(
+                        instance.content,
+                        podInfo as PodInfo,
+                        cr.spec.autoInstrumentationPlatforms,
+                        cr.spec.aiConnectionString,
+                        process.env.ARM_ID,
+                        process.env.ARM_REGION,
+                        clusterName))).toString("base64");
+
+                    logger.telemetry(Metrics.CPSuccess, 1, instance.uid);
+                }
             } else {
                 logger.telemetry(Metrics.CPFail, 1, instance.uid);
             }
@@ -117,7 +125,9 @@ export class ContentProcessor {
                 const matches = /^\b(?<!-)(?<role_name>[a-z0-9]+(?:-[a-z0-9]+)*?)(?:-([a-f0-9]{8-12}))?-([a-z0-9]+)$/i.exec(ownerReference.name);
                 if(matches && matches.length > 0) {
                     podInfo.deploymentName = matches[1];
-                }                                
+                } else {
+                    podInfo.deploymentName = null;
+                }                             
             }
         }
                 

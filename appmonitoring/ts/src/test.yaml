@@ -111,7 +111,7 @@ spec:
     spec:
       containers:
         - name: app-monitoring-webhook
-          image: aicommon.azurecr.io/aidev:v0
+          image: aicommon.azurecr.io/aidev:v1
           imagePullPolicy: Always # IfNotPresent
           env: 
             - name: ARM_ID

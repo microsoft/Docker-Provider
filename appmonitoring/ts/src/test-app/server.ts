@@ -2,7 +2,7 @@ import * as http from "http";
 
 console.info("Starting...");
 
-while(true) {
+while(true) { // eslint-disable-line
     try{
         await new Promise(f => setTimeout(f, 3000));
 

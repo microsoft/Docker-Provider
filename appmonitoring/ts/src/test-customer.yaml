@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: test-app
-        image: aicommon.azurecr.io/aitestapp:v0
+        image: aicommon.azurecr.io/aitestapp:v1
         imagePullPolicy: Always
         ports:
         - containerPort: 80

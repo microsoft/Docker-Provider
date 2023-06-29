@@ -19,7 +19,7 @@ K8sWatcher.StartWatchingCRs((cr: AppMonitoringConfigCR, isRemoved: boolean) => {
     const items: AppMonitoringConfigCR[] = crs.ListCRs();
     let log = "CRs: [";
     for (let i = 0; i < items.length; i++) {
-        log += `${items[i].metadata.namespace}/${items[i].metadata.name}, autoInstrumentationPlatforms=${items[i].spec.autoInstrumentationPlatforms}, aiConnectionString=${items[i].spec.aiConnectionString}}, `;
+        log += `${items[i].metadata.namespace}/${items[i].metadata.name}, autoInstrumentationPlatforms=${items[i].spec.autoInstrumentationPlatforms}, aiConnectionString=${items[i].spec.aiConnectionString}}, deployments=${JSON.stringify(items[i].spec.deployments)}`;
     }
 
     log += "]"

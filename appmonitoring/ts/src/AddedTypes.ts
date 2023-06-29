@@ -9,7 +9,7 @@ export class AddedTypes {
     // agent image
     private static agentImageDotNet = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/dotnet:1.0.0-beta1";
     private static agentImageJava = "mcr.microsoft.com/applicationinsights/auto-instrumentation/java:3.4.14";
-    private static agentImageNodeJs = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/nodejs:3.0.0-beta.3";
+    private static agentImageNodeJs = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/nodejs:3.0.0-beta.6";
     
     // path on agent image to copy from
     private static imagePathDotNet = "/dotnet-tracer-home/.";
@@ -32,9 +32,9 @@ export class AddedTypes {
     private static agentLogsVolumeNodeJs = "agent-volume-logs-nodejs";
 
     // agent logs volume mount path
-    private static agentLogsVolumeMountPathDotNet = "/applicationinsights/logs/dotnet";
-    private static agentLogsVolumeMountPathJava = "/applicationinsights/logs/java"; // this is hardcoded in Java SDK, can't change this
-    private static agentLogsVolumeMountPathNodeJs = "/applicationinsights/logs/nodejs";
+    private static agentLogsVolumeMountPathDotNet = "/var/log/applicationinsights";
+    private static agentLogsVolumeMountPathJava = "/var/log/applicationinsights"; // this is hardcoded in Java SDK, can't change this
+    private static agentLogsVolumeMountPathNodeJs = "/var/log/applicationinsights"; // this is hardcoded in NodeJs SDK, can't change this
     
     public static init_containers(platforms: string[]) {
         const containers: object[] = [];
@@ -229,10 +229,6 @@ ${ownerUid}`
 
                 case "NodeJs":
                     returnValue.push(...[
-                        {
-                            name: "OTEL_DOTNET_AUTO_LOG_DIRECTORY",
-                            value: AddedTypes.agentLogsVolumeMountPathNodeJs
-                        },
                         {
                             name: "NODE_OPTIONS",
                             value: `--require ${AddedTypes.agentVolumeMountPathNodeJs}/aks.js`
