@@ -9,7 +9,9 @@ export class AppMonitoringConfigCRsCollection {
     }
 
     public GetCR(namespace: string, deploymentName: string): AppMonitoringConfigCR {
-        return this.crs.find(cr => cr.metadata.namespace === namespace && (!cr.spec.deployments || cr.spec.deployments.length === 0 || cr.spec.deployments.some(deployment => deployment === deploymentName)), this);
+        return this.crs.find(cr => cr.metadata.namespace === namespace && 
+            (!cr.spec.deployments || cr.spec.deployments.length === 0 || cr.spec.deployments.some(deployment => deployment === deploymentName)),
+            this);
     }
 
     public Upsert(cr: AppMonitoringConfigCR): void {
