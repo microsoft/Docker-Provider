@@ -81,5 +81,5 @@ spec:
     volumes:
       - name: settings-vol-config
         configMap:
-          name: container-azm-ms-hostlogsconfig
+          name: container-azm-ms-agentconfig
           optional: true
