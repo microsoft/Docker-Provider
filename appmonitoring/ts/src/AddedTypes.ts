@@ -82,7 +82,7 @@ export class AddedTypes {
 
                 case "OpenTelemetry":
                     throw `Not implemented`;
-                    break;
+                    //break;
 
                 default:
                     throw `Unsupported platform in init_containers(): ${platforms[i]}`;
@@ -237,7 +237,7 @@ ${ownerUid}`
 
                 case "OpenTelemetry":
                     throw `Not implemented`;
-                    break;
+                    //break;
 
                 default:
                     throw `Unsupported platform in env(): ${platforms[i]}`;
@@ -290,7 +290,7 @@ ${ownerUid}`
 
                 case "OpenTelemetry":
                     throw `Not implemented`;
-                    break;
+                    //break;
 
                 default:
                     throw `Unsupported platform in volume_mounts(): ${platforms[i]}`;
@@ -343,7 +343,7 @@ ${ownerUid}`
 
                 case "OpenTelemetry":
                     throw `Not implemented`;
-                    break;
+                    //break;
 
                 default:
                     throw `Unsupported platform in volumes(): ${platforms[i]}`;

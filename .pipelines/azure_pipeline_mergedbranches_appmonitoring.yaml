@@ -134,7 +134,7 @@ jobs:
         echo "Build is done"
 
         echo "Running ESLint..."
-        npx eslint *.ts
+        npx eslint .
         echo "ESLint is done"
 
         pwd
