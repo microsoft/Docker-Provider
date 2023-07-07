@@ -1,0 +1,76 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dotnet
+  namespace: tenant1
+spec:
+  parallelism: 1
+  completions: 1
+  template:
+    metadata:
+      name: dotnet
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+        kubernetes.io/arch: amd64
+      volumes:
+      - name: dotnet-scripts-volume
+        configMap:
+          name: dotnet-test-scripts
+      containers:
+      - name: dotnet
+        image: mcr.microsoft.com/mirror/docker/library/ubuntu:18.04
+
+        volumeMounts:
+          - mountPath: /dotnet-test-scripts
+            name: dotnet-scripts-volume
+        env:
+          - name: HOME
+            value: /tmp
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "scripts in /dotnet-test-scripts"
+          ls -lh /dotnet-test-scripts
+          echo "copy scripts to /tmp"
+          cp /dotnet-test-scripts/*.sh /tmp
+          echo "apply 'chmod +x' to /tmp/*.sh"
+          chmod +x /tmp/*.sh
+          echo "script.sh in /tmp"
+          ls -lh /tmp
+          /tmp/script.sh
+      restartPolicy: Never
+---
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    script.sh: |
+      #!/bin/bash
+
+      while true; do
+        sleep 1 &
+        for var in {1..1..1}
+        do
+          echo "2022/11/29 05:41:10 StackTrace: '   at System.Environment.GetStackTrace(Exception e)"
+          echo "   at System.Environment.GetStackTrace(Exception e)"
+          echo "   at System.Environment.get_StackTrace()"
+          echo "   at Sample.Main()'"
+          echo "2022/11/29 05:41:10 normal log"
+          echo "2022/11/29 05:41:10 ConsoleApplication1.MyCustomException: some message .... ---> System.Exception: Oh noes!"
+          echo "   at ConsoleApplication1.SomeObject.OtherMethod() in C:\ConsoleApplication1\SomeObject.cs:line 24"
+          echo "   at ConsoleApplication1.SomeObject..ctor() in C:\ConsoleApplication1\SomeObject.cs:line 14"
+          echo "   --- End of inner exception stack trace ---"
+          echo "   at ConsoleApplication1.SomeObject..ctor() in C:\ConsoleApplication1\SomeObject.cs:line 18"
+          echo "   at ConsoleApplication1.Program.Main(String[] args) in C:\ConsoleApplication1\Program.cs:line 13"
+        done
+        wait
+      done
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: null
+    name:  dotnet-test-scripts
+    namespace: tenant1
+kind: List
+metadata: {}

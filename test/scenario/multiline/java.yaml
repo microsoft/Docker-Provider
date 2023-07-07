@@ -1,0 +1,68 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: java
+  namespace: tenant1
+spec:
+  parallelism: 1
+  completions: 1
+  template:
+    metadata:
+      name: java
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+        kubernetes.io/arch: amd64
+      volumes:
+      - name: java-scripts-volume
+        configMap:
+          name: java-test-scripts
+      containers:
+      - name: java
+        image: mcr.microsoft.com/mirror/docker/library/ubuntu:18.04
+
+        volumeMounts:
+          - mountPath: /java-test-scripts
+            name: java-scripts-volume
+        env:
+          - name: HOME
+            value: /tmp
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "scripts in /java-test-scripts"
+          ls -lh /java-test-scripts
+          echo "copy scripts to /tmp"
+          cp /java-test-scripts/*.sh /tmp
+          echo "apply 'chmod +x' to /tmp/*.sh"
+          chmod +x /tmp/*.sh
+          echo "script.sh in /tmp"
+          ls -lh /tmp
+          /tmp/script.sh
+      restartPolicy: Never
+---
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    script.sh: |
+      #!/bin/bash
+
+      while true; do
+        sleep 1 &
+        for var in {1..1..1}
+        do
+          echo "Exception in thread "main" java. lang.ArithmeticException: / by zero"
+          echo "  at GreatestNumber.greater(GreatestNumber.java:18)"
+          echo "  at GreatestNumber.main(GreatestNumber.java:27)"
+        done
+        wait
+      done
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: null
+    name:  java-test-scripts
+    namespace: tenant1
+kind: List
+metadata: {}

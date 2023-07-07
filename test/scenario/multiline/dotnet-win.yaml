@@ -1,0 +1,62 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: dotnet-win
+  namespace: tenant1
+spec:
+  parallelism: 1
+  completions: 1
+  template:
+    metadata:
+      name: dotnet-win
+    spec:
+      nodeSelector:
+        kubernetes.io/os: windows
+        kubernetes.io/arch: amd64
+      volumes:
+      - name: dotnet-win-scripts-volume
+        configMap:
+          name: dotnet-win-test-scripts
+      nodeSelector:
+        kubernetes.io/os: windows
+        kubernetes.io/arch: amd64
+      containers:
+      - name: dotnet-win
+        image: mcr.microsoft.com/powershell:lts-nanoserver-1809
+        volumeMounts:
+          - mountPath: C:\dotnet-win-test-scripts
+            name: dotnet-win-scripts-volume
+        command:
+        - pwsh
+        - -F
+        - C:\dotnet-win-test-scripts\script.ps1
+      restartPolicy: Never
+---
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    script.ps1: |
+      while(1) {
+        for ($num = 1 ; $num -le 1 ; $num++) {
+          Write-Host "2022/11/29 05:41:10 StackTrace: '   at System.Environment.GetStackTrace(Exception e)"
+          Write-Host "   at System.Environment.GetStackTrace(Exception e)"
+          Write-Host "   at System.Environment.get_StackTrace()"
+          Write-Host "   at Sample.Main()'"
+          Write-Host "2022/11/29 05:41:10 normal log"
+          Write-Host "2022/11/29 05:41:10 ConsoleApplication1.MyCustomException: some message .... ---> System.Exception: Oh noes!"
+          Write-Host "   at ConsoleApplication1.SomeObject.OtherMethod() in C:\ConsoleApplication1\SomeObject.cs:line 24"
+          Write-Host "   at ConsoleApplication1.SomeObject..ctor() in C:\ConsoleApplication1\SomeObject.cs:line 14"
+          Write-Host "   --- End of inner exception stack trace ---"
+          Write-Host "   at ConsoleApplication1.SomeObject..ctor() in C:\ConsoleApplication1\SomeObject.cs:line 18"
+          Write-Host "   at ConsoleApplication1.Program.Main(String[] args) in C:\ConsoleApplication1\Program.cs:line 13"
+        }
+        start-sleep -seconds 1
+      }
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: null
+    name:  dotnet-win-test-scripts
+    namespace: tenant1
+kind: List
+metadata: {}

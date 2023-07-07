@@ -1,0 +1,58 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: python-win
+  namespace: tenant1
+spec:
+  parallelism: 1
+  completions: 1
+  template:
+    metadata:
+      name: python-win
+    spec:
+      nodeSelector:
+        kubernetes.io/os: windows
+        kubernetes.io/arch: amd64
+      volumes:
+      - name: python-win-scripts-volume
+        configMap:
+          name: python-win-test-scripts
+      nodeSelector:
+        kubernetes.io/os: windows
+        kubernetes.io/arch: amd64
+      containers:
+      - name: python-win
+        image: mcr.microsoft.com/powershell:lts-nanoserver-1809
+        volumeMounts:
+          - mountPath: C:\python-win-test-scripts
+            name: python-win-scripts-volume
+        command:
+        - pwsh
+        - -F
+        - C:\python-win-test-scripts\script.ps1
+      restartPolicy: Never
+---
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    script.ps1: |
+      while(1) {
+        for ($num = 1 ; $num -le 1 ; $num++) {
+          Write-Host "INFO:werkzeug:127.0.0.1 - - [24/Jan/2023 20:50:19] GET /crash HTTP/1.1 500 -"
+          Write-Host "Traceback (most recent call last):"
+          Write-Host "  File /usr/lib/python3.10/site-packages/flask/app.py, line 2548, in __call__"
+          Write-Host "    return self.wsgi_app(environ, start_response)"
+          Write-Host "  File /usr/lib/python3.10/site-packages/flask/app.py, line 2528, in wsgi_app"
+          Write-Host "    response = self.handle_exception(e)"
+          Write-Host "ZeroDivisionError: division by zero"
+        }
+        start-sleep -seconds 1
+      }
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: null
+    name:  python-win-test-scripts
+    namespace: tenant1
+kind: List
+metadata: {}

@@ -1,0 +1,54 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: java-win
+  namespace: tenant1
+spec:
+  parallelism: 1
+  completions: 1
+  template:
+    metadata:
+      name: java-win
+    spec:
+      nodeSelector:
+        kubernetes.io/os: windows
+        kubernetes.io/arch: amd64
+      volumes:
+      - name: java-win-scripts-volume
+        configMap:
+          name: java-win-test-scripts
+      nodeSelector:
+        kubernetes.io/os: windows
+        kubernetes.io/arch: amd64
+      containers:
+      - name: java-win
+        image: mcr.microsoft.com/powershell:lts-nanoserver-1809
+        volumeMounts:
+          - mountPath: C:\java-win-test-scripts
+            name: java-win-scripts-volume
+        command:
+        - pwsh
+        - -F
+        - C:\java-win-test-scripts\script.ps1
+      restartPolicy: Never
+---
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    script.ps1: |
+      while(1) {
+        for ($num = 1 ; $num -le 1 ; $num++) {
+          Write-Host "Exception in thread "main" java. lang.ArithmeticException: / by zero"
+          Write-Host "  at GreatestNumber.greater(GreatestNumber.java:18)"
+          Write-Host "  at GreatestNumber.main(GreatestNumber.java:27)"
+        }
+        start-sleep -seconds 1
+      }
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: null
+    name:  java-win-test-scripts
+    namespace: tenant1
+kind: List
+metadata: {}

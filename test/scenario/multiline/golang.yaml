@@ -1,0 +1,74 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: golang
+  namespace: tenant1
+spec:
+  parallelism: 1
+  completions: 1
+  template:
+    metadata:
+      name: golang
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+        kubernetes.io/arch: amd64
+      volumes:
+      - name: golang-scripts-volume
+        configMap:
+          name: golang-test-scripts
+      containers:
+      - name: golang
+        image: mcr.microsoft.com/mirror/docker/library/ubuntu:18.04
+
+        volumeMounts:
+          - mountPath: /golang-test-scripts
+            name: golang-scripts-volume
+        env:
+          - name: HOME
+            value: /tmp
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "scripts in /golang-test-scripts"
+          ls -lh /golang-test-scripts
+          echo "copy scripts to /tmp"
+          cp /golang-test-scripts/*.sh /tmp
+          echo "apply 'chmod +x' to /tmp/*.sh"
+          chmod +x /tmp/*.sh
+          echo "script.sh in /tmp"
+          ls -lh /tmp
+          /tmp/script.sh
+      restartPolicy: Never
+---
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    script.sh: |
+      #!/bin/bash
+
+      while true; do
+        sleep 1 &
+        for var in {1..1..1}
+        do
+          echo "2022/11/29 05:41:10 This is our first log message in Go."
+          echo "2022/11/29 05:41:10 log panic"
+          echo "panic: log panic"
+          echo ""
+          echo "goroutine 1 [running]:"
+          echo "log.Panic({0xc00008df48?, 0xc00006cf70?, 0x405359?})"
+          echo "        /usr/local/go/src/log/log.go:388 +0x65"
+          echo "main.main()"
+          echo "        /datadrive/repos/arm64-config/multi/multiline-loggers/golang/main.go:12 +0xad"
+        done
+        wait
+      done
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: null
+    name:  golang-test-scripts
+    namespace: tenant1
+kind: List
+metadata: {}

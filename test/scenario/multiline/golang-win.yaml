@@ -1,0 +1,60 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: golang-win
+  namespace: tenant1
+spec:
+  parallelism: 1
+  completions: 1
+  template:
+    metadata:
+      name: golang-win
+    spec:
+      nodeSelector:
+        kubernetes.io/os: windows
+        kubernetes.io/arch: amd64
+      volumes:
+      - name: golang-win-scripts-volume
+        configMap:
+          name: golang-win-test-scripts
+      nodeSelector:
+        kubernetes.io/os: windows
+        kubernetes.io/arch: amd64
+      containers:
+      - name: golang-win
+        image: mcr.microsoft.com/powershell:lts-nanoserver-1809
+        volumeMounts:
+          - mountPath: C:\golang-win-test-scripts
+            name: golang-win-scripts-volume
+        command:
+        - pwsh
+        - -F
+        - C:\golang-win-test-scripts\script.ps1
+      restartPolicy: Never
+---
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    script.ps1: |
+      while(1) {
+        for ($num = 1 ; $num -le 1 ; $num++) {
+          Write-Host "2022/11/29 05:41:10 This is our first log message in Go."
+          Write-Host "2022/11/29 05:41:10 log panic"
+          Write-Host "panic: log panic"
+          Write-Host ""
+          Write-Host "goroutine 1 [running]:"
+          Write-Host "log.Panic({0xc00008df48?, 0xc00006cf70?, 0x405359?})"
+          Write-Host "        /usr/local/go/src/log/log.go:388 +0x65"
+          Write-Host "main.main()"
+          Write-Host "        /datadrive/repos/arm64-config/multi/multiline-loggers/golang/main.go:12 +0xad"
+        }
+        start-sleep -seconds 1
+      }
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: null
+    name:  golang-win-test-scripts
+    namespace: tenant1
+kind: List
+metadata: {}

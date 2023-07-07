@@ -1,0 +1,72 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: python
+  namespace: tenant1
+spec:
+  parallelism: 1
+  completions: 1
+  template:
+    metadata:
+      name: python
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+        kubernetes.io/arch: amd64
+      volumes:
+      - name: python-scripts-volume
+        configMap:
+          name: python-test-scripts
+      containers:
+      - name: python
+        image: mcr.microsoft.com/mirror/docker/library/ubuntu:18.04
+
+        volumeMounts:
+          - mountPath: /python-test-scripts
+            name: python-scripts-volume
+        env:
+          - name: HOME
+            value: /tmp
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "scripts in /python-test-scripts"
+          ls -lh /python-test-scripts
+          echo "copy scripts to /tmp"
+          cp /python-test-scripts/*.sh /tmp
+          echo "apply 'chmod +x' to /tmp/*.sh"
+          chmod +x /tmp/*.sh
+          echo "script.sh in /tmp"
+          ls -lh /tmp
+          /tmp/script.sh
+      restartPolicy: Never
+---
+apiVersion: v1
+items:
+- apiVersion: v1
+  data:
+    script.sh: |
+      #!/bin/bash
+
+      while true; do
+        sleep 1 &
+        for var in {1..1..1}
+        do
+          echo "INFO:werkzeug:127.0.0.1 - - [24/Jan/2023 20:50:19] GET /crash HTTP/1.1 500 -"
+          echo "Traceback (most recent call last):"
+          echo "  File /usr/lib/python3.10/site-packages/flask/app.py, line 2548, in __call__"
+          echo "    return self.wsgi_app(environ, start_response)"
+          echo "  File /usr/lib/python3.10/site-packages/flask/app.py, line 2528, in wsgi_app"
+          echo "    response = self.handle_exception(e)"
+          echo "ZeroDivisionError: division by zero"
+        done
+        wait
+      done
+  kind: ConfigMap
+  metadata:
+    creationTimestamp: null
+    name:  python-test-scripts
+    namespace: tenant1
+kind: List
+metadata: {}
