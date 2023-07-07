@@ -31,6 +31,12 @@
   "overrides": {
     "async-listener": {
       "semver": "^7.5.3"
+    },
+    "cls-hooked": {
+      "semver": "^7.5.3"
+    },
+    "diagnostic-channel": {
+      "semver": "^7.5.3"
     }
   },
   "engines": {
