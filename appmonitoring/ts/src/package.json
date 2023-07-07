@@ -29,7 +29,9 @@
     "typescript": "^5.0.4"
   },
   "overrides": {
-    "semver": "^7.5.3"
+    "async-listener": {
+      "semver": "^7.5.3"
+    }
   },
   "engines": {
     "node": "^16.19.1"
