@@ -17,27 +17,14 @@
     "@kubernetes/client-node": "^0.18.1",
     "@types/node": "20.2.4",
     "@types/npm": "^7.19.0",
-    "applicationinsights": "^2.6.0",
+    "applicationinsights": "^2.7.0",
     "chai": "4.3.7",
-    "dot-prop": "8.0.0",
     "http-proxy-agent": "7.0.0",
     "https-proxy-agent": "7.0.0",
     "log4js": "^6.9.1",
-    "toml": "3.0.0",
     "ts-node": "10.9.1",
     "tsc": "^2.0.4",
     "typescript": "^5.0.4"
-  },
-  "overrides": {
-    "async-listener": {
-      "semver": "^7.5.3"
-    },
-    "cls-hooked": {
-      "semver": "^7.5.3"
-    },
-    "diagnostic-channel": {
-      "semver": "^7.5.3"
-    }
   },
   "engines": {
     "node": "^20.4.0"
