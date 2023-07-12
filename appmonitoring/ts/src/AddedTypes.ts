@@ -27,14 +27,10 @@ export class AddedTypes {
     private static agentVolumeMountPathNodeJs = "/agent-nodejs";
 
     // agent logs volume (where agents dump runtime logs)
-    private static agentLogsVolumeDotNet = "agent-volume-logs-dotnet";
-    private static agentLogsVolumeJava = "agent-volume-logs-java";
-    private static agentLogsVolumeNodeJs = "agent-volume-logs-nodejs";
-
+    private static agentLogsVolume = "agent-volume-logs";
+    
     // agent logs volume mount path
-    private static agentLogsVolumeMountPathDotNet = "/var/log/applicationinsights";
-    private static agentLogsVolumeMountPathJava = "/var/log/applicationinsights"; // this is hardcoded in Java SDK, can't change this
-    private static agentLogsVolumeMountPathNodeJs = "/var/log/applicationinsights"; // this is hardcoded in NodeJs SDK, can't change this
+    private static agentLogsVolumeMountPath = "/var/log/applicationinsights"; // this is hardcoded in Java SDK and NodeJs SDK, can't change this
     
     public static init_containers(platforms: string[]) {
         const containers: object[] = [];
@@ -165,7 +161,7 @@ ${ownerUid}`
                     returnValue.push(...[
                         {
                             name: "OTEL_DOTNET_AUTO_LOG_DIRECTORY",
-                            value: AddedTypes.agentLogsVolumeMountPathDotNet
+                            value: AddedTypes.agentLogsVolumeMountPath
                         },
                         {
                             name: "DOTNET_STARTUP_HOOKS",
@@ -221,8 +217,8 @@ ${ownerUid}`
                 case "Java":
                     {
                         returnValue.push(...[{
-                            name: "JAVA_OPTIONS",
-                            value: `-javaagent:${AddedTypes.agentLogsVolumeMountPathJava}/applicationinsights-agent-codeless.jar`
+                            name: "JAVA_TOOL_OPTIONS",
+                            value: `-javaagent:${AddedTypes.agentVolumeMountPathJava}/applicationinsights-agent-codeless.jar`
                         }]);
                     }
                     break;
@@ -257,11 +253,6 @@ ${ownerUid}`
                         name: AddedTypes.agentVolumeDotNet,
                         mountPath: AddedTypes.agentVolumeMountPathDotNet
                     });
-
-                    volumeMounts.push({
-                        name: AddedTypes.agentLogsVolumeDotNet,
-                        mountPath: AddedTypes.agentLogsVolumeMountPathDotNet
-                    });
                     break;
 
                 case "Java":
@@ -269,22 +260,12 @@ ${ownerUid}`
                         name: AddedTypes.agentVolumeJava,
                         mountPath: AddedTypes.agentVolumeMountPathJava
                     });
-
-                    volumeMounts.push({
-                        name: AddedTypes.agentLogsVolumeJava,
-                        mountPath: AddedTypes.agentLogsVolumeMountPathJava
-                    });
                     break;
 
                 case "NodeJs":
                     volumeMounts.push({
                         name: AddedTypes.agentVolumeNodeJs,
                         mountPath: AddedTypes.agentVolumeMountPathNodeJs
-                    });
-
-                    volumeMounts.push({
-                        name: AddedTypes.agentLogsVolumeNodeJs,
-                        mountPath: AddedTypes.agentLogsVolumeMountPathNodeJs
                     });
                     break;
 
@@ -296,6 +277,23 @@ ${ownerUid}`
                     throw `Unsupported platform in volume_mounts(): ${platforms[i]}`;
             }
         }
+
+        let logVolumeMounted = false;
+        for (let i = 0; i < platforms.length; i++) {
+            switch (platforms[i]) {
+                case "DotNet":
+                case "Java":
+                case "NodeJs":
+                    if(!logVolumeMounted) {
+                        volumeMounts.push({
+                            name: AddedTypes.agentLogsVolume,
+                            mountPath: AddedTypes.agentLogsVolumeMountPath
+                        });
+
+                        logVolumeMounted = true;
+                    }
+            }
+        }       
 
         return volumeMounts;
     }
@@ -310,11 +308,6 @@ ${ownerUid}`
                         name: AddedTypes.agentVolumeDotNet,
                         emptyDir: {}
                     });
-
-                    volumes.push({
-                        name: AddedTypes.agentLogsVolumeDotNet,
-                        emptyDir: {}
-                    });
                     break;
 
                 case "Java":
@@ -322,21 +315,11 @@ ${ownerUid}`
                         name: AddedTypes.agentVolumeJava,
                         emptyDir: {}
                     });
-
-                    volumes.push({
-                        name: AddedTypes.agentLogsVolumeJava,
-                        emptyDir: {}
-                    });
                     break;
 
                 case "NodeJs":
                     volumes.push({
                         name: AddedTypes.agentVolumeNodeJs,
-                        emptyDir: {}
-                    });
-
-                    volumes.push({
-                        name: AddedTypes.agentLogsVolumeNodeJs,
                         emptyDir: {}
                     });
                     break;
@@ -349,6 +332,23 @@ ${ownerUid}`
                     throw `Unsupported platform in volumes(): ${platforms[i]}`;
             }
         }
+
+        let logVolumeAdded = false;
+        for (let i = 0; i < platforms.length; i++) {
+            switch (platforms[i]) {
+                case "DotNet":
+                case "Java":
+                case "NodeJs":
+                    if(!logVolumeAdded) {
+                        volumes.push({
+                            name: AddedTypes.agentLogsVolume,
+                            emptyDir: {}
+                        });
+
+                        logVolumeAdded = true;
+                    }
+            }
+        }       
 
         return volumes;
     }
