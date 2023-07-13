@@ -86,13 +86,17 @@ Set-EnvironmentVariables
 Start-FileSystemWatcher
 
 if(Get-GenevaEnabled){
-    Invoke-Expression ".\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe -useenv"
+    
+    Start-Job -Name "WindowsHostLogsJob" -ScriptBlock {
+        .".\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe" -useenv
+    }
+
 } else {
     Write-Host "Geneva not configured. Watching for config map"
     # Infinite loop keeps container alive while waiting for config map
     # Otherwise when the process ends, kubernetes sees this as a crash and the container will enter a crash loop
-    while($true){
-        Start-Sleep 3600
-    }
+    #while($true){
+    #    Start-Sleep 3600
+    #}
 }
 

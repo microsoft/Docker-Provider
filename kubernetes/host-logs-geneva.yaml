@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
  name: host-logs-windows
- namespace: kube-system
+ namespace: test-probe
  labels:
   component: geneva-agent-windows
   tier: node-win
@@ -34,7 +34,7 @@ spec:
     hostNetwork: true
     containers:
      - name: host-logs-windows
-       image: "VALUE_IMAGE_NAME"
+       image: "cacarlttesteastus2.azurecr.io/whltest:win-07072023-ltsc2022"
        imagePullPolicy: IfNotPresent
        resources:
         limits:
@@ -56,10 +56,12 @@ spec:
        livenessProbe:
           exec:
             command:
-              - cmd
-              - /c
-              - .\opt\hostlogswindows\scripts\cmd\livenessprobe.exe
-              - ".\\etc\\hostlogswindows\\filesystemwatcher.txt"
+              - powershell
+              - -command
+              - |
+                .\opt\hostlogswindows\scripts\powershell\livenessprobe.ps1
+                -jobName ".\\opt\\genevamonitoringagent\\genevamonitoringagent\\Monitoring\Agent\\MonAgentManager.exe"
+                -filePath ".\\etc\\hostlogswindows\\filesystemwatcher.txt"
     affinity:
      nodeAffinity:
        requiredDuringSchedulingIgnoredDuringExecution:
@@ -83,3 +85,4 @@ spec:
         configMap:
           name: container-azm-ms-hostlogsconfig
           optional: true
+    nodeName: akshpc000000

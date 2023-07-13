@@ -33,6 +33,6 @@ COPY ./hostlogswindows/installer/scripts/*.rb /opt/hostlogswindows/scripts/ruby/
 
 COPY main.ps1 /opt/hostlogswindows/scripts/powershell/main.ps1
 COPY ./hostlogswindows/installer/scripts/filesystemwatcher.ps1 /opt/hostlogswindows/scripts/powershell
-COPY ./hostlogswindows/installer/livenessprobe/livenessprobe.exe /opt/hostlogswindows/scripts/cmd/
+COPY ./hostlogswindows/installer/scripts/livenessprobe.ps1 /opt/hostlogswindows/scripts/powershell
 
 ENTRYPOINT ["powershell", ".\\opt\\hostlogswindows\\scripts\\powershell\\main.ps1"]
