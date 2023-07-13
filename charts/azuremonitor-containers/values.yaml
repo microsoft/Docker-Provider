@@ -134,10 +134,6 @@ amalogs:
               operator: NotIn
               values:
                 - virtual-kubelet
-            - key: kubernetes.io/arch
-              operator: In
-              values:
-                - amd64
   deployment:
     affinity:
       nodeAffinity:
@@ -165,10 +161,6 @@ amalogs:
               operator: NotIn
               values:
                 - master
-            - key: kubernetes.io/arch
-              operator: In
-              values:
-                - amd64
   ## Configure resource requests and limits
   ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
   ##
