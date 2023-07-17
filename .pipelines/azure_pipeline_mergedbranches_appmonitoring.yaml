@@ -166,7 +166,6 @@ jobs:
 
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-        touch .trivyignore
         echo "# tough-cookie -> request -> kubernetes/client-node\nCVE-2023-26136" > .trivyignore
         cat .trivyignore
 
