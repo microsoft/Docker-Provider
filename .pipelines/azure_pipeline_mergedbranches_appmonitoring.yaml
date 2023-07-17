@@ -166,7 +166,9 @@ jobs:
 
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-        echo "# tough-cookie -> request -> kubernetes/client-node\nCVE-2023-26136" > .trivyignore
+        echo "# tough-cookie -> request -> kubernetes/client-node" > .trivyignore
+        echo "CVE-2023-26136" >> .trivyignore
+        echo ".trivyignore file:"
         cat .trivyignore
 
         trivy image --ignore-unfixed --format json --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 ${{ variables.repoImageName }}:$(imageTag)
