@@ -10,12 +10,12 @@ param(
     [string]$fileName
 )
 
-if (-Not (Test-Path -Path $fileName -PathType Leaf)) 
+if (Test-Path -Path $fileName -PathType Leaf) 
 {
-    Write-Error "File $fileName does not exist"
+    Write-Error "INFO: File: $filename exists indicates Config Map Updated since agent started."
 }
 
 if(-not (Get-WmiObject Win32_Process -Filter "ExecutablePath LIKE '%$exeRelativePath'"))
 {
-    Write-Error "Process not running: $exeFullPath"
+    Write-Error "ERROR: Process not running: $exeFullPath"
 }

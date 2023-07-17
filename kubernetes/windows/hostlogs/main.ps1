@@ -74,7 +74,7 @@ function Get-GenevaEnabled {
 
   return (![string]::IsNullOrEmpty($gcsEnvironment)) -and 
     (![string]::IsNullOrEmpty($gcsAccount)) -and 
-    (![string]::IsNullOrEmpty($gcsNamespace)) -and 
+    (![string]::IsNullOrEmpty($gcsNamespace)) -and
     (![string]::IsNullOrEmpty($gcsConfigVersion)) -and 
     (![string]::IsNullOrEmpty($gcsAuthIdIdentifier))  -and 
     (![string]::IsNullOrEmpty($gcsAuthIdValue)) 
@@ -86,17 +86,16 @@ Set-EnvironmentVariables
 Start-FileSystemWatcher
 
 if(Get-GenevaEnabled){
-    
-    Start-Job -Name "WindowsHostLogsJob" -ScriptBlock {
-        .".\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe" -useenv
+    Write-Host "Starting Windows AMA in 1P Mode"
+
+    Start-Job -Name "WindowsHostLogsJob" -ScriptBlock { 
+        Start-Process -NoNewWindow -FilePath ".\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe" -ArgumentList @("-useenv")
     }
 
 } else {
     Write-Host "Geneva not configured. Watching for config map"
-    # Infinite loop keeps container alive while waiting for config map
-    # Otherwise when the process ends, kubernetes sees this as a crash and the container will enter a crash loop
-    #while($true){
-    #    Start-Sleep 3600
-    #}
+
+    Notepad.exe | Out-Null
 }
 
+Write-Host "Main.ps1 ending"
