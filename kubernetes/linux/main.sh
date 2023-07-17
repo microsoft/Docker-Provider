@@ -855,6 +855,23 @@ else
 fi
 source ~/.bashrc
 
+if [ -n "${BACKPRESSURE_THRESHOLD}" ]; then
+      echo "Setting MDSD backpressure threshold from configmap"
+      export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD=${BACKPRESSURE_THRESHOLD}
+      echo "export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD=$MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD" >> ~/.bashrc
+      source ~/.bashrc
+elif [ -z "${FBIT_TAIL_MEM_BUF_LIMIT}" ]; then
+      if [[ -f "/sys/fs/cgroup/memory/memory.limit_in_bytes" ]]; then
+            echo "Setting MDSD backpressure threshold from container limit"
+            limit_in_bytes=$(cat /sys/fs/cgroup/memory/memory.limit_in_bytes)
+            limit_in_mebibytes=$((limit_in_bytes / 1048576))
+
+            export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD=$((limit_in_mebibytes * 75 / 100))
+            echo "export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD=$MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD" >> ~/.bashrc
+            source ~/.bashrc
+      fi
+fi
+
 if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
     if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
       echo "starting mdsd with mdsd-port=26130, fluentport=26230 and influxport=26330 in sidecar container..."

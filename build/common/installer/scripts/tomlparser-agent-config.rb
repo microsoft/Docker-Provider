@@ -95,6 +95,8 @@ require_relative "ConfigParseErrorLogger"
 @waittime_port_25228 = 120
 @waittime_port_25229 = 45
 
+@mdsdBackPressureThreshold = 0
+
 def is_number?(value)
   true if Integer(value) rescue false
 end
@@ -263,16 +265,23 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           puts "Using config map value: require_ack_response = #{@requireAckResponse}"
         end
       end
-      # ama-logs daemonset only settings
-      if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.casecmp(@daemonset) == 0 && @containerType.nil?
-        # mdsd settings
-        mdsd_config = parsedConfig[:agent_settings][:mdsd_config]
-        if !mdsd_config.nil?
+
+      # mdsd settings
+      mdsd_config = parsedConfig[:agent_settings][:mdsd_config]
+      if !mdsd_config.nil?
+        # ama-logs daemonset only settings
+        if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.casecmp(@daemonset) == 0 && @containerType.nil?
           mdsdMonitoringMaxEventRate = mdsd_config[:monitoring_max_event_rate]
           if is_valid_number?(mdsdMonitoringMaxEventRate)
             @mdsdMonitoringMaxEventRate = mdsdMonitoringMaxEventRate.to_i
             puts "Using config map value: monitoring_max_event_rate  = #{@mdsdMonitoringMaxEventRate}"
           end
+        end
+
+        mdsdBackPressureThreshold = mdsd_config[:backpressure_memory_threshold]
+        if is_valid_number?(mdsdBackPressureThreshold)
+          @mdsdBackPressureThreshold = mdsdBackPressureThreshold.to_i
+          puts "Using config map value: backpressure_memory_threshold  = #{@mdsdBackPressureThreshold}"
         end
       end
 
@@ -402,6 +411,10 @@ if !file.nil?
   #mdsd settings
   if @mdsdMonitoringMaxEventRate > 0
     file.write("export MONITORING_MAX_EVENT_RATE=#{@mdsdMonitoringMaxEventRate}\n")
+  end
+
+  if @mdsdBackPressureThreshold > 0
+    file.write("export BACKPRESSURE_THRESHOLD=#{@mdsdBackPressureThreshold}\n")
   end
 
   if @promFbitChunkSize > 0
