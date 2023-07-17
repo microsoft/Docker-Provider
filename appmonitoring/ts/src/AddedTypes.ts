@@ -7,7 +7,7 @@ export class AddedTypes {
     private static initContainerNameNodeJs = "agent-init-nodejs";
     
     // agent image
-    private static agentImageDotNet = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/dotnet:1.0.0-beta1";
+    private static agentImageDotNet = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/dotnet:1.0.0-beta2";
     private static agentImageJava = "mcr.microsoft.com/applicationinsights/auto-instrumentation/java:3.4.14";
     private static agentImageNodeJs = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/nodejs:3.0.0-beta.6";
     
@@ -198,10 +198,6 @@ ${ownerUid}`
                         {
                             name: "OTEL_DOTNET_AUTO_PLUGINS",
                             value: "Azure.Monitor.OpenTelemetry.AutoInstrumentation.AzureMonitorPlugin, Azure.Monitor.OpenTelemetry.AutoInstrumentation, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
-                        },
-                        {
-                            name: "OTEL_SERVICE_NAME",
-                            value: "StartupHook.Self-hosted"
                         },
                         {
                             name: "OTEL_DOTNET_AUTO_LOGS_INCLUDE_FORMATTED_MESSAGE",
