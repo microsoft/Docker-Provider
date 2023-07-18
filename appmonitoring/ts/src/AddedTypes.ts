@@ -13,7 +13,7 @@ export class AddedTypes {
     
     // path on agent image to copy from
     private static imagePathDotNet = "/dotnet-tracer-home/.";
-    private static imagePathJava = "/agents/java/.";
+    private static imagePathJava = "/agents/java/applicationinsights-agent-codeless.jar";
     private static imagePathNodeJs = "/agents/nodejs/.";
 
     // agent volume (where init containers copy agent binaries to)
@@ -55,7 +55,7 @@ export class AddedTypes {
                         name: AddedTypes.initContainerNameJava,
                         image: AddedTypes.agentImageJava,
                         command: ["cp"],
-                        args: ["-a", AddedTypes.imagePathJava, AddedTypes.agentVolumeMountPathJava], // cp -a <source> <destination>
+                        args: ["-a", AddedTypes.imagePathJava, AddedTypes.agentVolumeMountPathJava], // cp -a <source> <destination> 
                         volumeMounts: [{
                             name: AddedTypes.agentVolumeJava,
                             mountPath: AddedTypes.agentVolumeMountPathJava
