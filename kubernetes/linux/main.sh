@@ -857,8 +857,8 @@ source ~/.bashrc
 
 if [ -n "${BACKPRESSURE_THRESHOLD}" ]; then
       echo "Setting MDSD backpressure threshold from configmap"
-      export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD=${BACKPRESSURE_THRESHOLD}
-      echo "export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD=$MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD" >> ~/.bashrc
+      export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB=${BACKPRESSURE_THRESHOLD}
+      echo "export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB=$MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB" >> ~/.bashrc
       source ~/.bashrc
 elif [ -z "${FBIT_TAIL_MEM_BUF_LIMIT}" ]; then
       if [[ -f "/sys/fs/cgroup/memory/memory.limit_in_bytes" ]]; then
@@ -866,8 +866,8 @@ elif [ -z "${FBIT_TAIL_MEM_BUF_LIMIT}" ]; then
             limit_in_bytes=$(cat /sys/fs/cgroup/memory/memory.limit_in_bytes)
             limit_in_mebibytes=$((limit_in_bytes / 1048576))
 
-            export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD=$((limit_in_mebibytes * 75 / 100))
-            echo "export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD=$MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD" >> ~/.bashrc
+            export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB=$((limit_in_mebibytes * 75 / 100))
+            echo "export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB=$MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB" >> ~/.bashrc
             source ~/.bashrc
       fi
 fi
