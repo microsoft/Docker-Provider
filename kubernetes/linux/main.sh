@@ -866,7 +866,7 @@ elif [ -z "${FBIT_TAIL_MEM_BUF_LIMIT}" ]; then
             echo "Setting MDSD backpressure threshold from container limit"
             limit_in_mebibytes=$((CONTAINER_MEMORY_LIMIT / 1048576))
 
-            export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB=$((limit_in_mebibytes * 75 / 100))
+            export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB=$((limit_in_mebibytes * 50 / 100))
             echo "export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB=$MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB" >> ~/.bashrc
             source ~/.bashrc
       fi
