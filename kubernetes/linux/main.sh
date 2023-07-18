@@ -855,16 +855,16 @@ else
 fi
 source ~/.bashrc
 
+# manually set backpressure value using container limit only when neither backpressure or fbit tail buffer is provided through configmap
 if [ -n "${BACKPRESSURE_THRESHOLD}" ]; then
       echo "Setting MDSD backpressure threshold from configmap"
       export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB=${BACKPRESSURE_THRESHOLD}
       echo "export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB=$MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB" >> ~/.bashrc
       source ~/.bashrc
 elif [ -z "${FBIT_TAIL_MEM_BUF_LIMIT}" ]; then
-      if [[ -f "/sys/fs/cgroup/memory/memory.limit_in_bytes" ]]; then
+      if [ -n "${CONTAINER_MEMORY_LIMIT}" ]; then
             echo "Setting MDSD backpressure threshold from container limit"
-            limit_in_bytes=$(cat /sys/fs/cgroup/memory/memory.limit_in_bytes)
-            limit_in_mebibytes=$((limit_in_bytes / 1048576))
+            limit_in_mebibytes=$((CONTAINER_MEMORY_LIMIT / 1048576))
 
             export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB=$((limit_in_mebibytes * 75 / 100))
             echo "export MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB=$MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB" >> ~/.bashrc

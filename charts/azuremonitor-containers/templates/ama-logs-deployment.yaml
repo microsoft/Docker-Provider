@@ -58,6 +58,11 @@ spec:
            resourceFieldRef:
              containerName: ama-logs
              resource: limits.cpu
+       - name: CONTAINER_MEMORY_LIMIT
+         valueFrom:
+           resourceFieldRef:
+             containerName: ama-logs
+             resource: limits.memory
        {{- if ne .Values.amalogs.env.clusterId "<your_cluster_id>" }}
        - name: AKS_RESOURCE_ID
          value: {{ .Values.amalogs.env.clusterId | quote }}
