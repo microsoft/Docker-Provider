@@ -10,12 +10,18 @@ param(
     [string]$fileName
 )
 
+$SUCCESS=0
+$FILESYSTEM_WATCHER_FILE_EXISTS=1
+$NO_MONAGENT_MANAGER_PROCESS=2
+
 if (Test-Path -Path $fileName -PathType Leaf) 
 {
     Write-Error "INFO: File: $filename exists indicates Config Map Updated since agent started."
+    exit $FILESYSTEM_WATCHER_FILE_EXISTS
 }
 
 if(-not (Get-WmiObject Win32_Process -Filter "ExecutablePath LIKE '%$exeRelativePath'"))
 {
     Write-Error "ERROR: Process not running: $exeFullPath"
+    exit $NO_MONAGENT_MANAGER_PROCESS
 }

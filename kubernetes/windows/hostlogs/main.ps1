@@ -94,8 +94,9 @@ if(Get-GenevaEnabled){
 
 } else {
     Write-Host "Geneva not configured. Watching for config map"
-
-    Notepad.exe | Out-Null
 }
+
+
+Notepad.exe | Out-Null
 
 Write-Host "Main.ps1 ending"
