@@ -16,9 +16,16 @@ require_relative "ConfigParseErrorLogger"
 @waittime_port_25226 = 45
 @waittime_port_25228 = 120
 @waittime_port_25229 = 45
+@containerMemoryLimitInBytes = ENV["CONTAINER_MEMORY_LIMIT_IN_BYTES"]
+@mdsdBackPressureThresholdInMB = 0
 
 def is_number?(value)
   true if Integer(value) rescue false
+end
+
+# check if it is number and greater than 0
+def is_valid_number?(value)
+  return !value.nil? && is_number?(value) && value.to_i > 0
 end
 
 # check if it is a valid waittime
@@ -94,6 +101,18 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         end
       end
 
+      # mdsd settings
+      mdsd_config = parsedConfig[:agent_settings][:mdsd_config]
+      if !mdsd_config.nil?
+        mdsdBackPressureThresholdInMB = mdsd_config[:backpressure_memory_threshold_in_mb]
+        if is_valid_number?(mdsdBackPressureThresholdInMB) && is_valid_number?(@containerMemoryLimitInBytes) && mdsdBackPressureThresholdInMB.to_i < (@containerMemoryLimitInBytes.to_i / 1048576) && mdsdBackPressureThresholdInMB.to_i > 100
+          @mdsdBackPressureThresholdInMB = mdsdBackPressureThresholdInMB.to_i
+          puts "Using config map value: backpressure_memory_threshold_in_mb  = #{@mdsdBackPressureThresholdInMB}"
+        else
+          puts "Ignoring mdsd backpressure limit. Check input values for correctness. Configmap value in mb: #{mdsdBackPressureThresholdInMB}, container limit in bytes: #{@containerMemoryLimitInBytes}"
+        end
+      end
+
     end
   rescue => errorStr
     puts "config::error:Exception while reading config settings for sidecar agent configuration setting - #{errorStr}, using defaults"
@@ -124,6 +143,11 @@ if !file.nil?
   file.write("export WAITTIME_PORT_25226=#{@waittime_port_25226}\n")
   file.write("export WAITTIME_PORT_25228=#{@waittime_port_25228}\n")
   file.write("export WAITTIME_PORT_25229=#{@waittime_port_25229}\n")
+  
+  if @mdsdBackPressureThresholdInMB > 0
+    file.write("export BACKPRESSURE_THRESHOLD_IN_MB=#{@mdsdBackPressureThresholdInMB}\n")
+  end
+
   # Close file after writing all environment variables
   file.close
 else
