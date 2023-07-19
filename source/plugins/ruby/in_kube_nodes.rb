@@ -50,6 +50,7 @@ module Fluent::Plugin
       @@rsPromMonitorPodsFieldSelectorLength = @env["TELEMETRY_RS_PROM_FIELD_SELECTOR_LENGTH"]
       @@collectAllKubeEvents = @env["AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS"]
       @@osmNamespaceCount = @env["TELEMETRY_OSM_CONFIGURATION_NAMESPACES_COUNT"]
+      @@mdsdBackPressureThresholdInMB = @env["MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB"]
 
       @ContainerNodeInventoryTag = "oneagent.containerInsights.CONTAINER_NODE_INVENTORY_BLOB"
       @insightsMetricsTag = "oneagent.containerInsights.INSIGHTS_METRICS_BLOB"
@@ -393,6 +394,12 @@ module Fluent::Plugin
               if (File.file?(@@osmConfigMountPath))
                 properties["osmNamespaceCount"] = @@osmNamespaceCount
               end
+
+              # telemetry about mdsd backpressure limits for replicaset
+              if (!@@mdsdBackPressureThresholdInMB.nil?) && (!@@mdsdBackPressureThresholdInMB.empty?)
+                properties["mdsdBackPressureThresholdInMB"] = @@mdsdBackPressureThresholdInMB
+              end
+
               @applicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
               telemetrySent = true
             rescue => errorStr

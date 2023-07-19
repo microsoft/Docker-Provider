@@ -185,6 +185,11 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 				telemetryDimensions["PromFbitBufferSize"] = os.Getenv("AZMON_SIDECAR_FBIT_BUFFER_SIZE")
 				telemetryDimensions["PromFbitMemBufLimit"] = os.Getenv("AZMON_SIDECAR_FBIT_MEM_BUF_LIMIT")
 
+				mdsdBackPressureThresholdInMB := os.Getenv("MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB")
+				if mdsdBackPressureThresholdInMB != "" {
+					telemetryDimensions["mdsdBackPressureThresholdInMB"] = mdsdBackPressureThresholdInMB
+				}
+
 				SendEvent(eventNameCustomPrometheusSidecarHeartbeat, telemetryDimensions)
 
 			} else {
@@ -207,6 +212,10 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 				mdsdMonitoringMaxEventRate := os.Getenv("MONITORING_MAX_EVENT_RATE")
 				if mdsdMonitoringMaxEventRate != "" {
 					telemetryDimensions["mdsdMonitoringMaxEventRate"] = mdsdMonitoringMaxEventRate
+				}
+				mdsdBackPressureThresholdInMB := os.Getenv("MDSD_BACKPRESSURE_MONITOR_MEMORY_THRESHOLD_IN_MB")
+				if mdsdBackPressureThresholdInMB != "" {
+					telemetryDimensions["mdsdBackPressureThresholdInMB"] = mdsdBackPressureThresholdInMB
 				}
 				telemetryDimensions["PromFbitChunkSize"] = os.Getenv("AZMON_FBIT_CHUNK_SIZE")
 				telemetryDimensions["PromFbitBufferSize"] = os.Getenv("AZMON_FBIT_BUFFER_SIZE")

@@ -78,6 +78,7 @@ require_relative "ConfigParseErrorLogger"
 # Checking to see if container is not prometheus sidecar.
 # CONTAINER_TYPE is populated only for prometheus sidecar container.
 @containerType = ENV["CONTAINER_TYPE"]
+@containerMemoryLimitInBytes = ENV["CONTAINER_MEMORY_LIMIT_IN_BYTES"]
 
 @promFbitChunkSize = 0
 @promFbitBufferSize = 0
@@ -95,7 +96,7 @@ require_relative "ConfigParseErrorLogger"
 @waittime_port_25228 = 120
 @waittime_port_25229 = 45
 
-@mdsdBackPressureThreshold = 0
+@mdsdBackPressureThresholdInMB = 0
 
 def is_number?(value)
   true if Integer(value) rescue false
@@ -278,10 +279,12 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           end
         end
 
-        mdsdBackPressureThreshold = mdsd_config[:backpressure_memory_threshold]
-        if is_valid_number?(mdsdBackPressureThreshold)
-          @mdsdBackPressureThreshold = mdsdBackPressureThreshold.to_i
-          puts "Using config map value: backpressure_memory_threshold  = #{@mdsdBackPressureThreshold}"
+        mdsdBackPressureThresholdInMB = mdsd_config[:backpressure_memory_threshold_in_mb]
+        if is_valid_number?(mdsdBackPressureThresholdInMB) && is_valid_number?(@containerMemoryLimitInBytes) && mdsdBackPressureThresholdInMB.to_i < (@containerMemoryLimitInBytes.to_i / 1048576) && mdsdBackPressureThresholdInMB.to_i > 100
+          @mdsdBackPressureThresholdInMB = mdsdBackPressureThresholdInMB.to_i
+          puts "Using config map value: backpressure_memory_threshold_in_mb  = #{@mdsdBackPressureThresholdInMB}"
+        else
+          puts "Ignoring mdsd backpressure limit. Check input values for correctness. Configmap value in mb: #{mdsdBackPressureThresholdInMB}, container limit in bytes: #{@containerMemoryLimitInBytes}"
         end
       end
 
@@ -413,8 +416,8 @@ if !file.nil?
     file.write("export MONITORING_MAX_EVENT_RATE=#{@mdsdMonitoringMaxEventRate}\n")
   end
 
-  if @mdsdBackPressureThreshold > 0
-    file.write("export BACKPRESSURE_THRESHOLD=#{@mdsdBackPressureThreshold}\n")
+  if @mdsdBackPressureThresholdInMB > 0
+    file.write("export BACKPRESSURE_THRESHOLD_IN_MB=#{@mdsdBackPressureThresholdInMB}\n")
   end
 
   if @promFbitChunkSize > 0

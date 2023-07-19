@@ -441,7 +441,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-            - name: CONTAINER_MEMORY_LIMIT
+            - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
               valueFrom:
                 resourceFieldRef:
                   containerName: ama-logs
@@ -531,7 +531,7 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-            - name: CONTAINER_MEMORY_LIMIT
+            - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
               valueFrom:
                 resourceFieldRef:
                   containerName: ama-logs-prometheus
@@ -755,7 +755,7 @@ spec:
                 resourceFieldRef:
                   containerName: ama-logs
                   resource: limits.cpu
-            - name: CONTAINER_MEMORY_LIMIT
+            - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
               valueFrom:
                 resourceFieldRef:
                   containerName: ama-logs
