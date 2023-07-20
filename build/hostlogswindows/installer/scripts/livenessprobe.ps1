@@ -20,8 +20,11 @@ if (Test-Path -Path $fileName -PathType Leaf)
     exit $FILESYSTEM_WATCHER_FILE_EXISTS
 }
 
-if(-not (Get-WmiObject Win32_Process -Filter "ExecutablePath LIKE '%$exeRelativePath'"))
+if($Env:HOSTLOGS_MA_STARTED -eq "true")
 {
-    Write-Error "ERROR: Process not running: $exeFullPath"
-    exit $NO_MONAGENT_MANAGER_PROCESS
+    if(-not (Get-WmiObject Win32_Process -Filter "ExecutablePath LIKE '%$exeRelativePath'"))
+    {
+        Write-Error "ERROR: Process not running: $exeRelativePath"
+        exit $NO_MONAGENT_MANAGER_PROCESS
+    }
 }

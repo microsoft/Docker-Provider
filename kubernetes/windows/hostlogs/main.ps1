@@ -92,6 +92,8 @@ if(Get-GenevaEnabled){
         Start-Process -NoNewWindow -FilePath ".\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe" -ArgumentList @("-useenv")
     }
 
+    [System.Environment]::SetEnvironmentVariable("HOSTLOGS_MA_STARTED", "true", "process")
+
 } else {
     Write-Host "Geneva not configured. Watching for config map"
 }

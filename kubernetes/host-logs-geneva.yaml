@@ -38,8 +38,8 @@ spec:
        imagePullPolicy: IfNotPresent
        resources:
         limits:
-         cpu: "1"
-         memory: 2Gi
+         cpu: "0.5"
+         memory: 1Gi
        env:
         - name: AKS_CLUSTER_NAME
           value: "VALUE_AKS_CLUSTER_NAME"
@@ -59,10 +59,10 @@ spec:
               - C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
               - -command
               - |
-                .\opt\hostlogswindows\scripts\powershell\livenessprobe.ps1 -exeRelativePath ".\\opt\\genevamonitoringagent\\genevamonitoringagent\\Monitoring\Agent\\MonAgentManager.exe" -fileName ".\\etc\\hostlogswindows\\filesystemwatcher.txt"
-            initialDelaySeconds: 60
-            periodSeconds: 180
-            timeoutSeconds: 30
+                .\opt\hostlogswindows\scripts\powershell\livenessprobe.ps1 -exeRelativePath "\\opt\\genevamonitoringagent\\genevamonitoringagent\\Monitoring\\Agent\\MonAgentCore.exe" -fileName "etc\hostlogswindows\filesystemwatcher.txt"
+          initialDelaySeconds: 60
+          periodSeconds: 180
+          timeoutSeconds: 30
     affinity:
      nodeAffinity:
        requiredDuringSchedulingIgnoredDuringExecution:
