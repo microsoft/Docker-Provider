@@ -1,8 +1,8 @@
 param(
     [Parameter( Position=0,
                 mandatory=$true,
-                HelpMessage="Path of the MonAgentManager.exe to check if it is running as expected.")] 
-    [string]$monAgentManagerExePath,
+                HelpMessage="Path of the MonAgentLauncher.exe to check if it is running as expected.")] 
+    [string]$monAgentLauncherExePath,
 
     [Parameter( Position=1,
                 mandatory=$true,
@@ -12,7 +12,7 @@ param(
 
 $SUCCESS=0
 $FILESYSTEM_WATCHER_FILE_EXISTS=1
-$NO_MONAGENT_MANAGER_PROCESS=2
+$NO_MONAGENT_LAUNCHER_PROCESS=2
 
 if (Test-Path -Path $fileSystemWatcherTextFilePath -PathType Leaf) 
 {
@@ -24,12 +24,12 @@ $Env:HOSTLOGS_MA_STARTED | Out-File livenessprobe.log
 
 if($Env:HOSTLOGS_MA_STARTED -eq "true")
 {
-    $monAgentManagerExePath.replace('\','\\')
+    $monAgentLauncherExePath.replace('\','\\')
     
-    if(-not (Get-CimInstance Win32_Process -Filter "ExecutablePath LIKE '%$monAgentManagerExePath'"))
+    if(-not (Get-CimInstance Win32_Process -Filter "ExecutablePath LIKE '%$monAgentLauncherExePath'"))
     {
-        Write-Error "ERROR: Process not running: $monAgentManagerExePath"
-        exit $NO_MONAGENT_MANAGER_PROCESS
+        Write-Error "ERROR: Process not running: $monAgentLauncherExePath"
+        exit $NO_MONAGENT_LAUNCHER_PROCESS
     }
 }
 
