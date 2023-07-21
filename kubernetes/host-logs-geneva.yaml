@@ -59,7 +59,7 @@ spec:
               - C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
               - -command
               - |
-                .\opt\hostlogswindows\scripts\powershell\livenessprobe.ps1 -exeRelativePath "\\opt\\genevamonitoringagent\\genevamonitoringagent\\Monitoring\\Agent\\MonAgentCore.exe" -fileName "etc\hostlogswindows\filesystemwatcher.txt"
+                .\opt\hostlogswindows\scripts\powershell\livenessprobe.ps1 -monAgentManagerExePath "\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentManager.exe" -fileSystemWatcherTextFilePath "etc\hostlogswindows\filesystemwatcher.txt"
           initialDelaySeconds: 60
           periodSeconds: 180
           timeoutSeconds: 30
