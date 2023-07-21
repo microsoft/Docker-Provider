@@ -99,7 +99,7 @@ if(Get-GenevaEnabled){
     Write-Host "Geneva not configured. Watching for config map"
 }
 
-
+# Execute Notepad.exe to keep container alive since there is nothing in the foreground.
 Notepad.exe | Out-Null
 
 Write-Host "Main.ps1 ending"
