@@ -37,6 +37,9 @@ spec:
        image: "VALUE_CONTAINER_IMAGE"
        imagePullPolicy: IfNotPresent
        resources:
+        request:
+          cpu: "0.25"
+          memory: 250Mi
         limits:
          cpu: "0.5"
          memory: 1Gi
@@ -60,8 +63,8 @@ spec:
               - -command
               - |
                 .\opt\hostlogswindows\scripts\powershell\livenessprobe.ps1 -monAgentLauncherExePath "\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe" -fileSystemWatcherTextFilePath "etc\hostlogswindows\filesystemwatcher.txt"
-          initialDelaySeconds: 60
-          periodSeconds: 180
+          initialDelaySeconds: 180
+          periodSeconds: 60
           timeoutSeconds: 30
     affinity:
      nodeAffinity:
