@@ -5,12 +5,12 @@ import { logger, Metrics } from "./LoggerWrapper.js";
 import { AppMonitoringConfigCR, IRootObject } from "./RequestDefinition.js";
 import { K8sWatcher } from "./K8sWatcher.js";
 import { AppMonitoringConfigCRsCollection } from "./AppMonitoringConfigCRsCollection.js"
-import { CertificateGenerator } from "./CerttificateGenerator.js";
+import { CertificateGenerator } from "./CertificateGenerator.js";
 
 const crs: AppMonitoringConfigCRsCollection = new AppMonitoringConfigCRsCollection();
 
 
-CertificateGenerator.GenerateSelfSignedCertificate()
+await CertificateGenerator.PatchWebhookAndSecrets();
 
 // don't await, this runs an infinite loop
 K8sWatcher.StartWatchingCRs((cr: AppMonitoringConfigCR, isRemoved: boolean) => {
