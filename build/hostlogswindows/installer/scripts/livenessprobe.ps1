@@ -20,17 +20,14 @@ if (Test-Path -Path $fileSystemWatcherTextFilePath -PathType Leaf)
     exit $FILESYSTEM_WATCHER_FILE_EXISTS
 }
 
-$Env:HOSTLOGS_MA_STARTED | Out-File livenessprobe.log
+$monAgentLauncherExePath = $monAgentLauncherExePath.replace('\','\\')
 
-if($Env:HOSTLOGS_MA_STARTED -eq "true")
+$monAgentLauncherExePath | Out-File livenessprobe.log
+
+if(-not (Get-CimInstance Win32_Process -Filter "ExecutablePath LIKE '%$monAgentLauncherExePath'"))
 {
-    $monAgentLauncherExePath.replace('\','\\')
-    
-    if(-not (Get-CimInstance Win32_Process -Filter "ExecutablePath LIKE '%$monAgentLauncherExePath'"))
-    {
-        Write-Error "ERROR: Process not running: $monAgentLauncherExePath"
-        exit $NO_MONAGENT_LAUNCHER_PROCESS
-    }
+    Write-Error "ERROR: Process not running: $monAgentLauncherExePath"
+    exit $NO_MONAGENT_LAUNCHER_PROCESS
 }
 
 exit $SUCCESS

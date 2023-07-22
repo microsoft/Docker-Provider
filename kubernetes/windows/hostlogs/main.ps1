@@ -92,11 +92,21 @@ if(Get-GenevaEnabled){
         Start-Process -NoNewWindow -FilePath ".\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe" -ArgumentList @("-useenv")
     }
 
-    [System.Environment]::SetEnvironmentVariable("HOSTLOGS_MA_STARTED", $true, "process")
-    Write-Host "Flag is set - $Env:HOSTLOGS_MA_STARTED"
-
 } else {
-    Write-Host "Geneva not configured. Watching for config map"
+    Write-Host "Geneva not configured. Watching for config map."
+
+    [System.Environment]::SetEnvironmentVariable("MONITORING_GCS_ENVIRONMENT", "Test" ,"process")
+    [System.Environment]::SetEnvironmentVariable("MONITORING_GCS_ACCOUNT", "PLACEHOLDER", "process")
+    [System.Environment]::SetEnvironmentVariable("MONITORING_GCS_NAMESPACE", "PLACEHOLDER", "process")
+    [System.Environment]::SetEnvironmentVariable("MONITORING_CONFIG_VERSION", "PLACEHOLDERprocess")
+    [System.Environment]::SetEnvironmentVariable("MONITORING_MANAGED_ID_IDENTIFIER", "PLACEHOLDER", "process")
+    [System.Environment]::SetEnvironmentVariable("MONITORING_MANAGED_ID_VALUE", "PLACEHOLDER", "process")
+
+    Write-Host $Env:MONITORING_GCS_NAMESPACE
+
+    Start-Job -Name "WindowsHostLogsJob" -ScriptBlock { 
+        Start-Process -NoNewWindow -FilePath ".\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe" -ArgumentList @("-useenv")
+    }
 }
 
 # Execute Notepad.exe to keep container alive since there is nothing in the foreground.

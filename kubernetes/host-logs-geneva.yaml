@@ -37,13 +37,15 @@ spec:
        image: "VALUE_CONTAINER_IMAGE"
        imagePullPolicy: IfNotPresent
        resources:
-        request:
+        requests:
           cpu: "0.25"
           memory: 250Mi
         limits:
          cpu: "0.5"
          memory: 1Gi
        env:
+        - name: AKS_RESOURCE_ID
+          value: "VALUE_AKS_RESORUCE_ID"
         - name: AKS_CLUSTER_NAME
           value: "VALUE_AKS_CLUSTER_NAME"
         - name: AKS_REGION
