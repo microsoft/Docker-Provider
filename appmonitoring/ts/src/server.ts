@@ -1,5 +1,4 @@
-﻿import * as fs from "fs";
-import * as https from "https";
+﻿import * as https from "https";
 import { ContentProcessor } from "./ContentProcessor.js";
 import { logger, Metrics } from "./LoggerWrapper.js";
 import { AppMonitoringConfigCR, IRootObject } from "./RequestDefinition.js";
@@ -10,7 +9,7 @@ import { CertificateGenerator } from "./CertificateGenerator.js";
 const crs: AppMonitoringConfigCRsCollection = new AppMonitoringConfigCRsCollection();
 
 
-await CertificateGenerator.PatchWebhookAndSecrets();
+const tlsdata: {tlsCert: string, tlsKey: string} = await CertificateGenerator.PatchWebhookAndSecrets();
 
 // don't await, this runs an infinite loop
 K8sWatcher.StartWatchingCRs((cr: AppMonitoringConfigCR, isRemoved: boolean) => {
@@ -34,8 +33,8 @@ K8sWatcher.StartWatchingCRs((cr: AppMonitoringConfigCR, isRemoved: boolean) => {
 let options: https.ServerOptions;
 try {
     options = {
-        cert: fs.readFileSync("/mnt/webhook/tls.cert"),
-        key: fs.readFileSync("/mnt/webhook/tls.key"),
+        cert: tlsdata.tlsCert,
+        key: tlsdata.tlsKey,
     };
 
     logger.info(`Certs successfully loaded. Cert: ${options.cert}`);

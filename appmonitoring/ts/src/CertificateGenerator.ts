@@ -127,24 +127,34 @@ export class CertificateGenerator {
         } as WebhookCertData;
     }
 
-    public static async PatchWebhookAndSecrets() {
+    public static async PatchWebhookAndSecrets(): Promise<{tlsCert: string, tlsKey: string}> {
 
         const kc = new k8s.KubeConfig();
         kc.loadFromDefault();
 
         const certificate: WebhookCertData = await CertificateGenerator.GenerateSelfSignedCertificate()
         console.log("We be loading up!");
+
+        let tlsdata: {tlsCert: string, tlsKey: string} = {
+            tlsCert: "",
+            tlsKey: ""
+        }
         
         // get secret
         const k8sSecretsApi = kc.makeApiClient(k8s.CoreV1Api);
         await k8sSecretsApi.readNamespacedSecret("app-monitoring-webhook-cert", "kube-system").then(async secretObj => {
 
             const secret: k8s.V1Secret = secretObj.body;
+            tlsdata = {
+                tlsCert: certificate.tlsCert,
+                tlsKey: certificate.tlsKey
+            };
+
             secret.data["ca.cert"] = btoa(certificate.caCert);
             secret.data["tls.cert"] = btoa(certificate.tlsCert);
             secret.data["tls.key"] = btoa(certificate.tlsKey);
             
-            console.log(secret);
+            // console.log(secret);
 
             //patch secret
             await k8sSecretsApi.patchNamespacedSecret("app-monitoring-webhook-cert", "kube-system", secret, undefined, undefined, undefined, undefined, undefined, {
@@ -172,8 +182,8 @@ export class CertificateGenerator {
         }).catch(rejected => {
             console.log(rejected);
         })
-    
-        
+
+        return tlsdata;
     }
 
 
