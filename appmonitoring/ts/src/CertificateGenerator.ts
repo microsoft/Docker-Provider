@@ -17,10 +17,25 @@ class WebhookCertData {
 
 export class CertificateGenerator {
 
+    private static makeNumberPositive = (hexString) => {
+        let mostSignificativeHexDigitAsInt = parseInt(hexString[0], 16);
+    
+        if (mostSignificativeHexDigitAsInt < 8) return hexString;
+    
+        mostSignificativeHexDigitAsInt -= 8
+        return mostSignificativeHexDigitAsInt.toString() + hexString.substring(1)
+    }
+    
+    // Generate a random serial number for the Certificate
+    private static randomSerialNumber = () => {
+        return CertificateGenerator.makeNumberPositive(forge.util.bytesToHex(forge.random.getBytesSync(20)));
+    }
+
     private static async GenerateSelfSignedCertificate(): Promise<WebhookCertData> {
 
         let caCert: forge.pki.Certificate = forge.pki.createCertificate();
         let keys = forge.pki.rsa.generateKeyPair(4096);
+        caCert.serialNumber = CertificateGenerator.randomSerialNumber();
         caCert.publicKey = keys.publicKey;
         caCert.privateKey = keys.privateKey;
         caCert.validity.notBefore = new Date(2023,6,20,0,0,0,0);
@@ -47,30 +62,9 @@ export class CertificateGenerator {
             keyEncipherment: true,
         }];
 
-
-
-        
         caCert.setExtensions(extensions);
-        // cert1.setSubject([{name: "applicationinsights-ca" }])
-        caCert.sign(caCert.privateKey,forge.md.sha512.create());
-        // console.log(forge.pki.certificateToPem(cert1));
+        caCert.sign(caCert.privateKey,forge.md.sha256.create());
 
-
-        // const caCertPromise: Promise<pem.CertificateCreationResult> = new Promise<pem.CertificateCreationResult>((resolve, reject) =>  {
-        //     pem.createCertificate({
-        //         // commonName: "applicationinsights-ca",
-        //         extFile: "config_ssl1.cnf",
-        //         days: 730,
-        //         selfSigned: true,
-        //     },(error, result) => {
-
-        //         if (error){
-        //             reject(error)
-        //         }
-        //         resolve(result);
-        //     })
-            
-        // })
 
         const caCertResult: pem.CertificateCreationResult = {
             certificate: forge.pki.certificateToPem(caCert),
@@ -80,7 +74,7 @@ export class CertificateGenerator {
             
         }
 
-
+        // console.log(caCertResult.certificate);
 
         const host_attributes = [{
             shortName: 'CN',
@@ -110,6 +104,7 @@ export class CertificateGenerator {
 
         // Set the attributes for the new Host Certificate
         newHostCert.publicKey = hostKeys.publicKey;
+        newHostCert.serialNumber = CertificateGenerator.randomSerialNumber();
         newHostCert.validity.notBefore = new Date(2023,6,20,0,0,0,0);
         newHostCert.validity.notAfter = new Date(2025,7,21,0,0,0,0);
         newHostCert.setSubject(host_attributes);
@@ -117,70 +112,18 @@ export class CertificateGenerator {
         newHostCert.setExtensions(host_extensions);
 
         // Sign the new Host Certificate using the CA
-        newHostCert.sign(caCert.privateKey, forge.md.sha512.create());
+        newHostCert.sign(caCert.privateKey, forge.md.sha256.create());
 
         // // Convert to PEM format
         let pemHostCert = forge.pki.certificateToPem(newHostCert);
         let pemHostKey = forge.pki.privateKeyToPem(hostKeys.privateKey);
 
-        console.log(pemHostCert);
-
-
-        const serverCertResult: pem.CertificateCreationResult = {
-            certificate: pemHostCert,
-            clientKey: pemHostKey,
-            csr: undefined,
-            serviceKey: undefined
-        };
-
-        // const serverCertResult: pem.CertificateCreationResult = {
-        //     certificate: undefined,
-        //     clientKey: undefined,
-        //     csr: undefined,
-        //     serviceKey: undefined
-        // };
-        // console.log(caCertResult.certificate);
-
-        // const csrPromise: Promise<CSRKeyPair> = new Promise<CSRKeyPair>((resolve, reject) =>  {
-        //     pem.createCSR({
-        //         clientKey: caCertResult.clientKey,
-        //     },(error, result) => {
-    
-        //         const cSRKeyPair: CSRKeyPair = {
-        //             csr: result.csr,
-        //             key: result.clientKey
-        //         }
-
-        //         resolve(cSRKeyPair);
-        //     })
-        // })
-
-        // const csrResult: CSRKeyPair = await csrPromise;
-        // // console.log(csrResult.csr);
-
-        // const serverCertPromise: Promise<pem.CertificateCreationResult> = new Promise<pem.CertificateCreationResult>((resolve, reject) =>  {
-        //     pem.createCertificate({
-        //         // csr: csrResult.csr,
-        //         commonName: "app-monitoring-webhook-service.kube-system.svc",
-        //         altNames: ["app-monitoring-webhook-service.kube-system.svc"],
-        //         days: 730,
-        //         serviceKey: caCertResult.serviceKey,
-        //         serviceCertificate: caCertResult.certificate,
-                
-        //     },(error, result) => {
-
-        //         resolve(result);
-        //     })
-        // })
-
-        // const serverCertResult: pem.CertificateCreationResult = await serverCertPromise;
-        // console.log(serverCertResult.certificate);
-
+        // console.log(pemHostCert);
 
         return {
             caCert: caCertResult.certificate,
-            tlsCert: serverCertResult.certificate,
-            tlsKey: serverCertResult.clientKey
+            tlsCert: pemHostCert,
+            tlsKey: pemHostKey
         } as WebhookCertData;
     }
 
