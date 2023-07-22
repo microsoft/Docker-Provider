@@ -19,15 +19,27 @@ export class CertificateGenerator {
 
     private static async GenerateSelfSignedCertificate(): Promise<WebhookCertData> {
 
+        let caCert: forge.pki.Certificate = forge.pki.createCertificate();
+        let keys = forge.pki.rsa.generateKeyPair(4096);
+        caCert.publicKey = keys.publicKey;
+        caCert.privateKey = keys.privateKey;
+        caCert.validity.notBefore = new Date(2023,6,20,0,0,0,0);
+        caCert.validity.notAfter = new Date(2025,7,21,0,0,0,0);
+
         const attributes = [{
             shortName: 'CN',
             value: 'applicationinsights-ca'
         }];
+        caCert.setSubject(attributes);
+        caCert.setIssuer(attributes);
     
         const extensions = [{
             name: 'basicConstraints',
             cA: true
-        }, {
+        },{
+            name: 'subjectKeyIdentifier',
+            keyIdentifier: caCert.generateSubjectKeyIdentifier().getBytes(),
+        },{
             name: 'keyUsage',
             keyCertSign: true,
             cRLSign: true,
@@ -37,15 +49,8 @@ export class CertificateGenerator {
 
 
 
-        let caCert: forge.pki.Certificate = forge.pki.createCertificate();
-        let keys = forge.pki.rsa.generateKeyPair(4096);
-        caCert.publicKey = keys.publicKey;
-        caCert.privateKey = keys.privateKey;
-        caCert.validity.notBefore = new Date(2023,6,20,0,0,0,0);
-        caCert.validity.notAfter = new Date(2025,7,21,0,0,0,0);
+        
         caCert.setExtensions(extensions);
-        caCert.setSubject(attributes);
-        caCert.setIssuer(attributes);
         // cert1.setSubject([{name: "applicationinsights-ca" }])
         caCert.sign(caCert.privateKey,forge.md.sha512.create());
         // console.log(forge.pki.certificateToPem(cert1));
@@ -87,7 +92,7 @@ export class CertificateGenerator {
             cA: false
         }, {
             name: 'authorityKeyIdentifier',
-            authorityCertIssuer: true,
+            keyIdentifier: caCert.generateSubjectKeyIdentifier().getBytes(),
         }, {
             name: 'keyUsage',
             digitalSignature: true,
@@ -95,6 +100,9 @@ export class CertificateGenerator {
         }, {
             name: 'extKeyUsage',
             serverAuth: true
+        }, {
+            name: 'subjectAltName',
+            altNames: [{ type: 2, value: "app-monitoring-webhook-service.kube-system.svc" }]
         }];
 
         let newHostCert = forge.pki.createCertificate();
