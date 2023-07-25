@@ -3,19 +3,15 @@ import * as k8s from "@kubernetes/client-node";
 import forge from "node-forge";
 import pem from "pem";
 
-
-class CSRKeyPair {
-    csr: string;
-    key: string;
-}
-
 class WebhookCertData {
     caCert: string;
     tlsCert: string;
     tlsKey: string;
 }
 
-export class CertificateGenerator {
+const hostname = process.env.HOSTNAME;
+
+export class CertificateManager {
 
     private static makeNumberPositive = (hexString) => {
         let mostSignificativeHexDigitAsInt = parseInt(hexString[0], 16);
@@ -28,14 +24,14 @@ export class CertificateGenerator {
     
     // Generate a random serial number for the Certificate
     private static randomSerialNumber = () => {
-        return CertificateGenerator.makeNumberPositive(forge.util.bytesToHex(forge.random.getBytesSync(20)));
+        return CertificateManager.makeNumberPositive(forge.util.bytesToHex(forge.random.getBytesSync(20)));
     }
 
     private static async GenerateSelfSignedCertificate(): Promise<WebhookCertData> {
 
         let caCert: forge.pki.Certificate = forge.pki.createCertificate();
         let keys = forge.pki.rsa.generateKeyPair(4096);
-        caCert.serialNumber = CertificateGenerator.randomSerialNumber();
+        caCert.serialNumber = CertificateManager.randomSerialNumber();
         caCert.publicKey = keys.publicKey;
         caCert.privateKey = keys.privateKey;
         caCert.validity.notBefore = new Date(2023,6,20,0,0,0,0);
@@ -64,7 +60,6 @@ export class CertificateGenerator {
 
         caCert.setExtensions(extensions);
         caCert.sign(caCert.privateKey,forge.md.sha256.create());
-
 
         const caCertResult: pem.CertificateCreationResult = {
             certificate: forge.pki.certificateToPem(caCert),
@@ -104,7 +99,7 @@ export class CertificateGenerator {
 
         // Set the attributes for the new Host Certificate
         newHostCert.publicKey = hostKeys.publicKey;
-        newHostCert.serialNumber = CertificateGenerator.randomSerialNumber();
+        newHostCert.serialNumber = CertificateManager.randomSerialNumber();
         newHostCert.validity.notBefore = new Date(2023,6,20,0,0,0,0);
         newHostCert.validity.notAfter = new Date(2025,7,21,0,0,0,0);
         newHostCert.setSubject(host_attributes);
@@ -127,12 +122,94 @@ export class CertificateGenerator {
         } as WebhookCertData;
     }
 
-    public static async PatchWebhookAndSecrets(): Promise<{tlsCert: string, tlsKey: string}> {
+    public static async CreateSecretStore(kubeConfig: k8s.KubeConfig, certificate: WebhookCertData) {
+
+        const secretsApi = kubeConfig.makeApiClient(k8s.CoreV1Api);
+        const secretStore: k8s.V1Secret = {
+            apiVersion: "v1",
+            kind: "Secret",
+            metadata: {
+                name: "app-monitoring-webhook-cert",
+                namespace: "kube-system"
+            },
+            type: "Opaque",
+            data: {
+                "ca.cert": btoa(certificate.caCert),
+                "tls.cert": btoa(certificate.tlsCert),
+                "tls.key": btoa(certificate.tlsKey)
+            }
+        } 
+
+        await secretsApi.createNamespacedSecret("kube-system", secretStore);
+    }
+
+    public static async CreateMutatingWebhook(kubeConfig: k8s.KubeConfig, certificate: WebhookCertData) {
+
+        const webhookApi = kubeConfig.makeApiClient(k8s.AdmissionregistrationV1Api);
+        const mutatingWebhook: k8s.V1MutatingWebhookConfiguration = {
+
+            kind: "MutatingWebhookConfiguration",
+            apiVersion: "admissionregistration.k8s.io/v1",
+            metadata: {
+                name: "app-monitoring-webhook",
+                namespace: "kube-system",
+                labels: {
+                    "component": "ama-logs-appinsights"
+                }
+            },
+            webhooks: [{
+                name: "app-monitoring-webhook-service.kube-system.svc",
+                clientConfig: {
+                    service: {
+                        name: "app-monitoring-webhook-service",
+                        namespace: "kube-system",
+                        path: "/"
+                    },
+                    caBundle: btoa(certificate.caCert)
+                },
+                rules: [{
+                    operations: ["CREATE", "UPDATE"],
+                    apiGroups: ["*"],
+                    apiVersions: ["*"],
+                    resources: ["pods"]
+                }],
+                admissionReviewVersions: ["v1"],
+                sideEffects: "None",
+                failurePolicy: "Fail"
+            }]
+        }
+        await webhookApi.createMutatingWebhookConfiguration(mutatingWebhook);
+    }
+
+    public static async CreateWebhookAndCertificates() {
 
         const kc = new k8s.KubeConfig();
         kc.loadFromDefault();
 
-        const certificate: WebhookCertData = await CertificateGenerator.GenerateSelfSignedCertificate()
+        const results = new Promise<void>(async resolve => {
+
+            console.log("Creating certificates...");
+            const certificates: WebhookCertData = await CertificateManager.GenerateSelfSignedCertificate();
+            console.log("Certificates created successfully");
+
+            await CertificateManager.CreateMutatingWebhook(kc, certificates);
+            await CertificateManager.CreateSecretStore(kc, certificates);
+            resolve();
+
+        })
+
+        await results.catch(error => {
+            console.log(error);
+        })
+    }
+
+    public static async PatchWebhookAndSecrets(): Promise<{tlsCert: string, tlsKey: string}> {
+
+        console.log(process.env.HOSTNAME);
+        const kc = new k8s.KubeConfig();
+        kc.loadFromDefault();
+ 
+        const certificate: WebhookCertData = await CertificateManager.GenerateSelfSignedCertificate()
         console.log("We be loading up!");
 
         let tlsdata: {tlsCert: string, tlsKey: string} = {
@@ -173,7 +250,7 @@ export class CertificateGenerator {
             const webhookConfig: k8s.V1MutatingWebhookConfiguration = webhookConfigObj.body;
             webhookConfig.webhooks[0].clientConfig.caBundle = btoa(certificate.caCert);
             webhookConfig.webhooks[0].failurePolicy = "Fail";
-            console.log(webhookConfig);
+            // console.log(webhookConfig);
 
             await k8sWebhookApi.patchMutatingWebhookConfiguration("app-monitoring-webhook", webhookConfig, undefined, undefined, undefined, undefined, undefined, {
                 headers: { "Content-Type" : "application/strategic-merge-patch+json" }
