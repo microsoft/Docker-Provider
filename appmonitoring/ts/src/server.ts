@@ -17,6 +17,8 @@ if ("secrets-manager".localeCompare(containerMode) === 0) {
 
 } else if ("secrets-manager-cleanup".localeCompare(containerMode) === 0) {
 
+    console.log("Running in certificate manager cleanup mode...");
+    await CertificateManager.DeleteWebhookAndCertificates();
 }
 else if ("server".localeCompare(containerMode) === 0) {
     const crs: AppMonitoringConfigCRsCollection = new AppMonitoringConfigCRsCollection();
