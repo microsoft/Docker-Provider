@@ -1,4 +1,3 @@
-import { logger } from "./LoggerWrapper.js";
 import * as k8s from "@kubernetes/client-node";
 import forge from "node-forge";
 import pem from "pem";
@@ -69,8 +68,6 @@ export class CertificateManager {
             
         }
 
-        // console.log(caCertResult.certificate);
-
         const host_attributes = [{
             shortName: 'CN',
             value: "app-monitoring-webhook-service.kube-system.svc"
@@ -112,8 +109,6 @@ export class CertificateManager {
         // // Convert to PEM format
         let pemHostCert = forge.pki.certificateToPem(newHostCert);
         let pemHostKey = forge.pki.privateKeyToPem(hostKeys.privateKey);
-
-        // console.log(pemHostCert);
 
         return {
             caCert: caCertResult.certificate,
