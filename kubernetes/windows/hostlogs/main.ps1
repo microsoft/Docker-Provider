@@ -6,40 +6,13 @@ function Start-FileSystemWatcher {
 
 function Set-EnvironmentVariables {
 
-    $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID", "process")
-    if (![string]::IsNullOrEmpty($aksResourceId)) {
-        [System.Environment]::SetEnvironmentVariable("AKS_RESOURCE_ID", $aksResourceId, "machine")
-        Write-Host "Successfully set environment variable AKS_RESOURCE_ID - $($aksResourceId) for target 'machine'..."
-    }
-    else {
-        Write-Host "Failed to set environment variable AKS_RESOURCE_ID for target 'machine' since it is either null or empty"
-    }
-
     $aksRegion = [System.Environment]::GetEnvironmentVariable("AKS_REGION", "process")
-    if (![string]::IsNullOrEmpty($aksRegion)) {
-        [System.Environment]::SetEnvironmentVariable("AKS_REGION", $aksRegion, "machine")
-        Write-Host "Successfully set environment variable AKS_REGION - $($aksRegion) for target 'machine'..."
-    }
-    else {
-        Write-Host "Failed to set environment variable AKS_REGION for target 'machine' since it is either null or empty"
-    }
-
-    $hostName = [System.Environment]::GetEnvironmentVariable("HOSTNAME", "process")
-    if (![string]::IsNullOrEmpty($hostName)) {
-        [System.Environment]::SetEnvironmentVariable("HOSTNAME", $hostName, "machine")
-        Write-Host "Successfully set environment variable HOSTNAME - $($hostName) for target 'machine'..."
-    }
-    else {
-        Write-Host "Failed to set environment variable HOSTNAME for target 'machine' since it is either null or empty"
-    }
-
 
     $schemaVersionFile = './etc/config/settings/schema-version'
     if (Test-Path $schemaVersionFile) {
         $schemaVersion = Get-Content $schemaVersionFile | ForEach-Object { $_.TrimEnd() }
         if ($schemaVersion.GetType().Name -eq 'String') {
             [System.Environment]::SetEnvironmentVariable("AZMON_AGENT_CFG_SCHEMA_VERSION", $schemaVersion, "Process")
-            [System.Environment]::SetEnvironmentVariable("AZMON_AGENT_CFG_SCHEMA_VERSION", $schemaVersion, "Machine")
         }
         $env:AZMON_AGENT_CFG_SCHEMA_VERSION
     }
@@ -53,7 +26,6 @@ function Set-EnvironmentVariables {
 
     foreach($key in $envVars.PSBase.Keys) {
         [System.Environment]::SetEnvironmentVariable($key, $envVars[$key], "Process")
-        [System.Environment]::SetEnvironmentVariable($key, $envVars[$key], "Machine")
     }
 
     # run config parser
@@ -92,17 +64,17 @@ if(Get-GenevaEnabled){
         Start-Process -NoNewWindow -FilePath ".\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe" -ArgumentList @("-useenv")
     }
 
+
 } else {
     Write-Host "Geneva not configured. Watching for config map."
 
-    [System.Environment]::SetEnvironmentVariable("MONITORING_GCS_ENVIRONMENT", "Test" ,"process")
-    [System.Environment]::SetEnvironmentVariable("MONITORING_GCS_ACCOUNT", "PLACEHOLDER", "process")
-    [System.Environment]::SetEnvironmentVariable("MONITORING_GCS_NAMESPACE", "PLACEHOLDER", "process")
-    [System.Environment]::SetEnvironmentVariable("MONITORING_CONFIG_VERSION", "PLACEHOLDERprocess")
-    [System.Environment]::SetEnvironmentVariable("MONITORING_MANAGED_ID_IDENTIFIER", "PLACEHOLDER", "process")
-    [System.Environment]::SetEnvironmentVariable("MONITORING_MANAGED_ID_VALUE", "PLACEHOLDER", "process")
+    [System.Environment]::SetEnvironmentVariable("MONITORING_GCS_ENVIRONMENT", "Test" ,"Process")
+    [System.Environment]::SetEnvironmentVariable("MONITORING_GCS_ACCOUNT", "PLACEHOLDER", "Process")
+    [System.Environment]::SetEnvironmentVariable("MONITORING_GCS_NAMESPACE", "PLACEHOLDER", "Process")
+    [System.Environment]::SetEnvironmentVariable("MONITORING_CONFIG_VERSION", "PLACEHOLDER", "Process")
+    [System.Environment]::SetEnvironmentVariable("MONITORING_MANAGED_ID_IDENTIFIER", "PLACEHOLDER", "Process")
+    [System.Environment]::SetEnvironmentVariable("MONITORING_MANAGED_ID_VALUE", "PLACEHOLDER", "Process")
 
-    Write-Host $Env:MONITORING_GCS_NAMESPACE
 
     Start-Job -Name "WindowsHostLogsJob" -ScriptBlock { 
         Start-Process -NoNewWindow -FilePath ".\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe" -ArgumentList @("-useenv")

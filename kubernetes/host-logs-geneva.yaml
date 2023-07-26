@@ -61,10 +61,11 @@ spec:
        livenessProbe:
           exec:
             command:
-              - powershell.exe
-              - -command
-              - |
-                .\opt\hostlogswindows\scripts\powershell\livenessprobe.ps1 -monAgentLauncherExePath "\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe" -fileSystemWatcherTextFilePath "etc\hostlogswindows\filesystemwatcher.txt"
+              - cmd
+              - /c
+              - .\opt\hostlogswindows\scripts\cmd\livenessprobe.exe
+              - "%CONTAINER_SANDBOX_MOUNT_POINT%\\opt\\genevamonitoringagent\\genevamonitoringagent\\Monitoring\\Agent\\MonAgentLauncher.exe"
+              - ".\\etc\\hostlogswindows\\filesystemwatcher.txt"
           initialDelaySeconds: 180
           periodSeconds: 60
           timeoutSeconds: 30
