@@ -145,7 +145,7 @@ export class CertificateManager {
 
     public static async CreateMutatingWebhook(kubeConfig: k8s.KubeConfig, certificate: WebhookCertData) {
 
-        const webhookApi = kubeConfig.makeApiClient(k8s.AdmissionregistrationV1Api);
+        const webhookApi: k8s.AdmissionregistrationV1Api = kubeConfig.makeApiClient(k8s.AdmissionregistrationV1Api);
         const mutatingWebhook: k8s.V1MutatingWebhookConfiguration = {
 
             kind: "MutatingWebhookConfiguration",
@@ -191,11 +191,15 @@ export class CertificateManager {
             console.log("Creating certificates...");
             const certificates: WebhookCertData = await CertificateManager.GenerateSelfSignedCertificate();
             console.log("Certificates created successfully");
-
+            
+            console.log("Creating MutatingWebhookConfiguration...");
             await CertificateManager.CreateMutatingWebhook(kc, certificates);
-            await CertificateManager.CreateSecretStore(kc, certificates);
-            resolve();
+            console.log("MutatingWebhookConfiguration created successfully");
 
+            console.log("Creating Secret Store...");
+            await CertificateManager.CreateSecretStore(kc, certificates);
+            console.log("Secret Store created successfully");
+            resolve();
         })
 
         await results.catch(error => {
@@ -203,65 +207,28 @@ export class CertificateManager {
         })
     }
 
-    public static async PatchWebhookAndSecrets(): Promise<{tlsCert: string, tlsKey: string}> {
+    public static async DeleteWebhookAndCertificates() {
 
-        console.log(process.env.HOSTNAME);
         const kc = new k8s.KubeConfig();
         kc.loadFromDefault();
- 
-        const certificate: WebhookCertData = await CertificateManager.GenerateSelfSignedCertificate()
-        console.log("We be loading up!");
 
-        let tlsdata: {tlsCert: string, tlsKey: string} = {
-            tlsCert: "",
-            tlsKey: ""
-        }
-        
-        // get secret
-        const k8sSecretsApi = kc.makeApiClient(k8s.CoreV1Api);
-        await k8sSecretsApi.readNamespacedSecret("app-monitoring-webhook-cert", "kube-system").then(async secretObj => {
+        const results = new Promise<void>(async resolve => {
 
-            const secret: k8s.V1Secret = secretObj.body;
-            tlsdata = {
-                tlsCert: certificate.tlsCert,
-                tlsKey: certificate.tlsKey
-            };
+            console.log("Deleting MutatingWebhookConfiguration...");
+            const webhookApi: k8s.AdmissionregistrationV1Api = kc.makeApiClient(k8s.AdmissionregistrationV1Api);
+            webhookApi.deleteMutatingWebhookConfiguration("app-monitoring-webhook");
+            console.log("MutatingWebhookConfiguration Deleted...");
 
-            secret.data["ca.cert"] = btoa(certificate.caCert);
-            secret.data["tls.cert"] = btoa(certificate.tlsCert);
-            secret.data["tls.key"] = btoa(certificate.tlsKey);
-            
-            // console.log(secret);
-
-            //patch secret
-            await k8sSecretsApi.patchNamespacedSecret("app-monitoring-webhook-cert", "kube-system", secret, undefined, undefined, undefined, undefined, undefined, {
-                headers: { "Content-Type" : "application/strategic-merge-patch+json" }
-            });
-        }).catch(rejected => {
-            console.log(rejected)
-        });
-
-        console.log("Secrets successfully updated!");
-
-        //get webhook configuration
-        const k8sWebhookApi = kc.makeApiClient(k8s.AdmissionregistrationV1Api);
-        k8sWebhookApi.readMutatingWebhookConfiguration("app-monitoring-webhook").then(async webhookConfigObj => {
-
-            const webhookConfig: k8s.V1MutatingWebhookConfiguration = webhookConfigObj.body;
-            webhookConfig.webhooks[0].clientConfig.caBundle = btoa(certificate.caCert);
-            webhookConfig.webhooks[0].failurePolicy = "Fail";
-            // console.log(webhookConfig);
-
-            await k8sWebhookApi.patchMutatingWebhookConfiguration("app-monitoring-webhook", webhookConfig, undefined, undefined, undefined, undefined, undefined, {
-                headers: { "Content-Type" : "application/strategic-merge-patch+json" }
-            });
-
-        }).catch(rejected => {
-            console.log(rejected);
+            console.log("Deleting Secret Store...");
+            const secretsApi: k8s.CoreV1Api = kc.makeApiClient(k8s.CoreV1Api);
+            secretsApi.deleteNamespacedSecret("app-monitoring-webhook-cert", "kube-system");
+            console.log("Secret Store Deleted...");
+            resolve();
         })
 
-        return tlsdata;
+        await results.catch(error => {
+            console.log(error);
+        })
     }
-
 
 }
