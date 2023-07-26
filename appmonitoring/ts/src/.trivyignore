@@ -1,2 +1,2 @@
-# tough-cookie -> request -> kubernetes/client-node"
+# tough-cookie -> request -> kubernetes/client-node, blocked on kubernetes/client-node's migration from request to fetch
 CVE-2023-26136

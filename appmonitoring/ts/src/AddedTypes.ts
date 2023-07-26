@@ -8,7 +8,7 @@ export class AddedTypes {
     
     // agent image
     private static agentImageDotNet = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/dotnet:1.0.0-beta2";
-    private static agentImageJava = "mcr.microsoft.com/applicationinsights/auto-instrumentation/java:3.4.14";
+    private static agentImageJava = "mcr.microsoft.com/applicationinsights/auto-instrumentation/java:3.4.15";
     private static agentImageNodeJs = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/nodejs:3.0.0-beta.6";
     
     // path on agent image to copy from
@@ -89,12 +89,10 @@ export class AddedTypes {
     }
 
     public static env(podInfo: PodInfo, platforms: string[], connectionString: string, armId: string, armRegion: string, clusterName: string): object {
-        const ownerName: string = podInfo.ownerReference ?
-            podInfo.deploymentName ? `k8s.deployment.name=${podInfo.deploymentName},` : `k8s.${podInfo.ownerReference.kind}.name=${podInfo.ownerReference.name},`
-            : null;
-
-        const ownerUid: string = podInfo.ownerReference ? `k8s.${podInfo.ownerReference.kind}.uid=${podInfo.ownerReference.uid},` : null;
-
+        const ownerNameAttribute: string = podInfo.ownerReference ? `k8s.${podInfo.ownerReference.kind?.toLowerCase()}.name=${podInfo.ownerReference.name}` : null;
+        const ownerUidAttribute: string = podInfo.ownerReference ? `k8s.${podInfo.ownerReference.kind?.toLowerCase()}.uid=${podInfo.ownerReference.uid}` : null;
+        const deploymentNameAttribute: string = podInfo.deploymentName ? `k8s.deployment.name=${podInfo.deploymentName}` : null;
+        const containerNameAttribute: string = podInfo.onlyContainerName ? `k8s.container.name=${podInfo.onlyContainerName}` : null;
 
         const returnValue = [
             // Downward API environment variables must come first as they are referenced later
@@ -142,11 +140,12 @@ k8s.pod.namespace=$(POD_NAMESPACE),\
 k8s.node.name=$(NODE_NAME),\
 k8s.pod.name=$(POD_NAME),\
 k8s.pod.uid=$(POD_UID),\
-${podInfo.onlyContainerName ? `k8s.container.name=${podInfo.onlyContainerName},` : null}\
+${containerNameAttribute},\
 cloud.provider=Azure,\
 cloud.platform=azure_aks,\
-${ownerName}\
-${ownerUid}`
+${ownerNameAttribute},\
+${deploymentNameAttribute},\
+${ownerUidAttribute}`
             },
             {
                 name: "APPLICATIONINSIGHTS_CONNECTION_STRING",
