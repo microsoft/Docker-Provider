@@ -1,14 +1,17 @@
 import * as k8s from "@kubernetes/client-node";
 import forge from "node-forge";
-import pem from "pem";
+import { logger } from "./LoggerWrapper.js";
+
+class CACertData {
+    certificate: string;
+    serviceKey: string;
+}
 
 class WebhookCertData {
     caCert: string;
     tlsCert: string;
     tlsKey: string;
 }
-
-const hostname = process.env.HOSTNAME;
 
 export class CertificateManager {
 
@@ -27,7 +30,6 @@ export class CertificateManager {
     }
 
     private static async GenerateSelfSignedCertificate(): Promise<WebhookCertData> {
-
         let caCert: forge.pki.Certificate = forge.pki.createCertificate();
         let keys = forge.pki.rsa.generateKeyPair(4096);
         caCert.serialNumber = CertificateManager.randomSerialNumber();
@@ -60,12 +62,9 @@ export class CertificateManager {
         caCert.setExtensions(extensions);
         caCert.sign(caCert.privateKey,forge.md.sha256.create());
 
-        const caCertResult: pem.CertificateCreationResult = {
+        const caCertResult: CACertData = {
             certificate: forge.pki.certificateToPem(caCert),
-            serviceKey: forge.pki.privateKeyToPem(caCert.privateKey),
-            csr: undefined,
-            clientKey: undefined
-            
+            serviceKey: forge.pki.privateKeyToPem(caCert.privateKey)
         }
 
         const host_attributes = [{
@@ -117,112 +116,54 @@ export class CertificateManager {
         } as WebhookCertData;
     }
 
-    public static async CreateSecretStore(kubeConfig: k8s.KubeConfig, certificate: WebhookCertData) {
-
+    public static async PatchSecretStore(kubeConfig: k8s.KubeConfig, certificate: WebhookCertData) {
         const secretsApi = kubeConfig.makeApiClient(k8s.CoreV1Api);
-        const secretStore: k8s.V1Secret = {
-            apiVersion: "v1",
-            kind: "Secret",
-            metadata: {
-                name: "app-monitoring-webhook-cert",
-                namespace: "kube-system"
-            },
-            type: "Opaque",
-            data: {
-                "ca.cert": btoa(certificate.caCert),
-                "tls.cert": btoa(certificate.tlsCert),
-                "tls.key": btoa(certificate.tlsKey)
-            }
-        } 
+        const secretStore = await secretsApi.readNamespacedSecret("app-monitoring-webhook-cert", "kube-system");
+        let secretsObj: k8s.V1Secret = secretStore.body;
 
-        await secretsApi.createNamespacedSecret("kube-system", secretStore);
+        secretsObj.data["ca.cert"] = btoa(certificate.caCert);
+        secretsObj.data["tls.cert"] = btoa(certificate.tlsCert);
+        secretsObj.data["tls.key"] = btoa(certificate.tlsKey);
+
+        await secretsApi.patchNamespacedSecret("app-monitoring-webhook-cert", "kube-system", secretsObj, undefined, undefined, undefined, undefined, undefined, {
+            headers: { "Content-Type" : "application/strategic-merge-patch+json" }
+        });
     }
 
-    public static async CreateMutatingWebhook(kubeConfig: k8s.KubeConfig, certificate: WebhookCertData) {
-
+    public static async PatchMutatingWebhook(kubeConfig: k8s.KubeConfig, certificate: WebhookCertData) {
         const webhookApi: k8s.AdmissionregistrationV1Api = kubeConfig.makeApiClient(k8s.AdmissionregistrationV1Api);
-        const mutatingWebhook: k8s.V1MutatingWebhookConfiguration = {
+        const mutatingWebhook = await webhookApi.readMutatingWebhookConfiguration("app-monitoring-webhook");
+        let mutatingWebhookObject: k8s.V1MutatingWebhookConfiguration = mutatingWebhook.body;
+        mutatingWebhookObject.webhooks[0].clientConfig.caBundle = btoa(certificate.caCert);
 
-            kind: "MutatingWebhookConfiguration",
-            apiVersion: "admissionregistration.k8s.io/v1",
-            metadata: {
-                name: "app-monitoring-webhook",
-                namespace: "kube-system",
-                labels: {
-                    "component": "ama-logs-appinsights"
-                }
-            },
-            webhooks: [{
-                name: "app-monitoring-webhook-service.kube-system.svc",
-                clientConfig: {
-                    service: {
-                        name: "app-monitoring-webhook-service",
-                        namespace: "kube-system",
-                        path: "/"
-                    },
-                    caBundle: btoa(certificate.caCert)
-                },
-                rules: [{
-                    operations: ["CREATE", "UPDATE"],
-                    apiGroups: ["*"],
-                    apiVersions: ["*"],
-                    resources: ["pods"]
-                }],
-                admissionReviewVersions: ["v1"],
-                sideEffects: "None",
-                failurePolicy: "Fail"
-            }]
-        }
-        await webhookApi.createMutatingWebhookConfiguration(mutatingWebhook);
+        await webhookApi.patchMutatingWebhookConfiguration("app-monitoring-webhook", mutatingWebhookObject, undefined, undefined, undefined, undefined, undefined, {
+            headers: { "Content-Type" : "application/strategic-merge-patch+json" }
+        });
     }
 
     public static async CreateWebhookAndCertificates() {
-
         const kc = new k8s.KubeConfig();
         kc.loadFromDefault();
 
-        const results = new Promise<void>(async resolve => {
+        const results = new Promise<void>(async (resolve) => {
 
-            console.log("Creating certificates...");
+            logger.info("Creating certificates...");
             const certificates: WebhookCertData = await CertificateManager.GenerateSelfSignedCertificate();
-            console.log("Certificates created successfully");
+            logger.info("Certificates created successfully");
             
-            console.log("Creating MutatingWebhookConfiguration...");
-            await CertificateManager.CreateMutatingWebhook(kc, certificates);
-            console.log("MutatingWebhookConfiguration created successfully");
+            logger.info("Creating MutatingWebhookConfiguration...");
+            await CertificateManager.PatchMutatingWebhook(kc, certificates);
+            logger.info("MutatingWebhookConfiguration patched successfully");
 
-            console.log("Creating Secret Store...");
-            await CertificateManager.CreateSecretStore(kc, certificates);
-            console.log("Secret Store created successfully");
+            logger.info("Creating Secret Store...");
+            await CertificateManager.PatchSecretStore(kc, certificates);
+            logger.info("Secret Store patched successfully");
+
             resolve();
         })
 
         await results.catch(error => {
-            console.log(error);
-        })
-    }
-
-    public static async DeleteWebhookAndCertificates() {
-
-        const kc = new k8s.KubeConfig();
-        kc.loadFromDefault();
-
-        const results = new Promise<void>(async resolve => {
-
-            console.log("Deleting MutatingWebhookConfiguration...");
-            const webhookApi: k8s.AdmissionregistrationV1Api = kc.makeApiClient(k8s.AdmissionregistrationV1Api);
-            webhookApi.deleteMutatingWebhookConfiguration("app-monitoring-webhook");
-            console.log("MutatingWebhookConfiguration Deleted...");
-
-            console.log("Deleting Secret Store...");
-            const secretsApi: k8s.CoreV1Api = kc.makeApiClient(k8s.CoreV1Api);
-            secretsApi.deleteNamespacedSecret("app-monitoring-webhook-cert", "kube-system");
-            console.log("Secret Store Deleted...");
-            resolve();
-        })
-
-        await results.catch(error => {
-            console.log(error);
+            logger.info(error);
         })
     }
 
