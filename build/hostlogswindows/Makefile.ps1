@@ -1,6 +1,7 @@
 #  Build script to build the liveness probe and copy installers for host logs
 #  1. copy the files under installer directory to ..\..\kubernetes\windows\hostlogs\hostlogswindows
 #  2. Builds the livenessprobe cpp and copy the executable to the under directory ..\..\kubernetes\windows\hostlogs\hostlogswindows
+#  3. Builds the startupprobe cpp and copy the executable to the under directory ..\..\kubernetes\windows\hostlogs\hostlogswindows
 
 $currentdir =  $PSScriptRoot
 Write-Host("current script dir : " + $currentdir + " ")
@@ -42,6 +43,19 @@ if (Test-Path -Path $livenessprobeexepath){
     Write-Host("livenessprobe.exe exists which indicates cpp build step succeeded") -ForegroundColor Green
 } else {
     Write-Host("livenessprobe.exe doesnt exist which indicates cpp build step failed") -ForegroundColor Red
+    exit 1
+}
+
+# compile and build the startup probe cpp code
+Write-Host("Start:build startup cpp code")
+$startupprobesrcpath = Join-Path -Path $builddir  -ChildPath "hostlogswindows\installer\startupprobe\startupprobe.cpp"
+$startupprobeexepath = Join-Path -Path $builddir  -ChildPath "hostlogswindows\installer\startupprobe\startupprobe.exe"
+g++ $startupprobesrcpath -o $startupprobeexepath -municode
+Write-Host("End:build startupprobe cpp code")
+if (Test-Path -Path $startupprobeexepath){
+    Write-Host("startupprobe.exe exists which indicates cpp build step succeeded") -ForegroundColor Green
+} else {
+    Write-Host("startupprobe.exe doesnt exist which indicates cpp build step failed") -ForegroundColor Red
     exit 1
 }
 

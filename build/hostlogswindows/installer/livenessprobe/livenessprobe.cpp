@@ -27,7 +27,7 @@ bool IsFileExists(const wchar_t* const fileName)
 /*
 * Function to check if a process is running based on its full path
 */ 
-bool IsMonAgentRunning(const wchar_t* executableFullPath) {
+bool IsProcessRunningWithSpecifcPath(const wchar_t* executableFullPath) {
     PROCESSENTRY32 processEntry{};  // struct to hold process details
     processEntry.dwSize = sizeof(PROCESSENTRY32);  // set size of struct
 
@@ -67,11 +67,11 @@ int wmain(int argc, wchar_t* argv[])
     {
         if (argc < 3) 
         {  
-            wprintf_s(L"ERROR:unexpected number arguments and expected is 5");
+            wprintf_s(L"ERROR:unexpected number arguments and expected is 3");
             return UNEXPECTED_ERROR;
         }
 
-        if (!IsMonAgentRunning(argv[1])) 
+        if (!IsProcessRunningWithSpecifcPath(argv[1])) 
         {
             wprintf_s(L"ERROR:Process:%s is not running\n", argv[1]);
             return NO_MONAGENT_LAUNCHER_PROCES;

@@ -1,94 +1,108 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
- name: host-logs-windows
- namespace: kube-system
- labels:
-  component: geneva-agent-windows
-  tier: node-win
-spec:
- updateStrategy:
-  type: RollingUpdate
- selector:
-  matchLabels:
+  name: host-logs-windows
+  namespace: kube-system
+  labels:
     component: geneva-agent-windows
     tier: node-win
- template:
-  metadata:
-    labels:
+spec:
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
       component: geneva-agent-windows
       tier: node-win
-    annotations:
-      agentVersion: "0.0.0-0"
-      dockerProviderVersion: "18.0.1-0"
-      schema-versions: "v1"
-  spec:
-    dnsConfig:
-      options:
-        - name: ndots
-          value: "3"
-    securityContext:
-      windowsOptions:
-        hostProcess: true
-        runAsUserName: "NT AUTHORITY\\SYSTEM"
-    hostNetwork: true
-    containers:
-     - name: host-logs-windows
-       image: "VALUE_CONTAINER_IMAGE"
-       imagePullPolicy: IfNotPresent
-       resources:
-        requests:
-          cpu: "0.25"
-          memory: 250Mi
-        limits:
-         cpu: "0.5"
-         memory: 1Gi
-       env:
-        - name: AKS_RESOURCE_ID
-          value: "VALUE_AKS_RESORUCE_ID"
-        - name: AKS_CLUSTER_NAME
-          value: "VALUE_AKS_CLUSTER_NAME"
-        - name: AKS_REGION
-          value: "VALUE_AKS_RESOURCE_REGION_VALUE"
-        - name: HOSTNAME
-          valueFrom:
-             fieldRef:
-               fieldPath: spec.nodeName
-       volumeMounts:
-        - mountPath: \etc\config\settings
-          name: settings-vol-config
-          readOnly: true
-       livenessProbe:
-          exec:
-            command:
-              - cmd
-              - /c
-              - .\opt\hostlogswindows\scripts\cmd\livenessprobe.exe
-              - "%CONTAINER_SANDBOX_MOUNT_POINT%\\opt\\genevamonitoringagent\\genevamonitoringagent\\Monitoring\\Agent\\MonAgentLauncher.exe"
-              - ".\\etc\\hostlogswindows\\filesystemwatcher.txt"
-          initialDelaySeconds: 180
-          periodSeconds: 60
-          timeoutSeconds: 30
-    affinity:
-     nodeAffinity:
-       requiredDuringSchedulingIgnoredDuringExecution:
-         nodeSelectorTerms:
-         - matchExpressions:
-           - key: kubernetes.io/os
-             operator: In
-             values:
-             - windows
-    tolerations:
-    - key: "CriticalAddonsOnly"
-      operator: "Exists"
-    - operator: "Exists"
-      effect: NoExecute
-    - operator: "Exists"
-      effect: NoSchedule
-    - operator: "Exists"
-      effect: PreferNoSchedule
-    volumes:
-      - name: settings-vol-config
-        configMap:
-          name: container-azm-ms-hostlogsconfig
-          optional: true
+  template:
+    metadata:
+      labels:
+        component: geneva-agent-windows
+        tier: node-win
+      annotations:
+        agentVersion: 45.13.1
+        dockerProviderVersion: 18.0.1-0
+        schema-versions: v1
+    spec:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: '3'
+      securityContext:
+        windowsOptions:
+          hostProcess: true
+          runAsUserName: NT AUTHORITY\SYSTEM
+      hostNetwork: true
+      containers:
+        - name: host-logs-windows
+          image: VALUE_CONTAINER_IMAGE
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: '0.25'
+              memory: 250Mi
+            limits:
+              cpu: '0.5'
+              memory: 1Gi
+          env:
+            - name: AKS_RESOURCE_ID
+              value: VALUE_AKS_RESORUCE_ID
+            - name: AKS_CLUSTER_NAME
+              value: VALUE_AKS_CLUSTER_NAME
+            - name: AKS_REGION
+              value: VALUE_AKS_RESOURCE_REGION_VALUE
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          volumeMounts:
+            - mountPath: \etc\config\settings
+              name: settings-vol-config
+              readOnly: true
+          startupProbe:
+            initialDelaySeconds: 180
+            periodSeconds: 60
+            timeoutSeconds: 30
+            successThreshold: 1
+            failureThreshold: 3
+            exec:
+              command:
+                - cmd
+                - /c
+                - .\opt\hostlogswindows\scripts\cmd\startupprobe.exe
+                - >-
+                  %CONTAINER_SANDBOX_MOUNT_POINT%\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe
+          livenessProbe:
+            exec:
+              command:
+                - cmd
+                - /c
+                - .\opt\hostlogswindows\scripts\cmd\livenessprobe.exe
+                - >-
+                  %CONTAINER_SANDBOX_MOUNT_POINT%\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe
+                - .\etc\hostlogswindows\filesystemwatcher.txt
+            initialDelaySeconds: 180
+            periodSeconds: 60
+            timeoutSeconds: 30
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/os
+                    operator: In
+                    values:
+                      - windows
+      tolerations:
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - operator: Exists
+          effect: NoExecute
+        - operator: Exists
+          effect: NoSchedule
+        - operator: Exists
+          effect: PreferNoSchedule
+      volumes:
+        - name: settings-vol-config
+          configMap:
+            name: container-azm-ms-hostlogsconfig
+            optional: true
