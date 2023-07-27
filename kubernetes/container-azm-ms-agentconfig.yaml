@@ -196,6 +196,14 @@ data:
     #   tcp_port_25228 = 60                           # Port 25228 is used for telegraf to fluentd data
     #   tcp_port_25229 = 45                           # Port 25229 is used for telegraf to fluent-bit data in DaemonSet
 
+  hostlogs-settings: |-
+    [hostlogs_settings.geneva_logs_config]
+      environment = "VALUE_ENVIRONMENT"               # Supported values Test, Stage, DiagnosticsProd, FirstpartyProd, BillingProd, ExternalProd, CaMooncake, CaFairfax, CaBlackforest
+      account = "VALUE_ACCOUNT"                       # Name of the Geneva Logs account
+      namespace = "VALUE_ACCOUNT_NAMESPACE"           # Name of the Geneva Logs account namespace
+      configversion = "VALUE_CONFIG_VERSION"          # Version of the agent xml configuration.
+      # By default, authId uses MSI provisioned by AKS during cluster creation. Uncomment to override with a different managed identity
+      #authid = "VALUE_AUTH_ID"                       # object_id#<guid>, client_id#<guid>, or mi_res_id#<identity resource id>
 metadata:
   name: container-azm-ms-agentconfig
   namespace: kube-system
