@@ -7,7 +7,6 @@ import { AppMonitoringConfigCRsCollection } from "./AppMonitoringConfigCRsCollec
 import fs from "fs";
 import { CertificateManager } from "./CertificateGenerator.js";
 
-
 const containerMode = process.env.CONTAINER_MODE;
 
 if ("secrets-manager".localeCompare(containerMode) === 0) {

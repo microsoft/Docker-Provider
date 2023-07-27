@@ -48,10 +48,12 @@ export class CertificateManager {
         const extensions = [{
             name: 'basicConstraints',
             cA: true
-        },{
+        },
+        {
             name: 'subjectKeyIdentifier',
             keyIdentifier: caCert.generateSubjectKeyIdentifier().getBytes(),
-        },{
+        },
+        {
             name: 'keyUsage',
             keyCertSign: true,
             cRLSign: true,
@@ -75,17 +77,21 @@ export class CertificateManager {
         const host_extensions = [{
             name: 'basicConstraints',
             cA: false
-        }, {
+        }, 
+        {
             name: 'authorityKeyIdentifier',
             keyIdentifier: caCert.generateSubjectKeyIdentifier().getBytes(),
-        }, {
+        }, 
+        {
             name: 'keyUsage',
             digitalSignature: true,
             keyEncipherment: true
-        }, {
+        },
+        {
             name: 'extKeyUsage',
             serverAuth: true
-        }, {
+        }, 
+        {
             name: 'subjectAltName',
             altNames: [{ type: 2, value: "app-monitoring-webhook-service.kube-system.svc" }]
         }];
