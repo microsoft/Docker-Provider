@@ -16,7 +16,7 @@
 #define UNEXPECTED_ERROR 0xFFFFFFFF
 
 /*
-*  check if the file exists
+*  Function to check if the given file exists
 */
 bool IsFileExists(const wchar_t* const fileName)
 {
@@ -63,23 +63,20 @@ bool IsMonAgentRunning(const wchar_t* executableFullPath) {
 **/
 int wmain(int argc, wchar_t* argv[]) 
 {
-    
     try 
     {
         if (argc < 3) 
         {  
-            printf_s(L"ERROR:unexpected number arguments and expected is 5");
-            return UNEXPECTED_ERROR; // Unhandled exception, process path was not provided
+            wprintf_s(L"ERROR:unexpected number arguments and expected is 5");
+            return UNEXPECTED_ERROR;
         }
 
-        // Check if the process is running
         if (!IsMonAgentRunning(argv[1])) 
         {
             wprintf_s(L"ERROR:Process:%s is not running\n", argv[1]);
-            return NO_MONAGENT_LAUNCHER_PROCES; // Process is not running
+            return NO_MONAGENT_LAUNCHER_PROCES;
         }
 
-        // Check if file exists
         if (IsFileExists(argv[2]))
         {
             wprintf_s(L"INFO:File:%s exists indicates Config Map Updated since agent started.\n", argv[2]);
@@ -90,8 +87,7 @@ int wmain(int argc, wchar_t* argv[])
     }
     catch (...) 
     {
-        // Catch any unhandled exceptions
-        std::wcout << L"An unexpected error occurred.\n";
+        wprintf_s(L"An unexpected error occurred.\n");
         return UNEXPECTED_ERROR;
     }
 }
