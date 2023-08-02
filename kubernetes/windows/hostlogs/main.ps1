@@ -1,12 +1,8 @@
-$rootDir = Get-Location
-
 function Start-FileSystemWatcher {
     Start-Process powershell -NoNewWindow .\opt\hostlogswindows\scripts\powershell\filesystemwatcher.ps1
 }
 
 function Set-EnvironmentVariables {
-
-    $aksRegion = [System.Environment]::GetEnvironmentVariable("AKS_REGION", "process")
 
     $schemaVersionFile = './etc/config/settings/schema-version'
     if (Test-Path $schemaVersionFile) {
@@ -17,17 +13,6 @@ function Set-EnvironmentVariables {
         $env:AZMON_AGENT_CFG_SCHEMA_VERSION
     }
 
-    # Set env vars for geneva monitor
-    $envVars = @{
-        MONITORING_DATA_DIRECTORY = (Join-Path $rootDir "opt\genevamonitoringagent\datadirectory")
-        MONITORING_GCS_AUTH_ID_TYPE = "AuthMSIToken"
-        MONITORING_GCS_REGION = "$aksregion"    
-    }
-
-    foreach($key in $envVars.PSBase.Keys) {
-        [System.Environment]::SetEnvironmentVariable($key, $envVars[$key], "Process")
-    }
-
     # run config parser
     $rubypath =  "./ruby31/bin/ruby.exe"
 
@@ -36,7 +21,10 @@ function Set-EnvironmentVariables {
     .\setagentenv.ps1
 }
 
-function Get-GenevaEnabled {
+function Get-GenevaEnvironmentConfiguration {
+  $gcsDataDirectory = [System.Environment]::GetEnvironmentVariable("MONITORING_DATA_DIRECTORY", "process")
+  $gcsAuthIdType = [System.Environment]::GetEnvironmentVariable("MONITORING_GCS_AUTH_ID_TYPE", "process")
+  $gcsRegion = [System.Environment]::GetEnvironmentVariable("MONITORING_GCS_REGION", "process")
   $gcsEnvironment = [System.Environment]::GetEnvironmentVariable("MONITORING_GCS_ENVIRONMENT", "process")
   $gcsAccount = [System.Environment]::GetEnvironmentVariable("MONITORING_GCS_ACCOUNT", "process")
   $gcsNamespace = [System.Environment]::GetEnvironmentVariable("MONITORING_GCS_NAMESPACE", "process")
@@ -44,7 +32,10 @@ function Get-GenevaEnabled {
   $gcsAuthIdIdentifier = [System.Environment]::GetEnvironmentVariable("MONITORING_MANAGED_ID_IDENTIFIER", "process")
   $gcsAuthIdValue = [System.Environment]::GetEnvironmentVariable("MONITORING_MANAGED_ID_VALUE", "process")
 
-  return (![string]::IsNullOrEmpty($gcsEnvironment)) -and 
+  return (![string]::IsNullOrEmpty($gcsDataDirectory)) -and
+    (![string]::IsNullOrEmpty($gcsAuthIdType)) -and
+    (![string]::IsNullOrEmpty($gcsRegion)) -and
+    (![string]::IsNullOrEmpty($gcsEnvironment)) -and 
     (![string]::IsNullOrEmpty($gcsAccount)) -and 
     (![string]::IsNullOrEmpty($gcsNamespace)) -and
     (![string]::IsNullOrEmpty($gcsConfigVersion)) -and 
@@ -57,28 +48,17 @@ Start-Transcript -Path main.txt
 Set-EnvironmentVariables
 Start-FileSystemWatcher
 
-if(Get-GenevaEnabled){
-    Write-Host "Starting Windows AMA in 1P Mode"
+if(Get-GenevaEnvironmentConfiguration)
+{
+    Write-Host "Geneva environment is configured. Starting Windows AMA in 1P Mode"
 
     Start-Job -Name "WindowsHostLogsJob" -ScriptBlock { 
         Start-Process -NoNewWindow -FilePath ".\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe" -ArgumentList @("-useenv")
     }
-
-
-} else {
-    Write-Host "Geneva not configured. Watching for config map."
-
-    [System.Environment]::SetEnvironmentVariable("MONITORING_GCS_ENVIRONMENT", "Test" ,"Process")
-    [System.Environment]::SetEnvironmentVariable("MONITORING_GCS_ACCOUNT", "PLACEHOLDER", "Process")
-    [System.Environment]::SetEnvironmentVariable("MONITORING_GCS_NAMESPACE", "PLACEHOLDER", "Process")
-    [System.Environment]::SetEnvironmentVariable("MONITORING_CONFIG_VERSION", "PLACEHOLDER", "Process")
-    [System.Environment]::SetEnvironmentVariable("MONITORING_MANAGED_ID_IDENTIFIER", "PLACEHOLDER", "Process")
-    [System.Environment]::SetEnvironmentVariable("MONITORING_MANAGED_ID_VALUE", "PLACEHOLDER", "Process")
-
-
-    Start-Job -Name "WindowsHostLogsJob" -ScriptBlock { 
-        Start-Process -NoNewWindow -FilePath ".\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe" -ArgumentList @("-useenv")
-    }
+} 
+else 
+{
+    Write-Host "Geneva environment not configured. Liveness probe will fail the container."
 }
 
 # Execute Notepad.exe to keep container alive since there is nothing in the foreground.
