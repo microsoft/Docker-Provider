@@ -77,6 +77,9 @@ class TestGenevaConfigParser < Minitest::Unit::TestCase
   # It does not verify that the script is valid and correctly sets env vars
   def test_writeEnvScript
     # set values to write
+    @geneva_data_directory = "./opt/genevamonitoringagent/datadirectory"
+    @geneva_auth_type = "AuthMSIToken"
+    @geneva_region = "eastus2"
     @geneva_account_environment = CONFIG_MAP_VARIABLES[:environment]
     @geneva_account_name = CONFIG_MAP_VARIABLES[:account]
     @geneva_account_namespace = CONFIG_MAP_VARIABLES[:namespace]

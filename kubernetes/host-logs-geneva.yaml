@@ -59,7 +59,6 @@ spec:
               name: settings-vol-config
               readOnly: true
           startupProbe:
-            initialDelaySeconds: 180
             periodSeconds: 60
             timeoutSeconds: 30
             successThreshold: 1
@@ -68,19 +67,16 @@ spec:
               command:
                 - cmd
                 - /c
-                - .\opt\hostlogswindows\scripts\cmd\startupprobe.exe
-                - >-
-                  %CONTAINER_SANDBOX_MOUNT_POINT%\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe
+                - .\opt\hostlogswindows\scripts\cmd\livenessprobe.exe
+                - "%CONTAINER_SANDBOX_MOUNT_POINT%\\opt\\genevamonitoringagent\\genevamonitoringagent\\Monitoring\\Agent\\MonAgentLauncher.exe"
           livenessProbe:
             exec:
               command:
                 - cmd
                 - /c
                 - .\opt\hostlogswindows\scripts\cmd\livenessprobe.exe
-                - >-
-                  %CONTAINER_SANDBOX_MOUNT_POINT%\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentLauncher.exe
+                - "%CONTAINER_SANDBOX_MOUNT_POINT%\\opt\\genevamonitoringagent\\genevamonitoringagent\\Monitoring\\Agent\\MonAgentLauncher.exe"
                 - .\etc\hostlogswindows\filesystemwatcher.txt
-            initialDelaySeconds: 180
             periodSeconds: 60
             timeoutSeconds: 30
       affinity:

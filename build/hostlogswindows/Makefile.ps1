@@ -1,7 +1,6 @@
 #  Build script to build the liveness probe and copy installers for host logs
 #  1. copy the files under installer directory to ..\..\kubernetes\windows\hostlogs\hostlogswindows
 #  2. Builds the livenessprobe cpp and copy the executable to the under directory ..\..\kubernetes\windows\hostlogs\hostlogswindows
-#  3. Builds the startupprobe cpp and copy the executable to the under directory ..\..\kubernetes\windows\hostlogs\hostlogswindows
 
 $currentdir =  $PSScriptRoot
 Write-Host("current script dir : " + $currentdir + " ")
@@ -37,7 +36,7 @@ New-Item -Path $publishdir -ItemType "directory" -Force
 Write-Host("Start:build livenessprobe cpp code")
 $livenessprobesrcpath = Join-Path -Path $builddir  -ChildPath "hostlogswindows\installer\livenessprobe\livenessprobe.cpp"
 $livenessprobeexepath = Join-Path -Path $builddir  -ChildPath "hostlogswindows\installer\livenessprobe\livenessprobe.exe"
-g++ $livenessprobesrcpath -o $livenessprobeexepath -municode
+g++ $livenessprobesrcpath -o $livenessprobeexepath -municode -l shlwapi
 Write-Host("End:build livenessprobe cpp code")
 if (Test-Path -Path $livenessprobeexepath){
     Write-Host("livenessprobe.exe exists which indicates cpp build step succeeded") -ForegroundColor Green
@@ -46,18 +45,6 @@ if (Test-Path -Path $livenessprobeexepath){
     exit 1
 }
 
-# compile and build the startup probe cpp code
-Write-Host("Start:build startup cpp code")
-$startupprobesrcpath = Join-Path -Path $builddir  -ChildPath "hostlogswindows\installer\startupprobe\startupprobe.cpp"
-$startupprobeexepath = Join-Path -Path $builddir  -ChildPath "hostlogswindows\installer\startupprobe\startupprobe.exe"
-g++ $startupprobesrcpath -o $startupprobeexepath -municode
-Write-Host("End:build startupprobe cpp code")
-if (Test-Path -Path $startupprobeexepath){
-    Write-Host("startupprobe.exe exists which indicates cpp build step succeeded") -ForegroundColor Green
-} else {
-    Write-Host("startupprobe.exe doesnt exist which indicates cpp build step failed") -ForegroundColor Red
-    exit 1
-}
 
 $installerdir = Join-Path -Path $builddir -ChildPath "common\installer"
 Write-Host("copying common installer files conf and scripts from :" + $installerdir + "  to  :" + $publishdir + " ...")
