@@ -107,10 +107,10 @@ def writeEnvScript(filepath)
     file.write(get_command_windows("MONITORING_MANAGED_ID_IDENTIFIER", authIdParts[0]))
     file.write(get_command_windows("MONITORING_MANAGED_ID_VALUE", authIdParts[1]))
 
-    puts "Using config map value: MONITORING_DATA_DIRECTORY = #{@geneva_account_environment}"
+    puts "Using config map value: MONITORING_DATA_DIRECTORY = #{@geneva_data_directory}"
     puts "Using config map value: MONITORING_GCS_AUTH_ID_TYPE = #{@geneva_auth_type}"
     puts "Using config map value: MONITORING_GCS_REGION = #{@geneva_region}"
-    puts "Using config map value: MONITORING_GCS_ENVIRONMENT = #{@geneva_data_directory}"
+    puts "Using config map value: MONITORING_GCS_ENVIRONMENT = #{@geneva_account_environment}"
     puts "Using config map value: MONITORING_GCS_ACCOUNT = #{@geneva_account_name}"
     puts "Using config map value: MONITORING_GCS_NAMESPACE = #{@geneva_account_namespace}"
     puts "Using config map value: MONITORING_CONFIG_VERSION = #{@geneva_logs_config_version}"

@@ -30,7 +30,7 @@ bool IsFileExists(const wchar_t* const fileName)
 /*
 * Function to check if a process is running based on its full path
 */
-bool IsProcessRunningWithSpecifcPath(const wchar_t* executableFullPath)
+bool IsProcessRunningWithSpecificPath(const wchar_t* executableFullPath)
 {
     PROCESSENTRY32 processEntry{};  // struct to hold process details
     processEntry.dwSize = sizeof(PROCESSENTRY32);  // set size of struct
@@ -40,7 +40,7 @@ bool IsProcessRunningWithSpecifcPath(const wchar_t* executableFullPath)
 
     if (processSnapshot == INVALID_HANDLE_VALUE)
     {
-        throw std::runtime_error("Failed to create process snapshot"); // or just exit the program with UNEXPECTED_ERROR ?
+        throw std::runtime_error("Failed to create process snapshot"); 
     }
 
     wchar_t* executableName = PathFindFileName(executableFullPath);
@@ -54,6 +54,11 @@ bool IsProcessRunningWithSpecifcPath(const wchar_t* executableFullPath)
             {
                 // For each process that matches our executableName, capture a snapshot of all modules
                 HANDLE moduleSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, processEntry.th32ProcessID);
+
+                if (moduleSnapshot == INVALID_HANDLE_VALUE)
+                {
+                    throw std::runtime_error("Failed to create module snapshot"); 
+                }
 
                 MODULEENTRY32 moduleEntry{}; // struct to hold details of a module (exe) associated with a process
                 moduleEntry.dwSize = sizeof(MODULEENTRY32); // set size of struct
@@ -75,29 +80,46 @@ bool IsProcessRunningWithSpecifcPath(const wchar_t* executableFullPath)
 }
 
 /**
- <exe> <monAgentLauncherExe> <filesystemwatcherfilepath>
+Usage: livesnessprobe.exe <monitoringAgentLauncherPath> [fileSystemWatcherTextFilePath]
+Description: 
+    - monitoringAgentLauncherPath: The mandatory path to the Monitoring Agent Launcher exe. The program will return exit code 1 if a process with this full path is not running.
+    - fileSystemWatcherTextFilePath: The optional path to the file system watcher text file. If provided, the program will return exit code 2 if this file exists.
 **/
 int wmain(int argc, wchar_t* argv[])
 {
     try
     {
-        if (argc < 2 || argc > 3)
+        if (argc < 2)
         {
-            wprintf_s(L"ERROR:unexpected number of arguments give. The expectation is at least 2 and no more then 3 agruments");
+            wprintf_s(L"ERROR: No arguments provided. "
+                    "Usage: livesnessprobe.exe <monitoringAgentLauncherPath> [fileSystemWatcherTextFilePath] "
+                    "Description: " 
+                    "- monitoringAgentLauncherPath: The mandatory path to the Monitoring Agent Launcher exe. The program will return exit code 1 if a process with this full path is not running. "
+                    "- watcherPath: The optional path to the watcher. If provided, the program will fail if this file exists.\n");
             return UNEXPECTED_ERROR;
         }
-        else if (argc == 3)
+        else if(argc == 2)
         {
-            if (IsFileExists(argv[2]))
-            {
-                wprintf_s(L"INFO:File:%s exists indicates ConfigMap has been deployed/updated after the container started.\n", argv[2]);
-                return FILESYSTEM_WATCHER_FILE_EXISTS;
-            }
+            wprintf_s(L"INFO: Only the agentPath provided. The program won't check the watcher file.\n");
+        }
+        else if (argc == 3 && IsFileExists(argv[2]))
+        {
+            wprintf_s(L"INFO: File:%s exists indicates ConfigMap has been deployed/updated after the container started.\n", argv[2]);
+            return FILESYSTEM_WATCHER_FILE_EXISTS;
+        }
+        else
+        {
+            wprintf_s(L"ERROR: Too many arguments provided. "
+                    "Usage: livesnessprobe.exe <monitoringAgentLauncherPath> [fileSystemWatcherTextFilePath] "
+                    "Description: " 
+                    "- monitoringAgentLauncherPath: The mandatory path to the Monitoring Agent Launcher exe. The program will return exit code 1 if a process with this full path is not running. "
+                    "- watcherPath: The optional path to the watcher. If provided, the program will fail if this file exists.\n");
+            return UNEXPECTED_ERROR;
         }
 
-        if (!IsProcessRunningWithSpecifcPath(argv[1]))
+        if (!IsProcessRunningWithSpecificPath(argv[1]))
         {
-            wprintf_s(L"ERROR:Process:%s is not running\n", argv[1]);
+            wprintf_s(L"ERROR: Process:%s is not running\n", argv[1]);
             return NO_MONAGENT_LAUNCHER_PROCESS;
         }
 
