@@ -400,11 +400,6 @@ spec:
               cpu: 75m
               memory: 325Mi
           env:
-            - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
-              valueFrom:
-                resourceFieldRef:
-                  containerName: ama-logs
-                  resource: limits.memory
             - name: FBIT_SERVICE_FLUSH_INTERVAL
               value: "15"
             - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
@@ -757,11 +752,6 @@ spec:
               cpu: 150m
               memory: 250Mi
           env:
-            - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
-              valueFrom:
-                resourceFieldRef:
-                  containerName: ama-logs
-                  resource: limits.memory
             - name: NUM_OF_FLUENTD_WORKERS
               valueFrom:
                 resourceFieldRef:

@@ -85,6 +85,11 @@ spec:
          valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
+       - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+         valueFrom:
+           resourceFieldRef:
+             containerName: ama-logs-windows
+             resource: limits.memory
        - name: NODE_IP
          valueFrom:
             fieldRef:
