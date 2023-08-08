@@ -1,0 +1,50 @@
+kind: ConfigMap
+apiVersion: v1
+data:
+  prometheus-config: |-
+    scrape_configs:
+    - job_name: ama-logs-daemonset
+      kubernetes_sd_configs:
+        - role: pod
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_controller_kind]
+          action: keep
+          regex: 'DaemonSet'
+        - source_labels: [__meta_kubernetes_pod_controller_name]
+          regex: ^(ama-logs|ama-logs-windows)$ 
+          action: keep
+        - source_labels: [__address__]
+          action: replace
+          target_label: __address__
+          regex: (.+?)(\:\d+)?
+          replacement: $1:9102
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: instance
+        - source_labels: [__meta_kubernetes_pod_node_name]
+          action: replace
+          target_label: node
+    - job_name: ama-logs-geneva-deployment
+      kubernetes_sd_configs:
+        - role: pod
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_pod_controller_kind]
+          action: keep
+          regex: 'ReplicaSet'
+        - source_labels: [__meta_kubernetes_pod_controller_name]
+          regex: 'ama-logs-geneva-deployment'
+          action: keep
+        - source_labels: [__address__]
+          action: replace
+          target_label: __address__
+          regex: (.+?)(\:\d+)?
+          replacement: $1:9102
+        - source_labels: [__meta_kubernetes_pod_name]
+          action: replace
+          target_label: instance
+        - source_labels: [__meta_kubernetes_pod_node_name]
+          action: replace
+          target_label: node
+metadata:
+  name: ama-metrics-prometheus-config
+  namespace: kube-system

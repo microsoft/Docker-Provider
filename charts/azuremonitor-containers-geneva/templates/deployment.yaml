@@ -61,12 +61,27 @@ spec:
            value: {{ .Values.genevaLogsConfig.region | quote }}
          - name: MONITORING_USE_GENEVA_CONFIG_SERVICE
            value: "true"
-         - name: MONITORING_MAX_EVENT_RATE
-           value: "100000" # default MDSD EPS is 20K which is not enough for large scale
          - name: FBIT_INPUT_FORWARD_BUFFER_CHUNK_SIZE
            value: "15m"
          - name: FBIT_INPUT_FORWARD_BUFFER_CHUNK_MAX_SIZE
            value: "30m"
+         # MDSD high scale config
+         - name: MONITORING_MAX_EVENT_RATE
+           value: "100000" # default MDSD EPS is 20K which is not enough for large scale
+         - name: MDSD_COMPRESSION_ALGORITHM
+           value: "lz4"
+         - name: MDSD_COMPRESSION_LEVEL
+           value: "4"
+         - name: MDSD_TCMALLOC_RELEASE_FREQ_SEC
+           value: "1"
+         - name: TCMALLOC_MAX_TOTAL_THREAD_CACHE_BYTES
+           value: "64000000"
+         - name: MONITORING_MAX_DEDUP_TAGS
+           value: "0"
+         - name: MDSD_DJSON_ACK
+           value: "0"
+         - name: MDSD_MSGPACK_SEND_ACK
+           value: "0"
          - name: MDSD_MSGPACK_SORT_COLUMNS # confirm this setting with AMA team
            value: "1"
          - name: NODE_IP
@@ -95,3 +110,8 @@ spec:
           initialDelaySeconds: 60
           periodSeconds: 60
           timeoutSeconds: 15
+         readinessProbe:
+          tcpSocket:
+           port: 24224
+          initialDelaySeconds: 10
+          periodSeconds: 30

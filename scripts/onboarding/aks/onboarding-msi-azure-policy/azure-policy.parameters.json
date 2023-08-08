@@ -9,7 +9,7 @@
       "type": "string"
     },
     "enableSyslog": {
-      "type": "boolean",
+      "type": "bool",
       "defaultValue": false
     },
     "syslogLevels": {
@@ -67,6 +67,27 @@
       "type": "array",
       "defaultValue": [
         "kube-system", "gatekeeper-system", "azure-arc"
+      ]
+    },
+    "enableContainerLogV2": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "streams": {
+       "type": "array",
+       "defaultValue": [
+        "Microsoft-ContainerLog",
+        "Microsoft-ContainerLogV2",
+        "Microsoft-KubeEvents",
+        "Microsoft-KubePodInventory",
+        "Microsoft-KubeNodeInventory",
+        "Microsoft-KubePVInventory",
+        "Microsoft-KubeServices",
+        "Microsoft-KubeMonAgentEvents",
+        "Microsoft-InsightsMetrics",
+        "Microsoft-ContainerInventory",
+        "Microsoft-ContainerNodeInventory",
+        "Microsoft-Perf"
       ]
     }
 }

@@ -38,6 +38,7 @@ def substituteFluentBitPlaceHolders(configFilePath)
     memBufLimit = ENV["FBIT_TAIL_MEM_BUF_LIMIT"]
     ignoreOlder = ENV["FBIT_TAIL_IGNORE_OLDER"]
     multilineLogging = ENV["AZMON_MULTILINE_ENABLED"]
+    enableFluentBitThreading = ENV["ENABLE_FBIT_THREADING"]
 
     serviceInterval = is_valid_number?(interval) ? interval : @default_service_interval
     serviceIntervalSetting = "Flush         " + serviceInterval
@@ -72,6 +73,12 @@ def substituteFluentBitPlaceHolders(configFilePath)
       new_contents = new_contents.gsub("${TAIL_IGNORE_OLDER}", "Ignore_Older " + ignoreOlder)
     else
       new_contents = new_contents.gsub("\n    ${TAIL_IGNORE_OLDER}\n", "\n")
+    end
+
+    if !enableFluentBitThreading.nil? && enableFluentBitThreading.strip.casecmp("true") == 0
+      new_contents = new_contents.gsub("${TAIL_THREADED}", "threaded on")
+    else
+      new_contents = new_contents.gsub("\n    ${TAIL_THREADED}\n", "\n")
     end
 
     if !multilineLogging.nil? && multilineLogging.to_s.downcase == "true"

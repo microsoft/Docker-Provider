@@ -15,7 +15,7 @@ genevaLogsConfig:
 
 image:
   repository: mcr.microsoft.com/azuremonitor/containerinsights/ciprod
-  tag: "3.1.10"
+  tag: "3.1.11"
   pullPolicy: IfNotPresent
   agentVersion: "azure-mdsd-1.17.1"
 nameOverride: ""
@@ -27,18 +27,18 @@ service:
   port: 24224
 resources:
   limits:
-    cpu: 2
-    memory: 2Gi
+    cpu: 4
+    memory: 4Gi
   requests:
-    cpu: 150m
+    cpu: 500m
     memory: 900Mi
 autoscaling:
   enabled: true
   minReplicas: 1
-  maxReplicas: 10
+  maxReplicas: 30
   # hpa calculates the % usage against requests not limits
-  targetMemoryUtilizationPercentage: 150
-  # targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 200
+  targetCPUUtilizationPercentage: 200
 affinity:
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:

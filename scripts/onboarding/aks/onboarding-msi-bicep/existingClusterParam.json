@@ -29,6 +29,25 @@
       },
       "namespacesForDataCollection": {
         "value": [ "kube-system", "gatekeeper-system", "azure-arc" ]
-      }
+      },
+      "enableContainerLogV2": {
+        "value": true
+      },
+      "streams": {
+       "value": [
+         "Microsoft-ContainerLog",
+         "Microsoft-ContainerLogV2",
+         "Microsoft-KubeEvents",
+         "Microsoft-KubePodInventory",
+         "Microsoft-KubeNodeInventory",
+         "Microsoft-KubePVInventory",
+         "Microsoft-KubeServices",
+         "Microsoft-KubeMonAgentEvents",
+         "Microsoft-InsightsMetrics",
+         "Microsoft-ContainerInventory",
+         "Microsoft-ContainerNodeInventory",
+         "Microsoft-Perf"
+       ]
+     }
     }
   }

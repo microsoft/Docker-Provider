@@ -30,7 +30,7 @@
   <Events>
     <MdsdEvents>
      <MdsdEventSource source="ContainerLogV2Source">
-        <RouteEvent eventName="ContainerLogV2" duration="PT10S" priority="High" storeType="CentralBond" account="<GenevaLogsAccountMoniker>" immutable="true">
+        <RouteEvent eventName="ContainerLogV2" duration="PT1S" priority="High" storeType="CentralBond" account="<GenevaLogsAccountMoniker>" immutable="true">
         </RouteEvent>
     </MdsdEventSource>
     <MdsdEventSource source="MaQosEvent">

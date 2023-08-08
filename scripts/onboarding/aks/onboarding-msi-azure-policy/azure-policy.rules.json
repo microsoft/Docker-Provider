@@ -60,6 +60,12 @@
 				},
 				"namespacesForDataCollection": {
 				  "type": "array"
+				},
+				"enableContainerLogV2": {
+				  "type": "bool"
+				},
+				"streams": {
+					"type": "array"
 				}
 			  },
 			  "variables": {
@@ -90,14 +96,13 @@
 									"extensions": [
 										{
 											"name": "ContainerInsightsExtension",
-											"streams": [
-											   "Microsoft-ContainerInsights-Group-Default"
-											],
+											"streams":"[parameters('streams')]",
 											"extensionSettings": {
 												"dataCollectionSettings" : {
 													"interval": "[parameters('dataCollectionInterval')]",
 													"namespaceFilteringMode": "[parameters('namespaceFilteringModeForDataCollection')]",
-													"namespaces": "[parameters('namespacesForDataCollection')]"
+													"namespaces": "[parameters('namespacesForDataCollection')]",
+													"enableContainerLogV2": "[parameters('enableContainerLogV2')]"
 												}
 											},
 											"extensionName": "ContainerInsights"
@@ -114,9 +119,7 @@
 								},
 								"dataFlows": [
 									{
-										"streams": [
-											"Microsoft-ContainerInsights-Group-Default"
-										],
+										"streams": "[parameters('streams')]",
 										"destinations": [
 											"ciworkspace"
 										]
@@ -154,14 +157,13 @@
 									"extensions": [
 										{
 											"name": "ContainerInsightsExtension",
-											"streams": [
-												"Microsoft-ContainerInsights-Group-Default"
-											],
+											"streams": "[parameters('streams')]",
 											"extensionSettings": {
 												"dataCollectionSettings" : {
 													"interval": "[parameters('dataCollectionInterval')]",
 													"namespaceFilteringMode": "[parameters('namespaceFilteringModeForDataCollection')]",
-													"namespaces": "[parameters('namespacesForDataCollection')]"
+													"namespaces": "[parameters('namespacesForDataCollection')]",
+													"enableContainerLogV2": "[parameters('enableContainerLogV2')]"
 												}
 											},
 											"extensionName": "ContainerInsights"
@@ -178,8 +180,13 @@
 								},
 								"dataFlows": [
 									{
+										"streams": "[parameters('streams')]",
+										"destinations": [
+											"ciworkspace"
+										]
+									},
+									{
 										"streams": [
-											"Microsoft-ContainerInsights-Group-Default",
 											"Microsoft-Syslog"
 										],
 										"destinations": [
@@ -231,7 +238,7 @@
 								"dataCollectionRuleId": "[variables('dataCollectionRuleId')]"
 							}
 						  }
-		
+
 						]
 					  },
 					  "parameters": {}
@@ -314,6 +321,12 @@
 			  },
 			  "namespacesForDataCollection": {
 				"value": "[parameters('namespacesForDataCollection')]"
+			  },
+			  "enableContainerLogV2": {
+				"value": "[parameters('enableContainerLogV2')]"
+			  },
+			  "streams": {
+				"value": "[parameters('streams')]"
 			  }
 			}
 		  }

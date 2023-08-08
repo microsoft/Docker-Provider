@@ -8,6 +8,44 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+
+### 08/03/2023 -
+##### Version microsoft/oms:3.1.11 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.11 (linux)
+##### Version microsoft/oms:win-3.1.11 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.11 (windows)
+##### Current dependencies
+- Linux
+  - [CBL-Mariner 2.0.20230630](https://github.com/microsoft/CBL-Mariner/releases/tag/2.0.20230630-2.0)
+  - Golang - 1.20.5
+  - Ruby - 3.1.3
+  - MDSD - 1.26.1
+  - Telegraf - 1.26.0
+  - Fluent-bit - 2.0.9
+  - Fluentd - 1.14.6
+- Windows
+  - Ruby - 3.1.1
+  - Fluent-bit - 2.0.14
+  - Telegraf - 1.24.2
+  - Fluentd - 1.14.6
+  - Windows AMA - 46.3.2
+  - Golang - 1.20.5
+##### Code change log
+- Common
+  - Add java and python stacktrace for multiline
+  - Add multiline test yamls
+  - Disable threaded by default and make optional
+  - Update golang version to 1.20.5
+  - Add CI templates support for containerlogv2 
+  - Add streams params in templates
+  - Add env vars: CONTAINER_MEMORY_LIMIT_IN_BYTES and HOSTNAME to ama-logs-yaml
+- Linux
+  - Remove amd64 requirement in ARC
+  - Remove the use of dnf package
+  - Remove fluentd cert pem files causing CVEs
+  - Update the frequency duration to 1s, grafana dashboard for 1P
+  - Add test workloads
+  - Expose mdsd config for high log customers
+  - Add env variable HOSTNAME to all linux pods in ARC K8s
+
 ### 06/30/2023 -
 ##### Version microsoft/oms:3.1.10 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.10 (linux)
 ##### Version microsoft/oms:win-3.1.10 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.10 (windows)

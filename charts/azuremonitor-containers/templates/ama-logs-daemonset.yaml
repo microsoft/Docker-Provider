@@ -125,6 +125,10 @@ spec:
        {{- end }}
        - name: IS_CUSTOM_CERT
          value: {{ .Values.Azure.proxySettings.isCustomCert | quote }}
+       - name: HOSTNAME
+         valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
        securityContext:
          privileged: true
        ports:
@@ -218,6 +222,10 @@ spec:
              resource: limits.memory
        - name: ISTEST
          value: {{ .Values.amalogs.ISTEST | quote }}
+       - name: HOSTNAME
+         valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
        securityContext:
          privileged: true
        volumeMounts:

@@ -10,7 +10,7 @@ resource "azurerm_kubernetes_cluster" "k8s" {
   dns_prefix          = var.dns_prefix
 
   tags = var.resource_tag_values
-  
+
   default_node_pool {
     name       = "agentpool"
     vm_size    = var.vm_size
@@ -40,7 +40,12 @@ resource "azurerm_monitor_data_collection_rule" "dcr" {
   }
 
   data_flow {
-    streams      = ["Microsoft-ContainerInsights-Group-Default","Microsoft-Syslog"]
+    streams      = var.streams
+    destinations = ["ciworkspace"]
+  }
+
+  data_flow {
+    streams      = [ "Microsoft-Syslog"]
     destinations = ["ciworkspace"]
   }
 
@@ -53,9 +58,17 @@ resource "azurerm_monitor_data_collection_rule" "dcr" {
     }
 
     extension {
-      streams            = ["Microsoft-ContainerInsights-Group-Default"]
+      streams            = var.streams
       extension_name     = "ContainerInsights"
-      name = "ContainerInsightsExtension"
+      extension_json     = jsonencode({
+        "dataCollectionSettings" : {
+            "interval": var.data_collection_interval,
+            "namespaceFilteringMode": var.namespace_filtering_mode_for_data_collection,
+            "namespaces": var.namespaces_for_data_collection
+            "enableContainerLogV2": var.enableContainerLogV2
+        }
+      })
+      name               = "ContainerInsightsExtension"
     }
   }
 

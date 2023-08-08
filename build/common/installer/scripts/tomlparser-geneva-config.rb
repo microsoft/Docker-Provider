@@ -23,6 +23,7 @@ GENEVA_SUPPORTED_ENVIRONMENTS = ["Test", "Stage", "DiagnosticsProd", "Firstparty
 @tenant_namespaces = ""
 @geneva_gcs_authid = ""
 @azure_json_path = "/etc/kubernetes/host/azure.json"
+@enable_fbit_threading = false
 
 # Use parser to parse the configmap toml file to a ruby structure
 def parseConfigMap
@@ -75,6 +76,11 @@ def populateSettingValuesFromConfigMap(parsedConfig)
                   @infra_namespaces.concat("," + namespace)
                 end
               end
+            end
+            enable_fbit_threading = parsedConfig[:integrations][:geneva_logs][:enable_threading].to_s
+            puts "config::geneva_logs:enable_threading provided in the configmap: #{enable_fbit_threading}"
+            if !enable_fbit_threading.nil? && enable_fbit_threading.strip.casecmp("true") == 0
+              @enable_fbit_threading = true
             end
           end
 
@@ -244,6 +250,9 @@ file = File.open("geneva_config_env_var", "w")
 if !file.nil?
   file.write("export GENEVA_LOGS_INTEGRATION=#{@geneva_logs_integration}\n")
   file.write("export GENEVA_LOGS_MULTI_TENANCY=#{@multi_tenancy}\n")
+  if @enable_fbit_threading
+    file.write("export ENABLE_FBIT_THREADING=#{@enable_fbit_threading}\n")
+  end
 
   if @geneva_logs_integration
     file.write("export MONITORING_GCS_ENVIRONMENT=#{@geneva_account_environment}\n")
@@ -276,6 +285,10 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     file.write(commands)
     commands = get_command_windows("GENEVA_LOGS_MULTI_TENANCY", @multi_tenancy)
     file.write(commands)
+    if @enable_fbit_threading
+      commands = get_command_windows("ENABLE_FBIT_THREADING", @enable_fbit_threading)
+      file.write(commands)
+    end
 
     if @geneva_logs_integration
       commands = get_command_windows("MONITORING_GCS_ENVIRONMENT", @geneva_account_environment)

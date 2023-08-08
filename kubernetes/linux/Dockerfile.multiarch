@@ -5,7 +5,7 @@ ARG MARINER_DISTROLESS_IMAGE=mcr.microsoft.com/cbl-mariner/distroless/base:2.0
 
 FROM --platform=$BUILDPLATFORM ${GOLANG_BASE_IMAGE} AS golang-builder
 ARG TARGETOS TARGETARCH
-RUN /usr/bin/apt-get update && /usr/bin/apt-get install git g++ make pkg-config libssl-dev libpam0g-dev rpm librpm-dev uuid-dev libkrb5-dev python sudo gcc-aarch64-linux-gnu -y
+RUN /usr/bin/apt-get update && /usr/bin/apt-get install git g++ make pkg-config libssl-dev libpam0g-dev rpm librpm-dev uuid-dev libkrb5-dev python-is-python3 sudo gcc-aarch64-linux-gnu -y
 
 COPY build /src/build
 COPY source /src/source
@@ -52,7 +52,7 @@ ENV KUBE_CLIENT_BACKOFF_DURATION 0
 ENV RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR 0.9
 
 # default value will be overwritten by pipeline
-ARG IMAGE_TAG=3.1.10
+ARG IMAGE_TAG=3.1.11
 ENV AGENT_VERSION ${IMAGE_TAG}
 
 WORKDIR ${tmpdir}

@@ -347,8 +347,6 @@ spec:
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         kubernetes.azure.com/no-http-proxy-vars: "true"
-        # prometheus.io/scrape: "true"
-        # prometheus.io/port: "9102"
     spec:
       serviceAccountName: ama-logs
       dnsConfig:
@@ -392,7 +390,7 @@ spec:
         #         - NET_ADMIN
         #         - NET_RAW
         - name: ama-logs
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.10"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.11"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -402,6 +400,11 @@ spec:
               cpu: 75m
               memory: 325Mi
           env:
+            - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+              valueFrom:
+                resourceFieldRef:
+                  containerName: ama-logs
+                  resource: limits.memory
             - name: FBIT_SERVICE_FLUSH_INTERVAL
               value: "15"
             - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
@@ -501,7 +504,7 @@ spec:
             timeoutSeconds: 15
 #Only in sidecar scraping mode
         - name: ama-logs-prometheus
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.10"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.11"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -511,6 +514,11 @@ spec:
               cpu: 75m
               memory: 225Mi
           env:
+            - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+              valueFrom:
+                resourceFieldRef:
+                  containerName: ama-logs-prometheus
+                  resource: limits.memory
             # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
             - name: AKS_CLUSTER_NAME
               value: "VALUE_AKS_CLUSTER_NAME"
@@ -531,11 +539,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-            - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+            - name: HOSTNAME
               valueFrom:
-                resourceFieldRef:
-                  containerName: ama-logs-prometheus
-                  resource: limits.memory
+                fieldRef:
+                  fieldPath: spec.nodeName
             # Update this with the user assigned msi client id for ama-logs
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
               value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
@@ -739,7 +746,7 @@ spec:
         #         - NET_ADMIN
         #         - NET_RAW
         - name: ama-logs
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.10"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.11"
           imagePullPolicy: IfNotPresent
           # comment resources if VPA configured since the VPA will set these values
           resources:
@@ -750,6 +757,11 @@ spec:
               cpu: 150m
               memory: 250Mi
           env:
+            - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+              valueFrom:
+                resourceFieldRef:
+                  containerName: ama-logs
+                  resource: limits.memory
             - name: NUM_OF_FLUENTD_WORKERS
               valueFrom:
                 resourceFieldRef:
@@ -778,6 +790,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
             # Update this with the user assigned msi client id for ama-logs
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
               value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
@@ -928,8 +944,6 @@ spec:
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         kubernetes.azure.com/no-http-proxy-vars: "true"
-        # prometheus.io/scrape: "true"
-        # prometheus.io/port: "9102"
     spec:
      serviceAccountName: ama-logs
      dnsConfig:
@@ -938,13 +952,18 @@ spec:
             value: "3"
      containers:
        - name: ama-logs-windows
-         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.10"
+         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.11"
          imagePullPolicy: IfNotPresent
          resources:
           limits:
            cpu: 500m
            memory: 700Mi
          env:
+          - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+            valueFrom:
+              resourceFieldRef:
+                containerName: ama-logs-windows
+                resource: limits.memory
           - name: FBIT_SERVICE_FLUSH_INTERVAL
             value: "15"
           - name: FBIT_TAIL_BUFFER_CHUNK_SIZE

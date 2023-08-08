@@ -75,7 +75,7 @@
     "namespacesForDataCollection": {
       "value": [ "kube-system", "gatekeeper-system", "azure-arc" ]
     },
-    "defaultStreams": {
+    "streams": {
       "value": [
         "Microsoft-ContainerLog",
         "Microsoft-ContainerLogV2",

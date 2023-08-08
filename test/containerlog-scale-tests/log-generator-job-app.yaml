@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: log-gen
+  labels:
+    app: log-gen
+spec:
+  template:
+    spec:
+      nodeSelector:
+        kubernetes.io/os: "linux"
+      restartPolicy: Never
+      containers:
+      - name: log-gen
+        image: docker.io/mffiedler/ocp-logtest:latest
+        command:
+          - python
+        args:
+          - ocp_logtest.py
+          - --line-length=1024
+          - --num-lines=300000
+          - --rate=60000
+          - --fixed-line
+        resources:
+          limits:
+            cpu: 4
+            memory: 4Gi
+          requests:
+            cpu: 100m
+            memory: 50Mi
