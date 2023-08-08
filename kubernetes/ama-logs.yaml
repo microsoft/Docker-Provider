@@ -400,6 +400,11 @@ spec:
               cpu: 75m
               memory: 325Mi
           env:
+            - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+              valueFrom:
+                resourceFieldRef:
+                  containerName: ama-logs
+                  resource: limits.memory
             - name: FBIT_SERVICE_FLUSH_INTERVAL
               value: "15"
             - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
@@ -439,11 +444,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-            - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
-              valueFrom:
-                resourceFieldRef:
-                  containerName: ama-logs
-                  resource: limits.memory
           securityContext:
             privileged: true
           ports:
@@ -752,16 +752,16 @@ spec:
               cpu: 150m
               memory: 250Mi
           env:
-            - name: NUM_OF_FLUENTD_WORKERS
-              valueFrom:
-                resourceFieldRef:
-                  containerName: ama-logs
-                  resource: limits.cpu
             - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
               valueFrom:
                 resourceFieldRef:
                   containerName: ama-logs
                   resource: limits.memory
+            - name: NUM_OF_FLUENTD_WORKERS
+              valueFrom:
+                resourceFieldRef:
+                  containerName: ama-logs
+                  resource: limits.cpu
             - name: EMIT_CACHE_TELEMETRY
               value: "false" # enable only debug or test purpose and disable for prod
             - name: AKS_RESOURCE_ID
