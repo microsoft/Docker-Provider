@@ -1,2 +1,5 @@
 # tough-cookie -> request -> kubernetes/client-node, blocked on kubernetes/client-node's migration from request to fetch
 CVE-2023-26136
+
+# import-in-the-middle -> @opentelemetry/instrumentation -> @azure/opentelemetry-instrumentation-azure-sdk -> applicationinsights
+CVE-2023-38704
