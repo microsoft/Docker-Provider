@@ -8,8 +8,14 @@
         "eslint:recommended",
         "plugin:@typescript-eslint/recommended"
     ],
-    "overrides": [
-    ],
+    // "overrides": [
+    //     {
+    //       "files": ["tests/*.spec.*"],
+    //       "rules": {
+    //         "@typescript-eslint/no-var-requires": "off"
+    //       }
+    //     }
+    // ],
     "parser": "@typescript-eslint/parser",
     "parserOptions": {
         "ecmaVersion": "latest",
@@ -18,6 +24,7 @@
     "plugins": [
         "@typescript-eslint"
     ],
+    "ignorePatterns": ["**/*.js"],
     "rules": {
         "max-line-length": "off"
     }

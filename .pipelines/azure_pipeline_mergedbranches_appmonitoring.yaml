@@ -137,6 +137,10 @@ jobs:
         npx eslint .
         echo "ESLint is done"
 
+        echo "Running Jest..."
+        npm test
+        echo "Jest is done"
+
         pwd
         ls -a
         
