@@ -123,6 +123,7 @@ describe("ContentProcessor", () => {
     })
 
     it("DiffCalculatorNull1", async () => {
+        expect(1).toBe(0);
         expect(await DiffCalculator.CalculateDiff(null, null, null, null, null, null, null)).toBeNull();
     })
 
