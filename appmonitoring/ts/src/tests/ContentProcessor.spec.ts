@@ -118,7 +118,6 @@ describe("ContentProcessor", () => {
     it("ValidateMissingFields7", () => {
         const testSubject: IRootObject = JSON.parse(TestObject2);
         testSubject.request.object.spec = null;
-
         expect(TemplateValidator.ValidateContent(testSubject)).toBe(false);
     })
 

@@ -131,14 +131,35 @@ jobs:
         
         echo "Building the typescript project..."
         tsc --build --force
+        
+        if [ $? -neq 0 ]
+        then
+          echo "Build failed"
+          exit 1
+        fi
+
         echo "Build is done"
 
         echo "Running ESLint..."
         npx eslint .
+
+        if [ $? -neq 0 ]
+        then
+          echo "ESLint failed"
+          exit 1
+        fi
+
         echo "ESLint is done"
 
         echo "Running Jest..."
         npm test
+
+        if [ $? -neq 0 ]
+        then
+          echo "Jest failed"
+          exit 1
+        fi
+        
         echo "Jest is done"
 
         pwd
