@@ -132,7 +132,7 @@ jobs:
         echo "Building the typescript project..."
         tsc --build --force
         
-        if [ $? -neq 0 ]
+        if [ $? -ne 0 ]
         then
           echo "Build failed"
           exit 1
@@ -143,7 +143,7 @@ jobs:
         echo "Running ESLint..."
         npx eslint .
 
-        if [ $? -neq 0 ]
+        if [ $? -ne 0 ]
         then
           echo "ESLint failed"
           exit 1
@@ -154,7 +154,7 @@ jobs:
         echo "Running Jest..."
         npm test
 
-        if [ $? -neq 0 ]
+        if [ $? -ne 0 ]
         then
           echo "Jest failed"
           exit 1
