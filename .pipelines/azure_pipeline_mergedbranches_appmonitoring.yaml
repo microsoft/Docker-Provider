@@ -159,8 +159,9 @@ jobs:
           echo "Jest failed"
           exit 1
         fi
-        
+
         echo "Jest is done"
+        echo $?
 
         pwd
         ls -a
