@@ -3,3 +3,5 @@ CVE-2023-26136
 
 # import-in-the-middle -> @opentelemetry/instrumentation -> @azure/opentelemetry-instrumentation-azure-sdk -> applicationinsights
 CVE-2023-38704
+# @opentelemetry/instrumentation -> @azure/opentelemetry-instrumentation-azure-sdk -> applicationinsights
+GHSA-f8pq-3926-8gx5
