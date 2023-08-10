@@ -161,8 +161,7 @@ jobs:
         fi
 
         echo "Jest is done"
-        echo $?
-
+        
         pwd
         ls -a
         
