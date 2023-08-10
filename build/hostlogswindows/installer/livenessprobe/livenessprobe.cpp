@@ -107,7 +107,7 @@ int wmain(int argc, wchar_t* argv[])
             wprintf_s(L"INFO: File:%s exists indicates ConfigMap has been deployed/updated after the container started.\n", argv[2]);
             return FILESYSTEM_WATCHER_FILE_EXISTS;
         }
-        else
+        else if(argc > 3)
         {
             wprintf_s(L"ERROR: Too many arguments provided. "
                     "Usage: livesnessprobe.exe <monitoringAgentLauncherPath> [fileSystemWatcherTextFilePath] "
