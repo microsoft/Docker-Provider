@@ -832,6 +832,8 @@ else
             echo "export MONITORING_USE_GENEVA_CONFIG_SERVICE=$MONITORING_USE_GENEVA_CONFIG_SERVICE" >> ~/.bashrc
             export MDSD_USE_LOCAL_PERSISTENCY="false"
             echo "export MDSD_USE_LOCAL_PERSISTENCY=$MDSD_USE_LOCAL_PERSISTENCY" >> ~/.bashrc
+            export MDSD_DEFAULT_TCP_SYSLOG_PORT=28330
+            echo "export MDSD_DEFAULT_TCP_SYSLOG_PORT=$MDSD_DEFAULT_TCP_SYSLOG_PORT" >> ~/.bashrc
       else
             echo "*** setting up oneagent in legacy auth mode ***"
             CIWORKSPACE_id="$(cat /etc/ama-logs-secret/WSID)"
