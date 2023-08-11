@@ -84,7 +84,7 @@ export class K8sWatcher {
                             logger.info(`BOOKMARK resourceVersion=${apiObj.metadata?.resourceVersion}`);
                             latestResourceVersion = apiObj.metadata?.resourceVersion ?? latestResourceVersion;
                         } else {
-                            logger.info(`Unknown object type: ${type}`);
+                            logger.error(`Unknown object type: ${type}`);
                         }
 
                         //logger.info(`apiObj: ${JSON.stringify(apiObj)}`);

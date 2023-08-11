@@ -14,25 +14,16 @@ class WebhookCertData {
 }
 
 export class CertificateManager {
-
-    private static makeNumberPositive = (hexString) => {
-        let mostSignificativeHexDigitAsInt = parseInt(hexString[0], 16);
-    
-        if (mostSignificativeHexDigitAsInt < 8) return hexString;
-    
-        mostSignificativeHexDigitAsInt -= 8
-        return mostSignificativeHexDigitAsInt.toString() + hexString.substring(1)
-    }
     
     // Generate a random serial number for the Certificate
-    private static randomSerialNumber = () => {
-        return CertificateManager.makeNumberPositive(forge.util.bytesToHex(forge.random.getBytesSync(20)));
+    private static randomHexSerialNumber = () => {
+        return (1001).toString(16) + Math.ceil(Math.random()*100);
     }
 
     private static async GenerateSelfSignedCertificate(): Promise<WebhookCertData> {
         let caCert: forge.pki.Certificate = forge.pki.createCertificate();
         let keys = forge.pki.rsa.generateKeyPair(4096);
-        caCert.serialNumber = CertificateManager.randomSerialNumber();
+        caCert.serialNumber = CertificateManager.randomHexSerialNumber();
         caCert.publicKey = keys.publicKey;
         caCert.privateKey = keys.privateKey;
         caCert.validity.notBefore = new Date(2023,6,20,0,0,0,0);
@@ -101,7 +92,7 @@ export class CertificateManager {
 
         // Set the attributes for the new Host Certificate
         newHostCert.publicKey = hostKeys.publicKey;
-        newHostCert.serialNumber = CertificateManager.randomSerialNumber();
+        newHostCert.serialNumber = CertificateManager.randomHexSerialNumber();
         newHostCert.validity.notBefore = new Date(2023,6,20,0,0,0,0);
         newHostCert.validity.notAfter = new Date(2025,7,21,0,0,0,0);
         newHostCert.setSubject(host_attributes);
@@ -157,11 +148,11 @@ export class CertificateManager {
             const certificates: WebhookCertData = await CertificateManager.GenerateSelfSignedCertificate();
             logger.info("Certificates created successfully");
             
-            logger.info("Creating MutatingWebhookConfiguration...");
+            logger.info("Patching MutatingWebhookConfiguration...");
             await CertificateManager.PatchMutatingWebhook(kc, certificates);
             logger.info("MutatingWebhookConfiguration patched successfully");
 
-            logger.info("Creating Secret Store...");
+            logger.info("Patching Secret Store...");
             await CertificateManager.PatchSecretStore(kc, certificates);
             logger.info("Secret Store patched successfully");
 
@@ -169,7 +160,7 @@ export class CertificateManager {
         })
 
         await results.catch(error => {
-            logger.info(error);
+            logger.error(error);
         })
     }
 
