@@ -89,13 +89,15 @@ int wmain(int argc, wchar_t* argv[])
 {
     try
     {
+        const wchar_t* USAGE_INFO = L"Usage: livenessprobe.exe <monitoringAgentLauncherPath> [fileSystemWatcherTextFilePath]\n"
+                             "Description: \n"
+                             "- monitoringAgentLauncherPath: The mandatory path to the Monitoring Agent Launcher exe. The program will return exit code 1 if a process with this full path is not running.\n"
+                             "- fileSystemWatcherTextFilePath: The optional path to the watcher. If provided, the program will fail if this file exists.\n";
+
         if (argc < 2)
         {
-            wprintf_s(L"ERROR: No arguments provided. "
-                    "Usage: livesnessprobe.exe <monitoringAgentLauncherPath> [fileSystemWatcherTextFilePath] "
-                    "Description: " 
-                    "- monitoringAgentLauncherPath: The mandatory path to the Monitoring Agent Launcher exe. The program will return exit code 1 if a process with this full path is not running. "
-                    "- watcherPath: The optional path to the watcher. If provided, the program will fail if this file exists.\n");
+            wprintf_s(L"ERROR: No arguments provided.");
+            wprintf_s(USAGE_INFO);
             return UNEXPECTED_ERROR;
         }
         else if(argc == 2)
@@ -109,11 +111,8 @@ int wmain(int argc, wchar_t* argv[])
         }
         else if(argc > 3)
         {
-            wprintf_s(L"ERROR: Too many arguments provided. "
-                    "Usage: livesnessprobe.exe <monitoringAgentLauncherPath> [fileSystemWatcherTextFilePath] "
-                    "Description: " 
-                    "- monitoringAgentLauncherPath: The mandatory path to the Monitoring Agent Launcher exe. The program will return exit code 1 if a process with this full path is not running. "
-                    "- watcherPath: The optional path to the watcher. If provided, the program will fail if this file exists.\n");
+            wprintf_s(L"ERROR: Too many arguments provided.");
+            wprintf_s(USAGE_INFO);
             return UNEXPECTED_ERROR;
         }
 
