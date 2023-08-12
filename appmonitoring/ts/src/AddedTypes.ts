@@ -9,7 +9,7 @@ export class AddedTypes {
     // agent image
     private static agentImageDotNet = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/dotnet:1.0.0-beta2";
     private static agentImageJava = "mcr.microsoft.com/applicationinsights/auto-instrumentation/java:3.4.15";
-    private static agentImageNodeJs = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/nodejs:3.0.0-beta.6";
+    private static agentImageNodeJs = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/nodejs:3.0.0-beta.8";
     
     // path on agent image to copy from
     private static imagePathDotNet = "/dotnet-tracer-home/.";
