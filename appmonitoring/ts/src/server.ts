@@ -10,7 +10,6 @@ import { CertificateManager } from "./CertificateGenerator.js";
 const containerMode = process.env.CONTAINER_MODE;
 
 if ("secrets-manager".localeCompare(containerMode) === 0) {
-
     logger.info("Running in certificate manager mode...");
     await CertificateManager.CreateWebhookAndCertificates();
 
