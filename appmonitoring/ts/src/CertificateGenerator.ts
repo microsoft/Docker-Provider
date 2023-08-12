@@ -18,7 +18,7 @@ export class CertificateManager {
     
     // Generate a random serial number for the Certificate
     private static randomHexSerialNumber() {
-        return (1001).toString(16) + Math.ceil(Math.random()*100);
+        return (1001).toString(16) + Math.ceil(Math.random()*100); //Just creates a placeholder hex and randomly increments it with a number between 0 and 99
     }
 
     private static async GenerateSelfSignedCertificate(): Promise<WebhookCertData> {
