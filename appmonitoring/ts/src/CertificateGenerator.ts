@@ -1,6 +1,7 @@
-import * as k8s from "@kubernetes/client-node";
-import forge from "node-forge";
-import { logger } from "./LoggerWrapper.js";
+import * as k8s from '@kubernetes/client-node';
+import { CertificateStoreName, NameSpaceName, WebhookDNSEndpoint, WebhookName } from './Constants.js'
+import forge from 'node-forge';
+import { logger } from './LoggerWrapper.js';
 
 class CACertData {
     certificate: string;
@@ -26,8 +27,9 @@ export class CertificateManager {
         caCert.serialNumber = CertificateManager.randomHexSerialNumber();
         caCert.publicKey = keys.publicKey;
         caCert.privateKey = keys.privateKey;
-        caCert.validity.notBefore = new Date(2023,6,20,0,0,0,0);
-        caCert.validity.notAfter = new Date(2025,7,21,0,0,0,0);
+        const timeNowNum: number = Date.now()
+        caCert.validity.notBefore = new Date(timeNowNum - (5 * 60 * 1000)); //5 Mins ago
+        caCert.validity.notAfter = new Date(timeNowNum + (2 * 365 * 24 * 60 * 60 * 1000)); //2 Years from now
 
         const attributes = [{
             shortName: 'CN',
@@ -62,7 +64,7 @@ export class CertificateManager {
 
         const host_attributes = [{
             shortName: 'CN',
-            value: "app-monitoring-webhook-service.kube-system.svc"
+            value: WebhookDNSEndpoint
         }];
     
         const host_extensions = [{
@@ -84,7 +86,7 @@ export class CertificateManager {
         }, 
         {
             name: 'subjectAltName',
-            altNames: [{ type: 2, value: "app-monitoring-webhook-service.kube-system.svc" }]
+            altNames: [{ type: 2, value: WebhookDNSEndpoint }]
         }];
 
         const newHostCert = forge.pki.createCertificate();
@@ -93,8 +95,8 @@ export class CertificateManager {
         // Set the attributes for the new Host Certificate
         newHostCert.publicKey = hostKeys.publicKey;
         newHostCert.serialNumber = CertificateManager.randomHexSerialNumber();
-        newHostCert.validity.notBefore = new Date(2023,6,20,0,0,0,0);
-        newHostCert.validity.notAfter = new Date(2025,7,21,0,0,0,0);
+        newHostCert.validity.notBefore = new Date(timeNowNum - (5 * 60 * 1000)); //5 Mins ago
+        newHostCert.validity.notAfter = new Date(timeNowNum + (2 * 365 * 24 * 60 * 60 * 1000)); //2 Years from now
         newHostCert.setSubject(host_attributes);
         newHostCert.setIssuer(caCert.subject.attributes);
         newHostCert.setExtensions(host_extensions);
@@ -115,26 +117,26 @@ export class CertificateManager {
 
     public static async PatchSecretStore(kubeConfig: k8s.KubeConfig, certificate: WebhookCertData) {
         const secretsApi = kubeConfig.makeApiClient(k8s.CoreV1Api);
-        const secretStore = await secretsApi.readNamespacedSecret("app-monitoring-webhook-cert", "kube-system");
+        const secretStore = await secretsApi.readNamespacedSecret(CertificateStoreName, NameSpaceName);
         const secretsObj: k8s.V1Secret = secretStore.body;
 
-        secretsObj.data["ca.cert"] = btoa(certificate.caCert);
-        secretsObj.data["tls.cert"] = btoa(certificate.tlsCert);
-        secretsObj.data["tls.key"] = btoa(certificate.tlsKey);
+        secretsObj.data['ca.cert'] = btoa(certificate.caCert);
+        secretsObj.data['tls.cert'] = btoa(certificate.tlsCert);
+        secretsObj.data['tls.key'] = btoa(certificate.tlsKey);
 
-        await secretsApi.patchNamespacedSecret("app-monitoring-webhook-cert", "kube-system", secretsObj, undefined, undefined, undefined, undefined, undefined, {
-            headers: { "Content-Type" : "application/strategic-merge-patch+json" }
+        await secretsApi.patchNamespacedSecret(CertificateStoreName, NameSpaceName, secretsObj, undefined, undefined, undefined, undefined, undefined, {
+            headers: { 'Content-Type' : 'application/strategic-merge-patch+json' }
         });
     }
 
     public static async PatchMutatingWebhook(kubeConfig: k8s.KubeConfig, certificate: WebhookCertData) {
         const webhookApi: k8s.AdmissionregistrationV1Api = kubeConfig.makeApiClient(k8s.AdmissionregistrationV1Api);
-        const mutatingWebhook = await webhookApi.readMutatingWebhookConfiguration("app-monitoring-webhook");
+        const mutatingWebhook = await webhookApi.readMutatingWebhookConfiguration(WebhookName);
         const mutatingWebhookObject: k8s.V1MutatingWebhookConfiguration = mutatingWebhook.body;
         mutatingWebhookObject.webhooks[0].clientConfig.caBundle = btoa(certificate.caCert);
 
-        await webhookApi.patchMutatingWebhookConfiguration("app-monitoring-webhook", mutatingWebhookObject, undefined, undefined, undefined, undefined, undefined, {
-            headers: { "Content-Type" : "application/strategic-merge-patch+json" }
+        await webhookApi.patchMutatingWebhookConfiguration(WebhookName, mutatingWebhookObject, undefined, undefined, undefined, undefined, undefined, {
+            headers: { 'Content-Type' : 'application/strategic-merge-patch+json' }
         });
     }
 
@@ -143,26 +145,26 @@ export class CertificateManager {
         const kc = new k8s.KubeConfig();
         kc.loadFromDefault();
 
-        logger.info("Creating certificates...");
+        logger.info('Creating certificates...');
         const certificates: WebhookCertData = await CertificateManager.GenerateSelfSignedCertificate().catch(error => {
-            logger.error("Self Signed CA Cert generation failed!");
+            logger.error('Self Signed CA Cert generation failed!');
             logger.error(error);
         }) as WebhookCertData;
-        logger.info("Certificates created successfully");
-        logger.info("Patching MutatingWebhookConfiguration...");
+        logger.info('Certificates created successfully');
+        logger.info('Patching MutatingWebhookConfiguration...');
 
         await CertificateManager.PatchMutatingWebhook(kc, certificates).catch(error => {
-            logger.error("Failed to patch MutatingWebhookConfiguration!");
+            logger.error('Failed to patch MutatingWebhookConfiguration!');
             logger.error(error);
         });
-        logger.info("MutatingWebhookConfiguration patched successfully");
-        logger.info("Patching Secret Store...");
+        logger.info('MutatingWebhookConfiguration patched successfully');
+        logger.info('Patching Secret Store...');
 
         await CertificateManager.PatchSecretStore(kc, certificates).catch(error => {
-            logger.error("Failed to patch Secret Store!");
+            logger.error('Failed to patch Secret Store!');
             logger.error(error);
         });
-        logger.info("Secret Store patched successfully");
+        logger.info('Secret Store patched successfully');
     }
 
 }
