@@ -17,7 +17,7 @@ class WebhookCertData {
 export class CertificateManager {
     
     // Generate a random serial number for the Certificate
-    private static randomHexSerialNumber = () => {
+    private static randomHexSerialNumber() {
         return (1001).toString(16) + Math.ceil(Math.random()*100);
     }
 
