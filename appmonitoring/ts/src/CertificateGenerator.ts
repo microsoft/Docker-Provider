@@ -164,7 +164,6 @@ export class CertificateManager {
         }
     }
 
-    
     public static async CreateWebhookAndCertificates() {
         const kc = new k8s.KubeConfig();
         kc.loadFromDefault();
