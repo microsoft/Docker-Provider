@@ -10,9 +10,14 @@ import { CertificateManager } from "./CertificateGenerator.js";
 const containerMode = process.env.CONTAINER_MODE;
 
 if ("secrets-manager".localeCompare(containerMode) === 0) {
-    logger.info("Running in certificate manager mode...");
-    await CertificateManager.CreateWebhookAndCertificates();
-
+    try {
+        logger.info("Running in certificate manager mode...");
+        await CertificateManager.CreateWebhookAndCertificates();
+    } catch (error) {
+        logger.error(JSON.stringify(error));
+        logger.error("Failed to Install Certificates, Terminating...");
+    }
+    
     process.exit();
 } 
 const crs: AppMonitoringConfigCRsCollection = new AppMonitoringConfigCRsCollection();
