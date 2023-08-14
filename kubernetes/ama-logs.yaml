@@ -451,6 +451,10 @@ spec:
               protocol: TCP
             - containerPort: 25224
               protocol: UDP
+            - name: syslog
+              containerPort: 28330
+              hostPort: 28330
+              protocol: TCP
           volumeMounts:
             - mountPath: /var/run/mdsd-PrometheusSidecar
               name: mdsd-prometheus-sock
