@@ -53,6 +53,7 @@ try {
     logger.info(`Certs successfully loaded. Cert: ${options.cert}`);
 } catch (e) {
     logger.error(`Failed to load certs: ${e}`);
+    throw e;
 }
 
 const port = process.env.port || 1337;
