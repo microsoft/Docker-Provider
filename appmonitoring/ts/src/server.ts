@@ -16,6 +16,7 @@ if ("secrets-manager".localeCompare(containerMode) === 0) {
     } catch (error) {
         logger.error(JSON.stringify(error));
         logger.error("Failed to Install Certificates, Terminating...");
+        throw error;
     }
     
     process.exit();
