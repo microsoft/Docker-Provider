@@ -8,6 +8,32 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 08/17/2023 -
+##### Version microsoft/oms:3.1.12 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.12 (linux)
+##### Version microsoft/oms:win-3.1.12 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.12 (windows)
+##### Current dependencies
+- Linux
+  - [CBL-Mariner 2.0.20230630](https://github.com/microsoft/CBL-Mariner/releases/tag/2.0.20230805-2.0)
+  - Golang - 1.20.5
+  - Ruby - 3.1.3
+  - MDSD - 1.26.1
+  - Telegraf - 1.27.2
+  - Fluent-bit - 2.0.9
+  - Fluentd - 1.14.6
+- Windows
+  - Ruby - 3.1.1
+  - Fluent-bit - 2.0.14
+  - Telegraf - 1.24.2
+  - Fluentd - 1.14.6
+  - Windows AMA - 46.3.2
+  - Golang - 1.20.5
+##### Code change log
+- Common
+  * Make infra geneva config optional in multi tenancy by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1050
+  * Retry only retriable http status codes by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1046
+- Linux
+  * Set mdsd limits by @pfrcks in https://github.com/microsoft/Docker-Provider/pull/1027
+  * Updating telegraf to version 1.27.2 by @jatakiajanvi12 in https://github.com/microsoft/Docker-Provider/pull/1048
 
 ### 08/03/2023 -
 ##### Version microsoft/oms:3.1.11 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.11 (linux)
