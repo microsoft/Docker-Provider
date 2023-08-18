@@ -155,7 +155,6 @@ apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
   name: app-monitoring-webhook
-  namespace: kube-system
 webhooks:
   - name: app-monitoring-webhook-service.kube-system.svc
     clientConfig:
