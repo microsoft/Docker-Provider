@@ -1,8 +1,12 @@
 param(
     [guid] [Parameter(Mandatory = $true)] $SubscriptionId,
     [string] [Parameter(Mandatory = $true)] $Location,
-    [string] [Parameter(Mandatory = $false)] $ResourceGroupName = "whl-scale-test$(Get-Date -Format MMdd)",
-    [string] [Parameter(Mandatory = $false)] $AKSClusterName = $ResourceGroupName + "-aks",
+    [string] [Parameter(Mandatory = $false)] $ResourceGroupName = [Environment]::UserName + "scaletest",
+    [string] [Parameter(Mandatory = $false)] $AKSClusterName = $ResourceGroupName + "aks",
+    [string] [Parameter(Mandatory = $false)]
+             [ValidateSet("node-image", "none", "patch", "rapid", "stable")] $AKSAutoUpgradeChannel = "stable",
+    [int]    [Parameter(Mandatory = $false)] $AKSVersion = 1.26.3,
+    [int]    [Parameter(Mandatory = $false)] $AKSWindowsNodeCount = 5,
     [string] [Parameter(Mandatory = $false)] $KeyVaultName = $ResourceGroupName + "-kv"
 )
 
@@ -23,11 +27,11 @@ function Get-RandomPassword {
         $result[$i] = $charSet[$bytes[$i]%$charSet.Length]
     }
  
-    return (-join $result)
+    return (-join $result).ToString()
 }
 
 # Login using your microsoft accout
-Write-Host "Login in using your Microsoft account"
+Write-Host "Login with your Microsoft account"
 az login
 
 # Set subscription
@@ -49,20 +53,58 @@ az aks create `
     --name $AKSClusterName `
     --network-plugin azure `
     --node-vm-size Standard_D2s_v3 `
-    --kubernetes-version 1.26.3 `
+    --auto-upgrade-channel $AKSAutoUpgradeChannel `
+    --kubernetes-version $AKSVersion `
+    --enable-managed-identity `
+    --enable-addons monitoring `
+    --generate-ssh-keys `
     --node-count 1 `
     --windows-admin-username azuureadmin `
     --windows-admin-password $password
 
-# Create a Windows node pool
-Write-Host "Creating Windows Node Pool"
+# Create a Windows node pool for Text Log scale test
+Write-Host "Creating Windows Node Pool for Text Log scale test"
 az aks nodepool add `
     --resource-group $ResourceGroupName `
     --cluster-name $AKSClusterName `
-    --os-type Windows `
-    --name scale `
+    --os-sku Windows2022 `
+    --name  txtlog `
     --node-vm-size Standard_D2s_v3 `
-    --node-count 5
+    --node-count $AKSWindowsNodeCount
+
+# Create a Windows node pool for ETW Log scale test"
+Write-Host "Creating Windows Node Pool for ETW Log scale test"
+az aks nodepool add `
+    --resource-group $ResourceGroupName `
+    --cluster-name $AKSClusterName `
+    --os-sku Windows2022 `
+    --name  etwlog `
+    --node-vm-size Standard_D2s_v3 `
+    --node-count $AKSWindowsNodeCount
+
+# Create a Windows node pool for Event Log scale test
+Write-Host "Creating Windows Node Pool for Event Log scale test"
+az aks nodepool add `
+    --resource-group $ResourceGroupName `
+    --cluster-name $AKSClusterName `
+    --os-sku Windows2022 `
+    --name  evtlog `
+    --node-vm-size Standard_D2s_v3 `
+    --node-count $AKSWindowsNodeCount
+
+# Create a Windows node pool for Crash Dump scale test
+Write-Host "Creating Windows Node Pool for Crash Dump scale test"
+az aks nodepool add `
+    --resource-group $ResourceGroupName `
+    --cluster-name $AKSClusterName `
+    --os-sku Windows2022 `
+    --name  crashd `
+    --node-vm-size Standard_D2s_v3 `
+    --node-count $AKSWindowsNodeCount
+
+# Get AKS credentials 
+Write-Host "Gathering AKS credentials"
+az aks get-credentials --resource-group $ResourceGroupName --name $AKSClusterName
 
 # Wait for the Windows node to be available.
 Write-Host "Waiting on node to become avaliable..."
@@ -74,18 +116,24 @@ az keyvault create --name $KeyVaultName --resource-group $ResourceGroupName --lo
 
 # Add password to as secret in the key vault
 Write-Host "Adding Windows Node Pool passwrod to Key Vault"
-az keyvault secret set --vault-name $KeyVaultName --name "Windows Scale Test" --value $password
+az keyvault secret set --vault-name $KeyVaultName --name "WindowsScaleTest" --value $password
 
-# Get AKS credentials 
-Write-Host "Gathering AKS credentials"
-az aks get-credentials --resource-group $ResourceGroupName --name $AKSClusterName
-
-#Deploy windows host logs
+#Deploy windows host logs **Make sure to document container and configmap changes to setup properly** 
 Write-Host "Deploy WHL to the AKS Cluster"
-kubectl apply -f ..\..\kubernetes\host-logs-geneva.ymal
+kubectl apply -f ..\..\kubernetes\host-logs-geneva.yaml
+kubectl apply -f ..\..\kubernetes\container-azm-ms-agentconfig.yaml
 
-Write-Host "Creating namespace for scaling components"
-kubectl create namespace scale-test
+Write-Host "Creating namespace for Text Log scale component"
+kubectl create namespace txtlog-test
 
-Write-Host "Creating daemonset for X Scale Component"
-kubectl apply -f .\
+Write-Host "Creating namespace for Event Log scale component"
+kubectl create namespace evtlog-test
+
+Write-Host "Creating namespace for ETW Log scale component"
+kubectl create namespace ewtlog-test
+
+Write-Host "Creating namespace for Crash Dump scale component"
+kubectl create namespace crashd-test
+
+#Write-Host "Creating daemonset for X scale Component"
+#kubectl apply -f .\
