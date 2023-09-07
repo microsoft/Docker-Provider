@@ -102,14 +102,6 @@ az aks nodepool add `
     --node-vm-size Standard_D2s_v3 `
     --node-count $AKSWindowsNodeCount
 
-# Get AKS credentials 
-Write-Host "Gathering AKS credentials"
-az aks get-credentials --resource-group $ResourceGroupName --name $AKSClusterName
-
-# Wait for the Windows node to be available.
-Write-Host "Waiting on node to become avaliable..."
-kubectl get nodes -o wide
-
 # Create a Key Vault
 Write-Host "Creating a key vault"
 az keyvault create --name $KeyVaultName --resource-group $ResourceGroupName --location $Location
@@ -118,22 +110,4 @@ az keyvault create --name $KeyVaultName --resource-group $ResourceGroupName --lo
 Write-Host "Adding Windows Node Pool passwrod to Key Vault"
 az keyvault secret set --vault-name $KeyVaultName --name "WindowsScaleTest" --value $password
 
-#Deploy windows host logs **Make sure to document container and configmap changes to setup properly** 
-Write-Host "Deploy WHL to the AKS Cluster"
-kubectl apply -f ..\..\kubernetes\host-logs-geneva.yaml
-kubectl apply -f ..\..\kubernetes\container-azm-ms-agentconfig.yaml
-
-Write-Host "Creating namespace for Text Log scale component"
-kubectl create namespace txtlog-test
-
-Write-Host "Creating namespace for Event Log scale component"
-kubectl create namespace evtlog-test
-
-Write-Host "Creating namespace for ETW Log scale component"
-kubectl create namespace ewtlog-test
-
-Write-Host "Creating namespace for Crash Dump scale component"
-kubectl create namespace crashd-test
-
-#Write-Host "Creating daemonset for X scale Component"
-#kubectl apply -f .\
+Write-Host "Windows Host Log Scale Test Infrastructure deployed"
