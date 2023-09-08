@@ -1,3 +1,5 @@
+$ErrorActionPreference = 'Stop'
+
 function Get-RandomPassword {
     param (
         [Parameter(Mandatory)]
