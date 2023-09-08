@@ -142,8 +142,6 @@ kubectl create namespace txtlog-test
 Write-Host "Configuring WHL for Event Log Collection"
 $whlEventLogNamespace = "whl-evtlog"
 kubectl create namespace $whlEventLogNamespace
-$containerYAMLFilePath = "..\..\host-logs-geneva.yaml"
-$configmapFilePath = "..\..\container-azm-ms-agentconfig.yaml"
 
 Write-Host "Updating WHL Container YAML and ConfigMap files"
 
@@ -174,8 +172,6 @@ kubectl create namespace ewtlog-test
 Write-Host "Configuring WHL for ETW Log Collection"
 $whlETWLogNamespace = "whl-etwlog"
 kubectl create namespace $whlETWLogNamespace
-$containerYAMLFilePath = "..\..\host-logs-geneva.yaml"
-$configmapFilePath = "..\..\container-azm-ms-agentconfig.yaml"
 
 Write-Host "Updating WHL Container YAML and ConfigMap files"
 
@@ -199,15 +195,13 @@ kubectl apply -f ..\..\kubernetes\host-logs-geneva.yaml
 
 #Setup Text Log Environment Generation Container
 Write-Host "Creating namespace for Text Log scale component"
-kubectl create namespace ewtlog-test
-#kubectl apply -f ewt-log-generation.yaml
+kubectl create namespace txtlog-test
+#kubectl apply -f txt-log-generation.yaml
 
 #Targeting WHL for Text Log Configuration
 Write-Host "Configuring WHL for Text Log Collection"
 $whlTextLogNamespace = "whl-txtlog"
 kubectl create namespace $whlTextLogNamespace
-$containerYAMLFilePath = "..\..\host-logs-geneva.yaml"
-$configmapFilePath = "..\..\container-azm-ms-agentconfig.yaml"
 
 Write-Host "Updating WHL Container YAML and ConfigMap files"
 
