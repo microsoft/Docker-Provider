@@ -1,7 +1,5 @@
 # Windows Host Logs Scale Test
 
-**DEV NOTE: Make sure to be using the lastest of sky-dev
-
 ## Prerequisites
 - Access to an Azure Subscription
 - A Dignostic PROD Geneva Account where you have permissions to edit Geneva Log Configurations
