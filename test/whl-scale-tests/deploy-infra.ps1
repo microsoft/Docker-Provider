@@ -35,7 +35,6 @@ Write-Host "Creating Azure Container Registery"
 az acr create --resource-group $resourceGroupName --name $acrName --sku Standard
 
 # Create an AKS cluster with a Linux node pool
-#$ACRUri = $acrName + ".azurecr.io"
 Write-Host "Creating AKS Cluster with System node pool"
 az aks create `
     --resource-group $resourceGroupName `
