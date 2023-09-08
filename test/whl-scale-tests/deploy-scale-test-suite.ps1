@@ -62,6 +62,11 @@ kubectl get nodes -o wide
 $imageName = $acrUri + "/latestwhl:win-$(Get-Date -Format MMdd)"
 Write-Host "Using WHL Image: $imageName"
 
+Write-Host "Moving working directory to ..\..\..\kubernetes"
+Set-Location "..\..\..\kubernetes"
+$containerYAMLFilePath = ".\host-logs-geneva.yaml"
+$configmapFilePath = ".\container-azm-ms-agentconfig.yaml"
+
 #Setup Crash Dump Generation Container
 Write-Host "Creating namespace for Crash Dump scale component"
 kubectl create namespace crashd-test
@@ -71,8 +76,6 @@ kubectl create namespace crashd-test
 Write-Host "Configuring WHL for Crash Dump Log Collection"
 $whlCrashDumpNamespace = "whl-crashd"
 kubectl create namespace $whlCrashDumpNamespace
-$containerYAMLFilePath = "..\..\host-logs-geneva.yaml"
-$configmapFilePath = "..\..\container-azm-ms-agentconfig.yaml"
 
 Write-Host "Updating WHL Container YAML and ConfigMap files"
 
@@ -81,16 +84,16 @@ $containerYAMLHashTable = @{
     'VALUE_CONTAINER_IMAGE' = $imageName;
     'VALUE_AKS_CLUSTER_NAME' = $aksClusterName;
     'VALUE_AKS_RESOURCE_REGION_VALUE' = $Location;
-    'kubernetes.io/os' = 'agentpool';
+    'kubernetes.io/os' = 'kubernetes.azure.com/agentpool';
     '- windows' = '- crashd'
 }
 
 $configMapHashTable = @{
     'VALUE_ENVIRONMENT' = $genevaEnvironment;
-    'VALUE_ACCOUNT' = $GenevaAccountName;
     'VALUE_ACCOUNT_NAMESPACE' = $GenevaLogAccountNamespace;
+    'VALUE_ACCOUNT' = $GenevaAccountName;
     'VALUE_CONFIG_VERSION' = $CrashDumpConfigVersion;
-    'kube-system' = $whlCrashDumpNamespace;
+    'namespace: kube-system' = "namespace: $whlCrashDumpNamespace";
 }
 
 SubstituteNameValuePairs -InputFilePath $containerYAMLFilePath -OutputFilePath $containerYAMLFilePath -Substitutions $containerYAMLHashTable
@@ -98,8 +101,8 @@ SubstituteNameValuePairs -InputFilePath $containerYAMLFilePath -OutputFilePath $
 SubstituteNameValuePairs -InputFilePath $configmapFilePath -OutputFilePath $configmapFilePath -Substitutions $configMapHashTable
 
 Write-Host "Deploying WHL to the crashd node pool"
-kubectl apply -f ..\..\kubernetes\container-azm-ms-agentconfig.yaml
-kubectl apply -f ..\..\kubernetes\host-logs-geneva.yaml
+kubectl apply -f .\container-azm-ms-agentconfig.yaml
+kubectl apply -f .\kubernetes\host-logs-geneva.yaml
 
 #Setup Event Log Environment Generation Container
 Write-Host "Creating namespace for Event Log scale component"
@@ -110,8 +113,6 @@ kubectl create namespace evtlog-test
 Write-Host "Configuring WHL for Crash Dump Log Collection"
 $whlEventLogNamespace = "whl-evtlog"
 kubectl create namespace $whlEventLogNamespace
-$containerYAMLFilePath = "..\..\host-logs-geneva.yaml"
-$configmapFilePath = "..\..\container-azm-ms-agentconfig.yaml"
 
 Write-Host "Updating WHL Container YAML and ConfigMap files"
 
@@ -130,38 +131,8 @@ SubstituteNameValuePairs -InputFilePath $containerYAMLFilePath -OutputFilePath $
 SubstituteNameValuePairs -InputFilePath $configmapFilePath -OutputFilePath $configmapFilePath -Substitutions $configMapHashTable
 
 Write-Host "Deploying WHL to the evtlog node pool"
-kubectl apply -f ..\..\kubernetes\container-azm-ms-agentconfig.yaml
-kubectl apply -f ..\..\kubernetes\host-logs-geneva.yaml
-
-#Setup Text Log Environment Generation Container
-Write-Host "Creating namespace for Text Log scale component"
-kubectl create namespace txtlog-test
-#kubectl apply -f text-log-generation.yaml
-
-#Targeting WHL for Event Log Configuration
-Write-Host "Configuring WHL for Event Log Collection"
-$whlEventLogNamespace = "whl-evtlog"
-kubectl create namespace $whlEventLogNamespace
-
-Write-Host "Updating WHL Container YAML and ConfigMap files"
-
-$containerYAMLHashTable = @{    
-    $whlCrashDumpNamespace = $whlEventLogNamespace;
-    '- crashd' = '- evtlog';
-}
-
-$configMapHashTable = @{
-    $CrashDumpConfigVersion = $EventLogConfigVersion;
-    $whlCrashDumpNamespace = $whlEventLogNamespace;
-}
-
-SubstituteNameValuePairs -InputFilePath $containerYAMLFilePath -OutputFilePath $containerYAMLFilePath -Substitutions $containerYAMLHashTable
-
-SubstituteNameValuePairs -InputFilePath $configmapFilePath -OutputFilePath $configmapFilePath -Substitutions $configMapHashTable
-
-Write-Host "Deploying WHL to the evtlog node pool"
-kubectl apply -f ..\..\kubernetes\container-azm-ms-agentconfig.yaml
-kubectl apply -f ..\..\kubernetes\host-logs-geneva.yaml
+kubectl apply -f .\container-azm-ms-agentconfig.yaml
+kubectl apply -f .\host-logs-geneva.yaml
 
 #Setup ETW Log Environment Generation Container
 Write-Host "Creating namespace for ETW Log scale component"
@@ -190,9 +161,10 @@ SubstituteNameValuePairs -InputFilePath $containerYAMLFilePath -OutputFilePath $
 SubstituteNameValuePairs -InputFilePath $configmapFilePath -OutputFilePath $configmapFilePath -Substitutions $configMapHashTable
 
 Write-Host "Deploying WHL to the etwlog node pool"
-kubectl apply -f ..\..\kubernetes\container-azm-ms-agentconfig.yaml
-kubectl apply -f ..\..\kubernetes\host-logs-geneva.yaml
+kubectl apply -f .\container-azm-ms-agentconfig.yaml
+kubectl apply -f .\host-logs-geneva.yaml
 
+exit
 #Setup Text Log Environment Generation Container
 Write-Host "Creating namespace for Text Log scale component"
 kubectl create namespace txtlog-test
@@ -220,7 +192,7 @@ SubstituteNameValuePairs -InputFilePath $containerYAMLFilePath -OutputFilePath $
 SubstituteNameValuePairs -InputFilePath $configmapFilePath -OutputFilePath $configmapFilePath -Substitutions $configMapHashTable
 
 Write-Host "Deploying WHL to the txtlog node pool"
-kubectl apply -f ..\..\kubernetes\container-azm-ms-agentconfig.yaml
-kubectl apply -f ..\..\kubernetes\host-logs-geneva.yaml
+kubectl apply -f .\container-azm-ms-agentconfig.yaml
+kubectl apply -f .\host-logs-geneva.yaml
 
 Write-Host "Windows Host Log Scale Test is now Live"
