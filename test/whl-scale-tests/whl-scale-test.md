@@ -85,6 +85,8 @@ Example:
 
 1. Go to [aka.ms/jarvis](https://portal.microsoftgeneva.com/)
 
+2. Account -> Log Settings -> 
+
 ## 3. Deploy Scale Test Suite 
 <br>
 
