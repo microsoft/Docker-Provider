@@ -1,0 +1,147 @@
+<MonitoringManagement eventVersion="1" version="1.0" timestamp="2018-05-07T00:00:00Z" namespace="GENEVA_LOG_ACCOUNT_NAMESPACE">
+  <!-- This is only collecting event logs -->
+  <Imports>
+    <!-- Imports documentation: https://jarvis.dc.ad.msft.net/?page=documents&section=9c95f4eb-8689-4c9f-81bf-82d688e860fd&id=15b0c8c4-c82f-4659-a4c8-52f153879a03   -->
+    <!-- You can import other files.  The AgentStandardEvents.xml emits metrics about the agent -->
+    <Import file="AgentStandardEvents.xml" />
+  </Imports>
+  <Accounts>
+    <Account moniker="GENEVA_STORAGE_DIAG" isDefault="true" />
+    <Account moniker="GENEVA_STORAGE_SECURITY" alias="AzSecurityStore" />
+    <Account moniker="GENEVA_STORAGE_LOGSAUDIT" salias="AuditStore" />
+  </Accounts>
+  <!-- Management documentation: https://jarvis.dc.ad.msft.net/?page=documents&section=9c95f4eb-8689-4c9f-81bf-82d688e860fd&id=8794f47e-d1b2-4538-8f31-839c41c1710a  -->
+  <Management onDemandRequestFlags="tablesearch,process,etw" defaultRetentionInDays="29">
+    <!--
+      The identity TenantRole means MONITORING_IDENTITY, MONITORING_ROLE, and MONITORING_ROLE_INSTANCE will
+      uniquely identify any of your instances
+    -->
+    <Identity tenantNameAlias="ClusterName" roleNameAlias="Computer" roleInstanceNameAlias="Region">
+      <IdentityComponent name="ClusterName">GetEnvironmentVariable("AKS_CLUSTER_NAME")</IdentityComponent>
+      <IdentityComponent name="Computer">GetEnvironmentVariable("HOSTNAME")</IdentityComponent>
+      <IdentityComponent name="Region">GetEnvironmentVariable("AKS_REGION")</IdentityComponent>
+    </Identity>
+    <!--
+      The diskQuotaInMB is a required parameter.  For 10,000 MB there should be 15,000 MB available on the disk  The CPU, memory and network can also be limited in the
+      AgentResourceUsage element's attributes.
+    -->
+    <AgentResourceUsage cpuPercentUsage="100" cpuThrottling="true" memoryLimitInMB="1000" memoryThrottling="true" diskQuotaInMB="10000" />
+    <AgentMetrics mdmMonitoringAccount="GENEVA_METRIC_ACCOUNT" />
+  </Management>
+  <!-- Events documentation: https://jarvis.dc.ad.msft.net/?page=documents&section=9c95f4eb-8689-4c9f-81bf-82d688e860fd&id=ac0084ad-5065-4b16-8f7d-0a5193143378   -->
+  <!--
+      Events can contain one or more Event elements.  The Event elements each describe a different kind of collector.
+      Events must be defined in the order of the mds2.xsd.
+    -->
+  <Events>
+    <CounterSets storeType="Local" mdmMonitoringAccount="GENEVA_METRIC_ACCOUNT" format="Factored">
+      <CounterSet eventName="CounterTable" sampleRateInSeconds="60" mdmNamespace="PlatformMetrics">
+        <MdmDimensions>
+          <MdmDimension name="CloudTenant"><![CDATA[GetEnvironmentVariable("AKS_CLUSTER_NAME")]]></MdmDimension>
+          <MdmDimension name="CloudRole"><![CDATA[GetEnvironmentVariable("HOSTNAME")]]></MdmDimension>
+          <MdmDimension name="RoleInstance"><![CDATA[GetEnvironmentVariable("AKS_REGION")]]></MdmDimension>
+          <MdmDimension name="Environment"><![CDATA[GetEnvironmentVariable("MONITORING_ENVIRONMENT")]]></MdmDimension>
+          <MdmDimension name="Datacenter"><![CDATA[GetEnvironmentVariable("MONITORING_DATACENTER")]]></MdmDimension>
+          <MdmDimension name="ScaleUnit"><![CDATA[GetEnvironmentVariable("MONITORING_TENANT_NAME")]]></MdmDimension>
+        </MdmDimensions>
+        <!-- System counters -->
+        <Counter>\Memory\Available MBytes</Counter>
+        <Counter>\System\System Calls/sec</Counter>
+        <Counter>\Processor(_Total)\% Processor Time</Counter>
+        <Counter>\Process(_Total)\Working Set</Counter>
+        <Counter>\LogicalDisk(*)\% Free Space</Counter>
+        <Counter>\LogicalDisk(*)\% Disk Read Time</Counter>
+        <Counter>\LogicalDisk(*)\% Disk Write Time</Counter>
+      </CounterSet>
+      <CounterSet eventName="IisCounters" sampleRateInSeconds="60" mdmNamespace="PlatformMetrics">
+        <MdmDimensions>
+          <MdmDimension name="CloudTenant"><![CDATA[GetEnvironmentVariable("AKS_CLUSTER_NAME")]]></MdmDimension>
+          <MdmDimension name="CloudRole"><![CDATA[GetEnvironmentVariable("HOSTNAME")]]></MdmDimension>
+          <MdmDimension name="RoleInstance"><![CDATA[GetEnvironmentVariable("AKS_REGION")]]></MdmDimension>
+          <MdmDimension name="Environment"><![CDATA[GetEnvironmentVariable("MONITORING_ENVIRONMENT")]]></MdmDimension>
+          <MdmDimension name="Datacenter"><![CDATA[GetEnvironmentVariable("MONITORING_DATACENTER")]]></MdmDimension>
+          <MdmDimension name="ScaleUnit"><![CDATA[GetEnvironmentVariable("MONITORING_TENANT_NAME")]]></MdmDimension>
+        </MdmDimensions>
+      </CounterSet>
+    </CounterSets>
+<!-- Update with the Event Logs that we are generating and only watch for those Event Logs
+    <WindowsEventLogSubscriptions>   
+      <Subscription eventName="SystemEvents" query="System!*" storeType="CentralBond" priority="High" deadline="PT5M">
+        <Column name="EventData" defaultAssignment="">
+          <Value>/Event/EventData/Data</Value>
+        </Column>
+        <Column name="ProviderName" defaultAssignment="">
+          <Value>/Event/System/Provider/@Name</Value>
+        </Column>
+        <Column name="Level" type="mt:int32" defaultAssignment="4">
+          <Value>/Event/System/Level</Value>
+        </Column>
+        <Column name="Task" defaultAssignment="">
+          <Value>/Event/System/Task</Value>
+        </Column>
+        <Column name="EventID" type="mt:int32" defaultAssignment="0">
+          <Value>/Event/System/EventID</Value>
+        </Column>
+      </Subscription>
+      <Subscription eventName="ApplicationEvents" query="Application!*" storeType="CentralBond">
+        <Column name="EventData" defaultAssignment="">
+          <Value>/Event/EventData/Data</Value>
+        </Column>
+        <Column name="ProviderName" defaultAssignment="">
+          <Value>/Event/System/Provider/@Name</Value>
+        </Column>
+        <Column name="Level" type="mt:int32" defaultAssignment="4">
+          <Value>/Event/System/Level</Value>
+        </Column>
+        <Column name="Task" defaultAssignment="">
+          <Value>/Event/System/Task</Value>
+        </Column>
+        <Column name="EventId" defaultAssignment="0" type="mt:int32">
+          <Value>/Event/System/EventID</Value>
+        </Column>
+        <Column name="OpCode" type="mt:int32" defaultAssignment="0">
+          <Value>/Event/System/Opcode</Value>
+        </Column>
+      </Subscription>
+      <Subscription eventName="SecurityEvents" query="Security!*[System[((EventID!=4672 and EventID!=5058 and EventID!=5061 and EventID!=5145))]]" storeType="Local" duration="PT5M" retentionInDays="5">
+        <Column name="ProviderName" defaultAssignment="">
+          <Value>/Event/System/Provider/@Name</Value>
+        </Column>
+        <Column name="EventID" type="mt:int32" defaultAssignment="">
+          <Value>/Event/System/EventID</Value>
+        </Column>
+        <Column name="Channel" defaultAssignment="">
+          <Value>/Event/System/Channel</Value>
+        </Column>
+        <Column name="Computer" defaultAssignment="">
+          <Value>/Event/System/Computer</Value>
+        </Column>
+        <Column name="EventData" defaultAssignment="">
+          <Value>/Event/EventData/Data</Value>
+        </Column>
+      </Subscription>
+      <Subscription eventName="HostIDSOperationsLogEvents" query="HostIDS Operations Log!*" storeType="Local" duration="PT5M" retentionInDays="5">
+        <Column name="ProviderName" defaultAssignment="">
+          <Value>/Event/System/Provider/@Name</Value>
+        </Column>
+        <Column name="EventID" type="mt:int32" defaultAssignment="">
+          <Value>/Event/System/EventID</Value>
+        </Column>
+        <Column name="Channel" defaultAssignment="">
+          <Value>/Event/System/Channel</Value>
+        </Column>
+        <Column name="Computer" defaultAssignment="">
+          <Value>/Event/System/Computer</Value>
+        </Column>
+        <Column name="EventData" defaultAssignment="">
+          <Value>/Event/EventData/Data</Value>
+        </Column>
+      </Subscription>
+    </WindowsEventLogSubscriptions>
+-->
+    <Extensions>
+      <Extension extensionName="MetricsExtension">
+        <CommandLine><![CDATA[MetricsExtension.Native.exe -ConfigOverrides {\"imdsInfo\":[{\"account\":\"GENEVA_ACCOUNT_NAME\",\"objectId\":\"CLUSTER_MANAGED_IDENTITY_OBJECT_ID\"}]}]]></CommandLine>
+      </Extension>
+    </Extensions>
+  </Events>

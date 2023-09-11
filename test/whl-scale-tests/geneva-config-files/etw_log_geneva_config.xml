@@ -1,0 +1,144 @@
+<MonitoringManagement eventVersion="1" version="1.0" timestamp="2018-05-07T00:00:00Z" namespace="GENEVA_LOG_ACCOUNT_NAMESPACE">  <!-- This only collects etw -->
+  <Imports>
+    <!-- Imports documentation: https://jarvis.dc.ad.msft.net/?page=documents&section=9c95f4eb-8689-4c9f-81bf-82d688e860fd&id=15b0c8c4-c82f-4659-a4c8-52f153879a03   -->
+    <!-- You can import other files.  The AgentStandardEvents.xml emits metrics about the agent -->
+    <Import file="AgentStandardEvents.xml" />
+  </Imports>
+  <Accounts>
+    <Account moniker="GENEVA_STORAGE_DIAG" isDefault="true" />
+    <Account moniker="GENEVA_STORAGE_SECURITY" alias="AzSecurityStore" />
+    <Account moniker="GENEVA_STORAGE_LOGSAUDIT" salias="AuditStore" />
+  </Accounts>
+  <!-- Management documentation: https://jarvis.dc.ad.msft.net/?page=documents&section=9c95f4eb-8689-4c9f-81bf-82d688e860fd&id=8794f47e-d1b2-4538-8f31-839c41c1710a  -->
+  <Management onDemandRequestFlags="tablesearch,process,etw" defaultRetentionInDays="29">
+    <!--
+      The identity TenantRole means MONITORING_IDENTITY, MONITORING_ROLE, and MONITORING_ROLE_INSTANCE will
+      uniquely identify any of your instances
+    -->
+    <Identity tenantNameAlias="ClusterName" roleNameAlias="Computer" roleInstanceNameAlias="Region">
+      <IdentityComponent name="ClusterName">GetEnvironmentVariable("AKS_CLUSTER_NAME")</IdentityComponent>
+      <IdentityComponent name="Computer">GetEnvironmentVariable("HOSTNAME")</IdentityComponent>
+      <IdentityComponent name="Region">GetEnvironmentVariable("AKS_REGION")</IdentityComponent>
+    </Identity>
+    <!--
+      The diskQuotaInMB is a required parameter.  For 10,000 MB there should be 15,000 MB available on the disk  The CPU, memory and network can also be limited in the
+      AgentResourceUsage element's attributes.
+    -->
+    <AgentResourceUsage cpuPercentUsage="25" cpuThrottling="true" memoryLimitInMB="1000" memoryThrottling="true" diskQuotaInMB="10000" />
+    <AgentMetrics mdmMonitoringAccount="GENEVA_METRIC_ACCOUNT" />
+  </Management>
+  <!-- Events documentation: https://jarvis.dc.ad.msft.net/?page=documents&section=9c95f4eb-8689-4c9f-81bf-82d688e860fd&id=ac0084ad-5065-4b16-8f7d-0a5193143378   -->
+  <!--
+      Events can contain one or more Event elements.  The Event elements each describe a different kind of collector.
+      Events must be defined in the order of the mds2.xsd.
+    -->
+  <Events>
+    <CounterSets storeType="Local" mdmMonitoringAccount="GENEVA_METRIC_ACCOUNT" format="Factored">
+      <CounterSet eventName="CounterTable" sampleRateInSeconds="60" mdmNamespace="PlatformMetrics">
+        <MdmDimensions>
+          <MdmDimension name="CloudTenant"><![CDATA[GetEnvironmentVariable("AKS_CLUSTER_NAME")]]></MdmDimension>
+          <MdmDimension name="CloudRole"><![CDATA[GetEnvironmentVariable("HOSTNAME")]]></MdmDimension>
+          <MdmDimension name="RoleInstance"><![CDATA[GetEnvironmentVariable("AKS_REGION")]]></MdmDimension>
+          <MdmDimension name="Environment"><![CDATA[GetEnvironmentVariable("MONITORING_ENVIRONMENT")]]></MdmDimension>
+          <MdmDimension name="Datacenter"><![CDATA[GetEnvironmentVariable("MONITORING_DATACENTER")]]></MdmDimension>
+          <MdmDimension name="ScaleUnit"><![CDATA[GetEnvironmentVariable("MONITORING_TENANT_NAME")]]></MdmDimension>
+        </MdmDimensions>
+        <!-- System counters -->
+        <Counter>\Memory\Available MBytes</Counter>
+        <Counter>\System\System Calls/sec</Counter>
+        <Counter>\Processor(_Total)\% Processor Time</Counter>
+        <Counter>\Process(_Total)\Working Set</Counter>
+        <Counter>\LogicalDisk(*)\% Free Space</Counter>
+        <Counter>\LogicalDisk(*)\% Disk Read Time</Counter>
+        <Counter>\LogicalDisk(*)\% Disk Write Time</Counter>
+      </CounterSet>
+      <CounterSet eventName="IisCounters" sampleRateInSeconds="60" mdmNamespace="PlatformMetrics">
+        <MdmDimensions>
+          <MdmDimension name="CloudTenant"><![CDATA[GetEnvironmentVariable("AKS_CLUSTER_NAME")]]></MdmDimension>
+          <MdmDimension name="CloudRole"><![CDATA[GetEnvironmentVariable("HOSTNAME")]]></MdmDimension>
+          <MdmDimension name="RoleInstance"><![CDATA[GetEnvironmentVariable("AKS_REGION")]]></MdmDimension>
+          <MdmDimension name="Environment"><![CDATA[GetEnvironmentVariable("MONITORING_ENVIRONMENT")]]></MdmDimension>
+          <MdmDimension name="Datacenter"><![CDATA[GetEnvironmentVariable("MONITORING_DATACENTER")]]></MdmDimension>
+          <MdmDimension name="ScaleUnit"><![CDATA[GetEnvironmentVariable("MONITORING_TENANT_NAME")]]></MdmDimension>
+        </MdmDimensions>
+      </CounterSet>
+    </CounterSets>
+<!-- Update with the ETW Logs that we are generating and only watch for those ETW Logs
+    <EtwProviders>
+      <EtwProvider guid="80CE50DE-D264-4581-950D-ABADEEE0D340" format="Manifest" storeType="CentralBond" levelFilter="3">
+        <DefaultEvent eventName="WindowsHyperVCompute" />
+      </EtwProvider>
+      <EtwProvider guid="94DEB9D1-0A52-449B-B368-41E4426B4F36" format="Manifest" storeType="CentralBond" levelFilter="5">
+        <DefaultEvent eventName="WindowsHyperVNetSetupHelper" />
+      </EtwProvider>
+      <EtwProvider guid="6C28C7E5-331B-4437-9C69-5352A2F7F296" format="Manifest" storeType="CentralBond" levelFilter="3">
+        <DefaultEvent eventName="WindowsHyperVVmsIf" />
+      </EtwProvider>
+      <EtwProvider guid="C29C4FB7-B60E-4FFF-9AF9-CF21F9B09A34" format="Manifest" storeType="CentralBond" levelFilter="3">
+        <DefaultEvent eventName="WindowsHyperVSynthNic" />
+      </EtwProvider>
+      <EtwProvider guid="9F2660EA-CFE7-428F-9850-AECA612619B0" format="Manifest" storeType="CentralBond" levelFilter="3">
+        <DefaultEvent eventName="WindowsHyperVVfpExt" />
+      </EtwProvider>
+      <EtwProvider guid="67DC0D66-3695-47c0-9642-33F76F7BD7AD" format="Manifest" storeType="CentralBond" levelFilter="3">
+        <DefaultEvent eventName="WindowsHyperVVmSwitch" />
+      </EtwProvider>
+      <EtwProvider guid="AE3F6C6D-BF2A-4291-9D07-59E661274EE3" format="Manifest" storeType="CentralBond" levelFilter="5">
+        <DefaultEvent eventName="IpNatWpp" />
+      </EtwProvider>
+      <EtwProvider guid="9d911ddb-d45f-41c3-b766-d566d2655c4a" format="Manifest" storeType="CentralBond" levelFilter="5">
+        <DefaultEvent eventName="WindowsContainersManager" />
+      </EtwProvider>
+      <EtwProvider guid="D1BC9AFF-2ABF-4D71-9146-ECB2A986EB85" format="Manifest" storeType="CentralBond" levelFilter="5">
+        <DefaultEvent eventName="WindowsFirewall" />
+      </EtwProvider>
+      <EtwProvider guid="15A7A4F8-0072-4EAB-ABAD-F98A4D666AED" format="Manifest" storeType="CentralBond" levelFilter="5">
+        <DefaultEvent eventName="WindowsDhcpClient" />
+      </EtwProvider>
+      <EtwProvider guid="6A1F2B00-6A90-4C38-95A5-5CAB3B056778" format="Manifest" storeType="CentralBond" levelFilter="5">
+        <DefaultEvent eventName="WindowsDHCPv6Client" />
+      </EtwProvider>
+      <EtwProvider guid="1C95126E-7EEA-49A9-A3FE-A378B03DDB4D" format="Manifest" storeType="CentralBond" levelFilter="5">
+        <DefaultEvent eventName="WindowsDNSClient" />
+      </EtwProvider>
+      <EtwProvider guid="0c885e0d-6eb6-476c-a048-2457eed3a5c1" format="Manifest" storeType="CentralBond" levelFilter="4">
+        <DefaultEvent eventName="HostNetworkService" />
+      </EtwProvider>
+      <EtwProvider guid="93f693dc-9163-4dee-af64-d855218af242" format="Manifest" storeType="CentralBond" levelFilter="5">
+        <DefaultEvent eventName="HostNetworkManagement" />
+      </EtwProvider>
+      <EtwProvider guid="D0E4BC17-34C7-43fc-9A72-D89A59D6979A" format="Manifest" storeType="CentralBond" levelFilter="5">
+        <DefaultEvent eventName="HostNetworkingService" />
+      </EtwProvider>
+      <EtwProvider guid="564368D6-577B-4af5-AD84-1C54464848E6" format="Manifest" storeType="CentralBond" levelFilter="5">
+        <DefaultEvent eventName="WindowsOverlayHNSPlugin" />
+      </EtwProvider>
+      <EtwProvider guid="A6F32731-9A38-4159-A220-3D9B7FC5FE5D" format="Manifest" storeType="CentralBond" levelFilter="5">
+        <DefaultEvent eventName="WindowsSharedAccessNAT" />
+      </EtwProvider>
+      <EtwProvider guid="2F07E2EE-15DB-40F1-90EF-9D7BA282188A" format="Manifest" storeType="CentralBond" levelFilter="3">
+        <DefaultEvent eventName="WindowsTCPIP" />
+      </EtwProvider>
+      <EtwProvider guid="66C07ECD-6667-43FC-93F8-05CF07F446EC" format="Manifest" storeType="CentralBond" levelFilter="5">
+        <DefaultEvent eventName="WindowsWinNat" />
+      </EtwProvider>
+      <EtwProvider guid="9B322459-4AD9-4F81-8EEA-DC77CDD18CA6" format="Manifest" storeType="CentralBond" levelFilter="5">
+        <DefaultEvent eventName="SharedAccessSvcWPPProvider" />
+      </EtwProvider>
+      <EtwProvider guid="1F387CBC-6818-4530-9DB6-5F1058CD7E86" format="Manifest" storeType="CentralBond" levelFilter="5">
+        <DefaultEvent eventName="vmswitch" />
+      </EtwProvider>
+      <EtwProvider guid="AA7387CF-3639-496A-B3BF-DC1E79A6fc5A" format="Manifest" storeType="CentralBond" levelFilter="5">
+        <DefaultEvent eventName="WinNatWpp" />
+      </EtwProvider>
+      <EtwProvider guid="5EEFEBDB-E90C-423a-8ABF-0241E7C5B87D" format="Manifest" storeType="CentralBond" levelFilter="5">
+        <DefaultEvent eventName="WindowsFirewallService" />
+      </EtwProvider>
+    </EtwProviders>
+-->
+    <Extensions>
+      <Extension extensionName="MetricsExtension">
+        <CommandLine><![CDATA[MetricsExtension.Native.exe -ConfigOverrides {\"imdsInfo\":[{\"account\":\"GENEVA_ACCOUNT_NAME\",\"objectId\":\"CLUSTER_MANAGED_IDENTITY_OBJECT_ID\"}]}]]></CommandLine>      </Extension>
+    </Extensions>
+  </Events>
+</MonitoringManagement>
