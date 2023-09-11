@@ -25,9 +25,11 @@ Here are some brief notes on the parameters:
 - **SubscriptionId** - The Azure Subscription ID you want to use for WHL Scale Testing.
     
 - **Location** - Your preferred Azure region for deploying resources.
+
+- **WindowsVMSize** - Default VM size is Standard_D2s_v3. Feel free to increase the size but do not go any lower than this.
     
-- **AKSAutoUpgradeChannel** - **[Optional]** Choose between "none","node-image",  "patch", "rapid", "stable". By default we have it set to "stable" which as of writing this pushes the K8s version to 1.26.6.
-    
+- **AKSAutoUpgradeChannel** - **[Optional]** Choose between "none","node-image",  "patch", "rapid", "stable". By default we have it set to "none".
+
 - **AKSVersion** - **[Optional]** We default to the version COSMIC is using as of writing this document. 
 
 - **AKSWindowsNodeCount** - **[Optional]** Sets the number of nodes for each Windows Nodepool. By default it is set to one node per Windows nodepool.

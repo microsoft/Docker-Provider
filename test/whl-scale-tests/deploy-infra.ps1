@@ -1,13 +1,15 @@
 param(
     [guid] [Parameter(Mandatory = $true)] $SubscriptionId,
     [string] [Parameter(Mandatory = $true)] $Location,
+    [string] [Parameter(Mandatory = $false)] $WindowsVMSize = ",
     [string] [Parameter(Mandatory = $false)]
-             [ValidateSet("node-image", "none", "patch", "rapid", "stable")] $AKSAutoUpgradeChannel = "stable",
+             [ValidateSet("node-image", "none", "patch", "rapid", "stable")] $AKSAutoUpgradeChannel = "none",
     [string]    [Parameter(Mandatory = $false)] $AKSVersion = "1.26.3",
+    
     [int]    [Parameter(Mandatory = $false)] $AKSWindowsNodeCount = 1
 )
 
-. .\common.ps1
+. $PSScriptRoot\common.ps1
 
 $resourceGroupName = [Environment]::UserName + "scaletest"
 $acrName = $resourceGroupName + "acr"
@@ -59,7 +61,7 @@ az aks nodepool add `
     --os-type Windows `
     --os-sku Windows2022 `
     --name  txtlog `
-    --node-vm-size Standard_D2s_v3 `
+    --node-vm-size $WindowsVMSize `
     --node-count $AKSWindowsNodeCount
 
 # Create a Windows node pool for ETW Log scale test"
@@ -70,7 +72,7 @@ az aks nodepool add `
     --os-type Windows `
     --os-sku Windows2022 `
     --name  etwlog `
-    --node-vm-size Standard_D2s_v3 `
+    --node-vm-size $WindowsVMSize `
     --node-count $AKSWindowsNodeCount
 
 # Create a Windows node pool for Event Log scale test
@@ -81,7 +83,7 @@ az aks nodepool add `
     --os-type Windows `
     --os-sku Windows2022 `
     --name  evtlog `
-    --node-vm-size Standard_D2s_v3 `
+    --node-vm-size $WindowsVMSize `
     --node-count $AKSWindowsNodeCount
 
 # Create a Windows node pool for Crash Dump scale test
@@ -92,7 +94,7 @@ az aks nodepool add `
     --os-type Windows `
     --os-sku Windows2022 `
     --name  crashd `
-    --node-vm-size Standard_D2s_v3 `
+    --node-vm-size $WindowsVMSize `
     --node-count $AKSWindowsNodeCount
 
 # Create a Key Vault

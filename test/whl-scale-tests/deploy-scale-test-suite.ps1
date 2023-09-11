@@ -9,7 +9,7 @@ param(
     [string] [Parameter(Mandatory = $true)] $TextLogConfigVersion
 )
 
-. .\common.ps1
+. $PSScriptRoot\common.ps1
 
 $genevaEnvironment = "DiagnosticsProd"
 $resourceGroupName = [Environment]::UserName + "scaletest"
