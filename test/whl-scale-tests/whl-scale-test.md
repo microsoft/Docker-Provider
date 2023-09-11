@@ -61,13 +61,13 @@ To automatically configure the XML for your Geneva Account we will use `.\Docker
 ```
 Here are some brief notes on the parameters:
 
-- **GenevaAccountName** - You must set this to the name of the Geneva Account you wish to use for scale testing WHL.
+- **GenevaAccountName** - Set this to the name of the Geneva Account you wish to use for scale testing WHL.
     
-- **GenevaLogAccountNamespace** - You must set this to the Geneva Logs Account Namespace you wish to use for scale testing WHL.
+- **GenevaLogAccountNamespace** - Set this to the Geneva Logs Account Namespace you wish to use for scale testing WHL.
     
-- **GenevaMetricAccountName** - You must set this to the Geneva Metrics Account you wish to use for scale testing WHL.
+- **GenevaMetricAccountName** - Set this to the Geneva Metrics Account you wish to use for scale testing WHL.
     
-- **AKSClusterMSIObjectId** - You must set this to the MSI assigned to your AKS cluster. You can find this by going to the Azure Portal -> search for your MC_[resource_group]\_[cluster_name]_[region] -> find the [cluster_name]-nodepool -> Get the Object Id.
+- **AKSClusterMSIObjectId** - Set this to the MSI assigned to your AKS cluster. You can find this by going to the Azure Portal -> search for your MC_[resource_group]\_[cluster_name]_[region] -> find the [cluster_name]-nodepool -> Get the Object Id.
 
 ![Example AKS Cluster MSI with Object Id placement circled](images/example_msi_objid.png)
 
@@ -80,6 +80,10 @@ Example:
     -AKSClusterMSIObjectId "d1e9226d-17cb-4799-aaf1-79e113f92a70"
 ```
 <br>
+
+### Adding the Object Id to Geneva
+
+1. Go to [aka.ms/jarvis](https://portal.microsoftgeneva.com/)
 
 ## 3. Deploy Scale Test Suite 
 <br>
