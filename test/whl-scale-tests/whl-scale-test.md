@@ -8,13 +8,14 @@
 <br>
 
 ## 1. Deploy Scale Test Infrastructure 
-The first thing we need to do is setup the infrastructure for our scale test. We will do this via .`\Docker-Provider\test\whl-scale-tests\deploy-infra.ps1`. This script will create a new resource group (Ex. [alias]scaletest). Within that resource group you will find an AKS Cluster, an Azure Contianer Registry and a Key Vault. Your cluster will have four nodepool one for each scale component (Crash Dumps, Text Logs, ETW, Event Logs), by default, configured with the most recent stable kuberenetes version and each nodepool having one node each. 
+The first thing we need to do is setup the infrastructure for our scale test. We will do this with `.\Docker-Provider\test\whl-scale-tests\deploy-infra.ps1`. This script will create a new resource group (Ex. [alias]scaletest). Within that resource group you will find an AKS Cluster, an Azure Contianer Registry and a Key Vault. Your cluster will have four nodepool one for each scale component (Crash Dumps, Text Logs, ETW, Event Logs), by default, configured with the most recent stable kuberenetes version and each nodepool having one node each. 
 
 ### Using deploy-infra.ps1
 ```powershell
 .\deploy-infra.ps1 `
     -SubscriptionId "<your-azure-subscription>" `
     -Location "<preferred-azure-region>" `
+    -WindowsVMSize "<preferred-vm-size>" `
     -AKSAutoUpgradeChannel "<preferred-cluster-configuration>"
     -AKSVersion "<preferred-aks-version>" `
     -AKSWindowsNodeCount "<preferred-aks-windows-node-count>"
@@ -26,7 +27,7 @@ Here are some brief notes on the parameters:
     
 - **Location** - Your preferred Azure region for deploying resources.
 
-- **WindowsVMSize** - Default VM size is Standard_D2s_v3. Feel free to increase the size but do not go any lower than this.
+- **WindowsVMSize** - **[Optional]** Default VM size is Standard_D2s_v3. Feel free to increase the size but do not go any lower than this.
     
 - **AKSAutoUpgradeChannel** - **[Optional]** Choose between "none","node-image",  "patch", "rapid", "stable". By default we have it set to "none".
 
@@ -117,6 +118,51 @@ Once you are done with the script it will open three tab for you in the followin
 Now use the last tab to upload each XML file under `.\Docker-Provider\test\whl-scale-tests\geneva-config-files\`
 
 ## 3. Deploy Scale Test Suite 
+After setting the your Geneva Account with the AKS Cluster and the four different XML configurations we can move forward to deploying the scale test suite. We will do this with `.\Docker-Provider\test\whl-scale-tests\deploy-scale-test-suite.ps1`. This script will deploy five namespaces, eight of which will be for each testing component, the other four will be for targeting WHL to collect the corresponding test component.
+
+### Using deploy-infra.ps1
+```powershell
+.\deploy-scale-test-suite.ps1 `
+    -SubscriptionId "<your-azure-subscription>" `
+    -Location "<current-deployed-infra-region>"
+    -GenevaAccountName "<your-geneva-account-name>" `
+    -GenevaLogAccountNamespace "<your-geneva-log-account-namespace>" `
+    -CrashDumpConfigVersion "<config-version-for-crash-dump-collection>" `
+    -ETWConfigVersion "<config-version-for-etw-log-collection>" `
+    -EventLogConfigVersion "<config-version-for-event-log-collection>" `
+    -TextLogConfigVersion "<config-version-for-text-log-collection>"
+```
+
+Here are some brief notes on the parameters:
+
+- **SubscriptionId** - The Azure Subscription ID you want to use for WHL Scale Testing.
+    
+- **Location** - Your preferred Azure region for deploying resources. Make sure it is the same one you used for `deploy-infra.ps1`
+
+- **GenevaAccountName** - Set this to the name of the Geneva Account you wish to use for scale testing WHL.
+    
+- **GenevaLogAccountNamespace** - Set this to the Geneva Logs Account Namespace you wish to use for scale testing WHL.
+
+- **CrashDumpConfigVersion** - Use the config version that you uploaded to handle Crash Dump Collection.
+    
+- **ETWConfigVersion** - Use the config version that you uploaded to handle ETW Log Collection.
+
+- **EventLogConfigVersion** - Use the config version that you uploaded to handle Event Log Collection.
+
+- **TextLogConfigVersion** - Use the config version that you uploaded to handle Text Log Collection.
+
+Example:
+```powershell
+.\deploy-scale-test-suite.ps1 `
+    -SubscriptionId "b2eb1341-814f-4e78-bec8-6042f4c10c5b" `
+    -Location "westus3" `
+    -GenevaAccountName "SkyMERProdLogs" `
+    -GenevaLogAccountNamespace "SkyAlulaDevLogs" `
+    -CrashDumpConfigVersion "3.1" `
+    -ETWConfigVersion "6.0" `
+    -EventLogConfigVersion "5.0" `
+    -TextLogConfigVersion "4.0"
+```
 <br>
 
 ## 4. Taking Measurements of each component

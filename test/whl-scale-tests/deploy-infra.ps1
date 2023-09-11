@@ -1,7 +1,8 @@
 param(
     [guid] [Parameter(Mandatory = $true)] $SubscriptionId,
     [string] [Parameter(Mandatory = $true)] $Location,
-    [string] [Parameter(Mandatory = $false)] $WindowsVMSize = ",
+    #[securestring] [Parameter(Mandatory = $true)] $WindowsAdminPassword,
+    [string] [Parameter(Mandatory = $false)] $WindowsVMSize = "Standard_D2s_v3",
     [string] [Parameter(Mandatory = $false)]
              [ValidateSet("node-image", "none", "patch", "rapid", "stable")] $AKSAutoUpgradeChannel = "none",
     [string]    [Parameter(Mandatory = $false)] $AKSVersion = "1.26.3",
@@ -26,7 +27,7 @@ az account set --subscription $SubscriptionId
 
 # Required for Windows node pool and could be used to troubleshoot any issues
 Write-Host "Creating random password for Host login"
-$password = Get-RandomPassword 16
+$password = Get-RandomPassword 16 1 1 1 1
 
 # Create resource group
 Write-Host "Creating Azure Resource Group"
@@ -51,7 +52,7 @@ az aks create `
     --generate-ssh-keys `
     --node-count 1 `
     --windows-admin-username azuureadmin `
-    --windows-admin-password $password
+    --windows-admin-password $WindowsAdminPassword
 
 # Create a Windows node pool for Text Log scale test
 Write-Host "Creating Windows Node Pool for Text Log scale test"
