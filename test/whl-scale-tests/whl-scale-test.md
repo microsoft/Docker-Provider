@@ -22,7 +22,7 @@ The first thing we need to do is setup the infrastructure for our scale test. We
 
 Here are some brief notes on the parameters:
 
-- **SubscriptionId** - The Azure Subscription Id you want to use for WHL Scale Testing.
+- **SubscriptionId** - The Azure Subscription ID you want to use for WHL Scale Testing.
     
 - **Location** - Your preferred Azure region for deploying resources.
     
@@ -45,11 +45,11 @@ Example:
 
 > [!NOTE]
 >
-> If you know you already have a Geneva Account with each of these already configured go ahead and take note of their config versions because will need it for the next section.
+> If you know you already have a Geneva Account with each of these already configured go ahead and take note of their config versions because will need it for the next section. You will still need to setup your AKS Cluster Object ID for both Geneva Metrics and Geneva Logs
 
 In setting up the Windos Host Log Scale Test Suite you will need to make sure that you have four configurations that focus on each log type. 
 
-To automatically configure the XML for your Geneva Account we will use `.\Docker-Provider\test\whl-scale-tests\prepare-geneva-xml.ps1.` This script will take the xml files in `.\Docker-Provider\test\whl-scale-tests\geneva-config-files` and configure each with your Geneva Account parameters. Once the script is done it will take your to [aks.ms/jarivs](aka.ms/jarvis) where you can start uploading these new XML files.
+To automatically configure the XML for your Geneva Account we will use `.\Docker-Provider\test\whl-scale-tests\prepare-geneva-xml.ps1.` This script will take the xml files in `.\Docker-Provider\test\whl-scale-tests\geneva-config-files` and configure each with your Geneva Account parameters.
 
 ### Using prepare-geneva-xml.ps1
 ```powershell
@@ -67,9 +67,9 @@ Here are some brief notes on the parameters:
     
 - **GenevaMetricAccountName** - Set this to the Geneva Metrics Account you wish to use for scale testing WHL.
     
-- **AKSClusterMSIObjectId** - Set this to the MSI assigned to your AKS cluster. You can find this by going to the Azure Portal -> search for your MC_[resource_group]\_[cluster_name]_[region] -> find the [cluster_name]-nodepool -> Get the Object Id.
+- **AKSClusterMSIObjectId** - Set this to the MSI assigned to your AKS cluster. You can find this by going to the Azure Portal -> search for your MC_[resource_group]\_[cluster_name]_[region] -> find the [cluster_name]-nodepool -> Get the Object ID.
 
-![Example AKS Cluster MSI with Object Id placement circled](images/example_msi_objid.png)
+![Example AKS Cluster MSI with Object ID placement circled](images/example_msi_objid.png)
 
 Example:
 ```powershell
@@ -81,11 +81,38 @@ Example:
 ```
 <br>
 
-### Adding the Object Id to Geneva
+Once you are done with the script it will open three tab for you in the following order: Geneva Metrics Machine Accesss, Geneva Logs User Roles and a page where you can upload your newly created XML files.
 
-1. Go to [aka.ms/jarvis](https://portal.microsoftgeneva.com/)
+### Assign AKS Cluster Object ID to Geneva Metrics
 
-2. Account -> Log Settings -> 
+1. Go to the newly opened Web Browser Window and select the first new tab:
+![Geneva Metris Settings for Machine Access](images/geneva_metric_machine_access.png)
+
+2. Select "Managed Identities"
+
+3. Setup a new row with your AKS Cluster Object ID, your Subscription's Tenant ID, describe the cluster attach to this item and provide the "MetricPublisher" Role. It should look similar to this
+
+    ![New row item with an example of the Object ID, Tenant ID, cluster name and Metric Publisher as the Role](images/metrics_access_managed_identity.png)
+
+4. Click save towards the top of the page. 
+<br>
+
+### Assign AKS Cluster Object ID to Geneva Logs
+
+1. Go next tab:
+
+2. Go to User Role "MdsAccountAdmin_<your_geneva_logs_account>" -> "KeyVault Certs/Identities" and Click "View/Add"
+![Geneva Logs Settings forUser Roles Access](images/geneva_logs_user_roles.png)
+
+3. Select "Managed Identities"
+
+4. Setup a new entry with your AKS Cluster Object ID, your Subscription's Tenant ID, leave Resource ID blank, and your cluster name for the description. It should look similar to this
+    ![New row item with an example of the Object ID, Tenant ID, empty Resource ID and cluster name](images/geneva_logs_managed_identity.png)
+
+4. Click save toward the bottom of the form.
+<br>
+
+Now use the last tab to upload each XML file under `.\Docker-Provider\test\whl-scale-tests\geneva-config-files\`
 
 ## 3. Deploy Scale Test Suite 
 <br>
