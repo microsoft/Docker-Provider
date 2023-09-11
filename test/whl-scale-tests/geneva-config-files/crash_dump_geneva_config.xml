@@ -1,4 +1,4 @@
-<MonitoringManagement eventVersion="1" version="1.0" timestamp="2018-05-07T00:00:00Z" namespace="SkyAlulaDevLogs">
+<MonitoringManagement eventVersion="1" version="1.0" timestamp="2018-05-07T00:00:00Z" namespace="GENEVA_LOG_ACCOUNT_NAMESPACE">
   <!-- This is only enabling Crash Dumps -->
   <Imports>
     <!-- Imports documentation: https://jarvis.dc.ad.msft.net/?page=documents&section=9c95f4eb-8689-4c9f-81bf-82d688e860fd&id=15b0c8c4-c82f-4659-a4c8-52f153879a03   -->
@@ -6,9 +6,9 @@
     <Import file="AgentStandardEvents.xml" />
   </Imports>
   <Accounts>
-    <Account moniker="skyaluladevlogsdiag" isDefault="true" />
-    <Account moniker="skyaluladevlogssecurity" alias="AzSecurityStore" />
-    <Account moniker="skyaluladevlogslogsaudit" salias="AuditStore" />
+    <Account moniker="GENEVA_STORAGE_DIAG" isDefault="true" />
+    <Account moniker="GENEVA_STORAGE_SECURITY" alias="AzSecurityStore" />
+    <Account moniker="GENEVA_STORAGE_LOGSAUDIT" salias="AuditStore" />
   </Accounts>
   <!-- Management documentation: https://jarvis.dc.ad.msft.net/?page=documents&section=9c95f4eb-8689-4c9f-81bf-82d688e860fd&id=8794f47e-d1b2-4538-8f31-839c41c1710a  -->
   <Management onDemandRequestFlags="tablesearch,process,etw" defaultRetentionInDays="29">
@@ -26,7 +26,7 @@
       AgentResourceUsage element's attributes.
     -->
     <AgentResourceUsage cpuPercentUsage="100" cpuThrottling="true" memoryLimitInMB="1000" memoryThrottling="true" diskQuotaInMB="10000" />
-    <AgentMetrics mdmMonitoringAccount="SkyMERProdMetrics" />
+    <AgentMetrics mdmMonitoringAccount="GENEVA_METRIC_ACCOUNT" />
   </Management>
   <!-- Events documentation: https://jarvis.dc.ad.msft.net/?page=documents&section=9c95f4eb-8689-4c9f-81bf-82d688e860fd&id=ac0084ad-5065-4b16-8f7d-0a5193143378   -->
   <!--
@@ -34,7 +34,7 @@
       Events must be defined in the order of the mds2.xsd.
     -->
   <Events>
-    <CounterSets storeType="Local" mdmMonitoringAccount="SkyMERProdMetrics" format="Factored">
+    <CounterSets storeType="Local" mdmMonitoringAccount="GENEVA_METRIC_ACCOUNT" format="Factored">
       <CounterSet eventName="CounterTable" sampleRateInSeconds="60" mdmNamespace="PlatformMetrics">
         <MdmDimensions>
           <MdmDimension name="CloudTenant"><![CDATA[GetEnvironmentVariable("AKS_CLUSTER_NAME")]]></MdmDimension>
@@ -73,7 +73,7 @@
     </CrashDumpMonitor>
     <Extensions>
       <Extension extensionName="MetricsExtension">
-        <CommandLine><![CDATA[MetricsExtension.Native.exe -ConfigOverrides {\"imdsInfo\":[{\"account\":\"SkyMERProdLogs\",\"objectId\":\"d1e9226d-17cb-4799-aaf1-79e113f92a70\"}]}]]></CommandLine>
+        <CommandLine><![CDATA[MetricsExtension.Native.exe -ConfigOverrides {\"imdsInfo\":[{\"account\":\"GENEVA_ACCOUNT_NAME\",\"objectId\":\"CLUSTER_MANAGED_IDENTITY_OBJECT_ID\"}]}]]></CommandLine>
       </Extension>
     </Extensions>
   </Events>
