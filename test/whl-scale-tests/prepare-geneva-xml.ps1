@@ -5,7 +5,7 @@ param(
     [guid] [Parameter(Mandatory = $true)] $AKSClusterMSIObjectId
 )
 
-. .\common.ps1
+. $PSScriptRoot\common.ps1
 
 $genevaXmlConfigurationHashTable = @{
     'GENEVA_ACCOUNT_NAME' = $GenevaAccountName;

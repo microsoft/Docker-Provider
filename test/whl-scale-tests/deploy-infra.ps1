@@ -22,12 +22,14 @@ Write-Host "Login with your Microsoft account"
 az login
 
 # Set subscription
-Write-Host "Setting Azure CLI to given Subscription       "
+Write-Host "Setting Azure CLI to given Subscription"
 az account set --subscription $SubscriptionId
 
 # Required for Windows node pool and could be used to troubleshoot any issues
 Write-Host "Creating random password for Host login"
 $password = Get-RandomPassword 16 1 1 1 1
+
+$password = $password.ToString()
 
 # Create resource group
 Write-Host "Creating Azure Resource Group"
@@ -52,7 +54,7 @@ az aks create `
     --generate-ssh-keys `
     --node-count 1 `
     --windows-admin-username azuureadmin `
-    --windows-admin-password $WindowsAdminPassword
+    --windows-admin-password $password
 
 # Create a Windows node pool for Text Log scale test
 Write-Host "Creating Windows Node Pool for Text Log scale test"
