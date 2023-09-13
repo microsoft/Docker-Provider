@@ -165,7 +165,36 @@ Example:
 ```
 <br>
 
+## 4. Validate WHL is Collecting Logs
+1. Got to [aka.ms/jarvis/agentExplorer](https://portal.microsoftgeneva.com/diagnose/agentExplorer)
+2. Put in your geneva info Ex. show imge of exmaple
+3. Make sure after 15 mins that the agent is reporting healthy like so: Another image of a healthy agent
+4. Now go to logs section -> navigate to one of the collect logs and make sure their is data there
+5. Now go to metrics section -> naviagte to a Agent QoS and verify that data is working as expected
+
 ## 4. Taking Measurements of each component
+Need to actually deploy a test component something to get this filled out
 <br>
 
 ## 5. How to clean up scale test infra
+To clean up all the resources you deployed we are going to use `.\Docker-Provider\test\whl-scale-tests\clean-infra.ps1`
+
+### Using clearn-infra.ps1
+```powershell
+.\clean-infra.ps1 `
+    -SubscriptionId "<your-azure-subscription>" `
+    -Location "<whl-resource-azure-region>" 
+```
+
+Here are some brief notes on the parameters:
+
+- **SubscriptionId** - The Azure Subscription ID in use for WHL Scale Testing.
+    
+- **Location** - The region used to for deploy the infra.
+
+Example:
+```powershell
+.\clean-infra.ps1 `
+    -SubscriptionId "b2eb1341-814f-4e78-bec8-6042f4c10c5b" `
+    -Location "westus3" `
+```
