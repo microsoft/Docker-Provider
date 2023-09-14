@@ -3,6 +3,8 @@ param(
     [string] [Parameter(Mandatory = $false)] $ResourceGroupName = [Environment]::UserName + "scaletest"
 )
 
+. "$PSScriptRoot\common.ps1"
+
 # Login using your microsoft accout
 Write-Host "Login with your Microsoft account"
 az login
@@ -14,3 +16,6 @@ az account set --subscription $SubscriptionId
 # Delete Resource Group
 Write-Host "Deleting resource group and all resources within it"
 az group delete --name $ResourceGroupName
+
+#Remove Temporary Files
+Remove-Item (Get-TempDir) -R -Force

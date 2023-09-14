@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: <DEPLOYMENT_NAME>
+  labels:
+    component: <DEPLOYMENT_NAME>
+    tier: node-win
+spec:
+  selector:
+    matchLabels:
+      component: <DEPLOYMENT_NAME>
+      tier: node-win
+  template:
+    metadata:
+      labels:
+        component: <DEPLOYMENT_NAME>
+        tier: node-win
+    spec:
+      securityContext:
+        windowsOptions:
+          hostProcess: true
+          runAsUserName: "NT AUTHORITY\\SYSTEM"
+      hostNetwork: true
+      containers:
+        - name: <DEPLOYMENT_NAME>
+          image: <CONTAINER_IMAGE>
+          envFrom:
+            - configMapRef:
+                name: whl-scale-test-settings
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.azure.com/agentpool
+                    operator: In
+                    values:
+                      - <NODE_SELECTOR>
