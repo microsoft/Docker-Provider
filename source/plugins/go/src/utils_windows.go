@@ -3,21 +3,23 @@
 package main
 
 import (
+	"Docker-Provider/source/plugins/go/src/extension"
 	"context"
+	"net"
 	"syscall"
 	"time"
 
 	"github.com/Microsoft/go-winio"
 )
 
-func CreateWindowsNamedPipesClient(namedPipe string) {
+func CreateWindowsNamedPipeClient(namedPipe string, namedPipeConnection *net.Conn) {
 	if namedPipe == "" {
-		Log("Error::AMA::CreateWindowsNamedPipesClient::namedPipe is empty")
+		Log("Error::AMA::CreateWindowsNamedPipeClient::namedPipe is empty")
 		return
 	}
 	containerLogPipePath := "\\\\.\\\\pipe\\\\" + namedPipe
 
-	Log("AMA::CreateWindowsNamedPipesClient::The named pipe is: %s", containerLogPipePath)
+	Log("AMA::CreateWindowsNamedPipeClient::The named pipe is: %s", containerLogPipePath)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	conn, err := winio.DialPipeAccess(ctx, containerLogPipePath, syscall.GENERIC_WRITE)
@@ -26,6 +28,25 @@ func CreateWindowsNamedPipesClient(namedPipe string) {
 		Log("Error::AMA::Unable to open Named Pipe %s", err.Error())
 	} else {
 		Log("Windows Named Pipe opened without any errors")
-		ContainerLogNamedPipe = conn
+		*namedPipeConnection = conn
 	}
+}
+
+func CreateGenevaOr3PNamedPipe(namedPipeConnection *net.Conn, datatype string, errorCount *float64, isGenevaLogsIntegrationEnabled bool) bool {
+	if *namedPipeConnection == nil {
+		Log("Error::AMA:: The connection to named pipe was nil. re-connecting...")
+		if isGenevaLogsIntegrationEnabled {
+			CreateWindowsNamedPipeClient(getGenevaWindowsNamedPipeName(), namedPipeConnection)
+		} else {
+			CreateWindowsNamedPipeClient(extension.GetInstance(FLBLogger, ContainerType).GetOutputNamedPipe(datatype), namedPipeConnection)
+		}
+		if namedPipeConnection == nil {
+			Log("Error::AMA::Cannot create the named pipe connection for %s.", datatype)
+			ContainerLogTelemetryMutex.Lock()
+			defer ContainerLogTelemetryMutex.Unlock()
+			*errorCount += 1
+			return false
+		}
+	}
+	return true
 }

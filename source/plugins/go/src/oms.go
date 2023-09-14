@@ -34,7 +34,7 @@ import (
 // DataType for Container Log
 const ContainerLogDataType = "CONTAINER_LOG_BLOB"
 
-//DataType for Container Log v2
+// DataType for Container Log v2
 const ContainerLogV2DataType = "CONTAINERINSIGHTS_CONTAINERLOGV2"
 
 // DataType for Insights metric
@@ -43,13 +43,13 @@ const InsightsMetricsDataType = "INSIGHTS_METRICS_BLOB"
 // DataType for KubeMonAgentEvent
 const KubeMonAgentEventDataType = "KUBE_MON_AGENT_EVENTS_BLOB"
 
-//env variable which has ResourceId for LA
+// env variable which has ResourceId for LA
 const ResourceIdEnv = "AKS_RESOURCE_ID"
 
-//env variable which has ResourceName for NON-AKS
+// env variable which has ResourceName for NON-AKS
 const ResourceNameEnv = "ACS_RESOURCE_NAME"
 
-//env variable which has container run time name
+// env variable which has container run time name
 const ContainerRuntimeEnv = "CONTAINER_RUNTIME"
 
 // Origin prefix for telegraf Metrics (used as prefix for origin field & prefix for azure monitor specific tags and also for custom-metrics telemetry )
@@ -92,30 +92,30 @@ const kubeMonAgentConfigEventFlushInterval = 60
 const defaultIngestionAuthTokenRefreshIntervalSeconds = 3600
 const agentConfigRefreshIntervalSeconds = 300
 
-//Eventsource name in mdsd
+// Eventsource name in mdsd
 const MdsdContainerLogSourceName = "ContainerLogSource"
 const MdsdContainerLogV2SourceName = "ContainerLogV2Source"
 const MdsdKubeMonAgentEventsSourceName = "KubeMonAgentEventsSource"
 const MdsdInsightsMetricsSourceName = "InsightsMetricsSource"
 
-//container logs route (v2=flush to oneagent, adx= flush to adx ingestion, v1 for ODS Direct)
+// container logs route (v2=flush to oneagent, adx= flush to adx ingestion, v1 for ODS Direct)
 const ContainerLogsV2Route = "v2"
 
 const ContainerLogsADXRoute = "adx"
 
-//container logs schema (v2=ContainerLogsV2 table in LA, anything else ContainerLogs table in LA. This is applicable only if Container logs route is NOT ADX)
+// container logs schema (v2=ContainerLogsV2 table in LA, anything else ContainerLogs table in LA. This is applicable only if Container logs route is NOT ADX)
 const ContainerLogV2SchemaVersion = "v2"
 
-//env variable for AAD MSI Auth mode
+// env variable for AAD MSI Auth mode
 const AADMSIAuthMode = "AAD_MSI_AUTH_MODE"
 
 // Tag prefix of mdsd output streamid for AMA in MSI auth mode
 const MdsdOutputStreamIdTagPrefix = "dcr-"
 
-//env variable to container type
+// env variable to container type
 const ContainerTypeEnv = "CONTAINER_TYPE"
 
-//Default ADX destination database name, can be overriden through configuration
+// Default ADX destination database name, can be overriden through configuration
 const DefaultAdxDatabaseName = "containerinsights"
 
 var (
@@ -329,7 +329,7 @@ type MsgPackEntry struct {
 	Record map[string]string `msg:"record"`
 }
 
-//MsgPackForward represents a series of messagepack events in Forward Mode
+// MsgPackForward represents a series of messagepack events in Forward Mode
 type MsgPackForward struct {
 	Tag     string         `msg:"tag"`
 	Entries []MsgPackEntry `msg:"entries"`
@@ -500,7 +500,7 @@ func populateExcludedStderrNamespaces() {
 	}
 }
 
-//Azure loganalytics metric values have to be numeric, so string values are dropped
+// Azure loganalytics metric values have to be numeric, so string values are dropped
 func convert(in interface{}) (float64, bool) {
 	switch v := in.(type) {
 	case int64:
@@ -844,7 +844,7 @@ func flushKubeMonAgentEventRecords() {
 	}
 }
 
-//Translates telegraf time series to one or more Azure loganalytics metric(s)
+// Translates telegraf time series to one or more Azure loganalytics metric(s)
 func translateTelegrafMetrics(m map[interface{}]interface{}) ([]*laTelegrafMetric, error) {
 
 	var laMetrics []*laTelegrafMetric
@@ -1341,31 +1341,35 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			msgpBytes = msgp.AppendInt64(msgpBytes, batchTime)
 			msgpBytes = msgp.AppendMapStrStr(msgpBytes, fluentForward.Entries[entry].Record)
 		}
-		if IsWindows && IsGenevaLogsIntegrationEnabled {
-			if ContainerLogNamedPipe == nil {
-				Log("Error::AMA:: The connection to named pipe was nil. re-connecting...")
-				CreateWindowsNamedPipesClient(getGenevaWindowsNamedPipeName())
-			}
-			if ContainerLogNamedPipe == nil {
-				Log("Error::AMA::Cannot create the named pipe connection")
-				ContainerLogTelemetryMutex.Lock()
-				defer ContainerLogTelemetryMutex.Unlock()
-				ContainerLogsWindowsAMAClientCreateErrors += 1
-				return output.FLB_RETRY
-			}
-			Log("Info::AMA::Starting to write container logs to named pipe")
-			deadline := 10 * time.Second
-			ContainerLogNamedPipe.SetWriteDeadline(time.Now().Add(deadline))
-			n, err := ContainerLogNamedPipe.Write(msgpBytes)
-			if err != nil {
-				Log("Error::AMA::Failed to write to AMA %d records. Will retry ... error : %s", len(msgPackEntries), err.Error())
-				ContainerLogTelemetryMutex.Lock()
-				defer ContainerLogTelemetryMutex.Unlock()
-				ContainerLogsSendErrorsToWindowsAMAFromFluent += 1
-				return output.FLB_RETRY
+
+		if IsWindows {
+			var datatype string
+			if ContainerLogSchemaV2 {
+				datatype = ContainerLogV2DataType
 			} else {
-				numContainerLogRecords = len(msgPackEntries)
-				Log("Success::AMA::Successfully flushed %d container log records that was %d bytes to AMA ", numContainerLogRecords, n)
+				datatype = ContainerLogDataType
+			}
+			if CreateGenevaOr3PNamedPipe(&ContainerLogNamedPipe, datatype, &ContainerLogsWindowsAMAClientCreateErrors, IsGenevaLogsIntegrationEnabled) {
+				Log("Info::AMA::Starting to write container logs to named pipe")
+				deadline := 10 * time.Second
+				ContainerLogNamedPipe.SetWriteDeadline(time.Now().Add(deadline))
+				n, err := ContainerLogNamedPipe.Write(msgpBytes)
+				if err != nil {
+					Log("Error::AMA::Failed to write to AMA %d records. Will retry ... error : %s", len(msgPackEntries), err.Error())
+					if ContainerLogNamedPipe != nil {
+						ContainerLogNamedPipe.Close()
+						ContainerLogNamedPipe = nil
+					}
+					ContainerLogTelemetryMutex.Lock()
+					defer ContainerLogTelemetryMutex.Unlock()
+					ContainerLogsSendErrorsToWindowsAMAFromFluent += 1
+					return output.FLB_RETRY
+				} else {
+					numContainerLogRecords = len(msgPackEntries)
+					Log("Success::AMA::Successfully flushed %d container log records that was %d bytes to AMA ", numContainerLogRecords, n)
+				}
+			} else {
+				return output.FLB_RETRY
 			}
 		} else {
 			if MdsdMsgpUnixSocketClient == nil {
@@ -1502,18 +1506,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			req.Header.Set("x-ms-AzureResourceId", ResourceID)
 		}
 
-		if IsAADMSIAuthMode == true {
-			IngestionAuthTokenUpdateMutex.Lock()
-			ingestionAuthToken := ODSIngestionAuthToken
-			IngestionAuthTokenUpdateMutex.Unlock()
-			if ingestionAuthToken == "" {
-				Log("Error::ODS Ingestion Auth Token is empty. Please check error log.")
-				return output.FLB_RETRY
-			}
-			// add authorization header to the req
-			req.Header.Set("Authorization", "Bearer "+ingestionAuthToken)
-		}
-
 		resp, err := HTTPClient.Do(req)
 		elapsed = time.Since(start)
 
@@ -1528,21 +1520,17 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			return output.FLB_RETRY
 		}
 
-		if resp != nil && resp.Body != nil {
-			defer resp.Body.Close()
-		}
-
-		if resp == nil || IsRetriableError(resp.StatusCode) {
+		if resp == nil || resp.StatusCode != 200 {
 			if resp != nil {
-				Log("PostDataHelper::Warn::Failed with retriable error code hence retrying .RequestId %s Status %s Status Code %d", reqId, resp.Status, resp.StatusCode)
+				Log("RequestId %s Status %s Status Code %d", reqId, resp.Status, resp.StatusCode)
 			}
 			return output.FLB_RETRY
-		} else if IsSuccessStatusCode(resp.StatusCode) {
-			numContainerLogRecords = loglinesCount
-			Log("PostDataHelper::Info::Successfully flushed %d %s records to ODS in %s", numContainerLogRecords, recordType, elapsed)
-		} else {
-			Log("PostDataHelper::Error:: Failed with non-retriable error::RequestId %s Status %s Status Code %d", reqId, resp.Status, resp.StatusCode)
 		}
+
+		defer resp.Body.Close()
+		numContainerLogRecords = loglinesCount
+		Log("PostDataHelper::Info::Successfully flushed %d %s records to ODS in %s", numContainerLogRecords, recordType, elapsed)
+
 	}
 
 	ContainerLogTelemetryMutex.Lock()
@@ -1865,33 +1853,10 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 			Log("Routing container logs thru %s route...", ContainerLogsADXRoute)
 			fmt.Fprintf(os.Stdout, "Routing container logs thru %s route...\n", ContainerLogsADXRoute)
 		}
-	} else if strings.Compare(strings.ToLower(osType), "windows") != 0 { //for linux, oneagent will be default route
+	} else if IsWindows == false || IsAADMSIAuthMode { //for linux and windows AadMSIAuth, oneagent will be default route
 		ContainerLogsRouteV2 = true //default is mdsd route
 		Log("Routing container logs thru %s route...", ContainerLogsRoute)
 		fmt.Fprintf(os.Stdout, "Routing container logs thru %s route... \n", ContainerLogsRoute)
-	}
-
-	if ContainerLogsRouteV2 == true {
-		if IsWindows {
-			if IsGenevaLogsIntegrationEnabled {
-				CreateWindowsNamedPipesClient(getGenevaWindowsNamedPipeName())
-				Log("Creating HTTP Client for insights metrics since OS Platform is Windows and Configured in Geneva Logs Integration Mode")
-				CreateHTTPClient()
-			}
-		} else {
-			CreateMDSDClient(ContainerLogV2, ContainerType)
-		}
-	} else if ContainerLogsRouteADX == true {
-		CreateADXClient()
-	} else { // v1 or windows
-		Log("Creating HTTP Client since either OS Platform is Windows or configmap configured with fallback option for ODS direct")
-		CreateHTTPClient()
-	}
-
-	if IsWindows == false { // mdsd linux specific
-		Log("Creating MDSD clients for KubeMonAgentEvents & InsightsMetrics")
-		CreateMDSDClient(KubeMonAgentEvents, ContainerType)
-		CreateMDSDClient(InsightsMetrics, ContainerType)
 	}
 
 	ContainerLogSchemaVersion := strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION")))
@@ -1904,6 +1869,34 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		ContainerLogSchemaV2 = true
 		Log("Container logs schema=%s", ContainerLogV2SchemaVersion)
 		fmt.Fprintf(os.Stdout, "Container logs schema=%s... \n", ContainerLogV2SchemaVersion)
+	}
+
+	if ContainerLogsRouteV2 == true {
+		if IsWindows {
+			var datatype string
+			if ContainerLogSchemaV2 {
+				datatype = ContainerLogV2DataType
+			} else {
+				datatype = ContainerLogDataType
+			}
+			CreateGenevaOr3PNamedPipe(&ContainerLogNamedPipe, datatype, &ContainerLogsWindowsAMAClientCreateErrors, IsGenevaLogsIntegrationEnabled)
+		} else {
+			CreateMDSDClient(ContainerLogV2, ContainerType)
+		}
+	} else if ContainerLogsRouteADX == true {
+		CreateADXClient()
+	}
+	if IsWindows || (!ContainerLogsRouteV2 && !ContainerLogsRouteADX) {
+		// windows for both Geneva and 3P for insights metrics and for ContainerLog in legacy auth
+		// configmap configured for direct ODS route
+		Log("Creating HTTP Client since either OS Platform is Windows or configmap configured with fallback option for ODS direct")
+		CreateHTTPClient()
+	}
+
+	if IsWindows == false { // mdsd linux specific
+		Log("Creating MDSD clients for KubeMonAgentEvents & InsightsMetrics")
+		CreateMDSDClient(KubeMonAgentEvents, ContainerType)
+		CreateMDSDClient(InsightsMetrics, ContainerType)
 	}
 
 	if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {

@@ -160,6 +160,8 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		AgentLogProcessingMaxLatencyMsContainer = ""
 		ContainerLogsSendErrorsToMDSDFromFluent = 0.0
 		ContainerLogsMDSDClientCreateErrors = 0.0
+		ContainerLogsSendErrorsToWindowsAMAFromFluent = 0.0
+		ContainerLogsWindowsAMAClientCreateErrors = 0.0
 		ContainerLogsSendErrorsToADXFromFluent = 0.0
 		ContainerLogsSendErrorsToWindowsAMAFromFluent = 0.0
 		ContainerLogsWindowsAMAClientCreateErrors = 0.0
