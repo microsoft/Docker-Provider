@@ -1,0 +1,9 @@
+kind: ConfigMap 
+apiVersion: v1 
+metadata:
+  name: whl-scale-test-settings 
+data:
+  CRASHD_NUM_CRASHES: "5"
+  CRASHD_ALLOC_STRATEGY: "va" # va, ha, or sa
+  CRASHD_ALLOC_TOTAL_SIZE: "1" #GB
+  CRASHD_ALLOC_PORTION_SIZE: "500" #KB
