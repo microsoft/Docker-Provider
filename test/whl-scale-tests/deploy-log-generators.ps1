@@ -36,6 +36,8 @@ param(
 
 $all = !$CrashDumps -and !$ETW -and !$EventLogs -and !$TextLogs
 
+az acr login -n $acr
+
 if($CrashDumps -or $all){
   Write-Host "START:Deploying Crash Dump Generator"
   # TODO: Deploy crash dump generator here
