@@ -8,12 +8,12 @@ import (
 	"sync"
 
 	uuid "github.com/google/uuid"
-	"github.com/ugorji/go/codec"
 )
 
 type Extension struct {
 	datatypeStreamIdMap    map[string]string
 	dataCollectionSettings map[string]string
+	datatypeNamedPipeMap   map[string]string
 }
 
 var singleton *Extension
@@ -27,6 +27,7 @@ func GetInstance(flbLogger *log.Logger, containertype string) *Extension {
 		singleton = &Extension{
 			datatypeStreamIdMap:    make(map[string]string),
 			dataCollectionSettings: make(map[string]string),
+			datatypeNamedPipeMap:   make(map[string]string),
 		}
 		flbLogger.Println("Extension Instance created")
 	})
@@ -35,38 +36,33 @@ func GetInstance(flbLogger *log.Logger, containertype string) *Extension {
 	return singleton
 }
 
-func getExtensionConfigs() ([]ExtensionConfig, error) {
+func getExtensionData() (TaggedData, error) {
 	guid := uuid.New()
 	taggedData := map[string]interface{}{"Request": "AgentTaggedData", "RequestId": guid.String(), "Tag": "ContainerInsights", "Version": "1"}
 	jsonBytes, err := json.Marshal(taggedData)
 
-	var data []byte
-	enc := codec.NewEncoderBytes(&data, new(codec.MsgpackHandle))
-	if err := enc.Encode(string(jsonBytes)); err != nil {
-		return nil, err
-	}
-
-	fs := &FluentSocket{}
-	fs.sockAddress = "/var/run/mdsd-ci/default_fluent.socket"
-	if containerType != "" && strings.Compare(strings.ToLower(containerType), "prometheussidecar") == 0 {
-		fs.sockAddress = fmt.Sprintf("/var/run/mdsd-%s/default_fluent.socket", containerType)
-	}
-	
-	responseBytes, err := FluentSocketWriter.writeAndRead(fs, data)
-	defer FluentSocketWriter.disconnect(fs)
+	responseBytes, err := getExtensionConfigResponse(jsonBytes)
+	var extensionData TaggedData
 	if err != nil {
-		return nil, err
+		return extensionData, err
 	}
 	var responseObject AgentTaggedDataResponse
 	err = json.Unmarshal(responseBytes, &responseObject)
 	if err != nil {
-		logger.Printf("Error::mdsd::Failed to unmarshal config data. Error message: %s", string(err.Error()))
-		return nil, err
+		logger.Printf("Error::mdsd/ama::Failed to unmarshal config data. Error message: %s", string(err.Error()))
+		return extensionData, err
 	}
 
-	var extensionData TaggedData
-	json.Unmarshal([]byte(responseObject.TaggedData), &extensionData)
+	err = json.Unmarshal([]byte(responseObject.TaggedData), &extensionData)
 
+	return extensionData, err
+}
+
+func getExtensionConfigs() ([]ExtensionConfig, error) {
+	extensionData, err := getExtensionData()
+	if err != nil {
+		return nil, err
+	}
 	return extensionData.ExtensionConfigs, nil
 }
 
@@ -105,17 +101,29 @@ func getDataCollectionSettings() (map[string]string, error) {
 	return dataCollectionSettings, nil
 }
 
-func getDataTypeToStreamIdMapping() (map[string]string, error) {
+func getDataTypeToStreamIdMapping(hasNamedPipe bool) (map[string]string, error) {
 	datatypeOutputStreamMap := make(map[string]string)
 
 	extensionConfigs, err := getExtensionConfigs()
 	if err != nil {
 		return datatypeOutputStreamMap, err
 	}
+	outputStreamDefinitions := make(map[string]StreamDefinition)
+	if hasNamedPipe == true {
+		extensionData, err := getExtensionData()
+		if err != nil {
+			return datatypeOutputStreamMap, err
+		}
+		outputStreamDefinitions = extensionData.OutputStreamDefinitions
+	}
 	for _, extensionConfig := range extensionConfigs {
 		outputStreams := extensionConfig.OutputStreams
 		for dataType, outputStreamID := range outputStreams {
-			datatypeOutputStreamMap[dataType] = outputStreamID.(string)
+			if hasNamedPipe {
+				datatypeOutputStreamMap[dataType] = outputStreamDefinitions[outputStreamID.(string)].NamedPipe
+			} else {
+				datatypeOutputStreamMap[dataType] = outputStreamID.(string)
+			}
 		}
 	}
 	return datatypeOutputStreamMap, nil
@@ -143,10 +151,25 @@ func (e *Extension) GetOutputStreamId(datatype string, useFromCache bool) string
 		return e.datatypeStreamIdMap[datatype]
 	}
 	var err error
-	e.datatypeStreamIdMap, err = getDataTypeToStreamIdMapping()
+	e.datatypeStreamIdMap, err = getDataTypeToStreamIdMapping(false)
 	if err != nil {
 		message := fmt.Sprintf("Error getting datatype to streamid mapping: %s", err.Error())
 		logger.Printf(message)
 	}
 	return e.datatypeStreamIdMap[datatype]
+}
+
+func (e *Extension) GetOutputNamedPipe(datatype string) string {
+	extensionconfiglock.Lock()
+	defer extensionconfiglock.Unlock()
+	if len(e.datatypeNamedPipeMap) > 0 && e.datatypeNamedPipeMap[datatype] != "" {
+		return e.datatypeNamedPipeMap[datatype]
+	}
+	var err error
+	e.datatypeNamedPipeMap, err = getDataTypeToStreamIdMapping(true)
+	if err != nil {
+		message := fmt.Sprintf("Error getting datatype to named pipe mapping: %s", err.Error())
+		logger.Printf(message)
+	}
+	return e.datatypeNamedPipeMap[datatype]
 }
