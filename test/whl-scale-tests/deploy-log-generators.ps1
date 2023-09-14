@@ -3,6 +3,8 @@
 Deploylog generators
 .DESCRIPTION
 Deploys one or more log generators for scale testing. Can specify CrashDumps, ETW, EventLogs, and/or TextLogs. If none specified all will be deployed
+.PARAMETER ACR
+Azure container registry to store the generator images
 .PARAMETER CrashDumps
 Deploy the crash dumps generator
 .PARAMETER ETW
@@ -25,6 +27,7 @@ deploy-log-generators.ps1 -ETW -EventLogs
 Deploy the ETW and Event Log generators
 #>
 param(
+  [Parameter(Mandatory=$true)][string] $ACR,
   [Parameter()][switch]$CrashDumps,
   [Parameter()][switch]$ETW,
   [Parameter()][switch]$EventLogs,
