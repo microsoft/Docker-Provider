@@ -1520,17 +1520,21 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			return output.FLB_RETRY
 		}
 
-		if resp == nil || resp.StatusCode != 200 {
-			if resp != nil {
-				Log("RequestId %s Status %s Status Code %d", reqId, resp.Status, resp.StatusCode)
-			}
-			return output.FLB_RETRY
+		if resp != nil && resp.Body != nil {
+			defer resp.Body.Close()
 		}
 
-		defer resp.Body.Close()
-		numContainerLogRecords = loglinesCount
-		Log("PostDataHelper::Info::Successfully flushed %d %s records to ODS in %s", numContainerLogRecords, recordType, elapsed)
-
+		if resp == nil || IsRetriableError(resp.StatusCode) {
+			if resp != nil {
+				Log("PostDataHelper::Warn::Failed with retriable error code hence retrying .RequestId %s Status %s Status Code %d", reqId, resp.Status, resp.StatusCode)
+			}
+			return output.FLB_RETRY
+		} else if IsSuccessStatusCode(resp.StatusCode) {
+			numContainerLogRecords = loglinesCount
+			Log("PostDataHelper::Info::Successfully flushed %d %s records to ODS in %s", numContainerLogRecords, recordType, elapsed)
+		} else {
+			Log("PostDataHelper::Error:: Failed with non-retriable error::RequestId %s Status %s Status Code %d", reqId, resp.Status, resp.StatusCode)
+		}
 	}
 
 	ContainerLogTelemetryMutex.Lock()
