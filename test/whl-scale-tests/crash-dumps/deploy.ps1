@@ -27,26 +27,18 @@ $NUGET_SOURCE = "https://msazure.pkgs.visualstudio.com/One/_packaging/OneBranch-
 $PACKAGE_NAME = "AzwHugeDump-retail-amd64"
 $PACKAGE_VERSION = "1.0.97"
 $DownloadName = "$PACKAGE_NAME.$PACKAGE_VERSION" # Expected folder/file name of the downloaded nuget package
-$TmpZipFile="$PSScriptRoot\crashdumpgenerator.zip"
+$TmpDir = Get-TempDir
+$DownloadPath = Join-Path $TmpDir "$DownloadName\$DownloadName.nupkg"
+$TmpZipFile=Join-Path $TmpDir "crashdumpgenerator.zip"
 
 function DownloadPackage{
   Write-Host "START:Downloading Nuget Package: $PACKAGE_NAME"
-  nuget install $PACKAGE_NAME -version $PACKAGE_VERSION -source $NUGET_SOURCE -DirectDownload -OutputDirectory $PSScriptRoot -PackageSaveMode nupkg -NonInteractive
-  Move-Item "$PSScriptRoot\$DownloadName\$DownloadName.nupkg" $TmpZipFile
+  nuget install $PACKAGE_NAME -version $PACKAGE_VERSION -source $NUGET_SOURCE -DirectDownload -OutputDirectory $TmpDir -PackageSaveMode nupkg -NonInteractive
+  Move-Item $DownloadPath $TmpZipFile # rename
   Write-Host "End:Downloading Nuget Package: $PACKAGE_NAME"
 }
-
-function Cleanup {
-  Write-Host "Cleaning up resources"
-  Write-Host "Removing NugetPackage $DownloadName"
-  Remove-Item "$PSScriptRoot\$DownloadName" -R -Force
-  Write-Host "Removing crash dump generator zip file"
-  Remove-Item $TmpZipFile -Force
-}
-
 
 DownloadPackage
 Build-DockerImage $ImageTag $WindowsVersion $PSScriptRoot
 Push-DockerImage $ImageTag
 Deploy-LogGenerator $ImageTag "whl-crash-dump-generator" $namespace $nodeSelector
-Cleanup

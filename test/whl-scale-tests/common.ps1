@@ -1,4 +1,9 @@
 $ErrorActionPreference = 'Stop'
+$TempDir = "$PSScriptRoot\Temp"
+
+if(!(Test-Path $TempDir)){
+    New-Item -ItemType Directory -Force -Path $TempDir
+}
 
 function Get-RandomPassword {
     param (
@@ -64,6 +69,16 @@ function SubstituteNameValuePairs {
     {
         (Get-Content $OutputFilePath).Replace($subItem.Name, $subItem.Value) | Set-Content $OutputFilePath
     }
+}
+
+<#
+.SYNOPSIS
+Get a temp directory
+.DESCRIPTION
+Gets path to a shared temporary directory for storing temporary files
+#>
+function Get-TempDir{
+    return $TempDir
 }
 
 <#
@@ -136,18 +151,20 @@ function Deploy-LogGenerator {
         [Parameter(Mandatory = $true)][string] $nodeSelector
     )
 
+    Write-Host "Applying settings config map to $namespace"
+    kubectl apply -f "$PSScriptRoot\log-generation-config.yaml" -n $namespace
+
     Write-Host "Configuring WHL for Crash Dump Log Collection";
     $template = "$PSScriptRoot\deploy-log-generator.template.yaml";
-    $file = "$PSScriptRoot\deploy-log-generator.$name.yaml";
+    $file = Join-Path $TempDir "deploy-log-generator.$name.yaml";
     $substitutions = @{
-        "<CONTAINER_IMAGE>"         = $imageTag;
-        "<DEPLOYMENT_NAME>"         = $name;
-        "<DEPLOYMENT_NAMESPACE>"    = $namespace;
-        "<NODE_SELECTOR>"           = $nodeSelector
+        "<CONTAINER_IMAGE>" = $imageTag;
+        "<DEPLOYMENT_NAME>" = $name;
+        "<NODE_SELECTOR>"   = $nodeSelector
     }
     SubstituteNameValuePairs $template $file $substitutions;
 
     Write-Host "START:Deploying Crash dump generation pods";
-    kubectl apply -f $file;
+    kubectl apply -f $file -n $namespace;
     Write-Host "End:Deploying Crash dump generation pods";
 }
