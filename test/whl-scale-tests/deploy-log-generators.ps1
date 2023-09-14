@@ -40,7 +40,7 @@ az acr login -n $acr
 
 if($CrashDumps -or $all){
   Write-Host "START:Deploying Crash Dump Generator"
-  # TODO: Deploy crash dump generator here
+  & "$PSScriptRoot\crash-dumps\deploy.ps1" "$ACR/generatecrashdumps:latest" ltsc2022 whl-crashd crashd
   Write-Host "END:Deploying Crash Dump Generator"
 }
 
