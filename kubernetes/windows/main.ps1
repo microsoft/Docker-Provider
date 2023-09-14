@@ -44,9 +44,9 @@ function Set-ProcessAndMachineEnvVariables($name, $value) {
     [System.Environment]::SetEnvironmentVariable($name, $value, "Machine")
 }
 
-function Set-GenevaAMAEnvironmentVariables {
+function Set-CommonAMAEnvironmentVariables {
     Set-ProcessAndMachineEnvVariables "MONITORING_DATA_DIRECTORY" "C:\\opt\\windowsazuremonitoragent\\datadirectory"
-    Set-ProcessAndMachineEnvVariables "MONITORING_ROLE_INSTANCE" "MONITORING_ROLE_INSTANCE"
+    Set-ProcessAndMachineEnvVariables "MONITORING_ROLE_INSTANCE" "cloudAgentRoleInstanceIdentity"
     Set-ProcessAndMachineEnvVariables "MA_RoleEnvironment_OsType" "Windows"
     Set-ProcessAndMachineEnvVariables "MONITORING_VERSION" "2.0"
     Set-ProcessAndMachineEnvVariables "MONITORING_ROLE" "cloudAgentRoleIdentity"
@@ -57,6 +57,51 @@ function Set-GenevaAMAEnvironmentVariables {
     Set-ProcessAndMachineEnvVariables "MA_RoleEnvironment_ResourceId" $aksResourceId
     Set-ProcessAndMachineEnvVariables "MA_ENABLE_LARGE_EVENTS" "1"
 }
+
+function Set-AMA3PEnvironmentVariables {
+
+    Set-ProcessAndMachineEnvVariables "MONITORING_MCS_MODE" "1"
+    Set-ProcessAndMachineEnvVariables "customRegion" $aksRegion
+    Set-ProcessAndMachineEnvVariables "customResourceId" $aksResourceId
+    Set-ProcessAndMachineEnvVariables "MCS_CUSTOM_RESOURCE_ID" $aksResourceId
+
+    $domain = "opinsights.azure.com"
+    $mcs_endpoint = "https://monitor.azure.com/"
+    $mcs_globalendpoint = "https://global.handler.control.monitor.azure.com"
+    if (Test-Path /etc/ama-logs-secret/DOMAIN) {
+        $domain = Get-Content /etc/ama-logs-secret/DOMAIN
+        if (![string]::IsNullOrEmpty($domain)) {
+            if ($domain -eq "opinsights.azure.cn") {
+                $mcs_globalendpoint = "https://global.handler.control.monitor.azure.cn"
+                $mcs_endpoint = "https://monitor.azure.cn/"
+            }
+            elseif ($domain -eq "opinsights.azure.us") {
+                $mcs_globalendpoint = "https://global.handler.control.monitor.azure.us"
+                $mcs_endpoint = "https://monitor.azure.us/"
+            }
+            elseif ($domain -eq "opinsights.azure.eaglex.ic.gov") {
+                $mcs_globalendpoint = "https://global.handler.control.monitor.azure.eaglex.ic.gov"
+                $mcs_endpoint = "https://monitor.azure.eaglex.ic.gov/"
+            }
+            elseif ($domain -eq "opinsights.azure.microsoft.scloud") {
+                $mcs_globalendpoint = "https://global.handler.control.monitor.azure.microsoft.scloud"
+                $mcs_endpoint = "https://monitor.azure.microsoft.scloud/"
+            }
+            else {
+                Write-Host "Invalid or Unsupported domain name $($domain). EXITING....."
+                exit 1
+            }
+        }
+        else {
+            Write-Host "Domain name either null or empty. EXITING....."
+            exit 1
+        }
+    }
+    Set-ProcessAndMachineEnvVariables "MCS_AZURE_RESOURCE_ENDPOINT" $mcs_endpoint
+    Set-ProcessAndMachineEnvVariables "MCS_GLOBAL_ENDPOINT" $mcs_globalendpoint
+}
+
+
 
 function Generate-GenevaTenantNameSpaceConfig {
      $genevaLogsTenantNameSpaces = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_TENANT_NAMESPACES", "process")
@@ -411,13 +456,19 @@ function Read-Configs {
     }
     if (![string]::IsNullOrEmpty($genevaLogsIntegration) -and $genevaLogsIntegration.ToLower() -eq 'true') {
         Write-Host "Setting Geneva Windows AMA Environment variables"
-        Set-GenevaAMAEnvironmentVariables
+        Set-CommonAMAEnvironmentVariables
         if (![string]::IsNullOrEmpty($genevaLogsMultitenancy) -and $genevaLogsMultitenancy.ToLower() -eq 'true') {
             ruby /opt/amalogswindows/scripts/ruby/fluent-bit-geneva-conf-customizer.rb "common"
             ruby /opt/amalogswindows/scripts/ruby/fluent-bit-geneva-conf-customizer.rb "tenant"
             ruby /opt/amalogswindows/scripts/ruby/fluent-bit-geneva-conf-customizer.rb "infra"
             Generate-GenevaTenantNameSpaceConfig
             Generate-GenevaInfraNameSpaceConfig
+        }
+    } else {
+        $isAADMSIAuth = [System.Environment]::GetEnvironmentVariable("USING_AAD_MSI_AUTH", "process")
+        if (![string]::IsNullOrEmpty($isAADMSIAuth) -and $isAADMSIAuth.ToLower() -eq 'true') {
+            Set-CommonAMAEnvironmentVariables
+            Set-AMA3PEnvironmentVariables
         }
     }
 
@@ -763,12 +814,18 @@ if (IsGenevaMode) {
     Write-Host "Starting Windows AMA in 1P Mode"
     #start Windows AMA
     Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\windowsazuremonitoragent\windowsazuremonitoragent\Monitoring\Agent\MonAgentLauncher.exe" -ArgumentList @("-useenv")}
-}
-
-if (![string]::IsNullOrEmpty($isAADMSIAuth) -and $isAADMSIAuth.ToLower() -eq 'true') {
+} elseif (![string]::IsNullOrEmpty($isAADMSIAuth) -and $isAADMSIAuth.ToLower() -eq 'true') {
     Write-Host "skipping agent onboarding via cert since AAD MSI Auth configured"
+
+    Set-ProcessAndMachineEnvVariables "MONITORING_GCS_AUTH_ID_TYPE" ""
+    #start Windows AMA 
+    Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\windowsazuremonitoragent\windowsazuremonitoragent\Monitoring\Agent\MonAgentLauncher.exe" -ArgumentList @("-useenv")}
+    $version = Get-Content -Path "C:\opt\windowsazuremonitoragent\version.txt"
+    Write-Host $version
 }
 else {
+    Write-Host "skipping starting windows ama agent"
+
     Generate-Certificates
     Test-CertificatePath
 }
