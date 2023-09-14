@@ -24,7 +24,7 @@ func getExtensionConfigResponse(jsonBytes []byte) ([]byte, error) {
 	defer FluentSocketWriter.disconnect(fs)
 	logger.Printf("Info::mdsd::Making call to FluentSocket: %s to write and read the config data", fs.sockAddress)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	logger.Printf("extensionconfig::getExtensionConfigResponse:: getting extension config from fluent socket-end")
 
