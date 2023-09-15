@@ -169,8 +169,11 @@ Example:
 1. Got to [aka.ms/jarvis/agentExplorer](https://portal.microsoftgeneva.com/diagnose/agentExplorer)
 2. Put in your geneva info Ex. show imge of exmaple
 3. Make sure after 15 mins that the agent is reporting healthy like so: Another image of a healthy agent
+   ![Alt text](image-1.png)
+   
 4. Now go to logs section -> navigate to one of the collect logs and make sure their is data there
 5. Now go to metrics section -> naviagte to a Agent QoS and verify that data is working as expected
+
 
 ## 4. Taking Measurements of each component
 Need to actually deploy a test component something to get this filled out
@@ -198,3 +201,55 @@ Example:
     -SubscriptionId "b2eb1341-814f-4e78-bec8-6042f4c10c5b" `
     -Location "westus3" `
 ```
+
+# Troubleshooting
+
+## After 30 mins or more and the Agent Hasn't appeared in Agent Explorer
+
+### Cause 1:
+The MSI used isnt configured properly. Make sure that the latest deployment of your clusters <clustername>-agentpool msi's Object ID is configured in Geneva Logs User Roles properly. Refer to Section 2.
+
+## Cause 2:
+The values used in the configmap isnt correct.
+
+Go to your deployed aks cluster -> Go to Configurations -> choose the namespace that isnt working as expected and check the configmap. 
+
+Example of a problem:
+![Alt text](image.png)
+
+In this example the namespace isnt set correctly which will make the agent run healthy but it wont ever connect upstream properly.
+
+If this looks good then it is time to dig deeper with the Agent Logs.
+
+Use `kubectl exec -it <name_of_the_pod_not_working> the -n <namespace_that_contains_the_pod>-- powershell` 
+
+Nav to .\opt\genevamonitoringagent\datadirectory\Configuration
+
+Look for the latest MonAgentHost.*.log
+
+In this file we want to look for a few things:
+
+1. Look for the starting agent command and validate that it looks right with values you would expect
+
+Ex. 'C:\C\7bb64a8ce0a1cff91c9489d224ed56dd78d46b9415a1acdafb670ebb72e665b1\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent\MonAgentManager.exe 
+-serviceShutdown MonAgentShutdownEvent.9520 
+-parent 9520 
+-deploymentdir "C:\C\7bb64a8ce0a1cff91c9489d224ed56dd78d46b9415a1acdafb670ebb72e665b1\opt\genevamonitoringagent\genevamonitoringagent\Monitoring\Agent" 
+-LocalPath "C:\C\7bb64a8ce0a1cff91c9489d224ed56dd78d46b9415a1acdafb670ebb72e665b1\opt\genevamonitoringagent\datadirectory" 
+-connectionInfo "AuthMSIToken" 
+"-serviceIdentity" "DiagnosticsProd#SkyMERProdLogs#SkyMERProdLogs_NAMESPACE#westus3" 
+"-configVersion" "6.0" 
+"-ManagedIdentity" 
+"client_id#10e472c6-ff9e-4656-a878-dc9644d40eab" 
+"-parentCpuRate" "25,6"
+-LogPath "C:\C\7bb64a8ce0a1cff91c9489d224ed56dd78d46b9415a1acdafb670ebb72e665b1\opt\genevamonitoringagent\datadirectory\Configuration\MonAgentHost.73.log"'
+   
+2. Check if the agent is having success with grabbing the config version
+
+
+Ex.
+Error (2023-09-14T19:02:04Z): GcsManager.dll - Call to download Configuration JSON blob from GCS failed; requestId=529b2797-37d1-4ff3-a9f9-88fd25a993c5; response={"LatestConfigVersionFound":null,"ErrorMessage":"There is no monitoring configuration found for the version given. Look at the LatestConfigVersionFound attributeto know the latest minor version available."}; AuthType=5; result=80050003
+
+AND
+
+Error (2023-09-14T19:02:04Z): GcsManager.dll - The asked for configuration version 6.0 is not deployed in your Geneva account SkyMERProdLogs and namespace SkyMERProdLogs_NAMESPACE in environment DiagnosticsProd. MA is configured to receive the latest version, 6.0, when this happens. This usage violates Azure safe deployment practices. See https://aka.ms/GenevaSafeConfigUpdate for more details.
