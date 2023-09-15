@@ -59,8 +59,10 @@ function SubstituteNameValuePairs {
         exit
     }
 
+    $content = Get-Content $InputFilePath;
     foreach($subItem in $Substitutions.GetEnumerator())
     {
-        (Get-Content $InputFilePath).Replace($subItem.Name, $subItem.Value) | Set-Content $OutputFilePath
+        $content = $content.Replace($subItem.Name, $subItem.Value); 
     }
+    $content | Set-Content $OutputFilePath;
 }
