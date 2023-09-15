@@ -59,7 +59,8 @@ function Set-CommonAMAEnvironmentVariables {
 }
 
 function Set-AMA3PEnvironmentVariables {
-
+    $aksRegion = [System.Environment]::GetEnvironmentVariable("AKS_REGION", "process")
+    $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID", "process")
     Set-ProcessAndMachineEnvVariables "MONITORING_MCS_MODE" "1"
     Set-ProcessAndMachineEnvVariables "customRegion" $aksRegion
     Set-ProcessAndMachineEnvVariables "customResourceId" $aksResourceId
