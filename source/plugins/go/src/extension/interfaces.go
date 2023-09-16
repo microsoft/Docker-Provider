@@ -13,7 +13,7 @@ type AgentTaggedDataResponse struct {
 // TaggedData structure for respone
 type TaggedData struct {
 	SchemaVersion           int                         `json:"schemaVersion"`
-	Version                 int                         `json:"version"`
+	Version                 string                      `json:"version"`
 	ExtensionName           string                      `json:"extensionName"`
 	ExtensionConfigs        []ExtensionConfig           `json:"extensionConfigurations"`
 	OutputStreamDefinitions map[string]StreamDefinition `json:"outputStreamDefinitions"`
@@ -26,9 +26,9 @@ type StreamDefinition struct {
 
 // ExtensionConfig structure for extension definition in DCR
 type ExtensionConfig struct {
-	ID                string                 `json:"id"`
-	OriginIds         []string               `json:"originIds"`
+	ID                string                            `json:"id"`
+	OriginIds         []string                          `json:"originIds"`
 	ExtensionSettings map[string]map[string]interface{} `json:"extensionSettings"`
-	InputStreams      map[string]interface{} `json:"inputStreams"`
-	OutputStreams     map[string]interface{} `json:"outputStreams"`
+	InputStreams      map[string]interface{}            `json:"inputStreams"`
+	OutputStreams     map[string]interface{}            `json:"outputStreams"`
 }

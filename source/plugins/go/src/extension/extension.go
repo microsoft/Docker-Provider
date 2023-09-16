@@ -53,7 +53,6 @@ func getExtensionData() (TaggedData, error) {
 		return extensionData, err
 	}
 
-	logger.Printf("Info::mdsd/ama::Response from extension: %s", string(responseObject.TaggedData))
 	err = json.Unmarshal([]byte(responseObject.TaggedData), &extensionData)
 
 	return extensionData, err
