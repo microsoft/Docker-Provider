@@ -1162,8 +1162,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		logEntry := ToString(record["log"])
 		logEntryTimeStamp := ToString(record["time"])
 
-		if !IsWindows && !ContainerLogV2ConfigMap && IsAADMSIAuthMode == true && !IsGenevaLogsIntegrationEnabled {
-			if MdsdMsgpUnixSocketClient == nil {
+		if !ContainerLogV2ConfigMap && IsAADMSIAuthMode == true && !IsGenevaLogsIntegrationEnabled {
+			if !IsWindows && MdsdMsgpUnixSocketClient == nil {
 				Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
 				CreateMDSDClient(ContainerLogV2, ContainerType)
 				if MdsdMsgpUnixSocketClient == nil {
