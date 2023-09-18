@@ -27,6 +27,8 @@ az account set --subscription $SubscriptionId
 
 #Use Windows Engine on Docker
 Write-Host "Setting Docker to utilize Windows Engine"
+Start-Process -filePath "Docker Desktop.exe" -WorkingDirectory "C:\Program Files\Docker\Docker"
+Start-Sleep -Duration (New-TimeSpan -Seconds 60)
 Start-Process -filePath "DockerCli.exe" -WorkingDirectory "C:\Program Files\Docker\Docker" -ArgumentList "-SwitchWindowsEngine"
 
 #Login into ACR
@@ -69,7 +71,7 @@ $configmapFilePath = ".\container-azm-ms-agentconfig.yaml"
 
 #Setup Crash Dump Generation Container
 Write-Host "Creating namespace for Crash Dump scale component"
-kubectl create namespace crashd-test
+#kubectl create namespace crashd-test
 #kubectl apply -f crash-dump-generation.yaml
 
 #Targeting WHL for Crash Dump Configuration
@@ -77,7 +79,7 @@ Write-Host "Configuring WHL for Crash Dump Log Collection"
 $whlCrashDumpNamespace = "whl-crashd"
 kubectl create namespace $whlCrashDumpNamespace
 
-Write-Host "Updating WHL Container YAML and ConfigMap files"
+Write-Host "Updating WHL Container YAML and ConfigMap to deploy to evtlog agent pool"
 
 $containerYAMLHashTable = @{    
     'kube-system' = $whlCrashDumpNamespace;
@@ -91,7 +93,7 @@ $containerYAMLHashTable = @{
 $configMapHashTable = @{
     'VALUE_ENVIRONMENT' = $genevaEnvironment;
     'VALUE_ACCOUNT_NAMESPACE' = $GenevaLogAccountNamespace;
-    'VALUE_ACCOUNT' = $GenevaAccountName;
+    'VALUE_GENEVA_ACCOUNT' = $GenevaAccountName;
     'VALUE_CONFIG_VERSION' = $CrashDumpConfigVersion;
     'namespace: kube-system' = "namespace: $whlCrashDumpNamespace";
 }
@@ -101,12 +103,20 @@ SubstituteNameValuePairs -InputFilePath $containerYAMLFilePath -OutputFilePath $
 SubstituteNameValuePairs -InputFilePath $configmapFilePath -OutputFilePath $configmapFilePath -Substitutions $configMapHashTable
 
 Write-Host "Deploying WHL to the crashd node pool"
+kubectl apply -f .\host-logs-geneva.yaml
+
+Write-Host "Waiting..."
+
+Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+kubectl get pods -n $whlCrashDumpNamespace
+
 kubectl apply -f .\container-azm-ms-agentconfig.yaml
-kubectl apply -f .\kubernetes\host-logs-geneva.yaml
+Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+kubectl get pods -n $whlCrashDumpNamespace
 
 #Setup Event Log Environment Generation Container
 Write-Host "Creating namespace for Event Log scale component"
-kubectl create namespace evtlog-test
+#kubectl create namespace evtlog-test
 #kubectl apply -f event-log-generation.yaml
 
 #Targeting WHL for Event Log Configuration
@@ -114,7 +124,7 @@ Write-Host "Configuring WHL for Crash Dump Log Collection"
 $whlEventLogNamespace = "whl-evtlog"
 kubectl create namespace $whlEventLogNamespace
 
-Write-Host "Updating WHL Container YAML and ConfigMap files"
+Write-Host "Updating WHL Container YAML and ConfigMap to deploy to evtlog agent pool"
 
 $containerYAMLHashTable = @{    
     $whlCrashDumpNamespace = $whlEventLogNamespace;
@@ -131,12 +141,20 @@ SubstituteNameValuePairs -InputFilePath $containerYAMLFilePath -OutputFilePath $
 SubstituteNameValuePairs -InputFilePath $configmapFilePath -OutputFilePath $configmapFilePath -Substitutions $configMapHashTable
 
 Write-Host "Deploying WHL to the evtlog node pool"
-kubectl apply -f .\container-azm-ms-agentconfig.yaml
 kubectl apply -f .\host-logs-geneva.yaml
+
+Write-Host "Waiting..."
+
+Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+kubectl get pods -n $whlEventLogNamespace
+
+kubectl apply -f .\container-azm-ms-agentconfig.yaml
+Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+kubectl get pods -n $whlEventLogNamespace
 
 #Setup ETW Log Environment Generation Container
 Write-Host "Creating namespace for ETW Log scale component"
-kubectl create namespace ewtlog-test
+#kubectl create namespace ewtlog-test
 #kubectl apply -f ewt-log-generation.yaml
 
 #Targeting WHL for ETW Log Configuration
@@ -144,7 +162,7 @@ Write-Host "Configuring WHL for ETW Log Collection"
 $whlETWLogNamespace = "whl-etwlog"
 kubectl create namespace $whlETWLogNamespace
 
-Write-Host "Updating WHL Container YAML and ConfigMap files"
+Write-Host "Updating WHL Container YAML and ConfigMap to deploy to etwlog agent pool"
 
 $containerYAMLHashTable = @{    
     $whlEventLogNamespace = $whlETWLogNamespace;
@@ -161,13 +179,20 @@ SubstituteNameValuePairs -InputFilePath $containerYAMLFilePath -OutputFilePath $
 SubstituteNameValuePairs -InputFilePath $configmapFilePath -OutputFilePath $configmapFilePath -Substitutions $configMapHashTable
 
 Write-Host "Deploying WHL to the etwlog node pool"
-kubectl apply -f .\container-azm-ms-agentconfig.yaml
 kubectl apply -f .\host-logs-geneva.yaml
 
-exit
+Write-Host "Waiting..."
+
+Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+kubectl get pods -n $whlETWLogNamespace
+
+kubectl apply -f .\container-azm-ms-agentconfig.yaml
+Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+kubectl get pods -n $whlETWLogNamespace
+
 #Setup Text Log Environment Generation Container
-Write-Host "Creating namespace for Text Log scale component"
-kubectl create namespace txtlog-test
+#Write-Host "Creating namespace for Text Log scale component"
+#kubectl create namespace txtlog-test
 #kubectl apply -f txt-log-generation.yaml
 
 #Targeting WHL for Text Log Configuration
@@ -175,7 +200,7 @@ Write-Host "Configuring WHL for Text Log Collection"
 $whlTextLogNamespace = "whl-txtlog"
 kubectl create namespace $whlTextLogNamespace
 
-Write-Host "Updating WHL Container YAML and ConfigMap files"
+Write-Host "Updating WHL Container YAML and ConfigMap to deploy to txtlog agent pool"
 
 $containerYAMLHashTable = @{    
     $whlETWLogNamespace = $whlTextLogNamespace;
@@ -192,7 +217,15 @@ SubstituteNameValuePairs -InputFilePath $containerYAMLFilePath -OutputFilePath $
 SubstituteNameValuePairs -InputFilePath $configmapFilePath -OutputFilePath $configmapFilePath -Substitutions $configMapHashTable
 
 Write-Host "Deploying WHL to the txtlog node pool"
-kubectl apply -f .\container-azm-ms-agentconfig.yaml
 kubectl apply -f .\host-logs-geneva.yaml
+
+Write-Host "Waiting..."
+
+Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+kubectl get pods -n $whlTextLogNamespace
+
+kubectl apply -f .\container-azm-ms-agentconfig.yaml
+Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+kubectl get pods -n $whlTextLogNamespace
 
 Write-Host "Windows Host Log Scale Test is now Live"
