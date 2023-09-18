@@ -169,7 +169,7 @@ Example:
 1. Got to [aka.ms/jarvis/agentExplorer](https://portal.microsoftgeneva.com/diagnose/agentExplorer)
 2. Put in your geneva info Ex. show imge of exmaple
 3. Make sure after 15 mins that the agent is reporting healthy like so: Another image of a healthy agent
-   ![Alt text](image-1.png)
+   ![List of each node deployed with WHL Agent shown as Healthy](images/agent_explorer.png)
    
 4. Now go to logs section -> navigate to one of the collect logs and make sure their is data there
 5. Now go to metrics section -> naviagte to a Agent QoS and verify that data is working as expected
@@ -215,7 +215,7 @@ The values used in the configmap isnt correct.
 Go to your deployed aks cluster -> Go to Configurations -> choose the namespace that isnt working as expected and check the configmap. 
 
 Example of a problem:
-![Alt text](image.png)
+![Example of namespace not set correctly in configmap: SkyMERProdLogs_NAMESPACE](images/invalid_namespace_config.png)
 
 In this example the namespace isnt set correctly which will make the agent run healthy but it wont ever connect upstream properly.
 
