@@ -1349,7 +1349,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			} else {
 				datatype = ContainerLogDataType
 			}
-			if CreateGenevaOr3PNamedPipe(&ContainerLogNamedPipe, datatype, &ContainerLogsWindowsAMAClientCreateErrors, IsGenevaLogsIntegrationEnabled) {
+			if CreateGenevaOr3PNamedPipe(&ContainerLogNamedPipe, datatype, &ContainerLogsWindowsAMAClientCreateErrors, IsGenevaLogsIntegrationEnabled, &MdsdContainerLogTagRefreshTracker) {
 				Log("Info::AMA::Starting to write container logs to named pipe")
 				deadline := 10 * time.Second
 				ContainerLogNamedPipe.SetWriteDeadline(time.Now().Add(deadline))
@@ -1875,6 +1875,12 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		fmt.Fprintf(os.Stdout, "Container logs schema=%s... \n", ContainerLogV2SchemaVersion)
 	}
 
+	MdsdInsightsMetricsTagName = MdsdInsightsMetricsSourceName
+	MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName
+	MdsdKubeMonAgentEventsTagRefreshTracker = time.Now()
+	MdsdInsightsMetricsTagRefreshTracker = time.Now()
+	MdsdContainerLogTagRefreshTracker = time.Now()
+
 	if ContainerLogsRouteV2 == true {
 		if IsWindows {
 			var datatype string
@@ -1883,7 +1889,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 			} else {
 				datatype = ContainerLogDataType
 			}
-			CreateGenevaOr3PNamedPipe(&ContainerLogNamedPipe, datatype, &ContainerLogsWindowsAMAClientCreateErrors, IsGenevaLogsIntegrationEnabled)
+			CreateGenevaOr3PNamedPipe(&ContainerLogNamedPipe, datatype, &ContainerLogsWindowsAMAClientCreateErrors, IsGenevaLogsIntegrationEnabled, &MdsdContainerLogTagRefreshTracker)
 		} else {
 			CreateMDSDClient(ContainerLogV2, ContainerType)
 		}
@@ -1920,11 +1926,6 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		Log("Running in replicaset. Disabling container enrichment caching & updates \n")
 	}
 
-	MdsdInsightsMetricsTagName = MdsdInsightsMetricsSourceName
-	MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName
-	MdsdKubeMonAgentEventsTagRefreshTracker = time.Now()
-	MdsdInsightsMetricsTagRefreshTracker = time.Now()
-	MdsdContainerLogTagRefreshTracker = time.Now()
 	Log("ContainerLogsRouteADX: %v, IsWindows: %v, IsAADMSIAuthMode = %v IsGenevaLogsIntegrationEnabled = %v \n", ContainerLogsRouteADX, IsWindows, IsAADMSIAuthMode, IsGenevaLogsIntegrationEnabled)
 	if !ContainerLogsRouteADX && IsWindows && IsAADMSIAuthMode {
 		Log("defaultIngestionAuthTokenRefreshIntervalSeconds = %d \n", defaultIngestionAuthTokenRefreshIntervalSeconds)

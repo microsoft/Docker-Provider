@@ -159,10 +159,10 @@ func (e *Extension) GetOutputStreamId(datatype string, useFromCache bool) string
 	return e.datatypeStreamIdMap[datatype]
 }
 
-func (e *Extension) GetOutputNamedPipe(datatype string) string {
+func (e *Extension) GetOutputNamedPipe(datatype string, useFromCache bool) string {
 	extensionconfiglock.Lock()
 	defer extensionconfiglock.Unlock()
-	if len(e.datatypeNamedPipeMap) > 0 && e.datatypeNamedPipeMap[datatype] != "" {
+	if useFromCache && len(e.datatypeNamedPipeMap) > 0 && e.datatypeNamedPipeMap[datatype] != "" {
 		return e.datatypeNamedPipeMap[datatype]
 	}
 	var err error

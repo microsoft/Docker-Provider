@@ -122,7 +122,7 @@ func ToString(s interface{}) string {
 	}
 }
 
-//mdsdSocketClient to write msgp messages
+// mdsdSocketClient to write msgp messages
 func CreateMDSDClient(dataType DataType, containerType string) {
 	mdsdfluentSocket := "/var/run/mdsd-ci/default_fluent.socket"
 	if containerType != "" && strings.Compare(strings.ToLower(containerType), "prometheussidecar") == 0 {
@@ -186,7 +186,7 @@ func CreateMDSDClient(dataType DataType, containerType string) {
 	}
 }
 
-//ADX client to write to ADX
+// ADX client to write to ADX
 func CreateADXClient() {
 
 	if ADXIngestor != nil {
@@ -270,7 +270,7 @@ func convertMsgPackEntriesToMsgpBytes(fluentForwardTag string, msgPackEntries []
 	return msgpBytes
 }
 
-//namedpipe format => CAgentStream_<pipeNamedDefinedXMLConfig>_<genevaNamespace>
+// namedpipe format => CAgentStream_<pipeNamedDefinedXMLConfig>_<genevaNamespace>
 func getGenevaWindowsNamedPipeName() string {
 	gcsNameSpace := os.Getenv("MONITORING_GCS_NAMESPACE")
 	var namedPipeName string
@@ -293,6 +293,23 @@ func getOutputStreamIdTag(dataType string, streamIdTagName string, refreshTracke
 		}
 	} else {
 		Log("getOutputStreamIdTag: refreshTracker is nil")
+		useFromCache = false
 	}
 	return extension.GetInstance(FLBLogger, ContainerType).GetOutputStreamId(dataType, useFromCache)
+}
+
+func GetOutputNamedPipe(datatype string, refreshTracker *time.Time) string {
+	useFromCache := true
+	if refreshTracker != nil {
+		elapsed := time.Now().Sub(*refreshTracker)
+		//No need to check the tag name as for Windows this will always be called when AMA windows.
+		if elapsed.Seconds() >= agentConfigRefreshIntervalSeconds {
+			useFromCache = false
+			*refreshTracker = time.Now()
+		}
+	} else {
+		Log("GetOutputNamedPipe: refreshTracker is nil")
+		useFromCache = false
+	}
+	return extension.GetInstance(FLBLogger, ContainerType).GetOutputNamedPipe(datatype, useFromCache)
 }
