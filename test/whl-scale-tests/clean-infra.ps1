@@ -18,4 +18,4 @@ Write-Host "Deleting resource group and all resources within it"
 az group delete --name $ResourceGroupName
 
 #Remove Temporary Files
-Remove-Item (Get-TempDir) -R -Force
+Remove-Item $TempDir -R -Force

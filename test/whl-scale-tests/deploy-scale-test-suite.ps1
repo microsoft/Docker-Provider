@@ -51,7 +51,7 @@ Write-Host "Improving compatibility with running build script locally"
 SubstituteNameValuePairs -InputFilePath $filePath -OutputFilePath $filePath -Substitutions $dockerCommandHashTable
 
 Write-Host "Creating latest WHL Container Image"
-Invoke-Expression -Command ".\build-and-publish-docker-image.ps1 -image $imageName -windowsBaseImageVersion `"ltsc2022`"" 
+Invoke-Expression -Command ".\build-and-publish-docker-image.ps1 -image $imageName -windowsBaseImageVersion `"$WindowsVersion`"" 
 
 # Get AKS credentials 
 Write-Host "Gathering AKS credentials"

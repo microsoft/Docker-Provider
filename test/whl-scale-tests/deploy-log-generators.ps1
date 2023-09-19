@@ -3,8 +3,6 @@
 Deploylog generators
 .DESCRIPTION
 Deploys one or more log generators for scale testing. Can specify CrashDumps, ETW, EventLogs, and/or TextLogs. If none specified all will be deployed
-.PARAMETER ACR
-Azure container registry to store the generator images
 .PARAMETER CrashDumps
 Deploy the crash dumps generator
 .PARAMETER ETW
@@ -27,16 +25,56 @@ deploy-log-generators.ps1 -ETW -EventLogs
 Deploy the ETW and Event Log generators
 #>
 param(
-  [Parameter(Mandatory=$true)][string] $ACR,
   [Parameter()][switch]$CrashDumps,
   [Parameter()][switch]$ETW,
   [Parameter()][switch]$EventLogs,
   [Parameter()][switch]$TextLogs
 )
 
+. "$PSScriptRoot\common.ps1"
+
 $all = !$CrashDumps -and !$ETW -and !$EventLogs -and !$TextLogs
 
-az acr login -n $acr
+<#
+.SYNOPSIS
+Deploy a log generation DaemonSet
+.DESCRIPTION
+Build and deploy a DaemonSet to generate logs
+.PARAMETER ImageTag
+Full tag to use for the container image in the format <uri>/<tag>:<version>
+.PARAMETER name
+Name to give the DaemonSet
+.PARAMETER namespace
+Kubernetes namespace where the DaemonSet should be deployed
+.PARAMETER nodeSelector
+String to match for selecting nodes where the DaemonSet should be deployed
+.EXAMPLE
+Deploy-LogGenerator exampleacr.azurecr.io/generatelogs:latest LogGenerator log-generation whl-logs
+#>
+function buildAndDeploy {
+  param(
+  [Parameter(Mandatory = $true)][string] $ImageTag,
+  [Parameter(Mandatory = $true)][string] $name,
+  [Parameter(Mandatory = $true)][string] $namespace,
+  [Parameter(Mandatory = $true)][string] $nodeSelector,
+  [Parameter(Mandatory = $true)][string] $BuildPath
+)
+  Write-Host "Applying settings config map to $namespace"
+  kubectl apply -f "$PSScriptRoot\log-generation-config.yaml" -n $namespace
+
+  if(![string]::IsNullOrWhiteSpace((kubectl get ds -n $namespace $name -o name --ignore-not-found))){
+    Write-Host "Daemonset $name already exists. Restarting with new configuration."
+    kubectl rollout restart daemonset/$name -n $namespace
+  } else {
+    Build-DockerImage $ImageTag $WindowsVersion $BuildPath
+    Push-DockerImage $ImageTag
+    Deploy-LogGenerator $ImageTag $name $namespace $nodeSelector
+  }
+  
+}
+
+az login
+az acr login -n $acrName
 
 if($CrashDumps -or $all){
   Write-Host "START:Deploying Crash Dump Generator"

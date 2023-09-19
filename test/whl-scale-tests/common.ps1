@@ -1,6 +1,15 @@
 $ErrorActionPreference = 'Stop'
 $TempDir = "$PSScriptRoot\Temp"
 
+$WindowsVersion = "ltsc2022"
+$resourceGroupName = [Environment]::UserName + "scaletest"
+$acrName = $resourceGroupName + "acr"
+$aksClusterName = $resourceGroupName + "aks"
+$keyVaultName = $resourceGroupName + "kv"
+$genevaEnvironment = "DiagnosticsProd"
+$acrName = $resourceGroupName + "acr"
+$acrUri = $acrName + ".azurecr.io"
+
 if(!(Test-Path $TempDir)){
     New-Item -ItemType Directory -Force -Path $TempDir
 }
@@ -73,16 +82,6 @@ function SubstituteNameValuePairs {
 
 <#
 .SYNOPSIS
-Get a temp directory
-.DESCRIPTION
-Gets path to a shared temporary directory for storing temporary files
-#>
-function Get-TempDir{
-    return $TempDir
-}
-
-<#
-.SYNOPSIS
 Build docker image
 .DESCRIPTION
 Builds the docker image for a log generator
@@ -150,11 +149,8 @@ function Deploy-LogGenerator {
         [Parameter(Mandatory = $true)][string] $namespace,
         [Parameter(Mandatory = $true)][string] $nodeSelector
     )
-
-    Write-Host "Applying settings config map to $namespace"
-    kubectl apply -f "$PSScriptRoot\log-generation-config.yaml" -n $namespace
-
-    Write-Host "Configuring WHL for Crash Dump Log Collection";
+    
+    Write-Host "Configuring Log Generation Template for $name";
     $template = "$PSScriptRoot\deploy-log-generator.template.yaml";
     $file = Join-Path $TempDir "deploy-log-generator.$name.yaml";
     $substitutions = @{
@@ -164,7 +160,7 @@ function Deploy-LogGenerator {
     }
     SubstituteNameValuePairs $template $file $substitutions;
 
-    Write-Host "START:Deploying Crash dump generation pods";
+    Write-Host "START:Deploying Log Generation Daemonset: $name";
     kubectl apply -f $file -n $namespace;
-    Write-Host "End:Deploying Crash dump generation pods";
+    Write-Host "End:Deploying Log Generation Daemonset: $name";
 }
