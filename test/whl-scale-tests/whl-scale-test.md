@@ -104,15 +104,15 @@ Once you are done with the script it will open three tab for you in the followin
 
 1. Go next tab:
 
-2. Go to User Role "MdsAccountAdmin_<your_geneva_logs_account>" -> "KeyVault Certs/Identities" and Click "View/Add"
+2. Go to User Role "<your_geneva_logs_account>_MaCommunication" -> "KeyVault Certs/Identities" and Click "View/Add"
 ![Geneva Logs Settings forUser Roles Access](images/geneva_logs_user_roles.png)
 
-3. Select "Managed Identities"
+1. Select "Managed Identities"
 
-4. Setup a new entry with your AKS Cluster Object ID, your Subscription's Tenant ID, leave Resource ID blank, and your cluster name for the description. It should look similar to this
+2. Setup a new entry with your AKS Cluster Object ID, your Subscription's Tenant ID, leave Resource ID blank, and your cluster name for the description. It should look similar to this
     ![New row item with an example of the Object ID, Tenant ID, empty Resource ID and cluster name](images/geneva_logs_managed_identity.png)
 
-4. Click save toward the bottom of the form.
+3. Click save toward the bottom of the form.
 <br>
 
 Now use the last tab to upload each XML file under `.\Docker-Provider\test\whl-scale-tests\geneva-config-files\`

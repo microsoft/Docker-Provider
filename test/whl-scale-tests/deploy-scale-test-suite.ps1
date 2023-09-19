@@ -9,7 +9,9 @@ param(
     [string] [Parameter(Mandatory = $true)] $TextLogConfigVersion
 )
 
-. $PSScriptRoot\common.ps1
+$orignalPath = Get-Location
+Set-Location -Path $PSScriptRoot
+. .\common.ps1
 
 $genevaEnvironment = "DiagnosticsProd"
 $resourceGroupName = [Environment]::UserName + "scaletest"
@@ -59,7 +61,7 @@ az aks get-credentials --resource-group $resourceGroupName --name $aksClusterNam
 
 # Wait for the Windows node to be available.
 Write-Host "Waiting on node to become avaliable..."
-kubectl get nodes -o wide
+kubectl wait node --all --for condition=Ready --timeout=900s
 
 $imageName = $acrUri + "/latestwhl:win-$(Get-Date -Format MMdd)"
 Write-Host "Using WHL Image: $imageName"
@@ -120,7 +122,7 @@ Write-Host "Creating namespace for Event Log scale component"
 #kubectl apply -f event-log-generation.yaml
 
 #Targeting WHL for Event Log Configuration
-Write-Host "Configuring WHL for Crash Dump Log Collection"
+Write-Host "Configuring WHL for Event Log Collection"
 $whlEventLogNamespace = "whl-evtlog"
 kubectl create namespace $whlEventLogNamespace
 
@@ -228,4 +230,5 @@ kubectl apply -f .\container-azm-ms-agentconfig.yaml
 Start-Sleep -Duration (New-TimeSpan -Seconds 180)
 kubectl get pods -n $whlTextLogNamespace
 
+Set-Location -Path $orignalPath.path
 Write-Host "Windows Host Log Scale Test is now Live"

@@ -5,7 +5,9 @@ param(
     [guid] [Parameter(Mandatory = $true)] $AKSClusterMSIObjectId
 )
 
-. $PSScriptRoot\common.ps1
+$orignalPath = Get-Location
+Set-Location -Path $PSScriptRoot
+. .\common.ps1
 
 $genevaXmlConfigurationHashTable = @{
     'GENEVA_ACCOUNT_NAME' = $GenevaAccountName;
@@ -40,3 +42,5 @@ Start-Process "https://portal.microsoftgeneva.com/account/logs/userRoles?endpoin
 
 #Opens a new tab your Geneva Account to upload the new configurations
 Start-Process "https://portal.microsoftgeneva.com/manage-logs-config?endpoint=Diagnostics%2520PROD&gwpAccount=$GenevaAccountName&gcsEnabled=true&gsmEnabled=true&hotpathAccount=$GenevaMetricAccountName"
+
+Set-Location -Path $orignalPath.path
