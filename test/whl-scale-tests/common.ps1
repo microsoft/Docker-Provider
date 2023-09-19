@@ -3,7 +3,7 @@ $ErrorActionPreference = 'Stop'
 function Get-RandomPassword {
     param (
         [Parameter(Mandatory)]
-        [ValidateRange(4,[int]::MaxValue)]
+        [ValidateRange(4,72)]
         [int] $length,
         [int] $upper = 1,
         [int] $lower = 1,
