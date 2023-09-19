@@ -129,10 +129,10 @@ func getDataTypeToStreamIdMapping(hasNamedPipe bool) (map[string]string, error) 
 	return datatypeOutputStreamMap, nil
 }
 
-func (e *Extension) IsContainerLogV2() bool {
+func (e *Extension) IsContainerLogV2(useFromCache bool) bool {
 	extensionconfiglock.Lock()
 	defer extensionconfiglock.Unlock()
-	if len(e.dataCollectionSettings) > 0 && e.dataCollectionSettings["enablecontainerlogv2"] != "" {
+	if useFromCache && len(e.dataCollectionSettings) > 0 && e.dataCollectionSettings["enablecontainerlogv2"] != "" {
 		return e.dataCollectionSettings["enablecontainerlogv2"] == "true"
 	}
 	var err error

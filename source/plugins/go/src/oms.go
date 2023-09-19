@@ -1174,7 +1174,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 					return output.FLB_RETRY
 				}
 			}
-			ContainerLogSchemaV2 = extension.GetInstance(FLBLogger, ContainerType).IsContainerLogV2()
+			useFromCache := checkIfUseFromCache(&MdsdContainerLogTagRefreshTracker)
+			ContainerLogSchemaV2 = extension.GetInstance(FLBLogger, ContainerType).IsContainerLogV2(useFromCache)
 		}
 
 		//ADX Schema & LAv2 schema are almost the same (except resourceId)
