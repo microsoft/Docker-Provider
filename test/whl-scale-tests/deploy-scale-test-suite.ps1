@@ -53,7 +53,7 @@ Write-Host "Improving compatibility with running build script locally"
 SubstituteNameValuePairs -InputFilePath $filePath -OutputFilePath $filePath -Substitutions $dockerCommandHashTable
 
 Write-Host "Creating latest WHL Container Image"
-Invoke-Expression -Command ".\build-and-publish-docker-image.ps1 -image $imageName -windowsBaseImageVersion `"ltsc2022`"" 
+Invoke-Expression -Command ".\build-and-publish-docker-image.ps1 -image $imageName" 
 
 # Get AKS credentials 
 Write-Host "Gathering AKS credentials"
@@ -61,7 +61,7 @@ az aks get-credentials --resource-group $resourceGroupName --name $aksClusterNam
 
 # Wait for the Windows node to be available.
 Write-Host "Waiting on node to become avaliable..."
-kubectl wait node --all --for condition=Ready --timeout=900s
+kubectl wait node --all --for condition=Ready --timeout=60s
 
 $imageName = $acrUri + "/latestwhl:win-$(Get-Date -Format MMdd)"
 Write-Host "Using WHL Image: $imageName"
@@ -70,11 +70,6 @@ Write-Host "Moving working directory to ..\..\..\kubernetes"
 Set-Location "..\..\..\kubernetes"
 $containerYAMLFilePath = ".\host-logs-geneva.yaml"
 $configmapFilePath = ".\container-azm-ms-agentconfig.yaml"
-
-#Setup Crash Dump Generation Container
-Write-Host "Creating namespace for Crash Dump scale component"
-#kubectl create namespace crashd-test
-#kubectl apply -f crash-dump-generation.yaml
 
 #Targeting WHL for Crash Dump Configuration
 Write-Host "Configuring WHL for Crash Dump Log Collection"
@@ -107,7 +102,7 @@ SubstituteNameValuePairs -InputFilePath $configmapFilePath -OutputFilePath $conf
 Write-Host "Deploying WHL to the crashd node pool"
 kubectl apply -f .\host-logs-geneva.yaml
 
-Write-Host "Waiting..."
+Write-Host "Waiting for pod to be ready..."
 
 Start-Sleep -Duration (New-TimeSpan -Seconds 180)
 kubectl get pods -n $whlCrashDumpNamespace
@@ -115,11 +110,6 @@ kubectl get pods -n $whlCrashDumpNamespace
 kubectl apply -f .\container-azm-ms-agentconfig.yaml
 Start-Sleep -Duration (New-TimeSpan -Seconds 180)
 kubectl get pods -n $whlCrashDumpNamespace
-
-#Setup Event Log Environment Generation Container
-Write-Host "Creating namespace for Event Log scale component"
-#kubectl create namespace evtlog-test
-#kubectl apply -f event-log-generation.yaml
 
 #Targeting WHL for Event Log Configuration
 Write-Host "Configuring WHL for Event Log Collection"
@@ -154,11 +144,6 @@ kubectl apply -f .\container-azm-ms-agentconfig.yaml
 Start-Sleep -Duration (New-TimeSpan -Seconds 180)
 kubectl get pods -n $whlEventLogNamespace
 
-#Setup ETW Log Environment Generation Container
-Write-Host "Creating namespace for ETW Log scale component"
-#kubectl create namespace ewtlog-test
-#kubectl apply -f ewt-log-generation.yaml
-
 #Targeting WHL for ETW Log Configuration
 Write-Host "Configuring WHL for ETW Log Collection"
 $whlETWLogNamespace = "whl-etwlog"
@@ -191,11 +176,6 @@ kubectl get pods -n $whlETWLogNamespace
 kubectl apply -f .\container-azm-ms-agentconfig.yaml
 Start-Sleep -Duration (New-TimeSpan -Seconds 180)
 kubectl get pods -n $whlETWLogNamespace
-
-#Setup Text Log Environment Generation Container
-#Write-Host "Creating namespace for Text Log scale component"
-#kubectl create namespace txtlog-test
-#kubectl apply -f txt-log-generation.yaml
 
 #Targeting WHL for Text Log Configuration
 Write-Host "Configuring WHL for Text Log Collection"
