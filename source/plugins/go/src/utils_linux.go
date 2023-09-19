@@ -3,6 +3,7 @@
 package main
 
 import "net"
+import "time"
 
 func CreateWindowsNamedPipeClient(namedPipe string, namedPipeConnection *net.Conn) {
 	//function unimplemented
