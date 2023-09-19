@@ -96,6 +96,6 @@ if($EventLogs -or $all){
 
 if($TextLogs -or $all){
   Write-Host "START:Deploying Text Log Generator"
-  # TODO: Deploy text log generator here
+  buildAndDeploy "$acrUri/generatetextlogs:latest" "whl-text-log-generator" "whl-txtlog" "txtlog" "$PSScriptRoot\text-logs"
   Write-Host "END:Deploying Text Log Generator"
 }
