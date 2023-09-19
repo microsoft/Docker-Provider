@@ -1,8 +1,8 @@
 param(
-    [guid] [Parameter(Mandatory = $true)] $SubscriptionId,
-    [string] [Parameter(Mandatory = $false)] $ResourceGroupName = [Environment]::UserName + "scaletest"
+    [guid] [Parameter(Mandatory = $true)] $SubscriptionId
 )
 
+$resourceGroupName = [Environment]::UserName + "scaletest"
 # Login using your microsoft accout
 Write-Host "Login with your Microsoft account"
 az login
@@ -13,4 +13,4 @@ az account set --subscription $SubscriptionId
 
 # Delete Resource Group
 Write-Host "Deleting resource group and all resources within it"
-az group delete --name $ResourceGroupName
+az group delete --name $resourceGroupName
