@@ -48,27 +48,40 @@ Name to give the DaemonSet
 Kubernetes namespace where the DaemonSet should be deployed
 .PARAMETER nodeSelector
 String to match for selecting nodes where the DaemonSet should be deployed
+.PARAMETER preBuild
+Setup script block to run before building docker image
+.PARAMETER preBuild
+Cleanup script block to run after building docker image
 .EXAMPLE
 Deploy-LogGenerator exampleacr.azurecr.io/generatelogs:latest LogGenerator log-generation whl-logs
 #>
 function buildAndDeploy {
   param(
-  [Parameter(Mandatory = $true)][string] $ImageTag,
-  [Parameter(Mandatory = $true)][string] $name,
-  [Parameter(Mandatory = $true)][string] $namespace,
-  [Parameter(Mandatory = $true)][string] $nodeSelector,
-  [Parameter(Mandatory = $true)][string] $BuildPath
-)
+    [Parameter(Mandatory = $true)]  [string]      $ImageTag,
+    [Parameter(Mandatory = $true)]  [string]      $name,
+    [Parameter(Mandatory = $true)]  [string]      $namespace,
+    [Parameter(Mandatory = $true)]  [string]      $nodeSelector,
+    [Parameter(Mandatory = $true)]  [string]      $BuildPath,
+    [Parameter(Mandatory = $false)] [ScriptBlock] $PreBuild,
+    [Parameter(Mandatory = $false)] [ScriptBlock] $PostBuild
+  )
   Write-Host "Applying settings config map to $namespace"
   kubectl apply -f "$PSScriptRoot\log-generation-config.yaml" -n $namespace
 
-  if(![string]::IsNullOrWhiteSpace((kubectl get ds -n $namespace $name -o name --ignore-not-found))){
+  if (![string]::IsNullOrWhiteSpace((kubectl get ds -n $namespace $name -o name --ignore-not-found))) {
     Write-Host "Daemonset $name already exists. Restarting with new configuration."
     kubectl rollout restart daemonset/$name -n $namespace
-  } else {
+  }
+  else {
+    if ($null -ne $PreBuild) {
+      $PreBuild.Invoke()
+    }
     Build-DockerImage $ImageTag $WindowsVersion $BuildPath
     Push-DockerImage $ImageTag
     Deploy-LogGenerator $ImageTag $name $namespace $nodeSelector
+    if ($null -ne $PostBuild) {
+      $PostBuild.Invoke()
+    }
   }
   
 }
@@ -76,25 +89,35 @@ function buildAndDeploy {
 az login
 az acr login -n $acrName
 
-if($CrashDumps -or $all){
+if ($CrashDumps -or $all) {
+  
   Write-Host "START:Deploying Crash Dump Generator"
-  & "$PSScriptRoot\crash-dumps\deploy.ps1" "$ACR/generatecrashdumps:latest" ltsc2022 whl-crashd crashd
+  $PreBuild = {
+    . "$PSScriptRoot\crash-dumps\setup.ps1"
+    DownloadCrashDumpsPackage
+  }
+  $PostBuild = {
+    . "$PSScriptRoot\crash-dumps\setup.ps1"
+    CleanupCrashDumps
+  }
+  
+  buildAndDeploy "$acrUri/generatecrashdumps:latest" "whl-crash-dump-generator" "whl-crashd" "crashd" "$PSScriptRoot\crash-dumps" $PreBuild $PostBuild
   Write-Host "END:Deploying Crash Dump Generator"
 }
 
-if($ETW -or $all){
+if ($ETW -or $all) {
   Write-Host "START:Deploying ETW Generator"
   # TODO: Deploy ETW generator here
   Write-Host "END:Deploying ETW Generator"
 }
 
-if($EventLogs -or $all){
+if ($EventLogs -or $all) {
   Write-Host "START:Deploying Event Log Generator"
   # TODO: Deploy event log generator here
   Write-Host "END:Deploying Event Log Generator"
 }
 
-if($TextLogs -or $all){
+if ($TextLogs -or $all) {
   Write-Host "START:Deploying Text Log Generator"
   # TODO: Deploy text log generator here
   Write-Host "END:Deploying Text Log Generator"
