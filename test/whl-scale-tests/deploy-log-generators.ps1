@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-Deploylog generators
+Deploy log generators
 .DESCRIPTION
 Deploys one or more log generators for scale testing. Can specify CrashDumps, ETW, EventLogs, and/or TextLogs. If none specified all will be deployed
 .PARAMETER CrashDumps
@@ -86,10 +86,11 @@ function buildAndDeploy {
 }
 
 az login
+Start-Docker
 az acr login -n $acrName
 
-if ($CrashDumps -or $all) {
-  
+
+if($CrashDumps -or $all){
   Write-Host "START:Deploying Crash Dump Generator"
   $PreBuild = {
     . "$PSScriptRoot\crash-dumps\setup.ps1"
