@@ -14,10 +14,6 @@ Set-Location -Path $PSScriptRoot
 . .\common.ps1
 
 $genevaEnvironment = "DiagnosticsProd"
-$resourceGroupName = [Environment]::UserName + "scaletest"
-$aksClusterName = $resourceGroupName + "aks"
-$acrName = $resourceGroupName + "acr"
-$acrUri = $acrName + ".azurecr.io"
 
 # Login using your microsoft accout
 Write-Host "Login with your Microsoft account"

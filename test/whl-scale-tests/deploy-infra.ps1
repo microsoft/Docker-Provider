@@ -12,11 +12,6 @@ param(
 
 . $PSScriptRoot\common.ps1
 
-$resourceGroupName = [Environment]::UserName + "scaletest"
-$acrName = $resourceGroupName + "acr"
-$aksClusterName = $resourceGroupName + "aks"
-$keyVaultName = $resourceGroupName + "kv"
-
 # Login using your microsoft accout
 Write-Host "Login with your Microsoft account"
 az login
