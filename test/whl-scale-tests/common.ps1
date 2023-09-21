@@ -81,8 +81,27 @@ function SubstituteNameValuePairs {
 
 <#
 .SYNOPSIS
-Build docker image
-.DESCRIPTION
+Start docker engine 
+#>
+function Start-Docker{
+    $dockerServer = ((docker version -f json) | ConvertFrom-Json).server 2> $null
+
+    #Use Windows Engine on Docker
+    if($null -eq $dockerServer){
+        Write-Host "Setting Docker to utilize Windows Engine"
+        Start-Process -filePath "Docker Desktop.exe" -WorkingDirectory "C:\Program Files\Docker\Docker"
+        Start-Sleep -Seconds 60
+    }
+    
+    $dockerOs = ((docker version -f json) | ConvertFrom-Json).server.os 2> $null
+    if($dockerOs -ne "windows"){
+        Start-Process -filePath "DockerCli.exe" -WorkingDirectory "C:\Program Files\Docker\Docker" -ArgumentList "-SwitchWindowsEngine"
+        Start-Sleep -Seconds 60
+    }
+}
+
+<#
+.SYNOPSIS
 Builds the docker image for a log generator
 .PARAMETER image
 Full tag to use for the image in the format <uri>/<tag>:<version>
@@ -114,8 +133,6 @@ function Build-DockerImage {
 
 <#
 .SYNOPSIS
-Push docker image
-.DESCRIPTION
 Pushes a docker images to a container registry
 .PARAMETER imageTag
 Full tag of the image to push in the format <uri>/<tag>:<version>
