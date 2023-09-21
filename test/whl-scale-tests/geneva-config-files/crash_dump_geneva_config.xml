@@ -8,7 +8,7 @@
   <Accounts>
     <Account moniker="GENEVA_STORAGE_DIAG" isDefault="true" />
     <Account moniker="GENEVA_STORAGE_SECURITY" alias="AzSecurityStore" />
-    <Account moniker="GENEVA_STORAGE_LOGSAUDIT" salias="AuditStore" />
+    <Account moniker="GENEVA_STORAGE_LOGSAUDIT" alias="AuditStore" />
   </Accounts>
   <!-- Management documentation: https://jarvis.dc.ad.msft.net/?page=documents&section=9c95f4eb-8689-4c9f-81bf-82d688e860fd&id=8794f47e-d1b2-4538-8f31-839c41c1710a  -->
   <Management onDemandRequestFlags="tablesearch,process,etw" defaultRetentionInDays="29">
