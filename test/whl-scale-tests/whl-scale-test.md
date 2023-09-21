@@ -175,11 +175,55 @@ Example:
 5. Now go to metrics section -> naviagte to a Agent QoS and verify that data is working as expected
 
 
-## 4. Taking Measurements of each component
+## 5. Generating logs for testing
+Log generators can be deployed to create large amounts of logs for scale testing. Log generators will be deployed in separate daemonsets for Text Logs, ETWs, Event Logs and Crash Dumps
+### Configure Log Generators
+Log generators can be configured by editing the values in `log-generation-config.yaml`. Each generator has different configuration options.
+#### Text Logs
+
+`TODO: Fill out text log generator configuration`
+| Option | Description |
+| ------ | ----------- |
+| | |
+
+#### ETW
+`TODO: Fill out ETW generator configuration`
+| Option | Description |
+| ------ | ----------- |
+| | |
+
+#### Event Logs
+`TODO: Fill out Event Log generator configuration`
+| Option | Description |
+| ------ | ----------- |
+| | |
+
+#### Crash Dumps
+`TODO: Fill out Crash Dumps generator configuration`
+| Option | Description |
+| ------ | ----------- |
+| | |
+
+### Deploy Log generators
+```powershell
+./deploy-log-generators.ps1
+```
+By default this will deploy all of the available log generators. If you only need to deploy a specific generator, use the flags -TextLogs, -ETW, -EventLogs or -CrashDumps to specify which generator to deploy.
+
+### Optional - Redeploy log generators
+It is possible to redeploy the log generators by re-running `./deploy-log-generators.ps1`. 
+This will also apply any configuration changes made in `log-generation-config.yaml`
+
+Example: <br/>
+Redeploy the Text Logs and Crash Dumps generators
+```powershell
+./deploy-log-generators.ps1 -TextLogs -CrashDumps
+```
+## 6. Taking Measurements of each component
 Need to actually deploy a test component something to get this filled out
 <br>
 
-## 5. How to clean up scale test infra
+## 7. How to clean up scale test infra
 To clean up all the resources you deployed we are going to use `.\Docker-Provider\test\whl-scale-tests\clean-infra.ps1`
 
 ### Using clean-infra.ps1
