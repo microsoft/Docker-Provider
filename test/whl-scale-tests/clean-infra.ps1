@@ -1,6 +1,5 @@
 param(
-    [guid] [Parameter(Mandatory = $true)] $SubscriptionId,
-    [string] [Parameter(Mandatory = $false)] $ResourceGroupName = [Environment]::UserName + "scaletest"
+    [guid] [Parameter(Mandatory = $true)] $SubscriptionId
 )
 
 . "$PSScriptRoot\common.ps1"
@@ -15,7 +14,7 @@ az account set --subscription $SubscriptionId
 
 # Delete Resource Group
 Write-Host "Deleting resource group and all resources within it"
-az group delete --name $ResourceGroupName
+az group delete --name $resourceGroupName
 
 #Remove Temporary Files
 Remove-Item $TempDir -R -Force

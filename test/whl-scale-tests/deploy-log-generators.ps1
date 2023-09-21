@@ -40,7 +40,7 @@ $all = !$CrashDumps -and !$ETW -and !$EventLogs -and !$TextLogs
 Deploy a log generation DaemonSet
 .DESCRIPTION
 Build and deploy a DaemonSet to generate logs
-.PARAMETER ImageTag
+.PARAMETER imageTag
 Full tag to use for the container image in the format <uri>/<tag>:<version>
 .PARAMETER name
 Name to give the DaemonSet
@@ -48,22 +48,24 @@ Name to give the DaemonSet
 Kubernetes namespace where the DaemonSet should be deployed
 .PARAMETER nodeSelector
 String to match for selecting nodes where the DaemonSet should be deployed
+.PARAMETER buildPath
+Docker Context to use for build
+.PARAMETER dockerfilePath
+Path to dockerfile. Default is $buildPath/Dockerfile
 .PARAMETER preBuild
 Setup script block to run before building docker image
-.PARAMETER preBuild
-Cleanup script block to run after building docker image
 .EXAMPLE
 Deploy-LogGenerator exampleacr.azurecr.io/generatelogs:latest LogGenerator log-generation whl-logs
 #>
 function buildAndDeploy {
   param(
-    [Parameter(Mandatory = $true)]  [string]      $ImageTag,
+    [Parameter(Mandatory = $true)]  [string]      $imageTag,
     [Parameter(Mandatory = $true)]  [string]      $name,
     [Parameter(Mandatory = $true)]  [string]      $namespace,
     [Parameter(Mandatory = $true)]  [string]      $nodeSelector,
-    [Parameter(Mandatory = $true)]  [string]      $BuildPath,
-    [Parameter(Mandatory = $false)] [ScriptBlock] $PreBuild,
-    [Parameter(Mandatory = $false)] [ScriptBlock] $PostBuild
+    [Parameter(Mandatory = $true)]  [string]      $buildPath,
+    [Parameter(Mandatory = $false)] [string]      $dockerfilePath,
+    [Parameter(Mandatory = $false)] [ScriptBlock] $preBuild
   )
   Write-Host "Applying settings config map to $namespace"
   kubectl apply -f "$PSScriptRoot\log-generation-config.yaml" -n $namespace
@@ -73,15 +75,12 @@ function buildAndDeploy {
     kubectl rollout restart daemonset/$name -n $namespace
   }
   else {
-    if ($null -ne $PreBuild) {
-      $PreBuild.Invoke()
+    if ($null -ne $preBuild) {
+      $preBuild.Invoke()
     }
-    Build-DockerImage $ImageTag $WindowsVersion $BuildPath
-    Push-DockerImage $ImageTag
-    Deploy-LogGenerator $ImageTag $name $namespace $nodeSelector
-    if ($null -ne $PostBuild) {
-      $PostBuild.Invoke()
-    }
+    Build-DockerImage $imageTag $windowsVersion $buildPath $dockerfilePath
+    Push-DockerImage $imageTag
+    Deploy-LogGenerator $imageTag $name $namespace $nodeSelector
   }
   
 }

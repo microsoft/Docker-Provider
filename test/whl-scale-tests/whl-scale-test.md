@@ -8,7 +8,7 @@
 <br>
 
 ## 1. Deploy Scale Test Infrastructure 
-The first thing we need to do is setup the infrastructure for our scale test. We will do this with `.\Docker-Provider\test\whl-scale-tests\deploy-infra.ps1`. This script will create a new resource group (Ex. [alias]scaletest). Within that resource group you will find an AKS Cluster, an Azure Contianer Registry and a Key Vault. Your cluster will have four nodepool one for each scale component (Crash Dumps, Text Logs, ETW, Event Logs), by default, configured with the most recent stable kuberenetes version and each nodepool having one node each. 
+The first thing we need to do is setup the infrastructure for our scale test. We will do this with `.\Docker-Provider\test\whl-scale-tests\deploy-infra.ps1`. This script will create a new resource group (Ex. [alias]scaletest). Within that resource group you will find an AKS Cluster, an Azure Container Registry and a Key Vault. Your cluster will have four nodepool one for each scale component (Crash Dumps, Text Logs, ETW, Event Logs), by default, configured with the most recent stable kubernetes version and each nodepool having one node each. 
 
 ### Using deploy-infra.ps1
 ```powershell
@@ -104,15 +104,15 @@ Once you are done with the script it will open three tab for you in the followin
 
 1. Go next tab:
 
-2. Go to User Role "MdsAccountAdmin_<your_geneva_logs_account>" -> "KeyVault Certs/Identities" and Click "View/Add"
+2. Go to User Role "<your_geneva_logs_account>_MaCommunication" -> "KeyVault Certs/Identities" and Click "View/Add"
 ![Geneva Logs Settings forUser Roles Access](images/geneva_logs_user_roles.png)
 
-3. Select "Managed Identities"
+1. Select "Managed Identities"
 
-4. Setup a new entry with your AKS Cluster Object ID, your Subscription's Tenant ID, leave Resource ID blank, and your cluster name for the description. It should look similar to this
+2. Setup a new entry with your AKS Cluster Object ID, your Subscription's Tenant ID, leave Resource ID blank, and your cluster name for the description. It should look similar to this
     ![New row item with an example of the Object ID, Tenant ID, empty Resource ID and cluster name](images/geneva_logs_managed_identity.png)
 
-4. Click save toward the bottom of the form.
+3. Click save toward the bottom of the form.
 <br>
 
 Now use the last tab to upload each XML file under `.\Docker-Provider\test\whl-scale-tests\geneva-config-files\`
@@ -175,14 +175,58 @@ Example:
 5. Now go to metrics section -> naviagte to a Agent QoS and verify that data is working as expected
 
 
-## 4. Taking Measurements of each component
+## 5. Generating logs for testing
+Log generators can be deployed to create large amounts of logs for scale testing. Log generators will be deployed in separate daemonsets for Text Logs, ETWs, Event Logs and Crash Dumps
+### Configure Log Generators
+Log generators can be configured by editing the values in `log-generation-config.yaml`. Each generator has different configuration options.
+#### Text Logs
+
+`TODO: Fill out text log generator configuration`
+| Option | Description |
+| ------ | ----------- |
+| | |
+
+#### ETW
+`TODO: Fill out ETW generator configuration`
+| Option | Description |
+| ------ | ----------- |
+| | |
+
+#### Event Logs
+`TODO: Fill out Event Log generator configuration`
+| Option | Description |
+| ------ | ----------- |
+| | |
+
+#### Crash Dumps
+`TODO: Fill out Crash Dumps generator configuration`
+| Option | Description |
+| ------ | ----------- |
+| | |
+
+### Deploy Log generators
+```powershell
+./deploy-log-generators.ps1
+```
+By default this will deploy all of the available log generators. If you only need to deploy a specific generator, use the flags -TextLogs, -ETW, -EventLogs or -CrashDumps to specify which generator to deploy.
+
+### Optional - Redeploy log generators
+It is possible to redeploy the log generators by re-running `./deploy-log-generators.ps1`. 
+This will also apply any configuration changes made in `log-generation-config.yaml`
+
+Example: <br/>
+Redeploy the Text Logs and Crash Dumps generators
+```powershell
+./deploy-log-generators.ps1 -TextLogs -CrashDumps
+```
+## 6. Taking Measurements of each component
 Need to actually deploy a test component something to get this filled out
 <br>
 
-## 5. How to clean up scale test infra
+## 7. How to clean up scale test infra
 To clean up all the resources you deployed we are going to use `.\Docker-Provider\test\whl-scale-tests\clean-infra.ps1`
 
-### Using clearn-infra.ps1
+### Using clean-infra.ps1
 ```powershell
 .\clean-infra.ps1 `
     -SubscriptionId "<your-azure-subscription>" `
