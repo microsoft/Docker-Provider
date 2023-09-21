@@ -95,12 +95,8 @@ if ($CrashDumps -or $all) {
     . "$PSScriptRoot\crash-dumps\setup.ps1"
     DownloadCrashDumpsPackage
   }
-  $PostBuild = {
-    . "$PSScriptRoot\crash-dumps\setup.ps1"
-    CleanupCrashDumps
-  }
   
-  buildAndDeploy "$acrUri/generatecrashdumps:latest" "whl-crash-dump-generator" "whl-crashd" "crashd" "$PSScriptRoot\crash-dumps" $PreBuild $PostBuild
+  buildAndDeploy "$acrUri/generatecrashdumps:latest" "whl-crash-dump-generator" "whl-crashd" "crashd" $PSScriptRoot "$PSScriptRoot/crash-dumps/Dockerfile" $PreBuild
   Write-Host "END:Deploying Crash Dump Generator"
 }
 

@@ -199,10 +199,13 @@ Log generators can be configured by editing the values in `log-generation-config
 | | |
 
 #### Crash Dumps
-`TODO: Fill out Crash Dumps generator configuration`
+
 | Option | Description |
 | ------ | ----------- |
-| | |
+| CRASHD_NUM_CRASHES | Number of crash dumps to generate |
+| CRASHD_ALLOC_STRATEGY | Strategy to use for memory allocation. Options are: <ul> <li> va : allocate using VirtualAlloc </li><li> ha : allocate using HeapAlloc </li><li> sa : allocate on threads' stacks </li><ul> |
+| CRASHD_ALLOC_TOTAL_SIZE | Total number of GB to allocate before crashing |
+| CRASHD_ALLOC_PORTION_SIZE | Allocation portion size in KB |
 
 ### Deploy Log generators
 ```powershell
