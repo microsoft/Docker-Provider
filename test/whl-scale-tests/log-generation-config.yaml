@@ -3,6 +3,7 @@ apiVersion: v1
 metadata:
   name: whl-scale-test-settings 
 data:
+  # Text Logs
   TXTLOGS_LOG_DIRECTORY: "C:/host-logs/test/textlogs"
   TXTLOGS_FILE_NAME_PREFIX: "generated-text-logs-"
   TXTLOGS_FILE_COUNT: "5"

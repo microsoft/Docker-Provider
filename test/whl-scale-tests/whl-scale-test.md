@@ -181,10 +181,16 @@ Log generators can be deployed to create large amounts of logs for scale testing
 Log generators can be configured by editing the values in `log-generation-config.yaml`. Each generator has different configuration options.
 #### Text Logs
 
-`TODO: Fill out text log generator configuration`
 | Option | Description |
 | ------ | ----------- |
-| | |
+| TXTLOGS_LOG_DIRECTORY | File path where logs should be stored
+| TXTLOGS_FILE_NAME_PREFIX | Prefix for new log files
+| TXTLOGS_FILE_COUNT | Number of distinct files to generate in parallel
+| TXTLOGS_LINE_COUNT | Number of lines to write per file before rotation
+| TXTLOGS_ROTATION_COUNT | Number of times to rotate each file
+| TXTLOGS_ROTATION_STRATEGY | What strategy to use for file rotation. Options: <ul><li>RenameReplace - Rename original file and recreate file with the original name</li><li>NewFile - Create a new file with a different name</li><li>Overwrite - Overwrite the original file. Note this option is likely to result in lost log lines</li></ul>
+
+By default, text logs are collected using the Text Log Subscription feature of AMA. It is possible to instead use Managed Fluent by updating the text logs geneva configuration in Jarvis. To switch to managed fluent, uncomment the `<ManagedFluent>` tag and comment out the `<TextLogSubscriptions>` tag.
 
 #### ETW
 `TODO: Fill out ETW generator configuration`

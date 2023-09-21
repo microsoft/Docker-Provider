@@ -74,6 +74,13 @@
         </Schema>
       </Subscription>
     </TextLogSubscriptions>
+    <!--
+    <ManagedFluent>
+      <TailPlugin fileMatch="C:/host-logs/test/textlogs/generated-text-logs-*">
+        <Event eventName="ScaleTestTextLogs"/>
+      </TailPlugin>
+    </ManagedFluent>
+    -->
     <Extensions>
       <Extension extensionName="MetricsExtension">
         <CommandLine><![CDATA[MetricsExtension.Native.exe -ConfigOverrides {\"imdsInfo\":[{\"account\":\"GENEVA_ACCOUNT_NAME\",\"objectId\":\"CLUSTER_MANAGED_IDENTITY_OBJECT_ID\"}]}]]></CommandLine>      </Extension>
