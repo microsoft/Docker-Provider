@@ -9,13 +9,11 @@ param(
     [string] [Parameter(Mandatory = $true)] $TextLogConfigVersion
 )
 
-. $PSScriptRoot\common.ps1
+$orignalPath = Get-Location
+Set-Location -Path $PSScriptRoot
+. .\common.ps1
 
 $genevaEnvironment = "DiagnosticsProd"
-$resourceGroupName = [Environment]::UserName + "scaletest"
-$aksClusterName = $resourceGroupName + "aks"
-$acrName = $resourceGroupName + "acr"
-$acrUri = $acrName + ".azurecr.io"
 
 # Login using your microsoft accout
 Write-Host "Login with your Microsoft account"
@@ -25,11 +23,7 @@ az login
 Write-Host "Setting az account to given Subscription"
 az account set --subscription $SubscriptionId
 
-#Use Windows Engine on Docker
-Write-Host "Setting Docker to utilize Windows Engine"
-Start-Process -filePath "Docker Desktop.exe" -WorkingDirectory "C:\Program Files\Docker\Docker"
-Start-Sleep -Duration (New-TimeSpan -Seconds 60)
-Start-Process -filePath "DockerCli.exe" -WorkingDirectory "C:\Program Files\Docker\Docker" -ArgumentList "-SwitchWindowsEngine"
+Start-Docker
 
 #Login into ACR
 Write-Host "Logining into ACR"
@@ -51,7 +45,7 @@ Write-Host "Improving compatibility with running build script locally"
 SubstituteNameValuePairs -InputFilePath $filePath -OutputFilePath $filePath -Substitutions $dockerCommandHashTable
 
 Write-Host "Creating latest WHL Container Image"
-Invoke-Expression -Command ".\build-and-publish-docker-image.ps1 -image $imageName -windowsBaseImageVersion `"$WindowsVersion`"" 
+Invoke-Expression -Command ".\build-and-publish-docker-image.ps1 -image $imageName" 
 
 # Get AKS credentials 
 Write-Host "Gathering AKS credentials"
@@ -59,7 +53,7 @@ az aks get-credentials --resource-group $resourceGroupName --name $aksClusterNam
 
 # Wait for the Windows node to be available.
 Write-Host "Waiting on node to become avaliable..."
-kubectl get nodes -o wide
+kubectl wait node --all --for condition=Ready --timeout=60s
 
 $imageName = $acrUri + "/latestwhl:win-$(Get-Date -Format MMdd)"
 Write-Host "Using WHL Image: $imageName"
@@ -68,11 +62,6 @@ Write-Host "Moving working directory to ..\..\..\kubernetes"
 Set-Location "..\..\..\kubernetes"
 $containerYAMLFilePath = ".\host-logs-geneva.yaml"
 $configmapFilePath = ".\container-azm-ms-agentconfig.yaml"
-
-#Setup Crash Dump Generation Container
-Write-Host "Creating namespace for Crash Dump scale component"
-#kubectl create namespace crashd-test
-#kubectl apply -f crash-dump-generation.yaml
 
 #Targeting WHL for Crash Dump Configuration
 Write-Host "Configuring WHL for Crash Dump Log Collection"
@@ -105,7 +94,7 @@ SubstituteNameValuePairs -InputFilePath $configmapFilePath -OutputFilePath $conf
 Write-Host "Deploying WHL to the crashd node pool"
 kubectl apply -f .\host-logs-geneva.yaml
 
-Write-Host "Waiting..."
+Write-Host "Waiting for pod to be ready..."
 
 Start-Sleep -Duration (New-TimeSpan -Seconds 180)
 kubectl get pods -n $whlCrashDumpNamespace
@@ -114,13 +103,8 @@ kubectl apply -f .\container-azm-ms-agentconfig.yaml
 Start-Sleep -Duration (New-TimeSpan -Seconds 180)
 kubectl get pods -n $whlCrashDumpNamespace
 
-#Setup Event Log Environment Generation Container
-Write-Host "Creating namespace for Event Log scale component"
-#kubectl create namespace evtlog-test
-#kubectl apply -f event-log-generation.yaml
-
 #Targeting WHL for Event Log Configuration
-Write-Host "Configuring WHL for Crash Dump Log Collection"
+Write-Host "Configuring WHL for Event Log Collection"
 $whlEventLogNamespace = "whl-evtlog"
 kubectl create namespace $whlEventLogNamespace
 
@@ -151,11 +135,6 @@ kubectl get pods -n $whlEventLogNamespace
 kubectl apply -f .\container-azm-ms-agentconfig.yaml
 Start-Sleep -Duration (New-TimeSpan -Seconds 180)
 kubectl get pods -n $whlEventLogNamespace
-
-#Setup ETW Log Environment Generation Container
-Write-Host "Creating namespace for ETW Log scale component"
-#kubectl create namespace ewtlog-test
-#kubectl apply -f ewt-log-generation.yaml
 
 #Targeting WHL for ETW Log Configuration
 Write-Host "Configuring WHL for ETW Log Collection"
@@ -190,11 +169,6 @@ kubectl apply -f .\container-azm-ms-agentconfig.yaml
 Start-Sleep -Duration (New-TimeSpan -Seconds 180)
 kubectl get pods -n $whlETWLogNamespace
 
-#Setup Text Log Environment Generation Container
-#Write-Host "Creating namespace for Text Log scale component"
-#kubectl create namespace txtlog-test
-#kubectl apply -f txt-log-generation.yaml
-
 #Targeting WHL for Text Log Configuration
 Write-Host "Configuring WHL for Text Log Collection"
 $whlTextLogNamespace = "whl-txtlog"
@@ -228,4 +202,5 @@ kubectl apply -f .\container-azm-ms-agentconfig.yaml
 Start-Sleep -Duration (New-TimeSpan -Seconds 180)
 kubectl get pods -n $whlTextLogNamespace
 
+Set-Location -Path $orignalPath.path
 Write-Host "Windows Host Log Scale Test is now Live"

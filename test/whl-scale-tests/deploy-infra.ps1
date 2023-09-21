@@ -1,7 +1,7 @@
 param(
     [guid] [Parameter(Mandatory = $true)] $SubscriptionId,
     [string] [Parameter(Mandatory = $true)] $Location,
-    #[securestring] [Parameter(Mandatory = $true)] $WindowsAdminPassword,
+    [string] [Parameter(Mandatory = $false)] $WindowsOSVersion = "Windows2022",
     [string] [Parameter(Mandatory = $false)] $WindowsVMSize = "Standard_D2s_v3",
     [string] [Parameter(Mandatory = $false)]
              [ValidateSet("node-image", "none", "patch", "rapid", "stable")] $AKSAutoUpgradeChannel = "none",
@@ -11,11 +11,6 @@ param(
 )
 
 . $PSScriptRoot\common.ps1
-
-$resourceGroupName = [Environment]::UserName + "scaletest"
-$acrName = $resourceGroupName + "acr"
-$aksClusterName = $resourceGroupName + "aks"
-$keyVaultName = $resourceGroupName + "kv"
 
 # Login using your microsoft accout
 Write-Host "Login with your Microsoft account"
@@ -62,7 +57,7 @@ az aks nodepool add `
     --resource-group $resourceGroupName `
     --cluster-name $aksClusterName `
     --os-type Windows `
-    --os-sku Windows2022 `
+    --os-sku $WindowsOSVersion `
     --name  txtlog `
     --node-vm-size $WindowsVMSize `
     --node-count $AKSWindowsNodeCount
@@ -73,7 +68,7 @@ az aks nodepool add `
     --resource-group $resourceGroupName `
     --cluster-name $aksClusterName `
     --os-type Windows `
-    --os-sku Windows2022 `
+    --os-sku $WindowsOSVersion `
     --name  etwlog `
     --node-vm-size $WindowsVMSize `
     --node-count $AKSWindowsNodeCount
@@ -84,7 +79,7 @@ az aks nodepool add `
     --resource-group $resourceGroupName `
     --cluster-name $aksClusterName `
     --os-type Windows `
-    --os-sku Windows2022 `
+    --os-sku $WindowsOSVersion `
     --name  evtlog `
     --node-vm-size $WindowsVMSize `
     --node-count $AKSWindowsNodeCount
@@ -95,7 +90,7 @@ az aks nodepool add `
     --resource-group $resourceGroupName `
     --cluster-name $aksClusterName `
     --os-type Windows `
-    --os-sku Windows2022 `
+    --os-sku $WindowsOSVersion `
     --name  crashd `
     --node-vm-size $WindowsVMSize `
     --node-count $AKSWindowsNodeCount

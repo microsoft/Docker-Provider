@@ -3,7 +3,6 @@ $TempDir = "$PSScriptRoot\Temp"
 
 $WindowsVersion = "ltsc2022"
 $resourceGroupName = [Environment]::UserName + "scaletest"
-$acrName = $resourceGroupName + "acr"
 $aksClusterName = $resourceGroupName + "aks"
 $keyVaultName = $resourceGroupName + "kv"
 $genevaEnvironment = "DiagnosticsProd"
@@ -17,7 +16,7 @@ if(!(Test-Path $TempDir)){
 function Get-RandomPassword {
     param (
         [Parameter(Mandatory)]
-        [ValidateRange(4,[int]::MaxValue)]
+        [ValidateRange(4,72)]
         [int] $length,
         [int] $upper = 1,
         [int] $lower = 1,
@@ -82,33 +81,58 @@ function SubstituteNameValuePairs {
 
 <#
 .SYNOPSIS
-Build docker image
-.DESCRIPTION
+Start docker engine 
+#>
+function Start-Docker{
+    $dockerServer = ((docker version -f json) | ConvertFrom-Json).server 2> $null
+
+    #Use Windows Engine on Docker
+    if($null -eq $dockerServer){
+        Write-Host "Setting Docker to utilize Windows Engine"
+        Start-Process -filePath "Docker Desktop.exe" -WorkingDirectory "C:\Program Files\Docker\Docker"
+        Start-Sleep -Seconds 60
+    }
+    
+    $dockerOs = ((docker version -f json) | ConvertFrom-Json).server.os 2> $null
+    if($dockerOs -ne "windows"){
+        Start-Process -filePath "DockerCli.exe" -WorkingDirectory "C:\Program Files\Docker\Docker" -ArgumentList "-SwitchWindowsEngine"
+        Start-Sleep -Seconds 60
+    }
+}
+
+<#
+.SYNOPSIS
 Builds the docker image for a log generator
 .PARAMETER image
 Full tag to use for the image in the format <uri>/<tag>:<version>
 .PARAMETER windowsVersion
-windows server core image version to use
+Windows server core image version to use
 .PARAMETER buildDirectory
-Root build directory. This should be where the dockerfile is located.
+Docker context
+.PARAMETER dockerfile
+Path to dockerfile. Default is $buildDirectory/Dockerfile
 .EXAMPLE
 Build-DockerImage exampleacr.azurecr.io/generatelogs:latest ltsc2022 . 
 #>
 function Build-DockerImage {
     param(
-        [Parameter(Mandatory = $true)][string] $imageTag,
-        [Parameter(Mandatory = $true)][string] $windowsVersion,
-        [Parameter(Mandatory = $true)][string] $buildDirectory
+        [Parameter(Mandatory = $true)]  [string] $imageTag,
+        [Parameter(Mandatory = $true)]  [string] $windowsVersion,
+        [Parameter(Mandatory = $true)]  [string] $buildDirectory,
+        [Parameter(Mandatory = $false)] [string] $dockerfile
     )
     Write-Host "START:Triggering docker image build: $imageTag";
-    docker build --isolation=hyperv -t $imageTag --build-arg WINDOWS_VERSION=$windowsVersion $buildDirectory;
+    if(![string]::IsNullOrWhiteSpace($dockerfile)){
+        docker build --isolation=hyperv -t $imageTag --build-arg WINDOWS_VERSION=$windowsVersion -f $dockerfile $buildDirectory;
+    } else {
+        docker build --isolation=hyperv -t $imageTag --build-arg WINDOWS_VERSION=$windowsVersion $buildDirectory;
+    }
+    
     Write-Host "END:Triggering docker image build: $imageTag";
 }
 
 <#
 .SYNOPSIS
-Push docker image
-.DESCRIPTION
 Pushes a docker images to a container registry
 .PARAMETER imageTag
 Full tag of the image to push in the format <uri>/<tag>:<version>
