@@ -5,6 +5,7 @@
 - A Dignostic PROD Geneva Account where you have permissions to edit Geneva Log Configurations
 - [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
 - Latest sky-dev branch
+- [Install nuget.exe](https://learn.microsoft.com/en-us/nuget/consume-packages/install-use-packages-nuget-cli#prerequisites)
 <br>
 
 ## 1. Deploy Scale Test Infrastructure 
@@ -215,12 +216,14 @@ By default this will deploy all of the available log generators. If you only nee
 
 ### Optional - Redeploy log generators
 It is possible to redeploy the log generators by re-running `./deploy-log-generators.ps1`. 
-This will also apply any configuration changes made in `log-generation-config.yaml`
+By default this will delete any existing log generator daemonsets, rebuild the docker image, and deploy new daemonsets. 
+
+You can also use the `-ApplyConfigChanges` flag to apply the configuration changes in `log-generation-config.yaml` and restart the existing daemonsets without performing a full cleanup and image build.
 
 Example: <br/>
-Redeploy the Text Logs and Crash Dumps generators
+Redeploy the Text Logs and Crash Dumps generators with new configuration
 ```powershell
-./deploy-log-generators.ps1 -TextLogs -CrashDumps
+./deploy-log-generators.ps1 -TextLogs -CrashDumps -ApplyConfigChanges
 ```
 ## 6. Taking Measurements of each component
 Need to actually deploy a test component something to get this filled out

@@ -28,7 +28,8 @@ param(
   [Parameter()][switch]$CrashDumps,
   [Parameter()][switch]$ETW,
   [Parameter()][switch]$EventLogs,
-  [Parameter()][switch]$TextLogs
+  [Parameter()][switch]$TextLogs,
+  [Parameter()][Switch]$ApplyConfigChanges
 )
 
 . "$PSScriptRoot\common.ps1"
@@ -57,7 +58,7 @@ Setup script block to run before building docker image
 .EXAMPLE
 Deploy-LogGenerator exampleacr.azurecr.io/generatelogs:latest LogGenerator log-generation whl-logs
 #>
-function buildAndDeploy {
+function BuildAndDeploy {
   param(
     [Parameter(Mandatory = $true)]  [string]      $imageTag,
     [Parameter(Mandatory = $true)]  [string]      $name,
@@ -65,24 +66,32 @@ function buildAndDeploy {
     [Parameter(Mandatory = $true)]  [string]      $nodeSelector,
     [Parameter(Mandatory = $true)]  [string]      $buildPath,
     [Parameter(Mandatory = $false)] [string]      $dockerfilePath,
-    [Parameter(Mandatory = $false)] [ScriptBlock] $preBuild
+    [Parameter(Mandatory = $false)] [ScriptBlock] $preBuild,
+    [Parameter(Mandatory = $false)] [Switch]      $applyConfigChanges
+
   )
   Write-Host "Applying settings config map to $namespace"
   kubectl apply -f "$PSScriptRoot\log-generation-config.yaml" -n $namespace
 
-  if (![string]::IsNullOrWhiteSpace((kubectl get ds -n $namespace $name -o name --ignore-not-found))) {
-    Write-Host "Daemonset $name already exists. Restarting with new configuration."
+  $dsExists = ![string]::IsNullOrWhiteSpace((kubectl get ds -n $namespace $name -o name --ignore-not-found))
+
+  if($dsExists -and $applyConfigChanges){
+    Write-Host "Restarting daemonset $name with new configuration."
     kubectl rollout restart daemonset/$name -n $namespace
+    return;
   }
-  else {
-    if ($null -ne $preBuild) {
-      $preBuild.Invoke()
-    }
-    Build-DockerImage $imageTag $windowsVersion $buildPath $dockerfilePath
-    Push-DockerImage $imageTag
-    Deploy-LogGenerator $imageTag $name $namespace $nodeSelector
+
+  if($dsExists){
+    Write-Host "Deleting daemonset $name."
+    kubectl delete ds $name -n $namespace
   }
-  
+
+  if ($null -ne $preBuild) {
+    $preBuild.Invoke()
+  }
+  Build-DockerImage $imageTag $windowsVersion $buildPath $dockerfilePath
+  Push-DockerImage $imageTag
+  Deploy-LogGenerator $imageTag $name $namespace $nodeSelector
 }
 
 az login
@@ -97,7 +106,7 @@ if($CrashDumps -or $all){
     DownloadCrashDumpsPackage
   }
   
-  buildAndDeploy "$acrUri/generatecrashdumps:latest" "whl-crash-dump-generator" "whl-crashd" "crashd" $PSScriptRoot "$PSScriptRoot/crash-dumps/Dockerfile" $PreBuild
+  buildAndDeploy "$acrUri/generatecrashdumps:latest" "whl-crash-dump-generator" "whl-crashd" "crashd" $PSScriptRoot "$PSScriptRoot/crash-dumps/Dockerfile" $PreBuild -applyConfigChanges:$ApplyConfigChanges
   Write-Host "END:Deploying Crash Dump Generator"
 }
 
