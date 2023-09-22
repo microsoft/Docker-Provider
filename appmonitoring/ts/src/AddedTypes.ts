@@ -8,7 +8,7 @@ export class AddedTypes {
     
     // agent image
     private static agentImageDotNet = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/dotnet:1.0.0-beta2";
-    private static agentImageJava = "mcr.microsoft.com/applicationinsights/auto-instrumentation/java:3.4.15";
+    private static agentImageJava = "mcr.microsoft.com/applicationinsights/auto-instrumentation/java:3.4.17-aks";
     private static agentImageNodeJs = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/nodejs:3.0.0-beta.9";
     
     // path on agent image to copy from
@@ -137,6 +137,7 @@ export class AddedTypes {
 cloud.region=${armRegion},\
 k8s.cluster.name=${clusterName},\
 k8s.pod.namespace=$(POD_NAMESPACE),\
+k8s.namespace.name=$(POD_NAMESPACE),\
 k8s.node.name=$(NODE_NAME),\
 k8s.pod.name=$(POD_NAME),\
 k8s.pod.uid=$(POD_UID),\
