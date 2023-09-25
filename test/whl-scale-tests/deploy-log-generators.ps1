@@ -113,7 +113,7 @@ if($ETW -or $all){
 
 if($EventLogs -or $all){
   Write-Host "START:Deploying Event Log Generator"
-  # TODO: Deploy event log generator here
+  buildAndDeploy "$acrUri/generateeventlogs:latest" "whl-event-log-generator" "whl-evtlog" "evtlog" "$PSScriptRoot\event-logs" -applyConfigChanges:$ApplyConfigChanges
   Write-Host "END:Deploying Event Log Generator"
 }
 
