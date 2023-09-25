@@ -77,11 +77,11 @@ try {
     Invoke-WebRequest -Uri $windowsazuremonitoragent -OutFile /installation/windowsazuremonitoragent.zip
     Expand-Archive -Path /installation/windowsazuremonitoragent.zip -Destination /installation/windowsazuremonitoragent
     Move-Item -Path /installation/windowsazuremonitoragent -Destination /opt/windowsazuremonitoragent/ -ErrorAction SilentlyContinue
-    if ($windowsazuremonitoragent -match 'https://.*genevamonitoringagent.(.*).zip') {
-        $version = $matches[1]
-        echo "Monitoring Agent Version - $version" > /opt/windowsazuremonitoragent/version.txt
-    } else {
+    $version = (Get-Item C:\opt\windowsazuremonitoragent\windowsazuremonitoragent\Monitoring\Agent\MonAgentCore.exe).VersionInfo.ProductVersion
+    if ([string]::IsNullOrEmpty($version)) {
         echo "Monitoring Agent Version not found" > /opt/windowsazuremonitoragent/version.txt
+    } else {
+        echo "Monitoring Agent Version - $version" > /opt/windowsazuremonitoragent/version.txt
     }
 }
 catch {
