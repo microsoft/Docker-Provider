@@ -10,8 +10,8 @@ func CreateWindowsNamedPipeClient(namedPipe string, namedPipeConnection *net.Con
 	Log("Error::CreateWindowsNamedPipeClient not implemented for Linux")
 }
 
-func CreateGenevaOr3PNamedPipe(namedPipeConnection *net.Conn, datatype string, errorCount *float64, isGenevaLogsIntegrationEnabled bool, refreshTracker *time.Time) bool {
+func EnsureGenevaOr3PNamedPipeExists(namedPipeConnection *net.Conn, datatype string, errorCount *float64, isGenevaLogsIntegrationEnabled bool, refreshTracker *time.Time) bool {
 	//function unimplemented
-	Log("Error::CreateGenevaOr3PNamedPipe not implemented for Linux")
+	Log("Error::EnsureGenevaOr3PNamedPipeExists not implemented for Linux")
 	return false
 }
