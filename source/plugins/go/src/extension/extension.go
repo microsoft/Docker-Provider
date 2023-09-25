@@ -38,18 +38,23 @@ func GetInstance(flbLogger *log.Logger, containertype string) *Extension {
 
 func getExtensionData() (TaggedData, error) {
 	guid := uuid.New()
+	var extensionData TaggedData
 	taggedData := map[string]interface{}{"Request": "AgentTaggedData", "RequestId": guid.String(), "Tag": "ContainerInsights", "Version": "1"}
 	jsonBytes, err := json.Marshal(taggedData)
+	if err != nil {
+		logger.Printf("Error::mdsd/ama::Failed to marshal taggedData data. Error message: %s", string(err.Error()))
+		return extensionData, err
+	}
 
 	responseBytes, err := getExtensionConfigResponse(jsonBytes)
-	var extensionData TaggedData
 	if err != nil {
+		logger.Printf("Error::mdsd/ama::Failed to get config response data. Error message: %s", string(err.Error()))
 		return extensionData, err
 	}
 	var responseObject AgentTaggedDataResponse
 	err = json.Unmarshal(responseBytes, &responseObject)
 	if err != nil {
-		logger.Printf("Error::mdsd/ama::Failed to unmarshal config data. Error message: %s", string(err.Error()))
+		logger.Printf("Error::mdsd/ama::Failed to unmarshal config response data. Error message: %s", string(err.Error()))
 		return extensionData, err
 	}
 

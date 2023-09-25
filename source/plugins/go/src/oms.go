@@ -1350,7 +1350,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			} else {
 				datatype = ContainerLogDataType
 			}
-			if CreateGenevaOr3PNamedPipe(&ContainerLogNamedPipe, datatype, &ContainerLogsWindowsAMAClientCreateErrors, IsGenevaLogsIntegrationEnabled, &MdsdContainerLogTagRefreshTracker) {
+			if EnsureGenevaOr3PNamedPipeExists(&ContainerLogNamedPipe, datatype, &ContainerLogsWindowsAMAClientCreateErrors, IsGenevaLogsIntegrationEnabled, &MdsdContainerLogTagRefreshTracker) {
 				Log("Info::AMA::Starting to write container logs to named pipe")
 				deadline := 10 * time.Second
 				ContainerLogNamedPipe.SetWriteDeadline(time.Now().Add(deadline))
@@ -1890,7 +1890,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 			} else {
 				datatype = ContainerLogDataType
 			}
-			CreateGenevaOr3PNamedPipe(&ContainerLogNamedPipe, datatype, &ContainerLogsWindowsAMAClientCreateErrors, IsGenevaLogsIntegrationEnabled, &MdsdContainerLogTagRefreshTracker)
+			EnsureGenevaOr3PNamedPipeExists(&ContainerLogNamedPipe, datatype, &ContainerLogsWindowsAMAClientCreateErrors, IsGenevaLogsIntegrationEnabled, &MdsdContainerLogTagRefreshTracker)
 		} else {
 			CreateMDSDClient(ContainerLogV2, ContainerType)
 		}

@@ -51,9 +51,25 @@ function Set-CommonAMAEnvironmentVariables {
     Set-ProcessAndMachineEnvVariables "MONITORING_VERSION" "2.0"
     Set-ProcessAndMachineEnvVariables "MONITORING_ROLE" "cloudAgentRoleIdentity"
     Set-ProcessAndMachineEnvVariables "MONITORING_IDENTITY" "use_ip_address"
-    $aksRegion = [System.Environment]::GetEnvironmentVariable("AKS_REGION", "process")
-    Set-ProcessAndMachineEnvVariables "MA_RoleEnvironment_Location" $aksRegion
+
     $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID", "process")
+    if (![string]::IsNullOrEmpty($aksResourceId)) {
+        [System.Environment]::SetEnvironmentVariable("AKS_RESOURCE_ID", $aksResourceId, "machine")
+        Write-Host "Successfully set environment variable AKS_RESOURCE_ID - $($aksResourceId) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable AKS_RESOURCE_ID for target 'machine' since it is either null or empty"
+    }
+
+    $aksRegion = [System.Environment]::GetEnvironmentVariable("AKS_REGION", "process")
+    if (![string]::IsNullOrEmpty($aksRegion)) {
+        [System.Environment]::SetEnvironmentVariable("AKS_REGION", $aksRegion, "machine")
+        Write-Host "Successfully set environment variable AKS_REGION - $($aksRegion) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable AKS_REGION for target 'machine' since it is either null or empty"
+    }
+    Set-ProcessAndMachineEnvVariables "MA_RoleEnvironment_Location" $aksRegion
     Set-ProcessAndMachineEnvVariables "MA_RoleEnvironment_ResourceId" $aksResourceId
     Set-ProcessAndMachineEnvVariables "MA_ENABLE_LARGE_EVENTS" "1"
 }
@@ -101,8 +117,6 @@ function Set-AMA3PEnvironmentVariables {
     Set-ProcessAndMachineEnvVariables "MCS_AZURE_RESOURCE_ENDPOINT" $mcs_endpoint
     Set-ProcessAndMachineEnvVariables "MCS_GLOBAL_ENDPOINT" $mcs_globalendpoint
 }
-
-
 
 function Generate-GenevaTenantNameSpaceConfig {
      $genevaLogsTenantNameSpaces = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_TENANT_NAMESPACES", "process")
@@ -818,7 +832,6 @@ if (IsGenevaMode) {
 } elseif (![string]::IsNullOrEmpty($isAADMSIAuth) -and $isAADMSIAuth.ToLower() -eq 'true') {
     Write-Host "skipping agent onboarding via cert since AAD MSI Auth configured"
 
-    Set-ProcessAndMachineEnvVariables "MONITORING_GCS_AUTH_ID_TYPE" ""
     #start Windows AMA 
     Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\windowsazuremonitoragent\windowsazuremonitoragent\Monitoring\Agent\MonAgentLauncher.exe" -ArgumentList @("-useenv")}
     $version = Get-Content -Path "C:\opt\windowsazuremonitoragent\version.txt"

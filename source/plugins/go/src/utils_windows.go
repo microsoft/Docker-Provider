@@ -31,7 +31,7 @@ func CreateWindowsNamedPipeClient(namedPipe string, namedPipeConnection *net.Con
 	}
 }
 
-func CreateGenevaOr3PNamedPipe(namedPipeConnection *net.Conn, datatype string, errorCount *float64, isGenevaLogsIntegrationEnabled bool, refreshTracker *time.Time) bool {
+func EnsureGenevaOr3PNamedPipeExists(namedPipeConnection *net.Conn, datatype string, errorCount *float64, isGenevaLogsIntegrationEnabled bool, refreshTracker *time.Time) bool {
 	if *namedPipeConnection == nil {
 		Log("Error::AMA:: The connection to named pipe was nil. re-connecting...")
 		if isGenevaLogsIntegrationEnabled {
