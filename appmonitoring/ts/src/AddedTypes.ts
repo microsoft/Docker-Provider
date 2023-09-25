@@ -136,7 +136,6 @@ export class AddedTypes {
                 value: `cloud.resource_id=${armId},\
 cloud.region=${armRegion},\
 k8s.cluster.name=${clusterName},\
-k8s.pod.namespace=$(POD_NAMESPACE),\
 k8s.namespace.name=$(POD_NAMESPACE),\
 k8s.node.name=$(NODE_NAME),\
 k8s.pod.name=$(POD_NAME),\
@@ -147,6 +146,10 @@ cloud.platform=azure_aks,\
 ${ownerNameAttribute},\
 ${deploymentNameAttribute},\
 ${ownerUidAttribute}`
+            },
+            {
+                name: "AKS_ARM_NAMESPACE_ID",
+                value: `${armId}/$(POD_NAMESPACE)`
             },
             {
                 name: "APPLICATIONINSIGHTS_CONNECTION_STRING",
