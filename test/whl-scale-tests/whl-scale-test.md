@@ -194,7 +194,6 @@ Log generators can be configured by editing the values in `log-generation-config
 | | |
 
 #### Event Logs
-`TODO: Fill out Event Log generator configuration`
 | Option | Description |
 | ------ | ----------- |
 | EVTLOGS_JOB_COUNT | Number of event log generation jobs to run in parallel
