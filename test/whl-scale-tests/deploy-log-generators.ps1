@@ -107,7 +107,7 @@ if($CrashDumps -or $all){
 
 if($ETW -or $all){
   Write-Host "START:Deploying ETW Generator"
-  # TODO: Deploy ETW generator here
+  BuildAndDeploy "$acrUri/generateetws:latest" "whl-ETW-generator" "whl-etwlog" "etwlog" $PSScriptRoot "$PSScriptRoot/ETW" -applyConfigChanges:$ApplyConfigChanges
   Write-Host "END:Deploying ETW Generator"
 }
 

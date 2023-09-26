@@ -191,7 +191,7 @@ Log generators can be configured by editing the values in `log-generation-config
 `TODO: Fill out ETW generator configuration`
 | Option | Description |
 | ------ | ----------- |
-| | |
+| ETW_EVENTS_NUM | Number of ETW events to generate|
 
 #### Event Logs
 `TODO: Fill out Event Log generator configuration`
