@@ -829,7 +829,8 @@ if (IsGenevaMode) {
     Write-Host "Starting Windows AMA in 1P Mode"
     #start Windows AMA
     Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\windowsazuremonitoragent\windowsazuremonitoragent\Monitoring\Agent\MonAgentLauncher.exe" -ArgumentList @("-useenv")}
-} elseif (![string]::IsNullOrEmpty($isAADMSIAuth) -and $isAADMSIAuth.ToLower() -eq 'true') {
+} 
+if (!IsGenevaMode -and ![string]::IsNullOrEmpty($isAADMSIAuth) -and $isAADMSIAuth.ToLower() -eq 'true') {
     Write-Host "skipping agent onboarding via cert since AAD MSI Auth configured"
 
     #start Windows AMA 
@@ -838,8 +839,7 @@ if (IsGenevaMode) {
     Write-Host $version
 }
 else {
-    Write-Host "skipping starting windows ama agent"
-
+    Write-Host "Starting Windows in Cert Auth Mode"
     Generate-Certificates
     Test-CertificatePath
 }
