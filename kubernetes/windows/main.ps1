@@ -824,13 +824,14 @@ if (![string]::IsNullOrEmpty($requiresCertBootstrap) -and `
 }
 
 $isAADMSIAuth = [System.Environment]::GetEnvironmentVariable("USING_AAD_MSI_AUTH")
+$isGenevaModeVar = IsGenevaMode
 # Geneva mode supported on both AAD MSI Auth and Cert Auth
-if (IsGenevaMode) {
+if ($isGenevaModeVar) {
     Write-Host "Starting Windows AMA in 1P Mode"
     #start Windows AMA
     Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\windowsazuremonitoragent\windowsazuremonitoragent\Monitoring\Agent\MonAgentLauncher.exe" -ArgumentList @("-useenv")}
 } 
-if (!IsGenevaMode -and ![string]::IsNullOrEmpty($isAADMSIAuth) -and $isAADMSIAuth.ToLower() -eq 'true') {
+if (!$isGenevaModeVar -eq $false -and ![string]::IsNullOrEmpty($isAADMSIAuth) -and $isAADMSIAuth.ToLower() -eq 'true') {
     Write-Host "skipping agent onboarding via cert since AAD MSI Auth configured"
 
     #start Windows AMA 

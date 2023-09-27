@@ -984,6 +984,33 @@ spec:
           - name: ndots
             value: "3"
      containers:
+      # Uncomment below lines for MSI Auth Mode  testing
+      #  - name: addon-token-adapter-win
+      #    command:
+      #     - addon-token-adapter-win
+      #    args:
+      #     - --secret-namespace=kube-system
+      #     - --secret-name=aad-msi-auth-token
+      #     - --token-server-listening-port=7777
+      #     - --health-server-listening-port=9999
+      #    image: "mcr.microsoft.com/aks/hcp/addon-token-adapter:20230120winbeta"
+      #    imagePullPolicy: Always
+      #    livenessProbe:
+      #     httpGet:
+      #       path: /healthz
+      #       port: 9999
+      #     initialDelaySeconds: 10
+      #     periodSeconds: 60
+      #    resources:
+      #     limits:
+      #       memory: 500Mi
+      #     requests:
+      #       cpu: 100m
+      #       memory: 100Mi
+      #    securityContext:
+      #     capabilities:
+      #       add:
+      #         - NET_ADMIN
        - name: ama-logs-windows
          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.13"
          imagePullPolicy: IfNotPresent
@@ -1074,6 +1101,8 @@ spec:
               - fluentdwinaks
               - "C:\\etc\\amalogswindows\\filesystemwatcher.txt"
               - "C:\\etc\\amalogswindows\\renewcertificate.txt"
+              # Uncomment below lines for MSI Auth Mode  testing
+              # - MonAgentCore.exe
           periodSeconds: 60
           initialDelaySeconds: 180
           timeoutSeconds: 15
