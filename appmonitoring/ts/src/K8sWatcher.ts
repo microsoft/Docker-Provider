@@ -81,7 +81,6 @@ export class K8sWatcher {
                             logger.info(`DELETED object: ${apiObj.metadata?.name} (${apiObj.metadata?.namespace})`);
                             onNewCR(apiObj, true);
                         } else if (type === "BOOKMARK") {
-                            logger.info(`BOOKMARK resourceVersion=${apiObj.metadata?.resourceVersion}`);
                             latestResourceVersion = apiObj.metadata?.resourceVersion ?? latestResourceVersion;
                         } else {
                             logger.error(`Unknown object type: ${type}`);
