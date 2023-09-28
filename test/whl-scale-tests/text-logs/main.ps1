@@ -117,3 +117,6 @@ for ($RotationNum = 0; $RotationNum -lt $RotationCount; $RotationNum++) {
   # Wait for all files to finish writing and print out result before rotation
   $jobs | Wait-Job | Format-Table -Property Id, Name, State, PSBeginTime, PSEndTime
 }
+
+# Execute Notepad.exe to keep container alive to prevent crash loop
+Notepad.exe | Out-Null
