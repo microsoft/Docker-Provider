@@ -50,7 +50,7 @@ try {
         key: fs.readFileSync("/mnt/webhook/tls.key"),
     };
 
-    logger.info(`Certs successfully loaded. Cert: ${options.cert}`);
+    logger.info(`Certs successfully loaded.`);
 } catch (e) {
     logger.error(`Failed to load certs: ${e}`);
     throw e;
