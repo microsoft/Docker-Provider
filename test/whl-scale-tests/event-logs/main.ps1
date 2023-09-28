@@ -67,3 +67,6 @@ foreach ($job in $jobs) {
   Receive-Job $jobs # Output job logs
 }
 Write-Host "Done Generating Event Logs."
+
+# Execute Notepad.exe to keep container alive to prevent crash loop
+Notepad.exe | Out-Null
