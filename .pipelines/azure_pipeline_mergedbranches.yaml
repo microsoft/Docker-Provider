@@ -178,7 +178,7 @@ jobs:
     condition: eq(variables.IS_PR, false)
     inputs:
       BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
-      DockerImagesToScan: '$(GOLANG_BASE_IMAGE), $(CI_BASE_IMAGE), ${{ variables.repoImageName }}:$(linuxImagetag)'
+      DockerImagesToScan: '$(GOLANG_BASE_IMAGE),$(CI_BASE_IMAGE),${{ variables.repoImageName }}:$(linuxImagetag)'
 
   - task: ComponentGovernanceComponentDetection@0
     condition: eq(variables.IS_PR, true)
