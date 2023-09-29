@@ -171,7 +171,7 @@ jobs:
     condition: eq(variables.IS_PR, true)
     inputs:
       BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
-      DockerImagesToScan: '$(GOLANG_BASE_IMAGE), $(CI_BASE_IMAGE)'
+      DockerImagesToScan: '$(GOLANG_BASE_IMAGE),$(CI_BASE_IMAGE)'
 
   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
     displayName: 'Generation Task'
@@ -183,7 +183,7 @@ jobs:
   - task: ComponentGovernanceComponentDetection@0
     condition: eq(variables.IS_PR, true)
     inputs:
-      DockerImagesToScan: '$(GOLANG_BASE_IMAGE), $(CI_BASE_IMAGE)'
+      DockerImagesToScan: '$(GOLANG_BASE_IMAGE),$(CI_BASE_IMAGE)'
 
   - task: ComponentGovernanceComponentDetection@0
     condition: eq(variables.IS_PR, false)
@@ -326,14 +326,14 @@ jobs:
     condition: eq(variables.IS_PR, true)
     inputs:
       BuildDropPath: '$(Build.ArtifactStagingDirectory)/windows'
-      DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019, mcr.microsoft.com/windows/servercore:ltsc2022'
+      DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019,mcr.microsoft.com/windows/servercore:ltsc2022'
 
   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
     displayName: 'Generation Task'
     condition: eq(variables.IS_PR, false)
     inputs:
       BuildDropPath: '$(Build.ArtifactStagingDirectory)/windows'
-      DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019, mcr.microsoft.com/windows/servercore:ltsc2022, ${{ variables.repoImageName }}:$(windowsImageTag)'
+      DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019,mcr.microsoft.com/windows/servercore:ltsc2022,${{ variables.repoImageName }}:$(windowsImageTag)'
   - task: PublishBuildArtifacts@1
     inputs:
       pathToPublish: '$(Build.ArtifactStagingDirectory)'
