@@ -30,7 +30,7 @@ az account set --subscription $SubscriptionId
 #Use Windows Engine on Docker
 Write-Host "Setting Docker to utilize Windows Engine"
 Start-Process -filePath "Docker Desktop.exe" -WorkingDirectory "C:\Program Files\Docker\Docker"
-Start-Sleep -Duration (New-TimeSpan -Seconds 60)
+Start-Sleep -Seconds 60
 Start-Process -filePath "DockerCli.exe" -WorkingDirectory "C:\Program Files\Docker\Docker" -ArgumentList "-SwitchWindowsEngine"
 
 #Login into ACR
@@ -41,16 +41,6 @@ az acr login --name $acrName
 $imageName = $acrUri + "/latestwhl:$(Get-Date -Format MMdd)"
 Write-Host "Moving working directory to ..\..\kubernetes\windows\hostlogs"
 Set-Location "..\..\kubernetes\windows\hostlogs"
-
-$filepath = ".\build-and-publish-docker-image.ps1"
-$dockerCommandArguments = "imageTag  ."
-
-$dockerCommandHashTable = @{
-    $dockerCommandArguments = $dockerCommandArguments + " --network `"Default Switch`"";
-}
-
-Write-Host "Improving compatibility with running build script locally"
-SubstituteNameValuePairs -InputFilePath $filePath -OutputFilePath $filePath -Substitutions $dockerCommandHashTable
 
 Write-Host "Creating latest WHL Container Image"
 Invoke-Expression -Command ".\build-and-publish-docker-image.ps1 -image $imageName" 
@@ -104,11 +94,11 @@ kubectl apply -f .\host-logs-geneva.yaml
 
 Write-Host "Waiting for pod to be ready..."
 
-Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+Start-Sleep -Seconds 180
 kubectl get pods -n $whlCrashDumpNamespace
 
 kubectl apply -f .\container-azm-ms-agentconfig.yaml
-Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+Start-Sleep -Seconds 180
 kubectl get pods -n $whlCrashDumpNamespace
 
 #Targeting WHL for Event Log Configuration
@@ -137,11 +127,11 @@ kubectl apply -f .\host-logs-geneva.yaml
 
 Write-Host "Waiting..."
 
-Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+Start-Sleep -Seconds 180
 kubectl get pods -n $whlEventLogNamespace
 
 kubectl apply -f .\container-azm-ms-agentconfig.yaml
-Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+Start-Sleep -Seconds 180
 kubectl get pods -n $whlEventLogNamespace
 
 #Targeting WHL for ETW Log Configuration
@@ -170,11 +160,11 @@ kubectl apply -f .\host-logs-geneva.yaml
 
 Write-Host "Waiting..."
 
-Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+Start-Sleep -Seconds 180
 kubectl get pods -n $whlETWLogNamespace
 
 kubectl apply -f .\container-azm-ms-agentconfig.yaml
-Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+Start-Sleep -Seconds 180
 kubectl get pods -n $whlETWLogNamespace
 
 #Targeting WHL for Text Log Configuration
@@ -203,11 +193,11 @@ kubectl apply -f .\host-logs-geneva.yaml
 
 Write-Host "Waiting..."
 
-Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+Start-Sleep -Seconds 180
 kubectl get pods -n $whlTextLogNamespace
 
 kubectl apply -f .\container-azm-ms-agentconfig.yaml
-Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+Start-Sleep -Seconds 180
 kubectl get pods -n $whlTextLogNamespace
 
 Set-Location -Path $orignalPath.path

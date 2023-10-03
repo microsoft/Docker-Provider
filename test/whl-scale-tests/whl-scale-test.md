@@ -40,7 +40,7 @@ Example:
 ```powershell
 .\deploy-infra.ps1 `
     -SubscriptionId "b2eb1341-814f-4e78-bec8-6042f4c10c5b" `
-    -Location "westus3" `
+    -Location "westus3"
 ```
 
 <br>
