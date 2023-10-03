@@ -42,16 +42,6 @@ $imageName = $acrUri + "/latestwhl:$(Get-Date -Format MMdd)"
 Write-Host "Moving working directory to ..\..\kubernetes\windows\hostlogs"
 Set-Location "..\..\kubernetes\windows\hostlogs"
 
-$filepath = ".\build-and-publish-docker-image.ps1"
-$dockerCommandArguments = "imageTag  ."
-
-$dockerCommandHashTable = @{
-    $dockerCommandArguments = $dockerCommandArguments + " --network `"Default Switch`"";
-}
-
-Write-Host "Improving compatibility with running build script locally"
-SubstituteNameValuePairs -InputFilePath $filePath -OutputFilePath $filePath -Substitutions $dockerCommandHashTable
-
 Write-Host "Creating latest WHL Container Image"
 Invoke-Expression -Command ".\build-and-publish-docker-image.ps1 -image $imageName" 
 
