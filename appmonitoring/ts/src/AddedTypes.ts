@@ -7,7 +7,7 @@ export class AddedTypes {
     private static initContainerNameNodeJs = "agent-init-nodejs";
     
     // agent image
-    private static agentImageDotNet = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/dotnet:1.0.0-beta2";
+    private static agentImageDotNet = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/dotnet:1.0.0-beta3";
     private static agentImageJava = "mcr.microsoft.com/applicationinsights/auto-instrumentation/java:3.4.17-aks";
     private static agentImageNodeJs = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/nodejs:3.0.0-beta.9";
     
@@ -187,28 +187,8 @@ ${ownerUidAttribute}`
                             value: `${AddedTypes.agentVolumeMountPathDotNet}/`
                         },
                         {
-                            name: "OTEL_DOTNET_AUTO_TRACES_CONSOLE_EXPORTER_ENABLED",
-                            value: "true"
-                        },
-                        {
-                            name: "OTEL_DOTNET_AUTO_LOGS_CONSOLE_EXPORTER_ENABLED",
-                            value: "true"
-                        },
-                        {
-                            name: "OTEL_DOTNET_AUTO_METRICS_CONSOLE_EXPORTER_ENABLED",
-                            value: "true"
-                        },
-                        {
                             name: "OTEL_DOTNET_AUTO_PLUGINS",
                             value: "Azure.Monitor.OpenTelemetry.AutoInstrumentation.AzureMonitorPlugin, Azure.Monitor.OpenTelemetry.AutoInstrumentation, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
-                        },
-                        {
-                            name: "OTEL_DOTNET_AUTO_LOGS_INCLUDE_FORMATTED_MESSAGE",
-                            value: "true"
-                        },
-                        {
-                            name: "OTEL_DOTNET_AUTO_METRICS_ADDITIONAL_SOURCES",
-                            value: ""
                         }]
                     );
                     break;
