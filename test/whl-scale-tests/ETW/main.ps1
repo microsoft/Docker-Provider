@@ -32,14 +32,14 @@ $etwProviders = @(
     [EtwProvider]::new("Microsoft-Windows-ApplicationExperience-Cache", 3, 0, @("OperationalMessage")),
     [EtwProvider]::new("Microsoft-Windows-AppLocker", 8026, 0, @()),
     [EtwProvider]::new("Microsoft-Windows-AppLocker", 8027, 0, @()),
-    [EtwProvider]::new("Microsoft-Windows-AppLocker", 8036, 0, @($true, "ac69843f-f0ba-4140-b20c-b38e3f11c628"))
-    [EtwProvider]::new("Microsoft-Windows-AppModel-Runtime", 217, 0, @("PackageName", "ContainerIds"))
-    [EtwProvider]::new("Microsoft-Windows-AppModel-Runtime", 53, 0, @("PackageFullName"))
-    [EtwProvider]::new("Microsoft-Windows-AppModel-Runtime", 54, 0, @("PackageFullName"))
-    [EtwProvider]::new("Microsoft-Windows-AppModel-Runtime", 55, 0, @("PackageFullName"))
-    [EtwProvider]::new("Microsoft-Windows-AppModel-Runtime", 56, 0, @("PackageFullName"))
-    [EtwProvider]::new("Microsoft-Windows-AppReadiness", 5047, 0, @("User"))
-    [EtwProvider]::new("Microsoft-Windows-AppReadiness", 5046, 0, @("User"))
+    [EtwProvider]::new("Microsoft-Windows-AppLocker", 8036, 0, @($true, "ac69843f-f0ba-4140-b20c-b38e3f11c628")),
+    [EtwProvider]::new("Microsoft-Windows-AppModel-Runtime", 217, 0, @("PackageName", "ContainerIds")),
+    [EtwProvider]::new("Microsoft-Windows-AppModel-Runtime", 53, 0, @("PackageFullName")),
+    [EtwProvider]::new("Microsoft-Windows-AppModel-Runtime", 54, 0, @("PackageFullName")),
+    [EtwProvider]::new("Microsoft-Windows-AppModel-Runtime", 55, 0, @("PackageFullName")),
+    [EtwProvider]::new("Microsoft-Windows-AppModel-Runtime", 56, 0, @("PackageFullName")),
+    [EtwProvider]::new("Microsoft-Windows-AppReadiness", 5047, 0, @("User")),
+    [EtwProvider]::new("Microsoft-Windows-AppReadiness", 5046, 0, @("User")),
     [EtwProvider]::new("Microsoft-Windows-AppReadiness", 5045, 0, @("User", 1))  
 )
 
@@ -47,7 +47,7 @@ $etwProviders = @(
 $etwCount = $env:ETW_EVENTS_NUM
 
 if ([string]::IsNullOrWhiteSpace($etwCount)) {
-    throw "ETW_EVENTS_NUM env variable must beset with the number of ETW events to generate" 
+    throw "ETW_EVENTS_NUM env variable must be set with the number of ETW events to generate" 
 }
 
 Write-Host "START: Generating ETW events"
@@ -59,13 +59,7 @@ for ($i = 0; $i -lt $etwProviders.Count; $i++) {
         -Payload @($etwProviders[$i].Payload)
 
     Write-Host "ETW Event from Provider: $($etwProviders[$i].ProviderName) with Id: $($etwProviders[$i].Id) generated"
-    $newEvent = Get-WinEvent -ProviderName $etwProviders[$i].ProviderName -MaxEvents 1
-
-    # Check if the event was generated
-    if ($newEvent.Id -eq $etwProviders[$i].Id) {
-        $etwCount--
-    }
-
+    $etwCount--
     Write-Host "Remaining ETW events to generate = $etwCount"
 
     # Check if all events were generated
