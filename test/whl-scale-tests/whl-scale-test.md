@@ -2,7 +2,7 @@
 
 ## Prerequisites
 - Access to an Azure Subscription
-- A Dignostic PROD Geneva Account where you have permissions to edit Geneva Log Configurations
+- A Diagnostics PROD Geneva Account where you have permissions to edit Geneva Log Configurations
 - [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
 - Latest sky-dev branch
 - [Install nuget.exe](https://learn.microsoft.com/en-us/nuget/consume-packages/install-use-packages-nuget-cli#prerequisites)
@@ -40,7 +40,7 @@ Example:
 ```powershell
 .\deploy-infra.ps1 `
     -SubscriptionId "b2eb1341-814f-4e78-bec8-6042f4c10c5b" `
-    -Location "westus3" `
+    -Location "westus3"
 ```
 
 <br>
@@ -51,7 +51,7 @@ Example:
 >
 > If you know you already have a Geneva Account with each of these already configured go ahead and take note of their config versions because will need it for the next section. You will still need to setup your AKS Cluster Object ID for both Geneva Metrics and Geneva Logs
 
-In setting up the Windos Host Log Scale Test Suite you will need to make sure that you have four configurations that focus on each log type. 
+In setting up the Windows Host Log Scale Test Suite you will need to make sure that you have four configurations that focus on each log type. 
 
 To automatically configure the XML for your Geneva Account we will use `.\Docker-Provider\test\whl-scale-tests\prepare-geneva-xml.ps1.` This script will take the xml files in `.\Docker-Provider\test\whl-scale-tests\geneva-config-files` and configure each with your Geneva Account parameters.
 
@@ -306,12 +306,12 @@ Ex. 'C:\C\7bb64a8ce0a1cff91c9489d224ed56dd78d46b9415a1acdafb670ebb72e665b1\opt\g
 "-parentCpuRate" "25,6"
 -LogPath "C:\C\7bb64a8ce0a1cff91c9489d224ed56dd78d46b9415a1acdafb670ebb72e665b1\opt\genevamonitoringagent\datadirectory\Configuration\MonAgentHost.73.log"'
    
-2. Check if the agent is having success with grabbing the config version
+1. Check if the agent is having failing in grabbing the config version
 
 
-Ex.
+Example 1.1
 Error (2023-09-14T19:02:04Z): GcsManager.dll - Call to download Configuration JSON blob from GCS failed; requestId=529b2797-37d1-4ff3-a9f9-88fd25a993c5; response={"LatestConfigVersionFound":null,"ErrorMessage":"There is no monitoring configuration found for the version given. Look at the LatestConfigVersionFound attributeto know the latest minor version available."}; AuthType=5; result=80050003
 
-AND
 
+Example 1.2
 Error (2023-09-14T19:02:04Z): GcsManager.dll - The asked for configuration version 6.0 is not deployed in your Geneva account SkyMERProdLogs and namespace SkyMERProdLogs_NAMESPACE in environment DiagnosticsProd. MA is configured to receive the latest version, 6.0, when this happens. This usage violates Azure safe deployment practices. See https://aka.ms/GenevaSafeConfigUpdate for more details.

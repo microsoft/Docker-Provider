@@ -26,7 +26,7 @@ az account set --subscription $SubscriptionId
 Start-Docker
 
 #Login into ACR
-Write-Host "Logining into ACR"
+Write-Host "Logging into ACR"
 az acr login --name $acrName
 
 #Create latest WHL Container Image
@@ -96,11 +96,11 @@ kubectl apply -f .\host-logs-geneva.yaml
 
 Write-Host "Waiting for pod to be ready..."
 
-Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+Start-Sleep -Seconds 180
 kubectl get pods -n $whlCrashDumpNamespace
 
 kubectl apply -f .\container-azm-ms-agentconfig.yaml
-Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+Start-Sleep -Seconds 180
 kubectl get pods -n $whlCrashDumpNamespace
 
 #Targeting WHL for Event Log Configuration
@@ -129,11 +129,11 @@ kubectl apply -f .\host-logs-geneva.yaml
 
 Write-Host "Waiting..."
 
-Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+Start-Sleep -Seconds 180
 kubectl get pods -n $whlEventLogNamespace
 
 kubectl apply -f .\container-azm-ms-agentconfig.yaml
-Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+Start-Sleep -Seconds 180
 kubectl get pods -n $whlEventLogNamespace
 
 #Targeting WHL for ETW Log Configuration
@@ -162,11 +162,11 @@ kubectl apply -f .\host-logs-geneva.yaml
 
 Write-Host "Waiting..."
 
-Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+Start-Sleep -Seconds 180
 kubectl get pods -n $whlETWLogNamespace
 
 kubectl apply -f .\container-azm-ms-agentconfig.yaml
-Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+Start-Sleep -Seconds 180
 kubectl get pods -n $whlETWLogNamespace
 
 #Targeting WHL for Text Log Configuration
@@ -195,11 +195,11 @@ kubectl apply -f .\host-logs-geneva.yaml
 
 Write-Host "Waiting..."
 
-Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+Start-Sleep -Seconds 180
 kubectl get pods -n $whlTextLogNamespace
 
 kubectl apply -f .\container-azm-ms-agentconfig.yaml
-Start-Sleep -Duration (New-TimeSpan -Seconds 180)
+Start-Sleep -Seconds 180
 kubectl get pods -n $whlTextLogNamespace
 
 Set-Location -Path $orignalPath.path
