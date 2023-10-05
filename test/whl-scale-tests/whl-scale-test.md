@@ -5,8 +5,9 @@
 - A Diagnostics PROD Geneva Account where you have permissions to edit Geneva Log Configurations
 - [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
 - Latest sky-dev branch
+- Run `.\Docker-Provider\scripts\build\windows\install-build-pre-requisites.ps1`
 - [Install nuget.exe](https://learn.microsoft.com/en-us/nuget/consume-packages/install-use-packages-nuget-cli#prerequisites)
-<br>
+<br>GENEVA_METRIC_ACCOUNT
 
 ## 1. Deploy Scale Test Infrastructure 
 The first thing we need to do is setup the infrastructure for our scale test. We will do this with `.\Docker-Provider\test\whl-scale-tests\deploy-infra.ps1`. This script will create a new resource group (Ex. [alias]scaletest). Within that resource group you will find an AKS Cluster, an Azure Container Registry and a Key Vault. Your cluster will have four nodepool one for each scale component (Crash Dumps, Text Logs, ETW, Event Logs), by default, configured with the most recent stable kubernetes version and each nodepool having one node each. 

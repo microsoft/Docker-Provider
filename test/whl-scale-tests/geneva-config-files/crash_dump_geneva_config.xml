@@ -73,7 +73,7 @@
     </CrashDumpMonitor>
     <Extensions>
       <Extension extensionName="MetricsExtension">
-        <CommandLine><![CDATA[MetricsExtension.Native.exe -ConfigOverrides {\"imdsInfo\":[{\"account\":\"GENEVA_ACCOUNT_NAME\",\"objectId\":\"CLUSTER_MANAGED_IDENTITY_OBJECT_ID\"}]}]]></CommandLine>
+        <CommandLine><![CDATA[MetricsExtension.Native.exe -ConfigOverrides {\"imdsInfo\":[{\"account\":\"GENEVA_METRIC_ACCOUNT\",\"objectId\":\"CLUSTER_MANAGED_IDENTITY_OBJECT_ID\"}]}]]></CommandLine>
       </Extension>
     </Extensions>
   </Events>
