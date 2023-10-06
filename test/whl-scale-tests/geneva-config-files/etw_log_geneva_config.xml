@@ -68,10 +68,6 @@
         <DefaultEvent eventName="WindowsAppId" />
         <Event eventName="WindowsAppId" id="4007" />
       </EtwProvider>
-      <EtwProvider guid="6D8A3A60-40AF-445A-98CA-99359E500146" format="Manifest" storeType="CentralBond" levelFilter="4">
-        <DefaultEvent eventName="ApplicationExperienceCache" />
-        <Event eventName="ApplicationExperienceCache" id="3" />
-      </EtwProvider>
       <EtwProvider guid="CBDA4DBF-8D5D-4F69-9578-BE14AA540D22" format="Manifest" storeType="CentralBond" levelFilter="5">
         <DefaultEvent eventName="WindowsAppLocker" />
         <Event eventName="WindowsAppLocker" id="8026" />
@@ -95,7 +91,7 @@
     </EtwProviders>
     <Extensions>
       <Extension extensionName="MetricsExtension">
-        <CommandLine><![CDATA[MetricsExtension.Native.exe -ConfigOverrides {\"imdsInfo\":[{\"account\":\"GENEVA_ACCOUNT_NAME\",\"objectId\":\"CLUSTER_MANAGED_IDENTITY_OBJECT_ID\"}]}]]></CommandLine>
+        <CommandLine><![CDATA[MetricsExtension.Native.exe -ConfigOverrides {\"imdsInfo\":[{\"account\":\"GENEVA_METRIC_ACCOUNT\",\"objectId\":\"CLUSTER_MANAGED_IDENTITY_OBJECT_ID\"}]}]]></CommandLine>
       </Extension>
     </Extensions>
   </Events>
