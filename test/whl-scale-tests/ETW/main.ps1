@@ -29,7 +29,6 @@ class EtwProvider {
 
 $etwProviders = @(
     [EtwProvider]::new("Microsoft-Windows-AppId", 4007, 0, @(1)),
-    [EtwProvider]::new("Microsoft-Windows-ApplicationExperience-Cache", 3, 0, @("OperationalMessage")),
     [EtwProvider]::new("Microsoft-Windows-AppLocker", 8026, 0, @()),
     [EtwProvider]::new("Microsoft-Windows-AppLocker", 8027, 0, @()),
     [EtwProvider]::new("Microsoft-Windows-AppLocker", 8036, 0, @($true, "ac69843f-f0ba-4140-b20c-b38e3f11c628")),
@@ -44,7 +43,7 @@ $etwProviders = @(
 )
 
 # read this value from env var
-$etwCount = $env:ETW_EVENTS_NUM
+$etwCount = [int]$env:ETW_EVENTS_NUM
 
 if ([string]::IsNullOrWhiteSpace($etwCount)) {
     throw "ETW_EVENTS_NUM env variable must be set with the number of ETW events to generate" 
@@ -77,3 +76,8 @@ for ($i = 0; $i -lt $etwProviders.Count; $i++) {
 
 Write-Host "END: Generating ETW events"
 Write-Host "Number of ETW events generated: $env:ETW_EVENTS_NUM)"
+
+# Infinite loop to keep the container alive to prevent crash loop
+Do {
+    Start-Sleep 1
+} While ($true)
