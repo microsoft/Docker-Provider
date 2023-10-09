@@ -47,6 +47,8 @@ $etwCount = [int]$env:ETW_EVENTS_NUM
 
 if ([string]::IsNullOrWhiteSpace($etwCount)) {
     throw "ETW_EVENTS_NUM env variable must be set with the number of ETW events to generate" 
+} elseif ($etwCount -le 0) {
+    throw "ETW_EVENTS_NUM env variable must be greater than 0"
 }
 
 Write-Host "START: Generating ETW events"
