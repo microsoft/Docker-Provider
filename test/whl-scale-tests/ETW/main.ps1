@@ -79,7 +79,5 @@ for ($i = 0; $i -lt $etwProviders.Count; $i++) {
 Write-Host "END: Generating ETW events"
 Write-Host "Number of ETW events generated: $env:ETW_EVENTS_NUM)"
 
-# Infinite loop to keep the container alive to prevent crash loop
-Do {
-    Start-Sleep 1
-} While ($true)
+# Execute Notepad.exe to keep container alive to prevent crash loop
+Notepad.exe | Out-Null
