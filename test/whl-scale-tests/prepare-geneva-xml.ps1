@@ -34,13 +34,13 @@ foreach ($filePath in $listOfFiles)
     Write-Host "$filePath is ready to be uploaded to Geneva"
 }
 
-#Opens a new tab to the Geneva Metrics - Machine Access Section
-Start-Process "https://portal.microsoftgeneva.com/account/metrics?account=$GenevaMetricAccountName&section=certificates&hideLeftNav=true"
+#Provide generated link to Geneva Metrics - Machine Access Section
+Write-Host "Geneva Metrics - Machine Access Section: https://portal.microsoftgeneva.com/account/metrics?account=$GenevaMetricAccountName&section=certificates&hideLeftNav=true"
 
-#Opens a new tab to the Geneva Logs Management Section
-Start-Process "https://portal.microsoftgeneva.com/account/logs/userRoles?endpoint=Diagnostics%20PROD&account=$GenevaAccountName"
+#Provide generated link to Geneva Logs Management Section
+Write-Host "Geneva Logs Management Section: https://portal.microsoftgeneva.com/account/logs/userRoles?endpoint=Diagnostics%20PROD&account=$GenevaAccountName"
 
-#Opens a new tab your Geneva Account to upload the new configurations
-Start-Process "https://portal.microsoftgeneva.com/manage-logs-config?endpoint=Diagnostics%2520PROD&gwpAccount=$GenevaAccountName&gcsEnabled=true&gsmEnabled=true&hotpathAccount=$GenevaMetricAccountName"
+#Provide generated link to Geneva Account to upload the new configurations
+Write-Host "Upload new configurations here: https://portal.microsoftgeneva.com/manage-logs-config?endpoint=Diagnostics%2520PROD&gwpAccount=$GenevaAccountName&gcsEnabled=true&gsmEnabled=true&hotpathAccount=$GenevaMetricAccountName"
 
 Set-Location -Path $orignalPath.path

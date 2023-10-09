@@ -2,11 +2,12 @@
 
 ## Prerequisites
 - Access to an Azure Subscription
-- A Dignostic PROD Geneva Account where you have permissions to edit Geneva Log Configurations
+- A Diagnostics PROD Geneva Account where you have permissions to edit Geneva Log Configurations
 - [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
 - Latest sky-dev branch
+- Run `.\Docker-Provider\scripts\build\windows\install-build-pre-requisites.ps1`
 - [Install nuget.exe](https://learn.microsoft.com/en-us/nuget/consume-packages/install-use-packages-nuget-cli#prerequisites)
-<br>
+<br>GENEVA_METRIC_ACCOUNT
 
 ## 1. Deploy Scale Test Infrastructure 
 The first thing we need to do is setup the infrastructure for our scale test. We will do this with `.\Docker-Provider\test\whl-scale-tests\deploy-infra.ps1`. This script will create a new resource group (Ex. [alias]scaletest). Within that resource group you will find an AKS Cluster, an Azure Container Registry and a Key Vault. Your cluster will have four nodepool one for each scale component (Crash Dumps, Text Logs, ETW, Event Logs), by default, configured with the most recent stable kubernetes version and each nodepool having one node each. 
@@ -40,7 +41,7 @@ Example:
 ```powershell
 .\deploy-infra.ps1 `
     -SubscriptionId "b2eb1341-814f-4e78-bec8-6042f4c10c5b" `
-    -Location "westus3" `
+    -Location "westus3"
 ```
 
 <br>
@@ -51,7 +52,7 @@ Example:
 >
 > If you know you already have a Geneva Account with each of these already configured go ahead and take note of their config versions because will need it for the next section. You will still need to setup your AKS Cluster Object ID for both Geneva Metrics and Geneva Logs
 
-In setting up the Windos Host Log Scale Test Suite you will need to make sure that you have four configurations that focus on each log type. 
+In setting up the Windows Host Log Scale Test Suite you will need to make sure that you have four configurations that focus on each log type. 
 
 To automatically configure the XML for your Geneva Account we will use `.\Docker-Provider\test\whl-scale-tests\prepare-geneva-xml.ps1.` This script will take the xml files in `.\Docker-Provider\test\whl-scale-tests\geneva-config-files` and configure each with your Geneva Account parameters.
 
@@ -224,8 +225,23 @@ Redeploy the Text Logs and Crash Dumps generators with new configuration
 ./deploy-log-generators.ps1 -TextLogs -CrashDumps -ApplyConfigChanges
 ```
 ## 6. Taking Measurements of each component
-Need to actually deploy a test component something to get this filled out
-<br>
+Metrics will be automatically sent to your Geneva account.
+To view a metrics summary you can create a [Geneva dashboard](https://portal.microsoftgeneva.com/dashboard/)
+![Example Geneva dashboard with CPU usage, Memory Usage, Number of logs colllected, and Number of Logs Dropped](images/geneva_metrics_dashboard.png)
+
+For the data source setting, set "Account" to your Geneva account and Namespace to "Monitoring Agent". From here you can see a variety of metrics such as CpuUsage, MemoryUsage and EventsLogged. For more info on the available metrics see [eng.ms/docs/products/geneva/collect/manage/agentmetrics](https://eng.ms/docs/products/geneva/collect/manage/agentmetrics#metrics)
+
+![Example Geneva dashboard with CPU usage, Memory Usage, Number of logs colllected, and Number of Logs Dropped](images/geneva_metrics_dashboard_settings.png)
+
+If more precise numbers are needed, it's also possible to view metrics counter logs in [dgrep](https://portal.microsoftgeneva.com/logs/dgrep) under the MACounterSummary metric.
+
+![Geneva metrics counters in DGrep](images/geneva_metrics_dgrep_counters.png)
+
+### Viewing Collected Logs
+If you need to view the collected test logs:
+* Event Logs , ETWs and Text Logs will show up in [dgrep](https://portal.microsoftgeneva.com/logs/dgrep)
+* Crash Dumps will show up in [azure watson](https://portal.watson.azure.com). The easiest way to find your crash dumps is to filter by MdsNamespace (Geneva account namespace). Scale testing crash dumps will show the crash process as "hugedump.exe"
+![Geneva metrics counters in DGrep](images/watson_crash_dumps.png)
 
 ## 7. How to clean up scale test infra
 To clean up all the resources you deployed we are going to use `.\Docker-Provider\test\whl-scale-tests\clean-infra.ps1`
@@ -292,12 +308,12 @@ Ex. 'C:\C\7bb64a8ce0a1cff91c9489d224ed56dd78d46b9415a1acdafb670ebb72e665b1\opt\g
 "-parentCpuRate" "25,6"
 -LogPath "C:\C\7bb64a8ce0a1cff91c9489d224ed56dd78d46b9415a1acdafb670ebb72e665b1\opt\genevamonitoringagent\datadirectory\Configuration\MonAgentHost.73.log"'
    
-2. Check if the agent is having success with grabbing the config version
+1. Check if the agent is having failing in grabbing the config version
 
 
-Ex.
+Example 1.1
 Error (2023-09-14T19:02:04Z): GcsManager.dll - Call to download Configuration JSON blob from GCS failed; requestId=529b2797-37d1-4ff3-a9f9-88fd25a993c5; response={"LatestConfigVersionFound":null,"ErrorMessage":"There is no monitoring configuration found for the version given. Look at the LatestConfigVersionFound attributeto know the latest minor version available."}; AuthType=5; result=80050003
 
-AND
 
+Example 1.2
 Error (2023-09-14T19:02:04Z): GcsManager.dll - The asked for configuration version 6.0 is not deployed in your Geneva account SkyMERProdLogs and namespace SkyMERProdLogs_NAMESPACE in environment DiagnosticsProd. MA is configured to receive the latest version, 6.0, when this happens. This usage violates Azure safe deployment practices. See https://aka.ms/GenevaSafeConfigUpdate for more details.
