@@ -116,13 +116,13 @@ if ($ETW -or $all) {
   Write-Host "END:Deploying ETW Generator"
 }
 
-if ($EventLogs -or $all) {
+if($EventLogs -or $all){
   Write-Host "START:Deploying Event Log Generator"
   # TODO: Deploy event log generator here
   Write-Host "END:Deploying Event Log Generator"
 }
 
-if ($TextLogs -or $all) {
+if($TextLogs -or $all){
   Write-Host "START:Deploying Text Log Generator"
   # TODO: Deploy text log generator here
   Write-Host "END:Deploying Text Log Generator"
