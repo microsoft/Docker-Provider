@@ -26,7 +26,7 @@ az account set --subscription $SubscriptionId
 Start-Docker
 
 #Login into ACR
-Write-Host "Logining into ACR"
+Write-Host "Logging into ACR"
 az acr login --name $acrName
 
 #Create latest WHL Container Image

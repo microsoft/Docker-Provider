@@ -194,6 +194,7 @@ Log generators can be configured by editing the values in `log-generation-config
 
 By default, text logs are collected using the Text Log Subscription feature of AMA. It is possible to instead use Managed Fluent by updating the text logs geneva configuration in Jarvis. To switch to managed fluent, uncomment the `<ManagedFluent>` tag and comment out the `<TextLogSubscriptions>` tag.
 
+
 #### ETW
 `TODO: Fill out ETW generator configuration`
 | Option | Description |
@@ -230,8 +231,23 @@ Redeploy the Text Logs and Crash Dumps generators with new configuration
 ./deploy-log-generators.ps1 -TextLogs -CrashDumps -ApplyConfigChanges
 ```
 ## 6. Taking Measurements of each component
-Need to actually deploy a test component something to get this filled out
-<br>
+Metrics will be automatically sent to your Geneva account.
+To view a metrics summary you can create a [Geneva dashboard](https://portal.microsoftgeneva.com/dashboard/)
+![Example Geneva dashboard with CPU usage, Memory Usage, Number of logs colllected, and Number of Logs Dropped](images/geneva_metrics_dashboard.png)
+
+For the data source setting, set "Account" to your Geneva account and Namespace to "Monitoring Agent". From here you can see a variety of metrics such as CpuUsage, MemoryUsage and EventsLogged. For more info on the available metrics see [eng.ms/docs/products/geneva/collect/manage/agentmetrics](https://eng.ms/docs/products/geneva/collect/manage/agentmetrics#metrics)
+
+![Example Geneva dashboard with CPU usage, Memory Usage, Number of logs colllected, and Number of Logs Dropped](images/geneva_metrics_dashboard_settings.png)
+
+If more precise numbers are needed, it's also possible to view metrics counter logs in [dgrep](https://portal.microsoftgeneva.com/logs/dgrep) under the MACounterSummary metric.
+
+![Geneva metrics counters in DGrep](images/geneva_metrics_dgrep_counters.png)
+
+### Viewing Collected Logs
+If you need to view the collected test logs:
+* Event Logs , ETWs and Text Logs will show up in [dgrep](https://portal.microsoftgeneva.com/logs/dgrep)
+* Crash Dumps will show up in [azure watson](https://portal.watson.azure.com). The easiest way to find your crash dumps is to filter by MdsNamespace (Geneva account namespace). Scale testing crash dumps will show the crash process as "hugedump.exe"
+![Geneva metrics counters in DGrep](images/watson_crash_dumps.png)
 
 ## 7. How to clean up scale test infra
 To clean up all the resources you deployed we are going to use `.\Docker-Provider\test\whl-scale-tests\clean-infra.ps1`
