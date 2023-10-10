@@ -55,6 +55,9 @@ The general directory structure is:
 |   |   |   |── conf/                         - fluent, fluentbit and out_oms plugin configuration files
 |   |   |   |── scripts/                      - script files related to livenessproble, filesystemwatcher, keepCertificateAlive etc..
 |   |   |   |── certificategenerator/         - .NET code for the generation self-signed certificate of the windows agent
+|   |── hostologswindows/                     - scripts to build the cpp code for windows host logs
+|   |   |── Makefile.ps1                      - powershell script to build .net and go lang code and copy the files to amalogswindows directory
+|   |   ├── installer                         - files related to installer
 ├── charts/                                   - helm charts
 │   ├── azuremonitor-containers/              - azure monitor for containers helm chart used for non-AKS clusters
 ├── alerts/                                   - alert queries
@@ -74,6 +77,11 @@ The general directory structure is:
 │   │   ├── DockerFile                        - DockerFile for Windows Agent Container Image
 │   │   ├── main.ps1                          - Windows Agent container entry point
 │   │   ├── setup.ps1                         - setup file for Windows Agent Container Image
+│   │   ├── hostlogs/                         - scripts to build the Docker image for Windows Host Logs Agent
+|   |   |   ├── README.md                     - Information about building and deploying Windows Host Logs Agent 
+|   |   |   ├── Dockerfile                    - DockerFile for Windows Host Logs Container Image
+|   |   |   ├── main.ps1                      - Windows HostLogs container entry point
+|   |   |   ├── setup.ps1                     - setup file for Windows Host Logs Container Image
 │   ├── ama-logs.yaml                         - kubernetes yaml for both Linux and Windows Agent
 │   ├── container-azm-ms-agentconfig.yaml     - kubernetes yaml for agent configuration
 ├── scripts/                                  - scripts for onboarding, troubleshooting and preview scripts related to Azure Monitor for containers
