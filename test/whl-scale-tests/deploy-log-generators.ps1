@@ -101,19 +101,24 @@ az acr login -n $acrName
 
 if($CrashDumps -or $all){
   Write-Host "START:Deploying Crash Dump Generator"
-  # TODO: Deploy crash dump generator here
+  $PreBuild = {
+    . "$PSScriptRoot\crash-dumps\setup.ps1"
+    DownloadCrashDumpsPackage
+  }
+  
+  buildAndDeploy "$acrUri/generatecrashdumps:latest" "whl-crash-dump-generator" "whl-crashd" "crashd" $PSScriptRoot "$PSScriptRoot/crash-dumps/Dockerfile" $PreBuild -applyConfigChanges:$ApplyConfigChanges
   Write-Host "END:Deploying Crash Dump Generator"
 }
 
-if($ETW -or $all){
+if ($ETW -or $all) {
   Write-Host "START:Deploying ETW Generator"
-  # TODO: Deploy ETW generator here
+  BuildAndDeploy "$acrUri/generateetws:latest" "whl-etw-generator" "whl-etwlog" "etwlog" "$PSScriptRoot\ETW" -applyConfigChanges:$ApplyConfigChanges
   Write-Host "END:Deploying ETW Generator"
 }
 
 if($EventLogs -or $all){
   Write-Host "START:Deploying Event Log Generator"
-  # TODO: Deploy event log generator here
+  buildAndDeploy "$acrUri/generateeventlogs:latest" "whl-event-log-generator" "whl-evtlog" "evtlog" "$PSScriptRoot\event-logs" -applyConfigChanges:$ApplyConfigChanges
   Write-Host "END:Deploying Event Log Generator"
 }
 

@@ -64,81 +64,16 @@
         </MdmDimensions>
       </CounterSet>
     </CounterSets>
-<!-- Update with the Event Logs that we are generating and only watch for those Event Logs
     <WindowsEventLogSubscriptions>   
-      <Subscription eventName="SystemEvents" query="System!*" storeType="CentralBond" priority="High" deadline="PT5M">
+      <Subscription eventName="WHLScaleTestEventLog" query="WHLScaleTest!*[System[Provider[@Name='WHLScaleTestSource']]]" storeType="CentralBond">
         <Column name="EventData" defaultAssignment="">
           <Value>/Event/EventData/Data</Value>
         </Column>
-        <Column name="ProviderName" defaultAssignment="">
-          <Value>/Event/System/Provider/@Name</Value>
-        </Column>
-        <Column name="Level" type="mt:int32" defaultAssignment="4">
-          <Value>/Event/System/Level</Value>
-        </Column>
-        <Column name="Task" defaultAssignment="">
-          <Value>/Event/System/Task</Value>
-        </Column>
-        <Column name="EventID" type="mt:int32" defaultAssignment="0">
+        <Column name="JobNumber" defaultAssignment="">
           <Value>/Event/System/EventID</Value>
-        </Column>
-      </Subscription>
-      <Subscription eventName="ApplicationEvents" query="Application!*" storeType="CentralBond">
-        <Column name="EventData" defaultAssignment="">
-          <Value>/Event/EventData/Data</Value>
-        </Column>
-        <Column name="ProviderName" defaultAssignment="">
-          <Value>/Event/System/Provider/@Name</Value>
-        </Column>
-        <Column name="Level" type="mt:int32" defaultAssignment="4">
-          <Value>/Event/System/Level</Value>
-        </Column>
-        <Column name="Task" defaultAssignment="">
-          <Value>/Event/System/Task</Value>
-        </Column>
-        <Column name="EventId" defaultAssignment="0" type="mt:int32">
-          <Value>/Event/System/EventID</Value>
-        </Column>
-        <Column name="OpCode" type="mt:int32" defaultAssignment="0">
-          <Value>/Event/System/Opcode</Value>
-        </Column>
-      </Subscription>
-      <Subscription eventName="SecurityEvents" query="Security!*[System[((EventID!=4672 and EventID!=5058 and EventID!=5061 and EventID!=5145))]]" storeType="Local" duration="PT5M" retentionInDays="5">
-        <Column name="ProviderName" defaultAssignment="">
-          <Value>/Event/System/Provider/@Name</Value>
-        </Column>
-        <Column name="EventID" type="mt:int32" defaultAssignment="">
-          <Value>/Event/System/EventID</Value>
-        </Column>
-        <Column name="Channel" defaultAssignment="">
-          <Value>/Event/System/Channel</Value>
-        </Column>
-        <Column name="Computer" defaultAssignment="">
-          <Value>/Event/System/Computer</Value>
-        </Column>
-        <Column name="EventData" defaultAssignment="">
-          <Value>/Event/EventData/Data</Value>
-        </Column>
-      </Subscription>
-      <Subscription eventName="HostIDSOperationsLogEvents" query="HostIDS Operations Log!*" storeType="Local" duration="PT5M" retentionInDays="5">
-        <Column name="ProviderName" defaultAssignment="">
-          <Value>/Event/System/Provider/@Name</Value>
-        </Column>
-        <Column name="EventID" type="mt:int32" defaultAssignment="">
-          <Value>/Event/System/EventID</Value>
-        </Column>
-        <Column name="Channel" defaultAssignment="">
-          <Value>/Event/System/Channel</Value>
-        </Column>
-        <Column name="Computer" defaultAssignment="">
-          <Value>/Event/System/Computer</Value>
-        </Column>
-        <Column name="EventData" defaultAssignment="">
-          <Value>/Event/EventData/Data</Value>
         </Column>
       </Subscription>
     </WindowsEventLogSubscriptions>
--->
     <Extensions>
       <Extension extensionName="MetricsExtension">
         <CommandLine><![CDATA[MetricsExtension.Native.exe -ConfigOverrides {\"imdsInfo\":[{\"account\":\"GENEVA_METRIC_ACCOUNT\",\"objectId\":\"CLUSTER_MANAGED_IDENTITY_OBJECT_ID\"}]}]]></CommandLine>

@@ -196,22 +196,25 @@ By default, text logs are collected using the Text Log Subscription feature of A
 
 
 #### ETW
-`TODO: Fill out ETW generator configuration`
 | Option | Description |
 | ------ | ----------- |
-| | |
+| ETW_EVENTS_NUM | Number of ETW events to generate|
 
 #### Event Logs
-`TODO: Fill out Event Log generator configuration`
 | Option | Description |
 | ------ | ----------- |
-| | |
+| EVTLOGS_JOB_COUNT | Number of event log generation jobs to run in parallel
+| EVTLOGS_LOG_COUNT | Number of event logs to generate per job
+| EVTLOGS_DELAY | Time to wait between writing each event log
 
 #### Crash Dumps
-`TODO: Fill out Crash Dumps generator configuration`
+
 | Option | Description |
 | ------ | ----------- |
-| | |
+| CRASHD_NUM_CRASHES | Number of crash dumps to generate |
+| CRASHD_ALLOC_STRATEGY | Strategy to use for memory allocation. Options are: <ul> <li> va : allocate using VirtualAlloc </li><li> ha : allocate using HeapAlloc </li><li> sa : allocate on threads' stacks </li><ul> |
+| CRASHD_ALLOC_TOTAL_SIZE | Total number of GB to allocate before crashing |
+| CRASHD_ALLOC_PORTION_SIZE | Allocation portion size in KB |
 
 ### Deploy Log generators
 ```powershell

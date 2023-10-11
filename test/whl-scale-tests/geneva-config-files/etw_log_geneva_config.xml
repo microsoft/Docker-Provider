@@ -63,82 +63,36 @@
         </MdmDimensions>
       </CounterSet>
     </CounterSets>
-<!-- Update with the ETW Logs that we are generating and only watch for those ETW Logs
     <EtwProviders>
-      <EtwProvider guid="80CE50DE-D264-4581-950D-ABADEEE0D340" format="Manifest" storeType="CentralBond" levelFilter="3">
-        <DefaultEvent eventName="WindowsHyperVCompute" />
+      <EtwProvider guid="3CB2A168-FE19-4A4E-BDAD-DCF422F13473" format="Manifest" storeType="CentralBond" levelFilter="4">
+        <DefaultEvent eventName="WindowsAppId" />
+        <Event eventName="WindowsAppId" id="4007" />
       </EtwProvider>
-      <EtwProvider guid="94DEB9D1-0A52-449B-B368-41E4426B4F36" format="Manifest" storeType="CentralBond" levelFilter="5">
-        <DefaultEvent eventName="WindowsHyperVNetSetupHelper" />
+      <EtwProvider guid="CBDA4DBF-8D5D-4F69-9578-BE14AA540D22" format="Manifest" storeType="CentralBond" levelFilter="5">
+        <DefaultEvent eventName="WindowsAppLocker" />
+        <Event eventName="WindowsAppLocker" id="8026" />
+        <Event eventName="WindowsAppLocker" id="8027" />
+        <Event eventName="WindowsAppLocker" id="8036" />
       </EtwProvider>
-      <EtwProvider guid="6C28C7E5-331B-4437-9C69-5352A2F7F296" format="Manifest" storeType="CentralBond" levelFilter="3">
-        <DefaultEvent eventName="WindowsHyperVVmsIf" />
+      <EtwProvider guid="F1EF270A-0D32-4352-BA52-DBAB41E1D859" format="Manifest" storeType="CentralBond" levelFilter="4">
+        <DefaultEvent eventName="AppModelRuntime" />
+        <Event eventName="AppModelRuntime" id="217" />
+        <Event eventName="AppModelRuntime" id="53" />
+        <Event eventName="AppModelRuntime" id="54" />
+        <Event eventName="AppModelRuntime" id="55" />
+        <Event eventName="AppModelRuntime" id="56" />
       </EtwProvider>
-      <EtwProvider guid="C29C4FB7-B60E-4FFF-9AF9-CF21F9B09A34" format="Manifest" storeType="CentralBond" levelFilter="3">
-        <DefaultEvent eventName="WindowsHyperVSynthNic" />
-      </EtwProvider>
-      <EtwProvider guid="9F2660EA-CFE7-428F-9850-AECA612619B0" format="Manifest" storeType="CentralBond" levelFilter="3">
-        <DefaultEvent eventName="WindowsHyperVVfpExt" />
-      </EtwProvider>
-      <EtwProvider guid="67DC0D66-3695-47c0-9642-33F76F7BD7AD" format="Manifest" storeType="CentralBond" levelFilter="3">
-        <DefaultEvent eventName="WindowsHyperVVmSwitch" />
-      </EtwProvider>
-      <EtwProvider guid="AE3F6C6D-BF2A-4291-9D07-59E661274EE3" format="Manifest" storeType="CentralBond" levelFilter="5">
-        <DefaultEvent eventName="IpNatWpp" />
-      </EtwProvider>
-      <EtwProvider guid="9d911ddb-d45f-41c3-b766-d566d2655c4a" format="Manifest" storeType="CentralBond" levelFilter="5">
-        <DefaultEvent eventName="WindowsContainersManager" />
-      </EtwProvider>
-      <EtwProvider guid="D1BC9AFF-2ABF-4D71-9146-ECB2A986EB85" format="Manifest" storeType="CentralBond" levelFilter="5">
-        <DefaultEvent eventName="WindowsFirewall" />
-      </EtwProvider>
-      <EtwProvider guid="15A7A4F8-0072-4EAB-ABAD-F98A4D666AED" format="Manifest" storeType="CentralBond" levelFilter="5">
-        <DefaultEvent eventName="WindowsDhcpClient" />
-      </EtwProvider>
-      <EtwProvider guid="6A1F2B00-6A90-4C38-95A5-5CAB3B056778" format="Manifest" storeType="CentralBond" levelFilter="5">
-        <DefaultEvent eventName="WindowsDHCPv6Client" />
-      </EtwProvider>
-      <EtwProvider guid="1C95126E-7EEA-49A9-A3FE-A378B03DDB4D" format="Manifest" storeType="CentralBond" levelFilter="5">
-        <DefaultEvent eventName="WindowsDNSClient" />
-      </EtwProvider>
-      <EtwProvider guid="0c885e0d-6eb6-476c-a048-2457eed3a5c1" format="Manifest" storeType="CentralBond" levelFilter="4">
-        <DefaultEvent eventName="HostNetworkService" />
-      </EtwProvider>
-      <EtwProvider guid="93f693dc-9163-4dee-af64-d855218af242" format="Manifest" storeType="CentralBond" levelFilter="5">
-        <DefaultEvent eventName="HostNetworkManagement" />
-      </EtwProvider>
-      <EtwProvider guid="D0E4BC17-34C7-43fc-9A72-D89A59D6979A" format="Manifest" storeType="CentralBond" levelFilter="5">
-        <DefaultEvent eventName="HostNetworkingService" />
-      </EtwProvider>
-      <EtwProvider guid="564368D6-577B-4af5-AD84-1C54464848E6" format="Manifest" storeType="CentralBond" levelFilter="5">
-        <DefaultEvent eventName="WindowsOverlayHNSPlugin" />
-      </EtwProvider>
-      <EtwProvider guid="A6F32731-9A38-4159-A220-3D9B7FC5FE5D" format="Manifest" storeType="CentralBond" levelFilter="5">
-        <DefaultEvent eventName="WindowsSharedAccessNAT" />
-      </EtwProvider>
-      <EtwProvider guid="2F07E2EE-15DB-40F1-90EF-9D7BA282188A" format="Manifest" storeType="CentralBond" levelFilter="3">
-        <DefaultEvent eventName="WindowsTCPIP" />
-      </EtwProvider>
-      <EtwProvider guid="66C07ECD-6667-43FC-93F8-05CF07F446EC" format="Manifest" storeType="CentralBond" levelFilter="5">
-        <DefaultEvent eventName="WindowsWinNat" />
-      </EtwProvider>
-      <EtwProvider guid="9B322459-4AD9-4F81-8EEA-DC77CDD18CA6" format="Manifest" storeType="CentralBond" levelFilter="5">
-        <DefaultEvent eventName="SharedAccessSvcWPPProvider" />
-      </EtwProvider>
-      <EtwProvider guid="1F387CBC-6818-4530-9DB6-5F1058CD7E86" format="Manifest" storeType="CentralBond" levelFilter="5">
-        <DefaultEvent eventName="vmswitch" />
-      </EtwProvider>
-      <EtwProvider guid="AA7387CF-3639-496A-B3BF-DC1E79A6fc5A" format="Manifest" storeType="CentralBond" levelFilter="5">
-        <DefaultEvent eventName="WinNatWpp" />
-      </EtwProvider>
-      <EtwProvider guid="5EEFEBDB-E90C-423a-8ABF-0241E7C5B87D" format="Manifest" storeType="CentralBond" levelFilter="5">
-        <DefaultEvent eventName="WindowsFirewallService" />
+      <EtwProvider guid="F0BE35F8-237B-4814-86B5-ADE51192E503" format="Manifest" storeType="CentralBond" levelFilter="4">
+        <DefaultEvent eventName="AppReadiness" />
+        <Event eventName="AppReadiness" id="5047" />
+        <Event eventName="AppReadiness" id="5046" />
+        <Event eventName="AppReadiness" id="5045" />
       </EtwProvider>
     </EtwProviders>
--->
     <Extensions>
       <Extension extensionName="MetricsExtension">
-        <CommandLine><![CDATA[MetricsExtension.Native.exe -ConfigOverrides {\"imdsInfo\":[{\"account\":\"GENEVA_METRIC_ACCOUNT\",\"objectId\":\"CLUSTER_MANAGED_IDENTITY_OBJECT_ID\"}]}]]></CommandLine>      </Extension>
+        <CommandLine><![CDATA[MetricsExtension.Native.exe -ConfigOverrides {\"imdsInfo\":[{\"account\":\"GENEVA_METRIC_ACCOUNT\",\"objectId\":\"CLUSTER_MANAGED_IDENTITY_OBJECT_ID\"}]}]]></CommandLine>
+      </Extension>
     </Extensions>
   </Events>
 </MonitoringManagement>
