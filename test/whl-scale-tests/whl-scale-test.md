@@ -189,10 +189,9 @@ Log generators can be configured by editing the values in `log-generation-config
 | | |
 
 #### ETW
-`TODO: Fill out ETW generator configuration`
 | Option | Description |
 | ------ | ----------- |
-| | |
+| ETW_EVENTS_NUM | Number of ETW events to generate|
 
 #### Event Logs
 | Option | Description |
@@ -202,10 +201,13 @@ Log generators can be configured by editing the values in `log-generation-config
 | EVTLOGS_DELAY | Time to wait between writing each event log
 
 #### Crash Dumps
-`TODO: Fill out Crash Dumps generator configuration`
+
 | Option | Description |
 | ------ | ----------- |
-| | |
+| CRASHD_NUM_CRASHES | Number of crash dumps to generate |
+| CRASHD_ALLOC_STRATEGY | Strategy to use for memory allocation. Options are: <ul> <li> va : allocate using VirtualAlloc </li><li> ha : allocate using HeapAlloc </li><li> sa : allocate on threads' stacks </li><ul> |
+| CRASHD_ALLOC_TOTAL_SIZE | Total number of GB to allocate before crashing |
+| CRASHD_ALLOC_PORTION_SIZE | Allocation portion size in KB |
 
 ### Deploy Log generators
 ```powershell
