@@ -45,7 +45,7 @@ spec:
               memory: 1Gi
           env:
             - name: AKS_RESOURCE_ID
-              value: VALUE_AKS_RESORUCE_ID
+              value: VALUE_AKS_RESOURCE_ID
             - name: AKS_CLUSTER_NAME
               value: VALUE_AKS_CLUSTER_NAME
             - name: AKS_REGION

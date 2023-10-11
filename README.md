@@ -55,8 +55,8 @@ The general directory structure is:
 |   |   |   |── conf/                         - fluent, fluentbit and out_oms plugin configuration files
 |   |   |   |── scripts/                      - script files related to livenessproble, filesystemwatcher, keepCertificateAlive etc..
 |   |   |   |── certificategenerator/         - .NET code for the generation self-signed certificate of the windows agent
-|   |── hostologswindows/                     - scripts to build the cpp code for windows host logs
-|   |   |── Makefile.ps1                      - powershell script to build .net and go lang code and copy the files to amalogswindows directory
+|   |── hostlogswindows/                      - scripts to build the cpp code for windows host logs
+|   |   |── Makefile.ps1                      - powershell script to build cpp code and copy the files to hostlogswindows directory
 |   |   ├── installer                         - files related to installer
 ├── charts/                                   - helm charts
 │   ├── azuremonitor-containers/              - azure monitor for containers helm chart used for non-AKS clusters

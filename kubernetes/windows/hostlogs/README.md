@@ -23,7 +23,7 @@ powershell -ExecutionPolicy bypass  # switch to powershell if you are not on pow
 ```
 
 # Deploying WHL
-1. Open _Docker-Provider\kubernetes\host-logs-geneva.yaml_. Replace `VALUE_CONTAINER_IMAGE`, `VALUE_AKS_RESORUCE_ID`, `VALUE_AKS_CLUSTER_NAME`, and `VALUE_AKS_RESOURCE_REGION_VALUE` with the appropriate values
+1. Open _Docker-Provider\kubernetes\host-logs-geneva.yaml_. Replace `VALUE_CONTAINER_IMAGE`, `VALUE_AKS_RESOURCE_ID`, `VALUE_AKS_CLUSTER_NAME`, and `VALUE_AKS_RESOURCE_REGION_VALUE` with the appropriate values
 
 2. Open _Docker-Provider\kubernetes\container-azm-ms-agentconfig.yaml_. Update the agent settings under "`hostlogs-settings`"
 
