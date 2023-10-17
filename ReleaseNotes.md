@@ -13,7 +13,7 @@ additional questions or comments.
 ##### Version microsoft/oms:win-3.1.15 Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.15 (windows)
 ##### Current dependencies
 - Linux
-  - [CBL-Mariner 2.0.20230630](https://github.com/microsoft/CBL-Mariner/releases/tag/2.0.20230805-2.0)
+  - [CBL-Mariner 2.0.20230924](https://github.com/microsoft/CBL-Mariner/releases/tag/2.0.20230924-2.0)
   - Golang - 1.20.5
   - Ruby - 3.1.3
   - MDSD - 1.27.4
@@ -25,7 +25,7 @@ additional questions or comments.
   - Fluent-bit - 2.0.14
   - Telegraf - 1.24.2
   - Fluentd - 1.14.6
-  - Windows AMA - 46.3.2
+  - Windows AMA - 46.9.43
   - Golang - 1.20.5
 ##### Code change log
 ## What's Changed
