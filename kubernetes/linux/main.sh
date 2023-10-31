@@ -620,6 +620,7 @@ if [ -e "telemetry_prom_config_env_var" ]; then
             echo $line >>~/.bashrc
       done
       source telemetry_prom_config_env_var
+      setGlobalEnvVar TELEMETRY_RS_TELEGRAF_DISABLED "${TELEMETRY_RS_TELEGRAF_DISABLED}"
 else
       setGlobalEnvVar TELEMETRY_RS_TELEGRAF_DISABLED true
       setGlobalEnvVar TELEMETRY_CUSTOM_PROM_MONITOR_PODS false
