@@ -46,7 +46,7 @@ class KubernetesApiClient
   @@memoryLimitsTelemetryTimeTracker = DateTime.now.to_time.to_i
   @@memoryRequestsTelemetryTimeTracker = DateTime.now.to_time.to_i
   @@resourceLimitsTelemetryHash = {}
-  @@userAgent = "ama-logs-" + (ENV["AGENT_VERSION"].nil? ? "" : ENV["AGENT_VERSION"])
+  @@userAgent = "ama-logs/" + (ENV["AGENT_VERSION"].nil? ? "0.0.0" : ENV["AGENT_VERSION"]) + " (#{@os_type})"
 
   def initialize
   end
