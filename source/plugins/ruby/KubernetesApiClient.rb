@@ -46,6 +46,7 @@ class KubernetesApiClient
   @@memoryLimitsTelemetryTimeTracker = DateTime.now.to_time.to_i
   @@memoryRequestsTelemetryTimeTracker = DateTime.now.to_time.to_i
   @@resourceLimitsTelemetryHash = {}
+  @@userAgent = "ama-logs-" + ENV["AGENT_VERSION"]
 
   def initialize
   end
@@ -65,6 +66,7 @@ class KubernetesApiClient
             Net::HTTP.start(uri.host, uri.port, :use_ssl => true, :ca_file => @@CaFile, :verify_mode => OpenSSL::SSL::VERIFY_PEER, :open_timeout => 20, :read_timeout => 40) do |http|
               kubeApiRequest = Net::HTTP::Get.new(uri.request_uri)
               kubeApiRequest["Authorization"] = "Bearer " + getTokenStr
+              kubeApiRequest["User-Agent"] = @@userAgent
               @Log.info "KubernetesAPIClient::getKubeResourceInfo : Making request to #{uri.request_uri} @ #{Time.now.utc.iso8601}"
               response = http.request(kubeApiRequest)
               @Log.info "KubernetesAPIClient::getKubeResourceInfo : Got response of #{response.code} for #{uri.request_uri} @ #{Time.now.utc.iso8601}"
@@ -97,6 +99,7 @@ class KubernetesApiClient
             Net::HTTP.start(uri.host, uri.port, :use_ssl => true, :ca_file => @@CaFile, :verify_mode => OpenSSL::SSL::VERIFY_PEER, :open_timeout => 20, :read_timeout => 40) do |http|
               kubeApiRequest = Net::HTTP::Get.new(uri.request_uri)
               kubeApiRequest["Authorization"] = "Bearer " + getTokenStr
+              kubeApiRequest["User-Agent"] = @@userAgent
               @Log.info "KubernetesAPIClient::getKubeResourceInfoV2 : Making request to #{uri.request_uri} @ #{Time.now.utc.iso8601}"
               response = http.request(kubeApiRequest)
               responseCode = response.code
