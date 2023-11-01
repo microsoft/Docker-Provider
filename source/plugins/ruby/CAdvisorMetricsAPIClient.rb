@@ -62,7 +62,8 @@ class CAdvisorMetricsAPIClient
   @@telemetryCpuMetricTimeTracker = DateTime.now.to_time.to_i
   @@telemetryMemoryMetricTimeTracker = DateTime.now.to_time.to_i
   @@telemetryPVKubeSystemMetricsTimeTracker = DateTime.now.to_time.to_i
-  @@userAgent = "ama-logs-" + ENV["AGENT_VERSION"]
+  @@userAgent = "ama-logs-" + (ENV["AGENT_VERSION"].nil? ? "" : ENV["AGENT_VERSION"])
+
 
   #Containers a hash of node name and the last time telemetry was sent for this node
   @@nodeTelemetryTimeTracker = {}
