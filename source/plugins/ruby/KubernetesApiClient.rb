@@ -946,6 +946,7 @@ class KubernetesApiClient
         }
         http_headers = {
           Authorization: "Bearer " + getTokenStr,
+          "User-Agent": @@userAgent,
         }
         ns = ""
         if !options[:namespace].to_s.empty?
