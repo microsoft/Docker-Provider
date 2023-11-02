@@ -46,7 +46,7 @@ class KubernetesApiClient
   @@memoryLimitsTelemetryTimeTracker = DateTime.now.to_time.to_i
   @@memoryRequestsTelemetryTimeTracker = DateTime.now.to_time.to_i
   @@resourceLimitsTelemetryHash = {}
-  @@userAgent = ""
+  @@userAgent = nil
 
   def initialize
   end
@@ -225,10 +225,13 @@ class KubernetesApiClient
     end
 
     def getUserAgent()
-      if @@userAgent.nil? || @@userAgent.empty?
-        @@userAgent = "ama-logs/#{ENV['AGENT_VERSION'].nil? ? '0.0.0' : ENV['AGENT_VERSION']} (#{ENV['OS_TYPE'].nil? ? 'linux' : ENV['OS_TYPE']}; Ruby #{RUBY_PLATFORM})"
+      return @@userAgent if !@@userAgent.nil?
+      begin
+          @@userAgent = "ama-logs/#{ENV['AGENT_VERSION'].nil? ? '0.0.0' : ENV['AGENT_VERSION']} (#{ENV['OS_TYPE'].nil? ? 'linux' : ENV['OS_TYPE']}; Ruby #{RUBY_PLATFORM})"
+      rescue => error
+        @Log.warn("KubernetesAPIClient::getUserAgent : getUserAgent failed: #{error}")
       end
-      return @@userAgent
+      return "ama-logs/0.0.0 ()"
     end
 
     def isAROV3Cluster
