@@ -1,5 +1,8 @@
 ﻿import { IContainer, IVolume, PodInfo } from "./RequestDefinition.js";
 
+/**
+ * Contains a collection of mutations necessary to add functionality to a Pod
+ */
 export class Mutations {
     // name of the init container
     private static initContainerNameDotNet = "agent-init-dotnet";
@@ -21,7 +24,7 @@ export class Mutations {
     private static agentVolumeJava = "agent-volume-java";
     private static agentVolumeNodeJs = "agent-volume-nodejs";
 
-    // agent volume mount path
+    // agent volume mount path (where customer app's runtime loads agents from)
     private static agentVolumeMountPathDotNet = "/agent-dotnet";
     private static agentVolumeMountPathJava = "/agent-java";
     private static agentVolumeMountPathNodeJs = "/agent-nodejs";
@@ -32,6 +35,9 @@ export class Mutations {
     // agent logs volume mount path
     private static agentLogsVolumeMountPath = "/var/log/applicationinsights"; // this is hardcoded in Java SDK and NodeJs SDK, can't change this
     
+    /**
+     * Creates init containers that are used to copy agent binaries onto a Pod. These containers download the agent image, copy agent binaries from inside of the image, and finish.
+     */
     public static GenerateInitContainers(platforms: string[]): IContainer[] {
         const containers: IContainer[] = [];
 
@@ -88,6 +94,9 @@ export class Mutations {
         return containers;
     }
 
+    /**
+     * Generates environment variables necessary to configure agents. Agents take configuration from these environment variables once they run.
+     */
     public static GenerateEnvironmentVariables(podInfo: PodInfo, platforms: string[], connectionString: string, armId: string, armRegion: string, clusterName: string): object[] {
         const ownerNameAttribute: string = podInfo.ownerReference ? `k8s.${podInfo.ownerReference.kind?.toLowerCase()}.name=${podInfo.ownerReference.name}` : null;
         const ownerUidAttribute: string = podInfo.ownerReference ? `k8s.${podInfo.ownerReference.kind?.toLowerCase()}.uid=${podInfo.ownerReference.uid}` : null;
@@ -222,6 +231,10 @@ ${ownerUidAttribute}`
         return returnValue;
     }
 
+    /**
+     * Generates volume mounts necessary for customer app's runtimes to load agent binaries.
+     * Also generates volume mounts necessary for the agents to dump runtime logs.
+     */
     public static GenerateVolumeMounts(platforms: string[]): object[] {
         const volumeMounts: object[] = [];
 
@@ -277,6 +290,9 @@ ${ownerUidAttribute}`
         return volumeMounts;
     }
 
+    /**
+     * Generates volumes to place agent binaries, and also volumes for agents to dump runtime logs.
+     */
     public static GenerateVolumes(platforms: string[]) : IVolume[] {
         const volumes: IVolume[] = [];
 

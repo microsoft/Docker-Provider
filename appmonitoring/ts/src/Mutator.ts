@@ -5,15 +5,20 @@ import { AdmissionReviewValidator } from "./AdmissionReviewValidator.js";
 import { AppMonitoringConfigCRsCollection } from "./AppMonitoringConfigCRsCollection.js";
 
 export class Mutator {
+    /**
+     * Mutates the incoming AdmissionReview of a Pod to enable autoattach features on it
+     * @returns An AdmissionReview k8s object that represents a response from the webhook to the API server. Includes the JsonPatch mutation to the incoming AdmissionReview.
+     */
     public static async MutatePod(admissionReview: IAdmissionReview, crs: AppMonitoringConfigCRsCollection, clusterArmId: string, clusterArmRegion: string): Promise<string> {
+        // this is what we need to return to k8s API server
         const response = {
             apiVersion: "admission.k8s.io/v1",
             kind: "AdmissionReview",
             response: {
                 allowed: true, // we only mutate, not admit, so this should always be true as we never want to block any of the customer's API calls
-                patch: undefined,
+                patch: undefined, // JsonPatch document describing the mutation
                 patchType: "JSONPatch",
-                uid: ""
+                uid: "" // must match the uid of the incoming AdmissionReview
             },
         };
 
@@ -37,6 +42,7 @@ export class Mutator {
                 throw `Could not determine the namespace of the incoming object: ${mutator.AdmissionReview}`;
             }
 
+            // find an appropriate CR that dictates whether and how we should mutate
             const cr: AppMonitoringConfigCR = crs.GetCR(namespace, podInfo.deploymentName);
             if (!cr) {
                 // no relevant CR found, do not mutate and return with no modifications
