@@ -231,7 +231,7 @@ class KubernetesApiClient
       rescue => error
         @Log.warn("KubernetesAPIClient::getUserAgent : getUserAgent failed: #{error}")
       end
-      return "ama-logs/0.0.0 ()"
+      return @@userAgent || "ama-logs/0.0.0 ()"
     end
 
     def isAROV3Cluster
