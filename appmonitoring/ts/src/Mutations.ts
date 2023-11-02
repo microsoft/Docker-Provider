@@ -16,7 +16,7 @@ export class Mutations {
     
     // path on agent image to copy from
     private static imagePathDotNet = "/dotnet-tracer-home/.";
-    private static imagePathJava = "/agents/java/applicationinsights-agent-codeless.jar";
+    private static imagePathJava = "/agents/java/.";
     private static imagePathNodeJs = "/agents/nodejs/.";
 
     // agent volume (where init containers copy agent binaries to)
