@@ -1,0 +1,127 @@
+﻿import { Patcher } from "./Patcher.js";
+import { logger, Metrics } from "./LoggerWrapper.js";
+import { PodInfo, IOwnerReference, IAdmissionReview, AppMonitoringConfigCR } from "./RequestDefinition.js";
+import { AdmissionReviewValidator } from "./AdmissionReviewValidator.js";
+import { AppMonitoringConfigCRsCollection } from "./AppMonitoringConfigCRsCollection.js";
+
+export class Mutator {
+    public static async MutatePod(admissionReview: IAdmissionReview, crs: AppMonitoringConfigCRsCollection, clusterArmId: string, clusterArmRegion: string): Promise<string> {
+        const response = {
+            apiVersion: "admission.k8s.io/v1",
+            kind: "AdmissionReview",
+            response: {
+                allowed: true, // we only mutate, not admit, so this should always be true as we never want to block any of the customer's API calls
+                patch: undefined,
+                patchType: "JSONPatch",
+                uid: ""
+            },
+        };
+
+        try {
+            const mutator: Mutator = new Mutator(admissionReview);
+
+            logger.telemetry(Metrics.CPStart, 1, mutator.uid);
+
+            response.apiVersion = mutator.AdmissionReview.apiVersion;
+            response.response.uid = mutator.AdmissionReview.request.uid;
+            response.kind = mutator.AdmissionReview.kind;
+            
+            if(!AdmissionReviewValidator.Validate(mutator.AdmissionReview)) {
+                throw `Validation of the incoming AdmissionReview failed`;
+            }
+
+            const podInfo: PodInfo = await mutator.getPodInfo();
+            
+            const namespace: string = mutator.AdmissionReview.request.object.metadata.namespace;
+            if (!namespace) {
+                throw `Could not determine the namespace of the incoming object: ${mutator.AdmissionReview}`;
+            }
+
+            const cr: AppMonitoringConfigCR = crs.GetCR(namespace, podInfo.deploymentName);
+            if (!cr) {
+                // no relevant CR found, do not mutate and return with no modifications
+                logger.info(`No governing CR found, will not mutate`);
+                response.response.patch = Buffer.from(JSON.stringify([])).toString("base64");
+            } else {
+                const armIdMatches = /^\/subscriptions\/(?<SubscriptionId>[^/]+)\/resourceGroups\/(?<ResourceGroup>[^/]+)\/providers\/(?<Provider>[^/]+)\/(?<ResourceType>[^/]+)\/(?<ResourceName>[^/]+).*$/i.exec(clusterArmId);
+                if (!armIdMatches || armIdMatches.length != 6) {
+                    throw `ARM ID is in a wrong format: ${clusterArmId}`;
+                }
+
+                const clusterName = armIdMatches[5];
+
+                logger.info(`Governing CR for the object to be processed (namespace: ${namespace}, deploymentName: ${podInfo.deploymentName}): ${JSON.stringify(cr)}`);
+
+                const patchData: object[] = await Patcher.PatchPod(
+                    mutator.AdmissionReview,
+                    podInfo as PodInfo,
+                    cr.spec.autoInstrumentationPlatforms,
+                    cr.spec.aiConnectionString,
+                    clusterArmId,
+                    clusterArmRegion,
+                    clusterName);
+
+                response.response.patch = Buffer.from(JSON.stringify(patchData)).toString("base64");
+
+                logger.telemetry(Metrics.CPSuccess, 1, mutator.uid);
+            }
+
+            const result = JSON.stringify(response);
+            logger.info(`Determined final response ${mutator.uid}, ${result}`);
+            return result;
+        } catch (e) {
+            logger.error(`Exception encountered: ${e}`);
+            logger.telemetry(Metrics.CPError, 1, "");
+
+            response.response.patch = undefined;
+            return JSON.stringify(response);
+        }
+    }
+
+    public readonly AdmissionReview: IAdmissionReview;
+
+    private constructor(message: IAdmissionReview) {
+        if(!message) {
+            throw `Admission review can't be null`;
+        }
+
+        this.AdmissionReview = message;
+    }
+
+    public get uid() {
+        if (this.AdmissionReview && this.AdmissionReview.request && this.AdmissionReview.request.uid) {
+            return this.AdmissionReview.request.uid;
+        }
+        return "";
+    }
+
+    private async getPodInfo(): Promise<PodInfo> {
+        logger.info(`Attempting to get owner info ${this.uid}`);
+
+        const podInfo: PodInfo = new PodInfo();
+
+        podInfo.namespace = this.AdmissionReview.request.namespace;
+        podInfo.name = this.AdmissionReview.request.object.metadata.name;
+
+        podInfo.onlyContainerName = this.AdmissionReview.request.object.spec.containers?.length == 1 ? this.AdmissionReview.request.object.spec.containers[0].name : null;
+
+        const ownerReference: IOwnerReference | null = this.AdmissionReview.request.object.metadata?.ownerReferences[0];
+
+        if(ownerReference?.kind) {
+            podInfo.ownerReference = ownerReference;
+            
+            if(ownerReference.kind.localeCompare("ReplicaSet", undefined, { sensitivity: 'accent' }) === 0) {
+                // the owner is a replica set, so we need to try to get to the deployment
+                // while it is possible to name a bare ReplicaSet (not produced by a Deployment) in a way that will fool the regex, we are ignoring that corner case
+                const matches = /^\b(?<!-)(?<role_name>[a-z0-9]+(?:-[a-z0-9]+)*?)(?:-([a-f0-9]{8-12}))?-([a-z0-9]+)$/i.exec(ownerReference.name);
+                if(matches && matches.length > 0) {
+                    podInfo.deploymentName = matches[1];
+                } else {
+                    podInfo.deploymentName = null;
+                }                             
+            }
+        }
+                
+        return Promise.resolve(podInfo);
+    }
+}

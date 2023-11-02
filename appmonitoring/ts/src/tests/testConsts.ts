@@ -1,102 +1,27 @@
 ﻿/* tslint:disable */
-export const TestObject = JSON.stringify({
-    kind: "Testing",
-    apiVersion: "admission.k8s.io/v1",
-    request: {
-        uid: "6e55578b-9c4f-11e9-9685-b65b44598b61",
-        kind: {
-            group: "apps",
-            version: "v1",
-            kind: "Deployment",
-        },
-        resource: {
-            group: "apps",
-            version: "v1",
-            resource: "deployments",
-        },
-        namespace: "default",
-        operation: "CREATE",
-        userInfo: {
-            username: "masterclient",
-            groups: ["system:masters", "system:authenticated"],
-        },
-        object: {
-            kind: "Deployment",
-            apiVersion: "apps/v1",
-            metadata: {
-                name: "spring-simple",
-                namespace: "default",
-                creationTimestamp: "None",
-                labels: {
-                    app: "spring-simple",
-                },
-                annotations: {
-                    "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{},\"name\":\"spring-simple\",\"namespace\":\"default\"},\"spec\":{\"minReadySeconds\":5,\"replicas\":1,\"strategy\":{\"rollingUpdate\":{\"maxSurge\":1,\"maxUnavailable\":1}},\"template\":{\"metadata\":{\"labels\":{\"app\":\"spring-simple\"}},\"spec\":{\"containers\":[{\"image\":\"tamhariacr.azurecr.io/spring-simple:v1\",\"name\":\"spring-simple\",\"ports\":[{\"containerPort\":8080}],\"resources\":{\"limits\":{\"cpu\":\"200m\"},\"requests\":{\"cpu\":\"150m\"}}}],\"nodeSelector\":{\"beta.kubernetes.io/os\":\"linux\"}}}}}\n",
-                },
-            },
-            spec: {
-                replicas: 1,
-                selector: {
-                    matchLabels: {
-                        app: "spring-simple",
-                    },
-                },
-                template: {
-                    metadata: {
-                        creationTimestamp: "None",
-                        labels: {
-                            app: "spring-simple",
-                        },
-                    },
-                    spec: {
-                        containers: [{
-                            name: "spring-simple",
-                            image: "tamhariacr.azurecr.io/spring-simple:v1",
-                            ports: [{
-                                containerPort: 8080,
-                                protocol: "TCP",
-                            }],
-                            resources: {
-                                limits: {
-                                    cpu: "200m",
-                                },
-                                requests: {
-                                    cpu: "150m",
-                                },
-                            },
-                            terminationMessagePath: "/dev/termination-log",
-                            terminationMessagePolicy: "File",
-                            imagePullPolicy: "IfNotPresent",
-                        }],
-                        restartPolicy: "Always",
-                        terminationGracePeriodSeconds: 30,
-                        dnsPolicy: "ClusterFirst",
-                        nodeSelector: {
-                            "beta.kubernetes.io/os": "linux",
-                        },
-                        securityContext: {},
-                        schedulerName: "default-scheduler",
-                    },
-                },
-                strategy: {
-                    type: "RollingUpdate",
-                    rollingUpdate: {
-                        maxUnavailable: 1,
-                        maxSurge: 1,
-                    },
-                },
-                minReadySeconds: 5,
-                revisionHistoryLimit: 2,
-                progressDeadlineSeconds: 600,
-            },
-            status: {},
-        },
-        oldObject: "None",
-        dryRun: "False",
-    },
-});
+import { IAdmissionReview, AppMonitoringConfigCR, PodInfo, IContainer, IVolume, IEnvironmentVariable } from "../RequestDefinition.js";
+import { AppMonitoringConfigCRsCollection } from "../AppMonitoringConfigCRsCollection.js";
 
-export const TestObject2 = JSON.stringify({
+export const clusterArmId = "/subscriptions/66010356-d8a5-42d3-8593-6aaa3aeb1c11/resourceGroups/rambhatt-rnd-v2/providers/Microsoft.ContainerService/managedClusters/aks-rambhatt-test";
+export const clusterArmRegion = "eastus";
+export const clusterName = "aks-rambhatt-test";
+
+export const cr: AppMonitoringConfigCR = {
+    metadata: {
+        name: "appmonitoringconfig",
+        namespace: "default"
+    },
+    spec: {
+        autoInstrumentationPlatforms: ["DotNet", "Java", "NodeJs"],
+        aiConnectionString: "InstrumentationKey=823201eb-fdbf-468a-bc7b-e685639439b2;IngestionEndpoint=https://uaecentral-0.in.applicationinsights.azure.com/",
+        deployments: []
+    }
+};
+
+export const crs: AppMonitoringConfigCRsCollection = new AppMonitoringConfigCRsCollection();
+crs.Upsert(cr);
+
+export const TestObject2 = {
     "kind": "Testing",
     "apiVersion": "admission.k8s.io/v1",
     "request": {
@@ -125,6 +50,7 @@ export const TestObject2 = JSON.stringify({
             "apiVersion": "v1",
             "metadata": {
                 "generateName": "quieting-garfish-ibm-ope-7459f598b4-",
+                namespace: "default",
                 "creationTimestamp": null,
                 "labels": {
                     "app": "quieting-garfish-ibm-ope",
@@ -274,6 +200,38 @@ export const TestObject2 = JSON.stringify({
                             "readOnlyRootFilesystem": false,
                             "allowPrivilegeEscalation": false
                         }
+                    },
+                    {
+                        name: "container2",
+                        image: "image2",
+                        env: [
+                            {
+                                "name": "ENV_VAR_1",
+                                "value": "value 1"
+                            },
+                            {
+                                "name": "ENV_VAR_2",
+                                "value": "value 2"
+                            }
+                        ],
+                        "volumeMounts": [
+                            {
+                                "name": "volume-mount-1",
+                                "readOnly": true,
+                                "mountPath": "mount-path-1",
+                                "subPath": "subPath-1"
+                            }
+                        ]
+                    }
+                ],
+                initContainers: [
+                    {
+                        name: "initContainer1",
+                        image: "image1"
+                    },
+                    {
+                        name: "initContainer2",
+                        image: "image2"
                     }
                 ],
                 "restartPolicy": "Always",
@@ -406,11 +364,266 @@ export const TestObject2 = JSON.stringify({
         "oldObject": null,
         "dryRun": false
     }
-});
+};
 
-export const TestObject3 = JSON.stringify({ "kind": "Testing", "apiVersion": "admission.k8s.io/v1", "request": { "uid": "26897b2e-1609-11ea-a591-d6dc29b985cb", "kind": { "group": "", "version": "v1", "kind": "Pod" }, "resource": { "group": "", "version": "v1", "resource": "pods" }, "namespace": "default", "operation": "CREATE", "userInfo": { "username": "aksService", "groups": ["system:masters", "system:authenticated"] }, "object": { "kind": "Pod", "apiVersion": "v1", "metadata": { "generateName": "statistics-service-5547698479-", "creationTimestamp": null, "labels": { "io.kompose.service": "statistics-service", "pod-template-hash": "5547698479" }, "ownerReferences": [{ "apiVersion": "apps/v1", "kind": "ReplicaSet", "name": "statistics-service-5547698479", "uid": "7508732f-1607-11ea-a591-d6dc29b985cb", "controller": true, "blockOwnerDeletion": true }] }, "spec": { "volumes": [{ "name": "default-token-ctb67", "secret": { "secretName": "default-token-ctb67" } }], "containers": [{ "name": "statistics-service", "image": "test.azurecr.io/piggymetrics-statistics-service", "env": [{ "name": "CONFIG_SERVICE_PASSWORD", "value": "" }, { "name": "MONGODB_DATABASE", "value": "" }, { "name": "MONGODB_URI", "value": "" }, { "name": "RABBITMQ_HOST", "value": "" }, { "name": "RABBITMQ_PASSWORD", "value": "" }, { "name": "RABBITMQ_PORT", "value": "" }, { "name": "RABBITMQ_USERNAME", "value": "" }, { "name": "STATISTICS_SERVICE_PASSWORD", "value": "" }], "resources": {}, "volumeMounts": [{ "name": "default-token-ctb67", "readOnly": true, "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount" }], "terminationMessagePath": "/dev/termination-log", "terminationMessagePolicy": "File", "imagePullPolicy": "Always" }], "restartPolicy": "Always", "terminationGracePeriodSeconds": 30, "dnsPolicy": "ClusterFirst", "serviceAccountName": "default", "serviceAccount": "default", "securityContext": {}, "schedulerName": "default-scheduler", "tolerations": [{ "key": "node.kubernetes.io/not-ready", "operator": "Exists", "effect": "NoExecute", "tolerationSeconds": 300 }, { "key": "node.kubernetes.io/unreachable", "operator": "Exists", "effect": "NoExecute", "tolerationSeconds": 300 }], "priority": 0, "enableServiceLinks": true }, "status": {} }, "oldObject": null, "dryRun": false } });
+export const TestObject3 =
+{
+    "kind": "Testing",
+    "apiVersion": "admission.k8s.io/v1",
+    "request": {
+        "uid": "26897b2e-1609-11ea-a591-d6dc29b985cb",
+        "kind": {
+            "group": "",
+            "version": "v1",
+            "kind": "Pod"
+        },
+        "resource": {
+            "group": "",
+            "version": "v1",
+            "resource": "pods"
+        },
+        "namespace": "default",
+        "operation": "CREATE",
+        "userInfo": {
+            "username": "aksService",
+            "groups": [
+                "system:masters",
+                "system:authenticated"
+            ]
+        },
+        "object": {
+            "kind": "Pod",
+            "apiVersion": "v1",
+            "metadata": {
+                "generateName": "statistics-service-5547698479-",
+                "creationTimestamp": null,
+                "labels": {
+                    "io.kompose.service": "statistics-service",
+                    "pod-template-hash": "5547698479"
+                },
+                "ownerReferences": [
+                    {
+                        "apiVersion": "apps/v1",
+                        "kind": "ReplicaSet",
+                        "name": "statistics-service-5547698479",
+                        "uid": "7508732f-1607-11ea-a591-d6dc29b985cb",
+                        "controller": true,
+                        "blockOwnerDeletion": true
+                    }
+                ]
+            },
+            "spec": {
+                "volumes": [
+                    {
+                        "name": "default-token-ctb67",
+                        "secret": {
+                            "secretName": "default-token-ctb67"
+                        }
+                    }
+                ],
+                "containers": [
+                    {
+                        "name": "statistics-service",
+                        "image": "test.azurecr.io/piggymetrics-statistics-service",
+                        "env": [
+                            {
+                                "name": "CONFIG_SERVICE_PASSWORD",
+                                "value": ""
+                            },
+                            {
+                                "name": "MONGODB_DATABASE",
+                                "value": ""
+                            },
+                            {
+                                "name": "MONGODB_URI",
+                                "value": ""
+                            },
+                            {
+                                "name": "RABBITMQ_HOST",
+                                "value": ""
+                            },
+                            {
+                                "name": "RABBITMQ_PASSWORD",
+                                "value": ""
+                            },
+                            {
+                                "name": "RABBITMQ_PORT",
+                                "value": ""
+                            },
+                            {
+                                "name": "RABBITMQ_USERNAME",
+                                "value": ""
+                            },
+                            {
+                                "name": "STATISTICS_SERVICE_PASSWORD",
+                                "value": ""
+                            }
+                        ],
+                        "resources": {},
+                        "volumeMounts": [
+                            {
+                                "name": "default-token-ctb67",
+                                "readOnly": true,
+                                "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+                            }
+                        ],
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File",
+                        "imagePullPolicy": "Always"
+                    }
+                ],
+                "restartPolicy": "Always",
+                "terminationGracePeriodSeconds": 30,
+                "dnsPolicy": "ClusterFirst",
+                "serviceAccountName": "default",
+                "serviceAccount": "default",
+                "securityContext": {},
+                "schedulerName": "default-scheduler",
+                "tolerations": [
+                    {
+                        "key": "node.kubernetes.io/not-ready",
+                        "operator": "Exists",
+                        "effect": "NoExecute",
+                        "tolerationSeconds": 300
+                    },
+                    {
+                        "key": "node.kubernetes.io/unreachable",
+                        "operator": "Exists",
+                        "effect": "NoExecute",
+                        "tolerationSeconds": 300
+                    }
+                ],
+                "priority": 0,
+                "enableServiceLinks": true
+            },
+            "status": {}
+        },
+        "oldObject": null,
+        "dryRun": false
+    }
+};
 
-export const TestObject4 = JSON.stringify({ "kind": "AdmissionReview", "apiVersion": "admission.k8s.io/v1", "request": { "uid": "438472ed-262f-4255-9a64-2c9781ad5358", "kind": { "group": "", "version": "v1", "kind": "Pod" }, "resource": { "group": "", "version": "v1", "resource": "pods" }, "requestKind": { "group": "", "version": "v1", "kind": "Pod" }, "requestResource": { "group": "", "version": "v1", "resource": "pods" }, "namespace": "default", "operation": "CREATE", "userInfo": { "username": "aksService", "groups": ["system:masters", "system:authenticated"] }, "object": { "kind": "Pod", "apiVersion": "v1", "metadata": { "generateName": "fabrikam-backend-core-7bcf4fdc9f-", "creationTimestamp": null, "labels": { "app": "fabrikam-backend-core", "pod-template-hash": "7bcf4fdc9f" }, "ownerReferences": [{ "apiVersion": "apps/v1", "kind": "ReplicaSet", "name": "fabrikam-backend-core-7bcf4fdc9f", "uid": "206af3c8-f814-4dcf-b5bd-237b4f467773", "controller": true, "blockOwnerDeletion": true }] }, "spec": { "volumes": [{ "name": "default-token-gkbmz", "secret": { "secretName": "default-token-gkbmz" } }], "containers": [{ "name": "fabrikam-backend-core", "image": "gearamaaks.azurecr.io/public/applicationinsights/codeless-attach/netcore-sample:v57", "ports": [{ "containerPort": 80, "protocol": "TCP" }], "env": [{ "name": "AZURESTORAGE_CONNECTION" }], "resources": { "limits": { "cpu": "900m" }, "requests": { "cpu": "200m" } }, "volumeMounts": [{ "name": "default-token-gkbmz", "readOnly": true, "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount" }], "terminationMessagePath": "/dev/termination-log", "terminationMessagePolicy": "File", "imagePullPolicy": "IfNotPresent" }], "restartPolicy": "Always", "terminationGracePeriodSeconds": 30, "dnsPolicy": "ClusterFirst", "nodeSelector": { "beta.kubernetes.io/os": "linux" }, "serviceAccountName": "default", "serviceAccount": "default", "securityContext": {}, "schedulerName": "default-scheduler", "tolerations": [{ "key": "node.kubernetes.io/not-ready", "operator": "Exists", "effect": "NoExecute", "tolerationSeconds": 300 }] } } } });
+export const TestObject4 =
+{
+    "kind": "AdmissionReview",
+    "apiVersion": "admission.k8s.io/v1",
+    "request": {
+        "uid": "438472ed-262f-4255-9a64-2c9781ad5358",
+        "kind": {
+            "group": "",
+            "version": "v1",
+            "kind": "Pod"
+        },
+        "resource": {
+            "group": "",
+            "version": "v1",
+            "resource": "pods"
+        },
+        "requestKind": {
+            "group": "",
+            "version": "v1",
+            "kind": "Pod"
+        },
+        "requestResource": {
+            "group": "",
+            "version": "v1",
+            "resource": "pods"
+        },
+        "namespace": "default",
+        "operation": "CREATE",
+        "userInfo": {
+            "username": "aksService",
+            "groups": [
+                "system:masters",
+                "system:authenticated"
+            ]
+        },
+        "object": {
+            "kind": "Pod",
+            "apiVersion": "v1",
+            "metadata": {
+                "generateName": "fabrikam-backend-core-7bcf4fdc9f-",
+                "creationTimestamp": null,
+                "labels": {
+                    "app": "fabrikam-backend-core",
+                    "pod-template-hash": "7bcf4fdc9f"
+                },
+                "ownerReferences": [
+                    {
+                        "apiVersion": "apps/v1",
+                        "kind": "ReplicaSet",
+                        "name": "fabrikam-backend-core-7bcf4fdc9f",
+                        "uid": "206af3c8-f814-4dcf-b5bd-237b4f467773",
+                        "controller": true,
+                        "blockOwnerDeletion": true
+                    }
+                ]
+            },
+            "spec": {
+                "volumes": [
+                    {
+                        "name": "default-token-gkbmz",
+                        "secret": {
+                            "secretName": "default-token-gkbmz"
+                        }
+                    }
+                ],
+                "containers": [
+                    {
+                        "name": "fabrikam-backend-core",
+                        "image": "gearamaaks.azurecr.io/public/applicationinsights/codeless-attach/netcore-sample:v57",
+                        "ports": [
+                            {
+                                "containerPort": 80,
+                                "protocol": "TCP"
+                            }
+                        ],
+                        "env": [
+                            {
+                                "name": "AZURESTORAGE_CONNECTION"
+                            }
+                        ],
+                        "resources": {
+                            "limits": {
+                                "cpu": "900m"
+                            },
+                            "requests": {
+                                "cpu": "200m"
+                            }
+                        },
+                        "volumeMounts": [
+                            {
+                                "name": "default-token-gkbmz",
+                                "readOnly": true,
+                                "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount"
+                            }
+                        ],
+                        "terminationMessagePath": "/dev/termination-log",
+                        "terminationMessagePolicy": "File",
+                        "imagePullPolicy": "IfNotPresent"
+                    }
+                ],
+                "restartPolicy": "Always",
+                "terminationGracePeriodSeconds": 30,
+                "dnsPolicy": "ClusterFirst",
+                "nodeSelector": {
+                    "beta.kubernetes.io/os": "linux"
+                },
+                "serviceAccountName": "default",
+                "serviceAccount": "default",
+                "securityContext": {},
+                "schedulerName": "default-scheduler",
+                "tolerations": [
+                    {
+                        "key": "node.kubernetes.io/not-ready",
+                        "operator": "Exists",
+                        "effect": "NoExecute",
+                        "tolerationSeconds": 300
+                    }
+                ]
+            }
+        }
+    }
+};
 
-export const TestObject5 = "{\"kind\":\"AdmissionReview\",\"apiVersion\":\"admission.k8s.io/v1\",\"request\":{\"uid\":\"681cffe5-8c4c-4d5b-8578-d5e19f4d52c2\",\"kind\":{\"group\":\"\",\"version\":\"v1\",\"kind\":\"Pod\"},\"resource\":{\"group\":\"\",\"version\":\"v1\",\"resource\":\"pods\"},\"requestKind\":{\"group\":\"\",\"version\":\"v1\",\"kind\":\"Pod\"},\"requestResource\":{\"group\":\"\",\"version\":\"v1\",\"resource\":\"pods\"},\"namespace\":\"default\",\"operation\":\"CREATE\",\"userInfo\":{\"username\":\"aksService\",\"groups\":[\"system:masters\",\"system:authenticated\"]},\"object\":{\"kind\":\"Pod\",\"apiVersion\":\"v1\",\"metadata\":{\"generateName\":\"fabrikam-notifier-aks-java-656f46b8cd-\",\"creationTimestamp\":null,\"labels\":{\"app\":\"fabrikam-notifier-aks-java\",\"pod-template-hash\":\"656f46b8cd\"},\"ownerReferences\":[{\"apiVersion\":\"apps/v1\",\"kind\":\"ReplicaSet\",\"name\":\"fabrikam-notifier-aks-java-656f46b8cd\",\"uid\":\"f4c01e07-7c70-4488-a85f-e26ac653316f\",\"controller\":true,\"blockOwnerDeletion\":true}]},\"spec\":{\"volumes\":[{\"name\":\"default-token-w695l\",\"secret\":{\"secretName\":\"default-token-w695l\"}}],\"containers\":[{\"name\":\"fabrikam-notifier-aks-java\",\"image\":\"gearamaaks.azurecr.io/public/applicationinsights/codeless-attach/java-sample:v61\",\"ports\":[{\"containerPort\":8080,\"protocol\":\"TCP\"}],\"env\":[{\"name\":\"AZURESTORAGE_CONNECTION\"}],\"resources\":{\"limits\":{\"cpu\":\"900m\"},\"requests\":{\"cpu\":\"500m\"}},\"volumeMounts\":[{\"name\":\"default-token-w695l\",\"readOnly\":true,\"mountPath\":\"/var/run/secrets/kubernetes.io/serviceaccount\"}],\"terminationMessagePath\":\"/dev/termination-log\",\"terminationMessagePolicy\":\"File\",\"imagePullPolicy\":\"IfNotPresent\"}],\"restartPolicy\":\"Always\",\"terminationGracePeriodSeconds\":30,\"dnsPolicy\":\"ClusterFirst\",\"nodeSelector\":{\"beta.kubernetes.io/os\":\"linux\"},\"serviceAccountName\":\"default\",\"serviceAccount\":\"default\",\"securityContext\":{},\"schedulerName\":\"default-scheduler\",\"tolerations\":[{\"key\":\"node.kubernetes.io/not-ready\",\"operator\":\"Exists\",\"effect\":\"NoExecute\",\"tolerationSeconds\":300},{\"key\":\"node.kubernetes.io/unreachable\",\"operator\":\"Exists\",\"effect\":\"NoExecute\",\"tolerationSeconds\":300}],\"priority\":0,\"enableServiceLinks\":true},\"status\":{}},\"oldObject\":null,\"dryRun\":false,\"options\":{\"kind\":\"CreateOptions\",\"apiVersion\":\"meta.k8s.io/v1\"}}}\n"
 /* tslint:enable */

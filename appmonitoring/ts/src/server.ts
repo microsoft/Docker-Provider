@@ -1,7 +1,7 @@
 ﻿import * as https from "https";
-import { ContentProcessor } from "./ContentProcessor.js";
+import { Mutator } from "./Mutator.js";
 import { logger, Metrics } from "./LoggerWrapper.js";
-import { AppMonitoringConfigCR, IRootObject } from "./RequestDefinition.js";
+import { AppMonitoringConfigCR, IAdmissionReview } from "./RequestDefinition.js";
 import { K8sWatcher } from "./K8sWatcher.js";
 import { AppMonitoringConfigCRsCollection } from "./AppMonitoringConfigCRsCollection.js"
 import fs from "fs";
@@ -67,36 +67,32 @@ https.createServer(options, (req, res) => {
         let body = "";
 
         req.on("data", (chunk) => {
-            body += chunk.toString(); // convert Buffer to string
+            body += chunk.toString();
         });
 
         req.on("end", async () => {
             const begin = Date.now();
-  
-            let uid = "";
-            try {
-                const message: IRootObject = JSON.parse(body);
-                if (message?.request?.uid) {
-                    uid = message.request.uid;
-                }
-            } catch (e) {
-                // swallow
-                logger.error(JSON.stringify(e));
-            }
 
             try {
-                const updatedConfig: string = await ContentProcessor.TryUpdateConfig(body, crs);
-                
+                const admissionReview: IAdmissionReview = JSON.parse(body);
+                let uid: string;
+                if (admissionReview?.request?.uid) {
+                    uid = admissionReview.request.uid;
+                } else {
+                    throw `Unable to get request.uid from the incoming admission review: ${admissionReview}`
+                }
+
+                const mutatedPod: string = await Mutator.MutatePod(admissionReview, crs, process.env.ARM_ID, process.env.ARM_REGION);
+
                 const end = Date.now();
                 
                 logger.info(`Done processing request in ${end - begin} ms for ${uid}`);
                 logger.telemetry(Metrics.Success, 1, uid);
 
                 res.writeHead(200, { "Content-Type": "application/json" });
-                res.end(updatedConfig);
+                res.end(mutatedPod);
             } catch (e) {
-                logger.error(`Error while processing request: ${uid}, ${JSON.stringify(e)}`);
-                logger.telemetry(Metrics.Fail, 1, uid);
+                logger.error(`Error while processing request: ${JSON.stringify(e)}. Incoming payload: ${body}`);
             }
         });
     } else {

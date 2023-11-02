@@ -75,13 +75,20 @@ export interface IResources {
 export interface IContainer {
     name: string;
     image: string;
-    ports: IPort[];
-    resources: IResources;
-    terminationMessagePath: string;
-    terminationMessagePolicy: string;
-    imagePullPolicy: string;
-    env?: object;
-    volumeMounts?: object;
+    command?: string[];
+    args?: string[];
+    ports?: IPort[];
+    resources?: IResources;
+    terminationMessagePath?: string;
+    terminationMessagePolicy?: string;
+    imagePullPolicy?: string;
+    env?: IEnvironmentVariable[];
+    volumeMounts?: object[];
+}
+
+export interface IVolume {
+    name: string;
+    emptyDir?: object;
 }
 
 export interface ISpec2 {
@@ -93,7 +100,7 @@ export interface ISpec2 {
     securityContext: object;
     schedulerName: string;
     initContainers?: object;
-    volumes?: object;
+    volumes?: IVolume[];
 }
 
 export interface ITemplate {
@@ -119,8 +126,8 @@ export interface ISpec {
     minReadySeconds: number;
     revisionHistoryLimit: number;
     progressDeadlineSeconds: number;
-    initContainers?: object;
-    volumes?: object;
+    initContainers?: IContainer[];
+    volumes?: IVolume[];
     containers?: IContainer[];
 }
 
@@ -130,6 +137,10 @@ export interface IObjectType {
     metadata: IMetadata;
     spec: ISpec;
     status: object;
+}
+
+export interface IEnvironmentVariable {
+    name: string;
 }
 
 export interface IRequest {
@@ -144,7 +155,7 @@ export interface IRequest {
     dryRun: string;
 }
 
-export interface IRootObject {
+export interface IAdmissionReview {
     kind: string;
     apiVersion: string;
     request: IRequest;
