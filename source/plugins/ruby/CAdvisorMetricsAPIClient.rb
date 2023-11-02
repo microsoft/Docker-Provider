@@ -62,7 +62,6 @@ class CAdvisorMetricsAPIClient
   @@telemetryCpuMetricTimeTracker = DateTime.now.to_time.to_i
   @@telemetryMemoryMetricTimeTracker = DateTime.now.to_time.to_i
   @@telemetryPVKubeSystemMetricsTimeTracker = DateTime.now.to_time.to_i
-  @@userAgent = "ama-logs/#{ENV['AGENT_VERSION'].nil? ? '0.0.0' : ENV['AGENT_VERSION']} (#{ENV['OS_TYPE'].nil? ? 'linux' : ENV['OS_TYPE']}; Ruby #{RUBY_PLATFORM})"
 
 
   #Containers a hash of node name and the last time telemetry was sent for this node
@@ -953,14 +952,14 @@ class CAdvisorMetricsAPIClient
                             :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
               cAdvisorApiRequest = Net::HTTP::Get.new(uri.request_uri)
               cAdvisorApiRequest["Authorization"] = "Bearer #{bearerToken}"
-              cAdvisorApiRequest["User-Agent"] = @@userAgent
+              cAdvisorApiRequest["User-Agent"] = getUserAgent()
               response = http.request(cAdvisorApiRequest)
               @Log.info "Got response code #{response.code} from #{uri.request_uri}"
             end
           else
             Net::HTTP.start(uri.host, uri.port, :use_ssl => false, :open_timeout => 20, :read_timeout => 40) do |http|
               cAdvisorApiRequest = Net::HTTP::Get.new(uri.request_uri)
-              cAdvisorApiRequest["User-Agent"] = @@userAgent
+              cAdvisorApiRequest["User-Agent"] = getUserAgent()
               response = http.request(cAdvisorApiRequest)
               @Log.info "Got response code #{response.code} from #{uri.request_uri}"
             end
