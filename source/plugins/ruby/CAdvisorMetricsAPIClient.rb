@@ -63,7 +63,6 @@ class CAdvisorMetricsAPIClient
   @@telemetryMemoryMetricTimeTracker = DateTime.now.to_time.to_i
   @@telemetryPVKubeSystemMetricsTimeTracker = DateTime.now.to_time.to_i
 
-
   #Containers a hash of node name and the last time telemetry was sent for this node
   @@nodeTelemetryTimeTracker = {}
 
