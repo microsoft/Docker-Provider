@@ -951,7 +951,7 @@ class CAdvisorMetricsAPIClient
                             :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
               cAdvisorApiRequest = Net::HTTP::Get.new(uri.request_uri)
               cAdvisorApiRequest["Authorization"] = "Bearer #{bearerToken}"
-              cAdvisorApiRequest["User-Agent"] = getUserAgent()
+              cAdvisorApiRequest["User-Agent"] = KubernetesAPIClient.getUserAgent()
               response = http.request(cAdvisorApiRequest)
               @Log.info "Got response code #{response.code} from #{uri.request_uri}"
             end
