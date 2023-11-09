@@ -51,6 +51,9 @@ data:
           # fluent-bit based multiline log collection for .NET, Go, Java, and Python stacktraces.
           # if enabled will also stitch together container logs split by docker/cri due to size limits(16KB per log line)
           # enabled = "false"
+       #[log_collection_settings.metadata_collection]
+          # if enabled will collect kubernetes metadata for ContainerLogv2 schema. Default false
+          # enabled = false
 
 
   prometheus-data-collection-settings: |-
