@@ -212,11 +212,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       if !parsedConfig[:log_collection_settings][:metadata_collection].nil? && !parsedConfig[:log_collection_settings][:metadata_collection][:enabled].nil?
         @logEnableKubernetesMetadata = parsedConfig[:log_collection_settings][:metadata_collection][:enabled]
         puts "config::Using config map setting for kubernetes metadata"
-
-        if @containerLogSchemaVersion.strip.casecmp("v2") != 0
-          puts "config:: WARN: container logs V2 is disabled and is required for kubernetes metadata. Disabling kubernetes metadata collection"
-          @logEnableKubernetesMetadata = false
-        end
   end
 end
 
