@@ -11,8 +11,8 @@ export class Mutations {
     
     // agent image
     private static agentImageDotNet = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/dotnet:1.0.0-beta3";
-    private static agentImageJava = "mcr.microsoft.com/applicationinsights/auto-instrumentation/java:3.4.17-aks";
-    private static agentImageNodeJs = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/nodejs:3.0.0-beta.9";
+    private static agentImageJava = "mcr.microsoft.com/applicationinsights/auto-instrumentation/java:3.4.18-aks";
+    private static agentImageNodeJs = "mcr.microsoft.com/applicationinsights/opentelemetry-auto-instrumentation/nodejs:3.0.0-beta.10";
     
     // path on agent image to copy from
     private static imagePathDotNet = "/dotnet-tracer-home/.";
