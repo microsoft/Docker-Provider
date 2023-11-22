@@ -1,5 +1,4 @@
 ﻿import { Mutations } from "./Mutations.js";
-import { logger } from "./LoggerWrapper.js";
 import { PodInfo, IAdmissionReview, IContainer, ISpec, IVolume, IEnvironmentVariable } from "./RequestDefinition.js";
 
 export class Patcher {
@@ -62,17 +61,8 @@ export class Patcher {
                 path: "/spec",
                 value: modifiedPodSpec
             }];
-
-        logger.info(`Determined patch ${this.uid(admissionReview)}, ${JSON.stringify(jsonPatch)}`);
-
+        
         return jsonPatch;
     }
 
-    private static uid(content: IAdmissionReview): string {
-        if (content && content.request && content.request.uid) {
-            return content.request.uid;
-        }
-
-        return "";
-    }
 }

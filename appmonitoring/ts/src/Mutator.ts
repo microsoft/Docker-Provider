@@ -1,5 +1,5 @@
 ﻿import { Patcher } from "./Patcher.js";
-import { logger, Metrics } from "./LoggerWrapper.js";
+import { logger, RequestMetadata, HeartbeatMetrics } from "./LoggerWrapper.js";
 import { PodInfo, IOwnerReference, IAdmissionReview, AppMonitoringConfigCR } from "./RequestDefinition.js";
 import { AdmissionReviewValidator } from "./AdmissionReviewValidator.js";
 import { AppMonitoringConfigCRsCollection } from "./AppMonitoringConfigCRsCollection.js";
@@ -9,7 +9,7 @@ export class Mutator {
      * Mutates the incoming AdmissionReview of a Pod to enable autoattach features on it
      * @returns An AdmissionReview k8s object that represents a response from the webhook to the API server. Includes the JsonPatch mutation to the incoming AdmissionReview.
      */
-    public static async MutatePod(admissionReview: IAdmissionReview, crs: AppMonitoringConfigCRsCollection, clusterArmId: string, clusterArmRegion: string): Promise<string> {
+    public static async MutatePod(admissionReview: IAdmissionReview, crs: AppMonitoringConfigCRsCollection, clusterArmId: string, clusterArmRegion: string, operationId: string): Promise<string> {
         // this is what we need to return to k8s API server
         const response = {
             apiVersion: "admission.k8s.io/v1",
@@ -22,16 +22,19 @@ export class Mutator {
             },
         };
 
+        let requestMetadata = new RequestMetadata(null, crs);
+
         try {
             const mutator: Mutator = new Mutator(admissionReview);
-
-            logger.telemetry(Metrics.CPStart, 1, mutator.uid);
+            logger.info(`Original AdmissionReview: ${JSON.stringify(admissionReview)}`, operationId, requestMetadata);
 
             response.apiVersion = mutator.AdmissionReview.apiVersion;
             response.response.uid = mutator.AdmissionReview.request.uid;
             response.kind = mutator.AdmissionReview.kind;
+
+            requestMetadata = new RequestMetadata(mutator.AdmissionReview.request.uid, crs);
             
-            if(!AdmissionReviewValidator.Validate(mutator.AdmissionReview)) {
+            if(!AdmissionReviewValidator.Validate(mutator.AdmissionReview, operationId, requestMetadata)) {
                 throw `Validation of the incoming AdmissionReview failed`;
             }
 
@@ -46,7 +49,7 @@ export class Mutator {
             const cr: AppMonitoringConfigCR = crs.GetCR(namespace, podInfo.deploymentName);
             if (!cr) {
                 // no relevant CR found, do not mutate and return with no modifications
-                logger.info(`No governing CR found, will not mutate`);
+                logger.info(`No governing CR found, will not mutate`, operationId, requestMetadata);
                 response.response.patch = Buffer.from(JSON.stringify([])).toString("base64");
             } else {
                 const armIdMatches = /^\/subscriptions\/(?<SubscriptionId>[^/]+)\/resourceGroups\/(?<ResourceGroup>[^/]+)\/providers\/(?<Provider>[^/]+)\/(?<ResourceType>[^/]+)\/(?<ResourceName>[^/]+).*$/i.exec(clusterArmId);
@@ -56,7 +59,7 @@ export class Mutator {
 
                 const clusterName = armIdMatches[5];
 
-                logger.info(`Governing CR for the object to be processed (namespace: ${namespace}, deploymentName: ${podInfo.deploymentName}): ${JSON.stringify(cr)}`);
+                logger.info(`Governing CR for the object to be processed (namespace: ${namespace}, deploymentName: ${podInfo.deploymentName}): ${JSON.stringify(cr)}`, operationId, requestMetadata);
 
                 const patchData: object[] = await Patcher.PatchPod(
                     mutator.AdmissionReview,
@@ -69,16 +72,18 @@ export class Mutator {
 
                 response.response.patch = Buffer.from(JSON.stringify(patchData)).toString("base64");
 
-                logger.telemetry(Metrics.CPSuccess, 1, mutator.uid);
+                logger.AddHeartbeatMetric(HeartbeatMetrics.AdmissionReviewActionableCount, 1);
             }
 
             const result = JSON.stringify(response);
-            logger.info(`Determined final response ${mutator.uid}, ${result}`);
+            logger.info(`Determined final response ${mutator.uid}, ${result}`, operationId, requestMetadata);
+        
             return result;
         } catch (e) {
-            logger.error(`Exception encountered: ${e}`);
-            logger.telemetry(Metrics.CPError, 1, "");
-
+            logger.AddHeartbeatMetric(HeartbeatMetrics.AdmissionReviewActionableFailedCount, 1);
+        
+            logger.error(`Exception encountered: ${e}`, operationId, requestMetadata);
+            
             response.response.patch = undefined;
             return JSON.stringify(response);
         }
@@ -102,8 +107,6 @@ export class Mutator {
     }
 
     private async getPodInfo(): Promise<PodInfo> {
-        logger.info(`Attempting to get owner info ${this.uid}`);
-
         const podInfo: PodInfo = new PodInfo();
 
         podInfo.namespace = this.AdmissionReview.request.namespace;
