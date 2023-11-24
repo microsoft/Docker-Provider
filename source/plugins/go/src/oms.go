@@ -215,6 +215,8 @@ var (
 	KubeMonAgentEventsNamedPipe net.Conn
 	// named pipe connection to ContainerInventory for AMA
 	InputPluginNamedPipe net.Conn
+	// named pipe connection to send InsightsMetrics for AMA
+	InsightsMetricsNamedPipe net.Conn
 )
 
 var (
@@ -1015,7 +1017,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		Log(message)
 	}
 
-	if IsWindows == false { //for linux, mdsd route
+	if IsWindows == false || IsAADMSIAuthMode { //for linux and for windows MSI Auth: mdsd/ama route
 		var msgPackEntries []MsgPackEntry
 		var i int
 		start := time.Now()
@@ -1058,26 +1060,44 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 				}
 			}
 			msgpBytes := convertMsgPackEntriesToMsgpBytes(MdsdInsightsMetricsTagName, msgPackEntries)
-			if MdsdInsightsMetricsMsgpUnixSocketClient == nil {
-				Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
-				CreateMDSDClient(InsightsMetrics, ContainerType)
+			var bts int
+			var er error
+			if IsWindows == false {
 				if MdsdInsightsMetricsMsgpUnixSocketClient == nil {
-					Log("Error::mdsd::Unable to create mdsd client for insights metrics. Please check error log.")
-					ContainerLogTelemetryMutex.Lock()
-					defer ContainerLogTelemetryMutex.Unlock()
-					InsightsMetricsMDSDClientCreateErrors += 1
-					return output.FLB_RETRY
+					Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
+					CreateMDSDClient(InsightsMetrics, ContainerType)
+					if MdsdInsightsMetricsMsgpUnixSocketClient == nil {
+						Log("Error::mdsd::Unable to create mdsd client for insights metrics. Please check error log.")
+						ContainerLogTelemetryMutex.Lock()
+						defer ContainerLogTelemetryMutex.Unlock()
+						InsightsMetricsMDSDClientCreateErrors += 1
+						return output.FLB_RETRY
+					}
 				}
-			}
 
-			deadline := 10 * time.Second
-			MdsdInsightsMetricsMsgpUnixSocketClient.SetWriteDeadline(time.Now().Add(deadline)) //this is based of clock time, so cannot reuse
-			bts, er := MdsdInsightsMetricsMsgpUnixSocketClient.Write(msgpBytes)
+				deadline := 10 * time.Second
+				MdsdInsightsMetricsMsgpUnixSocketClient.SetWriteDeadline(time.Now().Add(deadline)) //this is based of clock time, so cannot reuse
+				bts, er = MdsdInsightsMetricsMsgpUnixSocketClient.Write(msgpBytes)
+			} else {
+				if InsightsMetricsNamedPipe == nil {
+					EnsureGenevaOr3PNamedPipeExists(&InsightsMetricsNamedPipe, InsightsMetricsDataType, &ContainerLogsWindowsAMAClientCreateErrors, false, &MdsdContainerLogTagRefreshTracker)
+					if InsightsMetricsNamedPipe == nil {
+						Log("Error::mdsd::Unable to create mdsd client for insights metrics. Please check error log.")
+						ContainerLogTelemetryMutex.Lock()
+						defer ContainerLogTelemetryMutex.Unlock()
+						InsightsMetricsMDSDClientCreateErrors += 1
+						return output.FLB_RETRY
+					}
+				}
+				deadline := 10 * time.Second
+				InsightsMetricsNamedPipe.SetWriteDeadline(time.Now().Add(deadline)) //this is based of clock time, so cannot reuse
+				bts, er = InsightsMetricsNamedPipe.Write(msgpBytes)
+			}
 
 			elapsed = time.Since(start)
 
 			if er != nil {
-				Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(msgPackEntries), elapsed, er.Error())
+				Log("Error::mdsd::Failed to write to ama/mdsd %d records after %s. Will retry ... error : %s", len(msgPackEntries), elapsed, er.Error())
 				UpdateNumTelegrafMetricsSentTelemetry(0, 1, 0, 0)
 				if MdsdInsightsMetricsMsgpUnixSocketClient != nil {
 					MdsdInsightsMetricsMsgpUnixSocketClient.Close()
@@ -1091,11 +1111,11 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 			} else {
 				numTelegrafMetricsRecords := len(msgPackEntries)
 				UpdateNumTelegrafMetricsSentTelemetry(numTelegrafMetricsRecords, 0, 0, 0)
-				Log("Success::mdsd::Successfully flushed %d telegraf metrics records that was %d bytes to mdsd in %s ", numTelegrafMetricsRecords, bts, elapsed)
+				Log("Success::mdsd::Successfully flushed %d telegraf metrics records that was %d bytes to mdsd/ama in %s ", numTelegrafMetricsRecords, bts, elapsed)
 			}
 		}
 
-	} else { // for windows, ODS direct
+	} else { // for windows legacy auth, ODS direct
 
 		var metrics []laTelegrafMetric
 		var i int
@@ -2349,6 +2369,8 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	} else if IsWindows && IsAADMSIAuthMode { // AMA windows specific
 		Log("Creating AMA client for KubeMonAgentEvents")
 		EnsureGenevaOr3PNamedPipeExists(&KubeMonAgentEventsNamedPipe, KubeMonAgentEventDataType, &KubeMonEventsWindowsAMAClientCreateErrors, false, &MdsdKubeMonAgentEventsTagRefreshTracker)
+		Log("Creating AMA client for InsightsMetrics")
+		EnsureGenevaOr3PNamedPipeExists(&InsightsMetricsNamedPipe, InsightsMetricsDataType, &ContainerLogsWindowsAMAClientCreateErrors, false, &MdsdContainerLogTagRefreshTracker)
 	}
 
 	if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
