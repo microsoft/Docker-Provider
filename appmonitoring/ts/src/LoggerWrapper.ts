@@ -94,7 +94,7 @@ class LocalLogger {
 
     private static instance: LocalLogger;
 
-    private isUnitTestMode: boolean = false;
+    private isUnitTestMode = false;
     private log: log4js.Logger = getLogger("default");
     private client: applicationInsights.TelemetryClient;
     private clusterMetadata: ClusterMetadata;
