@@ -293,7 +293,7 @@ class LocalLogger {
         }
         
         // global AI component collecting telemetry from all webhooks
-        return "InstrumentationKey=e368995c-b30a-4724-84d1-dac2cfef24b5;IngestionEndpoint=https://eastus2-3.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus2.livediagnostics.monitor.azure.com/";
+        return "InstrumentationKey=a5e8ca94-9dbb-475d-a44f-bd5f778fcd1a;IngestionEndpoint=https://eastus2-3.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus2.livediagnostics.monitor.azure.com/";
     }
 }
 
