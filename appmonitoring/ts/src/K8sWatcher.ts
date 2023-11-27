@@ -22,8 +22,8 @@ export class K8sWatcher {
             try {
                 latestResourceVersion = await K8sWatcher.WatchCRs(k8sApi, watch, latestResourceVersion, crs,  operationId, onNewCR);
             } catch (e) {
-                logger.AddHeartbeatMetric(HeartbeatMetrics.ApiServerCallErrorCount, 1);
-                logger.AppendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, JSON.stringify(e));
+                logger.addHeartbeatMetric(HeartbeatMetrics.ApiServerCallErrorCount, 1);
+                logger.appendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, JSON.stringify(e));
 
                 const requestMetadata = new RequestMetadata("CR watcher", crs);
                 logger.error(`K8s watch failure: ${e}`, operationId, requestMetadata);
@@ -32,7 +32,7 @@ export class K8sWatcher {
                 await new Promise(r => setTimeout(r, 5000));
             } finally {
                 // we ended up here because the watch above either finished gracefully or failed (its lifespan is limited no matter what), so we have to establish a new one
-                logger.AddHeartbeatMetric(HeartbeatMetrics.ApiServerCallCount, 1);
+                logger.addHeartbeatMetric(HeartbeatMetrics.ApiServerCallCount, 1);
             }
         }
     }

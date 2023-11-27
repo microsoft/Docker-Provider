@@ -14,27 +14,27 @@ afterEach(() => {
 describe("Heartbeats", () => {
     it("Sends logs", async () => {
         for(let i = 0; i < 10; i++) {
-            logger.AppendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-10");
+            logger.appendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-10");
         }
 
         for(let i = 0; i < 100; i++) {
-            logger.AppendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-100");
+            logger.appendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-100");
         }
 
         for(let i = 0; i < 25; i++) {
-            logger.AppendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-25");
+            logger.appendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-25");
         }
 
         for(let i = 0; i < 5; i++) {
-            logger.AppendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-5");
+            logger.appendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-5");
         }
 
         for(let i = 0; i < 120; i++) {
-            logger.AppendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-120");
+            logger.appendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-120");
         }
 
         for(let i = 0; i < 75; i++) {
-            logger.AppendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-75");
+            logger.appendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-75");
         }
         
         const tracesSent = <TraceTelemetry[]>[];
@@ -43,7 +43,7 @@ describe("Heartbeats", () => {
             tracesSent.push(telemetry);
         });
 
-        await logger.StartHeartbeats(null);
+        await logger.startHeartbeats(null);
        
         expect(tracesSent.length).toBe(5);
         expect(tracesSent[0].message).toBe("blah-blah-blah-120");
@@ -54,8 +54,11 @@ describe("Heartbeats", () => {
     });
 
     it("Sends metrics", async () => {
-        logger.AddHeartbeatMetric(HeartbeatMetrics.CRCount, 2);
-        logger.AddHeartbeatMetric(HeartbeatMetrics.CRCount, 3);
+        logger.addHeartbeatMetric(HeartbeatMetrics.CRCount, 2);
+        logger.addHeartbeatMetric(HeartbeatMetrics.CRCount, 3);
+
+        logger.addHeartbeatMetric(HeartbeatMetrics.InstrumentedNamespaceCount, 2);
+        logger.setHeartbeatMetric(HeartbeatMetrics.InstrumentedNamespaceCount, 1);
         
         const metricsSent = <MetricTelemetry[]>[];
 
@@ -63,9 +66,16 @@ describe("Heartbeats", () => {
             metricsSent.push(telemetry);
         });
 
-        await logger.StartHeartbeats(null);
+        await logger.startHeartbeats(null);
         
-        expect(metricsSent.length).toBe(1);
+        expect(metricsSent.length).toBe(2);
+
         expect(metricsSent[0].name).toBe(HeartbeatMetrics[HeartbeatMetrics.CRCount]);
+        expect(metricsSent[0].value).toBe(5);
+        expect(metricsSent[0].count).toBe(1);
+
+        expect(metricsSent[1].name).toBe(HeartbeatMetrics[HeartbeatMetrics.InstrumentedNamespaceCount]);
+        expect(metricsSent[1].value).toBe(1);
+        expect(metricsSent[1].count).toBe(1);
     });
 });

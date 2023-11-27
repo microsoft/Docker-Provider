@@ -72,7 +72,7 @@ export class Mutator {
 
                 response.response.patch = Buffer.from(JSON.stringify(patchData)).toString("base64");
 
-                logger.AddHeartbeatMetric(HeartbeatMetrics.AdmissionReviewActionableCount, 1);
+                logger.addHeartbeatMetric(HeartbeatMetrics.AdmissionReviewActionableCount, 1);
             }
 
             const result = JSON.stringify(response);
@@ -80,7 +80,7 @@ export class Mutator {
         
             return result;
         } catch (e) {
-            logger.AddHeartbeatMetric(HeartbeatMetrics.AdmissionReviewActionableFailedCount, 1);
+            logger.addHeartbeatMetric(HeartbeatMetrics.AdmissionReviewActionableFailedCount, 1);
         
             logger.error(`Exception encountered: ${e}`, operationId, requestMetadata);
             

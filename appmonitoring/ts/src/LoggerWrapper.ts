@@ -46,15 +46,17 @@ export class RequestMetadata {
 class ClusterMetadata {
     private clusterArmId: string;
     private clusterArmRegion: string;
+    private podName: string;
 
-    public constructor(clusterArmId: string, clusterArmRegion: string) {
+    public constructor(clusterArmId: string, clusterArmRegion: string, podName: string) {
         this.clusterArmId = clusterArmId;
         this.clusterArmRegion = clusterArmRegion;
+        this.podName = podName;
     }
 }
 
 export enum HeartbeatMetrics {
-    CRCount, // number of CRs that the cluster has
+    CRCount = 0, // number of CRs that the cluster has
     InstrumentedNamespaceCount, // number of namespaces in the cluster that have at least one CR
     ApiServerCallCount, // number of API calls made
     ApiServerCallErrorCount, // number of failed API calls
@@ -66,7 +68,7 @@ export enum HeartbeatMetrics {
 }
 
 export enum HeartbeatLogs {
-    ApiServerTopExceptionsEncountered, // top exceptions encountered by count when calling API server
+    ApiServerTopExceptionsEncountered = 0, // top exceptions encountered by count when calling API server
     AdmissionReviewTopExceptionsEncountered, // top exceptions encountered during mutation by count
     CertificateOperations, // certificate operations
 }
@@ -80,9 +82,9 @@ class HeartbeatAccumulator {
 }
 
 class LocalLogger {
-    public static Instance(clusterArmId: string, clusterArmRegion: string) {
+    public static Instance(clusterArmId: string, clusterArmRegion: string, podName: string) {
         if (!LocalLogger.instance) {
-            LocalLogger.instance = new LocalLogger(clusterArmId, clusterArmRegion);
+            LocalLogger.instance = new LocalLogger(clusterArmId, clusterArmRegion, podName);
         }
 
         return LocalLogger.instance;
@@ -103,10 +105,10 @@ class LocalLogger {
 
     private heartbeatRequestMetadata = new RequestMetadata(null, null);
 
-    private constructor(clusterArmId: string, clusterArmRegion: string) {
+    private constructor(clusterArmId: string, clusterArmRegion: string, podName: string) {
         this.client = new applicationInsights.TelemetryClient(this.getKey());
 
-        this.clusterMetadata = new ClusterMetadata(clusterArmId, clusterArmRegion);
+        this.clusterMetadata = new ClusterMetadata(clusterArmId, clusterArmRegion, podName);
     }
 
     public trace(message: string, operationId: string, requestMetadata: RequestMetadata) {
@@ -165,7 +167,7 @@ class LocalLogger {
         }
     }
 
-    public SetHeartbeatMetric(metricName: HeartbeatMetrics, value: number): void {
+    public setHeartbeatMetric(metricName: HeartbeatMetrics, value: number): void {
         if(!this.heartbeatAccumulator.metrics[metricName]) {
             this.heartbeatAccumulator.metrics[metricName] = 0;
         }
@@ -173,7 +175,7 @@ class LocalLogger {
         this.heartbeatAccumulator.metrics[metricName] = value;
     }
 
-    public AddHeartbeatMetric(metricName: HeartbeatMetrics, valueToAdd: number): void {
+    public addHeartbeatMetric(metricName: HeartbeatMetrics, valueToAdd: number): void {
         if(!this.heartbeatAccumulator.metrics[metricName]) {
             this.heartbeatAccumulator.metrics[metricName] = 0;
         }
@@ -181,7 +183,7 @@ class LocalLogger {
         this.heartbeatAccumulator.metrics[metricName] += valueToAdd;
     }
 
-    public AppendHeartbeatLog(logName: HeartbeatLogs, log: string) {
+    public appendHeartbeatLog(logName: HeartbeatLogs, log: string) {
         if(!this.heartbeatAccumulator.logs[logName]) {
             this.heartbeatAccumulator.logs[logName] = new Map<HeartbeatLogs, Map<string, number>>();
         }
@@ -194,7 +196,7 @@ class LocalLogger {
     }
 
     // periodically sends out accumulated heartbeat telemetry
-    public async StartHeartbeats(operationId: string): Promise<void> {
+    public async startHeartbeats(operationId: string): Promise<void> {
         while (true) { // eslint-disable-line
             try {
                 this.info(`Sending heartbeat...`, operationId, this.heartbeatRequestMetadata);
@@ -223,8 +225,8 @@ class LocalLogger {
         for(const metricName in this.heartbeatAccumulator.metrics) {
             const telemetryItem: MetricTelemetry = {
                 name: HeartbeatMetrics[metricName],
-                value: this.heartbeatAccumulator.metrics[metricName].value,
-                count: this.heartbeatAccumulator.metrics[metricName].count,
+                value: Number(this.heartbeatAccumulator.metrics[metricName]),
+                count: 1,
                 time: new Date(),
                 properties: {
                     clusterMetadata: this.clusterMetadata
@@ -236,7 +238,7 @@ class LocalLogger {
         }
 
         this.heartbeatAccumulator.metrics.clear();
-        
+
         for(const logName in this.heartbeatAccumulator.logs) {
             const logArray = Object.keys(this.heartbeatAccumulator.logs[logName]).map((key) => {
                 return {
@@ -324,8 +326,9 @@ class LocalLogger {
         }
         
         // global AI component collecting telemetry from all webhooks
+        //!!!
         return "InstrumentationKey=a5e8ca94-9dbb-475d-a44f-bd5f778fcd1a;IngestionEndpoint=https://eastus2-3.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus2.livediagnostics.monitor.azure.com/";
     }
 }
 
-export const logger = LocalLogger.Instance(process.env.ARM_ID, process.env.ARM_REGION);
+export const logger = LocalLogger.Instance(process.env.ARM_ID, process.env.ARM_REGION, process.env.POD_NAME);

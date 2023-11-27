@@ -19,14 +19,14 @@ if ("secrets-manager".localeCompare(containerMode) === 0) {
         logger.info("Running in certificate manager mode...", operationId, null);
         logger.SendEvent("CertificateManagerModeRun", operationId, null, clusterArmId, clusterArmRegion);
 
-        logger.AddHeartbeatMetric(HeartbeatMetrics.CertificateOperationCount, 1);
+        logger.addHeartbeatMetric(HeartbeatMetrics.CertificateOperationCount, 1);
 
         await CertificateManager.CreateWebhookAndCertificates(operationId, clusterArmId, clusterArmRegion);
 
         logger.info("Certificate manager mode is done", operationId, null);
         logger.SendEvent("CertificateManagerModeRunSuccess", operationId, null, clusterArmId, clusterArmRegion, true);
     } catch (error) {
-        logger.AddHeartbeatMetric(HeartbeatMetrics.CertificateOperationFaailedCount, 1);
+        logger.addHeartbeatMetric(HeartbeatMetrics.CertificateOperationFaailedCount, 1);
 
         logger.error(`Certificate manager mode failed: ${JSON.stringify(error)}`, operationId, null);
         logger.SendEvent("CertificateManagerModeRunFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
@@ -43,7 +43,7 @@ logger.info("Running in server mode...", operationId, null);
 logger.SendEvent("ServerModeRun", operationId, null, clusterArmId, clusterArmRegion,);
 
 // don't await, this runs an infinite loop in the background
-logger.StartHeartbeats(operationId);
+logger.startHeartbeats(operationId);
 
 // don't await, this runs an infinite loop
 K8sWatcher.StartWatchingCRs(crs, (cr: AppMonitoringConfigCR, isRemoved: boolean) => {
@@ -54,10 +54,10 @@ K8sWatcher.StartWatchingCRs(crs, (cr: AppMonitoringConfigCR, isRemoved: boolean)
     }
     
     const items: AppMonitoringConfigCR[] = crs.ListCRs();
-    logger.SetHeartbeatMetric(HeartbeatMetrics.CRCount, items.length);
+    logger.setHeartbeatMetric(HeartbeatMetrics.CRCount, items.length);
     
     const uniqueNamespaces = new Set<string>(items.map(cr => cr.metadata.namespace, this));
-    logger.SetHeartbeatMetric(HeartbeatMetrics.InstrumentedNamespaceCount, uniqueNamespaces.size);
+    logger.setHeartbeatMetric(HeartbeatMetrics.InstrumentedNamespaceCount, uniqueNamespaces.size);
 
     let log = "CRs: [";
     for (let i = 0; i < items.length; i++) {
@@ -89,7 +89,7 @@ logger.info(`listening on port ${port}`, operationId, null);
 https.createServer(options, (req, res) => {
     logger.info(`Received request with url: ${req.url}, method: ${req.method}, content-type: ${req.headers["content-type"]}`, operationId, null);
     
-    logger.AddHeartbeatMetric(HeartbeatMetrics.AdmissionReviewCount, 1);
+    logger.addHeartbeatMetric(HeartbeatMetrics.AdmissionReviewCount, 1);
 
     if (req.method === "POST" && req.headers["content-type"] === "application/json") {
         let body = "";
@@ -124,7 +124,7 @@ https.createServer(options, (req, res) => {
                 res.writeHead(200, { "Content-Type": "application/json" });
                 res.end(mutatedPod);
             } catch (e) {
-                logger.AppendHeartbeatLog(HeartbeatLogs.AdmissionReviewTopExceptionsEncountered, JSON.stringify(e));
+                logger.appendHeartbeatLog(HeartbeatLogs.AdmissionReviewTopExceptionsEncountered, JSON.stringify(e));
 
                 logger.error(`Error while processing request: ${JSON.stringify(e)}. Incoming payload: ${body}`, operationId, requestMetadata);
             }
