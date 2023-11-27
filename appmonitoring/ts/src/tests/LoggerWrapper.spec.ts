@@ -2,6 +2,11 @@
 import { logger, HeartbeatMetrics, HeartbeatLogs } from "../LoggerWrapper.js";
 import { TelemetryClient } from "applicationinsights";
 import { MetricTelemetry, TraceTelemetry } from "applicationinsights/out/Declarations/Contracts";
+import { beforeEach } from "node:test";
+
+beforeEach(() => {
+    logger.setUnitTestMode(true);
+});
 
 afterEach(() => {
     jest.restoreAllMocks();

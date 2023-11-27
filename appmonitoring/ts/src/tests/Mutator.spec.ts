@@ -1,12 +1,17 @@
 ﻿import { expect, describe, it } from "@jest/globals";
 import { Mutator } from "../Mutator.js";
-import { Mutations } from "../Mutations.js";
-import { IAdmissionReview, AppMonitoringConfigCR, PodInfo } from "../RequestDefinition.js";
-import { AdmissionReviewValidator } from "../AdmissionReviewValidator.js";
-import { Patcher } from "../Patcher.js";
-import { AppMonitoringConfigCRsCollection } from "../AppMonitoringConfigCRsCollection.js";
-import { TestObject2, TestObject3, TestObject4, crs, cr, clusterArmId, clusterArmRegion, clusterName } from "./testConsts.js";
-import { assert } from "console";
+import { IAdmissionReview } from "../RequestDefinition.js";
+import { TestObject2, TestObject3, TestObject4, crs, clusterArmId, clusterArmRegion } from "./testConsts.js";
+import { logger } from "../LoggerWrapper.js"
+import { beforeEach } from "node:test";
+
+beforeEach(() => {
+    logger.setUnitTestMode(true);
+});
+
+afterEach(() => {
+    jest.restoreAllMocks();
+});
 
 describe("Mutator", () => {
     it("Null", async () => {

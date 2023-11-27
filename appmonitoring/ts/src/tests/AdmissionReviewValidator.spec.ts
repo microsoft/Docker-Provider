@@ -2,9 +2,18 @@
 import { IAdmissionReview } from "../RequestDefinition.js";
 import { AdmissionReviewValidator } from "../AdmissionReviewValidator.js";
 import { TestObject2 } from "./testConsts.js";
-import { RequestMetadata } from "../LoggerWrapper.js";
+import { logger, RequestMetadata } from "../LoggerWrapper.js";
+import { beforeEach } from "node:test";
 
 const requestMetadata = new RequestMetadata(null, null);
+
+beforeEach(() => {
+    logger.setUnitTestMode(true);
+});
+
+afterEach(() => {
+    jest.restoreAllMocks();
+});
 
 describe("AdmissionReviewValidator", () => {
     it("ValidateNull", () => {

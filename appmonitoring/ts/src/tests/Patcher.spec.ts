@@ -1,12 +1,18 @@
 ﻿import { expect, describe, it } from "@jest/globals";
-import { Mutator } from "../Mutator.js";
 import { Mutations } from "../Mutations.js";
-import { IAdmissionReview, AppMonitoringConfigCR, PodInfo, IContainer, IVolume, IEnvironmentVariable } from "../RequestDefinition.js";
-import { AdmissionReviewValidator } from "../AdmissionReviewValidator.js";
+import { IAdmissionReview, PodInfo, IContainer, IVolume } from "../RequestDefinition.js";
 import { Patcher } from "../Patcher.js";
-import { AppMonitoringConfigCRsCollection } from "../AppMonitoringConfigCRsCollection.js";
-import { TestObject2, TestObject3, TestObject4, cr, clusterArmId, clusterArmRegion, clusterName } from "./testConsts.js";
-import { assert } from "console";
+import { TestObject2, cr, clusterArmId, clusterArmRegion, clusterName } from "./testConsts.js";
+import { logger } from "../LoggerWrapper.js"
+import { beforeEach } from "node:test";
+
+beforeEach(() => {
+    logger.setUnitTestMode(true);
+});
+
+afterEach(() => {
+    jest.restoreAllMocks();
+});
 
 describe("Patcher", () => {
     it("Patches a pod correctly", async () => {

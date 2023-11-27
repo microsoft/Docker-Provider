@@ -88,8 +88,13 @@ class LocalLogger {
         return LocalLogger.instance;
     }
 
+    public setUnitTestMode(isUnitTestMode: boolean) {
+        this.isUnitTestMode = isUnitTestMode;
+    }
+
     private static instance: LocalLogger;
 
+    private isUnitTestMode: boolean = false;
     private log: log4js.Logger = getLogger("default");
     private client: applicationInsights.TelemetryClient;
     private clusterMetadata: ClusterMetadata;
@@ -105,38 +110,59 @@ class LocalLogger {
     }
 
     public trace(message: string, operationId: string, requestMetadata: RequestMetadata) {
-        this.log.trace(message, operationId, this.clusterMetadata, requestMetadata);
-        //this.fireEvent("TRACE", message);
+        if(requestMetadata) {
+            this.log.trace(message, operationId, this.clusterMetadata, requestMetadata);
+        } else {
+            this.log.trace(message, operationId, this.clusterMetadata);
+        }
     }
 
     public debug(message: string, operationId: string, requestMetadata: RequestMetadata) {
-        this.log.debug(message, operationId, this.clusterMetadata, requestMetadata);
-        //this.fireEvent("DEBUG", message);
+        if(requestMetadata) {
+            this.log.debug(message, operationId, this.clusterMetadata, requestMetadata);
+        } else {
+            this.log.debug(message, operationId, this.clusterMetadata);
+        }
     }
 
     public info(message: string, operationId: string, requestMetadata: RequestMetadata) {
-        this.log.info(message, operationId, this.clusterMetadata, requestMetadata);
-        //this.fireEvent("INFO", message);
+        if(requestMetadata) {
+            this.log.info(message, operationId, this.clusterMetadata, JSON.stringify(requestMetadata));
+        } else {
+            this.log.info(message, operationId, this.clusterMetadata);
+        }
     }
 
     public warn(message: string, operationId: string, requestMetadata: RequestMetadata) {
-        this.log.warn(message, operationId, this.clusterMetadata, requestMetadata);
-        //this.fireEvent("WARN", message);
+        if(requestMetadata) {
+            this.log.warn(message, operationId, this.clusterMetadata, requestMetadata);
+        } else {
+            this.log.warn(message, operationId, this.clusterMetadata);
+        }
     }
 
     public error(message: string, operationId: string, requestMetadata: RequestMetadata) {
-        this.log.error(message, operationId, this.clusterMetadata, requestMetadata);
-        //this.fireEvent("ERROR", message);
+        if(requestMetadata) {
+            this.log.error(message, operationId, this.clusterMetadata, requestMetadata);
+        } else {
+            this.log.error(message, operationId, this.clusterMetadata);
+        }
     }
 
     public fatal(message: string, operationId: string, requestMetadata: RequestMetadata) {
-        this.log.fatal(message, operationId, this.clusterMetadata, requestMetadata);
-        //this.fireEvent("FATAL", message);
+        if(requestMetadata) {
+            this.log.fatal(message, operationId, this.clusterMetadata, requestMetadata);
+        } else {
+            this.log.fatal(message, operationId, this.clusterMetadata);
+        }
     }
 
     public mark(message: string, operationId: string, requestMetadata: RequestMetadata) {
-        this.log.mark(message, operationId, this.clusterMetadata, requestMetadata);
-        //this.fireEvent("MARK", message);
+        if(requestMetadata) {
+            this.log.mark(message, operationId, this.clusterMetadata, requestMetadata);
+        } else {
+            this.log.mark(message, operationId, this.clusterMetadata);
+        }
     }
 
     public SetHeartbeatMetric(metricName: HeartbeatMetrics, value: number): void {
@@ -288,6 +314,10 @@ class LocalLogger {
     }
 
     private getKey(): string {
+        if(this.isUnitTestMode) {
+            return ""; // for unit tests this shouldn't go anywhere
+        }
+
         if (process.env.TELEMETRY_SETUP_STRING) {
             return process.env.TELEMETRY_SETUP_STRING;
         }
