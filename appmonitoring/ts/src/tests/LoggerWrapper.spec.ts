@@ -2,7 +2,6 @@
 import { logger, HeartbeatMetrics, HeartbeatLogs } from "../LoggerWrapper.js";
 import { TelemetryClient } from "applicationinsights";
 import { MetricTelemetry, TraceTelemetry } from "applicationinsights/out/Declarations/Contracts";
-import { beforeEach } from "node:test";
 
 beforeEach(() => {
     logger.setUnitTestMode(true);
@@ -44,7 +43,7 @@ describe("Heartbeats", () => {
             tracesSent.push(telemetry);
         });
 
-        await logger.StartHeartbeats(null, { isCancelled: true });
+        await logger.StartHeartbeats(null);
        
         expect(tracesSent.length).toBe(5);
         expect(tracesSent[0].message).toBe("blah-blah-blah-120");
@@ -64,7 +63,7 @@ describe("Heartbeats", () => {
             metricsSent.push(telemetry);
         });
 
-        await logger.StartHeartbeats(null, { isCancelled: true });
+        await logger.StartHeartbeats(null);
         
         expect(metricsSent.length).toBe(1);
         expect(metricsSent[0].name).toBe(HeartbeatMetrics[HeartbeatMetrics.CRCount]);

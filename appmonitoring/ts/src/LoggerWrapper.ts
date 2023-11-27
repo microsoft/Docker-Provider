@@ -194,7 +194,7 @@ class LocalLogger {
     }
 
     // periodically sends out accumulated heartbeat telemetry
-    public async StartHeartbeats(operationId: string, cancel: {isCancelled: boolean} = null): Promise<void> {
+    public async StartHeartbeats(operationId: string): Promise<void> {
         while (true) { // eslint-disable-line
             try {
                 this.sendHeartbeat();
@@ -202,13 +202,13 @@ class LocalLogger {
                 logger.error(`Failed to send out heartbeat: ${e}`, operationId, this.heartbeatRequestMetadata);
             } finally {
                 // pause until the next heartbeat
-                if(!cancel?.isCancelled) {
+                if(!this.isUnitTestMode) {
                     await new Promise(r => setTimeout(r, 5 * 60 * 1000)); // in ms
                 }
             }
 
             // unit tests only
-            if (cancel?.isCancelled) {
+            if (this.isUnitTestMode) {
                 break;
             }
         }

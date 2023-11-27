@@ -4,7 +4,6 @@ import { IAdmissionReview, PodInfo, IContainer, IVolume } from "../RequestDefini
 import { Patcher } from "../Patcher.js";
 import { TestObject2, cr, clusterArmId, clusterArmRegion, clusterName } from "./testConsts.js";
 import { logger } from "../LoggerWrapper.js"
-import { beforeEach } from "node:test";
 
 beforeEach(() => {
     logger.setUnitTestMode(true);
