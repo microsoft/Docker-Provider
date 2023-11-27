@@ -197,6 +197,7 @@ class LocalLogger {
     public async StartHeartbeats(operationId: string): Promise<void> {
         while (true) { // eslint-disable-line
             try {
+                this.info(`Sending heartbeat...`, operationId, this.heartbeatRequestMetadata);
                 this.sendHeartbeat();
             } catch (e) {
                 logger.error(`Failed to send out heartbeat: ${e}`, operationId, this.heartbeatRequestMetadata);
