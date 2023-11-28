@@ -272,30 +272,6 @@ class LocalLogger {
         this.heartbeatAccumulator.logs.clear();
     }
 
-    // public telemetry(metric: Metrics, value: number, uid = "") {
-    //     if (metric == null) {
-    //         this.log.error("invalid metric");
-    //     }
-
-    //     if (this.client == null) {
-    //         this.client = new applicationInsights.TelemetryClient(this.getKey());
-    //     }
-
-    //     const telemetryItem: MetricTelemetry = {
-    //         name: metric,
-    //         value,
-    //         count: 1,
-    //         properties: {
-    //             KUBERNETES_SERVICE_HOST: process.env.KUBERNETES_SERVICE_HOST,
-    //             CLUSTER_RESOURCE_ID: process.env.CLUSTER_RESOURCE_ID,
-    //             UID: uid,
-    //         },
-    //     };
-
-    //     this.client.trackMetric(telemetryItem);
-    //     //this.client.flush();
-    // }
-
     public SendEvent(eventName: string, operationId: string, uid: string, clusterArmId: string, clusterArmRegion: string, flush = false, ...args: unknown[]) {
         const event: EventTelemetry = {
             name: eventName,
