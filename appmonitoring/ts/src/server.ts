@@ -124,7 +124,7 @@ https.createServer(options, (req, res) => {
                 res.writeHead(200, { "Content-Type": "application/json" });
                 res.end(mutatedPod);
             } catch (e) {
-                logger.appendHeartbeatLog(HeartbeatLogs.AdmissionReviewTopExceptionsEncountered, JSON.stringify(e));
+                logger.appendHeartbeatLog(HeartbeatLogs.AdmissionReviewTopExceptionsEncountered, e);
 
                 logger.error(`Error while processing request: ${JSON.stringify(e)}. Incoming payload: ${body}`, operationId, requestMetadata);
             }
