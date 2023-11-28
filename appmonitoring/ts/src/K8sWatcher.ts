@@ -22,9 +22,11 @@ export class K8sWatcher {
             try {
                 latestResourceVersion = await K8sWatcher.WatchCRs(k8sApi, watch, latestResourceVersion, crs,  operationId, onNewCR);
             } catch (e) {
+                const ex = logger.sanitizeException(e);
+                
                 logger.addHeartbeatMetric(HeartbeatMetrics.ApiServerCallErrorCount, 1);
 
-                logger.appendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, e);
+                logger.appendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, JSON.stringify(ex));
 
                 const requestMetadata = new RequestMetadata("CR watcher", crs);
                 logger.error(`K8s watch failure: ${e}`, operationId, requestMetadata);

@@ -90,6 +90,14 @@ class LocalLogger {
         return LocalLogger.instance;
     }
 
+    public sanitizeException(e: any): any {
+        if(e?.response?.request?.headers?.Authorization) {
+            e.response.request.headers.Authorization = "<redacted>";
+        }
+
+        return e;
+    }
+
     public setUnitTestMode(isUnitTestMode: boolean) {
         this.isUnitTestMode = isUnitTestMode;
     }
@@ -202,7 +210,7 @@ class LocalLogger {
                 this.info(`Sending heartbeat...`, operationId, this.heartbeatRequestMetadata);
                 this.sendHeartbeat();
             } catch (e) {
-                logger.error(`Failed to send out heartbeat: ${e}`, operationId, this.heartbeatRequestMetadata);
+                logger.error(`Failed to send out heartbeat: ${JSON.stringify(logger.sanitizeException(e))}`, operationId, this.heartbeatRequestMetadata);
             } finally {
                 // pause until the next heartbeat
                 if(!this.isUnitTestMode) {
