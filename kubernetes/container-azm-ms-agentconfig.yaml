@@ -20,6 +20,8 @@ data:
           # If you want to continue to disable kube-system,gatekeeper-system log collection keep the namespaces in the following setting and add any other namespace you want to disable log collection to the array.
           # In the absense of this configmap, default value for exclude_namespaces = ["kube-system","gatekeeper-system"]
           exclude_namespaces = ["kube-system","gatekeeper-system"]
+          # If you want to collect logs from system pods that have been excluded using exclude_namespaces setting, add them to the following setting. Provide daemonset or deployment name of the system pod. Eg adding coredns to list can capture logs from pods with name like coredns-77sd7 or coredns-65cbf4f7bc-jcn6z. NOTE: this setting is only for system pods
+          # include_system_pods = ["coredns"]
 
        [log_collection_settings.stderr]
           # Default value for enabled is true
@@ -29,6 +31,8 @@ data:
           # If you want to continue to disable kube-system,gatekeeper-system log collection keep the namespaces in the following setting and add any other namespace you want to disable log collection to the array.
           # In the absense of this configmap, default value for exclude_namespaces = ["kube-system","gatekeeper-system"]
           exclude_namespaces = ["kube-system","gatekeeper-system"]
+          # If you want to collect logs from system pods that have been excluded using exclude_namespaces setting, add them to the following setting. Provide daemonset or deployment name of the system pod. Eg adding coredns to list can capture logs from pods with name like coredns-77sd7 or coredns-65cbf4f7bc-jcn6z. NOTE: this setting is only for system pods
+          # include_system_pods = ["coredns"]
 
        [log_collection_settings.env_var]
           # In the absense of this configmap, default value for enabled is true

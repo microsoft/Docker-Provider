@@ -222,8 +222,14 @@ var (
 	NameIDMap map[string]string
 	// StdoutIgnoreNamespaceSet set of  excluded K8S namespaces for stdout logs
 	StdoutIgnoreNsSet map[string]bool
+	// StdoutIncludeSystemPodsSet set of included system pods for stdout logs
+	StdoutIncludeSystemPodsSet map[string]bool
 	// StderrIgnoreNamespaceSet set of  excluded K8S namespaces for stderr logs
 	StderrIgnoreNsSet map[string]bool
+	// StderrIncludeSystemPodsSet set of included system pods for stderr logs
+	StderrIncludeSystemPodsSet map[string]bool
+	// PodNameToDSDeploymentNameMap stores podName to potential DS and deployment name mapping
+	PodNameToDSDeploymentNameMap map[string][2]string
 	// DataUpdateMutex read and write mutex access to the container id set
 	DataUpdateMutex = &sync.Mutex{}
 	// ContainerLogTelemetryMutex read and write mutex access to the Container Log Telemetry
@@ -514,6 +520,32 @@ func populateExcludedStderrNamespaces() {
 		for _, ns := range stderrNSExcludeList {
 			Log("Excluding namespace %s for stderr log collection", ns)
 			StderrIgnoreNsSet[strings.TrimSpace(ns)] = true
+		}
+	}
+}
+
+func populateIncludedStdoutSystemPods() {
+	collectStdoutLogs := os.Getenv("AZMON_COLLECT_STDOUT_LOGS")
+	var stdoutIncludedSystemPodsList []string
+	includeList := os.Getenv("AZMON_STDOUT_INCLUDED_SYSTEM_PODS")
+	if (collectStdoutLogs == "true") && (len(includeList) > 0) {
+		stdoutIncludedSystemPodsList = strings.Split(includeList, ",")
+		for _, pod := range stdoutIncludedSystemPodsList {
+			Log("Including system pod %s for stdout log collection", pod)
+			StdoutIncludeSystemPodsSet[strings.TrimSpace(pod)] = true
+		}
+	}
+}
+
+func populateIncludedStderrSystemPods() {
+	collectStderrLogs := os.Getenv("AZMON_COLLECT_STDERR_LOGS")
+	var stderrIncludedSystemPodsList []string
+	includeList := os.Getenv("AZMON_STDERR_INCLUDED_SYSTEM_PODS")
+	if (strings.Compare(collectStderrLogs, "true") == 0) && (len(includeList) > 0) {
+		stderrIncludedSystemPodsList = strings.Split(includeList, ",")
+		for _, pod := range stderrIncludedSystemPodsList {
+			Log("Including system pod %s for stdout log collection", pod)
+			StderrIncludeSystemPodsSet[strings.TrimSpace(pod)] = true
 		}
 	}
 }
@@ -1460,12 +1492,18 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		}
 
 		if strings.EqualFold(logEntrySource, "stdout") {
-			if containerID == "" || containsKey(StdoutIgnoreNsSet, k8sNamespace) {
-				continue
+			if containerID == "" { continue }
+			if containsKey(StdoutIgnoreNsSet, k8sNamespace) {
+				if len(StdoutIncludeSystemPodsSet) == 0 { continue }
+				dsName, deploymentName := GetDSNameAndDeploymentNameFromK8sPodName(k8sPodName)
+				if (!containsKey(StdoutIncludeSystemPodsSet, dsName) && !containsKey(StdoutIncludeSystemPodsSet, deploymentName)) { continue }
 			}
 		} else if strings.EqualFold(logEntrySource, "stderr") {
-			if containerID == "" || containsKey(StderrIgnoreNsSet, k8sNamespace) {
-				continue
+			if containerID == "" { continue }
+			if containsKey(StderrIgnoreNsSet, k8sNamespace) {
+				if len(StderrIncludeSystemPodsSet) == 0 { continue }
+				dsName, deploymentName := GetDSNameAndDeploymentNameFromK8sPodName(k8sPodName)
+				if (!containsKey(StderrIncludeSystemPodsSet, dsName) && !containsKey(StderrIncludeSystemPodsSet, deploymentName)) { continue }
 			}
 		}
 
@@ -1945,6 +1983,25 @@ func GetContainerIDK8sNamespacePodNameFromFileName(filename string) (string, str
 	return id, ns, podName, containerName
 }
 
+// GetDSNameAndDeploymentNameFromK8sPodName tries to extract potential deployment name and daemonset name from the pod name. If its not possible to extract then sends empty string
+func GetDSNameAndDeploymentNameFromK8sPodName(podName string) (string, string) {
+	if values, ok := PodNameToDSDeploymentNameMap[podName]; ok {
+		return values[0], values[1]
+	}
+	dsName := ""
+	deploymentName := ""
+	last := strings.LastIndex(podName, "-")
+	if last != -1 {
+		dsName = podName[:last]
+		last = strings.LastIndex(dsName, "-")
+		if last != -1 {
+			deploymentName = dsName[:last]
+		}
+	}
+	PodNameToDSDeploymentNameMap[podName] = [2]string{dsName, deploymentName}
+	return dsName, deploymentName
+}
+
 // InitializePlugin reads and populates plugin configuration
 func InitializePlugin(pluginConfPath string, agentVersion string) {
 	go func() {
@@ -1957,7 +2014,10 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		}
 	}()
 	StdoutIgnoreNsSet = make(map[string]bool)
+	StdoutIncludeSystemPodsSet = make(map[string]bool)
 	StderrIgnoreNsSet = make(map[string]bool)
+	StderrIncludeSystemPodsSet = make(map[string]bool)
+	PodNameToDSDeploymentNameMap = make(map[string][2]string)
 	ImageIDMap = make(map[string]string)
 	NameIDMap = make(map[string]string)
 	// Keeping the two error hashes separate since we need to keep the config error hash for the lifetime of the container
@@ -2259,6 +2319,9 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	if strings.Compare(strings.ToLower(os.Getenv("CONTROLLER_TYPE")), "daemonset") == 0 {
 		populateExcludedStdoutNamespaces()
 		populateExcludedStderrNamespaces()
+		populateIncludedStdoutSystemPods()
+		populateIncludedStderrSystemPods()
+		Log("Included pods set stdout: %v, stderr: %v", StdoutIncludeSystemPodsSet, StderrIncludeSystemPodsSet)
 		//enrichment not applicable for ADX and v2 schema
 		if enrichContainerLogs == true && ContainerLogsRouteADX != true && ContainerLogSchemaV2 != true {
 			Log("ContainerLogEnrichment=true; starting goroutine to update containerimagenamemaps \n")

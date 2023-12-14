@@ -12,8 +12,10 @@ require_relative "ConfigParseErrorLogger"
 # Setting default values which will be used in case they are not set in the configmap or if configmap doesnt exist
 @collectStdoutLogs = true
 @stdoutExcludeNamespaces = "kube-system,gatekeeper-system"
+@stdoutIncludeSystemPods = ""
 @collectStderrLogs = true
 @stderrExcludeNamespaces = "kube-system,gatekeeper-system"
+@stderrIncludeSystemPods = ""
 @collectClusterEnvVariables = true
 @logTailPath = "/var/log/containers/*.log"
 @logExclusionRegexPattern = "(^((?!stdout|stderr).)*$)"
@@ -63,6 +65,11 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         @collectStdoutLogs = parsedConfig[:log_collection_settings][:stdout][:enabled]
         puts "config::Using config map setting for stdout log collection"
         stdoutNamespaces = parsedConfig[:log_collection_settings][:stdout][:exclude_namespaces]
+        
+        stdoutSystemPods = Array.new
+        if !parsedConfig[:log_collection_settings][:stdout][:include_system_pods].nil?
+          stdoutSystemPods = parsedConfig[:log_collection_settings][:stdout][:include_system_pods]
+        end
 
         #Clearing it, so that it can be overridden with the config map settings
         @stdoutExcludeNamespaces.clear
@@ -83,6 +90,15 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             end
           end
         end
+
+        if @collectStdoutLogs && !stdoutSystemPods.nil? && stdoutSystemPods.kind_of?(Array)
+          # Checking only for the first element to be string because toml enforces the arrays to contain elements of same type
+          if stdoutSystemPods.length > 0 && stdoutSystemPods[0].kind_of?(String)
+            @stdoutIncludeSystemPods = stdoutsytemPods.join(",")
+            puts "config::Using config map setting for stdout log collection to include system pods"
+          end
+        end
+
       end
     rescue => errorStr
       ConfigParseErrorLogger.logError("Exception while reading config map settings for stdout log collection - #{errorStr}, using defaults, please check config map for errors")
@@ -94,6 +110,12 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         @collectStderrLogs = parsedConfig[:log_collection_settings][:stderr][:enabled]
         puts "config::Using config map setting for stderr log collection"
         stderrNamespaces = parsedConfig[:log_collection_settings][:stderr][:exclude_namespaces]
+
+        stderrSystemPods = Array.new
+        if !parsedConfig[:log_collection_settings][:stderr][:include_system_pods].nil?
+          stderrSystemPods = parsedConfig[:log_collection_settings][:stderr][:include_system_pods]
+        end
+
         stdoutNamespaces = Array.new
         #Clearing it, so that it can be overridden with the config map settings
         @stderrExcludeNamespaces.clear
@@ -120,6 +142,20 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             end
           end
         end
+
+        if @collectStderrLogs && !stderrSystemPods.nil? && stderrSystemPods.kind_of?(Array)
+          # Checking only for the first element to be string because toml enforces the arrays to contain elements of same type
+          if stderrSystemPods.length > 0 && stderrSystemPods[0].kind_of?(String)
+            @stderrIncludeSystemPods = stderrSystemPods.join(",")
+            puts "config::Using config map setting for stderr log collection to include system pods"
+          end
+        end
+
+        # If we have to collect logs from system pods belonging to exlcuded namespaces from either of the streams we need to reset exclude path to noop
+        if !@stdoutIncludeSystemPods.empty? || !@stderrIncludeSystemPods.empty?
+          @excludePath = "*.csv2"
+        end
+
       end
     rescue => errorStr
       ConfigParseErrorLogger.logError("Exception while reading config map settings for stderr log collection - #{errorStr}, using defaults, please check config map for errors")
@@ -306,8 +342,10 @@ if !file.nil?
   file.write("export AZMON_LOG_TAIL_PATH_DIR=#{logTailPathDir}\n")
   file.write("export AZMON_LOG_EXCLUSION_REGEX_PATTERN=\"#{@logExclusionRegexPattern}\"\n")
   file.write("export AZMON_STDOUT_EXCLUDED_NAMESPACES=#{@stdoutExcludeNamespaces}\n")
+  file.write("export AZMON_STDOUT_INCLUDED_SYSTEM_PODS=#{@stdoutIncludeSystemPods}\n")
   file.write("export AZMON_COLLECT_STDERR_LOGS=#{@collectStderrLogs}\n")
   file.write("export AZMON_STDERR_EXCLUDED_NAMESPACES=#{@stderrExcludeNamespaces}\n")
+  file.write("export AZMON_STDERR_INCLUDED_SYSTEM_PODS=#{@stderrIncludeSystemPods}\n")
   file.write("export AZMON_CLUSTER_COLLECT_ENV_VAR=#{@collectClusterEnvVariables}\n")
   file.write("export AZMON_CLUSTER_LOG_TAIL_EXCLUDE_PATH=#{@excludePath}\n")
   file.write("export AZMON_CLUSTER_CONTAINER_LOG_ENRICH=#{@enrichContainerLogs}\n")
@@ -364,9 +402,13 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     file.write(commands)
     commands = get_command_windows("AZMON_STDOUT_EXCLUDED_NAMESPACES", @stdoutExcludeNamespaces)
     file.write(commands)
+    commands = get_command_windows("AZMON_STDOUT_INCLUDED_SYSTEM_PODS", @stdoutIncludeSystemPods)
+    file.write(commands)
     commands = get_command_windows("AZMON_COLLECT_STDERR_LOGS", @collectStderrLogs)
     file.write(commands)
     commands = get_command_windows("AZMON_STDERR_EXCLUDED_NAMESPACES", @stderrExcludeNamespaces)
+    file.write(commands)
+    commands = get_command_windows("AZMON_STDERR_INCLUDED_SYSTEM_PODS", @stderrIncludeSystemPods)
     file.write(commands)
     commands = get_command_windows("AZMON_CLUSTER_COLLECT_ENV_VAR", @collectClusterEnvVariables)
     file.write(commands)
