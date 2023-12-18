@@ -26,6 +26,7 @@ require_relative "ConfigParseErrorLogger"
 @logEnableMultiline = "false"
 @logEnableKubernetesMetadata = false
 @logKubernetesMetadataiIncludeFields = "podLabels,podAnnotations,podUid,image"
+@annotationBasedLogFiltering = false
 if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
   @containerLogsRoute = "v1" # default is v1 for windows until windows agent integrates windows ama
   # This path format is necessary for fluent-bit in windows
@@ -219,6 +220,14 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         end
       end
     end
+
+    #Get annotation based log filtering setting
+    begin
+      if !parsedConfig[:log_collection_settings][:filter_using_annotations].nil? && !parsedConfig[:log_collection_settings][:filter_using_annotations][:enabled].nil?
+        puts "config::Using config map setting for annotation based log filtering"
+        @annotationBasedLogFiltering = parsedConfig[:log_collection_settings][:filter_using_annotations][:enabled]
+      end
+    end
   end
 end
 
@@ -268,6 +277,7 @@ if !file.nil?
   file.write("export AZMON_MULTILINE_ENABLED=#{@logEnableMultiline}\n")
   file.write("export AZMON_KUBERNETES_METADATA_ENABLED=#{@logEnableKubernetesMetadata}\n")
   file.write("export AZMON_KUBERNETES_METADATA_INCLUDES_FIELDS=#{@logKubernetesMetadataiIncludeFields}\n")
+  file.write("export AZMON_ANNOTATION_BASED_LOG_FILTERING=#{@annotationBasedLogFiltering}\n")
   # Close file after writing all environment variables
   file.close
   puts "Both stdout & stderr log collection are turned off for namespaces: '#{@excludePath}' "
@@ -335,6 +345,8 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     commands = get_command_windows("AZMON_KUBERNETES_METADATA_ENABLED ", @logEnableKubernetesMetadata)
     file.write(commands)
     commands = get_command_windows("AZMON_KUBERNETES_METADATA_INCLUDES_FIELDS", @logKubernetesMetadataiIncludeFields)
+    file.write(commands)
+    commands = get_command_windows("AZMON_ANNOTATION_BASED_LOG_FILTERING", @annotationBasedLogFiltering)
     file.write(commands)
     # Close file after writing all environment variables
     file.close

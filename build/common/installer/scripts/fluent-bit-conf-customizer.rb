@@ -44,6 +44,7 @@ def substituteFluentBitPlaceHolders
     ignoreOlder = ENV["FBIT_TAIL_IGNORE_OLDER"]
     multilineLogging = ENV["AZMON_MULTILINE_ENABLED"]
     kubernetesMetadataCollection = ENV["AZMON_KUBERNETES_METADATA_ENABLED"]
+    annotationBasedLogFiltering = ENV["AZMON_ANNOTATION_BASED_LOG_FILTERING"]
 
     serviceInterval = (!interval.nil? && is_number?(interval) && interval.to_i > 0) ? interval : @default_service_interval
     serviceIntervalSetting = "Flush         " + serviceInterval
@@ -82,6 +83,12 @@ def substituteFluentBitPlaceHolders
 
     if !kubernetesMetadataCollection.nil? && kubernetesMetadataCollection.to_s.downcase == "true"
       new_contents = new_contents.gsub("#${KubernetesFilterEnabled}", "")
+    end
+
+    if !annotationBasedLogFiltering.nil? && annotationBasedLogFiltering.to_s.downcase == "true"
+      # enabled kubernetes fluent-bit plugin if not already enabled
+      new_contents = new_contents.gsub("#${KubernetesFilterEnabled}", "")
+      new_contents = new_contents.gsub("#${AnnotationBasedLogFilteringEnabled}", "")
     end
 
     new_contents = substituteMultiline(multilineLogging, new_contents)
