@@ -3,6 +3,7 @@ CVE-2023-39325 #same as CVE-2023-44487
 CVE-2023-3978
 CVE-2023-44487 #false positive according to Mariner team
 GHSA-jq35-85cj-fj4p
+CVE-2019-3826
 
 #telegraf HIGH
 GHSA-m425-mq94-257g
@@ -11,3 +12,6 @@ CVE-2023-47090
 
 # ruby HIGH
 CVE-2017-10784
+
+# mariner MEDIUM
+CVE-2023-5678

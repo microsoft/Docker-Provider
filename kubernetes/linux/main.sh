@@ -942,9 +942,18 @@ else
       echo "not checking onboarding status (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
 fi
 
+ruby dcr-config-parser.rb
+if [ -e "dcr_env_var" ]; then
+      cat dcr_env_var | while read line; do
+            echo $line >>~/.bashrc
+      done
+      source dcr_env_var
+      setGlobalEnvVar LOGS_AND_EVENTS_ONLY "${LOGS_AND_EVENTS_ONLY}"
+fi
+
 # no dependency on fluentd for prometheus side car container
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
-      if [ ! -e "/etc/config/kube.conf" ]; then
+      if [ ! -e "/etc/config/kube.conf" ] && [ "$LOGS_AND_EVENTS_ONLY" != "true" ]; then
             echo "*** starting fluentd v1 in daemonset"
             fluentd -c /etc/fluent/container.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
       else
@@ -1117,6 +1126,8 @@ if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ]; then
 elif [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
     if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ "${TELEMETRY_RS_TELEGRAF_DISABLED}" == "true" ]; then
         echo "not starting telegraf since prom scraping is disabled for replicaset"
+    elif [ "${CONTROLLER_TYPE}" != "ReplicaSet" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${LOGS_AND_EVENTS_ONLY}" == "true" ]; then
+        echo "not starting telegraf for LOGS_AND_EVENTS_ONLY daemonset"
     else
         /opt/telegraf --config $telegrafConfFile &
     fi
