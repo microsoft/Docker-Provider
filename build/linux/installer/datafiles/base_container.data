@@ -56,6 +56,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/ConfigParseErrorLogger.rb;                                 build/common/installer/scripts/ConfigParseErrorLogger.rb;           755; root; root
 /opt/tomlparser-npm-config.rb;                                  build/linux/installer/scripts/tomlparser-npm-config.rb;     755; root; root
 /opt/tomlparser-osm-config.rb;                                  build/linux/installer/scripts/tomlparser-osm-config.rb;     755; root; root
+/opt/dcr-config-parser.rb;                                      build/linux/installer/scripts/dcr-config-parser.rb;     755; root; root
 /opt/test.json;			                                        build/linux/installer/conf/test.json;                    644; root; root
 
 /etc/fluent/plugin/lib/application_insights/version.rb;								   source/plugins/ruby/lib/application_insights/version.rb; 644; root; root
