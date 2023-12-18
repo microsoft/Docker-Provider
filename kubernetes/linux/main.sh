@@ -931,6 +931,17 @@ if [ ! -f /etc/cron.d/ci-agent ]; then
       echo "*/5 * * * * root /usr/sbin/logrotate -s /var/lib/logrotate/ci-agent-status /etc/logrotate.d/ci-agent >/dev/null 2>&1" >/etc/cron.d/ci-agent
 fi
 
+# Write messages from the liveness probe to stdout (so telemetry picks it up)
+touch /dev/write-to-traces
+
+if [ "${GENEVA_LOGS_INTEGRATION}" == "true" ] || [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ]; then
+     checkAgentOnboardingStatus $AAD_MSI_AUTH_MODE 30
+elif [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
+      checkAgentOnboardingStatus $AAD_MSI_AUTH_MODE 30
+else
+      echo "not checking onboarding status (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
+fi
+
 # no dependency on fluentd for prometheus side car container
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
       if [ ! -e "/etc/config/kube.conf" ]; then
@@ -1113,16 +1124,6 @@ else
     echo "not starting telegraf (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
 fi
 
-# Write messages from the liveness probe to stdout (so telemetry picks it up)
-touch /dev/write-to-traces
-
-if [ "${GENEVA_LOGS_INTEGRATION}" == "true" ] || [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ]; then
-     checkAgentOnboardingStatus $AAD_MSI_AUTH_MODE 30
-elif [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
-      checkAgentOnboardingStatus $AAD_MSI_AUTH_MODE 30
-else
-      echo "not checking onboarding status (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
-fi
 
 # Get the end time of the setup in seconds
 endTime=$(date +%s)
