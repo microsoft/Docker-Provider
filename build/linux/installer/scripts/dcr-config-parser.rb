@@ -7,8 +7,7 @@ require_relative 'ConfigParseErrorLogger'
 @os_type = ENV['OS_TYPE']
 @controllerType = ENV['CONTROLLER_TYPE']
 @containerType = ENV['CONTAINER_TYPE']
-@daemonset = 'daemonset'
-@dcrConfigFileLocation = '/etc/mdsd.d/config-cache/configchunks/'
+@dcrConfigFilePattern = '/etc/mdsd.d/config-cache/configchunks/*.json'
 @logs_and_events_streams = %w[
   CONTAINER_LOG_BLOB
   CONTAINERINSIGHTS_CONTAINERLOGV2
@@ -20,10 +19,10 @@ require_relative 'ConfigParseErrorLogger'
 return if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp('windows').zero?
 return unless ENV['USING_AAD_MSI_AUTH'].strip.casecmp('true').zero?
 
-if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.casecmp(@daemonset).zero? \
+if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.casecmp('daemonset').zero? \
   && @containerType.nil?
   begin
-    file_path = Dir.glob('/etc/mdsd.d/config-cache/configchunks/*.json').first
+    file_path = Dir.glob(@dcrConfigFilePattern).first
     # Raise an error if no JSON file is found
     raise 'No JSON file found in the specified directory' unless file_path
 
