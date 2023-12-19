@@ -243,21 +243,24 @@ ${ownerUidAttribute}`
                 case "DotNet":
                     volumeMounts.push({
                         name: Mutations.agentVolumeDotNet,
-                        mountPath: Mutations.agentVolumeMountPathDotNet
+                        mountPath: Mutations.agentVolumeMountPathDotNet,
+                        readOnly: true
                     });
                     break;
 
                 case "Java":
                     volumeMounts.push({
                         name: Mutations.agentVolumeJava,
-                        mountPath: Mutations.agentVolumeMountPathJava
+                        mountPath: Mutations.agentVolumeMountPathJava,
+                        readOnly: true
                     });
                     break;
 
                 case "NodeJs":
                     volumeMounts.push({
                         name: Mutations.agentVolumeNodeJs,
-                        mountPath: Mutations.agentVolumeMountPathNodeJs
+                        mountPath: Mutations.agentVolumeMountPathNodeJs,
+                        readOnly: true
                     });
                     break;
 
