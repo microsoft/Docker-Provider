@@ -953,9 +953,13 @@ fi
 
 # no dependency on fluentd for prometheus side car container
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
-      if [ ! -e "/etc/config/kube.conf" ] && [ "$LOGS_AND_EVENTS_ONLY" != "true" ]; then
-            echo "*** starting fluentd v1 in daemonset"
-            fluentd -c /etc/fluent/container.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
+      if [ ! -e "/etc/config/kube.conf" ]; then
+            if [ "$LOGS_AND_EVENTS_ONLY" != "true" ]; then
+                  echo "*** starting fluentd v1 in daemonset"
+                  fluentd -c /etc/fluent/container.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
+            else
+                  echo "Skipping fluentd since LOGS_AND_EVENTS_ONLY is set to true"
+            fi
       else
            echo "*** starting fluentd v1 in replicaset"
            fluentd -c /etc/fluent/kube.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
@@ -1109,10 +1113,14 @@ if [ ! -e "/etc/config/kube.conf" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE
                   echo "no metrics to scrape since MUTE_PROM_SIDECAR is true, not checking for listener on tcp #25229"
             fi
       else
-            echo "checking for listener on tcp #25226 and waiting for $WAITTIME_PORT_25226 secs if not.."
-            waitforlisteneronTCPport 25226 $WAITTIME_PORT_25226
-            echo "checking for listener on tcp #25228 and waiting for $WAITTIME_PORT_25228 secs if not.."
-            waitforlisteneronTCPport 25228 $WAITTIME_PORT_25228
+            if [ "${LOGS_AND_EVENTS_ONLY}" == "true" ]; then
+                  echo "LOGS_AND_EVENTS_ONLY is true, not checking for listener on tcp #25226 and tcp #25228"
+            else
+                  echo "checking for listener on tcp #25226 and waiting for $WAITTIME_PORT_25226 secs if not.."
+                  waitforlisteneronTCPport 25226 $WAITTIME_PORT_25226
+                  echo "checking for listener on tcp #25228 and waiting for $WAITTIME_PORT_25228 secs if not.."
+                  waitforlisteneronTCPport 25228 $WAITTIME_PORT_25228
+            fi
       fi
 elif [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
         echo "checking for listener on tcp #25226 and waiting for $WAITTIME_PORT_25226 secs if not.."

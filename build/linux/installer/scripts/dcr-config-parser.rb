@@ -41,7 +41,7 @@ if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.cas
     streams -= @logs_and_events_streams
     if streams.empty?
       # Write the settings to file, so that they can be set as environment variables
-      puts 'Setting LOGS_AND_EVENTS_ONLY to true'
+      puts 'DCR config matches Log and Events only profile. Setting LOGS_AND_EVENTS_ONLY to true'
       @logs_and_events_only = true
       file = File.open('dcr_env_var', 'w')
       file.write("LOGS_AND_EVENTS_ONLY=#{@logs_and_events_only}\n")
