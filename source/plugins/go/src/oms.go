@@ -127,11 +127,11 @@ const ContainerTypeEnv = "CONTAINER_TYPE"
 const DefaultAdxDatabaseName = "containerinsights"
 
 var SystemNamespaces = map[string]bool{
-	"kube-system":        true,
-	"azure-arc":          true,
-	"gatekeeper-system":  true,
-	"kube-public":        true,
-	"kube-node-lease":    true,
+	"kube-system":       true,
+	"azure-arc":         true,
+	"gatekeeper-system": true,
+	"kube-public":       true,
+	"kube-node-lease":   true,
 }
 
 var (
@@ -1524,7 +1524,9 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			if containsKey(SystemNamespaces, k8sNamespace) && containsKey(StdoutIncludeSystemNamespaceSet, k8sNamespace) {
 				if len(StdoutIncludeSystemResourceSet) != 0 {
 					dsName, deploymentName := GetDSNameAndDeploymentNameFromK8sPodName(k8sPodName)
-					if (!containsKey(StdoutIncludeSystemResourceSet, k8sNamespace + ":" + dsName) && !containsKey(StdoutIncludeSystemResourceSet, k8sNamespace + ":" + deploymentName)) { continue }
+					if !containsKey(StdoutIncludeSystemResourceSet, k8sNamespace+":"+dsName) && !containsKey(StdoutIncludeSystemResourceSet, k8sNamespace+":"+deploymentName) {
+						continue
+					}
 				}
 			}
 		} else if strings.EqualFold(logEntrySource, "stderr") {
@@ -1534,7 +1536,9 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			if containsKey(SystemNamespaces, k8sNamespace) && containsKey(StderrIncludeSystemNamespaceSet, k8sNamespace) {
 				if len(StderrIncludeSystemResourceSet) != 0 {
 					dsName, deploymentName := GetDSNameAndDeploymentNameFromK8sPodName(k8sPodName)
-					if (!containsKey(StderrIncludeSystemResourceSet, k8sNamespace + ":" + dsName) && !containsKey(StderrIncludeSystemResourceSet, k8sNamespace + ":" + deploymentName)) { continue }
+					if !containsKey(StderrIncludeSystemResourceSet, k8sNamespace+":"+dsName) && !containsKey(StderrIncludeSystemResourceSet, k8sNamespace+":"+deploymentName) {
+						continue
+					}
 				}
 			}
 		}
@@ -1700,6 +1704,9 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	}
 
 	numContainerLogRecords := 0
+
+	Log("StdoutIncludeSystemResourceSet : %v, StderrIncludeSystemResourceSet: %v, StdoutIncludeSystemNamespaceSet: %v, StderrIncludeSystemNamespaceSet: %v, PodNameToDSDeploymentNameMap: %v",
+		StdoutIncludeSystemResourceSet, StderrIncludeSystemResourceSet, StdoutIncludeSystemNamespaceSet, StderrIncludeSystemNamespaceSet, PodNameToDSDeploymentNameMap)
 
 	if ContainerLogSchemaV2 == true {
 		MdsdContainerLogTagName = MdsdContainerLogV2SourceName

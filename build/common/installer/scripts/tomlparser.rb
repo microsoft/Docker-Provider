@@ -94,7 +94,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         if @collectStdoutLogs && !stdoutSystemPods.nil? && stdoutSystemPods.kind_of?(Array)
           # Checking only for the first element to be string because toml enforces the arrays to contain elements of same type
           if stdoutSystemPods.length > 0 && stdoutSystemPods[0].kind_of?(String)
-            @stdoutIncludeSystemPods = stdoutsytemPods.join(",")
+            @stdoutIncludeSystemPods = stdoutSystemPods.join(",")
             puts "config::Using config map setting for stdout log collection to include system pods"
           end
         end
