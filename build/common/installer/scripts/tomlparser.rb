@@ -67,8 +67,8 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         stdoutNamespaces = parsedConfig[:log_collection_settings][:stdout][:exclude_namespaces]
         
         stdoutSystemPods = Array.new
-        if !parsedConfig[:log_collection_settings][:stdout][:include_system_pods].nil?
-          stdoutSystemPods = parsedConfig[:log_collection_settings][:stdout][:include_system_pods]
+        if !parsedConfig[:log_collection_settings][:stdout][:collect_system_pod_logs].nil?
+          stdoutSystemPods = parsedConfig[:log_collection_settings][:stdout][:collect_system_pod_logs]
         end
 
         #Clearing it, so that it can be overridden with the config map settings
@@ -112,8 +112,8 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         stderrNamespaces = parsedConfig[:log_collection_settings][:stderr][:exclude_namespaces]
 
         stderrSystemPods = Array.new
-        if !parsedConfig[:log_collection_settings][:stderr][:include_system_pods].nil?
-          stderrSystemPods = parsedConfig[:log_collection_settings][:stderr][:include_system_pods]
+        if !parsedConfig[:log_collection_settings][:stderr][:collect_system_pod_logs].nil?
+          stderrSystemPods = parsedConfig[:log_collection_settings][:stderr][:collect_system_pod_logs]
         end
 
         stdoutNamespaces = Array.new
@@ -149,11 +149,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             @stderrIncludeSystemPods = stderrSystemPods.join(",")
             puts "config::Using config map setting for stderr log collection to include system pods"
           end
-        end
-
-        # If we have to collect logs from system pods belonging to exlcuded namespaces from either of the streams we need to reset exclude path to noop
-        if !@stdoutIncludeSystemPods.empty? || !@stderrIncludeSystemPods.empty?
-          @excludePath = "*.csv2"
         end
 
       end
