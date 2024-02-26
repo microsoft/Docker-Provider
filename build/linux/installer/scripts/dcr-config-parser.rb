@@ -53,10 +53,10 @@ if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.cas
       # Write the settings to file, so that they can be set as environment variables
       puts 'DCR config matches Log and Events only profile. Setting LOGS_AND_EVENTS_ONLY to true'
       @logs_and_events_only = true
-      file = File.open('dcr_env_var', 'w')
-      file.write("LOGS_AND_EVENTS_ONLY=#{@logs_and_events_only}\n")
-      file.close
     end
+    file = File.open('dcr_env_var', 'w')
+    file.write("LOGS_AND_EVENTS_ONLY=#{@logs_and_events_only}\n")
+    file.close
   rescue Exception => e
     ConfigParseErrorLogger.logError("Exception while parsing dcr : #{e}. DCR Json data: #{data}")
   end
