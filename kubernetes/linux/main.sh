@@ -22,6 +22,7 @@ setGlobalEnvVar() {
       echo "export \"$1\"=\"$2\"" >> /opt/env_vars
 }
 touch /opt/env_vars
+touch /opt/dcr_env_var
 echo "source /opt/env_vars" >> ~/.bashrc
 
 waitforlisteneronTCPport() {
@@ -949,11 +950,11 @@ else
 fi
 
 ruby dcr-config-parser.rb
-if [ -e "dcr_env_var" ]; then
+if [ -e "/opt/dcr_env_var" ]; then
       cat dcr_env_var | while read line; do
             echo $line >>~/.bashrc
       done
-      source dcr_env_var
+      source /opt/dcr_env_var
       setGlobalEnvVar LOGS_AND_EVENTS_ONLY "${LOGS_AND_EVENTS_ONLY}"
 fi
 
