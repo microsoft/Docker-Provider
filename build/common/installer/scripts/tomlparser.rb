@@ -24,7 +24,7 @@ require_relative "ConfigParseErrorLogger"
 @containerLogsRoute = "v2" # default for linux
 @adxDatabaseName = "containerinsights" # default for all configurations
 @logEnableMultiline = "false"
-@stacktraceLanguages = "go,java,python,dotnet"
+@stacktraceLanguages = "go,java,python"
 if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
   @containerLogsRoute = "v1" # default is v1 for windows until windows agent integrates windows ama
   # This path format is necessary for fluent-bit in windows
@@ -175,7 +175,13 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               if invalid_lang
                 puts "config::WARN: stacktrace languages contains invalid languages. Disabling multiline stacktrace logging"
               else
-                @stacktraceLanguages = multilineLanguages.join(",").downcase
+                multilineLanguages = multilineLanguages.map(&:downcase)
+                # the java multiline parser also captures dotnet
+                if multilineLanguages.include?("dotnet")
+                  multilineLanguages.delete("dotnet")
+                  multilineLanguages << "java" unless multilineLanguages.include?("java")
+                end
+                @stacktraceLanguages = multilineLanguages.join(",")
                 puts "config::Using config map setting for multiline languages"
               end
             else
