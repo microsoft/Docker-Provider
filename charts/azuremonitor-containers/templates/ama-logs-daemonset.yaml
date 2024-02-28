@@ -75,6 +75,10 @@ spec:
        {{- end }}
        - name: CONTROLLER_TYPE
          value: "DaemonSet"
+       {{- if .Values.amalogs.syslog.enabled }}
+       - name: SYSLOG_HOST_PORT
+         value: {{ .Values.amalogs.syslog.syslogPort | quote }}
+       {{- end }}
        - name: NODE_IP
          valueFrom:
             fieldRef:
@@ -132,6 +136,12 @@ spec:
          protocol: TCP
        - containerPort: 25224
          protocol: UDP
+       {{- if .Values.amalogs.syslog.enabled }}
+       - name: syslog
+         containerPort: {{ .Values.amalogs.syslog.syslogPort }}
+         hostPort: {{ .Values.amalogs.syslog.syslogPort }}
+         protocol: TCP
+       {{- end }}
        volumeMounts:
         - name: kube-api-access
           mountPath: /var/run/secrets/kubernetes.io/serviceaccount

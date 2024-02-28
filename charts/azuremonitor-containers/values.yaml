@@ -78,6 +78,9 @@ amalogs:
     clusterRegion: <your_cluster_region>
   rbac: true
   sidecarscraping: true
+  syslog:
+    enabled: false
+    syslogPort: 28330
   logsettings:
     logflushintervalsecs: "15"
     tailbufchunksizemegabytes: "1"
