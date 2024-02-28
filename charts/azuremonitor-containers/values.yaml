@@ -78,6 +78,7 @@ amalogs:
     clusterRegion: <your_cluster_region>
   rbac: true
   sidecarscraping: true
+  # Syslog collection on Arc K8s clusters requires additional config dependencies on the node and is currently not supported. Please open a service ticket if there is a syslog collection requirement.
   syslog:
     enabled: false
     syslogPort: 28330
