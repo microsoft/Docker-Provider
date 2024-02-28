@@ -24,7 +24,7 @@ require_relative "ConfigParseErrorLogger"
 @containerLogsRoute = "v2" # default for linux
 @adxDatabaseName = "containerinsights" # default for all configurations
 @logEnableMultiline = "false"
-@stacktraceLanguages = "go,java,python"
+@stacktraceLanguages = "go,java,python" #supported languages for multiline logs. java is also used for dotnet stacktraces
 if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
   @containerLogsRoute = "v1" # default is v1 for windows until windows agent integrates windows ama
   # This path format is necessary for fluent-bit in windows
