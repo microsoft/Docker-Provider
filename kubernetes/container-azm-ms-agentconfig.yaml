@@ -53,6 +53,7 @@ data:
           # If enabled will also stitch together container logs split by docker/cri due to size limits(16KB per log line) up to 64 KB.
           # Requires ContainerLogV2 schema to be enabled. See https://aka.ms/ContainerLogv2 for more details.
           # enabled = "false"
+          # NOTE: for better performance consider enabling only for languages that are needed (valid inputs: "go", "java", "python", "dotnet") 
           # stacktrace_languages = []
 
 
