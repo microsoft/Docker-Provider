@@ -68,6 +68,10 @@ var (
 	winNodePrevMetricRate                   = map[string]float64{}
 	winNodeCpuUsageNanoSecondsLast          = map[string]float64{}
 	winNodeCpuUsageNanoSecondsTimeLast      = map[string]interface{}{}
+	winContainerIdCache                     = map[string]bool{}
+	winContainerCpuUsageNanoSecondsLast     = make(map[string]float64)
+	winContainerCpuUsageNanoSecondsTimeLast = make(map[string]time.Time)
+	winContainerPrevMetricRate              = make(map[string]float64)
 	Log                                     *logrus.Logger
 	osType                                  string
 )
@@ -525,8 +529,38 @@ func getContainerCpuMetricItemRate(metricInfo map[string]interface{}, hostName, 
 
 				metricCollection := map[string]interface{}{
 					"CounterName": metricName,
-					"Value":       metricValue,
 				}
+
+				containerId := podUid + "/" + containerName
+				winContainerIdCache[containerId] = true
+				metricTimeParsed, _ := time.Parse(time.RFC3339, metricTime)
+				if lastTime, exists := winContainerCpuUsageNanoSecondsTimeLast[containerId]; !exists || winContainerCpuUsageNanoSecondsLast[containerId] > metricValue {
+					winContainerCpuUsageNanoSecondsLast[containerId] = metricValue
+					winContainerCpuUsageNanoSecondsTimeLast[containerId] = metricTimeParsed
+					// Equivalent of 'next' in Ruby:
+					continue
+				} else {
+					timeDifference := metricTimeParsed.Sub(lastTime)
+					containerCpuUsageDifference := metricValue - winContainerCpuUsageNanoSecondsLast[containerId]
+					var metricRateValue float64
+					if timeDifference.Seconds() != 0 && containerCpuUsageDifference != 0 {
+						metricRateValue = containerCpuUsageDifference / timeDifference.Seconds()
+					} else {
+						Log.Warnf("Error: timeDifference.Seconds() is 0 or containerCpuUsageDifference is 0")
+						if value, exists := winContainerPrevMetricRate[containerId]; exists {
+							metricRateValue = value
+						} else {
+							metricRateValue = 0
+						}
+					}
+
+					winContainerCpuUsageNanoSecondsLast[containerId] = metricValue
+					winContainerCpuUsageNanoSecondsTimeLast[containerId] = metricTimeParsed
+					metricValue = metricRateValue
+					winContainerPrevMetricRate[containerId] = metricRateValue
+				}
+
+				metricCollection["Value"] = metricValue
 
 				metricCollections := []map[string]interface{}{metricCollection}
 				metricCollectionsJSON, err := json.Marshal(metricCollections)
@@ -1206,4 +1240,31 @@ func getPersistentVolumeMetrics(metricInfo map[string]interface{}, hostName, met
 	}
 
 	return metricItems
+}
+
+func ResetWinContainerIdCache() {
+	winContainerIdCache = make(map[string]bool)
+}
+
+func ClearDeletedWinContainersFromCache() {
+	var winCpuUsageNanoSecondsKeys []string
+	for key := range winContainerCpuUsageNanoSecondsLast {
+		winCpuUsageNanoSecondsKeys = append(winCpuUsageNanoSecondsKeys, key)
+	}
+
+	winContainersToBeCleared := []string{}
+	for _, containerId := range winCpuUsageNanoSecondsKeys {
+		if _, exists := winContainerIdCache[containerId]; !exists {
+			winContainersToBeCleared = append(winContainersToBeCleared, containerId)
+		}
+	}
+
+	if len(winContainersToBeCleared) > 0 {
+		Log.Println("Stale containers found in cache, clearing...: %v", winContainersToBeCleared)
+	}
+
+	for _, containerId := range winContainersToBeCleared {
+		delete(winContainerCpuUsageNanoSecondsLast, containerId)
+		delete(winContainerCpuUsageNanoSecondsTimeLast, containerId)
+	}
 }

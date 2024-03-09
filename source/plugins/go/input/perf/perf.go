@@ -39,6 +39,7 @@ var (
 	hostName                  = ""
 	isWindows                 = false
 	telemetryTimeTracker      = time.Now().Unix()
+	cleanupRoutineTimeTracker = time.Now().Unix()
 	isFromCache               = false
 )
 
@@ -125,6 +126,14 @@ func (p perfPlugin) Collect(ctx context.Context, ch chan<- plugin.Message) error
 				}
 				lib.SendTelemetry("Perf", telemetryProperties)
 			}
+
+			cleanupTimeDifference := int(math.Abs(float64(time.Now().Unix() - cleanupRoutineTimeTracker)))
+			cleanupTimeDifferenceInMinutes := cleanupTimeDifference / 60
+			if cleanupTimeDifferenceInMinutes >= 5 {
+				cleanupRoutineTimeTracker = time.Now().Unix()
+				lib.ClearDeletedWinContainersFromCache()
+				FLBLogger.Print("perf::cleanupRoutine:  @ Cleanup routine kicking in to clear deleted containers from cache")
+			}
 		}
 	}
 }
@@ -176,6 +185,7 @@ func (p perfPlugin) enumerate() ([]map[string]interface{}, []map[string]interfac
 		}
 	}
 
+	lib.ResetWinContainerIdCache()
 	metricData := lib.GetMetrics(nil, namespaceFilteringMode, namespaces, batchTime)
 	for _, metricDataItem := range metricData {
 		eventStream = append(eventStream, metricDataItem)
