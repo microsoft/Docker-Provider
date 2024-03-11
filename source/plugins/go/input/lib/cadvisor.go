@@ -1244,7 +1244,9 @@ func getPersistentVolumeMetrics(metricInfo map[string]interface{}, hostName, met
 }
 
 func ResetWinContainerIdCache() {
-	winContainerIdCache = make(map[string]bool)
+	for key := range winContainerIdCache {
+		delete(winContainerIdCache, key)
+	}
 }
 
 func ClearDeletedWinContainersFromCache() {
