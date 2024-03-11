@@ -18,6 +18,7 @@ import (
 	"github.com/Azure/azure-kusto-go/kusto"
 	"github.com/Azure/azure-kusto-go/kusto/ingest"
 	"github.com/tinylib/msgp/msgp"
+	"github.com/Azure/go-autorest/autorest/azure/auth"
 )
 
 // ReadConfiguration reads a property file
@@ -209,9 +210,8 @@ func CreateADXClient() {
 		ADXIngestor = nil
 	}
 
-	AdxClusterUriConnectionStringBuilder := kusto.NewConnectionStringBuilder(AdxClusterUri)
-	AdxClusterUriConnectionStringBuilder.WithAadAppKey(AdxClientID, AdxClientSecret, AdxTenantID)
-	client, err := kusto.New(AdxClusterUriConnectionStringBuilder)
+	authConfig := auth.NewClientCredentialsConfig(AdxClientID, AdxClientSecret, AdxTenantID)
+	client, err := kusto.New(AdxClusterUri, kusto.Authorization{Config: authConfig})
 	if err != nil {
 		Log("Error::mdsd::Unable to create ADX client %s", err.Error())
 		//log.Fatalf("Unable to create ADX connection %s", err.Error())

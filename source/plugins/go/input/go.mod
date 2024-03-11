@@ -1,6 +1,6 @@
 module Docker-Provider/source/plugins/go/input
 
-go 1.21
+go 1.19
 
 require github.com/calyptia/plugin v1.0.2
 
@@ -11,8 +11,8 @@ require (
 	github.com/docker/docker v24.0.6+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
-	github.com/google/uuid v1.6.0 // indirect
-	github.com/ugorji/go/codec v1.2.12 // indirect
+	github.com/google/uuid v1.4.0 // indirect
+	github.com/ugorji/go/codec v1.2.11 // indirect
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
@@ -20,7 +20,7 @@ require (
 
 require (
 	Docker-Provider/source/plugins/go/src v0.0.0
-	github.com/golang-jwt/jwt/v5 v5.2.0
+	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
 	github.com/sirupsen/logrus v1.9.3
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
