@@ -898,6 +898,7 @@ func getContainerStartTimeMetricItems(metricInfo map[string]interface{}, hostNam
 
 				containerName, _ := containerData["name"].(string)
 				metricValue, _ := containerData["startTime"].(string)
+				metricValueParsed, _ := time.Parse(time.RFC3339, metricValue)
 
 				metricItem := metricDataItem{}
 				metricItem["Timestamp"] = metricTime
@@ -907,7 +908,7 @@ func getContainerStartTimeMetricItems(metricInfo map[string]interface{}, hostNam
 
 				metricCollection := map[string]interface{}{
 					"CounterName": metricName,
-					"Value":       metricValue,
+					"Value":       metricValueParsed.Unix(),
 				}
 				metricCollections := []map[string]interface{}{metricCollection}
 				metricCollectionsJSON, err := json.Marshal(metricCollections)
