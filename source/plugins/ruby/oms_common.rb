@@ -30,13 +30,13 @@ module OMS
 
       def has_designated_hostnamefile?
         return false if @@HostnameFilePath.nil?
-        return false unless @@HostnameFilePath =~ /\w/
+        return false unless @@HostnameFilePath.match? /\w/
         return false unless File.exist?(@@HostnameFilePath)
         return true
       end
 
       def is_dot_separated_string?(hnBuffer)
-        return true if /[^.]+\.[^.]+/ =~ hnBuffer
+        return true if /[^.]+\.[^.]+/.match? hnBuffer
         return false
       end
 
@@ -44,14 +44,14 @@ module OMS
         # RFC 2181:
         #   Size limit is 1 to 63 octets, so probably bytesize is appropriate method.
         return false if hnBuffer.nil?
-        return false if /\./ =~ hnBuffer # Hostname by definition may not contain a dot.
-        return false if /:/ =~ hnBuffer # Hostname by definition may not contain a colon.
+        return false if /\./.match? hnBuffer # Hostname by definition may not contain a dot.
+        return false if /:/.match? hnBuffer # Hostname by definition may not contain a colon.
         return false unless 1 <= hnBuffer.bytesize && hnBuffer.bytesize <= 63
         return true
       end
 
       def is_like_ipv4_string?(hnBuffer)
-        return false unless /\A#{IPV4_Approximate_REGEX}\z/ =~ hnBuffer
+        return false unless /\A#{IPV4_Approximate_REGEX}\z/.match? hnBuffer
         qwa = hnBuffer.split('.')
         return false unless qwa.length == 4
         return false if qwa[0].to_i == 0
@@ -64,7 +64,7 @@ module OMS
       end
 
       def is_like_ipv6_string?(hnBuffer)
-        return true if /\A#{IPV6_REGEX}\z/ =~ hnBuffer
+        return true if /\A#{IPV6_REGEX}\z/.match? hnBuffer
         return false
       end
 
