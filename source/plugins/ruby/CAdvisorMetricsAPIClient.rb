@@ -32,6 +32,8 @@ class CAdvisorMetricsAPIClient
   @clusterKubernetesMetadataIncludeFields = ENV["AZMON_KUBERNETES_METADATA_INCLUDES_FIELDS"]
   @clusterAnnotationBasedFiltering = ENV["AZMON_ANNOTATION_BASED_LOG_FILTERING"]
   @clusterKubernetesMetadataCacheTTLSeconds = ENV["AZMON_KUBERNETES_METADATA_CACHE_TTL_SECONDS"]
+  @clusterStdOutIncludedSystemPods = ENV["AZMON_STDOUT_INCLUDED_SYSTEM_PODS"]
+  @clusterStdErrIncludedSystemPods = ENV["AZMON_STDERR_INCLUDED_SYSTEM_PODS"]
 
   @dsPromInterval = ENV["TELEMETRY_DS_PROM_INTERVAL"]
   @dsPromFieldPassCount = ENV["TELEMETRY_DS_PROM_FIELDPASS_LENGTH"]
@@ -319,6 +321,12 @@ class CAdvisorMetricsAPIClient
                     end
                     if (!@clusterKubernetesMetadataCacheTTLSeconds.nil? && !@clusterKubernetesMetadataCacheTTLSeconds.empty?)
                       telemetryProps["metadataCacheTTL"] = @clusterKubernetesMetadataCacheTTLSeconds
+                    end
+                    if (!@clusterStdOutIncludedSystemPods.nil? && !@clusterStdOutIncludedSystemPods.empty?)
+                      telemetryProps["stdoutSystemPods"] = @clusterStdOutIncludedSystemPods
+                    end
+                    if (!@clusterStdErrIncludedSystemPods.nil? && !@clusterStdErrIncludedSystemPods.empty?)
+                      telemetryProps["stderrSystemPods"] = @clusterStdErrIncludedSystemPods
                     end
                     ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
                   end

@@ -126,14 +126,6 @@ const ContainerTypeEnv = "CONTAINER_TYPE"
 // Default ADX destination database name, can be overriden through configuration
 const DefaultAdxDatabaseName = "containerinsights"
 
-var SystemNamespaces = map[string]bool{
-	"kube-system":       true,
-	"azure-arc":         true,
-	"gatekeeper-system": true,
-	"kube-public":       true,
-	"kube-node-lease":   true,
-}
-
 var (
 	// PluginConfiguration the plugins configuration
 	PluginConfiguration map[string]string
@@ -536,44 +528,34 @@ func populateExcludedStderrNamespaces() {
 	}
 }
 
-func populateIncludedStdoutSystemResource() {
-	collectStdoutLogs := os.Getenv("AZMON_COLLECT_STDOUT_LOGS")
-	var stdoutIncludedSystemResourceList []string
-	includeList := os.Getenv("AZMON_STDOUT_INCLUDED_SYSTEM_PODS")
-	if (collectStdoutLogs == "true") && (len(includeList) > 0) {
-		stdoutIncludedSystemResourceList = strings.Split(includeList, ",")
-		for _, resource := range stdoutIncludedSystemResourceList {
+// Helper function to populate included system resources for both stdout and stderr.
+func populateIncludedSystemResource(collectLogs string, includeListEnvVar string, includeSystemResourceSet map[string]bool, includeSystemNamespaceSet map[string]bool) {
+	if collectLogs == "true" && len(includeListEnvVar) > 0 {
+		includedSystemResourceList := strings.Split(includeListEnvVar, ",")
+		for _, resource := range includedSystemResourceList {
 			colonLoc := strings.Index(resource, ":")
 			if colonLoc == -1 {
-				Log("Skipping invalid system resource namespace:controller %s for stdout log collection", resource)
+				Log("Skipping invalid system resource namespace:controller %s for log collection", resource)
 				continue
 			}
 			namespace := resource[:colonLoc]
-			Log("Including system resource namespace:controller %s for stdout log collection", resource)
-			StdoutIncludeSystemResourceSet[strings.TrimSpace(resource)] = true
-			StdoutIncludeSystemNamespaceSet[strings.TrimSpace(namespace)] = true
+			Log("Including system resource namespace:controller %s for log collection", resource)
+			includeSystemResourceSet[strings.TrimSpace(resource)] = true
+			includeSystemNamespaceSet[strings.TrimSpace(namespace)] = true
 		}
 	}
 }
 
+func populateIncludedStdoutSystemResource() {
+	collectStdoutLogs := os.Getenv("AZMON_COLLECT_STDOUT_LOGS")
+	includeList := os.Getenv("AZMON_STDOUT_INCLUDED_SYSTEM_PODS")
+	populateIncludedSystemResource(collectStdoutLogs, includeList, StdoutIncludeSystemResourceSet, StdoutIncludeSystemNamespaceSet)
+}
+
 func populateIncludedStderrSystemResource() {
 	collectStderrLogs := os.Getenv("AZMON_COLLECT_STDERR_LOGS")
-	var stderrIncludedSystemResourceList []string
 	includeList := os.Getenv("AZMON_STDERR_INCLUDED_SYSTEM_PODS")
-	if (strings.Compare(collectStderrLogs, "true") == 0) && (len(includeList) > 0) {
-		stderrIncludedSystemResourceList = strings.Split(includeList, ",")
-		for _, resource := range stderrIncludedSystemResourceList {
-			colonLoc := strings.Index(resource, ":")
-			if colonLoc == -1 {
-				Log("Skipping invalid system resource namespace:controller %s for stderr log collection", resource)
-				continue
-			}
-			namespace := resource[:colonLoc]
-			Log("Including system resource namespace:controller %s for stderr log collection", resource)
-			StderrIncludeSystemResourceSet[strings.TrimSpace(resource)] = true
-			StderrIncludeSystemNamespaceSet[strings.TrimSpace(namespace)] = true
-		}
-	}
+	populateIncludedSystemResource(collectStderrLogs, includeList, StderrIncludeSystemResourceSet, StderrIncludeSystemNamespaceSet)
 }
 
 // Azure loganalytics metric values have to be numeric, so string values are dropped
@@ -1521,9 +1503,9 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			if containerID == "" || containsKey(StdoutIgnoreNsSet, k8sNamespace) {
 				continue
 			}
-			if containsKey(SystemNamespaces, k8sNamespace) && containsKey(StdoutIncludeSystemNamespaceSet, k8sNamespace) {
+			if containsKey(StdoutIncludeSystemNamespaceSet, k8sNamespace) {
 				if len(StdoutIncludeSystemResourceSet) != 0 {
-					dsName, deploymentName := GetDSNameAndDeploymentNameFromK8sPodName(k8sPodName)
+					dsName, deploymentName := GetControllerNameFromK8sPodName(k8sPodName)
 					if !containsKey(StdoutIncludeSystemResourceSet, k8sNamespace+":"+dsName) && !containsKey(StdoutIncludeSystemResourceSet, k8sNamespace+":"+deploymentName) {
 						continue
 					}
@@ -1533,9 +1515,9 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			if containerID == "" || containsKey(StderrIgnoreNsSet, k8sNamespace) {
 				continue
 			}
-			if containsKey(SystemNamespaces, k8sNamespace) && containsKey(StderrIncludeSystemNamespaceSet, k8sNamespace) {
+			if containsKey(StderrIncludeSystemNamespaceSet, k8sNamespace) {
 				if len(StderrIncludeSystemResourceSet) != 0 {
-					dsName, deploymentName := GetDSNameAndDeploymentNameFromK8sPodName(k8sPodName)
+					dsName, deploymentName := GetControllerNameFromK8sPodName(k8sPodName)
 					if !containsKey(StderrIncludeSystemResourceSet, k8sNamespace+":"+dsName) && !containsKey(StderrIncludeSystemResourceSet, k8sNamespace+":"+deploymentName) {
 						continue
 					}
@@ -2022,8 +2004,8 @@ func GetContainerIDK8sNamespacePodNameFromFileName(filename string) (string, str
 	return id, ns, podName, containerName
 }
 
-// GetDSNameAndDeploymentNameFromK8sPodName tries to extract potential deployment name and daemonset name from the pod name. If its not possible to extract then sends empty string
-func GetDSNameAndDeploymentNameFromK8sPodName(podName string) (string, string) {
+// GetControllerNameFromK8sPodName tries to extract potential deployment name and daemonset name from the pod name. If its not possible to extract then sends empty string
+func GetControllerNameFromK8sPodName (podName string) (string, string) {
 	if values, ok := PodNameToDSDeploymentNameMap[podName]; ok {
 		return values[0], values[1]
 	}

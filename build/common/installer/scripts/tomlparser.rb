@@ -30,6 +30,9 @@ require_relative "ConfigParseErrorLogger"
 @logEnableKubernetesMetadata = false
 @logKubernetesMetadataIncludeFields = "podlabels,podannotations,poduid,image,imageid,imagerepo,imagetag"
 @annotationBasedLogFiltering = false
+@allowed_system_namespaces = ['kube-system', 'gatekeeper-system', 'calico-system', 'azure-arc', 'kube-public', 'kube-node-lease']
+
+
 if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
   @containerLogsRoute = "v1" # default is v1 for windows until windows agent integrates windows ama
   # This path format is necessary for fluent-bit in windows
@@ -91,12 +94,21 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           end
         end
 
-        if @collectStdoutLogs && !stdoutSystemPods.nil? && stdoutSystemPods.kind_of?(Array)
-          # Checking only for the first element to be string because toml enforces the arrays to contain elements of same type
-          if stdoutSystemPods.length > 0 && stdoutSystemPods[0].kind_of?(String)
-            @stdoutIncludeSystemPods = stdoutSystemPods.join(",")
-            puts "config::Using config map setting for stdout log collection to include system pods"
+        if @collectStdoutLogs && stdoutSystemPods.is_a?(Array) && !stdoutSystemPods.empty?
+          # Using is_a? for type checking and directly checking if the array is not empty
+          filtered_entries = stdoutSystemPods.each_with_object([]) do |pod, entries|
+            namespace, _controller = pod.split(':') # Split once and use the result
+            if namespace && @allowed_system_namespaces.include?(namespace) && @stdoutExcludeNamespaces.include?(namespace)
+              entries << pod
+            else
+              puts "config:: invalid entry for collect_system_pod_logs: #{pod}"
+            end
           end
+
+          @stdoutIncludeSystemPods = filtered_entries.join(",")
+          puts "config::Using config map setting for stdout log collection to include system pods" if filtered_entries.any?
+        else
+          puts "config::Stdout log collection is not enabled or stdoutSystemPods is not properly configured." unless @collectStdoutLogs
         end
 
       end
@@ -143,12 +155,21 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           end
         end
 
-        if @collectStderrLogs && !stderrSystemPods.nil? && stderrSystemPods.kind_of?(Array)
-          # Checking only for the first element to be string because toml enforces the arrays to contain elements of same type
-          if stderrSystemPods.length > 0 && stderrSystemPods[0].kind_of?(String)
-            @stderrIncludeSystemPods = stderrSystemPods.join(",")
-            puts "config::Using config map setting for stderr log collection to include system pods"
+        if @collectStderrLogs && stderrSystemPods.is_a?(Array) && !stderrSystemPods.empty?
+          # Using is_a? for type checking and directly checking if the array is not empty
+          filtered_entries = stderrSystemPods.each_with_object([]) do |pod, entries|
+            namespace, _controller = pod.split(':') # Split once and use the result
+            if namespace && @allowed_system_namespaces.include?(namespace) && @stderrExcludeNamespaces.include?(namespace)
+              entries << pod
+            else
+              puts "config:: invalid entry for collect_system_pod_logs: #{pod}"
+            end
           end
+
+          @stderrIncludeSystemPods = filtered_entries.join(",")
+          puts "config::Using config map setting for stderr log collection to include system pods" if filtered_entries.any?
+        else
+          puts "config::stderr log collection is not enabled or stderrSystemPods is not properly configured." unless @collectStderrLogs
         end
 
       end
