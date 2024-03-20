@@ -98,10 +98,16 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           # Using is_a? for type checking and directly checking if the array is not empty
           filtered_entries = stdoutSystemPods.each_with_object([]) do |pod, entries|
             namespace, _controller = pod.split(':') # Split once and use the result
-            if namespace && @allowed_system_namespaces.include?(namespace) && @stdoutExcludeNamespaces.include?(namespace)
+            if namespace && @allowed_system_namespaces.include?(namespace) && !@stdoutExcludeNamespaces.include?(namespace)
               entries << pod
             else
               puts "config:: invalid entry for collect_system_pod_logs: #{pod}"
+              unless @allowed_system_namespaces.include?(namespace)
+                puts "config:: collect_system_pod_logs only works for system namespaces #{@allowed_system_namespaces}"
+              end
+              if @stdoutExcludeNamespaces.include?(namespace)
+                puts "config:: please remove #{namespace} from exclude_namespaces to use collect_system_pod_logs"
+              end
             end
           end
 
@@ -159,10 +165,16 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           # Using is_a? for type checking and directly checking if the array is not empty
           filtered_entries = stderrSystemPods.each_with_object([]) do |pod, entries|
             namespace, _controller = pod.split(':') # Split once and use the result
-            if namespace && @allowed_system_namespaces.include?(namespace) && @stderrExcludeNamespaces.include?(namespace)
+            if namespace && @allowed_system_namespaces.include?(namespace) && !@stderrExcludeNamespaces.include?(namespace)
               entries << pod
             else
               puts "config:: invalid entry for collect_system_pod_logs: #{pod}"
+              unless @allowed_system_namespaces.include?(namespace)
+                puts "config:: collect_system_pod_logs only works for system namespaces #{@allowed_system_namespaces}"
+              end
+              if @stdoutExcludeNamespaces.include?(namespace)
+                puts "config:: please remove #{namespace} from exclude_namespaces to use collect_system_pod_logs"
+              end
             end
           end
 

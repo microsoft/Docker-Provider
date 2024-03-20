@@ -1503,7 +1503,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			if containerID == "" || containsKey(StdoutIgnoreNsSet, k8sNamespace) {
 				continue
 			}
-			if containsKey(StdoutIncludeSystemNamespaceSet, k8sNamespace) {
+			if len(StdoutIncludeSystemNamespaceSet) > 0 && containsKey(StdoutIncludeSystemNamespaceSet, k8sNamespace) {
 				if len(StdoutIncludeSystemResourceSet) != 0 {
 					dsName, deploymentName := GetControllerNameFromK8sPodName(k8sPodName)
 					if !containsKey(StdoutIncludeSystemResourceSet, k8sNamespace+":"+dsName) && !containsKey(StdoutIncludeSystemResourceSet, k8sNamespace+":"+deploymentName) {
@@ -1515,7 +1515,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			if containerID == "" || containsKey(StderrIgnoreNsSet, k8sNamespace) {
 				continue
 			}
-			if containsKey(StderrIncludeSystemNamespaceSet, k8sNamespace) {
+			if len(StderrIncludeSystemNamespaceSet) > 0 && containsKey(StderrIncludeSystemNamespaceSet, k8sNamespace) {
 				if len(StderrIncludeSystemResourceSet) != 0 {
 					dsName, deploymentName := GetControllerNameFromK8sPodName(k8sPodName)
 					if !containsKey(StderrIncludeSystemResourceSet, k8sNamespace+":"+dsName) && !containsKey(StderrIncludeSystemResourceSet, k8sNamespace+":"+deploymentName) {
