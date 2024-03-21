@@ -25,6 +25,9 @@ require_relative "ConfigParseErrorLogger"
 @adxDatabaseName = "containerinsights" # default for all configurations
 @logEnableMultiline = "false"
 @stacktraceLanguages = "go,java,python" #supported languages for multiline logs. java is also used for dotnet stacktraces
+@logEnableKubernetesMetadata = false
+@logKubernetesMetadataIncludeFields = "podlabels,podannotations,poduid,image,imageid,imagerepo,imagetag"
+@annotationBasedLogFiltering = false
 if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
   @containerLogsRoute = "v1" # default is v1 for windows until windows agent integrates windows ama
   # This path format is necessary for fluent-bit in windows
@@ -228,6 +231,44 @@ def populateSettingValuesFromConfigMap(parsedConfig)
     rescue => errorStr
       ConfigParseErrorLogger.logError("Exception while reading config map settings for adx database name - #{errorStr}, using default #{@adxDatabaseName}, please check config map for errors")
     end
+
+    #Get Kubernetes Metadata setting
+    begin
+      if !parsedConfig[:log_collection_settings][:metadata_collection].nil? && !parsedConfig[:log_collection_settings][:metadata_collection][:enabled].nil?
+        puts "config::INFO: Using config map setting for kubernetes metadata"
+        @logEnableKubernetesMetadata = parsedConfig[:log_collection_settings][:metadata_collection][:enabled]
+        if !parsedConfig[:log_collection_settings][:metadata_collection][:include_fields].nil?
+          puts "config::INFO: Using config map setting for kubernetes metadata include fields"
+          include_fields = parsedConfig[:log_collection_settings][:metadata_collection][:include_fields]
+          if include_fields.empty?
+            puts "config::WARN: Include fields specified for Kubernetes metadata is empty, disabling Kubernetes metadata"
+            @logEnableKubernetesMetadata = false
+          elsif include_fields.kind_of?(Array)
+            include_fields.map!(&:downcase)
+            predefined_fields = @logKubernetesMetadataIncludeFields.downcase.split(',')
+            any_field_match = include_fields.any? { |field| predefined_fields.include?(field) }
+            if any_field_match
+              @logKubernetesMetadataIncludeFields = include_fields.join(",")
+            else
+              puts "config:: WARN: Include fields specified for Kubernetes metadata does not match any predefined fields, disabling Kubernetes metadata"
+              @logEnableKubernetesMetadata = false
+            end
+          end
+        end
+      end
+    rescue => errorStr
+      ConfigParseErrorLogger.logError("config::error: Exception while reading config map settings for kubernetes metadata - #{errorStr}, please check config map for errors")
+    end
+
+    #Get annotation based log filtering setting
+    begin
+      if !parsedConfig[:log_collection_settings][:filter_using_annotations].nil? && !parsedConfig[:log_collection_settings][:filter_using_annotations][:enabled].nil?
+        puts "config::INFO: Using config map setting for annotation based log filtering"
+        @annotationBasedLogFiltering = parsedConfig[:log_collection_settings][:filter_using_annotations][:enabled]
+      end
+    rescue => errorStr
+      ConfigParseErrorLogger.logError("config::error: Exception while reading config map settings for annotation based log filtering - #{errorStr}, please check config map for errors")
+    end
   end
 end
 
@@ -276,6 +317,9 @@ if !file.nil?
   file.write("export AZMON_ADX_DATABASE_NAME=#{@adxDatabaseName}\n")
   file.write("export AZMON_MULTILINE_ENABLED=#{@logEnableMultiline}\n")
   file.write("export AZMON_MULTILINE_LANGUAGES=#{@stacktraceLanguages}\n")
+  file.write("export AZMON_KUBERNETES_METADATA_ENABLED=#{@logEnableKubernetesMetadata}\n")
+  file.write("export AZMON_KUBERNETES_METADATA_INCLUDES_FIELDS=#{@logKubernetesMetadataIncludeFields}\n")
+  file.write("export AZMON_ANNOTATION_BASED_LOG_FILTERING=#{@annotationBasedLogFiltering}\n")
   # Close file after writing all environment variables
   file.close
   puts "Both stdout & stderr log collection are turned off for namespaces: '#{@excludePath}' "
@@ -341,6 +385,12 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     commands = get_command_windows("AZMON_MULTILINE_ENABLED", @logEnableMultiline)
     file.write(commands)
     commands = get_command_windows("AZMON_MULTILINE_LANGUAGES", @stacktraceLanguages)
+    file.write(commands)
+    commands = get_command_windows("AZMON_KUBERNETES_METADATA_ENABLED", @logEnableKubernetesMetadata)
+    file.write(commands)
+    commands = get_command_windows("AZMON_KUBERNETES_METADATA_INCLUDES_FIELDS", @logKubernetesMetadataIncludeFields)
+    file.write(commands)
+    commands = get_command_windows("AZMON_ANNOTATION_BASED_LOG_FILTERING", @annotationBasedLogFiltering)
     file.write(commands)
     # Close file after writing all environment variables
     file.close

@@ -35,6 +35,38 @@ function Remove-WindowsServiceIfItExists($name) {
     }
 }
 
+function Test-FluentbitTcpListener {
+    param (
+        [int]$port
+    )
+
+    $waitTimeSecs = [System.Environment]::GetEnvironmentVariable("WAITTIME_PORT_25229", "process")
+    if (![string]::IsNullOrEmpty($waitTimeSecs)) {
+        [System.Environment]::SetEnvironmentVariable("WAITTIME_PORT_25229", $waitTimeSecs, "Process")
+        [System.Environment]::SetEnvironmentVariable("WAITTIME_PORT_25229", $waitTimeSecs, "Machine")
+        Write-Host "Successfully set environment variable WAITTIME_PORT_25229 - $($waitTimeSecs) for target 'machine'..."
+    } else {
+        Write-Host "Failed to set environment variable WAITTIME_PORT_25229 for target 'machine' since it is either null or empty"
+        $waitTimeSecs = 30
+    }
+
+    $retryCount = [int]$waitTimeSecs
+    $retryAttempts = 0
+    $retryDelaySeconds = 1
+    while ($retryAttempts -lt $retryCount) {
+        $retryAttempts++
+        Write-Host "Test-FluentbitTcpListener: Retry attempt $retryAttempts/$retryCount..."
+        $netstatOutput = netstat -an | Select-String "LISTENING"
+        if ($netstatOutput -match ":$port") {
+            Write-Host "Test-FluentbitTcpListener: Fluentbit TCP listener is UP and running on port $port."
+            return $true
+        }
+        Start-Sleep -Seconds $retryDelaySeconds
+    }
+    Write-Host "Test-FluentbitTcpListener: Failed to detect TCP listener after $retryCount attempts. Exiting script."
+    return $false
+}
+
 function Start-FileSystemWatcher {
     Start-Process powershell -NoNewWindow .\filesystemwatcher.ps1
 }
@@ -520,6 +552,8 @@ function Read-Configs {
             ruby /opt/amalogswindows/scripts/ruby/fluent-bit-geneva-conf-customizer.rb "common"
             ruby /opt/amalogswindows/scripts/ruby/fluent-bit-geneva-conf-customizer.rb "tenant"
             ruby /opt/amalogswindows/scripts/ruby/fluent-bit-geneva-conf-customizer.rb "infra"
+            ruby /opt/amalogswindows/scripts/ruby/fluent-bit-geneva-conf-customizer.rb "tenant_filter"
+            ruby /opt/amalogswindows/scripts/ruby/fluent-bit-geneva-conf-customizer.rb "infra_filter"
             Generate-GenevaTenantNameSpaceConfig
             Generate-GenevaInfraNameSpaceConfig
         }
@@ -695,6 +729,12 @@ function Start-Fluent-Telegraf {
 
     $containerRuntime = Get-ContainerRuntime
 
+    $monitorKubernetesPods = [System.Environment]::GetEnvironmentVariable('TELEMETRY_CUSTOM_PROM_MONITOR_PODS')
+    if ([string]::IsNullOrEmpty($monitorKubernetesPods) -or $monitorKubernetesPods.ToLower() -eq 'false') {
+        Write-Host "Disabling telegraf tcp input plugin since TELEMETRY_CUSTOM_PROM_MONITOR_PODS is not set or set to false"
+        Clear-Content C:/etc/fluent-bit/fluent-bit-telegraf-tcp.conf
+    }
+
     if (![string]::IsNullOrEmpty($containerRuntime) -and [string]$containerRuntime.StartsWith('docker') -eq $false) {
         # change parser from docker to cri if the container runtime is not docker
         Write-Host "changing parser from Docker to CRI since container runtime : $($containerRuntime) and which is non-docker"
@@ -720,7 +760,6 @@ function Start-Fluent-Telegraf {
     # Start telegraf only in sidecar scraping mode
     $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
     if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true') {
-        Write-Host "Starting telegraf..."
         Start-Telegraf
     }
 
@@ -736,6 +775,7 @@ function Start-Telegraf {
 
     $monitorKubernetesPods = [System.Environment]::GetEnvironmentVariable('TELEMETRY_CUSTOM_PROM_MONITOR_PODS')
     if (![string]::IsNullOrEmpty($monitorKubernetesPods) -and $monitorKubernetesPods.ToLower() -eq 'true') {
+        Write-Host "Starting telegraf..."
         # Set required environment variable for telegraf prometheus plugin to run properly
         Write-Host "Setting required environment variables for telegraf prometheus input plugin to run properly..."
         $kubernetesServiceHost = [System.Environment]::GetEnvironmentVariable("KUBERNETES_SERVICE_HOST", "process")
@@ -772,37 +812,42 @@ function Start-Telegraf {
         Write-Host "Installing telegraf service"
         C:\opt\telegraf\telegraf.exe --service install --config "C:\etc\telegraf\telegraf.conf"
 
-        # Setting delay auto start for telegraf since there have been known issues with windows server and telegraf -
-        # https://github.com/influxdata/telegraf/issues/4081
-        # https://github.com/influxdata/telegraf/issues/3601
-        try {
-            $serverName = [System.Environment]::GetEnvironmentVariable("PODNAME", "process")
-            if (![string]::IsNullOrEmpty($serverName)) {
-                sc.exe \\$serverName config telegraf start= delayed-auto
-                Write-Host "Successfully set delayed start for telegraf"
+        if (Test-FluentbitTcpListener -port 25229) {
+            Write-Host "Fluentbit tcp listener is running on port 25229"
+            # Setting delay auto start for telegraf since there have been known issues with windows server and telegraf -
+            # https://github.com/influxdata/telegraf/issues/4081
+            # https://github.com/influxdata/telegraf/issues/3601
+            try {
+                $serverName = [System.Environment]::GetEnvironmentVariable("PODNAME", "process")
+                if (![string]::IsNullOrEmpty($serverName)) {
+                    sc.exe \\$serverName config telegraf start= delayed-auto
+                    Write-Host "Successfully set delayed start for telegraf"
 
+                }
+                else {
+                    Write-Host "Failed to get environment variable PODNAME to set delayed telegraf start"
+                }
             }
-            else {
-                Write-Host "Failed to get environment variable PODNAME to set delayed telegraf start"
+            catch {
+                $e = $_.Exception
+                Write-Host $e
+                Write-Host "exception occured in delayed telegraf start.. continuing without exiting"
             }
-        }
-        catch {
-            $e = $_.Exception
-            Write-Host $e
-            Write-Host "exception occured in delayed telegraf start.. continuing without exiting"
-        }
-        Write-Host "Running telegraf service in test mode"
-        C:\opt\telegraf\telegraf.exe --config "C:\etc\telegraf\telegraf.conf" --test
-        Write-Host "Starting telegraf service"
-        C:\opt\telegraf\telegraf.exe --service start
-
-        # Trying to start telegraf again if it did not start due to fluent bit not being ready at startup
-        Get-Service telegraf | findstr Running
-        if ($? -eq $false) {
-            Write-Host "trying to start telegraf in again in 30 seconds, since fluentbit might not have been ready..."
-            Start-Sleep -s 30
+            Write-Host "Running telegraf service in test mode"
+            C:\opt\telegraf\telegraf.exe --config "C:\etc\telegraf\telegraf.conf" --test
+            Write-Host "Starting telegraf service"
             C:\opt\telegraf\telegraf.exe --service start
-            Get-Service telegraf
+
+            # Trying to start telegraf again if it did not start due to fluent bit not being ready at startup
+            Get-Service telegraf | findstr Running
+            if ($? -eq $false) {
+                Write-Host "trying to start telegraf in again in 30 seconds, since fluentbit might not have been ready..."
+                Start-Sleep -s 30
+                C:\opt\telegraf\telegraf.exe --service start
+                Get-Service telegraf
+            }
+        } else {
+            Write-Host "Telegraf not started since Fluentbit tcp listener is not up and running on port 25229"
         }
     }
 }

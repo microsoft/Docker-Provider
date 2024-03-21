@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<MonitoringManagement version="1.0" namespace="<NamespaceForLinuxContainers>" eventVersion="1" timestamp="2016-01-20T00:00:00.000">
+<MonitoringManagement version="1.1" namespace="<NamespaceForLinuxContainers>" eventVersion="1" timestamp="2016-01-20T00:00:00.000">
   <Accounts>
     <Account moniker="<GenevaLogsAccountMoniker>" isDefault="true" />
   </Accounts>
@@ -25,6 +25,7 @@
       <Column name="Computer" type="str" mdstype="mt:wstr" />
       <Column name="ContainerName" type="str" mdstype="mt:wstr" />
       <Column name="AzureResourceId" type="str" mdstype="mt:wstr" />
+      <Column name="KubernetesMetadata" type="str" mdstype="mt:wstr" />
     </Schema>
   </Schemas>
   <Sources>

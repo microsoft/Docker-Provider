@@ -604,6 +604,10 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
       commands = get_command_windows("AZMON_WINDOWS_FLUENT_BIT_DISABLED", @windows_fluent_bit_disabled)
       file.write(commands)
     end
+
+    commands = get_command_windows("WAITTIME_PORT_25229", @waittime_port_25229)
+    file.write(commands)
+
     # Close file after writing all environment variables
     file.close
     puts "****************End Config Processing********************"

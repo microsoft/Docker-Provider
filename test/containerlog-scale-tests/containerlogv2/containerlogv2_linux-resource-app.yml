@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: linux-resource-intensive-app
+  namespace: lwtest
+  annotations:
+    description: "Scale test deployment for a resource-intensive app"
+    build-information: "Built on 2023-12-29"
+  labels:
+    purpose: scale-testing
+    environment: test
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: linux-resource-intensive-app
+  template:
+    metadata:
+      labels:
+        app: linux-resource-intensive-app
+        tier: frontend
+        department: IT
+        managed-by: kubernetes
+        version: "1.0"
+        component: logger
+        role: resource-intensive-task
+        l1: test
+        l2: test
+        l3: test
+        l4: test
+        l5: test
+        l6: test
+        l7: test
+        l8: test
+        l9: test
+        l10: test
+      annotations:
+        notes: "Pods generate high volume logs for stress testing"
+        maintainer: "team@example.com"
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - key: "CriticalAddonsOnly"
+        operator: "Exists"
+      containers:
+      - name: linux-resource-intensive-app
+        image: ubuntu
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            while true; do
+              timestamp=$(date "+%Y/%m/%d %H:%M:%S.%3N")
+              logEntry=$(printf 'Test-%.0s' {1..200}) # Adjusted to create a log entry of about 1000 bytes
+              echo "$timestamp $logEntry"
+              sleep 0.0001  # Sleep for round up to 1 millisecond # Generates approximately 1000 logs per second
+            done

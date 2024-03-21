@@ -39,6 +39,10 @@ spec:
                 fieldPath: metadata.namespace
          - name: ENABLE_FBIT_INTERNAL_METRICS
            value: {{ .Values.enableInternalMetrics | quote }}
+         - name: AZMON_KUBERNETES_METADATA_ENABLED
+           value: {{ .Values.enableKubernetesMetadata | quote }}
+         - name: AZMON_KUBERNETES_METADATA_INCLUDES_FIELDS
+           value: {{ .Values.kubernetesMetadataIncludeFields | quote }}
          - name: FBIT_SERVICE_GRACE_INTERVAL_SECONDS
            value: "10"
          - name: GENEVA_LOGS_INTEGRATION_SERVICE_MODE

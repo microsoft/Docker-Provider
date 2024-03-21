@@ -77,6 +77,8 @@ def substituteFluentBitPlaceHolders
     stacktraceLanguages = ENV["AZMON_MULTILINE_LANGUAGES"]
     resourceOptimizationEnabled = ENV["AZMON_RESOURCE_OPTIMIZATION_ENABLED"]
     windowsFluentBitDisabled = ENV["AZMON_WINDOWS_FLUENT_BIT_DISABLED"]
+    kubernetesMetadataCollection = ENV["AZMON_KUBERNETES_METADATA_ENABLED"]
+    annotationBasedLogFiltering = ENV["AZMON_ANNOTATION_BASED_LOG_FILTERING"]
 
     serviceInterval = (!interval.nil? && is_number?(interval) && interval.to_i > 0) ? interval : @default_service_interval
     serviceIntervalSetting = "Flush         " + serviceInterval
@@ -111,6 +113,16 @@ def substituteFluentBitPlaceHolders
       new_contents = new_contents.gsub("${TAIL_IGNORE_OLDER}", "Ignore_Older " + ignoreOlder)
     else
       new_contents = new_contents.gsub("\n    ${TAIL_IGNORE_OLDER}\n", "\n")
+    end
+
+    if !kubernetesMetadataCollection.nil? && kubernetesMetadataCollection.to_s.downcase == "true"
+      new_contents = new_contents.gsub("#${KubernetesFilterEnabled}", "")
+    end
+
+    if !annotationBasedLogFiltering.nil? && annotationBasedLogFiltering.to_s.downcase == "true"
+      # enabled kubernetes filter plugin if not already enabled
+      new_contents = new_contents.gsub("#${KubernetesFilterEnabled}", "")
+      new_contents = new_contents.gsub("#${AnnotationBasedLogFilteringEnabled}", "")
     end
 
     new_contents = substituteMultiline(multilineLogging, stacktraceLanguages, new_contents)

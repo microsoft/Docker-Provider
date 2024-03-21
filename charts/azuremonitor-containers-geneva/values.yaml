@@ -20,6 +20,8 @@ image:
   agentVersion: "azure-mdsd-1.29.7"
 nameOverride: ""
 enableInternalMetrics: false
+enableKubernetesMetadata: false
+kubernetesMetadataIncludeFields: "podlabels,podannotations,poduid,image,imageid,imagerepo,imagetag"
 fullnameOverride: ""
 podAnnotations: {}
 service:

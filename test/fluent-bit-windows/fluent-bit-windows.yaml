@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluent-bit-windows
+  labels:
+    app: fluent-bit-windows
+spec:
+  selector:
+    matchLabels:
+      app: fluent-bit-windows
+  template:
+    metadata:
+      labels:
+        app: fluent-bit-windows
+    spec:
+      affinity:
+       nodeAffinity:
+         requiredDuringSchedulingIgnoredDuringExecution:
+           nodeSelectorTerms:
+           - matchExpressions:
+             - key: kubernetes.io/os
+               operator: In
+               values:
+               - windows
+             - key: kubernetes.azure.com/os-sku
+               operator: In
+               values:
+               - Windows2019 # For Windows 2022, use Windows2022
+      containers:
+      - name: fluent-bit
+        image: fluent/fluent-bit:windows-2019-2.2.2 # For Windows 2022, use 2022 instead of 2019
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            memory: "750Mi"
+            cpu: "500m"
+          # requests:
+          #   memory: "100Mi"
+          #   cpu: "50m"
+        volumeMounts:
+        - mountPath: C:\ProgramData\docker\containers
+          name: docker-windows-containers
+          readOnly: true
+        - mountPath: C:\var #Read + Write access on this for position file
+          name: docker-windows-kuberenetes-container-logs
+        - name: config-volume
+          mountPath: /fluent-bit/etc/
+      volumes:
+      - name: docker-windows-kuberenetes-container-logs
+        hostPath:
+          path: C:\var
+      - name: docker-windows-containers
+        hostPath:
+          path: C:\ProgramData\docker\containers
+          type: DirectoryOrCreate
+      - name: config-volume
+        configMap:
+          name: fluent-bit-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-config
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush         1
+        Log_Level     info
+        Daemon        off
+        Parsers_File  parsers.conf
+
+    [INPUT]
+        Name                tail
+        Path                C:\\var\\log\\containers\*.log
+        Multiline.Parser    cri
+        Tag                 windows.*
+        Read_from_Head      true
+        DB                  C:\\var\\log\\fblogs.db
+        DB.Sync             Off
+        Rotate_Wait         20
+        Refresh_Interval    30
+        Path_Key            filepath
+        Skip_Long_Lines     On
+
+    [FILTER]
+        Name multiline
+        Match *
+        multiline.key_content log
+        multiline.parser go,java,python
+
+    [OUTPUT]
+        Name          Null
+        Match         *
+

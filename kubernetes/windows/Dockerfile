@@ -78,6 +78,7 @@ COPY ./amalogswindows/installer/conf/fluent-bit-geneva.conf /etc/fluent-bit/
 COPY ./amalogswindows/installer/conf/fluent-bit-common.conf /etc/fluent-bit/
 COPY ./amalogswindows/installer/conf/fluent-bit-internal-metrics.conf /etc/fluent-bit/
 COPY ./amalogswindows/installer/conf/fluent-bit-input.conf /etc/fluent-bit/
+COPY ./amalogswindows/installer/conf/fluent-bit-telegraf-tcp.conf /etc/fluent-bit/
 
 
 # copy telegraf conf file

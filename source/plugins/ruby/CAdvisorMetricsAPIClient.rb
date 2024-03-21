@@ -28,6 +28,10 @@ class CAdvisorMetricsAPIClient
   @clusterContainerLogSchemaVersion = ENV["AZMON_CONTAINER_LOG_SCHEMA_VERSION"]
   @clusterMultilineEnabled = ENV["AZMON_MULTILINE_ENABLED"]
   @clusterMultilineLanguages = ENV["AZMON_MULTILINE_LANGUAGES"]
+  @clusterKubernetesMetadataEnabled = ENV["AZMON_KUBERNETES_METADATA_ENABLED"]
+  @clusterKubernetesMetadataIncludeFields = ENV["AZMON_KUBERNETES_METADATA_INCLUDES_FIELDS"]
+  @clusterAnnotationBasedFiltering = ENV["AZMON_ANNOTATION_BASED_LOG_FILTERING"]
+  @clusterKubernetesMetadataCacheTTLSeconds = ENV["AZMON_KUBERNETES_METADATA_CACHE_TTL_SECONDS"]
 
   @dsPromInterval = ENV["TELEMETRY_DS_PROM_INTERVAL"]
   @dsPromFieldPassCount = ENV["TELEMETRY_DS_PROM_FIELDPASS_LENGTH"]
@@ -303,6 +307,18 @@ class CAdvisorMetricsAPIClient
                       if (!@clusterMultilineLanguages.nil? && !@clusterMultilineLanguages.empty?)
                         telemetryProps["multilineLanguages"] = @clusterMultilineLanguages
                       end
+                    end
+                    if (!@clusterKubernetesMetadataEnabled.nil? && !@clusterKubernetesMetadataEnabled.empty?)
+                      telemetryProps["metadataEnabled"] = @clusterKubernetesMetadataEnabled
+                    end
+                    if (!@clusterKubernetesMetadataIncludeFields.nil? && !@clusterKubernetesMetadataIncludeFields.empty?)
+                      telemetryProps["metadataIncludeFields"] = @clusterKubernetesMetadataIncludeFields
+                    end
+                    if (!@clusterAnnotationBasedFiltering.nil? && !@clusterAnnotationBasedFiltering.empty?)
+                      telemetryProps["annotationBasedFiltering"] = @clusterAnnotationBasedFiltering
+                    end
+                    if (!@clusterKubernetesMetadataCacheTTLSeconds.nil? && !@clusterKubernetesMetadataCacheTTLSeconds.empty?)
+                      telemetryProps["metadataCacheTTL"] = @clusterKubernetesMetadataCacheTTLSeconds
                     end
                     ApplicationInsightsUtility.sendMetricTelemetry(metricNametoReturn, metricValue, telemetryProps)
                   end

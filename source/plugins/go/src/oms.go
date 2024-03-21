@@ -171,6 +171,10 @@ var (
 	ContainerLogSchemaV2 bool
 	// container log schema version from config map
 	ContainerLogV2ConfigMap bool
+	// Kubernetes Metadata enabled through configmap flag
+	KubernetesMetadataEnabled bool
+	// Kubernetes Metadata enabled include list
+	KubernetesMetadataIncludeList []string
 	//ADX Cluster URI
 	AdxClusterUri string
 	// ADX clientID
@@ -278,28 +282,27 @@ type DataItemLAv1 struct {
 // DataItemLAv2 == ContainerLogV2 table in LA
 // Please keep the names same as destination column names, to avoid transforming one to another in the pipeline
 type DataItemLAv2 struct {
-	TimeGenerated string `json:"TimeGenerated"`
-	Computer      string `json:"Computer"`
-	ContainerId   string `json:"ContainerId"`
-	ContainerName string `json:"ContainerName"`
-	PodName       string `json:"PodName"`
-	PodNamespace  string `json:"PodNamespace"`
-	LogMessage    string `json:"LogMessage"`
-	LogSource     string `json:"LogSource"`
-	//PodLabels			  string `json:"PodLabels"`
+	TimeGenerated      string `json:"TimeGenerated"`
+	Computer           string `json:"Computer"`
+	ContainerId        string `json:"ContainerId"`
+	ContainerName      string `json:"ContainerName"`
+	PodName            string `json:"PodName"`
+	PodNamespace       string `json:"PodNamespace"`
+	LogMessage         string `json:"LogMessage"`
+	LogSource          string `json:"LogSource"`
+	KubernetesMetadata string `json:"KubernetesMetadata"`
 }
 
 // DataItemADX == ContainerLogV2 table in ADX
 type DataItemADX struct {
-	TimeGenerated string `json:"TimeGenerated"`
-	Computer      string `json:"Computer"`
-	ContainerId   string `json:"ContainerId"`
-	ContainerName string `json:"ContainerName"`
-	PodName       string `json:"PodName"`
-	PodNamespace  string `json:"PodNamespace"`
-	LogMessage    string `json:"LogMessage"`
-	LogSource     string `json:"LogSource"`
-	//PodLabels			  string `json:"PodLabels"`
+	TimeGenerated   string `json:"TimeGenerated"`
+	Computer        string `json:"Computer"`
+	ContainerId     string `json:"ContainerId"`
+	ContainerName   string `json:"ContainerName"`
+	PodName         string `json:"PodName"`
+	PodNamespace    string `json:"PodNamespace"`
+	LogMessage      string `json:"LogMessage"`
+	LogSource       string `json:"LogSource"`
 	AzureResourceId string `json:"AzureResourceId"`
 }
 
@@ -1149,6 +1152,141 @@ func UpdateNumTelegrafMetricsSentTelemetry(numMetricsSent int, numSendErrors int
 	ContainerLogTelemetryMutex.Unlock()
 }
 
+func processIncludes(kubernetesMetadataMap map[string]interface{}, includesList []string) map[string]interface{} {
+	includedMetadata := make(map[string]interface{})
+
+	// pre process image related fields
+	var imageRepo, imageName, imageTag, imageID string
+	imageProcessed := false // Flag to check if image processing is required
+	for _, include := range includesList {
+		if include == "imageid" || include == "imagerepo" || include == "image" || include == "imagetag" {
+			imageProcessed = true
+			break
+		}
+	}
+
+	if imageProcessed {
+		if hash, ok := kubernetesMetadataMap["container_hash"].(string); ok {
+			imageID = extractImageID(hash)
+		}
+		if image, ok := kubernetesMetadataMap["container_image"].(string); ok {
+			imageRepo, imageName, imageTag = parseImageDetails(image)
+		}
+	}
+
+	for _, include := range includesList {
+		switch include {
+		case "poduid":
+			if val, ok := kubernetesMetadataMap["pod_id"]; ok {
+				includedMetadata["podUid"] = val
+			}
+		case "podlabels":
+			if val, ok := kubernetesMetadataMap["labels"]; ok {
+				includedMetadata["podLabels"] = val
+			}
+		case "podannotations":
+			if val, ok := kubernetesMetadataMap["annotations"]; ok {
+				if annotationsMap, ok := val.(map[string]interface{}); ok {
+					filteredAnnotations := make(map[string]interface{})
+					for key, annotationValue := range annotationsMap {
+						if !strings.Contains(key, "kubernetes.io/config") {
+							filteredAnnotations[key] = annotationValue
+						}
+					}
+					includedMetadata["podAnnotations"] = filteredAnnotations
+				}
+			}
+		case "imageid":
+			if imageID != "" {
+				includedMetadata["imageID"] = imageID
+			}
+		case "imagerepo":
+			if imageRepo != "" {
+				includedMetadata["imageRepo"] = imageRepo
+			}
+		case "image":
+			if imageName != "" {
+				includedMetadata["image"] = imageName
+			}
+		case "imagetag":
+			if imageTag != "" {
+				includedMetadata["imageTag"] = imageTag
+			}
+		}
+	}
+	return includedMetadata
+}
+
+func extractImageID(hash string) string {
+	if atLocation := strings.Index(hash, "@"); atLocation != -1 {
+		return hash[atLocation+1:]
+	}
+	return ""
+}
+
+func parseImageDetails(image string) (repo, name, tag string) {
+	slashLocation := strings.Index(image, "/")
+	colonLocation := strings.Index(image, ":")
+	atLocation := strings.Index(image, "@")
+
+	// Exclude the digest part for imageRepo/image/tag parsing, if present
+	if atLocation != -1 {
+		image = image[:atLocation]
+	}
+
+	// If colonLocation is -1 (not found), set it to the length of the image string
+	if colonLocation == -1 {
+		colonLocation = len(image)
+	}
+
+	// Processing Image Name, Repo based on the simplified logic
+	if slashLocation != -1 && slashLocation < colonLocation {
+		// imageRepo/image:tag or imageRepo/image
+		repo = image[:slashLocation]
+		name = image[slashLocation+1 : colonLocation]
+	} else {
+		// image:tag without imageRepo or just image
+		name = image[:colonLocation]
+	}
+
+	// Set tag, defaulting to "latest" if colonLocation is at the end of the image string (i.e., no explicit tag)
+	if colonLocation < len(image) {
+		tag = image[colonLocation+1:]
+	} else {
+		tag = "latest"
+	}
+
+	return repo, name, tag
+}
+
+func convertKubernetesMetadata(kubernetesMetadataJson interface{}) (map[string]interface{}, error) {
+	m, ok := kubernetesMetadataJson.(map[interface{}]interface{})
+	if !ok {
+		return nil, fmt.Errorf("type assertion to map[interface{}]interface{} failed")
+	}
+
+	strMap := make(map[string]interface{})
+	for k, v := range m {
+		strKey, ok := k.(string)
+		if !ok {
+			continue
+		}
+		switch val := v.(type) {
+		case map[interface{}]interface{}:
+			convertedMap, err := convertKubernetesMetadata(val)
+			if err != nil {
+				return nil, err
+			}
+			strMap[strKey] = convertedMap
+		case []byte:
+			strMap[strKey] = string(val)
+		default:
+			strMap[strKey] = val
+		}
+	}
+	return strMap, nil
+}
+
 func toStringMap(record map[interface{}]interface{}) map[string]interface{} {
 	tag := record["tag"].([]byte)
 	mp := make(map[string]interface{})
@@ -1299,6 +1437,27 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	for _, record := range tailPluginRecords {
 		containerID, k8sNamespace, k8sPodName, containerName := GetContainerIDK8sNamespacePodNameFromFileName(ToString(record["filepath"]))
 		logEntrySource := ToString(record["stream"])
+		kubernetesMetadata := ""
+		if KubernetesMetadataEnabled {
+			if kubernetesMetadataJson, exists := record["kubernetes"]; exists {
+				kubernetesMetadataMap, err := convertKubernetesMetadata(kubernetesMetadataJson)
+				if err != nil {
+					Log(fmt.Sprintf("Error convertKubernetesMetadata: %v", err))
+				}
+				includedMetadata := processIncludes(kubernetesMetadataMap, KubernetesMetadataIncludeList)
+				kubernetesMetadataBytes, err := json.Marshal(includedMetadata)
+				if err != nil {
+					message := fmt.Sprintf("Error while Marshalling kubernetesMetadataBytes to json bytes: %s", err.Error())
+					Log(message)
+					SendException(message)
+				}
+				kubernetesMetadata = string(kubernetesMetadataBytes)
+			} else {
+				message := fmt.Sprintf("Error while getting kubernetesMetadata")
+				Log(message)
+				SendException(message)
+			}
+		}
 
 		if strings.EqualFold(logEntrySource, "stdout") {
 			if containerID == "" || containsKey(StdoutIgnoreNsSet, k8sNamespace) {
@@ -1343,7 +1502,17 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		}
 
 		//ADX Schema & LAv2 schema are almost the same (except resourceId)
-		if ContainerLogSchemaV2 == true || ContainerLogsRouteADX == true {
+		if ContainerLogSchemaV2 == true {
+			stringMap["Computer"] = Computer
+			stringMap["ContainerId"] = containerID
+			stringMap["ContainerName"] = containerName
+			stringMap["PodName"] = k8sPodName
+			stringMap["PodNamespace"] = k8sNamespace
+			stringMap["LogMessage"] = logEntry
+			stringMap["LogSource"] = logEntrySource
+			stringMap["TimeGenerated"] = logEntryTimeStamp
+			stringMap["KubernetesMetadata"] = kubernetesMetadata
+		} else if ContainerLogsRouteADX == true {
 			stringMap["Computer"] = Computer
 			stringMap["ContainerId"] = containerID
 			stringMap["ContainerName"] = containerName
@@ -1407,14 +1576,15 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		} else {
 			if ContainerLogSchemaV2 == true {
 				dataItemLAv2 = DataItemLAv2{
-					TimeGenerated: stringMap["TimeGenerated"],
-					Computer:      stringMap["Computer"],
-					ContainerId:   stringMap["ContainerId"],
-					ContainerName: stringMap["ContainerName"],
-					PodName:       stringMap["PodName"],
-					PodNamespace:  stringMap["PodNamespace"],
-					LogMessage:    stringMap["LogMessage"],
-					LogSource:     stringMap["LogSource"],
+					TimeGenerated:      stringMap["TimeGenerated"],
+					Computer:           stringMap["Computer"],
+					ContainerId:        stringMap["ContainerId"],
+					ContainerName:      stringMap["ContainerName"],
+					PodName:            stringMap["PodName"],
+					PodNamespace:       stringMap["PodNamespace"],
+					LogMessage:         stringMap["LogMessage"],
+					LogSource:          stringMap["LogSource"],
+					KubernetesMetadata: stringMap["KubernetesMetadata"],
 				}
 				//ODS-v2 schema
 				dataItemsLAv2 = append(dataItemsLAv2, dataItemLAv2)
@@ -2034,6 +2204,15 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	ContainerLogSchemaV2 = false //default is v1 schema
 	ContainerLogV2ConfigMap = (strings.Compare(ContainerLogSchemaVersion, ContainerLogV2SchemaVersion) == 0)
 
+	KubernetesMetadataEnabled = false
+	KubernetesMetadataEnabled = (strings.Compare(strings.ToLower(os.Getenv("AZMON_KUBERNETES_METADATA_ENABLED")), "true") == 0)
+	metadataIncludeList := strings.ToLower(os.Getenv("AZMON_KUBERNETES_METADATA_INCLUDES_FIELDS"))
+	Log(fmt.Sprintf("KubernetesMetadataEnabled from configmap: %+v\n", KubernetesMetadataEnabled))
+	Log(fmt.Sprintf("KubernetesMetadataIncludeList from configmap: %+v\n", metadataIncludeList))
+	KubernetesMetadataIncludeList = []string{}
+	if KubernetesMetadataEnabled && len(metadataIncludeList) > 0 {
+		KubernetesMetadataIncludeList = strings.Split(metadataIncludeList, ",")
+	}
 	if ContainerLogV2ConfigMap && ContainerLogsRouteADX != true {
 		ContainerLogSchemaV2 = true
 		Log("Container logs schema=%s", ContainerLogV2SchemaVersion)

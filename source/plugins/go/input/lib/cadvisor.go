@@ -1051,6 +1051,18 @@ func getContainerCpuMetricItems(metricInfo map[string]interface{}, hostName, met
 						if len(os.Getenv("AZMON_RESOURCE_OPTIMIZATION_ENABLED")) > 0 {
 							telemetryProps["resoureceOptimizationEnabled"] = os.Getenv("AZMON_RESOURCE_OPTIMIZATION_ENABLED")
 						}
+						if len(os.Getenv("AZMON_KUBERNETES_METADATA_ENABLED")) > 0 {
+							telemetryProps["metadataEnabled"] = os.Getenv("AZMON_KUBERNETES_METADATA_ENABLED")
+						}
+						if len(os.Getenv("AZMON_KUBERNETES_METADATA_INCLUDES_FIELDS")) > 0 {
+							telemetryProps["metadataIncludeFields"] = os.Getenv("AZMON_KUBERNETES_METADATA_INCLUDES_FIELDS")
+						}
+						if len(os.Getenv("AZMON_ANNOTATION_BASED_LOG_FILTERING")) > 0 {
+							telemetryProps["annotationBasedFiltering"] = os.Getenv("AZMON_ANNOTATION_BASED_LOG_FILTERING")
+						}
+						if len(os.Getenv("AZMON_KUBERNETES_METADATA_CACHE_TTL_SECONDS")) > 0 {
+							telemetryProps["metadataCacheTTL"] = os.Getenv("AZMON_KUBERNETES_METADATA_CACHE_TTL_SECONDS")
+						}
 						SendMetricTelemetry(metricName, metricValue, telemetryProps)
 					}
 				}

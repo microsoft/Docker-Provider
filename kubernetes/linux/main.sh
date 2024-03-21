@@ -625,6 +625,8 @@ if [ ! -e "/etc/config/kube.conf" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE
             ruby fluent-bit-geneva-conf-customizer.rb  "common"
             ruby fluent-bit-geneva-conf-customizer.rb  "tenant"
             ruby fluent-bit-geneva-conf-customizer.rb  "infra"
+            ruby fluent-bit-geneva-conf-customizer.rb  "tenant_filter"
+            ruby fluent-bit-geneva-conf-customizer.rb  "infra_filter"
             # generate genavaconfig for each tenant
             generateGenevaTenantNamespaceConfig
             # generate genavaconfig for infra namespace

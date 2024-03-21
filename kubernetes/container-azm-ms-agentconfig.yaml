@@ -54,7 +54,16 @@ data:
           # Requires ContainerLogV2 schema to be enabled. See https://aka.ms/ContainerLogv2 for more details.
           # enabled = "false"
           # stacktrace_languages = []
-
+       #[log_collection_settings.metadata_collection]
+          # kube_meta_cache_ttl_secs is a configurable option for K8s cached metadata. Default is 60s. You may adjust it in below section [agent_settings.k8s_metadata_config]. Reference link: https://docs.fluentbit.io/manual/pipeline/filters/kubernetes#configuration-parameters
+          # if enabled will collect kubernetes metadata for ContainerLogv2 schema. Default is false. 
+          # enabled = false
+          # if include_fields commented out or empty, all fields will be included. If include_fields is set, only the fields listed will be included.
+          # include_fields = ["podLabels","podAnnotations","podUid","image","imageID","imageRepo","imageTag"]
+       #[log_collection_settings.filter_using_annotations]
+          # if enabled will exclude logs from pods with annotations fluenbit.io/exclude: "true".
+          # Read more: https://docs.fluentbit.io/manual/pipeline/filters/kubernetes#kubernetes-annotations
+          # enabled = false
 
   prometheus-data-collection-settings: |-
     # Custom Prometheus metrics data collection settings
@@ -214,6 +223,10 @@ data:
     # The following settings are "undocumented", we don't recommend uncommenting them unless directed by Microsoft.
     # [agent_settings.telemetry_config]
     #   disable_telemetry = false  # if this is not applied, default value is false
+    
+    # The following setting is for KubernetesMetadata CacheTTL Settings.
+    # [agent_settings.k8s_metadata_config]
+    #   kube_meta_cache_ttl_secs = 60  # if this is not applied, default value is 60s
 
 metadata:
   name: container-azm-ms-agentconfig
