@@ -126,6 +126,8 @@ const ContainerTypeEnv = "CONTAINER_TYPE"
 // Default ADX destination database name, can be overriden through configuration
 const DefaultAdxDatabaseName = "containerinsights"
 
+const PodNameToControllerNameMapCacheSize = 300 // AKS 250 pod per node limit + 50 extra
+
 var (
 	// PluginConfiguration the plugins configuration
 	PluginConfiguration map[string]string
@@ -2002,22 +2004,31 @@ func GetContainerIDK8sNamespacePodNameFromFileName(filename string) (string, str
 }
 
 // GetControllerNameFromK8sPodName tries to extract potential controller name from the pod name. If its not possible to extract then sends empty string
+// For sample pod name kube-proxy-dgcx7 it returns kube and kube-proxy.
+// For sample pod name coredns-77d8fb66dd-hsgbb returns coredns-77d8fb66dd and coredns
+// The returned values are matched against configmap inputs eg kube-system:coredns and kube-system:kube-proxy
 func GetControllerNameFromK8sPodName (podName string) (string, string) {
+	// clear cache if it exceeds the cache size
+	if len(PodNameToControllerNameMap) > PodNameToControllerNameMapCacheSize {
+		PodNameToControllerNameMap = make(map[string][2]string)
+	}
+
 	if values, ok := PodNameToControllerNameMap[podName]; ok {
 		return values[0], values[1]
 	}
-	dsName := ""
-	deploymentName := ""
+
+	dsNameType := ""
+	deploymentNameType := ""
 	last := strings.LastIndex(podName, "-")
 	if last != -1 {
-		dsName = podName[:last]
-		last = strings.LastIndex(dsName, "-")
+		dsNameType = podName[:last]
+		last = strings.LastIndex(dsNameType, "-")
 		if last != -1 {
-			deploymentName = dsName[:last]
+			deploymentNameType = dsNameType[:last]
 		}
 	}
-	PodNameToControllerNameMap[podName] = [2]string{dsName, deploymentName}
-	return dsName, deploymentName
+	PodNameToControllerNameMap[podName] = [2]string{dsNameType, deploymentNameType}
+	return dsNameType, deploymentNameType
 }
 
 // InitializePlugin reads and populates plugin configuration
