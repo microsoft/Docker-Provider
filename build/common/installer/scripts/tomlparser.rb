@@ -108,7 +108,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               if @stdoutExcludeNamespaces.include?(namespace)
                 puts "config:: please remove #{namespace} from exclude_namespaces to use collect_system_pod_logs"
               end
-              if !controller || controler.empty?
+              if !controller || controller.empty?
                 puts "config:: Please provide valid controller name. controller name is empty"
               end
             end
@@ -178,7 +178,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               if @stdoutExcludeNamespaces.include?(namespace)
                 puts "config:: please remove #{namespace} from exclude_namespaces to use collect_system_pod_logs"
               end
-              if !controller || controler.empty?
+              if !controller || controller.empty?
                 puts "config:: Please provide valid controller name. controller name is empty"
               end
             end
