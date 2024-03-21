@@ -2010,6 +2010,7 @@ func GetContainerIDK8sNamespacePodNameFromFileName(filename string) (string, str
 func GetControllerNameFromK8sPodName (podName string) (string, string) {
 	// clear cache if it exceeds the cache size
 	if len(PodNameToControllerNameMap) > PodNameToControllerNameMapCacheSize {
+		Log("Clearing PodNameToControllerNameMap cache")
 		PodNameToControllerNameMap = make(map[string][2]string)
 	}
 
