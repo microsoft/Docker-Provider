@@ -98,7 +98,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           # Using is_a? for type checking and directly checking if the array is not empty
           filtered_entries = stdoutSystemPods.each_with_object([]) do |pod, entries|
             namespace, controller = pod.split(':') # Split once and use the result
-            if namespace && @allowed_system_namespaces.include?(namespace) && !@stdoutExcludeNamespaces.include?(namespace) && !controller&.empty?
+            if namespace && @allowed_system_namespaces.include?(namespace) && !@stdoutExcludeNamespaces.include?(namespace) && controller && !controller.empty?
               entries << pod
             else
               puts "config:: invalid entry for collect_system_pod_logs: #{pod}"
@@ -108,7 +108,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               if @stdoutExcludeNamespaces.include?(namespace)
                 puts "config:: please remove #{namespace} from exclude_namespaces to use collect_system_pod_logs"
               end
-              if controller&.empty?
+              if !controller || controler.empty?
                 puts "config:: Please provide valid controller name. controller name is empty"
               end
             end
@@ -168,7 +168,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           # Using is_a? for type checking and directly checking if the array is not empty
           filtered_entries = stderrSystemPods.each_with_object([]) do |pod, entries|
             namespace, controller = pod.split(':') # Split once and use the result
-            if namespace && @allowed_system_namespaces.include?(namespace) && !@stderrExcludeNamespaces.include?(namespace) && !controller&.empty?
+            if namespace && @allowed_system_namespaces.include?(namespace) && !@stderrExcludeNamespaces.include?(namespace) && controller && !controller.empty?
               entries << pod
             else
               puts "config:: invalid entry for collect_system_pod_logs: #{pod}"
@@ -178,7 +178,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               if @stdoutExcludeNamespaces.include?(namespace)
                 puts "config:: please remove #{namespace} from exclude_namespaces to use collect_system_pod_logs"
               end
-              if controller&.empty?
+              if !controller || controler.empty?
                 puts "config:: Please provide valid controller name. controller name is empty"
               end
             end

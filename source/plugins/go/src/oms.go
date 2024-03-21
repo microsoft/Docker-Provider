@@ -232,8 +232,8 @@ var (
 	StdoutIncludeSystemNamespaceSet map[string]bool
 	// StderrIncludeSystemNamespaceSet  set of included system namespaces for stderr logs
 	StderrIncludeSystemNamespaceSet map[string]bool
-	// PodNameToDSDeploymentNameMap stores podName to potential DS and deployment name mapping
-	PodNameToDSDeploymentNameMap map[string][2]string
+	// PodNameToControllerNameMap stores podName to potential controller name mapping
+	PodNameToControllerNameMap map[string][2]string
 	// DataUpdateMutex read and write mutex access to the container id set
 	DataUpdateMutex = &sync.Mutex{}
 	// ContainerLogTelemetryMutex read and write mutex access to the Container Log Telemetry
@@ -1505,8 +1505,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			}
 			if len(StdoutIncludeSystemNamespaceSet) > 0 && containsKey(StdoutIncludeSystemNamespaceSet, k8sNamespace) {
 				if len(StdoutIncludeSystemResourceSet) != 0 {
-					dsName, deploymentName := GetControllerNameFromK8sPodName(k8sPodName)
-					if !containsKey(StdoutIncludeSystemResourceSet, k8sNamespace+":"+dsName) && !containsKey(StdoutIncludeSystemResourceSet, k8sNamespace+":"+deploymentName) {
+					candidate1, candidate2 := GetControllerNameFromK8sPodName(k8sPodName)
+					if !containsKey(StdoutIncludeSystemResourceSet, k8sNamespace+":"+candidate1) && !containsKey(StdoutIncludeSystemResourceSet, k8sNamespace+":"+candidate2) {
 						continue
 					}
 				}
@@ -1517,8 +1517,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			}
 			if len(StderrIncludeSystemNamespaceSet) > 0 && containsKey(StderrIncludeSystemNamespaceSet, k8sNamespace) {
 				if len(StderrIncludeSystemResourceSet) != 0 {
-					dsName, deploymentName := GetControllerNameFromK8sPodName(k8sPodName)
-					if !containsKey(StderrIncludeSystemResourceSet, k8sNamespace+":"+dsName) && !containsKey(StderrIncludeSystemResourceSet, k8sNamespace+":"+deploymentName) {
+					candidate1, candidate2 := GetControllerNameFromK8sPodName(k8sPodName)
+					if !containsKey(StderrIncludeSystemResourceSet, k8sNamespace+":"+candidate1) && !containsKey(StderrIncludeSystemResourceSet, k8sNamespace+":"+candidate2) {
 						continue
 					}
 				}
@@ -1686,9 +1686,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	}
 
 	numContainerLogRecords := 0
-
-	Log("StdoutIncludeSystemResourceSet : %v, StderrIncludeSystemResourceSet: %v, StdoutIncludeSystemNamespaceSet: %v, StderrIncludeSystemNamespaceSet: %v, PodNameToDSDeploymentNameMap: %v",
-		StdoutIncludeSystemResourceSet, StderrIncludeSystemResourceSet, StdoutIncludeSystemNamespaceSet, StderrIncludeSystemNamespaceSet, PodNameToDSDeploymentNameMap)
 
 	if ContainerLogSchemaV2 == true {
 		MdsdContainerLogTagName = MdsdContainerLogV2SourceName
@@ -2004,9 +2001,9 @@ func GetContainerIDK8sNamespacePodNameFromFileName(filename string) (string, str
 	return id, ns, podName, containerName
 }
 
-// GetControllerNameFromK8sPodName tries to extract potential deployment name and daemonset name from the pod name. If its not possible to extract then sends empty string
+// GetControllerNameFromK8sPodName tries to extract potential controller name from the pod name. If its not possible to extract then sends empty string
 func GetControllerNameFromK8sPodName (podName string) (string, string) {
-	if values, ok := PodNameToDSDeploymentNameMap[podName]; ok {
+	if values, ok := PodNameToControllerNameMap[podName]; ok {
 		return values[0], values[1]
 	}
 	dsName := ""
@@ -2019,7 +2016,7 @@ func GetControllerNameFromK8sPodName (podName string) (string, string) {
 			deploymentName = dsName[:last]
 		}
 	}
-	PodNameToDSDeploymentNameMap[podName] = [2]string{dsName, deploymentName}
+	PodNameToControllerNameMap[podName] = [2]string{dsName, deploymentName}
 	return dsName, deploymentName
 }
 
@@ -2040,7 +2037,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	StderrIgnoreNsSet = make(map[string]bool)
 	StderrIncludeSystemResourceSet = make(map[string]bool)
 	StderrIncludeSystemNamespaceSet = make(map[string]bool)
-	PodNameToDSDeploymentNameMap = make(map[string][2]string)
+	PodNameToControllerNameMap = make(map[string][2]string)
 	ImageIDMap = make(map[string]string)
 	NameIDMap = make(map[string]string)
 	// Keeping the two error hashes separate since we need to keep the config error hash for the lifetime of the container
