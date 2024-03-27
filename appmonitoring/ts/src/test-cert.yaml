@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: app-monitoring-webhook-secret-writer-sa
+  namespace: kube-system
+  labels:
+    component: app-monitoring-webhook-secret-writer-sa
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: app-monitoring-webhook-secret-writer
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: app-monitoring-webhook-mwhc-manager
+rules:
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["mutatingwebhookconfigurations"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: app-monitoring-webhook-secret-binding
+subjects:
+- kind: ServiceAccount
+  name: app-monitoring-webhook-secret-writer-sa
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: app-monitoring-webhook-secret-writer
+  apiGroup: rbac.authorization.k8s.io
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: app-monitoring-webhook-secret-mwhc-binding
+subjects:
+- kind: ServiceAccount
+  name: app-monitoring-webhook-secret-writer-sa
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: app-monitoring-webhook-mwhc-manager
+  apiGroup: rbac.authorization.k8s.io
+---
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: appmonitoring-cert-manager-hook-install
+  namespace: kube-system
+  labels:
+    component: app-monitoring-cert-helper
+spec:
+  template:
+    metadata:
+      labels:
+        app: app-monitoring-cert-helper
+    spec:
+      containers:
+        - name: app-monitoring-cert-helper
+          image: aicommon.azurecr.io/aidev:v1
+          imagePullPolicy: Always # IfNotPresent
+          env: 
+            - name: CONTAINER_MODE
+              value: "secrets-manager"
+          ports:
+            - containerPort: 1337
+          resources:
+            requests:
+              cpu: 200m
+            limits:
+              cpu: 300m
+      serviceAccount: app-monitoring-webhook-secret-writer-sa
+      restartPolicy: OnFailure
+---

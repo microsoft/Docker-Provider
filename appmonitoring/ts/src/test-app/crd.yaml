@@ -1,0 +1,91 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: appmonitoringconfigs.monitor.azure.com # name must match the spec fields below, and be in the form: <plural>.<group>
+spec:
+  group: monitor.azure.com # group name to use for REST API: /apis/<group>/<version>
+  names:
+    plural: appmonitoringconfigs # plural name to be used in the URL: /apis/<group>/<version>/<plural>
+    singular: appmonitoringconfig # singular name to be used as an alias on the CLI and for display
+    kind: AppMonitoringConfig # kind is normally the PascalCase singular type. Your resource manifests use this.
+  scope: Namespaced # either Namespaced or Cluster
+  versions:
+    - name: v1
+      served: true # each version can be enabled/disabled. Defines whether k8s will serve this version to clients if asked to.
+      storage: true # one and only one version must be marked as the storage version. This is how all CRs will be stored internally when crated.
+      schema:
+        openAPIV3Schema:
+          description: Configures application monitoring in the current namespace. Multiple CRs of this kind are allowed within a namespace.
+          type: object
+          required:
+            - spec
+          properties:
+            spec:
+              type: object
+              required: 
+                - settings
+                - destination
+              properties:
+                selector:
+                  description: Determines which workloads this configuration applies to.
+                  type: object
+                  required:
+                    - deployments
+                  properties:
+                    deployments:
+                      description: List of deployment names to apply this configuration to
+                      type: array
+                      minItems: 1
+                      items:
+                        type: string
+                settings:
+                  description: Determines which settings to apply as part of this configuration.
+                  type: object
+                  required:
+                    - autoInstrumentationPlatforms
+                  properties:
+                    imageRepoPath:
+                      description: "Path to a repository to fetch auto-instrumentation images from. Only use if you have an Artifact Cache set up to host related images normally found on Microsoft Container Registry (MCR). See here for details: https://learn.microsoft.com/en-us/azure/container-registry/tutorial-artifact-cache"
+                      type: string
+                    autoInstrumentationPlatforms:
+                      description: List of auto-instrumentation platforms to use (must match the type of the application running in the container). Can be empty to use none.
+                      type: array
+                      minItems: 0
+                      items:
+                        type: string
+                        enum:
+                          - DotNet
+                          - Java
+                          - NodeJs
+                    logCollectionSettings:
+                      description: >-
+                        Before this configuration is applied, Azure Monitor already collects pod console output and uploads it to ConsoleLog / ConsoleLogV2 tables in the associated Log Analytics Workspace by Azure Monitor Container Insights.
+                        Logs that were output via the console lose distributed tracing context and cannot be visualized in the end-to-end transaction details experience.
+                        The following flags allow for configuring what works best for a particular monitoring scenario.
+                      type: object
+                      properties:
+                        disableAppLogs:
+                          description: >-
+                            Controls whether logs produced by standard logging framework are uploaded to Application Insights.
+                            Different languages may support different logging frameworks, and support will change over time.
+                            Note: enabling this flag without disabling console output (either through the flag in this setion or by removing the console adapters when configuring the SDK) might result in double collection of logs and higher cost.
+                          type: boolean
+                          default: false
+                        disableContainerLogs:
+                          description: >-
+                            Controls whether console output from the container should be collected in the associated Log Analytics Workspace.
+                            Disabling container logs collection will result in lower costs if that output is already collected by the language-specific SDK.
+                            Note: if your application outputs to console using an unsupported framework, disabling container console output might result in lost logs.
+                            If you have workloads/containers outside of your application (such as Nginx) which output to console, setting this flag will disable output from those pods as well if this CR's _selector_ applies to those workloads/containers.
+                          type: boolean
+                          default: false
+                  
+                destination:
+                  description: Sink for telemetry data
+                  type: object
+                  required:
+                    - applicationInsightsConnectionString
+                  properties:
+                    applicationInsightsConnectionString:
+                      description: Connection string of the Application Insights component to send telemetry data to.
+                      type: string

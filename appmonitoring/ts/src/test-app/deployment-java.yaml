@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: zakima-java-1
+    someLabel25: some-label25
+  annotations:
+    version-annotation: v1
+  name: zakima-java-1
+  namespace: zakima1
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 4
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: zakima-java-1
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: zakima-java-1
+      #annotations:
+      #  instrumentation.opentelemetry.io/inject-nodejs: "cr1"
+    spec:
+      containers:
+      - image: aicommon.azurecr.io/demoaks-dotnet-app:latest
+        env:
+        - name: env1
+          value: val1
+        - name: NODE_NAME
+          value: Original node name value
+        #imagePullPolicy: Always
+        name: zakima-java-1
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        resources: {}

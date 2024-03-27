@@ -3,7 +3,7 @@ import { EventTelemetry, MetricTelemetry, TraceTelemetry } from "applicationinsi
 import { PodInfo } from "./RequestDefinition.js";
 
 import log4js from "log4js";
-import { AppMonitoringConfigCRsCollection } from "./AppMonitoringConfigCRsCollection.js";
+import { InstrumentationCRsCollection } from "./InstrumentationCRsCollection.js";
 
 const { configure, getLogger } = log4js;
 
@@ -35,9 +35,9 @@ configure({
 export class RequestMetadata {
     private uid: string;
     private podInfo: PodInfo;
-    private crs: AppMonitoringConfigCRsCollection;
+    private crs: InstrumentationCRsCollection;
 
-    public constructor(uid: string, crs: AppMonitoringConfigCRsCollection) {
+    public constructor(uid: string, crs: InstrumentationCRsCollection) {
         this.uid = uid;
         this.crs = crs;
     }

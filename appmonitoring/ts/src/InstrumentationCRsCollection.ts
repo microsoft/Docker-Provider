@@ -1,20 +1,19 @@
-﻿import { AppMonitoringConfigCR } from "./RequestDefinition.js"
+﻿import { InstrumentationCR, DefaultInstrumentationCRName } from "./RequestDefinition.js"
 
-export class AppMonitoringConfigCRsCollection {
+export class InstrumentationCRsCollection {
 
-    private crs: AppMonitoringConfigCR[] = [];
+    private crs: InstrumentationCR[] = [];
 
-    public ListCRs(): AppMonitoringConfigCR[] {
+    public ListCRs(): InstrumentationCR[] {
         return this.crs;
     }
 
-    public GetCR(namespace: string, deploymentName: string): AppMonitoringConfigCR {
-        return this.crs.find(cr => cr.metadata.namespace === namespace && 
-            (!cr.spec.deployments || cr.spec.deployments.length === 0 || cr.spec.deployments.some(deployment => deployment === deploymentName)),
-            this);
+    public GetCR(namespace: string, crName: string): InstrumentationCR {
+        // return the exact name match or DefaultInstrumentationCRName within the namespace
+        return this.crs.find(cr => cr.metadata.namespace === namespace && (crName && cr.metadata.name === crName || !crName && cr.metadata.name === DefaultInstrumentationCRName), this);
     }
 
-    public Upsert(cr: AppMonitoringConfigCR): void {
+    public Upsert(cr: InstrumentationCR): void {
         // remove equivalent element if present
         for (let i = 0; i < this.crs.length; i++) {
             if (this.crs[i].metadata.name === cr.metadata.name && this.crs[i].metadata.namespace === cr.metadata.namespace) {
@@ -27,7 +26,7 @@ export class AppMonitoringConfigCRsCollection {
         this.crs.push(cr);
     }
 
-    public Remove(cr: AppMonitoringConfigCR): void {
+    public Remove(cr: InstrumentationCR): void {
         for (let i = 0; i < this.crs.length; i++) {
             if (this.crs[i].metadata.name === cr.metadata.name && this.crs[i].metadata.namespace === cr.metadata.namespace) {
                 this.crs.splice(i, 1);

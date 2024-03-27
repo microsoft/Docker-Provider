@@ -1,0 +1,51 @@
+apiVersion: monitor.azure.com/v1 
+kind: Instrumentation
+metadata:
+  name: default
+  namespace: zakima1
+spec:  
+
+  settings:
+
+    #imageRepoPath: mycompany.azurecr.io/mcr-replicas/applicationinsights # optional Customers are obliged to keep their ACR in sync with MCR for new versions, or things will break
+
+    autoInstrumentationPlatforms: # required, could be empty
+      - DotNet
+      # - Java
+      #- NodeJs
+
+    #logCollectionSettings: # optional, defaults are shown below
+    #  disableAppLogs: false # AI log collection. Default is false (enabled)
+    #  disableContainerLogs: false # CI console collection. Default is false (enabled). Webhook will mark pod with annotations to let CI know
+      # once log levels and log filtering are figured out, we’ll add them here 
+
+  destination: # required
+  
+    applicationInsightsConnectionString: "InstrumentationKey=3d2741c8-3067-4e75-9def-b4b0f23eb9c2;IngestionEndpoint=https://eastus2-3.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus2.livediagnostics.monitor.azure.com//" # zakima-1
+---
+
+apiVersion: monitor.azure.com/v1 
+kind: Instrumentation
+metadata:
+  name: cr1
+  namespace: zakima1
+spec:  
+
+  settings:
+
+    #imageRepoPath: mycompany.azurecr.io/mcr-replicas/applicationinsights # optional Customers are obliged to keep their ACR in sync with MCR for new versions, or things will break
+
+    autoInstrumentationPlatforms: # required, could be empty
+      - DotNet
+      #- Java
+      - NodeJs
+
+    #logCollectionSettings: # optional, defaults are shown below
+    #  disableAppLogs: false # AI log collection. Default is false (enabled)
+    #  disableContainerLogs: false # CI console collection. Default is false (enabled). Webhook will mark pod with annotations to let CI know
+      # once log levels and log filtering are figured out, we’ll add them here 
+
+  destination: # required
+  
+    applicationInsightsConnectionString: "InstrumentationKey=3d2741c8-3067-4e75-9def-b4b0f23eb9c2;IngestionEndpoint=https://eastus2-3.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus2.livediagnostics.monitor.azure.com//" # zakima-1
+---

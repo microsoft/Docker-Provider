@@ -1,16 +1,15 @@
 ﻿import { HeartbeatLogs, HeartbeatMetrics, RequestMetadata, logger } from "./LoggerWrapper.js";
 import * as k8s from "@kubernetes/client-node";
-import { AppMonitoringConfigCR as AppMonitoringConfigCR, ListResponse } from "./RequestDefinition.js"
-import { AppMonitoringConfigCRsCollection } from "./AppMonitoringConfigCRsCollection.js";
+import { InstrumentationCR, ListResponse } from "./RequestDefinition.js"
+import { InstrumentationCRsCollection } from "./InstrumentationCRsCollection.js";
 
 export class K8sWatcher {
 
-    private static crdNamePlural = "appmonitoringconfigs";
-    private static crdApiGroup = "azmon.app.monitoring";
+    private static crdNamePlural = "instrumentations";
+    private static crdApiGroup = "monitor.azure.com";
     private static crdApiVersion = "v1";
-    private static crName = "appmonitoring";
-
-    public static async StartWatchingCRs(crs: AppMonitoringConfigCRsCollection, onNewCR: (cr: AppMonitoringConfigCR, isRemoved: boolean) => void, operationId: string): Promise<void> {
+    
+    public static async StartWatchingCRs(crs: InstrumentationCRsCollection, onNewCR: (cr: InstrumentationCR, isRemoved: boolean) => void, operationId: string): Promise<void> {
         const kc = new k8s.KubeConfig();
         kc.loadFromDefault();
 
@@ -40,12 +39,10 @@ export class K8sWatcher {
         }
     }
 
-    private static async WatchCRs(k8sApi: k8s.CustomObjectsApi, watch: k8s.Watch, latestResourceVersion: string, crs: AppMonitoringConfigCRsCollection, operationId: string, onNewCR: (cr: AppMonitoringConfigCR, isRemoved: boolean) => void): Promise<string> {
+    private static async WatchCRs(k8sApi: k8s.CustomObjectsApi, watch: k8s.Watch, latestResourceVersion: string, crs: InstrumentationCRsCollection, operationId: string, onNewCR: (cr: InstrumentationCR, isRemoved: boolean) => void): Promise<string> {
         let requestMetadata = new RequestMetadata("CR watcher", crs);
 
-        const fieldSelector = `metadata.name=${K8sWatcher.crName}`;
-
-        logger.info(`Listing CRs, resourceVersion=${latestResourceVersion}, fieldSelector=${fieldSelector}...`, operationId, requestMetadata);
+        logger.info(`Listing CRs, resourceVersion=${latestResourceVersion}...`, operationId, requestMetadata);
 
         const crsResult: ListResponse = <ListResponse>await k8sApi.listClusterCustomObject(
             K8sWatcher.crdApiGroup,
@@ -54,7 +51,7 @@ export class K8sWatcher {
             undefined,
             undefined,
             undefined,
-            fieldSelector,
+            undefined, // `metadata.name=${K8sWatcher.crName}`
             undefined,
             undefined,
             latestResourceVersion);
@@ -63,22 +60,22 @@ export class K8sWatcher {
 
         latestResourceVersion = crsResult.body.metadata?.resourceVersion;
 
-        crsResult.body.items.forEach((cr: AppMonitoringConfigCR) => { 
+        crsResult.body.items.forEach((cr: InstrumentationCR) => { 
             onNewCR(cr, false);
         });
 
-        logger.info(`Starting a watch, resourceVersion=${latestResourceVersion}, fieldSelector=${fieldSelector}...`, operationId, requestMetadata);
+        logger.info(`Starting a watch, resourceVersion=${latestResourceVersion}...`, operationId, requestMetadata);
         
         // watch() doesn't block (it starts the loop and returns immediately), so we can't just return the promise it returns to our caller
         // we must instead create our own promise and resolve it manually when the watch informs us that it stopped via a callback
         const watchIsDonePromise: Promise<string> = new Promise(resolveWatchPromise => {
             // /api/v1/namespaces
-            // /apis/azmon.app.monitoring/v1/namespaces/default/appmonitoringconfigs
+            // /apis/monitor.azure.com/v1/namespaces/default/instrumentations
             watch.watch(`/apis/${K8sWatcher.crdApiGroup}/${K8sWatcher.crdApiVersion}/${K8sWatcher.crdNamePlural}`,
                 {
                     allowWatchBookmarks: true,
-                    resourceVersion: latestResourceVersion,
-                    fieldSelector: fieldSelector
+                    resourceVersion: latestResourceVersion
+                    //fieldSelector: fieldSelector
                 },
                 (type, apiObj) => {
                     requestMetadata = new RequestMetadata("CR watcher", crs);

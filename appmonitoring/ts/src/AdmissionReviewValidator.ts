@@ -18,11 +18,12 @@ export class AdmissionReviewValidator {
             logger.error(`Invalid empty kind ${this.uid(content)}`, operationId, requestMetadata);
             returnValue = false;
         } else if (isNullOrUndefined(content.request.object)
-            || isNullOrUndefined(content.request.object.spec)) {
+            || isNullOrUndefined(content.request.object.spec)
+            || isNullOrUndefined(content.request.object.spec.template.spec)) {
             logger.error(`Missing object or object.spec in template, DELETE operations are not supported ${this.uid(content)}, ${content}`, operationId, requestMetadata);
             returnValue = false;
-        } else if(content.request.kind.kind.toUpperCase() !== "POD") {
-            logger.error(`Invalid incoming object kind, the webhook only supports Pods: ${content.request.kind.kind}`, operationId, requestMetadata);
+        } else if(content.request.resource?.resource?.toLowerCase() !== "deployments") {
+            logger.error(`Invalid incoming resource type: ${content.request.resource.resource}`, operationId, requestMetadata);
             returnValue = false;
         } else if(content.request.operation.toUpperCase() !== "CREATE" && content.request.operation.toUpperCase() !== "UPDATE") {
             logger.error(`Invalid operation, the webhook only supports CREATE and UPDATE: ${content.request}`, operationId, requestMetadata);
@@ -32,7 +33,6 @@ export class AdmissionReviewValidator {
             returnValue = false;
         }
 
-        logger.info(`Successfully validated content ${this.uid(content)}, ${content}`, operationId, requestMetadata);
         return returnValue;
     }
 

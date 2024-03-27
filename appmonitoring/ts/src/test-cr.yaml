@@ -1,10 +1,22 @@
-apiVersion: azmon.app.monitoring/v1
-kind: appmonitoringconfig
+apiVersion: monitor.azure.com/v1
+kind: Instrumentation
 metadata:
- name: appmonitoring
+ name: default
  namespace: default
 spec:
- autoInstrumentationPlatforms: [ DotNet, Java, NodeJs ] #, OpenTelemetry ]
- aiConnectionString: "InstrumentationKey=8aef9e62-258f-4049-a8b1-8ad68f746b20;IngestionEndpoint=https://eastus2-3.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus2.livediagnostics.monitor.azure.com/"
- #deployments: [ deployment1, customer-deployment-1 ]
+ settings:
+   autoInstrumentationPlatforms: [ DotNet, Java, NodeJs ]
+ destination:
+   applicationInsightsConnectionString: "InstrumentationKey=8aef9e62-258f-4049-a8b1-8ad68f746b20;IngestionEndpoint=https://eastus2-3.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus2.livediagnostics.monitor.azure.com/"
 ---
+
+# apiVersion: azmon.app.monitoring/v1
+# kind: appmonitoringconfig
+# metadata:
+#  name: appmonitoring
+#  namespace: default
+# spec:
+#  autoInstrumentationPlatforms: [ DotNet, Java, NodeJs ] #, OpenTelemetry ]
+#  aiConnectionString: "InstrumentationKey=8aef9e62-258f-4049-a8b1-8ad68f746b20;IngestionEndpoint=https://eastus2-3.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus2.livediagnostics.monitor.azure.com/"
+#  #deployments: [ deployment1, customer-deployment-1 ]
+# ---

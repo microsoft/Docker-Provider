@@ -15,7 +15,7 @@
     "name": "Microsoft Corp"
   },
   "dependencies": {
-    "@kubernetes/client-node": "^0.18.1",
+    "@kubernetes/client-node": "^0.20.0",
     "@types/node": "20.2.4",
     "@types/npm": "^7.19.0",
     "applicationinsights": "^2.7.0",
