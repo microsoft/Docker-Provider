@@ -115,14 +115,14 @@ amalogs:
     - key: "node-role.kubernetes.io/master"
       operator: "Exists"
       effect: "PreferNoSchedule"
-  
+
   tolerationsUnrestricted:
     - operator: "Exists"
       effect: "NoSchedule"
     - operator: "Exists"
       effect: "NoExecute"
     - operator: "Exists"
-      effect: "PreferNoSchedule" 
+      effect: "PreferNoSchedule"
 
   ## Pod scheduling preferences.
   ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
@@ -180,9 +180,12 @@ amalogs:
         cpu: 150m
         memory: 750Mi
     daemonsetwindows:
-      limits:
+      requests:
         cpu: 500m
         memory: 600Mi
+      limits:
+        cpu: 2
+        memory: 2Gi
     deployment:
       requests:
         cpu: 150m
