@@ -1,0 +1,3151 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Dashboard visualizing ContainerLogV2 records collected by Azure Monitor",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "gnetId": 19866,
+  "graphTooltip": 0,
+  "id": 55,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "description": "",
+      "gridPos": {
+        "h": 7,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 18,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "## Kubernetes Logs Metadata \n\nKubernetes Logs Metadata encompasses essential information such as Pod labels, Pod Annotations, Image, ImageHash, ImageRepo, and PodUID. This metadata plays a crucial role in enabling rich context for log records, allowing seamless correlation with Kubernetes resources.\n\nThe dashboard presented here visualizes ContainerLogV2 data alongside Kubernetes Metadata. For further details, refer to the documentation here:\n\nBefore diving in, ensure the following prerequisites:\n\n1. Container Insights is enabled for your selected AKS cluster.\n2. Kubernetes Metadata collection and ContainerLogV2 are both activated.\n\nRead more on annotation based filtering here: ",
+        "mode": "markdown"
+      },
+      "pluginVersion": "10.3.4",
+      "type": "text"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 7
+      },
+      "id": 73,
+      "panels": [],
+      "title": "Log Level",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Critical Explore",
+              "url": "https://longw-grafana-test-ada0c5fbafhxaxdx.eus.grafana.azure.com/explore?left={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n| where LogLevel == \\\"critical\\\"\\r\\n| project TimeGenerated, LogMessage, LogLevel, Computer, PodName, ContainerName, ContainerId, KubernetesMetadata\\r\\n\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}&orgId=1&right={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n| where LogLevel == \\\"critical\\\"\\r\\n| summarize count() by bin(TimeGenerated, 1m)\\r\\n| render timechart \\r\\n\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}"
+            }
+          ],
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "dark-purple",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short",
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 3,
+        "x": 0,
+        "y": 8
+      },
+      "id": 87,
+      "options": {
+        "colorMode": "background_solid",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 80
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.3.4",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 17,
+          "refId": "A"
+        }
+      ],
+      "title": "CRITICAL",
+      "transformations": [
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "Critical"
+                  }
+                },
+                "fieldName": "LogLevel"
+              }
+            ],
+            "match": "any",
+            "type": "include"
+          }
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Error Explore",
+              "url": "https://longw-grafana-test-ada0c5fbafhxaxdx.eus.grafana.azure.com/explore?left={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n| where LogLevel == \\\"error\\\"\\r\\n| project TimeGenerated, LogMessage, LogLevel, Computer, PodName, ContainerName, ContainerId, KubernetesMetadata\\r\\n\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}&orgId=1&right={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n| where LogLevel == \\\"error\\\"\\r\\n| summarize count() by bin(TimeGenerated, 1m)\\r\\n| render timechart \\r\\n\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}"
+            }
+          ],
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "semi-dark-red",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short",
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 3,
+        "x": 3,
+        "y": 8
+      },
+      "id": 75,
+      "options": {
+        "colorMode": "background_solid",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 80
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.3.4",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 17,
+          "refId": "A"
+        }
+      ],
+      "title": "ERROR",
+      "transformations": [
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "Error"
+                  }
+                },
+                "fieldName": "LogLevel"
+              }
+            ],
+            "match": "any",
+            "type": "include"
+          }
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Warning Explore",
+              "url": "https://longw-grafana-test-ada0c5fbafhxaxdx.eus.grafana.azure.com/explore?left={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n| where LogLevel == \\\"warning\\\"\\r\\n| project TimeGenerated, LogMessage, LogLevel, Computer, PodName, ContainerName, ContainerId, KubernetesMetadata\\r\\n\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}&orgId=1&right={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n| where LogLevel == \\\"warning\\\"\\r\\n| summarize count() by bin(TimeGenerated, 1m)\\r\\n| render timechart \\r\\n\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}"
+            }
+          ],
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "yellow",
+                "value": null
+              },
+              {
+                "color": "dark-yellow",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short",
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 3,
+        "x": 6,
+        "y": 8
+      },
+      "id": 68,
+      "options": {
+        "colorMode": "background_solid",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 80
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.3.4",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 17,
+          "refId": "A"
+        }
+      ],
+      "title": "WARNING",
+      "transformations": [
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "Warning"
+                  }
+                },
+                "fieldName": "LogLevel"
+              }
+            ],
+            "match": "any",
+            "type": "include"
+          }
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Debug Explore",
+              "url": "https://longw-grafana-test-ada0c5fbafhxaxdx.eus.grafana.azure.com/explore?left={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n| where LogLevel == \\\"debug\\\"\\r\\n| project TimeGenerated, LogMessage, LogLevel, Computer, PodName, ContainerName, ContainerId, KubernetesMetadata\\r\\n\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}&orgId=1&right={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n| where LogLevel == \\\"debug\\\"\\r\\n| summarize count() by bin(TimeGenerated, 1m)\\r\\n| render timechart \\r\\n\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}"
+            }
+          ],
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "yellow",
+                "value": null
+              },
+              {
+                "color": "semi-dark-green",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short",
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 3,
+        "x": 9,
+        "y": 8
+      },
+      "id": 69,
+      "options": {
+        "colorMode": "background_solid",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 80
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.3.4",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 17,
+          "refId": "A"
+        }
+      ],
+      "title": "DEBUG",
+      "transformations": [
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "Debug"
+                  }
+                },
+                "fieldName": "LogLevel"
+              }
+            ],
+            "match": "any",
+            "type": "include"
+          }
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Info Explore",
+              "url": "https://longw-grafana-test-ada0c5fbafhxaxdx.eus.grafana.azure.com/explore?left={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n| where LogLevel == \\\"info\\\"\\r\\n| project TimeGenerated, LogMessage, LogLevel, Computer, PodName, ContainerName, ContainerId, KubernetesMetadata\\r\\n\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}&orgId=1&right={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n| where LogLevel == \\\"info\\\"\\r\\n| summarize count() by bin(TimeGenerated, 1m)\\r\\n| render timechart \\r\\n\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}"
+            }
+          ],
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "light-yellow",
+                "value": null
+              },
+              {
+                "color": "dark-blue",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short",
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 12,
+        "y": 8
+      },
+      "id": 70,
+      "options": {
+        "colorMode": "background_solid",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 80
+        },
+        "textMode": "value",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.3.4",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 17,
+          "refId": "A"
+        }
+      ],
+      "title": "INFO",
+      "transformations": [
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "Info"
+                  }
+                },
+                "fieldName": "LogLevel"
+              }
+            ],
+            "match": "any",
+            "type": "include"
+          }
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Trace Explore",
+              "url": "https://longw-grafana-test-ada0c5fbafhxaxdx.eus.grafana.azure.com/explore?left={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n| where LogLevel == \\\"trace\\\"\\r\\n| project TimeGenerated, LogMessage, LogLevel, Computer, PodName, ContainerName, ContainerId, KubernetesMetadata\\r\\n\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}&orgId=1&right={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n| where LogLevel == \\\"trace\\\"\\r\\n| summarize count() by bin(TimeGenerated, 1m)\\r\\n| render timechart \\r\\n\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}"
+            }
+          ],
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "super-light-blue",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short",
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 16,
+        "y": 8
+      },
+      "id": 71,
+      "options": {
+        "colorMode": "background_solid",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 80
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.3.4",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 17,
+          "refId": "A"
+        }
+      ],
+      "title": "TRACE",
+      "transformations": [
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "Trace"
+                  }
+                },
+                "fieldName": "LogLevel"
+              }
+            ],
+            "match": "any",
+            "type": "include"
+          }
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Unknown Explore",
+              "url": "https://longw-grafana-test-ada0c5fbafhxaxdx.eus.grafana.azure.com/explore?left={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n| where LogLevel == \\\"unknown\\\"\\r\\n| project TimeGenerated, LogMessage, LogLevel, Computer, PodName, ContainerName, ContainerId, KubernetesMetadata\\r\\n\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}&orgId=1&right={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n| where LogLevel == \\\"unknown\\\"\\r\\n| summarize count() by bin(TimeGenerated, 1m)\\r\\n| render timechart \\r\\n\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}"
+            }
+          ],
+          "mappings": [],
+          "noValue": "0",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "#bbbbbb",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short",
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 20,
+        "y": 8
+      },
+      "id": 72,
+      "options": {
+        "colorMode": "background_solid",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 80
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.3.4",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 17,
+          "refId": "A"
+        }
+      ],
+      "title": "UNKNOWN",
+      "transformations": [
+        {
+          "id": "filterByValue",
+          "options": {
+            "filters": [
+              {
+                "config": {
+                  "id": "equal",
+                  "options": {
+                    "value": "Unknown"
+                  }
+                },
+                "fieldName": "LogLevel"
+              }
+            ],
+            "match": "any",
+            "type": "include"
+          }
+        }
+      ],
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "azure-monitor-oob"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Log Records Explore",
+              "url": "https://longw-grafana-test-ada0c5fbafhxaxdx.eus.grafana.azure.com/explore?left={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n| project TimeGenerated, LogMessage, LogLevel, Computer, PodName, ContainerName, ContainerId, KubernetesMetadata\\r\\n\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}&orgId=1&right={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n| summarize count() by bin(TimeGenerated, 1m)\\r\\n| render timechart \\r\\n\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}"
+            }
+          ],
+          "mappings": [],
+          "unitScale": true
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "critical"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "semi-dark-purple",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "warning"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "debug"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "info"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "super-light-blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "unknown"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#c3c3c3",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Critical"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-purple",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Error"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "semi-dark-red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Warning"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Info"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Trace"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "super-light-blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Unknown"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#bcbcbc",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 13
+      },
+      "id": 17,
+      "options": {
+        "displayLabels": [
+          "percent"
+        ],
+        "legend": {
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true,
+          "values": []
+        },
+        "pieType": "pie",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.5.16",
+      "targets": [
+        {
+          "azureLogAnalytics": {
+            "dashboardTime": false,
+            "query": "ContainerLogV2\r\n| where $__timeFilter(TimeGenerated)\r\n| where _ResourceId =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| where PodNamespace =~ \"$Namespace\"\r\n| extend PodLabels = KubernetesMetadata.podLabels\r\n| mv-expand PodLabels\r\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\r\n| where labelKey in ($LabelKey)\r\n| extend labelVal = tostring(PodLabels[labelKey])\r\n| where labelVal in ($LabelValue)\r\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\r\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\r\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\r\n    logMessagePreview matches regex @\"\\b(emerg|alert|crit|critical)\\b\", \"Critical\",\r\n    logMessagePreview matches regex @\"\\b(err|error)\\b\", \"Error\",\r\n    logMessagePreview matches regex @\"\\b(warn|warning)\\b\", \"Warning\",\r\n    logMessagePreview matches regex @\"\\b(info|information|notice)\\b\", \"Info\",\r\n    logMessagePreview matches regex @\"\\b(debug|verbose)\\b\", \"Debug\",\r\n    logMessagePreview matches regex @\"\\btrace\\b\", \"Trace\",\r\n    LogSource == \"stderr\", \"Error\",\r\n    \"Unknown\"\r\n))\r\n| summarize Count = count() by LogLevel\r\n",
+            "resources": [
+              "$LAWorkspace"
+            ],
+            "resultFormat": "time_series"
+          },
+          "azureMonitor": {
+            "allowedTimeGrainsMs": [],
+            "timeGrain": "auto"
+          },
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "azure-monitor-oob"
+          },
+          "queryType": "Azure Log Analytics",
+          "refId": "A"
+        }
+      ],
+      "title": "Log Records by Loglevel",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "azure-monitor-oob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 3,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unitScale": true
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Count critical"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "semi-dark-purple",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Count debug"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Count error"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Count info"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Count trace"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "super-light-blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Count unknown"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#828282",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Count warning"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Count Critical"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "semi-dark-purple",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Count Debug"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "semi-dark-green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Count Error"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "semi-dark-red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Count Info"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "semi-dark-blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Count Trace"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "super-light-blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Count Unknown"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#adadad",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Count Warning"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "semi-dark-yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 13
+      },
+      "id": 32,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "azureLogAnalytics": {
+            "dashboardTime": false,
+            "query": "ContainerLogV2\r\n| where $__timeFilter(TimeGenerated)\r\n| where _ResourceId =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| where PodNamespace =~ \"$Namespace\"\r\n| extend PodLabels = KubernetesMetadata.podLabels\r\n| mv-expand PodLabels\r\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\r\n| where labelKey in ($LabelKey)\r\n| extend labelVal = tostring(PodLabels[labelKey])\r\n| where labelVal in ($LabelValue)\r\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\r\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\r\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\r\n    logMessagePreview matches regex @\"\\b(emerg|alert|crit|critical)\\b\", \"Critical\",\r\n    logMessagePreview matches regex @\"\\b(err|error)\\b\", \"Error\",\r\n    logMessagePreview matches regex @\"\\b(warn|warning)\\b\", \"Warning\",\r\n    logMessagePreview matches regex @\"\\b(info|information|notice)\\b\", \"Info\",\r\n    logMessagePreview matches regex @\"\\b(debug|verbose)\\b\", \"Debug\",\r\n    logMessagePreview matches regex @\"\\btrace\\b\", \"Trace\",\r\n    LogSource == \"stderr\", \"Error\",\r\n    \"Unknown\"\r\n))\r\n| summarize Count = count() by bin(TimeGenerated, 1m), LogLevel\r\n| order by TimeGenerated asc \r\n| render timechart",
+            "resources": [
+              "$LAWorkspace"
+            ],
+            "resultFormat": "time_series"
+          },
+          "azureMonitor": {
+            "allowedTimeGrainsMs": [],
+            "timeGrain": "auto"
+          },
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "azure-monitor-oob"
+          },
+          "queryType": "Azure Log Analytics",
+          "refId": "A"
+        }
+      ],
+      "title": "Logs/Min by Loglevel",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
+      "id": 77,
+      "panels": [],
+      "title": "Log Volume",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "azure-monitor-oob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Log Volumn Explore",
+              "url": "https://longw-grafana-test-ada0c5fbafhxaxdx.eus.grafana.azure.com/explore?left={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n| extend DataVolume = _BilledSize\\r\\n| project TimeGenerated, LogMessage, LogLevel, DataVolume, PodName, KubernetesMetadata, Computer, ContainerName, ContainerId\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}&orgId=1"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short",
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 4,
+        "x": 0,
+        "y": 24
+      },
+      "id": 42,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 100
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.3.4",
+      "targets": [
+        {
+          "azureLogAnalytics": {
+            "dashboardTime": false,
+            "query": "ContainerLogV2\r\n| where $__timeFilter(TimeGenerated)\r\n| where _ResourceId =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| where PodNamespace =~ \"$Namespace\"\r\n| extend PodLabels = KubernetesMetadata.podLabels\r\n| mv-expand PodLabels\r\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\r\n| where labelKey in ($LabelKey)\r\n| extend labelVal = tostring(PodLabels[labelKey])\r\n| where labelVal in ($LabelValue)\r\n| extend DataVolume = _BilledSize\r\n| summarize TotalDataVolume = round(sum(DataVolume), 4)",
+            "resources": [
+              "$LAWorkspace"
+            ],
+            "resultFormat": "time_series"
+          },
+          "azureMonitor": {
+            "allowedTimeGrainsMs": [],
+            "timeGrain": "auto"
+          },
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "azure-monitor-oob"
+          },
+          "queryType": "Azure Log Analytics",
+          "refId": "A"
+        }
+      ],
+      "title": "Log Volume",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "azure-monitor-oob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short",
+          "unitScale": true
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "TotalDataVolumeMB"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "LogCount"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 20,
+        "x": 4,
+        "y": 24
+      },
+      "id": 84,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "orientation": "horizontal",
+        "showValue": "never",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "azureLogAnalytics": {
+            "dashboardTime": false,
+            "query": "ContainerLogV2\r\n| where $__timeFilter(TimeGenerated)\r\n| where _ResourceId =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| where PodNamespace =~ \"$Namespace\"\r\n| extend PodLabels = KubernetesMetadata.podLabels\r\n| mv-expand PodLabels\r\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\r\n| where labelKey in ($LabelKey)\r\n| extend labelVal = tostring(PodLabels[labelKey])\r\n| where labelVal in ($LabelValue)\r\n| extend DataVolumeMB = _BilledSize\r\n| summarize TotalDataVolumeMB = round(sum(DataVolumeMB), 4) by Computer\r\n| order by TotalDataVolumeMB desc\r\n",
+            "resources": [
+              "$LAWorkspace"
+            ],
+            "resultFormat": "time_series"
+          },
+          "azureMonitor": {
+            "allowedTimeGrainsMs": [],
+            "timeGrain": "auto"
+          },
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "azure-monitor-oob"
+          },
+          "queryType": "Azure Log Analytics",
+          "refId": "A"
+        }
+      ],
+      "title": "Log Volume by Computer ",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "azure-monitor-oob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short",
+          "unitScale": true
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "TotalDataVolumeMB"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "LogCount"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 33
+      },
+      "id": 85,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "orientation": "horizontal",
+        "showValue": "never",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "azureLogAnalytics": {
+            "dashboardTime": false,
+            "query": "ContainerLogV2\r\n| where $__timeFilter(TimeGenerated)\r\n| where _ResourceId =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| where PodNamespace =~ \"$Namespace\"\r\n| extend PodLabels = KubernetesMetadata.podLabels\r\n| mv-expand PodLabels\r\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\r\n| where labelKey in ($LabelKey)\r\n| extend labelVal = tostring(PodLabels[labelKey])\r\n| where labelVal in ($LabelValue)\r\n| extend DataVolumeMB = _BilledSize\r\n| summarize TotalDataVolumeMB = round(sum(DataVolumeMB), 4) by PodName\r\n| order by TotalDataVolumeMB desc\r\n",
+            "resources": [
+              "$LAWorkspace"
+            ],
+            "resultFormat": "time_series"
+          },
+          "azureMonitor": {
+            "allowedTimeGrainsMs": [],
+            "timeGrain": "auto"
+          },
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "azure-monitor-oob"
+          },
+          "queryType": "Azure Log Analytics",
+          "refId": "A"
+        }
+      ],
+      "title": "Log Volume by Pod",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "azure-monitor-oob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short",
+          "unitScale": true
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "TotalDataVolumeMB"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "orange",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "LogCount"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 33
+      },
+      "id": 86,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "orientation": "horizontal",
+        "showValue": "never",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "azureLogAnalytics": {
+            "dashboardTime": false,
+            "query": "ContainerLogV2\r\n| where $__timeFilter(TimeGenerated)\r\n| where _ResourceId =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| where PodNamespace =~ \"$Namespace\"\r\n| extend PodLabels = KubernetesMetadata.podLabels\r\n| mv-expand PodLabels\r\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\r\n| where labelKey in ($LabelKey)\r\n| extend labelVal = tostring(PodLabels[labelKey])\r\n| where labelVal in ($LabelValue)\r\n| extend DataVolumeMB = _BilledSize\r\n| summarize TotalDataVolumeMB = round(sum(DataVolumeMB), 4) by ContainerName\r\n| order by TotalDataVolumeMB desc\r\n",
+            "resources": [
+              "$LAWorkspace"
+            ],
+            "resultFormat": "time_series"
+          },
+          "azureMonitor": {
+            "allowedTimeGrainsMs": [],
+            "timeGrain": "auto"
+          },
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "azure-monitor-oob"
+          },
+          "queryType": "Azure Log Analytics",
+          "refId": "A"
+        }
+      ],
+      "title": "Log Volume by Container",
+      "type": "barchart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 42
+      },
+      "id": 79,
+      "panels": [],
+      "title": "Log Rate",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "azure-monitor-oob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Log Rate Explore",
+              "url": "https://longw-grafana-test-ada0c5fbafhxaxdx.eus.grafana.azure.com/explore?left={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n| summarize CountPerMinute = count() by bin(TimeGenerated, 1m)\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}&orgId=1"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text"
+              }
+            ]
+          },
+          "unit": "short",
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 4,
+        "x": 0,
+        "y": 43
+      },
+      "id": 80,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 100
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.3.4",
+      "targets": [
+        {
+          "azureLogAnalytics": {
+            "dashboardTime": false,
+            "query": "ContainerLogV2\r\n| where $__timeFilter(TimeGenerated)\r\n| where _ResourceId =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| where PodNamespace =~ \"$Namespace\"\r\n| extend PodLabels = KubernetesMetadata.podLabels\r\n| mv-expand PodLabels\r\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\r\n| where labelKey in ($LabelKey)\r\n| extend labelVal = tostring(PodLabels[labelKey])\r\n| where labelVal in ($LabelValue)\r\n| summarize CountPerMinute = count() by bin(TimeGenerated, 1m)\r\n| summarize AverageLogRatePerMinute = avg(CountPerMinute)\r\n",
+            "resources": [
+              "$LAWorkspace"
+            ],
+            "resultFormat": "time_series"
+          },
+          "azureMonitor": {
+            "allowedTimeGrainsMs": [],
+            "timeGrain": "auto"
+          },
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "azure-monitor-oob"
+          },
+          "queryType": "Azure Log Analytics",
+          "refId": "A"
+        }
+      ],
+      "title": "Average Log Rate/Min",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "azure-monitor-oob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 3,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 20,
+        "x": 4,
+        "y": 43
+      },
+      "id": 81,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "azureLogAnalytics": {
+            "dashboardTime": false,
+            "query": "ContainerLogV2\r\n| where $__timeFilter(TimeGenerated)\r\n| where _ResourceId =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| where PodNamespace =~ \"$Namespace\"\r\n| extend PodLabels = KubernetesMetadata.podLabels\r\n| mv-expand PodLabels\r\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\r\n| where labelKey in ($LabelKey)\r\n| extend labelVal = tostring(PodLabels[labelKey])\r\n| where labelVal in ($LabelValue)\r\n| summarize Count = count() by bin(TimeGenerated, 1m), Computer\r\n| order by TimeGenerated asc \r\n| render timechart",
+            "resources": [
+              "$LAWorkspace"
+            ],
+            "resultFormat": "time_series"
+          },
+          "azureMonitor": {
+            "allowedTimeGrainsMs": [],
+            "timeGrain": "auto"
+          },
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "azure-monitor-oob"
+          },
+          "queryType": "Azure Log Analytics",
+          "refId": "A"
+        }
+      ],
+      "title": "Logs/Min by Computer",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "azure-monitor-oob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 3,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 52
+      },
+      "id": 82,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "azureLogAnalytics": {
+            "dashboardTime": false,
+            "query": "ContainerLogV2\r\n| where $__timeFilter(TimeGenerated)\r\n| where _ResourceId =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| where PodNamespace =~ \"$Namespace\"\r\n| extend PodLabels = KubernetesMetadata.podLabels\r\n| mv-expand PodLabels\r\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\r\n| where labelKey in ($LabelKey)\r\n| extend labelVal = tostring(PodLabels[labelKey])\r\n| where labelVal in ($LabelValue)\r\n| summarize Count = count() by bin(TimeGenerated, 1m), PodName\r\n| order by TimeGenerated asc \r\n| render timechart",
+            "resources": [
+              "$LAWorkspace"
+            ],
+            "resultFormat": "time_series"
+          },
+          "azureMonitor": {
+            "allowedTimeGrainsMs": [],
+            "timeGrain": "auto"
+          },
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "azure-monitor-oob"
+          },
+          "queryType": "Azure Log Analytics",
+          "refId": "A"
+        },
+        {
+          "azureMonitor": {
+            "allowedTimeGrainsMs": [],
+            "timeGrain": "auto"
+          },
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "azure-monitor-oob"
+          },
+          "hide": false,
+          "queryType": "Azure Monitor",
+          "refId": "B"
+        }
+      ],
+      "title": "Logs/Min by Pod",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "azure-monitor-oob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 3,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 52
+      },
+      "id": 83,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "azureLogAnalytics": {
+            "dashboardTime": false,
+            "query": "ContainerLogV2\r\n| where $__timeFilter(TimeGenerated)\r\n| where _ResourceId =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| where PodNamespace =~ \"$Namespace\"\r\n| extend PodLabels = KubernetesMetadata.podLabels\r\n| mv-expand PodLabels\r\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\r\n| where labelKey in ($LabelKey)\r\n| extend labelVal = tostring(PodLabels[labelKey])\r\n| where labelVal in ($LabelValue)\r\n| summarize Count = count() by bin(TimeGenerated, 1m), ContainerName\r\n| order by TimeGenerated asc \r\n| render timechart",
+            "resources": [
+              "$LAWorkspace"
+            ],
+            "resultFormat": "time_series"
+          },
+          "azureMonitor": {
+            "allowedTimeGrainsMs": [],
+            "timeGrain": "auto"
+          },
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "azure-monitor-oob"
+          },
+          "queryType": "Azure Log Analytics",
+          "refId": "A"
+        }
+      ],
+      "title": "Logs/Min by Container",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 62
+      },
+      "id": 28,
+      "panels": [],
+      "title": "Log Records",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "azure-monitor-oob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Log Record Explore",
+              "url": "https://longw-grafana-test-ada0c5fbafhxaxdx.eus.grafana.azure.com/explore?left={\r\n   \"datasource\":\"${DataSource}\",\r\n   \"queries\":[\r\n      {\r\n         \"datasource\":{\r\n            \"type\":\"grafana-azure-monitor-datasource\",\r\n            \"uid\":\"${DataSource}\"\r\n         },\r\n         \"azureLogAnalytics\":{\r\n            \"resultFormat\":\"time_series\",\r\n            \"query\":\"ContainerLogV2\\r\\n| where $__timeFilter(TimeGenerated)\\r\\n| where _ResourceId =~ \\\"/subscriptions/${Subscription}/resourcegroups/${rg}/providers/Microsoft.ContainerService/managedClusters/${Cluster}\\\"\\r\\n| where PodNamespace =~ \\\"${Namespace}\\\"\\r\\n| extend PodLabels = KubernetesMetadata.podLabels\\r\\n| mv-expand PodLabels\\r\\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\\r\\n| where labelKey in (${LabelKey:singlequote})\\r\\n| extend labelVal = tostring(PodLabels[labelKey])\\r\\n| where labelVal in (${LabelValue:singlequote})\\r\\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\\r\\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\\r\\n    isnotnull(LogMessage.level), tolower(tostring(LogMessage.level)),\\r\\n    logMessagePreview matches regex @\\\"\\\\b(emerg|alert|crit|critical)\\\\b\\\", \\\"critical\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(err|error)\\\\b\\\", \\\"error\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(warn|warning)\\\\b\\\", \\\"warning\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(info|information|notice)\\\\b\\\", \\\"info\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\b(debug|verbose)\\\\b\\\", \\\"debug\\\",\\r\\n    logMessagePreview matches regex @\\\"\\\\btrace\\\\b\\\", \\\"trace\\\",\\r\\n    LogSource == \\\"stderr\\\", \\\"error\\\",\\r\\n    \\\"unknown\\\"\\r\\n))\\r\\n\",\r\n            \"resources\":[\r\n               \"${LAWorkspace}\"\r\n            ],\r\n            \"workspace\":\"\"\r\n         },\r\n         \"azureMonitor\":{\r\n            \"allowedTimeGrainsMs\":[\r\n               \r\n            ],\r\n            \"timeGrain\":\"auto\"\r\n         },\r\n         \"queryType\":\"Azure Log Analytics\",\r\n         \"refId\":\"A\"\r\n      }\r\n   ],\r\n   \"range\":{\r\n      \"from\": \"${__from}\",\r\n      \"to\": \"${__to}\"\r\n   }\r\n}&orgId=1"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text"
+              }
+            ]
+          },
+          "unit": "short",
+          "unitScale": true
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 4,
+        "x": 0,
+        "y": 63
+      },
+      "id": 78,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "text": {
+          "valueSize": 100
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "pluginVersion": "10.3.4",
+      "targets": [
+        {
+          "azureLogAnalytics": {
+            "dashboardTime": false,
+            "query": "ContainerLogV2\r\n| where $__timeFilter(TimeGenerated)\r\n| where _ResourceId =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| where PodNamespace =~ \"$Namespace\"\r\n| extend PodLabels = KubernetesMetadata.podLabels\r\n| mv-expand PodLabels\r\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\r\n| where labelKey in ($LabelKey)\r\n| extend labelVal = tostring(PodLabels[labelKey])\r\n| where labelVal in ($LabelValue)\r\n| summarize TotalCount = count()\r\n",
+            "resources": [
+              "$LAWorkspace"
+            ],
+            "resultFormat": "time_series"
+          },
+          "azureMonitor": {
+            "allowedTimeGrainsMs": [],
+            "timeGrain": "auto"
+          },
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "azure-monitor-oob"
+          },
+          "queryType": "Azure Log Analytics",
+          "refId": "A"
+        }
+      ],
+      "title": "Log Records Total",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "azure-monitor-oob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short",
+          "unitScale": true
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "LogCount"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "LogCount"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 20,
+        "x": 4,
+        "y": 63
+      },
+      "id": 41,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "orientation": "horizontal",
+        "showValue": "never",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "azureLogAnalytics": {
+            "query": "ContainerLogV2\r\n| where $__timeFilter(TimeGenerated)\r\n| where _ResourceId =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| where PodNamespace =~ \"$Namespace\"\r\n| extend PodLabels = KubernetesMetadata.podLabels\r\n| mv-expand PodLabels\r\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\r\n| where labelKey in ($LabelKey)\r\n| extend labelVal = tostring(PodLabels[labelKey])\r\n| where labelVal in ($LabelValue)\r\n| summarize LogCount = count() by Computer\r\n",
+            "resources": [
+              "$LAWorkspace"
+            ],
+            "resultFormat": "time_series"
+          },
+          "azureMonitor": {
+            "allowedTimeGrainsMs": [],
+            "timeGrain": "auto"
+          },
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "azure-monitor-oob"
+          },
+          "queryType": "Azure Log Analytics",
+          "refId": "A"
+        }
+      ],
+      "title": "Log Records by Computer ",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "azure-monitor-oob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short",
+          "unitScale": true
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "LogCount"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "LogCount"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 72
+      },
+      "id": 74,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "orientation": "horizontal",
+        "showValue": "never",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "azureLogAnalytics": {
+            "query": "ContainerLogV2\r\n| where $__timeFilter(TimeGenerated)\r\n| where _ResourceId =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| where PodNamespace =~ \"$Namespace\"\r\n| extend PodLabels = KubernetesMetadata.podLabels\r\n| mv-expand PodLabels\r\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\r\n| where labelKey in ($LabelKey)\r\n| extend labelVal = tostring(PodLabels[labelKey])\r\n| where labelVal in ($LabelValue)\r\n| summarize LogCount = count() by PodName\r\n",
+            "resources": [
+              "$LAWorkspace"
+            ],
+            "resultFormat": "time_series"
+          },
+          "azureMonitor": {
+            "allowedTimeGrainsMs": [],
+            "timeGrain": "auto"
+          },
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "azure-monitor-oob"
+          },
+          "queryType": "Azure Log Analytics",
+          "refId": "A"
+        }
+      ],
+      "title": "Log Records by Pod",
+      "type": "barchart"
+    },
+    {
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "azure-monitor-oob"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green"
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short",
+          "unitScale": true
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "LogCount"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "__systemRef": "hideSeriesFrom",
+            "matcher": {
+              "id": "byNames",
+              "options": {
+                "mode": "exclude",
+                "names": [
+                  "LogCount"
+                ],
+                "prefix": "All except:",
+                "readOnly": true
+              }
+            },
+            "properties": [
+              {
+                "id": "custom.hideFrom",
+                "value": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": true
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 72
+      },
+      "id": 35,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "orientation": "horizontal",
+        "showValue": "never",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "azureLogAnalytics": {
+            "query": "ContainerLogV2\r\n| where $__timeFilter(TimeGenerated)\r\n| where _ResourceId =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| where PodNamespace =~ \"$Namespace\"\r\n| extend PodLabels = KubernetesMetadata.podLabels\r\n| mv-expand PodLabels\r\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\r\n| where labelKey in ($LabelKey)\r\n| extend labelVal = tostring(PodLabels[labelKey])\r\n| where labelVal in ($LabelValue)\r\n| summarize LogCount = count() by ContainerName\r\n",
+            "resources": [
+              "$LAWorkspace"
+            ],
+            "resultFormat": "time_series"
+          },
+          "azureMonitor": {
+            "allowedTimeGrainsMs": [],
+            "timeGrain": "auto"
+          },
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "azure-monitor-oob"
+          },
+          "queryType": "Azure Log Analytics",
+          "refId": "A"
+        }
+      ],
+      "title": "Log Records by Container",
+      "type": "barchart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 82
+      },
+      "id": 31,
+      "panels": [],
+      "title": "Logs",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-azure-monitor-datasource",
+        "uid": "azure-monitor-oob"
+      },
+      "description": "",
+      "gridPos": {
+        "h": 13,
+        "w": 24,
+        "x": 0,
+        "y": 83
+      },
+      "id": 16,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": false,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "pluginVersion": "9.5.17",
+      "targets": [
+        {
+          "azureLogAnalytics": {
+            "dashboardTime": false,
+            "query": "ContainerLogV2\r\n| where $__timeFilter(TimeGenerated)\r\n| where _ResourceId =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| extend NamespaceInput = \"$Namespace\"\r\n| where PodNamespace =~ \"$Namespace\"\r\n| extend PodLabels = KubernetesMetadata.podLabels\r\n| mv-expand PodLabels\r\n| extend labelKey = tostring(bag_keys(PodLabels)[0])\r\n| where labelKey in ($LabelKey)\r\n| extend labelVal = tostring(PodLabels[labelKey])\r\n| where labelVal in ($LabelValue)\r\n| extend logMessagePreview = tolower(substring(LogMessage, 0, 100))\r\n| extend LogLevel = iif(isnotempty(LogLevel), LogLevel, case(\r\n    isnotnull(LogMessage.level),                                          tolower(tostring(LogMessage.level)),\r\n    logMessagePreview matches regex @\"\\b(emerg|alert|crit|critical)\\b\",         \"critical\",\r\n    logMessagePreview matches regex @\"\\b(err|error)\\b\",                         \"error\",\r\n    logMessagePreview matches regex @\"\\b(warn|warning)\\b\",                      \"warning\",\r\n    logMessagePreview matches regex @\"\\b(info|information|notice)\\b\",           \"info\",\r\n    logMessagePreview matches regex @\"\\b(debug|verbose)\\b\",                     \"debug\",\r\n    logMessagePreview matches regex @\"\\btrace\\b\",                               \"trace\",\r\n    LogSource == \"stderr\",                                                      \"error\",\r\n    \"unknown\"\r\n))\r\n| project TimeGenerated, LogMessage, LogLevel, PodName, KubernetesMetadata, Computer, ContainerName, ContainerId\r\n| take 100",
+            "resources": [
+              "$LAWorkspace"
+            ],
+            "resultFormat": "table"
+          },
+          "azureMonitor": {
+            "allowedTimeGrainsMs": [],
+            "timeGrain": "auto"
+          },
+          "datasource": {
+            "type": "grafana-azure-monitor-datasource",
+            "uid": "azure-monitor-oob"
+          },
+          "queryType": "Azure Log Analytics",
+          "refId": "A"
+        }
+      ],
+      "title": "Last 100 Log Records - Click any row to access full list",
+      "type": "logs"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "Azure Monitor",
+          "value": "azure-monitor-oob"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "DataSource",
+        "multi": false,
+        "name": "DataSource",
+        "options": [],
+        "query": "grafana-azure-monitor-datasource",
+        "queryValue": "",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "ContainerInsights_Dev_Janvi",
+          "value": "81895b44-c46d-44c3-9368-42f0386af28e"
+        },
+        "datasource": {
+          "type": "grafana-azure-monitor-datasource",
+          "uid": "azure-monitor-oob"
+        },
+        "definition": "",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Subscription",
+        "multi": false,
+        "name": "Subscription",
+        "options": [],
+        "query": {
+          "azureLogAnalytics": {
+            "query": "",
+            "resources": []
+          },
+          "queryType": "Azure Subscriptions",
+          "refId": "A"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "longw_dev",
+          "value": "longw_dev"
+        },
+        "datasource": {
+          "type": "grafana-azure-monitor-datasource",
+          "uid": "azure-monitor-oob"
+        },
+        "definition": "",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Resource Group",
+        "multi": false,
+        "name": "rg",
+        "options": [],
+        "query": {
+          "azureLogAnalytics": {
+            "query": "",
+            "resources": []
+          },
+          "queryType": "Azure Resource Groups",
+          "refId": "A",
+          "subscription": "$Subscription"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "MetadataBugbush3Legacy",
+          "value": "MetadataBugbush3Legacy"
+        },
+        "datasource": {
+          "type": "grafana-azure-monitor-datasource",
+          "uid": "azure-monitor-oob"
+        },
+        "definition": "",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Cluster",
+        "multi": false,
+        "name": "Cluster",
+        "options": [],
+        "query": {
+          "azureLogAnalytics": {
+            "query": "",
+            "resources": []
+          },
+          "azureResourceGraph": {
+            "query": "Resources\r\n| where type =~ 'microsoft.containerservice/managedclusters'"
+          },
+          "namespace": "microsoft.containerservice/managedclusters",
+          "queryType": "Azure Resource Names",
+          "refId": "A",
+          "resourceGroup": "$rg",
+          "subscription": "$Subscription",
+          "subscriptions": [
+            "$Subscription"
+          ]
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "/subscriptions/81895b44-c46d-44c3-9368-42f0386af28e/resourcegroups/defaultresourcegroup-eus/providers/microsoft.operationalinsights/workspaces/defaultworkspace-81895b44-c46d-44c3-9368-42f0386af28e-eus",
+          "value": "/subscriptions/81895b44-c46d-44c3-9368-42f0386af28e/resourcegroups/defaultresourcegroup-eus/providers/microsoft.operationalinsights/workspaces/defaultworkspace-81895b44-c46d-44c3-9368-42f0386af28e-eus"
+        },
+        "datasource": {
+          "type": "grafana-azure-monitor-datasource",
+          "uid": "azure-monitor-oob"
+        },
+        "definition": "",
+        "hide": 2,
+        "includeAll": false,
+        "label": "Log Analytics Workspace",
+        "multi": false,
+        "name": "LAWorkspace",
+        "options": [],
+        "query": {
+          "azureLogAnalytics": {
+            "query": "",
+            "resources": []
+          },
+          "azureResourceGraph": {
+            "query": "Resources\r\n| where type =~ 'microsoft.containerservice/managedclusters'\r\n| where id =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| extend props = parse_json(properties)\r\n| extend lawResourceId = tostring(props.addonProfiles.omsAgent.config.logAnalyticsWorkspaceResourceID)\r\n| extend LAWS = iff(isnotempty(lawResourceId), lawResourceId, tostring(props.addonProfiles.omsagent.config.logAnalyticsWorkspaceResourceID))\r\n| project LAWS\r\n"
+          },
+          "queryType": "Azure Resource Graph",
+          "refId": "A",
+          "subscriptions": [
+            "$Subscription"
+          ]
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "lwtest",
+          "value": "lwtest"
+        },
+        "datasource": {
+          "type": "grafana-azure-monitor-datasource",
+          "uid": "azure-monitor-oob"
+        },
+        "definition": "",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "Namespace",
+        "options": [],
+        "query": {
+          "azureLogAnalytics": {
+            "query": "ContainerLogV2\r\n| where $__timeFilter(TimeGenerated)\r\n| where _ResourceId =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| distinct PodNamespace",
+            "resources": [
+              "$LAWorkspace"
+            ]
+          },
+          "queryType": "Azure Log Analytics",
+          "refId": "A",
+          "subscription": "E98D0648-F21A-417D-8470-DB17AAB036A7"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "app",
+            "l1"
+          ],
+          "value": [
+            "app",
+            "l1"
+          ]
+        },
+        "datasource": {
+          "type": "grafana-azure-monitor-datasource",
+          "uid": "azure-monitor-oob"
+        },
+        "definition": "",
+        "hide": 0,
+        "includeAll": false,
+        "multi": true,
+        "name": "LabelKey",
+        "options": [],
+        "query": {
+          "azureLogAnalytics": {
+            "query": "ContainerLogV2\r\n| where $__timeFilter(TimeGenerated)\r\n| where _ResourceId =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| extend PodNamespace = \"$Namespace\"\r\n| where isnotempty(KubernetesMetadata)\r\n| extend LabelsJson = KubernetesMetadata.podLabels\r\n| mv-expand LabelsJson\r\n| extend LabelName = tostring(bag_keys(LabelsJson)[0])\r\n| where isnotempty(LabelName)\r\n| distinct LabelName",
+            "resources": [
+              "$LAWorkspace"
+            ]
+          },
+          "queryType": "Azure Log Analytics",
+          "refId": "A",
+          "subscription": "E98D0648-F21A-417D-8470-DB17AAB036A7"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "windows-resource-intensive-app2",
+            "test",
+            "windows-resource-intensive-app5"
+          ],
+          "value": [
+            "windows-resource-intensive-app2",
+            "test",
+            "windows-resource-intensive-app5"
+          ]
+        },
+        "datasource": {
+          "type": "grafana-azure-monitor-datasource",
+          "uid": "azure-monitor-oob"
+        },
+        "definition": "",
+        "hide": 0,
+        "includeAll": false,
+        "multi": true,
+        "name": "LabelValue",
+        "options": [],
+        "query": {
+          "azureLogAnalytics": {
+            "query": "ContainerLogV2\r\n| where $__timeFilter(TimeGenerated)\r\n| where _ResourceId =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| where  PodNamespace == \"$Namespace\"\r\n| where isnotempty(KubernetesMetadata)\r\n| extend LabelsJson = KubernetesMetadata.podLabels\r\n| mv-expand LabelsJson\r\n| extend LabelName = tostring(bag_keys(LabelsJson)[0])\r\n| where LabelName in ($LabelKey)\r\n| extend LabelValue = tostring(LabelsJson[LabelName])\r\n| where isnotempty(LabelValue)\r\n| distinct LabelValue",
+            "resources": [
+              "$LAWorkspace"
+            ]
+          },
+          "queryType": "Azure Log Analytics",
+          "refId": "A",
+          "subscription": "E98D0648-F21A-417D-8470-DB17AAB036A7"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timeRangeUpdatedDuringEditOrView": false,
+  "timepicker": {},
+  "timezone": "",
+  "title": "Azure Monitor / Container Insights / ContainerLogV2 Metadata",
+  "uid": "fc1780b5-e3cc-4c6a-828e-e06a96dec4b5",
+  "version": 7,
+  "weekStart": ""
+}
