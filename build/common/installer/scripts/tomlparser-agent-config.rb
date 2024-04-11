@@ -40,7 +40,7 @@ require_relative "ConfigParseErrorLogger"
 @nodesChunkSizeMin = 100
 @nodesChunkSizeMax = 400
 # pods
-@podsChunkSizeMin = 250
+@podsChunkSizeMin = 10
 @podsChunkSizeMax = 1500
 # events
 @eventsChunkSizeMin = 2000
