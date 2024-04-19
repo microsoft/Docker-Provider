@@ -16,7 +16,7 @@ if [[ "${CONTROLLER_TYPE}" == "DaemonSet" && "${CONTAINER_TYPE}" != "PrometheusS
   fi
 
   CURRENT_LOGS_AND_EVENTS_ONLY=${LOGS_AND_EVENTS_ONLY}
-  ruby /opt/dcr-config-parser.rb
+  ruby /opt/dcr-config-parser.rb > /dev/write-to-traces 2>&1
   source /opt/dcr_env_var
   if [ "${LOGS_AND_EVENTS_ONLY}" != "${CURRENT_LOGS_AND_EVENTS_ONLY}" ]; then
     echo "dcr_env_var has been updated - dcr config changed" > /dev/termination-log
