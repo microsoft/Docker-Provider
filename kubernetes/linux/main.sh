@@ -613,24 +613,30 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${GENEVA_LOGS_INTEGRATIO
 fi
 
 #Replace the placeholders in fluent-bit.conf file for fluentbit with custom/default values in daemonset
-if [ ! -e "/etc/config/kube.conf" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
-      ruby fluent-bit-conf-customizer.rb
+if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
       #Parse geneva config
       ruby tomlparser-geneva-config.rb
+
       cat geneva_config_env_var | while read line; do
             echo $line >> ~/.bashrc
       done
       source geneva_config_env_var
-      if [ "${GENEVA_LOGS_INTEGRATION}" == "true" ] && [ "${GENEVA_LOGS_MULTI_TENANCY}" == "true" ]; then
-            ruby fluent-bit-geneva-conf-customizer.rb  "common"
-            ruby fluent-bit-geneva-conf-customizer.rb  "tenant"
-            ruby fluent-bit-geneva-conf-customizer.rb  "infra"
-            ruby fluent-bit-geneva-conf-customizer.rb  "tenant_filter"
-            ruby fluent-bit-geneva-conf-customizer.rb  "infra_filter"
-            # generate genavaconfig for each tenant
-            generateGenevaTenantNamespaceConfig
-            # generate genavaconfig for infra namespace
-            generateGenevaInfraNamespaceConfig
+
+      if [ ! -e "/etc/config/kube.conf" ]; then
+      #Parse fluent-bit-conf-customizer.rb as it uses geneva environment variables
+            ruby fluent-bit-conf-customizer.rb
+            
+            if [ "${GENEVA_LOGS_INTEGRATION}" == "true" ] && [ "${GENEVA_LOGS_MULTI_TENANCY}" == "true" ]; then
+                  ruby fluent-bit-geneva-conf-customizer.rb  "common"
+                  ruby fluent-bit-geneva-conf-customizer.rb  "tenant"
+                  ruby fluent-bit-geneva-conf-customizer.rb  "infra"
+                  ruby fluent-bit-geneva-conf-customizer.rb  "tenant_filter"
+                  ruby fluent-bit-geneva-conf-customizer.rb  "infra_filter"
+                  # generate genavaconfig for each tenant
+                  generateGenevaTenantNamespaceConfig
+                  # generate genavaconfig for infra namespace
+                  generateGenevaInfraNamespaceConfig
+            fi
       fi
 fi
 
@@ -979,7 +985,7 @@ if [ ! -f /etc/cron.d/ci-agent ]; then
 fi
 
 setGlobalEnvVar AZMON_WINDOWS_FLUENT_BIT_DISABLED "${AZMON_WINDOWS_FLUENT_BIT_DISABLED}"
-if [ "${AZMON_WINDOWS_FLUENT_BIT_DISABLED}" == "true" ] || [ -z "${AZMON_WINDOWS_FLUENT_BIT_DISABLED}" ] || [ "${USING_AAD_MSI_AUTH}" != "true" ] || [ "${GENEVA_LOGS_INTEGRATION}" == "true" ]; then
+if [ "${AZMON_WINDOWS_FLUENT_BIT_DISABLED}" == "true" ] || [ -z "${AZMON_WINDOWS_FLUENT_BIT_DISABLED}" ] || [ "${USING_AAD_MSI_AUTH}" != "true" ] || [ "${RS_GENEVA_LOGS_INTEGRATION}" == "true" ]; then
       if [ -e "/etc/config/kube.conf" ]; then
            # Replace a string in the configmap file
             sed -i "s/#@include windows_rs/@include windows_rs/g" /etc/fluent/kube.conf

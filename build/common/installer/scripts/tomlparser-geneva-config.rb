@@ -26,6 +26,9 @@ GENEVA_SUPPORTED_ENVIRONMENTS = ["Test", "Stage", "DiagnosticsProd", "Firstparty
 @geneva_gcs_authid = ""
 @azure_json_path = "/etc/kubernetes/host/azure.json"
 @enable_fbit_threading = false
+# Checking to see if this is the daemonset or replicaset to parse config accordingly
+@controllerType = ENV["CONTROLLER_TYPE"]
+@daemonset = "daemonset"
 
 # Use parser to parse the configmap toml file to a ruby structure
 def parseConfigMap
@@ -45,6 +48,30 @@ def parseConfigMap
     return nil
   end
 end
+
+def populateGenevaIntegrationSettings(parsedConfig)
+  begin
+    if !parsedConfig.nil? && !parsedConfig[:integrations].nil? && !parsedConfig[:integrations][:geneva_logs].nil?
+      if !parsedConfig[:integrations][:geneva_logs][:enabled].nil?
+        geneva_logs_integration = parsedConfig[:integrations][:geneva_logs][:enabled].to_s
+        if !geneva_logs_integration.nil? && geneva_logs_integration.strip.casecmp("true") == 0
+          @geneva_logs_integration = true
+        else
+          @geneva_logs_integration = false
+        end
+      end
+      puts "Using config map value: GENEVA_LOGS_INTEGRATION=#{@geneva_logs_integration}"
+    end
+  rescue => errorStr
+    puts "config::geneva_logs::error:Exception while reading config settings for geneva logs setting - #{errorStr}, using defaults"
+    @geneva_logs_integration = false
+    @multi_tenancy = false
+    @geneva_account_environment = ""
+    @geneva_account_name = ""
+    @geneva_account_namespace = ""
+    @geneva_gcs_region = ""
+  end
+end  
 
 # Use the ruby structure created after config parsing to set the right values to be used as environment variables
 def populateSettingValuesFromConfigMap(parsedConfig)
@@ -256,7 +283,11 @@ puts "****************Start Agent Integrations Config Processing****************
 if !@configSchemaVersion.nil? && !@configSchemaVersion.empty? && @configSchemaVersion.strip.casecmp("v1") == 0 #note v1 is the only supported schema version , so hardcoding it
   configMapSettings = parseConfigMap
   if !configMapSettings.nil?
-    populateSettingValuesFromConfigMap(configMapSettings)
+    if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.casecmp(@daemonset) == 0
+      populateSettingValuesFromConfigMap(configMapSettings)
+    else
+      populateGenevaIntegrationSettings(configMapSettings)
+    end
   end
 else
   if (File.file?(@configMapMountPath))
@@ -277,26 +308,30 @@ if !file.nil?
   if @disable_linux
     puts "config::geneva_logs::info:geneva logs integration disabled for linux"
   else
-    file.write("export GENEVA_LOGS_INTEGRATION=#{@geneva_logs_integration}\n")
-    file.write("export GENEVA_LOGS_MULTI_TENANCY=#{@multi_tenancy}\n")
-    if @enable_fbit_threading
-      file.write("export ENABLE_FBIT_THREADING=#{@enable_fbit_threading}\n")
-    end
+    if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.casecmp(@daemonset) == 0
+      file.write("export GENEVA_LOGS_INTEGRATION=#{@geneva_logs_integration}\n")
+      file.write("export GENEVA_LOGS_MULTI_TENANCY=#{@multi_tenancy}\n")
+      if @enable_fbit_threading
+        file.write("export ENABLE_FBIT_THREADING=#{@enable_fbit_threading}\n")
+      end
 
-    if is_configure_geneva_env_vars()
-      file.write("export MONITORING_GCS_ENVIRONMENT=#{@geneva_account_environment}\n")
-      file.write("export MONITORING_GCS_NAMESPACE=#{@geneva_account_namespace}\n")
-      file.write("export MONITORING_GCS_ACCOUNT=#{@geneva_account_name}\n")
-      file.write("export MONITORING_GCS_REGION=#{@geneva_gcs_region}\n")
-      file.write("export MONITORING_CONFIG_VERSION=#{@geneva_logs_config_version}\n")
-      file.write("export MONITORING_GCS_AUTH_ID=#{@geneva_gcs_authid}\n")
-      file.write("export MONITORING_GCS_AUTH_ID_TYPE=AuthMSIToken")
-    end
-    file.write("export GENEVA_LOGS_INFRA_NAMESPACES=#{@infra_namespaces}\n")
-    file.write("export GENEVA_LOGS_TENANT_NAMESPACES=#{@tenant_namespaces}\n")
+      if is_configure_geneva_env_vars()
+        file.write("export MONITORING_GCS_ENVIRONMENT=#{@geneva_account_environment}\n")
+        file.write("export MONITORING_GCS_NAMESPACE=#{@geneva_account_namespace}\n")
+        file.write("export MONITORING_GCS_ACCOUNT=#{@geneva_account_name}\n")
+        file.write("export MONITORING_GCS_REGION=#{@geneva_gcs_region}\n")
+        file.write("export MONITORING_CONFIG_VERSION=#{@geneva_logs_config_version}\n")
+        file.write("export MONITORING_GCS_AUTH_ID=#{@geneva_gcs_authid}\n")
+        file.write("export MONITORING_GCS_AUTH_ID_TYPE=AuthMSIToken")
+      end
+      file.write("export GENEVA_LOGS_INFRA_NAMESPACES=#{@infra_namespaces}\n")
+      file.write("export GENEVA_LOGS_TENANT_NAMESPACES=#{@tenant_namespaces}\n")
 
-    # This required environment variable in geneva mode
-    file.write("export MDSD_MSGPACK_SORT_COLUMNS=1\n")
+      # This required environment variable in geneva mode
+      file.write("export MDSD_MSGPACK_SORT_COLUMNS=1\n")
+    else
+      file.write("export RS_GENEVA_LOGS_INTEGRATION=#{@geneva_logs_integration}\n")
+    end
   end
   # Close file after writing all environment variables
   file.close
