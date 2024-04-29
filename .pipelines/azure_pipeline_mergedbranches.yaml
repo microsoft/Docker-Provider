@@ -81,6 +81,9 @@ jobs:
       echo "##vso[task.setvariable variable=windowsAMAUrl;isOutput=true]$windowsAMAUrl"
     name: setup
 
+  - task: CredScan@3
+    displayName: "SDL : Run credscan"
+  
   - task: CopyFiles@2
     displayName: "Copy ev2 deployment artifacts"
     inputs:
@@ -126,6 +129,12 @@ jobs:
       pathToPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: drop
   
+  - task: Armory@2
+    displayName: 'Run ARMory'
+    inputs:
+      toolVersion: Latest
+      targetDirectory: '$(Build.SourcesDirectory)'
+
 - job: build_linux
   timeoutInMinutes: 120
   dependsOn: common
@@ -454,6 +463,19 @@ jobs:
       MaxRetryAttempts: '5'
     displayName: 'EsrpCodeSigning for OSS'
 
+  - task: BinSkim@4
+    displayName: 'SDL: run binskim'
+    inputs:
+      InputType: 'CommandLine'
+      arguments: 'analyze --rich-return-code $(Build.ArtifactStagingDirectory)\ossSigning\out_oms.so $(Build.ArtifactStagingDirectory)\ossSigning\perf.so $(Build.ArtifactStagingDirectory)\ossSigning\containerinventory.so $(Build.ArtifactStagingDirectory)\fpSigning\livenessprobe.exe $(Build.ArtifactStagingDirectory)\fpSigning\CertificateGenerator.exe $(Build.ArtifactStagingDirectory)\fpSigning\CertificateGenerator.dll'
+    retryCountOnTaskFailure: 1
+
+  - task: PoliCheck@2
+    displayName: "SDL : Run PoliCheck"
+    inputs:
+      targetType: 'F'
+      targetArgument: '$(Build.SourcesDirectory)'
+
   - task: PowerShell@2
     displayName: Replace files in origin Image
     inputs:
@@ -664,6 +686,19 @@ jobs:
       MaxRetryAttempts: '5'
     displayName: 'EsrpCodeSigning for OSS'
 
+  - task: BinSkim@4
+    displayName: 'SDL: run binskim'
+    inputs:
+      InputType: 'CommandLine'
+      arguments: 'analyze --rich-return-code $(Build.ArtifactStagingDirectory)\ossSigning\out_oms.so $(Build.ArtifactStagingDirectory)\ossSigning\perf.so $(Build.ArtifactStagingDirectory)\ossSigning\containerinventory.so $(Build.ArtifactStagingDirectory)\fpSigning\livenessprobe.exe $(Build.ArtifactStagingDirectory)\fpSigning\CertificateGenerator.exe $(Build.ArtifactStagingDirectory)\fpSigning\CertificateGenerator.dll'
+    retryCountOnTaskFailure: 1
+
+  - task: PoliCheck@2
+    displayName: "SDL : Run PoliCheck"
+    inputs:
+      targetType: 'F'
+      targetArgument: '$(Build.SourcesDirectory)'
+
   - task: PowerShell@2
     displayName: Replace files in origin Image
     inputs:
@@ -806,3 +841,11 @@ jobs:
     inputs:
       pathToPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: drop
+  
+  - task: AntiMalware@4
+    displayName: 'Run MpCmdRun.exe'
+    inputs:
+      InputType: Basic
+      ScanType: CustomScan
+      FileDirPath: '$(Build.ArtifactStagingDirectory)'
+      DisableRemediation: false
