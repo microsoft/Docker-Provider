@@ -226,6 +226,10 @@ data:
     #   upload_frequency_seconds = "1" # default 60 upload_frequency_seconds
     #   compression_level = "0"  # supported levels 0 to 9 and 0 means no compression
 
+    # Disables fluentd and uses fluent-bit for all data collection
+    # [agent_settings.resource_optimization]
+    #   enabled = false  # if this is not applied, default value is false
+
     # The following settings are "undocumented", we don't recommend uncommenting them unless directed by Microsoft.
     # [agent_settings.telemetry_config]
     #   disable_telemetry = false  # if this is not applied, default value is false

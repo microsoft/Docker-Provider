@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/fluent/fluent-bit-go/output"
+	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 )
 import (
 	"C"
@@ -16,13 +16,13 @@ func FLBPluginRegister(ctx unsafe.Pointer) int {
 	return output.FLBPluginRegister(ctx, "oms", "OMS GO!")
 }
 
-//export FLBPluginInit
 // (fluentbit will call this)
 // ctx (context) pointer to fluentbit context (state/ c code)
+//
+//export FLBPluginInit
 func FLBPluginInit(ctx unsafe.Pointer) int {
 	Log("Initializing out_oms go plugin for fluentbit")
-	var agentVersion string
-	agentVersion = os.Getenv("AGENT_VERSION")
+	agentVersion := os.Getenv("AGENT_VERSION")
 
 	osType := os.Getenv("OS_TYPE")
 	if strings.Compare(strings.ToLower(osType), "windows") == 0 {
@@ -70,16 +70,17 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 	}
 
 	incomingTag := strings.ToLower(C.GoString(tag))
-	if strings.Contains(incomingTag, "oms.container.log.flbplugin") {
+	switch {
+	case strings.Contains(incomingTag, "oms.container.log.flbplugin"):
 		// This will also include populating cache to be sent as for config events
 		return PushToAppInsightsTraces(records, appinsights.Information, incomingTag)
-	} else if strings.Contains(incomingTag, "oms.container.perf.telegraf") {
+	case strings.Contains(incomingTag, "oms.container.perf.telegraf"):
 		return PostTelegrafMetricsToLA(records)
-	} else if strings.Contains(incomingTag, "oneagent.containerinsights") {
+	case strings.Contains(incomingTag, "oms.container.oneagent.containerinsights"):
 		return PostInputPluginRecords(records)
+	default:
+		return PostDataHelper(records)
 	}
-
-	return PostDataHelper(records)
 }
 
 // FLBPluginExit exits the plugin

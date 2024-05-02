@@ -12,6 +12,7 @@ import (
 	"net/http"
 	_ "net/http/pprof"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -1376,12 +1377,23 @@ func PostInputPluginRecords(inputPluginRecords []map[interface{}]interface{}) in
 	start := time.Now()
 	Log("Info::PostInputPluginRecords starting")
 
+	defer func() {
+		if r := recover(); r != nil {
+			stacktrace := debug.Stack()
+			Log("Error::PostInputPluginRecords Error processing cadvisor metrics records: %v, stacktrace: %v", r, stacktrace)
+			SendException(fmt.Sprintf("Error:PostInputPluginRecords: %v, stackTrace: %v", r, stacktrace))
+		}
+	}()
+
 	for _, record := range inputPluginRecords {
 		var msgPackEntries []MsgPackEntry
 		val := toStringMap(record)
 		tag := val["tag"].(string)
 		Log("Info::PostInputPluginRecords tag: %s\n", tag)
 		messages := val["messages"].([]map[string]interface{})
+		if len(messages) == 0 {
+			continue
+		}
 		for _, message := range messages {
 			stringMap := convertMap(message)
 			msgPackEntry := MsgPackEntry{
@@ -1466,7 +1478,7 @@ func PostInputPluginRecords(inputPluginRecords []map[interface{}]interface{}) in
 		}
 	}
 
-	return 0
+	return output.FLB_OK
 }
 
 // PostDataHelper sends data to the ODS endpoint or oneagent or ADX

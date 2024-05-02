@@ -8,7 +8,7 @@ import (
 )
 
 func Test_GetContainerInventoryHelper(t *testing.T) {
-	inventoryDirectory = "./tempData/"
+	inventoryDirectory = os.Getenv("TESTDIR")
 	err := os.MkdirAll(inventoryDirectory, 0755)
 	if err != nil {
 		panic(err)

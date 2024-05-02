@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/golang-jwt/jwt/v5"
 	"io/ioutil"
 	"log"
 	"math"
@@ -15,6 +14,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 const (
@@ -46,7 +47,7 @@ var (
 
 func init() {
 	// Define log path
-	isTestEnv := os.Getenv("ISTEST") == "true"
+	isTestEnv := os.Getenv("GOUNITTEST") == "true"
 	osType := os.Getenv("OS_TYPE")
 	if osType != "" && osType == "windows" {
 		LogPath = WindowsLogPath + "kubernetes_client_log.txt"
@@ -155,7 +156,7 @@ func GetTokenStr() string {
 					TokenExpiry = time.Now().Unix() + int64(LEGACY_SERVICE_ACCOUNT_TOKEN_EXPIRY_SECONDS)
 				}
 			} else {
-				logger.Println("Unable to read token string from %s: %v\n", TokenFileName, readErr)
+				logger.Printf("Unable to read token string from %s: %v\n", TokenFileName, readErr)
 				TokenExpiry = time.Now().Unix()
 				TokenStr = ""
 			}

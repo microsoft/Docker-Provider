@@ -13,6 +13,10 @@ jobs:
   Golang-Tests:
     runs-on: ubuntu-latest
     steps:
+      - name: Setup Go 1.19.x
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.19.x'
       - name: Check out repository code
         uses: actions/checkout@v2
       - name: Run unit tests
