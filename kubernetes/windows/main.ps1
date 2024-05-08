@@ -76,62 +76,6 @@ function Set-ProcessAndMachineEnvVariables($name, $value) {
     [System.Environment]::SetEnvironmentVariable($name, $value, "Machine")
 }
 
-function Set-AirgapCloudSpecificApplicationInsightsConfig {
-     # Need to do this before the SA fetch for AI key for airgapped clouds so that it is not overwritten with defaults.
-     $appInsightsAuth = [System.Environment]::GetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", "process")
-     if (![string]::IsNullOrEmpty($appInsightsAuth)) {
-         [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_AUTH", $appInsightsAuth, "machine")
-         Write-Host "Successfully set environment variable APPLICATIONINSIGHTS_AUTH - $($appInsightsAuth) for target 'machine'..."
-     }
-     else {
-         Write-Host "Failed to set environment variable APPLICATIONINSIGHTS_AUTH for target 'machine' since it is either null or empty"
-     }
-
-     $appInsightsEndpoint = [System.Environment]::GetEnvironmentVariable("APPLICATIONINSIGHTS_ENDPOINT", "process")
-     if (![string]::IsNullOrEmpty($appInsightsEndpoint)) {
-         [System.Environment]::SetEnvironmentVariable("APPLICATIONINSIGHTS_ENDPOINT", $appInsightsEndpoint, "machine")
-         Write-Host "Successfully set environment variable APPLICATIONINSIGHTS_ENDPOINT - $($appInsightsEndpoint) for target 'machine'..."
-     }
-
-     # Check if the instrumentation key needs to be fetched from a storage account (as in airgapped clouds)
-     $aiKeyURl = [System.Environment]::GetEnvironmentVariable('APPLICATIONINSIGHTS_AUTH_URL')
-     if ($aiKeyURl) {
-         $aiKeyFetched = ""
-         # retry up to 5 times
-         for ( $i = 1; $i -le 4; $i++) {
-             try {
-                 $response = Invoke-WebRequest -uri $aiKeyURl -UseBasicParsing -TimeoutSec 5 -ErrorAction:Stop
-
-                 if ($response.StatusCode -ne 200) {
-                     Write-Host "Expecting reponse code 200, was: $($response.StatusCode), retrying"
-                     Start-Sleep -Seconds ([MATH]::Pow(2, $i) / 4)
-                 }
-                 else {
-                     $aiKeyFetched = $response.Content
-                     break
-                 }
-             }
-             catch {
-                 Write-Host "Exception encountered fetching instrumentation key:"
-                 Write-Host $_.Exception
-             }
-         }
-
-         # Check if the fetched IKey was properly encoded. if not then turn off telemetry
-         if ($aiKeyFetched -match '^[A-Za-z0-9=]+$') {
-             Write-Host "Using cloud-specific instrumentation key"
-             Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_AUTH" $aiKeyFetched
-         }
-         else {
-             # Couldn't fetch the Ikey, turn telemetry off
-             Write-Host "Could not get cloud-specific instrumentation key (network error?). Disabling telemetry"
-             Set-ProcessAndMachineEnvVariables "DISABLE_TELEMETRY" "True"
-         }
-     }
-
-     $aiKeyDecoded = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:APPLICATIONINSIGHTS_AUTH))
-     Set-ProcessAndMachineEnvVariables "TELEMETRY_APPLICATIONINSIGHTS_KEY" $aiKeyDecoded
-}
 function Set-CloudSpecificApplicationInsightsConfig {
     param (
         [string]$CloudEnvironment
@@ -151,11 +95,13 @@ function Set-CloudSpecificApplicationInsightsConfig {
         }
         "usnat" {
             Write-Host "Set-CloudSpecificApplicationInsightsConfig: Setting Application Insights configuration for USNat Cloud"
-            Set-AirgapCloudSpecificApplicationInsightsConfig
+            Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_AUTH" "YTk5NTlkNDYtYzE3Zi0xZDYxLWJhODgtZWU3NDFjMGI3MTliCg=="
+            Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_ENDPOINT" "https://dc.applicationinsights.azure.eaglex.ic.gov/v2/track"
         }
         "ussec" {
             Write-Host "Set-CloudSpecificApplicationInsightsConfig: Setting Application Insights configuration for USSec Cloud"
-            Set-AirgapCloudSpecificApplicationInsightsConfig
+            Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_AUTH" "NTc5ZDRiZjUtMTA1Mi0wODQzLThhNTYtMjU5YzEyZmJhZTkyCg=="
+            Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_ENDPOINT" "https://dc.applicationinsights.azure.microsoft.scloud/v2/track"
         }
         default {
             Write-Host "Set-CloudSpecificApplicationInsightsConfig: defaulting to Public Cloud Application Insights configuration"

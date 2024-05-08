@@ -22,39 +22,21 @@ setCloudSpecificApplicationInsightsConfig() {
             echo "export APPLICATIONINSIGHTS_ENDPOINT=$APPLICATIONINSIGHTS_ENDPOINT" >>~/.bashrc
             source ~/.bashrc
             ;;
-         "usnat" | "ussec")
-           # Check if the instrumentation key needs to be fetched from a storage account (as in airgapped clouds)
-            if [ ${#APPLICATIONINSIGHTS_AUTH_URL} -ge 1 ]; then # (check if APPLICATIONINSIGHTS_AUTH_URL has length >=1)
-                  for BACKOFF in {1..4}; do
-                        KEY=$(curl -sS $APPLICATIONINSIGHTS_AUTH_URL)
-                        # there's no easy way to get the HTTP status code from curl, so just check if the result is well formatted
-                        if [[ $KEY =~ ^[A-Za-z0-9=]+$ ]]; then
-                              break
-                        else
-                              sleep $((2 ** $BACKOFF / 4)) # (exponential backoff)
-                        fi
-                  done
-
-                  # validate that the retrieved data is an instrumentation key
-                  if [[ $KEY =~ ^[A-Za-z0-9=]+$ ]]; then
-                        export APPLICATIONINSIGHTS_AUTH=$(echo $KEY)
-                        echo "export APPLICATIONINSIGHTS_AUTH=$APPLICATIONINSIGHTS_AUTH" >>~/.bashrc
-                        echo "Using cloud-specific instrumentation key"
-                  else
-                        # no ikey can be retrieved. Disable telemetry and continue
-                        export DISABLE_TELEMETRY=true
-                        echo "export DISABLE_TELEMETRY=true" >>~/.bashrc
-                        echo "Could not get cloud-specific instrumentation key (network error?). Disabling telemetry"
-                  fi
-            fi
-
-            aikey=$(echo "$APPLICATIONINSIGHTS_AUTH" | base64 -d)
-            export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey
-            echo "export TELEMETRY_APPLICATIONINSIGHTS_KEY=$aikey" >>~/.bashrc
+         "usnat")
+            APPLICATIONINSIGHTS_AUTH="YTk5NTlkNDYtYzE3Zi0xZDYxLWJhODgtZWU3NDFjMGI3MTliCg=="
+            APPLICATIONINSIGHTS_ENDPOINT="https://dc.applicationinsights.azure.eaglex.ic.gov/v2/track"
+            echo "export APPLICATIONINSIGHTS_AUTH=$APPLICATIONINSIGHTS_AUTH" >>~/.bashrc
+            echo "export APPLICATIONINSIGHTS_ENDPOINT=$APPLICATIONINSIGHTS_ENDPOINT" >>~/.bashrc
             source ~/.bashrc
             ;;
-
-        *)
+         "ussec")
+            APPLICATIONINSIGHTS_AUTH="NTc5ZDRiZjUtMTA1Mi0wODQzLThhNTYtMjU5YzEyZmJhZTkyCg=="
+            APPLICATIONINSIGHTS_ENDPOINT="https://dc.applicationinsights.azure.microsoft.scloud/v2/track"
+            echo "export APPLICATIONINSIGHTS_AUTH=$APPLICATIONINSIGHTS_AUTH" >>~/.bashrc
+            echo "export APPLICATIONINSIGHTS_ENDPOINT=$APPLICATIONINSIGHTS_ENDPOINT" >>~/.bashrc
+            source ~/.bashrc
+            ;;
+          *)
             echo "default is Public cloud"
             ;;
     esac
