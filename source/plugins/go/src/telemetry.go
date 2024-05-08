@@ -81,11 +81,11 @@ var (
 		"replicaset": "RS",
 	}
 	//Metrics map for the mdsd traces
-	MdsdErrorMetrics = map[string]float64{}
+	TracesErrorMetrics = map[string]float64{}
 	//Time ticker for sending mdsd errors as metrics
-	MdsdErrorMetricsTicker *time.Ticker
+	TracesErrorMetricsTicker *time.Ticker
 	//Mutex for mdsd error metrics
-	MdsdErrorMetricsMutex = &sync.Mutex{}
+	TracesErrorMetricsMutex = &sync.Mutex{}
 )
 
 const (
@@ -334,23 +334,23 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 	}
 }
 
-// SendMdsdTracesAsMetrics is a go-routine that flushes the mdsd traces as metrics periodically (every 5 mins to App Insights)
-func SendMdsdTracesAsMetrics(telemetryPushIntervalProperty string) {
+// SendTracesAsMetrics is a go-routine that flushes the mdsd traces as metrics periodically (every 5 mins to App Insights)
+func SendTracesAsMetrics(telemetryPushIntervalProperty string) {
 	telemetryPushInterval, err := strconv.Atoi(telemetryPushIntervalProperty)
 	if err != nil {
 		Log("Error Converting telemetryPushIntervalProperty %s. Using Default Interval... %d \n", telemetryPushIntervalProperty, defaultTelemetryPushIntervalSeconds)
 		telemetryPushInterval = defaultTelemetryPushIntervalSeconds
 	}
 
-	MdsdErrorMetricsTicker = time.NewTicker(time.Second * time.Duration(telemetryPushInterval))
+	TracesErrorMetricsTicker = time.NewTicker(time.Second * time.Duration(telemetryPushInterval))
 
-	for ; true; <-MdsdErrorMetricsTicker.C {
-		MdsdErrorMetricsMutex.Lock()
-		for metricName, metricValue := range MdsdErrorMetrics {
+	for ; true; <-TracesErrorMetricsTicker.C {
+		TracesErrorMetricsMutex.Lock()
+		for metricName, metricValue := range TracesErrorMetrics {
 			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricName, metricValue))
 		}
-		MdsdErrorMetrics = map[string]float64{}
-		MdsdErrorMetricsMutex.Unlock()
+		TracesErrorMetrics = map[string]float64{}
+		TracesErrorMetricsMutex.Unlock()
 	}
 }
 
@@ -535,14 +535,14 @@ func InitializeTelemetryClient(agentVersion string) (int, error) {
 	return 0, nil
 }
 
-func UpdateMdsdErrorMetrics(key string) {
-	MdsdErrorMetricsMutex.Lock()
-	if _, ok := MdsdErrorMetrics[key]; ok {
-		MdsdErrorMetrics[key]++
+func UpdateTracesErrorMetrics(key string) {
+	TracesErrorMetricsMutex.Lock()
+	if _, ok := TracesErrorMetrics[key]; ok {
+		TracesErrorMetrics[key]++
 	} else {
-		MdsdErrorMetrics[key] = 1
+		TracesErrorMetrics[key] = 1
 	}
-	MdsdErrorMetricsMutex.Unlock()
+	TracesErrorMetricsMutex.Unlock()
 }
 
 // PushToAppInsightsTraces sends the log lines as trace messages to the configured App Insights Instance
@@ -556,19 +556,35 @@ func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLeve
 		} else if strings.Contains(logEntry, "E! [inputs.prometheus]") {
 			populateKubeMonAgentEventHash(record, PromScrapingError)
 		} else if strings.Contains(logEntry, "Lifetime validation failed. The token is expired.") {
-			UpdateMdsdErrorMetrics("MdsdTokenExpired")
+			UpdateTracesErrorMetrics("MdsdTokenExpired")
 		} else if strings.Contains(logEntry, "Failed to upload to ODS: Error resolving address") {
-			UpdateMdsdErrorMetrics("MdsdODSUploadErrorResolvingAddress")
+			UpdateTracesErrorMetrics("MdsdODSUploadErrorResolvingAddress")
 		} else if strings.Contains(logEntry, "Data collection endpoint must be used to access configuration over private link") {
-			UpdateMdsdErrorMetrics("MdsdPrivateLinkNoDCE")
+			UpdateTracesErrorMetrics("MdsdPrivateLinkNoDCE")
 		} else if strings.Contains(logEntry, "Failed to register certificate with OMS Homing Service:Error resolving address") {
-			UpdateMdsdErrorMetrics("MdsdOMSHomingServiceError")
+			UpdateTracesErrorMetrics("MdsdOMSHomingServiceError")
 		} else if strings.Contains(logEntry, "Could not obtain configuration from") {
-			UpdateMdsdErrorMetrics("MdsdGetConfigError")
+			UpdateTracesErrorMetrics("MdsdGetConfigError")
 		} else if strings.Contains(logEntry, " Failed to upload to ODS: 403") {
-			UpdateMdsdErrorMetrics("MdsdODSUploadError403")
+			UpdateTracesErrorMetrics("MdsdODSUploadError403")
+		} else if strings.Contains(logEntry, "failed getting access token") {
+			UpdateTracesErrorMetrics("AddonTokenAdapterFailedGettingAccessToken")
+		} else if strings.Contains(logEntry, "failed to watch token secret") {
+			UpdateTracesErrorMetrics("AddonTokenAdapterFailedToWatchTokenSecret")
+		} else if strings.Contains(logEntry, "http: Server closed") {
+			UpdateTracesErrorMetrics("AddonTokenAdapterServerClosed")
+		} else if strings.Contains(logEntry, "forwarding the token request to IMDS...") {
+			UpdateTracesErrorMetrics("AddonTokenAdapterForwardingTokenRequestToIMDS")
+		} else if strings.Contains(logEntry, "watch channel is closed, retrying..") {
+			UpdateTracesErrorMetrics("AddonTokenAdapterWatchChannelClosed")
+		} else if strings.Contains(logEntry, "error modifying iptable rules:") {
+			UpdateTracesErrorMetrics("AddonTokenAdapterErrorModifyingIptableRules")
+		} else if strings.Contains(logEntry, "Token last updated at") && strings.Contains(logEntry, "exiting the container") {
+			UpdateTracesErrorMetrics("AddonTokenAdapterExitContainerTokenNotUpdated")
 		} else {
-			logLines = append(logLines, logEntry)
+			if !strings.Contains(tag, "addon-token-adapter") {
+				logLines = append(logLines, logEntry)
+			}
 		}
 	}
 
