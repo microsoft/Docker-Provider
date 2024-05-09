@@ -37,7 +37,7 @@ mv /usr/lib/ruby/gems/3.1.0/specifications/default/uri-0.11.0.gemspec /usr/lib/r
 gem uninstall time --version 0.2.0
 gem uninstall uri --version 0.11.0
 
-sudo tdnf install -y azure-mdsd-1.29.7
+sudo tdnf install -y azure-mdsd-1.31.1
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
 rm /usr/sbin/telegraf
@@ -95,4 +95,4 @@ rm -f $TMPDIR/envmdsd
 
 # Remove settings for cron.daily that conflict with the node's cron.daily. Since both are trying to rotate the same files
 # in /var/log at the same time, the rotation doesn't happen correctly and then the *.1 file is forever logged to.
-rm /etc/logrotate.d/azure-mdsd
+rm -f /etc/logrotate.d/azure-mdsd

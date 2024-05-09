@@ -45,6 +45,8 @@ MAINTAINER:              'Microsoft Corporation'
 
 /opt/tomlparser-geneva-config.rb;                                       build/common/installer/scripts/tomlparser-geneva-config.rb;     755; root; root
 
+/etc/opt/microsoft/azuremonitoragent/amacoreagent/PA.json;              build/linux/installer/conf/PA.json;                             755; root; root
+
 /opt/fluent-bit-geneva-conf-customizer.rb;                            build/common/installer/scripts/fluent-bit-geneva-conf-customizer.rb;     755; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit-input.conf;			    build/linux/installer/conf/fluent-bit-input.conf;                644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit-common.conf;			    build/linux/installer/conf/fluent-bit-common.conf;                644; root; root
@@ -181,6 +183,10 @@ MAINTAINER:              'Microsoft Corporation'
 /var/opt/microsoft/docker-cimprov/state/ContainerInventory; 755; root; root
 /var/opt/microsoft/docker-cimprov/log;                  755; root; root
 /var/opt/microsoft/linuxmonagent/log;                   755; root; root
+/var/opt/microsoft/linuxmonagent/amaca;                 755; root; root
+/var/opt/microsoft/linuxmonagent/amaca/log;             755; root; root
+
+/etc/opt/microsoft/azuremonitoragent/amacoreagent;      755; root; root
 
 /opt/fluent-bit;                          755; root; root;sysdir
 /opt/fluent-bit/bin;                      755; root; root;sysdir

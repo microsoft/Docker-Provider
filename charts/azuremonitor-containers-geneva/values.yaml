@@ -17,7 +17,7 @@ image:
   repository: mcr.microsoft.com/azuremonitor/containerinsights/ciprod
   tag: "3.1.20"
   pullPolicy: IfNotPresent
-  agentVersion: "azure-mdsd-1.29.7"
+  agentVersion: "azure-mdsd-1.31.1"
 nameOverride: ""
 enableInternalMetrics: false
 enableKubernetesMetadata: false

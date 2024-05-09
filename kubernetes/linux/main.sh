@@ -5,6 +5,46 @@ startTime=$(date +%s)
 
 echo "startup script start @ $(date +'%Y-%m-%dT%H:%M:%S')"
 
+startAMACoreAgent() {
+      echo "AMACoreAgent: Starting AMA Core Agent since High Log scale mode is enabled"
+
+      AMACALogFileDir="/var/opt/microsoft/linuxmonagent/amaca/log"
+      AMACALogFilePath="$AMACALogFileDir"/amaca.log
+      AMACAConfigFilePath="/etc/opt/microsoft/azuremonitoragent/amacoreagent"
+      export PA_FLUENT_SOCKET_PORT=13000
+      export PA_DATA_PORT=13000
+      export PA_GIG_BRIDGE_MODE=true
+      export GIG_PA_ENABLE_OPTIMIZATION=true
+      export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
+      export PA_CONFIG_PORT=12563
+      export CounterDataReportFrequencyInMinutes=60
+
+      {
+         echo "export PA_FLUENT_SOCKET_PORT=$PA_FLUENT_SOCKET_PORT"
+         echo "export PA_DATA_PORT=$PA_DATA_PORT"
+         echo "export PA_GIG_BRIDGE_MODE=$PA_GIG_BRIDGE_MODE"
+         echo "export GIG_PA_ENABLE_OPTIMIZATION=$GIG_PA_ENABLE_OPTIMIZATION"
+         echo "export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=$DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"
+         echo "export PA_CONFIG_PORT=$PA_CONFIG_PORT"
+         echo "export CounterDataReportFrequencyInMinutes=$CounterDataReportFrequencyInMinutes"
+      } >> ~/.bashrc
+
+      source ~/.bashrc
+      /opt/microsoft/azure-mdsd/bin/amacoreagent -c $AMACAConfigFilePath --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath > /dev/null 2>&1 &
+
+      waitforlisteneronTCPport "$PA_FLUENT_SOCKET_PORT" "$WAITTIME_PORT_13000"
+      waitforlisteneronTCPport "$PA_CONFIG_PORT" "$WAITTIME_PORT_12563"
+      # Extract AMACoreAgent version from log file
+      version=""
+      if [ -d "$AMACALogFileDir" ]; then
+            logfile=$(find "$AMACALogFileDir" -maxdepth 1 -type f -name "amaca*.log" | head -n 1)
+            if [ -n "$logfile" ]; then
+                  version=$(grep -o 'AMACoreAgent Version: [0-9.]*' "$logfile" | awk '{print $3}' | cut -d: -f2)
+            fi
+      fi
+      echo "AMACoreAgent: AMA Core Agent Version: ${version} started successfully."
+}
+
 setCloudSpecificApplicationInsightsConfig() {
     echo "setCloudSpecificApplicationInsightsConfig: Cloud environment: $1"
     case $1 in
@@ -111,6 +151,20 @@ isGenevaMode() {
    false
   fi
 }
+
+isHighLogScaleMode() {
+     if [[ "${CONTROLLER_TYPE}" == "DaemonSet" && \
+          "${CONTAINER_TYPE}" != "PrometheusSidecar" && \
+          "${ENABLE_HIGH_LOG_SCALE_MODE}" == "true" && \
+          "${USING_AAD_MSI_AUTH}" == "true" && \
+          "${GENEVA_LOGS_INTEGRATION}" != "true" && \
+          "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]]; then
+         true
+     else
+         false
+     fi
+}
+
 checkAgentOnboardingStatus() {
       local sleepdurationsecs=1
       local totalsleptsecs=0
@@ -373,6 +427,14 @@ cat common_agent_config_env_var | while read line; do
 done
 source common_agent_config_env_var
 
+# check if high log scale mode enabled
+if isHighLogScaleMode; then
+    echo "Enabled High Log Scale Mode"
+    export IS_HIGH_LOG_SCALE_MODE=true
+    echo "export IS_HIGH_LOG_SCALE_MODE=$IS_HIGH_LOG_SCALE_MODE" >>~/.bashrc
+    source ~/.bashrc
+fi
+
 #Parse the configmap to set the right environment variables for agent config.
 #Note > tomlparser-agent-config.rb has to be parsed first before fluent-bit-conf-customizer.rb for fbit agent settings
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
@@ -465,6 +527,20 @@ if [ -e "/etc/ama-logs-secret/WSID" ]; then
                   if [ -e "/etc/ama-logs-secret/PROXYCERT.crt" ]; then
                         export PROXY_CA_CERT=/etc/ama-logs-secret/PROXYCERT.crt
                         echo "export PROXY_CA_CERT=$PROXY_CA_CERT" >> ~/.bashrc
+                  fi
+                  # Proxy config for AMA core agent
+                  if isHighLogScaleMode; then
+                        proxy_endpoint=$PROXY_ENDPOINT
+                        if [[ "${proxy_endpoint: -1}" == "/" ]]; then
+                              proxy_endpoint="${proxy_endpoint%?}"
+                        fi
+                        if [ "$proxyprotocol" == "http://" ]; then
+                              export http_proxy=$proxy_endpoint
+                              echo "export http_proxy=$http_proxy" >> ~/.bashrc
+                        elif [ "$proxyprotocol" == "https://" ]; then
+                              export https_proxy=$proxy_endpoint
+                              echo "export https_proxy=$https_proxy" >> ~/.bashrc
+                        fi
                   fi
             fi
       fi
@@ -607,7 +683,7 @@ if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
       if [ ! -e "/etc/config/kube.conf" ]; then
       #Parse fluent-bit-conf-customizer.rb as it uses geneva environment variables
             ruby fluent-bit-conf-customizer.rb
-            
+
             if [ "${GENEVA_LOGS_INTEGRATION}" == "true" ] && [ "${GENEVA_LOGS_MULTI_TENANCY}" == "true" ]; then
                   ruby fluent-bit-geneva-conf-customizer.rb  "common"
                   ruby fluent-bit-geneva-conf-customizer.rb  "tenant"
@@ -940,6 +1016,9 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
     fi
 else
       echo "starting mdsd in main container..."
+      if isHighLogScaleMode; then
+            startAMACoreAgent
+      fi
       # add -T 0xFFFF for full traces
       export MDSD_ROLE_PREFIX=/var/run/mdsd-ci/default
       echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >> ~/.bashrc
@@ -1211,6 +1290,9 @@ shutdown() {
          gracefulShutdown
       else
          pkill -f mdsd
+         if isHighLogScaleMode; then
+            pkill -f amacoreagent
+         fi
       fi
 }
 

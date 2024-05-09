@@ -260,6 +260,11 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 					telemetryDimensions["logsAndEventsOnly"] = logsAndEventsOnly
 				}
 
+				isHighLogScaleMode := os.Getenv("IS_HIGH_LOG_SCALE_MODE")
+				if isHighLogScaleMode != "" {
+					telemetryDimensions["isHighLogScaleMode"] = isHighLogScaleMode
+				}
+
 				telemetryDimensions["PromFbitChunkSize"] = os.Getenv("AZMON_FBIT_CHUNK_SIZE")
 				telemetryDimensions["PromFbitBufferSize"] = os.Getenv("AZMON_FBIT_BUFFER_SIZE")
 				telemetryDimensions["PromFbitMemBufLimit"] = os.Getenv("AZMON_FBIT_MEM_BUF_LIMIT")

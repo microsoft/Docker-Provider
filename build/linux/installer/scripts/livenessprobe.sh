@@ -63,6 +63,16 @@ then
  exit 1
 fi
 
+if [[ "${IS_HIGH_LOG_SCALE_MODE}" == "true" ]]; then
+      (ps -ef | grep "amacoreagent" | grep -v "grep")
+      if [ $? -ne 0 ]
+      then
+        echo "amacoreagent is not running" > /dev/termination-log
+        exit 1
+      fi
+fi
+
+
 # LOGS_AND_EVENTS_ONLY mode in daemonset needs only mdsd and fluent-bit
 if [[ "${CONTROLLER_TYPE}" == "DaemonSet" && "${CONTAINER_TYPE}" != "PrometheusSidecar" && "${LOGS_AND_EVENTS_ONLY}" == "true" ]]; then
   echo "Logs and events only mode enabled" > /dev/write-to-traces

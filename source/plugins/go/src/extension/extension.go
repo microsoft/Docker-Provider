@@ -153,11 +153,11 @@ func getDataTypeToStreamIdMapping(hasNamedPipe bool) (map[string]string, error) 
 	for _, extensionConfig := range extensionConfigs {
 		outputStreams := extensionConfig.OutputStreams
 		for dataType, outputStreamID := range outputStreams {
-			if hasNamedPipe {
-				datatypeOutputStreamMap[dataType] = outputStreamDefinitions[outputStreamID.(string)].NamedPipe
-			} else {
-				datatypeOutputStreamMap[dataType] = outputStreamID.(string)
-			}
+				if hasNamedPipe {
+					datatypeOutputStreamMap[dataType] = outputStreamDefinitions[outputStreamID.(string)].NamedPipe
+				} else {
+					datatypeOutputStreamMap[dataType] = outputStreamID.(string)
+				}
 		}
 	}
 	return datatypeOutputStreamMap, nil

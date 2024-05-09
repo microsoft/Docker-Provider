@@ -75,6 +75,10 @@ spec:
        {{- end }}
        - name: CONTROLLER_TYPE
          value: "DaemonSet"
+       {{- if .Values.amalogs.enableHighLogScaleMode }}
+       - name: ENABLE_HIGH_LOG_SCALE_MODE
+         value: {{ .Values.amalogs.enableHighLogScaleMode | quote }}
+       {{- end }}
        {{- if .Values.amalogs.syslog.enabled }}
        - name: SYSLOG_HOST_PORT
          value: {{ .Values.amalogs.syslog.syslogPort | quote }}

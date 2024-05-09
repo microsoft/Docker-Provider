@@ -28,7 +28,7 @@ amalogs:
     tagWindows: "win-3.1.20"
     pullPolicy: IfNotPresent
     dockerProviderVersion: "18.0.1-0"
-    agentVersion: "azure-mdsd-1.29.7"
+    agentVersion: "azure-mdsd-1.31.1"
     winAgentVersion: "0.0.0-0" # there is no base agent version for windows agent
 
   # The priority used by the ama-logs priority class for the daemonset pods
@@ -43,6 +43,9 @@ amalogs:
   # chance to build pod for the node and give it to the scheduler)
   # Should be some number greater than default (0)
   priority: 10
+
+  # This flag used to determine whether to run is high log scale mode or not
+  enableHighLogScaleMode: false
 
   # This used for running agent pods in test mode.
   # if set to true additional agent workflow logs will be emitted which are used for e2e and arc k8s conformance testing
@@ -115,14 +118,13 @@ amalogs:
     - key: "node-role.kubernetes.io/master"
       operator: "Exists"
       effect: "PreferNoSchedule"
-  
   tolerationsUnrestricted:
     - operator: "Exists"
       effect: "NoSchedule"
     - operator: "Exists"
       effect: "NoExecute"
     - operator: "Exists"
-      effect: "PreferNoSchedule" 
+      effect: "PreferNoSchedule"
 
   ## Pod scheduling preferences.
   ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity

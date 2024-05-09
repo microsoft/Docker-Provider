@@ -1,6 +1,5 @@
 #!/usr/local/bin/ruby
 
-
 @os_type = ENV["OS_TYPE"]
 require "tomlrb"
 
@@ -68,6 +67,9 @@ require_relative "ConfigParseErrorLogger"
 @outputForwardWorkers = 10
 @outputForwardRetryLimit = 10
 @requireAckResponse = "false"
+@fbitStorageMaxChunksUp = 0
+@fbitStorageType = ""
+@enableFluentBitThreading = false
 
 # configmap settings related to mdsd
 @mdsdMonitoringMaxEventRate = 0
@@ -101,6 +103,8 @@ require_relative "ConfigParseErrorLogger"
 @waittime_port_25226 = 45
 @waittime_port_25228 = 120
 @waittime_port_25229 = 45
+@waittime_port_13000 = 45 # default waittime for AMACA data port
+@waittime_port_12563 = 45 # default waittime for AMACA config port
 
 def is_number?(value)
   true if Integer(value) rescue false
@@ -237,6 +241,23 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         if !enableFbitInternalMetrics.nil? && enableFbitInternalMetrics.downcase == "true"
           @enableFbitInternalMetrics = true
           puts "Using config map value: enable_internal_metrics = #{@enableFbitInternalMetrics}"
+        end
+
+        fbitStorageMaxChunksUp = fbit_config[:storage_max_chunks_up]
+        if is_valid_number?(fbitStorageMaxChunksUp)
+            @fbitStorageMaxChunksUp = fbitStorageMaxChunksUp.to_i
+            puts "Using config map value: fbitStorageMaxChunksUp  = #{@fbitStorageMaxChunksUp}"
+        end
+        fbitStorageType = fbit_config[:storage_type]
+        if !fbitStorageType.nil? && !fbitStorageType.empty? && ["memory", "filesystem"].include?(fbitStorageType)
+            @fbitStorageType = fbitStorageType
+            puts "Using config map value: fbitStorageType  = #{@fbitStorageType}"
+        end
+
+        enableFluentBitThreading = fbit_config[:enable_threading]
+        if !enableFluentBitThreading.nil? && enableFluentBitThreading.strip.casecmp("true") == 0
+          @enableFluentBitThreading = enableFluentBitThreading
+          puts "Using config map value: enableFluentBitThreading  = #{@enableFluentBitThreading}"
         end
       end
 
@@ -391,6 +412,16 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           @waittime_port_25229 = waittime.to_i
           puts "Using config map value: WAITTIME_PORT_25229 = #{@waittime_port_25229}"
         end
+        waittime = network_listener_waittime_config[:tcp_port_13000]
+        if is_valid_waittime?(waittime, @waittime_port_13000)
+          @waittime_port_13000 = waittime.to_i
+          puts "Using config map value: WAITTIME_PORT_13000 = #{@waittime_port_13000}"
+        end
+        waittime = network_listener_waittime_config[:tcp_port_12563]
+        if is_valid_waittime?(waittime, @waittime_port_12563)
+          @waittime_port_12563 = waittime.to_i
+          puts "Using config map value: WAITTIME_PORT_12563 = #{@waittime_port_12563}"
+        end
       end
     end
   rescue => errorStr
@@ -438,6 +469,18 @@ if !file.nil?
   end
   if !@fbitTailIgnoreOlder.nil? && !@fbitTailIgnoreOlder.empty?
     file.write("export FBIT_TAIL_IGNORE_OLDER=#{@fbitTailIgnoreOlder}\n")
+  end
+
+  if @fbitStorageMaxChunksUp > 0
+    file.write("export FBIT_STORAGE_MAX_CHUNKS_UP=#{@fbitStorageMaxChunksUp}\n")
+  end
+
+  if !@fbitStorageType.nil? && !@fbitStorageType.empty?
+    file.write("export FBIT_STORAGE_TYPE=#{@fbitStorageType}\n")
+  end
+
+  if @enableFluentBitThreading
+    file.write("export ENABLE_FBIT_THREADING=#{@enableFluentBitThreading}\n")
   end
 
   if @storageTotalLimitSizeMB > 0
@@ -509,6 +552,8 @@ if !file.nil?
   file.write("export WAITTIME_PORT_25226=#{@waittime_port_25226}\n")
   file.write("export WAITTIME_PORT_25228=#{@waittime_port_25228}\n")
   file.write("export WAITTIME_PORT_25229=#{@waittime_port_25229}\n")
+  file.write("export WAITTIME_PORT_13000=#{@waittime_port_13000}\n")
+  file.write("export WAITTIME_PORT_12563=#{@waittime_port_12563}\n")
 
   # Close file after writing all environment variables
   file.close
@@ -548,6 +593,20 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
       commands = get_command_windows("FBIT_TAIL_IGNORE_OLDER", @fbitTailIgnoreOlder)
       file.write(commands)
     end
+
+    if @fbitStorageMaxChunksUp > 0
+      commands = get_command_windows("FBIT_STORAGE_MAX_CHUNKS_UP", @fbitStorageMaxChunksUp)
+      file.write(commands)
+    end
+    if !@fbitStorageType.nil? && !@fbitStorageType.empty?
+      commands = get_command_windows("FBIT_STORAGE_TYPE", @fbitStorageType)
+    end
+
+    if @enableFluentBitThreading
+      commands = get_command_windows("ENABLE_FBIT_THREADING", @enableFluentBitThreading)
+      file.write(commands)
+    end
+
     if @promFbitChunkSize > 0
       commands = get_command_windows("AZMON_FBIT_CHUNK_SIZE", @promFbitChunkSize.to_s + "m")
       file.write(commands)
