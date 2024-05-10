@@ -21,19 +21,11 @@ var (
 )
 
 func init() {
-	var logPath string
 	if strings.EqualFold(osType, "windows") {
-		logPath = "/etc/amalogswindows/fluent-bit-input.log"
+		FLBLogger = CreateLogger("/etc/amalogswindows/fluent-bit-input.log")
 	} else {
-		logPath = "/var/opt/microsoft/docker-cimprov/log/fluent-bit-input.log"
+		FLBLogger = CreateLogger("/var/opt/microsoft/docker-cimprov/log/fluent-bit-input.log")
 	}
-
-	isTestEnv := os.Getenv("GOUNITTEST") == "true"
-	if isTestEnv {
-		logPath = "./fluent-bit-input.log"
-	}
-
-	FLBLogger = CreateLogger(logPath)
 }
 
 func GetContainerInventoryRecords(podItem map[string]interface{}, batchTime string, clusterCollectEnvironmentVar string, isWindows bool) []map[string]interface{} {

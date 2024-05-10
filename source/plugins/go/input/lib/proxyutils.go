@@ -8,7 +8,7 @@ import (
 
 var proxyCertPath = "/etc/ama-logs-secret/PROXYCERT.crt"
 
-func GetProxyEndpoint() (string, error) {
+func getProxyEndpoint() (string, error) {
 	amaLogsProxySecretPath := "/etc/ama-logs-secret/PROXY"
 	proxyConfig, err := ioutil.ReadFile(amaLogsProxySecretPath)
 	if err != nil {
@@ -17,11 +17,11 @@ func GetProxyEndpoint() (string, error) {
 	return strings.TrimSpace(string(proxyConfig)), nil
 }
 
-func IsProxyCACertConfigured() bool {
+func isProxyCACertConfigured() bool {
 	_, err := os.Stat(proxyCertPath)
 	return err == nil
 }
 
-func IsIgnoreProxySettings() bool {
+func isIgnoreProxySettings() bool {
 	return strings.ToLower(os.Getenv("IGNORE_PROXY_SETTINGS")) == "true"
 }

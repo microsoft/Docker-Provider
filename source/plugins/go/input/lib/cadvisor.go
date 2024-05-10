@@ -86,7 +86,7 @@ func init() {
 		LogPath = LinuxLogPath + "kubernetes_perf_log.txt"
 	}
 
-	isTestEnv := os.Getenv("GOUNITTEST") == "true"
+	isTestEnv := os.Getenv("ISTEST") == "true"
 	if isTestEnv {
 		LogPath = "./kubernetes_perf_log.txt"
 	}
@@ -221,6 +221,7 @@ func getResponse(winNode map[string]string, relativeUri string) (*http.Response,
 			Log.Errorf("Failed to get HTTP response: %s", err)
 			return nil, err
 		}
+		// defer response.Body.Close()
 
 		Log.Infof("Got response code %d from %s", response.StatusCode, uri.RequestURI())
 	}
@@ -236,8 +237,7 @@ func GetMetrics(winNode map[string]string, namespaceFilteringMode string, namesp
 		telemetryProps := make(map[string]string)
 		telemetryProps["Computer"] = hostName
 		SendExceptionTelemetry(err.Error(), telemetryProps)
-	}
-	if cAdvisorStats != nil {
+	} else {
 		defer cAdvisorStats.Body.Close()
 	}
 
@@ -331,11 +331,9 @@ func GetInsightsMetrics(winNode map[string]string, namespaceFilteringMode string
 		telemetryProps := make(map[string]string)
 		telemetryProps["Computer"] = hostName
 		SendExceptionTelemetry(err.Error(), telemetryProps)
-	}
-	if cAdvisorStats != nil {
+	} else {
 		defer cAdvisorStats.Body.Close()
 	}
-
 	var metricInfo map[string]interface{}
 	if cAdvisorStats != nil {
 		bodybytes, err := io.ReadAll(cAdvisorStats.Body)
@@ -420,11 +418,7 @@ func getContainerMemoryMetricItems(metricInfo map[string]interface{}, hostName, 
 
 				containerName, _ := containerData["name"].(string)
 				containerDataMemory := containerData["memory"]
-				metricValue, ok := containerDataMemory.(map[string]interface{})[metricKey].(float64)
-				if !ok {
-					Log.Warnf("CHECK::Error: metricValue is not a float64. %v", containerDataMemory)
-					continue
-				}
+				metricValue := containerDataMemory.(map[string]interface{})[metricKey].(float64)
 
 				metricItem := metricDataItem{}
 				metricItem["Timestamp"] = metricTime
@@ -525,10 +519,7 @@ func getContainerCpuMetricItemRate(metricInfo map[string]interface{}, hostName, 
 
 				containerName, _ := containerData["name"].(string)
 				containerDataCpu := containerData["cpu"]
-				metricValue, ok := containerDataCpu.(map[string]interface{})[metricKey].(float64)
-				if !ok {
-					continue
-				}
+				metricValue := containerDataCpu.(map[string]interface{})[metricKey].(float64)
 
 				metricItem := metricDataItem{}
 				metricItem["Timestamp"] = metricTime
@@ -979,10 +970,7 @@ func getContainerCpuMetricItems(metricInfo map[string]interface{}, hostName, met
 
 				containerName, _ := containerData["name"].(string)
 				containerDataCpu := containerData["cpu"]
-				metricValue, ok := containerDataCpu.(map[string]interface{})[metricKey].(float64)
-				if !ok {
-					continue
-				}
+				metricValue := containerDataCpu.(map[string]interface{})[metricKey].(float64)
 
 				metricItem := metricDataItem{}
 				metricItem["Timestamp"] = metricTime
@@ -1137,9 +1125,8 @@ func getContainerGpuMetricsAsInsightsMetrics(metricInfo map[string]interface{}, 
 					continue
 				}
 				for _, accelerator := range accelerators {
-					metricValue, ok := accelerator.(map[string]interface{})[metricKey]
+					metricValue := accelerator.(map[string]interface{})[metricKey]
 					if !ok {
-						Log.Warnf("Error: metricKey %v not found in the accelerator", metricKey)
 						continue
 					}
 					containerName, _ := containerData["name"].(string)
@@ -1253,7 +1240,7 @@ func getPersistentVolumeMetrics(metricInfo map[string]interface{}, hostName, met
 					metricTags[INSIGHTSMETRICS_TAGS_PV_CAPACITY_BYTES] = fmt.Sprintf("%.0f", parsedVolume["capacityBytes"].(float64))
 
 					jsonTags, err := json.Marshal(metricTags)
-					if err != nil {
+					if (err != nil) {
 						Log.Warnf("Error marshaling metricTags: %s", err)
 						continue
 					}
@@ -1292,7 +1279,7 @@ func ClearDeletedWinContainersFromCache() {
 	}
 
 	if len(winContainersToBeCleared) > 0 {
-		Log.Printf("Stale containers found in cache, clearing...: %v", winContainersToBeCleared)
+		Log.Println("Stale containers found in cache, clearing...: %v", winContainersToBeCleared)
 	}
 
 	for _, containerId := range winContainersToBeCleared {

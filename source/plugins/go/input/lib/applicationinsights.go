@@ -58,21 +58,16 @@ func init() {
 		logPath = "/var/opt/microsoft/docker-cimprov/log/appinsights_error.log"
 	}
 
-	isTestEnv := os.Getenv("GOUNITTEST") == "true"
-	if isTestEnv {
-		logPath = "./appinsights_error.log"
-	}
-
 	aiLogger = CreateLogger(logPath)
 	// Initialize customProperties
 	customProperties = make(map[string]string)
-	if !IsIgnoreProxySettings() {
+	if !isIgnoreProxySettings() {
 		if isWindows {
 			proxyEndpoint = os.Getenv("PROXY")
 
 		} else {
 			var err error
-			proxyEndpoint, err = GetProxyEndpoint()
+			proxyEndpoint, err = getProxyEndpoint()
 			if err != nil {
 				aiLogger.Printf("Error getting proxy endpoint: %s", err.Error())
 			}
@@ -101,13 +96,13 @@ func init() {
 	if proxyEndpoint != "" {
 		customProperties["Proxy"] = "true"
 		isProxyConfigured = true
-		if IsProxyCACertConfigured() {
+		if isProxyCACertConfigured() {
 			customProperties["IsProxyCACertConfigured"] = "true"
 		}
 	} else {
 		customProperties["Proxy"] = "false"
 		isProxyConfigured = false
-		if IsIgnoreProxySettings() {
+		if isIgnoreProxySettings() {
 			customProperties["IsProxyConfigurationIgnored"] = "true"
 		}
 	}

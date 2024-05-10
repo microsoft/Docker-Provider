@@ -8,11 +8,9 @@ import (
 	"testing"
 )
 
-var inventoryDirectory string
-
 func TestWriteAndReadContainerState(t *testing.T) {
 	// Test case: WriteContainerState and ReadContainerState
-	inventoryDirectory = os.Getenv("TESTDIR")
+	inventoryDirectory = "./testData" // A temporary test directory to use as inventoryDirectory
 	err := os.Mkdir(inventoryDirectory, 0755)
 	if err != nil {
 		t.Fatalf("Failed to create test directory: %v", err)
@@ -42,7 +40,7 @@ func TestWriteAndReadContainerState(t *testing.T) {
 
 func TestGetDeletedContainers(t *testing.T) {
 	// Test case: GetDeletedContainers
-	inventoryDirectory = os.Getenv("TESTDIR")
+	inventoryDirectory = "./testData" // A temporary test directory to use as inventoryDirectory
 	err := os.Mkdir(inventoryDirectory, 0755)
 	if err != nil {
 		t.Fatalf("Failed to create test directory: %v", err)
@@ -71,7 +69,6 @@ func TestGetDeletedContainers(t *testing.T) {
 
 func createTestFile(filename string, t *testing.T) {
 	// Create a test file in the test inventoryDirectory
-	inventoryDirectory = os.Getenv("TESTDIR")
 	filePath := filepath.Join(inventoryDirectory, filename)
 	file, err := os.Create(filePath)
 	if err != nil {
@@ -108,9 +105,7 @@ func compareStringSlices(s1, s2 []string) bool {
 
 // setup function to be called before running any tests
 func setup() {
-	inventoryDirectory = "./testData" // A temporary test directory to use as inventoryDirectory
-	os.Setenv("TESTDIR", inventoryDirectory)
-	os.Setenv("GOUNITTEST", "true")
+	inventoryDirectory = "./" // A temporary test directory to use as inventoryDirectory
 }
 
 // teardown function to be called after running all tests

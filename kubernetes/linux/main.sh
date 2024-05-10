@@ -1159,10 +1159,6 @@ if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
       sed -i -e "s/placeholder_hostname/$nodename/g" $telegrafConfFile
 fi
 
-if [ "${AZMON_RESOURCE_OPTIMIZATION_ENABLED}" == "true" ]; then
-      sed -i '/^#CustomMetricsStart/,/^#CustomMetricsEnd/ s/^/# /' $telegrafConfFile
-fi
-
 export HOST_MOUNT_PREFIX=/hostfs
 echo "export HOST_MOUNT_PREFIX=/hostfs" >>~/.bashrc
 export HOST_PROC=/hostfs/proc
@@ -1188,10 +1184,8 @@ if [ ! -e "/etc/config/kube.conf" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE
             else
                   echo "checking for listener on tcp #25226 and waiting for $WAITTIME_PORT_25226 secs if not.."
                   waitforlisteneronTCPport 25226 $WAITTIME_PORT_25226
-                  if [ "${AZMON_RESOURCE_OPTIMIZATION_ENABLED}" != "true" ]; then
-                        echo "checking for listener on tcp #25228 and waiting for $WAITTIME_PORT_25228 secs if not.."
-                        waitforlisteneronTCPport 25228 $WAITTIME_PORT_25228
-                  fi
+                  echo "checking for listener on tcp #25228 and waiting for $WAITTIME_PORT_25228 secs if not.."
+                  waitforlisteneronTCPport 25228 $WAITTIME_PORT_25228
             fi
       fi
 elif [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
