@@ -66,7 +66,8 @@ require_relative "ConfigParseErrorLogger"
 @fbitTailIgnoreOlder = ""
 @storageTotalLimitSizeMB = 200
 @outputForwardWorkers = 10
-@outputForwardRetryLimit = 10
+# retries infinetly until it succeeds
+@outputForwardRetryLimit = "no_limits"
 @requireAckResponse = "false"
 
 # configmap settings related to mdsd
