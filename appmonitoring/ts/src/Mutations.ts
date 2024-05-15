@@ -17,7 +17,7 @@ export class Mutations {
     };
     private static agentImageNodeJs = {
         repositoryPath: "opentelemetry-auto-instrumentation/nodejs",
-        imageTag: "3.0.0"
+        imageTag: "3.1.0"
     };
     private static agentImageJava = {
         repositoryPath: "auto-instrumentation/java",
