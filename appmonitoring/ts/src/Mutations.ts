@@ -273,7 +273,7 @@ ${ownerUidAttribute}`
                         },
                         {
                             name: "APPLICATIONINSIGHTS_CONFIGURATION_CONTENT",
-                            value: `{"logInstrumentationOptions":{"console": { "enabled": false }, "bunyan": { "enabled": false },"winston": { "enabled": false }}}`,
+                            value: `{"instrumentationOptions":{"console": { "enabled": false }, "bunyan": { "enabled": false },"winston": { "enabled": false }}}`,
                             platformSpecific: platforms[i],
                             doNotSet: !disableAppLogs
                         }]);
