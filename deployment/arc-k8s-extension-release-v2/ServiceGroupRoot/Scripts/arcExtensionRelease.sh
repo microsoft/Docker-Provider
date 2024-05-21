@@ -226,11 +226,19 @@ RESOURCE_AUDIENCE=${RESOURCE_AUDIENCE}
 
 echo "Request parameter preparation, SUBSCRIPTION is $SUBSCRIPTION, RESOURCE_AUDIENCE is $RESOURCE_AUDIENCE, CHART_VERSION is $CHART_VERSION, SPN_CLIENT_ID is $SPN_CLIENT_ID, SPN_TENANT_ID is $SPN_TENANT_ID"
 
-# msi is not supported yet since msi always linked to an Azure Resource
-echo "Login cli using spn"
-az login --service-principal --username=${SPN_CLIENT_ID} --password=${SPN_SECRET} --tenant=${SPN_TENANT_ID}
-if [ $? -eq 0 ]; then
-  echo "Logged in successfully with spn"
+echo "Login cli using Managed Identity"
+# Retries needed due to: https://stackoverflow.microsoft.com/questions/195032
+n=0
+signInExitCode=-1
+until [ "$n" -ge 5 ]
+do
+   az login --identity --allow-no-subscriptions && signInExitCode=0 && break
+   n=$((n+1))
+   sleep 15
+done
+
+if [ $signInExitCode -eq 0 ]; then
+  echo "Logged in successfully"
 else
   echo "-e error failed to login to az with managed identity credentials"
   exit 1
