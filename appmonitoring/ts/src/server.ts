@@ -123,7 +123,7 @@ https.createServer(options, (req, res) => {
                     uid = admissionReview.request.uid;
                     requestMetadata = new RequestMetadata(uid, crs);
                 } else {
-                    throw `Unable to get request.uid from the incoming admission review: ${admissionReview}`
+                    throw `Unable to get request.uid from the incoming admission review`;
                 }
 
                 const mutator: Mutator = new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, operationId);
@@ -138,6 +138,7 @@ https.createServer(options, (req, res) => {
             } catch (e) {
                 const ex = logger.sanitizeException(e);
 
+                // e must not contain any customer content for privacy reasons, this exception is logged to a Microsoft-owned resource
                 logger.appendHeartbeatLog(HeartbeatLogs.AdmissionReviewTopExceptionsEncountered, JSON.stringify(ex));
 
                 logger.error(`Error while processing request: ${JSON.stringify(e)}. Incoming payload: ${body}`, operationId, requestMetadata);

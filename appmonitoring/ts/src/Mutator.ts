@@ -30,7 +30,8 @@ export class Mutator {
             }
 
             if (!AdmissionReviewValidator.Validate(this.admissionReview, this.operationId, this.requestMetadata)) {
-                throw `Validation of the incoming AdmissionReview failed: ${JSON.stringify(this.admissionReview)}`;
+                logger.error(`Validation failed on original AdmissionReview: ${JSON.stringify(this.admissionReview)}`, this.operationId, this.requestMetadata);
+                throw `Validation of the incoming AdmissionReview failed: ${JSON.stringify(this.admissionReview?.request?.uid)}`;
             } else {
                 logger.info(`Validation passed on original AdmissionReview: ${JSON.stringify(this.admissionReview)}`, this.operationId, this.requestMetadata);
             }
@@ -39,7 +40,6 @@ export class Mutator {
             response.response.patch = patch;
 
             return JSON.stringify(response);
-
         } catch (e) {
             const exceptionMessage = `Exception encountered: ${e}${e?.stack ?? ""}`;
 
