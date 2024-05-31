@@ -981,7 +981,7 @@ describe("Patcher", () => {
         
         const newInitContainers: IContainer[] = Mutations.GenerateInitContainers(platforms, cr1.spec.settings.imageRepoPath);
         expect((<any>result[0]).value.spec.template.spec.initContainers.length).toBe(admissionReview.request.object.spec.template.spec.initContainers.length + newInitContainers.length);
-        expect((<any>result[0]).value.spec.template.spec.initContainers[2].image).toBe(`myacr.azurecr.io/some-namespace-blah/opentelemetry-auto-instrumentation/dotnet:1.0.0-rc.2`);
+        expect((<any>result[0]).value.spec.template.spec.initContainers[2].image).toBe(`myacr.azurecr.io/some-namespace-blah/opentelemetry-auto-instrumentation/dotnet:1.0.0-rc.3`);
         expect((<any>result[0]).value.spec.template.spec.initContainers[3].image).toBe(`myacr.azurecr.io/some-namespace-blah/auto-instrumentation/java:3.5.2-aks`);
         expect((<any>result[0]).value.spec.template.spec.initContainers[4].image).toBe(`myacr.azurecr.io/some-namespace-blah/opentelemetry-auto-instrumentation/nodejs:3.1.0`);
     });
