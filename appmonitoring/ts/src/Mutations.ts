@@ -385,7 +385,9 @@ ${ownerUidAttribute}`
                     if(!logVolumeAdded) {
                         volumes.push({
                             name: Mutations.agentLogsVolume,
-                            emptyDir: {}
+                            emptyDir: {
+                                sizeLimit: "100Mi"
+                            }
                         });
 
                         logVolumeAdded = true;
