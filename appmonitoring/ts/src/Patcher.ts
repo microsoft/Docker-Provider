@@ -63,7 +63,7 @@ export class Patcher {
             podSpec.volumes = (podSpec.volumes ?? <IVolume[]>[]).concat(newVolumes);
 
             // add new initcontainers (used to copy agent binaries over to the pod)
-            const newInitContainers: IContainer[] = Mutations.GenerateInitContainers(platforms, cr.spec.settings?.imageRepoPath);
+            const newInitContainers: IContainer[] = Mutations.GenerateInitContainers(platforms);
             podSpec.initContainers = (podSpec.initContainers ?? <IContainer[]>[]).concat(newInitContainers);
 
             // add new environment variables (used to configure agents)
@@ -162,7 +162,7 @@ export class Patcher {
         podSpec.volumes = podSpec.volumes?.filter(volume => !volumesToRemove.find(vtr => volume.name === vtr.name));
         
         // remove init containers by name
-        const initContainersToRemove: IContainer[] = Mutations.GenerateInitContainers(allPlatforms, null);
+        const initContainersToRemove: IContainer[] = Mutations.GenerateInitContainers(allPlatforms);
         podSpec.initContainers = podSpec.initContainers?.filter(ic => !initContainersToRemove.find(ictr => ic.name === ictr.name));
 
         // remove environment variables and volume mounts from all containers by name

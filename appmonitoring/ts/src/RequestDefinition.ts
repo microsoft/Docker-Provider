@@ -193,7 +193,6 @@ export class InstrumentationCR {
     spec: {
         settings: {
             autoInstrumentationPlatforms: AutoInstrumentationPlatforms[];
-            imageRepoPath?: string;
             logCollectionSettings?: {
                 disableAppLogs?: boolean;
                 disableContainerLogs?: boolean;

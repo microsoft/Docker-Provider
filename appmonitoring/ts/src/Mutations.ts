@@ -48,7 +48,7 @@ export class Mutations {
     /**
      * Creates init containers that are used to copy agent binaries onto a Pod. These containers download the agent image, copy agent binaries from inside of the image, and finish.
      */
-    public static GenerateInitContainers(platforms: AutoInstrumentationPlatforms[], imageRepoPath: string): IContainer[] {
+    public static GenerateInitContainers(platforms: AutoInstrumentationPlatforms[], imageRepoPath: string = null): IContainer[] {
         const containers: IContainer[] = [];
 
         for (let i = 0; i < platforms.length; i++) {
@@ -398,7 +398,7 @@ ${ownerUidAttribute}`
         return volumes;
     }
 
-    private static generateImagePath(platform: AutoInstrumentationPlatforms, imagePath: string): string {
+    private static generateImagePath(platform: AutoInstrumentationPlatforms, imagePath: string = null): string {
         while(imagePath?.length > 1 && imagePath.endsWith("/")) {
             imagePath = imagePath.slice(0, imagePath.length - 1);
         }
