@@ -305,7 +305,7 @@ spec:
       containers: 
       - env: 
         - name: ARM_ID
-          value: /subscriptions/66010356-d8a5-42d3-8593-6aaa3aeb1c11/resourceGroups/appmonitoring-pipeline-test/providers/Microsoft.ContainerService/managedClusters/aks-pipeline-testbed-ai
+          value: /subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/Microsoft.ContainerService/managedClusters/aks-pipeline-validation-ai
         - name: ARM_REGION
           value: eastus
         image: ${AIDEV_IMAGE_NAME}
