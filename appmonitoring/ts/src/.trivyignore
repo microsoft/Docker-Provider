@@ -6,3 +6,6 @@ CVE-2024-28863
 CVE-2023-38704
 # @opentelemetry/instrumentation -> @azure/opentelemetry-instrumentation-azure-sdk -> applicationinsights
 GHSA-f8pq-3926-8gx5
+
+# ws -> kubernetes/client-node
+CVE-2024-37890
