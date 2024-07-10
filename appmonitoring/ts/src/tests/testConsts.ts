@@ -16,8 +16,7 @@ export const cr: InstrumentationCR = {
         settings: {
             autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.DotNet, AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs],
             logCollectionSettings: {
-                disableAppLogs: true,
-                disableContainerLogs: true
+                disableAppLogs: true
             }
         },
         destination: {

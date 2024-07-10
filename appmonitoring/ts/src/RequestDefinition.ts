@@ -28,8 +28,6 @@ export interface IInstrumentationState {
 }
 
 export const InstrumentationAnnotationName = "monitor.azure.com/instrumentation";
-export const FluentBitIoExcludeAnnotationName = "fluentbit.io/exclude";
-export const FluentBitIoExcludeBeforeMutationAnnotationName = "monitor.azure.com/fluentbit.io-exclude-before-auto-instrumentation";
 export interface IAnnotations {
     "instrumentation.opentelemetry.io/inject-dotnet"?: string;
     "instrumentation.opentelemetry.io/inject-java"?: string;
@@ -195,7 +193,6 @@ export class InstrumentationCR {
             autoInstrumentationPlatforms: AutoInstrumentationPlatforms[];
             logCollectionSettings?: {
                 disableAppLogs?: boolean;
-                disableContainerLogs?: boolean;
             }
         },
         destination: {

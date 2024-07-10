@@ -1,5 +1,5 @@
 ﻿import { Mutations } from "./Mutations.js";
-import { PodInfo, IContainer, ISpec, IVolume, IEnvironmentVariable, AutoInstrumentationPlatforms, IVolumeMount, InstrumentationAnnotationName, InstrumentationCR, IInstrumentationState, FluentBitIoExcludeAnnotationName, IMetadata, IAnnotations, FluentBitIoExcludeBeforeMutationAnnotationName, IObjectType } from "./RequestDefinition.js";
+import { PodInfo, IContainer, ISpec, IVolume, IEnvironmentVariable, AutoInstrumentationPlatforms, IVolumeMount, InstrumentationAnnotationName, InstrumentationCR, IInstrumentationState, IMetadata, IAnnotations, IObjectType } from "./RequestDefinition.js";
 
 export class Patcher {
 
@@ -44,19 +44,6 @@ export class Patcher {
                 crResourceVersion: cr.metadata.resourceVersion,
                 platforms: <string[]>platforms
             });
-
-            // add pod-level annotations to disable CI logs if requested
-            spec.template.metadata = spec.template.metadata ?? <IMetadata>{};
-            spec.template.metadata.annotations = spec.template.metadata?.annotations ?? <IAnnotations>{};
-            if (spec.template.metadata.annotations[FluentBitIoExcludeAnnotationName] != null) {
-                // a value is provided and must be saved to be restored during unpatching
-                spec.template.metadata.annotations[FluentBitIoExcludeBeforeMutationAnnotationName] = spec.template.metadata.annotations[FluentBitIoExcludeAnnotationName];
-            }
-
-            if (cr.spec?.settings?.logCollectionSettings?.disableContainerLogs != null) {
-                // we have a setting to use
-                spec.template.metadata.annotations[FluentBitIoExcludeAnnotationName] = cr.spec.settings.logCollectionSettings.disableContainerLogs ? "true" : "false";
-            }
 
             // add new volumes (used to store agent binaries)
             const newVolumes: IVolume[] = Mutations.GenerateVolumes(platforms);
@@ -139,18 +126,6 @@ export class Patcher {
         obj.metadata = obj.metadata ?? <IMetadata>{};
         if (obj.metadata.annotations) {
             delete obj.metadata.annotations[InstrumentationAnnotationName];
-        }
-
-        // remove pod annotations
-        if (instrumentationState?.crName) {
-            spec.template.metadata = spec.template.metadata ?? <IMetadata>{};
-            spec.template.metadata.annotations = spec.template.metadata?.annotations ?? <IAnnotations>{};
-
-            delete spec.template.metadata.annotations[FluentBitIoExcludeAnnotationName];
-            if (spec.template.metadata.annotations[FluentBitIoExcludeBeforeMutationAnnotationName] != null) {
-                spec.template.metadata.annotations[FluentBitIoExcludeAnnotationName] = spec.template.metadata.annotations[FluentBitIoExcludeBeforeMutationAnnotationName];
-                delete spec.template.metadata.annotations[FluentBitIoExcludeBeforeMutationAnnotationName];
-            }
         }
 
         // we are removing all mutations (regardless of whether only some mutations are applied based on the platforms used)

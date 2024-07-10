@@ -71,15 +71,7 @@ spec:
                             Note: enabling this flag without disabling console output (either through the flag in this setion or by removing the console adapters when configuring the SDK) might result in double collection of logs and higher cost.
                           type: boolean
                           default: false
-                        disableContainerLogs:
-                          description: >-
-                            Controls whether console output from the container should be collected in the associated Log Analytics Workspace.
-                            Disabling container logs collection will result in lower costs if that output is already collected by the language-specific SDK.
-                            Note: if your application outputs to console using an unsupported framework, disabling container console output might result in lost logs.
-                            If you have workloads/containers outside of your application (such as Nginx) which output to console, setting this flag will disable output from those pods as well if this CR's _selector_ applies to those workloads/containers.
-                          type: boolean
-                          default: false
-                  
+                        
                 destination:
                   description: Sink for telemetry data
                   type: object
