@@ -188,11 +188,11 @@ jobs:
         if [ "$(Build.Reason)" != "PullRequest" ]; then
           docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --push --provenance=false .
 
+          echo "##vso[task.logissue type=warning]Linux image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)"
+
           docker pull ${{ variables.repoImageName }}:$(linuxImagetag)
         else
           docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --provenance=false .
-          echo "##vso[task.logissue type=message;]Linux image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)"
-          echo "##vso[task.complete result=Succeeded;]DONE"
 
           # load the multi-arch image to run tests
           docker buildx build --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --load --provenance=false .
@@ -815,8 +815,7 @@ jobs:
         if ("$(Build.Reason)" -ne "PullRequest") {
            docker manifest create ${{ variables.repoImageName }}:$(windowsImageTag) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
            docker manifest push ${{ variables.repoImageName }}:$(windowsImageTag)
-           Write-Host "##vso[task.logissue type=message;]Windows image built with tag: ${{ variables.repoImageName }}:$(windowsImageTag)"
-           Write-Host "##vso[task.complete result=Succeeded;]DONE"
+           Write-Host "##vso[task.logissue type=warning]Windows image built with tag: ${{ variables.repoImageName }}:$(windowsImageTag)"
         }
   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
     displayName: 'Generation Task'
