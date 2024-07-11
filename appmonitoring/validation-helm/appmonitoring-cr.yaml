@@ -10,8 +10,5 @@ spec:
       - DotNet
       - Java
       - NodeJs
-    logCollectionSettings: # optional, defaults are shown below
-      disableAppLogs: true # AI log collection. Default is false (enabled)
-    #   # once log levels and log filtering are figured out, we’ll add them here 
   destination: # required
     applicationInsightsConnectionString: ${AI_CONNECTION_STRING}

@@ -28,6 +28,7 @@ export interface IInstrumentationState {
 }
 
 export const InstrumentationAnnotationName = "monitor.azure.com/instrumentation";
+export const EnableApplicationLogsAnnotationName = "monitor.azure.com/enable-application-logs";
 export interface IAnnotations {
     "instrumentation.opentelemetry.io/inject-dotnet"?: string;
     "instrumentation.opentelemetry.io/inject-java"?: string;
@@ -191,9 +192,6 @@ export class InstrumentationCR {
     spec: {
         settings: {
             autoInstrumentationPlatforms: AutoInstrumentationPlatforms[];
-            logCollectionSettings?: {
-                disableAppLogs?: boolean;
-            }
         },
         destination: {
             applicationInsightsConnectionString: string;

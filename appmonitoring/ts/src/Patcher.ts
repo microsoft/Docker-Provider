@@ -1,5 +1,5 @@
 ﻿import { Mutations } from "./Mutations.js";
-import { PodInfo, IContainer, ISpec, IVolume, IEnvironmentVariable, AutoInstrumentationPlatforms, IVolumeMount, InstrumentationAnnotationName, InstrumentationCR, IInstrumentationState, IMetadata, IAnnotations, IObjectType } from "./RequestDefinition.js";
+import { PodInfo, IContainer, ISpec, IVolume, IEnvironmentVariable, AutoInstrumentationPlatforms, IVolumeMount, InstrumentationAnnotationName, EnableApplicationLogsAnnotationName, InstrumentationCR, IInstrumentationState, IMetadata, IAnnotations, IObjectType } from "./RequestDefinition.js";
 
 export class Patcher {
 
@@ -45,6 +45,10 @@ export class Patcher {
                 platforms: <string[]>platforms
             });
 
+            // determine if application logs should be enabled as indicated by a pod spec annotation (specified by the customer)
+            const enableApplicationLogsAnnotation = spec.template.metadata?.annotations?.[EnableApplicationLogsAnnotationName]; 
+            const enableApplicationLogs: boolean = enableApplicationLogsAnnotation?.toLocaleLowerCase() === "true" || enableApplicationLogsAnnotation?.toLocaleLowerCase() === "1";
+            
             // add new volumes (used to store agent binaries)
             const newVolumes: IVolume[] = Mutations.GenerateVolumes(platforms);
             podSpec.volumes = (podSpec.volumes ?? <IVolume[]>[]).concat(newVolumes);
@@ -54,7 +58,7 @@ export class Patcher {
             podSpec.initContainers = (podSpec.initContainers ?? <IContainer[]>[]).concat(newInitContainers);
 
             // add new environment variables (used to configure agents)
-            const newEnvironmentVariables: IEnvironmentVariable[] = Mutations.GenerateEnvironmentVariables(podInfo, platforms, cr.spec?.settings?.logCollectionSettings?.disableAppLogs ?? false, cr.spec?.destination?.applicationInsightsConnectionString, armId, armRegion, clusterName);
+            const newEnvironmentVariables: IEnvironmentVariable[] = Mutations.GenerateEnvironmentVariables(podInfo, platforms, !enableApplicationLogs, cr.spec?.destination?.applicationInsightsConnectionString, armId, armRegion, clusterName);
 
             podSpec.containers?.forEach(container => {
                 // hold all environment variables in a dictionary, both existing and new ones

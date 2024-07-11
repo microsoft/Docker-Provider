@@ -1,6 +1,6 @@
 ﻿import { expect, describe, it } from "@jest/globals";
 import { Mutations } from "../Mutations.js";
-import { IAdmissionReview, PodInfo, IContainer, IVolume, AutoInstrumentationPlatforms, IEnvironmentVariable, InstrumentationCR, IInstrumentationState, IObjectType, InstrumentationAnnotationName } from "../RequestDefinition.js";
+import { IAdmissionReview, PodInfo, IContainer, IVolume, AutoInstrumentationPlatforms, IEnvironmentVariable, InstrumentationCR, IInstrumentationState, IObjectType, InstrumentationAnnotationName, EnableApplicationLogsAnnotationName } from "../RequestDefinition.js";
 import { Patcher } from "../Patcher.js";
 import { cr, clusterArmId, clusterArmRegion, clusterName, TestDeployment2 } from "./testConsts.js";
 import { logger } from "../LoggerWrapper.js"
@@ -19,8 +19,7 @@ describe("Patcher", () => {
 
         const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
         const platforms = cr1.spec.settings.autoInstrumentationPlatforms;
-        cr1.spec.settings.logCollectionSettings = { disableAppLogs: true };
-
+        
         const podInfo: PodInfo = <PodInfo>{
             namespace: "default",
             ownerName: "deployment1",
@@ -31,8 +30,10 @@ describe("Patcher", () => {
 
         admissionReview.request.object.metadata.namespace = "ns1";
         admissionReview.request.object.metadata.annotations = { 
-            preExistingAnnotationName: "preExistingAnnotationValue"
+            preExistingAnnotationName: "preExistingAnnotationValue",
         };
+
+        admissionReview.request.object.spec.template.metadata.annotations[EnableApplicationLogsAnnotationName] = "false"
 
         const result: object[] = Patcher.PatchObject(JSON.parse(JSON.stringify(admissionReview.request.object)), cr1, podInfo, platforms, clusterArmId, clusterArmRegion, clusterName);
 
@@ -78,8 +79,7 @@ describe("Patcher", () => {
 
         const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
         cr1.spec.settings.autoInstrumentationPlatforms = [];
-        cr1.spec.settings.logCollectionSettings = { disableAppLogs: true };
-
+        
         const podInfo: PodInfo = <PodInfo>{
             namespace: "default",
             ownerName: "deployment1",
@@ -92,6 +92,9 @@ describe("Patcher", () => {
         admissionReview.request.object.metadata.annotations = { 
             preExistingAnnotationName: "preExistingAnnotationValue"
         };
+
+        admissionReview.request.object.spec.template.metadata.annotations[EnableApplicationLogsAnnotationName] = "false"
+
 
         const result: object[] = Patcher.PatchObject(JSON.parse(JSON.stringify(admissionReview.request.object)), cr1, podInfo, cr1.spec.settings.autoInstrumentationPlatforms, clusterArmId, clusterArmRegion, clusterName);
 
@@ -398,7 +401,7 @@ describe("Patcher", () => {
         expect((<any>unpatchedResult[0]).value.spec.template.spec.containers[0].env.length).toBe(0);
     });
 
-    it("Disables app logs correctly", async () => {
+    it("Disables app logs by default correctly", async () => {
         // ASSUME
         const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));
         const platforms = cr.spec.settings.autoInstrumentationPlatforms;
@@ -454,12 +457,10 @@ describe("Patcher", () => {
         expect((<any>unpatchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "APPLICATIONINSIGHTS_CONFIGURATION_CONTENT")?.value).toBeUndefined();
     });
 
-    it("Handles app logs correctly when logs are enabled in CR", async () => {
+    it("Leaves app logs enabled when app logs are enabled by customer via annotation", async () => {
         // ASSUME
         const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));
         const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
-
-        cr1.spec.settings.logCollectionSettings.disableAppLogs = false;
 
         const platforms = cr.spec.settings.autoInstrumentationPlatforms;
         const podInfo: PodInfo = <PodInfo>{
@@ -471,6 +472,8 @@ describe("Patcher", () => {
         };
 
         admissionReview.request.object.metadata.namespace = cr1.metadata.namespace;
+
+        admissionReview.request.object.spec.template.metadata.annotations[EnableApplicationLogsAnnotationName] = "true"
 
         // conflicting environment variable
         admissionReview.request.object.spec.template.spec.containers[0].env = [
@@ -514,12 +517,10 @@ describe("Patcher", () => {
         expect((<any>unpatchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "APPLICATIONINSIGHTS_CONFIGURATION_CONTENT").value).toBe("original conflicting value for NodeJs configuration content");
     });
 
-    it("Handles app logs correctly when logs settings aren't specified in CR - option 1", async () => {
+    it("Disables app logs when app logs are disabled by customer via annotation", async () => {
         // ASSUME
         const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));
         const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
-
-        cr1.spec.settings.logCollectionSettings = {};
 
         const platforms = cr.spec.settings.autoInstrumentationPlatforms;
         const podInfo: PodInfo = <PodInfo>{
@@ -531,6 +532,8 @@ describe("Patcher", () => {
         };
 
         admissionReview.request.object.metadata.namespace = cr1.metadata.namespace;
+
+        admissionReview.request.object.spec.template.metadata.annotations[EnableApplicationLogsAnnotationName] = "false"
 
         // conflicting environment variable
         admissionReview.request.object.spec.template.spec.containers[0].env = [
@@ -558,69 +561,9 @@ describe("Patcher", () => {
 
         // ASSERT
         expect((<any>patchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "NODE_NAME").valueFrom.fieldRef.fieldPath).toBe("spec.nodeName");
-        expect((<any>patchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "OTEL_DOTNET_AUTO_LOGS_ENABLED").value).toBe("original conflicting value for dotnet auto logs enabled");
-        expect((<any>patchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "APPLICATIONINSIGHTS_INSTRUMENTATION_LOGGING_ENABLED").value).toBe("original conflicting value for Java logging enabled");
-        expect((<any>patchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "APPLICATIONINSIGHTS_CONFIGURATION_CONTENT")?.value).toBeUndefined();
-
-        expect((<any>patchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "NODE_NAME_BEFORE_AUTO_INSTRUMENTATION").value).toBe("original conflicting value for node name");
-        expect((<any>patchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "OTEL_DOTNET_AUTO_LOGS_ENABLED_BEFORE_AUTO_INSTRUMENTATION").value).toBe("original conflicting value for dotnet auto logs enabled");
-        expect((<any>patchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "APPLICATIONINSIGHTS_INSTRUMENTATION_LOGGING_ENABLED_BEFORE_AUTO_INSTRUMENTATION").value).toBe("original conflicting value for Java logging enabled");
-        expect((<any>patchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "APPLICATIONINSIGHTS_CONFIGURATION_CONTENT_BEFORE_AUTO_INSTRUMENTATION")?.value).toBeUndefined();
-
-        expect((<any>unpatchedResult[0]).value.spec.template.spec.containers[0].env.length).toBe(3);
-        expect((<any>unpatchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "NODE_NAME").value).toBe("original conflicting value for node name");
-        expect((<any>unpatchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "OTEL_DOTNET_AUTO_LOGS_ENABLED").value).toBe("original conflicting value for dotnet auto logs enabled");
-        expect((<any>unpatchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "APPLICATIONINSIGHTS_INSTRUMENTATION_LOGGING_ENABLED").value).toBe("original conflicting value for Java logging enabled");
-        expect((<any>unpatchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "APPLICATIONINSIGHTS_CONFIGURATION_CONTENT")?.value).toBeUndefined();
-    });
-
-    it("Handles app logs correctly when logs settings aren't specified in CR - option 2", async () => {
-        // ASSUME
-        const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));
-        const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
-
-        cr1.spec.settings.logCollectionSettings = undefined;
-
-        const platforms = cr.spec.settings.autoInstrumentationPlatforms;
-        const podInfo: PodInfo = <PodInfo>{
-            namespace: "default",
-            ownerName: "deployment1",
-            ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
-        };
-
-        admissionReview.request.object.metadata.namespace = cr1.metadata.namespace;
-
-        // conflicting environment variable
-        admissionReview.request.object.spec.template.spec.containers[0].env = [
-            {
-                "name": "NODE_NAME",
-                "value": "original conflicting value for node name"
-            },
-            {
-                "name": "OTEL_DOTNET_AUTO_LOGS_ENABLED",
-                "value": "original conflicting value for dotnet auto logs enabled"
-            },
-            {
-                "name": "APPLICATIONINSIGHTS_INSTRUMENTATION_LOGGING_ENABLED",
-                "value": "original conflicting value for Java logging enabled"
-            },
-            // {
-            //     "name": "APPLICATIONINSIGHTS_CONFIGURATION_CONTENT",
-            //     "value": "original conflicting value for NodeJs configuration content"
-            // }
-        ];
-
-        // ACT
-        const patchedResult: object[] = JSON.parse(JSON.stringify(Patcher.PatchObject(admissionReview.request.object, cr1, podInfo, platforms, clusterArmId, clusterArmRegion, clusterName)));
-        const unpatchedResult: object[] = JSON.parse(JSON.stringify(Patcher.PatchObject(admissionReview.request.object, null, podInfo, [] as AutoInstrumentationPlatforms[], clusterArmId, clusterArmRegion, clusterName)));
-
-        // ASSERT
-        expect((<any>patchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "NODE_NAME").valueFrom.fieldRef.fieldPath).toBe("spec.nodeName");
-        expect((<any>patchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "OTEL_DOTNET_AUTO_LOGS_ENABLED").value).toBe("original conflicting value for dotnet auto logs enabled");
-        expect((<any>patchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "APPLICATIONINSIGHTS_INSTRUMENTATION_LOGGING_ENABLED").value).toBe("original conflicting value for Java logging enabled");
-        expect((<any>patchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "APPLICATIONINSIGHTS_CONFIGURATION_CONTENT")?.value).toBeUndefined();
+        expect((<any>patchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "OTEL_DOTNET_AUTO_LOGS_ENABLED").value).toBe("false");
+        expect((<any>patchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "APPLICATIONINSIGHTS_INSTRUMENTATION_LOGGING_ENABLED").value).toBe("false");
+        expect((<any>patchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "APPLICATIONINSIGHTS_CONFIGURATION_CONTENT").value).toBe(`{"instrumentationOptions":{"console": { "enabled": false }, "bunyan": { "enabled": false },"winston": { "enabled": false }}}`);
 
         expect((<any>patchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "NODE_NAME_BEFORE_AUTO_INSTRUMENTATION").value).toBe("original conflicting value for node name");
         expect((<any>patchedResult[0]).value.spec.template.spec.containers[0].env.find((ev: IEnvironmentVariable) => ev.name === "OTEL_DOTNET_AUTO_LOGS_ENABLED_BEFORE_AUTO_INSTRUMENTATION").value).toBe("original conflicting value for dotnet auto logs enabled");

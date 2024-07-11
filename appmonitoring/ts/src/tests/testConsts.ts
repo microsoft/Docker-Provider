@@ -15,9 +15,6 @@ export const cr: InstrumentationCR = {
     spec: {
         settings: {
             autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.DotNet, AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs],
-            logCollectionSettings: {
-                disableAppLogs: true
-            }
         },
         destination: {
             applicationInsightsConnectionString: "InstrumentationKey=823201eb-fdbf-468a-bc7b-e685639439b2;IngestionEndpoint=https://uaecentral-0.in.applicationinsights.azure.com/"

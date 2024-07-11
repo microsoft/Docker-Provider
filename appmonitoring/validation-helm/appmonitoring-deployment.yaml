@@ -138,20 +138,6 @@ spec:
                           - DotNet
                           - Java
                           - NodeJs
-                    logCollectionSettings:
-                      description: >-
-                        Before this configuration is applied, Azure Monitor already collects pod console output and uploads it to ConsoleLog / ConsoleLogV2 tables in the associated Log Analytics Workspace by Azure Monitor Container Insights.
-                        Logs that were output via the console lose distributed tracing context and cannot be visualized in the end-to-end transaction details experience.
-                        The following flags allow for configuring what works best for a particular monitoring scenario.
-                      type: object
-                      properties:
-                        disableAppLogs:
-                          description: >-
-                            Controls whether logs produced by standard logging frameworks are uploaded to Application Insights.
-                            Different languages may support different logging frameworks, and support will change over time.
-                            Note: enabling this flag without disabling console output (either through the flag in this section or by removing the console adapters when configuring the SDK) might result in double collection of logs and higher cost.
-                          type: boolean
-                          default: false
                         
                 destination:
                   description: Sink for telemetry data
