@@ -137,8 +137,7 @@ spec:
                         enum:
                           - DotNet
                           - Java
-                          - NodeJs
-                        
+                          - NodeJs      
                 destination:
                   description: Sink for telemetry data
                   type: object
