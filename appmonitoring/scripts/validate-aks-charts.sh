@@ -1,7 +1,7 @@
 #!/bin/bash
 
 az account set --subscription 5a3b3ba4-3a42-42ae-b2cb-f882345803bc
-az aks get-credentials --resource-group aks-appmonitoring-pipeline --name aks-pipeline-validation-ai
+az aks get-credentials --resource-group aks-appmonitoring-pipeline --name appmonitoring-webhook-testbed
 
 DEPLOYMENT=app-monitoring-webhook-deployment
 SECRET_STORE=app-monitoring-webhook-cert

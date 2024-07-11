@@ -66,7 +66,7 @@ jobs:
     Codeql.Enabled: true
     Codeql.BuildIdentifier: 'linuxbuild'
     AKSResourceGroup: 'aks-appmonitoring-pipeline'
-    AKSResourceName: 'aks-pipeline-validation-ai'
+    AKSResourceName: 'appmonitoring-webhook-testbed'
     # This is necessary because of: https://github.com/moby/moby/issues/37965
     DOCKER_BUILDKIT: 1
 
