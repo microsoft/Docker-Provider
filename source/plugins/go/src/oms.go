@@ -171,14 +171,6 @@ var (
 	KubernetesMetadataEnabled bool
 	// Kubernetes Metadata enabled include list
 	KubernetesMetadataIncludeList []string
-	//ADX Cluster URI
-	AdxClusterUri string
-	// ADX clientID
-	AdxClientID string
-	// ADX tenantID
-	AdxTenantID string
-	//ADX client secret
-	AdxClientSecret string
 	// container log or container log v2 tag name for oneagent route
 	MdsdContainerLogTagName string
 	// ContainerLog Tag Refresh Tracker
@@ -242,8 +234,6 @@ var (
 	PromScrapeErrorEvent map[string]KubeMonAgentEventTags
 	// EventHashUpdateMutex read and write mutex access to the event hash
 	EventHashUpdateMutex = &sync.Mutex{}
-	// parent context used by ADX uploader
-	ParentContext = context.Background()
 	// IngestionAuthTokenUpdateMutex read and write mutex access for ODSIngestionAuthToken
 	IngestionAuthTokenUpdateMutex = &sync.Mutex{}
 	// ODSIngestionAuthToken for windows agent AAD MSI Auth
@@ -297,19 +287,6 @@ type DataItemLAv2 struct {
 	LogMessage         string `json:"LogMessage"`
 	LogSource          string `json:"LogSource"`
 	KubernetesMetadata string `json:"KubernetesMetadata"`
-}
-
-// DataItemADX == ContainerLogV2 table in ADX
-type DataItemADX struct {
-	TimeGenerated   string `json:"TimeGenerated"`
-	Computer        string `json:"Computer"`
-	ContainerId     string `json:"ContainerId"`
-	ContainerName   string `json:"ContainerName"`
-	PodName         string `json:"PodName"`
-	PodNamespace    string `json:"PodNamespace"`
-	LogMessage      string `json:"LogMessage"`
-	LogSource       string `json:"LogSource"`
-	AzureResourceId string `json:"AzureResourceId"`
 }
 
 // telegraf metric DataItem represents the object corresponding to the json that is sent by fluentbit tail plugin
@@ -1477,7 +1454,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	start := time.Now()
 	var dataItemsLAv1 []DataItemLAv1
 	var dataItemsLAv2 []DataItemLAv2
-	var dataItemsADX []DataItemADX
 
 	var msgPackEntries []MsgPackEntry
 	var stringMap map[string]string
@@ -1622,7 +1598,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		}
 		var dataItemLAv1 DataItemLAv1
 		var dataItemLAv2 DataItemLAv2
-		var dataItemADX DataItemADX
 		var msgPackEntry MsgPackEntry
 
 		FlushedRecordsSize += float64(len(stringMap["LogEntry"]))
@@ -1638,25 +1613,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				Record: stringMap,
 			}
 			msgPackEntries = append(msgPackEntries, msgPackEntry)
-		} else if ContainerLogsRouteADX == true {
-			if ResourceCentric == true {
-				stringMap["AzureResourceId"] = ResourceID
-			} else {
-				stringMap["AzureResourceId"] = ""
-			}
-			dataItemADX = DataItemADX{
-				TimeGenerated:   stringMap["TimeGenerated"],
-				Computer:        stringMap["Computer"],
-				ContainerId:     stringMap["ContainerId"],
-				ContainerName:   stringMap["ContainerName"],
-				PodName:         stringMap["PodName"],
-				PodNamespace:    stringMap["PodNamespace"],
-				LogMessage:      stringMap["LogMessage"],
-				LogSource:       stringMap["LogSource"],
-				AzureResourceId: stringMap["AzureResourceId"],
-			}
-			//ADX
-			dataItemsADX = append(dataItemsADX, dataItemADX)
 		} else {
 			if ContainerLogSchemaV2 == true {
 				dataItemLAv2 = DataItemLAv2{
@@ -1829,9 +1785,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				Log("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numContainerLogRecords, bts, elapsed)
 			}
 		}
-	} else if ContainerLogsRouteADX == true && len(dataItemsADX) > 0 {
-		Log("WARN::ADX::ADX mode has been deprecated")
-
 	} else if (ContainerLogSchemaV2 == true && len(dataItemsLAv2) > 0) || len(dataItemsLAv1) > 0 { //ODS
 		var logEntry interface{}
 		recordType := ""
