@@ -15,8 +15,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-kusto-go/kusto"
-	"github.com/Azure/azure-kusto-go/kusto/ingest"
 	"github.com/tinylib/msgp/msgp"
 )
 
@@ -198,31 +196,6 @@ func CreateMDSDClient(dataType DataType, containerType string) {
 		} else {
 			Log("Successfully created MDSD msgp socket connection for input plugin records %s", mdsdfluentSocket)
 			MdsdInputPluginRecordsMsgpUnixSocketClient = conn
-		}
-	}
-}
-
-// ADX client to write to ADX
-func CreateADXClient() {
-
-	if ADXIngestor != nil {
-		ADXIngestor = nil
-	}
-
-	AdxClusterUriConnectionStringBuilder := kusto.NewConnectionStringBuilder(AdxClusterUri)
-	AdxClusterUriConnectionStringBuilder.WithAadAppKey(AdxClientID, AdxClientSecret, AdxTenantID)
-	client, err := kusto.New(AdxClusterUriConnectionStringBuilder)
-	if err != nil {
-		Log("Error::mdsd::Unable to create ADX client %s", err.Error())
-		//log.Fatalf("Unable to create ADX connection %s", err.Error())
-	} else {
-		Log("Successfully created ADX Client. Creating Ingestor...")
-		Log("AdxDatabaseName=%s", AdxDatabaseName)
-		ingestor, ingestorErr := ingest.New(client, AdxDatabaseName, "ContainerLogV2")
-		if ingestorErr != nil {
-			Log("Error::mdsd::Unable to create ADX ingestor %s", ingestorErr.Error())
-		} else {
-			ADXIngestor = ingestor
 		}
 	}
 }
