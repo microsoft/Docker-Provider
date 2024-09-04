@@ -19,7 +19,7 @@ if ("secrets-manager".localeCompare(containerMode) === 0) {
         logger.info("Running in certificate manager mode...", operationId, null);
         logger.SendEvent("CertificateManagerModeRun", operationId, null, clusterArmId, clusterArmRegion);
         logger.addHeartbeatMetric(HeartbeatMetrics.CertificateOperationCount, 1);
-        await CertificateManager.CreateWebhookAndCertificates(operationId, clusterArmId, clusterArmRegion);
+        await new CertificateManager().CreateWebhookAndCertificates(operationId, clusterArmId, clusterArmRegion);
         logger.info("Certificate manager mode is done", operationId, null);
         logger.SendEvent("CertificateManagerModeRunSuccess", operationId, null, clusterArmId, clusterArmRegion, true);
     } catch (error) {
@@ -32,7 +32,7 @@ if ("secrets-manager".localeCompare(containerMode) === 0) {
 } else if ("secrets-housekeeper".localeCompare(containerMode) === 0) {
     try {
         logger.info("Running in certificate housekeeper mode...", operationId, null);
-        await CertificateManager.ReconcileWebhookAndCertificates(operationId, clusterArmId, clusterArmRegion);
+        await new CertificateManager().ReconcileWebhookAndCertificates(operationId, clusterArmId, clusterArmRegion);
     } catch (error) {
         logger.error(`Failed to Update Certificates, Terminating...\n${JSON.stringify(error)}`, operationId, null);
         logger.SendEvent("SecretsHouseKeeperFailed", operationId, null, clusterArmId, clusterArmRegion, true, error);
