@@ -1,4 +1,5 @@
-﻿import { Mutations } from "./Mutations.js";
+﻿import { isNullOrUndefined } from "util";
+import { Mutations } from "./Mutations.js";
 import { PodInfo, IContainer, ISpec, IVolume, IEnvironmentVariable, AutoInstrumentationPlatforms, IVolumeMount, InstrumentationAnnotationName, EnableApplicationLogsAnnotationName, InstrumentationCR, IInstrumentationState, IMetadata, IAnnotations, IObjectType } from "./RequestDefinition.js";
 
 export class Patcher {
@@ -14,11 +15,18 @@ export class Patcher {
             throw `Unable to parse request.object.spec in AdmissionReview: ${obj}`;
         }
 
-        // remove all mutation (in case it is already mutated)
-        this.unpatch(obj);
+        if (!obj.metadata?.deletionTimestamp) {
+            // the object is not being finalized, proceed normally
 
-        // mutate
-        this.patch(cr, platforms, obj, podInfo, armId, armRegion, clusterName);
+            // remove all mutation (in case it is already mutated)
+            this.unpatch(obj);
+
+            // mutate
+            this.patch(cr, platforms, obj, podInfo, armId, armRegion, clusterName);
+        } else {
+            // the object is being finalized, we are not making any changes to it, but we aren't throwing an exception either
+            // this will be a successful webhook invocation, but the object will not be changed
+        }
 
         const jsonPatch: object[] = [
             // replace the entire root section with the mutated one

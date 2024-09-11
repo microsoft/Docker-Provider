@@ -136,6 +136,41 @@ describe("Patcher", () => {
         admissionReview.request.object.spec.template.spec.containers[1].volumeMounts.forEach(vm => expect((<any>result[0]).value.spec.template.spec.containers[1].volumeMounts).toContainEqual(vm));
     });
 
+    it("Does not patch if object is being finalized", async () => {
+        // ASSUME
+        const initialAdmissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));
+        const platforms = cr.spec.settings.autoInstrumentationPlatforms;
+        const podInfo: PodInfo = <PodInfo>{
+            namespace: "default",
+            ownerName: "deployment1",
+            ownerKind: "Deployment",
+            ownerUid: "ownerUid",
+            onlyContainerName: "container1"
+        };
+
+        // the object is being finalized
+        initialAdmissionReview.request.object.metadata.deletionTimestamp = new Date().toISOString();
+
+        const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
+        
+        const mutatedAdmissionReview: IAdmissionReview = JSON.parse(JSON.stringify(initialAdmissionReview));
+
+        // ACT
+        const patchResult: object[] = JSON.parse(JSON.stringify(Patcher.PatchObject(mutatedAdmissionReview.request.object, cr1, podInfo, platforms, clusterArmId, clusterArmRegion, clusterName)));
+
+        // ASSERT
+        expect(JSON.stringify(mutatedAdmissionReview)).toBe(JSON.stringify(initialAdmissionReview));
+
+        expect(patchResult.length).toBe(1);
+
+        const obj: IObjectType = (<any>patchResult[0]).value as IObjectType;
+        expect(obj.metadata?.annotations?.[InstrumentationAnnotationName]).toBeUndefined();
+        
+        expect((<any>patchResult[0]).op).toBe("replace");
+        expect((<any>patchResult[0]).path).toBe("");
+        expect(JSON.stringify((<any>patchResult[0]).value.spec.template.spec)).toBe(JSON.stringify(initialAdmissionReview.request.object.spec.template.spec));
+    });
+
     it("Unpatches a deployment correctly", async () => {
         // ASSUME
         const initialAdmissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));

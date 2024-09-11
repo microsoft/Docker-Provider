@@ -50,6 +50,7 @@ export interface IMetadata {
     labels?: ILabels;
     annotations?: IAnnotations;
     ownerReferences?: IOwnerReference[];
+    deletionTimestamp?: string;
 }
 
 export interface IMatchLabels {
