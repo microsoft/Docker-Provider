@@ -23,7 +23,7 @@ url="https://api.loganalytics.io/v1$AI_RES_ID/query"
 verify_AI_telemetry() {
     echo $1
     json_body="{
-        'query': 'union * | where timestamp > ago(15m) | where cloud_RoleInstance == \"$1\" | count',
+        'query': 'union \* | where timestamp > ago(15m) | where cloud_RoleInstance == \"$1\" | count',
         'options': {
             'truncationMaxSize': 67108864
         },
@@ -33,7 +33,7 @@ verify_AI_telemetry() {
         }
     }";
 
-    echo $json_body
+    echo "$json_body"
 
     # Make the POST request
     response=$(curl -s -X POST $url \
