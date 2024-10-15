@@ -3,11 +3,11 @@
 DEPLOYMENT_JAVA_NAME=$1
 DEPLOYMENT_NODEJS_NAME=$2
 AI_RES_ID=$3
-NS=$4
+NAMESPACE=$4
 
 
-POD_JAVA_NAME=$(kubectl get pods -n test-ns -l app=$DEPLOYMENT_JAVA_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
-POD_NODEJS_NAME=$(kubectl get pods -n test-ns -l app=$DEPLOYMENT_NODEJS_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
+POD_JAVA_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$DEPLOYMENT_JAVA_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
+POD_NODEJS_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$DEPLOYMENT_NODEJS_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
 
 
 # Get an access token
