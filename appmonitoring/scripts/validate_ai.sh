@@ -15,7 +15,7 @@ result_rsp=$(curl 'http://169.254.169.254/metadata/identity/oauth2/token?api-ver
 # echo "Result: $result_rsp"
 access_token=$(echo $result_rsp | jq -r '.access_token')
 
-echo $AI_RES_ID
+echo "$AI_RES_ID"
 
 # Define your variables
 url="https://api.loganalytics.io/v1$AI_RES_ID/query"
@@ -23,7 +23,7 @@ url="https://api.loganalytics.io/v1$AI_RES_ID/query"
 verify_AI_telemetry() {
     echo $1
     json_body="{
-        'query': 'union \* | where timestamp > ago(15m) | where cloud_RoleInstance == \"$1\" | count',
+        'query': 'union * | where timestamp > ago(15m) | where cloud_RoleInstance == \"$1\" | count',
         'options': {
             'truncationMaxSize': 67108864
         },
