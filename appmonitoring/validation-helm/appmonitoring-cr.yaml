@@ -5,9 +5,7 @@ metadata:
   namespace: ${TEST_NS}
 spec:  
   settings:
-    imageRepoPath: aicommon.azurecr.io/all-auto-instrumentation-images # optional Customers are obliged to keep their ACR in sync with MCR for new versions, or things will break
     autoInstrumentationPlatforms: # required, could be empty
-      - DotNet
       - Java
       - NodeJs
   destination: # required

@@ -125,9 +125,6 @@ spec:
                   required:
                     - autoInstrumentationPlatforms
                   properties:
-                    imageRepoPath:
-                      description: "Path to a repository to fetch auto-instrumentation images from. Only use if you have an Artifact Cache set up to host related images normally found on Microsoft Container Registry (MCR). See here for details: https://learn.microsoft.com/en-us/azure/container-registry/tutorial-artifact-cache"
-                      type: string
                     autoInstrumentationPlatforms:
                       description: List of auto-instrumentation platforms to use (must match the type of the application running in the container). Can be empty to use none. Ignored for named (non-default) CRs.
                       type: array
@@ -135,7 +132,6 @@ spec:
                       items:
                         type: string
                         enum:
-                          - DotNet
                           - Java
                           - NodeJs      
                 destination:
