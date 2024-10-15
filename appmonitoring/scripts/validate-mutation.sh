@@ -1,4 +1,4 @@
-DEPLOYMENT_deployment#!/bin/bash
+#!/bin/bash
 
 # Define the pod name and namespace
 DEPLOYMENT_JAVA_NAME=$1
