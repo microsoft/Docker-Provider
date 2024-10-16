@@ -30,7 +30,7 @@ spec:
 
     autoInstrumentationPlatforms: # required, could be empty
       - Java
-      #- NodeJs
+      - NodeJs
 
   destination: # required
   
