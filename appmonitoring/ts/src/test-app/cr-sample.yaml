@@ -23,17 +23,14 @@ apiVersion: monitor.azure.com/v1
 kind: Instrumentation
 metadata:
   name: cr1
-  namespace: zakima1
+  namespace: alkaplan1
 spec:  
 
   settings:
 
-    #imageRepoPath: mycompany.azurecr.io/mcr-replicas/applicationinsights # optional Customers are obliged to keep their ACR in sync with MCR for new versions, or things will break
-
     autoInstrumentationPlatforms: # required, could be empty
-      - DotNet
-      #- Java
-      - NodeJs
+      - Java
+      #- NodeJs
 
   destination: # required
   
