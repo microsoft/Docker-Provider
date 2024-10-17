@@ -1,27 +1,6 @@
 apiVersion: monitor.azure.com/v1 
 kind: Instrumentation
 metadata:
-  name: default
-  namespace: zakima1
-spec:  
-
-  settings:
-
-    imageRepoPath: aicommon.azurecr.io/all-auto-instrumentation-images # optional Customers are obliged to keep their ACR in sync with MCR for new versions, or things will break
-
-    autoInstrumentationPlatforms: # required, could be empty
-      - DotNet
-      # - Java
-      # - NodeJs
-
-  destination: # required
-  
-    applicationInsightsConnectionString: "InstrumentationKey=11111111-3067-4e75-9def-b4b0f23eb9c2;IngestionEndpoint=https://eastus2-3.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus2.livediagnostics.monitor.azure.com/"
----
-
-apiVersion: monitor.azure.com/v1 
-kind: Instrumentation
-metadata:
   name: cr1
   namespace: alkaplan1
 spec:  
