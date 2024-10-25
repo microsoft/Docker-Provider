@@ -1038,7 +1038,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		Log(message)
 	}
 
-	if IsWindows == false || IsAADMSIAuthMode { //for linux and for windows MSI Auth: mdsd/ama route
+	if IsWindows == false || (IsAADMSIAuthMode && !IsGenevaLogsIntegrationEnabled) { //for linux and for windows MSI Auth and non geneva mode: mdsd/ama route
 		var msgPackEntries []MsgPackEntry
 		var i int
 		start := time.Now()
@@ -1136,7 +1136,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 			}
 		}
 
-	} else { // for windows legacy auth, ODS direct
+	} else { // for windows legacy auth or windows msi auth in geneva mode, ODS direct
 
 		var metrics []laTelegrafMetric
 		var i int
