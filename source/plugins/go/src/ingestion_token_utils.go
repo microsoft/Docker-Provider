@@ -444,17 +444,40 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 		return configurationId, channelId, err
 	}
 
-	if len(agentConfiguration.Configurations[0].Content.Channels) == 0 {
-		message := "getAgentConfiguration: Received empty agentConfiguration.Configurations[0].Content.Channels"
-		Log(message)
-		SendException(message)
-		return configurationId, channelId, err
+	for _, config := range agentConfiguration.Configurations {
+		if len(config.Content.Channels) == 0 {
+			// this is expected because AMCS will return agent config based on OS Type. For example, syslog is not supported on windows hence config will not have channels and data sources
+			message := "getAgentConfiguration: Received empty config.Content.Channels"
+			Log(message)
+			continue
+		}
+
+		configurationId = config.Configurationid
+		for _, channel := range config.Content.Channels {
+			if channel.ID != "" {
+				channelId = channel.ID
+				break
+			}
+		}
+
+		if !ContainerLogV2ConfigMap && len(config.Content.Extensionconfigurations.Containerinsights) > 0 {
+			for _, ciExtensionInstance := range config.Content.Extensionconfigurations.Containerinsights {
+				if ciExtensionInstance.Extensionsettings != nil && ciExtensionInstance.Extensionsettings.DataCollectionSettings != nil {
+					ContainerLogSchemaV2 = ciExtensionInstance.Extensionsettings.DataCollectionSettings.EnableContainerLogV2
+					break
+				} else {
+					Log("getAgentConfiguration: Extensionsettings or DataCollectionSettings is nil")
+				}
+			}
+		}
+		break
 	}
 
-	configurationId = agentConfiguration.Configurations[0].Configurationid
-	channelId = agentConfiguration.Configurations[0].Content.Channels[0].ID
-	if !ContainerLogV2ConfigMap && len(agentConfiguration.Configurations[0].Content.Extensionconfigurations.Containerinsights) > 0 {
-		ContainerLogSchemaV2 = agentConfiguration.Configurations[0].Content.Extensionconfigurations.Containerinsights[0].Extensionsettings.DataCollectionSettings.EnableContainerLogV2
+	if configurationId == "" || channelId == "" {
+		message := "getAgentConfiguration: Failed to obtain configurationId or channelId"
+		Log(message)
+		SendException(message)
+		return configurationId, channelId, errors.New(message)
 	}
 	Log("getAgentConfiguration: obtained configurationId: %s, channelId: %s", configurationId, channelId)
 	Log("Info getAgentConfiguration: end")
