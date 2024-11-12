@@ -462,12 +462,7 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 
 		if !ContainerLogV2ConfigMap && len(config.Content.Extensionconfigurations.Containerinsights) > 0 {
 			for _, ciExtensionInstance := range config.Content.Extensionconfigurations.Containerinsights {
-				if ciExtensionInstance.Extensionsettings != nil && ciExtensionInstance.Extensionsettings.DataCollectionSettings != nil {
-					ContainerLogSchemaV2 = ciExtensionInstance.Extensionsettings.DataCollectionSettings.EnableContainerLogV2
-					break
-				} else {
-					Log("getAgentConfiguration: Extensionsettings or DataCollectionSettings is nil")
-				}
+				ContainerLogSchemaV2 = ciExtensionInstance.Extensionsettings.DataCollectionSettings.EnableContainerLogV2
 			}
 		}
 		break
