@@ -140,6 +140,8 @@ RUN ln -s /lib/libnssckbi.so /lib/p11-kit-trust.so
 # Do vulnerability scan in a seperate stage to avoid adding layer
 FROM distroless_image AS vulnscan
 COPY .trivyignore .trivyignore
+ENV TRIVY_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-db,public.ecr.aws/aquasecurity/trivy-db"
+ENV TRIVY_JAVA_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-java-db,public.ecr.aws/aquasecurity/trivy-java-db"
 RUN ["/bin/bash", "-c", "curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.39.0"]
 RUN ["/bin/bash", "-c", "trivy rootfs --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --skip-files \"/usr/local/bin/trivy\" /"]
 RUN ["/bin/bash", "-c", "trivy rootfs --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM /usr/lib"]
