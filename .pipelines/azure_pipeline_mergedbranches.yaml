@@ -78,7 +78,7 @@ jobs:
 
       cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension/ServiceGroupRoot/Scripts
       tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ pushChartToAcr.sh
-    
+
       cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension-release-v2/ServiceGroupRoot/Scripts
       tar -czvf ../artifacts.tar.gz arcExtensionRelease.sh
 
@@ -95,7 +95,7 @@ jobs:
 
   - task: CredScan@3
     displayName: "SDL : Run credscan"
-  
+
   - task: CopyFiles@2
     displayName: "Copy ev2 deployment artifacts"
     inputs:
@@ -140,7 +140,7 @@ jobs:
     inputs:
       pathToPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: drop
-  
+
   - task: Armory@2
     displayName: 'Run ARMory'
     inputs:
@@ -287,7 +287,7 @@ jobs:
         ls
         make
     displayName: 'Execute Makefile for Linux Build'
-  
+
   - task: CodeQL3000Finalize@0
     condition: eq(variables.IS_MAIN_BRANCH, true)
 
@@ -355,6 +355,7 @@ jobs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: ps
       scriptLocation: inlineScript
+      retryCountOnTaskFailure: 2
       inlineScript: |
         mkdir -p $(Build.ArtifactStagingDirectory)/windows
         cd kubernetes/windows
@@ -398,7 +399,7 @@ jobs:
 
         echo "Extract fluent-bit"
         docker cp signingContainer:C:\opt\fluent-bit .
-        
+
         echo "Extract Ruby"
         docker cp signingContainer:C:\ruby31 .
 
@@ -525,7 +526,7 @@ jobs:
       targetType: 'inline'
       script: |
         docker create --name pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned
-        
+
         echo "Copy Signed binaries/folders back to docker image..."
         docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.exe pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.exe
         docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.dll pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.dll
@@ -588,6 +589,7 @@ jobs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: ps
       scriptLocation: inlineScript
+      retryCountOnTaskFailure: 2
       inlineScript: |
         mkdir -p $(Build.ArtifactStagingDirectory)/windows
         cd kubernetes/windows
@@ -631,7 +633,7 @@ jobs:
 
         echo "Extract fluent-bit"
         docker cp signingContainer:C:\opt\fluent-bit .
-        
+
         echo "Extract Ruby"
         docker cp signingContainer:C:\ruby31 .
 
@@ -758,7 +760,7 @@ jobs:
       targetType: 'inline'
       script: |
         docker create --name pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)-unsigned
-        
+
         echo "Copy Signed binaries/folders back to docker image..."
         docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.exe pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.exe
         docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.dll pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.dll
@@ -907,7 +909,7 @@ jobs:
     inputs:
       pathToPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: drop
-  
+
   - task: AntiMalware@4
     displayName: 'Run MpCmdRun.exe'
     inputs:
