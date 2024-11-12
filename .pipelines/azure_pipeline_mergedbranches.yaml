@@ -175,6 +175,7 @@ jobs:
 
         sudo apt-get update && sudo apt-get -y install qemu binfmt-support qemu-user-static
         docker system prune --all -f
+        docker images -q --filter "dangling=true" | xargs docker rmi
         docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
         docker buildx create --name testbuilder
@@ -184,6 +185,11 @@ jobs:
         az account show
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
+
+        # NOTE: Using the prometheus-collector team's cached buildx image since moby/buildkit:buildx-stable-1 getting throttled
+        docker pull mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1
+        docker buildx create --name dockerbuilder --driver docker-container --driver-opt image=mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1 --use
+        docker buildx inspect --bootstrap
 
         if [ "$(Build.Reason)" != "PullRequest" ]; then
           docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --push --provenance=false .
