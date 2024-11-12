@@ -280,23 +280,50 @@ jobs:
       scriptLocation: inlineScript
       inlineScript: |
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-        export TRIVY_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-db,public.ecr.aws/aquasecurity/trivy-db"
-        export TRIVY_JAVA_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-java-db,public.ecr.aws/aquasecurity/trivy-java-db"
+        PRIMARY_TRIVY_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-db"
+        SECONDARY_TRIVY_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-db"
+        PRIMARY_TRIVY_JAVA_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-java-db"
+        SECONDARY_TRIVY_JAVA_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-java-db"
+
+        # Set initial repositories to primary
+        export TRIVY_DB_REPOSITORY=$PRIMARY_TRIVY_DB_REPOSITORY
+        export TRIVY_JAVA_DB_REPOSITORY=$PRIMARY_TRIVY_JAVA_DB_REPOSITORY
+
+        # Function to run Trivy scan and handle output
+        run_trivy_scan() {
+            trivy image --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM "${{ variables.repoImageName }}:$(linuxImagetag)" > trivy_output.log 2>&1
+            return $?
+        }
+
+        # Attempt scan up to 5 times with repository fallback
         for i in {1..5}; do
-            trivy image --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM ${{ variables.repoImageName }}:$(linuxImagetag) > trivy_output.log 2>&1
+            echo "Running Trivy scan attempt $i..."
+
+            # Run the Trivy scan and capture exit code
+            run_trivy_scan
             TRIVY_EXIT_CODE=$?
+
+            # Check if scan was successful
             if [ $TRIVY_EXIT_CODE -eq 0 ]; then
-              cat trivy_output.log
-              break
+                echo "Trivy scan succeeded."
+                cat trivy_output.log
+                break
             fi
-            if grep -q "TOOMANYREQUESTS" trivy_output.log; then
-              echo "Error: Too many requests to the Trivy server. Retrying... ($i/5)"
-              sleep 5
-            else
-              cat trivy_output.log
-              exit 1
+
+            # If the first attempt fails, switch to secondary repositories
+            if [ $i -eq 1 ]; then
+                echo "Primary repositories failed with an error. Switching to secondary repositories."
+                export TRIVY_DB_REPOSITORY=$SECONDARY_TRIVY_DB_REPOSITORY
+                export TRIVY_JAVA_DB_REPOSITORY=$SECONDARY_TRIVY_JAVA_DB_REPOSITORY
             fi
+
+            # Log and wait before retrying if an error occurred
+            echo "Error: Trivy scan attempt $i failed. Retrying... ($i/5)"
+            cat trivy_output.log
+            sleep 5 # Wait 5 seconds before retrying
         done
+
+        # Final check: if still failing after 5 attempts, exit with error
         if [ $TRIVY_EXIT_CODE -ne 0 ]; then
             echo "Error: Trivy scan failed after 5 retries."
             exit 1
