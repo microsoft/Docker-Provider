@@ -274,8 +274,27 @@ jobs:
       scriptLocation: inlineScript
       inlineScript: |
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-
-        trivy image --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 ${{ variables.repoImageName }}:$(linuxImagetag)
+        export TRIVY_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-db,public.ecr.aws/aquasecurity/trivy-db"
+        export TRIVY_JAVA_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-java-db,public.ecr.aws/aquasecurity/trivy-java-db"
+        for i in {1..5}; do
+            trivy image --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM ${{ variables.repoImageName }}:$(linuxImagetag) > trivy_output.log 2>&1
+            TRIVY_EXIT_CODE=$?
+            if [ $TRIVY_EXIT_CODE -eq 0 ]; then
+              cat trivy_output.log
+              break
+            fi
+            if grep -q "TOOMANYREQUESTS" trivy_output.log; then
+              echo "Error: Too many requests to the Trivy server. Retrying... ($i/5)"
+              sleep 5
+            else
+              cat trivy_output.log
+              exit 1
+            fi
+        done
+        if [ $TRIVY_EXIT_CODE -ne 0 ]; then
+            echo "Error: Trivy scan failed after 5 retries."
+            exit 1
+        fi
 
     # Find in cache or download a specific version of Go and add it to the PATH.
   - task: GoTool@0
