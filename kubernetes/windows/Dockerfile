@@ -16,18 +16,6 @@ RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex (
 RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
 && choco install -y msys2 --version 20211130.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'"
 
-# Set environment variables for paths
-RUN setx PATH "%PATH%;C:\ruby31\bin;C:\ruby31\msys64\usr\bin"
-
-RUN powershell -Command "Write-Output 'Configuring MSYS2 mirrors...'; \
-    $MirrorFileMsys = 'C:\ruby31\msys64\etc\pacman.d\mirrorlist.msys'; \
-    $MirrorFileMingw = 'C:\ruby31\msys64\etc\pacman.d\mirrorlist.mingw'; \
-    (Get-Content $MirrorFileMsys) -replace '^(Server = .*)$', '#$1' | Set-Content $MirrorFileMsys; \
-    (Get-Content $MirrorFileMingw) -replace '^(Server = .*)$', '#$1' | Set-Content $MirrorFileMingw; \
-    Add-Content -Path $MirrorFileMsys -Value 'Server = https://repo.msys2.org/msys/$arch'; \
-    Add-Content -Path $MirrorFileMingw -Value 'Server = https://repo.msys2.org/mingw/$arch'; \
-    Start-Process 'C:\ruby31\msys64\usr\bin\bash.exe' -ArgumentList '-c', 'pacman -Syuu --noconfirm' -NoNewWindow -Wait;"
-
 # gangams - optional MSYS2 update via ridk failing in merged docker file so skipping that since we dont need optional update
 RUN refreshenv \
 && ridk install 3 \
