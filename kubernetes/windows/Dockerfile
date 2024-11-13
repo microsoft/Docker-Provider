@@ -16,6 +16,9 @@ RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex (
 RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
 && choco install -y msys2 --version 20211130.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'"
 
+# Set environment variables for paths
+RUN setx PATH "%PATH%;C:\ruby31\bin;C:\ruby31\msys64\usr\bin"
+
 RUN powershell -Command "Write-Output 'Configuring MSYS2 mirrors...'; \
     $MirrorFileMsys = 'C:\ruby31\msys64\etc\pacman.d\mirrorlist.msys'; \
     $MirrorFileMingw = 'C:\ruby31\msys64\etc\pacman.d\mirrorlist.mingw'; \
