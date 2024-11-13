@@ -34,7 +34,8 @@ RUN Write-Output "Configuring MSYS2 mirrors..." ; \
     (Get-Content $MirrorFileMingw) -replace '^(Server = .*)$', '#$1' | Set-Content $MirrorFileMingw ; \
     Add-Content -Path $MirrorFileMsys -Value 'Server = https://repo.msys2.org/msys/$arch' ; \
     Add-Content -Path $MirrorFileMingw -Value 'Server = https://repo.msys2.org/mingw/$arch' ; \
-    Start-Process 'C:\ruby31\msys64\usr\bin\bash.exe' -ArgumentList '-c', 'pacman -Syuu --noconfirm' -NoNewWindow -Wait
+    Start-Process 'C:\ruby31\msys64\usr\bin\bash.exe' -ArgumentList '-c', 'pacman -Syuu --noconfirm' -NoNewWindow -Wait ; \
+    refreshenv; ridk install 3; echo gem: --no-document >> C:\ProgramData\gemrc
 
 # Install required gems with retry logic for network stability
 RUN Write-Output 'Installing Ruby gems with retry logic...'; \
@@ -59,11 +60,6 @@ RUN Write-Output 'Installing Ruby gems with retry logic...'; \
     Install-GemWithRetry -gemName 'ipaddress' -version '0.8.3'; \
     Install-GemWithRetry -gemName 'jwt' -version '2.7.1'; \
     gem sources --clear-all
-
-# Optional: Run `ridk install` to add MSYS2 dev tools (optional if MSYS2 update fails)
-RUN refreshenv && \
-    ridk install 3 && \
-    echo gem: --no-document >> C:\ProgramData\gemrc
 
 # Remove gem cache and chocolatey
 RUN powershell -Command "Remove-Item -Force C:\ruby31\lib\ruby\gems\3.1.0\cache\*.gem; Remove-Item -Recurse -Force 'C:\ProgramData\chocolatey'; Remove-Item -Recurse -Force 'C:\Users\ContainerAdministrator\AppData\Local\Temp'"
