@@ -10,28 +10,60 @@ RUN reg add "HKLM\Software\Wow6432Node\Microsoft\Cryptography\Wintrust\Config" /
 
 # Do not split this into multiple RUN!
 # Docker creates a layer for every RUN-Statement
+# Set the Chocolatey version
 ENV chocolateyVersion 1.4.0
-RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
-# Fluentd depends on cool.io whose fat gem is only available for Ruby < 2.5, so need to specify --platform ruby when install Ruby > 2.5 and install msys2 to get dev tools
-RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
-&& choco install -y msys2 --version 20211130.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'"
 
-# gangams - optional MSYS2 update via ridk failing in merged docker file so skipping that since we dont need optional update
-RUN refreshenv \
-&& ridk install 3 \
-&& echo gem: --no-document >> C:\ProgramData\gemrc \
-&& gem install cool.io -v 1.7.1 --platform ruby \
-&& gem install oj -v 3.3.10 \
-&& gem install fluentd -v 1.16.3 \
-&& gem install win32-service -v 1.0.1 \
-&& gem install win32-ipc -v 0.7.0 \
-&& gem install win32-event -v 0.6.3 \
-&& gem install windows-pr -v 1.2.6 \
-&& gem install tomlrb -v 2.0.1 \
-&& gem install gyoku -v 1.3.1 \
-&& gem install ipaddress -v 0.8.3 \
-&& gem install jwt -v 2.7.1 \
-&& gem sources --clear-all
+# Install Chocolatey
+RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; \
+    iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
+
+# Install Ruby and MSYS2 using Chocolatey with specified install directories
+RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" && \
+    choco install -y msys2 --version 20211130.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'"
+
+# Set environment variables for paths
+RUN setx PATH "%PATH%;C:\ruby31\bin;C:\ruby31\msys64\usr\bin"
+
+# Refresh environment and set up MSYS2 mirrors and retry logic for gem installs
+SHELL ["powershell", "-Command"]
+
+RUN Write-Output "Configuring MSYS2 mirrors..." ; \
+    $MirrorFileMsys = 'C:\ruby31\msys64\etc\pacman.d\mirrorlist.msys' ; \
+    $MirrorFileMingw = 'C:\ruby31\msys64\etc\pacman.d\mirrorlist.mingw' ; \
+    (Get-Content $MirrorFileMsys) -replace '^(Server = .*)$', '#$1' | Set-Content $MirrorFileMsys ; \
+    (Get-Content $MirrorFileMingw) -replace '^(Server = .*)$', '#$1' | Set-Content $MirrorFileMingw ; \
+    Add-Content -Path $MirrorFileMsys -Value 'Server = https://repo.msys2.org/msys/$arch' ; \
+    Add-Content -Path $MirrorFileMingw -Value 'Server = https://repo.msys2.org/mingw/$arch' ; \
+    Start-Process 'C:\ruby31\msys64\usr\bin\bash.exe' -ArgumentList '-c', 'pacman -Syuu --noconfirm' -NoNewWindow -Wait
+
+# Install required gems with retry logic for network stability
+RUN Write-Output "Installing Ruby gems with retry logic..." ; \
+    function Install-GemWithRetry { \
+        param([string]$gemName, [string]$version, [int]$retries = 5) ; \
+        for ($i = 0; $i -lt $retries; $i++) { \
+            gem install $gemName -v $version --no-document --platform ruby && break || \
+            Write-Output "Failed to install $gemName. Retrying in 5 seconds... ($($i+1)/$retries)" ; \
+            Start-Sleep -Seconds 5 ; \
+        } ; \
+        if (-not (gem list -i $gemName -v $version)) { throw "Failed to install $gemName after $retries attempts." } ; \
+    } ; \
+    Install-GemWithRetry -gemName 'cool.io' -version '1.7.1' ; \
+    Install-GemWithRetry -gemName 'oj' -version '3.3.10' ; \
+    Install-GemWithRetry -gemName 'fluentd' -version '1.16.3' ; \
+    Install-GemWithRetry -gemName 'win32-service' -version '1.0.1' ; \
+    Install-GemWithRetry -gemName 'win32-ipc' -version '0.7.0' ; \
+    Install-GemWithRetry -gemName 'win32-event' -version '0.6.3' ; \
+    Install-GemWithRetry -gemName 'windows-pr' -version '1.2.6' ; \
+    Install-GemWithRetry -gemName 'tomlrb' -version '2.0.1' ; \
+    Install-GemWithRetry -gemName 'gyoku' -version '1.3.1' ; \
+    Install-GemWithRetry -gemName 'ipaddress' -version '0.8.3' ; \
+    Install-GemWithRetry -gemName 'jwt' -version '2.7.1' ; \
+    gem sources --clear-all
+
+# Optional: Run `ridk install` to add MSYS2 dev tools (optional if MSYS2 update fails)
+RUN refreshenv && \
+    ridk install 3 && \
+    echo gem: --no-document >> C:\ProgramData\gemrc
 
 # Remove gem cache and chocolatey
 RUN powershell -Command "Remove-Item -Force C:\ruby31\lib\ruby\gems\3.1.0\cache\*.gem; Remove-Item -Recurse -Force 'C:\ProgramData\chocolatey'; Remove-Item -Recurse -Force 'C:\Users\ContainerAdministrator\AppData\Local\Temp'"
