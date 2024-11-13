@@ -37,27 +37,27 @@ RUN Write-Output "Configuring MSYS2 mirrors..." ; \
     Start-Process 'C:\ruby31\msys64\usr\bin\bash.exe' -ArgumentList '-c', 'pacman -Syuu --noconfirm' -NoNewWindow -Wait
 
 # Install required gems with retry logic for network stability
-RUN Write-Output "Installing Ruby gems with retry logic..." ; \
+RUN Write-Output 'Installing Ruby gems with retry logic...'; \
     function Install-GemWithRetry { \
-        param([string]$gemName, [string]$version, [int]$retries = 5) ; \
+        param([string]$gemName, [string]$version, [int]$retries = 5); \
         for ($i = 0; $i -lt $retries; $i++) { \
-            gem install $gemName -v $version --no-document --platform ruby && break || \
-            Write-Output "Failed to install $gemName. Retrying in 5 seconds... ($($i+1)/$retries)" ; \
-            Start-Sleep -Seconds 5 ; \
-        } ; \
-        if (-not (gem list -i $gemName -v $version)) { throw "Failed to install $gemName after $retries attempts." } ; \
-    } ; \
-    Install-GemWithRetry -gemName 'cool.io' -version '1.7.1' ; \
-    Install-GemWithRetry -gemName 'oj' -version '3.3.10' ; \
-    Install-GemWithRetry -gemName 'fluentd' -version '1.16.3' ; \
-    Install-GemWithRetry -gemName 'win32-service' -version '1.0.1' ; \
-    Install-GemWithRetry -gemName 'win32-ipc' -version '0.7.0' ; \
-    Install-GemWithRetry -gemName 'win32-event' -version '0.6.3' ; \
-    Install-GemWithRetry -gemName 'windows-pr' -version '1.2.6' ; \
-    Install-GemWithRetry -gemName 'tomlrb' -version '2.0.1' ; \
-    Install-GemWithRetry -gemName 'gyoku' -version '1.3.1' ; \
-    Install-GemWithRetry -gemName 'ipaddress' -version '0.8.3' ; \
-    Install-GemWithRetry -gemName 'jwt' -version '2.7.1' ; \
+            if (gem install $gemName -v $version --no-document --platform ruby) { break } else { \
+            Write-Output 'Failed to install $gemName. Retrying in 5 seconds... ($($i+1)/$retries)'; \
+            Start-Sleep -Seconds 5; } \
+        }; \
+        if (-not (gem list -i $gemName -v $version)) { throw 'Failed to install $gemName after $retries attempts.' }; \
+    }; \
+    Install-GemWithRetry -gemName 'cool.io' -version '1.7.1'; \
+    Install-GemWithRetry -gemName 'oj' -version '3.3.10'; \
+    Install-GemWithRetry -gemName 'fluentd' -version '1.16.3'; \
+    Install-GemWithRetry -gemName 'win32-service' -version '1.0.1'; \
+    Install-GemWithRetry -gemName 'win32-ipc' -version '0.7.0'; \
+    Install-GemWithRetry -gemName 'win32-event' -version '0.6.3'; \
+    Install-GemWithRetry -gemName 'windows-pr' -version '1.2.6'; \
+    Install-GemWithRetry -gemName 'tomlrb' -version '2.0.1'; \
+    Install-GemWithRetry -gemName 'gyoku' -version '1.3.1'; \
+    Install-GemWithRetry -gemName 'ipaddress' -version '0.8.3'; \
+    Install-GemWithRetry -gemName 'jwt' -version '2.7.1'; \
     gem sources --clear-all
 
 # Optional: Run `ridk install` to add MSYS2 dev tools (optional if MSYS2 update fails)
