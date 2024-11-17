@@ -51,7 +51,7 @@ gem uninstall webrick --version 1.8.1
 if [ "${ARCH}" != "arm64" ]; then
     # mdsd version with 50k eps changes for x64
     # TODO - For PROD release, make sure to consume the MDSD version from Mariner package repo
-    wget "https://github.com/microsoft/Docker-Provider/releases/download/mdsd-1.31.0/azure-mdsd-1.34.0-build.main.3783.dynamicssl.x86_64.rpm" -O azure-mdsd.deb
+    wget "https://github.com/microsoft/Docker-Provider/releases/download/mdsd-1.31.0/azure-mdsd-1.34.0-build.main.3783.dynamicssl.x86_64.rpm" -O azure-mdsd.rpm
     sudo tdnf install -y azure-mdsd.rpm
 else
     sudo tdnf install -y azure-mdsd-1.29.7
