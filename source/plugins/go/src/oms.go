@@ -19,7 +19,6 @@ import (
 
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/google/uuid"
-	"github.com/tinylib/msgp/msgp"
 
 	"Docker-Provider/source/plugins/go/src/extension"
 
@@ -98,6 +97,7 @@ const defaultContainerInventoryRefreshInterval = 60
 const kubeMonAgentConfigEventFlushInterval = 60
 const defaultIngestionAuthTokenRefreshIntervalSeconds = 3600
 const agentConfigRefreshIntervalSeconds = 300
+const defaultContainerLogV2ExtensionConfigRefreshIntervalSeconds = 300
 
 // Eventsource name in mdsd
 const MdsdContainerLogSourceName = "ContainerLogSource"
@@ -123,6 +123,8 @@ const MdsdOutputStreamIdTagPrefix = "dcr-"
 const ContainerTypeEnv = "CONTAINER_TYPE"
 
 const PodNameToControllerNameMapCacheSize = 300 // AKS 250 pod per node limit + 50 extra
+
+const NamedPipeConnectionCacheSize = 200
 
 var (
 	// PluginConfiguration the plugins configuration
@@ -201,6 +203,12 @@ var (
 	InputPluginNamedPipe net.Conn
 	// named pipe connection to send InsightsMetrics for AMA
 	InsightsMetricsNamedPipe net.Conn
+	// flag to check whether Azure Monitor Multi-tenancy Log Collection enabled or not
+	IsAzMonMultiTenancyLogCollectionEnabled bool
+	// flag to check whether Azure Monitor Multi-tenancy Log Collection Advanced Mode enabled or not
+	IsAzMonMultiTenancyLogCollectionAdvancedModeEnabled bool
+	// flag to check whether Azure Monitor Multi-tenancy Logs ServiceMode enabled or not
+	IsAzMonMultitenancyLogsServiceMode bool
 )
 
 var (
@@ -238,6 +246,14 @@ var (
 	IngestionAuthTokenUpdateMutex = &sync.Mutex{}
 	// ODSIngestionAuthToken for windows agent AAD MSI Auth
 	ODSIngestionAuthToken string
+	// NamespaceStreamIdsMap caches the Namespace to StreamIds map
+	NamespaceStreamIdsMap map[string][]string
+	// StreamIdNamedPipeMap caches the StreamId to NamedPipe map
+	StreamIdNamedPipeMap map[string]string
+	// ContainerLogV2ExtensionMapUpdateMutex read and write mutex access to the NamespaceStreamIdsMap
+	ContainerLogV2ExtensionMapUpdateMutex = &sync.Mutex{}
+	// NamedPipe and namedpipe connection cache for windows
+	NamedPipeConnectionCache map[string]net.Conn
 )
 
 var (
@@ -247,6 +263,8 @@ var (
 	KubeMonAgentConfigEventsSendTicker *time.Ticker
 	// IngestionAuthTokenRefreshTicker to refresh ingestion token
 	IngestionAuthTokenRefreshTicker *time.Ticker
+	// ContainerLogV2ExtensionConfigRefreshTicker to refresh namespace to stream id mapping
+	ContainerLogV2ExtensionConfigRefreshTicker *time.Ticker
 )
 
 var (
@@ -472,6 +490,40 @@ func updateContainerImageNameMaps() {
 		NameIDMap = _nameIDMap
 		DataUpdateMutex.Unlock()
 		Log("Unlocking after updating image and name maps")
+	}
+}
+
+func updateContainerLogV2ExtensionMaps(isWindows bool) {
+	for ; true; <-ContainerLogV2ExtensionConfigRefreshTicker.C {
+		Log("updateContainerLogV2ExtensionMaps::Info: Invoking GetContainerLogV2ExtensionConfig")
+		maxRetries := 3
+		for attempt := 1; attempt <= maxRetries; attempt++ {
+			_namespaceStreamIdsMap, _streamIdNamedPipeMap, err := extension.GetInstance(FLBLogger, ContainerType).GetContainerLogV2ExtensionConfig(IsWindows)
+			if err != nil {
+				Log("updateContainerLogV2ExtensionMaps::error: %s attempt: %d", string(err.Error()), attempt)
+				time.Sleep(time.Duration(attempt+1) * time.Second)
+			} else {
+				Log("updateContainerLogV2ExtensionMaps:Info:Locking to update NamespaceStreamIdsMap and StreamIdNamedPipeMap")
+				ContainerLogV2ExtensionMapUpdateMutex.Lock()
+				for key := range NamespaceStreamIdsMap {
+					delete(NamespaceStreamIdsMap, key)
+				}
+				for key, value := range _namespaceStreamIdsMap {
+					NamespaceStreamIdsMap[key] = value
+				}
+				if isWindows {
+					for key := range StreamIdNamedPipeMap {
+						delete(StreamIdNamedPipeMap, key)
+					}
+					for key, np := range _streamIdNamedPipeMap {
+						StreamIdNamedPipeMap[key] = np
+					}
+				}
+				ContainerLogV2ExtensionMapUpdateMutex.Unlock()
+				Log("updateContainerLogV2ExtensionMaps::Info: Unlocking after updating NamespaceStreamIdsMap and StreamIdNamedPipeMap")
+				break
+			}
+		}
 	}
 }
 
@@ -986,7 +1038,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 		Log(message)
 	}
 
-	if IsWindows == false || IsAADMSIAuthMode { //for linux and for windows MSI Auth: mdsd/ama route
+	if IsWindows == false || (IsAADMSIAuthMode && !IsGenevaLogsIntegrationEnabled) { //for linux and for windows MSI Auth and non geneva mode: mdsd/ama route
 		var msgPackEntries []MsgPackEntry
 		var i int
 		start := time.Now()
@@ -1084,7 +1136,7 @@ func PostTelegrafMetricsToLA(telegrafRecords []map[interface{}]interface{}) int 
 			}
 		}
 
-	} else { // for windows legacy auth, ODS direct
+	} else { // for windows legacy auth or windows msi auth in geneva mode, ODS direct
 
 		var metrics []laTelegrafMetric
 		var i int
@@ -1537,6 +1589,8 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			stringMap["AzureResourceId"] = ToString(record["AzureResourceId"])
 		} else if IsGenevaLogsIntegrationEnabled == true {
 			stringMap["AzureResourceId"] = ResourceID
+		} else if IsAzMonMultitenancyLogsServiceMode {
+			Computer = ToString(record["Computer"])
 		}
 
 		logEntry := ToString(record["log"])
@@ -1686,35 +1740,9 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			}
 			MdsdContainerLogTagName = getOutputStreamIdTag(containerlogDataType, MdsdContainerLogTagName, &MdsdContainerLogTagRefreshTracker)
 			if MdsdContainerLogTagName == "" {
-				Log("Warn::mdsd::skipping Microsoft-ContainerLog or Microsoft-ContainerLogV2 stream since its opted out")
+				Log("Warn::mdsd::skipping Microsoft-ContainerLog or Microsoft-ContainerLogV2 or Microsoft-ContainerLogV2-HighScale stream since its opted out")
 				return output.FLB_RETRY
 			}
-		}
-
-		fluentForward := MsgPackForward{
-			Tag:     MdsdContainerLogTagName,
-			Entries: msgPackEntries,
-		}
-
-		//determine the size of msgp message
-		msgpSize := 1 + msgp.StringPrefixSize + len(fluentForward.Tag) + msgp.ArrayHeaderSize
-		for i := range fluentForward.Entries {
-			msgpSize += 1 + msgp.Int64Size + msgp.GuessSize(fluentForward.Entries[i].Record)
-		}
-
-		//allocate buffer for msgp message
-		var msgpBytes []byte
-		msgpBytes = msgp.Require(nil, msgpSize)
-
-		//construct the stream
-		msgpBytes = append(msgpBytes, 0x92)
-		msgpBytes = msgp.AppendString(msgpBytes, fluentForward.Tag)
-		msgpBytes = msgp.AppendArrayHeader(msgpBytes, uint32(len(fluentForward.Entries)))
-		batchTime := time.Now().Unix()
-		for entry := range fluentForward.Entries {
-			msgpBytes = append(msgpBytes, 0x92)
-			msgpBytes = msgp.AppendInt64(msgpBytes, batchTime)
-			msgpBytes = msgp.AppendMapStrStr(msgpBytes, fluentForward.Entries[entry].Record)
 		}
 
 		if IsWindows {
@@ -1726,9 +1754,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			}
 			if EnsureGenevaOr3PNamedPipeExists(&ContainerLogNamedPipe, datatype, &ContainerLogsWindowsAMAClientCreateErrors, IsGenevaLogsIntegrationEnabled, &MdsdContainerLogTagRefreshTracker) {
 				Log("Info::AMA::Starting to write container logs to named pipe")
-				deadline := 10 * time.Second
-				ContainerLogNamedPipe.SetWriteDeadline(time.Now().Add(deadline))
-				n, err := ContainerLogNamedPipe.Write(msgpBytes)
+				n, err := writeMsgPackEntries(ContainerLogNamedPipe, ContainerLogSchemaV2, MdsdContainerLogTagName, msgPackEntries)
 				if err != nil {
 					Log("Error::AMA::Failed to write to AMA %d records. Will retry ... error : %s", len(msgPackEntries), err.Error())
 					if ContainerLogNamedPipe != nil {
@@ -1761,11 +1787,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				}
 			}
 
-			deadline := 10 * time.Second
-			MdsdMsgpUnixSocketClient.SetWriteDeadline(time.Now().Add(deadline)) //this is based of clock time, so cannot reuse
-
-			bts, er := MdsdMsgpUnixSocketClient.Write(msgpBytes)
-
+			bts, er := writeMsgPackEntries(MdsdMsgpUnixSocketClient, ContainerLogSchemaV2, MdsdContainerLogTagName, msgPackEntries)
 			elapsed = time.Since(start)
 
 			if er != nil {
@@ -1880,6 +1902,138 @@ func containsKey(currentMap map[string]bool, key string) bool {
 	return c
 }
 
+func writeMsgPackEntriesToNamedPipeConnection(streamTag string, msgPackEntries []MsgPackEntry, streamIdNamedPipeMap map[string]string) (int, error) {
+	var bts int
+	var er error
+	namedPipe, ok := streamIdNamedPipeMap[streamTag]
+	if !ok {
+		return 0, fmt.Errorf("Error::ama:: namedPipe is empty for streamId: %s \n", streamTag)
+	}
+	namedPipeConn, ok := NamedPipeConnectionCache[namedPipe]
+	if !ok || namedPipeConn == nil {
+		err := CreateWindowsNamedPipeClient(namedPipe, &namedPipeConn)
+		if err != nil {
+			Log("Error::ama:: failed to create namedpipe client for streamId: %s \n", streamTag)
+			return 0, err
+		}
+		NamedPipeConnectionCache[namedPipe] = namedPipeConn
+	}
+	msgpBytes := convertMsgPackEntriesToMsgpBytes(streamTag, msgPackEntries)
+	bts, er = namedPipeConn.Write(msgpBytes)
+	if er != nil {
+		Log("Error::ama:: failed to ingest the logs to namedpipe: %s \n", namedPipe)
+		if namedPipeConn != nil {
+			namedPipeConn.Close()
+			namedPipeConn = nil
+			delete(NamedPipeConnectionCache, namedPipe)
+		}
+	}
+	// clear the cache if its cachesize limit is reached
+	if len(NamedPipeConnectionCache) >= NamedPipeConnectionCacheSize {
+		for np, conn := range NamedPipeConnectionCache {
+			if conn != nil {
+				conn.Close()
+			}
+			delete(NamedPipeConnectionCache, np)
+		}
+	}
+
+	return bts, er
+}
+
+func writeMsgPackEntries(connection net.Conn, isContainerLogV2Schema bool, fluentForwardTag string, msgPackEntries []MsgPackEntry) (totalBytes int, err error) {
+	var bts int
+	var er error
+	if (IsAzMonMultiTenancyLogCollectionEnabled || IsAzMonMultitenancyLogsServiceMode) && isContainerLogV2Schema && !IsGenevaLogsIntegrationEnabled {
+		namespaceStreamIdsMap, streamIdNamedPipeMap := getContainerLogV2ExtensionMaps()
+		if len(namespaceStreamIdsMap) > 0 {
+			MultitenantNamespaceCount = len(namespaceStreamIdsMap)
+			streamTagCount := 0
+			for _, streamTags := range namespaceStreamIdsMap {
+				streamTagCount += len(streamTags)
+			}
+			ContainerLogV2ExtensionDCRCount = streamTagCount
+			msgPackEntriesByNamespace := getMsgPackEntriesByNamespace(msgPackEntries)
+			totalBytes := 0
+			for namespace, entries := range msgPackEntriesByNamespace {
+				if streamTags, exists := namespaceStreamIdsMap[namespace]; exists {
+					msg := fmt.Sprintf("Info::ama:: namespace : %s streamTags: %s \n", namespace, strings.Join(streamTags, ", "))
+					Log(msg)
+					for _, streamTag := range streamTags {
+						if IsWindows {
+							bts, er = writeMsgPackEntriesToNamedPipeConnection(streamTag, entries, streamIdNamedPipeMap)
+						} else {
+							msgpBytes := convertMsgPackEntriesToMsgpBytes(streamTag, entries)
+							deadline := 10 * time.Second
+							connection.SetWriteDeadline(time.Now().Add(deadline))
+							bts, er = connection.Write(msgpBytes)
+						}
+						if er != nil {
+							return bts, er
+						}
+						totalBytes = totalBytes + bts
+					}
+				} else {
+					Log("Info::ama:: streamTag is empty for namespace: %s hence using default workspace stream id: %s \n", namespace, fluentForwardTag)
+					msgpBytes := convertMsgPackEntriesToMsgpBytes(fluentForwardTag, entries)
+					deadline := 10 * time.Second
+					connection.SetWriteDeadline(time.Now().Add(deadline))
+					bts, er = connection.Write(msgpBytes)
+					if er != nil {
+						return bts, er
+					}
+					totalBytes = totalBytes + bts
+				}
+			}
+			bts = totalBytes
+		} else {
+			msgpBytes := convertMsgPackEntriesToMsgpBytes(fluentForwardTag, msgPackEntries)
+			deadline := 10 * time.Second
+			connection.SetWriteDeadline(time.Now().Add(deadline))
+			bts, er = connection.Write(msgpBytes)
+			if er != nil {
+				return bts, er
+			}
+		}
+	} else {
+		msgpBytes := convertMsgPackEntriesToMsgpBytes(fluentForwardTag, msgPackEntries)
+		deadline := 10 * time.Second
+		connection.SetWriteDeadline(time.Now().Add(deadline))
+		bts, er = connection.Write(msgpBytes)
+		if er != nil {
+			return bts, er
+		}
+	}
+
+	return bts, er
+}
+
+func getContainerLogV2ExtensionMaps() (map[string][]string, map[string]string) {
+	namespaceStreamIdsMap := make(map[string][]string)
+	streamIdNamedPipeMap := make(map[string]string)
+
+	Log("Locking to read namespaceStreamIdsMap and streamIdNamedPipeMap")
+	ContainerLogV2ExtensionMapUpdateMutex.Lock()
+	for key, value := range NamespaceStreamIdsMap {
+		namespaceStreamIdsMap[key] = value
+	}
+	for key, value := range StreamIdNamedPipeMap {
+		streamIdNamedPipeMap[key] = value
+	}
+	ContainerLogV2ExtensionMapUpdateMutex.Unlock()
+	Log("Unlocking after reading namespaceStreamIdsMap and streamIdNamedPipeMap")
+
+	return namespaceStreamIdsMap, streamIdNamedPipeMap
+}
+
+func getMsgPackEntriesByNamespace(msgPackEntries []MsgPackEntry) map[string][]MsgPackEntry {
+	msgPackEntriesByNamespace := make(map[string][]MsgPackEntry)
+	for _, entry := range msgPackEntries {
+		msgPackEntriesByNamespace[entry.Record["PodNamespace"]] = append(msgPackEntriesByNamespace[entry.Record["PodNamespace"]], entry)
+	}
+	return msgPackEntriesByNamespace
+}
+
 // GetContainerIDK8sNamespacePodNameFromFileName Gets the container ID, k8s namespace, pod name and containername From the file Name
 // sample filename kube-proxy-dgcx7_kube-system_kube-proxy-8df7e49e9028b60b5b0d0547f409c455a9567946cf763267b7e6fa053ab8c182.log
 func GetContainerIDK8sNamespacePodNameFromFileName(filename string) (string, string, string, string) {
@@ -1972,6 +2126,9 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	PodNameToControllerNameMap = make(map[string][2]string)
 	ImageIDMap = make(map[string]string)
 	NameIDMap = make(map[string]string)
+	NamespaceStreamIdsMap = make(map[string][]string)
+	StreamIdNamedPipeMap = make(map[string]string)
+	NamedPipeConnectionCache = make(map[string]net.Conn)
 	// Keeping the two error hashes separate since we need to keep the config error hash for the lifetime of the container
 	// whereas the prometheus scrape error hash needs to be refreshed every hour
 	ConfigErrorEvent = make(map[string]KubeMonAgentEventTags)
@@ -1999,6 +2156,12 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 
 	ContainerType = os.Getenv(ContainerTypeEnv)
 	Log("Container Type %s", ContainerType)
+
+	IsAzMonMultitenancyLogsServiceMode = false
+	azMonMultitenancyLogsServiceMode := os.Getenv("AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE")
+	if strings.Compare(strings.ToLower(azMonMultitenancyLogsServiceMode), "true") == 0 {
+		IsAzMonMultitenancyLogsServiceMode = true
+	}
 
 	osType := os.Getenv("OS_TYPE")
 	IsWindows = false
@@ -2174,6 +2337,20 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	ContainerLogSchemaV2 = false //default is v1 schema
 	ContainerLogV2ConfigMap = (strings.Compare(ContainerLogSchemaVersion, ContainerLogV2SchemaVersion) == 0)
 
+	IsAzMonMultiTenancyLogCollectionEnabled = false
+	multiTenancyEnabled := strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_MULTI_TENANCY_LOG_COLLECTION")))
+	if multiTenancyEnabled != "" && strings.Compare(strings.ToLower(multiTenancyEnabled), "true") == 0 {
+		IsAzMonMultiTenancyLogCollectionEnabled = true
+		Log("Azure Monitor Multi-tenancy Log Collection Enabled")
+	}
+
+	IsAzMonMultiTenancyLogCollectionAdvancedModeEnabled = false
+	multiTenancyAdvancedModeEnabled := strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE")))
+	if multiTenancyAdvancedModeEnabled != "" && strings.Compare(strings.ToLower(multiTenancyAdvancedModeEnabled), "true") == 0 {
+		IsAzMonMultiTenancyLogCollectionAdvancedModeEnabled = true
+		Log("Azure Monitor Multi-tenancy Log Collection Advanced Mode Enabled")
+	}
+
 	KubernetesMetadataEnabled = false
 	KubernetesMetadataEnabled = (strings.Compare(strings.ToLower(os.Getenv("AZMON_KUBERNETES_METADATA_ENABLED")), "true") == 0)
 	metadataIncludeList := strings.ToLower(os.Getenv("AZMON_KUBERNETES_METADATA_INCLUDES_FIELDS"))
@@ -2252,5 +2429,12 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		Log("defaultIngestionAuthTokenRefreshIntervalSeconds = %d \n", defaultIngestionAuthTokenRefreshIntervalSeconds)
 		IngestionAuthTokenRefreshTicker = time.NewTicker(time.Second * time.Duration(defaultIngestionAuthTokenRefreshIntervalSeconds))
 		go refreshIngestionAuthToken()
+	}
+
+	Log("IsAzMonMultitenancyLogsServiceMode: %v, IsAzMonMultiTenancyLogCollectionEnabled: %v, IsAzMonMultiTenancyLogCollectionAdvancedModeEnabled = %v \n", IsAzMonMultitenancyLogsServiceMode, IsAzMonMultiTenancyLogCollectionEnabled, IsAzMonMultiTenancyLogCollectionAdvancedModeEnabled)
+	if IsAADMSIAuthMode && (IsAzMonMultitenancyLogsServiceMode || (IsAzMonMultiTenancyLogCollectionEnabled && !IsAzMonMultiTenancyLogCollectionAdvancedModeEnabled)) {
+		Log("ContainerLogV2ExtensionConfigRefreshIntervalSeconds = %d \n", defaultContainerLogV2ExtensionConfigRefreshIntervalSeconds)
+		ContainerLogV2ExtensionConfigRefreshTicker = time.NewTicker(time.Second * time.Duration(defaultContainerLogV2ExtensionConfigRefreshIntervalSeconds))
+		go updateContainerLogV2ExtensionMaps(IsWindows)
 	}
 }

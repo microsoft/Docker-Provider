@@ -1,0 +1,40 @@
+{
+    "location": "<la-workspace-region>",
+    "properties": {
+        "dataSources": {
+            "extensions": [
+                {
+                    "streams": [
+                        "Microsoft-ContainerLogV2-HighScale"
+                    ],
+                    "extensionName": "ContainerLogV2Extension",
+                    "extensionSettings": {
+                        "dataCollectionSettings": {
+                            "namespaces": ["app-team-k8s-namespace-1", "app-team-k8s-namespace-2"]
+                        }
+                    },
+                    "name": "ContainerLogV2Extension"
+                }
+            ]
+        },
+        "destinations": {
+            "logAnalytics": [
+                {
+                    "workspaceResourceId": "/subscriptions/<subscriptionId>/resourcegroups/<rgName>/providers/microsoft.operationalinsights/workspaces/<workspaceName>",
+                    "name": "la-workspace"
+                }
+            ]
+        },
+        "dataFlows": [
+            {
+                "streams": [
+                    "Microsoft-ContainerLogV2-HighScale"
+                ],
+                "transformKql": "source | where LogLevel in ('CRITICAL', 'ERROR')",
+                "destinations": [
+                    "la-workspace"
+                ]
+            }
+        ]
+    }
+}

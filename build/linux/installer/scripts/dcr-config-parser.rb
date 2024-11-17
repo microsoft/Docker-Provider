@@ -15,8 +15,9 @@ require_relative "ConfigParseErrorLogger"
 }
 @logs_and_events_only = false
 
-return if ENV['GENEVA_LOGS_INTEGRATION']&.strip&.casecmp?('true')
+return if ENV['GENEVA_LOGS_INTEGRATION']&.strip&.casecmp?('true') && !ENV['AZMON_MULTI_TENANCY_LOG_COLLECTION']&.strip&.casecmp?('true')
 return if ENV['GENEVA_LOGS_INTEGRATION_SERVICE_MODE']&.strip&.casecmp?('true')
+return if ENV['AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE']&.strip&.casecmp?('true')
 return if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp('windows').zero?
 return unless ENV['USING_AAD_MSI_AUTH']&.strip&.casecmp?('true')
 

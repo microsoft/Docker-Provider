@@ -78,7 +78,7 @@ jobs:
 
       cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension/ServiceGroupRoot/Scripts
       tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ pushChartToAcr.sh
-    
+
       cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension-release-v2/ServiceGroupRoot/Scripts
       tar -czvf ../artifacts.tar.gz arcExtensionRelease.sh
 
@@ -95,7 +95,7 @@ jobs:
 
   - task: CredScan@3
     displayName: "SDL : Run credscan"
-  
+
   - task: CopyFiles@2
     displayName: "Copy ev2 deployment artifacts"
     inputs:
@@ -140,7 +140,7 @@ jobs:
     inputs:
       pathToPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: drop
-  
+
   - task: Armory@2
     displayName: 'Run ARMory'
     inputs:
@@ -175,6 +175,7 @@ jobs:
 
         sudo apt-get update && sudo apt-get -y install qemu binfmt-support qemu-user-static
         docker system prune --all -f
+        docker images -q --filter "dangling=true" | xargs docker rmi
         docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
         docker buildx create --name testbuilder
@@ -184,6 +185,11 @@ jobs:
         az account show
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
+
+        # NOTE: Using the prometheus-collector team's cached buildx image since moby/buildkit:buildx-stable-1 getting throttled
+        docker pull mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1
+        docker buildx create --name dockerbuilder --driver docker-container --driver-opt image=mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1 --use
+        docker buildx inspect --bootstrap
 
         if [ "$(Build.Reason)" != "PullRequest" ]; then
           docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --push --provenance=false .
@@ -274,8 +280,54 @@ jobs:
       scriptLocation: inlineScript
       inlineScript: |
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+        PRIMARY_TRIVY_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-db"
+        SECONDARY_TRIVY_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-db"
+        PRIMARY_TRIVY_JAVA_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-java-db"
+        SECONDARY_TRIVY_JAVA_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-java-db"
 
-        trivy image --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 ${{ variables.repoImageName }}:$(linuxImagetag)
+        # Set initial repositories to primary
+        export TRIVY_DB_REPOSITORY=$PRIMARY_TRIVY_DB_REPOSITORY
+        export TRIVY_JAVA_DB_REPOSITORY=$PRIMARY_TRIVY_JAVA_DB_REPOSITORY
+
+        # Function to run Trivy scan and handle output
+        run_trivy_scan() {
+            trivy image --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM "${{ variables.repoImageName }}:$(linuxImagetag)" > trivy_output.log 2>&1
+            return $?
+        }
+
+        # Attempt scan up to 5 times with repository fallback
+        for i in {1..5}; do
+            echo "Running Trivy scan attempt $i..."
+
+            # Run the Trivy scan and capture exit code
+            run_trivy_scan
+            TRIVY_EXIT_CODE=$?
+
+            # Check if scan was successful
+            if [ $TRIVY_EXIT_CODE -eq 0 ]; then
+                echo "Trivy scan succeeded."
+                cat trivy_output.log
+                break
+            fi
+
+            # If the first attempt fails, switch to secondary repositories
+            if [ $i -eq 1 ]; then
+                echo "Primary repositories failed with an error. Switching to secondary repositories."
+                export TRIVY_DB_REPOSITORY=$SECONDARY_TRIVY_DB_REPOSITORY
+                export TRIVY_JAVA_DB_REPOSITORY=$SECONDARY_TRIVY_JAVA_DB_REPOSITORY
+            fi
+
+            # Log and wait before retrying if an error occurred
+            echo "Error: Trivy scan attempt $i failed. Retrying... ($i/5)"
+            cat trivy_output.log
+            sleep 5 # Wait 5 seconds before retrying
+        done
+
+        # Final check: if still failing after 5 attempts, exit with error
+        if [ $TRIVY_EXIT_CODE -ne 0 ]; then
+            echo "Error: Trivy scan failed after 5 retries."
+            exit 1
+        fi
 
     # Find in cache or download a specific version of Go and add it to the PATH.
   - task: GoTool@0
@@ -287,7 +339,7 @@ jobs:
         ls
         make
     displayName: 'Execute Makefile for Linux Build'
-  
+
   - task: CodeQL3000Finalize@0
     condition: eq(variables.IS_MAIN_BRANCH, true)
 
@@ -355,6 +407,7 @@ jobs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: ps
       scriptLocation: inlineScript
+      retryCountOnTaskFailure: 2
       inlineScript: |
         mkdir -p $(Build.ArtifactStagingDirectory)/windows
         cd kubernetes/windows
@@ -398,7 +451,7 @@ jobs:
 
         echo "Extract fluent-bit"
         docker cp signingContainer:C:\opt\fluent-bit .
-        
+
         echo "Extract Ruby"
         docker cp signingContainer:C:\ruby31 .
 
@@ -525,7 +578,7 @@ jobs:
       targetType: 'inline'
       script: |
         docker create --name pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned
-        
+
         echo "Copy Signed binaries/folders back to docker image..."
         docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.exe pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.exe
         docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.dll pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.dll
@@ -536,7 +589,7 @@ jobs:
         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/Newtonsoft.Json.dll pushContainer:C:\opt\amalogswindows\certgenerator\Newtonsoft.Json.dll
         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/fluent-bit/. pushContainer:C:\opt\fluent-bit/
         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/ruby31/. pushContainer:C:\ruby31/
-        docker cp $(Build.ArtifactStagingDirectory)/ossSigning/telegraf.exe pushContainer::C:\opt\telegraf\telegraf.exe
+        docker cp $(Build.ArtifactStagingDirectory)/ossSigning/telegraf.exe pushContainer:C:\opt\telegraf\telegraf.exe
         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/out_oms.so pushContainer:C:\opt\amalogswindows\out_oms.so
 
         docker commit pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
@@ -588,6 +641,7 @@ jobs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: ps
       scriptLocation: inlineScript
+      retryCountOnTaskFailure: 2
       inlineScript: |
         mkdir -p $(Build.ArtifactStagingDirectory)/windows
         cd kubernetes/windows
@@ -631,7 +685,7 @@ jobs:
 
         echo "Extract fluent-bit"
         docker cp signingContainer:C:\opt\fluent-bit .
-        
+
         echo "Extract Ruby"
         docker cp signingContainer:C:\ruby31 .
 
@@ -758,7 +812,7 @@ jobs:
       targetType: 'inline'
       script: |
         docker create --name pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)-unsigned
-        
+
         echo "Copy Signed binaries/folders back to docker image..."
         docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.exe pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.exe
         docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.dll pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.dll
@@ -769,7 +823,7 @@ jobs:
         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/Newtonsoft.Json.dll pushContainer:C:\opt\amalogswindows\certgenerator\Newtonsoft.Json.dll
         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/fluent-bit/. pushContainer:C:\opt\fluent-bit/
         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/ruby31/. pushContainer:C:\ruby31/
-        docker cp $(Build.ArtifactStagingDirectory)/ossSigning/telegraf.exe pushContainer::C:\opt\telegraf\telegraf.exe
+        docker cp $(Build.ArtifactStagingDirectory)/ossSigning/telegraf.exe pushContainer:C:\opt\telegraf\telegraf.exe
         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/out_oms.so pushContainer:C:\opt\amalogswindows\out_oms.so
 
         docker commit pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
@@ -907,7 +961,7 @@ jobs:
     inputs:
       pathToPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: drop
-  
+
   - task: AntiMalware@4
     displayName: 'Run MpCmdRun.exe'
     inputs:

@@ -53,14 +53,26 @@ func GetContainerInventoryRecords(podItem map[string]interface{}, batchTime stri
 	for _, containerStatus := range podContainersStatuses {
 		containerInventoryRecord := make(map[string]interface{})
 		containerInventoryRecord["CollectionTime"] = batchTime
-		containerStatusMap := containerStatus.(map[string]interface{})
-		containerName := containerStatusMap["name"].(string)
+		containerStatusMap, ok := containerStatus.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		containerName, ok := containerStatusMap["name"].(string)
+		if !ok {
+			continue
+		}
 
 		containerRuntime := ""
 		containerID := ""
 		if containerIDValue, ok := containerStatusMap["containerID"].(string); ok {
-			containerRuntime = strings.Split(containerIDValue, ":")[0]
-			containerID = strings.Split(containerIDValue, "//")[1]
+			containerIDParts := strings.Split(containerIDValue, "//")
+			if len(containerIDParts) > 1 {
+				containerID = containerIDParts[1]
+			}
+			containerRuntimeParts := strings.Split(containerIDValue, ":")
+			if len(containerRuntimeParts) > 0 {
+				containerRuntime = containerRuntimeParts[0]
+			}
 		}
 		containerInventoryRecord["InstanceID"] = containerID
 
@@ -75,9 +87,9 @@ func GetContainerInventoryRecords(podItem map[string]interface{}, batchTime stri
 		isContainerWaiting := false
 
 		if containerState, ok := containerStatusMap["state"].(map[string]interface{}); ok {
-			if _, ok := containerState["running"]; ok {
+			if runningState, ok := containerState["running"].(map[string]interface{}); ok {
 				containerInventoryRecord["State"] = "Running"
-				containerInventoryRecord["StartedTime"] = containerState["running"].(map[string]interface{})["startedAt"]
+				containerInventoryRecord["StartedTime"] = runningState["startedAt"]
 			} else if terminatedState, ok := containerState["terminated"].(map[string]interface{}); ok {
 				containerInventoryRecord["State"] = "Terminated"
 				containerInventoryRecord["StartedTime"] = terminatedState["startedAt"]
@@ -174,13 +186,32 @@ func getContainersInfoMap(podItem map[string]interface{}, isWindows bool) map[st
 	containersInfoMap := make(map[string]map[string]string)
 
 	nodeName := ""
-	if val, ok := podItem["spec"].(map[string]interface{})["nodeName"].(string); ok {
-		nodeName = val
+	if spec, ok := podItem["spec"].(map[string]interface{}); ok {
+		if val, ok := spec["nodeName"].(string); ok {
+			nodeName = val
+		}
 	}
 
-	createdTime := podItem["metadata"].(map[string]interface{})["creationTimestamp"].(string)
-	podName := podItem["metadata"].(map[string]interface{})["name"].(string)
-	namespace := podItem["metadata"].(map[string]interface{})["namespace"].(string)
+	createdTime := ""
+	if metadata, ok := podItem["metadata"].(map[string]interface{}); ok {
+		if val, ok := metadata["creationTimestamp"].(string); ok {
+			createdTime = val
+		}
+	}
+
+	podName := ""
+	if metadata, ok := podItem["metadata"].(map[string]interface{}); ok {
+		if val, ok := metadata["name"].(string); ok {
+			podName = val
+		}
+	}
+
+	namespace := ""
+	if metadata, ok := podItem["metadata"].(map[string]interface{}); ok {
+		if val, ok := metadata["namespace"].(string); ok {
+			namespace = val
+		}
+	}
 
 	if len(podItem) > 0 && podItem["spec"] != nil && len(podItem["spec"].(map[string]interface{})) > 0 {
 		containersField, found := podItem["spec"].(map[string]interface{})["containers"]
@@ -206,37 +237,39 @@ func getContainersInfoMap(podItem map[string]interface{}, isWindows bool) map[st
 				}
 
 				containerInfoMap := make(map[string]string)
-				containerName := containerMap["name"].(string)
-				containerInfoMap["image"] = containerMap["image"].(string)
+				containerName := ""
+				if val, ok := containerMap["name"].(string); ok {
+					containerName = val
+				}
+				containerInfoMap["image"] = ""
+				if val, ok := containerMap["image"].(string); ok {
+					containerInfoMap["image"] = val
+				}
 				containerInfoMap["ElementName"] = containerName
 				containerInfoMap["Computer"] = nodeName
 				containerInfoMap["PodName"] = podName
 				containerInfoMap["Namespace"] = namespace
 				containerInfoMap["CreatedTime"] = createdTime
 
-				portsValue := containerMap["ports"]
 				portsValueString := ""
-				if portsValue != nil {
+				if portsValue, ok := containerMap["ports"]; ok {
 					jsonStr, err := json.Marshal(portsValue)
-					if err != nil {
-						continue
+					if err == nil {
+						portsValueString = string(jsonStr)
 					}
-					portsValueString = string(jsonStr)
 				}
 				containerInfoMap["Ports"] = portsValueString
 
-				cmdValue := containerMap["command"]
 				cmdValueString := ""
-				if cmdValue != nil {
+				if cmdValue, ok := containerMap["command"]; ok {
 					cmdValueString = fmt.Sprintf("%v", cmdValue)
 				}
 				containerInfoMap["Command"] = cmdValueString
 
-				//TODO: Remove this DEAD CODE as it was only used by replica set for Windows data
 				if isWindows && !IsAADMSIAuthMode() {
-					// For Windows container inventory, we don't need to get envvars from the pod's response
-					// since it's already taken care of in KPI as part of the pod optimized item
-					containerInfoMap["EnvironmentVar"] = containerMap["env"].(string)
+					if envVar, ok := containerMap["env"].(string); ok {
+						containerInfoMap["EnvironmentVar"] = envVar
+					}
 				} else {
 					containerInfoMap["EnvironmentVar"] = obtainContainerEnvironmentVarsFromPodsResponse(podItem, containerMap)
 				}
@@ -288,8 +321,8 @@ func obtainContainerEnvironmentVars(containerID string) string {
 		}
 	}
 
-	cGroupPid := containerCGroupCache[containerID]
-	if cGroupPid != "" {
+	cGroupPid, exists := containerCGroupCache[containerID]
+	if exists && cGroupPid != "" {
 		environFilePath := fmt.Sprintf("/hostfs/proc/%s/environ", cGroupPid)
 		if fileExists(environFilePath) {
 			pattern := regexp.MustCompile(`(?i)` + regexp.QuoteMeta("AZMON_COLLECT_ENV=FALSE"))
@@ -336,50 +369,89 @@ func obtainContainerEnvironmentVarsFromPodsResponse(pod map[string]interface{}, 
 	if !ok {
 		return envValueString
 	}
-	envVarsJSON := envVarField.([]interface{})
+	envVarsJSON, ok := envVarField.([]interface{})
+	if !ok {
+		return envValueString
+	}
 
 	if len(pod) > 0 && envVarsJSON != nil && len(envVarsJSON) > 0 {
 		for _, envVar := range envVarsJSON {
-			envVarMap := envVar.(map[string]interface{})
-			key := envVarMap["name"].(string)
+			envVarMap, ok := envVar.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			key, ok := envVarMap["name"].(string)
+			if !ok {
+				continue
+			}
 			value := ""
 
 			if envVarMap["value"] != nil {
-				value = envVarMap["value"].(string)
+				value, ok = envVarMap["value"].(string)
+				if !ok {
+					continue
+				}
 			} else if envVarMap["valueFrom"] != nil {
-				valueFrom := envVarMap["valueFrom"].(map[string]interface{})
+				valueFrom, ok := envVarMap["valueFrom"].(map[string]interface{})
+				if !ok {
+					continue
+				}
 
-				if fieldRef, ok := valueFrom["fieldRef"].(map[string]interface{}); ok && fieldRef["fieldPath"] != nil && fieldRef["fieldPath"].(string) != "" {
-					fieldPath := fieldRef["fieldPath"].(string)
+				if fieldRef, ok := valueFrom["fieldRef"].(map[string]interface{}); ok && fieldRef["fieldPath"] != nil {
+					fieldPath, ok := fieldRef["fieldPath"].(string)
+					if !ok || fieldPath == "" {
+						continue
+					}
 					fields := strings.Split(fieldPath, ".")
 
 					if len(fields) == 2 {
 						if fields[1] != "" && strings.HasSuffix(fields[1], "]") {
 							indexFields := strings.Split(fields[1][:len(fields[1])-1], "[")
-							hashMapValue := pod[fields[0]].(map[string]interface{})[indexFields[0]].(map[string]interface{})
-							if len(hashMapValue) > 0 {
-								subField := strings.Trim(indexFields[1], `'"`)
-								value = hashMapValue[subField].(string)
+							hashMapValue, ok := pod[fields[0]].(map[string]interface{})[indexFields[0]].(map[string]interface{})
+							if !ok || len(hashMapValue) == 0 {
+								continue
+							}
+							subField := strings.Trim(indexFields[1], `'"`)
+							value, ok = hashMapValue[subField].(string)
+							if !ok {
+								continue
 							}
 						} else {
-							value = pod[fields[0]].(map[string]interface{})[fields[1]].(string)
+							podField, ok := pod[fields[0]].(map[string]interface{})
+							if !ok {
+								continue
+							}
+							fieldValue, ok := podField[fields[1]].(string)
+							if !ok {
+								continue
+							}
+							value = fieldValue
 						}
 					}
-				} else if resourceFieldRef, ok := valueFrom["resourceFieldRef"].(map[string]interface{}); ok && resourceFieldRef["resource"] != nil && resourceFieldRef["resource"].(string) != "" {
-					resource := resourceFieldRef["resource"].(string)
+				} else if resourceFieldRef, ok := valueFrom["resourceFieldRef"].(map[string]interface{}); ok && resourceFieldRef["resource"] != nil {
+					resource, ok := resourceFieldRef["resource"].(string)
+					if !ok || resource == "" {
+						continue
+					}
 					resourceFields := strings.Split(resource, ".")
-					containerResources := container["resources"].(map[string]interface{})
-
-					if len(containerResources) > 0 && len(resourceFields) == 2 {
-						value = containerResources[resourceFields[0]].(map[string]interface{})[resourceFields[1]].(string)
+					containerResources, ok := container["resources"].(map[string]interface{})
+					if !ok || len(containerResources) == 0 || len(resourceFields) != 2 {
+						continue
+					}
+					value, ok = containerResources[resourceFields[0]].(map[string]interface{})[resourceFields[1]].(string)
+					if !ok {
+						continue
 					}
 				} else if secretKeyRef, ok := valueFrom["secretKeyRef"].(map[string]interface{}); ok {
-					secretName := secretKeyRef["name"].(string)
-					secretKey := secretKeyRef["key"].(string)
-
-					if secretName != "" && secretKey != "" {
-						value = fmt.Sprintf("secretKeyRef_%s_%s", secretName, secretKey)
+					secretName, ok := secretKeyRef["name"].(string)
+					if !ok || secretName == "" {
+						continue
 					}
+					secretKey, ok := secretKeyRef["key"].(string)
+					if !ok || secretKey == "" {
+						continue
+					}
+					value = fmt.Sprintf("secretKeyRef_%s_%s", secretName, secretKey)
 				} else {
 					value = fmt.Sprintf("%v", envVarMap["valueFrom"])
 				}
@@ -389,7 +461,10 @@ func obtainContainerEnvironmentVarsFromPodsResponse(pod map[string]interface{}, 
 		}
 
 		envValueString = strings.Join(envVars, ",")
-		containerName := container["name"].(string)
+		containerName, ok := container["name"].(string)
+		if !ok {
+			return envValueString
+		}
 
 		// Skip environment variable processing if it contains the flag AZMON_COLLECT_ENV=FALSE
 		// Check to see if the environment variable collection is disabled for this container.
@@ -470,52 +545,75 @@ func GetContainerInventory(namespaceFilteringMode string, namespaces []string, b
 		FLBLogger.Println("KubernetesContainerInventory::GetContainerInventory:getPodsFromCAdvisor io.ReadAll failed: ", err)
 		return nil, nil
 	}
+	if bodybytes == nil {
+		FLBLogger.Println("KubernetesContainerInventory::GetContainerInventory:getPodsFromCAdvisor bodybytes is nil")
+		return nil, nil
+	}
 	err = json.Unmarshal(bodybytes, &podList)
 	if err != nil {
 		FLBLogger.Println("KubernetesContainerInventory::GetContainerInventory:getPodsFromCAdvisor json.Unmarshal failed: ", err, bodybytes)
+		return nil, nil
+	}
+	if podList == nil {
+		FLBLogger.Println("KubernetesContainerInventory::GetContainerInventory:getPodsFromCAdvisor podList is nil")
 		return nil, nil
 	}
 
 	return GetContainerInventoryHelper(podList, namespaceFilteringMode, namespaces, batchTime)
 }
 
-func GetContainerInventoryHelper(podList map[string]interface{}, namespaceFilteringMode string, namespaces []string, batchTime string) ([]string, []map[string]interface{}) {
+func GetContainerInventoryHelper(podList map[string]interface{}, namespaceFilteringMode string, namespaces []string, batchTime string) ([]string, []map[string]interface{}){
 	containerIds := []string{}
 	containerInventory := []map[string]interface{}{}
 	clusterCollectEnvironmentVar := os.Getenv("AZMON_CLUSTER_COLLECT_ENV_VAR")
 	items, ok := podList["items"].([]interface{})
 	if ok && len(items) > 0 {
 		for _, item := range items {
-			metadata := item.(map[string]interface{})["metadata"].(map[string]interface{})
-			name := metadata["name"].(string)
-			namespace := metadata["namespace"].(string)
+			itemMap, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			metadata, ok := itemMap["metadata"].(map[string]interface{})
+			if !ok {
+				continue
+			}
+			name, ok := metadata["name"].(string)
+			if !ok {
+				continue
+			}
+			namespace, ok := metadata["namespace"].(string)
+			if !ok {
+				continue
+			}
 
 			if !IsExcludeResourceItem(name, namespace, namespaceFilteringMode, namespaces) {
 				isWindows := false
 				if strings.EqualFold(osType, "windows") {
 					isWindows = true
 				}
-				containerInventoryRecords := GetContainerInventoryRecords(item.(map[string]interface{}), batchTime, clusterCollectEnvironmentVar, isWindows)
+				containerInventoryRecords := GetContainerInventoryRecords(itemMap, batchTime, clusterCollectEnvironmentVar, isWindows)
 
 				for _, containerRecord := range containerInventoryRecords {
 					WriteContainerState(containerRecord)
 
-					computer := containerRecord["Computer"].(string)
-					if hostName == "" && computer != "" {
+					computer, ok := containerRecord["Computer"].(string)
+					if ok && hostName == "" && computer != "" {
 						hostName = computer
 					}
 
-					elementName := containerRecord["ElementName"].(string)
-					imageTag := containerRecord["ImageTag"].(string)
-					if addonTokenAdapterImageTag == "" && IsAADMSIAuthMode() &&
+					elementName, ok := containerRecord["ElementName"].(string)
+					imageTag, ok2 := containerRecord["ImageTag"].(string)
+					if ok && ok2 && addonTokenAdapterImageTag == "" && IsAADMSIAuthMode() &&
 						elementName != "" && strings.Contains(elementName, "_kube-system_") &&
 						strings.Contains(elementName, "addon-token-adapter_ama-logs") &&
 						imageTag != "" {
 						addonTokenAdapterImageTag = imageTag
 					}
 
-					instanceID := containerRecord["InstanceID"].(string)
-					containerIds = append(containerIds, instanceID)
+					instanceID, ok := containerRecord["InstanceID"].(string)
+					if ok {
+						containerIds = append(containerIds, instanceID)
+					}
 					containerInventory = append(containerInventory, containerRecord)
 				}
 			}
@@ -523,5 +621,4 @@ func GetContainerInventoryHelper(podList map[string]interface{}, namespaceFilter
 	}
 
 	return containerIds, containerInventory
-
 }

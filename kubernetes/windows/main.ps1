@@ -440,13 +440,20 @@ function Set-EnvironmentVariables {
 }
 
 function Read-Configs {
-    # run config parser
-    ruby /opt/amalogswindows/scripts/ruby/tomlparser.rb
-    Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setenv.txt"
-
     #Parse the configmap to set the right environment variables for agent config.
     ruby /opt/amalogswindows/scripts/ruby/tomlparser-common-agent-config.rb
     Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setcommonagentenv.txt"
+
+    # check if high log scale mode enabled
+    $enableHighLogScaleMode = [System.Environment]::GetEnvironmentVariable("ENABLE_HIGH_LOG_SCALE_MODE", "process")
+    if (![string]::IsNullOrEmpty($enableHighLogScaleMode)) {
+        Set-ProcessAndMachineEnvVariables "IS_HIGH_LOG_SCALE_MODE" $enableHighLogScaleMode
+        Write-Host "Successfully set environment variable IS_HIGH_LOG_SCALE_MODE - $($enableHighLogScaleMode) for target 'machine'..."
+    }
+
+    # run config parser
+    ruby /opt/amalogswindows/scripts/ruby/tomlparser.rb
+    Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setenv.txt"
 
     #Parse the configmap to set the right environment variables for agent config.
     ruby /opt/amalogswindows/scripts/ruby/tomlparser-agent-config.rb
@@ -464,13 +471,6 @@ function Read-Configs {
     }
     else {
         Write-Host "Failed to set environment variable GENEVA_LOGS_INTEGRATION for target 'machine' since it is either null or empty"
-    }
-
-    # check if high log scale mode enabled
-    $enableHighLogScaleMode = [System.Environment]::GetEnvironmentVariable("ENABLE_HIGH_LOG_SCALE_MODE", "process")
-    if (![string]::IsNullOrEmpty($enableHighLogScaleMode)) {
-        Set-ProcessAndMachineEnvVariables "IS_HIGH_LOG_SCALE_MODE" $enableHighLogScaleMode
-        Write-Host "Successfully set environment variable IS_HIGH_LOG_SCALE_MODE - $($enableHighLogScaleMode) for target 'machine'..."
     }
 
     #Replace placeholders in fluent-bit.conf
@@ -501,6 +501,29 @@ function Read-Configs {
     else {
         Write-Host "Failed to set environment variable GENEVA_LOGS_MULTI_TENANCY for target 'machine' since it is either null or empty"
     }
+
+    $azmonLogsMultitenancy = [System.Environment]::GetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION", "process")
+    if (![string]::IsNullOrEmpty($azmonLogsMultitenancy)) {
+        if ($azmonLogsMultitenancy.ToLower() -eq 'true') {
+          [System.Environment]::SetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION", $azmonLogsMultitenancy, "machine")
+          Write-Host "Successfully set environment variable AZMON_MULTI_TENANCY_LOG_COLLECTION - $($azmonLogsMultitenancy) for target 'machine'..."
+        }
+    }
+
+    $azmonLogsMultitenancyAdvancedMode = [System.Environment]::GetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE", "process")
+    if (![string]::IsNullOrEmpty($azmonLogsMultitenancyAdvancedMode)) {
+        if ($azmonLogsMultitenancyAdvancedMode.ToLower() -eq 'true') {
+          [System.Environment]::SetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE", $azmonLogsMultitenancyAdvancedMode, "machine")
+          Write-Host "Successfully set environment variable AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE - $($azmonLogsMultitenancyAdvancedMode) for target 'machine'..."
+        }
+    }
+
+    $azmonLogsMultitenancyNamespaces = [System.Environment]::GetEnvironmentVariable("AZMON_MULTI_TENANCY_NAMESPACES", "process")
+    if (![string]::IsNullOrEmpty($azmonLogsMultitenancyNamespaces)) {
+        [System.Environment]::SetEnvironmentVariable("AZMON_MULTI_TENANCY_NAMESPACES", $azmonLogsMultitenancyNamespaces, "machine")
+        Write-Host "Successfully set environment variable AZMON_MULTI_TENANCY_NAMESPACES - $($azmonLogsMultitenancyNamespaces) for target 'machine'..."
+    }
+
     if (![string]::IsNullOrEmpty($genevaLogsIntegration) -and $genevaLogsIntegration.ToLower() -eq 'true') {
         Write-Host "Setting Geneva Windows AMA Environment variables"
         Set-CommonAMAEnvironmentVariables
@@ -512,6 +535,9 @@ function Read-Configs {
             ruby /opt/amalogswindows/scripts/ruby/fluent-bit-geneva-conf-customizer.rb "infra_filter"
             Generate-GenevaTenantNameSpaceConfig
             Generate-GenevaInfraNameSpaceConfig
+        } else {
+            Clear-Content C:/etc/fluent-bit/fluent-bit-geneva-logs_tenant.conf
+            Clear-Content C:/etc/fluent-bit/fluent-bit-geneva-logs_tenant_filter.conf
         }
     } else {
         $isAADMSIAuth = [System.Environment]::GetEnvironmentVariable("USING_AAD_MSI_AUTH", "process")
@@ -699,7 +725,24 @@ function Start-Fluent-Telegraf {
     }
     $genevaLogsIntegration = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_INTEGRATION", "process")
     $genevaLogsMultitenancy = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_MULTI_TENANCY", "process")
-    if (![string]::IsNullOrEmpty($genevaLogsIntegration) -and $genevaLogsIntegration.ToLower() -eq 'true' -and ![string]::IsNullOrEmpty($genevaLogsMultitenancy) -and $genevaLogsMultitenancy.ToLower() -eq 'true') {
+    $azmonLogsMultitenancy = [System.Environment]::GetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION", "process")
+    $azmonLogsMultitenancyAdvancedMode = [System.Environment]::GetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE", "process")
+    if  (![string]::IsNullOrEmpty($azmonLogsMultitenancy) -and $azmonLogsMultitenancy.ToLower() -eq 'true') {
+        if  (![string]::IsNullOrEmpty($azmonLogsMultitenancyAdvancedMode) -and $azmonLogsMultitenancyAdvancedMode.ToLower() -eq 'true') {
+            $fluentbitConfFile = "C:/etc/fluent-bit/fluent-bit-azmon-multi-tenancy.conf"
+            Write-Host "Using fluent-bit config: $($fluentbitConfFile)"
+            # Run fluent-bit service first so that we do not miss any logs being forwarded by the telegraf service.
+            # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
+            Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\fluent-bit\bin\fluent-bit.exe" -ArgumentList @("-c", "C:/etc/fluent-bit/fluent-bit-azmon-multi-tenancy.conf", "-e", "C:\opt\amalogswindows\out_oms.so") }
+        } else {
+            $fluentbitConfFile = "C:/etc/fluent-bit/fluent-bit.conf"
+            Write-Host "Using fluent-bit config: $($fluentbitConfFile)"
+            # Run fluent-bit service first so that we do not miss any logs being forwarded by the telegraf service.
+            # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
+            Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\fluent-bit\bin\fluent-bit.exe" -ArgumentList @("-c", "C:/etc/fluent-bit/fluent-bit.conf", "-e", "C:\opt\amalogswindows\out_oms.so") }
+        }
+    }
+    elseif (![string]::IsNullOrEmpty($genevaLogsIntegration) -and $genevaLogsIntegration.ToLower() -eq 'true' -and ![string]::IsNullOrEmpty($genevaLogsMultitenancy) -and $genevaLogsMultitenancy.ToLower() -eq 'true') {
         $fluentbitConfFile = "C:/etc/fluent-bit/fluent-bit-geneva.conf"
         Write-Host "Using fluent-bit config: $($fluentbitConfFile)"
         # Run fluent-bit service first so that we do not miss any logs being forwarded by the telegraf service.

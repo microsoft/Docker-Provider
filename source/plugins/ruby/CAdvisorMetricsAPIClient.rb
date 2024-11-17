@@ -276,7 +276,10 @@ class CAdvisorMetricsAPIClient
                       telemetryProps["clusterenvvars"] = @clusterEnvVarCollectionEnabled
                       telemetryProps["clusterstderrlogs"] = @clusterStdErrLogCollectionEnabled
                       telemetryProps["clusterstdoutlogs"] = @clusterStdOutLogCollectionEnabled
-                      telemetryProps["clusterlogtailexcludepath"] = @clusterLogTailExcludPath
+                      # Limit the length of the clusterlogtailexcludepath to 1KB since it can impact telemetry ingestion
+                      if (!@clusterLogTailExcludPath.nil? && !@clusterLogTailExcludPath.empty? && @clusterLogTailExcludPath.size <= 1024)
+                        telemetryProps["clusterlogtailexcludepath"] = @clusterLogTailExcludPath
+                      end
                       telemetryProps["clusterLogTailPath"] = @clusterLogTailPath
                       telemetryProps["clusterAgentSchemaVersion"] = @clusterAgentSchemaVersion
                       telemetryProps["clusterCLEnrich"] = @clusterContainerLogEnrich
@@ -629,7 +632,10 @@ class CAdvisorMetricsAPIClient
                       telemetryProps["clusterenvvars"] = @clusterEnvVarCollectionEnabled
                       telemetryProps["clusterstderrlogs"] = @clusterStdErrLogCollectionEnabled
                       telemetryProps["clusterstdoutlogs"] = @clusterStdOutLogCollectionEnabled
-                      telemetryProps["clusterlogtailexcludepath"] = @clusterLogTailExcludPath
+                      # Limit the length of the clusterlogtailexcludepath to 1KB since it can impact telemetry ingestion
+                      if (!@clusterLogTailExcludPath.nil? && !@clusterLogTailExcludPath.empty? && @clusterLogTailExcludPath.size <= 1024)
+                        telemetryProps["clusterlogtailexcludepath"] = @clusterLogTailExcludPath
+                      end
                       telemetryProps["clusterLogTailPath"] = @clusterLogTailPath
                       telemetryProps["clusterAgentSchemaVersion"] = @clusterAgentSchemaVersion
                       telemetryProps["clusterCLEnrich"] = @clusterContainerLogEnrich

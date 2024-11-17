@@ -8,6 +8,51 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 10/07/2024 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.24 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.24 (windows)
+- Linux
+  - [CBL-Mariner 2.0.20240829](https://github.com/microsoft/azurelinux/releases/tag/2.0.20240829-2.0)
+  - Golang - 1.22.5
+  - Ruby - 3.1.3
+  - MDSD - 1.31.4
+  - Telegraf - 1.29.4-8
+  - Fluent-bit - 2.2.3
+  - Fluentd - 1.16.3
+- Windows
+  - Golang - 1.22.5
+  - Ruby - 3.1.1
+  - Windows AMA - 46.17.2
+  - Telegraf - 1.24.2
+  - Fluent-bit - 3.0.6
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+  * Enable telegraf livenessprobe for linux by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1299
+  * Contianer insights 3.1.23 release charts update and release notes by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1300
+  * Fix upgrade go version 1.22.5 by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1302
+  * Bump github.com/docker/docker from 24.0.9+incompatible to 25.0.6+incompatible in /source/plugins/go/input by @dependabot in https://github.com/microsoft/Docker-Provider/pull/1303
+  * strip debug symbols to reduce binary size by @pfrcks in https://github.com/microsoft/Docker-Provider/pull/1298
+  * cm update for high log scale by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1304
+  * Add chart change for linux Telegraf livenessprobe change by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1306
+  * bump aks arm api version for addon enablement by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1307
+  * Add telemetry for checking Telegraf running status when enabled by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1310
+  * Add update-ca-trust command by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1314
+  * Fix resource optimization bug by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1317
+  * Gangams/logs multi tenancy with service by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1309
+  * fix gh issue by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1319
+  * Fix windows ama toggles default bug by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1320
+  * Remove ruby webrick package for vulnerability by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1322
+  * Gangams/graceful shutdown by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1321
+  * fix windows perf telemetry bug by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1323
+  * remove fluentd dependency by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1324
+  * Update telegraf sign copy by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1325
+  * increase retry limit by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1327
+  * optimize agent telemetry by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1329
+  * Gangams/multi tenancy add advanced_mode_enabled option in the configmap  by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1328
+  * Gangams/update ca trust by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1330
+  * Gangams/fix panic by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1331
+
 ### 07/29/2024 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.23 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.23 (windows)

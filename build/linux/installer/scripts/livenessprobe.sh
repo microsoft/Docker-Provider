@@ -55,7 +55,7 @@ if [[ "${CONTAINER_TYPE}" == "PrometheusSidecar" && "${MUTE_PROM_SIDECAR}" == "t
 fi
 
 #test to exit non zero value if mdsd is not running
-(ps -ef | grep "mdsd" | grep -v "grep")
+(ps -ef | grep "mdsd" | grep -v -E "grep|amacoreagent")
 if [ $? -ne 0 ]
 then
   echo "mdsd is not running" > /dev/termination-log
@@ -70,7 +70,7 @@ then
  exit 1
 fi
 
-if [[ "${IS_HIGH_LOG_SCALE_MODE}" == "true" ]]; then
+if [[ "${IS_HIGH_LOG_SCALE_MODE}" == "true" || "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]]; then
       (ps -ef | grep "amacoreagent" | grep -v "grep")
       if [ $? -ne 0 ]
       then
@@ -89,7 +89,7 @@ fi
 #optionally test to exit non zero value if fluentd is not running
 if [ "$AZMON_RESOURCE_OPTIMIZATION_ENABLED" != "true" ]; then
   #fluentd not used in sidecar container
-  if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]  && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
+  if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]  && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ] && [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" != "true" ]; then
     (ps -ef | grep "fluentd" | grep -v "grep")
     if [ $? -ne 0 ]
     then
@@ -116,7 +116,7 @@ if [ "$AZMON_RESOURCE_OPTIMIZATION_ENABLED" != "true" ]; then
 fi
 
 #test to exit non zero value if telegraf is not running
-if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ]; then
+if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ] || [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]; then
   exit 0
 else
   (ps -ef | grep telegraf | grep -v "grep")

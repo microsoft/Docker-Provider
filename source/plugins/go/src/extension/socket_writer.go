@@ -6,14 +6,15 @@ import (
 
 //go:generate mockgen -destination=socket_writer_mock.go -package=extension Docker-Provider/source/plugins/go/src/extension IFluentSocketWriter
 
-//MaxRetries for trying to write data to the socket
+// MaxRetries for trying to write data to the socket
 const MaxRetries = 5
 
-//ReadBufferSize for reading data from sockets
-//Current CI extension config size is ~5KB and going with 20KB to handle any future scenarios
-const ReadBufferSize = 20480
+// ReadBufferSize for reading data from sockets
+// Current CI extension config size is ~5KB which is singleton where as ContainerLogV2Extension can be many
+// ContainerLogV2Extension DCR config size is ~2KB and for handling upto 500 DCRs, 2KB*500 => 1MB
+const ReadBufferSize = 1024000
 
-//FluentSocketWriter writes data to AMA's default fluent socket
+// FluentSocketWriter writes data to AMA's default fluent socket
 type FluentSocket struct {
 	socket      net.Conn
 	sockAddress string
@@ -100,7 +101,7 @@ func (FluentSocketWriterImpl) write(fs *FluentSocket, payload []byte) (int, erro
 	return FluentSocketWriter.writeWithRetries(fs, payload)
 }
 
-//writeAndRead writes data to the socket and sends the response back
+// writeAndRead writes data to the socket and sends the response back
 func (FluentSocketWriterImpl) writeAndRead(fs *FluentSocket, payload []byte) ([]byte, error) {
 	_, err := FluentSocketWriter.write(fs, payload)
 	if err != nil {

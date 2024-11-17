@@ -12,7 +12,7 @@ import (
 
 type FluentSocketWriterMock struct{}
 
-func Test_getDataTypeToStreamIdMapping(t *testing.T) {
+func Test_getDataTypeToStreamIdMappingFromCIExtension(t *testing.T) {
 
 	type test_struct struct {
 		testName     string
@@ -23,7 +23,7 @@ func Test_getDataTypeToStreamIdMapping(t *testing.T) {
 	}
 
 	// This is a pretty useless unit test, but it demonstrates the concept (putting together a real test
-	// would require some large json structs). If getDataTypeToStreamIdMapping() is ever updated, that
+	// would require some large json structs). If getDataTypeToStreamIdMappingFromCIExtension() is ever updated, that
 	// would be a good opertunity to add some real test cases.
 	tests := []test_struct{
 		{
@@ -58,13 +58,13 @@ func Test_getDataTypeToStreamIdMapping(t *testing.T) {
 			GetInstance(log.New(logfile, "", 0), "ContainerType")
 			defer os.Remove("logFile.txt")
 
-			got, reterr := getDataTypeToStreamIdMapping()
+			got, reterr := getDataTypeToStreamIdMappingFromCIExtension()
 			if reterr != nil {
 				t.Errorf("got error")
 				t.Errorf(err.Error())
 			}
 			if !reflect.DeepEqual(got, tt.output) {
-				t.Errorf("getDataTypeToStreamIdMapping() = %v, want %v", got, tt.output)
+				t.Errorf("getDataTypeToStreamIdMappingFromCIExtension() = %v, want %v", got, tt.output)
 			}
 
 			// stop redirecting method calls to the mock

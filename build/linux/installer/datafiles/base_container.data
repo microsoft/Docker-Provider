@@ -47,8 +47,8 @@ MAINTAINER:              'Microsoft Corporation'
 
 /etc/opt/microsoft/azuremonitoragent/amacoreagent/PA.json;              build/linux/installer/conf/PA.json;                             755; root; root
 
-/opt/fluent-bit-geneva-conf-customizer.rb;                            build/common/installer/scripts/fluent-bit-geneva-conf-customizer.rb;     755; root; root
-/etc/opt/microsoft/docker-cimprov/fluent-bit-input.conf;			    build/linux/installer/conf/fluent-bit-input.conf;                644; root; root
+/opt/fluent-bit-geneva-conf-customizer.rb;                     build/common/installer/scripts/fluent-bit-geneva-conf-customizer.rb;     755; root; root
+/etc/opt/microsoft/docker-cimprov/fluent-bit-input.conf;			       build/linux/installer/conf/fluent-bit-input.conf;                644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit-common.conf;			    build/linux/installer/conf/fluent-bit-common.conf;                644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit-geneva.conf;			    build/linux/installer/conf/fluent-bit-geneva.conf;                644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit-geneva-logs_infra.conf;  build/linux/installer/conf/fluent-bit-geneva-logs_infra.conf;   644; root; root
@@ -58,10 +58,16 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/opt/microsoft/docker-cimprov/fluent-bit-geneva-telemetry-svc.conf;          build/linux/installer/conf/fluent-bit-geneva-telemetry-svc.conf;   644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit-internal-metrics.conf;    build/linux/installer/conf/fluent-bit-internal-metrics.conf; 644; root; root
 
+
+/etc/opt/microsoft/docker-cimprov/fluent-bit-azmon-multi-tenancy.conf;        build/linux/installer/conf/fluent-bit-azmon-multi-tenancy.conf;              644; root; root
+/etc/opt/microsoft/docker-cimprov/fluent-bit-azmon-logs_tenant.conf;          build/linux/installer/conf/fluent-bit-azmon-logs_tenant.conf;                644; root; root
+/etc/opt/microsoft/docker-cimprov/fluent-bit-azmon-logs_metadata_filter.conf; build/linux/installer/conf/fluent-bit-azmon-logs_metadata_filter.conf;         644; root; root
+/etc/opt/microsoft/docker-cimprov/fluent-bit-azmon-logs-svc.conf;             build/linux/installer/conf/fluent-bit-azmon-logs-svc.conf;                   644; root; root
+
 /opt/tomlparser-agent-config.rb;                                build/common/installer/scripts/tomlparser-agent-config.rb;     755; root; root
 /opt/tomlparser-common-agent-config.rb;                         build/common/installer/scripts/tomlparser-common-agent-config.rb;     755; root; root
 /opt/tomlparser.rb;                                             build/common/installer/scripts/tomlparser.rb;     755; root; root
-/opt/fluent-bit-conf-customizer.rb;                           build/common/installer/scripts/fluent-bit-conf-customizer.rb;     755; root; root
+/opt/fluent-bit-conf-customizer.rb;                             build/common/installer/scripts/fluent-bit-conf-customizer.rb;     755; root; root
 /opt/ConfigParseErrorLogger.rb;                                 build/common/installer/scripts/ConfigParseErrorLogger.rb;           755; root; root
 /opt/tomlparser-npm-config.rb;                                  build/linux/installer/scripts/tomlparser-npm-config.rb;     755; root; root
 /opt/tomlparser-osm-config.rb;                                  build/linux/installer/scripts/tomlparser-osm-config.rb;     755; root; root

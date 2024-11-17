@@ -36,14 +36,17 @@ gem update time --default
 gem update uri --default
 gem update stringio --default
 gem update rexml --default
+gem update webrick --default
 mv /usr/lib/ruby/gems/3.1.0/specifications/default/time-0.2.0.gemspec /usr/lib/ruby/gems/3.1.0/specifications/default/..
 mv /usr/lib/ruby/gems/3.1.0/specifications/default/uri-0.11.0.gemspec /usr/lib/ruby/gems/3.1.0/specifications/default/..
 mv /usr/lib/ruby/gems/3.1.0/specifications/default/stringio-3.0.1.gemspec /usr/lib/ruby/gems/3.1.0/specifications/default/..
 mv /usr/lib/ruby/gems/3.1.0/specifications/default/rexml-3.2.5.gemspec /usr/lib/ruby/gems/3.1.0/specifications/default/..
+mv /usr/lib/ruby/gems/3.1.0/specifications/webrick-1.8.1.gemspec /usr/lib/ruby/gems/3.1.0/specifications/..
 gem uninstall time --version 0.2.0
 gem uninstall uri --version 0.11.0
 gem uninstall stringio --version 3.0.1
 gem uninstall rexml --version 3.2.5
+gem uninstall webrick --version 1.8.1
 
 if [ "${ARCH}" != "arm64" ]; then
     # mdsd version with 50k eps changes for x64

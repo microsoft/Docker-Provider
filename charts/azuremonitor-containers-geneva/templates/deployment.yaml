@@ -33,6 +33,8 @@ spec:
          resources:
           {{- toYaml .Values.resources | nindent 12 }}
          env:
+         - name: CONTROLLER_TYPE
+           value: "ReplicaSet"
          - name: GENEVA_TELEMETRY_SERVICE_POD_NAMESPACE
            valueFrom:
               fieldRef:

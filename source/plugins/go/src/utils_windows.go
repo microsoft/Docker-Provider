@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os/exec"
@@ -14,10 +15,9 @@ import (
 	"github.com/Microsoft/go-winio"
 )
 
-func CreateWindowsNamedPipeClient(namedPipe string, namedPipeConnection *net.Conn) {
+func CreateWindowsNamedPipeClient(namedPipe string, namedPipeConnection *net.Conn) error {
 	if namedPipe == "" {
-		Log("Error::AMA::CreateWindowsNamedPipeClient::namedPipe is empty")
-		return
+		return errors.New("Error::AMA::CreateWindowsNamedPipeClient::namedPipe is empty")
 	}
 	containerLogPipePath := "\\\\.\\\\pipe\\\\" + namedPipe
 
@@ -27,22 +27,25 @@ func CreateWindowsNamedPipeClient(namedPipe string, namedPipeConnection *net.Con
 	conn, err := winio.DialPipeAccess(ctx, containerLogPipePath, syscall.GENERIC_WRITE)
 
 	if err != nil {
-		Log("Error::AMA::Unable to open Named Pipe %s", err.Error())
+		return err
 	} else {
 		Log("Windows Named Pipe opened without any errors")
 		*namedPipeConnection = conn
 	}
+	return nil
 }
 
 func EnsureGenevaOr3PNamedPipeExists(namedPipeConnection *net.Conn, datatype string, errorCount *float64, isGenevaLogsIntegrationEnabled bool, refreshTracker *time.Time) bool {
 	if *namedPipeConnection == nil {
 		Log("Error::AMA:: The connection to named pipe was nil. re-connecting...")
+		var err error
 		if isGenevaLogsIntegrationEnabled {
-			CreateWindowsNamedPipeClient(getGenevaWindowsNamedPipeName(), namedPipeConnection)
+			err = CreateWindowsNamedPipeClient(getGenevaWindowsNamedPipeName(), namedPipeConnection)
 		} else {
-			CreateWindowsNamedPipeClient(GetOutputNamedPipe(datatype, refreshTracker), namedPipeConnection)
+			err = CreateWindowsNamedPipeClient(GetOutputNamedPipe(datatype, refreshTracker), namedPipeConnection)
 		}
-		if namedPipeConnection == nil {
+
+		if err != nil || namedPipeConnection == nil {
 			Log("Error::AMA::Cannot create the named pipe connection for %s.", datatype)
 			ContainerLogTelemetryMutex.Lock()
 			defer ContainerLogTelemetryMutex.Unlock()

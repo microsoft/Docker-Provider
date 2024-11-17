@@ -391,7 +391,7 @@ spec:
         #         - NET_ADMIN
         #         - NET_RAW
         - name: ama-logs
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.23"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.24"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -523,7 +523,7 @@ spec:
             timeoutSeconds: 15
 #Only in sidecar scraping mode
         - name: ama-logs-prometheus
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.23"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.24"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -694,6 +694,244 @@ spec:
             name: container-azm-ms-osmconfig
             optional: true
 ---
+# # Uncomment below lines for multi-tenancy log collection in advanced mode
+# apiVersion: autoscaling/v2
+# kind: HorizontalPodAutoscaler
+# metadata:
+#   name: ama-logs-hpa
+#   namespace: kube-system
+#   labels:
+#     component: ama-logs-agent
+#     tier: node
+# spec:
+#   scaleTargetRef:
+#     apiVersion: apps/v1
+#     kind: Deployment
+#     name: ama-logs-multitenancy
+#   minReplicas: 2
+#   maxReplicas: 100
+#   metrics:
+#     - type: Resource
+#       resource:
+#         name: cpu
+#         target:
+#           type: Utilization
+#           averageUtilization: 200
+#     - type: Resource
+#       resource:
+#         name: memory
+#         target:
+#           type: Utilization
+#           averageUtilization: 200
+#   behavior:
+#     scaleDown:
+#       stabilizationWindowSeconds: 1200
+#       policies:
+#       - type: Percent
+#         value: 5
+#         periodSeconds: 180
+#     scaleUp:
+#       stabilizationWindowSeconds: 0
+#       policies:
+#       - type: Pods
+#         value: 5
+#         periodSeconds: 5
+#       - type: Percent
+#         value: 100
+#         periodSeconds: 5
+#       selectPolicy: Max
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: ama-logs-service
+#   namespace: kube-system
+#   labels:
+#     component: ama-logs-agent
+#     tier: node
+# spec:
+#   type: ClusterIP
+#   ports:
+#     - port: 24225
+#       targetPort: 24225
+#       protocol: TCP
+#       name: fluentbit-fwd
+#   selector:
+#     rsName: "ama-logs-multitenancy"
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: ama-logs-multitenancy
+#   namespace: kube-system
+#   labels:
+#     component: ama-logs-agent
+#     tier: node
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       rsName: "ama-logs-multitenancy"
+#   strategy:
+#     type: RollingUpdate
+#   template:
+#     metadata:
+#       labels:
+#         rsName: "ama-logs-multitenancy"
+#       annotations:
+#         agentVersion: "azure-mdsd-1.31.4"
+#         dockerProviderVersion: "18.0.1-0"
+#         schema-versions: "v1"
+#         kubernetes.azure.com/no-http-proxy-vars: "true"
+#     spec:
+#       serviceAccountName: ama-logs
+#       containers:
+#         - name: addon-token-adapter
+#           command:
+#             - /addon-token-adapter
+#           args:
+#             - --secret-namespace=kube-system
+#             - --secret-name=aad-msi-auth-token
+#             - --token-server-listening-port=8888
+#             - --health-server-listening-port=9999
+#             - --restart-pod-waiting-minutes-on-broken-connection=240
+#           # Make sure this matching with version in AKS RP side
+#           image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.230804.1
+#           imagePullPolicy: IfNotPresent
+#           env:
+#             - name: AZMON_COLLECT_ENV
+#               value: "false"
+#           livenessProbe:
+#             httpGet:
+#               path: /healthz
+#               port: 9999
+#             initialDelaySeconds: 10
+#             periodSeconds: 60
+#           resources:
+#             limits:
+#               cpu: 500m
+#               memory: 500Mi
+#             requests:
+#               cpu: 100m
+#               memory: 100Mi
+#           securityContext:
+#             capabilities:
+#               drop:
+#                 - ALL
+#               add:
+#                 - NET_ADMIN
+#                 - NET_RAW
+#         - name: ama-logs
+#           image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.22"
+#           imagePullPolicy: IfNotPresent
+#           resources:
+#             limits:
+#               cpu: 1
+#               memory: 1Gi
+#             requests:
+#               cpu: 100m
+#               memory: 100Mi
+#           env:
+#             - name: AZMON_MULTI_TENANCY_LOG_COLLECTION
+#               value: "true"
+#             - name: AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE
+#               value: "true"
+#             - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+#               valueFrom:
+#                 resourceFieldRef:
+#                   containerName: ama-logs
+#                   resource: limits.memory
+#             - name: AKS_RESOURCE_ID
+#               value: "VALUE_AKS_RESOURCE_ID_VALUE"
+#             - name: AKS_REGION
+#               value: "VALUE_AKS_RESOURCE_REGION_VALUE"
+#             # this used for e2e test and setting this just emits some additional log statements which used for the e2e tests
+#             - name: ISTEST
+#               value: "false"
+#             - name: CONTROLLER_TYPE
+#               value: "ReplicaSet"
+#             - name: NODE_IP
+#               valueFrom:
+#                 fieldRef:
+#                   fieldPath: status.hostIP
+#             - name: USING_AAD_MSI_AUTH
+#               value: "true"
+#           securityContext:
+#             privileged: true
+#             capabilities:
+#               drop:
+#                 - ALL
+#               add:
+#                 - DAC_OVERRIDE
+#           ports:
+#             - name: http
+#               containerPort: 24225
+#               protocol: TCP
+#           volumeMounts:
+#             - mountPath: /etc/ama-logs-secret
+#               name: ama-logs-secret
+#               readOnly: true
+#             - mountPath: /etc/config/settings
+#               name: settings-vol-config
+#               readOnly: true
+#             #Uncomment below for HTTP(s) proxy testing
+#             # - mountPath: /etc/ssl/certs/proxy-cert.crt
+#             #   subPath: PROXYCERT.crt
+#             #   name: ama-logs-secret
+#             #   readOnly: true
+#           lifecycle:
+#             preStop:
+#               exec:
+#                command: [
+#                   "sh", "-c",
+#                   # Introduce a delay to the shutdown sequence to wait for the
+#                   # pod eviction event to propagate. Then, gracefully shutdown
+#                   "sleep 5"
+#                 ]
+#           livenessProbe:
+#             exec:
+#               command:
+#                 - /bin/bash
+#                 - -c
+#                 - /opt/livenessprobe.sh
+#             initialDelaySeconds: 60
+#             periodSeconds: 60
+#             timeoutSeconds: 15
+#           readinessProbe:
+#             tcpSocket:
+#               port: 24225
+#             initialDelaySeconds: 10
+#             periodSeconds: 30
+#       affinity:
+#         nodeAffinity:
+#           requiredDuringSchedulingIgnoredDuringExecution:
+#             nodeSelectorTerms:
+#             - matchExpressions:
+#                 - key: kubernetes.io/os
+#                   operator: In
+#                   values:
+#                   - linux
+#                 - key: type
+#                   operator: NotIn
+#                   values:
+#                     - virtual-kubelet
+#       # The following tolerations are removed for AKS, this is only required for non AKS
+#       tolerations:
+#         - operator: "Exists"
+#           effect: "NoSchedule"
+#         - operator: "Exists"
+#           effect: "NoExecute"
+#         - operator: "Exists"
+#           effect: "PreferNoSchedule"
+#       volumes:
+#         - name: ama-logs-secret
+#           secret:
+#             secretName: ama-logs-secret
+#         - name: settings-vol-config
+#           configMap:
+#             name: container-azm-ms-agentconfig
+#             optional: true
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -794,7 +1032,7 @@ spec:
         #         - NET_ADMIN
         #         - NET_RAW
         - name: ama-logs
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.23"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.24"
           imagePullPolicy: IfNotPresent
           # comment resources if VPA configured since the VPA will set these values
           resources:
@@ -856,6 +1094,8 @@ spec:
             - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
               value: "28331"
             - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+              value: "false"
+            - name: AZMON_WINDOWS_FLUENT_BIT_ENABLED
               value: "false"
           securityContext:
             privileged: true
@@ -1050,7 +1290,7 @@ spec:
       #       add:
       #         - NET_ADMIN
        - name: ama-logs-windows
-         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.23"
+         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.24"
          imagePullPolicy: IfNotPresent
          resources:
           requests:
@@ -1109,8 +1349,8 @@ spec:
           # Uncomment below lines for MSI Auth Mode  testing
           # - name: USING_AAD_MSI_AUTH
           #   value: "true"
-          - name: AZMON_WINDOWS_FLUENT_BIT_DISABLED
-            value: "true"
+          - name: AZMON_WINDOWS_FLUENT_BIT_ENABLED
+            value: "false"
           - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
             value: "false"
           - name: APPMONITORING_OPENTELEMETRYLOGS_ENABLED

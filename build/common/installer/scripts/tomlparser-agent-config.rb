@@ -65,7 +65,7 @@ require_relative "ConfigParseErrorLogger"
 @fbitTailIgnoreOlder = ""
 @storageTotalLimitSizeMB = 200
 @outputForwardWorkers = 10
-@outputForwardRetryLimit = 10
+@outputForwardRetryLimit = 30
 @requireAckResponse = "false"
 @fbitStorageMaxChunksUp = 0
 @fbitStorageType = ""
@@ -97,8 +97,6 @@ require_relative "ConfigParseErrorLogger"
 @ignoreProxySettings = false
 
 @multiline_enabled = "false"
-@resource_optimization_enabled = false
-@windows_fluent_bit_disabled = true
 
 @waittime_port_25226 = 45
 @waittime_port_25228 = 120
@@ -373,32 +371,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         puts "Using config map value: AZMON_MULTILINE_ENABLED = #{@multiline_enabled}"
       end
 
-      if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.casecmp(@daemonset) == 0 && @containerType.nil?
-        resource_optimization_config = parsedConfig[:agent_settings][:resource_optimization]
-        if !resource_optimization_config.nil?
-          resource_optimization_enabled = resource_optimization_config[:enabled]
-          if !resource_optimization_enabled.nil? && (!!resource_optimization_enabled == resource_optimization_enabled) #Checking for Boolean type, since 'Boolean' is not defined as a type in ruby
-            @resource_optimization_enabled = resource_optimization_enabled
-          end
-          puts "Using config map value: AZMON_RESOURCE_OPTIMIZATION_ENABLED = #{@resource_optimization_enabled}"
-        end
-      end
-
-      enable_custom_metrics = ENV["ENABLE_CUSTOM_METRICS"]
-      if !enable_custom_metrics.nil? && enable_custom_metrics.to_s.downcase == "true"
-        @resource_optimization_enabled = false
-        puts "Resource Optimization disabled since custom metrics is enabled"
-      end
-
-      windows_fluent_bit_config = parsedConfig[:agent_settings][:windows_fluent_bit]
-      if !windows_fluent_bit_config.nil?
-        windows_fluent_bit_disabled = windows_fluent_bit_config[:disabled]
-        if !windows_fluent_bit_disabled.nil? && windows_fluent_bit_disabled.to_s.downcase == "false"
-          @windows_fluent_bit_disabled = false
-        end
-        puts "Using config map value: AZMON_WINDOWS_FLUENT_BIT_DISABLED = #{@windows_fluent_bit_disabled}"
-      end
-
       network_listener_waittime_config = parsedConfig[:agent_settings][:network_listener_waittime]
       if !network_listener_waittime_config.nil?
         waittime = network_listener_waittime_config[:tcp_port_25226]
@@ -549,12 +521,6 @@ if !file.nil?
     file.write("export AZMON_MULTILINE_ENABLED=#{@multiline_enabled}\n")
   end
 
-  file.write("export AZMON_RESOURCE_OPTIMIZATION_ENABLED=#{@resource_optimization_enabled}\n")
-
-  if !@windows_fluent_bit_disabled
-    file.write("export AZMON_WINDOWS_FLUENT_BIT_DISABLED=#{@windows_fluent_bit_disabled}\n")
-  end
-
   file.write("export WAITTIME_PORT_25226=#{@waittime_port_25226}\n")
   file.write("export WAITTIME_PORT_25228=#{@waittime_port_25228}\n")
   file.write("export WAITTIME_PORT_25229=#{@waittime_port_25229}\n")
@@ -657,15 +623,6 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     end
     if @multiline_enabled.strip.casecmp("true") == 0
       commands = get_command_windows("AZMON_MULTILINE_ENABLED", @multiline_enabled)
-      file.write(commands)
-    end
-    if @resource_optimization_enabled
-      commands = get_command_windows("AZMON_RESOURCE_OPTIMIZATION_ENABLED", @resource_optimization_enabled)
-      file.write(commands)
-    end
-
-    if !@windows_fluent_bit_disabled
-      commands = get_command_windows("AZMON_WINDOWS_FLUENT_BIT_DISABLED", @windows_fluent_bit_disabled)
       file.write(commands)
     end
 

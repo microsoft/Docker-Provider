@@ -88,6 +88,10 @@ var (
 	TracesErrorMetricsTicker *time.Ticker
 	//Mutex for mdsd error metrics
 	TracesErrorMetricsMutex = &sync.Mutex{}
+	// ContainerLogV2ExtensionDCRCount indicates the number of ContainerLogV2 extension DCRs
+	ContainerLogV2ExtensionDCRCount int
+	// MultitenantNamespaceCount indicates the number of unique k8s namespaces enabled for multi-tenancy
+	MultitenantNamespaceCount int
 )
 
 const (
@@ -167,12 +171,16 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		promMonitorPodsLabelSelectorLength := PromMonitorPodsLabelSelectorLength
 		promMonitorPodsFieldSelectorLength := PromMonitorPodsFieldSelectorLength
 		containerLogRecordCountWithEmptyTimeStamp := ContainerLogRecordCountWithEmptyTimeStamp
+		containerLogV2ExtensionDCRCount := ContainerLogV2ExtensionDCRCount
+		multitenantNamespaceCount := MultitenantNamespaceCount
 
 		TelegrafMetricsSentCount = 0.0
 		TelegrafMetricsSendErrorCount = 0.0
 		TelegrafMetricsSend429ErrorCount = 0.0
 		WinTelegrafMetricsCountWithTagsSize64KBorMore = 0.0
 		FlushedRecordsCount = 0.0
+		ContainerLogV2ExtensionDCRCount = 0
+		MultitenantNamespaceCount = 0
 		FlushedRecordsSize = 0.0
 		FlushedMetadataSize = 0.0
 		FlushedRecordsTimeTaken = 0.0
@@ -267,6 +275,15 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 				isHighLogScaleMode := os.Getenv("IS_HIGH_LOG_SCALE_MODE")
 				if isHighLogScaleMode != "" {
 					telemetryDimensions["isHighLogScaleMode"] = isHighLogScaleMode
+				}
+
+				isAzMonMultitenancyEnabled := os.Getenv("AZMON_MULTI_TENANCY_LOG_COLLECTION")
+				isAzMonMultitenancyAdvancedMode := os.Getenv("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE")
+				if isAzMonMultitenancyEnabled != "" {
+					telemetryDimensions["isAzMonMultitenancyEnabled"] = isAzMonMultitenancyEnabled
+					telemetryDimensions["isAzMonMultitenancyAdvancedMode"] = isAzMonMultitenancyAdvancedMode
+					telemetryDimensions["containerLogV2ExtensionDCRCount"] = strconv.Itoa(containerLogV2ExtensionDCRCount)
+					telemetryDimensions["multitenantNamespaceCount"] = strconv.Itoa(multitenantNamespaceCount)
 				}
 
 				enableCustomMetrics := os.Getenv("ENABLE_CUSTOM_METRICS")

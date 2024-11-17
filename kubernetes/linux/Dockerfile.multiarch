@@ -22,7 +22,23 @@ ENV tmpdir /opt
 RUN tdnf clean all
 RUN tdnf repolist --refresh
 RUN tdnf -y update
-RUN tdnf install -y build-essential wget curl sudo net-tools cronie rsyslog dmidecode gnupg make logrotate busybox gawk tar && rm -rf /var/lib/apt/lists/*
+RUN tdnf install -y \
+         build-essential \
+        wget \
+        curl \
+        sudo \
+        net-tools \
+        cronie \
+        rsyslog \
+        dmidecode \
+        gnupg \
+        make \
+        logrotate \
+        busybox \
+        gawk \
+        tar \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 RUN mkdir /busybin && busybox --install /busybin
 
 COPY --from=golang-builder /src/kubernetes/linux/Linux_ULINUX_1.0_*_64_Release/docker-cimprov-*.*.*-*.*.sh $tmpdir/
@@ -52,7 +68,7 @@ ENV KUBE_CLIENT_BACKOFF_DURATION 0
 ENV RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR 0.9
 
 # default value will be overwritten by pipeline
-ARG IMAGE_TAG=3.1.23
+ARG IMAGE_TAG=3.1.24
 ENV AGENT_VERSION ${IMAGE_TAG}
 
 WORKDIR ${tmpdir}
@@ -66,6 +82,7 @@ COPY --from=builder /var/lib/logrotate /var/lib/logrotate
 COPY --from=builder /var/spool/cron /var/spool/cron
 
 # executables
+COPY --from=builder /usr/bin/sh /usr/bin/sh
 COPY --from=builder /usr/bin/bash /usr/bin/bash
 COPY --from=builder /usr/bin/ruby /usr/bin/ruby
 COPY --from=builder /usr/lib/ruby /usr/lib/ruby
@@ -81,6 +98,11 @@ COPY --from=builder /usr/bin/curl /usr/bin/curl
 COPY --from=builder /usr/bin/jq /usr/bin/jq
 COPY --from=builder /usr/bin/base64 /usr/bin/base64
 COPY --from=builder /usr/bin/fluentd /usr/bin/fluentd
+COPY --from=builder /usr/bin/update-ca-trust /usr/bin/update-ca-trust
+COPY --from=builder /usr/bin/p11-kit /usr/bin/p11-kit
+COPY --from=builder /usr/bin/trust /usr/bin/trust
+COPY --from=builder /usr/share/pki/ca-trust-source /usr/share/pki/ca-trust-source
+COPY --from=builder /usr/share/p11-kit/ /usr/share/p11-kit/
 
 # bash dependencies
 COPY --from=builder /lib/libreadline.so.8 /lib/
@@ -109,11 +131,39 @@ COPY --from=builder /lib/libcurl.so.4 /lib/libz.so.1 /lib/libc.so.6 /lib/libnght
 COPY --from=builder /usr/lib/libkrb5.so.3 /usr/lib/libk5crypto.so.3 /usr/lib/libcom_err.so.2 /usr/lib/libkrb5support.so.0 /usr/lib/libresolv.so.2 /usr/lib/
 # jq dependencies
 COPY --from=builder /lib/libjq.so.1 /lib/libc.so.6 /lib/libm.so.6 /lib/libonig.so.5 /lib/
+# update-ca-trust dependencies
+COPY --from=builder /lib/libp11-kit.so.0 /lib/libffi.so.8 /lib/libtasn1.so.6 /lib/
+COPY --from=builder /lib/pkcs11/p11-kit-trust.so /lib/pkcs11/
+RUN ln -s /lib/pkcs11/p11-kit-trust.so /lib/libnssckbi.so
+RUN ln -s /lib/libnssckbi.so /lib/p11-kit-trust.so
 
 # Do vulnerability scan in a seperate stage to avoid adding layer
 FROM distroless_image AS vulnscan
 COPY .trivyignore .trivyignore
 RUN ["/bin/bash", "-c", "curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.39.0"]
+
+# Set up primary and secondary repository URLs
+ENV PRIMARY_TRIVY_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-db"
+ENV SECONDARY_TRIVY_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-db"
+ENV PRIMARY_TRIVY_JAVA_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-java-db"
+ENV SECONDARY_TRIVY_JAVA_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-java-db"
+
+# Download Trivy main database with a fallback mechanism
+RUN export TRIVY_DB_REPOSITORY=$PRIMARY_TRIVY_DB_REPOSITORY && \
+    trivy image --download-db-only || \
+    (echo "Primary TRIVY_DB_REPOSITORY failed, trying secondary." && \
+     export TRIVY_DB_REPOSITORY=$SECONDARY_TRIVY_DB_REPOSITORY && \
+     trivy image --download-db-only) || \
+    (echo "Both TRIVY_DB_REPOSITORY sources failed." && exit 1)
+
+# Download Trivy Java database with a fallback mechanism
+RUN export TRIVY_JAVA_DB_REPOSITORY=$PRIMARY_TRIVY_JAVA_DB_REPOSITORY && \
+    trivy fs --scanners vuln --vuln-type library --download-java-db-only || \
+    (echo "Primary TRIVY_JAVA_DB_REPOSITORY failed, trying secondary." && \
+     export TRIVY_JAVA_DB_REPOSITORY=$SECONDARY_TRIVY_JAVA_DB_REPOSITORY && \
+     trivy fs --scanners vuln --vuln-type library --download-java-db-only) || \
+    (echo "Both TRIVY_JAVA_DB_REPOSITORY sources failed." && exit 1)
+
 RUN ["/bin/bash", "-c", "trivy rootfs --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --skip-files \"/usr/local/bin/trivy\" /"]
 RUN ["/bin/bash", "-c", "trivy rootfs --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM /usr/lib"]
 RUN ["/bin/bash", "-c", "trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --skip-files \"/usr/local/bin/trivy\" / > /dev/null 2>&1 && trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM /usr/lib > /dev/null 2>&1"]

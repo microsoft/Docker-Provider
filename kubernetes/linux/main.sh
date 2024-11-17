@@ -160,6 +160,8 @@ isHighLogScaleMode() {
           "${GENEVA_LOGS_INTEGRATION}" != "true" && \
           "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]]; then
          true
+     elif [[ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]]; then
+         true
      else
          false
      fi
@@ -696,6 +698,10 @@ if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
                   generateGenevaTenantNamespaceConfig
                   # generate genavaconfig for infra namespace
                   generateGenevaInfraNamespaceConfig
+            else
+                  # clear content of the files
+                  true > /etc/opt/microsoft/docker-cimprov/fluent-bit-geneva-logs_tenant.conf
+                  true > /etc/opt/microsoft/docker-cimprov/fluent-bit-geneva-logs_tenant_filter.conf
             fi
       fi
 fi
@@ -757,7 +763,7 @@ if [ ! -e "/etc/config/kube.conf" ]; then
 fi
 
 #Parse the configmap to set the right environment variables for MDM metrics configuration for Alerting.
-if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
+if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ] && [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" != "true" ]; then
       ruby tomlparser-mdm-metrics-config.rb
 
       cat config_mdm_metrics_env_var | while read line; do
@@ -804,7 +810,6 @@ echo "MUTE_PROM_SIDECAR = $MUTE_PROM_SIDECAR"
 if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ]; then
      echo "running in geneva logs telemetry service mode"
 else
-
       #Setting environment variable for CAdvisor metrics to use port 10255/10250 based on curl request
       echo "Making wget request to cadvisor endpoint with port 10250"
       #Defaults to use secure port: 10250
@@ -1060,8 +1065,8 @@ if [ ! -f /etc/cron.d/ci-agent ]; then
       echo "*/5 * * * * root /usr/sbin/logrotate -s /var/lib/logrotate/ci-agent-status /etc/logrotate.d/ci-agent >/dev/null 2>&1" >/etc/cron.d/ci-agent
 fi
 
-setGlobalEnvVar AZMON_WINDOWS_FLUENT_BIT_DISABLED "${AZMON_WINDOWS_FLUENT_BIT_DISABLED}"
-if [ "${AZMON_WINDOWS_FLUENT_BIT_DISABLED}" == "true" ] || [ -z "${AZMON_WINDOWS_FLUENT_BIT_DISABLED}" ] || [ "${USING_AAD_MSI_AUTH}" != "true" ] || [ "${RS_GENEVA_LOGS_INTEGRATION}" == "true" ]; then
+setGlobalEnvVar AZMON_RESOURCE_OPTIMIZATION_ENABLED "${AZMON_RESOURCE_OPTIMIZATION_ENABLED}"
+if [ "${AZMON_RESOURCE_OPTIMIZATION_ENABLED}" == "false" ] || [ -z "${AZMON_RESOURCE_OPTIMIZATION_ENABLED}" ] || [ "${USING_AAD_MSI_AUTH}" != "true" ] || [ "${RS_GENEVA_LOGS_INTEGRATION}" == "true" ]; then
       if [ -e "/etc/config/kube.conf" ]; then
            # Replace a string in the configmap file
             sed -i "s/#@include windows_rs/@include windows_rs/g" /etc/fluent/kube.conf
@@ -1097,34 +1102,35 @@ else
       setGlobalEnvVar AZMON_RESOURCE_OPTIMIZATION_ENABLED "${AZMON_RESOURCE_OPTIMIZATION_ENABLED}"
 fi
 
-if [ "$AZMON_RESOURCE_OPTIMIZATION_ENABLED" != "true" ]; then
-      # no dependency on fluentd for prometheus side car container
-      if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
-            if [ ! -e "/etc/config/kube.conf" ]; then
-                  if [ "$LOGS_AND_EVENTS_ONLY" != "true" ]; then
-                        echo "*** starting fluentd v1 in daemonset"
-                        if [ "${ENABLE_CUSTOM_METRICS}" == "true" ]; then
-                              mv /etc/fluent/container-cm.conf /etc/fluent/container.conf
-                        fi
-                        fluentd -c /etc/fluent/container.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
-                  else
-                        echo "Skipping fluentd since LOGS_AND_EVENTS_ONLY is set to true"
-                  fi
-            else
-                  echo "*** starting fluentd v1 in replicaset"
-                  if [ "${ENABLE_CUSTOM_METRICS}" == "true" ]; then
-                        mv /etc/fluent/kube-cm.conf /etc/fluent/kube.conf
-                  fi
-                  fluentd -c /etc/fluent/kube.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
+#start fluentd
+if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ] && [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" != "true" ]; then
+    echo "*** starting fluentd v1 in replicaset"
+    if [ "${ENABLE_CUSTOM_METRICS}" == "true" ]; then
+        mv /etc/fluent/kube-cm.conf /etc/fluent/kube.conf
+    fi
+    fluentd -c /etc/fluent/kube.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
+elif [ "$AZMON_RESOURCE_OPTIMIZATION_ENABLED" != "true" ]; then
+    # no dependency on fluentd for Prometheus sidecar container
+    if [ "${CONTROLLER_TYPE}" == "DaemonSet" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
+        if [ "$LOGS_AND_EVENTS_ONLY" != "true" ]; then
+            echo "*** starting fluentd v1 in daemonset"
+            if [ "${ENABLE_CUSTOM_METRICS}" == "true" ]; then
+                mv /etc/fluent/container-cm.conf /etc/fluent/container.conf
             fi
-      fi
+            fluentd -c /etc/fluent/container.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
+        else
+            echo "Skipping fluentd since LOGS_AND_EVENTS_ONLY is set to true"
+        fi
+    fi
 else
-      echo "Skipping fluentd since AZMON_RESOURCE_OPTIMIZATION_ENABLED is set to ${AZMON_RESOURCE_OPTIMIZATION_ENABLED}"
+    echo "Skipping fluentd for linux daemonset since AZMON_RESOURCE_OPTIMIZATION_ENABLED is set to ${AZMON_RESOURCE_OPTIMIZATION_ENABLED}"
 fi
 
 #If config parsing was successful, a copy of the conf file with replaced custom settings file is created
 if  [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ]; then
      echo "****************Skipping Telegraf Run in Test Mode since GENEVA_LOGS_INTEGRATION_SERVICE_MODE is true**************************"
+elif  [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]; then
+     echo "****************Skipping Telegraf Run in Test Mode since AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE is true**************************"
 else
       if [ ! -e "/etc/config/kube.conf" ]; then
             if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ] && [ -e "/opt/telegraf-test-prom-side-car.conf" ]; then
@@ -1176,7 +1182,13 @@ if [ ! -e "/etc/config/kube.conf" ]; then
       else
             echo "starting fluent-bit and setting telegraf conf file for daemonset"
             fluentBitConfFile="fluent-bit.conf"
-            if [ "${GENEVA_LOGS_INTEGRATION}" == "true" -a "${GENEVA_LOGS_MULTI_TENANCY}" == "true" ]; then
+            if [ "${AZMON_MULTI_TENANCY_LOG_COLLECTION}" == "true" ]; then
+                  if [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]; then
+                       fluentBitConfFile="fluent-bit-azmon-logs-svc.conf"
+                  elif [ "${AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE}" == "true" ]; then
+                        fluentBitConfFile="fluent-bit-azmon-multi-tenancy.conf"
+                  fi
+            elif [ "${GENEVA_LOGS_INTEGRATION}" == "true" -a "${GENEVA_LOGS_MULTI_TENANCY}" == "true" ]; then
                   fluentBitConfFile="fluent-bit-geneva.conf"
             elif [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ]; then
                   fluentBitConfFile="fluent-bit-geneva-telemetry-svc.conf"
@@ -1314,7 +1326,7 @@ echo "startup script took: $elapsed seconds"
 echo "startup script end @ $(date +'%Y-%m-%dT%H:%M:%S')"
 
 shutdown() {
-     if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ]; then
+     if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ] || [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]; then
          echo "graceful shutdown"
          gracefulShutdown
       else
