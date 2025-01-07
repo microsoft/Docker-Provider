@@ -45,7 +45,7 @@ mv /usr/lib/ruby/gems/3.1.0/specifications/webrick-1.8.1.gemspec /usr/lib/ruby/g
 gem uninstall time --version 0.2.0
 gem uninstall uri --version 0.11.0
 gem uninstall stringio --version 3.0.1
-gem uninstall rexml --version 3.3.8
+gem uninstall rexml --version 3.2.5
 gem uninstall webrick --version 1.8.1
 
 sudo tdnf install -y azure-mdsd-1.31.4
