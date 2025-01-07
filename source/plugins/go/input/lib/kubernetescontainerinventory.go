@@ -79,6 +79,8 @@ func GetContainerInventoryRecords(podItem map[string]interface{}, batchTime stri
 		if imageIDValue, ok := containerStatusMap["imageID"].(string); ok && imageIDValue != "" {
 			if atLocation := strings.Index(imageIDValue, "@"); atLocation != -1 {
 				containerInventoryRecord["ImageId"] = imageIDValue[atLocation+1:]
+			} else {
+				containerInventoryRecord["ImageId"] = imageIDValue
 			}
 		}
 
@@ -116,15 +118,15 @@ func GetContainerInventoryRecords(podItem map[string]interface{}, batchTime stri
 
 		if containerInfoMap, ok := containersInfoMap[containerName]; ok {
 			if imageValue, ok := containerInfoMap["image"]; ok && imageValue != "" {
-				atLocation := strings.Index(imageValue, "@")
+				// atLocation := strings.Index(imageValue, "@")
 				isDigestSpecified := false
-				if atLocation != -1 {
-					imageValue = imageValue[:atLocation]
-					if containerInventoryRecord["ImageId"] == nil || containerInventoryRecord["ImageId"] == "" {
-						containerInventoryRecord["ImageId"] = imageValue[atLocation+1:]
-					}
-					isDigestSpecified = true
-				}
+				// if atLocation != -1 {
+				// 	imageValue = imageValue[:atLocation]
+				// 	if containerInventoryRecord["ImageId"] == nil || containerInventoryRecord["ImageId"] == "" {
+				// 		containerInventoryRecord["ImageId"] = imageValue[atLocation+1:]
+				// 	}
+				// 	isDigestSpecified = true
+				// }
 				slashLocation := strings.Index(imageValue, "/")
 				colonLocation := strings.Index(imageValue, ":")
 				if colonLocation != -1 {
@@ -562,7 +564,7 @@ func GetContainerInventory(namespaceFilteringMode string, namespaces []string, b
 	return GetContainerInventoryHelper(podList, namespaceFilteringMode, namespaces, batchTime)
 }
 
-func GetContainerInventoryHelper(podList map[string]interface{}, namespaceFilteringMode string, namespaces []string, batchTime string) ([]string, []map[string]interface{}){
+func GetContainerInventoryHelper(podList map[string]interface{}, namespaceFilteringMode string, namespaces []string, batchTime string) ([]string, []map[string]interface{}) {
 	containerIds := []string{}
 	containerInventory := []map[string]interface{}{}
 	clusterCollectEnvironmentVar := os.Getenv("AZMON_CLUSTER_COLLECT_ENV_VAR")
