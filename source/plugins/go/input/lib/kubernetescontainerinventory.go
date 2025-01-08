@@ -118,15 +118,15 @@ func GetContainerInventoryRecords(podItem map[string]interface{}, batchTime stri
 
 		if containerInfoMap, ok := containersInfoMap[containerName]; ok {
 			if imageValue, ok := containerInfoMap["image"]; ok && imageValue != "" {
-				// atLocation := strings.Index(imageValue, "@")
+				atLocation := strings.Index(imageValue, "@")
 				isDigestSpecified := false
-				// if atLocation != -1 {
-				// 	imageValue = imageValue[:atLocation]
-				// 	if containerInventoryRecord["ImageId"] == nil || containerInventoryRecord["ImageId"] == "" {
-				// 		containerInventoryRecord["ImageId"] = imageValue[atLocation+1:]
-				// 	}
-				// 	isDigestSpecified = true
-				// }
+				if atLocation != -1 {
+					if containerInventoryRecord["ImageId"] == nil || containerInventoryRecord["ImageId"] == "" {
+						containerInventoryRecord["ImageId"] = imageValue[atLocation+1:]
+					}
+					imageValue = imageValue[:atLocation]
+					isDigestSpecified = true
+				}
 				slashLocation := strings.Index(imageValue, "/")
 				colonLocation := strings.Index(imageValue, ":")
 				if colonLocation != -1 {

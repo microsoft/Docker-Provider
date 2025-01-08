@@ -49,6 +49,8 @@ class KubernetesContainerInventory
               atLocation = imageIdValue.index("@")
               if !atLocation.nil?
                 containerInventoryRecord["ImageId"] = imageIdValue[(atLocation + 1)..-1]
+              else
+                containerInventoryRecord["ImageId"] = imageIdValue
               end
             end
             containerInventoryRecord["ExitCode"] = 0
@@ -92,12 +94,12 @@ class KubernetesContainerInventory
               atLocation = imageValue.index("@")
               isDigestSpecified = false
               if !atLocation.nil?
-                # repository/image@digest or repository/image:imagetag@digest, image@digest
-                imageValue = imageValue[0..(atLocation - 1)]
                 # Use Digest from the spec's image in case when the status doesnt get populated i.e. container in pending or image pull back etc.
                 if containerInventoryRecord["ImageId"].nil? || containerInventoryRecord["ImageId"].empty?
                   containerInventoryRecord["ImageId"] = imageValue[(atLocation + 1)..-1]
                 end
+                # repository/image@digest or repository/image:imagetag@digest, image@digest
+                imageValue = imageValue[0..(atLocation - 1)]
                 isDigestSpecified = true
               end
               slashLocation = imageValue.index("/")
