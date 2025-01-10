@@ -79,7 +79,13 @@ func GetContainerInventoryRecords(podItem map[string]interface{}, batchTime stri
 		if imageIDValue, ok := containerStatusMap["imageID"].(string); ok && imageIDValue != "" {
 			if atLocation := strings.Index(imageIDValue, "@"); atLocation != -1 {
 				containerInventoryRecord["ImageId"] = imageIDValue[atLocation+1:]
+			} else {
+				containerInventoryRecord["ImageId"] = imageIDValue
 			}
+		}
+
+		if imageValue, ok := containerStatusMap["image"].(string); ok && imageValue != "" {
+			addImageInfoToContainerInventoryRecord(containerInventoryRecord, imageValue)
 		}
 
 		containerInventoryRecord["ExitCode"] = 0
@@ -116,36 +122,7 @@ func GetContainerInventoryRecords(podItem map[string]interface{}, batchTime stri
 
 		if containerInfoMap, ok := containersInfoMap[containerName]; ok {
 			if imageValue, ok := containerInfoMap["image"]; ok && imageValue != "" {
-				atLocation := strings.Index(imageValue, "@")
-				isDigestSpecified := false
-				if atLocation != -1 {
-					imageValue = imageValue[:atLocation]
-					if containerInventoryRecord["ImageId"] == nil || containerInventoryRecord["ImageId"] == "" {
-						containerInventoryRecord["ImageId"] = imageValue[atLocation+1:]
-					}
-					isDigestSpecified = true
-				}
-				slashLocation := strings.Index(imageValue, "/")
-				colonLocation := strings.Index(imageValue, ":")
-				if colonLocation != -1 {
-					if slashLocation == -1 {
-						containerInventoryRecord["Image"] = imageValue[:colonLocation]
-					} else {
-						containerInventoryRecord["Repository"] = imageValue[:slashLocation]
-						containerInventoryRecord["Image"] = imageValue[slashLocation+1 : colonLocation]
-					}
-					containerInventoryRecord["ImageTag"] = imageValue[colonLocation+1:]
-				} else {
-					if slashLocation == -1 {
-						containerInventoryRecord["Image"] = imageValue
-					} else {
-						containerInventoryRecord["Repository"] = imageValue[:slashLocation]
-						containerInventoryRecord["Image"] = imageValue[slashLocation+1:]
-					}
-					if !isDigestSpecified {
-						containerInventoryRecord["ImageTag"] = "latest"
-					}
-				}
+				addImageInfoToContainerInventoryRecord(containerInventoryRecord, imageValue)
 			}
 
 			podName := containerInfoMap["PodName"]
@@ -180,6 +157,58 @@ func GetContainerInventoryRecords(podItem map[string]interface{}, batchTime stri
 	}
 
 	return containerInventoryRecords
+}
+
+func addImageInfoToContainerInventoryRecord(containerInventoryRecord map[string]interface{}, imageValue string) {
+	// image can be in any one of below formats:
+	// repository/image[:imagetag | @digest], repository/image:imagetag@digest, repo/image, image:imagetag, image@digest, image
+	if imageValue == "" {
+		return
+	}
+	atLocation := strings.Index(imageValue, "@")
+	isDigestSpecified := false
+	if atLocation != -1 {
+		if containerInventoryRecord["ImageId"] == nil || containerInventoryRecord["ImageId"] == "" {
+			containerInventoryRecord["ImageId"] = imageValue[atLocation+1:]
+		}
+		imageValue = imageValue[:atLocation]
+		isDigestSpecified = true
+	}
+	slashLocation := strings.Index(imageValue, "/")
+	colonLocation := strings.Index(imageValue, ":")
+	if colonLocation != -1 {
+		if slashLocation == -1 {
+			if containerInventoryRecord["Image"] == nil || containerInventoryRecord["Image"] == "" {
+				containerInventoryRecord["Image"] = imageValue[:colonLocation]
+			}
+		} else {
+			if containerInventoryRecord["Repository"] == nil || containerInventoryRecord["Repository"] == "" {
+				containerInventoryRecord["Repository"] = imageValue[:slashLocation]
+			}
+			if containerInventoryRecord["Image"] == nil || containerInventoryRecord["Image"] == "" {
+				containerInventoryRecord["Image"] = imageValue[slashLocation+1 : colonLocation]
+			}
+		}
+		if containerInventoryRecord["ImageTag"] == nil || containerInventoryRecord["ImageTag"] == "" {
+			containerInventoryRecord["ImageTag"] = imageValue[colonLocation+1:]
+		}
+	} else {
+		if slashLocation == -1 {
+			if containerInventoryRecord["Image"] == nil || containerInventoryRecord["Image"] == "" {
+				containerInventoryRecord["Image"] = imageValue
+			}
+		} else {
+			if containerInventoryRecord["Repository"] == nil || containerInventoryRecord["Repository"] == "" {
+				containerInventoryRecord["Repository"] = imageValue[:slashLocation]
+			}
+			if containerInventoryRecord["Image"] == nil || containerInventoryRecord["Image"] == "" {
+				containerInventoryRecord["Image"] = imageValue[slashLocation+1:]
+			}
+		}
+		if !isDigestSpecified && (containerInventoryRecord["ImageTag"] == nil || containerInventoryRecord["ImageTag"] == "") {
+			containerInventoryRecord["ImageTag"] = "latest"
+		}
+	}
 }
 
 func getContainersInfoMap(podItem map[string]interface{}, isWindows bool) map[string]map[string]string {
@@ -562,7 +591,7 @@ func GetContainerInventory(namespaceFilteringMode string, namespaces []string, b
 	return GetContainerInventoryHelper(podList, namespaceFilteringMode, namespaces, batchTime)
 }
 
-func GetContainerInventoryHelper(podList map[string]interface{}, namespaceFilteringMode string, namespaces []string, batchTime string) ([]string, []map[string]interface{}){
+func GetContainerInventoryHelper(podList map[string]interface{}, namespaceFilteringMode string, namespaces []string, batchTime string) ([]string, []map[string]interface{}) {
 	containerIds := []string{}
 	containerInventory := []map[string]interface{}{}
 	clusterCollectEnvironmentVar := os.Getenv("AZMON_CLUSTER_COLLECT_ENV_VAR")
