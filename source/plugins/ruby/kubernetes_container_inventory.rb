@@ -43,7 +43,7 @@ class KubernetesContainerInventory
               # for containers that have image issues (like invalid image/tag etc..) this will be empty. do not make it all 0
               containerInventoryRecord["InstanceID"] = containerId
             end
-            # imagedId is of the format - repo@sha256:imageid
+            # imagedId is either of the the format - repo@sha256:imageid or sha256:imageid
             imageIdValue = containerStatus["imageID"]
             if !imageIdValue.nil? && !imageIdValue.empty?
               atLocation = imageIdValue.index("@")
@@ -53,6 +53,7 @@ class KubernetesContainerInventory
                 containerInventoryRecord["ImageId"] = imageIdValue
               end
             end
+            
             addImageInfoToContainerInventoryRecord(containerInventoryRecord, containerStatus["image"])
 
             containerInventoryRecord["ExitCode"] = 0
@@ -90,6 +91,11 @@ class KubernetesContainerInventory
             containerInfoMap = containersInfoMap[containerName]
             # Populate the fields related to the image if not already populated
             addImageInfoToContainerInventoryRecord(containerInventoryRecord, containerInfoMap["image"])
+            
+            # if the repository is still not populated, set a default value as docker.io
+            if containerInventoryRecord["Repository"].nil? || containerInventoryRecord["Repository"].empty?
+              containerInventoryRecord["Repository"] = "docker.io"
+            end
 
             podName = containerInfoMap["PodName"]
             namespace = containerInfoMap["Namespace"]
@@ -135,6 +141,7 @@ class KubernetesContainerInventory
       begin
         if imageValue.nil? || imageValue.empty?
           return
+        end
         # image can be in any one of below formats:
         # repository/image[:imagetag | @digest], repository/image:imagetag@digest, repo/image, image:imagetag, image@digest, image
         # Find delimiters in image format
