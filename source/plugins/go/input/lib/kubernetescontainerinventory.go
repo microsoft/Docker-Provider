@@ -125,6 +125,11 @@ func GetContainerInventoryRecords(podItem map[string]interface{}, batchTime stri
 				addImageInfoToContainerInventoryRecord(containerInventoryRecord, imageValue)
 			}
 
+			// if the repository is still not populated, set a default value as docker.io
+			if containerInventoryRecord["Repository"] == nil || containerInventoryRecord["Repository"] == "" {
+				containerInventoryRecord["Repository"] = "docker.io"
+			}
+
 			podName := containerInfoMap["PodName"]
 			namespace := containerInfoMap["Namespace"]
 			containerNameInDockerFormat := fmt.Sprintf("k8s_%s_%s_%s_%s_%d", containerName, podName, namespace, containerID, restartCount)
