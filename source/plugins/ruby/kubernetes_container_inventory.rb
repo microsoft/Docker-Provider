@@ -91,6 +91,11 @@ class KubernetesContainerInventory
             containerInfoMap = containersInfoMap[containerName]
             # Populate the fields related to the image if not already populated
             addImageInfoToContainerInventoryRecord(containerInventoryRecord, containerInfoMap["image"])
+            
+            # if the repository is still not populated, set a default value as docker.io
+            if containerInventoryRecord["Repository"].nil? || containerInventoryRecord["Repository"].empty?
+              containerInventoryRecord["Repository"] = "docker.io"
+            end
 
             podName = containerInfoMap["PodName"]
             namespace = containerInfoMap["Namespace"]
@@ -136,6 +141,7 @@ class KubernetesContainerInventory
       begin
         if imageValue.nil? || imageValue.empty?
           return
+        end
         # image can be in any one of below formats:
         # repository/image[:imagetag | @digest], repository/image:imagetag@digest, repo/image, image:imagetag, image@digest, image
         # Find delimiters in image format
