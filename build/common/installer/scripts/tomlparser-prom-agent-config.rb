@@ -18,6 +18,7 @@ require_relative "ConfigParseErrorLogger"
 @waittime_port_25229 = 45
 @containerMemoryLimitInBytes = ENV["CONTAINER_MEMORY_LIMIT_IN_BYTES"]
 @mdsdBackPressureThresholdInMB = 0
+@mdsdMaxODSRetryCount = 3
 
 def is_number?(value)
   true if Integer(value) rescue false
@@ -111,6 +112,13 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         else
           puts "Ignoring mdsd backpressure limit. Check input values for correctness. Configmap value in mb: #{mdsdBackPressureThresholdInMB}, container limit in bytes: #{@containerMemoryLimitInBytes}"
         end
+        mdsdMaxODSRetryCount = mdsd_config[:max_ods_retry_count]
+        if is_valid_number?(mdsdMaxODSRetryCount)
+          @mdsdMaxODSRetryCount = mdsdMaxODSRetryCount.to_i
+          puts "Using config map value: max_ods_retry_count  = #{@mdsdMaxODSRetryCount}"
+        else
+          puts "Ignoring mdsd max_ods_retry_count. Check input values for correctness."
+        end
       end
 
     end
@@ -139,13 +147,16 @@ if !file.nil?
   file.write("export AZMON_SIDECAR_FBIT_CHUNK_SIZE=#{@promFbitChunkSize.to_s + "m"}\n")
   file.write("export AZMON_SIDECAR_FBIT_BUFFER_SIZE=#{@promFbitBufferSize.to_s + "m"}\n")
   file.write("export AZMON_SIDECAR_FBIT_MEM_BUF_LIMIT=#{@promFbitMemBufLimit.to_s + "m"}\n")
-  
+
   file.write("export WAITTIME_PORT_25226=#{@waittime_port_25226}\n")
   file.write("export WAITTIME_PORT_25228=#{@waittime_port_25228}\n")
   file.write("export WAITTIME_PORT_25229=#{@waittime_port_25229}\n")
-  
+
   if @mdsdBackPressureThresholdInMB > 0
     file.write("export BACKPRESSURE_THRESHOLD_IN_MB=#{@mdsdBackPressureThresholdInMB}\n")
+  end
+  if @mdsdMaxODSRetryCount > 0
+    file.write("export MDSD_ODS_RETRY_THRESHOLD=#{@mdsdMaxODSRetryCount}\n")
   end
 
   # Close file after writing all environment variables

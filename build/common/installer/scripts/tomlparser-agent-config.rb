@@ -77,6 +77,7 @@ require_relative "ConfigParseErrorLogger"
 @mdsdUploadFrequencyInSeconds = 0
 @mdsdBackPressureThresholdInMB = 0
 @mdsdCompressionLevel = -1
+@mdsdMaxODSRetryCount = 3
 
 # Checking to see if this is the daemonset or replicaset to parse config accordingly
 @controllerType = ENV["CONTROLLER_TYPE"]
@@ -326,6 +327,13 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         else
           puts "Ignoring mdsd backpressure limit. Check input values for correctness. Configmap value in mb: #{mdsdBackPressureThresholdInMB}, container limit in bytes: #{@containerMemoryLimitInBytes}"
         end
+        mdsdMaxODSRetryCount = mdsd_config[:max_ods_retry_count]
+        if is_valid_number?(mdsdMaxODSRetryCount)
+          @mdsdMaxODSRetryCount = mdsdMaxODSRetryCount.to_i
+          puts "Using config map value: max_ods_retry_count  = #{@mdsdMaxODSRetryCount}"
+        else
+          puts "Ignoring mdsd max_ods_retry_count. Check input values for correctness."
+        end
       end
 
       prom_fbit_config = nil
@@ -489,6 +497,10 @@ if !file.nil?
 
   if @mdsdBackPressureThresholdInMB > 0
     file.write("export BACKPRESSURE_THRESHOLD_IN_MB=#{@mdsdBackPressureThresholdInMB}\n")
+  end
+
+  if @mdsdMaxODSRetryCount > 0
+    file.write("export MDSD_ODS_RETRY_THRESHOLD=#{@mdsdMaxODSRetryCount}\n")
   end
 
   if @mdsdCompressionLevel >= 0

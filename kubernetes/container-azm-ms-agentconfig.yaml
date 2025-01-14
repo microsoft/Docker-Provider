@@ -235,6 +235,7 @@ data:
 
     # The following settings are "undocumented", we don't recommend uncommenting them unless directed by Microsoft.
     # [agent_settings.mdsd_config]
+    #   max_ods_retry_count = "5"  # default 3
     #   monitoring_max_event_rate = "50000" # default 20K eps
     #   backpressure_memory_threshold_in_mb = "1500" # default 3500MB
     #   upload_max_size_in_mb = "20"  # default 2MB
