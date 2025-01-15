@@ -31,7 +31,7 @@ RUN refreshenv \
 && gem install gyoku -v 1.3.1 \
 && gem install ipaddress -v 0.8.3 \
 && gem install jwt -v 2.7.1 \
-&& gem update rexml --default \
+&& gem uninstall rexml -v 3.2.5 --force \
 && gem sources --clear-all
 
 # Remove gem cache and chocolatey
