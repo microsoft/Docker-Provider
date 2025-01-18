@@ -126,6 +126,8 @@ const PodNameToControllerNameMapCacheSize = 300 // AKS 250 pod per node limit + 
 
 const NamedPipeConnectionCacheSize = 200
 
+const IsAllNamespaces = "_ALL_K8S_NAMESPACES_"
+
 var (
 	// PluginConfiguration the plugins configuration
 	PluginConfiguration map[string]string
@@ -1956,9 +1958,13 @@ func writeMsgPackEntries(connection net.Conn, isContainerLogV2Schema bool, fluen
 			msgPackEntriesByNamespace := getMsgPackEntriesByNamespace(msgPackEntries)
 			totalBytes := 0
 			for namespace, entries := range msgPackEntriesByNamespace {
-				if streamTags, exists := namespaceStreamIdsMap[namespace]; exists {
-					msg := fmt.Sprintf("Info::ama:: namespace : %s streamTags: %s \n", namespace, strings.Join(streamTags, ", "))
-					Log(msg)
+				streamTags, exists := namespaceStreamIdsMap[IsAllNamespaces]
+				if !exists {
+					streamTags, exists = namespaceStreamIdsMap[namespace]
+				}
+
+				if exists {
+					Log("Info::ama:: namespace : %s streamTags: %s \n", namespace, strings.Join(streamTags, ", "))
 					for _, streamTag := range streamTags {
 						if IsWindows {
 							bts, er = writeMsgPackEntriesToNamedPipeConnection(streamTag, entries, streamIdNamedPipeMap)
@@ -1969,9 +1975,9 @@ func writeMsgPackEntries(connection net.Conn, isContainerLogV2Schema bool, fluen
 							bts, er = connection.Write(msgpBytes)
 						}
 						if er != nil {
-							return bts, er
+							return totalBytes, er
 						}
-						totalBytes = totalBytes + bts
+						totalBytes += bts
 					}
 				} else {
 					Log("Info::ama:: streamTag is empty for namespace: %s hence using default workspace stream id: %s \n", namespace, fluentForwardTag)
@@ -1980,9 +1986,9 @@ func writeMsgPackEntries(connection net.Conn, isContainerLogV2Schema bool, fluen
 					connection.SetWriteDeadline(time.Now().Add(deadline))
 					bts, er = connection.Write(msgpBytes)
 					if er != nil {
-						return bts, er
+						return totalBytes, er
 					}
-					totalBytes = totalBytes + bts
+					totalBytes += bts
 				}
 			}
 			bts = totalBytes
