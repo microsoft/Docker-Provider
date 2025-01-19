@@ -16,6 +16,7 @@ data:
       #  [log_collection_settings.multi_tenancy]
       #    # High log scale MUST be enabled to use this feature. Refer to https://aka.ms/cihsmode for more details on high log scale mode
       #    enabled = true
+      #    disable_fallback_ingestion = false # by default fallback ingestion to default container insights extension DCR is enabled
       ###   Below advanced settings MUST be provided when ama-logs-multitenancy service deployed through AKS Monitoring Addon
       ##    advanced_mode_enabled = false # Default value is false
       ##    namespaces = ["app-team-1","app-team-2"]

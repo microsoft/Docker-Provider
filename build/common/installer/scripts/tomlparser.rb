@@ -31,6 +31,7 @@ require_relative "ConfigParseErrorLogger"
 @annotationBasedLogFiltering = false
 @allowed_system_namespaces = ['kube-system', 'gatekeeper-system', 'calico-system', 'azure-arc', 'kube-public', 'kube-node-lease']
 @isAzMonMultiTenancyLogCollectionEnabled = false
+@isAzMonMultiTenancyFallbackIngestionDisabled = false
 @isAzMonMultiTenancyLogCollectionAdvancedMode = false
 @azMonMultiTenantNamespaces = []
 @azMonMultiTenancyMaxStorageChunksUp = 500
@@ -468,6 +469,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             multi_tenancy_enabled = parsedConfig[:log_collection_settings][:multi_tenancy][:enabled]
             if multi_tenancy_enabled
               @isAzMonMultiTenancyLogCollectionEnabled = multi_tenancy_enabled
+              if !parsedConfig[:log_collection_settings][:multi_tenancy][:disable_fallback_ingestion].nil?
+                @isAzMonMultiTenancyFallbackIngestionDisabled = parsedConfig[:log_collection_settings][:multi_tenancy][:disable_fallback_ingestion]
+              end
+
               # multi-tenancy advanced mode
               if !parsedConfig[:log_collection_settings][:multi_tenancy][:advanced_mode_enabled].nil?
                 advanced_mode_enabled = parsedConfig[:log_collection_settings][:multi_tenancy][:advanced_mode_enabled]
@@ -610,6 +615,7 @@ if !file.nil?
   file.write("export AZMON_ANNOTATION_BASED_LOG_FILTERING=#{@annotationBasedLogFiltering}\n")
   if @isAzMonMultiTenancyLogCollectionEnabled
     file.write("export AZMON_MULTI_TENANCY_LOG_COLLECTION=#{@isAzMonMultiTenancyLogCollectionEnabled}\n")
+    file.write("export AZMON_MULTI_TENANCY_FALLBACK_INGESTION_DISABLE=#{@isAzMonMultiTenancyFallbackIngestionDisabled}\n")
     file.write("export AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE=#{@isAzMonMultiTenancyLogCollectionAdvancedMode}\n")
     azMonMultiTenantNamespacesString = @azMonMultiTenantNamespaces.join(",")
     file.write("export AZMON_MULTI_TENANCY_NAMESPACES=#{azMonMultiTenantNamespacesString}\n")
@@ -694,6 +700,8 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     file.write(commands)
     if @isAzMonMultiTenancyLogCollectionEnabled
       commands = get_command_windows("AZMON_MULTI_TENANCY_LOG_COLLECTION", @isAzMonMultiTenancyLogCollectionEnabled)
+      file.write(commands)
+      commands = get_command_windows("AZMON_MULTI_TENANCY_FALLBACK_INGESTION_DISABLE", @isAzMonMultiTenancyFallbackIngestionDisabled)
       file.write(commands)
       commands = get_command_windows("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE", @isAzMonMultiTenancyLogCollectionAdvancedMode)
       file.write(commands)
