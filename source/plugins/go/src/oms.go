@@ -1976,7 +1976,7 @@ func writeMsgPackEntries(connection net.Conn, isContainerLogV2Schema bool, fluen
 					}
 				} else {
 					if IsAzMonMultiTenancyFallbackIngestionDisabled {
-						Log("Info::ama:: streamTag is empty for namespace: %s and fallback ingestion disabled hence skipping the logs \n", namespace)
+						Log("Info::ama:: streamTag is empty for namespace: %s and fallback ingestion disabled hence skipping the logs to default container insights extension stream \n", namespace)
 						continue
 					} else {
 						Log("Info::ama:: streamTag is empty for namespace: %s hence using default workspace stream id: %s \n", namespace, fluentForwardTag)
@@ -1992,8 +1992,8 @@ func writeMsgPackEntries(connection net.Conn, isContainerLogV2Schema bool, fluen
 				}
 			}
 			// handle if DCR has _ALL_K8S_NAMESPACES_
-			if streamTags, exists := namespaceStreamIdsMap["_ALL_K8S_NAMESPACES_"]; exists {
-				Log("Info::ama:: namespace : _All_K8S_NAMESPACES streamTags: %s \n", strings.Join(streamTags, ", "))
+			if streamTags, exists := namespaceStreamIdsMap["_all_k8s_namespaces_"]; exists {
+				Log("Info::ama:: namespace : _All_K8S_NAMESPACES_ streamTags: %s \n", strings.Join(streamTags, ", "))
 				for _, streamTag := range streamTags {
 					if IsWindows {
 						bts, er = writeMsgPackEntriesToNamedPipeConnection(streamTag, msgPackEntries, streamIdNamedPipeMap)
