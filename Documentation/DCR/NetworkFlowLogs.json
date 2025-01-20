@@ -1,0 +1,44 @@
+{
+    "location": "<la-workspace-region>",
+    "properties": {
+        "dataSources": {
+            "extensions": [
+                {
+                    "streams": [
+                        "Microsoft-NetworkFlowLogs"
+                    ],
+                    "extensionName": "AzureMonitorNetworkFlowLogsExtension",
+                    "extensionSettings": {
+                        "filterSettings": {
+                            "Verdict": "FORWARDED | DROPPED",
+                            "AuthType" : "None | Basic",
+                            "Layer4Protocol": "TCP | UDP",
+                            "Layer4SourcePort": "80 | 443",
+                            "Layer4DestinationPort": "80 | 443"
+                        }
+                    },
+                    "name": "AzureMonitorNetworkFlowLogsExtension"
+                }
+            ]
+        },
+        "destinations": {
+            "logAnalytics": [
+                {
+                    "workspaceResourceId": "/subscriptions/<subscriptionId>/resourcegroups/<rgName>/providers/microsoft.operationalinsights/workspaces/<workspaceName>",
+                    "name": "la-workspace"
+                }
+            ]
+        },
+        "dataFlows": [
+            {
+                "streams": [
+                    "Microsoft-NetworkFlowLogs"
+                ],
+                "transformKql": "source | where Layer4Protocol in ('TCP', 'UDP')",
+                "destinations": [
+                    "la-workspace"
+                ]
+            }
+        ]
+    }
+}
