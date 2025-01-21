@@ -2369,7 +2369,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	}
 
 	IsAzMonMultiTenancyFallbackIngestionDisabled = false
-	multiTenancyFallbackIngestionDisabled := strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_MULTI_TENANCY_FALLBACK_INGESTION_DISABLE")))
+	multiTenancyFallbackIngestionDisabled := strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_MULTI_TENANCY_FALLBACK_INGESTION_DISABLED")))
 	if multiTenancyFallbackIngestionDisabled != "" && strings.Compare(strings.ToLower(multiTenancyFallbackIngestionDisabled), "true") == 0 {
 		IsAzMonMultiTenancyFallbackIngestionDisabled = true
 		Log("Azure Monitor Multi-tenancy Fallback ingestion disabled")

@@ -615,7 +615,7 @@ if !file.nil?
   file.write("export AZMON_ANNOTATION_BASED_LOG_FILTERING=#{@annotationBasedLogFiltering}\n")
   if @isAzMonMultiTenancyLogCollectionEnabled
     file.write("export AZMON_MULTI_TENANCY_LOG_COLLECTION=#{@isAzMonMultiTenancyLogCollectionEnabled}\n")
-    file.write("export AZMON_MULTI_TENANCY_FALLBACK_INGESTION_DISABLE=#{@isAzMonMultiTenancyFallbackIngestionDisabled}\n")
+    file.write("export AZMON_MULTI_TENANCY_FALLBACK_INGESTION_DISABLED=#{@isAzMonMultiTenancyFallbackIngestionDisabled}\n")
     file.write("export AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE=#{@isAzMonMultiTenancyLogCollectionAdvancedMode}\n")
     azMonMultiTenantNamespacesString = @azMonMultiTenantNamespaces.join(",")
     file.write("export AZMON_MULTI_TENANCY_NAMESPACES=#{azMonMultiTenantNamespacesString}\n")
@@ -701,7 +701,7 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     if @isAzMonMultiTenancyLogCollectionEnabled
       commands = get_command_windows("AZMON_MULTI_TENANCY_LOG_COLLECTION", @isAzMonMultiTenancyLogCollectionEnabled)
       file.write(commands)
-      commands = get_command_windows("AZMON_MULTI_TENANCY_FALLBACK_INGESTION_DISABLE", @isAzMonMultiTenancyFallbackIngestionDisabled)
+      commands = get_command_windows("AZMON_MULTI_TENANCY_FALLBACK_INGESTION_DISABLED", @isAzMonMultiTenancyFallbackIngestionDisabled)
       file.write(commands)
       commands = get_command_windows("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE", @isAzMonMultiTenancyLogCollectionAdvancedMode)
       file.write(commands)
