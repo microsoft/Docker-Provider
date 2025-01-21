@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.002.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{3A1487D1-CA9C-4BF0-8CDE-0560CD71754C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "windows", "windows", "{08FBE541-1B42-4A70-B911-A213B814DF30}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "installer", "installer", "{F0C32D07-8FB6-48CE-8F5A-381CBAACD91A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CertificateGenerator", "build\windows\installer\certificategenerator\CertificateGenerator.csproj", "{D68AF951-D1FD-4DEC-BA54-CFD3A6D08F7C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D68AF951-D1FD-4DEC-BA54-CFD3A6D08F7C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D68AF951-D1FD-4DEC-BA54-CFD3A6D08F7C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D68AF951-D1FD-4DEC-BA54-CFD3A6D08F7C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D68AF951-D1FD-4DEC-BA54-CFD3A6D08F7C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{08FBE541-1B42-4A70-B911-A213B814DF30} = {3A1487D1-CA9C-4BF0-8CDE-0560CD71754C}
+		{F0C32D07-8FB6-48CE-8F5A-381CBAACD91A} = {08FBE541-1B42-4A70-B911-A213B814DF30}
+		{D68AF951-D1FD-4DEC-BA54-CFD3A6D08F7C} = {F0C32D07-8FB6-48CE-8F5A-381CBAACD91A}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4AC187DC-DFD4-477D-B107-8D0042083740}
+	EndGlobalSection
+EndGlobal

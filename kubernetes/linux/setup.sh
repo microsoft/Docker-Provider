@@ -48,13 +48,14 @@ gem uninstall stringio --version 3.0.1
 gem uninstall rexml --version 3.2.5
 gem uninstall webrick --version 1.8.1
 
-sudo tdnf install -y azure-mdsd-1.31.4
-cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
-cp -f $TMPDIR/envmdsd /etc/mdsd.d
+# # shouldn't need this
+# sudo tdnf install -y azure-mdsd-1.31.4
+# cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
+# cp -f $TMPDIR/envmdsd /etc/mdsd.d
 rm /usr/sbin/telegraf
 
-mdsd_version=$(sudo tdnf list installed | grep mdsd | awk '{print $2}')
-echo "Azure mdsd: $mdsd_version" >> packages_version.txt
+# mdsd_version=$(sudo tdnf list installed | grep mdsd | awk '{print $2}')
+# echo "Azure mdsd: $mdsd_version" >> packages_version.txt
 
 # log rotate conf for mdsd and can be extended for other log files as well
 cp -f $TMPDIR/logrotate.conf /etc/logrotate.d/ci-agent
@@ -70,7 +71,7 @@ sudo tdnf install jq-1.6-1.cm2 -y
 #used to setcaps for ruby process to read /proc/env
 sudo tdnf install libcap -y
 
-sudo tdnf install telegraf-1.29.4 -y
+sudo tdnf install telegraf -y
 telegraf_version=$(sudo tdnf list installed | grep telegraf | awk '{print $2}')
 echo "telegraf $telegraf_version" >> packages_version.txt
 mv /usr/bin/telegraf /opt/telegraf
@@ -81,11 +82,11 @@ docker_cimprov_version=$(sudo tdnf list installed | grep docker-cimprov | awk '{
 echo "DOCKER_CIMPROV_VERSION=$docker_cimprov_version" >> packages_version.txt
 
 #install fluent-bit
-sudo tdnf install fluent-bit-2.2.3 -y
+sudo tdnf install fluent-bit -y
 echo "$(fluent-bit --version)" >> packages_version.txt
 
 # install fluentd using the mariner package
-# sudo tdnf install rubygem-fluentd-1.14.6 -y
+sudo tdnf install rubygem-fluentd-1.14.6 -y
 fluentd_version="1.16.3"
 gem install fluentd -v $fluentd_version --no-document
 
@@ -101,9 +102,9 @@ gem install ipaddress --no-document
 gem install jwt -v "2.7.1" --no-document
 
 rm -f $TMPDIR/docker-cimprov*.sh
-rm -f $TMPDIR/mdsd.xml
-rm -f $TMPDIR/envmdsd
+# rm -f $TMPDIR/mdsd.xml
+# rm -f $TMPDIR/envmdsd
 
 # Remove settings for cron.daily that conflict with the node's cron.daily. Since both are trying to rotate the same files
 # in /var/log at the same time, the rotation doesn't happen correctly and then the *.1 file is forever logged to.
-rm -f /etc/logrotate.d/azure-mdsd
+# rm -f /etc/logrotate.d/azure-mdsd
