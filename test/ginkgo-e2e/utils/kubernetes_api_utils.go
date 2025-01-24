@@ -70,10 +70,9 @@ func CheckContainerLogsForErrors(clientset *kubernetes.Clientset, namespace, lab
  * Returns all pods in the given namespace with the given label.
  */
 func GetPodsWithLabel(clientset *kubernetes.Clientset, namespace string, labelKey string, labelValue string) ([]corev1.Pod, error) {
-	podList, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{})
-	// , metav1.ListOptions{
-	// 	LabelSelector: labelKey + "=" + labelValue,
-	// })
+	podList, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
+		LabelSelector: labelKey + "=" + labelValue,
+	})
 	if err != nil {
 		return nil, err
 	}
