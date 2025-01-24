@@ -12,7 +12,7 @@ data:
     # Any errors related to config map settings can be found in the KubeMonAgentEvents table in the Log Analytics workspace that the cluster is sending data to.
 
     [log_collection_settings]
-      #  This feature in private preview and not ready for production use,please reach out us to try out this feature.
+      ##  This feature in private preview and not ready for production use,please reach out us to try out this feature.
       #  [log_collection_settings.multi_tenancy]
       #    # High log scale MUST be enabled to use this feature. Refer to https://aka.ms/cihsmode for more details on high log scale mode
       #    enabled = true
