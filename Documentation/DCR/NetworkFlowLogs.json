@@ -10,11 +10,13 @@
                     "extensionName": "AzureMonitorNetworkFlowLogsExtension",
                     "extensionSettings": {
                         "filterSettings": {
-                            "Verdict": "FORWARDED | DROPPED",
-                            "AuthType" : "None | Basic",
-                            "Layer4Protocol": "TCP | UDP",
-                            "Layer4SourcePort": "80 | 443",
-                            "Layer4DestinationPort": "80 | 443"
+                            "namespace": "<source or destination k8s namespace>",
+                            "verdict":  "<verdict of the flow>",
+                            "workload": "<name of the k8s workload>",
+                            "flowType" : "<type of flow>",
+                            "Layer4Protocol": "<name of the Layer4Protocol>",
+                            "SourcePort": "<source port>",
+                            "DestinationPort": "<destination port>"
                         }
                     },
                     "name": "AzureMonitorNetworkFlowLogsExtension"
