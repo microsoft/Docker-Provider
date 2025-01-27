@@ -8,6 +8,7 @@ trigger:
   branches:
     include:
     - ci_prod
+    - ngotina\azureLinux3.0Upgrade
 
 pr:
   branches:
