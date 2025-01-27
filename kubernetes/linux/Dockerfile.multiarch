@@ -1,5 +1,5 @@
 # Default base images. If you update them don't forgot to update variables in our build pipelines. Default values can be found in internal wiki. External can use ubuntu 18.04 and golang 1.18.3
-ARG GOLANG_BASE_IMAGE=mcr.microsoft.com/oss/go/microsoft/golang:1.23.4
+ARG GOLANG_BASE_IMAGE=
 ARG MARINER_BASE_IMAGE=mcr.microsoft.com/azurelinux/base/core:3.0
 ARG MARINER_DISTROLESS_IMAGE=mcr.microsoft.com/azurelinux/distroless/base:3.0
 
