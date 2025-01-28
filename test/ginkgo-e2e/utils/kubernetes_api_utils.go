@@ -281,7 +281,7 @@ func WatchForPodRestart(K8sClient *kubernetes.Clientset, namespace, labelName, l
 		break
 	}
 
-	return nil
+	return fmt.Errorf("%s=%s pod did restart but the terminate message doesn't match", labelName, labelValue)
 }
 
 /*
