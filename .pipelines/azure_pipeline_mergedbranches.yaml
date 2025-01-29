@@ -35,15 +35,22 @@ jobs:
             sudo apt-get install -y testkube=1.14.2
           workingDirectory: $(Build.SourcesDirectory)
           displayName: "Install testkube CLI"
-        - task: AzureCLI@1
+        # - task: AzureCLI@1
+        #   displayName: Get kubeconfig
+        #   inputs:
+        #     azureSubscription: 'ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)'
+        #     scriptLocation: 'inlineScript'
+        #     inlineScript: |
+        #       az login
+        #       az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-eus2
+        - task: AzureCLI@2
           displayName: Get kubeconfig
           inputs:
             azureSubscription: 'ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)'
+            scriptType: 'batch'
             scriptLocation: 'inlineScript'
-            inlineScript: |
-              az login
-              az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-eus2
-          
+            inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-eus2'
+            addSpnToEnvironment: true
         - bash: |
             envsubst < ./testkube/testkube-test-crs.yaml > ./testkube/testkube-test-crs-ci-logs-prod-aks-eus2.yaml
             kubectl apply -f ./testkube/api-server-permissions.yaml
