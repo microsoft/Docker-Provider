@@ -28,6 +28,9 @@ jobs:
     runOnce:
       deploy:
         steps:
+        - checkout: self
+          persistCredentials: true
+
         - bash: |
             wget -qO - https://repo.testkube.io/key.pub | sudo apt-key add -
             echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sources.list
@@ -35,12 +38,14 @@ jobs:
             sudo apt-get install -y testkube=1.14.2
           workingDirectory: $(Build.SourcesDirectory)
           displayName: "Install testkube CLI"
+
         - task: AzureCLI@1
           displayName: Get kubeconfig
           inputs:
             azureSubscription: 'TestContainerInsights_Connection'
             scriptLocation: 'inlineScript'
             inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-eus2'
+          
         - bash: |
             envsubst < ./testkube/testkube-test-crs.yaml > ./testkube/testkube-test-crs-ci-logs-prod-aks-eus2.yaml
             kubectl apply -f ./testkube/api-server-permissions.yaml
