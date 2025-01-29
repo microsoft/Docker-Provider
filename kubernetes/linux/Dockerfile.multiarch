@@ -125,7 +125,7 @@ COPY --from=builder /usr/sbin/../lib/libsymcrypt.so.103 /usr/sbin/../lib/libdl.s
 COPY --from=builder /opt/microsoft/azure-mdsd/lib/libtcmalloc_minimal.so.4 /opt/microsoft/azure-mdsd/lib/
 COPY --from=builder /opt/microsoft/azure-mdsd/lib/libsymcrypt.so.103 /opt/microsoft/azure-mdsd/lib/
 # logrotate dependencies (note: done)
-COPY --from=builder /lib/libselinux.so.1 /lib/libpcre.so.1 /lib/
+# COPY --from=builder /lib/libselinux.so.1 /lib/libpcre.so.1 /lib/
 COPY --from=builder /usr/lib/libpopt.so.0 /usr/lib/libc.so.6 /usr/lib/
 # curl dependencies (note:done)
 # libssl.so.1.1 & libcrypto.so.1.1 are already available with openssl in distroless and copying them over causes FIPS HMAC verification failures
