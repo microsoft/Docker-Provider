@@ -43,7 +43,7 @@ RUN mkdir /busybin && busybox --install /busybin
 
 COPY --from=golang-builder /src/kubernetes/linux/Linux_ULINUX_1.0_*_64_Release/docker-cimprov-*.*.*-*.*.sh $tmpdir/
 COPY kubernetes/linux/setup.sh kubernetes/linux/main.sh kubernetes/linux/defaultpromenvvariables kubernetes/linux/defaultpromenvvariables-rs kubernetes/linux/defaultpromenvvariables-sidecar kubernetes/linux/mdsd.xml kubernetes/linux/envmdsd kubernetes/linux/logrotate.conf $tmpdir/
-COPY kubernetes/linux/mariner-official-extras.repo /etc/yum.repos.d/
+COPY kubernetes/linux/azure-official-extras.repo /etc/yum.repos.d/
 
 WORKDIR ${tmpdir}
 
