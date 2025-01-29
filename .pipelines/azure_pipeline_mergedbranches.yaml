@@ -40,7 +40,10 @@ jobs:
           inputs:
             azureSubscription: 'ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)'
             scriptLocation: 'inlineScript'
-            inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-eus2'  
+            inlineScript: |
+              az login
+              az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-eus2
+          
         - bash: |
             envsubst < ./testkube/testkube-test-crs.yaml > ./testkube/testkube-test-crs-ci-logs-prod-aks-eus2.yaml
             kubectl apply -f ./testkube/api-server-permissions.yaml
