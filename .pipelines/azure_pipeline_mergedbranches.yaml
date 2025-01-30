@@ -36,6 +36,8 @@ jobs:
             echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sources.list
             sudo apt-get update
             sudo apt-get install -y testkube=1.14.2
+            helm repo add kubeshop https://kubeshop.github.io/helm-charts
+            helm install --create-namespace testkube kubeshop/testkube --version 1.15.17 -n testkube
           workingDirectory: $(Build.SourcesDirectory)
           displayName: "Install testkube CLI"
 
@@ -50,11 +52,10 @@ jobs:
             envsubst < ./testkube/testkube-test-crs.yaml > ./testkube/testkube-test-crs-Monitoring-Model-Cluster-WEU.yaml
             kubectl apply -f ./testkube/api-server-permissions.yaml
             kubectl apply -f ./testkube/testkube-test-crs-Monitoring-Model-Cluster-WEU.yaml
-            # kubectl apply -f ./test-cluster-yamls
 
             exit 0
           workingDirectory: $(Build.SourcesDirectory)/test/
-          displayName: "Apply TestKube CRs, scrape configs and pod/service monitors"
+          displayName: "Apply TestKube CRs and pod/service monitors"
         - bash: |
             sleep 120
           displayName: "Wait for cluster to be ready"
