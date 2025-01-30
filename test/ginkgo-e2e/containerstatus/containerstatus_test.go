@@ -63,12 +63,15 @@ var _ = DescribeTable("All processes are running",
 		[]string{
 			"fluent-bit",
 			"fluentd",
-			"mdsd -a -A -r", //this is -e for prometheus
+			"mdsd -a -A -r",
 			"inotifywait /etc/config/settings",
-			// "inotifywait /etc/mdsd.d",
-			// ruby ??
-			// "telegraf",
 			"crond",
+			/*
+				ToDo: Add checks for:
+					inotifywait /etc/mdsd.d
+					ruby ??
+					telegraf
+			*/
 		},
 	),
 	Entry("when checking the ama-logs daemonset pods", "kube-system", "component", "ama-logs-agent", "ama-logs",
@@ -77,10 +80,13 @@ var _ = DescribeTable("All processes are running",
 			"fluentd",
 			"mdsd -a -A -r",
 			"inotifywait /etc/config/settings",
-			// "inotifywait /etc/mdsd.d",
-			// ruby ??
 			"crond",
 			"telegraf",
+			/*
+				ToDo: Add checks for:
+					inotifywait /etc/mdsd.d
+					ruby ??
+			*/
 		},
 	),
 )

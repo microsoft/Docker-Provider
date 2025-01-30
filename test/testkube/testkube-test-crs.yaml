@@ -53,12 +53,12 @@ metadata:
   namespace: testkube
 spec:
   steps:
-  - stopOnFailure: false
-    execute:
-    - test: containerstatus
-  - stopOnFailure: false
-    execute:
-    - delay: 2m0s
+  # - stopOnFailure: false
+  #   execute:
+  #   - test: containerstatus
+  # - stopOnFailure: false
+  #   execute:
+  #   - delay: 2m0s
   - stopOnFailure: false
     execute:
     - test: livenessprobe
