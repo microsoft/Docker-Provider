@@ -48,7 +48,7 @@ gem uninstall stringio --version 3.0.1
 gem uninstall rexml --version 3.2.5
 gem uninstall webrick --version 1.8.1
 
-sudo tdnf install -y azure-mdsd-1.31.4
+sudo tdnf install -y azure-mdsd
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
 rm /usr/sbin/telegraf
@@ -65,12 +65,12 @@ sudo tdnf install inotify-tools -y
 
 #used to parse response of kubelet apis
 #ref: https://packages.ubuntu.com/search?keywords=jq
-sudo tdnf install jq-1.6-1.cm2 -y
+sudo tdnf install jq -y
 
 #used to setcaps for ruby process to read /proc/env
 sudo tdnf install libcap -y
 
-sudo tdnf install telegraf-1.29.4 -y
+sudo tdnf install telegraf -y
 telegraf_version=$(sudo tdnf list installed | grep telegraf | awk '{print $2}')
 echo "telegraf $telegraf_version" >> packages_version.txt
 mv /usr/bin/telegraf /opt/telegraf
@@ -81,7 +81,7 @@ docker_cimprov_version=$(sudo tdnf list installed | grep docker-cimprov | awk '{
 echo "DOCKER_CIMPROV_VERSION=$docker_cimprov_version" >> packages_version.txt
 
 #install fluent-bit
-sudo tdnf install fluent-bit-2.2.3 -y
+sudo tdnf install fluent-bit -y
 echo "$(fluent-bit --version)" >> packages_version.txt
 
 # install fluentd using the mariner package
