@@ -1,0 +1,94 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+#
+
+trigger:
+  batch: true
+  branches:
+    include:
+    - ci_prod
+
+pr:
+  branches:
+    include:
+    - ci_prod
+
+jobs:
+- deployment: Testkube
+  environment: container-insights
+  displayName: "Test: run testkube tests"
+  pool:
+    name: Azure-Pipelines-CI-Test-EO
+  variables:
+    skipComponentGovernanceDetection: true
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+        - checkout: self
+          persistCredentials: true
+
+        - bash: |
+            wget -qO - https://repo.testkube.io/key.pub | sudo apt-key add -
+            echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sources.list
+            sudo apt-get update
+            sudo apt-get install -y testkube=1.14.2
+          workingDirectory: $(Build.SourcesDirectory)
+          displayName: "Install testkube CLI"
+
+        - task: AzureCLI@1
+          displayName: Get kubeconfig
+          inputs:
+            azureSubscription: 'ContainerInsights_Build_Subscription'
+            scriptLocation: 'inlineScript'
+            inlineScript: 'az aks get-credentials -g Monitoring-Model-Cluster-WEU -n Monitoring-Model-Cluster-WEU'
+          
+        - bash: |
+            envsubst < ./testkube/testkube-test-crs.yaml > ./testkube/testkube-test-crs-Monitoring-Model-Cluster-WEU.yaml
+            kubectl apply -f ./testkube/api-server-permissions.yaml
+            kubectl apply -f ./testkube/testkube-test-crs-Monitoring-Model-Cluster-WEU.yaml
+            exit 0
+          workingDirectory: $(Build.SourcesDirectory)/test/
+          displayName: "Apply TestKube CRs and pod/service monitors"
+          
+        - bash: |
+            sleep 120
+          displayName: "Wait for cluster to be ready"
+          
+        - bash: |
+            # Run the full test suite
+            kubectl testkube run testsuite e2e-tests-merge --verbose
+
+            # Get the current id of the test suite now running
+            execution_id=$(kubectl testkube get testsuiteexecutions --test-suite e2e-tests-merge --limit 1 | grep e2e-tests | awk '{print $1}')
+
+            # Watch until the all the tests in the test suite finish
+            kubectl testkube watch testsuiteexecution $execution_id
+
+            # Get the results as a formatted json file
+            kubectl testkube get testsuiteexecution $execution_id --output json > testkube-results.json
+
+            # For any test that has failed, print out the Ginkgo logs
+            if [[ $(jq -r '.status' testkube-results.json) == "failed" ]]; then
+
+              # Get each test name and id that failed
+              jq -r '.executeStepResults[].execute[] | select(.execution.executionResult.status=="failed") | "\(.execution.testName) \(.execution.id)"' testkube-results.json | while read line; do
+                testName=$(echo $line | cut -d ' ' -f 1)
+                id=$(echo $line | cut -d ' ' -f 2)
+                echo "Test $testName failed. Test ID: $id"
+
+                # Get the Ginkgo logs of the test
+                kubectl testkube get execution $id > out 2>error.log
+
+                # Remove superfluous logs of everything before the last occurence of 'go downloading'.
+                # The actual errors can be viewed from the ADO run, instead of needing to view the testkube dashboard.
+                cat error.log | tac | awk '/go: downloading/ {exit} 1' | tac
+              done
+
+              # Explicitly fail the ADO task since at least one test failed
+              exit 1
+            fi
+          workingDirectory: $(Build.SourcesDirectory)
+          displayName: "Run tests"
