@@ -36,8 +36,6 @@ jobs:
             echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sources.list
             sudo apt-get update
             sudo apt-get install -y testkube=1.14.2
-            helm repo add kubeshop https://kubeshop.github.io/helm-charts
-            helm install --create-namespace testkube kubeshop/testkube --version 1.15.17 -n testkube
           workingDirectory: $(Build.SourcesDirectory)
           displayName: "Install testkube CLI"
 
