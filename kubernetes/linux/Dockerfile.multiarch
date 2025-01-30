@@ -40,7 +40,7 @@ RUN tdnf install -y \
         ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 RUN tdnf install -y jq
-RUN tdnf install azure-mdsd
+RUN tdnf install -y azure-mdsd
 RUN mkdir /busybin && busybox --install /busybin
 
 # can't find the linux image; most likely missing from the setup script; might need to find out what golang ver it was originally using
