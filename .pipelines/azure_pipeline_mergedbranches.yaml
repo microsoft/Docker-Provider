@@ -50,11 +50,10 @@ jobs:
             envsubst < ./testkube/testkube-test-crs.yaml > ./testkube/testkube-test-crs-Monitoring-Model-Cluster-WEU.yaml
             kubectl apply -f ./testkube/api-server-permissions.yaml
             kubectl apply -f ./testkube/testkube-test-crs-Monitoring-Model-Cluster-WEU.yaml
-            # kubectl apply -f ./test-cluster-yamls
 
             exit 0
           workingDirectory: $(Build.SourcesDirectory)/test/
-          displayName: "Apply TestKube CRs, scrape configs and pod/service monitors"
+          displayName: "Apply TestKube CRs and pod/service monitors"
         - bash: |
             sleep 120
           displayName: "Wait for cluster to be ready"
