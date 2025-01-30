@@ -48,7 +48,7 @@ gem uninstall stringio --version 3.0.1
 gem uninstall rexml --version 3.2.5
 gem uninstall webrick --version 1.8.1
 
-sudo tdnf install -y azure-mdsd
+sudo tdnf install -y azure-mdsd-1.31.4
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
 rm /usr/sbin/telegraf
@@ -65,7 +65,7 @@ sudo tdnf install inotify-tools -y
 
 #used to parse response of kubelet apis
 #ref: https://packages.ubuntu.com/search?keywords=jq
-sudo tdnf install jq -y
+sudo tdnf install jq-1.6-1.cm2 -y
 
 #used to setcaps for ruby process to read /proc/env
 sudo tdnf install libcap -y
