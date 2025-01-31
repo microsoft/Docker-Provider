@@ -8,9 +8,8 @@ import (
 )
 
 /*
- * For each of the pods that we deploy in our chart, ensure each container within that pod has status 'Running'.
- * The replicaset, daemonset, and kube-state-metrics are always deployed.
- * The operator-targets and node-exporter workloads are checked if the 'operator' or 'arc-extension' label is included in the test run.
+ * For each of the pods that we deploy, ensure each container within that pod has status 'Running'.
+ * The replicaset, and daemonset are always deployed.
  * The label and values are provided to get a list of pods only with that label.
  */
 var _ = DescribeTable("The containers should be running",
@@ -23,7 +22,7 @@ var _ = DescribeTable("The containers should be running",
 )
 
 /*
- * For each of the DS pods that we deploy in our chart, ensure that all nodes have been used to schedule these pods.
+ * For each of the DS pods that we deploy, ensure that all nodes have been used to schedule these pods.
  * The label and values are provided to get a list of pods only with that label.
  * The osLabel is provided to check on all DS pods based on the OS.
  */
@@ -37,7 +36,7 @@ var _ = DescribeTable("The pods should be scheduled in all nodes",
 )
 
 /*
-* For each of the DS pods that we deploy in our chart, ensure that all specific nodes like ARM64,FIPS have been used to schedule these pods.
+* For each of the DS pods that we deploy, ensure that all specific nodes like ARM64, FIPS have been used to schedule these pods.
 * The label and values are provided to get a list of pods only with that label.
  */
 var _ = DescribeTable("The pods should be scheduled in all Fips and ARM64 nodes",
@@ -52,7 +51,7 @@ var _ = DescribeTable("The pods should be scheduled in all Fips and ARM64 nodes"
 
 /*
 * For each of the pods that have the ama-logs container, check all expected processes are running.
-* The linux replicaset and daemonset will should have the same processes running.
+* The linux replicaset and daemonset should have the same processes running.
  */
 var _ = DescribeTable("All processes are running",
 	func(namespace, labelName, labelValue, containerName string, processes []string) {
@@ -66,12 +65,6 @@ var _ = DescribeTable("All processes are running",
 			"mdsd -a -A -r",
 			"inotifywait /etc/config/settings",
 			"crond",
-			/*
-				ToDo: Add checks for:
-					inotifywait /etc/mdsd.d
-					ruby ??
-					telegraf
-			*/
 		},
 	),
 	Entry("when checking the ama-logs daemonset pods", "kube-system", "component", "ama-logs-agent", "ama-logs",
@@ -82,11 +75,6 @@ var _ = DescribeTable("All processes are running",
 			"inotifywait /etc/config/settings",
 			"crond",
 			"telegraf",
-			/*
-				ToDo: Add checks for:
-					inotifywait /etc/mdsd.d
-					ruby ??
-			*/
 		},
 	),
 )
@@ -114,9 +102,8 @@ var _ = DescribeTable("All processes are running",
 )
 
 /*
-- For each of the pods that we deploy in our chart, ensure each container within that pod doesn't have errors in the logs.
+- For each of the pods that we deploy, ensure each container within that pod doesn't have errors in the logs.
 - The replicaset and daemonset are always deployed.
-- The operator-targets and node-exporter workloads are checked if the 'operator' or 'arc-extension' label is included in the test run.
 - The label and values are provided to get a list of pods only with that label.
 */
 var _ = DescribeTable("The container logs should not contain errors",

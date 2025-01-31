@@ -11,6 +11,9 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// These tests use Ginkgo (BDD-style Go testing framework). Refer to
+// http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
+
 var K8sClient *kubernetes.Clientset
 var Cfg *rest.Config
 

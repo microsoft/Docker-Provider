@@ -34,12 +34,7 @@ import (
 // 		Entry("mdsd is not running, the container should restart", "kube-system", "rsName", "ama-logs-rs", "ama-logs",
 // 			"mdsd is not running", "mdsd -a -A -r", int64(300),
 // 		),
-
-// 		// ToDo: add check for telegraf
 // 	)
-
-// 	// ToDo: add check for configmap update
-// 	// ToDo: check for certifical renewal - do we need this given we rely on MSI now?
 // })
 
 // var _ = Describe("When the daemonset ama-logs container liveness probe detects that", Ordered, func() {
@@ -61,11 +56,7 @@ import (
 // 		Entry("mdsd is not running, the container should restart", "kube-system", "component", "ama-logs-agent", "ama-logs",
 // 			"mdsd is not running", "mdsd -a -A -r", int64(300),
 // 		),
-
-// 		// ToDo: add check for telegraf
 // 	)
-
-// 	// ToDo: add check for configmap update
 // })
 
 var _ = Describe("When the windows ama-logs-windows container liveness probe detects that", Ordered, Label(utils.WindowsLabel), func() {
@@ -84,8 +75,5 @@ var _ = Describe("When the windows ama-logs-windows container liveness probe det
 		Entry("MonAgentLauncher is not running, the container should restart", "kube-system", "component", "ama-logs-agent-windows", "ama-logs-windows",
 			"", "MonAgentLauncher", int64(300),
 		),
-		// ToDo: MonAgetnCore and others?
 	)
-
-	// ToDo: add check for configmap update
 })
