@@ -1,0 +1,64 @@
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: containerstatus
+  namespace: testkube
+  labels:
+    executor: ginkgo-executor
+    test-type: ginkgo-test
+spec:
+  type: ginkgo/test
+  content:
+    type: git
+    repository:
+      type: git
+      uri: https://github.com/microsoft/Docker-Provider/
+      branch: suyadav/e2etestframework
+      path: test/ginkgo-e2e
+  executionRequest:
+    args:
+      - "--label-filter"
+      - "!(arc-extension,linux-daemonset-custom-config)"
+      - "./containerstatus"
+    executePostRunScriptBeforeScraping: false
+---
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: livenessprobe
+  namespace: testkube
+  labels:
+    executor: ginkgo-executor
+    test-type: ginkgo-test
+spec:
+  type: ginkgo/test
+  content:
+    type: git
+    repository:
+      type: git
+      uri: https://github.com/microsoft/Docker-Provider/
+      branch: suyadav/e2etestframework
+      path: test/ginkgo-e2e
+  executionRequest:
+    args:
+      - "--label-filter"
+      - "!(arc-extension,linux-daemonset-custom-config)"
+      - "./livenessprobe"
+    executePostRunScriptBeforeScraping: false
+---
+apiVersion: tests.testkube.io/v3
+kind: TestSuite
+metadata:
+  name: e2e-tests-merge
+  namespace: testkube
+spec:
+  steps:
+  # - stopOnFailure: false
+  #   execute:
+  #   - test: containerstatus
+  # - stopOnFailure: false
+  #   execute:
+  #   - delay: 2m0s
+  - stopOnFailure: false
+    execute:
+    - test: livenessprobe
