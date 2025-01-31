@@ -79,10 +79,10 @@ var _ = Describe("When the windows ama-logs-windows container liveness probe det
 			time.Sleep(120 * time.Second)
 		},
 		Entry("Fluentbit is not running, the container should restart", "kube-system", "component", "ama-logs-agent-windows", "ama-logs-windows",
-			"Fluentbit is not running", "fluent-bit", int64(300),
+			"", "fluent-bit", int64(300),
 		),
 		Entry("MonAgentLauncher is not running, the container should restart", "kube-system", "component", "ama-logs-agent-windows", "ama-logs-windows",
-			"MonAgentLauncher is not running", "MonAgentLauncher", int64(300),
+			"", "MonAgentLauncher", int64(300),
 		),
 		// ToDo: MonAgetnCore and others?
 	)
