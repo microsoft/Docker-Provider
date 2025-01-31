@@ -5,9 +5,9 @@
             "extensions": [
                 {
                     "streams": [
-                        "Microsoft-NetworkFlowLogs"
+                        "Microsoft-RetinaFlowLogs"
                     ],
-                    "extensionName": "AzureMonitorNetworkFlowLogsExtension",
+                    "extensionName": "AzureMonitorRetinaFlowLogsExtension",
                     "extensionSettings": {
                         "filterSettings": {
                             "namespace": "<source or destination k8s namespace>",
@@ -19,7 +19,7 @@
                             "DestinationPort": "<destination port>"
                         }
                     },
-                    "name": "AzureMonitorNetworkFlowLogsExtension"
+                    "name": "AzureMonitorRetinaFlowLogsExtension"
                 }
             ]
         },
@@ -34,7 +34,7 @@
         "dataFlows": [
             {
                 "streams": [
-                    "Microsoft-NetworkFlowLogs"
+                    "Microsoft-RetinaFlowLogs"
                 ],
                 "transformKql": "source | where Layer4Protocol in ('TCP', 'UDP')",
                 "destinations": [
