@@ -43,16 +43,16 @@ jobs:
           inputs:
             azureSubscription: 'ContainerInsights_Build_Subscription'
             scriptLocation: 'inlineScript'
-            inlineScript: 'az aks get-credentials -g Monitoring-Model-Cluster-WEU -n Monitoring-Model-Cluster-WEU'
+            inlineScript: 'az aks get-credentials -g $(RESOURCE_GROUP) -n $(CLUSTER_NAME)'
           
         - bash: |
-            envsubst < ./testkube/testkube-test-crs.yaml > ./testkube/testkube-test-crs-Monitoring-Model-Cluster-WEU.yaml
+            envsubst < ./testkube/testkube-test-crs.yaml > ./testkube/testkube-test-crs-$(CLUSTER_NAME).yaml
             kubectl apply -f ./testkube/api-server-permissions.yaml
-            kubectl apply -f ./testkube/testkube-test-crs-Monitoring-Model-Cluster-WEU.yaml
+            kubectl apply -f ./testkube/testkube-test-crs-$(CLUSTER_NAME).yaml
             exit 0
           workingDirectory: $(Build.SourcesDirectory)/test/
           displayName: "Apply TestKube CRs and pod/service monitors"
-          
+
         - bash: |
             sleep 120
           displayName: "Wait for cluster to be ready"
