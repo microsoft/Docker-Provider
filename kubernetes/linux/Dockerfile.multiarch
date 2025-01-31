@@ -105,28 +105,23 @@ COPY --from=builder /usr/bin/trust /usr/bin/trust
 COPY --from=builder /usr/share/pki/ca-trust-source /usr/share/pki/ca-trust-source
 COPY --from=builder /usr/share/p11-kit/ /usr/share/p11-kit/
 
-# bash dependencies (note: done)
+# bash dependencies 
 COPY --from=builder /usr/lib/libreadline.so.8  /usr/lib/libc.so.6 /usr/lib/libncursesw.so.6 /usr/lib/libtinfo.so.6 /usr/lib/
-# inotifywait dependencies (note: done)
+# inotifywait dependencies 
 COPY --from=builder /usr/lib/libinotifytools.so.0 /usr/lib/libstdc++.so.6 /usr/lib/libgcc_s.so.1 /usr/lib/libc.so.6 /usr/lib/libm.so.6 /usr/lib/
-# crond dependencies (note: done)
-# COPY --from=builder /lib/libpcre.so.1 /lib/libaudit.so.1 /lib/libcap-ng.so.0 /lib/
+# crond dependencies 
 COPY --from=builder /usr/lib/libselinux.so.1 /usr/lib/libpam.so.0 /usr/lib/libc.so.6 /usr/lib/
-# ruby dependencies (note: done)
+# ruby dependencies
 COPY --from=builder /usr/lib/libruby.so.3.1 /usr/lib/libz.so.1 /usr/lib/libgmp.so.10 /usr/lib/libcrypt.so.1 /usr/lib/libm.so.6 /usr/lib/libc.so.6 /usr/lib/
 # fluent-bit dependencies (note: done; might remove libssl.so.3 and libcrypto.so.3)
-# libssl.so.1.1 & libcrypto.so.1.1 are already available with openssl in distroless and copying them over causes FIPS HMAC verification failures
+# libssl.so.3 & libcrypto.so.3 are already available with openssl in distroless and copying them over causes FIPS HMAC verification failures
 COPY --from=builder /usr/lib/libluajit-5.1.so.2 /usr/lib/libyaml-0.so.2 /usr/lib/libsystemd.so.0 /usr/lib/libcurl.so.4 /usr/lib/libz.so.1 /usr/lib/libzstd.so.1 /usr/lib/libsasl2.so.3 /usr/lib/libm.so.6 /usr/lib/libgcc_s.so.1 /usr/lib/libc.so.6 /usr/lib/libcap.so.2 /usr/lib/liblz4.so.1 /usr/lib/liblzma.so.5 /usr/lib/libnghttp2.so.14 /usr/lib/libssh2.so.1 /usr/lib/libgssapi_krb5.so.2 /usr/lib/libresolv.so.2 /usr/lib/libkrb5.so.3 /usr/lib/libk5crypto.so.3 /usr/lib/libcom_err.so.2 /usr/lib/libkrb5support.so.0 /usr/lib/
-# COPY --from=builder /lib/libgcrypt.so.20 /lib/libgpg-error.so.0 /lib/
-# telegraf dependencies (note: done)
+# telegraf dependencies
 COPY --from=builder /usr/lib/libresolv.so.2 /usr/lib/libc.so.6 /usr/lib/
-# mdsd dependencies (note: done)
+# mdsd dependencies
 COPY --from=builder /usr/sbin/../lib/libpthread.so.0 /usr/sbin/../lib/libdl.so.2 /usr/sbin/../lib/libsymcrypt.so.103 /usr/sbin/../lib/librt.so.1 /usr/sbin/../lib/libm.so.6 /usr/sbin/../lib/libc.so.6 /usr/sbin/../lib/libstdc++.so.6 /usr/sbin/../lib/libgcc_s.so.1 /usr/sbin/../lib/
 COPY --from=builder /opt/microsoft/azure-mdsd/lib/libtcmalloc_minimal.so.4 /opt/microsoft/azure-mdsd/lib/
-# COPY --from=builder /opt/microsoft/azure-mdsd/lib/libsymcrypt.so.103 /opt/microsoft/azure-mdsd/lib/
-# logrotate dependencies (note: done)
-# removed libpcre.so.1 for being unrecognized during build - assuming it's not part of AzureLinux 3.0
-# COPY --from=builder /lib/libselinux.so.1 /lib/
+# logrotate dependencies 
 COPY --from=builder /usr/lib/libpopt.so.0 /usr/lib/libc.so.6 /usr/lib/
 # curl dependencies (note:done)
 # libssl.so.1.1 & libcrypto.so.1.1 are already available with openssl in distroless and copying them over causes FIPS HMAC verification failures
