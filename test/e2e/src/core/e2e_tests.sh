@@ -131,7 +131,6 @@ createArcCIExtension() {
     if [ ! -z "$CI_ARC_RELEASE_TRAIN" ]; then
        basicparameters="$basicparameters  --release-train $CI_ARC_RELEASE_TRAIN"
     fi
-
     if [ ! -z "$CI_ARC_VERSION" ]; then
        basicparameters="$basicparameters --version $CI_ARC_VERSION"
     fi
