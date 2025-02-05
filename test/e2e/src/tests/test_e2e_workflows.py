@@ -120,6 +120,7 @@ def test_e2e_workflows(env_dict):
         pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'KUBE_SERVICES'))
 
     # KubeEvents
+    # only the kube events with !normal event type will be collected
     query = constants.KUBE_EVENTS_QUERY.format(queryTimeInterval)
     params = { 'query': query}
     result = requests.get(queryUrl, params=params, headers=Headers)
@@ -128,7 +129,7 @@ def test_e2e_workflows(env_dict):
 
     rowCount = result.json()['tables'][0]['rows'][0][0]
     if not rowCount:
-        pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'KUBE_EVENTS'))
+        print("rowCount should be greater or equal than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'KUBE_EVENTS'))
 
     # Container Node Inventory
     query = constants.CONTAINER_NODE_INVENTORY_QUERY.format(queryTimeInterval)
