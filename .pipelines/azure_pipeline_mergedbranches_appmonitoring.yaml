@@ -8,7 +8,7 @@ trigger:
   branches:
     include:
     - ai_prod
-    
+
 pr:
   branches:
     include:
