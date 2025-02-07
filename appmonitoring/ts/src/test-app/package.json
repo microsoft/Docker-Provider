@@ -17,6 +17,7 @@
     "@kubernetes/client-node": "^1.0.0",
     "@types/node": "20.2.4",
     "@types/npm": "^7.19.0",
+    "applicationinsights": "^3.5.0",
     "http-proxy-agent": "7.0.0",
     "https-proxy-agent": "7.0.0",
     "ts-node": "10.9.1",
@@ -25,7 +26,5 @@
   },
   "engines": {
     "node": "^16.19.1"
-  },
-  "devDependencies": {
   }
 }
