@@ -14,7 +14,8 @@ pr:
     include:
     - ai_prod
   paths:
-    exclude:
+    include:
+    - /**
   
 variables:
   armServiceConnectionName: 'ci-1es-acr-connection'
