@@ -4,14 +4,15 @@
 # https://aka.ms/yaml
 
 trigger:
-  batch: false
+  batch: true
   branches:
     include:
     - ai_prod
 
-#pr:
-#- ai_prod
-#- alkaplan/readme-release-process
+pr:
+  branches:
+    include:
+    - ai_prod
   
 variables:
   armServiceConnectionName: 'ci-1es-acr-connection'
