@@ -13,9 +13,9 @@ pr:
   branches:
     include:
     - ai_prod
-  paths:
-    include:
-    - *
+  #paths:
+  #  include:
+  #  - *
 
 variables:
   armServiceConnectionName: 'ci-1es-acr-connection'
