@@ -15,7 +15,7 @@ pr:
     - ai_prod
   paths:
     include:
-    - '*'
+    - '.pipelines'
   
 variables:
   armServiceConnectionName: 'ci-1es-acr-connection'
