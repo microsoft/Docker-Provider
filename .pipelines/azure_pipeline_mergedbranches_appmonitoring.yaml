@@ -11,6 +11,7 @@ trigger:
 
 pr:
 - ai_prod
+- alkaplan/readme-release-process
   
 variables:
   armServiceConnectionName: 'ci-1es-acr-connection'
