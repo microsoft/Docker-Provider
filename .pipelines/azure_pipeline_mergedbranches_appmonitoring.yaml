@@ -8,8 +8,7 @@ trigger:
   branches:
     include:
     - ai_prod
-    - alkaplan/*
-
+    
 pr:
   branches:
     include:
