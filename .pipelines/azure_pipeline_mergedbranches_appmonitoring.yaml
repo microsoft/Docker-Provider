@@ -12,7 +12,7 @@ trigger:
 pr:
   branches:
     include:
-    - ai_prod
+    - origin/ai_prod
     - '*'
   
 variables:
