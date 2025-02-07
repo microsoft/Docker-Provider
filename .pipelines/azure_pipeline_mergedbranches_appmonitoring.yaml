@@ -14,7 +14,7 @@ pr:
   branches:
     include:
     - ai_prod
-    - alkaplan/*
+    - '*'
   
 variables:
   armServiceConnectionName: 'ci-1es-acr-connection'
