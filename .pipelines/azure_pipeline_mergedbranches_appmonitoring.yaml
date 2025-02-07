@@ -9,9 +9,9 @@ trigger:
     include:
     - ai_prod
 
-pr:
-- ai_prod
-- alkaplan/readme-release-process
+#pr:
+#- ai_prod
+#- alkaplan/readme-release-process
   
 variables:
   armServiceConnectionName: 'ci-1es-acr-connection'
