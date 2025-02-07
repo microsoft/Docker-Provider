@@ -10,9 +10,7 @@ trigger:
     - ai_prod
 
 pr:
-  branches:
-    include:
-    - ai_prod
+- ai_prod
   
 variables:
   armServiceConnectionName: 'ci-1es-acr-connection'
