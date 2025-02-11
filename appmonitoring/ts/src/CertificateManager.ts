@@ -137,17 +137,20 @@ export class CertificateManager {
     public async PatchSecretStore(operationId: string, kubeConfig: k8s.KubeConfig, certificate: WebhookCertData) {
         try {
             const secretsApi = kubeConfig.makeApiClient(k8s.CoreV1Api);
-            const secretStore = await secretsApi.readNamespacedSecret(CertificateStoreName, KubeSystemNamespaceName);
-            const secretsObj: k8s.V1Secret = secretStore.body;
+            const secretsObj: k8s.V1Secret = await secretsApi.readNamespacedSecret({ name: CertificateStoreName, namespace: KubeSystemNamespaceName });
 
             secretsObj.data['ca.cert'] = Buffer.from(certificate.caCert, 'utf-8').toString('base64');
             secretsObj.data['ca.key'] = Buffer.from(certificate.caKey, 'utf-8').toString('base64');
             secretsObj.data['tls.cert'] = Buffer.from(certificate.tlsCert, 'utf-8').toString('base64');
             secretsObj.data['tls.key'] = Buffer.from(certificate.tlsKey, 'utf-8').toString('base64');
 
-            await secretsApi.patchNamespacedSecret(CertificateStoreName, KubeSystemNamespaceName, secretsObj, undefined, undefined, undefined, undefined, undefined, {
-                headers: { 'Content-Type' : 'application/strategic-merge-patch+json' }
-            });
+            const request: k8s.CoreV1ApiPatchNamespacedSecretRequest = {
+                name: CertificateStoreName,
+                namespace: KubeSystemNamespaceName,
+                body: secretsObj
+            };
+
+            await secretsApi.patchNamespacedSecret(request);
             logger.addHeartbeatMetric(HeartbeatMetrics.SecretStoreUpdatedCount, 1);
         } catch (error) {
             logger.error('Failed to patch Secret Store!', operationId, this.requestMetadata);
@@ -160,8 +163,7 @@ export class CertificateManager {
     public async GetSecretDetails(operationId: string, kubeConfig: k8s.KubeConfig): Promise<WebhookCertData> {
         try {
             const k8sApi = kubeConfig.makeApiClient(k8s.CoreV1Api);
-            const secretStore = await k8sApi.readNamespacedSecret(CertificateStoreName, KubeSystemNamespaceName)
-            const secretsObj = secretStore.body;
+            const secretsObj: k8s.V1Secret = await k8sApi.readNamespacedSecret({ name: CertificateStoreName, namespace: KubeSystemNamespaceName });
             if (secretsObj.data) {
                 const certificate: WebhookCertData = {
                     caCert: Buffer.from(secretsObj.data['ca.cert'], 'base64').toString('utf-8'),
@@ -181,8 +183,7 @@ export class CertificateManager {
     public async GetMutatingWebhookCABundle(operationId: string, kubeConfig: k8s.KubeConfig): Promise<string> {
         try {
             const webhookApi: k8s.AdmissionregistrationV1Api = kubeConfig.makeApiClient(k8s.AdmissionregistrationV1Api);
-            const mutatingWebhook = await webhookApi.readMutatingWebhookConfiguration(WebhookName);
-            const mutatingWebhookObject: k8s.V1MutatingWebhookConfiguration = mutatingWebhook.body;
+            const  mutatingWebhookObject: k8s.V1MutatingWebhookConfiguration = await webhookApi.readMutatingWebhookConfiguration({ name: WebhookName });
             if (!mutatingWebhookObject 
                 || !mutatingWebhookObject.webhooks 
                 || mutatingWebhookObject.webhooks.length !== 1 || !mutatingWebhookObject.webhooks[0].clientConfig)
@@ -200,8 +201,7 @@ export class CertificateManager {
     public async PatchMutatingWebhook(operationId: string, kubeConfig: k8s.KubeConfig, certificate: WebhookCertData) {
         try {
             const webhookApi: k8s.AdmissionregistrationV1Api = kubeConfig.makeApiClient(k8s.AdmissionregistrationV1Api);
-            const mutatingWebhook = await webhookApi.readMutatingWebhookConfiguration(WebhookName);
-            const mutatingWebhookObject: k8s.V1MutatingWebhookConfiguration = mutatingWebhook.body;
+            const mutatingWebhookObject: k8s.V1MutatingWebhookConfiguration = await webhookApi.readMutatingWebhookConfiguration({ name: WebhookName });
             if (!mutatingWebhookObject 
                 || !mutatingWebhookObject.webhooks 
                 || mutatingWebhookObject.webhooks.length !== 1 || !mutatingWebhookObject.webhooks[0].clientConfig)
@@ -209,9 +209,7 @@ export class CertificateManager {
                 throw new Error("MutatingWebhookConfiguration not found or is malformed!");
             }
             mutatingWebhookObject.webhooks[0].clientConfig.caBundle = Buffer.from(certificate.caCert, 'utf-8').toString('base64');
-            await webhookApi.patchMutatingWebhookConfiguration(WebhookName, mutatingWebhookObject, undefined, undefined, undefined, undefined, undefined, {
-                headers: { 'Content-Type' : 'application/strategic-merge-patch+json' }
-            });
+            await webhookApi.patchMutatingWebhookConfiguration({ name: WebhookName, body: mutatingWebhookObject });
             logger.addHeartbeatMetric(HeartbeatMetrics.MutatingWebhookConfigurationUpdatedCount, 1);
         } catch (error) {
             logger.error('Failed to patch MutatingWebhookConfiguration!', operationId, this.requestMetadata);
@@ -265,11 +263,10 @@ export class CertificateManager {
         const namespace = KubeSystemNamespaceName;
 
         try {
-            const res = await k8sApi.readNamespacedJobStatus(jobName, namespace);
-            const jobStatus = res.body.status;
+            const jobStatus: k8s.V1Job = await k8sApi.readNamespacedJobStatus({ name: jobName, namespace: namespace });
             
-            if (jobStatus.conditions) {
-                for (const condition of jobStatus.conditions) {
+            if (jobStatus.status?.conditions) {
+                for (const condition of jobStatus.status.conditions) {
                     if (condition.type === 'Complete' && condition.status === 'True') {
                         logger.info(`Job ${jobName} has completed.`, operationId, requestMetadata);
                         logger.SendEvent("CertificateJobCompleted", operationId, null, clusterArmId, clusterArmRegion);
@@ -475,7 +472,7 @@ export class CertificateManager {
         try {
             const k8sApi = kc.makeApiClient(k8s.AppsV1Api);
             const selector = "app-monitoring-webhook"
-            const deployments: k8s.V1DeploymentList = (await k8sApi.listNamespacedDeployment(KubeSystemNamespaceName)).body;
+            const deployments: k8s.V1DeploymentList = (await k8sApi.listNamespacedDeployment({ namespace: KubeSystemNamespaceName }));
 
             if (!deployments)
             {
@@ -496,7 +493,7 @@ export class CertificateManager {
 
             logger.info(`Restarting deployment ${name}...`, operationId, this.requestMetadata);
             logger.SendEvent("DeploymentRestarting", operationId, null, clusterArmId, clusterArmRegion);
-            await k8sApi.replaceNamespacedDeployment(name, KubeSystemNamespaceName, deployment);
+            await k8sApi.replaceNamespacedDeployment({ name: name, namespace: KubeSystemNamespaceName, body: deployment });
             console.log(`Successfully restarted Deployment ${name}`);
             logger.SendEvent("DeploymentRestarted", operationId, null, clusterArmId, clusterArmRegion);
         } catch (err) {

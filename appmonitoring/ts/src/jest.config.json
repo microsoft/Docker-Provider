@@ -8,6 +8,7 @@
       }
     ]
   },
+  "transformIgnorePatterns": [],
   "testEnvironment": "node",
   "testRegex": "/tests/.*\\.spec\\.(ts|tsx)$",
   "moduleFileExtensions": [

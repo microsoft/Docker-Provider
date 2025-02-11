@@ -44,17 +44,13 @@ export class K8sWatcher {
 
         logger.info(`Listing CRs, resourceVersion=${latestResourceVersion}...`, operationId, requestMetadata);
 
-        const crsResult: ListResponse = <ListResponse>await k8sApi.listClusterCustomObject(
-            K8sWatcher.crdApiGroup,
-            K8sWatcher.crdApiVersion,
-            K8sWatcher.crdNamePlural,
-            undefined,
-            undefined,
-            undefined,
-            undefined, // `metadata.name=${K8sWatcher.crName}`
-            undefined,
-            undefined,
-            latestResourceVersion);
+        const crsResult: ListResponse = <ListResponse>await k8sApi.listClusterCustomObject({
+            group: K8sWatcher.crdApiGroup,
+            version: K8sWatcher.crdApiVersion,
+            plural: K8sWatcher.crdNamePlural,
+            // fieldSelector: `metadata.name=${K8sWatcher.crName}`
+            resourceVersion: latestResourceVersion
+        });
 
         logger.info(`CRs listed, resourceVersion=${crsResult.body.metadata.resourceVersion}`, operationId, requestMetadata);
 
