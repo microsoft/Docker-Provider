@@ -25,7 +25,5 @@
   },
   "engines": {
     "node": "^16.19.1"
-  },
-  "devDependencies": {
   }
 }
