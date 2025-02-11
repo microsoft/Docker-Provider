@@ -140,6 +140,11 @@ jobs:
 
         echo "Build is done"
 
+        echo "Pruning packages...""
+        sudo modclean -r
+        sudo npm prune --production
+        echo "Pruning packages is done"
+
         echo "Running ESLint..."
         npx eslint .
 
