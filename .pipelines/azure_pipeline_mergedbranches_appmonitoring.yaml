@@ -163,7 +163,7 @@ jobs:
         echo "Jest is done"
 
         echo "Pruning packages..."
-        sudo modclean -r
+        sudo npx modclean
         sudo npm prune --production
         echo "Pruning packages is done"
         
