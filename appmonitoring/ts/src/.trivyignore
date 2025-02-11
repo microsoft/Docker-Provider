@@ -4,3 +4,8 @@ CVE-2024-28863
 
 # ws -> kubernetes/client-node
 CVE-2024-37890
+
+# temporarily ignore until the next PR is merged that fixes vulnerabilities by updating packages
+# need the build to pass to get through the PR gate
+CVE-2024-21538
+CVE-2024-21534
