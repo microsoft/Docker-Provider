@@ -32,21 +32,21 @@ spec:
             Disables all instrumentation regardless of which languages the default CR specifies, or which language-specific annotation is used.
 
             instrumentation.opentelemetry.io/inject-java="true"
-            instrumentation.opentelemetry.io/inject-dotnet="true"
-            Uses the default CR for the namespace with Java and .NET instrumentation (regardless of which languages the default CR specifies)
+            instrumentation.opentelemetry.io/inject-nodejs="true"
+            Uses the default CR for the namespace with Java and NodeJs instrumentation (regardless of which languages the default CR specifies)
 
             instrumentation.opentelemetry.io/inject-java="true"
-            instrumentation.opentelemetry.io/inject-dotnet="false"
+            instrumentation.opentelemetry.io/inject-nodejs="false"
             Uses the default CR for the namespace with Java (regardless of which languages the default CR specifies)
 
             instrumentation.opentelemetry.io/inject-java="alternativeCrInThisNamespace"
             Uses a different, non-default CR named _alternativeCrInThisNamespace_ found within the namespace with Java instrumentation (regardless of which languages that CR specifies)
 
             instrumentation.opentelemetry.io/inject-java="crName1"
-            instrumentation.opentelemetry.io/inject-dotnet="crName2"
+            instrumentation.opentelemetry.io/inject-nodejs="crName2"
             Invalid configuration, deployment will fail.
 
-            instrumentation.opentelemetry.io/inject-dotnet="crThatDoesNotExist"
+            instrumentation.opentelemetry.io/inject-nodejs="crThatDoesNotExist"
             Invalid configuration since the CR does not exist, deployment will continue with no instrumentation.
           type: object
           required:
@@ -74,7 +74,6 @@ spec:
                       items:
                         type: string
                         enum:
-                          - DotNet
                           - Java
                           - NodeJs
                         
