@@ -13,7 +13,7 @@ import (
 
 //export FLBPluginRegister
 func FLBPluginRegister(ctx unsafe.Pointer) int {
-	return output.FLBPluginRegister(ctx, "oms", "OMS GO!")
+	return output.FLBPluginRegister(ctx, "oms_network_flow", "OMS GO!")
 }
 
 // (fluentbit will call this)
