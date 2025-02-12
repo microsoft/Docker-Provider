@@ -173,8 +173,8 @@ jobs:
         sudo apt-get update && sudo apt-get -y install qemu binfmt-support qemu-user-static
         docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
-        docker buildx create --name testbuilder
-        docker buildx use testbuilder
+        # docker buildx create --name testbuilder
+        # docker buildx use testbuilder
 
         az --version
         az account show
