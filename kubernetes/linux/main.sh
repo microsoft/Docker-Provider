@@ -1035,7 +1035,7 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
             source ~/.bashrc
             SYSLOG_PORT_CONFIG="" # enable syslog listener for mdsd for prometheus sidecar in geneva mode
       fi
-      # add -T 0xFFFF for full traces
+      # add -T 0xFFFF for full traces networkflowlogs
       mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
     else
       echo "not starting mdsd (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
