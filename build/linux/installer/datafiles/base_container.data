@@ -25,6 +25,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/fluent-bit/bin/perf.so;                                       intermediate/${{BUILD_CONFIGURATION}}/perf.so;  	755; root; root
 /etc/opt/microsoft/docker-cimprov/prometheus-side-car.conf;		         build/linux/installer/conf/prometheus-side-car.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit.conf;			            build/linux/installer/conf/fluent-bit.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/fluent-bit-network-flow-logs.conf;	build/linux/installer/conf/fluent-bit-network-flow-logs.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit-prom-side-car.conf;	   build/linux/installer/conf/fluent-bit-prom-side-car.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit-rs.conf;			         build/linux/installer/conf/fluent-bit-rs.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/azm-containers-parser.conf;	         build/common/installer/conf/azm-containers-parser.conf;                    644; root; root
