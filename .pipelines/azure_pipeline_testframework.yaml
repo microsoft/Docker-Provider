@@ -41,7 +41,7 @@ jobs:
         - task: AzureCLI@1
           displayName: Get kubeconfig
           inputs:
-            azureSubscription: 'ContainerInsights_Build_Subscription'
+            azureSubscription: 'ContainerInsights_Build_Subscription_CI'
             scriptLocation: 'inlineScript'
             inlineScript: 'az aks get-credentials -g $(RESOURCE_GROUP) -n $(CLUSTER_NAME)'
           
