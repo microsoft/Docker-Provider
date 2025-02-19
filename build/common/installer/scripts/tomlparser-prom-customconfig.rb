@@ -114,11 +114,6 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE")
 
     timeout_config_key = "timeout"
-    if is_windows?
-      # For windows, the timeout config key is different because of old version of telegraf
-      timeout_config_key = "response_timeout"
-    end
-
     pluginConfigsWithNamespaces = ""
     monitorKubernetesPodsNamespaces.each do |namespace|
       if !namespace.nil?
