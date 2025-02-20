@@ -1898,6 +1898,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	networkFlowLogsStreamTag := "dcr-92240d259af846b8941a7725ef5859de:ContainerInsightsExtension:RETINA_NETWORK_FLOW_LOGS"
 	networkFlowLogsMsgPackEntries := getNetworkFlowLogsMsgPackEntries()
+	Log(fmt.Sprintf("Debug: retinaNetworkFlowlogs sample data1: %+v", networkFlowLogsMsgPackEntries[0]))
 	writeMsgPackEntries(MdsdMsgpUnixSocketClient, false, networkFlowLogsStreamTag, networkFlowLogsMsgPackEntries)
 
 	return output.FLB_OK
@@ -2282,6 +2283,7 @@ func writeMsgPackEntries(connection net.Conn, isContainerLogV2Schema bool, fluen
 			}
 		}
 	} else {
+		Log(fmt.Sprintf("Debug: retinaNetworkFlowlogs ingest with stream tag: %+v", fluentForwardTag))
 		msgpBytes := convertMsgPackEntriesToMsgpBytes(fluentForwardTag, msgPackEntries)
 		deadline := 10 * time.Second
 		connection.SetWriteDeadline(time.Now().Add(deadline))
