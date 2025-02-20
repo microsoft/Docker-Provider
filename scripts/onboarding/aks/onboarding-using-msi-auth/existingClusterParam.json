@@ -89,7 +89,8 @@
         "Microsoft-InsightsMetrics",
         "Microsoft-ContainerInventory",
         "Microsoft-ContainerNodeInventory",
-        "Microsoft-Perf"
+        "Microsoft-Perf",
+        "Microsoft-RetinaNetworkFlowLogs"
       ]
     },
     "useAzureMonitorPrivateLinkScope": {
