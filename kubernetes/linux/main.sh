@@ -1036,7 +1036,7 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
             SYSLOG_PORT_CONFIG="" # enable syslog listener for mdsd for prometheus sidecar in geneva mode
       fi
       # add -T 0xFFFF for full traces networkflowlogs
-      mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+      mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 -T 0xFFFF "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
     else
       echo "not starting mdsd (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
     fi
@@ -1056,7 +1056,7 @@ else
       fi
       mkdir -p /var/run/mdsd-ci
       # add -T 0xFFFF for full traces
-      mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos 2>>/dev/null &
+      mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -T 0xFFFF "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos 2>>/dev/null &
 fi
 
 # # Set up a cron job for logrotation
