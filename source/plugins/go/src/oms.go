@@ -1806,6 +1806,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				return output.FLB_RETRY
 			} else {
 				numContainerLogRecords = len(msgPackEntries)
+				Log(fmt.Sprintf("Debug: msgPackEntries sample data1: %+v", msgPackEntries[0]))
 				Log("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numContainerLogRecords, bts, elapsed)
 			}
 		}
