@@ -1954,7 +1954,7 @@ var sampleLog1 = NetworkFlowLog{
 	UUID:                   uuid.New().String(),
 	Verdict:                "FORWARDED",
 	DropReason:             "",
-	IP:                     "{\"source\": \"10.244.1.127\", \"destination\": \"10.244.1.228\", \"ipVersion\": \"IPv4\"}",
+	IP:                     "10.244.1.127 -> 10.244.1.228",
 	Layer4:                 "TCP: 8080->55508, FIN:true, ACK:true",
 	SourceIdentity:         2,
 	SourceClusterName:      "default",
