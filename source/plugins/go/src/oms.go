@@ -1905,6 +1905,74 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	return output.FLB_OK
 }
 
+// PostNetworkflowRecords sends data to the mdsd and amacoreagent
+func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int {
+	Log(fmt.Sprintf("Debug: PostNetworkflowRecords starting"));
+	for _, record := range tailPluginRecords {
+		Log(fmt.Sprintf("Debug: PostNetworkflowRecords sample data: %+v", record))
+		
+		stringMap = make(map[string]string)
+
+		msgPackEntry = MsgPackEntry{
+			Record: stringMap,
+		}
+		msgPackEntries = append(msgPackEntries, msgPackEntry)
+	}
+
+	// msgPackEntries := getNetworkFlowLogsMsgPackEntries()
+	if len(msgPackEntries) > 0 {
+		// if IsAADMSIAuthMode == true && !IsGenevaLogsIntegrationEnabled {
+		// 	containerlogDataType := ContainerLogDataType
+		// 	if ContainerLogSchemaV2 == true {
+		// 		containerlogDataType = ContainerLogV2DataType
+		// 	}
+		// 	MdsdContainerLogTagName = getOutputStreamIdTag(containerlogDataType, MdsdContainerLogTagName, &MdsdContainerLogTagRefreshTracker)
+		// 	if MdsdContainerLogTagName == "" {
+		// 		Log("Warn::mdsd::skipping Microsoft-ContainerLog or Microsoft-ContainerLogV2 or Microsoft-ContainerLogV2-HighScale stream since its opted out")
+		// 		return output.FLB_RETRY
+		// 	}
+		// }
+		MdsdContainerLogTagName := "dcr-92240d259af846b8941a7725ef5859de:ContainerInsightsExtension:ods-f68dcd4f-c3dd-4826-9187-728ae9548788:RETINA_NETWORK_FLOW_LOGS"
+
+		if MdsdMsgpUnixSocketClient == nil {
+			Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
+			CreateMDSDClient(ContainerLogV2, ContainerType)
+			if MdsdMsgpUnixSocketClient == nil {
+				Log("Error::mdsd::Unable to create mdsd client. Please check error log.")
+
+				ContainerLogTelemetryMutex.Lock()
+				defer ContainerLogTelemetryMutex.Unlock()
+				ContainerLogsMDSDClientCreateErrors += 1
+
+				return output.FLB_RETRY
+			}
+		}
+
+		bts, er := writeMsgPackEntries(MdsdMsgpUnixSocketClient, false, networkFlowLogsStreamTag, msgPackEntries)
+		elapsed = time.Since(start)
+
+		if er != nil {
+			Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(msgPackEntries), elapsed, er.Error())
+			if MdsdMsgpUnixSocketClient != nil {
+				MdsdMsgpUnixSocketClient.Close()
+				MdsdMsgpUnixSocketClient = nil
+			}
+
+			ContainerLogTelemetryMutex.Lock()
+			defer ContainerLogTelemetryMutex.Unlock()
+			ContainerLogsSendErrorsToMDSDFromFluent += 1
+
+			return output.FLB_RETRY
+		} else {
+			numContainerLogRecords = len(msgPackEntries)
+			Log(fmt.Sprintf("Debug: msgPackEntries sample data1: %+v", msgPackEntries[0]))
+			Log("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numContainerLogRecords, bts, elapsed)
+		}
+	}
+
+	return output.FLB_OK
+}
+
 func getNetworkFlowLogsMsgPackEntries() []MsgPackEntry {
 	networkFlowLogs := []NetworkFlowLog{sampleLog1}
 	var msgPackEntries []MsgPackEntry
