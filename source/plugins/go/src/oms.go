@@ -1908,11 +1908,19 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 // PostNetworkflowRecords sends data to the mdsd and amacoreagent
 func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int {
 	Log(fmt.Sprintf("Debug: PostNetworkflowRecords starting"));
+	start := time.Now()
+	var elapsed time.Duration
+
+	var stringMap map[string]string
+	var msgPackEntries []MsgPackEntry
+	numNetworkLogRecords := 0
+
 	for _, record := range tailPluginRecords {
 		Log(fmt.Sprintf("Debug: PostNetworkflowRecords sample data: %+v", record))
-		
+
 		stringMap = make(map[string]string)
 
+		var msgPackEntry MsgPackEntry
 		msgPackEntry = MsgPackEntry{
 			Record: stringMap,
 		}
@@ -1932,7 +1940,7 @@ func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int
 		// 		return output.FLB_RETRY
 		// 	}
 		// }
-		MdsdContainerLogTagName := "dcr-92240d259af846b8941a7725ef5859de:ContainerInsightsExtension:ods-f68dcd4f-c3dd-4826-9187-728ae9548788:RETINA_NETWORK_FLOW_LOGS"
+		networkFlowLogsStreamTag := "dcr-92240d259af846b8941a7725ef5859de:ContainerInsightsExtension:ods-f68dcd4f-c3dd-4826-9187-728ae9548788:RETINA_NETWORK_FLOW_LOGS"
 
 		if MdsdMsgpUnixSocketClient == nil {
 			Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
@@ -1964,9 +1972,9 @@ func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int
 
 			return output.FLB_RETRY
 		} else {
-			numContainerLogRecords = len(msgPackEntries)
+			numNetworkLogRecords = len(msgPackEntries)
 			Log(fmt.Sprintf("Debug: msgPackEntries sample data1: %+v", msgPackEntries[0]))
-			Log("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numContainerLogRecords, bts, elapsed)
+			Log("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numNetworkLogRecords, bts, elapsed)
 		}
 	}
 
