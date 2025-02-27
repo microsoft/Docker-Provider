@@ -14,3 +14,6 @@ CVE-2024-37890
 # need the build to pass to get through the PR gate
 CVE-2024-21538
 CVE-2024-21534
+
+# jsonpath-plus -> kubernetes/client-node, need to remove once migrated to the new kubernetes/client-node
+CVE-2025-1302
