@@ -18,7 +18,7 @@ RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
 
 # gangams - optional MSYS2 update via ridk failing in merged docker file so skipping that since we dont need optional update
 RUN refreshenv \
-&& ridk install 3 \
+&& ridk install 2 3 \
 && echo gem: --no-document >> C:\ProgramData\gemrc \
 && gem install cool.io -v 1.7.1 --platform ruby \
 && gem install oj -v 3.3.10 \
