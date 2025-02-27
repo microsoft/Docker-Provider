@@ -1897,12 +1897,45 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		}
 	}
 
-	networkFlowLogsStreamTag := "dcr-92240d259af846b8941a7725ef5859de:ContainerInsightsExtension:ods-f68dcd4f-c3dd-4826-9187-728ae9548788:RETINA_NETWORK_FLOW_LOGS"
+	networkFlowLogsStreamTag := "dcr-92240d259af846b8941a7725ef5859de:ContainerInsightsExtension:gigl-dce-798ab40186414ef6b92e4b8e86e01fbe:RETINA_NETWORK_FLOW_LOGS"
 	networkFlowLogsMsgPackEntries := getNetworkFlowLogsMsgPackEntries()
 	Log(fmt.Sprintf("Debug: retinaNetworkFlowlogs sample data1: %+v", networkFlowLogsMsgPackEntries[0]))
 	writeMsgPackEntries(MdsdMsgpUnixSocketClient, false, networkFlowLogsStreamTag, networkFlowLogsMsgPackEntries)
 
 	return output.FLB_OK
+}
+
+func convertFluentBitRecord(input interface{}) (interface{}, error) {
+	switch v := input.(type) {
+	case map[interface{}]interface{}:
+		record := make(map[string]interface{})
+		for key, value := range v {
+			strKey, ok := key.(string)
+			if !ok {
+				strKey = fmt.Sprintf("%v", key)
+			}
+			convertedValue, err := convertFluentBitRecord(value)
+			if err != nil {
+				return nil, err
+			}
+			record[strKey] = convertedValue
+		}
+		return record, nil
+	case []byte:
+		return string(v), nil
+	case []interface{}:
+		records := make([]interface{}, len(v))
+		for i, item := range v {
+			convertedItem, err := convertFluentBitRecord(item)
+			if err != nil {
+				return nil, err
+			}
+			records[i] = convertedItem
+		}
+		return records, nil
+	default:
+		return v, nil
+	}
 }
 
 // PostNetworkflowRecords sends data to the mdsd and amacoreagent
@@ -1916,7 +1949,12 @@ func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int
 	numNetworkLogRecords := 0
 
 	for _, record := range tailPluginRecords {
-		Log(fmt.Sprintf("Debug: PostNetworkflowRecords sample data: %+v", record))
+		networkFlowLogRecord, err := convertFluentBitRecord(record)
+		if err != nil {
+			Log(fmt.Sprintf("Error converting record: %v", err))
+			continue
+		}
+		Log(fmt.Sprintf("Debug: PostNetworkflowRecords sample data: %+v", networkFlowLogRecord))
 
 		stringMap = make(map[string]string)
 
