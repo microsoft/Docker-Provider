@@ -102,7 +102,6 @@ ENV APPLICATIONINSIGHTS_AUTH "NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi"
 ENV AZMON_COLLECT_ENV False
 ENV CI_CERT_LOCATION "C://oms.crt"
 ENV CI_KEY_LOCATION "C://oms.key"
-ENV TELEGRAF_CONFIG_PATH "/etc/telegraf/telegraf.conf"
 
 # Delete unnecessary files
 RUN powershell -Command "Remove-Item -Recurse -Force 'C:\ruby31\share\doc\ruby\html\js'; \
