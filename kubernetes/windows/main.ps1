@@ -812,15 +812,6 @@ function Start-Telegraf {
             Write-Host "Failed to set environment variable NODE_IP for target 'machine' since it is either null or empty"
         }
 
-        $telegrafConfigPath = [System.Environment]::GetEnvironmentVariable("TELEGRAF_CONFIG_PATH", "process")
-        if (![string]::IsNullOrEmpty($telegrafConfigPath)) {
-            [System.Environment]::SetEnvironmentVariable("TELEGRAF_CONFIG_PATH", $telegrafConfigPath, "machine")
-            Write-Host "Successfully set environment variable TELEGRAF_CONFIG_PATH - $($telegrafConfigPath) for target 'machine'..."
-        }
-        else {
-            Write-Host "Failed to set environment variable TELEGRAF_CONFIG_PATH for target 'machine' since it is either null or empty"
-        }
-
         $hostName = [System.Environment]::GetEnvironmentVariable("HOSTNAME", "process")
         Write-Host "nodename: $($hostName)"
         Write-Host "replacing nodename in telegraf config"
@@ -852,8 +843,8 @@ function Start-Telegraf {
             }
             Write-Host "Running telegraf service in test mode"
             C:\opt\telegraf\telegraf.exe --config "C:\etc\telegraf\telegraf.conf" --test
-            Write-Host "Starting telegraf service with auto restart"
-            C:\opt\telegraf\telegraf.exe --service-auto-restart
+            Write-Host "Starting telegraf service"
+            C:\opt\telegraf\telegraf.exe --service start
 
             # Trying to start telegraf again if it did not start due to fluent bit not being ready at startup
             Get-Service telegraf | findstr Running
