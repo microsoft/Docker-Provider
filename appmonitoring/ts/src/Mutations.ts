@@ -48,7 +48,7 @@ export class Mutations {
                 case AutoInstrumentationPlatforms.Java:
                     containers.push({
                         name: Mutations.initContainerNameJava,
-                        image: Mutations.generateImagePath(platforms[i], imageRepoPath),
+                        image: Mutations.GenerateImagePath(platforms[i], imageRepoPath),
                         command: ["cp"],
                         args: ["-a", Mutations.imagePathJava, Mutations.agentVolumeMountPathJava], // cp -a <source> <destination> 
                         volumeMounts: [{
@@ -71,7 +71,7 @@ export class Mutations {
                 case AutoInstrumentationPlatforms.NodeJs:
                     containers.push({
                         name: Mutations.initContainerNameNodeJs,
-                        image: Mutations.generateImagePath(platforms[i], imageRepoPath),
+                        image: Mutations.GenerateImagePath(platforms[i], imageRepoPath),
                         command: ["cp"],
                         args: ["-a", Mutations.imagePathNodeJs, Mutations.agentVolumeMountPathNodeJs], // cp -a <source> <destination>
                         volumeMounts: [{
@@ -305,7 +305,7 @@ ${ownerUidAttribute}`
         return volumes;
     }
 
-    private static generateImagePath(platform: AutoInstrumentationPlatforms, imagePath: string = null): string {
+    public static GenerateImagePath(platform: AutoInstrumentationPlatforms, imagePath: string = null): string {
         while(imagePath?.length > 1 && imagePath.endsWith("/")) {
             imagePath = imagePath.slice(0, imagePath.length - 1);
         }

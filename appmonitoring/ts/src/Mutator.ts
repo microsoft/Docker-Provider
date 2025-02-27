@@ -3,6 +3,7 @@ import { logger, RequestMetadata, HeartbeatMetrics } from "./LoggerWrapper.js";
 import { PodInfo, IAdmissionReview, InstrumentationCR, AutoInstrumentationPlatforms, DefaultInstrumentationCRName } from "./RequestDefinition.js";
 import { AdmissionReviewValidator } from "./AdmissionReviewValidator.js";
 import { InstrumentationCRsCollection } from "./InstrumentationCRsCollection.js";
+import { Mutations } from "./Mutations.js"
 
 export class Mutator {
     private readonly admissionReview: IAdmissionReview;
@@ -43,7 +44,7 @@ export class Mutator {
         } catch (e) {
             const exceptionMessage = `Exception encountered: ${e}${e?.stack ?? ""}`;
 
-            logger.addHeartbeatMetric(HeartbeatMetrics.AdmissionReviewActionableFailedCount, 1);
+            logger.addHeartbeatMetric(HeartbeatMetrics.AdmissionReviewFailedCount, 1, e?.mutationDetails != null ? JSON.stringify(e.mutationDetails) : "");
         
             logger.error(exceptionMessage, this.operationId, this.requestMetadata);
             
@@ -74,6 +75,8 @@ export class Mutator {
         let clusterName = "";
         let platforms: AutoInstrumentationPlatforms[] = [];
 
+        let mutationDetails: any = null;
+
         if (!cr) {
             // no relevant CR found, we still need to mutate to remove any prior mutations that may already be there
             logger.info(`No governing CR found (best guess was '${crNameToUse}', but it wasn't found), so we'll reverse mutation if any`, this.operationId, this.requestMetadata);            
@@ -88,22 +91,30 @@ export class Mutator {
             platforms = this.pickInstrumentationPlatforms(cr);
 
             logger.info(`Governing CR for the object to be processed (namespace: ${namespace}, deploymentName: ${podInfo.ownerName}): ${JSON.stringify(cr)} with platforms: ${JSON.stringify(platforms)}`, this.operationId, this.requestMetadata);
-            logger.addHeartbeatMetric(HeartbeatMetrics.AdmissionReviewActionableCount, 1);
+            mutationDetails = {
+                platforms: platforms,
+                images: platforms.map(platform => Mutations.GenerateImagePath(platform))
+            };
+            logger.addHeartbeatMetric(HeartbeatMetrics.AdmissionReviewActionableCount, 1, JSON.stringify(mutationDetails));
         }
 
-        const patchData: object[] = Patcher.PatchObject(
-            this.admissionReview.request.object,
-            cr, // null to unpatch
-            podInfo as PodInfo,
-            platforms,
-            this.clusterArmId,
-            this.clusterArmRegion,
-            clusterName);
+        try {
+            const patchData: object[] = Patcher.PatchObject(
+                this.admissionReview.request.object,
+                cr, // null to unpatch
+                podInfo as PodInfo,
+                platforms,
+                this.clusterArmId,
+                this.clusterArmRegion,
+                clusterName);
 
-        const patchDataString: string = JSON.stringify(patchData);
-        logger.info(`Mutated a deployment, returning: ${patchDataString}`, this.operationId, this.requestMetadata);
+            const patchDataString: string = JSON.stringify(patchData);
+            logger.info(`Mutated a deployment, returning: ${patchDataString}`, this.operationId, this.requestMetadata);
 
-        return Buffer.from(patchDataString).toString("base64");
+            return Buffer.from(patchDataString).toString("base64");
+        } catch (e) {
+            throw { e: e, mutationDetails: mutationDetails };
+        }
     }           
 
     private newResponse() {

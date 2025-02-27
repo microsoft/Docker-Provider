@@ -34,4 +34,8 @@ export class InstrumentationCRsCollection {
             }
         }
     }
+
+    public Reset(crs: InstrumentationCR[]) {
+        this.crs = crs.slice();
+    }
 }
