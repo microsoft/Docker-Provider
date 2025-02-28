@@ -333,7 +333,7 @@ jobs:
     # Find in cache or download a specific version of Go and add it to the PATH.
   - task: GoTool@0
     inputs:
-      version: '1.22.5'
+      version: '1.23.5'
 
   - bash: |
         cd $(System.DefaultWorkingDirectory)/build/linux/

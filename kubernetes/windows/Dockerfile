@@ -18,10 +18,10 @@ RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
 
 # gangams - optional MSYS2 update via ridk failing in merged docker file so skipping that since we dont need optional update
 RUN refreshenv \
-&& ridk install 3 \
+&& ridk install 2 3 \
 && echo gem: --no-document >> C:\ProgramData\gemrc \
-&& gem install cool.io -v 1.7.1 --platform ruby \
-&& gem install oj -v 3.3.10 \
+&& gem install cool.io -v 1.9.0 --platform ruby \
+&& gem install oj -v 3.16.10 \
 && gem install fluentd -v 1.16.3 \
 && gem install win32-service -v 1.0.1 \
 && gem install win32-ipc -v 0.7.0 \
@@ -94,7 +94,7 @@ COPY ./amalogswindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluen
 COPY ./amalogswindows/ruby/ /etc/fluent/plugin/
 
 # default value will be overwritten by pipeline
-ARG IMAGE_TAG=win-3.1.23
+ARG IMAGE_TAG=win-3.1.25
 ENV AGENT_VERSION ${IMAGE_TAG}
 
 ENV OS_TYPE "windows"
