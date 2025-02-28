@@ -1899,7 +1899,9 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	networkFlowLogsStreamTag := "dcr-92240d259af846b8941a7725ef5859de:ContainerInsightsExtension:gigl-dce-798ab40186414ef6b92e4b8e86e01fbe:RETINA_NETWORK_FLOW_LOGS"
 	networkFlowLogsMsgPackEntries := getNetworkFlowLogsMsgPackEntries()
-	Log(fmt.Sprintf("Debug: retinaNetworkFlowlogs sample data1: %+v", networkFlowLogsMsgPackEntries[0]))
+	for i, entry := range networkFlowLogsMsgPackEntries {
+		Log(fmt.Sprintf("Debug: retinaNetworkFlowlogs sample data[%d]: %+v", i, entry))
+	}
 	writeMsgPackEntries(MdsdMsgpUnixSocketClient, false, networkFlowLogsStreamTag, networkFlowLogsMsgPackEntries)
 
 	return output.FLB_OK
@@ -2020,7 +2022,7 @@ func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int
 }
 
 func getNetworkFlowLogsMsgPackEntries() []MsgPackEntry {
-	networkFlowLogs := []NetworkFlowLog{sampleLog1}
+	networkFlowLogs := []NetworkFlowLog{sampleLog1, sampleLog2}
 	var msgPackEntries []MsgPackEntry
 	for _, log := range networkFlowLogs {
 		stringMap := make(map[string]string)
