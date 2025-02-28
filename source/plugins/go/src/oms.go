@@ -1942,7 +1942,7 @@ func convertFluentBitRecord(input interface{}) (interface{}, error) {
 
 // PostNetworkflowRecords sends data to the mdsd and amacoreagent
 func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int {
-	Log(fmt.Sprintf("Debug: PostNetworkflowRecords starting"));
+	Log(fmt.Sprintf("Debug: PostNetworkflowRecords starting"))
 	start := time.Now()
 	var elapsed time.Duration
 
@@ -2035,34 +2035,34 @@ func getNetworkFlowLogsMsgPackEntries() []MsgPackEntry {
 }
 
 type NetworkFlowLog struct {
-	TimeGenerated          string `json:"TimeGenerated"`
-	UUID                   string `json:"UUID"`
-	Verdict                string `json:"Verdict"`
-	DropReason             string `json:"DropReason"`
-	IP                     string `json:"IP"`     // interface
-	Layer4                 string `json:"Layer4"` // interface
-	SourceIdentity         int    `json:"SourceIdentity"`
-	SourceClusterName      string `json:"SourceClusterName"`
-	SourceNamespace        string `json:"SourceNamespace"`
-	SourcePodName          string `json:"SourcePodName"`
-	SourceWorkloads        string `json:"SourceWorkloads"` // interface
-	DestinationIdentity    int    `json:"DestinationIdentity"`
-	DestinationClusterName string `json:"DestinationClusterName"`
-	DestinationNamespace   string `json:"DestinationNamespace"`
-	DestinationPodName     string `json:"DestinationPodName"`
-	DestinationWorkloads   string `json:"DestinationWorkloads"` // interface
-	FlowType               string `json:"FlowType"`
-	NodeName               string `json:"NodeName"`
-	Layer7                 string `json:"Layer7"` // interface
-	Reply                  bool   `json:"Reply"`
-	EventType              string `json:"EventType"` // interface
-	Service                string `json:"Service"`   // interface
-	TrafficDirection       string `json:"TrafficDirection"`
-	TraceObservationPoint  string `json:"TraceObservationPoint"`
-	PacketsSent            int    `json:"PacketsSent"`
-	PacketsReceived        int    `json:"PacketsReceived"`
-	Policies               string `json:"Policies"` // interface
-	AdditionalFlowData     string `json:"AdditionalFlowData"`
+	TimeGenerated          string      `json:"TimeGenerated"`
+	UUID                   string      `json:"UUID"`
+	Verdict                string      `json:"Verdict"`
+	DropReason             string      `json:"DropReason"`
+	IP                     interface{} `json:"IP"`     // interface
+	Layer4                 interface{} `json:"Layer4"` // interface
+	SourceIdentity         int         `json:"SourceIdentity"`
+	SourceClusterName      string      `json:"SourceClusterName"`
+	SourceNamespace        string      `json:"SourceNamespace"`
+	SourcePodName          string      `json:"SourcePodName"`
+	SourceWorkloads        interface{} `json:"SourceWorkloads"` // interface
+	DestinationIdentity    int         `json:"DestinationIdentity"`
+	DestinationClusterName string      `json:"DestinationClusterName"`
+	DestinationNamespace   string      `json:"DestinationNamespace"`
+	DestinationPodName     string      `json:"DestinationPodName"`
+	DestinationWorkloads   interface{} `json:"DestinationWorkloads"` // interface
+	FlowType               string      `json:"FlowType"`
+	NodeName               string      `json:"NodeName"`
+	Layer7                 interface{} `json:"Layer7"` // interface
+	Reply                  bool        `json:"Reply"`
+	EventType              interface{} `json:"EventType"` // interface
+	Service                interface{} `json:"Service"`   // interface
+	TrafficDirection       string      `json:"TrafficDirection"`
+	TraceObservationPoint  string      `json:"TraceObservationPoint"`
+	PacketsSent            int         `json:"PacketsSent"`
+	PacketsReceived        int         `json:"PacketsReceived"`
+	Policies               interface{} `json:"Policies"` // interface
+	AdditionalFlowData     string      `json:"AdditionalFlowData"`
 }
 
 var sampleLog1 = NetworkFlowLog{
@@ -2096,35 +2096,64 @@ var sampleLog1 = NetworkFlowLog{
 	AdditionalFlowData:     "bytes: 66",
 }
 
+var (
+	ipData       map[string]interface{}
+	srcWorkloads []interface{}
+	dstWorkloads []interface{}
+	layer7Data   map[string]interface{}
+)
+
+func init() {
+	// For IP:
+	if err := json.Unmarshal([]byte(`{"source":"10.244.3.214","destination":"10.244.2.231","ipVersion":"IPv4"}`), &ipData); err != nil {
+		Log(fmt.Sprintf("Error unmarshaling IP: %v", err))
+	}
+
+	// For SourceWorkloads:
+	if err := json.Unmarshal([]byte(`["k8s:io.cilium.k8s.namespace.labels.kubernetes.io/cluster-service=true","k8s:pod-template-hash=5dcddfd57b","k8s:io.cilium.k8s.policy.serviceaccount=ama-logs","k8s:io.cilium.k8s.namespace.labels.control-plane=true","k8s:io.cilium.k8s.policy.cluster=default","k8s:io.kubernetes.pod.namespace=kube-system","k8s:io.cilium.k8s.namespace.labels.addonmanager.kubernetes.io/mode=Reconcile","k8s:rsName=ama-logs-rs","k8s:io.cilium.k8s.namespace.labels.kubernetes.azure.com/managedby=aks","k8s:io.cilium.k8s.namespace.labels.kubernetes.io/metadata.name=kube-system"]`), &srcWorkloads); err != nil {
+		Log(fmt.Sprintf("Error unmarshaling SourceWorkloads: %v", err))
+	}
+
+	// For DestinationWorkloads:
+	if err := json.Unmarshal([]byte(`["k8s:io.cilium.k8s.namespace.labels.control-plane=true","k8s:k8s-app=kube-dns","k8s:kubernetes.azure.com/managedby=aks","k8s:io.cilium.k8s.namespace.labels.addonmanager.kubernetes.io/mode=Reconcile","k8s:kubernetes.io/cluster-service=true","k8s:version=v20","k8s:io.cilium.k8s.namespace.labels.kubernetes.azure.com/managedby=aks","k8s:io.cilium.k8s.namespace.labels.kubernetes.io/cluster-service=true","k8s:io.cilium.k8s.policy.cluster=default","k8s:io.kubernetes.pod.namespace=kube-system","k8s:pod-template-hash=659fcb469c","k8s:io.cilium.k8s.policy.serviceaccount=coredns","k8s:io.cilium.k8s.namespace.labels.kubernetes.io/metadata.name=kube-system"]`), &dstWorkloads); err != nil {
+		Log(fmt.Sprintf("Error unmarshaling DestinationWorkloads: %v", err))
+	}
+
+	// For Layer7:
+	if err := json.Unmarshal([]byte(`{"type": "REQUEST", "dns": {"query": "ccfdad1b-88d3-4c3d-a6b9-1167b0360a1c.ods.opinsights.azure.com.2l5k3xhesotexezmfjsaa1un4d.zx.internal.cloudapp.net.", "rcode": 24, "qtypes": ["A"]}}`), &layer7Data); err != nil {
+		Log(fmt.Sprintf("Error unmarshaling Layer7: %v", err))
+	}
+}
+
 var sampleLog2 = NetworkFlowLog{
-    TimeGenerated:          "2025-02-27T22:31:56.730433843Z",
-    UUID:                   uuid.New().String(),
-    Verdict:                "FORWARDED",
-    DropReason:             "",
-    IP:                     `{"source":"10.244.3.214","destination":"10.244.2.231","ipVersion":"IPv4"}`,
-    Layer4:                 "",
-    SourceIdentity:         44564,
-    SourceClusterName:      "kube-system",
-    SourceNamespace:        "kube-system",
-    SourcePodName:          "ama-logs-rs-5dcddfd57b-cmtz7",
-    SourceWorkloads:        `["k8s:io.cilium.k8s.namespace.labels.kubernetes.io/cluster-service=true","k8s:pod-template-hash=5dcddfd57b","k8s:io.cilium.k8s.policy.serviceaccount=ama-logs","k8s:io.cilium.k8s.namespace.labels.control-plane=true","k8s:io.cilium.k8s.policy.cluster=default","k8s:io.kubernetes.pod.namespace=kube-system","k8s:io.cilium.k8s.namespace.labels.addonmanager.kubernetes.io/mode=Reconcile","k8s:rsName=ama-logs-rs","k8s:io.cilium.k8s.namespace.labels.kubernetes.azure.com/managedby=aks","k8s:io.cilium.k8s.namespace.labels.kubernetes.io/metadata.name=kube-system"]`,
-    DestinationIdentity:    20703,
-    DestinationClusterName: "kube-system",
-    DestinationNamespace:   "kube-system",
-    DestinationPodName:     "coredns-659fcb469c-j5fcw",
-    DestinationWorkloads:   `["k8s:io.cilium.k8s.namespace.labels.control-plane=true","k8s:k8s-app=kube-dns","k8s:kubernetes.azure.com/managedby=aks","k8s:io.cilium.k8s.namespace.labels.addonmanager.kubernetes.io/mode=Reconcile","k8s:kubernetes.io/cluster-service=true","k8s:version=v20","k8s:io.cilium.k8s.namespace.labels.kubernetes.azure.com/managedby=aks","k8s:io.cilium.k8s.namespace.labels.kubernetes.io/cluster-service=true","k8s:io.cilium.k8s.policy.cluster=default","k8s:io.kubernetes.pod.namespace=kube-system","k8s:pod-template-hash=659fcb469c","k8s:io.cilium.k8s.policy.serviceaccount=coredns","k8s:io.cilium.k8s.namespace.labels.kubernetes.io/metadata.name=kube-system"]`,
-    FlowType:               "L7",
-    NodeName:               "",
-    Layer7:                 `{"type": "REQUEST", "dns": {"query": "ccfdad1b-88d3-4c3d-a6b9-1167b0360a1c.ods.opinsights.azure.com.2l5k3xhesotexezmfjsaa1un4d.zx.internal.cloudapp.net.", "rcode": 24, "qtypes": ["A"]}}`,
-    Reply:                  false,
-    EventType:              "129", 
-    Service:                "",
-    TrafficDirection:       "EGRESS",
-    TraceObservationPoint:  "TO_NETWORK",
-    PacketsSent:            0,
-    PacketsReceived:        0,
-    Policies:               "",
-    AdditionalFlowData:     "DNS Query ccfdad1b-88d3-4c3d-a6b9-1167b0360a1c.ods.opinsights.azure.com. A",
+	TimeGenerated:          "2025-02-27T22:31:56.730433843Z",
+	UUID:                   uuid.New().String(),
+	Verdict:                "FORWARDED",
+	DropReason:             "",
+	IP:                     ipData,
+	Layer4:                 "",
+	SourceIdentity:         44564,
+	SourceClusterName:      "kube-system",
+	SourceNamespace:        "kube-system",
+	SourcePodName:          "ama-logs-rs-5dcddfd57b-cmtz7",
+	SourceWorkloads:        srcWorkloads,
+	DestinationIdentity:    20703,
+	DestinationClusterName: "kube-system",
+	DestinationNamespace:   "kube-system",
+	DestinationPodName:     "coredns-659fcb469c-j5fcw",
+	DestinationWorkloads:   dstWorkloads,
+	FlowType:               "L7",
+	NodeName:               "",
+	Layer7:                 layer7Data,
+	Reply:                  false,
+	EventType:              "129",
+	Service:                "",
+	TrafficDirection:       "EGRESS",
+	TraceObservationPoint:  "TO_NETWORK",
+	PacketsSent:            0,
+	PacketsReceived:        0,
+	Policies:               "",
+	AdditionalFlowData:     "DNS Query ccfdad1b-88d3-4c3d-a6b9-1167b0360a1c.ods.opinsights.azure.com. A",
 }
 
 // var sampleLog3 = NetworkFlowLog{
