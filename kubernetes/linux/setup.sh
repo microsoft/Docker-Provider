@@ -49,7 +49,7 @@ gem uninstall rexml --version 3.2.5
 gem uninstall webrick --version 1.8.1
 
 if [ "${ARCH}" != "arm64" ]; then
-    wget "https://github.com/microsoft/Docker-Provider/releases/download/mdsd-1.31.0/azure-mdsd-1.34.0-simathih.odsretry.4293.x86_64.rpm" -O azure-mdsd.rpm
+    wget "https://github.com/microsoft/Docker-Provider/releases/download/mdsd-1.31.0/azure-mdsd-1.35.0-pr.11802251.merge.4553.x86_64.rpm" -O azure-mdsd.rpm
     sudo tdnf install -y azure-mdsd.rpm
 else
    sudo tdnf install -y azure-mdsd-1.31.4
