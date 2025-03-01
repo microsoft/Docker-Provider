@@ -1983,34 +1983,74 @@ var sampleLog1 = NetworkFlowLog{
 }
 
 var sampleLog2 = NetworkFlowLog{
-    TimeGenerated:          "2025-02-27T22:31:56.730433843Z",
-    UUID:                   uuid.New().String(),
-    Verdict:                "FORWARDED",
-    DropReason:             "",
-    IP:                     `{"source":"10.244.3.214","destination":"10.244.2.231","ipVersion":"IPv4"}`,
-    Layer4:                 "",
-    SourceIdentity:         44564,
-    SourceClusterName:      "kube-system",
-    SourceNamespace:        "kube-system",
-    SourcePodName:          "ama-logs-rs-5dcddfd57b-cmtz7",
-    SourceWorkloads:        `["k8s:io.cilium.k8s.namespace.labels.kubernetes.io/cluster-service=true","k8s:pod-template-hash=5dcddfd57b","k8s:io.cilium.k8s.policy.serviceaccount=ama-logs","k8s:io.cilium.k8s.namespace.labels.control-plane=true","k8s:io.cilium.k8s.policy.cluster=default","k8s:io.kubernetes.pod.namespace=kube-system","k8s:io.cilium.k8s.namespace.labels.addonmanager.kubernetes.io/mode=Reconcile","k8s:rsName=ama-logs-rs","k8s:io.cilium.k8s.namespace.labels.kubernetes.azure.com/managedby=aks","k8s:io.cilium.k8s.namespace.labels.kubernetes.io/metadata.name=kube-system"]`,
-    DestinationIdentity:    20703,
-    DestinationClusterName: "kube-system",
-    DestinationNamespace:   "kube-system",
-    DestinationPodName:     "coredns-659fcb469c-j5fcw",
-    DestinationWorkloads:   `["k8s:io.cilium.k8s.namespace.labels.control-plane=true","k8s:k8s-app=kube-dns","k8s:kubernetes.azure.com/managedby=aks","k8s:io.cilium.k8s.namespace.labels.addonmanager.kubernetes.io/mode=Reconcile","k8s:kubernetes.io/cluster-service=true","k8s:version=v20","k8s:io.cilium.k8s.namespace.labels.kubernetes.azure.com/managedby=aks","k8s:io.cilium.k8s.namespace.labels.kubernetes.io/cluster-service=true","k8s:io.cilium.k8s.policy.cluster=default","k8s:io.kubernetes.pod.namespace=kube-system","k8s:pod-template-hash=659fcb469c","k8s:io.cilium.k8s.policy.serviceaccount=coredns","k8s:io.cilium.k8s.namespace.labels.kubernetes.io/metadata.name=kube-system"]`,
-    FlowType:               "L7",
-    NodeName:               "",
-    Layer7:                 `{"type": "REQUEST", "dns": {"query": "ccfdad1b-88d3-4c3d-a6b9-1167b0360a1c.ods.opinsights.azure.com.2l5k3xhesotexezmfjsaa1un4d.zx.internal.cloudapp.net.", "rcode": 24, "qtypes": ["A"]}}`,
-    Reply:                  false,
-    EventType:              "129", 
-    Service:                "",
-    TrafficDirection:       "EGRESS",
-    TraceObservationPoint:  "TO_NETWORK",
-    PacketsSent:            0,
-    PacketsReceived:        0,
-    Policies:               "",
-    AdditionalFlowData:     "DNS Query ccfdad1b-88d3-4c3d-a6b9-1167b0360a1c.ods.opinsights.azure.com. A",
+	TimeGenerated:     "2025-02-27T22:31:56.730433843Z",
+	UUID:              uuid.New().String(),
+	Verdict:           "FORWARDED",
+	DropReason:        "",
+	IP:                toJSONString(map[string]string{"source": "10.244.3.214", "destination": "10.244.2.231", "ipVersion": "IPv4"}),
+	Layer4:            "",
+	SourceIdentity:    44564,
+	SourceClusterName: "kube-system",
+	SourceNamespace:   "kube-system",
+	SourcePodName:     "ama-logs-rs-5dcddfd57b-cmtz7",
+	SourceWorkloads: toJSONString([]string{
+		"k8s:io.cilium.k8s.namespace.labels.kubernetes.io/cluster-service=true",
+		"k8s:pod-template-hash=5dcddfd57b",
+		"k8s:io.cilium.k8s.policy.serviceaccount=ama-logs",
+		"k8s:io.cilium.k8s.namespace.labels.control-plane=true",
+		"k8s:io.cilium.k8s.policy.cluster=default",
+		"k8s:io.kubernetes.pod.namespace=kube-system",
+		"k8s:io.cilium.k8s.namespace.labels.addonmanager.kubernetes.io/mode=Reconcile",
+		"k8s:rsName=ama-logs-rs",
+		"k8s:io.cilium.k8s.namespace.labels.kubernetes.azure.com/managedby=aks",
+		"k8s:io.cilium.k8s.namespace.labels.kubernetes.io/metadata.name=kube-system",
+	}),
+	DestinationIdentity:    20703,
+	DestinationClusterName: "kube-system",
+	DestinationNamespace:   "kube-system",
+	DestinationPodName:     "coredns-659fcb469c-j5fcw",
+	DestinationWorkloads: toJSONString([]string{
+		"k8s:io.cilium.k8s.namespace.labels.control-plane=true",
+		"k8s:k8s-app=kube-dns",
+		"k8s:kubernetes.azure.com/managedby=aks",
+		"k8s:io.cilium.k8s.namespace.labels.addonmanager.kubernetes.io/mode=Reconcile",
+		"k8s:kubernetes.io/cluster-service=true",
+		"k8s:version=v20",
+		"k8s:io.cilium.k8s.namespace.labels.kubernetes.azure.com/managedby=aks",
+		"k8s:io.cilium.k8s.namespace.labels.kubernetes.io/cluster-service=true",
+		"k8s:io.cilium.k8s.policy.cluster=default",
+		"k8s:io.kubernetes.pod.namespace=kube-system",
+		"k8s:pod-template-hash=659fcb469c",
+		"k8s:io.cilium.k8s.policy.serviceaccount=coredns",
+		"k8s:io.cilium.k8s.namespace.labels.kubernetes.io/metadata.name=kube-system",
+	}),
+	FlowType: "L7",
+	NodeName: "",
+	Layer7: toJSONString(map[string]interface{}{
+		"type": "REQUEST",
+		"dns": map[string]interface{}{
+			"query":  "ccfdad1b-88d3-4c3d-a6b9-1167b0360a1c.ods.opinsights.azure.com.2l5k3xhesotexezmfjsaa1un4d.zx.internal.cloudapp.net.",
+			"rcode":  24,
+			"qtypes": []string{"A"},
+		},
+	}),
+	Reply:                 false,
+	EventType:             "129",
+	Service:               "",
+	TrafficDirection:      "EGRESS",
+	TraceObservationPoint: "TO_NETWORK",
+	PacketsSent:           0,
+	PacketsReceived:       0,
+	Policies:              "",
+	AdditionalFlowData:    "DNS Query ccfdad1b-88d3-4c3d-a6b9-1167b0360a1c.ods.opinsights.azure.com. A",
+}
+
+func toJSONString(v interface{}) string {
+	bytes, err := json.Marshal(v)
+	if err != nil {
+		return ""
+	}
+	return string(bytes)
 }
 
 func populateStringMapFromNetworkFlowLog(stringMap map[string]string, networkFlowLog NetworkFlowLog) {
@@ -2072,7 +2112,6 @@ func populateStringMapFromNetworkFlowLog(stringMap map[string]string, networkFlo
 	stringMap["PacketsReceived"] = fmt.Sprintf("%d", networkFlowLog.PacketsReceived)
 }
 
-
 func convertFluentBitRecord(input interface{}) (interface{}, error) {
 	switch v := input.(type) {
 	case map[interface{}]interface{}:
@@ -2108,7 +2147,7 @@ func convertFluentBitRecord(input interface{}) (interface{}, error) {
 
 // PostNetworkflowRecords sends data to the mdsd and amacoreagent
 func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int {
-	Log(fmt.Sprintf("Debug: PostNetworkflowRecords starting"));
+	Log(fmt.Sprintf("Debug: PostNetworkflowRecords starting"))
 	start := time.Now()
 	var elapsed time.Duration
 
@@ -2313,6 +2352,7 @@ func writeMsgPackEntries(connection net.Conn, isContainerLogV2Schema bool, fluen
 		deadline := 10 * time.Second
 		connection.SetWriteDeadline(time.Now().Add(deadline))
 		bts, er = connection.Write(msgpBytes)
+		Log(fmt.Sprintf("Debug: retinaNetworkFlowlogs MsgPack bytes length: %d", len(msgpBytes)))
 		if er != nil {
 			return bts, er
 		}
