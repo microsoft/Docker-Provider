@@ -205,6 +205,8 @@ var (
 	InsightsMetricsNamedPipe net.Conn
 	// flag to check whether Azure Monitor Multi-tenancy Log Collection enabled or not
 	IsAzMonMultiTenancyLogCollectionEnabled bool
+	// flag to check whether Azure Monitor Multi-tenancy Fallback ingestion disabled or not
+	IsAzMonMultiTenancyFallbackIngestionDisabled bool
 	// flag to check whether Azure Monitor Multi-tenancy Log Collection Advanced Mode enabled or not
 	IsAzMonMultiTenancyLogCollectionAdvancedModeEnabled bool
 	// flag to check whether Azure Monitor Multi-tenancy Logs ServiceMode enabled or not
@@ -1957,8 +1959,7 @@ func writeMsgPackEntries(connection net.Conn, isContainerLogV2Schema bool, fluen
 			totalBytes := 0
 			for namespace, entries := range msgPackEntriesByNamespace {
 				if streamTags, exists := namespaceStreamIdsMap[namespace]; exists {
-					msg := fmt.Sprintf("Info::ama:: namespace : %s streamTags: %s \n", namespace, strings.Join(streamTags, ", "))
-					Log(msg)
+					Log("Info::ama:: namespace : %s streamTags: %s \n", namespace, strings.Join(streamTags, ", "))
 					for _, streamTag := range streamTags {
 						if IsWindows {
 							bts, er = writeMsgPackEntriesToNamedPipeConnection(streamTag, entries, streamIdNamedPipeMap)
@@ -1969,20 +1970,43 @@ func writeMsgPackEntries(connection net.Conn, isContainerLogV2Schema bool, fluen
 							bts, er = connection.Write(msgpBytes)
 						}
 						if er != nil {
-							return bts, er
+							return totalBytes, er
 						}
-						totalBytes = totalBytes + bts
+						totalBytes += bts
 					}
 				} else {
-					Log("Info::ama:: streamTag is empty for namespace: %s hence using default workspace stream id: %s \n", namespace, fluentForwardTag)
-					msgpBytes := convertMsgPackEntriesToMsgpBytes(fluentForwardTag, entries)
-					deadline := 10 * time.Second
-					connection.SetWriteDeadline(time.Now().Add(deadline))
-					bts, er = connection.Write(msgpBytes)
-					if er != nil {
-						return bts, er
+					if IsAzMonMultiTenancyFallbackIngestionDisabled {
+						Log("Info::ama:: streamTag is empty for namespace: %s and fallback ingestion disabled hence skipping the logs to default container insights extension stream \n", namespace)
+						continue
+					} else {
+						Log("Info::ama:: streamTag is empty for namespace: %s hence using default workspace stream id: %s \n", namespace, fluentForwardTag)
+						msgpBytes := convertMsgPackEntriesToMsgpBytes(fluentForwardTag, entries)
+						deadline := 10 * time.Second
+						connection.SetWriteDeadline(time.Now().Add(deadline))
+						bts, er = connection.Write(msgpBytes)
+						if er != nil {
+							return totalBytes, er
+						}
+						totalBytes += bts
 					}
-					totalBytes = totalBytes + bts
+				}
+			}
+			// handle if DCR has _ALL_K8S_NAMESPACES_
+			if streamTags, exists := namespaceStreamIdsMap["_all_k8s_namespaces_"]; exists {
+				Log("Info::ama:: namespace : _All_K8S_NAMESPACES_ streamTags: %s \n", strings.Join(streamTags, ", "))
+				for _, streamTag := range streamTags {
+					if IsWindows {
+						bts, er = writeMsgPackEntriesToNamedPipeConnection(streamTag, msgPackEntries, streamIdNamedPipeMap)
+					} else {
+						msgpBytes := convertMsgPackEntriesToMsgpBytes(streamTag, msgPackEntries)
+						deadline := 10 * time.Second
+						connection.SetWriteDeadline(time.Now().Add(deadline))
+						bts, er = connection.Write(msgpBytes)
+					}
+					if er != nil {
+						return totalBytes, er
+					}
+					totalBytes += bts
 				}
 			}
 			bts = totalBytes
@@ -2342,6 +2366,13 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	if multiTenancyEnabled != "" && strings.Compare(strings.ToLower(multiTenancyEnabled), "true") == 0 {
 		IsAzMonMultiTenancyLogCollectionEnabled = true
 		Log("Azure Monitor Multi-tenancy Log Collection Enabled")
+	}
+
+	IsAzMonMultiTenancyFallbackIngestionDisabled = false
+	multiTenancyFallbackIngestionDisabled := strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_MULTI_TENANCY_FALLBACK_INGESTION_DISABLED")))
+	if multiTenancyFallbackIngestionDisabled != "" && strings.Compare(strings.ToLower(multiTenancyFallbackIngestionDisabled), "true") == 0 {
+		IsAzMonMultiTenancyFallbackIngestionDisabled = true
+		Log("Azure Monitor Multi-tenancy Fallback ingestion disabled")
 	}
 
 	IsAzMonMultiTenancyLogCollectionAdvancedModeEnabled = false
