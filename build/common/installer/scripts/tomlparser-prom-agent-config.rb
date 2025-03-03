@@ -155,9 +155,8 @@ if !file.nil?
   if @mdsdBackPressureThresholdInMB > 0
     file.write("export BACKPRESSURE_THRESHOLD_IN_MB=#{@mdsdBackPressureThresholdInMB}\n")
   end
-  if @mdsdMaxODSRetryCount > 0
-    file.write("export MDSD_ODS_RETRY_THRESHOLD=#{@mdsdMaxODSRetryCount}\n")
-  end
+
+  file.write("export MDSD_ODS_RETRY_THRESHOLD=#{@mdsdMaxODSRetryCount}\n")
 
   # Close file after writing all environment variables
   file.close

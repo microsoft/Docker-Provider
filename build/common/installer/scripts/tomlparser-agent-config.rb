@@ -332,7 +332,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           @mdsdMaxODSRetryCount = mdsdMaxODSRetryCount.to_i
           puts "Using config map value: max_ods_retry_count  = #{@mdsdMaxODSRetryCount}"
         else
-          puts "Ignoring mdsd max_ods_retry_count. Check input values for correctness."
+          puts "Ignoring mdsd max_ods_retry_count and using default value: #{@mdsdMaxODSRetryCount}. Check input values for correctness."
         end
       end
 
@@ -499,9 +499,7 @@ if !file.nil?
     file.write("export BACKPRESSURE_THRESHOLD_IN_MB=#{@mdsdBackPressureThresholdInMB}\n")
   end
 
-  if @mdsdMaxODSRetryCount > 0
-    file.write("export MDSD_ODS_RETRY_THRESHOLD=#{@mdsdMaxODSRetryCount}\n")
-  end
+  file.write("export MDSD_ODS_RETRY_THRESHOLD=#{@mdsdMaxODSRetryCount}\n")
 
   if @mdsdCompressionLevel >= 0
     file.write("export MDSD_ODS_COMPRESSION_LEVEL=#{@mdsdCompressionLevel}\n")
