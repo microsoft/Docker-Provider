@@ -117,7 +117,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           @mdsdMaxODSRetryCount = mdsdMaxODSRetryCount.to_i
           puts "Using config map value: max_ods_retry_count  = #{@mdsdMaxODSRetryCount}"
         else
-          puts "Ignoring mdsd max_ods_retry_count. Check input values for correctness."
+          puts "Ignoring mdsd max_ods_retry_count and using default value: #{@mdsdMaxODSRetryCount}. Check input values for correctness."
         end
       end
 
