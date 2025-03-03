@@ -13,7 +13,7 @@ spec:
     repository:
       type: git
       uri: https://github.com/microsoft/Docker-Provider/
-      branch: suyadav/e2etestframework
+      branch: ci_prod
       path: test/ginkgo-e2e
   executionRequest:
     args:
@@ -37,7 +37,7 @@ spec:
     repository:
       type: git
       uri: https://github.com/microsoft/Docker-Provider/
-      branch: suyadav/e2etestframework
+      branch: ci_prod
       path: test/ginkgo-e2e
   executionRequest:
     args:
