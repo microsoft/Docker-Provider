@@ -2337,7 +2337,6 @@ func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int
 			Log("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numNetworkLogRecords, bts, elapsed)
 		}
 	}
-
 	return output.FLB_OK
 }
 
