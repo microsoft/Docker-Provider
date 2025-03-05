@@ -2161,18 +2161,18 @@ func serializeToJSON(v interface{}) string {
 }
 
 func safeNumericToString(value interface{}) string {
-    switch v := value.(type) {
-    case float64:
-        return fmt.Sprintf("%.0f", v)
-    case uint64:
-        return strconv.FormatUint(v, 10)
-    case int:
-        return strconv.Itoa(v)
-    case int64:
-        return strconv.FormatInt(v, 10)
-    default:
-        return ""
-    }
+	switch v := value.(type) {
+	case float64:
+		return fmt.Sprintf("%.0f", v)
+	case uint64:
+		return strconv.FormatUint(v, 10)
+	case int:
+		return strconv.Itoa(v)
+	case int64:
+		return strconv.FormatInt(v, 10)
+	default:
+		return ""
+	}
 }
 
 func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[string]interface{}) error {
@@ -2182,7 +2182,7 @@ func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[strin
 	}
 	// TimeGenerated
 	stringMap["TimeGenerated"] = extractString(flow, "time")
-	// Generate UUID if not present
+	// UUID
 	if uuidVal := extractString(record, "UUID"); uuidVal != "" {
 		stringMap["UUID"] = uuidVal
 	} else {
@@ -2190,7 +2190,7 @@ func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[strin
 	}
 	// Verdict and DropReason
 	stringMap["Verdict"] = extractString(flow, "verdict")
-	stringMap["DropReason"] = extractString(flow, "drop_reason") // Adjust key if different
+	stringMap["DropReason"] = extractString(flow, "drop_reason")
 	// IP
 	if ip, ok := flow["IP"].(map[string]interface{}); ok {
 		stringMap["IP"] = serializeToJSON(ip)
@@ -2207,12 +2207,15 @@ func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[strin
 		if labels, ok := source["labels"].([]interface{}); ok {
 			stringMap["SourceWorkloads"] = serializeToJSON(labels)
 		}
-		for _, label := range source["labels"].([]interface{}) {
-			if labelStr, ok := label.(string); ok && strings.Contains(labelStr, "k8s:io.cilium.k8s.policy.cluster=") {
-				parts := strings.Split(labelStr, "=")
-				if len(parts) > 1 {
-					stringMap["SourceClusterName"] = parts[1]
-					break
+		// Cluster name extraction
+		if labels, ok := source["labels"].([]interface{}); ok {
+			for _, label := range labels {
+				if labelStr, ok := label.(string); ok && strings.Contains(labelStr, "k8s:io.cilium.k8s.policy.cluster=") {
+					parts := strings.Split(labelStr, "=")
+					if len(parts) > 1 {
+						stringMap["SourceClusterName"] = parts[1]
+						break
+					}
 				}
 			}
 		}
@@ -2225,12 +2228,15 @@ func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[strin
 		if labels, ok := dest["labels"].([]interface{}); ok {
 			stringMap["DestinationWorkloads"] = serializeToJSON(labels)
 		}
-		for _, label := range dest["labels"].([]interface{}) {
-			if labelStr, ok := label.(string); ok && strings.Contains(labelStr, "k8s:io.cilium.k8s.policy.cluster=") {
-				parts := strings.Split(labelStr, "=")
-				if len(parts) > 1 {
-					stringMap["DestinationClusterName"] = parts[1]
-					break
+		// Cluster name extraction
+		if labels, ok := dest["labels"].([]interface{}); ok {
+			for _, label := range labels {
+				if labelStr, ok := label.(string); ok && strings.Contains(labelStr, "k8s:io.cilium.k8s.policy.cluster=") {
+					parts := strings.Split(labelStr, "=")
+					if len(parts) > 1 {
+						stringMap["DestinationClusterName"] = parts[1]
+						break
+					}
 				}
 			}
 		}
@@ -2250,7 +2256,9 @@ func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[strin
 	if eventType, ok := flow["event_type"].(map[string]interface{}); ok {
 		stringMap["EventType"] = extractString(eventType, "type")
 	}
-	stringMap["Reply"] = fmt.Sprintf("%t", flow["is_reply"].(bool))
+	if isReply, ok := flow["is_reply"].(bool); ok {
+		stringMap["Reply"] = fmt.Sprintf("%t", isReply)
+	}
 	// AdditionalFlowData from Summary
 	if summary, ok := flow["Summary"].(map[string]interface{}); ok {
 		var parts []string
@@ -2298,7 +2306,7 @@ func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int
 		}
 
 		stringMap = make(map[string]string)
-		if err := mapNetworkFlowLogsToStringMap(stringMap, networkFlowLogRecord); err!= nil {
+		if err := mapNetworkFlowLogsToStringMap(stringMap, networkFlowLogRecord); err != nil {
 			Log(fmt.Sprintf("Error mapping record to string map: %v", err))
 			continue
 		}
