@@ -2269,16 +2269,16 @@ func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int
 	numNetworkLogRecords := 0
 
 	for _, record := range tailPluginRecords {
-		networkFlowLogRecord, err := convertFluentBitRecord(record)
+		networkFlowLogRecordInterface, err := convertFluentBitRecord(record)
 		if err != nil {
 			Log(fmt.Sprintf("Error converting record: %v", err))
 			continue
 		}
-		Log(fmt.Sprintf("Debug: PostNetworkflowRecords real data: %+v", networkFlowLogRecord))
+		Log(fmt.Sprintf("Debug: PostNetworkflowRecords real data: %+v", networkFlowLogRecordInterface))
 
-		networkFlowLogRecord, ok := networkFlowLogRecord.(map[string]interface{})
+		networkFlowLogRecord, ok := networkFlowLogRecordInterface.(map[string]interface{})
 		if !ok {
-			Log(fmt.Sprintf("Error converting record to map[string]interface{}: %v", err))
+			Log("Error: networkFlowLogRecord is not of type map[string]interface{}")
 			continue
 		}
 
