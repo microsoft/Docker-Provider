@@ -2160,6 +2160,21 @@ func serializeToJSON(v interface{}) string {
 	return string(bytes)
 }
 
+func safeNumericToString(value interface{}) string {
+    switch v := value.(type) {
+    case float64:
+        return fmt.Sprintf("%.0f", v)
+    case uint64:
+        return strconv.FormatUint(v, 10)
+    case int:
+        return strconv.Itoa(v)
+    case int64:
+        return strconv.FormatInt(v, 10)
+    default:
+        return ""
+    }
+}
+
 func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[string]interface{}) error {
 	flow, ok := record["flow"].(map[string]interface{})
 	if !ok {
@@ -2186,7 +2201,7 @@ func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[strin
 	}
 	// Source details
 	if source, ok := flow["source"].(map[string]interface{}); ok {
-		stringMap["SourceIdentity"] = fmt.Sprintf("%.0f", source["ID"].(float64))
+		stringMap["SourceIdentity"] = safeNumericToString(source["ID"])
 		stringMap["SourceNamespace"] = extractString(source, "namespace")
 		stringMap["SourcePodName"] = extractString(source, "pod_name")
 		if labels, ok := source["labels"].([]interface{}); ok {
@@ -2204,7 +2219,7 @@ func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[strin
 	}
 	// Destination details
 	if dest, ok := flow["destination"].(map[string]interface{}); ok {
-		stringMap["DestinationIdentity"] = fmt.Sprintf("%.0f", dest["ID"].(float64))
+		stringMap["DestinationIdentity"] = safeNumericToString(dest["ID"])
 		stringMap["DestinationNamespace"] = extractString(dest, "namespace")
 		stringMap["DestinationPodName"] = extractString(dest, "pod_name")
 		if labels, ok := dest["labels"].([]interface{}); ok {
