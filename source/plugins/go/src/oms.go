@@ -2276,8 +2276,17 @@ func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int
 		}
 		Log(fmt.Sprintf("Debug: PostNetworkflowRecords real data: %+v", networkFlowLogRecord))
 
+		networkFlowLogRecord, ok := networkFlowLogRecord.(map[string]interface{})
+		if !ok {
+			Log(fmt.Sprintf("Error converting record to map[string]interface{}: %v", err))
+			continue
+		}
+
 		stringMap = make(map[string]string)
-		mapNetworkFlowLogsToStringMap(stringMap, networkFlowLogRecord)
+		if err := mapNetworkFlowLogsToStringMap(stringMap, networkFlowLogRecord); err!= nil {
+			Log(fmt.Sprintf("Error mapping record to string map: %v", err))
+			continue
+		}
 		Log(fmt.Sprintf("Debug: PostNetworkflowRecords stringMap data: %+v", stringMap))
 
 		var msgPackEntry MsgPackEntry
