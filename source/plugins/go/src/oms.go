@@ -2145,6 +2145,119 @@ func convertFluentBitRecord(input interface{}) (interface{}, error) {
 	}
 }
 
+func extractString(m map[string]interface{}, key string) string {
+	if val, ok := m[key].(string); ok {
+		return val
+	}
+	return ""
+}
+
+func serializeToJSON(v interface{}) string {
+	bytes, err := json.Marshal(v)
+	if err != nil {
+		return ""
+	}
+	return string(bytes)
+}
+
+func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[string]interface{}) error {
+	flow, ok := record["flow"].(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("'flow' field not found or is not a map")
+	}
+	// TimeGenerated
+	stringMap["TimeGenerated"] = extractString(flow, "time")
+	// Generate UUID if not present
+	if uuidVal := extractString(record, "UUID"); uuidVal != "" {
+		stringMap["UUID"] = uuidVal
+	} else {
+		stringMap["UUID"] = uuid.New().String()
+	}
+	// Verdict and DropReason
+	stringMap["Verdict"] = extractString(flow, "verdict")
+	stringMap["DropReason"] = extractString(flow, "drop_reason") // Adjust key if different
+	// IP
+	if ip, ok := flow["IP"].(map[string]interface{}); ok {
+		stringMap["IP"] = serializeToJSON(ip)
+	}
+	// Layer4
+	if l4, ok := flow["l4"].(map[string]interface{}); ok {
+		stringMap["Layer4"] = serializeToJSON(l4)
+	}
+	// Source details
+	if source, ok := flow["source"].(map[string]interface{}); ok {
+		stringMap["SourceIdentity"] = fmt.Sprintf("%.0f", source["ID"].(float64))
+		stringMap["SourceNamespace"] = extractString(source, "namespace")
+		stringMap["SourcePodName"] = extractString(source, "pod_name")
+		if labels, ok := source["labels"].([]interface{}); ok {
+			stringMap["SourceWorkloads"] = serializeToJSON(labels)
+		}
+		for _, label := range source["labels"].([]interface{}) {
+			if labelStr, ok := label.(string); ok && strings.Contains(labelStr, "k8s:io.cilium.k8s.policy.cluster=") {
+				parts := strings.Split(labelStr, "=")
+				if len(parts) > 1 {
+					stringMap["SourceClusterName"] = parts[1]
+					break
+				}
+			}
+		}
+	}
+	// Destination details
+	if dest, ok := flow["destination"].(map[string]interface{}); ok {
+		stringMap["DestinationIdentity"] = fmt.Sprintf("%.0f", dest["ID"].(float64))
+		stringMap["DestinationNamespace"] = extractString(dest, "namespace")
+		stringMap["DestinationPodName"] = extractString(dest, "pod_name")
+		if labels, ok := dest["labels"].([]interface{}); ok {
+			stringMap["DestinationWorkloads"] = serializeToJSON(labels)
+		}
+		for _, label := range dest["labels"].([]interface{}) {
+			if labelStr, ok := label.(string); ok && strings.Contains(labelStr, "k8s:io.cilium.k8s.policy.cluster=") {
+				parts := strings.Split(labelStr, "=")
+				if len(parts) > 1 {
+					stringMap["DestinationClusterName"] = parts[1]
+					break
+				}
+			}
+		}
+	}
+	// FlowType from Summary
+	if summary, ok := flow["Summary"].(map[string]interface{}); ok {
+		stringMap["FlowType"] = extractString(summary, "Type")
+	}
+	// Traffic Direction and Observation Point
+	stringMap["TrafficDirection"] = extractString(flow, "traffic_direction")
+	stringMap["TraceObservationPoint"] = extractString(flow, "trace_observation_point")
+	// Layer7
+	if l7, ok := flow["l7"].(map[string]interface{}); ok {
+		stringMap["Layer7"] = serializeToJSON(l7)
+	}
+	// EventType and Reply
+	if eventType, ok := flow["event_type"].(map[string]interface{}); ok {
+		stringMap["EventType"] = extractString(eventType, "type")
+	}
+	stringMap["Reply"] = fmt.Sprintf("%t", flow["is_reply"].(bool))
+	// AdditionalFlowData from Summary
+	if summary, ok := flow["Summary"].(map[string]interface{}); ok {
+		var parts []string
+		if tcpFlags, ok := summary["TCP Flags"].(map[string]interface{}); ok {
+			var flags []string
+			for flag, val := range tcpFlags {
+				if v, ok := val.(bool); ok && v {
+					flags = append(flags, flag)
+				}
+			}
+			if len(flags) > 0 {
+				parts = append(parts, "TCP Flags: "+strings.Join(flags, ", "))
+			}
+		}
+		if flowType, ok := summary["Type"].(string); ok {
+			parts = append(parts, "Type: "+flowType)
+		}
+		stringMap["AdditionalFlowData"] = strings.Join(parts, " | ")
+	}
+	return nil
+}
+
 // PostNetworkflowRecords sends data to the mdsd and amacoreagent
 func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int {
 	Log(fmt.Sprintf("Debug: PostNetworkflowRecords starting"))
@@ -2161,9 +2274,11 @@ func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int
 			Log(fmt.Sprintf("Error converting record: %v", err))
 			continue
 		}
-		Log(fmt.Sprintf("Debug: PostNetworkflowRecords sample data: %+v", networkFlowLogRecord))
+		Log(fmt.Sprintf("Debug: PostNetworkflowRecords real data: %+v", networkFlowLogRecord))
 
 		stringMap = make(map[string]string)
+		mapNetworkFlowLogsToStringMap(stringMap, networkFlowLogRecord)
+		Log(fmt.Sprintf("Debug: PostNetworkflowRecords stringMap data: %+v", stringMap))
 
 		var msgPackEntry MsgPackEntry
 		msgPackEntry = MsgPackEntry{
@@ -2185,7 +2300,7 @@ func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int
 		// 		return output.FLB_RETRY
 		// 	}
 		// }
-		networkFlowLogsStreamTag := "dcr-92240d259af846b8941a7725ef5859de:ContainerInsightsExtension:ods-f68dcd4f-c3dd-4826-9187-728ae9548788:RETINA_NETWORK_FLOW_LOGS"
+		networkFlowLogsStreamTag := "dcr-92240d259af846b8941a7725ef5859de:ContainerInsightsExtension:gigl-dce-798ab40186414ef6b92e4b8e86e01fbe:RETINA_NETWORK_FLOW_LOGS"
 
 		if MdsdMsgpUnixSocketClient == nil {
 			Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
