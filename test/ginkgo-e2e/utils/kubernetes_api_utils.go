@@ -67,6 +67,43 @@ func CheckContainerLogsForErrors(clientset *kubernetes.Clientset, namespace, lab
 }
 
 /*
+ * Returns the environment variables of the given container in the given pod.
+ */
+func GetContainerEnvVars(clientset *kubernetes.Clientset, namespace string, labelKey string, labelValue string, containerName string) (map[string]string, error) {
+	pods, err := GetPodsWithLabel(clientset, namespace, labelKey, labelValue)
+	if err != nil || len(pods) == 0 {
+		return nil, fmt.Errorf("failed to get pods with label %s=%s: %v", labelKey, labelValue, err)
+	}
+	// get first pod
+	podName := pods[0].Name
+
+	pod, err := clientset.CoreV1().Pods(namespace).Get(context.TODO(), podName, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pod %s in namespace %s: %v", podName, namespace, err)
+	}
+
+	for _, container := range pod.Spec.Containers {
+		if container.Name == containerName {
+			envVars := make(map[string]string)
+			for _, env := range container.Env {
+				envVars[env.Name] = env.Value
+			}
+			return envVars, nil
+		}
+	}
+
+	return nil, fmt.Errorf("container %s not found in pod %s", containerName, podName)
+}
+
+func GetAKSResourceID(clientset *kubernetes.Clientset, namespace string, labelKey string, labelValue string, containerName string) (string, error) {
+	envVars, error := GetContainerEnvVars(clientset, namespace, labelKey, labelValue, containerName)
+	if error != nil {
+		return "", fmt.Errorf("failed to get environment variables for container %s in pod with label %s=%s: %v", containerName, labelKey, labelValue, error)
+	}
+	return envVars["AKS_RESOURCE_ID"], nil
+}
+
+/*
  * Returns all pods in the given namespace with the given label.
  */
 func GetPodsWithLabel(clientset *kubernetes.Clientset, namespace string, labelKey string, labelValue string) ([]corev1.Pod, error) {

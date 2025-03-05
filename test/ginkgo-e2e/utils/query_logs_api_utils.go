@@ -50,10 +50,6 @@ func Querylogs(resourceID string, query string) error {
 		// if err != nil {
 		// 	return fmt.Errorf("failed to marshal table: %v", err)
 		// }
-		for _, column := range table.Columns {
-			fmt.Print(*column.Name + "\t")
-		}
-		fmt.Println()
 		for _, row := range table.Rows {
 			for index, cell := range row {
 				fmt.Print(*table.Columns[index].Name + ":" + fmt.Sprintf("%v", cell) + "\t")
