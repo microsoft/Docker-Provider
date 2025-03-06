@@ -70,7 +70,7 @@ sudo tdnf install jq-1.7.1-1.azl3 -y
 #used to setcaps for ruby process to read /proc/env
 sudo tdnf install libcap -y
 
-sudo tdnf install telegraf-1.31.0-4.azl3 -y
+sudo tdnf install telegraf-1.31.0-4 -y
 telegraf_version=$(sudo tdnf list installed | grep telegraf | awk '{print $2}')
 echo "telegraf $telegraf_version" >> packages_version.txt
 mv /usr/bin/telegraf /opt/telegraf
