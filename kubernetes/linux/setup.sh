@@ -85,12 +85,12 @@ sudo tdnf install fluent-bit-3.1.9 -y
 echo "$(fluent-bit --version)" >> packages_version.txt
 
 # install fluentd using the mariner package
-sudo tdnf install rubygem-fluentd -y
-# fluentd_version="1.16.3"
-# gem install fluentd -v $fluentd_version --no-document
+# sudo tdnf install rubygem-fluentd -y
+fluentd_version="1.16.2"
+gem install fluentd -v $fluentd_version --no-document
 
-# # remove the test directory from fluentd
-# rm -rf /usr/lib/ruby/gems/3.1.0/gems/fluentd-$fluentd_version/test/
+# remove the test directory from fluentd
+rm -rf /usr/lib/ruby/gems/3.1.0/gems/fluentd-$fluentd_version/test/
 
 echo "$(fluentd --version)" >> packages_version.txt
 fluentd --setup ./fluent
