@@ -2247,13 +2247,16 @@ func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[strin
 	// TrafficDirection and TraceObservationPoint
 	stringMap["TrafficDirection"] = extractString(flow, "traffic_direction")
 	stringMap["TraceObservationPoint"] = extractString(flow, "trace_observation_point")
-	// FlowState
-	stringMap["FlowState"] = extractString(flow, "flow_state")
-	// Packets and Bytes
-	stringMap["PacketsSent"] = safeNumericToString(flow["packets_sent"])
-	stringMap["PacketsReceived"] = safeNumericToString(flow["packets_received"])
-	stringMap["BytesSent"] = safeNumericToString(flow["bytes_sent"])
-	stringMap["BytesReceived"] = safeNumericToString(flow["bytes_received"])
+
+	// aggregation support needed
+	// // FlowState
+	// stringMap["FlowState"] = extractString(flow, "flow_state")
+	// // Packets and Bytes
+	// stringMap["PacketsSent"] = safeNumericToString(flow["packets_sent"])
+	// stringMap["PacketsReceived"] = safeNumericToString(flow["packets_received"])
+	// stringMap["BytesSent"] = safeNumericToString(flow["bytes_sent"])
+	// stringMap["BytesReceived"] = safeNumericToString(flow["bytes_received"])
+
 	// Policies (combined from multiple fields)
 	policiesData := map[string]interface{}{
 		"egress_allowed_by":  flow["egress_allowed_by"],
