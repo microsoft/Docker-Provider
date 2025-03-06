@@ -70,7 +70,7 @@ sudo tdnf install jq-1.7.1-1.azl3 -y
 #used to setcaps for ruby process to read /proc/env
 sudo tdnf install libcap -y
 
-sudo tdnf install telegraf-1.31.0-4 -y
+sudo tdnf install telegraf-1.31.0 -y
 telegraf_version=$(sudo tdnf list installed | grep telegraf | awk '{print $2}')
 echo "telegraf $telegraf_version" >> packages_version.txt
 mv /usr/bin/telegraf /opt/telegraf
@@ -81,16 +81,16 @@ docker_cimprov_version=$(sudo tdnf list installed | grep docker-cimprov | awk '{
 echo "DOCKER_CIMPROV_VERSION=$docker_cimprov_version" >> packages_version.txt
 
 #install fluent-bit
-sudo tdnf install fluent-bit-3.1.9-2.azl3 -y
+sudo tdnf install fluent-bit-3.1.9 -y
 echo "$(fluent-bit --version)" >> packages_version.txt
 
 # install fluentd using the mariner package
-# sudo tdnf install rubygem-fluentd-1.14.6 -y
-fluentd_version="1.16.3"
-gem install fluentd -v $fluentd_version --no-document
+sudo tdnf install rubygem-fluentd -y
+# fluentd_version="1.16.3"
+# gem install fluentd -v $fluentd_version --no-document
 
-# remove the test directory from fluentd
-rm -rf /usr/lib/ruby/gems/3.1.0/gems/fluentd-$fluentd_version/test/
+# # remove the test directory from fluentd
+# rm -rf /usr/lib/ruby/gems/3.1.0/gems/fluentd-$fluentd_version/test/
 
 echo "$(fluentd --version)" >> packages_version.txt
 fluentd --setup ./fluent
