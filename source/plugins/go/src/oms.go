@@ -2190,7 +2190,7 @@ func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[strin
 	}
 	// Verdict and DropReason
 	stringMap["Verdict"] = extractString(flow, "verdict")
-	stringMap["DropReason"] = extractString(flow, "drop_reason")
+	stringMap["DropReason"] = extractString(flow, "drop_reason_desc")
 	// IP
 	if ip, ok := flow["IP"].(map[string]interface{}); ok {
 		stringMap["IP"] = serializeToJSON(ip)
@@ -2201,82 +2201,95 @@ func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[strin
 	}
 	// Source details
 	if source, ok := flow["source"].(map[string]interface{}); ok {
-		stringMap["SourceIdentity"] = safeNumericToString(source["ID"])
+		stringMap["SourceIdentity"] = safeNumericToString(source["identity"])
+		stringMap["SourceClusterName"] = extractString(source, "cluster_name")
 		stringMap["SourceNamespace"] = extractString(source, "namespace")
 		stringMap["SourcePodName"] = extractString(source, "pod_name")
-		if labels, ok := source["labels"].([]interface{}); ok {
-			stringMap["SourceWorkloads"] = serializeToJSON(labels)
-		}
-		// Cluster name extraction
-		if labels, ok := source["labels"].([]interface{}); ok {
-			for _, label := range labels {
-				if labelStr, ok := label.(string); ok && strings.Contains(labelStr, "k8s:io.cilium.k8s.policy.cluster=") {
-					parts := strings.Split(labelStr, "=")
-					if len(parts) > 1 {
-						stringMap["SourceClusterName"] = parts[1]
-						break
-					}
-				}
-			}
+		if workloads, ok := source["workloads"].([]interface{}); ok {
+			stringMap["SourceWorkloads"] = serializeToJSON(workloads)
 		}
 	}
+
 	// Destination details
 	if dest, ok := flow["destination"].(map[string]interface{}); ok {
-		stringMap["DestinationIdentity"] = safeNumericToString(dest["ID"])
+		stringMap["DestinationIdentity"] = safeNumericToString(dest["identity"])
+		stringMap["DestinationClusterName"] = extractString(dest, "cluster_name")
 		stringMap["DestinationNamespace"] = extractString(dest, "namespace")
 		stringMap["DestinationPodName"] = extractString(dest, "pod_name")
-		if labels, ok := dest["labels"].([]interface{}); ok {
-			stringMap["DestinationWorkloads"] = serializeToJSON(labels)
-		}
-		// Cluster name extraction
-		if labels, ok := dest["labels"].([]interface{}); ok {
-			for _, label := range labels {
-				if labelStr, ok := label.(string); ok && strings.Contains(labelStr, "k8s:io.cilium.k8s.policy.cluster=") {
-					parts := strings.Split(labelStr, "=")
-					if len(parts) > 1 {
-						stringMap["DestinationClusterName"] = parts[1]
-						break
-					}
-				}
-			}
+		if workloads, ok := dest["workloads"].([]interface{}); ok {
+			stringMap["DestinationWorkloads"] = serializeToJSON(workloads)
 		}
 	}
-	// FlowType from Summary
-	if summary, ok := flow["Summary"].(map[string]interface{}); ok {
-		stringMap["FlowType"] = extractString(summary, "Type")
-	}
-	// Traffic Direction and Observation Point
-	stringMap["TrafficDirection"] = extractString(flow, "traffic_direction")
-	stringMap["TraceObservationPoint"] = extractString(flow, "trace_observation_point")
+	// FlowType
+	stringMap["FlowType"] = extractString(flow, "Type")
+	// NodeName
+	stringMap["NodeName"] = extractString(flow, "node_name")
 	// Layer7
 	if l7, ok := flow["l7"].(map[string]interface{}); ok {
 		stringMap["Layer7"] = serializeToJSON(l7)
 	}
-	// EventType and Reply
-	if eventType, ok := flow["event_type"].(map[string]interface{}); ok {
-		stringMap["EventType"] = extractString(eventType, "type")
-	}
+	// Reply
 	if isReply, ok := flow["is_reply"].(bool); ok {
 		stringMap["Reply"] = fmt.Sprintf("%t", isReply)
 	}
-	// AdditionalFlowData from Summary
-	if summary, ok := flow["Summary"].(map[string]interface{}); ok {
-		var parts []string
-		if tcpFlags, ok := summary["TCP Flags"].(map[string]interface{}); ok {
-			var flags []string
-			for flag, val := range tcpFlags {
-				if v, ok := val.(bool); ok && v {
-					flags = append(flags, flag)
+	// EventType
+	if eventType, ok := flow["event_type"].(map[string]interface{}); ok {
+		stringMap["EventType"] = serializeToJSON(eventType)
+	}
+	// Service
+	serviceData := map[string]interface{}{
+		"SourceService":               extractString(flow, "source_service.name"),
+		"SourceServiceNamespace":      extractString(flow, "source_service.namespace"),
+		"DestinationService":          extractString(flow, "destination_service.name"),
+		"DestinationServiceNamespace": extractString(flow, "destination_service.namespace"),
+	}
+	stringMap["Service"] = serializeToJSON(serviceData)
+	// TrafficDirection and TraceObservationPoint
+	stringMap["TrafficDirection"] = extractString(flow, "traffic_direction")
+	stringMap["TraceObservationPoint"] = extractString(flow, "trace_observation_point")
+	// FlowState
+	stringMap["FlowState"] = extractString(flow, "flow_state")
+	// Packets and Bytes
+	stringMap["PacketsSent"] = safeNumericToString(flow["packets_sent"])
+	stringMap["PacketsReceived"] = safeNumericToString(flow["packets_received"])
+	stringMap["BytesSent"] = safeNumericToString(flow["bytes_sent"])
+	stringMap["BytesReceived"] = safeNumericToString(flow["bytes_received"])
+
+	// Policies (combined from multiple fields)
+	policiesData := map[string]interface{}{
+		"egress_allowed_by":  flow["egress_allowed_by"],
+		"ingress_allowed_by": flow["ingress_allowed_by"],
+		"egress_denied_by":   flow["egress_denied_by"],
+		"ingress_denied_by":  flow["ingress_denied_by"],
+	}
+	stringMap["Policies"] = serializeToJSON(policiesData)
+
+	// AdditionalFlowData
+	additionalData := map[string]interface{}{
+		"EthernetSource":      extractString(flow, "ethernet.source"),
+		"EthernetDestination": extractString(flow, "ethernet.destination"),
+		"SourceLabels":        extractLabels(flow["source"]),
+		"DestinationLabels":   extractLabels(flow["destination"]),
+		"Summary":             flow["Summary"],
+		"Extensions":          flow["extensions"],
+	}
+	stringMap["AdditionalFlowData"] = serializeToJSON(additionalData)
+
+	return nil
+}
+
+// Helper function to extract labels
+func extractLabels(source interface{}) []string {
+	if src, ok := source.(map[string]interface{}); ok {
+		if labels, ok := src["labels"].([]interface{}); ok {
+			var labelStrs []string
+			for _, label := range labels {
+				if labelStr, ok := label.(string); ok {
+					labelStrs = append(labelStrs, labelStr)
 				}
 			}
-			if len(flags) > 0 {
-				parts = append(parts, "TCP Flags: "+strings.Join(flags, ", "))
-			}
+			return labelStrs
 		}
-		if flowType, ok := summary["Type"].(string); ok {
-			parts = append(parts, "Type: "+flowType)
-		}
-		stringMap["AdditionalFlowData"] = strings.Join(parts, " | ")
 	}
 	return nil
 }
