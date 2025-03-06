@@ -2254,7 +2254,6 @@ func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[strin
 	stringMap["PacketsReceived"] = safeNumericToString(flow["packets_received"])
 	stringMap["BytesSent"] = safeNumericToString(flow["bytes_sent"])
 	stringMap["BytesReceived"] = safeNumericToString(flow["bytes_received"])
-
 	// Policies (combined from multiple fields)
 	policiesData := map[string]interface{}{
 		"egress_allowed_by":  flow["egress_allowed_by"],
@@ -2263,7 +2262,6 @@ func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[strin
 		"ingress_denied_by":  flow["ingress_denied_by"],
 	}
 	stringMap["Policies"] = serializeToJSON(policiesData)
-
 	// AdditionalFlowData
 	additionalData := map[string]interface{}{
 		"EthernetSource":      extractString(flow, "ethernet.source"),
@@ -2274,7 +2272,6 @@ func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[strin
 		"Extensions":          flow["extensions"],
 	}
 	stringMap["AdditionalFlowData"] = serializeToJSON(additionalData)
-
 	return nil
 }
 
