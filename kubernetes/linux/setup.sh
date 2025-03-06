@@ -48,7 +48,13 @@ gem uninstall stringio --version 3.0.1
 gem uninstall rexml --version 3.2.5
 gem uninstall webrick --version 1.8.1
 
-sudo tdnf install -y azure-mdsd-1.31.4
+if [ "${ARCH}" != "arm64" ]; then
+    sudo tdnf install -y azure-mdsd-1.31.4
+else
+   wget "https://github.com/microsoft/Docker-Provider/releases/download/mdsd-1.31.0/azure-mdsd-1.35.0-thperapp.amacaAarch64.3.4643.aarch64.rpm" -O azure-mdsd.rpm
+   sudo tdnf install -y azure-mdsd.rpm
+fi
+
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
 rm /usr/sbin/telegraf
