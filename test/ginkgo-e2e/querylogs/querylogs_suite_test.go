@@ -5,14 +5,16 @@ import (
 
 	"docker-provider/test/utils"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/monitor/azquery"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
-var resourceId string
 var K8sClient *kubernetes.Clientset
+var LogsClient *azquery.LogsClient
+var AKSResourceId string
 var Cfg *rest.Config
 
 func TestQuerylogs(t *testing.T) {
@@ -24,7 +26,9 @@ var _ = BeforeSuite(func() {
 	var err error
 	K8sClient, Cfg, err = utils.SetupKubernetesClient()
 	Expect(err).NotTo(HaveOccurred())
-	resourceId, err = utils.GetAKSResourceID(K8sClient, "kube-system", "component", "ama-logs-agent", "ama-logs")
+	AKSResourceId, err = utils.GetAKSResourceID(K8sClient, "kube-system", "component", "ama-logs-agent", "ama-logs")
+	Expect(err).NotTo(HaveOccurred())
+	LogsClient, err = utils.SetupLogsClient()
 	Expect(err).NotTo(HaveOccurred())
 })
 

@@ -9,7 +9,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/azquery"
 )
 
-func CreateLogsClient() (*azquery.LogsClient, error) {
+func SetupLogsClient() (*azquery.LogsClient, error) {
 	// Create a new LogsClient
 	cred, err := azidentity.NewDefaultAzureCredential(nil)
 	if err != nil {
@@ -22,12 +22,7 @@ func CreateLogsClient() (*azquery.LogsClient, error) {
 	return client, nil
 }
 
-func Querylogs(resourceID string, query string) error {
-	// Query logs
-	logsClient, err := CreateLogsClient()
-	if err != nil {
-		return fmt.Errorf("failed to create a new LogsClient: %v", err)
-	}
+func QueryLogs(logsClient *azquery.LogsClient, resourceID string, query string) ([]*azquery.Table, error) {
 	res, err := logsClient.QueryResource(
 		context.TODO(),
 		resourceID,
@@ -36,25 +31,66 @@ func Querylogs(resourceID string, query string) error {
 		},
 		nil)
 	if err != nil {
-		//TODO: handle error
+		return nil, fmt.Errorf("Failed to query logs: %v", err)
 	}
 	if res.Error != nil {
-		//TODO: handle partial error
+		return nil, fmt.Errorf("The query returned the error: %v", *&res.Error)
 	}
 
-	fmt.Println("Query Results:")
+	return res.Tables, nil
+}
 
-	// Print Rows
-	for _, table := range res.Tables {
-		// column, err := table.Columns[0].MarshalJSON()
-		// if err != nil {
-		// 	return fmt.Errorf("failed to marshal table: %v", err)
-		// }
-		for _, row := range table.Rows {
-			for index, cell := range row {
-				fmt.Print(*table.Columns[index].Name + ":" + fmt.Sprintf("%v", cell) + "\t")
+// Print Rows
+// for _, table := range res.Tables {
+// 	// column, err := table.Columns[0].MarshalJSON()
+// 	// if err != nil {
+// 	// 	return fmt.Errorf("failed to marshal table: %v", err)
+// 	// }
+// 	for _, row := range table.Rows {
+// 		for index, cell := range row {
+// 			fmt.Print(*table.Columns[index].Name + ":" + fmt.Sprintf("%v", cell) + "\t")
+// 		}
+// 	}
+// }
+
+func QueryLogsForCount(logsClient *azquery.LogsClient, resourceID string, query string, expectZeroCount bool) error {
+	tables, err := QueryLogs(logsClient, resourceID, query)
+	if err != nil {
+		return err
+	}
+
+	if tables == nil || len(tables) == 0 {
+		return fmt.Errorf("The query returned 0 tables")
+	}
+
+	fmt.Println("Query result:")
+
+	for _, table := range tables {
+		fmt.Println("Number of rows: ", len(table.Rows))
+		if table.Rows == nil || len(table.Rows) == 0 {
+			return fmt.Errorf("The query returned 0 rows")
+		}
+
+		if len(table.Rows) > 1 {
+			return fmt.Errorf("The query returned more than 1 row, this test is only used for summarize count queries")
+		}
+
+		fmt.Println("Count: ", table.Rows[0][0])
+
+		if table.Rows[0][0].(float64) == 0 {
+			if expectZeroCount {
+				return nil
 			}
+			return fmt.Errorf("The query returned 0 count")
+		}
+
+		if table.Rows[0][0].(float64) > 0 {
+			if !expectZeroCount {
+				return nil
+			}
+			return fmt.Errorf("The query returned count greater than 0")
 		}
 	}
-	return nil
+
+	return fmt.Errorf("The query returned unexpected result")
 }

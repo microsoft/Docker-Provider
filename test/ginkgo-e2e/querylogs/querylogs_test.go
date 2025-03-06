@@ -7,10 +7,40 @@ import (
 	"docker-provider/test/utils"
 )
 
-var _ = DescribeTable("The logs should be queried",
-	func(query string) {
-		err := utils.Querylogs(resourceId, query)
-		Expect(err).NotTo(HaveOccurred())
-	},
-	Entry("when querying the logs for the resource", "ContainerInventory | take 5 | where TimeGenerated > ago(1d) | where Name == \"\" | summarize count()"),
-)
+// > 0 logs in all tables in last 15 minutes
+// number of pods in the kubectl vs LA kubepodinventory
+
+var _ = Describe("When querying the logs for the table", func() {
+	// > 0 logs in all tables in last 15 minutes
+	// number of pods in the kubectl vs LA kubepodinventory
+	DescribeTable("All tables should have logs",
+		func(table string) {
+			query := table + " | where TimeGenerated > ago(15m) | summarize count()"
+			err := utils.QueryLogsForCount(LogsClient, AKSResourceId, query, false)
+			Expect(err).NotTo(HaveOccurred())
+		},
+		// Check how to chose containerlog table
+		Entry("ContainerLog", "ContainerLog"),
+		Entry("ContainerLogV2", "ContainerLogV2"),
+		Entry("ContainerInventory", "ContainerInventory"),
+		Entry("ContainerNodeInventory", "ContainerNodeInventory"),
+		Entry("KubeNodeInventory", "KubeNodeInventory"),
+		Entry("KubePodInventory", "KubePodInventory"),
+		Entry("KubePVInventory", "KubePVInventory"),
+	)
+})
+
+var _ = Describe("When querying the logs for the ContainerInventory", func() {
+	DescribeTable("Column should have zero empty values",
+		func(column string) {
+			query := "ContainerInventory | where TimeGenerated > ago(1h) | summarize countif(isempty(" + column + ") or isnull(" + column + "))"
+			err := utils.QueryLogsForCount(LogsClient, AKSResourceId, query, true)
+			Expect(err).NotTo(HaveOccurred())
+		},
+		Entry("Image", "Image"),
+		Entry("ImageID", "ImageID"),
+		Entry("ImageTag", "ImageTag"),
+		Entry("Repository", "Repository"),
+		Entry("Ports", "Ports"),
+	)
+})
