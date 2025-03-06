@@ -7,6 +7,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/monitor/azquery"
+	"k8s.io/client-go/kubernetes"
 )
 
 func SetupLogsClient() (*azquery.LogsClient, error) {
@@ -90,6 +91,50 @@ func QueryLogsForCount(logsClient *azquery.LogsClient, resourceID string, query 
 			}
 			return fmt.Errorf("The query returned count greater than 0")
 		}
+	}
+
+	return fmt.Errorf("The query returned unexpected result")
+}
+
+func ComparePodsInLogsAndKubeAPI(K8sClient *kubernetes.Clientset, logsClient *azquery.LogsClient, resourceID string, logsTable string) error {
+	// Get the resource list from the kube API
+	pods, err := getAllAgentPods(K8sClient)
+
+	// Query the logs for the table
+	query := logsTable + " | where TimeGenerated > ago(15m) | where ContainerName contains \"ama-logs\" | distinct Name"
+	tables, err := QueryLogs(logsClient, resourceID, query)
+	if err != nil {
+		return err
+	}
+
+	if tables == nil || len(tables) == 0 {
+		return fmt.Errorf("The query returned 0 tables")
+	}
+
+	fmt.Println("Query result:")
+	for _, table := range tables {
+		// check if the pod exists in the logs
+		for _, pod := range pods {
+			fmt.Println("Checking pod: ", pod.Name)
+			found := false
+			for _, row := range table.Rows {
+				for _, cell := range row {
+					if cell == pod.Name {
+						found = true
+						break
+					}
+				}
+				if found {
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("Pod %s not found in logs", pod.Name)
+			}
+		}
+
+		// if all pods found, return nil
+		return nil
 	}
 
 	return fmt.Errorf("The query returned unexpected result")

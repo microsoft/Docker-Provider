@@ -41,6 +41,15 @@ var _ = Describe("When querying the logs for the ContainerInventory", func() {
 		Entry("ImageID", "ImageID"),
 		Entry("ImageTag", "ImageTag"),
 		Entry("Repository", "Repository"),
-		Entry("Ports", "Ports"),
+	)
+})
+
+var _ = Describe("When querying the number of resources of the cluster", func() {
+	DescribeTable("The resource from kube api should be present in logs",
+		func(table string) {
+			err := utils.ComparePodsInLogsAndKubeAPI(K8sClient, LogsClient, AKSResourceId, table)
+			Expect(err).NotTo(HaveOccurred())
+		},
+		Entry("Pods", "KubePodInventory"),
 	)
 })

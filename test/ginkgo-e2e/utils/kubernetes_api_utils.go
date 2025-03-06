@@ -450,3 +450,22 @@ func GetAndUpdateConfigMap(clientset *kubernetes.Clientset, configMapName, confi
 
 	return nil
 }
+
+func getAllAgentPods(clientset *kubernetes.Clientset) ([]corev1.Pod, error) {
+	linuxPods, err := GetPodsWithLabel(clientset, "kube-system", "component", "ama-logs-agent")
+	if err != nil {
+		return nil, fmt.Errorf("Error getting linux pods: %v", err)
+	}
+
+	rsPods, err := GetPodsWithLabel(clientset, "kube-system", "rsName", "ama-logs-rs")
+	if err != nil {
+		return nil, fmt.Errorf("Error getting rs pods: %v", err)
+	}
+
+	// windowsPods, err := GetPodsWithLabel(clientset, "kube-system", "component", "ama-logs-agent-windows")
+	// if err != nil {
+	// 	return nil, fmt.Errorf("Error getting windows pods: %v", err)
+	// }
+
+	return append(linuxPods, rsPods[:]...), nil
+}
