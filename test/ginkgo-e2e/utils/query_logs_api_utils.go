@@ -41,19 +41,6 @@ func QueryLogs(logsClient *azquery.LogsClient, resourceID string, query string) 
 	return res.Tables, nil
 }
 
-// Print Rows
-// for _, table := range res.Tables {
-// 	// column, err := table.Columns[0].MarshalJSON()
-// 	// if err != nil {
-// 	// 	return fmt.Errorf("failed to marshal table: %v", err)
-// 	// }
-// 	for _, row := range table.Rows {
-// 		for index, cell := range row {
-// 			fmt.Print(*table.Columns[index].Name + ":" + fmt.Sprintf("%v", cell) + "\t")
-// 		}
-// 	}
-// }
-
 func QueryLogsForCount(logsClient *azquery.LogsClient, resourceID string, query string, expectZeroCount bool) error {
 	tables, err := QueryLogs(logsClient, resourceID, query)
 	if err != nil {
@@ -96,12 +83,7 @@ func QueryLogsForCount(logsClient *azquery.LogsClient, resourceID string, query 
 	return fmt.Errorf("The query returned unexpected result")
 }
 
-func ComparePodsInLogsAndKubeAPI(K8sClient *kubernetes.Clientset, logsClient *azquery.LogsClient, resourceID string, logsTable string) error {
-	// Get the resource list from the kube API
-	pods, err := getAllAgentPods(K8sClient)
-
-	// Query the logs for the table
-	query := logsTable + " | where TimeGenerated > ago(15m) | where ContainerName contains \"ama-logs\" | distinct Name"
+func CompareResourcesHelper(logsClient *azquery.LogsClient, resourceID string, query string, resources []string) error {
 	tables, err := QueryLogs(logsClient, resourceID, query)
 	if err != nil {
 		return err
@@ -113,13 +95,13 @@ func ComparePodsInLogsAndKubeAPI(K8sClient *kubernetes.Clientset, logsClient *az
 
 	fmt.Println("Query result:")
 	for _, table := range tables {
-		// check if the pod exists in the logs
-		for _, pod := range pods {
-			fmt.Println("Checking pod: ", pod.Name)
+		// check if the resource exists in the logs
+		for _, resource := range resources {
+			fmt.Println("Checking resource: ", resource)
 			found := false
 			for _, row := range table.Rows {
 				for _, cell := range row {
-					if cell == pod.Name {
+					if cell == resource {
 						found = true
 						break
 					}
@@ -129,13 +111,39 @@ func ComparePodsInLogsAndKubeAPI(K8sClient *kubernetes.Clientset, logsClient *az
 				}
 			}
 			if !found {
-				return fmt.Errorf("Pod %s not found in logs", pod.Name)
+				return fmt.Errorf("Resource %s not found in logs", resource)
 			}
 		}
 
-		// if all pods found, return nil
+		// if all resources found, return nil
 		return nil
 	}
 
 	return fmt.Errorf("The query returned unexpected result")
+}
+
+func CompareResourcesInLogsAndKubeAPI(K8sClient *kubernetes.Clientset, logsClient *azquery.LogsClient, resourceID string, logsTable string) error {
+	var resources []string
+	var query string
+	if logsTable == "KubeNodeInventory" {
+		nodes, err := GetAllNodes(K8sClient)
+		if err != nil {
+			return err
+		}
+		for _, node := range nodes {
+			resources = append(resources, node.Name)
+		}
+		query = logsTable + " | where TimeGenerated > ago(15m) | distinct Computer"
+	} else if logsTable == "KubePodInventory" {
+		pods, err := GetAllAgentPods(K8sClient)
+		if err != nil {
+			return err
+		}
+		for _, pod := range pods {
+			resources = append(resources, pod.Name)
+		}
+		query = logsTable + " | where TimeGenerated > ago(15m) | where ContainerName contains \"ama-logs\" | distinct Name"
+	}
+
+	return CompareResourcesHelper(logsClient, resourceID, query, resources)
 }

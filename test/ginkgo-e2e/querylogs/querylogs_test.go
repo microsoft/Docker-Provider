@@ -7,9 +7,6 @@ import (
 	"docker-provider/test/utils"
 )
 
-// > 0 logs in all tables in last 15 minutes
-// number of pods in the kubectl vs LA kubepodinventory
-
 var _ = Describe("When querying the logs for the table", func() {
 	// > 0 logs in all tables in last 15 minutes
 	// number of pods in the kubectl vs LA kubepodinventory
@@ -47,9 +44,10 @@ var _ = Describe("When querying the logs for the ContainerInventory", func() {
 var _ = Describe("When querying the number of resources of the cluster", func() {
 	DescribeTable("The resource from kube api should be present in logs",
 		func(table string) {
-			err := utils.ComparePodsInLogsAndKubeAPI(K8sClient, LogsClient, AKSResourceId, table)
+			err := utils.CompareResourcesInLogsAndKubeAPI(K8sClient, LogsClient, AKSResourceId, table)
 			Expect(err).NotTo(HaveOccurred())
 		},
 		Entry("Pods", "KubePodInventory"),
+		Entry("Nodes", "KubeNodeInventory"),
 	)
 })

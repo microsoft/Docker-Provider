@@ -451,21 +451,43 @@ func GetAndUpdateConfigMap(clientset *kubernetes.Clientset, configMapName, confi
 	return nil
 }
 
-func getAllAgentPods(clientset *kubernetes.Clientset) ([]corev1.Pod, error) {
-	linuxPods, err := GetPodsWithLabel(clientset, "kube-system", "component", "ama-logs-agent")
+func GetAllAgentPods(clientset *kubernetes.Clientset) ([]corev1.Pod, error) {
+	dsPodList, err := clientset.CoreV1().Pods("kube-system").List(context.TODO(), metav1.ListOptions{
+		LabelSelector: "component in (ama-logs-agent, ama-logs-agent-windows)",
+	})
 	if err != nil {
-		return nil, fmt.Errorf("Error getting linux pods: %v", err)
+		return nil, err
 	}
 
-	rsPods, err := GetPodsWithLabel(clientset, "kube-system", "rsName", "ama-logs-rs")
+	rsPodList, err := clientset.CoreV1().Pods("kube-system").List(context.TODO(), metav1.ListOptions{
+		LabelSelector: "rsName=ama-logs-rs",
+	})
 	if err != nil {
-		return nil, fmt.Errorf("Error getting rs pods: %v", err)
+		return nil, err
 	}
 
-	// windowsPods, err := GetPodsWithLabel(clientset, "kube-system", "component", "ama-logs-agent-windows")
-	// if err != nil {
-	// 	return nil, fmt.Errorf("Error getting windows pods: %v", err)
-	// }
+	if dsPodList == nil || rsPodList == nil {
+		return nil, fmt.Errorf("error in getting pods")
+	}
 
-	return append(linuxPods, rsPods[:]...), nil
+	podList := append(dsPodList.Items, rsPodList.Items...)
+
+	if podList == nil || len(podList) == 0 {
+		return nil, fmt.Errorf("no pods found")
+	}
+
+	return podList, nil
+}
+
+func GetAllNodes(clientset *kubernetes.Clientset) ([]corev1.Node, error) {
+	nodes, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	if nodes == nil || len(nodes.Items) == 0 {
+		return nil, fmt.Errorf("no nodes found")
+	}
+
+	return nodes.Items, nil
 }
