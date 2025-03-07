@@ -8,8 +8,6 @@ import (
 )
 
 var _ = Describe("When querying the logs for the table", func() {
-	// > 0 logs in all tables in last 15 minutes
-	// number of pods in the kubectl vs LA kubepodinventory
 	DescribeTable("All tables should have logs",
 		func(table string) {
 			query := table + " | where TimeGenerated > ago(15m) | summarize count()"

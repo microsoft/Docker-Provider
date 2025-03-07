@@ -27,9 +27,7 @@ func QueryLogs(logsClient *azquery.LogsClient, resourceID string, query string) 
 	res, err := logsClient.QueryResource(
 		context.TODO(),
 		resourceID,
-		azquery.Body{
-			Query: to.Ptr(query),
-		},
+		azquery.Body{Query: to.Ptr(query)},
 		nil)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to query logs: %v", err)
@@ -93,7 +91,7 @@ func CompareResourcesHelper(logsClient *azquery.LogsClient, resourceID string, q
 		return fmt.Errorf("The query returned 0 tables")
 	}
 
-	fmt.Println("Query result:")
+	fmt.Println("Compare resources result:")
 	for _, table := range tables {
 		// check if the resource exists in the logs
 		for _, resource := range resources {
