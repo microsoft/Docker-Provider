@@ -1897,27 +1897,14 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		}
 	}
 
-	networkFlowLogsStreamTag := "dcr-92240d259af846b8941a7725ef5859de:ContainerInsightsExtension:gigl-dce-798ab40186414ef6b92e4b8e86e01fbe:RETINA_NETWORK_FLOW_LOGS"
-	networkFlowLogsMsgPackEntries := getNetworkFlowLogsMsgPackEntries()
-	for i, entry := range networkFlowLogsMsgPackEntries {
-		Log(fmt.Sprintf("Debug: retinaNetworkFlowlogs sample data[%d]: %+v", i, entry))
-	}
-	writeMsgPackEntries(MdsdMsgpUnixSocketClient, false, networkFlowLogsStreamTag, networkFlowLogsMsgPackEntries)
+	// networkFlowLogsStreamTag := "dcr-92240d259af846b8941a7725ef5859de:ContainerInsightsExtension:gigl-dce-798ab40186414ef6b92e4b8e86e01fbe:RETINA_NETWORK_FLOW_LOGS"
+	// networkFlowLogsMsgPackEntries := getNetworkFlowLogsMsgPackEntries()
+	// for i, entry := range networkFlowLogsMsgPackEntries {
+	// 	Log(fmt.Sprintf("Debug: retinaNetworkFlowlogs sample data[%d]: %+v", i, entry))
+	// }
+	// writeMsgPackEntries(MdsdMsgpUnixSocketClient, false, networkFlowLogsStreamTag, networkFlowLogsMsgPackEntries)
 
 	return output.FLB_OK
-}
-
-func getNetworkFlowLogsMsgPackEntries() []MsgPackEntry {
-	networkFlowLogs := []NetworkFlowLog{sampleLog1, sampleLog2}
-	var msgPackEntries []MsgPackEntry
-	for _, log := range networkFlowLogs {
-		stringMap := make(map[string]string)
-		populateStringMapFromNetworkFlowLog(stringMap, log)
-		msgPackEntries = append(msgPackEntries, MsgPackEntry{
-			Record: stringMap,
-		})
-	}
-	return msgPackEntries
 }
 
 type NetworkFlowLog struct {
@@ -1949,167 +1936,6 @@ type NetworkFlowLog struct {
 	PacketsReceived        int    `json:"PacketsReceived"`
 	Policies               string `json:"Policies"` // interface
 	AdditionalFlowData     string `json:"AdditionalFlowData"`
-}
-
-var sampleLog1 = NetworkFlowLog{
-	TimeGenerated:          "2025-01-27T19:30:14.716397550Z",
-	UUID:                   uuid.New().String(),
-	Verdict:                "FORWARDED",
-	DropReason:             "",
-	IP:                     "10.244.1.127 -> 10.244.1.228",
-	Layer4:                 "TCP: 8080->55508, FIN:true, ACK:true",
-	SourceIdentity:         2,
-	SourceClusterName:      "default",
-	SourceNamespace:        "default",
-	SourcePodName:          "kapinger-good-8468b88556-d75x8",
-	SourceWorkloads:        "reserved:world",
-	DestinationIdentity:    56017,
-	DestinationClusterName: "default",
-	DestinationNamespace:   "default",
-	DestinationPodName:     "kapinger-good-8468b88556-d75x8",
-	DestinationWorkloads:   "k8s:server=good, k8s:app=kapinger",
-	FlowType:               "L3_L4",
-	NodeName:               "",
-	Layer7:                 "",
-	Reply:                  false,
-	EventType:              "type: 4",
-	Service:                "name: kapinger-service, namespace: default",
-	TrafficDirection:       "EGRESS",
-	TraceObservationPoint:  "TO_ENDPOINT",
-	PacketsSent:            0,
-	PacketsReceived:        0,
-	Policies:               "",
-	AdditionalFlowData:     "bytes: 66",
-}
-
-var sampleLog2 = NetworkFlowLog{
-	TimeGenerated:     "2025-02-27T22:31:56.730433843Z",
-	UUID:              uuid.New().String(),
-	Verdict:           "FORWARDED",
-	DropReason:        "",
-	IP:                toJSONString(map[string]string{"source": "10.244.3.214", "destination": "10.244.2.231", "ipVersion": "IPv4"}),
-	Layer4:            "",
-	SourceIdentity:    44564,
-	SourceClusterName: "kube-system",
-	SourceNamespace:   "kube-system",
-	SourcePodName:     "ama-logs-rs-5dcddfd57b-cmtz7",
-	SourceWorkloads: toJSONString([]string{
-		"k8s:io.cilium.k8s.namespace.labels.kubernetes.io/cluster-service=true",
-		"k8s:pod-template-hash=5dcddfd57b",
-		"k8s:io.cilium.k8s.policy.serviceaccount=ama-logs",
-		"k8s:io.cilium.k8s.namespace.labels.control-plane=true",
-		"k8s:io.cilium.k8s.policy.cluster=default",
-		"k8s:io.kubernetes.pod.namespace=kube-system",
-		"k8s:io.cilium.k8s.namespace.labels.addonmanager.kubernetes.io/mode=Reconcile",
-		"k8s:rsName=ama-logs-rs",
-		"k8s:io.cilium.k8s.namespace.labels.kubernetes.azure.com/managedby=aks",
-		"k8s:io.cilium.k8s.namespace.labels.kubernetes.io/metadata.name=kube-system",
-	}),
-	DestinationIdentity:    20703,
-	DestinationClusterName: "kube-system",
-	DestinationNamespace:   "kube-system",
-	DestinationPodName:     "coredns-659fcb469c-j5fcw",
-	DestinationWorkloads: toJSONString([]string{
-		"k8s:io.cilium.k8s.namespace.labels.control-plane=true",
-		"k8s:k8s-app=kube-dns",
-		"k8s:kubernetes.azure.com/managedby=aks",
-		"k8s:io.cilium.k8s.namespace.labels.addonmanager.kubernetes.io/mode=Reconcile",
-		"k8s:kubernetes.io/cluster-service=true",
-		"k8s:version=v20",
-		"k8s:io.cilium.k8s.namespace.labels.kubernetes.azure.com/managedby=aks",
-		"k8s:io.cilium.k8s.namespace.labels.kubernetes.io/cluster-service=true",
-		"k8s:io.cilium.k8s.policy.cluster=default",
-		"k8s:io.kubernetes.pod.namespace=kube-system",
-		"k8s:pod-template-hash=659fcb469c",
-		"k8s:io.cilium.k8s.policy.serviceaccount=coredns",
-		"k8s:io.cilium.k8s.namespace.labels.kubernetes.io/metadata.name=kube-system",
-	}),
-	FlowType: "L7",
-	NodeName: "",
-	Layer7: toJSONString(map[string]interface{}{
-		"type": "REQUEST",
-		"dns": map[string]interface{}{
-			"query":  "ccfdad1b-88d3-4c3d-a6b9-1167b0360a1c.ods.opinsights.azure.com.2l5k3xhesotexezmfjsaa1un4d.zx.internal.cloudapp.net.",
-			"rcode":  24,
-			"qtypes": []string{"A"},
-		},
-	}),
-	Reply:                 false,
-	EventType:             "129",
-	Service:               "",
-	TrafficDirection:      "EGRESS",
-	TraceObservationPoint: "TO_NETWORK",
-	PacketsSent:           0,
-	PacketsReceived:       0,
-	Policies:              "",
-	AdditionalFlowData:    "DNS Query ccfdad1b-88d3-4c3d-a6b9-1167b0360a1c.ods.opinsights.azure.com. A",
-}
-
-func toJSONString(v interface{}) string {
-	bytes, err := json.Marshal(v)
-	if err != nil {
-		return ""
-	}
-	return string(bytes)
-}
-
-func populateStringMapFromNetworkFlowLog(stringMap map[string]string, networkFlowLog NetworkFlowLog) {
-	stringMap["TimeGenerated"] = networkFlowLog.TimeGenerated
-	stringMap["UUID"] = networkFlowLog.UUID
-	stringMap["Verdict"] = networkFlowLog.Verdict
-	stringMap["DropReason"] = networkFlowLog.DropReason
-	stringMap["SourceClusterName"] = networkFlowLog.SourceClusterName
-	stringMap["SourceNamespace"] = networkFlowLog.SourceNamespace
-	stringMap["SourcePodName"] = networkFlowLog.SourcePodName
-	stringMap["DestinationClusterName"] = networkFlowLog.DestinationClusterName
-	stringMap["DestinationNamespace"] = networkFlowLog.DestinationNamespace
-	stringMap["DestinationPodName"] = networkFlowLog.DestinationPodName
-	stringMap["FlowType"] = networkFlowLog.FlowType
-	stringMap["NodeName"] = networkFlowLog.NodeName
-	stringMap["TrafficDirection"] = networkFlowLog.TrafficDirection
-	stringMap["TraceObservationPoint"] = networkFlowLog.TraceObservationPoint
-
-	if networkFlowLog.IP != "" {
-		stringMap["IP"] = networkFlowLog.IP
-	}
-
-	if networkFlowLog.Layer4 != "" {
-		stringMap["Layer4"] = networkFlowLog.Layer4
-	}
-
-	if networkFlowLog.SourceWorkloads != "" {
-		stringMap["SourceWorkloads"] = networkFlowLog.SourceWorkloads
-	}
-
-	if networkFlowLog.DestinationWorkloads != "" {
-		stringMap["DestinationWorkloads"] = networkFlowLog.DestinationWorkloads
-	}
-
-	if networkFlowLog.Layer7 != "" {
-		stringMap["Layer7"] = networkFlowLog.Layer7
-	}
-
-	if networkFlowLog.EventType != "" {
-		stringMap["EventType"] = networkFlowLog.EventType
-	}
-
-	if networkFlowLog.Service != "" {
-		stringMap["Service"] = networkFlowLog.Service
-	}
-
-	if networkFlowLog.Policies != "" {
-		stringMap["Policies"] = networkFlowLog.Policies
-	}
-
-	if networkFlowLog.AdditionalFlowData != "" {
-		stringMap["AdditionalFlowData"] = networkFlowLog.AdditionalFlowData
-	}
-
-	stringMap["SourceIdentity"] = fmt.Sprintf("%d", networkFlowLog.SourceIdentity)
-	stringMap["DestinationIdentity"] = fmt.Sprintf("%d", networkFlowLog.DestinationIdentity)
-	stringMap["Reply"] = fmt.Sprintf("%t", networkFlowLog.Reply)
-	stringMap["PacketsSent"] = fmt.Sprintf("%d", networkFlowLog.PacketsSent)
-	stringMap["PacketsReceived"] = fmt.Sprintf("%d", networkFlowLog.PacketsReceived)
 }
 
 func convertFluentBitRecord(input interface{}) (interface{}, error) {
@@ -2332,7 +2158,6 @@ func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int
 		msgPackEntries = append(msgPackEntries, msgPackEntry)
 	}
 
-	// msgPackEntries := getNetworkFlowLogsMsgPackEntries()
 	if len(msgPackEntries) > 0 {
 		// if IsAADMSIAuthMode == true && !IsGenevaLogsIntegrationEnabled {
 		// 	containerlogDataType := ContainerLogDataType
