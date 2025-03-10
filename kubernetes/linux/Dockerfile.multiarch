@@ -49,119 +49,119 @@ WORKDIR ${tmpdir}
 
 RUN chmod 775 $tmpdir/*.sh; sync; $tmpdir/setup.sh ${TARGETARCH}
 
-FROM ${MARINER_DISTROLESS_IMAGE} AS distroless_image
-LABEL maintainer="OMSContainers@microsoft.com"
-LABEL vendor=Microsoft\ Corp \
-    com.microsoft.product="Azure Monitor for containers"
-ENV tmpdir /opt
-ENV PATH="/busybin:${PATH}"
-ENV APPLICATIONINSIGHTS_AUTH NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi
-ENV MALLOC_ARENA_MAX 2
-ENV HOST_MOUNT_PREFIX /hostfs
-ENV HOST_PROC /hostfs/proc
-ENV HOST_SYS /hostfs/sys
-ENV HOST_ETC /hostfs/etc
-ENV HOST_VAR /hostfs/var
-ENV AZMON_COLLECT_ENV False
-ENV KUBE_CLIENT_BACKOFF_BASE 1
-ENV KUBE_CLIENT_BACKOFF_DURATION 0
-ENV RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR 0.9
+# FROM ${MARINER_DISTROLESS_IMAGE} AS distroless_image
+# LABEL maintainer="OMSContainers@microsoft.com"
+# LABEL vendor=Microsoft\ Corp \
+#     com.microsoft.product="Azure Monitor for containers"
+# ENV tmpdir /opt
+# ENV PATH="/busybin:${PATH}"
+# ENV APPLICATIONINSIGHTS_AUTH NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi
+# ENV MALLOC_ARENA_MAX 2
+# ENV HOST_MOUNT_PREFIX /hostfs
+# ENV HOST_PROC /hostfs/proc
+# ENV HOST_SYS /hostfs/sys
+# ENV HOST_ETC /hostfs/etc
+# ENV HOST_VAR /hostfs/var
+# ENV AZMON_COLLECT_ENV False
+# ENV KUBE_CLIENT_BACKOFF_BASE 1
+# ENV KUBE_CLIENT_BACKOFF_DURATION 0
+# ENV RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR 0.9
 
-# default value will be overwritten by pipeline
-ARG IMAGE_TAG=3.1.25
-ENV AGENT_VERSION ${IMAGE_TAG}
+# # default value will be overwritten by pipeline
+# ARG IMAGE_TAG=3.1.25
+# ENV AGENT_VERSION ${IMAGE_TAG}
 
-WORKDIR ${tmpdir}
+# WORKDIR ${tmpdir}
 
-# files
-COPY --from=builder /opt /opt
-COPY --from=builder /etc /etc
-COPY --from=builder /busybin /busybin
-COPY --from=builder /var/opt/microsoft /var/opt/microsoft
-COPY --from=builder /var/lib/logrotate /var/lib/logrotate
-COPY --from=builder /var/spool/cron /var/spool/cron
+# # files
+# COPY --from=builder /opt /opt
+# COPY --from=builder /etc /etc
+# COPY --from=builder /busybin /busybin
+# COPY --from=builder /var/opt/microsoft /var/opt/microsoft
+# COPY --from=builder /var/lib/logrotate /var/lib/logrotate
+# COPY --from=builder /var/spool/cron /var/spool/cron
 
-# executables
-COPY --from=builder /usr/bin/sh /usr/bin/sh
-COPY --from=builder /usr/bin/bash /usr/bin/bash
-COPY --from=builder /usr/bin/ruby /usr/bin/ruby
-COPY --from=builder /usr/lib/ruby /usr/lib/ruby
-COPY --from=builder /usr/bin/inotifywait /usr/bin/inotifywait
-COPY --from=builder /usr/sbin/busybox /usr/sbin/busybox
-COPY --from=builder /usr/bin/fluent-bit /usr/bin/fluent-bit
-COPY --from=builder /opt/telegraf /opt/telegraf
-COPY --from=builder /usr/sbin/crond /usr/sbin/crond
-COPY --from=builder /usr/sbin/mdsd /usr/sbin/mdsd
-COPY --from=builder /usr/sbin/logrotate /usr/sbin/logrotate
-COPY --from=builder /usr/sbin/setcap /usr/sbin/setcap
-COPY --from=builder /usr/bin/curl /usr/bin/curl
-COPY --from=builder /usr/bin/jq /usr/bin/jq
-COPY --from=builder /usr/bin/base64 /usr/bin/base64
-COPY --from=builder /usr/bin/fluentd /usr/bin/fluentd
-COPY --from=builder /usr/bin/update-ca-trust /usr/bin/update-ca-trust
-COPY --from=builder /usr/bin/p11-kit /usr/bin/p11-kit
-COPY --from=builder /usr/bin/trust /usr/bin/trust
-COPY --from=builder /usr/share/pki/ca-trust-source /usr/share/pki/ca-trust-source
-COPY --from=builder /usr/share/p11-kit/ /usr/share/p11-kit/
+# # executables
+# COPY --from=builder /usr/bin/sh /usr/bin/sh
+# COPY --from=builder /usr/bin/bash /usr/bin/bash
+# COPY --from=builder /usr/bin/ruby /usr/bin/ruby
+# COPY --from=builder /usr/lib/ruby /usr/lib/ruby
+# COPY --from=builder /usr/bin/inotifywait /usr/bin/inotifywait
+# COPY --from=builder /usr/sbin/busybox /usr/sbin/busybox
+# COPY --from=builder /usr/bin/fluent-bit /usr/bin/fluent-bit
+# COPY --from=builder /opt/telegraf /opt/telegraf
+# COPY --from=builder /usr/sbin/crond /usr/sbin/crond
+# COPY --from=builder /usr/sbin/mdsd /usr/sbin/mdsd
+# COPY --from=builder /usr/sbin/logrotate /usr/sbin/logrotate
+# COPY --from=builder /usr/sbin/setcap /usr/sbin/setcap
+# COPY --from=builder /usr/bin/curl /usr/bin/curl
+# COPY --from=builder /usr/bin/jq /usr/bin/jq
+# COPY --from=builder /usr/bin/base64 /usr/bin/base64
+# COPY --from=builder /usr/bin/fluentd /usr/bin/fluentd
+# COPY --from=builder /usr/bin/update-ca-trust /usr/bin/update-ca-trust
+# COPY --from=builder /usr/bin/p11-kit /usr/bin/p11-kit
+# COPY --from=builder /usr/bin/trust /usr/bin/trust
+# COPY --from=builder /usr/share/pki/ca-trust-source /usr/share/pki/ca-trust-source
+# COPY --from=builder /usr/share/p11-kit/ /usr/share/p11-kit/
 
-# bash dependencies 
-COPY --from=builder /usr/lib/libreadline.so.8  /usr/lib/libc.so.6 /usr/lib/libncursesw.so.6 /usr/lib/libtinfo.so.6 /usr/lib/
-# inotifywait dependencies 
-COPY --from=builder /usr/lib/libinotifytools.so.0 /usr/lib/libstdc++.so.6 /usr/lib/libgcc_s.so.1 /usr/lib/libc.so.6 /usr/lib/libm.so.6 /usr/lib/
-# crond dependencies 
-COPY --from=builder /usr/lib/libselinux.so.1 /usr/lib/libpam.so.0 /usr/lib/libc.so.6 /usr/lib/
-# ruby dependencies
-COPY --from=builder /usr/lib/libruby.so.3.1 /usr/lib/libz.so.1 /usr/lib/libm.so.6 /usr/lib/libc.so.6 /usr/lib/
-# fluent-bit dependencies
-# libssl.so.3 & libcrypto.so.3 are already available with openssl in distroless and copying them over causes FIPS HMAC verification failures
-COPY --from=builder /usr/lib/libluajit-5.1.so.2 /usr/lib/libyaml-0.so.2 /usr/lib/libsystemd.so.0 /usr/lib/libcurl.so.4 /usr/lib/libz.so.1 /usr/lib/libzstd.so.1 /usr/lib/libsasl2.so.3 /usr/lib/libm.so.6 /usr/lib/libgcc_s.so.1 /usr/lib/libc.so.6 /usr/lib/libcap.so.2 /usr/lib/liblz4.so.1 /usr/lib/liblzma.so.5 /usr/lib/libnghttp2.so.14 /usr/lib/libssh2.so.1 /usr/lib/libgssapi_krb5.so.2 /usr/lib/libresolv.so.2 /usr/lib/libkrb5.so.3 /usr/lib/libk5crypto.so.3 /usr/lib/libcom_err.so.2 /usr/lib/libkrb5support.so.0 /usr/lib/
-# telegraf dependencies
-COPY --from=builder /usr/lib/libresolv.so.2 /usr/lib/libc.so.6 /usr/lib/
-# mdsd dependencies
-COPY --from=builder /usr/sbin/../lib/libpthread.so.0 /usr/sbin/../lib/libdl.so.2 /usr/sbin/../lib/libsymcrypt.so.103 /usr/sbin/../lib/librt.so.1 /usr/sbin/../lib/libm.so.6 /usr/sbin/../lib/libc.so.6 /usr/sbin/../lib/libstdc++.so.6 /usr/sbin/../lib/libgcc_s.so.1 /usr/sbin/../lib/
-COPY --from=builder /opt/microsoft/azure-mdsd/lib/libtcmalloc_minimal.so.4 /opt/microsoft/azure-mdsd/lib/
-# logrotate dependencies 
-COPY --from=builder /usr/lib/libpopt.so.0 /usr/lib/libc.so.6 /usr/lib/
-# curl dependencies
-# libssl.so.1.1 & libcrypto.so.1.1 are already available with openssl in distroless and copying them over causes FIPS HMAC verification failures
-COPY --from=builder /usr/lib/libcurl.so.4 /usr/lib/libz.so.1 /usr/lib/libc.so.6 /usr/lib/libnghttp2.so.14 /usr/lib/libssh2.so.1 /usr/lib/libgssapi_krb5.so.2 /usr/lib/libzstd.so.1 /usr/lib/libkrb5.so.3 /usr/lib/libk5crypto.so.3 /usr/lib/libcom_err.so.2 /usr/lib/libkrb5support.so.0 /usr/lib/libresolv.so.2 /usr/lib/
-# jq dependencies
-COPY --from=builder /usr/lib/libjq.so.1 /usr/lib/libc.so.6 /usr/lib/libm.so.6 /usr/lib/libonig.so.5 /usr/lib/
-# update-ca-trust dependencies
-COPY --from=builder /lib/libp11-kit.so.0 /lib/libffi.so.8 /lib/libtasn1.so.6 /lib/
-COPY --from=builder /lib/pkcs11/p11-kit-trust.so /lib/pkcs11/
-RUN ln -s /lib/pkcs11/p11-kit-trust.so /lib/libnssckbi.so
-RUN ln -s /lib/libnssckbi.so /lib/p11-kit-trust.so
+# # bash dependencies 
+# COPY --from=builder /usr/lib/libreadline.so.8  /usr/lib/libc.so.6 /usr/lib/libncursesw.so.6 /usr/lib/libtinfo.so.6 /usr/lib/
+# # inotifywait dependencies 
+# COPY --from=builder /usr/lib/libinotifytools.so.0 /usr/lib/libstdc++.so.6 /usr/lib/libgcc_s.so.1 /usr/lib/libc.so.6 /usr/lib/libm.so.6 /usr/lib/
+# # crond dependencies 
+# COPY --from=builder /usr/lib/libselinux.so.1 /usr/lib/libpam.so.0 /usr/lib/libc.so.6 /usr/lib/
+# # ruby dependencies
+# COPY --from=builder /usr/lib/libruby.so.3.1 /usr/lib/libz.so.1 /usr/lib/libm.so.6 /usr/lib/libc.so.6 /usr/lib/
+# # fluent-bit dependencies
+# # libssl.so.3 & libcrypto.so.3 are already available with openssl in distroless and copying them over causes FIPS HMAC verification failures
+# COPY --from=builder /usr/lib/libluajit-5.1.so.2 /usr/lib/libyaml-0.so.2 /usr/lib/libsystemd.so.0 /usr/lib/libcurl.so.4 /usr/lib/libz.so.1 /usr/lib/libzstd.so.1 /usr/lib/libsasl2.so.3 /usr/lib/libm.so.6 /usr/lib/libgcc_s.so.1 /usr/lib/libc.so.6 /usr/lib/libcap.so.2 /usr/lib/liblz4.so.1 /usr/lib/liblzma.so.5 /usr/lib/libnghttp2.so.14 /usr/lib/libssh2.so.1 /usr/lib/libgssapi_krb5.so.2 /usr/lib/libresolv.so.2 /usr/lib/libkrb5.so.3 /usr/lib/libk5crypto.so.3 /usr/lib/libcom_err.so.2 /usr/lib/libkrb5support.so.0 /usr/lib/
+# # telegraf dependencies
+# COPY --from=builder /usr/lib/libresolv.so.2 /usr/lib/libc.so.6 /usr/lib/
+# # mdsd dependencies
+# COPY --from=builder /usr/sbin/../lib/libpthread.so.0 /usr/sbin/../lib/libdl.so.2 /usr/sbin/../lib/libsymcrypt.so.103 /usr/sbin/../lib/librt.so.1 /usr/sbin/../lib/libm.so.6 /usr/sbin/../lib/libc.so.6 /usr/sbin/../lib/libstdc++.so.6 /usr/sbin/../lib/libgcc_s.so.1 /usr/sbin/../lib/
+# COPY --from=builder /opt/microsoft/azure-mdsd/lib/libtcmalloc_minimal.so.4 /opt/microsoft/azure-mdsd/lib/
+# # logrotate dependencies 
+# COPY --from=builder /usr/lib/libpopt.so.0 /usr/lib/libc.so.6 /usr/lib/
+# # curl dependencies
+# # libssl.so.1.1 & libcrypto.so.1.1 are already available with openssl in distroless and copying them over causes FIPS HMAC verification failures
+# COPY --from=builder /usr/lib/libcurl.so.4 /usr/lib/libz.so.1 /usr/lib/libc.so.6 /usr/lib/libnghttp2.so.14 /usr/lib/libssh2.so.1 /usr/lib/libgssapi_krb5.so.2 /usr/lib/libzstd.so.1 /usr/lib/libkrb5.so.3 /usr/lib/libk5crypto.so.3 /usr/lib/libcom_err.so.2 /usr/lib/libkrb5support.so.0 /usr/lib/libresolv.so.2 /usr/lib/
+# # jq dependencies
+# COPY --from=builder /usr/lib/libjq.so.1 /usr/lib/libc.so.6 /usr/lib/libm.so.6 /usr/lib/libonig.so.5 /usr/lib/
+# # update-ca-trust dependencies
+# COPY --from=builder /lib/libp11-kit.so.0 /lib/libffi.so.8 /lib/libtasn1.so.6 /lib/
+# COPY --from=builder /lib/pkcs11/p11-kit-trust.so /lib/pkcs11/
+# RUN ln -s /lib/pkcs11/p11-kit-trust.so /lib/libnssckbi.so
+# RUN ln -s /lib/libnssckbi.so /lib/p11-kit-trust.so
 
-# Do vulnerability scan in a seperate stage to avoid adding layer
-FROM distroless_image AS vulnscan
-COPY .trivyignore .trivyignore
-RUN ["/bin/bash", "-c", "curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.39.0"]
+# # Do vulnerability scan in a seperate stage to avoid adding layer
+# FROM distroless_image AS vulnscan
+# COPY .trivyignore .trivyignore
+# RUN ["/bin/bash", "-c", "curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.39.0"]
 
-# Set up primary and secondary repository URLs
-ENV PRIMARY_TRIVY_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-db"
-ENV SECONDARY_TRIVY_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-db"
+# # Set up primary and secondary repository URLs
+# ENV PRIMARY_TRIVY_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-db"
+# ENV SECONDARY_TRIVY_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-db"
 
-# Download Trivy main database with a fallback mechanism
-RUN export TRIVY_DB_REPOSITORY=$PRIMARY_TRIVY_DB_REPOSITORY && \
-    trivy image --download-db-only || \
-    (echo "Primary TRIVY_DB_REPOSITORY failed, trying secondary." && \
-     export TRIVY_DB_REPOSITORY=$SECONDARY_TRIVY_DB_REPOSITORY && \
-     trivy image --download-db-only) || \
-    (echo "Both TRIVY_DB_REPOSITORY sources failed." && exit 1)
+# # Download Trivy main database with a fallback mechanism
+# RUN export TRIVY_DB_REPOSITORY=$PRIMARY_TRIVY_DB_REPOSITORY && \
+#     trivy image --download-db-only || \
+#     (echo "Primary TRIVY_DB_REPOSITORY failed, trying secondary." && \
+#      export TRIVY_DB_REPOSITORY=$SECONDARY_TRIVY_DB_REPOSITORY && \
+#      trivy image --download-db-only) || \
+#     (echo "Both TRIVY_DB_REPOSITORY sources failed." && exit 1)
 
-# Perform Trivy rootfs scan (only OS vulnerabilities, no Java scanning)
-RUN ["/bin/bash", "-c", "trivy rootfs --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --vuln-type os --scanners vuln --skip-files \"/usr/local/bin/trivy\" /"]
-RUN ["/bin/bash", "-c", "trivy rootfs --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --vuln-type os --scanners vuln /usr/lib"]
-RUN ["/bin/bash", "-c", "trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --vuln-type os --scanners vuln --skip-files \"/usr/local/bin/trivy\" / > /dev/null 2>&1 && trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --vuln-type os --scanners vuln /usr/lib > /dev/null 2>&1"]
+# # Perform Trivy rootfs scan (only OS vulnerabilities, no Java scanning)
+# RUN ["/bin/bash", "-c", "trivy rootfs --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --vuln-type os --scanners vuln --skip-files \"/usr/local/bin/trivy\" /"]
+# RUN ["/bin/bash", "-c", "trivy rootfs --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --vuln-type os --scanners vuln /usr/lib"]
+# RUN ["/bin/bash", "-c", "trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --vuln-type os --scanners vuln --skip-files \"/usr/local/bin/trivy\" / > /dev/null 2>&1 && trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --vuln-type os --scanners vuln /usr/lib > /dev/null 2>&1"]
 
-# Revert to base layer before vulnscan
-FROM distroless_image AS ContainerInsights
-# force the trivy stage to run
-# docker buildx (BUILDKIT) does not build stages which do not affect the final stage
-# by copying over a file we create a dependency
-# see: https://github.com/docker/build-push-action/issues/377
-COPY --from=vulnscan /usr/local/bin/trivy /usr/local/bin/trivy
-RUN ["/bin/bash", "-c", "rm -rf /usr/local/bin/trivy"]
+# # Revert to base layer before vulnscan
+# FROM distroless_image AS ContainerInsights
+# # force the trivy stage to run
+# # docker buildx (BUILDKIT) does not build stages which do not affect the final stage
+# # by copying over a file we create a dependency
+# # see: https://github.com/docker/build-push-action/issues/377
+# COPY --from=vulnscan /usr/local/bin/trivy /usr/local/bin/trivy
+# RUN ["/bin/bash", "-c", "rm -rf /usr/local/bin/trivy"]
 
 CMD [ "/opt/main.sh" ]
