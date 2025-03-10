@@ -17,7 +17,7 @@ tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readlin
 wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20230330.tar.gz -O ruby-build.tar.gz
 tar -xzf ruby-build.tar.gz
 PREFIX=/usr/local ./ruby-build-*/install.sh
-ruby-build 3.1.3 /usr
+ruby-build 3.3.3 /usr
 
 # clean up the ruby-build files
 rm ruby-build.tar.gz
@@ -81,7 +81,7 @@ docker_cimprov_version=$(sudo tdnf list installed | grep docker-cimprov | awk '{
 echo "DOCKER_CIMPROV_VERSION=$docker_cimprov_version" >> packages_version.txt
 
 #install fluent-bit
-sudo tdnf install fluent-bit -y
+sudo tdnf install fluent-bit-3.1.9 -y
 echo "$(fluent-bit --version)" >> packages_version.txt
 
 # install fluentd using the mariner package
