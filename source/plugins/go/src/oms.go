@@ -1914,37 +1914,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	return output.FLB_OK
 }
 
-type NetworkFlowLog struct {
-	TimeGenerated          string `json:"TimeGenerated"`
-	UUID                   string `json:"UUID"`
-	Verdict                string `json:"Verdict"`
-	DropReason             string `json:"DropReason"`
-	IP                     string `json:"IP"`     // interface
-	Layer4                 string `json:"Layer4"` // interface
-	SourceIdentity         int    `json:"SourceIdentity"`
-	SourceClusterName      string `json:"SourceClusterName"`
-	SourceNamespace        string `json:"SourceNamespace"`
-	SourcePodName          string `json:"SourcePodName"`
-	SourceWorkloads        string `json:"SourceWorkloads"` // interface
-	DestinationIdentity    int    `json:"DestinationIdentity"`
-	DestinationClusterName string `json:"DestinationClusterName"`
-	DestinationNamespace   string `json:"DestinationNamespace"`
-	DestinationPodName     string `json:"DestinationPodName"`
-	DestinationWorkloads   string `json:"DestinationWorkloads"` // interface
-	FlowType               string `json:"FlowType"`
-	NodeName               string `json:"NodeName"`
-	Layer7                 string `json:"Layer7"` // interface
-	Reply                  bool   `json:"Reply"`
-	EventType              string `json:"EventType"` // interface
-	Service                string `json:"Service"`   // interface
-	TrafficDirection       string `json:"TrafficDirection"`
-	TraceObservationPoint  string `json:"TraceObservationPoint"`
-	PacketsSent            int    `json:"PacketsSent"`
-	PacketsReceived        int    `json:"PacketsReceived"`
-	Policies               string `json:"Policies"` // interface
-	AdditionalFlowData     string `json:"AdditionalFlowData"`
-}
-
 func convertFluentBitRecord(input interface{}) (interface{}, error) {
 	switch v := input.(type) {
 	case map[interface{}]interface{}:
@@ -2177,17 +2146,14 @@ func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int
 	}
 
 	if len(networkFlowLogsMsgPackEntries) > 0 {
-		// if IsAADMSIAuthMode == true && !IsGenevaLogsIntegrationEnabled {
-		// 	containerlogDataType := ContainerLogDataType
-		// 	if ContainerLogSchemaV2 == true {
-		// 		containerlogDataType = ContainerLogV2DataType
-		// 	}
-		// 	MdsdContainerLogTagName = getOutputStreamIdTag(containerlogDataType, MdsdContainerLogTagName, &MdsdContainerLogTagRefreshTracker)
-		// 	if MdsdContainerLogTagName == "" {
-		// 		Log("Warn::mdsd::skipping Microsoft-ContainerLog or Microsoft-ContainerLogV2 or Microsoft-ContainerLogV2-HighScale stream since its opted out")
-		// 		return output.FLB_RETRY
-		// 	}
-		// }
+		if IsAADMSIAuthMode == true {
+			MdsdContainerLogTagName = getOutputStreamIdTag("RETINA_NETWORK_FLOW_LOGS", MdsdContainerLogTagName, &MdsdContainerLogTagRefreshTracker)
+			Log(fmt.Sprintf("Debug: NetworkFlowRecords MdsdContainerLogTagName: %+v", MdsdContainerLogTagName))
+			if MdsdContainerLogTagName == "" {
+				Log("Warn::mdsd::skipping RETINA_NETWORK_FLOW_LOGS stream since its opted out")
+				return output.FLB_RETRY
+			}
+		}
 		networkFlowLogsStreamTag := "dcr-92240d259af846b8941a7725ef5859de:ContainerInsightsExtension:gigl-dce-798ab40186414ef6b92e4b8e86e01fbe:RETINA_NETWORK_FLOW_LOGS"
 
 		if MdsdMsgpUnixSocketClient == nil {
