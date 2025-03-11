@@ -12,18 +12,18 @@ fi
 sudo tdnf install ca-certificates-microsoft -y
 sudo update-ca-trust
 
-# sudo tdnf install ruby-3.3.3 -y
+sudo tdnf install ruby-3.3.3 -y
 tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
 
-# it's not able to build the latest stable ver ruby-build has (v3.2.2)
-wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20250215.tar.gz -O ruby-build.tar.gz
-tar -xzf ruby-build.tar.gz
-PREFIX=/usr/local ./ruby-build-*/install.sh
-ruby-build 3.3.3 /usr
+# it's not able to build the latest stable ver ruby-build has (v3.3.3) & it doesn't offer an aarch64 ver
+# wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20250215.tar.gz -O ruby-build.tar.gz
+# tar -xzf ruby-build.tar.gz
+# PREFIX=/usr/local ./ruby-build-*/install.sh
+# ruby-build 3.3.3 /usr
 
-# clean up the ruby-build files
-rm ruby-build.tar.gz
-rm -rf ruby-build-*
+# # clean up the ruby-build files
+# rm ruby-build.tar.gz
+# rm -rf ruby-build-*
 
 # remove unused default gem openssl, find as they have some known vulns
 rm /usr/lib/ruby/gems/3.3.0/specifications/default/openssl-3.2.0.gemspec
