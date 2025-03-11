@@ -79,7 +79,7 @@ func FLBPluginFlush(data unsafe.Pointer, length C.int, tag *C.char) int {
 	case strings.Contains(incomingTag, "oms.container.oneagent.containerinsights"):
 		return PostInputPluginRecords(records)
 	case strings.Contains(incomingTag, "oms.networkflow"):
-		return PostNetworkflowRecords(records)
+		return PostNetworkFlowRecords(records)
 	default:
 		return PostDataHelper(records)
 	}

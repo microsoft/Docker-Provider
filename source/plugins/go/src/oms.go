@@ -349,6 +349,12 @@ type MsgPackEntry struct {
 	Record map[string]string `msg:"record"`
 }
 
+// NetworkFlowMsgPackEntry represents the object corresponding to a single messagepack event in the messagepack stream
+type NetworkFlowMsgPackEntry struct {
+	Time   int64                  `msg:"time"`
+	Record map[string]interface{} `msg:"record"`
+}
+
 // MsgPackForward represents a series of messagepack events in Forward Mode
 type MsgPackForward struct {
 	Tag     string         `msg:"tag"`
@@ -1986,81 +1992,86 @@ func serializeToJSON(v interface{}) string {
 	return string(bytes)
 }
 
-func safeNumericToString(value interface{}) string {
+func safeToInt(value interface{}) int {
 	switch v := value.(type) {
 	case float64:
-		return fmt.Sprintf("%.0f", v)
-	case uint64:
-		return strconv.FormatUint(v, 10)
+		return int(v)
 	case int:
-		return strconv.Itoa(v)
+		return v
 	case int64:
-		return strconv.FormatInt(v, 10)
+		return int(v)
+	case uint64:
+		return int(v)
+	case string:
+		if intVal, err := strconv.Atoi(v); err == nil {
+			return intVal
+		}
 	default:
-		return ""
+		Log(fmt.Sprintf("Error: safeToInt: unsupported type %T", value))
 	}
+	return 0
 }
 
-func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[string]interface{}) error {
+func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[string]interface{}) error {
 	flow, ok := record["flow"].(map[string]interface{})
 	if !ok {
 		return fmt.Errorf("'flow' field not found or is not a map")
 	}
 	// TimeGenerated
-	stringMap["TimeGenerated"] = extractString(flow, "time")
+	dataMap["TimeGenerated"] = extractString(flow, "time")
 	// UUID
 	if uuidVal := extractString(record, "UUID"); uuidVal != "" {
-		stringMap["UUID"] = uuidVal
+		dataMap["UUID"] = uuidVal
 	} else {
-		stringMap["UUID"] = uuid.New().String()
+		dataMap["UUID"] = uuid.New().String()
 	}
 	// Verdict and DropReason
-	stringMap["Verdict"] = extractString(flow, "verdict")
-	stringMap["DropReason"] = extractString(flow, "drop_reason_desc")
+	dataMap["Verdict"] = extractString(flow, "verdict")
+	dataMap["DropReason"] = extractString(flow, "drop_reason_desc")
 	// IP
 	if ip, ok := flow["IP"].(map[string]interface{}); ok {
-		stringMap["IP"] = serializeToJSON(ip)
+		dataMap["IP"] = serializeToJSON(ip)
 	}
 	// Layer4
 	if l4, ok := flow["l4"].(map[string]interface{}); ok {
-		stringMap["Layer4"] = serializeToJSON(l4)
+		dataMap["Layer4"] = serializeToJSON(l4)
 	}
 	// Source details
 	if source, ok := flow["source"].(map[string]interface{}); ok {
-		stringMap["SourceIdentity"] = safeNumericToString(source["identity"])
-		stringMap["SourceClusterName"] = extractString(source, "cluster_name")
-		stringMap["SourceNamespace"] = extractString(source, "namespace")
-		stringMap["SourcePodName"] = extractString(source, "pod_name")
+		dataMap["SourceIdentity"] = safeToInt(source["identity"])
+		dataMap["SourceClusterName"] = extractString(source, "cluster_name")
+		dataMap["SourceNamespace"] = extractString(source, "namespace")
+		dataMap["SourcePodName"] = extractString(source, "pod_name")
 		if workloads, ok := source["workloads"].([]interface{}); ok {
-			stringMap["SourceWorkloads"] = serializeToJSON(workloads)
+			dataMap["SourceWorkloads"] = serializeToJSON(workloads)
 		}
 	}
 
 	// Destination details
 	if dest, ok := flow["destination"].(map[string]interface{}); ok {
-		stringMap["DestinationIdentity"] = safeNumericToString(dest["identity"])
-		stringMap["DestinationClusterName"] = extractString(dest, "cluster_name")
-		stringMap["DestinationNamespace"] = extractString(dest, "namespace")
-		stringMap["DestinationPodName"] = extractString(dest, "pod_name")
+		dataMap["DestinationIdentity"] = safeToInt(dest["identity"])
+		dataMap["DestinationClusterName"] = extractString(dest, "cluster_name")
+		dataMap["DestinationNamespace"] = extractString(dest, "namespace")
+		dataMap["DestinationPodName"] = extractString(dest, "pod_name")
 		if workloads, ok := dest["workloads"].([]interface{}); ok {
-			stringMap["DestinationWorkloads"] = serializeToJSON(workloads)
+			dataMap["DestinationWorkloads"] = serializeToJSON(workloads)
 		}
 	}
 	// FlowType
-	stringMap["FlowType"] = extractString(flow, "Type")
+	dataMap["FlowType"] = extractString(flow, "Type")
 	// NodeName
-	stringMap["NodeName"] = extractString(flow, "node_name")
+	dataMap["NodeName"] = extractString(flow, "node_name")
 	// Layer7
 	if l7, ok := flow["l7"].(map[string]interface{}); ok {
-		stringMap["Layer7"] = serializeToJSON(l7)
+		dataMap["Layer7"] = serializeToJSON(l7)
 	}
 	// Reply
 	if isReply, ok := flow["is_reply"].(bool); ok {
-		stringMap["Reply"] = fmt.Sprintf("%t", isReply)
+		dataMap["Reply"] = isReply
 	}
 	// EventType
 	if eventType, ok := flow["event_type"].(map[string]interface{}); ok {
-		stringMap["EventType"] = serializeToJSON(eventType)
+		dataMap["EventType"] = serializeToJSON(eventType)
 	}
 	// Service
 	serviceData := map[string]interface{}{
@@ -2069,19 +2080,23 @@ func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[strin
 		"DestinationService":          extractString(flow, "destination_service.name"),
 		"DestinationServiceNamespace": extractString(flow, "destination_service.namespace"),
 	}
-	stringMap["Service"] = serializeToJSON(serviceData)
+	dataMap["Service"] = serializeToJSON(serviceData)
 	// TrafficDirection and TraceObservationPoint
-	stringMap["TrafficDirection"] = extractString(flow, "traffic_direction")
-	stringMap["TraceObservationPoint"] = extractString(flow, "trace_observation_point")
+	dataMap["TrafficDirection"] = extractString(flow, "traffic_direction")
+	dataMap["TraceObservationPoint"] = extractString(flow, "trace_observation_point")
 
 	// aggregation support needed
 	// // FlowState
-	// stringMap["FlowState"] = extractString(flow, "flow_state")
-	// // Packets and Bytes
-	// stringMap["PacketsSent"] = safeNumericToString(flow["packets_sent"])
-	// stringMap["PacketsReceived"] = safeNumericToString(flow["packets_received"])
-	// stringMap["BytesSent"] = safeNumericToString(flow["bytes_sent"])
-	// stringMap["BytesReceived"] = safeNumericToString(flow["bytes_received"])
+	// dataMap["FlowState"] = extractString(flow, "flow_state")
+	// Packets and Bytes
+	if packetsSent, ok := flow["packets_sent"]; ok {
+		dataMap["PacketsSent"] = safeToInt(packetsSent)
+	}
+	if packetsReceived, ok := flow["packets_received"]; ok {
+		dataMap["PacketsReceived"] = safeToInt(packetsReceived)
+	}
+	// dataMap["BytesSent"] = safeToInt(flow["bytes_sent"])
+	// dataMap["BytesReceived"] = safeToInt(flow["bytes_received"])
 
 	// Policies (combined from multiple fields)
 	policiesData := map[string]interface{}{
@@ -2090,7 +2105,7 @@ func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[strin
 		"egress_denied_by":   flow["egress_denied_by"],
 		"ingress_denied_by":  flow["ingress_denied_by"],
 	}
-	stringMap["Policies"] = serializeToJSON(policiesData)
+	dataMap["Policies"] = serializeToJSON(policiesData)
 	// AdditionalFlowData
 	additionalData := map[string]interface{}{
 		"EthernetSource":      extractString(flow, "ethernet.source"),
@@ -2100,7 +2115,7 @@ func mapNetworkFlowLogsToStringMap(stringMap map[string]string, record map[strin
 		"Summary":             flow["Summary"],
 		"Extensions":          flow["extensions"],
 	}
-	stringMap["AdditionalFlowData"] = serializeToJSON(additionalData)
+	dataMap["AdditionalFlowData"] = serializeToJSON(additionalData)
 	return nil
 }
 
@@ -2120,14 +2135,14 @@ func extractLabels(source interface{}) []string {
 	return nil
 }
 
-// PostNetworkflowRecords sends data to the mdsd and amacoreagent
-func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int {
-	Log(fmt.Sprintf("Debug: PostNetworkflowRecords starting"))
+// PostNetworkFlowRecords sends data to the mdsd and amacoreagent
+func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int {
+	Log(fmt.Sprintf("Debug: PostNetworkFlowRecords starting"))
 	start := time.Now()
 	var elapsed time.Duration
 
-	var stringMap map[string]string
-	var msgPackEntries []MsgPackEntry
+	var dataMap map[string]interface{}
+	var networkFlowLogsMsgPackEntries []NetworkFlowMsgPackEntry
 	numNetworkLogRecords := 0
 
 	for _, record := range tailPluginRecords {
@@ -2136,7 +2151,7 @@ func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int
 			Log(fmt.Sprintf("Error converting record: %v", err))
 			continue
 		}
-		Log(fmt.Sprintf("Debug: PostNetworkflowRecords real data: %+v", networkFlowLogRecordInterface))
+		Log(fmt.Sprintf("Debug: PostNetworkFlowRecords real data: %+v", networkFlowLogRecordInterface))
 
 		networkFlowLogRecord, ok := networkFlowLogRecordInterface.(map[string]interface{})
 		if !ok {
@@ -2144,21 +2159,23 @@ func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int
 			continue
 		}
 
-		stringMap = make(map[string]string)
-		if err := mapNetworkFlowLogsToStringMap(stringMap, networkFlowLogRecord); err != nil {
+		dataMap = make(map[string]interface{})
+		if err := mapNetworkFlowLogsToDataMap(dataMap, networkFlowLogRecord); err != nil {
 			Log(fmt.Sprintf("Error mapping record to string map: %v", err))
 			continue
 		}
-		Log(fmt.Sprintf("Debug: PostNetworkflowRecords stringMap data: %+v", stringMap))
+		Log(fmt.Sprintf("Debug: PostNetworkFlowRecords stringMap data: %+v", dataMap))
 
-		var msgPackEntry MsgPackEntry
-		msgPackEntry = MsgPackEntry{
-			Record: stringMap,
+		var networkFlowLogsMsgPackEntry NetworkFlowMsgPackEntry
+		networkFlowLogsMsgPackEntry = NetworkFlowMsgPackEntry{
+			//Time: start.Unix(),
+			Time:   time.Now().Unix(),
+			Record: dataMap,
 		}
-		msgPackEntries = append(msgPackEntries, msgPackEntry)
+		networkFlowLogsMsgPackEntries = append(networkFlowLogsMsgPackEntries, networkFlowLogsMsgPackEntry)
 	}
 
-	if len(msgPackEntries) > 0 {
+	if len(networkFlowLogsMsgPackEntries) > 0 {
 		// if IsAADMSIAuthMode == true && !IsGenevaLogsIntegrationEnabled {
 		// 	containerlogDataType := ContainerLogDataType
 		// 	if ContainerLogSchemaV2 == true {
@@ -2186,11 +2203,11 @@ func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int
 			}
 		}
 
-		bts, er := writeMsgPackEntries(MdsdMsgpUnixSocketClient, false, networkFlowLogsStreamTag, msgPackEntries)
+		bts, er := writeNetworkFlowMsgPackEntries(MdsdMsgpUnixSocketClient, networkFlowLogsStreamTag, networkFlowLogsMsgPackEntries)
 		elapsed = time.Since(start)
 
 		if er != nil {
-			Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(msgPackEntries), elapsed, er.Error())
+			Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(networkFlowLogsMsgPackEntries), elapsed, er.Error())
 			if MdsdMsgpUnixSocketClient != nil {
 				MdsdMsgpUnixSocketClient.Close()
 				MdsdMsgpUnixSocketClient = nil
@@ -2202,12 +2219,67 @@ func PostNetworkflowRecords(tailPluginRecords []map[interface{}]interface{}) int
 
 			return output.FLB_RETRY
 		} else {
-			numNetworkLogRecords = len(msgPackEntries)
-			Log(fmt.Sprintf("Debug: msgPackEntries sample data1: %+v", msgPackEntries[0]))
+			numNetworkLogRecords = len(networkFlowLogsMsgPackEntries)
+			Log(fmt.Sprintf("Debug: networkFlowLogsMsgPackEntries sample data1: %+v", networkFlowLogsMsgPackEntries[0]))
 			Log("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numNetworkLogRecords, bts, elapsed)
 		}
 	}
 	return output.FLB_OK
+}
+
+func writeNetworkFlowMsgPackEntries(connection net.Conn, fluentForwardTag string, networkFlowLogsMsgPackEntries []NetworkFlowMsgPackEntry) (totalBytes int, err error) {
+	var bts int
+	var er error
+	Log(fmt.Sprintf("Debug: retinaNetworkFlowlogs ingest with stream tag: %+v", fluentForwardTag))
+	msgpBytes := convertNetworkFlowMsgPackEntriesToMsgpBytes(fluentForwardTag, networkFlowLogsMsgPackEntries)
+	deadline := 10 * time.Second
+	connection.SetWriteDeadline(time.Now().Add(deadline))
+	bts, er = connection.Write(msgpBytes)
+	Log(fmt.Sprintf("Debug: retinaNetworkFlowlogs MsgPack bytes length: %d", len(msgpBytes)))
+	if er != nil {
+		return bts, er
+	}
+	return bts, er
+}
+
+func convertNetworkFlowMsgPackEntriesToMsgpBytes(fluentForwardTag string, msgPackEntries []NetworkFlowMsgPackEntry) []byte {
+	fluentForward := struct {
+		Tag     string                    `msg:"tag"`
+		Entries []NetworkFlowMsgPackEntry `msg:"entries"`
+	}{
+		Tag:     fluentForwardTag,
+		Entries: msgPackEntries,
+	}
+
+	var msgpBytes []byte
+	msgpBytes = append(msgpBytes, 0x92)
+	msgpBytes = msgp.AppendString(msgpBytes, fluentForward.Tag)
+	msgpBytes = msgp.AppendArrayHeader(msgpBytes, uint32(len(fluentForward.Entries)))
+
+	batchTime := time.Now().Unix()
+	for _, entry := range fluentForward.Entries {
+		msgpBytes = append(msgpBytes, 0x92)
+		msgpBytes = msgp.AppendInt64(msgpBytes, batchTime)
+
+		msgpBytes = msgp.AppendMapHeader(msgpBytes, uint32(len(entry.Record)))
+		for key, value := range entry.Record {
+			msgpBytes = msgp.AppendString(msgpBytes, key)
+
+			switch v := value.(type) {
+			case string:
+				msgpBytes = msgp.AppendString(msgpBytes, v)
+			case int:
+				msgpBytes = msgp.AppendInt64(msgpBytes, int64(v))
+			case bool:
+				msgpBytes = msgp.AppendBool(msgpBytes, v)
+			case float64:
+				msgpBytes = msgp.AppendFloat64(msgpBytes, v)
+			default:
+				msgpBytes = msgp.AppendString(msgpBytes, fmt.Sprintf("%v", v))
+			}
+		}
+	}
+	return msgpBytes
 }
 
 func containsKey(currentMap map[string]bool, key string) bool {
