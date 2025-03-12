@@ -57,28 +57,22 @@ if (!armIdMatches || armIdMatches.length != 6) {
 logger.startHeartbeats(operationId);
 
 // don't await, this runs an infinite loop
-K8sWatcher.StartWatchingCRs(crs, (cr: InstrumentationCR, isRemoved: boolean) => {
-    if (isRemoved) {
-        crs.Remove(cr);
-    } else {
-        crs.Upsert(cr);
-    }
-    
-    const items: InstrumentationCR[] = crs.ListCRs();
-    logger.setHeartbeatMetric(HeartbeatMetrics.CRCount, items.length);
-    
-    const uniqueNamespaces = new Set<string>(items.map(cr => cr.metadata.namespace, this));
-    logger.setHeartbeatMetric(HeartbeatMetrics.InstrumentedNamespaceCount, uniqueNamespaces.size);
+K8sWatcher.StartWatchingCRs(crs,
+    (cr: InstrumentationCR, isRemoved: boolean) => {
+        if (isRemoved) {
+            crs.Remove(cr);
+        } else {
+            crs.Upsert(cr);
+        }
 
-    let log = "CRs: [";
-    for (let i = 0; i < items.length; i++) {
-        log += `${items[i].metadata.namespace}/${items[i].metadata.name}, autoInstrumentationPlatforms=${items[i].spec.settings.autoInstrumentationPlatforms}, applicationInsightsConnectionString=${items[i].spec.destination.applicationInsightsConnectionString}}`;
-    }
+        logCRs(crs);
+    },
+    (crsToResetWith: InstrumentationCR[]) => {
+        crs.Reset(crsToResetWith);
 
-    log += "]"
-
-    logger.info(log, operationId, null);
-}, operationId);
+        logCRs(crs);
+    },
+    operationId);
 
 let options: https.ServerOptions;
 try {
@@ -154,3 +148,20 @@ https.createServer(options, (req, res) => {
 }).listen(port);
 
 logger.info(`Finished listening on port ${port}, exiting`, null, null);
+
+function logCRs(crs: InstrumentationCRsCollection) {
+    const items: InstrumentationCR[] = crs.ListCRs();
+    logger.setHeartbeatMetric(HeartbeatMetrics.CRCount, items.length);
+
+    const uniqueNamespaces = new Set<string>(items.map(cr => cr.metadata.namespace, this));
+    logger.setHeartbeatMetric(HeartbeatMetrics.InstrumentedNamespaceCount, uniqueNamespaces.size);
+
+    let log = "CRs: [";
+    for (let i = 0; i < items.length; i++) {
+        log += `${items[i].metadata.namespace}/${items[i].metadata.name}, autoInstrumentationPlatforms=${items[i].spec.settings.autoInstrumentationPlatforms}, applicationInsightsConnectionString=${items[i].spec.destination.applicationInsightsConnectionString}}`;
+    }
+
+    log += "]";
+
+    logger.info(log, operationId, null);
+}

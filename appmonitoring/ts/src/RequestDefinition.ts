@@ -198,11 +198,8 @@ export class InstrumentationCR {
 }
 
 export class ListResponse {
-    response: http.IncomingMessage;
-    body: {
-        metadata: {
-            resourceVersion: string
-        };
-        items: InstrumentationCR[]
-    }
+    metadata: {
+        resourceVersion: string
+    };
+    items: InstrumentationCR[]
 }

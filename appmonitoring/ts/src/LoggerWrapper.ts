@@ -3,6 +3,7 @@ import { PodInfo } from "./RequestDefinition.js";
 
 import log4js from "log4js";
 import { InstrumentationCRsCollection } from "./InstrumentationCRsCollection.js";
+import { watch } from "fs";
 
 const { configure, getLogger } = log4js;
 
@@ -46,22 +47,30 @@ class ClusterMetadata {
     private clusterArmId: string;
     private clusterArmRegion: string;
     private podName: string;
+    private imageTag: string;
 
-    public constructor(clusterArmId: string, clusterArmRegion: string, podName: string) {
+    public constructor(clusterArmId: string, clusterArmRegion: string, podName: string, imageTag: string) {
         this.clusterArmId = clusterArmId;
         this.clusterArmRegion = clusterArmRegion;
         this.podName = podName;
+        this.imageTag = imageTag;
     }
+}
+
+export enum Watchdogs {
+    SecondsSinceLastSuccessfulCRList = 0 // number of seconds elapsed since the last successful list CRs call
 }
 
 export enum HeartbeatMetrics {
     CRCount = 0, // number of CRs that the cluster has
     InstrumentedNamespaceCount, // number of namespaces in the cluster that have at least one CR
-    ApiServerCallCount, // number of API calls made
-    ApiServerCallErrorCount, // number of failed API calls
+    CRsListCallSucceededCount, // number of successful list CR calls
+    CRsListCallFailedCount, // number of failed list CR calls
+    CRsWatchCallSucceededCount, // number of successful watch CR calls
+    CRsWatchCallFailedCount, // number of failed watch CR calls
     AdmissionReviewCount, // number of admission reviews submitted to the webhook
     AdmissionReviewActionableCount, // number of admission reviews that had a relevant CR and lead to actual mutation
-    AdmissionReviewActionableFailedCount, // number of failed admission reviews that had a relevant CR and lead to actual mutation
+    AdmissionReviewFailedCount, // number of failed admission reviews
     CertificateOperationCount, // number of certificate operations performed
     CertificateOperationFailedCount, // number of failed certificated operations performed
     HostCertificateGenerationCount, // number of certificates generated
@@ -69,7 +78,7 @@ export enum HeartbeatMetrics {
     SecretStoreUpdatedCount, // number of times the secret store was updated
     SecretStoreUpdateFailedCount, // number of times the secret store update failed
     MutatingWebhookConfigurationUpdatedCount, // number of times the mutating webhook configuration was updated
-    MutatingWebhookConfigurationUpdateFailedCount, // number of times the mutating webhook configuration update failed
+    MutatingWebhookConfigurationUpdateFailedCount // number of times the mutating webhook configuration update failed
 }
 
 export enum HeartbeatLogs {
@@ -79,17 +88,17 @@ export enum HeartbeatLogs {
 }
 
 class HeartbeatAccumulator {
-    // metric name => value
-    public metrics : Map<HeartbeatMetrics, number> = new Map<HeartbeatMetrics, number>();
+    // metric name => (dim1 => value)
+    public metrics : Map<HeartbeatMetrics, Map<string, number>> = new Map<HeartbeatMetrics, Map<string, number>>();
 
     // log name => (log message => count)
     public logs : Map<HeartbeatLogs, Map<string, number>> = new Map<HeartbeatLogs, Map<string, number>>();
 }
 
 class LocalLogger {
-    public static Instance(clusterArmId: string, clusterArmRegion: string, podName: string) {
+    public static Instance(clusterArmId: string, clusterArmRegion: string, podName: string, imageTag: string) {
         if (!LocalLogger.instance) {
-            LocalLogger.instance = new LocalLogger(clusterArmId, clusterArmRegion, podName);
+            LocalLogger.instance = new LocalLogger(clusterArmId, clusterArmRegion, podName, imageTag);
         }
 
         return LocalLogger.instance;
@@ -115,13 +124,14 @@ class LocalLogger {
     private clusterMetadata: ClusterMetadata;
     
     private heartbeatAccumulator: HeartbeatAccumulator = new HeartbeatAccumulator();
+    private watchdogs: Map<Watchdogs, () => number> = new Map<Watchdogs, () => number>();
 
     private heartbeatRequestMetadata = new RequestMetadata(null, null);
 
-    private constructor(clusterArmId: string, clusterArmRegion: string, podName: string) {
+    private constructor(clusterArmId: string, clusterArmRegion: string, podName: string, imageTag: string) {
         this.client = new applicationInsights.TelemetryClient(this.getKey());
 
-        this.clusterMetadata = new ClusterMetadata(clusterArmId, clusterArmRegion, podName);
+        this.clusterMetadata = new ClusterMetadata(clusterArmId, clusterArmRegion, podName, imageTag);
     }
 
     public trace(message: string, operationId: string, requestMetadata: RequestMetadata) {
@@ -180,32 +190,41 @@ class LocalLogger {
         }
     }
 
-    public setHeartbeatMetric(metricName: HeartbeatMetrics, value: number): void {
-        if(!this.heartbeatAccumulator.metrics[metricName]) {
-            this.heartbeatAccumulator.metrics[metricName] = 0;
+    public setHeartbeatMetric(metricName: HeartbeatMetrics, value: number, dim1 = ""): void {
+        if(!this.heartbeatAccumulator.metrics.get(metricName)) {
+            this.heartbeatAccumulator.metrics.set(metricName, new Map<string, number>());
         }
 
-        this.heartbeatAccumulator.metrics[metricName] = value;
+        this.heartbeatAccumulator.metrics.get(metricName).set(dim1, value);
     }
 
-    public addHeartbeatMetric(metricName: HeartbeatMetrics, valueToAdd: number): void {
-        if(!this.heartbeatAccumulator.metrics[metricName]) {
-            this.heartbeatAccumulator.metrics[metricName] = 0;
+    public addHeartbeatMetric(metricName: HeartbeatMetrics, valueToAdd: number, dim1 = ""): void {
+        if(!this.heartbeatAccumulator.metrics.get(metricName)) {
+            this.heartbeatAccumulator.metrics.set(metricName, new Map<string, number>());
+            this.heartbeatAccumulator.metrics.get(metricName).set(dim1, 0);
         }
 
-        this.heartbeatAccumulator.metrics[metricName] += valueToAdd;
+        if(!this.heartbeatAccumulator.metrics.get(metricName).get(dim1)) {
+            this.heartbeatAccumulator.metrics.get(metricName).set(dim1, 0);
+        }
+
+        this.heartbeatAccumulator.metrics.get(metricName).set(dim1, this.heartbeatAccumulator.metrics.get(metricName).get(dim1) + valueToAdd);
     }
 
     public appendHeartbeatLog(logName: HeartbeatLogs, log: string) {
-        if(!this.heartbeatAccumulator.logs[logName]) {
-            this.heartbeatAccumulator.logs[logName] = new Map<HeartbeatLogs, Map<string, number>>();
+        if(!this.heartbeatAccumulator.logs.get(logName)) {
+            this.heartbeatAccumulator.logs.set(logName, new Map<string, number>());
         }
 
-        if(!this.heartbeatAccumulator.logs[logName][log]) {
-            this.heartbeatAccumulator.logs[logName][log] = 0;
+        if(!this.heartbeatAccumulator.logs.get(logName).get(log)) {
+            this.heartbeatAccumulator.logs.get(logName).set(log, 0);
         }
 
-        this.heartbeatAccumulator.logs[logName][log]++;
+        this.heartbeatAccumulator.logs.get(logName).set(log, this.heartbeatAccumulator.logs.get(logName).get(log) + 1);
+    }
+
+    public registerWatchdog(name: Watchdogs, onReport: () => number) {
+        this.watchdogs.set(name, onReport);
     }
 
     // periodically sends out accumulated heartbeat telemetry
@@ -235,31 +254,29 @@ class LocalLogger {
             this.client = new applicationInsights.TelemetryClient(this.getKey());
         }
 
-        for(const metricName in this.heartbeatAccumulator.metrics) {
-            const telemetryItem: applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry = {
-                name: HeartbeatMetrics[metricName],
-                time: new Date(),
-                value: Number(this.heartbeatAccumulator.metrics[metricName]),
-                count: 1,
-                properties: {
-                    clusterMetadata: this.clusterMetadata
-                }
-            };
+        for(const [metricName, metric] of this.heartbeatAccumulator.metrics) {
+            for(const [dim1, value] of metric) {
+                const telemetryItem: applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry = {
+                    name: HeartbeatMetrics[metricName],
+                    time: new Date(),
+                    value: Number(value),
+                    count: 1,
+                    properties: {
+                        dimension1: dim1,
+                        clusterMetadata: this.clusterMetadata
+                    }
+                };
 
-            this.client.trackMetric(telemetryItem);
-            //this.client.flush();
+                this.client.trackMetric(telemetryItem);
+                //this.client.flush();
+            }
         }
 
         this.heartbeatAccumulator.metrics.clear();
 
-        for(const logName in this.heartbeatAccumulator.logs) {
-            const logArray = Object.keys(this.heartbeatAccumulator.logs[logName]).map((key) => {
-                return {
-                  message: key,
-                  count: this.heartbeatAccumulator.logs[logName][key]
-                }
-              });
-
+        for(const [logName, logMap] of this.heartbeatAccumulator.logs) {
+            const logArray = Array.from(logMap, ([key, value]) => ({ message: key, count: value }));
+            
             logArray.sort((one, two) => (one.count > two.count ? -1 : 1));
 
             // send top N logs by count of this type
@@ -283,6 +300,21 @@ class LocalLogger {
         }
 
         this.heartbeatAccumulator.logs.clear();
+
+        for(const [watchdog, onReport] of this.watchdogs) {
+            const telemetryItem: applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry = {
+                name: Watchdogs[watchdog],
+                time: new Date(),
+                value: onReport(),
+                count: 1,
+                properties: {
+                    clusterMetadata: this.clusterMetadata
+                }
+            };
+
+            this.client.trackMetric(telemetryItem);
+            //this.client.flush();
+        }
     }
 
     public SendEvent(eventName: string, operationId: string, uid: string, clusterArmId: string, clusterArmRegion: string, flush = false, ...args: unknown[]) {
@@ -327,4 +359,4 @@ class LocalLogger {
     }
 }
 
-export const logger = LocalLogger.Instance(process.env.ARM_ID, process.env.ARM_REGION, process.env.POD_NAME);
+export const logger = LocalLogger.Instance(process.env.ARM_ID, process.env.ARM_REGION, process.env.POD_NAME, process.env.IMAGE_TAG);

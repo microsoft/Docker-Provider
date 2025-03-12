@@ -3,6 +3,9 @@
 # https://eng.ms/docs/products/mariner-linux/gettingstarted/containers/marinercontainerimage
 FROM mcr.microsoft.com/cbl-mariner/base/nodejs:18
 
+ARG IMAGE_TAG
+ENV IMAGE_TAG=$IMAGE_TAG
+
 RUN tdnf upgrade -y && tdnf clean all
 
 # Smoke test ensuring that NodeJS was installed.

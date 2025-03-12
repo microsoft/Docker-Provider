@@ -1,5 +1,5 @@
 ﻿import { expect, describe, it } from "@jest/globals";
-import { logger, HeartbeatMetrics, HeartbeatLogs } from "../LoggerWrapper.js";
+import { logger, HeartbeatMetrics, HeartbeatLogs, Watchdogs } from "../LoggerWrapper.js";
 import * as applicationInsights from "applicationinsights";
 
 beforeEach(() => {
@@ -76,5 +76,68 @@ describe("Heartbeats", () => {
         expect(metricsSent[1].name).toBe(HeartbeatMetrics[HeartbeatMetrics.InstrumentedNamespaceCount]);
         expect(metricsSent[1].value).toBe(1);
         expect(metricsSent[1].count).toBe(1);
+    });
+
+    it("Sends metrics with dimensions", async () => {
+        logger.addHeartbeatMetric(HeartbeatMetrics.CRsListCallFailedCount, 2, "405");
+        logger.addHeartbeatMetric(HeartbeatMetrics.CRsListCallFailedCount, 3, "405");
+
+        logger.addHeartbeatMetric(HeartbeatMetrics.CRsListCallFailedCount, 3, "407");
+        logger.addHeartbeatMetric(HeartbeatMetrics.CRsListCallFailedCount, 4, "407");
+
+        logger.addHeartbeatMetric(HeartbeatMetrics.CRsWatchCallFailedCount, 2, "403");
+        logger.setHeartbeatMetric(HeartbeatMetrics.CRsWatchCallFailedCount, 3, "403");
+        
+        const metricsSent = <applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry[]>[];
+
+        jest.spyOn(applicationInsights.TelemetryClient.prototype, "trackMetric").mockImplementation((telemetry: applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry) => {
+            metricsSent.push(telemetry);
+        });
+
+        await logger.startHeartbeats(null);
+        
+        expect(metricsSent.length).toBe(3);
+
+        expect(metricsSent[0].name).toBe(HeartbeatMetrics[HeartbeatMetrics.CRsListCallFailedCount]);
+        expect((<applicationInsights.Contracts.Telemetry>metricsSent[0]).properties["dimension1"]).toBe("405");
+        expect(metricsSent[0].value).toBe(5);
+        expect(metricsSent[0].count).toBe(1);
+
+        expect(metricsSent[1].name).toBe(HeartbeatMetrics[HeartbeatMetrics.CRsListCallFailedCount]);
+        expect((<applicationInsights.Contracts.Telemetry>metricsSent[1]).properties["dimension1"]).toBe("407");
+        expect(metricsSent[1].value).toBe(7);
+        expect(metricsSent[1].count).toBe(1);
+
+        expect(metricsSent[2].name).toBe(HeartbeatMetrics[HeartbeatMetrics.CRsWatchCallFailedCount]);
+        expect((<applicationInsights.Contracts.Telemetry>metricsSent[2]).properties["dimension1"]).toBe("403");
+        expect(metricsSent[2].value).toBe(3);
+        expect(metricsSent[2].count).toBe(1);
+    });
+
+    it("Sends watchgdogs", async () => {
+        let watchdogReport = 1024.3;
+
+        logger.registerWatchdog(Watchdogs.SecondsSinceLastSuccessfulCRList, () => watchdogReport);
+        
+        const metricsSent = <applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry[]>[];
+        
+        jest.spyOn(applicationInsights.TelemetryClient.prototype, "trackMetric").mockImplementation((telemetry: applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry) => {
+            metricsSent.push(telemetry);
+        });
+
+        await logger.startHeartbeats(null);
+
+        watchdogReport = 1025.2;
+        await logger.startHeartbeats(null);
+        
+        expect(metricsSent.length).toBe(2);
+
+        expect(metricsSent[0].name).toBe(Watchdogs[Watchdogs.SecondsSinceLastSuccessfulCRList]);
+        expect(metricsSent[0].value).toBe(1024.3);
+        expect(metricsSent[0].count).toBe(1);
+        
+        expect(metricsSent[1].name).toBe(Watchdogs[Watchdogs.SecondsSinceLastSuccessfulCRList]);
+        expect(metricsSent[1].value).toBe(1025.2);
+        expect(metricsSent[1].count).toBe(1);    
     });
 });
