@@ -117,6 +117,7 @@ func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int
 		}
 	}
 
+	//TODO Telemetry
 	// NetworkFlowTelemetryMutex.Lock()
 	// defer NetworkFlowTelemetryMutex.Unlock()
 
