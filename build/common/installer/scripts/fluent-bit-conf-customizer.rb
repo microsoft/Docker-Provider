@@ -84,6 +84,13 @@ def substituteResourceOptimization(resourceOptimizationEnabled, new_contents)
   return new_contents
 end
 
+def substituteNetworkFlowLogs(networkFlowLogsEnabled, new_contents)
+  if !networkFlowLogsEnabled.nil? && networkFlowLogsEnabled.to_s.downcase == "true"
+    new_contents = new_contents.gsub("#${NetworkFlowLogsEnabled}", "")
+  end
+  return new_contents
+end
+
 def substituteHighLogScaleConfig(enableFbitThreading, storageType, storageMaxChunksUp, new_contents)
   begin
       if is_high_log_scale_mode? || (!enableFbitThreading.nil? && !enableFbitThreading.empty? && enableFbitThreading.to_s.downcase == "true" )
@@ -131,6 +138,7 @@ def substituteFluentBitPlaceHolders
     multilineLogging = ENV["AZMON_MULTILINE_ENABLED"]
     stacktraceLanguages = ENV["AZMON_MULTILINE_LANGUAGES"]
     resourceOptimizationEnabled = ENV["AZMON_RESOURCE_OPTIMIZATION_ENABLED"]
+    networkFlowLogsEnabled = ENV["AZMON_RETINA_FLOW_LOGS_ENABLED"]
     enableCustomMetrics = ENV["ENABLE_CUSTOM_METRICS"]
     windowsFluentBitEnabled = ENV["AZMON_WINDOWS_FLUENT_BIT_ENABLED"]
     kubernetesMetadataCollection = ENV["AZMON_KUBERNETES_METADATA_ENABLED"]
@@ -208,6 +216,7 @@ def substituteFluentBitPlaceHolders
     text = File.read(@fluent_bit_common_conf_path)
     text = substituteStorageTotalLimitSize(text)
     new_contents = substituteMultiline(multilineLogging, stacktraceLanguages, text)
+    new_contents = substituteNetworkFlowLogs(networkFlowLogsEnabled, new_contents)
     File.open(@fluent_bit_common_conf_path, "w") { |file| file.puts new_contents }
     puts "config::Successfully substituted the placeholders in fluent-bit-common.conf file"
 

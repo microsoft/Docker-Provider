@@ -2397,6 +2397,9 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		fmt.Fprintf(os.Stdout, "Container logs schema=%s... \n", ContainerLogV2SchemaVersion)
 	}
 
+	IsNetworkFlowLogsEnabled = false
+	IsNetworkFlowLogsEnabled = (strings.Compare(strings.ToLower(os.Getenv("AZMON_NETWORK_FLOW_LOGS_ENABLED")), "true") == 0)
+
 	MdsdInsightsMetricsTagName = MdsdInsightsMetricsSourceName
 	MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName
 	MdsdKubeMonAgentEventsTagRefreshTracker = time.Now()

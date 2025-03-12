@@ -27,6 +27,7 @@ class CAdvisorMetricsAPIClient
   @clusterContainerLogEnrich = ENV["AZMON_CLUSTER_CONTAINER_LOG_ENRICH"]
   @clusterContainerLogSchemaVersion = ENV["AZMON_CONTAINER_LOG_SCHEMA_VERSION"]
   @clusterMultilineEnabled = ENV["AZMON_MULTILINE_ENABLED"]
+  @clusterNetworkFlowLogsEnabled = ENV["AZMON_RETINA_FLOW_LOGS_ENABLED"]
   @clusterMultilineLanguages = ENV["AZMON_MULTILINE_LANGUAGES"]
   @clusterKubernetesMetadataEnabled = ENV["AZMON_KUBERNETES_METADATA_ENABLED"]
   @clusterKubernetesMetadataIncludeFields = ENV["AZMON_KUBERNETES_METADATA_INCLUDES_FIELDS"]
@@ -312,6 +313,9 @@ class CAdvisorMetricsAPIClient
                       if (!@clusterMultilineLanguages.nil? && !@clusterMultilineLanguages.empty?)
                         telemetryProps["multilineLanguages"] = @clusterMultilineLanguages
                       end
+                    end
+                    if (!clusterNetworkFlowLogsEnabled.nil? && !@clusterNetworkFlowLogsEnabled.empty?)
+                      telemetryProps["networkFlowLogsEnabled"] = @clusterNetworkFlowLogsEnabled
                     end
                     if (!@clusterKubernetesMetadataEnabled.nil? && !@clusterKubernetesMetadataEnabled.empty?)
                       telemetryProps["metadataEnabled"] = @clusterKubernetesMetadataEnabled

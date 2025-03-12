@@ -19,6 +19,8 @@ const RetinaNetworkFlowLogsStreamName = "RETINA_NETWORK_FLOW_LOGS"
 var (
 	// retina networkflow logs stream tag name
 	MdsdNetworkFlowLogsStreamTagName string
+	// flag to check whether the network flow logs are enabled
+	IsNetworkFlowLogsEnabled bool
 )
 
 var (
@@ -36,99 +38,101 @@ type NetworkFlowMsgPackEntry struct {
 
 // PostNetworkFlowRecords sends data to the mdsd and amacoreagent
 func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int {
-	Log(fmt.Sprintf("Debug: PostNetworkFlowRecords starting"))
-	start := time.Now()
-	var elapsed time.Duration
+	if IsNetworkFlowLogsEnabled {
+		Log(fmt.Sprintf("Debug: PostNetworkFlowRecords starting"))
+		start := time.Now()
+		var elapsed time.Duration
 
-	var dataMap map[string]interface{}
-	var networkFlowLogsMsgPackEntries []NetworkFlowMsgPackEntry
-	numNetworkLogRecords := 0
+		var dataMap map[string]interface{}
+		var networkFlowLogsMsgPackEntries []NetworkFlowMsgPackEntry
+		numNetworkLogRecords := 0
 
-	for _, record := range tailPluginRecords {
-		networkFlowLogRecordInterface, err := convertFluentBitRecord(record)
-		if err != nil {
-			Log(fmt.Sprintf("Error converting record: %v", err))
-			continue
-		}
-		Log(fmt.Sprintf("Debug: PostNetworkFlowRecords real data: %+v", networkFlowLogRecordInterface))
-
-		networkFlowLogRecord, ok := networkFlowLogRecordInterface.(map[string]interface{})
-		if !ok {
-			Log("Error: networkFlowLogRecord is not of type map[string]interface{}")
-			continue
-		}
-
-		dataMap = make(map[string]interface{})
-		if err := mapNetworkFlowLogsToDataMap(dataMap, networkFlowLogRecord); err != nil {
-			Log(fmt.Sprintf("Error mapping record to string map: %v", err))
-			continue
-		}
-		Log(fmt.Sprintf("Debug: PostNetworkFlowRecords stringMap data: %+v", dataMap))
-
-		var networkFlowLogsMsgPackEntry NetworkFlowMsgPackEntry
-		networkFlowLogsMsgPackEntry = NetworkFlowMsgPackEntry{
-			Time:   time.Now().Unix(),
-			Record: dataMap,
-		}
-		networkFlowLogsMsgPackEntries = append(networkFlowLogsMsgPackEntries, networkFlowLogsMsgPackEntry)
-	}
-
-	if len(networkFlowLogsMsgPackEntries) > 0 {
-		if IsAADMSIAuthMode == true {
-			MdsdNetworkFlowLogsStreamTagName = getOutputStreamIdTag(RetinaNetworkFlowLogsStreamName, MdsdNetworkFlowLogsStreamTagName, &NetworkFlowTagRefreshTracker)
-			Log(fmt.Sprintf("Debug: NetworkFlowRecords MdsdNetworkFlowLogsStreamTagName: %+v", MdsdNetworkFlowLogsStreamTagName))
-			if MdsdNetworkFlowLogsStreamTagName == "" {
-				Log("Warn::mdsd::skipping RETINA_NETWORK_FLOW_LOGS stream since its opted out")
-				return output.FLB_RETRY
+		for _, record := range tailPluginRecords {
+			networkFlowLogRecordInterface, err := convertFluentBitRecord(record)
+			if err != nil {
+				Log(fmt.Sprintf("Error converting record: %v", err))
+				continue
 			}
+			Log(fmt.Sprintf("Debug: PostNetworkFlowRecords real data: %+v", networkFlowLogRecordInterface))
+
+			networkFlowLogRecord, ok := networkFlowLogRecordInterface.(map[string]interface{})
+			if !ok {
+				Log("Error: networkFlowLogRecord is not of type map[string]interface{}")
+				continue
+			}
+
+			dataMap = make(map[string]interface{})
+			if err := mapNetworkFlowLogsToDataMap(dataMap, networkFlowLogRecord); err != nil {
+				Log(fmt.Sprintf("Error mapping record to string map: %v", err))
+				continue
+			}
+			Log(fmt.Sprintf("Debug: PostNetworkFlowRecords stringMap data: %+v", dataMap))
+
+			var networkFlowLogsMsgPackEntry NetworkFlowMsgPackEntry
+			networkFlowLogsMsgPackEntry = NetworkFlowMsgPackEntry{
+				Time:   time.Now().Unix(),
+				Record: dataMap,
+			}
+			networkFlowLogsMsgPackEntries = append(networkFlowLogsMsgPackEntries, networkFlowLogsMsgPackEntry)
 		}
-		if MdsdNetworkFlowClient == nil {
-			Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
-			CreateMDSDClient(NetworkFlowLogs, ContainerType)
+
+		if len(networkFlowLogsMsgPackEntries) > 0 {
+			if IsAADMSIAuthMode == true {
+				MdsdNetworkFlowLogsStreamTagName = getOutputStreamIdTag(RetinaNetworkFlowLogsStreamName, MdsdNetworkFlowLogsStreamTagName, &NetworkFlowTagRefreshTracker)
+				Log(fmt.Sprintf("Debug: NetworkFlowRecords MdsdNetworkFlowLogsStreamTagName: %+v", MdsdNetworkFlowLogsStreamTagName))
+				if MdsdNetworkFlowLogsStreamTagName == "" {
+					Log("Warn::mdsd::skipping RETINA_NETWORK_FLOW_LOGS stream since its opted out")
+					return output.FLB_RETRY
+				}
+			}
 			if MdsdNetworkFlowClient == nil {
-				Log("Error::mdsd::Unable to create mdsd client. Please check error log.")
+				Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
+				CreateMDSDClient(NetworkFlowLogs, ContainerType)
+				if MdsdNetworkFlowClient == nil {
+					Log("Error::mdsd::Unable to create mdsd client. Please check error log.")
+					NetworkFlowTelemetryMutex.Lock()
+					defer NetworkFlowTelemetryMutex.Unlock()
+					NetworkFlowLogsMDSDClientCreateErrors += 1
+
+					return output.FLB_RETRY
+				}
+			}
+
+			bts, er := writeNetworkFlowMsgPackEntries(MdsdNetworkFlowClient, MdsdNetworkFlowLogsStreamTagName, networkFlowLogsMsgPackEntries)
+			elapsed = time.Since(start)
+
+			if er != nil {
+				Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(networkFlowLogsMsgPackEntries), elapsed, er.Error())
+				if MdsdNetworkFlowClient != nil {
+					MdsdNetworkFlowClient.Close()
+					MdsdNetworkFlowClient = nil
+				}
+
 				NetworkFlowTelemetryMutex.Lock()
 				defer NetworkFlowTelemetryMutex.Unlock()
 				NetworkFlowLogsMDSDClientCreateErrors += 1
 
 				return output.FLB_RETRY
+			} else {
+				numNetworkLogRecords = len(networkFlowLogsMsgPackEntries)
+				Log(fmt.Sprintf("Debug: networkFlowLogsMsgPackEntries sample data1: %+v", networkFlowLogsMsgPackEntries[0]))
+				Log("Success::mdsd::Successfully flushed %d networkflow log records that was %d bytes to mdsd in %s ", numNetworkLogRecords, bts, elapsed)
 			}
 		}
 
-		bts, er := writeNetworkFlowMsgPackEntries(MdsdNetworkFlowClient, MdsdNetworkFlowLogsStreamTagName, networkFlowLogsMsgPackEntries)
-		elapsed = time.Since(start)
+		//TODO Telemetry
+		// NetworkFlowTelemetryMutex.Lock()
+		// defer NetworkFlowTelemetryMutex.Unlock()
 
-		if er != nil {
-			Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(networkFlowLogsMsgPackEntries), elapsed, er.Error())
-			if MdsdNetworkFlowClient != nil {
-				MdsdNetworkFlowClient.Close()
-				MdsdNetworkFlowClient = nil
-			}
+		// if numNetworkLogRecords > 0 {
+		// 	FlushedRecordsCount += float64(numNetworkLogRecords)
+		// 	FlushedRecordsTimeTaken += float64(elapsed / time.Millisecond)
 
-			NetworkFlowTelemetryMutex.Lock()
-			defer NetworkFlowTelemetryMutex.Unlock()
-			NetworkFlowLogsMDSDClientCreateErrors += 1
-
-			return output.FLB_RETRY
-		} else {
-			numNetworkLogRecords = len(networkFlowLogsMsgPackEntries)
-			Log(fmt.Sprintf("Debug: networkFlowLogsMsgPackEntries sample data1: %+v", networkFlowLogsMsgPackEntries[0]))
-			Log("Success::mdsd::Successfully flushed %d networkflow log records that was %d bytes to mdsd in %s ", numNetworkLogRecords, bts, elapsed)
-		}
+		// 	if maxLatency >= AgentLogProcessingMaxLatencyMs {
+		// 		AgentLogProcessingMaxLatencyMs = maxLatency
+		// 	}
+		// }
 	}
-
-	//TODO Telemetry
-	// NetworkFlowTelemetryMutex.Lock()
-	// defer NetworkFlowTelemetryMutex.Unlock()
-
-	// if numNetworkLogRecords > 0 {
-	// 	FlushedRecordsCount += float64(numNetworkLogRecords)
-	// 	FlushedRecordsTimeTaken += float64(elapsed / time.Millisecond)
-
-	// 	if maxLatency >= AgentLogProcessingMaxLatencyMs {
-	// 		AgentLogProcessingMaxLatencyMs = maxLatency
-	// 	}
-	// }
 	return output.FLB_OK
 }
 

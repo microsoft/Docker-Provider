@@ -1074,6 +1074,9 @@ func getContainerCpuMetricItems(metricInfo map[string]interface{}, hostName, met
 						if len(os.Getenv("AZMON_RESOURCE_OPTIMIZATION_ENABLED")) > 0 {
 							telemetryProps["resoureceOptimizationEnabled"] = os.Getenv("AZMON_RESOURCE_OPTIMIZATION_ENABLED")
 						}
+						if len(os.Getenv("AZMON_RETINA_FLOW_LOGS_ENABLED")) > 0 {
+							telemetryProps["networkFlowLogsEnabled"] = os.Getenv("AZMON_RETINA_FLOW_LOGS_ENABLED")
+						}
 						if len(os.Getenv("AZMON_KUBERNETES_METADATA_ENABLED")) > 0 {
 							telemetryProps["metadataEnabled"] = os.Getenv("AZMON_KUBERNETES_METADATA_ENABLED")
 						}
