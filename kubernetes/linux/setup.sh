@@ -15,16 +15,6 @@ sudo update-ca-trust
 sudo tdnf install ruby-3.3.3 -y
 tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
 
-# it's not able to build the latest stable ver ruby-build has (v3.3.3) & it doesn't offer an aarch64 ver
-# wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20250215.tar.gz -O ruby-build.tar.gz
-# tar -xzf ruby-build.tar.gz
-# PREFIX=/usr/local ./ruby-build-*/install.sh
-# ruby-build 3.3.3 /usr
-
-# # clean up the ruby-build files
-# rm ruby-build.tar.gz
-# rm -rf ruby-build-*
-
 # remove unused default gem openssl, find as they have some known vulns
 rm /usr/lib/ruby/gems/3.3.0/specifications/default/openssl-3.2.0.gemspec
 rm -rf /usr/lib/ruby/gems/3.3.0/gems/openssl-3.2.0
@@ -38,25 +28,13 @@ gem update time --default
 gem update uri --default
 gem update stringio --default
 
-# packages don't exist in ruby 3.3.3
-# gem update rexml --default
-# gem update webrick --default
-
 mv /usr/lib/ruby/gems/3.3.0/specifications/default/time-0.3.0.gemspec /usr/lib/ruby/gems/3.3.0/specifications/default/..
 mv /usr/lib/ruby/gems/3.3.0/specifications/default/uri-0.13.0.gemspec /usr/lib/ruby/gems/3.3.0/specifications/default/..
 mv /usr/lib/ruby/gems/3.3.0/specifications/default/stringio-3.1.1.gemspec /usr/lib/ruby/gems/3.3.0/specifications/default/..
 
-# files doesn't exist anymore in 3.3.3
-# mv /usr/lib/ruby/gems/3.3.0/specifications/default/rexml-3.2.5.gemspec /usr/lib/ruby/gems/3.1.0/specifications/default/..
-# mv /usr/lib/ruby/gems/3.3.0/specifications/webrick-1.8.1.gemspec /usr/lib/ruby/gems/3.1.0/specifications/..
-
 gem uninstall time --version 0.3.0
 gem uninstall uri --version 0.13.0
 gem uninstall stringio --version 3.1.1
-
-# packages not found in ruby 3.3.3
-# gem uninstall rexml --version 3.2.5
-# gem uninstall webrick --version 1.8.1
 
 sudo tdnf install -y azure-mdsd-1.33.3
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
