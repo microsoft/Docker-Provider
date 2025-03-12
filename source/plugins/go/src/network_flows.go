@@ -15,20 +15,6 @@ import (
 // Stream name for retina networkflow logs
 const RetinaNetworkFlowLogsStreamName = "RETINA_NETWORK_FLOW_LOGS"
 
-var (
-	// PluginConfiguration the plugins configuration
-	// PluginConfiguration map[string]string
-)
-
-var (
-	// ImageIDMap caches the container id to image mapping
-	//ImageIDMap map[string]string
-	// NameIDMap caches the container it to Name mapping
-	//NameIDMap map[string]string
-	// StdoutIgnoreNamespaceSet set of  excluded K8S namespaces for stdout logs
-	//StdoutIgnoreNsSet map[string]bool
-)
-
 // NetworkFlowMsgPackEntry represents the object corresponding to a single messagepack event in the messagepack stream
 type NetworkFlowMsgPackEntry struct {
 	Time   int64                  `msg:"time"`
@@ -295,7 +281,6 @@ func safeToInt(value interface{}) int {
 	return 0
 }
 
-// Helper function to extract labels
 func extractLabels(source interface{}) []string {
 	if src, ok := source.(map[string]interface{}); ok {
 		if labels, ok := src["labels"].([]interface{}); ok {
