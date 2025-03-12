@@ -1903,14 +1903,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			AgentLogProcessingMaxLatencyMsContainer = maxLatencyContainer
 		}
 	}
-
-	// networkFlowLogsStreamTag := "dcr-92240d259af846b8941a7725ef5859de:ContainerInsightsExtension:gigl-dce-798ab40186414ef6b92e4b8e86e01fbe:RETINA_NETWORK_FLOW_LOGS"
-	// networkFlowLogsMsgPackEntries := getNetworkFlowLogsMsgPackEntries()
-	// for i, entry := range networkFlowLogsMsgPackEntries {
-	// 	Log(fmt.Sprintf("Debug: retinaNetworkFlowlogs sample data[%d]: %+v", i, entry))
-	// }
-	// writeMsgPackEntries(MdsdMsgpUnixSocketClient, false, networkFlowLogsStreamTag, networkFlowLogsMsgPackEntries)
-
 	return output.FLB_OK
 }
 
@@ -2016,7 +2008,6 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 			dataMap["SourceWorkloads"] = serializeToJSON(workloads)
 		}
 	}
-
 	// Destination details
 	if dest, ok := flow["destination"].(map[string]interface{}); ok {
 		dataMap["DestinationIdentity"] = safeToInt(dest["identity"])
@@ -2154,8 +2145,6 @@ func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int
 				return output.FLB_RETRY
 			}
 		}
-		networkFlowLogsStreamTag := "dcr-92240d259af846b8941a7725ef5859de:ContainerInsightsExtension:gigl-dce-798ab40186414ef6b92e4b8e86e01fbe:RETINA_NETWORK_FLOW_LOGS"
-
 		if MdsdMsgpUnixSocketClient == nil {
 			Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
 			CreateMDSDClient(ContainerLogV2, ContainerType)
@@ -2170,7 +2159,7 @@ func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int
 			}
 		}
 
-		bts, er := writeNetworkFlowMsgPackEntries(MdsdMsgpUnixSocketClient, networkFlowLogsStreamTag, networkFlowLogsMsgPackEntries)
+		bts, er := writeNetworkFlowMsgPackEntries(MdsdMsgpUnixSocketClient, MdsdContainerLogTagName, networkFlowLogsMsgPackEntries)
 		elapsed = time.Since(start)
 
 		if er != nil {
