@@ -397,6 +397,7 @@ type DataType int
 const (
 	// DataType to be used as enum per data type socket client creation
 	ContainerLogV2 DataType = iota
+	NetworkFlowLogs
 	KubeMonAgentEvents
 	InsightsMetrics
 	InputPluginRecords
@@ -2401,6 +2402,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	MdsdKubeMonAgentEventsTagRefreshTracker = time.Now()
 	MdsdInsightsMetricsTagRefreshTracker = time.Now()
 	MdsdContainerLogTagRefreshTracker = time.Now()
+	NetworkFlowTagRefreshTracker = time.Now()
 
 	if ContainerLogsRouteV2 == true {
 		if IsWindows {

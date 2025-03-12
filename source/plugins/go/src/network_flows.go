@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"sync"
 	"time"
 	"strconv"
 	"encoding/json"
@@ -14,6 +15,18 @@ import (
 
 // Stream name for retina networkflow logs
 const RetinaNetworkFlowLogsStreamName = "RETINA_NETWORK_FLOW_LOGS"
+
+var (
+	// retina networkflow logs stream tag name
+	MdsdNetworkFlowLogsStreamTagName string
+)
+
+var (
+    NetworkFlowTelemetryMutex = &sync.Mutex{}
+    NetworkFlowLogsMDSDClientCreateErrors float64
+    MdsdNetworkFlowClient net.Conn
+    NetworkFlowTagRefreshTracker time.Time
+)
 
 // NetworkFlowMsgPackEntry represents the object corresponding to a single messagepack event in the messagepack stream
 type NetworkFlowMsgPackEntry struct {
@@ -62,48 +75,59 @@ func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int
 
 	if len(networkFlowLogsMsgPackEntries) > 0 {
 		if IsAADMSIAuthMode == true {
-			MdsdContainerLogTagName = getOutputStreamIdTag(RetinaNetworkFlowLogsStreamName, MdsdContainerLogTagName, &MdsdContainerLogTagRefreshTracker)
-			Log(fmt.Sprintf("Debug: NetworkFlowRecords MdsdContainerLogTagName: %+v", MdsdContainerLogTagName))
-			if MdsdContainerLogTagName == "" {
+			MdsdNetworkFlowLogsStreamTagName = getOutputStreamIdTag(RetinaNetworkFlowLogsStreamName, MdsdNetworkFlowLogsStreamTagName, &NetworkFlowTagRefreshTracker)
+			Log(fmt.Sprintf("Debug: NetworkFlowRecords MdsdNetworkFlowLogsStreamTagName: %+v", MdsdNetworkFlowLogsStreamTagName))
+			if MdsdNetworkFlowLogsStreamTagName == "" {
 				Log("Warn::mdsd::skipping RETINA_NETWORK_FLOW_LOGS stream since its opted out")
 				return output.FLB_RETRY
 			}
 		}
-		if MdsdMsgpUnixSocketClient == nil {
+		if MdsdNetworkFlowClient == nil {
 			Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
-			CreateMDSDClient(ContainerLogV2, ContainerType)
-			if MdsdMsgpUnixSocketClient == nil {
+			CreateMDSDClient(NetworkFlowLogs, ContainerType)
+			if MdsdNetworkFlowClient == nil {
 				Log("Error::mdsd::Unable to create mdsd client. Please check error log.")
-
-				ContainerLogTelemetryMutex.Lock()
-				defer ContainerLogTelemetryMutex.Unlock()
-				ContainerLogsMDSDClientCreateErrors += 1
+				NetworkFlowTelemetryMutex.Lock()
+				defer NetworkFlowTelemetryMutex.Unlock()
+				NetworkFlowLogsMDSDClientCreateErrors += 1
 
 				return output.FLB_RETRY
 			}
 		}
 
-		bts, er := writeNetworkFlowMsgPackEntries(MdsdMsgpUnixSocketClient, MdsdContainerLogTagName, networkFlowLogsMsgPackEntries)
+		bts, er := writeNetworkFlowMsgPackEntries(MdsdNetworkFlowClient, MdsdNetworkFlowLogsStreamTagName, networkFlowLogsMsgPackEntries)
 		elapsed = time.Since(start)
 
 		if er != nil {
 			Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(networkFlowLogsMsgPackEntries), elapsed, er.Error())
-			if MdsdMsgpUnixSocketClient != nil {
-				MdsdMsgpUnixSocketClient.Close()
-				MdsdMsgpUnixSocketClient = nil
+			if MdsdNetworkFlowClient != nil {
+				MdsdNetworkFlowClient.Close()
+				MdsdNetworkFlowClient = nil
 			}
 
-			ContainerLogTelemetryMutex.Lock()
-			defer ContainerLogTelemetryMutex.Unlock()
-			ContainerLogsSendErrorsToMDSDFromFluent += 1
+			NetworkFlowTelemetryMutex.Lock()
+			defer NetworkFlowTelemetryMutex.Unlock()
+			NetworkFlowLogsMDSDClientCreateErrors += 1
 
 			return output.FLB_RETRY
 		} else {
 			numNetworkLogRecords = len(networkFlowLogsMsgPackEntries)
 			Log(fmt.Sprintf("Debug: networkFlowLogsMsgPackEntries sample data1: %+v", networkFlowLogsMsgPackEntries[0]))
-			Log("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numNetworkLogRecords, bts, elapsed)
+			Log("Success::mdsd::Successfully flushed %d networkflow log records that was %d bytes to mdsd in %s ", numNetworkLogRecords, bts, elapsed)
 		}
 	}
+
+	// NetworkFlowTelemetryMutex.Lock()
+	// defer NetworkFlowTelemetryMutex.Unlock()
+
+	// if numNetworkLogRecords > 0 {
+	// 	FlushedRecordsCount += float64(numNetworkLogRecords)
+	// 	FlushedRecordsTimeTaken += float64(elapsed / time.Millisecond)
+
+	// 	if maxLatency >= AgentLogProcessingMaxLatencyMs {
+	// 		AgentLogProcessingMaxLatencyMs = maxLatency
+	// 	}
+	// }
 	return output.FLB_OK
 }
 
