@@ -2398,7 +2398,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	}
 
 	IsNetworkFlowLogsEnabled = false
-	IsNetworkFlowLogsEnabled = (strings.Compare(strings.ToLower(os.Getenv("AZMON_NETWORK_FLOW_LOGS_ENABLED")), "true") == 0)
+	IsNetworkFlowLogsEnabled = (strings.Compare(strings.ToLower(os.Getenv("AZMON_RETINA_FLOW_LOGS_ENABLED")), "true") == 0)
 
 	MdsdInsightsMetricsTagName = MdsdInsightsMetricsSourceName
 	MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName
