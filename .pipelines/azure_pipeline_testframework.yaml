@@ -4,20 +4,13 @@
 # https://aka.ms/yaml
 #
 
-trigger:
-  batch: true
-  branches:
-    include:
-    - ci_prod
-
-pr:
-  branches:
-    include:
-    - ci_prod
+trigger: none
+pr: none
 
 jobs:
 - deployment: Testkube
   environment: container-insights
+  timeoutInMinutes: 120
   displayName: "Test: run testkube tests"
   pool:
     name: Azure-Pipelines-CI-Test-EO
@@ -34,7 +27,7 @@ jobs:
             wget -qO - https://repo.testkube.io/key.pub | sudo apt-key add -
             echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sources.list
             sudo apt-get update
-            sudo apt-get install -y testkube=1.14.2
+            sudo apt-get install -y testkube
           workingDirectory: $(Build.SourcesDirectory)
           displayName: "Install testkube CLI"
 
@@ -46,9 +39,17 @@ jobs:
             inlineScript: 'az aks get-credentials -g $(RESOURCE_GROUP) -n $(CLUSTER_NAME)'
           
         - bash: |
-            envsubst < ./testkube/testkube-test-crs.yaml > ./testkube/testkube-test-crs-$(CLUSTER_NAME).yaml
+            # Install TestKube
+            helm repo add kubeshop https://kubeshop.github.io/helm-charts
+            helm repo update
+            helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./testkube/helm-testkube-values.yaml
+
+            # Install TestKube CRs
+            export WEBHOOK_URI=$(WEBHOOK_URI)
+            envsubst < ./testkube/testkube-teams-integration.yaml > ./testkube/testkube-teams-integration-$(CLUSTER_NAME).yaml
+            kubectl apply -f ./testkube/testkube-teams-integration-$(CLUSTER_NAME).yaml
             kubectl apply -f ./testkube/api-server-permissions.yaml
-            kubectl apply -f ./testkube/testkube-test-crs-$(CLUSTER_NAME).yaml
+            kubectl apply -f ./testkube/testkube-test-crs.yaml
             exit 0
           workingDirectory: $(Build.SourcesDirectory)/test/
           displayName: "Apply TestKube CRs and pod/service monitors"

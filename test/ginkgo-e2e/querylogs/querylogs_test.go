@@ -16,7 +16,7 @@ var _ = Describe("When querying the logs for the table", func() {
 			err = utils.QueryLogsForCount(LogsClient, AKSResourceId, query, false)
 			// If ContainerLogV2 is configured, query ContainerLogV2 table instead of ContainerLog
 			if err != nil && strings.Contains(table, "ContainerLog") {
-				query := table + "ContainerLogV2 | where TimeGenerated > ago(15m) | summarize count()"
+				query := "ContainerLogV2 | where TimeGenerated > ago(15m) | summarize count()"
 				err = utils.QueryLogsForCount(LogsClient, AKSResourceId, query, false)
 			}
 			Expect(err).NotTo(HaveOccurred())
