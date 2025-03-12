@@ -50,24 +50,19 @@ func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int
 		for _, record := range tailPluginRecords {
 			networkFlowLogRecordInterface, err := convertFluentBitRecord(record)
 			if err != nil {
-				Log(fmt.Sprintf("Error converting record: %v", err))
+				Log("Error::networkflow:: failed to convert fluent-bit record: %v", err.Error())
 				continue
 			}
-			Log(fmt.Sprintf("Debug: PostNetworkFlowRecords real data: %+v", networkFlowLogRecordInterface))
-
 			networkFlowLogRecord, ok := networkFlowLogRecordInterface.(map[string]interface{})
 			if !ok {
-				Log("Error: networkFlowLogRecord is not of type map[string]interface{}")
+				Log("Error::networkflow:: failed to convert networkflow record to map[string]interface{}: %v", networkFlowLogRecordInterface)
 				continue
 			}
-
 			dataMap = make(map[string]interface{})
 			if err := mapNetworkFlowLogsToDataMap(dataMap, networkFlowLogRecord); err != nil {
-				Log(fmt.Sprintf("Error mapping record to string map: %v", err))
+				Log("Error::networkflow:: failed to map networkflow logs to data map: %v", err.Error())
 				continue
 			}
-			Log(fmt.Sprintf("Debug: PostNetworkFlowRecords stringMap data: %+v", dataMap))
-
 			var networkFlowLogsMsgPackEntry NetworkFlowMsgPackEntry
 			networkFlowLogsMsgPackEntry = NetworkFlowMsgPackEntry{
 				Time:   time.Now().Unix(),
@@ -79,17 +74,16 @@ func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int
 		if len(networkFlowLogsMsgPackEntries) > 0 {
 			if IsAADMSIAuthMode == true {
 				MdsdNetworkFlowLogsStreamTagName = getOutputStreamIdTag(RetinaNetworkFlowLogsStreamName, MdsdNetworkFlowLogsStreamTagName, &NetworkFlowTagRefreshTracker)
-				Log(fmt.Sprintf("Debug: NetworkFlowRecords MdsdNetworkFlowLogsStreamTagName: %+v", MdsdNetworkFlowLogsStreamTagName))
 				if MdsdNetworkFlowLogsStreamTagName == "" {
-					Log("Warn::mdsd::skipping RETINA_NETWORK_FLOW_LOGS stream since its opted out")
+					Log("Error::mdsd::Failed to get stream tag for networkflow logs. Will retry ...")
 					return output.FLB_RETRY
 				}
 			}
 			if MdsdNetworkFlowClient == nil {
-				Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
+				Log("Error::mdsd::mdsd connection does not exist for networkflow mdsd client. re-connecting ...")
 				CreateMDSDClient(NetworkFlowLogs, ContainerType)
 				if MdsdNetworkFlowClient == nil {
-					Log("Error::mdsd::Unable to create mdsd client. Please check error log.")
+					Log("Error::mdsd::Unable to create mdsd client for networkflow. Please check error log.")
 					NetworkFlowTelemetryMutex.Lock()
 					defer NetworkFlowTelemetryMutex.Unlock()
 					NetworkFlowLogsMDSDClientCreateErrors += 1
@@ -102,7 +96,7 @@ func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int
 			elapsed = time.Since(start)
 
 			if er != nil {
-				Log("Error::mdsd::Failed to write to mdsd %d records after %s. Will retry ... error : %s", len(networkFlowLogsMsgPackEntries), elapsed, er.Error())
+				Log("Error::mdsd::Failed to write to mdsd %d records for networkflow logs after %s. Will retry ... error : %s", len(networkFlowLogsMsgPackEntries), elapsed, er.Error())
 				if MdsdNetworkFlowClient != nil {
 					MdsdNetworkFlowClient.Close()
 					MdsdNetworkFlowClient = nil
@@ -115,7 +109,6 @@ func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int
 				return output.FLB_RETRY
 			} else {
 				numNetworkLogRecords = len(networkFlowLogsMsgPackEntries)
-				Log(fmt.Sprintf("Debug: networkFlowLogsMsgPackEntries sample data1: %+v", networkFlowLogsMsgPackEntries[0]))
 				Log("Success::mdsd::Successfully flushed %d networkflow log records that was %d bytes to mdsd in %s ", numNetworkLogRecords, bts, elapsed)
 			}
 		}
@@ -328,13 +321,12 @@ func extractLabels(source interface{}) []string {
 func writeNetworkFlowMsgPackEntries(connection net.Conn, fluentForwardTag string, networkFlowLogsMsgPackEntries []NetworkFlowMsgPackEntry) (totalBytes int, err error) {
 	var bts int
 	var er error
-	Log(fmt.Sprintf("Debug: retinaNetworkFlowlogs ingest with stream tag: %+v", fluentForwardTag))
 	msgpBytes := convertNetworkFlowMsgPackEntriesToMsgpBytes(fluentForwardTag, networkFlowLogsMsgPackEntries)
 	deadline := 10 * time.Second
 	connection.SetWriteDeadline(time.Now().Add(deadline))
 	bts, er = connection.Write(msgpBytes)
-	Log(fmt.Sprintf("Debug: retinaNetworkFlowlogs MsgPack bytes length: %d", len(msgpBytes)))
 	if er != nil {
+		Log("Error::mdsd::Failed to write to mdsd %d bytes for networkflow logs. Error : %s", bts, er.Error())
 		return bts, er
 	}
 	return bts, er
