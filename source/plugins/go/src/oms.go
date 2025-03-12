@@ -1806,7 +1806,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				return output.FLB_RETRY
 			} else {
 				numContainerLogRecords = len(msgPackEntries)
-				Log(fmt.Sprintf("Debug: msgPackEntries sample data1: %+v", msgPackEntries[0]))
 				Log("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numContainerLogRecords, bts, elapsed)
 			}
 		}
@@ -2020,12 +2019,10 @@ func writeMsgPackEntries(connection net.Conn, isContainerLogV2Schema bool, fluen
 			}
 		}
 	} else {
-		Log(fmt.Sprintf("Debug: retinaNetworkFlowlogs ingest with stream tag: %+v", fluentForwardTag))
 		msgpBytes := convertMsgPackEntriesToMsgpBytes(fluentForwardTag, msgPackEntries)
 		deadline := 10 * time.Second
 		connection.SetWriteDeadline(time.Now().Add(deadline))
 		bts, er = connection.Write(msgpBytes)
-		Log(fmt.Sprintf("Debug: retinaNetworkFlowlogs MsgPack bytes length: %d", len(msgpBytes)))
 		if er != nil {
 			return bts, er
 		}

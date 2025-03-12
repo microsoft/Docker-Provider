@@ -12,8 +12,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// DataType for Container Log
-// const ContainerLogDataType = "CONTAINER_LOG_BLOB"
+// Stream name for retina networkflow logs
+const RetinaNetworkFlowLogsStreamName = "RETINA_NETWORK_FLOW_LOGS"
 
 var (
 	// PluginConfiguration the plugins configuration
@@ -68,7 +68,6 @@ func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int
 
 		var networkFlowLogsMsgPackEntry NetworkFlowMsgPackEntry
 		networkFlowLogsMsgPackEntry = NetworkFlowMsgPackEntry{
-			//Time: start.Unix(),
 			Time:   time.Now().Unix(),
 			Record: dataMap,
 		}
@@ -77,7 +76,7 @@ func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int
 
 	if len(networkFlowLogsMsgPackEntries) > 0 {
 		if IsAADMSIAuthMode == true {
-			MdsdContainerLogTagName = getOutputStreamIdTag("RETINA_NETWORK_FLOW_LOGS", MdsdContainerLogTagName, &MdsdContainerLogTagRefreshTracker)
+			MdsdContainerLogTagName = getOutputStreamIdTag(RetinaNetworkFlowLogsStreamName, MdsdContainerLogTagName, &MdsdContainerLogTagRefreshTracker)
 			Log(fmt.Sprintf("Debug: NetworkFlowRecords MdsdContainerLogTagName: %+v", MdsdContainerLogTagName))
 			if MdsdContainerLogTagName == "" {
 				Log("Warn::mdsd::skipping RETINA_NETWORK_FLOW_LOGS stream since its opted out")
