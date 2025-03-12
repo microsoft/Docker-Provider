@@ -5,18 +5,25 @@ import (
 	. "github.com/onsi/gomega"
 
 	"docker-provider/test/utils"
+	"strings"
 )
 
 var _ = Describe("When querying the logs for the table", func() {
 	DescribeTable("All tables should have logs",
 		func(table string) {
+			var err error
 			query := table + " | where TimeGenerated > ago(15m) | summarize count()"
-			err := utils.QueryLogsForCount(LogsClient, AKSResourceId, query, false)
+			err = utils.QueryLogsForCount(LogsClient, AKSResourceId, query, false)
+			// If ContainerLogV2 is configured, query ContainerLogV2 table instead of ContainerLog
+			if err != nil && strings.Contains(table, "ContainerLog") {
+				query := table + "ContainerLogV2 | where TimeGenerated > ago(15m) | summarize count()"
+				err = utils.QueryLogsForCount(LogsClient, AKSResourceId, query, false)
+			}
 			Expect(err).NotTo(HaveOccurred())
 		},
-		// Check how to chose containerlog table
+		Entry("Perf", "Perf"),
+		Entry("InsightsMetrics", "InsightsMetrics"),
 		Entry("ContainerLog", "ContainerLog"),
-		Entry("ContainerLogV2", "ContainerLogV2"),
 		Entry("ContainerInventory", "ContainerInventory"),
 		Entry("ContainerNodeInventory", "ContainerNodeInventory"),
 		Entry("KubeNodeInventory", "KubeNodeInventory"),
