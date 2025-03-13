@@ -190,7 +190,7 @@ def substituteFluentBitPlaceHolders
     end
 
     new_contents = substituteHighLogScaleConfig(enableFbitThreading, storageType,  storageMaxChunksUp, new_contents)
-
+    new_contents = substituteNetworkFlowLogs(networkFlowLogsEnabled, new_contents)
     if !kubernetesMetadataCollection.nil? && kubernetesMetadataCollection.to_s.downcase == "true"
       new_contents = new_contents.gsub("#${KubernetesFilterEnabled}", "")
     end
@@ -216,7 +216,6 @@ def substituteFluentBitPlaceHolders
     text = File.read(@fluent_bit_common_conf_path)
     text = substituteStorageTotalLimitSize(text)
     new_contents = substituteMultiline(multilineLogging, stacktraceLanguages, text)
-    new_contents = substituteNetworkFlowLogs(networkFlowLogsEnabled, new_contents)
     File.open(@fluent_bit_common_conf_path, "w") { |file| file.puts new_contents }
     puts "config::Successfully substituted the placeholders in fluent-bit-common.conf file"
 
