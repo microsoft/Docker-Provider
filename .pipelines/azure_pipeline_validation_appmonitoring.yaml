@@ -82,16 +82,13 @@ jobs:
         echo "Installing NPM..."
         sudo apt-get -y install npm
 
-        echo "Installing Node..."
-        sudo apt-get -y install -y nodejs
-
         echo "Switching the directory..."
         cd appmonitoring/ts/src
         pwd
         ls -a
         
         echo "Installing npm packages..."
-        sudo npm ci
+        npm ci
 
         #echo "Updating packages..."
         #npm update
