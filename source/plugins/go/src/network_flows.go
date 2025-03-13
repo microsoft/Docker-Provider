@@ -164,6 +164,12 @@ func convertFluentBitRecord(input interface{}) (interface{}, error) {
 }
 
 func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[string]interface{}) error {
+	defer func() {
+		if r := recover(); r != nil {
+			Log("Error::networkflow:: panic in mapNetworkFlowLogsToDataMap: %v", r)
+		}
+	}()
+
 	flow, ok := record["flow"].(map[string]interface{})
 	if !ok {
 		return fmt.Errorf("'flow' field not found or is not a map")
