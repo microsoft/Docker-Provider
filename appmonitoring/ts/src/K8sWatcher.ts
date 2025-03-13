@@ -33,10 +33,10 @@ export class K8sWatcher {
 
                 if(K8sWatcher.IsExpectedIntermittentException(e)) {
                     // e contains the max resourceVersion value that will help avoid this outcome in the future, but it's embedded into an error message
-                    // we don't want to be in the business of parsing implementation-dependent natural language error messages, so we just reset resourceVersion to null
+                    // we don't want to be in the business of parsing implementation-dependent natural language error messages, so we just reset resourceVersion
                     latestResourceVersion = null;
                 } else {
-                    // not an expected exception
+                    // not an expected exception, we leave latestResourceVersion as-is
                 }
                 
                 // pause for a bit to avoid generating too much load in case of cascading failures
@@ -79,7 +79,7 @@ export class K8sWatcher {
         
         // watch() doesn't block (it starts the loop and returns immediately), so we can't just return the promise it returns to our caller
         // we must instead create our own promise and resolve it manually when the watch informs us that it stopped via a callback
-        const watchIsDonePromise: Promise<string> = new Promise(resolveWatchPromise => {
+        const watchIsDonePromise: Promise<string> = new Promise((resolve, reject) => {
             try {
                 // /api/v1/namespaces
                 // /apis/monitor.azure.com/v1/namespaces/default/instrumentations
@@ -120,19 +120,21 @@ export class K8sWatcher {
                             // this indicates an issue with the watch encountered once the stream is opened
                             // we want to handle it in the same way as an exception (which is triggered during opening of the stream)
                             logger.error(`Watch error: ${err}`, operationId, requestMetadata);
+                            logger.addHeartbeatMetric(HeartbeatMetrics.CRsWatchCallFailedCount, 1, err.errno ?? 0);
+                            logger.appendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, JSON.stringify(err));
 
-                            throw err;
+                            reject(err);
                         }
 
                         logger.addHeartbeatMetric(HeartbeatMetrics.CRsWatchCallSucceededCount, 1, "200");
 
-                        resolveWatchPromise(latestResourceVersion);
+                        resolve(latestResourceVersion);
                     });
             } catch (e) {
                 logger.addHeartbeatMetric(HeartbeatMetrics.CRsWatchCallFailedCount, 1, e?.statusCode ?? 0);
                 logger.appendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, JSON.stringify(logger.sanitizeException(e)));
                 
-                throw e;
+                reject(e);
             }
         });
 
