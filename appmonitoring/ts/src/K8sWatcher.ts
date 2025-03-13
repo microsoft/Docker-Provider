@@ -58,6 +58,8 @@ export class K8sWatcher {
                 plural: K8sWatcher.crdNamePlural,
                 resourceVersion: latestResourceVersion ?? undefined
             });
+
+            logger.addHeartbeatMetric(HeartbeatMetrics.CRsListCallSucceededCount, 1, "200");
         } catch(e) {
             logger.addHeartbeatMetric(HeartbeatMetrics.CRsListCallFailedCount, 1, e?.statusCode ?? 0);
             logger.appendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, JSON.stringify(logger.sanitizeException(e)));
@@ -66,8 +68,6 @@ export class K8sWatcher {
         }
 
         K8sWatcher.lastSuccessfulListTimestamp = new Date();
-
-        logger.addHeartbeatMetric(HeartbeatMetrics.CRsListCallSucceededCount, 1, "200");
 
         logger.info(`CRs listed, resourceVersion=${crsResult.metadata.resourceVersion}`, operationId, requestMetadata);
 
@@ -124,6 +124,8 @@ export class K8sWatcher {
                             logger.appendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, JSON.stringify(err));
 
                             reject(err);
+
+                            return;
                         }
 
                         logger.addHeartbeatMetric(HeartbeatMetrics.CRsWatchCallSucceededCount, 1, "200");
