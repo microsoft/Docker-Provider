@@ -87,7 +87,7 @@ export class K8sWatcher {
                     {
                         allowWatchBookmarks: true,
                         resourceVersion: latestResourceVersion,
-                        timeoutSeconds: 300 // watch will be stopped after at most this many seconds
+                        timeoutSeconds: 240 // watch will be stopped after at most this many seconds
                         //fieldSelector: fieldSelector
                     },
                     (type, apiObj) => {
@@ -146,6 +146,6 @@ export class K8sWatcher {
     private static IsExpectedIntermittentException(e: any) {
         // k8s may return 504 or 410 if there is an issue with the supplied resource version (sometimes due to networking issues in the cluster, as well as other reasons)
         // we consider these to be expected intermittent failures and don't log them as exceptional conditions
-        return e.statusCode === "504" || e.statuscode === "410";
+        return e.code === 504 || e.code === 410;
     }
 }
