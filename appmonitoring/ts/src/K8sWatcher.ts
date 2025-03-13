@@ -119,7 +119,7 @@ export class K8sWatcher {
                         if (err != null) {
                             // this indicates an issue with the watch encountered once the stream is opened
                             // we want to handle it in the same way as an exception (which is triggered during opening of the stream)
-                            logger.error(err, operationId, requestMetadata);
+                            logger.error(`Watch error: ${err}`, operationId, requestMetadata);
 
                             throw err;
                         }
