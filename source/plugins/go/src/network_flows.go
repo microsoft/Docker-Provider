@@ -24,6 +24,7 @@ var (
 )
 
 var (
+	// networkflow telemetry
     NetworkFlowTelemetryMutex = &sync.Mutex{}
     NetworkFlowLogsMDSDClientCreateErrors float64
     MdsdNetworkFlowClient net.Conn
