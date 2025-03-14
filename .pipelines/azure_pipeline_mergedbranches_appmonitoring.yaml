@@ -124,6 +124,7 @@ jobs:
         ls -a
         
         echo "Installing npm packages..."
+        npm i
         npm ci
 
         #echo "Updating packages..."
