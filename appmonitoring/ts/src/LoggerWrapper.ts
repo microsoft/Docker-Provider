@@ -1,5 +1,4 @@
 ﻿import * as applicationInsights from "applicationinsights";
-import { EventTelemetry, MetricTelemetry, TraceTelemetry } from "applicationinsights/out/Declarations/Contracts";
 import { PodInfo } from "./RequestDefinition.js";
 
 import log4js from "log4js";
@@ -237,7 +236,7 @@ class LocalLogger {
         }
 
         for(const metricName in this.heartbeatAccumulator.metrics) {
-            const telemetryItem: MetricTelemetry = {
+            const telemetryItem = {
                 name: HeartbeatMetrics[metricName],
                 value: Number(this.heartbeatAccumulator.metrics[metricName]),
                 count: 1,
@@ -270,7 +269,7 @@ class LocalLogger {
                     break;
                 }
 
-                const telemetryItem: TraceTelemetry = {
+                const telemetryItem = {
                     message: logArray[j].message,
                     time: new Date(),
                     properties: {
@@ -288,7 +287,7 @@ class LocalLogger {
 
     public SendEvent(eventName: string, operationId: string, uid: string, clusterArmId: string, clusterArmRegion: string, flush = false, ...args: unknown[]) {
         try {
-            const event: EventTelemetry = {
+            const event = {
                 name: eventName,
                 properties: {
                     time: Date.now(),
@@ -296,6 +295,7 @@ class LocalLogger {
                     operationId: operationId,
                     clusterArmId: clusterArmId,
                     clusterArmRegion: clusterArmRegion,
+                    clusterMetadata: this.clusterMetadata,
                     uid: uid
                 },
             };
