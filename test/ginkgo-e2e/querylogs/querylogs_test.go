@@ -1,11 +1,12 @@
 package querylogs_test
 
 import (
+	"strings"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"docker-provider/test/utils"
-	"strings"
 )
 
 var _ = Describe("When querying the logs for the table", func() {

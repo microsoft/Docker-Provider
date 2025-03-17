@@ -446,31 +446,16 @@ func GetAndUpdateConfigMap(clientset *kubernetes.Clientset, configMapName, confi
 }
 
 func GetAllAgentPods(clientset *kubernetes.Clientset) ([]corev1.Pod, error) {
-	dsPodList, err := clientset.CoreV1().Pods("kube-system").List(context.TODO(), metav1.ListOptions{
-		LabelSelector: "component in (ama-logs-agent, ama-logs-agent-windows)",
-	})
+	podList, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	rsPodList, err := clientset.CoreV1().Pods("kube-system").List(context.TODO(), metav1.ListOptions{
-		LabelSelector: "rsName=ama-logs-rs",
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if dsPodList == nil || rsPodList == nil {
-		return nil, fmt.Errorf("error in getting pods")
-	}
-
-	podList := append(dsPodList.Items, rsPodList.Items...)
-
-	if podList == nil || len(podList) == 0 {
+	if podList == nil || len(podList.Items) == 0 {
 		return nil, fmt.Errorf("no pods found")
 	}
 
-	return podList, nil
+	return podList.Items, nil
 }
 
 func GetAllNodes(clientset *kubernetes.Clientset) ([]corev1.Node, error) {

@@ -140,7 +140,7 @@ func CompareResourcesInLogsAndKubeAPI(K8sClient *kubernetes.Clientset, logsClien
 		for _, pod := range pods {
 			resources = append(resources, pod.Name)
 		}
-		query = logsTable + " | where TimeGenerated > ago(15m) | where ContainerName contains \"ama-logs\" | distinct Name"
+		query = logsTable + " | where TimeGenerated > ago(15m) | distinct Name"
 	}
 
 	return CompareResourcesHelper(logsClient, resourceID, query, resources)
