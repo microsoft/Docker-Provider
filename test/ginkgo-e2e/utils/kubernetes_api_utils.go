@@ -67,6 +67,37 @@ func CheckContainerLogsForErrors(clientset *kubernetes.Clientset, namespace, lab
 }
 
 /*
+ * Returns the environment variables of the agent container.
+ */
+func GetContainerEnvVars(clientset *kubernetes.Clientset, namespace string, labelKey string, labelValue string, containerName string) (map[string]string, error) {
+	pods, err := GetPodsWithLabel(clientset, namespace, labelKey, labelValue)
+	if err != nil || len(pods) == 0 {
+		return nil, fmt.Errorf("failed to get pods with label %s=%s: %v", labelKey, labelValue, err)
+	}
+
+	// Get the environment variables of the agent container from the first pod
+	for _, container := range pods[0].Spec.Containers {
+		if container.Name == containerName {
+			envVars := make(map[string]string)
+			for _, env := range container.Env {
+				envVars[env.Name] = env.Value
+			}
+			return envVars, nil
+		}
+	}
+
+	return nil, fmt.Errorf("container %s not found in pod %s", containerName, &pods[0].Name)
+}
+
+func GetAKSResourceID(clientset *kubernetes.Clientset, namespace string, labelKey string, labelValue string, containerName string) (string, error) {
+	envVars, error := GetContainerEnvVars(clientset, namespace, labelKey, labelValue, containerName)
+	if error != nil {
+		return "", fmt.Errorf("failed to get environment variables for container %s in pod with label %s=%s: %v", containerName, labelKey, labelValue, error)
+	}
+	return envVars["AKS_RESOURCE_ID"], nil
+}
+
+/*
  * Returns all pods in the given namespace with the given label.
  */
 func GetPodsWithLabel(clientset *kubernetes.Clientset, namespace string, labelKey string, labelValue string) ([]corev1.Pod, error) {
@@ -412,4 +443,30 @@ func GetAndUpdateConfigMap(clientset *kubernetes.Clientset, configMapName, confi
 	}
 
 	return nil
+}
+
+func GetAllAgentPods(clientset *kubernetes.Clientset) ([]corev1.Pod, error) {
+	podList, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	if podList == nil || len(podList.Items) == 0 {
+		return nil, fmt.Errorf("no pods found")
+	}
+
+	return podList.Items, nil
+}
+
+func GetAllNodes(clientset *kubernetes.Clientset) ([]corev1.Node, error) {
+	nodes, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	if nodes == nil || len(nodes.Items) == 0 {
+		return nil, fmt.Errorf("no nodes found")
+	}
+
+	return nodes.Items, nil
 }
