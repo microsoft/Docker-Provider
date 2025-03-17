@@ -47,6 +47,28 @@ spec:
     executePostRunScriptBeforeScraping: false
 ---
 apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: querylogs
+  namespace: testkube
+  labels:
+    executor: ginkgo-executor
+    test-type: ginkgo-test
+spec:
+  type: ginkgo/test
+  content:
+    type: git
+    repository:
+      type: git
+      uri: https://github.com/microsoft/Docker-Provider/
+      branch: ci_prod
+      path: test/ginkgo-e2e
+  executionRequest:
+    args:
+      - "./querylogs"
+    executePostRunScriptBeforeScraping: false
+---
+apiVersion: tests.testkube.io/v3
 kind: TestSuite
 metadata:
   name: e2e-tests-merge
@@ -61,4 +83,4 @@ spec:
     - delay: 2m0s
   - stopOnFailure: false
     execute:
-    - test: livenessprobe
+    - test: querylogs
