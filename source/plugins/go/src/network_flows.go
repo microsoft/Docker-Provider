@@ -38,8 +38,8 @@ type NetworkFlowMsgPackEntry struct {
 
 // PostNetworkFlowRecords sends data to the mdsd and amacoreagent
 func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int {
+	Log(fmt.Sprintf("Debug: PostNetworkFlowRecords starting, isNetworkFlowLogsEnabled: %v", IsNetworkFlowLogsEnabled))
 	if IsNetworkFlowLogsEnabled {
-		Log(fmt.Sprintf("Debug: PostNetworkFlowRecords starting"))
 		start := time.Now()
 		var elapsed time.Duration
 
