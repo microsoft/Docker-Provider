@@ -62,7 +62,7 @@ waitForCIExtensionInstalled() {
       provisioningState=$(echo $provisioningState | tr -d '"' | tr -d '"\r\n')
       echo "extension install state: ${provisioningState}"
       if [ ! -z "$provisioningState" ]; then
-         if [ "${provisioningState}" == "Installed" ]; then
+         if [ "${provisioningState}" == "Succeeded" ]; then
             provisioningState=true
             break
          fi
