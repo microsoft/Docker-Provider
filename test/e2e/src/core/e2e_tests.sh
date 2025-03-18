@@ -52,24 +52,24 @@ waitForArcK8sClusterCreated() {
 }
 
 waitForCIExtensionInstalled() {
-    installedState=false
+    provisioningState=false
     max_retries=60
     sleep_seconds=10
     for i in $(seq 1 $max_retries)
     do
       echo "iteration: ${i}, clustername: ${CLUSTER_NAME}, resourcegroup: ${RESOURCE_GROUP}"
-      installState=$(az k8s-extension show  --cluster-name $CLUSTER_NAME --resource-group $RESOURCE_GROUP  --cluster-type connectedClusters --name azuremonitor-containers --query installState -o json)
-      installState=$(echo $installState | tr -d '"' | tr -d '"\r\n')
-      echo "extension install state: ${installState}"
-      if [ ! -z "$installState" ]; then
-         if [ "${installState}" == "Installed" ]; then
-            installedState=true
+      provisioningState=$(az k8s-extension show  --cluster-name $CLUSTER_NAME --resource-group $RESOURCE_GROUP  --cluster-type connectedClusters --name azuremonitor-containers --query provisioningState -o json)
+      provisioningState=$(echo $provisioningState | tr -d '"' | tr -d '"\r\n')
+      echo "extension install state: ${provisioningState}"
+      if [ ! -z "$provisioningState" ]; then
+         if [ "${provisioningState}" == "Succeeded" ]; then
+            provisioningState=true
             break
          fi
       fi
       sleep ${sleep_seconds}
     done
-    echo "container insights extension installedState: $installedState"
+    echo "container insights extension provisioningState: $provisioningState"
 }
 
 validateCommonParameters() {
