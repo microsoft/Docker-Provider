@@ -129,7 +129,7 @@ def test_e2e_workflows(env_dict):
 
     rowCount = result.json()['tables'][0]['rows'][0][0]
     if not rowCount:
-        print("rowCount should be greater or equal than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'KUBE_EVENTS'))
+        pytest.fail("rowCount should be greater than for cluster: {0} for workflow: {1} ".format(clusterResourceId, 'KUBE_EVENTS'))
 
     # Container Node Inventory
     query = constants.CONTAINER_NODE_INVENTORY_QUERY.format(queryTimeInterval)

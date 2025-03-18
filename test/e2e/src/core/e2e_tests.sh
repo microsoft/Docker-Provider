@@ -66,7 +66,7 @@ waitForCIExtensionInstalled() {
             provisioningState=true
             break
          fi
-      fiKUBE_EVENTS_QUERY
+      fi
       sleep ${sleep_seconds}
     done
     echo "container insights extension provisioningState: $provisioningState"
