@@ -61,6 +61,7 @@ func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int
 			}
 			dataMap = make(map[string]interface{})
 			if err := mapNetworkFlowLogsToDataMap(dataMap, networkFlowLogRecord); err != nil {
+				Log(fmt.Sprintf("Debug: Failed to map networkflow logs: %+v", networkFlowLogRecord))
 				Log("Error::networkflow:: failed to map networkflow logs to data map: %v", err.Error())
 				continue
 			}
