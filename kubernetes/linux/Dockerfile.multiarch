@@ -68,7 +68,7 @@ ENV KUBE_CLIENT_BACKOFF_DURATION 0
 ENV RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR 0.9
 
 # default value will be overwritten by pipeline
-ARG IMAGE_TAG=3.1.25
+ARG IMAGE_TAG=3.1.26
 ENV AGENT_VERSION ${IMAGE_TAG}
 
 WORKDIR ${tmpdir}
@@ -145,8 +145,6 @@ RUN ["/bin/bash", "-c", "curl -sfL https://raw.githubusercontent.com/aquasecurit
 # Set up primary and secondary repository URLs
 ENV PRIMARY_TRIVY_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-db"
 ENV SECONDARY_TRIVY_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-db"
-ENV PRIMARY_TRIVY_JAVA_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-java-db"
-ENV SECONDARY_TRIVY_JAVA_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-java-db"
 
 # Download Trivy main database with a fallback mechanism
 RUN export TRIVY_DB_REPOSITORY=$PRIMARY_TRIVY_DB_REPOSITORY && \
@@ -156,17 +154,10 @@ RUN export TRIVY_DB_REPOSITORY=$PRIMARY_TRIVY_DB_REPOSITORY && \
      trivy image --download-db-only) || \
     (echo "Both TRIVY_DB_REPOSITORY sources failed." && exit 1)
 
-# Download Trivy Java database with a fallback mechanism
-RUN export TRIVY_JAVA_DB_REPOSITORY=$PRIMARY_TRIVY_JAVA_DB_REPOSITORY && \
-    trivy fs --scanners vuln --vuln-type library --download-java-db-only || \
-    (echo "Primary TRIVY_JAVA_DB_REPOSITORY failed, trying secondary." && \
-     export TRIVY_JAVA_DB_REPOSITORY=$SECONDARY_TRIVY_JAVA_DB_REPOSITORY && \
-     trivy fs --scanners vuln --vuln-type library --download-java-db-only) || \
-    (echo "Both TRIVY_JAVA_DB_REPOSITORY sources failed." && exit 1)
-
-RUN ["/bin/bash", "-c", "trivy rootfs --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --skip-files \"/usr/local/bin/trivy\" /"]
-RUN ["/bin/bash", "-c", "trivy rootfs --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM /usr/lib"]
-RUN ["/bin/bash", "-c", "trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --skip-files \"/usr/local/bin/trivy\" / > /dev/null 2>&1 && trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM /usr/lib > /dev/null 2>&1"]
+# Perform Trivy rootfs scan (only OS vulnerabilities, no Java scanning)
+RUN ["/bin/bash", "-c", "trivy rootfs --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --vuln-type os --scanners vuln --skip-files \"/usr/local/bin/trivy\" /"]
+RUN ["/bin/bash", "-c", "trivy rootfs --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --vuln-type os --scanners vuln /usr/lib"]
+RUN ["/bin/bash", "-c", "trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --vuln-type os --scanners vuln --skip-files \"/usr/local/bin/trivy\" / > /dev/null 2>&1 && trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --vuln-type os --scanners vuln /usr/lib > /dev/null 2>&1"]
 
 # Revert to base layer before vulnscan
 FROM distroless_image AS ContainerInsights
