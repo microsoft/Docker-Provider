@@ -91,7 +91,7 @@ try {
 const port = process.env.port || 1337;
 logger.info(`listening on port ${port}`, operationId, null);
 
-https.createServer(options, (req, res) => {
+const server = https.createServer(options, (req, res) => {
     logger.info(`Received request with url: ${req.url}, method: ${req.method}, content-type: ${req.headers["content-type"]}`, operationId, null);
     
     logger.addHeartbeatMetric(HeartbeatMetrics.AdmissionReviewCount, 1);
@@ -147,7 +147,33 @@ https.createServer(options, (req, res) => {
 
 }).listen(port);
 
-logger.info(`Finished listening on port ${port}, exiting`, null, null);
+logger.info(`Server created on port ${port}`, null, null);
+
+function shutdownServer() {
+    server.close((err) => {
+        if (err) {
+            logger.error(`Error shutting down server: ${err}`, operationId, null);
+            process.exit(1);
+        } else {
+            logger.info("Server has shut down gracefully", operationId, null);
+            process.exit(0);
+        }
+    });
+}
+  
+// listen for process termination signals
+process.on("SIGINT", shutdownServer);
+process.on("SIGTERM", shutdownServer);
+
+const keepAlive = new Promise<void>((resolve) => {
+    process.on('SIGINT', resolve);
+    process.on('SIGTERM', resolve);
+});
+  
+// keep the event loop alive
+await keepAlive;
+  
+logger.info("Server shut down, exiting now", operationId, null);
 
 function logCRs(crs: InstrumentationCRsCollection) {
     const items: InstrumentationCR[] = crs.ListCRs();

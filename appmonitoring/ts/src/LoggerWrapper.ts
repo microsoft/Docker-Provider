@@ -1,9 +1,10 @@
-﻿import * as applicationInsights from "applicationinsights";
+﻿import telemetryClient from "./telemetryClient.cjs";
+import * as applicationInsights from "applicationinsights";
+
 import { PodInfo } from "./RequestDefinition.js";
 
 import log4js from "log4js";
 import { InstrumentationCRsCollection } from "./InstrumentationCRsCollection.js";
-import { watch } from "fs";
 
 const { configure, getLogger } = log4js;
 
@@ -30,7 +31,6 @@ configure({
         },
     },
 });
-
 
 export class RequestMetadata {
     private uid: string;
@@ -114,9 +114,13 @@ class LocalLogger {
 
     public setUnitTestMode(isUnitTestMode: boolean) {
         this.isUnitTestMode = isUnitTestMode;
+
+        if(isUnitTestMode) {
+            this.client = new applicationInsights.TelemetryClient("InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/"); // goes nowhere, empty GUID
+        }
     }
 
-    private static instance: LocalLogger;
+    private static instance: LocalLogger = null;
 
     private isUnitTestMode = false;
     private log: log4js.Logger = getLogger("default");
@@ -129,9 +133,11 @@ class LocalLogger {
     private heartbeatRequestMetadata = new RequestMetadata(null, null);
 
     private constructor(clusterArmId: string, clusterArmRegion: string, podName: string, imageTag: string) {
-        this.client = new applicationInsights.TelemetryClient(this.getKey());
+        this.client = telemetryClient.telemetryClient;
 
         this.clusterMetadata = new ClusterMetadata(clusterArmId, clusterArmRegion, podName, imageTag);
+
+        this.log.info(`Application Insights has been set up and started. Default telemetry client is: ${this.client}, cluster metadata: ${JSON.stringify(this.clusterMetadata)}`);
     }
 
     public trace(message: string, operationId: string, requestMetadata: RequestMetadata) {
@@ -231,7 +237,7 @@ class LocalLogger {
     public async startHeartbeats(operationId: string): Promise<void> {
         while (true) { // eslint-disable-line
             try {
-                this.info(`Sending heartbeat...`, operationId, this.heartbeatRequestMetadata);
+                logger.info(`Sending heartbeat...`, operationId, this.heartbeatRequestMetadata);
                 this.sendHeartbeat();
             } catch (e) {
                 logger.error(`Failed to send out heartbeat: ${JSON.stringify(logger.sanitizeException(e))}`, operationId, this.heartbeatRequestMetadata);
@@ -250,20 +256,15 @@ class LocalLogger {
     }
 
     private sendHeartbeat() {
-        if (this.client == null) {
-            this.client = new applicationInsights.TelemetryClient(this.getKey());
-        }
-
         for(const [metricName, metric] of this.heartbeatAccumulator.metrics) {
             for(const [dim1, value] of metric) {
-                const telemetryItem: applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry = {
+                const telemetryItem: applicationInsights.Contracts.MetricPointTelemetry & applicationInsights.Contracts.MetricTelemetry = {
                     name: HeartbeatMetrics[metricName],
-                    time: new Date(),
-                    value: Number(value),
+                    value: value,
                     count: 1,
                     properties: {
                         dimension1: dim1,
-                        clusterMetadata: this.clusterMetadata
+                        clusterMetadata: JSON.stringify(this.clusterMetadata)
                     }
                 };
 
@@ -286,11 +287,10 @@ class LocalLogger {
                     break;
                 }
 
-                const telemetryItem: applicationInsights.Contracts.TraceTelemetry = {
+                const telemetryItem: applicationInsights.Contracts.TraceTelemetry  = {
                     message: logArray[j].message,
-                    time: new Date(),
                     properties: {
-                        clusterMetadata: this.clusterMetadata
+                        clusterMetadata: JSON.stringify(this.clusterMetadata)
                     }
                 };
 
@@ -302,13 +302,12 @@ class LocalLogger {
         this.heartbeatAccumulator.logs.clear();
 
         for(const [watchdog, onReport] of this.watchdogs) {
-            const telemetryItem: applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry = {
+            const telemetryItem: applicationInsights.Contracts.MetricPointTelemetry & applicationInsights.Contracts.MetricTelemetry = {
                 name: Watchdogs[watchdog],
-                time: new Date(),
                 value: onReport(),
                 count: 1,
                 properties: {
-                    clusterMetadata: this.clusterMetadata
+                    clusterMetadata: JSON.stringify(this.clusterMetadata)
                 }
             };
 
@@ -322,17 +321,17 @@ class LocalLogger {
             const event: applicationInsights.Contracts.EventTelemetry = {
                 name: eventName,
                 properties: {
-                    time: Date.now(),
                     extra: JSON.stringify(args),
                     operationId: operationId,
                     clusterArmId: clusterArmId,
                     clusterArmRegion: clusterArmRegion,
+                    clusterMetadata: JSON.stringify(this.clusterMetadata),
                     uid: uid
-                },
+                }
             };
 
             this.client.trackEvent(event);
-
+            
             if (flush) {
                 this.client.flush();
             }
@@ -343,19 +342,6 @@ class LocalLogger {
                 // swallow, no recourse
             }
         }
-    }
-
-    private getKey(): string {
-        if(this.isUnitTestMode) {
-            return ""; // for unit tests this shouldn't go anywhere
-        }
-
-        if (process.env.TELEMETRY_SETUP_STRING) {
-            return process.env.TELEMETRY_SETUP_STRING;
-        }
-        
-        // global AI component collecting telemetry from all webhooks
-        return "InstrumentationKey=ac00484a-3c6f-41de-b5e8-95dda51d5a60;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/";
     }
 }
 

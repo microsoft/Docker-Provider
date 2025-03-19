@@ -1,5 +1,6 @@
 {
   "verbose": true,
+  "preset": "ts-jest",
   "transform": {
     ".*": [
       "ts-jest",
@@ -10,7 +11,8 @@
   },
   "transformIgnorePatterns": [],
   "testEnvironment": "node",
-  "testRegex": "/tests/.*\\.spec\\.(ts|tsx)$",
+  "testRegex": "tests/.*\\.spec\\.ts$",
+  "moduleDirectories": ["node_modules", "<rootDir>", "out"],
   "moduleFileExtensions": [
     "ts",
     "tsx",

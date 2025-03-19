@@ -1,6 +1,6 @@
-import { CertificateManager, WebhookCertData } from '../CertificateManager.js';
-import forge from 'node-forge';
-import { AdmissionregistrationV1Api, AppsV1Api, CoreV1Api, createConfiguration, KubeConfig, V1Deployment, V1DeploymentList, V1MutatingWebhook, V1MutatingWebhookConfiguration, V1ReplicaSet, V1Secret } from '@kubernetes/client-node';
+import { CertificateManager, WebhookCertData } from "CertificateManager.js";
+import forge from "node-forge";
+import { AdmissionregistrationV1Api, AppsV1Api, CoreV1Api, createConfiguration, KubeConfig, V1Deployment, V1DeploymentList, V1MutatingWebhook, V1MutatingWebhookConfiguration, V1ReplicaSet, V1Secret } from "@kubernetes/client-node";
 
 describe('CertificateManager', () => {
     let certManager: CertificateManager;

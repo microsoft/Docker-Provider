@@ -1,6 +1,6 @@
 ﻿/* tslint:disable */
-import { InstrumentationCR, AutoInstrumentationPlatforms } from "../RequestDefinition.js";
-import { InstrumentationCRsCollection } from "../InstrumentationCRsCollection.js";
+import { InstrumentationCR, AutoInstrumentationPlatforms } from "RequestDefinition.js";
+import { InstrumentationCRsCollection } from "InstrumentationCRsCollection.js";
 
 export const clusterArmId = "/subscriptions/66010356-d8a5-42d3-8593-6aaa3aeb1c11/resourceGroups/rambhatt-rnd-v2/providers/Microsoft.ContainerService/managedClusters/aks-rambhatt-test";
 export const clusterArmRegion = "eastus";

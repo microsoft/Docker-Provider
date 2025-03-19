@@ -7,11 +7,12 @@
     "allowJs": true,
     "esModuleInterop": true,
     "moduleResolution": "nodenext",
+    "outDir": "./out",
+    "baseUrl": ".",
   },
   "exclude": [
     "test-app",
     "node_modules",
-    "bin",
-    "obj"
+    "out"
   ]
 }

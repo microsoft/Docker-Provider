@@ -133,6 +133,7 @@ export class K8sWatcher {
                         resolve(latestResourceVersion);
                     });
             } catch (e) {
+                logger.error(`Watch.watch() threw: ${JSON.stringify(e)}`, operationId, requestMetadata);
                 logger.addHeartbeatMetric(HeartbeatMetrics.CRsWatchCallFailedCount, 1, e?.statusCode ?? 0);
                 logger.appendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, JSON.stringify(logger.sanitizeException(e)));
                 

@@ -1,9 +1,9 @@
 ﻿import { expect, describe, it } from "@jest/globals";
-import { Mutations } from "../Mutations.js";
-import { IAdmissionReview, PodInfo, IContainer, IVolume, AutoInstrumentationPlatforms, IEnvironmentVariable, InstrumentationCR, IInstrumentationState, IObjectType, InstrumentationAnnotationName, EnableApplicationLogsAnnotationName } from "../RequestDefinition.js";
-import { Patcher } from "../Patcher.js";
-import { cr, clusterArmId, clusterArmRegion, clusterName, TestDeployment2 } from "./testConsts.js";
-import { logger } from "../LoggerWrapper.js"
+import { Mutations } from "Mutations.js";
+import { IAdmissionReview, PodInfo, IContainer, IVolume, AutoInstrumentationPlatforms, IEnvironmentVariable, InstrumentationCR, IInstrumentationState, IObjectType, InstrumentationAnnotationName, EnableApplicationLogsAnnotationName } from "RequestDefinition.js";
+import { Patcher } from "Patcher.js";
+import { cr, clusterArmId, clusterArmRegion, clusterName, TestDeployment2 } from "tests/testConsts.js";
+import { logger } from "LoggerWrapper.js"
 
 beforeEach(() => {
     logger.setUnitTestMode(true);

@@ -13,7 +13,9 @@ RUN node --version && npm --version
 
 WORKDIR /mutating-webhook
 
-COPY . /mutating-webhook
+COPY ./out/* /mutating-webhook
+COPY ./package.json /mutating-webhook
+COPY ./node_modules /mutating-webhook/node_modules
 
 EXPOSE 1337
-CMD [ "node", "server" ]
+CMD [ "node", "server.js" ]

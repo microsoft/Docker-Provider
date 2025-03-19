@@ -1,5 +1,5 @@
 ﻿import { expect, describe, it } from "@jest/globals";
-import { logger, HeartbeatMetrics, HeartbeatLogs, Watchdogs } from "../LoggerWrapper.js";
+import { logger, HeartbeatMetrics, HeartbeatLogs, Watchdogs } from "LoggerWrapper.js";
 import * as applicationInsights from "applicationinsights";
 
 beforeEach(() => {
@@ -59,9 +59,9 @@ describe("Heartbeats", () => {
         logger.addHeartbeatMetric(HeartbeatMetrics.InstrumentedNamespaceCount, 2);
         logger.setHeartbeatMetric(HeartbeatMetrics.InstrumentedNamespaceCount, 1);
         
-        const metricsSent = <applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry[]>[];
+        const metricsSent = <(applicationInsights.Contracts.MetricPointTelemetry & applicationInsights.Contracts.MetricTelemetry)[]>[];
 
-        jest.spyOn(applicationInsights.TelemetryClient.prototype, "trackMetric").mockImplementation((telemetry: applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry) => {
+        jest.spyOn(applicationInsights.TelemetryClient.prototype, "trackMetric").mockImplementation((telemetry) => {
             metricsSent.push(telemetry);
         });
 
@@ -88,7 +88,7 @@ describe("Heartbeats", () => {
         logger.addHeartbeatMetric(HeartbeatMetrics.CRsWatchCallFailedCount, 2, "403");
         logger.setHeartbeatMetric(HeartbeatMetrics.CRsWatchCallFailedCount, 3, "403");
         
-        const metricsSent = <applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry[]>[];
+        const metricsSent = <(applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry)[]>[];
 
         jest.spyOn(applicationInsights.TelemetryClient.prototype, "trackMetric").mockImplementation((telemetry: applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry) => {
             metricsSent.push(telemetry);
@@ -119,7 +119,7 @@ describe("Heartbeats", () => {
 
         logger.registerWatchdog(Watchdogs.SecondsSinceLastSuccessfulCRList, () => watchdogReport);
         
-        const metricsSent = <applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry[]>[];
+        const metricsSent = <(applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry)[]>[];
         
         jest.spyOn(applicationInsights.TelemetryClient.prototype, "trackMetric").mockImplementation((telemetry: applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry) => {
             metricsSent.push(telemetry);

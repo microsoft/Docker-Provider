@@ -1,8 +1,8 @@
 ﻿import { expect, describe, it } from "@jest/globals";
-import { IAdmissionReview } from "../RequestDefinition.js";
-import { AdmissionReviewValidator } from "../AdmissionReviewValidator.js";
-import { TestObject2 } from "./testConsts.js";
-import { logger, RequestMetadata } from "../LoggerWrapper.js";
+import { IAdmissionReview } from "RequestDefinition.js";
+import { AdmissionReviewValidator } from "AdmissionReviewValidator.js";
+import { TestObject2 } from "tests/testConsts.js";
+import { logger, RequestMetadata } from "LoggerWrapper.js";
 
 const requestMetadata = new RequestMetadata(null, null);
 
