@@ -167,7 +167,7 @@ func GetContainerInventoryRecords(podItem map[string]interface{}, batchTime stri
 func addImageInfoToContainerInventoryRecord(containerInventoryRecord map[string]interface{}, imageValue string) {
 	// image can be in any one of below formats:
 	// repository/image[:imagetag | @digest], repository/image:imagetag@digest, repo/image, image:imagetag, image@digest, image
-	if imageValue == "" {
+	if imageValue == "" || regexp.MustCompile(`^sha256:[a-fA-F0-9]{64}$`).MatchString(imageValue) {
 		return
 	}
 	atLocation := strings.Index(imageValue, "@")

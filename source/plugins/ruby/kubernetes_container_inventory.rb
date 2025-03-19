@@ -139,7 +139,7 @@ class KubernetesContainerInventory
 
     def addImageInfoToContainerInventoryRecord(containerInventoryRecord, imageValue)
       begin
-        if imageValue.nil? || imageValue.empty?
+        if imageValue.nil? || imageValue.empty? || imageValue.match?(/^sha256:[a-fA-F0-9]{64}$/)
           return
         end
         # image can be in any one of below formats:
