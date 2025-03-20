@@ -12,6 +12,11 @@ trigger:
     include:
     - '*-appmonitoring'
 
+pr:
+  branches:
+    exclude:
+    - '*'
+
 variables:
   armServiceConnectionName: 'Appmonitoring_AKS_connection'
   subscription: '5a3b3ba4-3a42-42ae-b2cb-f882345803bc'
