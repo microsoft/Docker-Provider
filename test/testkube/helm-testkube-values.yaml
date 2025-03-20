@@ -164,49 +164,14 @@ nats:
   #   image:
   #     registry: <registry-name>
   # -- Uncomment to override the NATS Server image options
-  nodeSelector: 
-      kubernetes.io/os: linux
-      kubernetes.io/arch: amd64
+
   container:
     image:
       registry: mcr.microsoft.com
       repository: azuremonitor/containerinsights/cidev
       tag: nats_2.10.24-alpine
-      pullPolicy: IfNotPresent
-  # NATS Box container settings
-  # TODO remove this container after tests on dev and stage
-  # nats-box is A lightweight container with NATS utilities. It's not needed for nats server
-  # change it to
-  # natsBox:
-  #   enabled: false
-  # natsBox:
-  #   enabled: false
-  #   nodeSelector: 
-  #     kubernetes.io/os: linux
-  #     kubernetes.io/arch: amd64
-  #   # -- Uncomment to override the NATS Box image options
-  #   container:
-  #     image:
-  #       registry: mcr.microsoft.com
-  #       repository: azuremonitor/containerinsights/cidev
-  #       tag: nats-box_0.14.5
-  #       pullPolicy: IfNotPresent
-  #   # -- NATS Box tolerations settings. Uncomment to schedule a multi-arch image to any available architecture type in a GCP Standard cluster.
-  #   #   podTemplate:
-  #   #     merge:
-  #   #       spec:
-  #   #         tolerations:
-  #   #           - key: kubernetes.io/arch
-  #   #             operator: Equal
-  #   #             value: arm64
-  #   #             effect: NoSchedule
-  # config:
-  #   merge:
-  #     max_payload: << 8MB >>
-  #   jetstream:
-  #     # -- Toggle whether to enable JetStream (should not be disabled as Testkube uses Jetstream features)
-  #     enabled: true
-
+      pullPolicy: 
+  
   # Reloader container settings
   reloader:
     enabled: true
@@ -215,7 +180,44 @@ nats:
       registry: mcr.microsoft.com
       repository: azuremonitor/containerinsights/cidev
       tag: nats-server-config-reloader_0.16.0
-      pullPolicy: IfNotPresent
+      pullPolicy:
+  
+  podTemplate:
+    merge:
+      spec:
+        nodeSelector:
+          kubernetes.io/os: linux
+          kubernetes.io/arch: amd64
+  # NATS Box container settings
+  # TODO remove this container after tests on dev and stage
+  # nats-box is A lightweight container with NATS utilities. It's not needed for nats server
+  # change it to
+  # natsBox:
+  #   enabled: false
+  natsBox:
+    enabled: false
+    # -- Uncomment to override the NATS Box image options
+    # container:
+    #   image:
+    #     registry: mcr.microsoft.com
+    #     repository: azuremonitor/containerinsights/cidev
+    #     tag: nats-box_0.14.5
+    #     pullPolicy: IfNotPresent
+    # # -- NATS Box tolerations settings. Uncomment to schedule a multi-arch image to any available architecture type in a GCP Standard cluster.
+    # podTemplate:
+    #   merge:
+    #     spec:
+    #       nodeSelector: 
+    #         kubernetes.io/os: linux
+    #         kubernetes.io/arch: amd64
+  config:
+    merge:
+      max_payload: << 8MB >>
+    jetstream:
+      # -- Toggle whether to enable JetStream (should not be disabled as Testkube uses Jetstream features)
+      enabled: true
+  
+
 
 testkube-logs:
   # -- Testkube logs full name override
