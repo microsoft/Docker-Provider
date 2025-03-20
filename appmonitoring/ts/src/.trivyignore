@@ -14,3 +14,7 @@ CVE-2024-37890
 # │         └─┬ foreground-child@3.3.0
 # │           └── cross-spawn@7.0.3 deduped
 CVE-2024-21538
+
+# ┬ @kubernetes/client-node@1.0.0
+# └── jsonpath-plus@10.2.0
+CVE-2025-1302
