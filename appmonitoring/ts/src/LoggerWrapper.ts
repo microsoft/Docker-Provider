@@ -1,4 +1,5 @@
 ﻿import * as applicationInsights from "applicationinsights";
+import { EventTelemetry, MetricTelemetry, TraceTelemetry } from "applicationinsights/out/Declarations/Contracts/index.js";
 import { PodInfo } from "./RequestDefinition.js";
 
 import log4js from "log4js";

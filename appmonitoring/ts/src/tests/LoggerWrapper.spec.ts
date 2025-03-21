@@ -1,6 +1,7 @@
 ﻿import { expect, describe, it } from "@jest/globals";
 import { logger, HeartbeatMetrics, HeartbeatLogs } from "../LoggerWrapper.js";
 import { TelemetryClient } from "applicationinsights";
+import { MetricTelemetry, TraceTelemetry } from "applicationinsights/out/Declarations/Contracts/index.js";
 
 beforeEach(() => {
     logger.setUnitTestMode(true);
