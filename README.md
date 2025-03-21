@@ -394,7 +394,7 @@ For our single branch ci_prod, automatically deployed latest yaml with latest ag
   ```
    cd ~/Docker-Provider/test/e2e/src # based on your repo path
    docker login <acr> -u <user> -p <pwd> # login to acr
-   docker build -f ./core/Dockerfile -t <repo>/<imagename>:<imagetag> .
+   docker build -f ./core/Dockerfile -t <repo>/<imagename>:<imagetag> --build-arg PYTHON_BASE_IMAGE=<referInternalWikiForPythonBaseImage> .
    docker push <repo>/<imagename>:<imagetag>
   ```
 3. update existing agentest image tag in e2e-tests.yaml & conformance.yaml with newly built image tag with MCR repo
