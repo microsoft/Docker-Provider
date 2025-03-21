@@ -166,7 +166,8 @@ func GetContainerInventoryRecords(podItem map[string]interface{}, batchTime stri
 
 func addImageInfoToContainerInventoryRecord(containerInventoryRecord map[string]interface{}, imageValue string) {
 	// image can be in any one of below formats:
-	// repository/image[:imagetag | @digest], repository/image:imagetag@digest, repo/image, image:imagetag, image@digest, image
+	// repository/image[:imagetag | @digest], repository/image:imagetag@digest, repo/image, image:imagetag, image@digest, image, digest
+	// if the image is in digest format - which is expected in certain scenarios, we do not process the image
 	if imageValue == "" || regexp.MustCompile(`^sha256:[a-fA-F0-9]{64}$`).MatchString(imageValue) {
 		return
 	}
