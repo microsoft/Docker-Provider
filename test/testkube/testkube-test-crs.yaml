@@ -64,6 +64,15 @@ spec:
       branch: ci_prod
       path: test/ginkgo-e2e
   executionRequest:
+    variables:
+      AZURE_TENANT_ID:
+        name: AZURE_TENANT_ID
+        value: "72f988bf-86f1-41af-91ab-2d7cd011db47"
+        type: basic
+      AZURE_CLIENT_ID:
+        name: AZURE_CLIENT_ID
+        value: "$AZURE_CLIENT_ID"
+        type: basic
     args:
       - "./querylogs"
     executePostRunScriptBeforeScraping: false
