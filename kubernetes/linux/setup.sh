@@ -88,6 +88,10 @@ echo "$(fluent-bit --version)" >> packages_version.txt
 # sudo tdnf install rubygem-fluentd-1.14.6 -y
 fluentd_version="1.16.3"
 gem install fluentd -v $fluentd_version --no-document
+echo "Installed gems:"
+gem list fluentd
+echo "Fluentd binary location:"
+which fluentd || echo "fluentd not found"
 
 # remove the test directory from fluentd
 rm -rf /usr/lib/ruby/gems/3.1.0/gems/fluentd-$fluentd_version/test/
