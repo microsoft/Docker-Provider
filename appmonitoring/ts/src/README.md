@@ -18,6 +18,7 @@
 8. Prepare a GitHub release based on the newly create tag (e.g. [Public Preview beta.2](https://github.com/microsoft/Docker-Provider/releases/tag/appmonitoring-1.0.0-beta.2)).
 9. Build _ai_prod_ via the [ContainerInsights-MultiArch-MergedBranches-AppMonitoring](https://github-private.visualstudio.com/microsoft/_build?definitionId=539) build pipeline. Make sure the tag already exists at the time when this is run. Do not use old builds that ran before tagging was done.
 10. Build _ai_prod_ via the [validation pipeline](https://github-private.visualstudio.com/microsoft/_build?definitionId=543&_a=summary) build pipeline. Make sure the tag already exists at the time when this is run. Do not use old builds that ran before tagging was done.
-11. Push the image to MCR by releasing the build via the [application-insights-prod-release](https://github-private.visualstudio.com/microsoft/_release?definitionId=73&view=mine&_a=releases) release. Pick the build from step 9. The image is now publicly available.
+11. Push the image to MCR by releasing the build via the [application-insights-prod-release](https://github-private.visualstudio.com/microsoft/_release?definitionId=73&view=mine&_a=releases) release. Pick the build from step 9. and use the tag you created earlier in 
+`WebhookImageTagSuffix` paramerter. The image is now publicly available.
 12. Merge a PR into the AKS RP repo that updates the version of the image used.
 13. Follow daily and weekly rollouts of AKS RP and watch change propagation on the dashboard.
