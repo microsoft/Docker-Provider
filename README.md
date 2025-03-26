@@ -390,14 +390,19 @@ For our single branch ci_prod, automatically deployed latest yaml with latest ag
 ## For adding new tests
 
 1. Add the test python file with your test code under `tests` directory
-2. Build the docker image, recommended to use ACR & MCR
+2. Make sure all the files has Unix-style line ending (LF) instead of Windows-style (CRLF). Run below command to convert all files in a directoty from CRLF to LF:
+  ```
+   cd ~/Docker-Provider/test # based on your repo path
+   find ./e2e -type f -exec sed -i 's/\r$//' {} +
+  ```
+3. Build the docker image, recommended to use ACR & MCR
   ```
    cd ~/Docker-Provider/test/e2e/src # based on your repo path
    docker login <acr> -u <user> -p <pwd> # login to acr
    docker build -f ./core/Dockerfile -t <repo>/<imagename>:<imagetag> --build-arg PYTHON_BASE_IMAGE=<referInternalWikiForPythonBaseImage> .
    docker push <repo>/<imagename>:<imagetag>
   ```
-3. update existing agentest image tag in e2e-tests.yaml & conformance.yaml with newly built image tag with MCR repo
+4. update existing agentest image tag in e2e-tests.yaml & conformance.yaml with newly built image tag with MCR repo
 
 # Scenario Tests
 Clusters are used in release pipeline already has the yamls under test\scenario deployed. Make sure to validate these scenarios.
