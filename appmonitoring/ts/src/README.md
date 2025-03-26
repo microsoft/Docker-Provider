@@ -21,4 +21,5 @@
 11. Push the image to MCR by releasing the build via the [application-insights-prod-release](https://github-private.visualstudio.com/microsoft/_release?definitionId=73&view=mine&_a=releases) release. Pick the build from step 9, and use the tag you created earlier in 
 `WebhookImageTagSuffix` paramerter. The image is now publicly available.
 12. Merge a PR into the AKS RP repo that updates the version of the image used.
+13. You need to update the image versions, as per your release tag that you did just now, [here](https://dev.azure.com/msazure/CloudNativeCompute/_git/aks-rp?path=/ccp/charts/addon-charts/app-monitoring-addon/Chart.yaml) and [here](https://dev.azure.com/msazure/CloudNativeCompute/_git/aks-rp?path=/ccp/control-plane-core/charts/kube-control-plane/templates/_images.tpl) in AKS RP repo
 13. Follow daily and weekly rollouts of AKS RP and watch change propagation on the dashboard.
