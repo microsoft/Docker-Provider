@@ -3,8 +3,6 @@ kind: CronJob
 metadata:
   name: appmonitoring-cert-housekeeper-hook
   namespace: kube-system
-  annotations:
-    "helm.sh/hook": post-install
   labels:
     component: app-monitoring
 spec:

@@ -124,7 +124,8 @@ jobs:
         ls -a
         
         echo "Installing npm packages..."
-        sudo npm install
+        npm i
+        npm ci
 
         #echo "Updating packages..."
         #npm update

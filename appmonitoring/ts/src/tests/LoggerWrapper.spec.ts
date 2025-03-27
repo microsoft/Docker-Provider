@@ -1,7 +1,7 @@
 ﻿import { expect, describe, it } from "@jest/globals";
 import { logger, HeartbeatMetrics, HeartbeatLogs } from "../LoggerWrapper.js";
 import { TelemetryClient } from "applicationinsights";
-import { MetricTelemetry, TraceTelemetry } from "applicationinsights/out/Declarations/Contracts";
+import { MetricTelemetry, TraceTelemetry } from "applicationinsights/out/Declarations/Contracts/index.js";
 
 beforeEach(() => {
     logger.setUnitTestMode(true);
@@ -37,9 +37,9 @@ describe("Heartbeats", () => {
             logger.appendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-75");
         }
         
-        const tracesSent = <TraceTelemetry[]>[];
+        const tracesSent = [];
 
-        jest.spyOn(TelemetryClient.prototype, "trackTrace").mockImplementation((telemetry: TraceTelemetry) => {
+        jest.spyOn(TelemetryClient.prototype, "trackTrace").mockImplementation((telemetry) => {
             tracesSent.push(telemetry);
         });
 
@@ -60,9 +60,9 @@ describe("Heartbeats", () => {
         logger.addHeartbeatMetric(HeartbeatMetrics.InstrumentedNamespaceCount, 2);
         logger.setHeartbeatMetric(HeartbeatMetrics.InstrumentedNamespaceCount, 1);
         
-        const metricsSent = <MetricTelemetry[]>[];
+        const metricsSent = [];
 
-        jest.spyOn(TelemetryClient.prototype, "trackMetric").mockImplementation((telemetry: MetricTelemetry) => {
+        jest.spyOn(TelemetryClient.prototype, "trackMetric").mockImplementation((telemetry) => {
             metricsSent.push(telemetry);
         });
 

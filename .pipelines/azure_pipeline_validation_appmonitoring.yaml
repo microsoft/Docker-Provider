@@ -12,8 +12,13 @@ trigger:
     include:
     - '*-appmonitoring'
 
+pr:
+  branches:
+    exclude:
+    - '*'
+
 variables:
-  armServiceConnectionName: 'Appmonitoring_AKS_connection'
+  armServiceConnectionName: 'Appmonitoring_Validation_Pipeline'
   subscription: '5a3b3ba4-3a42-42ae-b2cb-f882345803bc'
   containerRegistry: 'aicommon' # this build pushes the aidev image to the dev ACR (caution: ACR that has "prod" in its name is the dev one, the one without "prod" is prod AME)
   repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/applicationinsights/aidev'
@@ -88,7 +93,8 @@ jobs:
         ls -a
         
         echo "Installing npm packages..."
-        sudo npm install
+        npm i
+        npm ci
 
         #echo "Updating packages..."
         #npm update
@@ -125,6 +131,11 @@ jobs:
         fi
 
         echo "Jest is done"
+
+        echo "Pruning packages..."
+        sudo npx modclean -r
+        sudo npm prune --production
+        echo "Pruning packages is done"
         
         pwd
         ls -a
