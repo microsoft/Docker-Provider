@@ -25,7 +25,7 @@ export class K8sWatcher {
                 
                 logger.addHeartbeatMetric(HeartbeatMetrics.ApiServerCallErrorCount, 1);
 
-                logger.appendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, JSON.stringify(ex));
+                logger.appendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, 'K8S watch error: ' + JSON.stringify(ex));
 
                 const requestMetadata = new RequestMetadata("CR watcher", crs);
                 logger.error(`K8s watch failure: ${e}`, operationId, requestMetadata);
@@ -92,8 +92,10 @@ export class K8sWatcher {
                             onNewCR(apiObj, true);
                         } else if (type === "BOOKMARK") {
                             latestResourceVersion = apiObj.metadata?.resourceVersion ?? latestResourceVersion;
+                        } else if (type === "ERROR") {
+                            logger.error(`Error object received: ${type}=${JSON.stringify(apiObj)}`, operationId, requestMetadata);
                         } else {
-                            logger.error(`Unknown object type: ${type}`, operationId, requestMetadata);
+                            logger.error(`Unknown object type: ${type}=${JSON.stringify(apiObj)}`, operationId, requestMetadata);
                         }
 
                         //logger.info(`apiObj: ${JSON.stringify(apiObj)}`);

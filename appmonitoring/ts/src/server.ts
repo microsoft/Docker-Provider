@@ -139,7 +139,7 @@ https.createServer(options, (req, res) => {
                 const ex = logger.sanitizeException(e);
 
                 // e must not contain any customer content for privacy reasons, this exception is logged to a Microsoft-owned resource
-                logger.appendHeartbeatLog(HeartbeatLogs.AdmissionReviewTopExceptionsEncountered, JSON.stringify(ex));
+                logger.appendHeartbeatLog(HeartbeatLogs.AdmissionReviewTopExceptionsEncountered, 'AdmissionReview error:' + JSON.stringify(ex));
 
                 logger.error(`Error while processing request: ${JSON.stringify(e)}. Incoming payload: ${body}`, operationId, requestMetadata);
             }
