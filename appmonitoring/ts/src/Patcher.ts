@@ -1,5 +1,5 @@
 ﻿import { Mutations } from "./Mutations.js";
-import { PodInfo, IContainer, ISpec, IVolume, IEnvironmentVariable, AutoInstrumentationPlatforms, IVolumeMount, InstrumentationAnnotationName, EnableApplicationLogsAnnotationName, InstrumentationCR, IInstrumentationState, IMetadata, IAnnotations, IObjectType } from "./RequestDefinition.js";
+import { PodInfo, IContainer, ISpec, IVolume, IEnvironmentVariable, AutoInstrumentationPlatforms, IVolumeMount, InstrumentationAnnotationName, EnableApplicationLogsAnnotationName, InstrumentationCR, IInstrumentationState, IMetadata, IAnnotations, IKubeObjectType } from "./RequestDefinition.js";
 
 export class Patcher {
 
@@ -9,7 +9,7 @@ export class Patcher {
      * Calculates a JsonPatch string describing the difference between the old (incoming) and new (outgoing) spec
      * The spec is also patched in-place
     */
-    public static PatchObject(obj: IObjectType, cr: InstrumentationCR, podInfo: PodInfo, platforms: AutoInstrumentationPlatforms[], armId: string, armRegion: string, clusterName: string): object[] {
+    public static PatchObject(obj: IKubeObjectType, cr: InstrumentationCR, podInfo: PodInfo, platforms: AutoInstrumentationPlatforms[], armId: string, armRegion: string, clusterName: string): object[] {
         if (!obj?.spec) {
             throw `Unable to parse request.object.spec in AdmissionReview: ${obj}`;
         }
@@ -17,7 +17,7 @@ export class Patcher {
         // remove all mutation (in case it is already mutated)
         this.unpatch(obj);
 
-        // mutate
+        // mutate, cr is null to remove the mutations
         this.patch(cr, platforms, obj, podInfo, armId, armRegion, clusterName);
 
         const jsonPatch: object[] = [
@@ -31,15 +31,15 @@ export class Patcher {
         return jsonPatch;
     }
 
-    private static patch(cr: InstrumentationCR, platforms: AutoInstrumentationPlatforms[], obj: IObjectType, podInfo: PodInfo, armId: string, armRegion: string, clusterName: string) {
-        if (cr) {
-            const spec: ISpec = obj.spec;
+    private static patch(cr: InstrumentationCR, platforms: AutoInstrumentationPlatforms[], kubeObj: IKubeObjectType, podInfo: PodInfo, armId: string, armRegion: string, clusterName: string) {
+        if (cr) { // only apply mutations if cr is not null, otherwise the mutations will be removed
+            const spec: ISpec = kubeObj.spec;
             const podSpec: ISpec = spec.template.spec;
         
             // add deployment-level annotation describing current mutation
-            obj.metadata = obj.metadata ?? <IMetadata>{};
-            obj.metadata.annotations = obj.metadata.annotations ?? <IAnnotations>{};
-            obj.metadata.annotations[InstrumentationAnnotationName] = JSON.stringify(<IInstrumentationState>{
+            kubeObj.metadata = kubeObj.metadata ?? <IMetadata>{};
+            kubeObj.metadata.annotations = kubeObj.metadata.annotations ?? <IAnnotations>{};
+            kubeObj.metadata.annotations[InstrumentationAnnotationName] = JSON.stringify(<IInstrumentationState>{
                 crName: cr.metadata.name,
                 crResourceVersion: cr.metadata.resourceVersion,
                 platforms: <string[]>platforms
@@ -116,7 +116,7 @@ export class Patcher {
     /**
      * Removes all mutations from a spec in-place
      */
-    private static unpatch(obj: IObjectType): void {
+    private static unpatch(obj: IKubeObjectType): void {
         const spec: ISpec = obj?.spec;
         const podSpec: ISpec = spec?.template?.spec;
         

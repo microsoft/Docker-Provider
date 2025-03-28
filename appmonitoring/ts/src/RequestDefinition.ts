@@ -131,7 +131,7 @@ export interface ISpec {
     containers?: IContainer[];
 }
 
-export interface IObjectType {
+export interface IKubeObjectType {
     kind: string;
     apiVersion: string;
     metadata: IMetadata;
@@ -154,16 +154,29 @@ export interface IRequest {
     namespace: string;
     operation: string;
     userInfo: IUserInfo;
-    object: IObjectType;
+    object: IKubeObjectType;
     oldObject: string;
     dryRun: string;
+}
+
+export interface IResponseStatus{
+    code: number;
+    message: string;
+}
+
+export interface IAdmissionReviewResponse {
+    uid: string;
+    allowed: boolean;
+    status?: IResponseStatus;
+    patch?: string;
+    patchType?: string;
 }
 
 export interface IAdmissionReview {
     kind: string;
     apiVersion: string;
     request: IRequest;
-    response?: object;
+    response?: IAdmissionReviewResponse;
 }
 
 export class PodInfo {

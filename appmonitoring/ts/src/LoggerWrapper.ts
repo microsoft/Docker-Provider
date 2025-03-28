@@ -274,7 +274,9 @@ class LocalLogger {
                     message: logArray[j].message,
                     time: new Date(),
                     properties: {
-                        clusterMetadata: this.clusterMetadata
+                        clusterMetadata: this.clusterMetadata,
+                        count: logArray[j].count,
+                        logName: HeartbeatLogs[logName],
                     }
                 };
 

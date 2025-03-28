@@ -127,13 +127,14 @@ https.createServer(options, (req, res) => {
                 }
 
                 const mutator: Mutator = new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, operationId);
-                const mutatedObject: string = await mutator.Mutate();
+                const mutateResponse: IAdmissionReview = await mutator.Mutate();
+                const mutatedObject = JSON.stringify(mutateResponse);
 
                 const end = Date.now();
                 
-                logger.info(`Done processing request in ${end - begin} ms for ${uid}. ${JSON.stringify(mutatedObject)}`, operationId, requestMetadata);
+                logger.info(`Done processing request in ${end - begin} ms for ${uid}. ${mutatedObject}`, operationId, requestMetadata);
                 
-                res.writeHead(200, { "Content-Type": "application/json" });
+                res.writeHead(mutateResponse.response?.status?.code ?? 200, { "Content-Type": "application/json" });
                 res.end(mutatedObject);
             } catch (e) {
                 const ex = logger.sanitizeException(e);

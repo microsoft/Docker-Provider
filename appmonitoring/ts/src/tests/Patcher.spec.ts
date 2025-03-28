@@ -1,6 +1,6 @@
 ﻿import { expect, describe, it } from "@jest/globals";
 import { Mutations } from "../Mutations.js";
-import { IAdmissionReview, PodInfo, IContainer, IVolume, AutoInstrumentationPlatforms, IEnvironmentVariable, InstrumentationCR, IInstrumentationState, IObjectType, InstrumentationAnnotationName, EnableApplicationLogsAnnotationName } from "../RequestDefinition.js";
+import { IAdmissionReview, PodInfo, IContainer, IVolume, AutoInstrumentationPlatforms, IEnvironmentVariable, InstrumentationCR, IInstrumentationState, IKubeObjectType, InstrumentationAnnotationName, EnableApplicationLogsAnnotationName } from "../RequestDefinition.js";
 import { Patcher } from "../Patcher.js";
 import { cr, clusterArmId, clusterArmRegion, clusterName, TestDeployment2 } from "./testConsts.js";
 import { logger } from "../LoggerWrapper.js"
@@ -39,7 +39,7 @@ describe("Patcher", () => {
 
         expect((<[]>result).length).toBe(1);
         
-        const obj: IObjectType = (<any>result[0]).value as IObjectType;
+        const obj: IKubeObjectType = (<any>result[0]).value as IKubeObjectType;
         const annotationValue: IInstrumentationState = JSON.parse(obj.metadata.annotations[InstrumentationAnnotationName]) as IInstrumentationState;
         expect(annotationValue.crName).toBe(cr1.metadata.name);
         expect(annotationValue.crResourceVersion).toBe("1");
@@ -100,7 +100,7 @@ describe("Patcher", () => {
 
         expect((<[]>result).length).toBe(1);
 
-        const obj: IObjectType = (<any>result[0]).value as IObjectType;
+        const obj: IKubeObjectType = (<any>result[0]).value as IKubeObjectType;
         const annotationValue: IInstrumentationState = JSON.parse(obj.metadata.annotations[InstrumentationAnnotationName]) as IInstrumentationState;
 
         expect(annotationValue.crName).toBe(cr1.metadata.name);
@@ -166,7 +166,7 @@ describe("Patcher", () => {
 
         expect(unpatchResult.length).toBe(1);
 
-        const obj: IObjectType = (<any>unpatchResult[0]).value as IObjectType;
+        const obj: IKubeObjectType = (<any>unpatchResult[0]).value as IKubeObjectType;
         expect(obj.metadata?.annotations?.[InstrumentationAnnotationName]).toBeUndefined();
 
         expect((<any>unpatchResult[0]).op).toBe("replace");
@@ -202,7 +202,7 @@ describe("Patcher", () => {
 
         expect(unpatchResult.length).toBe(1);
 
-        const obj: IObjectType = (<any>unpatchResult[0]).value as IObjectType;
+        const obj: IKubeObjectType = (<any>unpatchResult[0]).value as IKubeObjectType;
         expect(obj.metadata?.annotations?.[InstrumentationAnnotationName]).toBeUndefined();
 
         expect((<any>unpatchResult[0]).op).toBe("replace");
@@ -236,7 +236,7 @@ describe("Patcher", () => {
 
         expect(unpatchResult.length).toBe(1);
 
-        const obj: IObjectType = (<any>unpatchResult[0]).value as IObjectType;
+        const obj: IKubeObjectType = (<any>unpatchResult[0]).value as IKubeObjectType;
         expect(obj.metadata?.annotations?.[InstrumentationAnnotationName]).toBeUndefined();
 
         expect((<any>unpatchResult[0]).op).toBe("replace");
@@ -271,7 +271,7 @@ describe("Patcher", () => {
 
         expect(patchResult.length).toBe(1);
 
-        const obj: IObjectType = (<any>patchResult[0]).value as IObjectType;
+        const obj: IKubeObjectType = (<any>patchResult[0]).value as IKubeObjectType;
         expect(obj.metadata?.annotations?.[InstrumentationAnnotationName]).toBeUndefined();
         
         expect((<any>patchResult[0]).op).toBe("replace");

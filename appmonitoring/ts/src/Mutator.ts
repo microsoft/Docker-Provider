@@ -1,7 +1,7 @@
 ﻿import { Patcher } from "./Patcher.js";
-import { logger, RequestMetadata, HeartbeatMetrics } from "./LoggerWrapper.js";
+import { logger, RequestMetadata, HeartbeatMetrics, HeartbeatLogs } from "./LoggerWrapper.js";
 import { PodInfo, IAdmissionReview, InstrumentationCR, AutoInstrumentationPlatforms, DefaultInstrumentationCRName } from "./RequestDefinition.js";
-import { AdmissionReviewValidator } from "./AdmissionReviewValidator.js";
+import { AdmissionReviewValidator, IValidationResult } from "./AdmissionReviewValidator.js";
 import { InstrumentationCRsCollection } from "./InstrumentationCRsCollection.js";
 
 export class Mutator {
@@ -21,38 +21,47 @@ export class Mutator {
         this.requestMetadata = new RequestMetadata(this.admissionReview?.request?.uid, this.crs);
     }
 
-    public async Mutate(): Promise<string> {
-        const response = this.newResponse();
+    public async Mutate(): Promise<IAdmissionReview> {
+        let response: IAdmissionReview;
 
         try {
             if (!this.admissionReview) {
-                throw `Admission review can't be null`;
+                // this shouldn't happen but helps with testing
+                throw `admissionReview can't be null`;
             }
+    
+            logger.info(`Validating content ${this.admissionReview.request?.uid}, ${JSON.stringify(this.admissionReview)}`, this.operationId, this.requestMetadata);
 
-            if (!AdmissionReviewValidator.Validate(this.admissionReview, this.operationId, this.requestMetadata)) {
-                logger.error(`Validation failed on original AdmissionReview: ${JSON.stringify(this.admissionReview)}`, this.operationId, this.requestMetadata);
-                throw `Validation of the incoming AdmissionReview failed: ${JSON.stringify(this.admissionReview?.request?.uid)}`;
+            const validationResult: IValidationResult = AdmissionReviewValidator.Validate(this.admissionReview);
+            if (!validationResult.isValid) {
+                logger.error(`Validation failed with ${validationResult.message} on original AdmissionReview: ${JSON.stringify(this.admissionReview)}`, this.operationId, this.requestMetadata);
+
+                response = this.createErrorResponse(this.admissionReview, 400, validationResult.message);
             } else {
                 logger.info(`Validation passed on original AdmissionReview: ${JSON.stringify(this.admissionReview)}`, this.operationId, this.requestMetadata);
+                
+                const patch: string = await this.mutateDeployment();                
+                response = this.createPatchResponse(this.admissionReview, patch);
             }
-
-            const patch: string = await this.mutateDeployment();
-            response.response.patch = patch;
-
-            return JSON.stringify(response);
         } catch (e) {
-            const exceptionMessage = `Exception encountered: ${e}${e?.stack ?? ""}`;
-
+            const exceptionMessage = `Mutate error: ${e}${e?.stack ?? ""}`;
             logger.addHeartbeatMetric(HeartbeatMetrics.AdmissionReviewActionableFailedCount, 1);
-        
+            logger.appendHeartbeatLog(HeartbeatLogs.AdmissionReviewTopExceptionsEncountered, exceptionMessage);        
             logger.error(exceptionMessage, this.operationId, this.requestMetadata);
             
-            response.response.patch = undefined;
-            response.response.status.code = 400;
-            response.response.status.message = exceptionMessage;
-
-            return JSON.stringify(response);
+            response = this.createErrorResponse(this.admissionReview, 500, exceptionMessage);
+        } finally{
+            if (response === undefined || response === null) {
+                const unexpectedError = `Unexpected null response in Mutator.Mutate`;
+                logger.error(unexpectedError + ' uid: '+ this.admissionReview.request?.uid, this.operationId, this.requestMetadata);
+                logger.addHeartbeatMetric(HeartbeatMetrics.AdmissionReviewActionableFailedCount, 1);
+                // not appending uid to the log because different uid values would make each error count 1 and it would be easily swamped by other errors
+                logger.appendHeartbeatLog(HeartbeatLogs.AdmissionReviewTopExceptionsEncountered, unexpectedError);
+                response = this.createErrorResponse(this.admissionReview, 500, unexpectedError);
+            }           
         }
+        
+        return response;
     }
 
     /**
@@ -62,10 +71,7 @@ export class Mutator {
     private async mutateDeployment(): Promise<string> {
         const podInfo: PodInfo = this.getPodInfo();
         
-        const namespace: string = this.admissionReview.request.object.metadata.namespace;
-        if (!namespace) {
-            throw `Could not determine the namespace of the incoming object`;
-        }
+        const namespace: string = this.admissionReview.request.object.metadata.namespace;   
 
          // find an appropriate CR that dictates whether and how we should mutate
         const crNameToUse: string = this.pickCR();
@@ -101,32 +107,44 @@ export class Mutator {
             clusterName);
 
         const patchDataString: string = JSON.stringify(patchData);
-        logger.info(`Mutated a deployment, returning: ${patchDataString}`, this.operationId, this.requestMetadata);
+
+        logger.info(`Mutation of requested: ${JSON.stringify(this.admissionReview.request.object)}`, this.operationId, this.requestMetadata);
+        logger.info(`Mutation is returning: ${patchDataString}`, this.operationId, this.requestMetadata);        
 
         return Buffer.from(patchDataString).toString("base64");
     }           
 
-    private newResponse() {
-        const response = {
-            apiVersion: "admission.k8s.io/v1",
-            kind: "AdmissionReview",
+
+    private createPatchResponse(admissionReview: IAdmissionReview, patch: string): IAdmissionReview {
+        return <IAdmissionReview>{
+            apiVersion: admissionReview?.apiVersion ?? "admission.k8s.io/v1",
+            kind: admissionReview?.kind ?? "AdmissionReview",
             response: {
-                allowed: true, // we only mutate, not admit, so this should always be true as we never want to block any of the customer's API calls
-                patch: undefined, // JsonPatch document describing the mutation
+                allowed: true, 
+                patch: patch, // JsonPatch document describing the mutation
                 patchType: "JSONPatch",
-                uid: "", // must match the uid of the incoming AdmissionReview,
+                uid: admissionReview?.request?.uid,
                 status: {
                     code: 200, // indicate the type of success/error to k8s
                     message: "OK"
                 }
             },
+        }; 
+    }
+
+    private createErrorResponse(admissionReview: IAdmissionReview, statusCode?: number, errorMessage?: string): IAdmissionReview {
+        return <IAdmissionReview>{
+            apiVersion: admissionReview?.apiVersion ?? "admission.k8s.io/v1",
+            kind: admissionReview?.kind ?? "AdmissionReview",
+            response: {
+                allowed: false,
+                uid: admissionReview?.request?.uid,
+                status: {
+                    code: statusCode ?? 400, // indicate the type of success/error to k8s
+                    message: errorMessage ?? "Error"
+                }
+            },
         };
-
-        response.apiVersion = this.admissionReview?.apiVersion;
-        response.response.uid = this.admissionReview?.request?.uid;
-        response.kind = this.admissionReview?.kind;
-
-        return response;
     }
 
     private getPodInfo(): PodInfo {

@@ -1,6 +1,6 @@
 ﻿import { expect, describe, it } from "@jest/globals";
 import { Mutator } from "../Mutator.js";
-import { IAdmissionReview, IAnnotations, IMetadata, InstrumentationCR, AutoInstrumentationPlatforms, DefaultInstrumentationCRName, IInstrumentationState, IObjectType, InstrumentationAnnotationName } from "../RequestDefinition.js";
+import { IAdmissionReview, IAnnotations, IMetadata, InstrumentationCR, AutoInstrumentationPlatforms, DefaultInstrumentationCRName, IInstrumentationState, IKubeObjectType, InstrumentationAnnotationName } from "../RequestDefinition.js";
 import { TestObject2, TestObject4, crs, clusterArmId, clusterArmRegion } from "./testConsts.js";
 import { logger } from "../LoggerWrapper.js"
 import { InstrumentationCRsCollection } from "../InstrumentationCRsCollection.js";
@@ -15,7 +15,7 @@ afterEach(() => {
 
 describe("Mutator", () => {
     it("Null admission review", async () => {
-        const result = JSON.parse(await new Mutator(null, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = await new Mutator(null, crs, clusterArmId, clusterArmRegion, null).Mutate();
 
         expect(result.response.allowed).toBe(true);
         expect(result.response.patchType).toBe("JSONPatch");
@@ -28,7 +28,7 @@ describe("Mutator", () => {
         const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject2));
         admissionReview.request.resource.resource = "Not a pod!";
 
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate();
 
         expect(result.response.allowed).toBe(true);
         expect(result.response.patchType).toBe("JSONPatch");
@@ -41,7 +41,7 @@ describe("Mutator", () => {
         const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject2));
         admissionReview.request.operation = "DELETE";
 
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate();
 
         expect(result.response.allowed).toBe(true);
         expect(result.response.patchType).toBe("JSONPatch");
@@ -98,7 +98,7 @@ describe("Mutator", () => {
         crs.Upsert(crDefault);
 
         // ACT
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate();
 
         // ASSERT
         expect(result.response.allowed).toBe(true);
@@ -113,7 +113,7 @@ describe("Mutator", () => {
 
         expect((<[]>patches).length).toBe(1);
 
-        const obj: IObjectType = (<any>patches[0]).value as IObjectType;
+        const obj: IKubeObjectType = (<any>patches[0]).value as IKubeObjectType;
         const annotationValue: IInstrumentationState = JSON.parse(obj.metadata.annotations[InstrumentationAnnotationName]) as IInstrumentationState;
 
         expect(annotationValue.crName).toBe(DefaultInstrumentationCRName);
@@ -152,7 +152,7 @@ describe("Mutator", () => {
         crs.Upsert(cr1);
 
         // ACT
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate();
 
         // ASSERT
         expect(result.response.allowed).toBe(true);
@@ -167,7 +167,7 @@ describe("Mutator", () => {
 
         expect((<[]>patches).length).toBe(1);
 
-        const obj: IObjectType = (<any>patches[0]).value as IObjectType;
+        const obj: IKubeObjectType = (<any>patches[0]).value as IKubeObjectType;
         expect(obj.metadata?.annotations?.[InstrumentationAnnotationName]).toBeUndefined();        
     });
 
@@ -191,7 +191,7 @@ describe("Mutator", () => {
             admissionReview.request.object.spec.template.metadata = metadata;
 
              // ACT
-            const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+            const result = await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate();
             
             // ASSERT
             expect(result.response.allowed).toBe(true);
@@ -255,7 +255,7 @@ describe("Mutator", () => {
         admissionReview.request.object.spec.template.metadata = metadata;
 
         // ACT
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate();
 
         // ASSERT
         expect(result.response.allowed).toBe(true);
@@ -270,7 +270,7 @@ describe("Mutator", () => {
 
         expect((<[]>patches).length).toBe(1);
 
-        const obj: IObjectType = (<any>patches[0]).value as IObjectType;
+        const obj: IKubeObjectType = (<any>patches[0]).value as IKubeObjectType;
         const annotationValue: IInstrumentationState = JSON.parse(obj.metadata.annotations[InstrumentationAnnotationName]) as IInstrumentationState;
         
         expect(annotationValue.crName).toBe(DefaultInstrumentationCRName);
@@ -331,7 +331,7 @@ describe("Mutator", () => {
         admissionReview.request.object.spec.template.metadata = metadata;
 
         // ACT
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate();
 
         // ASSERT
         expect(result.response.allowed).toBe(true);
@@ -346,7 +346,7 @@ describe("Mutator", () => {
 
         expect((<[]>patches).length).toBe(1);
         
-        const obj: IObjectType = (<any>patches[0]).value as IObjectType;
+        const obj: IKubeObjectType = (<any>patches[0]).value as IKubeObjectType;
         const annotationValue: IInstrumentationState = JSON.parse(obj.metadata.annotations[InstrumentationAnnotationName]) as IInstrumentationState;
         
         expect(annotationValue.crName).toBe(cr1.metadata.name);
@@ -389,7 +389,7 @@ describe("Mutator", () => {
         admissionReview.request.object.spec.template.metadata = metadata;
 
         // ACT
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate();
 
         // ASSERT
         expect(result.response.allowed).toBe(true);
@@ -404,7 +404,7 @@ describe("Mutator", () => {
 
         expect((<[]>patches).length).toBe(1);
 
-        const obj: IObjectType = (<any>patches[0]).value as IObjectType;
+        const obj: IKubeObjectType = (<any>patches[0]).value as IKubeObjectType;
         const annotationValue: IInstrumentationState = JSON.parse(obj.metadata.annotations[InstrumentationAnnotationName]) as IInstrumentationState;
 
         expect(annotationValue.crName).toBe(crDefault.metadata.name);
