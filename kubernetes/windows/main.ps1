@@ -29,7 +29,7 @@ function Confirm-WindowsServiceExists($name) {
 }
 
 function Remove-WindowsServiceIfItExists($name) {
-    $exists = Confirm-WindowsServiceExists $name
+    $exists = Confirm-WindowsServiceExists($name)
     if ($exists) {
         sc.exe \\server delete $name
     }
@@ -987,5 +987,5 @@ Get-Service fluentdwinaks
 
 # Start memory monitoring script as a background job
 Start-Job -ScriptBlock {
-    Start-Process -NoNewWindow -FilePath "powershell" -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "C:\opt\amalogswindows\scripts\powershell\MemoryUsageMonitor.ps1"
+    Start-Process -NoNewWindow -FilePath "powershell" -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "C:\opt\amalogswindows\scripts\powershell\memoryusagemonitor.ps1"
 }
