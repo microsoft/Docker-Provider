@@ -4,15 +4,15 @@ variables:
 - name: ACRName
   value: containerinsights.azurecr.io
 - name: ADMIN_SUBSCRIPTION_ID
-  value: 9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb
+  value: $[variables['ADMIN_SUBSCRIPTION_ID']]
 - name: CHART_VERSION
   value: ''
 - name: IS_CUSTOMER_HIDDEN
   value: false
 - name: MANAGED_IDENTITY
-  value: /subscriptions/30c56c3a-54da-46ea-b004-06eb33432687/resourceGroups/containerinsightsprod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ev2-agent-release
+  value: $[variables['MANAGED_IDENTITY']]
 - name: ManagedIdentity
-  value: /subscriptions/30c56c3a-54da-46ea-b004-06eb33432687/resourceGroups/containerinsightsprod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ev2-agent-release
+  value: $[variables['MANAGED_IDENTITY']]
 - name: REGISTER_REGIONS_CANARY
   value: eastus2euap
 - name: RELEASE_TRAINS_PREVIEW_PATH
@@ -22,15 +22,15 @@ variables:
 - name: RepoType
   value: stable
 - name: RESOURCE_AUDIENCE
-  value: c699bf69-fb1d-4eaf-999b-99e6b2ae4d85
+  value: $[variables['RESOURCE_AUDIENCE']]
 - name: ServiceTreeGuid
-  value: 3170cdd2-19f0-4027-912b-1027311691a2
+  value: $[variables['SERVICE_TREE_GUID']]
 - name: SPN_CLIENT_ID
-  value: 4f258f4a-1526-461a-99cc-644e0e1cfafd
+  value: $[variables['SPN_CLIENT_ID']]
 - name: SPN_SECRET
   value: 
 - name: SPN_TENANT_ID
-  value: 72f988bf-86f1-41af-91ab-2d7cd011db47
+  value: $[variables['SPN_TENANT_ID']]
 resources:
   pipelines:
   - pipeline: '_ci-arc-k8s-extension-canary-release'
@@ -47,7 +47,7 @@ extends:
     pool:
       name: Azure-Pipelines-Windows-CI-Test-EO
       os: windows
-    serviceTreeId: 3170cdd2-19f0-4027-912b-1027311691a2
+    serviceTreeId: $[variables['SERVICE_TREE_GUID']]
     customBuildTags:
     - ES365AIMigrationTooling-Release
     stages:
