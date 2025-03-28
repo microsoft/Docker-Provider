@@ -986,6 +986,8 @@ Get-WmiObject Win32_process | Where-Object { $_.Name -match 'powershell' } | For
 Get-Service fluentdwinaks
 
 # Start memory monitoring script as a background job
+Write-Host "starting memory usage monitoring script"
 Start-Job -ScriptBlock {
     Start-Process -NoNewWindow -FilePath "powershell" -ArgumentList "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "C:\opt\amalogswindows\scripts\powershell\memoryusagemonitor.ps1"
 }
+Write-Host "finished starting memory usage monitoring script"
