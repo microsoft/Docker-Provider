@@ -20,12 +20,15 @@ sudo apt-get install -y testkube
 echo "Install testkube on the cluster"
 helm repo add kubeshop https://kubeshop.github.io/helm-charts
 helm repo update
-helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./testkube/helm-testkube-values.yaml
+helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./helm-testkube-values.yaml
 
 echo "Install testkube CRIs"
 export AZURE_CLIENT_ID=$AzureClientId
 export AZURE_TENANT_ID=$(AzureTenantId)
 export WEBHOOK_URI=$(TeamsWebhookUri)
+echo $AZURE_CLIENT_ID
+echo $AZURE_TENANT_ID
+echo $WEBHOOK_URI
 envsubst < ./testkube-teams-integration.yaml > ./testkube-teams-integration-updated.yaml
 kubectl apply -f ./testkube-teams-integration-updated.yaml
 kubectl apply -f ./api-server-permissions.yaml
