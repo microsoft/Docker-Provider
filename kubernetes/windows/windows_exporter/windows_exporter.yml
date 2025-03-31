@@ -1,0 +1,21 @@
+﻿# Windows Exporter Configuration
+# Reference: https://github.com/prometheus-community/windows_exporter
+
+# Enable specific collectors
+enabled_collectors:
+  - process
+  - memory
+  - cpu
+  - cs
+  - logical_disk
+  - net
+  - os
+  - system
+  - container
+
+# Process collector settings
+process:
+  # Collect metrics for all processes
+  include_exes: ["*"]
+  # Metrics whitelist (collect these metrics only)
+  whitelist: ["process_cpu_time_total", "process_working_set_bytes", "process_virtual_bytes", "process_private_bytes", "process_start_time_seconds"]

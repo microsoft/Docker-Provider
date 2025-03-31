@@ -698,8 +698,26 @@ function Get-ContainerRuntime {
     return $containerRuntime
 }
 
-function Start-Fluent-Telegraf {
+function Start-WindowsExporter {
+    Write-Host "Starting Windows exporter for process metrics collection"
+    # Define collectors to enable - adjust as needed
+    $enabledCollectors = "process,memory,cpu,cs,logical_disk,net,os,system,container"
 
+    # Start Windows exporter with specified collectors enabled
+    $arguments = @(
+        "--collectors.enabled=$enabledCollectors",
+        "--web.listen-address=:9182"
+    )
+
+    # Start Windows exporter in the background
+    Start-Job -ScriptBlock {
+        Start-Process -NoNewWindow -FilePath "C:\opt\windows_exporter\windows_exporter.exe" -ArgumentList @("--collectors.enabled=process,memory,cpu,cs,logical_disk,net,os,system,container", "--web.listen-address=:9182")
+    }
+    Write-Host "Windows exporter started with collectors: $enabledCollectors"
+}
+
+
+function Start-Fluent-Telegraf {
     Set-ProcessAndMachineEnvVariables "TELEMETRY_CUSTOM_PROM_MONITOR_PODS" "false"
     # run prometheus custom config parser
     Write-Host "**********Running config parser for custom prometheus scraping**********"
@@ -984,6 +1002,11 @@ Start-Job -ScriptBlock {
 Write-Host "finished starting memory usage monitoring script"
 
 Start-Fluent-Telegraf
+
+# Start Windows exporter for process metrics collection
+Write-Host "Starting Windows exporter for process metrics collection..."
+Start-WindowsExporter
+Write-Host "Windows exporter started successfully"
 
 # List all powershell processes running. This should have main.ps1 and filesystemwatcher.ps1
 Get-WmiObject Win32_process | Where-Object { $_.Name -match 'powershell' } | Format-Table -Property Name, CommandLine, ProcessId

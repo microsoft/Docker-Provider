@@ -88,6 +88,10 @@ COPY ./amalogswindows/installer/conf/fluent-bit-azmon-multi-tenancy.conf /etc/fl
 # copy telegraf conf file
 COPY ./amalogswindows/installer/conf/telegraf.conf /etc/telegraf/
 
+# Setup Windows exporter for Prometheus metrics
+RUN powershell -Command "New-Item -ItemType Directory -Path 'C:\opt\windows_exporter' -Force; \
+    Invoke-WebRequest -Uri 'https://github.com/prometheus-community/windows_exporter/releases/download/v0.25.0/windows_exporter-0.25.0-amd64.exe' -OutFile 'C:\opt\windows_exporter\windows_exporter.exe'"
+
 # copy keepcert alive ruby scripts
 COPY ./amalogswindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluent/plugin/
 
