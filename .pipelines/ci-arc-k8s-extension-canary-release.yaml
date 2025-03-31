@@ -1,0 +1,116 @@
+trigger: none
+name: $(Date:yyyyMMdd).$(Rev:r)
+variables:
+- name: ACRName
+  value: containerinsights.azurecr.io
+- name: ADMIN_SUBSCRIPTION_ID
+  value: $[variables['ADMIN_SUBSCRIPTION_ID']]
+- name: CHART_VERSION
+  value: ''
+- name: IS_CUSTOMER_HIDDEN
+  value: false
+- name: MANAGED_IDENTITY
+  value: $[variables['MANAGED_IDENTITY']]
+- name: ManagedIdentity
+  value: $[variables['MANAGED_IDENTITY']]
+- name: REGISTER_REGIONS_CANARY
+  value: eastus2euap
+- name: RELEASE_TRAINS_PREVIEW_PATH
+  value: preview
+- name: RELEASE_TRAINS_STABLE_PATH
+  value: stable
+- name: RepoType
+  value: stable
+- name: RESOURCE_AUDIENCE
+  value: $[variables['RESOURCE_AUDIENCE']]
+- name: ServiceTreeGuid
+  value: $[variables['SERVICE_TREE_GUID']]
+- name: SPN_CLIENT_ID
+  value: $[variables['SPN_CLIENT_ID']]
+- name: SPN_SECRET
+  value: 
+- name: SPN_TENANT_ID
+  value: $[variables['SPN_TENANT_ID']]
+resources:
+  pipelines:
+  - pipeline: '_ci-arc-k8s-extension-canary-release'
+    project: 'microsoft'
+    source: 'CDPX\docker-provider\ContainerInsights-MultiArch-MergedBranches'
+  repositories:
+  - repository: 1ESPipelineTemplates
+    type: git
+    name: 1ESPipelineTemplates/1ESPipelineTemplates
+    ref: refs/tags/release
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
+  parameters:
+    pool:
+      name: Azure-Pipelines-Windows-CI-Test-EO
+      os: windows
+    serviceTreeId: $[variables['SERVICE_TREE_GUID']]
+    customBuildTags:
+    - ES365AIMigrationTooling-Release
+    stages:
+    - stage: Stage_1
+      displayName: Canary MCR
+      templateContext:
+        cloud: Public
+        isProduction: true
+        approval:
+          workflow: approvalService
+      jobs:
+      - job: Job_1
+        displayName: Agentless job
+        condition: succeeded()
+        timeoutInMinutes: 7200
+        pool: server
+        steps:
+        - task: ReleasePipeline.approvalservice-ext.a81eb944-f6e7-40bb-acb3-6f68822bc5ab.ApprovalTask@1
+          displayName: Approval service
+          inputs:
+            servicetreeguid: $(ServiceTreeGuid)
+          timeoutInMinutes: 7200
+      - job: Job_2
+        displayName: Agent job - Ev2
+        condition: succeeded()
+        timeoutInMinutes: 0
+        templateContext:
+          type: releaseJob
+          workflow: ev2-classic
+          ev2:
+            useServerMonitorTask: true
+            serviceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/deploy/ServiceGroupRoot
+            rolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/deploy/ServiceGroupRoot/RolloutSpecs/Public.Canary.RolloutSpec.json
+            inlineScopeBindingOverrides: '{   "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",   "contentVersion": "0.0.0.1",   "scopeBindings": [     {       "scopeTagName": "Canary",       "bindings": [         {           "find": "__ACR_NAME__",           "replaceWith": "$(ACRName)"         },         {           "find": "__REPO_TYPE__",           "replaceWith": "$(RepoType)"         },         {           "find": "__CHART_VERSION__",           "replaceWith": "$(CHART_VERSION)"         },                 {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(ManagedIdentity)"                 }       ]     }   ] }'
+    - stage: Stage_2
+      displayName: Canary Regions Release
+      trigger: manual
+      templateContext:
+        cloud: Public
+        isProduction: true
+        approval:
+          workflow: approvalService
+      jobs:
+      - job: Job_1
+        displayName: Agentless job
+        condition: succeeded()
+        timeoutInMinutes: 7200
+        pool: server
+        steps:
+        - task: ReleasePipeline.approvalservice-ext.a81eb944-f6e7-40bb-acb3-6f68822bc5ab.ApprovalTask@1
+          displayName: Approval service
+          inputs:
+            servicetreeguid: $(ServiceTreeGuid)
+          timeoutInMinutes: 7200
+      - job: Job_2
+        displayName: Agent job - Ev2
+        condition: succeeded()
+        timeoutInMinutes: 0
+        templateContext:
+          type: releaseJob
+          workflow: ev2-classic
+          ev2:
+            useServerMonitorTask: true
+            serviceRootPath: ServiceGroupRoot
+            rolloutSpecPath: Public.CanaryStable.RolloutSpec.json
+            inlineScopeBindingOverrides: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",     "contentVersion": "0.0.0.1",     "scopeBindings": [                {             "scopeTagName": "CanaryStable",             "bindings": [                 {                     "find": "__RELEASE_STAGE__",                     "replaceWith": "CanaryStable"                 },                 {                     "find": "__ADMIN_SUBSCRIPTION_ID__",                     "replaceWith": "$(ADMIN_SUBSCRIPTION_ID)"                 },                 {                     "find": "__CHART_VERSION__",                     "replaceWith": "$(CHART_VERSION)"                 },                 {                     "find": "__IS_CUSTOMER_HIDDEN__",                     "replaceWith": "$(IS_CUSTOMER_HIDDEN)"                 },                 {                     "find": "__REGISTER_REGIONS_CANARY__",                     "replaceWith": "$(REGISTER_REGIONS_CANARY)"                 },                 {                     "find": "__RELEASE_TRAINS_PREVIEW_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_PREVIEW_PATH)"                 },                 {                     "find": "__RELEASE_TRAINS_STABLE_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_STABLE_PATH)"                 },                 {                     "find": "__RESOURCE_AUDIENCE__",                     "replaceWith": "$(RESOURCE_AUDIENCE)"                 },                 {                     "find": "__SPN_CLIENT_ID__",                     "replaceWith": "$(SPN_CLIENT_ID)"                 },                 {                     "find": "__SPN_SECRET__",                     "replaceWith": "$(SPN_SECRET)"                 },                 {                     "find": "__SPN_TENANT_ID__",                     "replaceWith": "$(SPN_TENANT_ID)"                 },                  {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(MANAGED_IDENTITY)"                 }             ]         }                ]         }                                                                                                                       '
