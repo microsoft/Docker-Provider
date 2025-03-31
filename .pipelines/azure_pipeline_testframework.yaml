@@ -8,7 +8,7 @@ trigger: none
 pr: none
 
 jobs:
-- deployment: Testkube
+- deployment: Testkube1
   environment: container-insights
   timeoutInMinutes: 120
   displayName: "Monitoring-Model-Cluster-WCUS tests"
@@ -35,7 +35,7 @@ jobs:
           workingDirectory: $(Build.SourcesDirectory)/test/testkube/
           displayName: "Install and execute testkube tests"
 
-- deployment: Testkube
+- deployment: Testkube2
   environment: container-insights
   timeoutInMinutes: 120
   displayName: "Monitoring-Model-Cluster-WEU tests"
@@ -62,7 +62,7 @@ jobs:
           workingDirectory: $(Build.SourcesDirectory)/test/testkube/
           displayName: "Install and execute testkube tests"
 
-- deployment: Testkube
+- deployment: Testkube3
   environment: container-insights
   timeoutInMinutes: 120
   displayName: "ci-logs-prod-aks-geneva-integration tests"
@@ -89,7 +89,7 @@ jobs:
           workingDirectory: $(Build.SourcesDirectory)/test/testkube/
           displayName: "Install and execute testkube tests"
 
-- deployment: Testkube
+- deployment: Testkube4
   environment: container-insights
   timeoutInMinutes: 120
   displayName: "ci-logs-prod-aks-geneva-integration-multi-tenancy tests"
@@ -116,7 +116,7 @@ jobs:
           workingDirectory: $(Build.SourcesDirectory)/test/testkube/
           displayName: "Install and execute testkube tests"
 
-- deployment: Testkube
+- deployment: Testkube5
   environment: container-insights
   timeoutInMinutes: 120
   displayName: "ci-logs-prod-aks-work-load-identity tests"
@@ -143,7 +143,7 @@ jobs:
           workingDirectory: $(Build.SourcesDirectory)/test/testkube/
           displayName: "Install and execute testkube tests"
 
-- deployment: Testkube
+- deployment: Testkube6
   environment: container-insights
   timeoutInMinutes: 120
   displayName: "ci-logs-prod-wcus-fips tests"
