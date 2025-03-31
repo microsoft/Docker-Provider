@@ -82,7 +82,7 @@ jobs:
           inputs:
             azureSubscription: 'ContainerInsights_Build_Subscription_CI'
             scriptLocation: 'inlineScript'
-            inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-geneva-integration
+            inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-geneva-integration'
           
         - bash: |
             ./install-and-execute-testkube.sh AzureClientId=$(AksGenevaIntegrationClientId)
