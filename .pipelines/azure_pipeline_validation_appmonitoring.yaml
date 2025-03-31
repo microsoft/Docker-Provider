@@ -131,6 +131,11 @@ jobs:
         fi
 
         echo "Jest is done"
+
+        echo "Pruning packages..."
+        sudo npx modclean -r
+        sudo npm prune --production
+        echo "Pruning packages is done"
         
         pwd
         ls -a

@@ -16,7 +16,7 @@ export class Mutations {
     };
     private static agentImageJava = {
         repositoryPath: "auto-instrumentation/java",
-        imageTag: "3.5.2-aks"
+        imageTag: "3.7.1-aks"
     };
     
     // path on agent image to copy from
