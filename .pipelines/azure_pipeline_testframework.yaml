@@ -7,11 +7,22 @@
 trigger: none
 pr: none
 
+# Define a reusable template for Testkube deployments
+parameters:
+  - name: environmentName
+    type: string
+  - name: resourceGroup
+    type: string
+  - name: clusterName
+    type: string
+  - name: clientId
+    type: string
+
 jobs:
 - deployment: Testkube
   environment: container-insights
   timeoutInMinutes: 120
-  displayName: "Monitoring-Model-Cluster-WCUS tests"
+  displayName: "${{ parameters.environmentName }} tests"
   pool:
     name: Azure-Pipelines-CI-Test-EO
   variables:
@@ -23,46 +34,43 @@ jobs:
         - checkout: self
           persistCredentials: true
 
-        - bash: |
-            wget -qO - https://repo.testkube.io/key.pub | sudo apt-key add -
-            echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sources.list
-            sudo apt-get update
-            sudo apt-get install -y testkube
-          workingDirectory: $(Build.SourcesDirectory)
-          displayName: "Install testkube CLI"
-
         - task: AzureCLI@1
           displayName: Get kubeconfig
           inputs:
             azureSubscription: 'ContainerInsights_Build_Subscription_CI'
             scriptLocation: 'inlineScript'
-            inlineScript: 'az aks get-credentials -g monitoring-model-cluster-wcus -n Monitoring-Model-Cluster-WCUS'
+            inlineScript: 'az aks get-credentials -g ${{ parameters.resourceGroup }} -n ${{ parameters.clusterName }}'
           
         - bash: |
-            # Install TestKube
+            # ./install-and-execute-testkube.sh AzureClientId=${{ parameters.clientId }}
+            echo "Install testkube CLI"
+            wget -qO - https://repo.testkube.io/key.pub | sudo apt-key add -
+            echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sources.list
+            sudo apt-get update
+            sudo apt-get install -y testkube
+
+            echo "Install testkube on the cluster"
             helm repo add kubeshop https://kubeshop.github.io/helm-charts
             helm repo update
             helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./testkube/helm-testkube-values.yaml
 
-            # Install TestKube CRs
-            export WEBHOOK_URI=$(WEBHOOK_URI)
-            export AZURE_CLIENT_ID="fea3fc3e-01b8-4af7-bf49-bd0815f09853"
-            envsubst < ./testkube/testkube-teams-integration.yaml > ./testkube/testkube-teams-integration-Monitoring-Model-Cluster-WCUS.yaml
-            kubectl apply -f ./testkube/testkube-teams-integration-Monitoring-Model-Cluster-WCUS.yaml
-            kubectl apply -f ./testkube/api-server-permissions.yaml
-            envsubst < ./testkube/testkube-test-crs.yaml > ./testkube/testkube-test-crs-Monitoring-Model-Cluster-WCUS.yaml
-            kubectl apply -f ./testkube/testkube-test-crs-Monitoring-Model-Cluster-WCUS.yaml
-            exit 0
-          workingDirectory: $(Build.SourcesDirectory)/test/
-          displayName: "Apply TestKube CRs and pod/service monitors"
+            echo "Install testkube CRIs"
+            export AZURE_CLIENT_ID=${{ parameters.clientId }}
+            export AZURE_TENANT_ID=$(AzureTenantId)
+            export WEBHOOK_URI=$(TeamsWebhookUri)
+            
+            envsubst < ./testkube-teams-integration.yaml > ./testkube-teams-integration-updated.yaml
+            kubectl apply -f ./testkube-teams-integration-updated.yaml
+            kubectl apply -f ./api-server-permissions.yaml
+            envsubst < ./testkube-test-crs.yaml > ./testkube-test-crs-updated.yaml
+            kubectl apply -f ./testkube-test-crs-updated.yaml
 
-        - bash: |
+            echo "Wait for cluster to be ready"
             sleep 120
-          displayName: "Wait for cluster to be ready"
-          
-        - bash: |
+
+            echo "Run testkube tests"
             # Run the full test suite
-            kubectl testkube run testsuite e2e-tests-merge --job-template ./test/testkube/custom-job-template.yaml --verbose
+            kubectl testkube run testsuite e2e-tests-merge --job-template ./custom-job-template.yaml --verbose
 
             # Get the current id of the test suite now running
             execution_id=$(kubectl testkube get testsuiteexecutions --test-suite e2e-tests-merge --limit 1 | grep e2e-tests | awk '{print $1}')
@@ -76,8 +84,8 @@ jobs:
             # For any test that has failed, print out the Ginkgo logs
             if [[ $(jq -r '.status' testkube-results.json) == "failed" ]]; then
 
-              # Get each test name and id that failed
-              jq -r '.executeStepResults[].execute[] | select(.execution.executionResult.status=="failed") | "\(.execution.testName) \(.execution.id)"' testkube-results.json | while read line; do
+                # Get each test name and id that failed
+                jq -r '.executeStepResults[].execute[] | select(.execution.executionResult.status=="failed") | "\(.execution.testName) \(.execution.id)"' testkube-results.json | while read line; do
                 testName=$(echo $line | cut -d ' ' -f 1)
                 id=$(echo $line | cut -d ' ' -f 2)
                 echo "Test $testName failed. Test ID: $id"
@@ -88,450 +96,52 @@ jobs:
                 # Remove superfluous logs of everything before the last occurence of 'go downloading'.
                 # The actual errors can be viewed from the ADO run, instead of needing to view the testkube dashboard.
                 cat error.log | tac | awk '/go: downloading/ {exit} 1' | tac
-              done
+                done
 
-              # Explicitly fail the ADO task since at least one test failed
-              exit 1
+                # Explicitly fail the ADO task since at least one test failed
+                exit 1
             fi
-          workingDirectory: $(Build.SourcesDirectory)
-          displayName: "Run tests"
-
-- deployment: Testkube
-  environment: container-insights
-  timeoutInMinutes: 120
-  displayName: "Monitoring-Model-Cluster-WEU tests"
-  pool:
-    name: Azure-Pipelines-CI-Test-EO
-  variables:
-    skipComponentGovernanceDetection: true
-  strategy:
-    runOnce:
-      deploy:
-        steps:
-        - checkout: self
-          persistCredentials: true
-
-        - bash: |
-            wget -qO - https://repo.testkube.io/key.pub | sudo apt-key add -
-            echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sources.list
-            sudo apt-get update
-            sudo apt-get install -y testkube
-          workingDirectory: $(Build.SourcesDirectory)
-          displayName: "Install testkube CLI"
-
-        - task: AzureCLI@1
-          displayName: Get kubeconfig
-          inputs:
-            azureSubscription: 'ContainerInsights_Build_Subscription_CI'
-            scriptLocation: 'inlineScript'
-            inlineScript: 'az aks get-credentials -g Monitoring-Model-Cluster-WEU -n Monitoring-Model-Cluster-WEU'
-          
-        - bash: |
-            # Install TestKube
-            helm repo add kubeshop https://kubeshop.github.io/helm-charts
-            helm repo update
-            helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./testkube/helm-testkube-values.yaml
-
-            # Install TestKube CRs
-            export WEBHOOK_URI=$(WEBHOOK_URI)
-            export AZURE_CLIENT_ID="39d6a58e-3827-465a-a0ae-6b6950644ed5"
-            envsubst < ./testkube/testkube-teams-integration.yaml > ./testkube/testkube-teams-integration-Monitoring-Model-Cluster-WEU.yaml
-            kubectl apply -f ./testkube/testkube-teams-integration-Monitoring-Model-Cluster-WEU.yaml
-            kubectl apply -f ./testkube/api-server-permissions.yaml
-            envsubst < ./testkube/testkube-test-crs.yaml > ./testkube/testkube-test-crs-Monitoring-Model-Cluster-WEU.yaml
-            kubectl apply -f ./testkube/testkube-test-crs-Monitoring-Model-Cluster-WEU.yaml
-            exit 0
-          workingDirectory: $(Build.SourcesDirectory)/test/
-          displayName: "Apply TestKube CRs and pod/service monitors"
-
-        - bash: |
-            sleep 120
-          displayName: "Wait for cluster to be ready"
-          
-        - bash: |
-            # Run the full test suite
-            kubectl testkube run testsuite e2e-tests-merge --job-template ./test/testkube/custom-job-template.yaml --verbose
-
-            # Get the current id of the test suite now running
-            execution_id=$(kubectl testkube get testsuiteexecutions --test-suite e2e-tests-merge --limit 1 | grep e2e-tests | awk '{print $1}')
-
-            # Watch until the all the tests in the test suite finish
-            kubectl testkube watch testsuiteexecution $execution_id
-
-            # Get the results as a formatted json file
-            kubectl testkube get testsuiteexecution $execution_id --output json > testkube-results.json
-
-            # For any test that has failed, print out the Ginkgo logs
-            if [[ $(jq -r '.status' testkube-results.json) == "failed" ]]; then
-
-              # Get each test name and id that failed
-              jq -r '.executeStepResults[].execute[] | select(.execution.executionResult.status=="failed") | "\(.execution.testName) \(.execution.id)"' testkube-results.json | while read line; do
-                testName=$(echo $line | cut -d ' ' -f 1)
-                id=$(echo $line | cut -d ' ' -f 2)
-                echo "Test $testName failed. Test ID: $id"
-
-                # Get the Ginkgo logs of the test
-                kubectl testkube get execution $id > out 2>error.log
-
-                # Remove superfluous logs of everything before the last occurence of 'go downloading'.
-                # The actual errors can be viewed from the ADO run, instead of needing to view the testkube dashboard.
-                cat error.log | tac | awk '/go: downloading/ {exit} 1' | tac
-              done
-
-              # Explicitly fail the ADO task since at least one test failed
-              exit 1
-            fi
-          workingDirectory: $(Build.SourcesDirectory)
-          displayName: "Run tests"
-
-- deployment: Testkube
-  environment: container-insights
-  timeoutInMinutes: 120
-  displayName: "ci-logs-prod-aks-geneva-integration tests"
-  pool:
-    name: Azure-Pipelines-CI-Test-EO
-  variables:
-    skipComponentGovernanceDetection: true
-  strategy:
-    runOnce:
-      deploy:
-        steps:
-        - checkout: self
-          persistCredentials: true
-
-        - bash: |
-            wget -qO - https://repo.testkube.io/key.pub | sudo apt-key add -
-            echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sources.list
-            sudo apt-get update
-            sudo apt-get install -y testkube
-          workingDirectory: $(Build.SourcesDirectory)
-          displayName: "Install testkube CLI"
-
-        - task: AzureCLI@1
-          displayName: Get kubeconfig
-          inputs:
-            azureSubscription: 'ContainerInsights_Build_Subscription_CI'
-            scriptLocation: 'inlineScript'
-            inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-geneva-integration
-          
-        - bash: |
-            # Install TestKube
-            helm repo add kubeshop https://kubeshop.github.io/helm-charts
-            helm repo update
-            helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./testkube/helm-testkube-values.yaml
-
-            # Install TestKube CRs
-            export WEBHOOK_URI=$(WEBHOOK_URI)
-            export AZURE_CLIENT_ID="0a56cdbb-9edb-40e3-8acd-f98819b6d960"
-            envsubst < ./testkube/testkube-teams-integration.yaml > ./testkube/testkube-teams-integration-ci-logs-prod-aks-geneva-integration.yaml
-            kubectl apply -f ./testkube/testkube-teams-integration-ci-logs-prod-aks-geneva-integration.yaml
-            kubectl apply -f ./testkube/api-server-permissions.yaml
-            envsubst < ./testkube/testkube-test-crs.yaml > ./testkube/testkube-test-crs-ci-logs-prod-aks-geneva-integration.yaml
-            kubectl apply -f ./testkube/testkube-test-crs-ci-logs-prod-aks-geneva-integration.yaml
-            exit 0
-          workingDirectory: $(Build.SourcesDirectory)/test/
-          displayName: "Apply TestKube CRs and pod/service monitors"
-
-        - bash: |
-            sleep 120
-          displayName: "Wait for cluster to be ready"
-          
-        - bash: |
-            # Run the full test suite
-            kubectl testkube run testsuite e2e-tests-merge --job-template ./test/testkube/custom-job-template.yaml --verbose
-
-            # Get the current id of the test suite now running
-            execution_id=$(kubectl testkube get testsuiteexecutions --test-suite e2e-tests-merge --limit 1 | grep e2e-tests | awk '{print $1}')
-
-            # Watch until the all the tests in the test suite finish
-            kubectl testkube watch testsuiteexecution $execution_id
-
-            # Get the results as a formatted json file
-            kubectl testkube get testsuiteexecution $execution_id --output json > testkube-results.json
-
-            # For any test that has failed, print out the Ginkgo logs
-            if [[ $(jq -r '.status' testkube-results.json) == "failed" ]]; then
-
-              # Get each test name and id that failed
-              jq -r '.executeStepResults[].execute[] | select(.execution.executionResult.status=="failed") | "\(.execution.testName) \(.execution.id)"' testkube-results.json | while read line; do
-                testName=$(echo $line | cut -d ' ' -f 1)
-                id=$(echo $line | cut -d ' ' -f 2)
-                echo "Test $testName failed. Test ID: $id"
-
-                # Get the Ginkgo logs of the test
-                kubectl testkube get execution $id > out 2>error.log
-
-                # Remove superfluous logs of everything before the last occurence of 'go downloading'.
-                # The actual errors can be viewed from the ADO run, instead of needing to view the testkube dashboard.
-                cat error.log | tac | awk '/go: downloading/ {exit} 1' | tac
-              done
-
-              # Explicitly fail the ADO task since at least one test failed
-              exit 1
-            fi
-          workingDirectory: $(Build.SourcesDirectory)
-          displayName: "Run tests"
-
-- deployment: Testkube
-  environment: container-insights
-  timeoutInMinutes: 120
-  displayName: "ci-logs-prod-aks-geneva-integration-multi-tenancy tests"
-  pool:
-    name: Azure-Pipelines-CI-Test-EO
-  variables:
-    skipComponentGovernanceDetection: true
-  strategy:
-    runOnce:
-      deploy:
-        steps:
-        - checkout: self
-          persistCredentials: true
-
-        - bash: |
-            wget -qO - https://repo.testkube.io/key.pub | sudo apt-key add -
-            echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sources.list
-            sudo apt-get update
-            sudo apt-get install -y testkube
-          workingDirectory: $(Build.SourcesDirectory)
-          displayName: "Install testkube CLI"
-
-        - task: AzureCLI@1
-          displayName: Get kubeconfig
-          inputs:
-            azureSubscription: 'ContainerInsights_Build_Subscription_CI'
-            scriptLocation: 'inlineScript'
-            inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-geneva-integration-multi-tenancy'
-          
-        - bash: |
-            # Install TestKube
-            helm repo add kubeshop https://kubeshop.github.io/helm-charts
-            helm repo update
-            helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./testkube/helm-testkube-values.yaml
-
-            # Install TestKube CRs
-            export WEBHOOK_URI=$(WEBHOOK_URI)
-            export AZURE_CLIENT_ID="027461a0-0069-42a3-b1cb-af4838987785"
-            envsubst < ./testkube/testkube-teams-integration.yaml > ./testkube/testkube-teams-integration-ci-logs-prod-aks-geneva-integration-multi-tenancy.yaml
-            kubectl apply -f ./testkube/testkube-teams-integration-ci-logs-prod-aks-geneva-integration-multi-tenancy.yaml
-            kubectl apply -f ./testkube/api-server-permissions.yaml
-            envsubst < ./testkube/testkube-test-crs.yaml > ./testkube/testkube-test-crs-ci-logs-prod-aks-geneva-integration-multi-tenancy.yaml
-            kubectl apply -f ./testkube/testkube-test-crs-ci-logs-prod-aks-geneva-integration-multi-tenancy.yaml
-            exit 0
-          workingDirectory: $(Build.SourcesDirectory)/test/
-          displayName: "Apply TestKube CRs and pod/service monitors"
-
-        - bash: |
-            sleep 120
-          displayName: "Wait for cluster to be ready"
-          
-        - bash: |
-            # Run the full test suite
-            kubectl testkube run testsuite e2e-tests-merge --job-template ./test/testkube/custom-job-template.yaml --verbose
-
-            # Get the current id of the test suite now running
-            execution_id=$(kubectl testkube get testsuiteexecutions --test-suite e2e-tests-merge --limit 1 | grep e2e-tests | awk '{print $1}')
-
-            # Watch until the all the tests in the test suite finish
-            kubectl testkube watch testsuiteexecution $execution_id
-
-            # Get the results as a formatted json file
-            kubectl testkube get testsuiteexecution $execution_id --output json > testkube-results.json
-
-            # For any test that has failed, print out the Ginkgo logs
-            if [[ $(jq -r '.status' testkube-results.json) == "failed" ]]; then
-
-              # Get each test name and id that failed
-              jq -r '.executeStepResults[].execute[] | select(.execution.executionResult.status=="failed") | "\(.execution.testName) \(.execution.id)"' testkube-results.json | while read line; do
-                testName=$(echo $line | cut -d ' ' -f 1)
-                id=$(echo $line | cut -d ' ' -f 2)
-                echo "Test $testName failed. Test ID: $id"
-
-                # Get the Ginkgo logs of the test
-                kubectl testkube get execution $id > out 2>error.log
-
-                # Remove superfluous logs of everything before the last occurence of 'go downloading'.
-                # The actual errors can be viewed from the ADO run, instead of needing to view the testkube dashboard.
-                cat error.log | tac | awk '/go: downloading/ {exit} 1' | tac
-              done
-
-              # Explicitly fail the ADO task since at least one test failed
-              exit 1
-            fi
-          workingDirectory: $(Build.SourcesDirectory)
-          displayName: "Run tests"
-
-- deployment: Testkube
-  environment: container-insights
-  timeoutInMinutes: 120
-  displayName: "ci-logs-prod-aks-work-load-identity tests"
-  pool:
-    name: Azure-Pipelines-CI-Test-EO
-  variables:
-    skipComponentGovernanceDetection: true
-  strategy:
-    runOnce:
-      deploy:
-        steps:
-        - checkout: self
-          persistCredentials: true
-
-        - bash: |
-            wget -qO - https://repo.testkube.io/key.pub | sudo apt-key add -
-            echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sources.list
-            sudo apt-get update
-            sudo apt-get install -y testkube
-          workingDirectory: $(Build.SourcesDirectory)
-          displayName: "Install testkube CLI"
-
-        - task: AzureCLI@1
-          displayName: Get kubeconfig
-          inputs:
-            azureSubscription: 'ContainerInsights_Build_Subscription_CI'
-            scriptLocation: 'inlineScript'
-            inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-work-load-identity'
-          
-        - bash: |
-            # Install TestKube
-            helm repo add kubeshop https://kubeshop.github.io/helm-charts
-            helm repo update
-            helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./testkube/helm-testkube-values.yaml
-
-            # Install TestKube CRs
-            export WEBHOOK_URI=$(WEBHOOK_URI)
-            export AZURE_CLIENT_ID="57712974-6974-4209-899b-d43bc6f0747f"
-            envsubst < ./testkube/testkube-teams-integration.yaml > ./testkube/testkube-teams-integration-ci-logs-prod-aks-work-load-identity.yaml
-            kubectl apply -f ./testkube/testkube-teams-integration-ci-logs-prod-aks-work-load-identity.yaml
-            kubectl apply -f ./testkube/api-server-permissions.yaml
-            envsubst < ./testkube/testkube-test-crs.yaml > ./testkube/testkube-test-crs-ci-logs-prod-aks-work-load-identity.yaml
-            kubectl apply -f ./testkube/testkube-test-crs-ci-logs-prod-aks-work-load-identity.yaml
-            exit 0
-          workingDirectory: $(Build.SourcesDirectory)/test/
-          displayName: "Apply TestKube CRs and pod/service monitors"
-
-        - bash: |
-            sleep 120
-          displayName: "Wait for cluster to be ready"
-          
-        - bash: |
-            # Run the full test suite
-            kubectl testkube run testsuite e2e-tests-merge --job-template ./test/testkube/custom-job-template.yaml --verbose
-
-            # Get the current id of the test suite now running
-            execution_id=$(kubectl testkube get testsuiteexecutions --test-suite e2e-tests-merge --limit 1 | grep e2e-tests | awk '{print $1}')
-
-            # Watch until the all the tests in the test suite finish
-            kubectl testkube watch testsuiteexecution $execution_id
-
-            # Get the results as a formatted json file
-            kubectl testkube get testsuiteexecution $execution_id --output json > testkube-results.json
-
-            # For any test that has failed, print out the Ginkgo logs
-            if [[ $(jq -r '.status' testkube-results.json) == "failed" ]]; then
-
-              # Get each test name and id that failed
-              jq -r '.executeStepResults[].execute[] | select(.execution.executionResult.status=="failed") | "\(.execution.testName) \(.execution.id)"' testkube-results.json | while read line; do
-                testName=$(echo $line | cut -d ' ' -f 1)
-                id=$(echo $line | cut -d ' ' -f 2)
-                echo "Test $testName failed. Test ID: $id"
-
-                # Get the Ginkgo logs of the test
-                kubectl testkube get execution $id > out 2>error.log
-
-                # Remove superfluous logs of everything before the last occurence of 'go downloading'.
-                # The actual errors can be viewed from the ADO run, instead of needing to view the testkube dashboard.
-                cat error.log | tac | awk '/go: downloading/ {exit} 1' | tac
-              done
-
-              # Explicitly fail the ADO task since at least one test failed
-              exit 1
-            fi
-          workingDirectory: $(Build.SourcesDirectory)
-          displayName: "Run tests"
-
-- deployment: Testkube
-  environment: container-insights
-  timeoutInMinutes: 120
-  displayName: "ci-logs-prod-wcus-fips tests"
-  pool:
-    name: Azure-Pipelines-CI-Test-EO
-  variables:
-    skipComponentGovernanceDetection: true
-  strategy:
-    runOnce:
-      deploy:
-        steps:
-        - checkout: self
-          persistCredentials: true
-
-        - bash: |
-            wget -qO - https://repo.testkube.io/key.pub | sudo apt-key add -
-            echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sources.list
-            sudo apt-get update
-            sudo apt-get install -y testkube
-          workingDirectory: $(Build.SourcesDirectory)
-          displayName: "Install testkube CLI"
-
-        - task: AzureCLI@1
-          displayName: Get kubeconfig
-          inputs:
-            azureSubscription: 'ContainerInsights_Build_Subscription_CI'
-            scriptLocation: 'inlineScript'
-            inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-wcus-fips'
-          
-        - bash: |
-            # Install TestKube
-            helm repo add kubeshop https://kubeshop.github.io/helm-charts
-            helm repo update
-            helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./testkube/helm-testkube-values.yaml
-
-            # Install TestKube CRs
-            export WEBHOOK_URI=$(WEBHOOK_URI)
-            export AZURE_CLIENT_ID="a688cc8e-e5dd-4456-a04a-85d2c84a5d6e"
-            envsubst < ./testkube/testkube-teams-integration.yaml > ./testkube/testkube-teams-integration-ci-logs-prod-wcus-fips.yaml
-            kubectl apply -f ./testkube/testkube-teams-integration-ci-logs-prod-wcus-fips.yaml
-            kubectl apply -f ./testkube/api-server-permissions.yaml
-            envsubst < ./testkube/testkube-test-crs.yaml > ./testkube/testkube-test-crs-ci-logs-prod-wcus-fips.yaml
-            kubectl apply -f ./testkube/testkube-test-crs-ci-logs-prod-wcus-fips.yaml
-            exit 0
-          workingDirectory: $(Build.SourcesDirectory)/test/
-          displayName: "Apply TestKube CRs and pod/service monitors"
-
-        - bash: |
-            sleep 120
-          displayName: "Wait for cluster to be ready"
-          
-        - bash: |
-            # Run the full test suite
-            kubectl testkube run testsuite e2e-tests-merge --job-template ./test/testkube/custom-job-template.yaml --verbose
-
-            # Get the current id of the test suite now running
-            execution_id=$(kubectl testkube get testsuiteexecutions --test-suite e2e-tests-merge --limit 1 | grep e2e-tests | awk '{print $1}')
-
-            # Watch until the all the tests in the test suite finish
-            kubectl testkube watch testsuiteexecution $execution_id
-
-            # Get the results as a formatted json file
-            kubectl testkube get testsuiteexecution $execution_id --output json > testkube-results.json
-
-            # For any test that has failed, print out the Ginkgo logs
-            if [[ $(jq -r '.status' testkube-results.json) == "failed" ]]; then
-
-              # Get each test name and id that failed
-              jq -r '.executeStepResults[].execute[] | select(.execution.executionResult.status=="failed") | "\(.execution.testName) \(.execution.id)"' testkube-results.json | while read line; do
-                testName=$(echo $line | cut -d ' ' -f 1)
-                id=$(echo $line | cut -d ' ' -f 2)
-                echo "Test $testName failed. Test ID: $id"
-
-                # Get the Ginkgo logs of the test
-                kubectl testkube get execution $id > out 2>error.log
-
-                # Remove superfluous logs of everything before the last occurence of 'go downloading'.
-                # The actual errors can be viewed from the ADO run, instead of needing to view the testkube dashboard.
-                cat error.log | tac | awk '/go: downloading/ {exit} 1' | tac
-              done
-
-              # Explicitly fail the ADO task since at least one test failed
-              exit 1
-            fi
-          workingDirectory: $(Build.SourcesDirectory)
-          displayName: "Run tests"
+          workingDirectory: $(Build.SourcesDirectory)/test/testkube/
+          displayName: "Install and execute testkube tests"
+
+- template: Testkube
+  parameters:
+    environmentName: "Monitoring-Model-Cluster-WCUS"
+    resourceGroup: "monitoring-model-cluster-wcus"
+    clusterName: "Monitoring-Model-Cluster-WCUS"
+    clientId: "$(MonitoringModelClusterWCUSClientId)"
+
+- template: Testkube
+  parameters:
+    environmentName: "Monitoring-Model-Cluster-WEU"
+    resourceGroup: "Monitoring-Model-Cluster-WEU"
+    clusterName: "Monitoring-Model-Cluster-WEU"
+    clientId: "$(MonitoringModelClusterWEUClientId)"
+
+- template: Testkube
+  parameters:
+    environmentName: "ci-logs-prod-aks-geneva-integration"
+    resourceGroup: "ci-logs-prod-aks"
+    clusterName: "ci-logs-prod-aks-geneva-integration"
+    clientId: "$(AksGenevaIntegrationClientId)"
+
+- template: Testkube
+  parameters:
+    environmentName: "ci-logs-prod-aks-geneva-integration-multi-tenancy"
+    resourceGroup: "ci-logs-prod-aks"
+    clusterName: "ci-logs-prod-aks-geneva-integration-multi-tenancy"
+    clientId: "$(AksGenevaIntegrationMultiTenancyClientId)"
+
+- template: Testkube
+  parameters:
+    environmentName: "ci-logs-prod-aks-work-load-identity"
+    resourceGroup: "ci-logs-prod-aks"
+    clusterName: "ci-logs-prod-aks-work-load-identity"
+    clientId: "$(AksWorkLoadIdentityClientId)"
+
+- template: Testkube
+  parameters:
+    environmentName: "ci-logs-prod-wcus-fips"
+    resourceGroup: "ci-logs-prod-aks"
+    clusterName: "ci-logs-prod-wcus-fips"
+    clientId: "$(WcusFipsClientId)"
