@@ -114,7 +114,7 @@ mongodb:
     # -- MongoDB image repository
     repository: azuremonitor/containerinsights/cidev
     # -- MongoDB image tag
-    tag: mongodb
+    tag: mongodb_6.0.5-debian-11-r64
     # -- MongoDB image pull Secret
     pullSecrets: []
   nodeSelector: 
@@ -163,8 +163,6 @@ nats:
   # global:
   #   image:
   #     registry: <registry-name>
-  # -- Uncomment to override the NATS Server image options
-
   container:
     image:
       registry: mcr.microsoft.com
@@ -175,7 +173,6 @@ nats:
   # Reloader container settings
   reloader:
     enabled: true
-    # -- Uncomment to override the NATS Server Config Reloader image options
     image:
       registry: mcr.microsoft.com
       repository: azuremonitor/containerinsights/cidev
@@ -216,8 +213,6 @@ nats:
     jetstream:
       # -- Toggle whether to enable JetStream (should not be disabled as Testkube uses Jetstream features)
       enabled: true
-  
-
 
 testkube-logs:
   # -- Testkube logs full name override
@@ -672,7 +667,7 @@ testkube-api:
     image:
       registry: mcr.microsoft.com
       repository: azuremonitor/containerinsights/cidev
-      tag: minio
+      tag: minio_RELEASE.2023-09-16T01-01-47Z
       pullPolicy: IfNotPresent
       pullSecrets: []
     # -- ServiceAccount name to use for Minio
@@ -1024,7 +1019,7 @@ testkube-operator:
     # -- Testkube Operator image pull policy
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "testkube-operator"
+    tag: "testkube-operator_1.7.1"
     # -- Testkube Operator image digest
     digest: ""
     # -- Operator k8s secret for private registries
