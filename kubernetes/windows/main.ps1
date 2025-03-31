@@ -698,6 +698,56 @@ function Get-ContainerRuntime {
     return $containerRuntime
 }
 
+function Start-WindowsExporter {
+    Write-Host "Starting Windows exporter..."
+    
+    try {
+        # Check if user wants to deploy using the kubernetes manifest instead
+        $k8sManifestPath = "C:\opt\amalogswindows\scripts\powershell\windows_exporter\windows_exporter.yml"
+        if (Test-Path $k8sManifestPath) {
+            Write-Host "Note: Windows exporter can also be deployed as a Kubernetes DaemonSet using the manifest at $k8sManifestPath"
+            Write-Host "To use this manifest, copy it from the container and apply it with: kubectl apply -f windows_exporter.yml"
+        }
+        
+        # Use the script copied from windows_exporter directory to the container
+        $windowsExporterStartScript = "C:\opt\amalogswindows\scripts\powershell\windows_exporter\start_windows_exporter.ps1"
+        
+        # Check if the script exists
+        if (Test-Path $windowsExporterStartScript) {
+            Write-Host "Running Windows exporter script from $windowsExporterStartScript"
+            & $windowsExporterStartScript
+        } else {
+            # Fallback to direct execution if script not found
+            Write-Host "Windows exporter script not found at $windowsExporterStartScript, using default configuration"
+            
+            # Check if Windows exporter environment variables are set
+            $collectors = [System.Environment]::GetEnvironmentVariable("WINDOWS_EXPORTER_COLLECTORS", "process")
+            $port = [System.Environment]::GetEnvironmentVariable("WINDOWS_EXPORTER_PORT", "process")
+            
+            if ([string]::IsNullOrEmpty($collectors)) {
+                $collectors = "process,memory,cpu,cs,logical_disk,net,os,system,container"
+                Write-Host "Using default collectors: $collectors"
+            }
+            
+            if ([string]::IsNullOrEmpty($port)) {
+                $port = "9182"
+                Write-Host "Using default port: $port"
+            }
+            
+            # Start Windows exporter directly
+            $windowsExporterPath = "C:\opt\windows_exporter\windows_exporter.exe"
+            $collectorsArg = "--collectors.enabled=$collectors"
+            $webListenAddress = "--web.listen-address=:$port"
+            
+            Write-Host "Starting Windows exporter with collectors: $collectors on port: $port"
+            Start-Process -NoNewWindow -FilePath $windowsExporterPath -ArgumentList @($collectorsArg, $webListenAddress)
+            Write-Host "Windows exporter started successfully"
+        }
+    } catch {
+        Write-Host "Failed to start Windows exporter: $_"
+    }
+}
+
 function Start-Fluent-Telegraf {
 
     Set-ProcessAndMachineEnvVariables "TELEMETRY_CUSTOM_PROM_MONITOR_PODS" "false"
@@ -723,6 +773,10 @@ function Start-Fluent-Telegraf {
         (Get-Content -Path C:/etc/fluent-bit/fluent-bit.conf -Raw) -replace 'docker', 'cri' | Set-Content C:/etc/fluent-bit/fluent-bit.conf
         (Get-Content -Path C:/etc/fluent-bit/fluent-bit-common.conf -Raw) -replace 'docker', 'cri' | Set-Content C:/etc/fluent-bit/fluent-bit-common.conf
     }
+    
+    # Start Windows exporter
+    Start-WindowsExporter
+    
     $genevaLogsIntegration = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_INTEGRATION", "process")
     $genevaLogsMultitenancy = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_MULTI_TENANCY", "process")
     $azmonLogsMultitenancy = [System.Environment]::GetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION", "process")

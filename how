@@ -1,0 +1,135 @@
+[33mcommit c186266ca1d96e33cb493ed892cc1116bb26ede1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mzane/prom_win_exporter[m[33m)[m
+Author: zanejohnson-azure <zanejohnson@microsoft.com>
+Date:   Mon Mar 31 16:06:36 2025 -0700
+
+    add prom windows exporter
+
+[1mdiff --git a/kubernetes/windows/Dockerfile b/kubernetes/windows/Dockerfile[m
+[1mindex 3ded4ebab..1be3abe2f 100644[m
+[1m--- a/kubernetes/windows/Dockerfile[m
+[1m+++ b/kubernetes/windows/Dockerfile[m
+[36m@@ -88,6 +88,10 @@[m [mCOPY ./amalogswindows/installer/conf/fluent-bit-azmon-multi-tenancy.conf /etc/fl[m
+ # copy telegraf conf file[m
+ COPY ./amalogswindows/installer/conf/telegraf.conf /etc/telegraf/[m
+ [m
+[32m+[m[32m# Setup Windows exporter for Prometheus metrics[m[41m[m
+[32m+[m[32mRUN powershell -Command "New-Item -ItemType Directory -Path 'C:\opt\windows_exporter' -Force; \[m[41m[m
+[32m+[m[32m    Invoke-WebRequest -Uri 'https://github.com/prometheus-community/windows_exporter/releases/download/v0.25.0/windows_exporter-0.25.0-amd64.exe' -OutFile 'C:\opt\windows_exporter\windows_exporter.exe'"[m[41m[m
+[32m+[m[41m[m
+ # copy keepcert alive ruby scripts[m
+ COPY ./amalogswindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluent/plugin/[m
+ [m
+[1mdiff --git a/kubernetes/windows/main.ps1 b/kubernetes/windows/main.ps1[m
+[1mindex 035665966..46275ead0 100644[m
+[1m--- a/kubernetes/windows/main.ps1[m
+[1m+++ b/kubernetes/windows/main.ps1[m
+[36m@@ -698,8 +698,26 @@[m [mfunction Get-ContainerRuntime {[m
+     return $containerRuntime[m
+ }[m
+ [m
+[31m-function Start-Fluent-Telegraf {[m
+[32m+[m[32mfunction Start-WindowsExporter {[m
+[32m+[m[32m    Write-Host "Starting Windows exporter for process metrics collection"[m
+[32m+[m[32m    # Define collectors to enable - adjust as needed[m
+[32m+[m[32m    $enabledCollectors = "process,memory,cpu,cs,logical_disk,net,os,system,container"[m
+[32m+[m
+[32m+[m[32m    # Start Windows exporter with specified collectors enabled[m
+[32m+[m[32m    $arguments = @([m
+[32m+[m[32m        "--collectors.enabled=$enabledCollectors",[m
+[32m+[m[32m        "--web.listen-address=:9182"[m
+[32m+[m[32m    )[m
+[32m+[m
+[32m+[m[32m    # Start Windows exporter in the background[m
+[32m+[m[32m    Start-Job -ScriptBlock {[m
+[32m+[m[32m        Start-Process -NoNewWindow -FilePath "C:\opt\windows_exporter\windows_exporter.exe" -ArgumentList @("--collectors.enabled=process,memory,cpu,cs,logical_disk,net,os,system,container", "--web.listen-address=:9182")[m
+[32m+[m[32m    }[m
+[32m+[m[32m    Write-Host "Windows exporter started with collectors: $enabledCollectors"[m
+[32m+[m[32m}[m
+[32m+[m
+ [m
+[32m+[m[32mfunction Start-Fluent-Telegraf {[m
+     Set-ProcessAndMachineEnvVariables "TELEMETRY_CUSTOM_PROM_MONITOR_PODS" "false"[m
+     # run prometheus custom config parser[m
+     Write-Host "**********Running config parser for custom prometheus scraping**********"[m
+[36m@@ -985,6 +1003,11 @@[m [mWrite-Host "finished starting memory usage monitoring script"[m
+ [m
+ Start-Fluent-Telegraf[m
+ [m
+[32m+[m[32m# Start Windows exporter for process metrics collection[m
+[32m+[m[32mWrite-Host "Starting Windows exporter for process metrics collection..."[m
+[32m+[m[32mStart-WindowsExporter[m
+[32m+[m[32mWrite-Host "Windows exporter started successfully"[m
+[32m+[m
+ # List all powershell processes running. This should have main.ps1 and filesystemwatcher.ps1[m
+ Get-WmiObject Win32_process | Where-Object { $_.Name -match 'powershell' } | Format-Table -Property Name, CommandLine, ProcessId[m
+ [m
+[1mdiff --git a/kubernetes/windows/windows_exporter/download_windows_exporter.ps1 b/kubernetes/windows/windows_exporter/download_windows_exporter.ps1[m
+[1mnew file mode 100644[m
+[1mindex 000000000..fa2b4805a[m
+[1m--- /dev/null[m
+[1m+++ b/kubernetes/windows/windows_exporter/download_windows_exporter.ps1[m
+[36m@@ -0,0 +1,15 @@[m
+[32m+[m[32m﻿# Download and configure Windows exporter[m
+[32m+[m[32m$windowsExporterVersion = "0.25.0"[m
+[32m+[m[32m$windowsExporterUrl = "https://github.com/prometheus-community/windows_exporter/releases/download/v$windowsExporterVersion/windows_exporter-$windowsExporterVersion-amd64.exe"[m
+[32m+[m[32m$windowsExporterPath = "C:\opt\windows_exporter\windows_exporter.exe"[m
+[32m+[m
+[32m+[m[32m# Create directory[m
+[32m+[m[32mif (!(Test-Path "C:\opt\windows_exporter")) {[m
+[32m+[m[32m    New-Item -ItemType Directory -Path "C:\opt\windows_exporter" -Force[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m# Download the exporter[m
+[32m+[m[32mWrite-Host "Downloading Windows exporter v$windowsExporterVersion..."[m
+[32m+[m[32mInvoke-WebRequest -Uri $windowsExporterUrl -OutFile $windowsExporterPath[m
+[32m+[m
+[32m+[m[32mWrite-Host "Windows exporter downloaded successfully to $windowsExporterPath"[m
+[1mdiff --git a/kubernetes/windows/windows_exporter/start_windows_exporter.ps1 b/kubernetes/windows/windows_exporter/start_windows_exporter.ps1[m
+[1mnew file mode 100644[m
+[1mindex 000000000..c8d71c48a[m
+[1m--- /dev/null[m
+[1m+++ b/kubernetes/windows/windows_exporter/start_windows_exporter.ps1[m
+[36m@@ -0,0 +1,16 @@[m
+[32m+[m[32m﻿# Windows Exporter startup script[m
+[32m+[m[32mWrite-Host "Configuring and starting Windows exporter..."[m
+[32m+[m
+[32m+[m[32m# Define collectors to enable - adjust as needed[m
+[32m+[m[32m$enabledCollectors = "process,memory,cpu,cs,logical_disk,net,os,system,container"[m
+[32m+[m
+[32m+[m[32m# Start Windows exporter with process collector enabled[m
+[32m+[m[32m$arguments = @([m
+[32m+[m[32m    "--collectors.enabled=$enabledCollectors",[m
+[32m+[m[32m    "--web.listen-address=:9182"[m
+[32m+[m[32m)[m
+[32m+[m
+[32m+[m[32m# Start Windows exporter in the background[m
+[32m+[m[32mStart-Process -NoNewWindow -FilePath "C:\opt\windows_exporter\windows_exporter.exe" -ArgumentList $arguments[m
+[32m+[m
+[32m+[m[32mWrite-Host "Windows exporter started with collectors: $enabledCollectors"[m
+[1mdiff --git a/kubernetes/windows/windows_exporter/windows_exporter.yml b/kubernetes/windows/windows_exporter/windows_exporter.yml[m
+[1mnew file mode 100644[m
+[1mindex 000000000..29935ab3f[m
+[1m--- /dev/null[m
+[1m+++ b/kubernetes/windows/windows_exporter/windows_exporter.yml[m
+[36m@@ -0,0 +1,21 @@[m
+[32m+[m[32m﻿# Windows Exporter Configuration[m
+[32m+[m[32m# Reference: https://github.com/prometheus-community/windows_exporter[m
+[32m+[m
+[32m+[m[32m# Enable specific collectors[m
+[32m+[m[32menabled_collectors:[m
+[32m+[m[32m  - process[m
+[32m+[m[32m  - memory[m
+[32m+[m[32m  - cpu[m
+[32m+[m[32m  - cs[m
+[32m+[m[32m  - logical_disk[m
+[32m+[m[32m  - net[m
+[32m+[m[32m  - os[m
+[32m+[m[32m  - system[m
+[32m+[m[32m  - container[m
+[32m+[m
+[32m+[m[32m# Process collector settings[m
+[32m+[m[32mprocess:[m
+[32m+[m[32m  # Collect metrics for all processes[m
+[32m+[m[32m  include_exes: ["*"][m
+[32m+[m[32m  # Metrics whitelist (collect these metrics only)[m
+[32m+[m[32m  whitelist: ["process_cpu_time_total", "process_working_set_bytes", "process_virtual_bytes", "process_private_bytes", "process_start_time_seconds"][m

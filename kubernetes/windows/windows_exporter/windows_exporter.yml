@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: windows-exporter-config
+  namespace: kube-system
+data:
+  config.yaml: |
+    collectors:
+      - process
+      - memory
+      - cpu
+      - cs
+      - logical_disk
+      - net
+      - os
+      - system
+      - container
+    port: 9182
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: windows-exporter
+  namespace: kube-system
+  labels:
+    app: windows-exporter
+spec:
+  selector:
+    matchLabels:
+      app: windows-exporter
+  template:
+    metadata:
+      labels:
+        app: windows-exporter
+    spec:
+      nodeSelector:
+        kubernetes.io/os: windows
+      containers:
+      - name: windows-exporter
+        image: mcr.microsoft.com/windows/servercore:ltsc2019
+        command:
+        - powershell
+        args:
+        - -Command
+        - |
+          $ErrorActionPreference = 'Stop';
+          if (-not (Test-Path C:\opt\windows_exporter)) {
+            New-Item -ItemType Directory -Path C:\opt\windows_exporter -Force | Out-Null;
+            Invoke-WebRequest -Uri 'https://github.com/prometheus-community/windows_exporter/releases/download/v0.25.0/windows_exporter-0.25.0-amd64.exe' -OutFile 'C:\opt\windows_exporter\windows_exporter.exe';
+          }
+          Start-Process -NoNewWindow -FilePath "C:\opt\windows_exporter\windows_exporter.exe" -ArgumentList @("--collectors.enabled=process,memory,cpu,cs,logical_disk,net,os,system,container", "--web.listen-address=:9182")
+          while ($true) { Start-Sleep -Seconds 60 }
+        ports:
+        - name: metrics
+          containerPort: 9182
+          hostPort: 9182
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 500m
+            memory: 500Mi
