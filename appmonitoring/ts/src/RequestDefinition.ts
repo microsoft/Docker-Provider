@@ -32,6 +32,7 @@ export const EnableApplicationLogsAnnotationName = "monitor.azure.com/enable-app
 export interface IAnnotations {
     "instrumentation.opentelemetry.io/inject-java"?: string;
     "instrumentation.opentelemetry.io/inject-nodejs"?: string;
+    "instrumentation.opentelemetry.io/inject-configuration"?: string;
 
     [key: string]: string;
 }
