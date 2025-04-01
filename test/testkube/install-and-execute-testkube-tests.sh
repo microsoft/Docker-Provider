@@ -7,6 +7,8 @@ do
 
    case "$KEY" in
            AzureClientId) AzureClientId=$VALUE ;;
+           AzureTenantId) AzureTenantId=$VALUE ;;
+           TeamsWebhookUri) TeamsWebhookUri=$VALUE ;;
            *)
     esac
 done
@@ -24,8 +26,8 @@ helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube
 
 echo "Install testkube CRIs"
 export AZURE_CLIENT_ID=$AzureClientId
-export AZURE_TENANT_ID=$(AzureTenantId)
-export WEBHOOK_URI=$(TeamsWebhookUri)
+export AZURE_TENANT_ID=$AzureTenantId
+export WEBHOOK_URI=$TeamsWebhookUri
 echo $AZURE_CLIENT_ID
 echo $AZURE_TENANT_ID
 echo $WEBHOOK_URI

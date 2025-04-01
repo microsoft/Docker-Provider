@@ -32,7 +32,7 @@ jobs:
           
         - bash: |
             chmod +x ./install-and-execute-testkube-tests.sh
-            ./install-and-execute-testkube-tests.sh AzureClientId=$(MonitoringModelClusterWCUSClientId)
+            ./install-and-execute-testkube-tests.sh AzureClientId=$(MonitoringModelClusterWCUSClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
           workingDirectory: $(Build.SourcesDirectory)/test/testkube/
           displayName: "Install and execute testkube tests"
 
@@ -60,7 +60,7 @@ jobs:
           
         - bash: |
             chmod +x ./install-and-execute-testkube-tests.sh
-            ./install-and-execute-testkube-tests.sh AzureClientId=$(MonitoringModelClusterWEUClientId)
+            ./install-and-execute-testkube-tests.sh AzureClientId=$(MonitoringModelClusterWEUClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
           workingDirectory: $(Build.SourcesDirectory)/test/testkube/
           displayName: "Install and execute testkube tests"
 
@@ -88,7 +88,7 @@ jobs:
           
         - bash: |
             chmod +x ./install-and-execute-testkube-tests.sh
-            ./install-and-execute-testkube-tests.sh AzureClientId=$(AksGenevaIntegrationClientId)
+            ./install-and-execute-testkube-tests.sh AzureClientId=$(AksGenevaIntegrationClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
           workingDirectory: $(Build.SourcesDirectory)/test/testkube/
           displayName: "Install and execute testkube tests"
 
@@ -116,7 +116,7 @@ jobs:
           
         - bash: |
             chmod +x ./install-and-execute-testkube-tests.sh
-            ./install-and-execute-testkube-tests.sh AzureClientId=$(AksGenevaIntegrationMultiTenancyClientId)
+            ./install-and-execute-testkube-tests.sh AzureClientId=$(AksGenevaIntegrationMultiTenancyClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
           workingDirectory: $(Build.SourcesDirectory)/test/testkube/
           displayName: "Install and execute testkube tests"
 
@@ -144,7 +144,7 @@ jobs:
           
         - bash: |
             chmod +x ./install-and-execute-testkube-tests.sh
-            ./install-and-execute-testkube-tests.sh AzureClientId=$(AksWorkLoadIdentityClientId)
+            ./install-and-execute-testkube-tests.sh AzureClientId=$(AksWorkLoadIdentityClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
           workingDirectory: $(Build.SourcesDirectory)/test/testkube/
           displayName: "Install and execute testkube tests"
 
@@ -172,6 +172,6 @@ jobs:
           
         - bash: |
             chmod +x ./install-and-execute-testkube-tests.sh
-            ./install-and-execute-testkube-tests.sh AzureClientId=$(WcusFipsClientId)
+            ./install-and-execute-testkube-tests.sh AzureClientId=$(WcusFipsClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
           workingDirectory: $(Build.SourcesDirectory)/test/testkube/
           displayName: "Install and execute testkube tests"

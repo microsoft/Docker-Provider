@@ -6,5 +6,5 @@ metadata:
 spec:
   events:
   - end-testsuite-failed
-  uri: $WEBHOOK_URI
+  uri: "$WEBHOOK_URI"
   payloadTemplate: "{\r\n    \"text\": \"Test Suite ''{{ .TestSuiteExecution.Name }}'' execution finished with ''{{ .TestSuiteExecution.Status }}'' status.\"\r\n}"
