@@ -13,3 +13,6 @@ Write-Host "Downloading Windows exporter v$windowsExporterVersion..."
 Invoke-WebRequest -Uri $windowsExporterUrl -OutFile $windowsExporterPath
 
 Write-Host "Windows exporter downloaded successfully to $windowsExporterPath"
+
+# Install the exporter as a service
+$serviceName = "windows_exporter"
