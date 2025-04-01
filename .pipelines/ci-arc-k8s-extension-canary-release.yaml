@@ -59,24 +59,17 @@ extends:
         approval:
           workflow: approvalService
       jobs:
-      - job: Job_1
-        displayName: Agentless job
-        condition: succeeded()
-        timeoutInMinutes: 7200
-        pool: server
-        steps:
-        - task: ReleasePipeline.approvalservice-ext.a81eb944-f6e7-40bb-acb3-6f68822bc5ab.ApprovalTask@1
-          displayName: Approval service
-          inputs:
-            servicetreeguid: $(ServiceTreeGuid)
-          timeoutInMinutes: 7200
-      - job: Job_2
+      - job: Ev2
         displayName: Agent job - Ev2
         condition: succeeded()
         timeoutInMinutes: 0
         templateContext:
           type: releaseJob
           workflow: ev2-classic
+          inputs:
+          - input: pipelineArtifact
+            pipeline: '_ci-arc-k8s-extension-canary-release'
+            artifactName: 'ev2Artifact'
           ev2:
             useServerMonitorTask: true
             serviceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/deploy/ServiceGroupRoot
@@ -91,24 +84,17 @@ extends:
         approval:
           workflow: approvalService
       jobs:
-      - job: Job_1
-        displayName: Agentless job
-        condition: succeeded()
-        timeoutInMinutes: 7200
-        pool: server
-        steps:
-        - task: ReleasePipeline.approvalservice-ext.a81eb944-f6e7-40bb-acb3-6f68822bc5ab.ApprovalTask@1
-          displayName: Approval service
-          inputs:
-            servicetreeguid: $(ServiceTreeGuid)
-          timeoutInMinutes: 7200
-      - job: Job_2
+      - job: Ev2
         displayName: Agent job - Ev2
         condition: succeeded()
         timeoutInMinutes: 0
         templateContext:
           type: releaseJob
           workflow: ev2-classic
+          inputs:
+          - input: pipelineArtifact
+            pipeline: '_ci-arc-k8s-extension-canary-release'
+            artifactName: 'ev2Artifact'
           ev2:
             useServerMonitorTask: true
             serviceRootPath: ServiceGroupRoot
