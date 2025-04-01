@@ -28,9 +28,6 @@ echo "Install testkube CRIs"
 export AZURE_CLIENT_ID=$AzureClientId
 export AZURE_TENANT_ID=$AzureTenantId
 export WEBHOOK_URI=$TeamsWebhookUri
-echo $AZURE_CLIENT_ID
-echo $AZURE_TENANT_ID
-echo $WEBHOOK_URI
 envsubst < ./testkube-teams-integration.yaml > ./testkube-teams-integration-updated.yaml
 kubectl apply -f ./testkube-teams-integration-updated.yaml
 kubectl apply -f ./api-server-permissions.yaml
