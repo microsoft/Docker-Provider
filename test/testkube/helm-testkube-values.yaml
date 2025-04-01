@@ -668,7 +668,6 @@ testkube-api:
       registry: mcr.microsoft.com
       repository: azuremonitor/containerinsights/cidev
       tag: minio_RELEASE.2023-09-16T01-01-47Z
-      pullPolicy: IfNotPresent
       pullSecrets: []
     # -- ServiceAccount name to use for Minio
     serviceAccountName: ""
@@ -1015,11 +1014,10 @@ testkube-operator:
     registry: mcr.microsoft.com
     # -- MongoDB image repository
     repository: azuremonitor/containerinsights/cidev
-    # -- MongoDB image tag
     # -- Testkube Operator image pull policy
-    pullPolicy: IfNotPresent
+    pullPolicy: ""
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "testkube-operator_1.7.1"
+    tag: "testkube-operator"
     # -- Testkube Operator image digest
     digest: ""
     # -- Operator k8s secret for private registries
