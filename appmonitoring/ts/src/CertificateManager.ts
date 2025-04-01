@@ -1,5 +1,5 @@
 import * as k8s from '@kubernetes/client-node';
-import { CertificateStoreName, KubeSystemNamespaceName, WebhookDNSEndpoint, WebhookName } from './Constants.js'
+import { CertificateStoreName, KubeSystemNamespaceName, WebhookDNSEndpoint, WebhookDeploymentName, MutatingWebhookConfigurationName } from './Constants.js'
 import forge from 'node-forge';
 import { HeartbeatMetrics, logger, RequestMetadata } from './LoggerWrapper.js';
 
@@ -28,7 +28,7 @@ export class CertificateManager {
         caCert.privateKey = keys.privateKey;
         caCert.validity.notBefore = new Date(currentTime - (5 * 60 * 1000)); //5 Mins ago
         caCert.validity.notAfter = new Date(currentTime + (2 * 365 * 24 * 60 * 60 * 1000)); //2 Years from now
-
+        
         const attributes = [{
             shortName: 'CN',
             value: 'applicationinsights-ca'
@@ -150,7 +150,8 @@ export class CertificateManager {
                 body: secretsObj
             };
 
-            await secretsApi.patchNamespacedSecret(request);
+            await secretsApi.replaceNamespacedSecret(request);
+
             logger.addHeartbeatMetric(HeartbeatMetrics.SecretStoreUpdatedCount, 1);
         } catch (error) {
             logger.error('Failed to patch Secret Store!', operationId, this.requestMetadata);
@@ -183,7 +184,7 @@ export class CertificateManager {
     public async GetMutatingWebhookCABundle(operationId: string, kubeConfig: k8s.KubeConfig): Promise<string> {
         try {
             const webhookApi: k8s.AdmissionregistrationV1Api = kubeConfig.makeApiClient(k8s.AdmissionregistrationV1Api);
-            const  mutatingWebhookObject: k8s.V1MutatingWebhookConfiguration = await webhookApi.readMutatingWebhookConfiguration({ name: WebhookName });
+            const mutatingWebhookObject: k8s.V1MutatingWebhookConfiguration = await webhookApi.readMutatingWebhookConfiguration({ name: MutatingWebhookConfigurationName });
             if (!mutatingWebhookObject 
                 || !mutatingWebhookObject.webhooks 
                 || mutatingWebhookObject.webhooks.length !== 1 || !mutatingWebhookObject.webhooks[0].clientConfig)
@@ -201,7 +202,7 @@ export class CertificateManager {
     public async PatchMutatingWebhook(operationId: string, kubeConfig: k8s.KubeConfig, certificate: WebhookCertData) {
         try {
             const webhookApi: k8s.AdmissionregistrationV1Api = kubeConfig.makeApiClient(k8s.AdmissionregistrationV1Api);
-            const mutatingWebhookObject: k8s.V1MutatingWebhookConfiguration = await webhookApi.readMutatingWebhookConfiguration({ name: WebhookName });
+            const mutatingWebhookObject: k8s.V1MutatingWebhookConfiguration = await webhookApi.readMutatingWebhookConfiguration({ name: MutatingWebhookConfigurationName });
             if (!mutatingWebhookObject 
                 || !mutatingWebhookObject.webhooks 
                 || mutatingWebhookObject.webhooks.length !== 1 || !mutatingWebhookObject.webhooks[0].clientConfig)
@@ -209,7 +210,9 @@ export class CertificateManager {
                 throw new Error("MutatingWebhookConfiguration not found or is malformed!");
             }
             mutatingWebhookObject.webhooks[0].clientConfig.caBundle = Buffer.from(certificate.caCert, 'utf-8').toString('base64');
-            await webhookApi.patchMutatingWebhookConfiguration({ name: WebhookName, body: mutatingWebhookObject });
+            
+            await webhookApi.replaceMutatingWebhookConfiguration({ name: MutatingWebhookConfigurationName, body: mutatingWebhookObject });
+
             logger.addHeartbeatMetric(HeartbeatMetrics.MutatingWebhookConfigurationUpdatedCount, 1);
         } catch (error) {
             logger.error('Failed to patch MutatingWebhookConfiguration!', operationId, this.requestMetadata);
@@ -461,8 +464,6 @@ export class CertificateManager {
      * @param clusterArmRegion - The ARM region of the cluster.
      */
     private async RestartWebhookDeployment(operationId: string, kc: k8s.KubeConfig, clusterArmId: string, clusterArmRegion: string): Promise<void> {
-        let name = null;
-    
         /**
          * The try block contains the logic to restart the webhook deployment. It first gets the webhook deployment by
          * its selector. If there is no deployment or more than one deployment with the selector, it throws an error. If
@@ -471,33 +472,24 @@ export class CertificateManager {
          */
         try {
             const k8sApi = kc.makeApiClient(k8s.AppsV1Api);
-            const selector = "app-monitoring-webhook"
-            const deployments: k8s.V1DeploymentList = (await k8sApi.listNamespacedDeployment({ namespace: KubeSystemNamespaceName }));
+            const webhookDeployment: k8s.V1Deployment = await k8sApi.readNamespacedDeployment({ namespace: KubeSystemNamespaceName, name: WebhookDeploymentName });
 
-            if (!deployments)
+            if (!webhookDeployment)
             {
-                throw new Error(`No Deployments found in ${KubeSystemNamespaceName} namespace!`);
+                throw new Error(`No webhook deployment named ${WebhookDeploymentName} found in ${KubeSystemNamespaceName} namespace!`);
             }
-            const matchingDeployments: k8s.V1Deployment[] = deployments.items.filter(deployment => selector.localeCompare(deployment.spec.selector?.matchLabels?.app) === 0);
-
-            if (matchingDeployments.length != 1) {
-                throw new Error(`Expected 1 Deployment with selector ${selector}, but found ${matchingDeployments.length}`);
-            }
-
-            const deployment: k8s.V1Deployment = matchingDeployments[0];
-            const annotations = deployment.spec.template.metadata.annotations ?? {};
+            
+            const annotations = webhookDeployment.spec.template.metadata.annotations ?? {};
             annotations["kubectl.kubernetes.io/restartedAt"] = new Date().toISOString();
-            deployment.spec.template.metadata.annotations = annotations;
+            webhookDeployment.spec.template.metadata.annotations = annotations;
 
-            name = deployment.metadata.name;
-
-            logger.info(`Restarting deployment ${name}...`, operationId, this.requestMetadata);
+            logger.info(`Restarting deployment ${webhookDeployment.metadata.name}...`, operationId, this.requestMetadata);
             logger.SendEvent("DeploymentRestarting", operationId, null, clusterArmId, clusterArmRegion);
-            await k8sApi.replaceNamespacedDeployment({ name: name, namespace: KubeSystemNamespaceName, body: deployment });
-            console.log(`Successfully restarted Deployment ${name}`);
+            await k8sApi.replaceNamespacedDeployment({ namespace: KubeSystemNamespaceName, name: webhookDeployment.metadata.name, body: webhookDeployment });
+            console.log(`Successfully restarted Deployment ${webhookDeployment.metadata.name}`);
             logger.SendEvent("DeploymentRestarted", operationId, null, clusterArmId, clusterArmRegion);
         } catch (err) {
-            logger.error(`Failed to restart Deployment ${name}: ${err}`, operationId, this.requestMetadata);
+            logger.error(`Failed to restart deployment: ${err}`, operationId, this.requestMetadata);
             logger.SendEvent("DeploymentRestartFailed", operationId, null, clusterArmId, clusterArmRegion, true, err);
             throw err;
         }

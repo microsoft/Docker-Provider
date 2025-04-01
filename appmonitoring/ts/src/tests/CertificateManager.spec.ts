@@ -353,7 +353,7 @@ describe('CertificateManager', () => {
             };
             const readMutatingWebhookConfiguration  = jest.spyOn(AdmissionregistrationV1Api.prototype, 'readMutatingWebhookConfiguration').mockResolvedValue(mutatingWebhookObject.body);
             const mutatingWebhookObjectCopy = JSON.parse(JSON.stringify(mutatingWebhookObject));
-            const patchMutatingWebhookConfiguration  = jest.spyOn(AdmissionregistrationV1Api.prototype, 'patchMutatingWebhookConfiguration').mockResolvedValue(null);
+            const patchMutatingWebhookConfiguration  = jest.spyOn(AdmissionregistrationV1Api.prototype, 'replaceMutatingWebhookConfiguration').mockResolvedValue(null);
             mutatingWebhookObjectCopy.body.webhooks[0].clientConfig.caBundle = Buffer.from(mockCertificate.caCert, 'utf-8').toString('base64');
             jest.spyOn(KubeConfig.prototype, 'makeApiClient').mockReturnValue(new AdmissionregistrationV1Api(createConfiguration()));
 
@@ -419,7 +419,7 @@ describe('CertificateManager', () => {
                 } as V1Secret
             };
             const readNamespacedSecret = jest.spyOn(CoreV1Api.prototype, 'readNamespacedSecret').mockResolvedValue(secretObject.body);
-            const patchNamespacedSecret = jest.spyOn(CoreV1Api.prototype, 'patchNamespacedSecret').mockResolvedValue(null);
+            const patchNamespacedSecret = jest.spyOn(CoreV1Api.prototype, 'replaceNamespacedSecret').mockResolvedValue(null);
             jest.spyOn(KubeConfig.prototype, 'makeApiClient').mockReturnValue(new CoreV1Api(createConfiguration()));
 
             // Mock the methods in CertificateManager
@@ -452,32 +452,30 @@ describe('CertificateManager', () => {
             const clusterArmId = 'clusterArmId';
             const clusterArmRegion = 'clusterArmRegion';
             const mockKubeConfig = new KubeConfig();
-            const deploymentList = {
+            const deployment = {
                 body: {
-                    items: [{
+                    metadata: {
+                        name: 'app-monitoring-webhook',
+                        namespace: 'kube-system'
+                    },
+                    spec: {
+                        selector: {
+                            matchLabels: {
+                                app: 'app-monitoring-webhook'
+                            }
+                        },
+                        template: {
                             metadata: {
                                 name: 'app-monitoring-webhook',
-                                namespace: 'kube-system'
-                            },
-                            spec: {
-                                selector: {
-                                    matchLabels: {
-                                        app: 'app-monitoring-webhook'
-                                    }
-                                },
-                                template: {
-                                    metadata: {
-                                        name: 'app-monitoring-webhook',
-                                        annotations: {
-                                            'anno1': 'anno1'
-                                        }
-                                    }
+                                annotations: {
+                                    'anno1': 'anno1'
                                 }
                             }
-                        } as V1Deployment
-                    ]} as V1DeploymentList
+                        }
+                    }
+                } as V1Deployment
             } as any;
-            const updatedDeployment: V1ReplicaSet = JSON.parse(JSON.stringify(deploymentList.body.items[0]));
+            const updatedDeployment: V1ReplicaSet = JSON.parse(JSON.stringify(deployment.body));
             jest.spyOn(Date.prototype, 'toISOString').mockReturnValue('GivenDate');
             updatedDeployment.spec.template.metadata = {
                 name: 'app-monitoring-webhook',
@@ -486,7 +484,7 @@ describe('CertificateManager', () => {
                     'kubectl.kubernetes.io/restartedAt': 'GivenDate'
                 }
             };
-            const listNamespacedDeployment = jest.spyOn(AppsV1Api.prototype, 'listNamespacedDeployment').mockResolvedValue(deploymentList.body);
+            const readNamespacedDeployment = jest.spyOn(AppsV1Api.prototype, 'readNamespacedDeployment').mockResolvedValue(deployment.body);
             const replaceNamespacedDeployment = jest.spyOn(AppsV1Api.prototype, 'replaceNamespacedDeployment').mockResolvedValue(null);
             jest.spyOn(KubeConfig.prototype, 'makeApiClient').mockReturnValue(new AppsV1Api(createConfiguration()));
             
@@ -495,7 +493,7 @@ describe('CertificateManager', () => {
             await method();
             
             // Assert
-            expect(listNamespacedDeployment).toHaveBeenCalledWith({ namespace: "kube-system" });
+            expect(readNamespacedDeployment).toHaveBeenCalledWith({ name: "app-monitoring-webhook", namespace: "kube-system" });
             expect(replaceNamespacedDeployment).toHaveBeenCalledWith({ name: "app-monitoring-webhook", namespace: "kube-system", body: updatedDeployment });
         });
     });
