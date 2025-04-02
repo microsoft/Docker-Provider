@@ -24,7 +24,7 @@ variables:
 - name: RESOURCE_AUDIENCE
   value: $[variables['RESOURCE_AUDIENCE']]
 - name: ServiceTreeGuid
-  value: $[variables['SERVICE_TREE_GUID']]
+  value: $(SERVICE_TREE_GUID)
 - name: SPN_CLIENT_ID
   value: $[variables['SPN_CLIENT_ID']]
 - name: SPN_SECRET
@@ -47,7 +47,7 @@ extends:
     pool:
       name: Azure-Pipelines-Windows-CI-Test-EO
       os: windows
-    serviceTreeId: $[variables['SERVICE_TREE_GUID']]
+    serviceTreeId: $(SERVICE_TREE_GUID)
     customBuildTags:
     - ES365AIMigrationTooling-Release
     stages:
