@@ -48,9 +48,11 @@ gem uninstall stringio --version 3.0.1
 gem uninstall rexml --version 3.2.5
 gem uninstall webrick --version 1.8.1
 
+sudo tdnf install which -y
 #sudo tdnf install -y azure-mdsd-1.31.4
 wget https://linuxamae2evm25032714510.blob.core.windows.net/bootdiagnostics-vm2503272-a8116da8-883a-4e8b-ab91-8db2218f660a/azure-mdsd-1.35.0-thperapp.amacaAarch64.3.4643.aarch64.rpm
-rpm --install --force azure-mdsd-1.35.0-thperapp.amacaAarch64.3.4643.aarch64.rpm
+sudo rpm --install --force azure-mdsd-1.35.0-thperapp.amacaAarch64.3.4643.aarch64.rpm
+
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
 rm /usr/sbin/telegraf
