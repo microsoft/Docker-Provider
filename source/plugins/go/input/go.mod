@@ -10,9 +10,13 @@ require (
 	github.com/calyptia/cmetrics-go v0.1.7 // indirect
 	github.com/docker/docker v25.0.6+incompatible // indirect
 	github.com/docker/go-units v0.5.0 // indirect
+	github.com/ebitengine/purego v0.8.2 // indirect
+	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
+	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
@@ -23,6 +27,7 @@ require (
 	Docker-Provider/source/plugins/go/src v0.0.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
+	github.com/shirou/gopsutil/v4 v4.25.3
 	github.com/sirupsen/logrus v1.9.3
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
