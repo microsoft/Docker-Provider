@@ -4,33 +4,31 @@ variables:
 - name: ACRName
   value: containerinsights.azurecr.io
 - name: ADMIN_SUBSCRIPTION_ID
-  value: $(ADMIN_SUBSCRIPTION_ID)
+  value: $(VAR_ADMIN_SUBSCRIPTION_ID)
 - name: CHART_VERSION
-  value: ''
+  value: $(VAR_CHART_VERSION)
 - name: IS_CUSTOMER_HIDDEN
-  value: false
+  value: $(VAR_IS_CUSTOMER_HIDDEN)
 - name: MANAGED_IDENTITY
-  value: $(MANAGED_IDENTITY)
-- name: ManagedIdentity
-  value: $(MANAGED_IDENTITY)
+  value: $(VAR_MANAGED_IDENTITY)
 - name: REGISTER_REGIONS_CANARY
-  value: eastus2euap
+  value: $(VAR_REGISTER_REGIONS_CANARY)
 - name: RELEASE_TRAINS_PREVIEW_PATH
-  value: preview
+  value: $(VAR_RELEASE_TRAINS_PREVIEW_PATH)
 - name: RELEASE_TRAINS_STABLE_PATH
-  value: stable
+  value: $(VAR_RELEASE_TRAINS_STABLE_PATH)
 - name: RepoType
-  value: stable
+  value: $(VAR_REPO_TYPE)
 - name: RESOURCE_AUDIENCE
-  value: $(RESOURCE_AUDIENCE)
+  value: $(VAR_RESOURCE_AUDIENCE)
 - name: ServiceTreeGuid
-  value: $(SERVICE_TREE_GUID)
+  value: $(VAR_SERVICE_TREE_GUID)
 - name: SPN_CLIENT_ID
-  value: $(SPN_CLIENT_ID)
+  value: $(VAR_SPN_CLIENT_ID)
 - name: SPN_SECRET
   value: 
 - name: SPN_TENANT_ID
-  value: $(SPN_TENANT_ID)
+  value: $(VAR_SPN_TENANT_ID)
 resources:
   pipelines:
   - pipeline: '_ci-arc-k8s-extension-canary-release'
@@ -47,7 +45,7 @@ extends:
     pool:
       name: Azure-Pipelines-Windows-CI-Test-EO
       os: windows
-    serviceTreeId: $(SERVICE_TREE_GUID)
+    serviceTreeId: $(VAR_SERVICE_TREE_GUID)
     customBuildTags:
     - ES365AIMigrationTooling-Release
     stages:
@@ -74,7 +72,7 @@ extends:
             useServerMonitorTask: true
             serviceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/deploy/ServiceGroupRoot
             rolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/deploy/ServiceGroupRoot/RolloutSpecs/Public.Canary.RolloutSpec.json
-            inlineScopeBindingOverrides: '{   "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",   "contentVersion": "0.0.0.1",   "scopeBindings": [     {       "scopeTagName": "Canary",       "bindings": [         {           "find": "__ACR_NAME__",           "replaceWith": "$(ACRName)"         },         {           "find": "__REPO_TYPE__",           "replaceWith": "$(RepoType)"         },         {           "find": "__CHART_VERSION__",           "replaceWith": "$(CHART_VERSION)"         },                 {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(ManagedIdentity)"                 }       ]     }   ] }'
+            inlineScopeBindingOverrides: '{   "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",   "contentVersion": "0.0.0.1",   "scopeBindings": [     {       "scopeTagName": "Canary",       "bindings": [         {           "find": "__ACR_NAME__",           "replaceWith": "$(ACRName)"         },         {           "find": "__REPO_TYPE__",           "replaceWith": "$(RepoType)"         },         {           "find": "__CHART_VERSION__",           "replaceWith": "$(CHART_VERSION)"         },                 {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(MANAGED_IDENTITY)"                 }       ]     }   ] }'
     - stage: Stage_2
       displayName: Canary Regions Release
       trigger: manual
