@@ -4,15 +4,15 @@ variables:
 - name: ACRName
   value: containerinsights.azurecr.io
 - name: ADMIN_SUBSCRIPTION_ID
-  value: $[variables['ADMIN_SUBSCRIPTION_ID']]
+  value: $(ADMIN_SUBSCRIPTION_ID)
 - name: CHART_VERSION
   value: ''
 - name: IS_CUSTOMER_HIDDEN
   value: false
 - name: MANAGED_IDENTITY
-  value: $[variables['MANAGED_IDENTITY']]
+  value: $(MANAGED_IDENTITY)
 - name: ManagedIdentity
-  value: $[variables['MANAGED_IDENTITY']]
+  value: $(MANAGED_IDENTITY)
 - name: REGISTER_REGIONS_CANARY
   value: eastus2euap
 - name: RELEASE_TRAINS_PREVIEW_PATH
@@ -22,15 +22,15 @@ variables:
 - name: RepoType
   value: stable
 - name: RESOURCE_AUDIENCE
-  value: $[variables['RESOURCE_AUDIENCE']]
+  value: $(RESOURCE_AUDIENCE)
 - name: ServiceTreeGuid
   value: $(SERVICE_TREE_GUID)
 - name: SPN_CLIENT_ID
-  value: $[variables['SPN_CLIENT_ID']]
+  value: $(SPN_CLIENT_ID)
 - name: SPN_SECRET
   value: 
 - name: SPN_TENANT_ID
-  value: $[variables['SPN_TENANT_ID']]
+  value: $(SPN_TENANT_ID)
 resources:
   pipelines:
   - pipeline: '_ci-arc-k8s-extension-canary-release'
