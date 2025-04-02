@@ -13,27 +13,27 @@ afterEach(() => {
 describe("Heartbeats", () => {
     it("Sends logs", async () => {
         for(let i = 0; i < 10; i++) {
-            logger.appendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-10");
+            logger.appendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, "blah-blah-blah-10");
         }
 
         for(let i = 0; i < 100; i++) {
-            logger.appendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-100");
+            logger.appendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, "blah-blah-blah-100");
         }
 
         for(let i = 0; i < 25; i++) {
-            logger.appendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-25");
+            logger.appendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, "blah-blah-blah-25");
         }
 
         for(let i = 0; i < 5; i++) {
-            logger.appendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-5");
+            logger.appendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, "blah-blah-blah-5");
         }
 
         for(let i = 0; i < 120; i++) {
-            logger.appendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-120");
+            logger.appendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, "blah-blah-blah-120");
         }
 
         for(let i = 0; i < 75; i++) {
-            logger.appendHeartbeatLog(HeartbeatLogs.CertificateOperations, "blah-blah-blah-75");
+            logger.appendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, "blah-blah-blah-75");
         }
         
         const tracesSent = <applicationInsights.Contracts.TraceTelemetry[]>[];

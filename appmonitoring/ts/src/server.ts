@@ -1,6 +1,6 @@
 ﻿import * as https from "https";
 import { Mutator } from "./Mutator.js";
-import { HeartbeatMetrics, HeartbeatLogs, logger, RequestMetadata } from "./LoggerWrapper.js";
+import { Events, HeartbeatMetrics, HeartbeatLogs, logger, RequestMetadata } from "./LoggerWrapper.js";
 import { InstrumentationCR, IAdmissionReview } from "./RequestDefinition.js";
 import { K8sWatcher } from "./K8sWatcher.js";
 import { InstrumentationCRsCollection } from "./InstrumentationCRsCollection.js"
@@ -17,39 +17,42 @@ let operationId = randomUUID();
 if ("secrets-manager".localeCompare(containerMode) === 0) {
     try {
         logger.info("Running in certificate manager mode...", operationId, null);
-        logger.SendEvent("CertificateManagerModeRun", operationId, null, clusterArmId, clusterArmRegion);
-        logger.addHeartbeatMetric(HeartbeatMetrics.CertificateOperationCount, 1);
+        await logger.SendEvent(Events[Events.CertificateManagerModeRun], operationId, null, clusterArmId, clusterArmRegion, true);
         await new CertificateManager().CreateWebhookAndCertificates(operationId, clusterArmId, clusterArmRegion);
         logger.info("Certificate manager mode is done", operationId, null);
-        logger.SendEvent("CertificateManagerModeRunSuccess", operationId, null, clusterArmId, clusterArmRegion, true);
+        await logger.SendEvent(Events[Events.CertificateManagerModeRunSuccess], operationId, null, clusterArmId, clusterArmRegion, true);
     } catch (error) {
-        logger.addHeartbeatMetric(HeartbeatMetrics.CertificateOperationFailedCount, 1);
         logger.error(`Certificate manager mode failed: ${JSON.stringify(error)}`, operationId, null);
-        logger.SendEvent("CertificateManagerModeRunFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
+        await logger.SendEvent(Events[Events.CertificateManagerModeRunFailure], operationId, null, clusterArmId, clusterArmRegion, true, error);
         throw error;
     }
+
     process.exit();
 } else if ("secrets-housekeeper".localeCompare(containerMode) === 0) {
     try {
         logger.info("Running in certificate housekeeper mode...", operationId, null);
+        await logger.SendEvent(Events[Events.SecretsHouseKeeperModeRun], operationId, null, clusterArmId, clusterArmRegion, true);
         await new CertificateManager().ReconcileWebhookAndCertificates(operationId, clusterArmId, clusterArmRegion);
+        logger.info("Certificate housekeeper mode is done", operationId, null);
+        await logger.SendEvent(Events[Events.SecretsHouseKeeperModeRunSuccess], operationId, null, clusterArmId, clusterArmRegion, true);
     } catch (error) {
-        logger.error(`Failed to Update Certificates, Terminating...\n${JSON.stringify(error)}`, operationId, null);
-        logger.SendEvent("SecretsHouseKeeperFailed", operationId, null, clusterArmId, clusterArmRegion, true, error);
+        logger.error(`Failed to update certificates, terminating...\n${JSON.stringify(error)}`, operationId, null);
+        await logger.SendEvent(Events[Events.SecretsHouseKeeperModeRunFailure], operationId, null, clusterArmId, clusterArmRegion, true, error);
         throw error;
     }
+
     process.exit();
 }
 
 const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
 
 logger.info("Running in server mode...", operationId, null);
-logger.SendEvent("ServerModeRun", operationId, null, clusterArmId, clusterArmRegion);
+await logger.SendEvent(Events[Events.ServerModeRun], operationId, null, clusterArmId, clusterArmRegion, true);
 
 const armIdMatches = /^\/subscriptions\/(?<SubscriptionId>[^/]+)\/resourceGroups\/(?<ResourceGroup>[^/]+)\/providers\/(?<Provider>[^/]+)\/(?<ResourceType>[^/]+)\/(?<ResourceName>[^/]+).*$/i.exec(clusterArmId);
 if (!armIdMatches || armIdMatches.length != 6) {
     logger.error(`Cluster ARM ID is in a wrong format: ${clusterArmId}`, operationId, null);
-    logger.SendEvent("ArmIdIncorrect", operationId, null, clusterArmId, clusterArmRegion, true);
+    await logger.SendEvent(Events[Events.ArmIdIncorrect], operationId, null, clusterArmId, clusterArmRegion, true);
     throw `Cluster ARM ID is in a wrong format: ${clusterArmId}`;
 }
 
@@ -84,7 +87,7 @@ try {
     logger.info(`Certs successfully loaded`, operationId, null);
 } catch (e) {
     logger.error(`Failed to load certs: ${e}`, operationId, null);
-    logger.SendEvent("CertsLoadFailed", operationId, null, clusterArmId, clusterArmRegion, true, e);
+    await logger.SendEvent(Events[Events.CertificateLoadFailure], operationId, null, clusterArmId, clusterArmRegion, true, e);
     throw e;
 }
 

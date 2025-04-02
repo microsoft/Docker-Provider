@@ -61,6 +61,20 @@ export enum Watchdogs {
     SecondsSinceLastSuccessfulCRList = 0 // number of seconds elapsed since the last successful list CRs call
 }
 
+// the list is not exhaustive, use operationId to look for a complete event chain for a particular failure
+export enum Events {
+    ServerModeRun = 0, // the image is run as a webhook
+    CertificateManagerModeRun, // the image is run as a certificate manager (initial certificate installation)
+    CertificateManagerModeRunSuccess, // CertificateManagerModeRun succeeded
+    CertificateManagerModeRunFailure, // CertificateManagerModeRun failed
+    SecretsHouseKeeperModeRun, // the image is run as a secret housekeeper (periodic run to reconcile and rotate if necessary)
+    SecretsHouseKeeperModeRunSuccess, // SecretsHouseKeeperModeRun succeeded
+    SecretsHouseKeeperModeRunFailure, // SecretsHouseKeeperModeRun failed
+
+    ArmIdIncorrect, // ARM ID of the cluster we have received is incorrect
+    CertificateLoadFailure, // we have failed to load certificates
+}
+
 export enum HeartbeatMetrics {
     CRCount = 0, // number of CRs that the cluster has
     InstrumentedNamespaceCount, // number of namespaces in the cluster that have at least one CR
@@ -71,20 +85,11 @@ export enum HeartbeatMetrics {
     AdmissionReviewCount, // number of admission reviews submitted to the webhook
     AdmissionReviewActionableCount, // number of admission reviews that had a relevant CR and lead to actual mutation
     AdmissionReviewFailedCount, // number of failed admission reviews
-    CertificateOperationCount, // number of certificate operations performed
-    CertificateOperationFailedCount, // number of failed certificated operations performed
-    HostCertificateGenerationCount, // number of certificates generated
-    CACertificateGenerationCount, // number of CA certificates generated
-    SecretStoreUpdatedCount, // number of times the secret store was updated
-    SecretStoreUpdateFailedCount, // number of times the secret store update failed
-    MutatingWebhookConfigurationUpdatedCount, // number of times the mutating webhook configuration was updated
-    MutatingWebhookConfigurationUpdateFailedCount // number of times the mutating webhook configuration update failed
 }
 
 export enum HeartbeatLogs {
     ApiServerTopExceptionsEncountered = 0, // top exceptions encountered by count when calling API server
     AdmissionReviewTopExceptionsEncountered, // top exceptions encountered during mutation by count
-    CertificateOperations, // certificate operations
 }
 
 class HeartbeatAccumulator {
@@ -238,7 +243,7 @@ class LocalLogger {
         while (true) { // eslint-disable-line
             try {
                 logger.info(`Sending heartbeat...`, operationId, this.heartbeatRequestMetadata);
-                this.sendHeartbeat();
+                await this.sendHeartbeat(operationId);
             } catch (e) {
                 logger.error(`Failed to send out heartbeat: ${JSON.stringify(logger.sanitizeException(e))}`, operationId, this.heartbeatRequestMetadata);
             } finally {
@@ -255,7 +260,7 @@ class LocalLogger {
         }
     }
 
-    private sendHeartbeat() {
+    private async sendHeartbeat(operationId: string, flush = false) {
         for(const [metricName, metric] of this.heartbeatAccumulator.metrics) {
             for(const [dim1, value] of metric) {
                 const telemetryItem: applicationInsights.Contracts.MetricPointTelemetry & applicationInsights.Contracts.MetricTelemetry = {
@@ -264,12 +269,12 @@ class LocalLogger {
                     count: 1,
                     properties: {
                         dimension1: dim1,
+                        operationId: operationId,
                         clusterMetadata: JSON.stringify(this.clusterMetadata)
                     }
                 };
 
                 this.client.trackMetric(telemetryItem);
-                //this.client.flush();
             }
         }
 
@@ -290,12 +295,12 @@ class LocalLogger {
                 const telemetryItem: applicationInsights.Contracts.TraceTelemetry  = {
                     message: logArray[j].message,
                     properties: {
+                        operationId: operationId,
                         clusterMetadata: JSON.stringify(this.clusterMetadata)
                     }
                 };
 
                 this.client.trackTrace(telemetryItem);
-                //this.client.flush();
             }
         }
 
@@ -307,16 +312,20 @@ class LocalLogger {
                 value: onReport(),
                 count: 1,
                 properties: {
+                    operationId: operationId,
                     clusterMetadata: JSON.stringify(this.clusterMetadata)
                 }
             };
 
             this.client.trackMetric(telemetryItem);
-            //this.client.flush();
+        }
+
+        if (flush) {
+            await this.client.flush();
         }
     }
 
-    public SendEvent(eventName: string, operationId: string, uid: string, clusterArmId: string, clusterArmRegion: string, flush = false, ...args: unknown[]) {
+    public async SendEvent(eventName: string, operationId: string, uid: string, clusterArmId: string, clusterArmRegion: string, flush = false, ...args: unknown[]): Promise<void> {
         try {
             const event: applicationInsights.Contracts.EventTelemetry = {
                 name: eventName,
@@ -331,9 +340,9 @@ class LocalLogger {
             };
 
             this.client.trackEvent(event);
-            
+
             if (flush) {
-                this.client.flush();
+                await this.client.flush();
             }
         } catch (e) {
             try {
