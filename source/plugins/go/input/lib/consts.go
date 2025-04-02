@@ -5,6 +5,7 @@ const (
 	ContainerInventoryDataType        = "CONTAINER_INVENTORY_BLOB"
 	PerfDataType                      = "LINUX_PERF_BLOB"
 	InsightsMetricsDataType           = "INSIGHTS_METRICS_BLOB"
+	DiskDataType                      = "DISK_BLOB"
 	AgentConfigRefreshIntervalSeconds = 300
 
 	// interval to refresh in-memory service account token from file

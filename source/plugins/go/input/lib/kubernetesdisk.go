@@ -2,7 +2,6 @@ package lib
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,14 +9,37 @@ import (
 	"github.com/shirou/gopsutil/v4/disk"
 )
 
-func main() {
-	// Example usage of DiskUsage function
-	disks, partitions, err := DiskUsage([]string{"C:"}, []string{}, []string{"tmpfs"})
-	if err != nil {
-		fmt.Printf("error getting disk usage info: %w", err)
+func init() {
+	var logPath string
+	if strings.EqualFold(osType, "windows") {
+		logPath = "/etc/amalogswindows/fluent-bit-disk.log"
+	} else {
+		logPath = "/var/opt/microsoft/docker-cimprov/log/fluent-bit-disk.log"
 	}
+
+	isTestEnv := os.Getenv("GOUNITTEST") == "true"
+	if isTestEnv {
+		logPath = "./fluent-bit-disk.log"
+	}
+
+	FLBLogger = CreateLogger(logPath)
+}
+
+func GetDiskUsage(mountPointFilter, mountOptsExclude, fstypeExclude []string) ([]map[string]interface{}, error) {
+	// Example usage of DiskUsage function
+	disks, partitions, err := GetDiskUsageHelper([]string{"C:"}, []string{}, []string{"tmpfs"})
+	if err != nil {
+		FLBLogger.Printf("error getting disk usage info: %v", err)
+		return nil, err
+	}
+
+	var results []map[string]interface{}
+
+	FLBLogger.Printf("getting disk usage info: 1")
+
 	for i, du := range disks {
 		if du.Total == 0 {
+			FLBLogger.Printf("getting disk usage info: 2")
 			// Skip dummy filesystem (procfs, cgroupfs, ...)
 			continue
 		}
@@ -31,6 +53,8 @@ func main() {
 			"mode":   mountOpts.mode(),
 		}
 
+		FLBLogger.Printf("tags: %+v\n", tags)
+
 		label, err := disk.Label(strings.TrimPrefix(device, "/dev/"))
 		if err == nil && label != "" {
 			tags["label"] = label
@@ -42,25 +66,24 @@ func main() {
 				(float64(du.Used) + float64(du.Free)) * 100
 		}
 
-		var inodesUsedPercent float64
-		if du.InodesUsed+du.InodesFree > 0 {
-			inodesUsedPercent = float64(du.InodesUsed) /
-				(float64(du.InodesUsed) + float64(du.InodesFree)) * 100
+		fields := map[string]interface{}{
+			"total":        du.Total,
+			"free":         du.Free,
+			"used":         du.Used,
+			"used_percent": usedPercent,
 		}
 
-		fields := map[string]interface{}{
-			"total":               du.Total,
-			"free":                du.Free,
-			"used":                du.Used,
-			"used_percent":        usedPercent,
-			"inodes_total":        du.InodesTotal,
-			"inodes_free":         du.InodesFree,
-			"inodes_used":         du.InodesUsed,
-			"inodes_used_percent": inodesUsedPercent,
-		}
-		fmt.Printf("Fields: %+v\n", fields)
-		fmt.Printf("Tags: %+v\n", tags)
+		FLBLogger.Printf("fields: %+v\n", fields)
+
+		results = append(results, map[string]interface{}{
+			"fields": fields,
+			"tags":   tags,
+		})
 	}
+
+	FLBLogger.Printf("Results: %+v\n", results)
+
+	return results, nil
 }
 
 type mountOptions []string
@@ -83,9 +106,12 @@ func (opts mountOptions) exists(opt string) bool {
 	return false
 }
 
-func DiskUsage(mountPointFilter, mountOptsExclude, fstypeExclude []string) ([]*disk.UsageStat, []*disk.PartitionStat, error) {
+func GetDiskUsageHelper(mountPointFilter, mountOptsExclude, fstypeExclude []string) ([]*disk.UsageStat, []*disk.PartitionStat, error) {
+	FLBLogger.Printf("getting disk usage info: 3")
 	parts, err := Partitions(true)
+	FLBLogger.Printf("getting disk usage info: 4")
 	if err != nil {
+		FLBLogger.Printf("error getting disk partitions: %v", err)
 		return nil, nil, err
 	}
 
@@ -117,22 +143,26 @@ func DiskUsage(mountPointFilter, mountOptsExclude, fstypeExclude []string) ([]*d
 
 partitionRange:
 	for i := range parts {
+		FLBLogger.Printf("getting disk usage info: 5")
 		p := parts[i]
 
 		for _, o := range p.Opts {
 			if !mountOptFilterSet.empty() && mountOptFilterSet.has(o) {
+				FLBLogger.Printf("getting disk usage info: 6")
 				continue partitionRange
 			}
 		}
 		// If there is a filter set and if the mount point is not a
 		// member of the filter set, don't gather info on it.
 		if !mountPointFilterSet.empty() && !mountPointFilterSet.has(p.Mountpoint) {
+			FLBLogger.Printf("getting disk usage info: 7")
 			continue
 		}
 
 		// If the mount point is a member of the exclude set,
 		// don't gather info on it.
 		if fstypeExcludeSet.has(p.Fstype) {
+			FLBLogger.Printf("getting disk usage info: 8")
 			continue
 		}
 
@@ -152,8 +182,10 @@ partitionRange:
 		// 	}
 		// }
 
+		FLBLogger.Printf("getting disk usage info: 9")
 		du, err := PSDiskUsage(mountpoint)
 		if err != nil {
+			FLBLogger.Printf("error getting PS-188 disk usage info: %v", err)
 			// if s.Log != nil {
 			// 	s.Log.Debugf("[SystemPS] => unable to get disk usage (%q): %v", mountpoint, err)
 			// }
@@ -201,9 +233,11 @@ func Partitions(all bool) ([]disk.PartitionStat, error) {
 func PSDiskUsage(path string) (*disk.UsageStat, error) {
 	du, err := disk.Usage(path)
 	if err != nil {
+		FLBLogger.Printf("error getting PS disk usage info: %v", err)
 		return nil, err
 	}
 	if du.Total == 0 {
+		FLBLogger.Printf("error getting disk usage info: total size is zero")
 		return nil, errors.New("total size is zero")
 	}
 	return du, nil

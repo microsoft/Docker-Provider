@@ -27,6 +27,7 @@ var (
 	tag                  = "oneagent.containerInsights.DISK_BLOB"
 	runInterval          = 60
 	diskTelemetryTracker = time.Now().Unix()
+	osType               = os.Getenv("OS_TYPE")
 )
 
 func (p *diskPlugin) Init(ctx context.Context, fbit *plugin.Fluentbit) error {
@@ -64,8 +65,15 @@ func (p diskPlugin) Collect(ctx context.Context, ch chan<- plugin.Message) error
 		case <-tick.C:
 			emitTime := time.Now()
 			FLBLogger.Print("disk::collect.start @ ", time.Now().UTC().Format(time.RFC3339))
-			diskData := p.scrapeDiskData()
-			FLBLogger.Print("disk::collect.end @ ", time.Now().UTC().Format(time.RFC3339))
+			diskData, err := lib.GetDiskUsage([]string{}, []string{}, []string{})
+			if err != nil {
+				FLBLogger.Print("disk::error @ ", err)
+				continue
+			}
+
+			for _, data := range diskData {
+				FLBLogger.Printf("disk::data: %v", data)
+			}
 
 			ch <- plugin.Message{
 				Record: map[string]any{
@@ -86,14 +94,6 @@ func (p diskPlugin) Collect(ctx context.Context, ch chan<- plugin.Message) error
 				lib.SendTelemetry("Disk", telemetryProperties)
 			}
 		}
-	}
-}
-
-func (p diskPlugin) scrapeDiskData() []map[string]interface{} {
-	// Placeholder for actual disk scraping logic
-	return []map[string]interface{}{
-		{"disk": "sda", "usage": 70},
-		{"disk": "sdb", "usage": 50},
 	}
 }
 
