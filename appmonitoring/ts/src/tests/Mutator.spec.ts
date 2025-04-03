@@ -1,9 +1,9 @@
 ﻿import { expect, describe, it } from "@jest/globals";
-import { Mutator } from "../Mutator.js";
-import { IAdmissionReview, IAnnotations, IMetadata, InstrumentationCR, AutoInstrumentationPlatforms, DefaultInstrumentationCRName, IInstrumentationState, IObjectType, InstrumentationAnnotationName } from "../RequestDefinition.js";
-import { TestObject2, TestObject4, crs, clusterArmId, clusterArmRegion } from "./testConsts.js";
-import { logger } from "../LoggerWrapper.js"
-import { InstrumentationCRsCollection } from "../InstrumentationCRsCollection.js";
+import { Mutator } from "Mutator.js";
+import { IAdmissionReview, IAnnotations, IMetadata, InstrumentationCR, AutoInstrumentationPlatforms, DefaultInstrumentationCRName, IInstrumentationState, IObjectType, InstrumentationAnnotationName } from "RequestDefinition.js";
+import { TestObject2, TestObject4, crs, clusterArmId, clusterArmRegion } from "tests/testConsts.js";
+import { logger } from "LoggerWrapper.js"
+import { InstrumentationCRsCollection } from "InstrumentationCRsCollection.js";
 
 beforeEach(() => {
     logger.setUnitTestMode(true);
@@ -405,12 +405,352 @@ describe("Mutator", () => {
         expect((<[]>patches).length).toBe(1);
 
         const obj: IObjectType = (<any>patches[0]).value as IObjectType;
-        const annotationValue: IInstrumentationState = JSON.parse(obj.metadata.annotations[InstrumentationAnnotationName]) as IInstrumentationState;
+        expect(obj.metadata?.annotations?.[InstrumentationAnnotationName]).toBeUndefined();
 
-        expect(annotationValue.crName).toBe(crDefault.metadata.name);
+        expect((<any>patches[0]).value.spec.template.spec.initContainers).toBeUndefined();
+    });
+
+    it("Mutating deployment - per language inject - single inject - annotations is set to true", async () => {
+        // ASSUME
+        const crDefault: InstrumentationCR = {
+            metadata: {
+                name: "default",
+                namespace: "ns1",
+                resourceVersion: "12"
+            },
+            spec: {
+                settings: {
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.NodeJs]
+                },
+                destination: {
+                    applicationInsightsConnectionString: "InstrumentationKey=default"
+                }
+            }
+        };
+        
+        const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
+        crs.Upsert(crDefault);
+
+        const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject4));
+
+        admissionReview.request.object.metadata.namespace = "ns1";
+        admissionReview.request.object.metadata.annotations = { preExistingAnnotationName: "preExistingAnnotationValue" };
+
+        const metadata: IMetadata = <IMetadata>{
+            annotations: {
+                "instrumentation.opentelemetry.io/inject-java": "true"
+            }
+        };
+
+        admissionReview.request.object.spec.template.metadata = metadata;
+
+        // ACT
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+
+        // ASSERT
+        expect(result.response.allowed).toBe(true);
+        expect(result.response.patchType).toBe("JSONPatch");
+        expect(result.response.uid).toBe(admissionReview.request.uid);
+        expect(result.response.status.code).toBe(200);
+        expect(result.response.status.message).toBe("OK");
+
+        // confirm default CR and annotation-enabled platforms were written into the annotations
+        const patchString: string = atob(result.response.patch);
+        const patches: object[] = JSON.parse(patchString);
+
+        expect((<[]>patches).length).toBe(1);
+
+        const obj: IObjectType = (<any>patches[0]).value as IObjectType;
+        const annotationValue: IInstrumentationState = JSON.parse(obj.metadata.annotations[InstrumentationAnnotationName]) as IInstrumentationState;
+        expect(annotationValue.crName).toBe(DefaultInstrumentationCRName);
         expect(annotationValue.crResourceVersion).toBe("12");
+        expect(annotationValue.platforms).toStrictEqual([AutoInstrumentationPlatforms.Java]);
+    });
+
+    it("Mutating deployment - configuration inject - annotations with specific CR", async () => {
+        // ASSUME
+        const crDefault: InstrumentationCR = {
+            metadata: {
+                name: "default",
+                namespace: "ns1",
+                resourceVersion: "1"
+            },
+            spec: {
+                settings: {
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs]
+                },
+                destination: {
+                    applicationInsightsConnectionString: "InstrumentationKey=default"
+                }
+            }
+        };
+
+        const cr1: InstrumentationCR = {
+            metadata: {
+                name: "cr1",
+                namespace: "ns1",
+                resourceVersion: "1"
+            },
+            spec: {
+                settings: {
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.NodeJs]
+                },
+                destination: {
+                    applicationInsightsConnectionString: "InstrumentationKey=cr1"
+                }
+            }
+        };
+        
+        const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
+        crs.Upsert(cr1);       
+        crs.Upsert(crDefault);
+
+        const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject4));
+
+        admissionReview.request.object.metadata.namespace = "ns1";
+        admissionReview.request.object.metadata.annotations = { preExistingAnnotationName: "preExistingAnnotationValue" };
+
+        const metadata: IMetadata = <IMetadata>{
+            annotations: {
+                "instrumentation.opentelemetry.io/inject-configuration": "cr1"
+            }
+        };
+
+        admissionReview.request.object.spec.template.metadata = metadata;
+
+        // ACT
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+
+        // ASSERT
+        expect(result.response.allowed).toBe(true);
+        expect(result.response.patchType).toBe("JSONPatch");
+        expect(result.response.uid).toBe(admissionReview.request.uid);
+
+        // remove once implemented
+        expect(result.response.status.code).toBe(400);
+        expect(result.response.status.message).toBe("Exception encountered: inject-configuration annotation is not supported yet, please use language-specific inject-* annotations instead.");
+        return;
+
+        expect(result.response.status.code).toBe(200);
+        expect(result.response.status.message).toBe("OK");
+
+        const patchString: string = atob(result.response.patch);
+        const patches: object[] = JSON.parse(patchString);
+
+        expect((<[]>patches).length).toBe(1);
+        
+        const obj: IObjectType = (<any>patches[0]).value as IObjectType;
+        const annotationValue: IInstrumentationState = JSON.parse(obj.metadata.annotations[InstrumentationAnnotationName]) as IInstrumentationState;
+        
+        expect(annotationValue.crName).toBe(cr1.metadata.name);
+        expect(annotationValue.crResourceVersion).toBe("1");
         expect(annotationValue.platforms).toStrictEqual([]);
 
         expect((<any>patches[0]).value.spec.template.spec.initContainers).toStrictEqual([]);
+    });
+
+    it("Mutating deployment - configuration inject - annotations with default CR", async () => {
+        // ASSUME
+        const crDefault: InstrumentationCR = {
+            metadata: {
+                name: "default",
+                namespace: "ns1",
+                resourceVersion: "2"
+            },
+            spec: {
+                settings: {
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs]
+                },
+                destination: {
+                    applicationInsightsConnectionString: "InstrumentationKey=default"
+                }
+            }
+        };
+
+        const cr1: InstrumentationCR = {
+            metadata: {
+                name: "cr1",
+                namespace: "ns1",
+                resourceVersion: "1"
+            },
+            spec: {
+                settings: {
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java]
+                },
+                destination: {
+                    applicationInsightsConnectionString: "InstrumentationKey=cr1"
+                }
+            }
+        };
+        
+        const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
+        crs.Upsert(cr1);       
+        crs.Upsert(crDefault);
+
+        const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject4));
+
+        admissionReview.request.object.metadata.namespace = "ns1";
+        admissionReview.request.object.metadata.annotations = { preExistingAnnotationName: "preExistingAnnotationValue" };
+
+        const metadata: IMetadata = <IMetadata>{
+            annotations: {
+                "instrumentation.opentelemetry.io/inject-configuration": "true"
+            }
+        };
+
+        admissionReview.request.object.spec.template.metadata = metadata;
+
+        // ACT
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+
+        // ASSERT
+        expect(result.response.allowed).toBe(true);
+        expect(result.response.patchType).toBe("JSONPatch");
+        expect(result.response.uid).toBe(admissionReview.request.uid);
+
+        expect(result.response.status.code).toBe(400);
+        expect(result.response.status.message).toBe("Exception encountered: inject-configuration annotation is not supported yet, please use language-specific inject-* annotations instead.");
+        return;
+
+        expect(result.response.status.code).toBe(200);
+        expect(result.response.status.message).toBe("OK");
+
+        const patchString: string = atob(result.response.patch);
+        const patches: object[] = JSON.parse(patchString);
+
+        expect((<[]>patches).length).toBe(1);
+        
+        const obj: IObjectType = (<any>patches[0]).value as IObjectType;
+        const annotationValue: IInstrumentationState = JSON.parse(obj.metadata.annotations[InstrumentationAnnotationName]) as IInstrumentationState;
+        
+        expect(annotationValue.crName).toBe(crDefault.metadata.name);
+        expect(annotationValue.crResourceVersion).toBe("2");
+        expect(annotationValue.platforms).toStrictEqual([]);
+        expect((<any>patches[0]).value.spec.template.spec.initContainers).toStrictEqual([]);
+    });
+
+    it("Mutating deployment - configuration inject - annotation is set to false", async () => {
+        // ASSUME
+        const crDefault: InstrumentationCR = {
+            metadata: {
+                name: "default",
+                namespace: "ns1",
+                resourceVersion: "2"
+            },
+            spec: {
+                settings: {
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs]
+                },
+                destination: {
+                    applicationInsightsConnectionString: "InstrumentationKey=default"
+                }
+            }
+        };
+
+        const cr1: InstrumentationCR = {
+            metadata: {
+                name: "cr1",
+                namespace: "ns1",
+                resourceVersion: "1"
+            },
+            spec: {
+                settings: {
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java]
+                },
+                destination: {
+                    applicationInsightsConnectionString: "InstrumentationKey=cr1"
+                }
+            }
+        };
+        
+        const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
+        crs.Upsert(cr1);       
+        crs.Upsert(crDefault);
+
+        const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject4));
+
+        admissionReview.request.object.metadata.namespace = "ns1";
+        admissionReview.request.object.metadata.annotations = { preExistingAnnotationName: "preExistingAnnotationValue" };
+
+        const metadata: IMetadata = <IMetadata>{
+            annotations: {
+                "instrumentation.opentelemetry.io/inject-configuration": "false"
+            }
+        };
+
+        admissionReview.request.object.spec.template.metadata = metadata;
+
+        // ACT
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+
+        // ASSERT
+        expect(result.response.allowed).toBe(true);
+        expect(result.response.patchType).toBe("JSONPatch");
+        expect(result.response.uid).toBe(admissionReview.request.uid);
+
+        expect(result.response.status.code).toBe(400);
+        expect(result.response.status.message).toBe("Exception encountered: inject-configuration annotation is not supported yet, please use language-specific inject-* annotations instead.");
+        return;
+
+        expect(result.response.status.code).toBe(200);
+        expect(result.response.status.message).toBe("OK");
+
+        const patchString: string = atob(result.response.patch);
+        const patches: object[] = JSON.parse(patchString);
+
+        expect((<[]>patches).length).toBe(1);
+        
+        const obj: IObjectType = (<any>patches[0]).value as IObjectType;        
+        expect(obj.metadata.annotations[InstrumentationAnnotationName]).toBeUndefined();
+
+        expect((<any>patches[0]).value.spec.template.spec.initContainers).toBeUndefined();
+    });
+
+    it("Mutating deployment - configuration inject - invalid annotations - combined with per-language injects", async () => {
+        // ASSUME
+        const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject4));
+
+        // invalid sets of annotations, all pointing to multiple CRs
+        const invalidAnnotationSets: IAnnotations[] = [
+            {
+                "instrumentation.opentelemetry.io/inject-java": "cr1",
+                "instrumentation.opentelemetry.io/inject-configuration": "cr2"
+            },
+            {
+                "instrumentation.opentelemetry.io/inject-java": "cr1",
+                "instrumentation.opentelemetry.io/inject-configuration": "true"
+            },
+            {
+                "instrumentation.opentelemetry.io/inject-java": "cr1",
+                "instrumentation.opentelemetry.io/inject-configuration": "false"
+            },
+            {
+                "instrumentation.opentelemetry.io/inject-nodejs": "true",
+                "instrumentation.opentelemetry.io/inject-configuration": "cr1"
+            }
+        ];
+       
+        admissionReview.request.object.metadata.namespace = "ns1";
+
+        invalidAnnotationSets.forEach(async annotationSet => {
+            const metadata: IMetadata = <IMetadata> { annotations: annotationSet };
+
+            admissionReview.request.object.spec.template.metadata = metadata;
+
+             // ACT
+            const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+            
+            // ASSERT
+            expect(result.response.allowed).toBe(true);
+            expect(result.response.patchType).toBe("JSONPatch");
+            expect(result.response.uid).toBe(admissionReview.request.uid);
+
+            expect(result.response.status.code).toBe(400);
+            expect(result.response.status.message).toBe("Exception encountered: inject-configuration annotation is not supported yet, please use language-specific inject-* annotations instead.");
+            return;
+
+            expect(result.response.status.code).toBe(400);
+            expect(result.response.status.message).toBe("Exception encountered: Mix of language-specific instrumentation.opentelemetry.io/inject-* annotations with instrumentation.opentelemetry.io/inject-configuration annotation, that is not supported.");
+        });
     });
 });

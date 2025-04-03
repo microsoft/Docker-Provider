@@ -1,6 +1,6 @@
 ﻿import * as https from "https";
 import { Mutator } from "./Mutator.js";
-import { HeartbeatMetrics, HeartbeatLogs, logger, RequestMetadata } from "./LoggerWrapper.js";
+import { Events, HeartbeatMetrics, HeartbeatLogs, logger, RequestMetadata } from "./LoggerWrapper.js";
 import { InstrumentationCR, IAdmissionReview } from "./RequestDefinition.js";
 import { K8sWatcher } from "./K8sWatcher.js";
 import { InstrumentationCRsCollection } from "./InstrumentationCRsCollection.js"
@@ -17,39 +17,42 @@ let operationId = randomUUID();
 if ("secrets-manager".localeCompare(containerMode) === 0) {
     try {
         logger.info("Running in certificate manager mode...", operationId, null);
-        logger.SendEvent("CertificateManagerModeRun", operationId, null, clusterArmId, clusterArmRegion);
-        logger.addHeartbeatMetric(HeartbeatMetrics.CertificateOperationCount, 1);
+        await logger.SendEvent(Events[Events.CertificateManagerModeRun], operationId, null, clusterArmId, clusterArmRegion, true);
         await new CertificateManager().CreateWebhookAndCertificates(operationId, clusterArmId, clusterArmRegion);
         logger.info("Certificate manager mode is done", operationId, null);
-        logger.SendEvent("CertificateManagerModeRunSuccess", operationId, null, clusterArmId, clusterArmRegion, true);
+        await logger.SendEvent(Events[Events.CertificateManagerModeRunSuccess], operationId, null, clusterArmId, clusterArmRegion, true);
     } catch (error) {
-        logger.addHeartbeatMetric(HeartbeatMetrics.CertificateOperationFailedCount, 1);
         logger.error(`Certificate manager mode failed: ${JSON.stringify(error)}`, operationId, null);
-        logger.SendEvent("CertificateManagerModeRunFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
+        await logger.SendEvent(Events[Events.CertificateManagerModeRunFailure], operationId, null, clusterArmId, clusterArmRegion, true, error);
         throw error;
     }
+
     process.exit();
 } else if ("secrets-housekeeper".localeCompare(containerMode) === 0) {
     try {
         logger.info("Running in certificate housekeeper mode...", operationId, null);
+        await logger.SendEvent(Events[Events.SecretsHouseKeeperModeRun], operationId, null, clusterArmId, clusterArmRegion, true);
         await new CertificateManager().ReconcileWebhookAndCertificates(operationId, clusterArmId, clusterArmRegion);
+        logger.info("Certificate housekeeper mode is done", operationId, null);
+        await logger.SendEvent(Events[Events.SecretsHouseKeeperModeRunSuccess], operationId, null, clusterArmId, clusterArmRegion, true);
     } catch (error) {
-        logger.error(`Failed to Update Certificates, Terminating...\n${JSON.stringify(error)}`, operationId, null);
-        logger.SendEvent("SecretsHouseKeeperFailed", operationId, null, clusterArmId, clusterArmRegion, true, error);
+        logger.error(`Failed to update certificates, terminating...\n${JSON.stringify(error)}`, operationId, null);
+        await logger.SendEvent(Events[Events.SecretsHouseKeeperModeRunFailure], operationId, null, clusterArmId, clusterArmRegion, true, error);
         throw error;
     }
+
     process.exit();
 }
 
 const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
 
 logger.info("Running in server mode...", operationId, null);
-logger.SendEvent("ServerModeRun", operationId, null, clusterArmId, clusterArmRegion);
+await logger.SendEvent(Events[Events.ServerModeRun], operationId, null, clusterArmId, clusterArmRegion, true);
 
 const armIdMatches = /^\/subscriptions\/(?<SubscriptionId>[^/]+)\/resourceGroups\/(?<ResourceGroup>[^/]+)\/providers\/(?<Provider>[^/]+)\/(?<ResourceType>[^/]+)\/(?<ResourceName>[^/]+).*$/i.exec(clusterArmId);
 if (!armIdMatches || armIdMatches.length != 6) {
     logger.error(`Cluster ARM ID is in a wrong format: ${clusterArmId}`, operationId, null);
-    logger.SendEvent("ArmIdIncorrect", operationId, null, clusterArmId, clusterArmRegion, true);
+    await logger.SendEvent(Events[Events.ArmIdIncorrect], operationId, null, clusterArmId, clusterArmRegion, true);
     throw `Cluster ARM ID is in a wrong format: ${clusterArmId}`;
 }
 
@@ -57,28 +60,22 @@ if (!armIdMatches || armIdMatches.length != 6) {
 logger.startHeartbeats(operationId);
 
 // don't await, this runs an infinite loop
-K8sWatcher.StartWatchingCRs(crs, (cr: InstrumentationCR, isRemoved: boolean) => {
-    if (isRemoved) {
-        crs.Remove(cr);
-    } else {
-        crs.Upsert(cr);
-    }
-    
-    const items: InstrumentationCR[] = crs.ListCRs();
-    logger.setHeartbeatMetric(HeartbeatMetrics.CRCount, items.length);
-    
-    const uniqueNamespaces = new Set<string>(items.map(cr => cr.metadata.namespace, this));
-    logger.setHeartbeatMetric(HeartbeatMetrics.InstrumentedNamespaceCount, uniqueNamespaces.size);
+K8sWatcher.StartWatchingCRs(crs,
+    (cr: InstrumentationCR, isRemoved: boolean) => {
+        if (isRemoved) {
+            crs.Remove(cr);
+        } else {
+            crs.Upsert(cr);
+        }
 
-    let log = "CRs: [";
-    for (let i = 0; i < items.length; i++) {
-        log += `${items[i].metadata.namespace}/${items[i].metadata.name}, autoInstrumentationPlatforms=${items[i].spec.settings.autoInstrumentationPlatforms}, applicationInsightsConnectionString=${items[i].spec.destination.applicationInsightsConnectionString}}`;
-    }
+        logCRs(crs);
+    },
+    (crsToResetWith: InstrumentationCR[]) => {
+        crs.Reset(crsToResetWith);
 
-    log += "]"
-
-    logger.info(log, operationId, null);
-}, operationId);
+        logCRs(crs);
+    },
+    operationId);
 
 let options: https.ServerOptions;
 try {
@@ -90,14 +87,14 @@ try {
     logger.info(`Certs successfully loaded`, operationId, null);
 } catch (e) {
     logger.error(`Failed to load certs: ${e}`, operationId, null);
-    logger.SendEvent("CertsLoadFailed", operationId, null, clusterArmId, clusterArmRegion, true, e);
+    await logger.SendEvent(Events[Events.CertificateLoadFailure], operationId, null, clusterArmId, clusterArmRegion, true, e);
     throw e;
 }
 
 const port = process.env.port || 1337;
 logger.info(`listening on port ${port}`, operationId, null);
 
-https.createServer(options, (req, res) => {
+const server = https.createServer(options, (req, res) => {
     logger.info(`Received request with url: ${req.url}, method: ${req.method}, content-type: ${req.headers["content-type"]}`, operationId, null);
     
     logger.addHeartbeatMetric(HeartbeatMetrics.AdmissionReviewCount, 1);
@@ -153,4 +150,47 @@ https.createServer(options, (req, res) => {
 
 }).listen(port);
 
-logger.info(`Finished listening on port ${port}, exiting`, null, null);
+logger.info(`Server created on port ${port}`, null, null);
+
+function shutdownServer() {
+    server.close((err) => {
+        if (err) {
+            logger.error(`Error shutting down server: ${err}`, operationId, null);
+            process.exit(1);
+        } else {
+            logger.info("Server has shut down gracefully", operationId, null);
+            process.exit(0);
+        }
+    });
+}
+  
+// listen for process termination signals
+process.on("SIGINT", shutdownServer);
+process.on("SIGTERM", shutdownServer);
+
+const keepAlive = new Promise<void>((resolve) => {
+    process.on('SIGINT', resolve);
+    process.on('SIGTERM', resolve);
+});
+  
+// keep the event loop alive
+await keepAlive;
+  
+logger.info("Server shut down, exiting now", operationId, null);
+
+function logCRs(crs: InstrumentationCRsCollection) {
+    const items: InstrumentationCR[] = crs.ListCRs();
+    logger.setHeartbeatMetric(HeartbeatMetrics.CRCount, items.length);
+
+    const uniqueNamespaces = new Set<string>(items.map(cr => cr.metadata.namespace, this));
+    logger.setHeartbeatMetric(HeartbeatMetrics.InstrumentedNamespaceCount, uniqueNamespaces.size);
+
+    let log = "CRs: [";
+    for (let i = 0; i < items.length; i++) {
+        log += `${items[i].metadata.namespace}/${items[i].metadata.name}, autoInstrumentationPlatforms=${items[i].spec.settings.autoInstrumentationPlatforms}, applicationInsightsConnectionString=${items[i].spec.destination.applicationInsightsConnectionString}}`;
+    }
+
+    log += "]";
+
+    logger.info(log, operationId, null);
+}

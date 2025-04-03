@@ -3,6 +3,7 @@ import { logger, RequestMetadata, HeartbeatMetrics } from "./LoggerWrapper.js";
 import { PodInfo, IAdmissionReview, InstrumentationCR, AutoInstrumentationPlatforms, DefaultInstrumentationCRName } from "./RequestDefinition.js";
 import { AdmissionReviewValidator } from "./AdmissionReviewValidator.js";
 import { InstrumentationCRsCollection } from "./InstrumentationCRsCollection.js";
+import { Mutations } from "./Mutations.js"
 
 export class Mutator {
     private readonly admissionReview: IAdmissionReview;
@@ -43,7 +44,7 @@ export class Mutator {
         } catch (e) {
             const exceptionMessage = `Exception encountered: ${e}${e?.stack ?? ""}`;
 
-            logger.addHeartbeatMetric(HeartbeatMetrics.AdmissionReviewActionableFailedCount, 1);
+            logger.addHeartbeatMetric(HeartbeatMetrics.AdmissionReviewFailedCount, 1, e?.mutationDetails != null ? JSON.stringify(e.mutationDetails) : "");
         
             logger.error(exceptionMessage, this.operationId, this.requestMetadata);
             
@@ -74,6 +75,8 @@ export class Mutator {
         let clusterName = "";
         let platforms: AutoInstrumentationPlatforms[] = [];
 
+        let mutationDetails: any = null;
+
         if (!cr) {
             // no relevant CR found, we still need to mutate to remove any prior mutations that may already be there
             logger.info(`No governing CR found (best guess was '${crNameToUse}', but it wasn't found), so we'll reverse mutation if any`, this.operationId, this.requestMetadata);            
@@ -88,22 +91,30 @@ export class Mutator {
             platforms = this.pickInstrumentationPlatforms(cr);
 
             logger.info(`Governing CR for the object to be processed (namespace: ${namespace}, deploymentName: ${podInfo.ownerName}): ${JSON.stringify(cr)} with platforms: ${JSON.stringify(platforms)}`, this.operationId, this.requestMetadata);
-            logger.addHeartbeatMetric(HeartbeatMetrics.AdmissionReviewActionableCount, 1);
+            mutationDetails = {
+                platforms: platforms,
+                images: platforms.map(platform => Mutations.GenerateImagePath(platform))
+            };
+            logger.addHeartbeatMetric(HeartbeatMetrics.AdmissionReviewActionableCount, 1, JSON.stringify(mutationDetails));
         }
 
-        const patchData: object[] = Patcher.PatchObject(
-            this.admissionReview.request.object,
-            cr, // null to unpatch
-            podInfo as PodInfo,
-            platforms,
-            this.clusterArmId,
-            this.clusterArmRegion,
-            clusterName);
+        try {
+            const patchData: object[] = Patcher.PatchObject(
+                this.admissionReview.request.object,
+                cr, // null to unpatch
+                podInfo as PodInfo,
+                platforms,
+                this.clusterArmId,
+                this.clusterArmRegion,
+                clusterName);
 
-        const patchDataString: string = JSON.stringify(patchData);
-        logger.info(`Mutated a deployment, returning: ${patchDataString}`, this.operationId, this.requestMetadata);
+            const patchDataString: string = JSON.stringify(patchData);
+            logger.info(`Mutated a deployment, returning: ${patchDataString}`, this.operationId, this.requestMetadata);
 
-        return Buffer.from(patchDataString).toString("base64");
+            return Buffer.from(patchDataString).toString("base64");
+        } catch (e) {
+            throw { e: e, mutationDetails: mutationDetails };
+        }
     }           
 
     private newResponse() {
@@ -147,17 +158,55 @@ export class Mutator {
     private pickCR(): string {
         const injectJavaAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-java"];
         const injectNodeJsAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-nodejs"];
+        const injectConfigurationAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-configuration"];
 
-        const injectAnnotationValues: string[] = [injectJavaAnnotation, injectNodeJsAnnotation];
+        const injectLanguageSpecificAnnotationValues: string[] = [injectJavaAnnotation, injectNodeJsAnnotation];
 
         // if any of the annotations contain a value other than "true" or "false", that must be the same value for all annotations, we can't apply multiple CRs to the same pod
-        const specificCRNames: string[] = injectAnnotationValues.filter(value => value && value.toLowerCase() != "true" && value.toLowerCase() != "false", this);
-        if(specificCRNames.length > 0 && specificCRNames.filter(value => value?.toLowerCase() === specificCRNames[0].toLowerCase(), this).length != specificCRNames.length) {
+        const specificCRNamesFromLanguageSpecific: string[] = injectLanguageSpecificAnnotationValues.filter(value => value && value.toLowerCase() !== "true" && value.toLowerCase() !== "false");
+        if(specificCRNamesFromLanguageSpecific.length > 0 && specificCRNamesFromLanguageSpecific.filter(value => value?.toLowerCase() === specificCRNamesFromLanguageSpecific[0].toLowerCase()).length != specificCRNamesFromLanguageSpecific.length) {
             throw `Multiple specific CR names specified in instrumentation.opentelemetry.io/inject-* annotations, that is not supported.`;
         }
 
-        // use CR provided in the annotation(s), otherwise use default
-        return specificCRNames.length > 0 ? specificCRNames[0] : DefaultInstrumentationCRName;
+        // remove this when we are ready to ship the inject-configuration annotation
+        if(injectConfigurationAnnotation) {
+            throw `inject-configuration annotation is not supported yet, please use language-specific inject-* annotations instead.`;
+        }
+
+        // if there's a inject-configuration annotation, no language-specific annotations are allowed
+        if(injectConfigurationAnnotation && injectLanguageSpecificAnnotationValues.filter(value => value).length > 0) {
+            throw `Mix of language-specific instrumentation.opentelemetry.io/inject-* annotations with instrumentation.opentelemetry.io/inject-configuration annotation, that is not supported.`;
+        }
+
+        const crNameFromConfiguration: string = (injectConfigurationAnnotation?.toLowerCase() !== "true" && injectConfigurationAnnotation?.toLowerCase() !== "false") ? injectConfigurationAnnotation : null;
+
+        // specific CR name in language-specific injects
+        if(specificCRNamesFromLanguageSpecific.length > 0) {
+            return specificCRNamesFromLanguageSpecific[0];
+        }
+        
+        // specific CR name in configuration inject
+        if(crNameFromConfiguration) {
+            return crNameFromConfiguration;
+        }
+        
+        // at least one language-specific inject is set to true
+        if(injectLanguageSpecificAnnotationValues.filter(value => value?.toLowerCase() === "true").length > 0) {
+            return DefaultInstrumentationCRName;
+        }
+
+        // configuration inject set to true
+        if(injectConfigurationAnnotation?.toLowerCase() === "true") {
+            return DefaultInstrumentationCRName;
+        }
+
+        // no injects at all (language-specific or otherwise)
+        if(injectLanguageSpecificAnnotationValues.filter(value => value).length === 0 && !injectConfigurationAnnotation) {
+            return DefaultInstrumentationCRName;
+        }
+        
+        // all injects are set to false, do not mutate
+        return null;
     }
 
     /**
@@ -172,8 +221,9 @@ export class Mutator {
         // annotations are on the pod template spec
         const injectJavaAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-java"];
         const injectNodeJsAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-nodejs"];
+        const injectConfigurationAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-configuration"];
 
-        const injectAnnotationValues: string[] = [injectJavaAnnotation, injectNodeJsAnnotation];
+        const injectAnnotationValues: string[] = [injectJavaAnnotation, injectNodeJsAnnotation, injectConfigurationAnnotation];
 
         if(injectAnnotationValues.filter(value => value).length == 0) {
             // no annotations specified, use platform list from the CR

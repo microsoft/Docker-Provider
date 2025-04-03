@@ -9,8 +9,8 @@ export class InstrumentationCRsCollection {
     }
 
     public GetCR(namespace: string, crName: string): InstrumentationCR {
-        // return the exact name match or DefaultInstrumentationCRName within the namespace
-        return this.crs.find(cr => cr.metadata.namespace === namespace && (crName && cr.metadata.name === crName || !crName && cr.metadata.name === DefaultInstrumentationCRName), this);
+        // return the exact name match within the namespace
+        return this.crs.find(cr => cr.metadata.namespace === namespace && (crName && cr.metadata.name === crName), this);
     }
 
     public Upsert(cr: InstrumentationCR): void {
@@ -33,5 +33,9 @@ export class InstrumentationCRsCollection {
                 break;
             }
         }
+    }
+
+    public Reset(crs: InstrumentationCR[]) {
+        this.crs = crs.slice();
     }
 }

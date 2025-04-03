@@ -124,8 +124,8 @@ jobs:
         ls -a
         
         echo "Installing npm packages..."
-        npm i
-        npm ci
+        sudo npm i
+        sudo npm ci
 
         #echo "Updating packages..."
         #npm update
@@ -174,8 +174,8 @@ jobs:
         sudo apt-get update && sudo apt-get -y install qemu binfmt-support qemu-user-static
         docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
-        docker buildx create --name testbuilder
-        docker buildx use testbuilder
+        # docker buildx create --name testbuilder
+        # docker buildx use testbuilder
 
         az --version
         az account show
@@ -190,14 +190,14 @@ jobs:
         echo "Build reason = $(Build.Reason)"
         
         if [ "$(Build.Reason)" != "PullRequest" ]; then
-          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(imageTag) -f ./Dockerfile --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --push --provenance=false .
+          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(imageTag) -f ./Dockerfile --build-arg IMAGE_TAG="$(imageTag)" --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --push --provenance=false .
 
           docker pull ${{ variables.repoImageName }}:$(imageTag)
         else
-          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(imageTag) -f ./Dockerfile --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --provenance=false .
+          docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.repoImageName }}:$(imageTag) -f ./Dockerfile --build-arg IMAGE_TAG="$(imageTag)" --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --provenance=false .
 
           # load the multi-arch image to run tests
-          docker buildx build --tag ${{ variables.repoImageName }}:$(imageTag) -f ./Dockerfile --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --load --provenance=false .
+          docker buildx build --tag ${{ variables.repoImageName }}:$(imageTag) -f ./Dockerfile --build-arg IMAGE_TAG="$(imageTag)" --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --load --provenance=false .
         fi
 
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin

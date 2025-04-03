@@ -2,16 +2,19 @@
 CVE-2023-26136
 CVE-2024-28863
 
-# import-in-the-middle -> @opentelemetry/instrumentation -> @azure/opentelemetry-instrumentation-azure-sdk -> applicationinsights
-CVE-2023-38704
-# @opentelemetry/instrumentation -> @azure/opentelemetry-instrumentation-azure-sdk -> applicationinsights
-GHSA-f8pq-3926-8gx5
-
 # ws -> kubernetes/client-node
 CVE-2024-37890
 
-# temporarily ignore until the next PR is merged that fixes vulnerabilities by updating packages
-# need the build to pass to get through the PR gate
+
+# @kubernetes/client-node@1.0.0
+# │ └─┬ tar@7.4.3
+# │   └─┬ minizlib@3.0.1
+# │     └─┬ rimraf@5.0.10
+# │       └─┬ glob@10.4.5
+# │         └─┬ foreground-child@3.3.0
+# │           └── cross-spawn@7.0.3 deduped
 CVE-2024-21538
-CVE-2024-21534
+
+# ┬ @kubernetes/client-node@1.0.0
+# └── jsonpath-plus@10.2.0
 CVE-2025-1302

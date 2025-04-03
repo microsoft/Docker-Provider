@@ -1,9 +1,9 @@
-del *.js.map
-del *.js
+@echo off
+if exist "./out" (
+    rmdir /S /Q "./out"
+)
 
-del tests\*.js.map
-del tests\*.js
-
+call npm i
 call npm ci
 
 call tsc --build || echo Build failed && exit /b

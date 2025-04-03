@@ -1,13 +1,11 @@
-import { CertificateManager, WebhookCertData } from '../CertificateManager.js';
-import * as k8s from '@kubernetes/client-node';
-import forge from 'node-forge';
+import { CertificateManager, WebhookCertData } from "CertificateManager.js";
+import forge from "node-forge";
+import { AdmissionregistrationV1Api, AppsV1Api, CoreV1Api, createConfiguration, KubeConfig, V1Deployment, V1DeploymentList, V1MutatingWebhook, V1MutatingWebhookConfiguration, V1ReplicaSet, V1Secret } from "@kubernetes/client-node";
 
 describe('CertificateManager', () => {
-    let kubeConfig: k8s.KubeConfig;
     let certManager: CertificateManager;
 
     beforeEach(() => {
-        kubeConfig = new k8s.KubeConfig();
         jest.clearAllMocks();
         jest.resetAllMocks();
         // Set up kubeConfig with necessary configurations
@@ -17,10 +15,10 @@ describe('CertificateManager', () => {
 
     describe('CreateWebhookAndSecretStore', () => {
         it('should create and patch webhook and certificates', async () => {
-            const mockKubeConfig = new k8s.KubeConfig();
+            const mockKubeConfig = new KubeConfig();
             const mockClusterArmId = 'clusterArmId';
             const mockClusterArmRegion = 'clusterArmRegion';
-            jest.spyOn(k8s.KubeConfig.prototype, 'loadFromDefault').mockReturnValue(null);
+            jest.spyOn(KubeConfig.prototype, 'loadFromDefault').mockReturnValue(null);
             const createOrUpdateCertificates = jest.spyOn(certManager as any, 'CreateOrUpdateCertificates').mockReturnValue({
                 caCert: 'mockCACert',
                 caKey: 'mockCAKey',
@@ -43,18 +41,18 @@ describe('CertificateManager', () => {
     });
 
     describe('ReconcileWebhookAndCertificates', () => {
-        let mockKubeConfig: k8s.KubeConfig;
+        let mockKubeConfig: KubeConfig;
         let mockClusterArmId: string;
         let mockClusterArmRegion: string;
         let operationId: string;
         let certManager: CertificateManager;
 
         beforeEach(() => {
-            mockKubeConfig = new k8s.KubeConfig();
+            mockKubeConfig = new KubeConfig();
             mockClusterArmId = 'clusterArmId';
             mockClusterArmRegion = 'clusterArmRegion';
             operationId = 'operationId';
-            jest.spyOn(k8s.KubeConfig.prototype, 'loadFromDefault').mockReturnValue(null);
+            jest.spyOn(KubeConfig.prototype, 'loadFromDefault').mockReturnValue(null);
 
             certManager = new CertificateManager();
         });
@@ -190,7 +188,7 @@ describe('CertificateManager', () => {
                 tlsKey: mockCertData.tlsKey,
                 tlsCert: mockCertData.tlsCert
             } as WebhookCertData);
-            jest.spyOn(certManager as any, 'GetSecretDetails').mockImplementation((operationId: string, kubeConfig: k8s.KubeConfig) => {
+            jest.spyOn(certManager as any, 'GetSecretDetails').mockImplementation((operationId: string, kubeConfig: KubeConfig) => {
                 if (!kubeConfig) {
                     throw new Error('Invalid KubeConfig');
                 }
@@ -202,7 +200,7 @@ describe('CertificateManager', () => {
             jest.spyOn(certManager as any, 'isCertificateSignedByCA').mockReturnValue(false);
             const checkCertificateJobStatus = jest.spyOn(certManager as any, 'HasCertificateInstallerJobFinished').mockReturnValue(true);
             const IsValidCertificate = jest.spyOn(certManager as any, 'IsValidCertificate').mockReturnValue(true);
-            const patchWebhookAndCertificates = jest.spyOn(certManager as any, 'PatchWebhookAndSecretStore').mockImplementation((_1: string, kc: k8s.KubeConfig, certificates: WebhookCertData, _2: string, _3: string) => {
+            const patchWebhookAndCertificates = jest.spyOn(certManager as any, 'PatchWebhookAndSecretStore').mockImplementation((_1: string, kc: KubeConfig, certificates: WebhookCertData, _2: string, _3: string) => {
                 if (!(kc && certificates && certificates.caCert && certificates.caKey && certificates.tlsCert && certificates.tlsKey 
                         && mockCertData.caCert.localeCompare(certificates.caCert) === 0 && mockCertData.caKey.localeCompare(certificates.caKey) === 0 
                         && mockCertData.tlsCert.localeCompare(certificates.tlsCert) === 0 && mockCertData.tlsKey.localeCompare(certificates.tlsKey) === 0)) {
@@ -210,7 +208,7 @@ describe('CertificateManager', () => {
                 }
                 return null;
             });
-            const restartWebhookDeployment = jest.spyOn(certManager as any, 'RestartWebhookDeployment').mockImplementation((_1: string, kc: k8s.KubeConfig, _2: string, _3: string) => {
+            const restartWebhookDeployment = jest.spyOn(certManager as any, 'RestartWebhookDeployment').mockImplementation((_1: string, kc: KubeConfig, _2: string, _3: string) => {
                 if (!kc) {
                     throw new Error('Invalid KubeConfig');
                 }
@@ -237,7 +235,7 @@ describe('CertificateManager', () => {
             jest.spyOn(Date, 'now').mockReturnValueOnce(0).mockReturnValue(800 * 24 * 60 * 60 * 1000);
             const realCertObj: WebhookCertData = (certManager as any).CreateOrUpdateCertificates('test-operationId');
             const caCertDecoded: forge.pki.Certificate = forge.pki.certificateFromPem(realCertObj.caCert);
-            const getSecretDetails =  jest.spyOn(certManager as any, 'GetSecretDetails').mockImplementation((operationId: string, kubeConfig: k8s.KubeConfig) => {
+            const getSecretDetails =  jest.spyOn(certManager as any, 'GetSecretDetails').mockImplementation((operationId: string, kubeConfig: KubeConfig) => {
                 if (!kubeConfig) {
                     throw new Error('Invalid KubeConfig');
                 }
@@ -245,7 +243,7 @@ describe('CertificateManager', () => {
                     resolve(realCertObj);
                 });
             });
-            const getMutatingWebhookCABundle = jest.spyOn(certManager as any, 'GetMutatingWebhookCABundle').mockImplementation((operationId: string, kubeConfig: k8s.KubeConfig) => {
+            const getMutatingWebhookCABundle = jest.spyOn(certManager as any, 'GetMutatingWebhookCABundle').mockImplementation((operationId: string, kubeConfig: KubeConfig) => {
                 if (!kubeConfig) {
                     throw new Error('Invalid KubeConfig');
                 }
@@ -263,7 +261,7 @@ describe('CertificateManager', () => {
             jest.spyOn(certManager as any, 'isCertificateSignedByCA').mockReturnValue(true);
             const checkCertificateJobStatus = jest.spyOn(certManager as any, 'HasCertificateInstallerJobFinished').mockReturnValue(true);
             const IsValidCertificate = jest.spyOn(certManager as any, 'IsValidCertificate').mockReturnValue(true);
-            const patchWebhookAndCertificates = jest.spyOn(certManager as any, 'PatchWebhookAndSecretStore').mockImplementation((_1: string, kc: k8s.KubeConfig, certificates: WebhookCertData, _2: string, _3: string) => {
+            const patchWebhookAndCertificates = jest.spyOn(certManager as any, 'PatchWebhookAndSecretStore').mockImplementation((_1: string, kc: KubeConfig, certificates: WebhookCertData, _2: string, _3: string) => {
                 if (!(kc && certificates && certificates.caCert && certificates.caKey && certificates.tlsCert && certificates.tlsKey 
                         && forge.pki.certificateFromPem(certificates.caCert) && forge.pki.privateKeyFromPem(certificates.caKey) && forge.pki.certificateFromPem(certificates.tlsCert) && forge.pki.privateKeyFromPem(certificates.tlsKey))) {
                         throw new Error('Invalid KubeConfig or Certificates');
@@ -292,7 +290,7 @@ describe('CertificateManager', () => {
             realCertObj.caCert = null;
             hostCertDecoded.privateKey = forge.pki.privateKeyFromPem(realCertObj.tlsKey);
             const getSecretDetails =  jest.spyOn(certManager as any, 'GetSecretDetails').mockResolvedValue(realCertObj);
-            const getMutatingWebhookCABundle = jest.spyOn(certManager as any, 'GetMutatingWebhookCABundle').mockImplementation((_: string, kubeConfig: k8s.KubeConfig) => {
+            const getMutatingWebhookCABundle = jest.spyOn(certManager as any, 'GetMutatingWebhookCABundle').mockImplementation((_: string, kubeConfig: KubeConfig) => {
                 if (!kubeConfig) {
                     throw new Error('Invalid KubeConfig');
                 }
@@ -307,7 +305,7 @@ describe('CertificateManager', () => {
                 return hostCertDecoded;
             });
             jest.spyOn(certManager as any, 'isCertificateSignedByCA').mockReturnValue(true);
-            const patchWebhookAndCertificates = jest.spyOn(certManager as any, 'PatchWebhookAndSecretStore').mockImplementation((_1: string, kc: k8s.KubeConfig, certificates: WebhookCertData, _2: string, _3: string) => {
+            const patchWebhookAndCertificates = jest.spyOn(certManager as any, 'PatchWebhookAndSecretStore').mockImplementation((_1: string, kc: KubeConfig, certificates: WebhookCertData, _2: string, _3: string) => {
                 if (!(kc && certificates && certificates.caCert && certificates.caKey && certificates.tlsCert && certificates.tlsKey 
                         && forge.pki.certificateFromPem(certificates.caCert) && forge.pki.privateKeyFromPem(certificates.caKey) && forge.pki.certificateFromPem(certificates.tlsCert) && forge.pki.privateKeyFromPem(certificates.tlsKey))) {
                         throw new Error('Invalid KubeConfig or Certificates');
@@ -333,44 +331,42 @@ describe('CertificateManager', () => {
         it('should patch mutating webhook', async () => {
             // Arrange
             const operationId = 'operationId';
-            const mockKubeConfig = new k8s.KubeConfig();
+            const mockKubeConfig = new KubeConfig();
             const mockCertificate: WebhookCertData = {
                 caCert: 'mockCACert',
                 caKey: 'mockCAKey',
                 tlsCert: 'mockTLSCert',
                 tlsKey: 'mockTLSKey',
             };
-            const mutatingwebhookobject = {
-                response: null,
+            const mutatingWebhookObject = {
                 body: {
                     webhooks: [
                         {
-                            name: 'app-monitoring-webhook',
+                            name: "app-monitoring-webhook",
                             clientConfig: {
                                 caBundle: ''
                             }
-                        } as k8s.V1MutatingWebhook
+                        } as V1MutatingWebhook
                     ]
-                }
+                } as V1MutatingWebhookConfiguration,
+                name: "app-monitoring-webhook"
             };
-            const readMutatingWebhookConfiguration  = jest.spyOn(k8s.AdmissionregistrationV1Api.prototype, 'readMutatingWebhookConfiguration').mockResolvedValue(mutatingwebhookobject);
-            const mutatingwebhookobjectBodyCopy: k8s.V1MutatingWebhookConfiguration = JSON.parse(JSON.stringify(mutatingwebhookobject.body));
-            const patchMutatingWebhookConfiguration  = jest.spyOn(k8s.AdmissionregistrationV1Api.prototype, 'patchMutatingWebhookConfiguration').mockResolvedValue(null);
-            mutatingwebhookobjectBodyCopy.webhooks[0].clientConfig.caBundle = Buffer.from(mockCertificate.caCert, 'utf-8').toString('base64');
-            jest.spyOn(k8s.KubeConfig.prototype, 'makeApiClient').mockReturnValue(new k8s.AdmissionregistrationV1Api());
+            const readMutatingWebhookConfiguration  = jest.spyOn(AdmissionregistrationV1Api.prototype, 'readMutatingWebhookConfiguration').mockResolvedValue(mutatingWebhookObject.body);
+            const mutatingWebhookObjectCopy = JSON.parse(JSON.stringify(mutatingWebhookObject));
+            const patchMutatingWebhookConfiguration  = jest.spyOn(AdmissionregistrationV1Api.prototype, 'replaceMutatingWebhookConfiguration').mockResolvedValue(null);
+            mutatingWebhookObjectCopy.body.webhooks[0].clientConfig.caBundle = Buffer.from(mockCertificate.caCert, 'utf-8').toString('base64');
+            jest.spyOn(KubeConfig.prototype, 'makeApiClient').mockReturnValue(new AdmissionregistrationV1Api(createConfiguration()));
 
             // Mock the methods in CertificateManager
             jest.spyOn(certManager, 'PatchMutatingWebhook');
             
             // Act
             await certManager.PatchMutatingWebhook(operationId, mockKubeConfig, mockCertificate);
-            mutatingwebhookobject.body.webhooks[0].clientConfig.caBundle = Buffer.from(mockCertificate.caCert, 'utf-8').toString('base64');
+            mutatingWebhookObject.body.webhooks[0].clientConfig.caBundle = Buffer.from(mockCertificate.caCert, 'utf-8').toString('base64');
 
             // Assert
-            expect(readMutatingWebhookConfiguration).toHaveBeenCalledWith('app-monitoring-webhook');
-            expect(patchMutatingWebhookConfiguration).toHaveBeenCalledWith('app-monitoring-webhook', mutatingwebhookobjectBodyCopy, undefined, undefined, undefined, undefined, undefined, {
-                headers: { 'Content-Type' : 'application/strategic-merge-patch+json' }
-            });
+            expect(readMutatingWebhookConfiguration).toHaveBeenCalledWith({ name: "app-monitoring-webhook" });
+            expect(patchMutatingWebhookConfiguration).toHaveBeenCalledWith(mutatingWebhookObjectCopy);
         });
     });
 
@@ -378,7 +374,7 @@ describe('CertificateManager', () => {
         it('should patch webhook and certificates', async () => {
             // Arrange
             const operationId = 'operationId';
-            const mockKubeConfig = new k8s.KubeConfig();
+            const mockKubeConfig = new KubeConfig();
             const mockCertificate: WebhookCertData = {
                 caCert: 'mockCACert',
                 caKey: 'mockCAKey',
@@ -404,7 +400,7 @@ describe('CertificateManager', () => {
         it('should patch secret store', async () => {
             // Arrange
             const operationId = 'operationId';
-            const mockKubeConfig = new k8s.KubeConfig();
+            const mockKubeConfig = new KubeConfig();
             const mockCertificate: WebhookCertData = {
                 caCert: 'mockCACert',
                 caKey: 'mockCAKey',
@@ -420,11 +416,11 @@ describe('CertificateManager', () => {
                         'tls.cert': '',
                         'tls.key': ''
                     }
-                }
+                } as V1Secret
             };
-            const readNamespacedSecret = jest.spyOn(k8s.CoreV1Api.prototype, 'readNamespacedSecret').mockResolvedValue(secretObject);
-            const patchNamespacedSecret = jest.spyOn(k8s.CoreV1Api.prototype, 'patchNamespacedSecret').mockResolvedValue(null);
-            jest.spyOn(k8s.KubeConfig.prototype, 'makeApiClient').mockReturnValue(new k8s.CoreV1Api());
+            const readNamespacedSecret = jest.spyOn(CoreV1Api.prototype, 'readNamespacedSecret').mockResolvedValue(secretObject.body);
+            const patchNamespacedSecret = jest.spyOn(CoreV1Api.prototype, 'replaceNamespacedSecret').mockResolvedValue(null);
+            jest.spyOn(KubeConfig.prototype, 'makeApiClient').mockReturnValue(new CoreV1Api(createConfiguration()));
 
             // Mock the methods in CertificateManager
             jest.spyOn(certManager, 'PatchSecretStore');
@@ -433,16 +429,18 @@ describe('CertificateManager', () => {
             await certManager.PatchSecretStore(operationId, mockKubeConfig, mockCertificate);
 
             // Assert
-            expect(readNamespacedSecret).toHaveBeenCalledWith('app-monitoring-webhook-cert', 'kube-system');
-            expect(patchNamespacedSecret).toHaveBeenCalledWith('app-monitoring-webhook-cert', 'kube-system', {
-                data: {
-                    'ca.cert': Buffer.from(mockCertificate.caCert, 'utf-8').toString('base64'),
-                    'ca.key': Buffer.from(mockCertificate.caKey, 'utf-8').toString('base64'),
-                    'tls.cert': Buffer.from(mockCertificate.tlsCert, 'utf-8').toString('base64'),
-                    'tls.key': Buffer.from(mockCertificate.tlsKey, 'utf-8').toString('base64')
+            expect(readNamespacedSecret).toHaveBeenCalledWith({ name: "app-monitoring-webhook-cert", namespace: "kube-system" });
+            expect(patchNamespacedSecret).toHaveBeenCalledWith({
+                name: "app-monitoring-webhook-cert",
+                namespace: "kube-system",
+                body: {
+                    data: {
+                        'ca.cert': Buffer.from(mockCertificate.caCert, 'utf-8').toString('base64'),
+                        'ca.key': Buffer.from(mockCertificate.caKey, 'utf-8').toString('base64'),
+                        'tls.cert': Buffer.from(mockCertificate.tlsCert, 'utf-8').toString('base64'),
+                        'tls.key': Buffer.from(mockCertificate.tlsKey, 'utf-8').toString('base64')
+                    }
                 }
-            }, undefined, undefined, undefined, undefined, undefined, {
-                headers: { 'Content-Type' : 'application/strategic-merge-patch+json' }
             });
         });
     });
@@ -453,33 +451,31 @@ describe('CertificateManager', () => {
             const operationId = 'operationId';
             const clusterArmId = 'clusterArmId';
             const clusterArmRegion = 'clusterArmRegion';
-            const mockKubeConfig = new k8s.KubeConfig();
-            const deploymentList = {
+            const mockKubeConfig = new KubeConfig();
+            const deployment = {
                 body: {
-                    items: [{
+                    metadata: {
+                        name: 'app-monitoring-webhook',
+                        namespace: 'kube-system'
+                    },
+                    spec: {
+                        selector: {
+                            matchLabels: {
+                                app: 'app-monitoring-webhook'
+                            }
+                        },
+                        template: {
                             metadata: {
                                 name: 'app-monitoring-webhook',
-                                namespace: 'kube-system'
-                            },
-                            spec: {
-                                selector: {
-                                    matchLabels: {
-                                        app: 'app-monitoring-webhook'
-                                    }
-                                },
-                                template: {
-                                    metadata: {
-                                        name: 'app-monitoring-webhook',
-                                        annotations: {
-                                            'anno1': 'anno1'
-                                        }
-                                    }
+                                annotations: {
+                                    'anno1': 'anno1'
                                 }
                             }
-                        } as k8s.V1Deployment
-                    ]} as k8s.V1DeploymentList
+                        }
+                    }
+                } as V1Deployment
             } as any;
-            const updatedDeployment: k8s.V1ReplicaSet = JSON.parse(JSON.stringify(deploymentList.body.items[0]));
+            const updatedDeployment: V1ReplicaSet = JSON.parse(JSON.stringify(deployment.body));
             jest.spyOn(Date.prototype, 'toISOString').mockReturnValue('GivenDate');
             updatedDeployment.spec.template.metadata = {
                 name: 'app-monitoring-webhook',
@@ -488,16 +484,17 @@ describe('CertificateManager', () => {
                     'kubectl.kubernetes.io/restartedAt': 'GivenDate'
                 }
             };
-            const listNamespacedDeployment = jest.spyOn(k8s.AppsV1Api.prototype, 'listNamespacedDeployment').mockResolvedValue(deploymentList);
-            const replaceNamespacedDeployment = jest.spyOn(k8s.AppsV1Api.prototype, 'replaceNamespacedDeployment').mockResolvedValue(null);
-            jest.spyOn(k8s.KubeConfig.prototype, 'makeApiClient').mockReturnValue(new k8s.AppsV1Api());
+            const readNamespacedDeployment = jest.spyOn(AppsV1Api.prototype, 'readNamespacedDeployment').mockResolvedValue(deployment.body);
+            const replaceNamespacedDeployment = jest.spyOn(AppsV1Api.prototype, 'replaceNamespacedDeployment').mockResolvedValue(null);
+            jest.spyOn(KubeConfig.prototype, 'makeApiClient').mockReturnValue(new AppsV1Api(createConfiguration()));
             
             // Act
-            await (certManager as any).RestartWebhookDeployment(operationId, mockKubeConfig, clusterArmId, clusterArmRegion);
-
+            const method = Reflect.get(certManager, "RestartWebhookDeployment").bind(certManager, operationId, mockKubeConfig, clusterArmId, clusterArmRegion);
+            await method();
+            
             // Assert
-            expect(listNamespacedDeployment).toHaveBeenCalledWith('kube-system');
-            expect(replaceNamespacedDeployment).toHaveBeenCalledWith('app-monitoring-webhook', 'kube-system', updatedDeployment);
+            expect(readNamespacedDeployment).toHaveBeenCalledWith({ name: "app-monitoring-webhook", namespace: "kube-system" });
+            expect(replaceNamespacedDeployment).toHaveBeenCalledWith({ name: "app-monitoring-webhook", namespace: "kube-system", body: updatedDeployment });
         });
     });
 
