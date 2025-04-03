@@ -141,30 +141,30 @@ func GetDiskUsageHelper(mountPointFilter, mountOptsExclude, fstypeExclude []stri
 	var partitions []*disk.PartitionStat
 	hostMountPrefix := ""
 
-partitionRange:
+	// partitionRange:
 	for i := range parts {
 		FLBLogger.Printf("getting disk usage info: 5")
 		p := parts[i]
 
-		for _, o := range p.Opts {
-			if !mountOptFilterSet.empty() && mountOptFilterSet.has(o) {
-				FLBLogger.Printf("getting disk usage info: 6")
-				continue partitionRange
-			}
-		}
+		// for _, o := range p.Opts {
+		// 	if !mountOptFilterSet.empty() && mountOptFilterSet.has(o) {
+		// 		FLBLogger.Printf("getting disk usage info: 6")
+		// 		continue partitionRange
+		// 	}
+		// }
 		// If there is a filter set and if the mount point is not a
 		// member of the filter set, don't gather info on it.
-		if !mountPointFilterSet.empty() && !mountPointFilterSet.has(p.Mountpoint) {
-			FLBLogger.Printf("getting disk usage info: 7")
-			continue
-		}
+		// if !mountPointFilterSet.empty() && !mountPointFilterSet.has(p.Mountpoint) {
+		// 	FLBLogger.Printf("getting disk usage info: 7")
+		// 	continue
+		// }
 
 		// If the mount point is a member of the exclude set,
 		// don't gather info on it.
-		if fstypeExcludeSet.has(p.Fstype) {
-			FLBLogger.Printf("getting disk usage info: 8")
-			continue
-		}
+		// if fstypeExcludeSet.has(p.Fstype) {
+		// 	FLBLogger.Printf("getting disk usage info: 8")
+		// 	continue
+		// }
 
 		// If there's a host mount prefix use it as newer gopsutil version check for
 		// the init's mountpoints usually pointing to the host-mountpoint but in the
