@@ -295,7 +295,7 @@ class LocalLogger {
                 const telemetryItem: applicationInsights.Contracts.TraceTelemetry  = {
                     message: logArray[j].message,
                     properties: {
-                        logName: logName,
+                        logName: HeartbeatLogs[logName],
                         operationId: operationId,
                         clusterMetadata: JSON.stringify(this.clusterMetadata)
                     }
