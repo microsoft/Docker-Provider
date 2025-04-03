@@ -6,11 +6,8 @@
 trigger:
   batch: true
   branches:
-    include:
-    - ai_prod
-  tags:
-    include:
-    - '*-appmonitoring'
+    exclude:
+    - '*'
 
 pr:
   branches:
