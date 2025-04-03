@@ -53,7 +53,9 @@ COPY setup.ps1 /opt/amalogswindows/scripts/powershell
 RUN ./setup.ps1
 
 COPY main.ps1 /opt/amalogswindows/scripts/powershell
-COPY ./memory-monitor/MemoryUsageMonitor.ps1 /opt/amalogswindows/scripts/powershell
+COPY ./memory-monitor/memoryusagemonitorall.ps1 /opt/amalogswindows/scripts/powershell
+COPY ./memory-monitor/memoryusagemonitor.ps1 /opt/amalogswindows/scripts/powershell
+
 COPY ./amalogswindows/installer/scripts/filesystemwatcher.ps1 /opt/amalogswindows/scripts/powershell
 COPY ./amalogswindows/installer/livenessprobe/livenessprobe.exe /opt/amalogswindows/scripts/cmd/
 COPY setdefaulttelegrafenvvariables.ps1 /opt/amalogswindows/scripts/powershell
