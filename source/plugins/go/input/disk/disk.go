@@ -14,7 +14,7 @@ import (
 )
 
 func init() {
-	plugin.RegisterInput("disk", "fluent-bit input plugin for disk data", &diskPlugin{})
+	plugin.RegisterInput("disk-test", "fluent-bit input plugin for disk data", &diskPlugin{})
 }
 
 type diskPlugin struct {

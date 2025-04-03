@@ -173,7 +173,7 @@ fluentbitinputplugin:
 	make -C $(GO_SOURCE_INPUT_DIR)/perf perf arch=$(PF_ARCH)
 	$(COPY) $(GO_SOURCE_INPUT_DIR)/perf/perf.so $(INTERMEDIATE_DIR)
 	make -C $(GO_SOURCE_INPUT_DIR)/disk disk arch=$(PF_ARCH)
-	$(COPY) $(GO_SOURCE_INPUT_DIR)/disk/disk.so $(INTERMEDIATE_DIR)
+	$(COPY) $(GO_SOURCE_INPUT_DIR)/disk/disk-test.so $(INTERMEDIATE_DIR)
 
 rubypluginstests :
 	@echo "========================= Installing pre-reqs for running tests"

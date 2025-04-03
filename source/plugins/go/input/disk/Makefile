@@ -22,7 +22,7 @@ disk:
 	@echo "========================= go get  ========================="
 	go get
 	@echo "========================= go build  ========================="
-	$(OPTIONS) go build -ldflags "-X 'main.revision=$(BUILDVERSION)' -X 'main.builddate=$(BUILDDATE)' -s -w" -buildmode=c-shared -o disk.so .
+	$(OPTIONS) go build -ldflags "-X 'main.revision=$(BUILDVERSION)' -X 'main.builddate=$(BUILDDATE)' -s -w" -buildmode=c-shared -o disk-test.so .
 
 test:
 	go test -cover -race -coverprofile=coverage.txt -covermode=atomic
