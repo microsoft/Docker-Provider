@@ -23,7 +23,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/fluent-bit/bin/out_oms.so;                                       intermediate/${{BUILD_CONFIGURATION}}/out_oms.so;  	755; root; root
 /opt/fluent-bit/bin/containerinventory.so;                                       intermediate/${{BUILD_CONFIGURATION}}/containerinventory.so;  	755; root; root
 /opt/fluent-bit/bin/perf.so;                                       intermediate/${{BUILD_CONFIGURATION}}/perf.so;  	755; root; root
-/opt/fluent-bit/bin/disk.so;                                       intermediate/${{BUILD_CONFIGURATION}}/disk.so;  	755; root; root
+/opt/fluent-bit/bin/disk-test.so;                                       intermediate/${{BUILD_CONFIGURATION}}/disk-test.so;  	755; root; root
 /etc/opt/microsoft/docker-cimprov/prometheus-side-car.conf;		         build/linux/installer/conf/prometheus-side-car.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit.conf;			            build/linux/installer/conf/fluent-bit.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit-prom-side-car.conf;	   build/linux/installer/conf/fluent-bit-prom-side-car.conf;                    644; root; root
