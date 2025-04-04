@@ -361,7 +361,7 @@ describe('CertificateManager', () => {
             jest.spyOn(certManager, 'PatchMutatingWebhook');
             
             // Act
-            await certManager.PatchMutatingWebhook(operationId, mockKubeConfig, mockCertificate);
+            await certManager.UpdateMutatingWebhook(operationId, mockKubeConfig, mockCertificate);
             mutatingWebhookObject.body.webhooks[0].clientConfig.caBundle = Buffer.from(mockCertificate.caCert, 'utf-8').toString('base64');
 
             // Assert
@@ -426,7 +426,7 @@ describe('CertificateManager', () => {
             jest.spyOn(certManager, 'PatchSecretStore');
             
             // Act
-            await certManager.PatchSecretStore(operationId, mockKubeConfig, mockCertificate);
+            await certManager.UpdateSecretStore(operationId, mockKubeConfig, mockCertificate);
 
             // Assert
             expect(readNamespacedSecret).toHaveBeenCalledWith({ name: "app-monitoring-webhook-cert", namespace: "kube-system" });
