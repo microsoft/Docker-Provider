@@ -382,6 +382,7 @@ export class CertificateManager {
             }
         } catch (error) {
             logger.error(`Error occurred while trying to get Installer Job\n${JSON.stringify(error)}`, operationId, this.requestMetadata);
+            logger.SendEvent("CertificateInstallerJobFetchFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
             return;
         }
 
@@ -390,6 +391,7 @@ export class CertificateManager {
             webhookCertData = await this.GetSecretDetails(operationId, kc, clusterArmId, clusterArmRegion);
         } catch (error) {
             logger.error(`Error occurred while trying to get Secret Store\n${JSON.stringify(error)}`, operationId, this.requestMetadata);
+            logger.SendEvent("CertificateSecretStoreFetchFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
             return;
         }
 
@@ -398,6 +400,7 @@ export class CertificateManager {
             mwhcCaBundle = await this.GetMutatingWebhookCABundle(operationId, kc);
         } catch (error) {
             logger.error(`Error occurred while trying to get MutatingWebhookConfiguration\n${JSON.stringify(error)}`, operationId, this.requestMetadata);
+            logger.SendEvent("CertificateMutatingWebhookCABundleFetchFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
             return;
         }
 
@@ -470,7 +473,9 @@ export class CertificateManager {
             await this.UpdateWebhookAndSecretStore(operationId, kc, webhookCertData, clusterArmId, clusterArmRegion);
             if (shouldRestartDeployment) {
                 logger.info('Restarting webhook deployment so the pods pick up new certificates...', operationId, this.requestMetadata);
+                await logger.SendEvent("CertificateDeploymentRestartStarted", operationId, null, clusterArmId, clusterArmRegion, true);
                 await this.RestartWebhookDeployment(operationId, kc, clusterArmId, clusterArmRegion);
+                await logger.SendEvent("CertificateDeploymentRestartCompleted", operationId, null, clusterArmId, clusterArmRegion, true);
             }
         }
         else {
