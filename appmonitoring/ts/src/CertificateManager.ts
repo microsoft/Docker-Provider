@@ -419,7 +419,7 @@ export class CertificateManager {
         {
             logger.info('Creating certificates...', operationId, this.requestMetadata);
             await logger.SendEvent("CertificateCreating", operationId, null, clusterArmId, clusterArmRegion, true);
-            certificates = this.CreateOrUpdateCertificates(operationId) as WebhookCertData;
+            certificates = this.CreateOrUpdateCertificates(operationId);
             logger.info('Certificates created successfully', operationId, this.requestMetadata);
             await logger.SendEvent("CertificateCreated", operationId, null, clusterArmId, clusterArmRegion, true);
             await this.UpdateWebhookAndSecretStore(operationId, kc, certificates, clusterArmId, clusterArmRegion);
@@ -523,7 +523,7 @@ export class CertificateManager {
         }
     }
 
-    private async UpdateWebhookAndSecretStore(operationId: string, kc: k8s.KubeConfig, certificates: WebhookCertData, clusterArmId: string, clusterArmRegion: string) {
+    private async UpdateWebhookAndSecretStore(operationId: string, kc: k8s.KubeConfig, certificates: WebhookCertData, clusterArmId: string, clusterArmRegion: string): Promise<void> {
         logger.info('Patching Secret Store...', operationId, this.requestMetadata);
         await logger.SendEvent("CertificatePatchingSecretStore", operationId, null, clusterArmId, clusterArmRegion, true);
         await this.UpdateSecretStore(operationId, kc, certificates);
