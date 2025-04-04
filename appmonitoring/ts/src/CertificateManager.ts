@@ -322,7 +322,7 @@ export class CertificateManager {
          * Then, it logs a message and sends an event to indicate that the certificate creation process has started. 
          * The CreateOrUpdateCertificates method is called to generate the certificates, and the result is stored in the certificates variable. 
          * Another log message and event are generated to indicate that the certificates have been created successfully. 
-         * Finally, the PatchWebhookAndSecretStore method is called to patch the webhook and certificates using the Kubernetes configuration, 
+         * Finally, the UpdateWebhookAndSecretStore method is called to patch the webhook and certificates using the Kubernetes configuration, 
          * the certificates variable, and other parameters.
          */
         const kc = new k8s.KubeConfig();
