@@ -29,7 +29,7 @@ function Confirm-WindowsServiceExists($name) {
 }
 
 function Remove-WindowsServiceIfItExists($name) {
-    $exists = Confirm-WindowsServiceExists($name)
+    $exists = Confirm-WindowsServiceExists $name
     if ($exists) {
         sc.exe \\server delete $name
     }
