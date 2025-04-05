@@ -24,6 +24,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/fluent-bit/bin/containerinventory.so;                                       intermediate/${{BUILD_CONFIGURATION}}/containerinventory.so;  	755; root; root
 /opt/fluent-bit/bin/perf.so;                                       intermediate/${{BUILD_CONFIGURATION}}/perf.so;  	755; root; root
 /opt/fluent-bit/bin/disk-test.so;                                       intermediate/${{BUILD_CONFIGURATION}}/disk-test.so;  	755; root; root
+/opt/fluent-bit/bin/fluent-bit-prometheus.so;                                       intermediate/${{BUILD_CONFIGURATION}}/fluent-bit-prometheus.so;  	755; root; root
 /etc/opt/microsoft/docker-cimprov/prometheus-side-car.conf;		         build/linux/installer/conf/prometheus-side-car.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit.conf;			            build/linux/installer/conf/fluent-bit.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit-prom-side-car.conf;	   build/linux/installer/conf/fluent-bit-prom-side-car.conf;                    644; root; root
@@ -34,6 +35,7 @@ MAINTAINER:              'Microsoft Corporation'
 /etc/opt/microsoft/docker-cimprov/out_oms.conf;			                  build/linux/installer/conf/out_oms.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/test.json;			                     build/linux/installer/conf/test.json;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/telegraf.conf;			               build/linux/installer/conf/telegraf.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/telegraf-prom-test.conf;			               build/linux/installer/conf/telegraf-prom-test.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf;			   build/linux/installer/conf/telegraf-prom-side-car.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/telegraf-rs.conf;			            build/linux/installer/conf/telegraf-rs.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/70-rsyslog-forward-mdsd-ci.conf;      build/linux/installer/conf/70-rsyslog-forward-mdsd-ci.conf;     644; root; root
