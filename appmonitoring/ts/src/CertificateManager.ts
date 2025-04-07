@@ -1,7 +1,7 @@
 import * as k8s from '@kubernetes/client-node';
 import { CertificateStoreName, KubeSystemNamespaceName, WebhookDNSEndpoint, WebhookDeploymentName, MutatingWebhookConfigurationName } from './Constants.js'
 import forge from 'node-forge';
-import { HeartbeatMetrics, logger, RequestMetadata } from './LoggerWrapper.js';
+import { logger, RequestMetadata } from './LoggerWrapper.js';
 
 export class WebhookCertData {
     caCert: string;
@@ -11,12 +11,12 @@ export class WebhookCertData {
 }
 
 export class CertificateManager {
-    
+
     private requestMetadata = new RequestMetadata(null, null);
 
     // Generate a random serial number for the Certificate
     private randomHexSerialNumber() {
-        return (1001).toString(16) + Math.ceil(Math.random()*100); //Just creates a placeholder hex and randomly increments it with a number between 1 and 100
+        return (1001).toString(16) + Math.ceil(Math.random() * 100); //Just creates a placeholder hex and randomly increments it with a number between 1 and 100
     }
 
     private GenerateCACertificate(existingKeyPair?: forge.pki.rsa.KeyPair): forge.pki.Certificate {
@@ -28,14 +28,14 @@ export class CertificateManager {
         caCert.privateKey = keys.privateKey;
         caCert.validity.notBefore = new Date(currentTime - (5 * 60 * 1000)); //5 Mins ago
         caCert.validity.notAfter = new Date(currentTime + (2 * 365 * 24 * 60 * 60 * 1000)); //2 Years from now
-        
+
         const attributes = [{
             shortName: 'CN',
             value: 'applicationinsights-ca'
         }];
         caCert.setSubject(attributes);
         caCert.setIssuer(attributes);
-    
+
         const extensions = [{
             name: 'basicConstraints',
             cA: true
@@ -53,8 +53,8 @@ export class CertificateManager {
         }];
 
         caCert.setExtensions(extensions);
-        caCert.sign(caCert.privateKey,forge.md.sha256.create());
-        
+        caCert.sign(caCert.privateKey, forge.md.sha256.create());
+
         return caCert;
     }
 
@@ -64,15 +64,15 @@ export class CertificateManager {
             shortName: 'CN',
             value: WebhookDNSEndpoint
         }];
-    
+
         const host_extensions = [{
             name: 'basicConstraints',
             cA: false
-        }, 
+        },
         {
             name: 'authorityKeyIdentifier',
             keyIdentifier: caCert.generateSubjectKeyIdentifier().getBytes(),
-        }, 
+        },
         {
             name: 'keyUsage',
             digitalSignature: true,
@@ -81,7 +81,7 @@ export class CertificateManager {
         {
             name: 'extKeyUsage',
             serverAuth: true
-        }, 
+        },
         {
             name: 'subjectAltName',
             altNames: [{ type: 2, value: WebhookDNSEndpoint }]
@@ -123,7 +123,7 @@ export class CertificateManager {
                 tlsCert: forge.pki.certificateToPem(hostCertificate),
                 tlsKey: forge.pki.privateKeyToPem(hostCertificate.privateKey)
             } as WebhookCertData;
-            
+
         } catch (error) {
             logger.error('Self Signed CA Cert generation failed!', operationId, this.requestMetadata);
             logger.error(JSON.stringify(error), operationId, this.requestMetadata);
@@ -131,7 +131,7 @@ export class CertificateManager {
         }
     }
 
-    public async UpdateSecretStore(operationId: string, kubeConfig: k8s.KubeConfig, certificate: WebhookCertData) {
+    public async UpdateSecretStore(operationId: string, kubeConfig: k8s.KubeConfig, certificate: WebhookCertData): Promise<void> {
         try {
             const secretsApi = kubeConfig.makeApiClient(k8s.CoreV1Api);
             const secretsObj: k8s.V1Secret = await secretsApi.readNamespacedSecret({ name: CertificateStoreName, namespace: KubeSystemNamespaceName });
@@ -156,89 +156,92 @@ export class CertificateManager {
     }
 
     public async GetSecretDetails(operationId: string, kubeConfig: k8s.KubeConfig, clusterArmId: string, clusterArmRegion: string): Promise<WebhookCertData> {
+        let secretsObj: k8s.V1Secret;
+        let certificate: WebhookCertData = null;
+
+        // Try to read the secret
         try {
             const k8sApi = kubeConfig.makeApiClient(k8s.CoreV1Api);
-            const secretsObj: k8s.V1Secret = await k8sApi.readNamespacedSecret({ name: CertificateStoreName, namespace: KubeSystemNamespaceName });
-            let certificate: WebhookCertData = null;
-            if (secretsObj.data) {
-                try {
-                    certificate = {
-                        caCert: Buffer.from(secretsObj.data['ca.cert'], 'base64').toString('utf-8'),
-                        caKey: Buffer.from(secretsObj.data['ca.key'], 'base64').toString('utf-8'),
-                        tlsCert: Buffer.from(secretsObj.data['tls.cert'], 'base64').toString('utf-8'),
-                        tlsKey: Buffer.from(secretsObj.data['tls.key'], 'base64').toString('utf-8')
-                    };
-                } catch (error) {
-                    logger.error('Failed to decode secret data from base64!', operationId, this.requestMetadata);
-                    logger.error(JSON.stringify(error), operationId, this.requestMetadata);
-                    await logger.SendEvent("CertificateBase64DecodeFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
-                    
-                    certificate = {
-                        caCert: null,
-                        caKey: null,
-                        tlsCert: null,
-                        tlsKey: null
-                    }
-                    logger.info('Returning empty certificate data due to decode failure.', operationId, this.requestMetadata);
-                }
-
-                return certificate;
-            }
+            secretsObj = await k8sApi.readNamespacedSecret({
+                name: CertificateStoreName,
+                namespace: KubeSystemNamespaceName
+            });
         } catch (error) {
-            logger.error(JSON.stringify(error), operationId, this.requestMetadata);
-            await logger.SendEvent("CertificateValidationFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
+            logger.error(`Error reading the secret: ${JSON.stringify(error)}`, operationId, this.requestMetadata);
+            logger.SendEvent('ReadNamespacedSecretFailure', operationId, null, clusterArmId, clusterArmRegion, true, error);
             throw error;
         }
+
+        // If the secret has data, decode it
+        if (secretsObj?.data) {
+            try {
+                certificate = {
+                    caCert: Buffer.from(secretsObj.data['ca.cert'], 'base64').toString('utf-8'),
+                    caKey: Buffer.from(secretsObj.data['ca.key'], 'base64').toString('utf-8'),
+                    tlsCert: Buffer.from(secretsObj.data['tls.cert'], 'base64').toString('utf-8'),
+                    tlsKey: Buffer.from(secretsObj.data['tls.key'], 'base64').toString('utf-8')
+                };
+            } catch (error) {
+                logger.error(`Failed to decode secret data from base64!${JSON.stringify(error)}`, operationId, this.requestMetadata);
+                await logger.SendEvent("CertificateBase64DecodeFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
+
+                certificate = {
+                    caCert: null,
+                    caKey: null,
+                    tlsCert: null,
+                    tlsKey: null
+                };
+                logger.info('Returning empty certificate data due to decode failure.', operationId, this.requestMetadata);
+            }
+
+            return certificate;
+        }
+
+        return null;
     }
 
-    public async GetMutatingWebhookCABundle(operationId: string, kubeConfig: k8s.KubeConfig): Promise<string> {
+    public async GetMutatingWebhookCABundle(operationId: string, kubeConfig: k8s.KubeConfig, clusterArmId: string, clusterArmRegion: string): Promise<string> {
+        let caBundle: string = null;
+        let mutatingWebhookObject: k8s.V1MutatingWebhookConfiguration;
         try {
             const webhookApi: k8s.AdmissionregistrationV1Api = kubeConfig.makeApiClient(k8s.AdmissionregistrationV1Api);
-            const mutatingWebhookObject: k8s.V1MutatingWebhookConfiguration = await webhookApi.readMutatingWebhookConfiguration({ name: MutatingWebhookConfigurationName });
-            if (!mutatingWebhookObject 
-                || !mutatingWebhookObject.webhooks 
-                || mutatingWebhookObject.webhooks.length !== 1 || !mutatingWebhookObject.webhooks[0].clientConfig)
-            {
-                throw new Error("MutatingWebhookConfiguration not found or is malformed!");
-            }
-
-            let caBundle: string = null;
-
-            try {
-                caBundle = Buffer.from(mutatingWebhookObject.webhooks[0].clientConfig.caBundle, 'base64').toString('utf-8');
-            }
-            catch (error) {
-                logger.error('Failed to decode caBundle from MutatingWebhookConfiguration!', operationId, this.requestMetadata);
-                logger.error(JSON.stringify(error), operationId, this.requestMetadata);
-                await logger.SendEvent("MutatingWebhookCABundleDecodeFailure", operationId, null, null, null, true, error);
-
-                caBundle = null; // return null to indicate failure in decoding
-                logger.info('Returning null caBundle due to decode failure.', operationId, this.requestMetadata);
-            }
-
-            return caBundle;
+            mutatingWebhookObject = await webhookApi.readMutatingWebhookConfiguration({ name: MutatingWebhookConfigurationName });
+            
         } catch (error) {
             logger.error(`Failed to get MutatingWebhookConfiguration! ${JSON.stringify(error)}`, operationId, this.requestMetadata);
+            await logger.SendEvent("MutatingWebhookConfigurationFetchFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
             throw error;
         }
+
+        try {
+            if (mutatingWebhookObject?.webhooks?.length !== 1
+                || !mutatingWebhookObject.webhooks[0].clientConfig) {
+                throw new Error("MutatingWebhookConfiguration not found or is malformed!");
+            }
+            caBundle = Buffer.from(mutatingWebhookObject.webhooks[0].clientConfig.caBundle, 'base64').toString('utf-8');
+        } catch (error) {
+            logger.error(`Failed to decode caBundle from MutatingWebhookConfiguration. ${JSON.stringify(error)}`, operationId, this.requestMetadata);
+            await logger.SendEvent("MutatingWebhookCABundleDecodeFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
+
+            caBundle = null; // return null to indicate failure in decoding
+            logger.info('Returning null caBundle due to decode failure.', operationId, this.requestMetadata);
+        }
+
+        return caBundle;
     }
 
-    public async UpdateMutatingWebhook(operationId: string, kubeConfig: k8s.KubeConfig, certificate: WebhookCertData) {
+    public async UpdateMutatingWebhook(operationId: string, kubeConfig: k8s.KubeConfig, certificate: WebhookCertData): Promise<void> {
         try {
             const webhookApi: k8s.AdmissionregistrationV1Api = kubeConfig.makeApiClient(k8s.AdmissionregistrationV1Api);
             const mutatingWebhookObject: k8s.V1MutatingWebhookConfiguration = await webhookApi.readMutatingWebhookConfiguration({ name: MutatingWebhookConfigurationName });
-            if (!mutatingWebhookObject 
-                || !mutatingWebhookObject.webhooks 
-                || mutatingWebhookObject.webhooks.length !== 1 || !mutatingWebhookObject.webhooks[0].clientConfig)
-            {
+            if (mutatingWebhookObject?.webhooks?.length !== 1 || !mutatingWebhookObject.webhooks[0].clientConfig) {
                 throw new Error("MutatingWebhookConfiguration not found or is malformed!");
             }
             mutatingWebhookObject.webhooks[0].clientConfig.caBundle = Buffer.from(certificate.caCert, 'utf-8').toString('base64');
-            
+
             await webhookApi.replaceMutatingWebhookConfiguration({ name: MutatingWebhookConfigurationName, body: mutatingWebhookObject });
         } catch (error) {
-            logger.error('Failed to patch MutatingWebhookConfiguration!', operationId, this.requestMetadata);
-            logger.error(JSON.stringify(error), operationId, this.requestMetadata);
+            logger.error(`Failed to patch MutatingWebhookConfiguration. ${JSON.stringify(error)}`, operationId, this.requestMetadata);
             throw error;
         }
     }
@@ -255,6 +258,13 @@ export class CertificateManager {
     }
 
     private async IsValidCertificate(operationId: string, mwhcCaBundle: string, webhookCertData: WebhookCertData, clusterArmId: string, clusterArmRegion: string): Promise<boolean> {
+        if (webhookCertData == null)
+        {
+            logger.info('WebhookCertData is null', operationId, this.requestMetadata);
+            await logger.SendEvent("CertificateFetchValueFailure", operationId, null, clusterArmId, clusterArmRegion, true);
+            return false;
+        }
+
         try {
             forge.pki.certificateFromPem(mwhcCaBundle);
             forge.pki.certificateFromPem(webhookCertData.caCert);
@@ -263,8 +273,7 @@ export class CertificateManager {
             forge.pki.privateKeyFromPem(webhookCertData.tlsKey);
             return true;
         } catch (error) {
-            logger.error('Error occured while trying to validate certificates!', operationId, this.requestMetadata);
-            logger.error(JSON.stringify(error), operationId, this.requestMetadata);
+            logger.error(`Error occured while trying to validate certificates. ${JSON.stringify(error)}`, operationId, this.requestMetadata);
             await logger.SendEvent("CertificateValidationFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
             return false;
         }
@@ -289,7 +298,7 @@ export class CertificateManager {
 
         try {
             const jobStatus: k8s.V1Job = await k8sApi.readNamespacedJobStatus({ name: jobName, namespace: namespace });
-            
+
             if (jobStatus.status?.conditions) {
                 for (const condition of jobStatus.status.conditions) {
                     if (condition.type === 'Complete' && condition.status === 'True') {
@@ -315,7 +324,7 @@ export class CertificateManager {
      * @param clusterArmId - The ARM ID of the cluster.
      * @param clusterArmRegion - The ARM region of the cluster.
      */
-    public async CreateWebhookAndCertificates(operationId: string, clusterArmId: string, clusterArmRegion: string) {
+    public async CreateWebhookAndCertificates(operationId: string, clusterArmId: string, clusterArmRegion: string): Promise<void> {
         /**
          * The code block above creates and updates certificates for a webhook. 
          * It starts by creating a new instance of the Kubernetes configuration and loading it from the default location. 
@@ -354,7 +363,7 @@ export class CertificateManager {
         let certificates: WebhookCertData = null;
         let webhookCertData: WebhookCertData = null;
         let mwhcCaBundle: string = null;
-        
+
         /**
          * The try block contains the main logic of the reconciliation. It first checks if the certificate installer job
          * has finished. If the job has finished, it gets the secret details and the mutating webhook CA bundle. It then
@@ -397,7 +406,7 @@ export class CertificateManager {
 
         try {
             // get mutating webhook configuration's CA bundle
-            mwhcCaBundle = await this.GetMutatingWebhookCABundle(operationId, kc);
+            mwhcCaBundle = await this.GetMutatingWebhookCABundle(operationId, kc, clusterArmId, clusterArmRegion);
         } catch (error) {
             logger.error(`Error occurred while trying to get MutatingWebhookConfiguration\n${JSON.stringify(error)}`, operationId, this.requestMetadata);
             logger.SendEvent("CertificateMutatingWebhookCABundleFetchFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
@@ -415,11 +424,10 @@ export class CertificateManager {
         const matchAndValidation: boolean = validCerts && mwhcCaBundle && webhookCertData && mwhcCaBundle.localeCompare(webhookCertData.caCert) === 0;
         const certSignedByGivenCA: boolean = matchAndValidation && this.isCertificateSignedByCA(webhookCertData.tlsCert, mwhcCaBundle);
 
-        if (!certSignedByGivenCA)
-        {
+        if (!certSignedByGivenCA) {
             logger.info('Creating certificates...', operationId, this.requestMetadata);
             await logger.SendEvent("CertificateCreating", operationId, null, clusterArmId, clusterArmRegion, true);
-            certificates = this.CreateOrUpdateCertificates(operationId) as WebhookCertData;
+            certificates = this.CreateOrUpdateCertificates(operationId);
             logger.info('Certificates created successfully', operationId, this.requestMetadata);
             await logger.SendEvent("CertificateCreated", operationId, null, clusterArmId, clusterArmRegion, true);
             await this.UpdateWebhookAndSecretStore(operationId, kc, certificates, clusterArmId, clusterArmRegion);
@@ -440,7 +448,7 @@ export class CertificateManager {
          * This function takes an optional existing key pair as a parameter, and if not provided, it generates a new key pair. 
          * The generated CA certificate is then converted to PEM format and assigned to the `caCert` property of the `webhookCertData` object.
          */
-        let daysToExpiry = (caPublicCertificate.validity.notAfter.valueOf() - timeNow)/dayVal;
+        let daysToExpiry = (caPublicCertificate.validity.notAfter.valueOf() - timeNow) / dayVal;
         if (daysToExpiry < 90) {
             logger.info('CA Certificate is close to expiration, regenerating CA Certificate...', operationId, this.requestMetadata);
             shouldUpdate = true;
@@ -454,7 +462,7 @@ export class CertificateManager {
 
         // Check if Host Cert is relatively close to expiration, similar to above
         const hostCertificate: forge.pki.Certificate = forge.pki.certificateFromPem(webhookCertData.tlsCert);
-        daysToExpiry = (hostCertificate.validity.notAfter.valueOf() - timeNow)/dayVal;
+        daysToExpiry = (hostCertificate.validity.notAfter.valueOf() - timeNow) / dayVal;
         if (daysToExpiry < 90) {
             logger.info('Host Certificate is close to expiration, regenerating Host Certificate...', operationId, this.requestMetadata);
             shouldUpdate = true;
@@ -502,11 +510,10 @@ export class CertificateManager {
             const k8sApi = kc.makeApiClient(k8s.AppsV1Api);
             const webhookDeployment: k8s.V1Deployment = await k8sApi.readNamespacedDeployment({ namespace: KubeSystemNamespaceName, name: WebhookDeploymentName });
 
-            if (!webhookDeployment)
-            {
+            if (!webhookDeployment) {
                 throw new Error(`No webhook deployment named ${WebhookDeploymentName} found in ${KubeSystemNamespaceName} namespace!`);
             }
-            
+
             const annotations = webhookDeployment.spec.template.metadata.annotations ?? {};
             annotations["kubectl.kubernetes.io/restartedAt"] = new Date().toISOString();
             webhookDeployment.spec.template.metadata.annotations = annotations;
@@ -523,7 +530,7 @@ export class CertificateManager {
         }
     }
 
-    private async UpdateWebhookAndSecretStore(operationId: string, kc: k8s.KubeConfig, certificates: WebhookCertData, clusterArmId: string, clusterArmRegion: string) {
+    private async UpdateWebhookAndSecretStore(operationId: string, kc: k8s.KubeConfig, certificates: WebhookCertData, clusterArmId: string, clusterArmRegion: string): Promise<void> {
         logger.info('Patching Secret Store...', operationId, this.requestMetadata);
         await logger.SendEvent("CertificatePatchingSecretStore", operationId, null, clusterArmId, clusterArmRegion, true);
         await this.UpdateSecretStore(operationId, kc, certificates);
