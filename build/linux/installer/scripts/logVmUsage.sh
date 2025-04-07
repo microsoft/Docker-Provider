@@ -6,9 +6,9 @@ LOG_FILE="/var/log/process_vm_usage.log"
 # Function to log memory usage for each running process
 log_vm_usage() {
   echo "Time: $(date)" >> "$LOG_FILE"
-  for pid in $(ps -e -o pid --no-headers); do
+  for pid in $(ps -e -o pid | tail -n +2); do
     if [ -f "/proc/$pid/status" ]; then
-      command=$(ps -p $pid -o cmd --no-headers)
+      command=$(cat /proc/$pid/cmdline | tr '\0' ' ')
       vm_usage=$(cat /proc/$pid/status | grep Vm)
       echo "Command: $command" >> "$LOG_FILE"
       echo "Vm Usage: $vm_usage" >> "$LOG_FILE"
