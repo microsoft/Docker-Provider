@@ -49,7 +49,7 @@ func QueryLogsForCount(logsClient *azquery.LogsClient, resourceID string, query 
 		return fmt.Errorf("The query returned 0 tables")
 	}
 
-	fmt.Println("Query result:")
+	fmt.Println("Query result of query: ", query)
 
 	for _, table := range tables {
 		fmt.Println("Number of rows: ", len(table.Rows))
@@ -138,6 +138,10 @@ func CompareResourcesInLogsAndKubeAPI(K8sClient *kubernetes.Clientset, logsClien
 			return err
 		}
 		for _, pod := range pods {
+			// skip the testkube namespace as it creates runtime pods for the triggered test which might not be present in the logs
+			if pod.Namespace == "testkube" {
+				continue
+			}
 			resources = append(resources, pod.Name)
 		}
 		query = logsTable + " | where TimeGenerated > ago(15m) | distinct Name"
