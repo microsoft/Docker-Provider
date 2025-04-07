@@ -173,7 +173,7 @@ export class CertificateManager {
         }
 
         // If the secret has data, decode it
-        if (secretsObj && secretsObj?.data) {
+        if (secretsObj?.data) {
             try {
                 certificate = {
                     caCert: Buffer.from(secretsObj.data['ca.cert'], 'base64').toString('utf-8'),
@@ -214,9 +214,8 @@ export class CertificateManager {
         }
 
         try {
-            if (!mutatingWebhookObject
-                || !mutatingWebhookObject.webhooks
-                || mutatingWebhookObject.webhooks.length !== 1 || !mutatingWebhookObject.webhooks[0].clientConfig) {
+            if (mutatingWebhookObject?.webhooks?.length !== 1
+                || !mutatingWebhookObject.webhooks[0].clientConfig) {
                 throw new Error("MutatingWebhookConfiguration not found or is malformed!");
             }
             caBundle = Buffer.from(mutatingWebhookObject.webhooks[0].clientConfig.caBundle, 'base64').toString('utf-8');
@@ -235,9 +234,7 @@ export class CertificateManager {
         try {
             const webhookApi: k8s.AdmissionregistrationV1Api = kubeConfig.makeApiClient(k8s.AdmissionregistrationV1Api);
             const mutatingWebhookObject: k8s.V1MutatingWebhookConfiguration = await webhookApi.readMutatingWebhookConfiguration({ name: MutatingWebhookConfigurationName });
-            if (!mutatingWebhookObject
-                || !mutatingWebhookObject.webhooks
-                || mutatingWebhookObject.webhooks.length !== 1 || !mutatingWebhookObject.webhooks[0].clientConfig) {
+            if (mutatingWebhookObject?.webhooks?.length !== 1 || !mutatingWebhookObject.webhooks[0].clientConfig) {
                 throw new Error("MutatingWebhookConfiguration not found or is malformed!");
             }
             mutatingWebhookObject.webhooks[0].clientConfig.caBundle = Buffer.from(certificate.caCert, 'utf-8').toString('base64');
@@ -261,6 +258,13 @@ export class CertificateManager {
     }
 
     private async IsValidCertificate(operationId: string, mwhcCaBundle: string, webhookCertData: WebhookCertData, clusterArmId: string, clusterArmRegion: string): Promise<boolean> {
+        if (webhookCertData == null)
+        {
+            logger.info('WebhookCertData is null', operationId, this.requestMetadata);
+            await logger.SendEvent("CertificateFetchValueFailure", operationId, null, clusterArmId, clusterArmRegion, true);
+            return false;
+        }
+
         try {
             forge.pki.certificateFromPem(mwhcCaBundle);
             forge.pki.certificateFromPem(webhookCertData.caCert);
@@ -402,7 +406,7 @@ export class CertificateManager {
 
         try {
             // get mutating webhook configuration's CA bundle
-            mwhcCaBundle = await this.GetMutatingWebhookCABundle(operationId, kc);
+            mwhcCaBundle = await this.GetMutatingWebhookCABundle(operationId, kc, clusterArmId, clusterArmRegion);
         } catch (error) {
             logger.error(`Error occurred while trying to get MutatingWebhookConfiguration\n${JSON.stringify(error)}`, operationId, this.requestMetadata);
             logger.SendEvent("CertificateMutatingWebhookCABundleFetchFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
