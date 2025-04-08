@@ -30,7 +30,7 @@ rules:
 - apiGroups: [ "admissionregistration.k8s.io"]
   resources: [ "mutatingwebhookconfigurations"]
   resourceNames: [ "app-monitoring-webhook"]
-  verbs: [ "get", "patch"]
+  verbs: [ "get", "patch", "update"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -41,7 +41,7 @@ rules:
 - apiGroups: [""]
   resources: ["secrets"]
   resourceNames: ["app-monitoring-webhook-cert"]
-  verbs: ["get", "patch"]
+  verbs: ["get", "patch", "update"]
 - apiGroups: ["batch"]
   resources: ["jobs/status"]
   resourceNames: ["app-monitoring-secrets-installer"]
@@ -49,12 +49,13 @@ rules:
 - apiGroups: ["apps"]
   resources: ["deployments"]
   resourceNames: ["app-monitoring-webhook"]
-  verbs: ["update", "list"]
+  verbs: ["update", "list", "get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: app-monitoring-certificate-manager-binding
+  namespace: kube-system
   labels:
     component: app-monitoring
 subjects:
@@ -146,6 +147,10 @@ spec:
             - env:
               - name: CONTAINER_MODE
                 value: secrets-housekeeper
+              - name: POD_NAME
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.name
               - name: ARM_ID
                 value: "{{ .Values.global.commonGlobals.Customer.AzureResourceID }}"
               - name: ARM_REGION
@@ -207,6 +212,10 @@ spec:
         - env:
           - name: CONTAINER_MODE
             value: secrets-manager
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
           - name: ARM_ID
             value: "{{ .Values.global.commonGlobals.Customer.AzureResourceID }}"
           - name: ARM_REGION
