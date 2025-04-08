@@ -162,6 +162,8 @@ isHighLogScaleMode() {
          true
      elif [[ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]]; then
          true
+     elif [[ "${AZMON_RETINA_FLOW_LOGS_ENABLED}" == "true" ]]; then
+         true
      else
          false
      fi

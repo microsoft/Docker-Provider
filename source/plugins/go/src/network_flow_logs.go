@@ -19,7 +19,7 @@ const RetinaNetworkFlowLogsStreamName = "RETINA_NETWORK_FLOW_LOGS"
 var (
 	// retina networkflow logs stream tag name
 	MdsdNetworkFlowLogsStreamTagName string
-	// flag to check whether the network flow logs are enabled
+	// flag to check whether network flow logs is enabled or not
 	IsNetworkFlowLogsEnabled bool
 )
 
@@ -241,9 +241,6 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 	dataMap["TrafficDirection"] = extractString(flow, "traffic_direction")
 	dataMap["TraceObservationPoint"] = extractString(flow, "trace_observation_point")
 
-	// aggregation support needed
-	// // FlowState
-	// dataMap["FlowState"] = extractString(flow, "flow_state")
 	// Packets and Bytes
 	if packetsSent, ok := flow["packets_sent"]; ok {
 		dataMap["PacketsSent"] = safeToInt(packetsSent)
@@ -251,8 +248,6 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 	if packetsReceived, ok := flow["packets_received"]; ok {
 		dataMap["PacketsReceived"] = safeToInt(packetsReceived)
 	}
-	// dataMap["BytesSent"] = safeToInt(flow["bytes_sent"])
-	// dataMap["BytesReceived"] = safeToInt(flow["bytes_received"])
 
 	// Policies (combined from multiple fields)
 	policiesData := map[string]interface{}{
