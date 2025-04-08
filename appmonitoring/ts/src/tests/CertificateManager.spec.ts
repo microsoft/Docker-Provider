@@ -156,7 +156,7 @@ describe('CertificateManager', () => {
             expect(getSecretDetails).toHaveBeenCalledTimes(1);
             expect(getSecretDetails).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion); // Ensure it was called with correct parameters
             expect(getMutatingWebhookCABundle).toHaveBeenCalledTimes(1);
-            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig);
+            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion);
             expect(updateWebhookAndCertificates).not.toBeCalled();
             expect(restartWebhookDeployment).not.toBeCalled();
         });
@@ -177,7 +177,7 @@ describe('CertificateManager', () => {
             expect(checkCertificateJobStatus).toHaveBeenCalled();
             expect(checkCertificateJobStatus).toHaveBeenCalledTimes(1);
             expect(IsValidCertificate).toBeCalled();
-            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig);
+            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion);
             expect(getSecretDetails).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion);
             expect(updateWebhookAndCertificates).toHaveBeenCalledTimes(1);
             expect(updateWebhookAndCertificates).toHaveBeenCalledWith(operationId, mockKubeConfig, generatedCertificate, mockClusterArmId, mockClusterArmRegion);
@@ -234,7 +234,7 @@ describe('CertificateManager', () => {
             expect(IsValidCertificate).toHaveBeenCalledTimes(1);
             expect(createOrUpdateCertificates).toHaveBeenLastCalledWith(operationId);
             expect(getMutatingWebhookCABundle).toHaveBeenCalledTimes(1);
-            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig);
+            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion);
             expect(updateWebhookAndCertificates).toHaveBeenCalledTimes(1);
             expect(updateWebhookAndCertificates).toHaveBeenCalledWith(operationId, mockKubeConfig, mockCertData, mockClusterArmId, mockClusterArmRegion);
             expect(restartWebhookDeployment).toHaveBeenCalledTimes(1);
@@ -284,7 +284,7 @@ describe('CertificateManager', () => {
 
             expect(checkCertificateJobStatus).toHaveBeenCalled();
             expect(IsValidCertificate).toBeCalled();
-            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig);
+            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion);
             expect(getSecretDetails).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion);
             expect(generateCACertificate).toHaveBeenCalled();
             expect(updateWebhookAndCertificates).toHaveBeenCalled();
@@ -328,7 +328,7 @@ describe('CertificateManager', () => {
 
             expect(checkCertificateJobStatus).toHaveBeenCalled();
             expect(IsValidCertificate).toBeCalled(); 
-            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig);
+            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion);
             expect(getSecretDetails).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion);
 
             expect(generateHostCertificate).toHaveBeenCalled();
