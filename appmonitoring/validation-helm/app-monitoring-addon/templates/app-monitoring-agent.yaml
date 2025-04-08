@@ -155,7 +155,11 @@ spec:
                 value: "{{ .Values.global.commonGlobals.Customer.AzureResourceID }}"
               - name: ARM_REGION
                 value: "{{ .Values.global.commonGlobals.Region }}"
-              image: "{{ .Values.AppmonitoringAgent.imageTag }}"
+{{- if .Values.AppmonitoringAgent.imageTag }}
+              image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"
+{{- else }}
+              image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{- dict "component" "appmonitoring-webhook" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag" -}}"
+{{- end }}
               securityContext:
                 capabilities:
                   drop:
@@ -224,7 +228,11 @@ spec:
             capabilities:
               drop:
                 - ALL
-          image: "{{ .Values.AppmonitoringAgent.imageTag }}"
+{{- if .Values.AppmonitoringAgent.imageTag }}
+          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"
+{{- else }}
+          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{- dict "component" "appmonitoring-webhook" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag" -}}"
+{{- end }}
           imagePullPolicy: IfNotPresent
           name: app-monitoring-secrets-installer
       restartPolicy: OnFailure
@@ -282,7 +290,11 @@ spec:
           effect: PreferNoSchedule
       containers:
         - name: app-monitoring-webhook
-          image: "{{ .Values.AppmonitoringAgent.imageTag }}"
+{{- if .Values.AppmonitoringAgent.imageTag }}
+          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"
+{{- else }}
+          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{- dict "component" "appmonitoring-webhook" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag" -}}"
+{{- end }}
           imagePullPolicy: IfNotPresent
           env:
             - name: POD_NAME
