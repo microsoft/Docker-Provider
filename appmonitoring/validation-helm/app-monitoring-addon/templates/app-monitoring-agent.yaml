@@ -150,11 +150,7 @@ spec:
                 value: "{{ .Values.global.commonGlobals.Customer.AzureResourceID }}"
               - name: ARM_REGION
                 value: "{{ .Values.global.commonGlobals.Region }}"
-{{- if .Values.AppmonitoringAgent.imageTag }}
-              image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"
-{{- else }}
-              image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{- dict "component" "appmonitoring-webhook" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag" -}}"
-{{- end }}
+              image: "{{ .Values.AppmonitoringAgent.imageTag }}"
               securityContext:
                 capabilities:
                   drop:
@@ -219,11 +215,7 @@ spec:
             capabilities:
               drop:
                 - ALL
-{{- if .Values.AppmonitoringAgent.imageTag }}
-          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"
-{{- else }}
-          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{- dict "component" "appmonitoring-webhook" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag" -}}"
-{{- end }}
+          image: "{{ .Values.AppmonitoringAgent.imageTag }}"
           imagePullPolicy: IfNotPresent
           name: app-monitoring-secrets-installer
       restartPolicy: OnFailure
@@ -281,11 +273,7 @@ spec:
           effect: PreferNoSchedule
       containers:
         - name: app-monitoring-webhook
-{{- if .Values.AppmonitoringAgent.imageTag }}
-          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"
-{{- else }}
-          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{- dict "component" "appmonitoring-webhook" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag" -}}"
-{{- end }}
+          image: "{{ .Values.AppmonitoringAgent.imageTag }}"
           imagePullPolicy: IfNotPresent
           env:
             - name: POD_NAME
