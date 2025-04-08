@@ -6,7 +6,7 @@ global:
     Versions:
       Kubernetes: "1.25.0"
 AppmonitoringAgent:
-  imageTag: ".azurecr.io/public/azuremonitor/applicationinsights/aidev:v100"
+  imageTag: "aicommon.azurecr.io/aidev:v100"
   cpuRequest: "100m"
   memoryRequest: "128Mi"
   cpuLimit: "500m"
