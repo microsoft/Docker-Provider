@@ -12,7 +12,7 @@ startAMACoreAgent() {
       AMACALogFilePath="$AMACALogFileDir"/amaca.log
       AMACAConfigFilePath="/etc/opt/microsoft/azuremonitoragent/amacoreagent"
       export PA_FLUENT_SOCKET_PORT=13000
-      export PA_DATA_PORT=13000
+      export PA_GIG_LA_PORT=13000
       export PA_GIG_BRIDGE_MODE=true
       export GIG_PA_ENABLE_OPTIMIZATION=true
       export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
@@ -21,7 +21,7 @@ startAMACoreAgent() {
 
       {
          echo "export PA_FLUENT_SOCKET_PORT=$PA_FLUENT_SOCKET_PORT"
-         echo "export PA_DATA_PORT=$PA_DATA_PORT"
+         echo "export PA_GIG_LA_PORT=$PA_GIG_LA_PORT"
          echo "export PA_GIG_BRIDGE_MODE=$PA_GIG_BRIDGE_MODE"
          echo "export GIG_PA_ENABLE_OPTIMIZATION=$GIG_PA_ENABLE_OPTIMIZATION"
          echo "export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=$DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"
