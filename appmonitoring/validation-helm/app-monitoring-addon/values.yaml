@@ -1,12 +1,11 @@
 global:
   commonGlobals:
     Customer:
-      AzureResourceID: "/subscriptions/8ecadfc9-d1a3-4ea4-b844-0d9f87e4d7c8/resourcegroups/rambhatebld120425118/providers/Microsoft.ContainerService/managedClusters/a1"
-    Region: "eastus2"
+      AzureResourceID: "/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/Microsoft.ContainerService/managedClusters/appmonitoring-webhook-testbed"
+    Region: "westus2"
     Versions:
       Kubernetes: "1.25.0"
 AppmonitoringAgent:
-  imageTag: "v100"
   cpuRequest: "100m"
   memoryRequest: "128Mi"
   cpuLimit: "500m"
@@ -19,15 +18,3 @@ resources:
   requests:
     cpu: 250m
     memory: 256Mi
-image:
-  repository: my-docker-repo/app-monitoring-addon
-  tag: latest
-  pullPolicy: IfNotPresent
-service:
-  type: ClusterIP
-  port: 80
-env:
-  - name: ENV_VAR_1
-    value: "value1"
-  - name: ENV_VAR_2
-    value: "value2"

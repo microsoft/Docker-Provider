@@ -18,7 +18,7 @@ variables:
   armServiceConnectionName: 'Appmonitoring_Validation_Pipeline'
   subscription: '5a3b3ba4-3a42-42ae-b2cb-f882345803bc'
   containerRegistry: 'aicommon' # this build pushes the aidev image to the dev ACR (caution: ACR that has "prod" in its name is the dev one, the one without "prod" is prod AME)
-  repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/applicationinsights/aiprod'
+  repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/applicationinsights/aidev'
   IS_PR: $[eq(variables['Build.Reason'], 'PullRequest')]
 
 jobs:
@@ -167,20 +167,19 @@ jobs:
       scriptType: bash
       scriptLocation: inlineScript
       inlineScript: |
-        cd appmonitoring/validation-helm
+        cd appmonitoring/scripts
         pwd
         az account set --subscription ${{ variables.subscription }}
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
-        kubectl delete -f appmonitoring-deployment.yaml
-
-        echo "Wait for 10s for everything to clear up..."
-        sleep 10
-
         export AIDEV_IMAGE_NAME=${{ variables.testImageName }}
-        cat appmonitoring-deployment.yaml | envsubst | kubectl apply -f -
 
-        echo "Wait for 10s for charts to be applied..."
-        sleep 10
+        sudo chmod u+x ./clean-install-appmonitoring.sh
+
+        echo "Checking for charts..."
+        if ! ./clean-install-appmonitoring.sh ${{ variables.testImageName }} then
+          echo "Chart installation failed"
+          exit 1
+        fi
 
   - task: AzureCLI@2
     displayName: "Validate charts deployed to AKS"
@@ -198,10 +197,16 @@ jobs:
         sudo chmod u+x ./validate-certs.sh
 
         echo "Checking for charts..."
-        ./validate-aks-charts.sh
-        
+        if ! ./validate-aks-charts.sh then
+          echo "Chart validation failed"
+          exit 1
+        fi
+
         echo "Checking for certificate installation..."
-        ./validate-certs.sh
+        if ! ./validate-certs.sh then
+          echo "Certificate validation failed"
+          exit 1
+        fi
 
   - task: AzureCLI@2
     displayName: "Install CR and test apps"
@@ -222,24 +227,11 @@ jobs:
         export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
 
-        cat java-test-app.yaml | envsubst | kubectl delete -f -
-        cat node-test-app.yaml | envsubst | kubectl delete -f -
-        cat appmonitoring-cr.yaml | envsubst | kubectl delete -f -
-
-        echo "Wait for 10s for everything to clear up..."
-        sleep 10
-
-        kubectl create namespace $TEST_NS
-
-        cat appmonitoring-cr.yaml | envsubst | kubectl apply -f -
-        echo "Wait for 10s for CR to be applied and picked up..."
-        sleep 10
-
-        cat java-test-app.yaml | envsubst | kubectl apply -f -
-        cat node-test-app.yaml | envsubst | kubectl apply -f -
-
-        echo "Wait for 60s for charts to be applied..."
-        sleep 60
+        sudo chmod +x ../scripts/install-test-apps.sh
+        if ! ./install-test-apps.sh then
+          echo "Test apps installation failed"
+          exit 1
+        fi
 
   - task: AzureCLI@2
     displayName: "Check test apps were mutated correctly"

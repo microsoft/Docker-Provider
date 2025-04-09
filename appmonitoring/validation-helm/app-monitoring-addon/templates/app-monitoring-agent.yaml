@@ -156,7 +156,7 @@ spec:
               - name: ARM_REGION
                 value: "{{ .Values.global.commonGlobals.Region }}"
 {{- if .Values.AppmonitoringAgent.imageTag }}
-              image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"
+              image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod-test:{{ .Values.AppmonitoringAgent.imageTag }}"
 {{- else }}
               image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{- dict "component" "appmonitoring-webhook" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag" -}}"
 {{- end }}
@@ -229,7 +229,7 @@ spec:
               drop:
                 - ALL
 {{- if .Values.AppmonitoringAgent.imageTag }}
-          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"
+          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod-test:{{ .Values.AppmonitoringAgent.imageTag }}"
 {{- else }}
           image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{- dict "component" "appmonitoring-webhook" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag" -}}"
 {{- end }}
@@ -291,7 +291,7 @@ spec:
       containers:
         - name: app-monitoring-webhook
 {{- if .Values.AppmonitoringAgent.imageTag }}
-          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"
+          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod-test:{{ .Values.AppmonitoringAgent.imageTag }}"
 {{- else }}
           image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{- dict "component" "appmonitoring-webhook" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag" -}}"
 {{- end }}
