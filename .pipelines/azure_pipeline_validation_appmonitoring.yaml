@@ -172,12 +172,11 @@ jobs:
         pwd
         az account set --subscription ${{ variables.subscription }}
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
-        export AIDEV_IMAGE_NAME=${{ variables.testImageName }}
 
         sudo chmod u+x ./clean-install-appmonitoring.sh
 
         echo "Checking for charts..."
-        if ! ./clean-install-appmonitoring.sh ${{ variables.testImageName }}; then
+        if ! ./clean-install-appmonitoring.sh ${{ variables.testImageTagSuffix }}; then
           echo "Chart installation failed"
           exit 1
         fi
