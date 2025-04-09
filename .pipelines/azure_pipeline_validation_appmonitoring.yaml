@@ -196,6 +196,9 @@ jobs:
         sudo chmod u+x ./validate-aks-charts.sh
         sudo chmod u+x ./validate-certs.sh
 
+        echo "Waiting for 30 seconds for charts to be ready..."
+        sleep 30
+
         echo "Checking for charts..."
         if ! ./validate-aks-charts.sh; then
           echo "Chart validation failed"
@@ -228,6 +231,7 @@ jobs:
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
 
         sudo chmod +x ../scripts/install-test-apps.sh
+
         if ! ../scripts/install-test-apps.sh; then
           echo "Test apps installation failed"
           exit 1
@@ -246,7 +250,11 @@ jobs:
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }}
         
         sudo chmod u+x ./validate-mutation.sh
-        ./validate-mutation.sh "test-app-java" "test-app-nodejs" "test-ns"
+
+        if ! ./validate-mutation.sh "test-app-java" "test-app-nodejs" "test-ns"; then
+          echo "Mutation validation failed"
+          exit 1
+        fi
 
   - task: AzureCLI@2
     displayName: "Check test apps are sending telemetry to AI"
@@ -266,7 +274,11 @@ jobs:
         sleep 180
         
         sudo chmod u+x ./validate_ai.sh
-        ./validate_ai.sh "test-app-java" "test-app-nodejs" "${{ variables.aiResourceId }}" "test-ns"
+
+        if ! ./validate_ai.sh "test-app-java" "test-app-nodejs" "${{ variables.aiResourceId }}" "test-ns"; then
+          echo "AI telemetry validation failed"
+          exit 1
+        fi
 
   - task: AzureCLI@2
     displayName: "Retag the image as ready to deploy"
