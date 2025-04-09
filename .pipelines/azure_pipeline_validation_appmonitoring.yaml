@@ -176,7 +176,7 @@ jobs:
         sudo chmod u+x ./clean-install-appmonitoring.sh
 
         echo "Checking for charts..."
-        if ! ./clean-install-appmonitoring.sh ${{ variables.testImageName }} then
+        if ! ./clean-install-appmonitoring.sh ${{ variables.testImageName }}; then
           echo "Chart installation failed"
           exit 1
         fi
@@ -197,13 +197,13 @@ jobs:
         sudo chmod u+x ./validate-certs.sh
 
         echo "Checking for charts..."
-        if ! ./validate-aks-charts.sh then
+        if ! ./validate-aks-charts.sh; then
           echo "Chart validation failed"
           exit 1
         fi
 
         echo "Checking for certificate installation..."
-        if ! ./validate-certs.sh then
+        if ! ./validate-certs.sh; then
           echo "Certificate validation failed"
           exit 1
         fi
@@ -228,7 +228,7 @@ jobs:
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
 
         sudo chmod +x ../scripts/install-test-apps.sh
-        if ! ./install-test-apps.sh then
+        if ! ./install-test-apps.sh; then
           echo "Test apps installation failed"
           exit 1
         fi
