@@ -139,11 +139,12 @@ class KubernetesContainerInventory
 
     def addImageInfoToContainerInventoryRecord(containerInventoryRecord, imageValue)
       begin
-        if imageValue.nil? || imageValue.empty?
+        # image can be in any one of below formats:
+        # repository/image[:imagetag | @digest], repository/image:imagetag@digest, repo/image, image:imagetag, image@digest, image, digest
+        # if the image is in digest format - which is expected in certain scenarios, we do not process the image
+        if imageValue.nil? || imageValue.empty? || imageValue.match?(/^sha256:[a-fA-F0-9]{64}$/)
           return
         end
-        # image can be in any one of below formats:
-        # repository/image[:imagetag | @digest], repository/image:imagetag@digest, repo/image, image:imagetag, image@digest, image
         # Find delimiters in image format
         atLocation = imageValue.index("@")
         isDigestSpecified = false
