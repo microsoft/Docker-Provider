@@ -228,7 +228,7 @@ jobs:
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
 
         sudo chmod +x ../scripts/install-test-apps.sh
-        if ! ./install-test-apps.sh; then
+        if ! ../scripts/install-test-apps.sh; then
           echo "Test apps installation failed"
           exit 1
         fi
