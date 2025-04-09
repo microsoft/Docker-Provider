@@ -54,7 +54,8 @@ jobs:
     name: rambhatt-test-es-pool
   variables:
     imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
-    testImageName: ${{ variables.repoImageName }}-test:$(imageTag)-$(Build.BuildId)
+    testImageTagSuffix: $(imageTag)-$(Build.BuildId)
+    testImageName: ${{ variables.repoImageName }}-test:${{ variables.testImageTagSuffix }}
     fullImageName: ${{ variables.repoImageName }}:$(imageTag)
     javaTestAppImageName: 'aicommon.azurecr.io/demoaks-java-app:latest'
     javaTestAppName: 'test-app-java'
