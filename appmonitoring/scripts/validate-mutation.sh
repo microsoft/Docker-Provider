@@ -39,7 +39,7 @@ checkMutation() {
         currentVar=$(echo "$envVariables" | jq -r --arg var "$expectedVar" '.[] | select(.name == $var)')
 
         if [[ -n "$currentVar" ]]; then
-            echo "Found expected env var: $expectedVar"
+            echo "Success! Found expected env var: $expectedVar"
         else
             echo "FATAL ERROR: Expected env var $expectedVar not found in deployment $deploymentName"
             exit 1
@@ -51,7 +51,7 @@ checkMutation() {
     for initContainer in "${EXPECTED_INIT_CONTAINERS[@]}"; do
         currentInitContainer=$(echo "$initContainers" | jq -r --arg container "$initContainer" '.[] | select(.name == $container)')
         if [[ -n "$currentInitContainer" ]]; then
-            echo "Found expected init container: $initContainer"
+            echo "Success! Found expected init container: $initContainer"
         else
             echo "FATAL ERROR: Expected init container $initContainer not found in deployment $deploymentName"
             exit 1
