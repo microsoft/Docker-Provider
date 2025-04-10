@@ -331,12 +331,14 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 				logLatencyMetric.Properties["Container"] = logLatencyMsContainer
 				TelemetryClient.Track(logLatencyMetric)
 
-				networkFlowLogsFlushedRateMetric := appinsights.NewMetricTelemetry(metricNameNetworkFlowFlushRate, networkFlowLogsFlushedRate)
-				networkFlowLogsRateMetric := appinsights.NewMetricTelemetry(metricNameNetworkFlowLogGenerationRate, networkFlowLogsRate)
-				networkFlowLogsSizeMetric := appinsights.NewMetricTelemetry(metricNameNetworkFlowLogSize, networkFlowLogsSizeRate)
-				TelemetryClient.Track(networkFlowLogsFlushedRateMetric)
-				TelemetryClient.Track(networkFlowLogsRateMetric)
-				TelemetryClient.Track(networkFlowLogsSizeMetric)
+				if IsNetworkFlowLogsEnabled {
+					networkFlowLogsFlushedRateMetric := appinsights.NewMetricTelemetry(metricNameNetworkFlowFlushRate, networkFlowLogsFlushedRate)
+					networkFlowLogsRateMetric := appinsights.NewMetricTelemetry(metricNameNetworkFlowLogGenerationRate, networkFlowLogsRate)
+					networkFlowLogsSizeMetric := appinsights.NewMetricTelemetry(metricNameNetworkFlowLogSize, networkFlowLogsSizeRate)
+					TelemetryClient.Track(networkFlowLogsFlushedRateMetric)
+					TelemetryClient.Track(networkFlowLogsRateMetric)
+					TelemetryClient.Track(networkFlowLogsSizeMetric)
+				}
 			}
 		}
 		telegrafConfig := make(map[string]string)
