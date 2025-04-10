@@ -174,7 +174,14 @@ data:
     # High log scale option for container logs high log volume scenarios. This mode is optimized for high log volume scenarios and have little higher resource utilization on low scale which will be addressed in subsequent agent releases.
     # Refer to public documentation for more details - https://aka.ms/cihsmode before enabling this setting as this setting has additional dependencies such as Data Collection endpoint and Microsoft-ContainerLogV2-HighScale stream instead of Microsoft-ContainerLogV2.
     [agent_settings.high_log_scale]
-      enabled = false
+      enabled = true
+
+    # Retina Network Flow Logs throttle settings
+    [agent_settings.network_flow_logs]
+      throttle_rate = 1200
+      throttle_window = 300
+      throttle_interval = 1
+      throttle_print = false
 
     # prometheus scrape fluent bit settings for high scale
     # buffer size should be greater than or equal to chunk size else we set it to chunk size.
@@ -203,7 +210,7 @@ data:
     # The following settings are "undocumented", we don't recommend uncommenting them unless directed by Microsoft.
     # They increase the maximum stdout/stderr log collection rate but will also cause higher cpu/memory usage.
     ## Ref for more details about Ignore_Older -  https://docs.fluentbit.io/manual/v/1.7/pipeline/inputs/tail
-    # [agent_settings.fbit_config]
+    # [agent_settings.fbit_config] QOS metrics
     #   log_flush_interval_secs = "1"                 # default value is 15
     #   tail_mem_buf_limit_megabytes = "10"           # default value is 10
     #   tail_buf_chunksize_megabytes = "1"            # default value is 32kb (comment out this line for default)
