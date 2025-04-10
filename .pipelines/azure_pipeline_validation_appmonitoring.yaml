@@ -275,7 +275,62 @@ jobs:
         
         sudo chmod u+x ./validate_ai.sh
 
-        if ! ./validate_ai.sh "test-app-java" "test-app-nodejs" "${{ variables.aiResourceId }}" "test-ns"; then
+        if ! ./validate_ai.sh "${{ variables.aiResourceId }}" "test-ns"; then
+          echo "AI telemetry validation failed"
+          exit 1
+        fi
+
+  - task: AzureCLI@2
+    displayName: "Validate Housekeeper Cron Job"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        cd appmonitoring/scripts
+        pwd
+        az account set --subscription ${{ variables.subscription }}
+        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
+
+        sudo chmod u+x ./test-cronjob.sh
+        sudo chmod u+x ./validate-certs.sh
+
+        echo "Checking for charts..."
+        if ! ./test-cronjob.sh; then
+          echo "Cron Job validation failed"
+          exit 1
+        fi
+
+  - task: AzureCLI@2
+    displayName: "Validate Test apps are re-mutated and sending telemetry"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        cd appmonitoring/scripts
+        pwd
+        az account set --subscription ${{ variables.subscription }}
+        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
+        export JAVA_TEST_IMAGE_NAME=${{ variables.javaTestAppImageName }}
+        export NODEJS_TEST_IMAGE_NAME=${{ variables.nodeTestAppImageName }}
+        export TEST_NS="${{ variables.testNamespace }}"
+        export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}-new"
+        export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}-new"
+        
+        sudo chmod +x ../scripts/install-test-apps.sh
+
+        if ! ../scripts/install-test-apps.sh; then
+          echo "Test apps installation failed"
+          exit 1
+        fi
+
+        echo "Wait for 3m for telemetry to flow..."
+        sleep 180
+        
+        sudo chmod u+x ./validate_ai.sh
+
+        if ! ./validate_ai.sh "${{ variables.aiResourceId }}" "test-ns"; then
           echo "AI telemetry validation failed"
           exit 1
         fi

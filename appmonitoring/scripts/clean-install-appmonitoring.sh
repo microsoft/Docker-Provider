@@ -3,6 +3,10 @@
 # This script uninstalls the existing app-monitoring release and reinstalls it using the provided image tag.
 
 IMAGE_TAG=$1
+namespace=kube-system
+secrets_installer_job=app-monitoring-secrets-installer
+webhook_deployment=app-monitoring-webhook
+
 
 echo $IMAGE_TAG 
 
@@ -27,6 +31,3 @@ if ! helm install -n kube-system appmonitoring-addon ./app-monitoring-addon --se
   exit 1
 fi
 echo "helm Installation  complete."
-
-echo "Returning to scripts directory..."
-cd ../scripts
