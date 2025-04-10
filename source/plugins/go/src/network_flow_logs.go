@@ -1,16 +1,16 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net"
+	"strconv"
 	"sync"
 	"time"
-	"strconv"
-	"encoding/json"
 
 	"github.com/fluent/fluent-bit-go/output"
-	"github.com/tinylib/msgp/msgp"
 	"github.com/google/uuid"
+	"github.com/tinylib/msgp/msgp"
 )
 
 // Stream name for retina networkflow logs
@@ -25,10 +25,10 @@ var (
 
 var (
 	// networkflow telemetry
-    NetworkFlowTelemetryMutex = &sync.Mutex{}
-    NetworkFlowLogsMDSDClientCreateErrors float64
-    MdsdNetworkFlowClient net.Conn
-    NetworkFlowTagRefreshTracker time.Time
+	NetworkFlowTelemetryMutex             = &sync.Mutex{}
+	NetworkFlowLogsMDSDClientCreateErrors float64
+	MdsdNetworkFlowClient                 net.Conn
+	NetworkFlowTagRefreshTracker          time.Time
 )
 
 // NetworkFlowMsgPackEntry represents the object corresponding to a single messagepack event in the messagepack stream
@@ -40,9 +40,10 @@ type NetworkFlowMsgPackEntry struct {
 // PostNetworkFlowRecords sends data to the mdsd and amacoreagent
 func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int {
 	if IsNetworkFlowLogsEnabled {
-		Log(fmt.Sprintf("Debug: PostNetworkFlowRecords starting"))
 		start := time.Now()
 		var elapsed time.Duration
+		var bts int
+		var er error
 
 		var dataMap map[string]interface{}
 		var networkFlowLogsMsgPackEntries []NetworkFlowMsgPackEntry
@@ -93,7 +94,7 @@ func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int
 				}
 			}
 
-			bts, er := writeNetworkFlowMsgPackEntries(MdsdNetworkFlowClient, MdsdNetworkFlowLogsStreamTagName, networkFlowLogsMsgPackEntries)
+			bts, er = writeNetworkFlowMsgPackEntries(MdsdNetworkFlowClient, MdsdNetworkFlowLogsStreamTagName, networkFlowLogsMsgPackEntries)
 			elapsed = time.Since(start)
 
 			if er != nil {
@@ -114,18 +115,14 @@ func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int
 			}
 		}
 
-		//TODO Telemetry
-		// NetworkFlowTelemetryMutex.Lock()
-		// defer NetworkFlowTelemetryMutex.Unlock()
+		NetworkFlowTelemetryMutex.Lock()
+		defer NetworkFlowTelemetryMutex.Unlock()
 
-		// if numNetworkLogRecords > 0 {
-		// 	FlushedRecordsCount += float64(numNetworkLogRecords)
-		// 	FlushedRecordsTimeTaken += float64(elapsed / time.Millisecond)
-
-		// 	if maxLatency >= AgentLogProcessingMaxLatencyMs {
-		// 		AgentLogProcessingMaxLatencyMs = maxLatency
-		// 	}
-		// }
+		if numNetworkLogRecords > 0 {
+			NetworkFlowLogsFlushedCount += float64(numNetworkLogRecords)
+			NetworkFlowLogsFlushedSize += float64(bts)
+			NetworkFlowLogsFlushedTimeTaken += float64(elapsed / time.Millisecond)
+		}
 	}
 	return output.FLB_OK
 }
