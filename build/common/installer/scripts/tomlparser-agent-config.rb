@@ -104,6 +104,11 @@ require_relative "ConfigParseErrorLogger"
 @waittime_port_13000 = 45 # default waittime for AMACA data port
 @waittime_port_12563 = 45 # default waittime for AMACA config port
 
+@netoworkFlowLogsThrottleRate = 1200
+@netoworkFlowLogsThrottleWindow = 300
+@netoworkFlowLogsThrottleInterval = "1s"
+@netoworkFlowLogsThrottlePrint = false
+
 def is_number?(value)
   true if Integer(value) rescue false
 end
@@ -186,6 +191,32 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           puts "Using config map value: NODES_EMIT_STREAM_BATCH_SIZE = #{@nodesEmitStreamBatchSize}"
         end
       end
+
+      # networkflow logs settings
+      networkflow_config = parsedConfig[:agent_settings][:networkflow_config]
+      if !networkflow_config.nil?
+        netoworkFlowLogsThrottleRate = networkflow_config[:throttle_rate]
+        if is_valid_number?(netoworkFlowLogsThrottleRate)
+          @netoworkFlowLogsThrottleRate = netoworkFlowLogsThrottleRate.to_i
+          puts "Using config map value: networkflow logs throttle_rate = #{@netoworkFlowLogsThrottleRate}"
+        end
+        netoworkFlowLogsThrottleWindow = networkflow_config[:throttle_window]
+        if is_valid_number?(netoworkFlowLogsThrottleWindow)
+          @netoworkFlowLogsThrottleWindow = netoworkFlowLogsThrottleWindow.to_i
+          puts "Using config map value: networkflow logsthrottle_window = #{@netoworkFlowLogsThrottleWindow}"
+        end
+        netoworkFlowLogsThrottleInterval = networkflow_config[:throttle_interval]
+        if !netoworkFlowLogsThrottleInterval.nil? && !netoworkFlowLogsThrottleInterval.empty?
+          @netoworkFlowLogsThrottleInterval = netoworkFlowLogsThrottleInterval
+          puts "Using config map value: networkflow logs throttle_interval = #{@netoworkFlowLogsThrottleInterval}"
+        end
+        netoworkFlowLogsThrottlePrint = networkflow_config[:throttle_print]
+        if !netoworkFlowLogsThrottlePrint.nil? && netoworkFlowLogsThrottlePrint.downcase == "true"
+          @netoworkFlowLogsThrottlePrint = true
+          puts "Using config map value: networkflow logs throttle_print = #{@netoworkFlowLogsThrottlePrint}"
+        end
+      end
+
       # fbit config settings
       fbit_config = parsedConfig[:agent_settings][:fbit_config]
       if !fbit_config.nil?
@@ -431,6 +462,13 @@ if !file.nil?
   file.write("export HPA_CHUNK_SIZE=#{@hpaChunkSize}\n")
   file.write("export PODS_EMIT_STREAM_BATCH_SIZE=#{@podsEmitStreamBatchSize}\n")
   file.write("export NODES_EMIT_STREAM_BATCH_SIZE=#{@nodesEmitStreamBatchSize}\n")
+
+  # networkflow logs settings
+  file.write("export NETWORKFLOW_LOGS_THROTTLE_RATE=#{@netoworkFlowLogsThrottleRate}\n")
+  file.write("export NETWORKFLOW_LOGS_THROTTLE_WINDOW=#{@netoworkFlowLogsThrottleWindow}\n")
+  file.write("export NETWORKFLOW_LOGS_THROTTLE_INTERVAL=#{@netoworkFlowLogsThrottleInterval}\n")
+  file.write("export NETWORKFLOW_LOGS_THROTTLE_PRINT=#{@netoworkFlowLogsThrottlePrint}\n")
+
   # fbit settings
   file.write("export ENABLE_FBIT_INTERNAL_METRICS=#{@enableFbitInternalMetrics}\n")
   if @fbitFlushIntervalSecs > 0
