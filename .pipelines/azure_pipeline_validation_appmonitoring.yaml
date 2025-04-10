@@ -313,7 +313,7 @@ jobs:
         az account set --subscription ${{ variables.subscription }}
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
-        kubectl rollout restart deployment/$webhook_deployment -n ${{ variables.testNamespace }}
+        kubectl rollout restart deployment/app-monitoring-webhook -n ${{ variables.testNamespace }}
 
   - task: AzureCLI@2
     displayName: "Check test apps were mutated correctly"
