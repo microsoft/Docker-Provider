@@ -17,7 +17,7 @@ pr:
 variables:
   armServiceConnectionName: 'Appmonitoring_Validation_Pipeline'
   subscription: '5a3b3ba4-3a42-42ae-b2cb-f882345803bc'
-  containerRegistry: 'aicommon' # this build pushes the aidev image to the dev ACR (caution: ACR that has "prod" in its name is the dev one, the one without "prod" is prod AME)
+  containerRegistry: 'aicommon' # this build pushes to aicommon.azurecr.io with an image that is used for testing in validation cluster, then pushes an image once tests pass. That image is latre picked up by the release pipeline and reuploaded to MCR
   repoImageName: '${{ variables.containerRegistry }}.azurecr.io/test/azuremonitor/applicationinsights/aiprod'
   repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/dev/azuremonitor/applicationinsights/aiprod'
   IS_PR: $[eq(variables['Build.Reason'], 'PullRequest')]
