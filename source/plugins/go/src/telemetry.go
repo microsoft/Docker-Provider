@@ -25,6 +25,12 @@ var (
 	FlushedMetadataSize float64
 	// FlushedRecordsTimeTaken indicates the cumulative time taken to flush the records for the current period
 	FlushedRecordsTimeTaken float64
+	// NetworkFlowLogsFlushedCount indicates the number of flushed network flow logs in the current period
+	NetworkFlowLogsFlushedCount float64
+	// NetworkFlowLogsFlushedSize indicates the size of the flushed network flow logs in the current period
+	NetworkFlowLogsFlushedSize float64
+	// NetworkFlowLogsFlushedTimeTaken indicates the cumulative time taken to flush the network flow logs for the current period
+	NetworkFlowLogsFlushedTimeTaken float64
 	// This is telemetry for how old/latent logs we are processing in milliseconds (max over a period of time)
 	AgentLogProcessingMaxLatencyMs float64
 	// This is telemetry for which container logs were latent (max over a period of time)
@@ -105,6 +111,9 @@ const (
 	metricNameAvgLogGenerationRate                                    = "ContainerLogsGeneratedPerSec"
 	metricNameLogSize                                                 = "ContainerLogsSize"
 	metricNameMetadataSize                                            = "ContainerLogsMetadataSize"
+	metricNameNetworkFlowFlushRate                                    = "NetworkFlowLogsAvgRecordsFlushedPerSec"
+	metricNameNetworkFlowLogGenerationRate                            = "NetworkFlowLogsGeneratedPerSec"
+	metricNameNetworkFlowLogSize                                      = "NetworkFlowLogsSize"
 	metricNameAgentLogProcessingMaxLatencyMs                          = "ContainerLogsAgentSideLatencyMs"
 	metricNameNumberofTelegrafMetricsSentSuccessfully                 = "TelegrafMetricsSentCount"
 	metricNameNumberofSendErrorsTelegrafMetrics                       = "TelegrafMetricsSendErrorCount"
@@ -151,6 +160,9 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		logRate := FlushedRecordsCount / float64(elapsed/time.Second)
 		logSizeRate := FlushedRecordsSize / float64(elapsed/time.Second)
 		metadataSizeRate := FlushedMetadataSize / float64(elapsed/time.Second)
+		networkFlowLogsFlushedRate := NetworkFlowLogsFlushedCount / NetworkFlowLogsFlushedTimeTaken * 1000
+		networkFlowLogsRate := NetworkFlowLogsFlushedCount / float64(elapsed/time.Second)
+		networkFlowLogsSizeRate := NetworkFlowLogsFlushedSize / float64(elapsed/time.Second)
 		telegrafMetricsSentCount := TelegrafMetricsSentCount
 		telegrafMetricsSendErrorCount := TelegrafMetricsSendErrorCount
 		telegrafMetricsSend429ErrorCount := TelegrafMetricsSend429ErrorCount
@@ -184,6 +196,9 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 		FlushedRecordsSize = 0.0
 		FlushedMetadataSize = 0.0
 		FlushedRecordsTimeTaken = 0.0
+		NetworkFlowLogsFlushedCount = 0.0
+		NetworkFlowLogsFlushedSize = 0.0
+		NetworkFlowLogsFlushedTimeTaken = 0.0
 		logLatencyMs := AgentLogProcessingMaxLatencyMs
 		logLatencyMsContainer := AgentLogProcessingMaxLatencyMsContainer
 		AgentLogProcessingMaxLatencyMs = 0
@@ -315,6 +330,15 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 				logLatencyMetric := appinsights.NewMetricTelemetry(metricNameAgentLogProcessingMaxLatencyMs, logLatencyMs)
 				logLatencyMetric.Properties["Container"] = logLatencyMsContainer
 				TelemetryClient.Track(logLatencyMetric)
+
+				if IsNetworkFlowLogsEnabled {
+					networkFlowLogsFlushedRateMetric := appinsights.NewMetricTelemetry(metricNameNetworkFlowFlushRate, networkFlowLogsFlushedRate)
+					networkFlowLogsRateMetric := appinsights.NewMetricTelemetry(metricNameNetworkFlowLogGenerationRate, networkFlowLogsRate)
+					networkFlowLogsSizeMetric := appinsights.NewMetricTelemetry(metricNameNetworkFlowLogSize, networkFlowLogsSizeRate)
+					TelemetryClient.Track(networkFlowLogsFlushedRateMetric)
+					TelemetryClient.Track(networkFlowLogsRateMetric)
+					TelemetryClient.Track(networkFlowLogsSizeMetric)
+				}
 			}
 		}
 		telegrafConfig := make(map[string]string)
