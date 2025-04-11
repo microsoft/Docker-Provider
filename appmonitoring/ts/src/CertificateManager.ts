@@ -201,7 +201,7 @@ export class CertificateManager {
     }
 
     public async GetMutatingWebhookCABundle(operationId: string, kubeConfig: k8s.KubeConfig, clusterArmId: string, clusterArmRegion: string): Promise<string> {
-        let caBundle: string = null;
+        let caBundle: string;
         let mutatingWebhookObject: k8s.V1MutatingWebhookConfiguration;
         try {
             const webhookApi: k8s.AdmissionregistrationV1Api = kubeConfig.makeApiClient(k8s.AdmissionregistrationV1Api);
