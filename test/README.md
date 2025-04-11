@@ -52,6 +52,57 @@
 
 In this document, we will be covering ginkgo-e2e and testkube folders in detail. Support for more folders will be added soon.
 
+# Current Tests
+- Container Status
+    - All daemonset pods are scheduled on each node:
+        - ama-logs
+        - ama-logs-win for `label=windows`
+    - Each Container on each pod that we deploy has status `Running`. Pods include:
+        - ama-logs
+        - ama-logs-rs
+    - All expected processes are running on the containers on linux nodes:
+        - fluent-bit
+        - fluentd
+        - mdsd
+        - telegraf (only check for daemonset as it's always running in daemonset. It only runs in replicaset if agent config is deployed.)
+    - All expected processes are running on the containers on windows nodes:
+        - fluent-bit 
+        - MonAgentLauncher
+        - MonAgentHost
+        - MonAgentManager
+        - MonAgentCore
+        - telegraf
+    - The Container logs should not contain any error.
+
+- Liveness Probe:
+    - When following processes are not running in ama-logs and ama-logs-rs containers, the container should restart:
+        - fluent-bit
+        - fluentd
+        - mdsd
+    - For windows ama-logs-windows container, liveness probe monitos following processes:
+        - fluent-bit
+        - MonAgentLauncher
+
+- Query Logs:
+    - All tables should have logs in last 15 mins (configurable):
+        - Perf
+        - InsightsMetrics
+        - ContainerLog (or ContainerLogV2 if configurable)
+        - ContainerInventory
+        - ContainerNodeInventory
+        - KubeNodeInventory
+        - KubePodInventory
+        - KubePVInventory
+    - ContainerInventory should not have any empty values in following columns:
+        - Image
+        - ImageID
+        - ImageTag
+        - Repository
+    - Check that all pods and nodes data is following to respective tables:
+        - Each pod should be present in KubePodInventory
+        - Each node should be present in KubeNodeInventory
+    
+
 
 # Ginkgo
 Tests are run using the [Ginkgo](https://onsi.github.io/ginkgo/) test framework. This is built upon the regular go test framework. It's advantages are that it:
