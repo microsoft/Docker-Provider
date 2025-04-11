@@ -303,7 +303,7 @@ jobs:
         fi
 
   - task: AzureCLI@2
-    displayName: "Restart test Apps"
+    displayName: "Restart webhook deployment"
     inputs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: bash
