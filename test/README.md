@@ -41,7 +41,6 @@
 │   │   ├── executors.json                          - Testkube executors used for ginkgo in compact json format. The base64 encoded string of this will be used in testkube helm chart.
 │   │   ├── helm-testkube-values.yaml               - Customized testkube helm chart values which pulls the data from MCR and schedule all the pods on linux nodes.
 │   │   ├── install-and-execute-testkube-tests.sh   - The script used to install and execute testkube tests on a given cluster. This is used in .pipelines\azure_pipeline_testframework.yaml.
-│   │   ├── testkube-teams-integration.yaml         - Teams webhook integration with testkube.
 │   │   ├── testkube-test-crs.yaml                  - CRs for TestKube test suites and tests for AKS CI/CD clusters.
 │   ├── unit-tests                                  - Unit test drivers and canned API responses.
 │   │   ├── canned-api-responses/                   - Subdirectory for canned API responses.
