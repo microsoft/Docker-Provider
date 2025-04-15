@@ -70,8 +70,7 @@ In this document, we will be covering ginkgo-e2e and testkube folders in detail.
         - MonAgentHost
         - MonAgentManager
         - MonAgentCore
-        - telegraf
-    - The Container logs should not contain any error.
+    - The Logs of the container should not contain any error.
 
 - Liveness Probe:
     - When following processes are not running in ama-logs and ama-logs-rs containers, the container should restart:
@@ -134,7 +133,7 @@ Ginkgo can be used for any tests written in golang, whether they are unit, integ
 - [azure-sdk-for-go](https://github.com/Azure/azure-sdk-for-go)
 
 # TestKube
-[Testkube](https://docs.testkube.io/) is an OSS runner framework for running the tests inside a Kubernetes cluster. It is deployed as a helm chart on the cluster. Ginkgo is included as one of the out-of-the-box executors supported.
+[Testkube](https://docs.testkube.io/) is an OSS runner framework for running the tests inside a Kubernetes cluster. It is deployed as a helm release on the cluster. Ginkgo is included as one of the out-of-the-box executors supported.
 
 Behind the scenes, tests and executors are custom resources. Running a test starts a job that deploys the test executor pod which runs the Ginkgo tests (or a different framework setup).
 
@@ -203,10 +202,10 @@ This section is specific to CICD clusters setup for testing. Testkube installati
 ## Upgrading
 ### Upgrade Testkube version
 1. Connect to the CI/CD cluster to have your kubeconfig pointing to it in your terminal.
-2. Have the lasted version of the [TestKube CLI](https://docs.testkube.io/articles/install/cli) installed in your terminal.
+2. Have the latest version of the [TestKube CLI](https://docs.testkube.io/articles/install/cli) installed in your terminal.
 3. Export the latest helm chart values file, check out the [documentation](https://docs.testkube.io/articles/install/install-with-helm#installing).
 4. Pull all the images locally with tag mentioned in the values file and push it to MCR.
-5. Update helm chart values to pull the images from MCR.
+5. Update `helm-testkube-values.yaml` to pull the updated images from MCR.
 
 ### Upgrade Golang Version
 1. The required Golang version in the `go.mod` files in the `ginkgo-e2e` directory will always need to be `<=` the Golang version of the TestKube Ginkgo runner.  
