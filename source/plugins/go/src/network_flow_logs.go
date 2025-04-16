@@ -174,7 +174,7 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 	// TimeGenerated
 	dataMap["TimeGenerated"] = extractString(flow, "time")
 	// UUID
-	if uuidVal := extractString(record, "UUID"); uuidVal != "" {
+	if uuidVal := extractString(flow, "uuid"); uuidVal != "" {
 		dataMap["UUID"] = uuidVal
 	} else {
 		dataMap["UUID"] = uuid.New().String()
