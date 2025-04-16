@@ -71,24 +71,8 @@ describe('CertificateManager', () => {
             jest.resetAllMocks();
         });
 
-        it('should not do anything if it cant find the installer job', async () => {
-            const checkCertificateJobStatus = jest.spyOn(certManager as any, 'HasCertificateInstallerJobFinished').mockRejectedValue(new Error('Job not found'));
-            const getMutatingWebhookCABundle = jest.spyOn(certManager as any, 'GetMutatingWebhookCABundle').mockResolvedValue(null);
-            const getSecretDetails = jest.spyOn(certManager as any, 'GetSecretDetails').mockResolvedValue(null);
-            const updateWebhookAndCertificates = jest.spyOn(certManager as any, 'UpdateWebhookAndSecretStore').mockResolvedValue(null);
-            const restartWebhookDeployment = jest.spyOn(certManager as any, 'RestartWebhookDeployment').mockResolvedValue(null);
-            await certManager.ReconcileWebhookAndCertificates(operationId, mockClusterArmId, mockClusterArmRegion);
-
-            expect(checkCertificateJobStatus).toHaveBeenCalled();
-            expect(checkCertificateJobStatus).toHaveBeenCalledTimes(1);
-            expect(getMutatingWebhookCABundle).not.toBeCalled();
-            expect(getSecretDetails).not.toBeCalled();
-            expect(updateWebhookAndCertificates).not.toBeCalled();
-            expect(restartWebhookDeployment).not.toBeCalled();
-        });
-
         it('should not do anything if it installer job has not finished', async () => {
-            const checkCertificateJobStatus = jest.spyOn(certManager as any, 'HasCertificateInstallerJobFinished').mockResolvedValue(false);
+            const checkCertificateJobStatus = jest.spyOn(certManager as any, 'IsCertificateInstallerJobRunning').mockResolvedValue(true);
             const getMutatingWebhookCABundle = jest.spyOn(certManager as any, 'GetMutatingWebhookCABundle').mockResolvedValue(null);
             const getSecretDetails = jest.spyOn(certManager as any, 'GetSecretDetails').mockResolvedValue(null);
             const updateWebhookAndCertificates = jest.spyOn(certManager as any, 'UpdateWebhookAndSecretStore').mockResolvedValue(null);
@@ -104,7 +88,7 @@ describe('CertificateManager', () => {
         });
 
         it('should not proceed if it fails to get secret store', async () => {
-            const checkCertificateJobStatus = jest.spyOn(certManager as any, 'HasCertificateInstallerJobFinished').mockResolvedValue(true);
+            const checkCertificateJobStatus = jest.spyOn(certManager as any, 'IsCertificateInstallerJobRunning').mockResolvedValue(false);
             const getSecretDetails = jest.spyOn(certManager as any, 'GetSecretDetails').mockRejectedValue(new Error('Secret not found'));
             const getMutatingWebhookCABundle = jest.spyOn(certManager as any, 'GetMutatingWebhookCABundle').mockResolvedValue(null);
             const updateWebhookAndCertificates = jest.spyOn(certManager as any, 'UpdateWebhookAndSecretStore').mockResolvedValue(null);
@@ -121,7 +105,7 @@ describe('CertificateManager', () => {
         });
 
         it('should not proceed if it fails to get mutating webhook configuration ', async () => {
-            const checkCertificateJobStatus = jest.spyOn(certManager as any, 'HasCertificateInstallerJobFinished').mockResolvedValue(true);
+            const checkCertificateJobStatus = jest.spyOn(certManager as any, 'IsCertificateInstallerJobRunning').mockResolvedValue(false);
             const getSecretDetails = jest.spyOn(certManager as any, 'GetSecretDetails').mockResolvedValue(null);
             const getMutatingWebhookCABundle = jest.spyOn(certManager as any, 'GetMutatingWebhookCABundle').mockRejectedValue(new Error('Mutating webhook not found'));
             const updateWebhookAndCertificates = jest.spyOn(certManager as any, 'UpdateWebhookAndSecretStore').mockResolvedValue(null);
@@ -143,7 +127,7 @@ describe('CertificateManager', () => {
             const getSecretDetails = jest.spyOn(certManager as any, 'GetSecretDetails').mockResolvedValue(secretObj);
             const getMutatingWebhookCABundle = jest.spyOn(certManager as any, 'GetMutatingWebhookCABundle').mockResolvedValue(secretObj.caCert);
             jest.spyOn(certManager as any, 'isCertificateSignedByCA').mockReturnValue(true);
-            const checkCertificateJobStatus = jest.spyOn(certManager as any, 'HasCertificateInstallerJobFinished').mockResolvedValue(true);
+            const checkCertificateJobStatus = jest.spyOn(certManager as any, 'IsCertificateInstallerJobRunning').mockResolvedValue(false);
             const IsValidCertificate = jest.spyOn(certManager as any, 'IsValidCertificate').mockResolvedValue(true);
             const updateWebhookAndCertificates = jest.spyOn(certManager as any, 'UpdateWebhookAndSecretStore').mockResolvedValue(null);
             const restartWebhookDeployment = jest.spyOn(certManager as any, 'RestartWebhookDeployment').mockResolvedValue(null);
@@ -166,7 +150,7 @@ describe('CertificateManager', () => {
             const getMutatingWebhookCABundle = jest.spyOn(certManager as any, 'GetMutatingWebhookCABundle').mockResolvedValue(null);
             const getSecretDetails =  jest.spyOn(certManager as any, 'GetSecretDetails').mockResolvedValue(null);
             jest.spyOn(certManager as any, 'isCertificateSignedByCA').mockReturnValue(false);
-            const checkCertificateJobStatus = jest.spyOn(certManager as any, 'HasCertificateInstallerJobFinished').mockResolvedValue(true);
+            const checkCertificateJobStatus = jest.spyOn(certManager as any, 'IsCertificateInstallerJobRunning').mockResolvedValue(false);
             const IsValidCertificate = jest.spyOn(certManager as any, 'IsValidCertificate').mockResolvedValue(false);
             const updateWebhookAndCertificates = jest.spyOn(certManager as any, 'UpdateWebhookAndSecretStore').mockResolvedValue(null);
             const restartWebhookDeployment = jest.spyOn(certManager as any, 'RestartWebhookDeployment').mockResolvedValue(null);
@@ -208,7 +192,7 @@ describe('CertificateManager', () => {
             });
             const getMutatingWebhookCABundle = jest.spyOn(certManager as any, 'GetMutatingWebhookCABundle').mockResolvedValue(mockCertData.caCert);
             jest.spyOn(certManager as any, 'isCertificateSignedByCA').mockReturnValue(false);
-            const checkCertificateJobStatus = jest.spyOn(certManager as any, 'HasCertificateInstallerJobFinished').mockResolvedValue(true);
+            const checkCertificateJobStatus = jest.spyOn(certManager as any, 'IsCertificateInstallerJobRunning').mockResolvedValue(false);
             const IsValidCertificate = jest.spyOn(certManager as any, 'IsValidCertificate').mockResolvedValue(true);
             const updateWebhookAndCertificates = jest.spyOn(certManager as any, 'UpdateWebhookAndSecretStore').mockImplementation((_1: string, kc: KubeConfig, certificates: WebhookCertData, _2: string, _3: string) => {
                 if (!(kc && certificates && certificates.caCert && certificates.caKey && certificates.tlsCert && certificates.tlsKey 
@@ -269,7 +253,7 @@ describe('CertificateManager', () => {
 
             });
             jest.spyOn(certManager as any, 'isCertificateSignedByCA').mockReturnValue(true);
-            const checkCertificateJobStatus = jest.spyOn(certManager as any, 'HasCertificateInstallerJobFinished').mockResolvedValue(true);
+            const checkCertificateJobStatus = jest.spyOn(certManager as any, 'IsCertificateInstallerJobRunning').mockResolvedValue(false);
             const IsValidCertificate = jest.spyOn(certManager as any, 'IsValidCertificate').mockResolvedValue(true);
             const updateWebhookAndCertificates = jest.spyOn(certManager as any, 'UpdateWebhookAndSecretStore').mockImplementation((_1: string, kc: KubeConfig, certificates: WebhookCertData, _2: string, _3: string) => {
                 if (!(kc && certificates && certificates.caCert && certificates.caKey && certificates.tlsCert && certificates.tlsKey 
@@ -292,7 +276,7 @@ describe('CertificateManager', () => {
         });
 
         it('should handle only Host cert expiration', async () => {
-            const checkCertificateJobStatus = jest.spyOn(certManager as any, 'HasCertificateInstallerJobFinished').mockResolvedValue(true);
+            const checkCertificateJobStatus = jest.spyOn(certManager as any, 'IsCertificateInstallerJobRunning').mockResolvedValue(false);
             const IsValidCertificate = jest.spyOn(certManager as any, 'IsValidCertificate').mockResolvedValue(true);
             jest.spyOn(Date, 'now').mockReturnValueOnce(800 * 24 * 60 * 60 * 1000).mockReturnValueOnce(0).mockReturnValue(800 * 24 * 60 * 60 * 1000);
             const realCertObj: WebhookCertData = (certManager as any).CreateOrUpdateCertificates('test-operationId');

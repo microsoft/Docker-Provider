@@ -4,3 +4,4 @@ export const CertificateStoreName = 'app-monitoring-webhook-cert';
 export const WebhookDeploymentName = 'app-monitoring-webhook';
 export const MutatingWebhookConfigurationName = 'app-monitoring-webhook';
 export const KubeSystemNamespaceName = 'kube-system';
+export const CertificateInstallerJobName = "app-monitoring-secrets-installer";

@@ -1,5 +1,5 @@
 import * as k8s from '@kubernetes/client-node';
-import { CertificateStoreName, KubeSystemNamespaceName, WebhookDNSEndpoint, WebhookDeploymentName, MutatingWebhookConfigurationName } from './Constants.js'
+import { CertificateStoreName, KubeSystemNamespaceName, WebhookDNSEndpoint, WebhookDeploymentName, MutatingWebhookConfigurationName, CertificateInstallerJobName } from './Constants.js'
 import forge from 'node-forge';
 import { logger, RequestMetadata } from './LoggerWrapper.js';
 
@@ -268,7 +268,7 @@ export class CertificateManager {
         try {
             forge.pki.certificateFromPem(mwhcCaBundle);
             forge.pki.certificateFromPem(webhookCertData.caCert);
-            forge.pki.certificateFromPem(webhookCertData.caKey);
+            forge.pki.privateKeyFromPem(webhookCertData.caKey);
             forge.pki.certificateFromPem(webhookCertData.tlsCert);
             forge.pki.privateKeyFromPem(webhookCertData.tlsKey);
             return true;
@@ -280,38 +280,43 @@ export class CertificateManager {
     }
 
     /**
-     * This method checks if a specific Kubernetes job has finished. It does this by reading the status of a job
-     * named `app-monitoring-cert-manager-hook-install` in a specific namespace. If the job status indicates completion,
-     * it returns true. If the job is not yet complete, it returns a false value.
-     * If there is an error in getting the job status, it throws the error.
+     * This method checks if the certificate installer job is still running.
+     * If the job status indicates completion or the job is not found, it returns false. If the job is not yet complete, it returns true.
+     * If there is an error in getting the job status, it throws an error.
      * @param kubeConfig - The Kubernetes configuration.
      * @param operationId - The operation ID.
      * @param clusterArmId - The ARM ID of the cluster.
      * @param clusterArmRegion - The ARM region of the cluster.
-     * @returns A promise that resolves to a boolean indicating whether the job has finished.
+     * @returns A promise that resolves to a boolean indicating whether the job is still running
      */
-    private async HasCertificateInstallerJobFinished(kubeConfig: k8s.KubeConfig, operationId: string, clusterArmId: string, clusterArmRegion: string): Promise<boolean> {
+    private async IsCertificateInstallerJobRunning(kubeConfig: k8s.KubeConfig, operationId: string, clusterArmId: string, clusterArmRegion: string): Promise<boolean> {
         const k8sApi = kubeConfig.makeApiClient(k8s.BatchV1Api);
         const requestMetadata = this.requestMetadata;
-        const jobName = 'app-monitoring-secrets-installer';
         const namespace = KubeSystemNamespaceName;
 
         try {
-            const jobStatus: k8s.V1Job = await k8sApi.readNamespacedJobStatus({ name: jobName, namespace: namespace });
+            const job: k8s.V1Job = await k8sApi.readNamespacedJobStatus({ name: CertificateInstallerJobName, namespace: namespace });
 
-            if (jobStatus.status?.conditions) {
-                for (const condition of jobStatus.status.conditions) {
-                    if (condition.type === 'Complete' && condition.status === 'True') {
-                        logger.info(`Job ${jobName} has completed.`, operationId, requestMetadata);
-                        await logger.SendEvent("CertificateJobCompleted", operationId, null, clusterArmId, clusterArmRegion, true);
-                        return true;
+            if (job.status?.conditions) {
+                for (const condition of job.status.conditions) {
+                    if ((condition.type === "Complete" || condition.type === "Failed") && condition.status === "True") {
+                        logger.info(`Job ${CertificateInstallerJobName} has reached a terminal state with a condition type of ${condition.type}.`, operationId, requestMetadata);
+                        await logger.SendEvent("CertificateJobTerminated", operationId, null, clusterArmId, clusterArmRegion, true);
+                        return false;
                     }
                 }
             }
-            logger.info(`Job ${jobName} has not completed yet.`, operationId, requestMetadata);
+
+            logger.info(`Job ${CertificateInstallerJobName} has not completed yet and is currently running: ${JSON.stringify(job)}`, operationId, requestMetadata);
             await logger.SendEvent("CertificateJobNotCompleted", operationId, null, clusterArmId, clusterArmRegion, true);
-            return false;
+            return true;
         } catch (err) {
+            if(err?.code === 404) {
+                logger.info(`Job ${CertificateInstallerJobName} not found.`, operationId, requestMetadata);
+                await logger.SendEvent("CertificateJobNotFound", operationId, null, clusterArmId, clusterArmRegion, true);
+                return false;
+            }
+
             logger.error(`Failed to get job status: ${JSON.stringify(err)}`, operationId, requestMetadata);
             await logger.SendEvent("CertificateJobStatusFailed", operationId, null, clusterArmId, clusterArmRegion, true, err);
             throw err;
@@ -373,7 +378,8 @@ export class CertificateManager {
          * is close to expiration and regenerates it if necessary. If either certificate is regenerated, it patches the
          * webhook and certificates and restarts the webhook deployment. If no certificates need to be regenerated, it logs
          * that nothing needs to be done.
-         * If the job cannot be found, the secret cannot be found, or the mutating webhook CA bundle cannot be found, the
+         * If the job cannot be found, that means that it has been removed after having run, so we treat it the same way as if we found it in a finished state.
+         * If the the secret cannot be found, or the mutating webhook CA bundle cannot be found, the
          * catch block logs the error and sends an event.
          * If the job has completed, the catch block logs that the certificates installer has completed and sends an event.
          * If an error occurs at any point in the try block, the catch block logs the error and sends an event.
@@ -381,13 +387,13 @@ export class CertificateManager {
 
         try {
             // get the cert installer job
-            const isInstallerJobCompleted: boolean = await this.HasCertificateInstallerJobFinished(kc, operationId, clusterArmId, clusterArmRegion);
-            if (isInstallerJobCompleted) {
-                logger.info('Certificates Installer has completed, continue validation...', operationId, this.requestMetadata);
-            } else {
-                logger.info('Certificates Installer has not completed yet, reconciliation is not needed at this time...', operationId, this.requestMetadata);
+            const isInstallerJobRunning: boolean = await this.IsCertificateInstallerJobRunning(kc, operationId, clusterArmId, clusterArmRegion);
+            if (isInstallerJobRunning) {
+                logger.info('Certificates installer job is currently running, reconciliation is not needed at this time...', operationId, this.requestMetadata);
                 await logger.SendEvent("CertificateInstallerNotCompleteYet", operationId, null, clusterArmId, clusterArmRegion, true);
                 return;
+            } else {
+                logger.info("Certificates installer job has completed or doesn't exist, continue validation...", operationId, this.requestMetadata);
             }
         } catch (error) {
             logger.error(`Error occurred while trying to get Installer Job\n${JSON.stringify(error)}`, operationId, this.requestMetadata);
