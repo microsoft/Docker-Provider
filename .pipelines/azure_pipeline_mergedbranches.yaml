@@ -937,7 +937,7 @@ stages:
       inputs:
         targetType: inline
         script: >
-          cd $(System.DefaultWorkingDirectory)/build/linux/
+          cd $(Pipeline.Workspace)/build/linux/
 
           ls
 
@@ -1453,7 +1453,7 @@ stages:
     - task: PowerShell@2
       inputs:
         targetType: filePath
-        filePath: $(System.DefaultWorkingDirectory)/scripts/build/windows/install-build-pre-requisites.ps1
+        filePath: $(Pipeline.Workspace)/scripts/build/windows/install-build-pre-requisites.ps1
       target:
         container: host
       displayName: install prereqs
@@ -1576,7 +1576,7 @@ stages:
       displayName: Extract files to sign
     - task: CmdLine@2
       inputs:
-        script: dir $(System.DefaultWorkingDirectory)
+        script: dir $(Pipeline.Workspace)
       target:
         container: host
       displayName: List files in DefaultWorking Directory
@@ -1818,7 +1818,7 @@ stages:
     - task: PowerShell@2
       inputs:
         targetType: filePath
-        filePath: $(System.DefaultWorkingDirectory)/scripts/build/windows/install-build-pre-requisites.ps1
+        filePath: $(Pipeline.Workspace)/scripts/build/windows/install-build-pre-requisites.ps1
       target:
         container: host
       displayName: install prereqs
@@ -1941,7 +1941,7 @@ stages:
       displayName: Extract files to sign
     - task: CmdLine@2
       inputs:
-        script: dir $(System.DefaultWorkingDirectory)
+        script: dir $(Pipeline.Workspace)
       target:
         container: host
       displayName: List files in DefaultWorking Directory
