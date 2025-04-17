@@ -139,6 +139,9 @@ const server = https.createServer(options, (req, res) => {
                 logger.appendHeartbeatLog(HeartbeatLogs.AdmissionReviewTopExceptionsEncountered, JSON.stringify(ex));
 
                 logger.error(`Error while processing request: ${JSON.stringify(e)}. Incoming payload: ${body}`, operationId, requestMetadata);
+
+                res.writeHead(500, { "Content-Type": "application/json" });
+                res.end(JSON.stringify(ex));
             }
         });
     } else {
