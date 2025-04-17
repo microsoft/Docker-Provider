@@ -97,7 +97,6 @@ if [[ $(jq -r '.status' testkube-results.json) == "failed" ]]; then
 }
 EOF
 )
-    echo "$payload"
 
     curl -X POST -H "Content-Type: application/json" -d "$payload" $WEBHOOK_URI
 
