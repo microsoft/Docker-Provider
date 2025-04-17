@@ -1,6 +1,7 @@
 package querylogs_test
 
 import (
+	"os"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -12,6 +13,10 @@ import (
 var _ = Describe("When querying the logs for the table", func() {
 	DescribeTable("All tables should have logs",
 		func(table string) {
+			// Skip RetinaNetworkFlowLogs test if the feature is not enabled
+			if table == "RetinaNetworkFlowLogs" && os.Getenv("ENABLE_RETINA_NETWORK_FLOW_LOGS") != "true" {
+				Skip("RetinaNetworkFlowLogs test skipped because ENABLE_RETINA_NETWORK_FLOW_LOGS is not set to 'true'")
+			}
 			var err error
 			query := table + " | where TimeGenerated > ago(15m) | summarize count()"
 			err = utils.QueryLogsForCount(LogsClient, AKSResourceId, query, false)
@@ -30,6 +35,7 @@ var _ = Describe("When querying the logs for the table", func() {
 		Entry("KubeNodeInventory", "KubeNodeInventory"),
 		Entry("KubePodInventory", "KubePodInventory"),
 		Entry("KubePVInventory", "KubePVInventory"),
+		Entry("RetinaNetworkFlowLogs", "RetinaNetworkFlowLogs"),
 	)
 })
 
