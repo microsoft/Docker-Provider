@@ -116,6 +116,8 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 
 # Building code
 
+__Note that building code in local computer is broken, the team will fix it.__
+
 ## Linux Agent
 
 ### Install Pre-requisites
