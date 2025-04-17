@@ -104,7 +104,7 @@ require_relative "ConfigParseErrorLogger"
 @waittime_port_13000 = 45 # default waittime for AMACA data port
 @waittime_port_12563 = 45 # default waittime for AMACA config port
 
-@netoworkFlowLogsThrottleRate = 1200
+@netoworkFlowLogsThrottleRate = 1000
 @netoworkFlowLogsThrottleWindow = 300
 @netoworkFlowLogsThrottleInterval = "1s"
 @netoworkFlowLogsThrottlePrint = false
@@ -193,24 +193,24 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       end
 
       # networkflow logs settings
-      networkflow_config = parsedConfig[:agent_settings][:networkflow_config]
-      if !networkflow_config.nil?
-        netoworkFlowLogsThrottleRate = networkflow_config[:throttle_rate]
+      networkflow_logs_config = parsedConfig[:agent_settings][:networkflow_logs_config]
+      if !networkflow_logs_config.nil?
+        netoworkFlowLogsThrottleRate = networkflow_logs_config[:throttle_rate]
         if is_valid_number?(netoworkFlowLogsThrottleRate)
           @netoworkFlowLogsThrottleRate = netoworkFlowLogsThrottleRate.to_i
           puts "Using config map value: networkflow logs throttle_rate = #{@netoworkFlowLogsThrottleRate}"
         end
-        netoworkFlowLogsThrottleWindow = networkflow_config[:throttle_window]
+        netoworkFlowLogsThrottleWindow = networkflow_logs_config[:throttle_window]
         if is_valid_number?(netoworkFlowLogsThrottleWindow)
           @netoworkFlowLogsThrottleWindow = netoworkFlowLogsThrottleWindow.to_i
           puts "Using config map value: networkflow logsthrottle_window = #{@netoworkFlowLogsThrottleWindow}"
         end
-        netoworkFlowLogsThrottleInterval = networkflow_config[:throttle_interval]
+        netoworkFlowLogsThrottleInterval = networkflow_logs_config[:throttle_interval]
         if !netoworkFlowLogsThrottleInterval.nil? && !netoworkFlowLogsThrottleInterval.empty?
           @netoworkFlowLogsThrottleInterval = netoworkFlowLogsThrottleInterval
           puts "Using config map value: networkflow logs throttle_interval = #{@netoworkFlowLogsThrottleInterval}"
         end
-        netoworkFlowLogsThrottlePrint = networkflow_config[:throttle_print]
+        netoworkFlowLogsThrottlePrint = networkflow_logs_config[:throttle_print]
         if !netoworkFlowLogsThrottlePrint.nil? && netoworkFlowLogsThrottlePrint.downcase == "true"
           @netoworkFlowLogsThrottlePrint = true
           puts "Using config map value: networkflow logs throttle_print = #{@netoworkFlowLogsThrottlePrint}"
