@@ -12,10 +12,14 @@ fi
 sudo tdnf install ca-certificates-microsoft -y
 sudo update-ca-trust
 
-wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20250409.tar.gz -O ruby-build.tar.gz
-tar -xzf ruby-build.tar.gz
-PREFIX=/usr/local ./ruby-build-*/install.sh
-ruby-build 3.3.8 /usr
+if [ "$ARCH" == "arm64" ]; then
+    sudo tdnf install ruby-3.3.5-2.azl3.aarch64 -y
+else
+    wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20250409.tar.gz -O ruby-build.tar.gz
+    tar -xzf ruby-build.tar.gz
+    PREFIX=/usr/local ./ruby-build-*/install.sh
+    ruby-build 3.3.8 /usr
+fi
 
 # clean up the ruby-build files
 rm ruby-build.tar.gz
@@ -94,7 +98,7 @@ gem install gyoku iso8601 bigdecimal --no-doc
 gem install tomlrb -v "2.0.1" --no-document
 gem install ipaddress --no-document
 gem install jwt -v "2.7.1" --no-document
-# gem install racc --no-document
+gem install racc --no-document
 
 rm -f $TMPDIR/docker-cimprov*.sh
 rm -f $TMPDIR/mdsd.xml
