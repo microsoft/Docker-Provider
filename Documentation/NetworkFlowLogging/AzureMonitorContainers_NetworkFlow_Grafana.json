@@ -1508,7 +1508,7 @@
   "timepicker": {},
   "timezone": "",
   "title": "Azure Monitor / Container Insights /QoS - Network Flow Logs",
-  "uid": "E_FvdCC4z",
-  "version": 7,
+  "uid": "ContainerInsightsNetworkFlowLogsQoS",
+  "version": 1,
   "weekStart": ""
 }

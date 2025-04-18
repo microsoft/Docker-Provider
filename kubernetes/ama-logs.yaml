@@ -457,6 +457,8 @@ spec:
               value: "false"
             - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
               value: "28331"
+            - name: AZMON_RETINA_FLOW_LOGS_ENABLED
+              value: "false"
           securityContext:
             privileged: true
             capabilities:
@@ -485,6 +487,8 @@ spec:
               mountPropagation: HostToContainer
             - mountPath: /var/run/mdsd-ci
               name: mdsd-sock
+            - mountPath: /var/log/acns/hubble
+              name: acns-hubble
             - mountPath: /var/log
               name: host-log
             - mountPath: /var/lib/docker/containers
@@ -660,6 +664,9 @@ spec:
         - name: mdsd-sock
           hostPath:
             path: /var/run/mdsd-ci
+        - name: acns-hubble
+          hostPath:
+            path: /var/log/acns/hubble
         - name: container-hostname
           hostPath:
             path: /etc/hostname
