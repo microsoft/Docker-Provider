@@ -81,7 +81,7 @@ echo "$(fluent-bit --version)" >> packages_version.txt
 
 # install fluentd using the mariner package
 # sudo tdnf install rubygem-fluentd -y
-fluentd_version="1.16.2"
+fluentd_version="1.16.3"
 gem install fluentd -v $fluentd_version --no-document
 
 # remove the test directory from fluentd
@@ -94,7 +94,7 @@ gem install gyoku iso8601 bigdecimal --no-doc
 gem install tomlrb -v "2.0.1" --no-document
 gem install ipaddress --no-document
 gem install jwt -v "2.7.1" --no-document
-gem install racc --no-document
+# gem install racc --no-document
 
 rm -f $TMPDIR/docker-cimprov*.sh
 rm -f $TMPDIR/mdsd.xml
