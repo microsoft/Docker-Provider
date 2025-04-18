@@ -12,7 +12,7 @@ fi
 sudo tdnf install ca-certificates-microsoft -y
 sudo update-ca-trust
 
-tdnf install -y perl
+tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
 wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20250409.tar.gz -O ruby-build.tar.gz
 tar -xzf ruby-build.tar.gz
 PREFIX=/usr/local ./ruby-build-*/install.sh
@@ -21,7 +21,6 @@ ruby-build 3.3.8 /usr
 # clean up the ruby-build files
 rm ruby-build.tar.gz
 rm -rf ruby-build-*
-tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
 
 # remove unused default gem openssl, find as they have some known vulns
 rm /usr/lib/ruby/gems/3.3.0/specifications/default/openssl-3.2.0.gemspec
