@@ -16,7 +16,7 @@ tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readlin
 wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20250409.tar.gz -O ruby-build.tar.gz
 tar -xzf ruby-build.tar.gz
 PREFIX=/usr/local ./ruby-build-*/install.sh
-ruby-build 3.3.8 /usr
+ruby-build 3.3.8 /usr -v
 
 # clean up the ruby-build files
 rm ruby-build.tar.gz
