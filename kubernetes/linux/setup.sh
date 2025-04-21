@@ -15,7 +15,7 @@ sudo update-ca-trust
 tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
 
 if [ "$ARCH" == "arm64" ]; then
-    sudo tdnf install ruby-3.1.3-1.cm2.aarch64 -y
+    sudo tdnf install ruby-3.3.5-1.azl3.aarch64 -y
 else
     wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20250409.tar.gz -O ruby-build.tar.gz
     tar -xzf ruby-build.tar.gz
