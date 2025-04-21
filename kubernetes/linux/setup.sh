@@ -12,11 +12,10 @@ fi
 sudo tdnf install ca-certificates-microsoft -y
 sudo update-ca-trust
 
-tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
-
 if [ "$ARCH" == "arm64" ]; then
     sudo tdnf install ruby-3.3.5-1.azl3.aarch64 -y
 else
+    tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
     wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20250409.tar.gz -O ruby-build.tar.gz
     tar -xzf ruby-build.tar.gz
     PREFIX=/usr/local ./ruby-build-*/install.sh
@@ -86,11 +85,11 @@ echo "$(fluent-bit --version)" >> packages_version.txt
 
 # install fluentd using the mariner package
 # sudo tdnf install rubygem-fluentd -y
-fluentd_version="1.16.3"
+fluentd_version="1.18.0"
 gem install fluentd -v $fluentd_version --no-document
 
 # remove the test directory from fluentd
-rm -rf /usr/lib/ruby/gems/3.1.0/gems/fluentd-$fluentd_version/test/
+rm -rf /usr/lib/ruby/gems/3.3.0/gems/fluentd-$fluentd_version/test/
 
 echo "$(fluentd --version)" >> packages_version.txt
 fluentd --setup ./fluent
