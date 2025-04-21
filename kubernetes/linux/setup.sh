@@ -20,10 +20,11 @@ else
     tar -xzf ruby-build.tar.gz
     PREFIX=/usr/local ./ruby-build-*/install.sh
     ruby-build 3.3.8 /usr -v
+
+    rm ruby-build.tar.gz
 fi
 
 # clean up the ruby-build files
-rm ruby-build.tar.gz
 rm -rf ruby-build-*
 
 # remove unused default gem openssl, find as they have some known vulns
@@ -35,16 +36,16 @@ rm /usr/lib/ruby/gems/3.3.0/specifications/default/rdoc-6.6.3.1.gemspec
 rm -rf /usr/lib/ruby/gems/3.3.0/gems/rdoc-6.6.3.1
 
 # update the time and uri package to tackle the vulnerabilities in these gems
-gem update time --default
-gem update uri --default
-gem update stringio --default
+gem update time --default --no-document
+gem update uri --default --no-document
+gem update stringio --default --no-document
 
 mv /usr/lib/ruby/gems/3.3.0/specifications/default/time-0.3.0.gemspec /usr/lib/ruby/gems/3.3.0/specifications/default/..
-mv /usr/lib/ruby/gems/3.3.0/specifications/default/uri-0.13.0.gemspec /usr/lib/ruby/gems/3.3.0/specifications/default/..
+mv /usr/lib/ruby/gems/3.3.0/specifications/default/uri-0.13.2.gemspec /usr/lib/ruby/gems/3.3.0/specifications/default/..
 mv /usr/lib/ruby/gems/3.3.0/specifications/default/stringio-3.1.1.gemspec /usr/lib/ruby/gems/3.3.0/specifications/default/..
 
 gem uninstall time --version 0.3.0
-gem uninstall uri --version 0.13.0
+gem uninstall uri --version 0.13.2
 gem uninstall stringio --version 3.1.1
 
 sudo tdnf install -y azure-mdsd-1.33.3
