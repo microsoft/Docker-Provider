@@ -13,10 +13,15 @@ sudo tdnf install ca-certificates-microsoft -y
 sudo update-ca-trust
 
 tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
-wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20250409.tar.gz -O ruby-build.tar.gz
-tar -xzf ruby-build.tar.gz
-PREFIX=/usr/local ./ruby-build-*/install.sh
-ruby-build 3.3.8 /usr -v
+
+if [ "$ARCH" == "arm64" ]; then
+    sudo tdnf install ruby-3.1.3-1.cm2.aarch64 -y
+else
+    wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20250409.tar.gz -O ruby-build.tar.gz
+    tar -xzf ruby-build.tar.gz
+    PREFIX=/usr/local ./ruby-build-*/install.sh
+    ruby-build 3.3.8 /usr -v
+fi
 
 # clean up the ruby-build files
 rm ruby-build.tar.gz
