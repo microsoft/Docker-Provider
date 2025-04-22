@@ -8,13 +8,8 @@ $env:CONTAINER_RUNTIME = "containerd" # Default value
 Write-Host "Container Runtime: $env:CONTAINER_RUNTIME"
 
 # Add diagnostic information to check for files
-Write-Host "Checking for Fluent Bit executable and DLLs..."
+Write-Host "Checking for Fluent Bit executable..."
 $fluentBitExe = "C:\opt\fluent-bit\bin\fluent-bit.exe"
-$requiredDlls = @(
-    "C:\Windows\System32\msvcp140.dll",
-    "C:\Windows\System32\vcruntime140.dll", 
-    "C:\Windows\System32\vccorlib140.dll"
-)
 
 # Check for Fluent Bit executable
 if (Test-Path $fluentBitExe) {
@@ -22,15 +17,6 @@ if (Test-Path $fluentBitExe) {
 } else {
     Write-Host "ERROR: Fluent Bit executable not found at $fluentBitExe"
     Get-ChildItem -Path "C:\opt\fluent-bit\" -Recurse | Select-Object FullName
-}
-
-# Check for required DLLs
-foreach ($dll in $requiredDlls) {
-    if (Test-Path $dll) {
-        Write-Host "Found required DLL: $dll"
-    } else {
-        Write-Host "WARNING: Required DLL not found: $dll"
-    }
 }
 
 # Check directory contents

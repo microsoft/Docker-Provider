@@ -19,8 +19,7 @@ function Get-PEFileImports {
         $matches = [regex]::Matches($content, $dllPattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
         
         # Create a hashtable to track unique DLLs
-        $dlls = @{
-        }
+        $dlls = @{}
         foreach ($match in $matches) {
             $dllName = $match.Groups[1].Value
             if (-not $dlls.ContainsKey($dllName)) {
@@ -95,14 +94,6 @@ function Analyze-Dependencies {
         Write-Warning "Failed to extract imports: $_"
     }
     
-    # Define list of the three required C++ runtime DLLs
-    $requiredDlls = @(
-        # Visual C++ Runtime DLLs - ONLY THESE THREE
-        "msvcp140.dll",
-        "vcruntime140.dll",
-        "vccorlib140.dll"
-    )
-    
     # Check what exists in Windows Nano Server
     Write-Host "`n======= WINDOWS NANO SERVER ANALYSIS ======="
     Write-Host "Checking what's available in Windows Nano Server base image..."
@@ -121,31 +112,8 @@ function Analyze-Dependencies {
         foreach ($dll in $systemDlls) {
             $availableSystemDlls[$dll.Name.ToLower()] = $dll.FullName
         }
-        
-        # Check for required VC++ Runtime DLLs
-        Write-Host "`nChecking for required Visual C++ Runtime DLLs in Windows Nano Server:"
-        foreach ($dll in $requiredDlls) {
-            $lowercase = $dll.ToLower()
-            if ($availableSystemDlls.ContainsKey($lowercase)) {
-                Write-Host "  [AVAILABLE] $dll"
-            } else {
-                Write-Host "  [MISSING] $dll"
-            }
-        }
     } else {
         Write-Warning "C:\Windows\System32 directory not found. This is unexpected."
-    }
-    
-    # Check for required Visual C++ Runtime DLLs in the application directory
-    $directory = Split-Path -Path $ExecutablePath -Parent
-    Write-Host "`nChecking for required VC++ Runtime DLLs in the application directory ($directory):"
-    foreach ($dll in $requiredDlls) {
-        $path = Join-Path -Path $directory -ChildPath $dll
-        if (Test-Path $path) {
-            Write-Host "  [FOUND] $dll"
-        } else {
-            Write-Host "  [MISSING] $dll"
-        }
     }
     
     # Try to examine the error via LoadLibrary
@@ -191,49 +159,6 @@ public class DllCheck {
     } catch {
         Write-Warning "Error attempting to load library: $_"
     }
-    
-    # Generate recommendations
-    Write-Host "`n======= RECOMMENDATIONS ======="
-    Write-Host "Based on the requirement to use only the three basic C++ runtime DLLs:"
-    Write-Host "The following DLLs should be copied from Windows Server Core to the Fluent Bit bin directory:"
-    
-    $missingRequiredDlls = @()
-    foreach ($dll in $requiredDlls) {
-        $lowercase = $dll.ToLower()
-        $localPath = Join-Path -Path $directory -ChildPath $dll
-        
-        if (-not (Test-Path $localPath) -and -not $availableSystemDlls.ContainsKey($lowercase)) {
-            $missingRequiredDlls += $dll
-        }
-    }
-    
-    if ($missingRequiredDlls.Count -gt 0) {
-        foreach ($dll in $missingRequiredDlls) {
-            Write-Host "- $dll"
-        }
-        
-        Write-Host "`nDockerfile RUN commands to add these required DLLs:"
-        Write-Host "```"
-        foreach ($dll in $missingRequiredDlls) {
-            Write-Host "RUN Copy-Item -Path `$env:windir\System32\$dll -Destination C:\vcruntime -ErrorAction SilentlyContinue"
-        }
-        Write-Host "```"
-        
-        Write-Host "`nDockerfile COPY commands:"
-        Write-Host "```"
-        foreach ($dll in $missingRequiredDlls) {
-            Write-Host "COPY --from=dll-extractor C:/vcruntime/$dll C:/opt/fluent-bit/bin/"
-        }
-        Write-Host "```"
-    } else {
-        Write-Host "All required DLLs are present."
-    }
-    
-    Write-Host "`nImportant Note: This configuration now only uses the three basic C++ runtime DLLs:"
-    Write-Host "- msvcp140.dll"
-    Write-Host "- vcruntime140.dll"
-    Write-Host "- vccorlib140.dll"
-    Write-Host "All other DLLs have been removed from the configuration as requested."
 }
 
 # Example usage

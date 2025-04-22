@@ -23,11 +23,8 @@ try {
         $fluentBitExeDir = Split-Path -Path $fluentBitExePath -Parent
         Write-Host "Found Fluent Bit executable in: $fluentBitExeDir"
         
-        # Copy just the executable to the bin directory
-        Copy-Item -Path $fluentBitExePath -Destination C:\opt\fluent-bit\bin\ -Verbose
-        
-        # Note: Only the three basic DLLs (msvcp140.dll, vcruntime140.dll, vccorlib140.dll)
-        # are copied directly from the dll-extractor stage in the Dockerfile
+        # Copy all files from the bin directory - Server Core can support more dependencies directly
+        Copy-Item -Path "$fluentBitExeDir\*" -Destination C:\opt\fluent-bit\bin\ -Recurse -Force -Verbose
         
         # List what we've copied to bin directory
         Write-Host "Copied files to bin directory:"
@@ -54,15 +51,51 @@ Write-Host ('Creating minimal fluent-bit.conf')
     Flush        1
     Daemon       Off
     Log_Level    info
+    Parsers_File parsers.conf
 
+# Generate test messages every second
 [INPUT]
     Name         dummy
     Tag          dummy.log
+    Dummy        {"message": "This is a test message from Fluent Bit", "timestamp": "\${TIMESTAMP}"}
+    Samples      1
+    Rate         1
 
+# Also monitor the system logs
+[INPUT]
+    Name         winlog
+    Tag          windows.system
+    Channels     System,Application
+    Interval_Sec 5
+
+# Format the output to be more visible
 [OUTPUT]
     Name         stdout
     Match        *
+    Format       json_lines
+
+# Also write to a log file for persistence
+[OUTPUT]
+    Name         file
+    Match        *
+    Path         C:/opt/amalogswindows/state/fluent-bit.log
 "@ | Set-Content -Path C:\etc\fluent-bit\fluent-bit.conf
+
+# Create parsers.conf file
+@"
+[PARSER]
+    Name   json
+    Format json
+    Time_Key time
+    Time_Format %d/%b/%Y:%H:%M:%S %z
+
+[PARSER]
+    Name   syslog
+    Format regex
+    Regex  ^\<(?<pri>[0-9]+)\>(?<time>[^ ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\/\.\-]*)(?:\[(?<pid>[0-9]+)\])?(?:[^\:]*\:)? *(?<message>.*)$
+    Time_Key time
+    Time_Format %b %d %H:%M:%S
+"@ | Set-Content -Path C:\etc\fluent-bit\parsers.conf
 
 Write-Host ('Removing installation directory')
 Remove-Item C:\installation -Recurse -ErrorAction SilentlyContinue

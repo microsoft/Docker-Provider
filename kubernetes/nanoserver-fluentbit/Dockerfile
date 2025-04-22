@@ -12,14 +12,6 @@ RUN $vcRedistLocation = 'https://aka.ms/vs/16/release/vc_redist.x64.exe'; \
     Invoke-WebRequest -Uri $vcRedistLocation -OutFile $vcInstallerLocation; \
     Start-Process $vcInstallerLocation -ArgumentList $vcArgs -NoNewWindow -Wait;
 
-# Create a directory to store the DLLs
-WORKDIR C:/vcruntime
-
-# Copy standard C++ runtime DLLs - ONLY copy these three DLLs
-RUN Copy-Item -Path $env:windir\System32\msvcp140.dll -Destination C:\vcruntime
-RUN Copy-Item -Path $env:windir\System32\vcruntime140.dll -Destination C:\vcruntime
-RUN Copy-Item -Path $env:windir\System32\vccorlib140.dll -Destination C:\vcruntime -ErrorAction SilentlyContinue
-
 # Download PowerShell Core for nano server - fixing string quotes issue
 RUN $powershellVersion = '7.3.4'; \
     $architecture = 'win-x64'; \
@@ -39,10 +31,6 @@ LABEL vendor=Microsoft\ Corp \
 # Create directories for Fluent Bit
 RUN mkdir C:\opt\fluent-bit\bin
 
-# Copy standard C++ runtime DLLs
-COPY --from=dll-extractor C:/vcruntime/msvcp140.dll C:/opt/fluent-bit/bin/
-COPY --from=dll-extractor C:/vcruntime/vcruntime140.dll C:/opt/fluent-bit/bin/
-COPY --from=dll-extractor C:/vcruntime/vccorlib140.dll C:/opt/fluent-bit/bin/
 
 # Copy PowerShell Core from the first stage
 COPY --from=dll-extractor C:/PowerShell C:/PowerShell
