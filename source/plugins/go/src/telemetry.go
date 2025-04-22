@@ -312,6 +312,16 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 				telemetryDimensions["PromFbitBufferSize"] = os.Getenv("AZMON_FBIT_BUFFER_SIZE")
 				telemetryDimensions["PromFbitMemBufLimit"] = os.Getenv("AZMON_FBIT_MEM_BUF_LIMIT")
 
+				if IsNetworkFlowLogsEnabled {
+					telemetryDimensions["NetworkFlowLogsEnabled"] = "true"
+					telemetryDimensions["NetworkFlowLogsThrottleRate"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_RATE")
+					telemetryDimensions["NetworkFlowLogsThrottleWindow"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_WINDOW")
+					telemetryDimensions["NetworkFlowLogsThrottleInterval"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_INTERVAL")
+					telemetryDimensions["NetworkFlowLogsThrottlePrint"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_PRINT")
+				} else {
+					telemetryDimensions["NetworkFlowLogsEnabled"] = "false"
+				}
+
 				SendEvent(eventNameDaemonSetHeartbeat, telemetryDimensions)
 				flushRateMetric := appinsights.NewMetricTelemetry(metricNameAvgFlushRate, flushRate)
 				TelemetryClient.Track(flushRateMetric)
