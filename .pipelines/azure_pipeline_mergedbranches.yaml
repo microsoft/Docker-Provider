@@ -42,7 +42,8 @@ resources:
 stages:
 - stage: stage
   pool:
-    name: Azure-Pipelines-CI-Test-EO
+    name: Azure-Pipelines-Windows-CI-Test-EO
+    os: windows
   jobs:
   - job: common
     variables:
@@ -652,6 +653,8 @@ stages:
     timeoutInMinutes: 120
     dependsOn:
     - common
+    pool:
+      name: Azure-Pipelines-CI-Test-EO
     variables:
     - name: OneESPT
       value: true
