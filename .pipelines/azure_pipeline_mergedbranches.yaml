@@ -42,8 +42,7 @@ resources:
 stages:
 - stage: stage
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
-    os: windows
+    name: Azure-Pipelines-CI-Test-EO
   jobs:
   - job: common
     variables:
