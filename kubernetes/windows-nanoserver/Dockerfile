@@ -15,32 +15,10 @@ RUN $vcRedistLocation = 'https://aka.ms/vs/16/release/vc_redist.x64.exe'; \
 # Create a directory to store the DLLs
 WORKDIR C:/vcruntime
 
-# Copy standard C++ runtime DLLs
+# Copy standard C++ runtime DLLs - ONLY copy these three DLLs
 RUN Copy-Item -Path $env:windir\System32\msvcp140.dll -Destination C:\vcruntime
 RUN Copy-Item -Path $env:windir\System32\vcruntime140.dll -Destination C:\vcruntime
 RUN Copy-Item -Path $env:windir\System32\vccorlib140.dll -Destination C:\vcruntime -ErrorAction SilentlyContinue
-
-# Copy additional C++ runtime DLLs identified by the dependency analyzer
-RUN Copy-Item -Path $env:windir\System32\vcruntime140_1.dll -Destination C:\vcruntime -ErrorAction SilentlyContinue
-RUN Copy-Item -Path $env:windir\System32\msvcp140_1.dll -Destination C:\vcruntime -ErrorAction SilentlyContinue
-RUN Copy-Item -Path $env:windir\System32\concrt140.dll -Destination C:\vcruntime -ErrorAction SilentlyContinue
-
-# Copy Universal CRT API forwarding DLLs
-RUN Copy-Item -Path $env:windir\System32\api-ms-win-crt-runtime-l1-1-0.dll -Destination C:\vcruntime -ErrorAction SilentlyContinue
-RUN Copy-Item -Path $env:windir\System32\api-ms-win-crt-string-l1-1-0.dll -Destination C:\vcruntime -ErrorAction SilentlyContinue
-RUN Copy-Item -Path $env:windir\System32\api-ms-win-crt-stdio-l1-1-0.dll -Destination C:\vcruntime -ErrorAction SilentlyContinue
-RUN Copy-Item -Path $env:windir\System32\api-ms-win-crt-heap-l1-1-0.dll -Destination C:\vcruntime -ErrorAction SilentlyContinue
-RUN Copy-Item -Path $env:windir\System32\api-ms-win-crt-convert-l1-1-0.dll -Destination C:\vcruntime -ErrorAction SilentlyContinue
-RUN Copy-Item -Path $env:windir\System32\api-ms-win-crt-math-l1-1-0.dll -Destination C:\vcruntime -ErrorAction SilentlyContinue
-RUN Copy-Item -Path $env:windir\System32\api-ms-win-crt-locale-l1-1-0.dll -Destination C:\vcruntime -ErrorAction SilentlyContinue
-RUN Copy-Item -Path $env:windir\System32\api-ms-win-crt-time-l1-1-0.dll -Destination C:\vcruntime -ErrorAction SilentlyContinue
-RUN Copy-Item -Path $env:windir\System32\api-ms-win-crt-filesystem-l1-1-0.dll -Destination C:\vcruntime -ErrorAction SilentlyContinue
-RUN Copy-Item -Path $env:windir\System32\api-ms-win-crt-environment-l1-1-0.dll -Destination C:\vcruntime -ErrorAction SilentlyContinue
-RUN Copy-Item -Path $env:windir\System32\api-ms-win-crt-process-l1-1-0.dll -Destination C:\vcruntime -ErrorAction SilentlyContinue
-RUN Copy-Item -Path $env:windir\System32\api-ms-win-crt-utility-l1-1-0.dll -Destination C:\vcruntime -ErrorAction SilentlyContinue
-
-# Copy ucrtbase.dll which is the actual implementation of the Universal CRT
-RUN Copy-Item -Path $env:windir\System32\ucrtbase.dll -Destination C:\vcruntime -ErrorAction SilentlyContinue
 
 # Download PowerShell Core for nano server - fixing string quotes issue
 RUN $powershellVersion = '7.3.4'; \
@@ -65,28 +43,6 @@ RUN mkdir C:\opt\fluent-bit\bin
 COPY --from=dll-extractor C:/vcruntime/msvcp140.dll C:/opt/fluent-bit/bin/
 COPY --from=dll-extractor C:/vcruntime/vcruntime140.dll C:/opt/fluent-bit/bin/
 COPY --from=dll-extractor C:/vcruntime/vccorlib140.dll C:/opt/fluent-bit/bin/
-
-# Copy additional C++ runtime DLLs 
-COPY --from=dll-extractor C:/vcruntime/vcruntime140_1.dll C:/opt/fluent-bit/bin/
-COPY --from=dll-extractor C:/vcruntime/msvcp140_1.dll C:/opt/fluent-bit/bin/
-COPY --from=dll-extractor C:/vcruntime/concrt140.dll C:/opt/fluent-bit/bin/
-
-# Copy Universal CRT API forwarding DLLs
-COPY --from=dll-extractor C:/vcruntime/api-ms-win-crt-runtime-l1-1-0.dll C:/opt/fluent-bit/bin/
-COPY --from=dll-extractor C:/vcruntime/api-ms-win-crt-string-l1-1-0.dll C:/opt/fluent-bit/bin/
-COPY --from=dll-extractor C:/vcruntime/api-ms-win-crt-stdio-l1-1-0.dll C:/opt/fluent-bit/bin/
-COPY --from=dll-extractor C:/vcruntime/api-ms-win-crt-heap-l1-1-0.dll C:/opt/fluent-bit/bin/
-COPY --from=dll-extractor C:/vcruntime/api-ms-win-crt-convert-l1-1-0.dll C:/opt/fluent-bit/bin/
-COPY --from=dll-extractor C:/vcruntime/api-ms-win-crt-math-l1-1-0.dll C:/opt/fluent-bit/bin/
-COPY --from=dll-extractor C:/vcruntime/api-ms-win-crt-locale-l1-1-0.dll C:/opt/fluent-bit/bin/
-COPY --from=dll-extractor C:/vcruntime/api-ms-win-crt-time-l1-1-0.dll C:/opt/fluent-bit/bin/
-COPY --from=dll-extractor C:/vcruntime/api-ms-win-crt-filesystem-l1-1-0.dll C:/opt/fluent-bit/bin/
-COPY --from=dll-extractor C:/vcruntime/api-ms-win-crt-environment-l1-1-0.dll C:/opt/fluent-bit/bin/
-COPY --from=dll-extractor C:/vcruntime/api-ms-win-crt-process-l1-1-0.dll C:/opt/fluent-bit/bin/
-COPY --from=dll-extractor C:/vcruntime/api-ms-win-crt-utility-l1-1-0.dll C:/opt/fluent-bit/bin/
-
-# Copy ucrtbase.dll which is the actual implementation of the Universal CRT
-COPY --from=dll-extractor C:/vcruntime/ucrtbase.dll C:/opt/fluent-bit/bin/
 
 # Copy PowerShell Core from the first stage
 COPY --from=dll-extractor C:/PowerShell C:/PowerShell

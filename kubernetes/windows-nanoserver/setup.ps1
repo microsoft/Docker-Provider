@@ -26,7 +26,7 @@ try {
         # Copy just the executable to the bin directory
         Copy-Item -Path $fluentBitExePath -Destination C:\opt\fluent-bit\bin\ -Verbose
         
-        # Note: The required DLLs (msvcp140.dll, vccorlib140.dll, vcruntime140.dll)
+        # Note: Only the three basic DLLs (msvcp140.dll, vcruntime140.dll, vccorlib140.dll)
         # are copied directly from the dll-extractor stage in the Dockerfile
         
         # List what we've copied to bin directory

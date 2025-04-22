@@ -95,30 +95,12 @@ function Analyze-Dependencies {
         Write-Warning "Failed to extract imports: $_"
     }
     
-    # Define list of common Visual C++ and UCRT dependencies
-    $commonDlls = @(
-        # Visual C++ Runtime DLLs
+    # Define list of the three required C++ runtime DLLs
+    $requiredDlls = @(
+        # Visual C++ Runtime DLLs - ONLY THESE THREE
         "msvcp140.dll",
         "vcruntime140.dll",
-        "vccorlib140.dll",
-        "vcruntime140_1.dll",
-        "msvcp140_1.dll",
-        "concrt140.dll",
-        # Universal CRT DLLs
-        "ucrtbase.dll",
-        # Common API MS Win CRT DLLs
-        "api-ms-win-crt-runtime-l1-1-0.dll",
-        "api-ms-win-crt-string-l1-1-0.dll",
-        "api-ms-win-crt-stdio-l1-1-0.dll",
-        "api-ms-win-crt-heap-l1-1-0.dll",
-        "api-ms-win-crt-convert-l1-1-0.dll",
-        "api-ms-win-crt-math-l1-1-0.dll",
-        "api-ms-win-crt-locale-l1-1-0.dll",
-        "api-ms-win-crt-time-l1-1-0.dll",
-        "api-ms-win-crt-filesystem-l1-1-0.dll",
-        "api-ms-win-crt-environment-l1-1-0.dll",
-        "api-ms-win-crt-process-l1-1-0.dll",
-        "api-ms-win-crt-utility-l1-1-0.dll"
+        "vccorlib140.dll"
     )
     
     # Check what exists in Windows Nano Server
@@ -140,58 +122,24 @@ function Analyze-Dependencies {
             $availableSystemDlls[$dll.Name.ToLower()] = $dll.FullName
         }
         
-        # Check for common VC++ Runtime DLLs
-        Write-Host "`nChecking for Visual C++ Runtime DLLs in Windows Nano Server:"
-        $vcppDlls = $commonDlls | Where-Object { $_ -like "msvc*" -or $_ -like "vcruntime*" -or $_ -like "vccorlib*" -or $_ -like "concrt*" }
-        foreach ($dll in $vcppDlls) {
+        # Check for required VC++ Runtime DLLs
+        Write-Host "`nChecking for required Visual C++ Runtime DLLs in Windows Nano Server:"
+        foreach ($dll in $requiredDlls) {
             $lowercase = $dll.ToLower()
             if ($availableSystemDlls.ContainsKey($lowercase)) {
                 Write-Host "  [AVAILABLE] $dll"
             } else {
                 Write-Host "  [MISSING] $dll"
-            }
-        }
-        
-        # Check for Universal CRT (UCRT) base DLL
-        Write-Host "`nChecking for Universal CRT base DLLs:"
-        $ucrtDlls = $commonDlls | Where-Object { $_ -like "ucrt*" }
-        foreach ($dll in $ucrtDlls) {
-            $lowercase = $dll.ToLower()
-            if ($availableSystemDlls.ContainsKey($lowercase)) {
-                Write-Host "  [AVAILABLE] $dll"
-            } else {
-                Write-Host "  [MISSING] $dll"
-            }
-        }
-        
-        # Check for API-MS-WIN-CRT DLLs
-        Write-Host "`nChecking for API-MS-WIN-CRT DLLs:"
-        $apiCrtDlls = $commonDlls | Where-Object { $_ -like "api-ms-win-crt*" }
-        foreach ($dll in $apiCrtDlls) {
-            $lowercase = $dll.ToLower()
-            if ($availableSystemDlls.ContainsKey($lowercase)) {
-                Write-Host "  [AVAILABLE] $dll"
-            } else {
-                Write-Host "  [MISSING] $dll"
-            }
-        }
-        
-        # Check for any other API-MS-WIN-CRT DLLs not in our common list
-        $otherApiCrtDlls = $systemDlls | Where-Object { $_.Name -like "api-ms-win-crt*" -and $_.Name -notIn $apiCrtDlls }
-        if ($otherApiCrtDlls.Count -gt 0) {
-            Write-Host "`nOther API-MS-WIN-CRT DLLs available in Windows Nano Server:"
-            foreach ($dll in $otherApiCrtDlls) {
-                Write-Host "  [AVAILABLE] $($dll.Name)"
             }
         }
     } else {
         Write-Warning "C:\Windows\System32 directory not found. This is unexpected."
     }
     
-    # Check for common Visual C++ Runtime DLLs in the application directory
+    # Check for required Visual C++ Runtime DLLs in the application directory
     $directory = Split-Path -Path $ExecutablePath -Parent
-    Write-Host "`nChecking for common VC++ Runtime DLLs in the application directory ($directory):"
-    foreach ($dll in $commonDlls) {
+    Write-Host "`nChecking for required VC++ Runtime DLLs in the application directory ($directory):"
+    foreach ($dll in $requiredDlls) {
         $path = Join-Path -Path $directory -ChildPath $dll
         if (Test-Path $path) {
             Write-Host "  [FOUND] $dll"
@@ -246,39 +194,46 @@ public class DllCheck {
     
     # Generate recommendations
     Write-Host "`n======= RECOMMENDATIONS ======="
-    Write-Host "Based on the analysis, the following DLLs should be copied from Windows Server Core to the Fluent Bit bin directory:"
+    Write-Host "Based on the requirement to use only the three basic C++ runtime DLLs:"
+    Write-Host "The following DLLs should be copied from Windows Server Core to the Fluent Bit bin directory:"
     
-    $recommendedDlls = @()
-    foreach ($dll in $commonDlls) {
+    $missingRequiredDlls = @()
+    foreach ($dll in $requiredDlls) {
         $lowercase = $dll.ToLower()
         $localPath = Join-Path -Path $directory -ChildPath $dll
         
         if (-not (Test-Path $localPath) -and -not $availableSystemDlls.ContainsKey($lowercase)) {
-            $recommendedDlls += $dll
+            $missingRequiredDlls += $dll
         }
     }
     
-    if ($recommendedDlls.Count -gt 0) {
-        foreach ($dll in $recommendedDlls) {
+    if ($missingRequiredDlls.Count -gt 0) {
+        foreach ($dll in $missingRequiredDlls) {
             Write-Host "- $dll"
         }
         
-        Write-Host "`nDockerfile RUN commands to add these DLLs:"
+        Write-Host "`nDockerfile RUN commands to add these required DLLs:"
         Write-Host "```"
-        foreach ($dll in $recommendedDlls) {
+        foreach ($dll in $missingRequiredDlls) {
             Write-Host "RUN Copy-Item -Path `$env:windir\System32\$dll -Destination C:\vcruntime -ErrorAction SilentlyContinue"
         }
         Write-Host "```"
         
         Write-Host "`nDockerfile COPY commands:"
         Write-Host "```"
-        foreach ($dll in $recommendedDlls) {
+        foreach ($dll in $missingRequiredDlls) {
             Write-Host "COPY --from=dll-extractor C:/vcruntime/$dll C:/opt/fluent-bit/bin/"
         }
         Write-Host "```"
     } else {
-        Write-Host "No additional DLLs need to be copied."
+        Write-Host "All required DLLs are present."
     }
+    
+    Write-Host "`nImportant Note: This configuration now only uses the three basic C++ runtime DLLs:"
+    Write-Host "- msvcp140.dll"
+    Write-Host "- vcruntime140.dll"
+    Write-Host "- vccorlib140.dll"
+    Write-Host "All other DLLs have been removed from the configuration as requested."
 }
 
 # Example usage

@@ -13,10 +13,7 @@ $fluentBitExe = "C:\opt\fluent-bit\bin\fluent-bit.exe"
 $requiredDlls = @(
     "C:\Windows\System32\msvcp140.dll",
     "C:\Windows\System32\vcruntime140.dll", 
-    "C:\Windows\System32\vccorlib140.dll",
-    "C:\opt\fluent-bit\bin\msvcp140.dll",
-    "C:\opt\fluent-bit\bin\vcruntime140.dll",
-    "C:\opt\fluent-bit\bin\vccorlib140.dll"
+    "C:\Windows\System32\vccorlib140.dll"
 )
 
 # Check for Fluent Bit executable
