@@ -28,6 +28,10 @@ class CAdvisorMetricsAPIClient
   @clusterContainerLogSchemaVersion = ENV["AZMON_CONTAINER_LOG_SCHEMA_VERSION"]
   @clusterMultilineEnabled = ENV["AZMON_MULTILINE_ENABLED"]
   @clusterNetworkFlowLogsEnabled = ENV["AZMON_RETINA_FLOW_LOGS_ENABLED"]
+  @clusterNetworkFlowLogsThrottleRate = ENV["NETWORKFLOW_LOGS_THROTTLE_RATE"]
+  @clusterNetworkFlowLogsThrottleWindow = ENV["NETWORKFLOW_LOGS_THROTTLE_WINDOW"]
+  @clusterNetworkFlowLogsThrottleInterval = ENV["NETWORKFLOW_LOGS_THROTTLE_INTERVAL"]
+  @clusterNetworkFlowLogsThrottlePrint = ENV["NETWORKFLOW_LOGS_THROTTLE_PRINT"]
   @clusterMultilineLanguages = ENV["AZMON_MULTILINE_LANGUAGES"]
   @clusterKubernetesMetadataEnabled = ENV["AZMON_KUBERNETES_METADATA_ENABLED"]
   @clusterKubernetesMetadataIncludeFields = ENV["AZMON_KUBERNETES_METADATA_INCLUDES_FIELDS"]
@@ -316,6 +320,18 @@ class CAdvisorMetricsAPIClient
                     end
                     if (!clusterNetworkFlowLogsEnabled.nil? && !@clusterNetworkFlowLogsEnabled.empty?)
                       telemetryProps["networkFlowLogsEnabled"] = @clusterNetworkFlowLogsEnabled
+                    end
+                    if (!@clusterNetworkFlowLogsThrottleRate.nil? && !@clusterNetworkFlowLogsThrottleRate.empty?)
+                      telemetryProps["networkFlowLogsThrottleRate"] = @clusterNetworkFlowLogsThrottleRate
+                    end
+                    if (!@clusterNetworkFlowLogsThrottleWindow.nil? && !@clusterNetworkFlowLogsThrottleWindow.empty?)
+                      telemetryProps["networkFlowLogsThrottleWindow"] = @clusterNetworkFlowLogsThrottleWindow
+                    end
+                    if (!@clusterNetworkFlowLogsThrottleInterval.nil? && !@clusterNetworkFlowLogsThrottleInterval.empty?)
+                      telemetryProps["networkFlowLogsThrottleInterval"] = @clusterNetworkFlowLogsThrottleInterval
+                    end
+                    if (!@clusterNetworkFlowLogsThrottlePrint.nil? && !@clusterNetworkFlowLogsThrottlePrint.empty?)
+                      telemetryProps["networkFlowLogsThrottlePrint"] = @clusterNetworkFlowLogsThrottlePrint
                     end
                     if (!@clusterKubernetesMetadataEnabled.nil? && !@clusterKubernetesMetadataEnabled.empty?)
                       telemetryProps["metadataEnabled"] = @clusterKubernetesMetadataEnabled

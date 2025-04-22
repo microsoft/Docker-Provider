@@ -39,7 +39,7 @@ type NetworkFlowMsgPackEntry struct {
 
 // PostNetworkFlowRecords sends data to the mdsd and amacoreagent
 func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int {
-	if IsNetworkFlowLogsEnabled {
+	if IsNetworkFlowLogsEnabled && IsAADMSIAuthMode {
 		start := time.Now()
 		var elapsed time.Duration
 		var bts int
@@ -74,12 +74,10 @@ func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int
 		}
 
 		if len(networkFlowLogsMsgPackEntries) > 0 {
-			if IsAADMSIAuthMode == true {
-				MdsdNetworkFlowLogsStreamTagName = getOutputStreamIdTag(RetinaNetworkFlowLogsStreamName, MdsdNetworkFlowLogsStreamTagName, &NetworkFlowTagRefreshTracker)
-				if MdsdNetworkFlowLogsStreamTagName == "" {
-					Log("Error::mdsd::Failed to get stream tag for networkflow logs. Will retry ...")
-					return output.FLB_RETRY
-				}
+			MdsdNetworkFlowLogsStreamTagName = getOutputStreamIdTag(RetinaNetworkFlowLogsStreamName, MdsdNetworkFlowLogsStreamTagName, &NetworkFlowTagRefreshTracker)
+			if MdsdNetworkFlowLogsStreamTagName == "" {
+				Log("Error::mdsd::Failed to get stream tag for networkflow logs. Will retry ...")
+				return output.FLB_RETRY
 			}
 			if MdsdNetworkFlowClient == nil {
 				Log("Error::mdsd::mdsd connection does not exist for networkflow mdsd client. re-connecting ...")
