@@ -901,7 +901,7 @@ else
 fi
 
 #start cron daemon for logrotate
-/usr/sbin/crond -n -s &
+# /usr/sbin/crond -n -s &
 
 #get docker-provider version
 DOCKER_CIMPROV_VERSION=$(cat packages_version.txt | grep "DOCKER_CIMPROV_VERSION" | awk -F= '{print $2}')
@@ -1017,53 +1017,53 @@ else
 fi
 SYSLOG_PORT_CONFIG="-y 0" # disables syslog listener for mdsd
 
-if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
-    if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
-      echo "starting mdsd with mdsd-port=26130, fluentport=26230 and influxport=26330 in sidecar container..."
-      #use tenant name to avoid unix socket conflict and different ports for port conflict
-      #roleprefix to use container specific mdsd socket
-      export TENANT_NAME="${CONTAINER_TYPE}"
-      echo "export TENANT_NAME=$TENANT_NAME" >> ~/.bashrc
-      export MDSD_ROLE_PREFIX=/var/run/mdsd-${CONTAINER_TYPE}/default
-      echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >> ~/.bashrc
-      source ~/.bashrc
-      mkdir -p /var/run/mdsd-${CONTAINER_TYPE}
-      if [[ "${GENEVA_LOGS_INTEGRATION}" == "true" && -d "/var/run/mdsd-ci" && -n "${SYSLOG_HOST_PORT}" ]]; then
-            echo "enabling syslog listener for mdsd in prometheus sidecar container"
-            export MDSD_DEFAULT_TCP_SYSLOG_PORT=$SYSLOG_HOST_PORT
-            echo "export MDSD_DEFAULT_TCP_SYSLOG_PORT=$MDSD_DEFAULT_TCP_SYSLOG_PORT" >> ~/.bashrc
-            source ~/.bashrc
-            SYSLOG_PORT_CONFIG="" # enable syslog listener for mdsd for prometheus sidecar in geneva mode
-      fi
-      # add -T 0xFFFF for full traces
-      mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
-    else
-      echo "not starting mdsd (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
-    fi
-else
-      echo "starting mdsd in main container..."
-      if isHighLogScaleMode; then
-            startAMACoreAgent
-      fi
-      export MDSD_ROLE_PREFIX=/var/run/mdsd-ci/default
-      echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >> ~/.bashrc
-      if [[ "${GENEVA_LOGS_INTEGRATION}" != "true" ]]; then
-            echo "enabling syslog listener for mdsd in main container"
-            export MDSD_DEFAULT_TCP_SYSLOG_PORT=28330
-            echo "export MDSD_DEFAULT_TCP_SYSLOG_PORT=$MDSD_DEFAULT_TCP_SYSLOG_PORT" >> ~/.bashrc
-            source ~/.bashrc
-            SYSLOG_PORT_CONFIG="" # enable syslog listener for mdsd for main container when not in geneva mode
-      fi
-      mkdir -p /var/run/mdsd-ci
-      # add -T 0xFFFF for full traces
-      mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos 2>>/dev/null &
-fi
+# if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
+#     if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
+#       echo "starting mdsd with mdsd-port=26130, fluentport=26230 and influxport=26330 in sidecar container..."
+#       #use tenant name to avoid unix socket conflict and different ports for port conflict
+#       #roleprefix to use container specific mdsd socket
+#       export TENANT_NAME="${CONTAINER_TYPE}"
+#       echo "export TENANT_NAME=$TENANT_NAME" >> ~/.bashrc
+#       export MDSD_ROLE_PREFIX=/var/run/mdsd-${CONTAINER_TYPE}/default
+#       echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >> ~/.bashrc
+#       source ~/.bashrc
+#       mkdir -p /var/run/mdsd-${CONTAINER_TYPE}
+#       if [[ "${GENEVA_LOGS_INTEGRATION}" == "true" && -d "/var/run/mdsd-ci" && -n "${SYSLOG_HOST_PORT}" ]]; then
+#             echo "enabling syslog listener for mdsd in prometheus sidecar container"
+#             export MDSD_DEFAULT_TCP_SYSLOG_PORT=$SYSLOG_HOST_PORT
+#             echo "export MDSD_DEFAULT_TCP_SYSLOG_PORT=$MDSD_DEFAULT_TCP_SYSLOG_PORT" >> ~/.bashrc
+#             source ~/.bashrc
+#             SYSLOG_PORT_CONFIG="" # enable syslog listener for mdsd for prometheus sidecar in geneva mode
+#       fi
+#       # add -T 0xFFFF for full traces
+#       mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+#     else
+#       echo "not starting mdsd (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
+#     fi
+# else
+#       echo "starting mdsd in main container..."
+#       if isHighLogScaleMode; then
+#             startAMACoreAgent
+#       fi
+#       export MDSD_ROLE_PREFIX=/var/run/mdsd-ci/default
+#       echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >> ~/.bashrc
+#       if [[ "${GENEVA_LOGS_INTEGRATION}" != "true" ]]; then
+#             echo "enabling syslog listener for mdsd in main container"
+#             export MDSD_DEFAULT_TCP_SYSLOG_PORT=28330
+#             echo "export MDSD_DEFAULT_TCP_SYSLOG_PORT=$MDSD_DEFAULT_TCP_SYSLOG_PORT" >> ~/.bashrc
+#             source ~/.bashrc
+#             SYSLOG_PORT_CONFIG="" # enable syslog listener for mdsd for main container when not in geneva mode
+#       fi
+#       mkdir -p /var/run/mdsd-ci
+#       # add -T 0xFFFF for full traces
+#       mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos 2>>/dev/null &
+# fi
 
 # # Set up a cron job for logrotation
-if [ ! -f /etc/cron.d/ci-agent ]; then
-      echo "setting up cronjob for ci agent log rotation"
-      echo "*/5 * * * * root /usr/sbin/logrotate -s /var/lib/logrotate/ci-agent-status /etc/logrotate.d/ci-agent >/dev/null 2>&1" >/etc/cron.d/ci-agent
-fi
+# if [ ! -f /etc/cron.d/ci-agent ]; then
+#       echo "setting up cronjob for ci agent log rotation"
+#       echo "*/5 * * * * root /usr/sbin/logrotate -s /var/lib/logrotate/ci-agent-status /etc/logrotate.d/ci-agent >/dev/null 2>&1" >/etc/cron.d/ci-agent
+# fi
 
 setGlobalEnvVar AZMON_WINDOWS_FLUENT_BIT_ENABLED "${AZMON_WINDOWS_FLUENT_BIT_ENABLED}"
 if [ "${AZMON_WINDOWS_FLUENT_BIT_ENABLED}" == "false" ] || [ -z "${AZMON_WINDOWS_FLUENT_BIT_ENABLED}" ] || [ "${USING_AAD_MSI_AUTH}" != "true" ] || [ "${RS_GENEVA_LOGS_INTEGRATION}" == "true" ]; then
