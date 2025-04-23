@@ -349,16 +349,16 @@ echo "MARINER $(grep 'VERSION=' /etc/os-release)" >> packages_version.txt
 mkdir -p /var/opt/microsoft/docker-cimprov/state
 echo "disabled" > /var/opt/microsoft/docker-cimprov/state/syslog.status
 
-#Run inotify as a daemon to track changes to the mounted configmap.
-touch /opt/inotifyoutput.txt
-inotifywait /etc/config/settings --daemon --recursive --outfile "/opt/inotifyoutput.txt" --event create,delete --format '%e : %T' --timefmt '+%s'
+# #Run inotify as a daemon to track changes to the mounted configmap.
+# touch /opt/inotifyoutput.txt
+# inotifywait /etc/config/settings --daemon --recursive --outfile "/opt/inotifyoutput.txt" --event create,delete --format '%e : %T' --timefmt '+%s'
 
-#Run inotify as a daemon to track changes to the mounted configmap for OSM settings.
-if [[ ((! -e "/etc/config/kube.conf") && ("${CONTAINER_TYPE}" == "PrometheusSidecar")) ||
-      ((-e "/etc/config/kube.conf") && ("${SIDECAR_SCRAPING_ENABLED}" == "false")) ]]; then
-      touch /opt/inotifyoutput-osm.txt
-      inotifywait /etc/config/osm-settings --daemon --recursive --outfile "/opt/inotifyoutput-osm.txt" --event create,delete --format '%e : %T' --timefmt '+%s'
-fi
+# #Run inotify as a daemon to track changes to the mounted configmap for OSM settings.
+# if [[ ((! -e "/etc/config/kube.conf") && ("${CONTAINER_TYPE}" == "PrometheusSidecar")) ||
+#       ((-e "/etc/config/kube.conf") && ("${SIDECAR_SCRAPING_ENABLED}" == "false")) ]]; then
+#       touch /opt/inotifyoutput-osm.txt
+#       inotifywait /etc/config/osm-settings --daemon --recursive --outfile "/opt/inotifyoutput-osm.txt" --event create,delete --format '%e : %T' --timefmt '+%s'
+# fi
 
 #resourceid override for loganalytics data.
 if [ -z $AKS_RESOURCE_ID ]; then
@@ -1126,103 +1126,103 @@ else
     echo "Skipping fluentd for linux daemonset since AZMON_RESOURCE_OPTIMIZATION_ENABLED is set to ${AZMON_RESOURCE_OPTIMIZATION_ENABLED}"
 fi
 
-#If config parsing was successful, a copy of the conf file with replaced custom settings file is created
-if  [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ]; then
-     echo "****************Skipping Telegraf Run in Test Mode since GENEVA_LOGS_INTEGRATION_SERVICE_MODE is true**************************"
-elif  [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]; then
-     echo "****************Skipping Telegraf Run in Test Mode since AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE is true**************************"
-else
-      if [ ! -e "/etc/config/kube.conf" ]; then
-            if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ] && [ -e "/opt/telegraf-test-prom-side-car.conf" ]; then
-                  if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
-                        echo "****************Start Telegraf in Test Mode**************************"
-                        /opt/telegraf --config /opt/telegraf-test-prom-side-car.conf --input-filter file -test
-                        if [ $? -eq 0 ]; then
-                              mv "/opt/telegraf-test-prom-side-car.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
-                              echo "Moving test conf file to telegraf side-car conf since test run succeeded"
-                        fi
-                        echo "****************End Telegraf Run in Test Mode**************************"
-                  else
-                        echo "****************Skipping Telegraf Run in Test Mode since MUTE_PROM_SIDECAR is true**************************"
-                  fi
-            else
-                  if [ -e "/opt/telegraf-test.conf" ]; then
-                        echo "****************Start Telegraf in Test Mode**************************"
-                        /opt/telegraf --config /opt/telegraf-test.conf --input-filter file -test
-                        if [ $? -eq 0 ]; then
-                              mv "/opt/telegraf-test.conf" "/etc/opt/microsoft/docker-cimprov/telegraf.conf"
-                              echo "Moving test conf file to telegraf daemonset conf since test run succeeded"
-                        fi
-                        echo "****************End Telegraf Run in Test Mode**************************"
-                  fi
-            fi
-      else
-            if [ -e "/opt/telegraf-test-rs.conf" ]; then
-                  echo "****************Start Telegraf in Test Mode**************************"
-                  /opt/telegraf --config /opt/telegraf-test-rs.conf --input-filter file -test
-                  if [ $? -eq 0 ]; then
-                        mv "/opt/telegraf-test-rs.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
-                        echo "Moving test conf file to telegraf replicaset conf since test run succeeded"
-                  fi
-                  echo "****************End Telegraf Run in Test Mode**************************"
-            fi
-      fi
-fi
+# #If config parsing was successful, a copy of the conf file with replaced custom settings file is created
+# if  [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ]; then
+#      echo "****************Skipping Telegraf Run in Test Mode since GENEVA_LOGS_INTEGRATION_SERVICE_MODE is true**************************"
+# elif  [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]; then
+#      echo "****************Skipping Telegraf Run in Test Mode since AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE is true**************************"
+# else
+#       if [ ! -e "/etc/config/kube.conf" ]; then
+#             if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ] && [ -e "/opt/telegraf-test-prom-side-car.conf" ]; then
+#                   if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
+#                         echo "****************Start Telegraf in Test Mode**************************"
+#                         /opt/telegraf --config /opt/telegraf-test-prom-side-car.conf --input-filter file -test
+#                         if [ $? -eq 0 ]; then
+#                               mv "/opt/telegraf-test-prom-side-car.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
+#                               echo "Moving test conf file to telegraf side-car conf since test run succeeded"
+#                         fi
+#                         echo "****************End Telegraf Run in Test Mode**************************"
+#                   else
+#                         echo "****************Skipping Telegraf Run in Test Mode since MUTE_PROM_SIDECAR is true**************************"
+#                   fi
+#             else
+#                   if [ -e "/opt/telegraf-test.conf" ]; then
+#                         echo "****************Start Telegraf in Test Mode**************************"
+#                         /opt/telegraf --config /opt/telegraf-test.conf --input-filter file -test
+#                         if [ $? -eq 0 ]; then
+#                               mv "/opt/telegraf-test.conf" "/etc/opt/microsoft/docker-cimprov/telegraf.conf"
+#                               echo "Moving test conf file to telegraf daemonset conf since test run succeeded"
+#                         fi
+#                         echo "****************End Telegraf Run in Test Mode**************************"
+#                   fi
+#             fi
+#       else
+#             if [ -e "/opt/telegraf-test-rs.conf" ]; then
+#                   echo "****************Start Telegraf in Test Mode**************************"
+#                   /opt/telegraf --config /opt/telegraf-test-rs.conf --input-filter file -test
+#                   if [ $? -eq 0 ]; then
+#                         mv "/opt/telegraf-test-rs.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
+#                         echo "Moving test conf file to telegraf replicaset conf since test run succeeded"
+#                   fi
+#                   echo "****************End Telegraf Run in Test Mode**************************"
+#             fi
+#       fi
+# fi
 
 #telegraf & fluentbit requirements
-if [ ! -e "/etc/config/kube.conf" ]; then
-      if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
-            telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
-            if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
-                  echo "starting fluent-bit and setting telegraf conf file for prometheus sidecar"
-                  fluent-bit -c /etc/opt/microsoft/docker-cimprov/fluent-bit-prom-side-car.conf -e /opt/fluent-bit/bin/out_oms.so &
-            else
-                  echo "not starting fluent-bit in prometheus sidecar (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
-            fi
-      else
-            echo "starting fluent-bit and setting telegraf conf file for daemonset"
-            fluentBitConfFile="fluent-bit.conf"
-            if [ "${AZMON_MULTI_TENANCY_LOG_COLLECTION}" == "true" ]; then
-                  if [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]; then
-                       fluentBitConfFile="fluent-bit-azmon-logs-svc.conf"
-                  elif [ "${AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE}" == "true" ]; then
-                        fluentBitConfFile="fluent-bit-azmon-multi-tenancy.conf"
-                  fi
-            elif [ "${GENEVA_LOGS_INTEGRATION}" == "true" -a "${GENEVA_LOGS_MULTI_TENANCY}" == "true" ]; then
-                  fluentBitConfFile="fluent-bit-geneva.conf"
-            elif [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ]; then
-                  fluentBitConfFile="fluent-bit-geneva-telemetry-svc.conf"
-                  # gangams - only support v2 in case of 1P mode
-                  AZMON_CONTAINER_LOG_SCHEMA_VERSION="v2"
-                  echo "export AZMON_CONTAINER_LOG_SCHEMA_VERSION=$AZMON_CONTAINER_LOG_SCHEMA_VERSION" >>~/.bashrc
+# if [ ! -e "/etc/config/kube.conf" ]; then
+#       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
+#             telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
+#             if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
+#                   echo "starting fluent-bit and setting telegraf conf file for prometheus sidecar"
+#                   fluent-bit -c /etc/opt/microsoft/docker-cimprov/fluent-bit-prom-side-car.conf -e /opt/fluent-bit/bin/out_oms.so &
+#             else
+#                   echo "not starting fluent-bit in prometheus sidecar (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
+#             fi
+#       else
+#             echo "starting fluent-bit and setting telegraf conf file for daemonset"
+#             fluentBitConfFile="fluent-bit.conf"
+#             if [ "${AZMON_MULTI_TENANCY_LOG_COLLECTION}" == "true" ]; then
+#                   if [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]; then
+#                        fluentBitConfFile="fluent-bit-azmon-logs-svc.conf"
+#                   elif [ "${AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE}" == "true" ]; then
+#                         fluentBitConfFile="fluent-bit-azmon-multi-tenancy.conf"
+#                   fi
+#             elif [ "${GENEVA_LOGS_INTEGRATION}" == "true" -a "${GENEVA_LOGS_MULTI_TENANCY}" == "true" ]; then
+#                   fluentBitConfFile="fluent-bit-geneva.conf"
+#             elif [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ]; then
+#                   fluentBitConfFile="fluent-bit-geneva-telemetry-svc.conf"
+#                   # gangams - only support v2 in case of 1P mode
+#                   AZMON_CONTAINER_LOG_SCHEMA_VERSION="v2"
+#                   echo "export AZMON_CONTAINER_LOG_SCHEMA_VERSION=$AZMON_CONTAINER_LOG_SCHEMA_VERSION" >>~/.bashrc
 
-                  if [ -z "$FBIT_SERVICE_GRACE_INTERVAL_SECONDS" ]; then
-                       export FBIT_SERVICE_GRACE_INTERVAL_SECONDS="10"
-                  fi
-                  echo "Using FluentBit Grace Interval seconds:${FBIT_SERVICE_GRACE_INTERVAL_SECONDS}"
-                  echo "export FBIT_SERVICE_GRACE_INTERVAL_SECONDS=$FBIT_SERVICE_GRACE_INTERVAL_SECONDS" >>~/.bashrc
+#                   if [ -z "$FBIT_SERVICE_GRACE_INTERVAL_SECONDS" ]; then
+#                        export FBIT_SERVICE_GRACE_INTERVAL_SECONDS="10"
+#                   fi
+#                   echo "Using FluentBit Grace Interval seconds:${FBIT_SERVICE_GRACE_INTERVAL_SECONDS}"
+#                   echo "export FBIT_SERVICE_GRACE_INTERVAL_SECONDS=$FBIT_SERVICE_GRACE_INTERVAL_SECONDS" >>~/.bashrc
 
-                  source ~/.bashrc
-                  # Delay FBIT service start to ensure MDSD is ready in 1P mode to avoid data loss
-                  sleep "${FBIT_SERVICE_GRACE_INTERVAL_SECONDS}"
-            fi
-            echo "using fluentbitconf file: ${fluentBitConfFile} for fluent-bit"
-            if [ "$CONTAINER_RUNTIME" == "docker" ]; then
-                  fluent-bit -c /etc/opt/microsoft/docker-cimprov/${fluentBitConfFile} -e /opt/fluent-bit/bin/out_oms.so &
-                  telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
-            else
-                  echo "since container run time is $CONTAINER_RUNTIME update the container log fluentbit Parser to cri from docker"
-                  sed -i 's/Parser.docker*/Parser cri/' /etc/opt/microsoft/docker-cimprov/${fluentBitConfFile}
-                  sed -i 's/Parser.docker*/Parser cri/' /etc/opt/microsoft/docker-cimprov/fluent-bit-common.conf
-                  fluent-bit -c /etc/opt/microsoft/docker-cimprov/${fluentBitConfFile} -e /opt/fluent-bit/bin/out_oms.so &
-                  telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
-            fi
-      fi
-else
-      echo "starting fluent-bit and setting telegraf conf file for replicaset"
-      fluent-bit -c /etc/opt/microsoft/docker-cimprov/fluent-bit-rs.conf -e /opt/fluent-bit/bin/out_oms.so &
-      telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
-fi
+#                   source ~/.bashrc
+#                   # Delay FBIT service start to ensure MDSD is ready in 1P mode to avoid data loss
+#                   sleep "${FBIT_SERVICE_GRACE_INTERVAL_SECONDS}"
+#             fi
+#             echo "using fluentbitconf file: ${fluentBitConfFile} for fluent-bit"
+#             if [ "$CONTAINER_RUNTIME" == "docker" ]; then
+#                   fluent-bit -c /etc/opt/microsoft/docker-cimprov/${fluentBitConfFile} -e /opt/fluent-bit/bin/out_oms.so &
+#                   telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
+#             else
+#                   echo "since container run time is $CONTAINER_RUNTIME update the container log fluentbit Parser to cri from docker"
+#                   sed -i 's/Parser.docker*/Parser cri/' /etc/opt/microsoft/docker-cimprov/${fluentBitConfFile}
+#                   sed -i 's/Parser.docker*/Parser cri/' /etc/opt/microsoft/docker-cimprov/fluent-bit-common.conf
+#                   fluent-bit -c /etc/opt/microsoft/docker-cimprov/${fluentBitConfFile} -e /opt/fluent-bit/bin/out_oms.so &
+#                   telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
+#             fi
+#       fi
+# else
+#       echo "starting fluent-bit and setting telegraf conf file for replicaset"
+#       fluent-bit -c /etc/opt/microsoft/docker-cimprov/fluent-bit-rs.conf -e /opt/fluent-bit/bin/out_oms.so &
+#       telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
+# fi
 
 #set env vars used by telegraf
 if [ -z $AKS_RESOURCE_ID ]; then
@@ -1276,46 +1276,46 @@ echo "export HOST_ETC=/hostfs/etc" >>~/.bashrc
 export HOST_VAR=/hostfs/var
 echo "export HOST_VAR=/hostfs/var" >>~/.bashrc
 
-if [ ! -e "/etc/config/kube.conf" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
-      if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
-            if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
-                  echo "checking for listener on tcp #25229 and waiting for $WAITTIME_PORT_25229 secs if not.."
-                  waitforlisteneronTCPport 25229 $WAITTIME_PORT_25229
-            else
-                  echo "no metrics to scrape since MUTE_PROM_SIDECAR is true, not checking for listener on tcp #25229"
-            fi
-      else
-            if [ "${LOGS_AND_EVENTS_ONLY}" == "true" ]; then
-                  echo "LOGS_AND_EVENTS_ONLY is true, not checking for listener on tcp #25226 and tcp #25228"
-            else
-                  echo "checking for listener on tcp #25226 and waiting for $WAITTIME_PORT_25226 secs if not.."
-                  waitforlisteneronTCPport 25226 $WAITTIME_PORT_25226
-                    if [ "${ENABLE_CUSTOM_METRICS}" == true ]; then
-                        echo "checking for listener on tcp #25228 and waiting for $WAITTIME_PORT_25228 secs if not.."
-                        waitforlisteneronTCPport 25228 $WAITTIME_PORT_25228
-                  fi
-            fi
-      fi
-elif [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
-        echo "checking for listener on tcp #25226 and waiting for $WAITTIME_PORT_25226 secs if not.."
-        waitforlisteneronTCPport 25226 $WAITTIME_PORT_25226
-fi
+# if [ ! -e "/etc/config/kube.conf" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
+#       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
+#             if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
+#                   echo "checking for listener on tcp #25229 and waiting for $WAITTIME_PORT_25229 secs if not.."
+#                   waitforlisteneronTCPport 25229 $WAITTIME_PORT_25229
+#             else
+#                   echo "no metrics to scrape since MUTE_PROM_SIDECAR is true, not checking for listener on tcp #25229"
+#             fi
+#       else
+#             if [ "${LOGS_AND_EVENTS_ONLY}" == "true" ]; then
+#                   echo "LOGS_AND_EVENTS_ONLY is true, not checking for listener on tcp #25226 and tcp #25228"
+#             else
+#                   echo "checking for listener on tcp #25226 and waiting for $WAITTIME_PORT_25226 secs if not.."
+#                   waitforlisteneronTCPport 25226 $WAITTIME_PORT_25226
+#                     if [ "${ENABLE_CUSTOM_METRICS}" == true ]; then
+#                         echo "checking for listener on tcp #25228 and waiting for $WAITTIME_PORT_25228 secs if not.."
+#                         waitforlisteneronTCPport 25228 $WAITTIME_PORT_25228
+#                   fi
+#             fi
+#       fi
+# elif [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
+#         echo "checking for listener on tcp #25226 and waiting for $WAITTIME_PORT_25226 secs if not.."
+#         waitforlisteneronTCPport 25226 $WAITTIME_PORT_25226
+# fi
 
 
 #start telegraf
-if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ]; then
-    echo "not starting telegraf (no metrics to scrape since GENEVA_LOGS_INTEGRATION_SERVICE_MODE is true)"
-elif [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
-    if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ "${TELEMETRY_RS_TELEGRAF_DISABLED}" == "true" ]; then
-        echo "not starting telegraf since prom scraping is disabled for replicaset"
-    elif [ "${CONTROLLER_TYPE}" != "ReplicaSet" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${LOGS_AND_EVENTS_ONLY}" == "true" ]; then
-        echo "not starting telegraf for LOGS_AND_EVENTS_ONLY daemonset"
-    else
-        /opt/telegraf --config $telegrafConfFile &
-    fi
-else
-    echo "not starting telegraf (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
-fi
+# if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ]; then
+#     echo "not starting telegraf (no metrics to scrape since GENEVA_LOGS_INTEGRATION_SERVICE_MODE is true)"
+# elif [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
+#     if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ "${TELEMETRY_RS_TELEGRAF_DISABLED}" == "true" ]; then
+#         echo "not starting telegraf since prom scraping is disabled for replicaset"
+#     elif [ "${CONTROLLER_TYPE}" != "ReplicaSet" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${LOGS_AND_EVENTS_ONLY}" == "true" ]; then
+#         echo "not starting telegraf for LOGS_AND_EVENTS_ONLY daemonset"
+#     else
+#         /opt/telegraf --config $telegrafConfFile &
+#     fi
+# else
+#     echo "not starting telegraf (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
+# fi
 
 
 # Get the end time of the setup in seconds
