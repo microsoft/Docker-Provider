@@ -13,6 +13,9 @@ do
     esac
 done
 
+cluster="$(kubectl config current-context)"
+echo "Current cluster: $cluster"
+
 echo "Install testkube CLI"
 wget -qO - https://repo.testkube.io/key.pub | sudo apt-key add -
 echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sources.list
@@ -28,8 +31,6 @@ echo "Install testkube CRIs"
 export AZURE_CLIENT_ID=$AzureClientId
 export AZURE_TENANT_ID=$AzureTenantId
 export WEBHOOK_URI=$TeamsWebhookUri
-envsubst < ./testkube-teams-integration.yaml > ./testkube-teams-integration-updated.yaml
-kubectl apply -f ./testkube-teams-integration-updated.yaml
 kubectl apply -f ./api-server-permissions.yaml
 envsubst < ./testkube-test-crs.yaml > ./testkube-test-crs-updated.yaml
 kubectl apply -f ./testkube-test-crs-updated.yaml
@@ -65,6 +66,40 @@ if [[ $(jq -r '.status' testkube-results.json) == "failed" ]]; then
     # Remove superfluous logs of everything before the last occurence of 'go downloading'.
     # The actual errors can be viewed from the ADO run, instead of needing to view the testkube dashboard.
     cat error.log | tac | awk '/go: downloading/ {exit} 1' | tac
+
+    result=$(cat error.log | tac | awk '/------------------------------/ {exit} 1' | tac | awk '{gsub(/\x1B\[[0-9;]*[mK]/, ""); print}')
+
+    payload=$(cat <<EOF
+{
+    "@type": "MessageCard",
+    "@context": "http://schema.org/extensions",
+    "themeColor": "0076D7",
+    "summary": "Test run failed",
+    "sections": [{
+        "activityTitle": "Test Execution Failed",
+        "activitySubtitle": "CI Test Automation",
+        "activityImage": "https://adaptivecards.io/content/cats/1.png",
+        "facts": [{
+            "name": "Cluster",
+            "value": "**$cluster**"
+        },{
+            "name": "Test",
+            "value": "**$testName**"
+        }, {
+            "name": "Execution Id",
+            "value": "$id"
+        }, {
+            "name": "Result",
+            "value": "$result"
+        }],
+        "markdown": true
+    }]
+}
+EOF
+)
+
+    curl -X POST -H "Content-Type: application/json" -d "$payload" $WEBHOOK_URI
+
     done
 
     # Explicitly fail the ADO task since at least one test failed
