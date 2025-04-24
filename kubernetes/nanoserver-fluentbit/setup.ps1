@@ -24,11 +24,14 @@ try {
         Write-Host "Found Fluent Bit executable in: $fluentBitExeDir"
         
         # Copy just the executable to the bin directory
-        Copy-Item -Path $fluentBitExePath -Destination C:\opt\fluent-bit\bin\ -Verbose
+        # Copy-Item -Path $fluentBitExePath -Destination C:\opt\fluent-bit\bin\ -Verbose
         
         # Note: Only the three basic DLLs (msvcp140.dll, vcruntime140.dll, vccorlib140.dll)
         # are copied directly from the dll-extractor stage in the Dockerfile
         
+        # copy everything from the bin directory - to emulate what we do in server core
+        Copy-Item -Path "$fluentBitExeDir\*" -Destination C:\opt\fluent-bit\bin\ -Recurse -Force -Verbose
+
         # List what we've copied to bin directory
         Write-Host "Copied files to bin directory:"
         Get-ChildItem -Path C:\opt\fluent-bit\bin | Format-Table Name, Length
