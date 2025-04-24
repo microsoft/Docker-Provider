@@ -1,0 +1,20 @@
+global:
+  commonGlobals:
+    Customer:
+      AzureResourceID: "/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/Microsoft.ContainerService/managedClusters/appmonitoring-webhook-testbed"
+    Region: "westus2"
+    Versions:
+      Kubernetes: "1.25.0"
+AppmonitoringAgent:
+  cpuRequest: "100m"
+  memoryRequest: "128Mi"
+  cpuLimit: "500m"
+  memoryLimit: "512Mi"
+replicaCount: 2
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi

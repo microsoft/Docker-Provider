@@ -1,0 +1,337 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: app-monitoring-webhook-service
+  namespace: kube-system
+  labels:
+    component: app-monitoring
+spec:
+  ports:
+    - port: 443
+      protocol: TCP
+      targetPort: 1337
+  selector:
+    app: app-monitoring-webhook
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: app-monitoring-instrumentation-crd-watcher
+rules:
+- apiGroups: ["monitor.azure.com"]
+  resources: ["instrumentations"]
+  verbs: ["get", "watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: app-monitoring-mutating-webhook-config-manager
+rules:
+- apiGroups: [ "admissionregistration.k8s.io"]
+  resources: [ "mutatingwebhookconfigurations"]
+  resourceNames: [ "app-monitoring-webhook"]
+  verbs: [ "get", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: app-monitoring-certificate-manager
+  namespace: kube-system
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  resourceNames: ["app-monitoring-webhook-cert"]
+  verbs: ["get", "patch", "update"]
+- apiGroups: ["batch"]
+  resources: ["jobs/status"]
+  resourceNames: ["app-monitoring-secrets-installer"]
+  verbs: ["get"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  resourceNames: ["app-monitoring-webhook"]
+  verbs: ["update", "list", "get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: app-monitoring-certificate-manager-binding
+  namespace: kube-system
+  labels:
+    component: app-monitoring
+subjects:
+- kind: ServiceAccount
+  name: app-monitoring-webhook-sa
+  namespace: kube-system
+roleRef:
+  kind: Role
+  name: app-monitoring-certificate-manager
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: app-monitoring-mutating-webhook-config-manager-role-binding
+  labels:
+    component: app-monitoring
+subjects:
+- kind: ServiceAccount
+  name: app-monitoring-webhook-sa
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: app-monitoring-mutating-webhook-config-manager
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: app-monitoring-instrumentation-crd-watcher-binding
+  labels:
+    component: app-monitoring
+subjects:
+- kind: ServiceAccount
+  name: app-monitoring-webhook-sa
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: app-monitoring-instrumentation-crd-watcher
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: app-monitoring-cert-housekeeper-hook
+  namespace: kube-system
+  labels:
+    component: app-monitoring
+spec:
+  schedule: "*/30 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          affinity:
+            nodeAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+                nodeSelectorTerms:
+                - matchExpressions:
+                  - key: kubernetes.io/os
+                    operator: In
+                    values:
+                    - linux
+                  - key: kubernetes.azure.com/cluster
+                    operator: Exists
+                  - key: type
+                    operator: NotIn
+                    values:
+                    - virtual-kubelet
+              preferredDuringSchedulingIgnoredDuringExecution:
+              - weight: 100
+                preference:
+                  matchExpressions:
+                  - key: kubernetes.azure.com/mode
+                    operator: In
+                    values:
+                    - system
+          tolerations:
+            - key: "CriticalAddonsOnly"
+              operator: "Exists"
+            - operator: "Exists"
+              effect: NoExecute
+            - operator: "Exists"
+              effect: NoSchedule
+            - operator: "Exists"
+              effect: PreferNoSchedule
+          serviceAccountName: app-monitoring-webhook-sa
+          containers:
+            - env:
+              - name: CONTAINER_MODE
+                value: secrets-housekeeper
+              - name: POD_NAME
+                valueFrom:
+                  fieldRef:
+                    fieldPath: metadata.name
+              - name: ARM_ID
+                value: "{{ .Values.global.commonGlobals.Customer.AzureResourceID }}"
+              - name: ARM_REGION
+                value: "{{ .Values.global.commonGlobals.Region }}"
+{{- if .Values.AppmonitoringAgent.imageTag }}
+              image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"
+{{- else }}
+              image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{- dict "component" "appmonitoring-webhook" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag" -}}"
+{{- end }}
+              securityContext:
+                capabilities:
+                  drop:
+                    - ALL
+              imagePullPolicy: IfNotPresent
+              name: app-monitoring-cert-manager
+          restartPolicy: OnFailure
+---
+#The purpose of this job is to amend the yamls of the mutating webhook configuration and the app-monitoring-webhook-cert secret to contain a generated CA bundle and certificate respectively, this is read by the webhook pod for authenticating the webhook endpoint
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: app-monitoring-secrets-installer
+  namespace: kube-system
+  labels:
+    component: app-monitoring
+spec:
+  template:
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+              - key: kubernetes.azure.com/cluster
+                operator: Exists
+              - key: type
+                operator: NotIn
+                values:
+                - virtual-kubelet
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: kubernetes.azure.com/mode
+                operator: In
+                values:
+                - system
+      tolerations:
+        - key: "CriticalAddonsOnly"
+          operator: "Exists"
+        - operator: "Exists"
+          effect: NoExecute
+        - operator: "Exists"
+          effect: NoSchedule
+        - operator: "Exists"
+          effect: PreferNoSchedule
+      serviceAccountName: app-monitoring-webhook-sa
+      containers:
+        - env:
+          - name: CONTAINER_MODE
+            value: secrets-manager
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: ARM_ID
+            value: "{{ .Values.global.commonGlobals.Customer.AzureResourceID }}"
+          - name: ARM_REGION
+            value: "{{ .Values.global.commonGlobals.Region }}"
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+{{- if .Values.AppmonitoringAgent.imageTag }}
+          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"
+{{- else }}
+          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{- dict "component" "appmonitoring-webhook" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag" -}}"
+{{- end }}
+          imagePullPolicy: IfNotPresent
+          name: app-monitoring-secrets-installer
+      restartPolicy: OnFailure
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-monitoring-webhook
+  namespace: kube-system
+  labels:
+    kubernetes.azure.com/managedby: aks
+    component: app-monitoring
+spec:
+  selector:
+    matchLabels:
+      app: app-monitoring-webhook
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: app-monitoring-webhook
+        kubernetes.azure.com/managedby: aks
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+              - key: kubernetes.azure.com/cluster
+                operator: Exists
+              - key: type
+                operator: NotIn
+                values:
+                - virtual-kubelet
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: kubernetes.azure.com/mode
+                operator: In
+                values:
+                - system
+      tolerations:
+        - key: "CriticalAddonsOnly"
+          operator: "Exists"
+        - operator: "Exists"
+          effect: NoExecute
+        - operator: "Exists"
+          effect: NoSchedule
+        - operator: "Exists"
+          effect: PreferNoSchedule
+      containers:
+        - name: app-monitoring-webhook
+{{- if .Values.AppmonitoringAgent.imageTag }}
+          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"
+{{- else }}
+          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{- dict "component" "appmonitoring-webhook" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag" -}}"
+{{- end }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: ARM_ID
+              value: "{{ .Values.global.commonGlobals.Customer.AzureResourceID }}"
+            - name: ARM_REGION
+              value: "{{ .Values.global.commonGlobals.Region }}"
+          ports:
+            - containerPort: 1337
+          resources:
+            requests:
+              cpu: "{{ .Values.AppmonitoringAgent.cpuRequest }}"
+              memory: "{{ .Values.AppmonitoringAgent.memoryRequest }}"
+            limits:
+              cpu: "{{ .Values.AppmonitoringAgent.cpuLimit }}"
+              memory: "{{ .Values.AppmonitoringAgent.memoryLimit }}"
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: webhook-certs
+              mountPath: /mnt/webhook
+              readOnly: true
+      serviceAccount: app-monitoring-webhook-sa
+      volumes:
+        - name: webhook-certs
+          secret:
+            secretName: app-monitoring-webhook-cert
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: app-monitoring-webhook-sa
+  namespace: kube-system
+  labels:
+    component: app-monitoring

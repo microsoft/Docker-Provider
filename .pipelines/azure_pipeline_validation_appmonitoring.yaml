@@ -17,8 +17,9 @@ pr:
 variables:
   armServiceConnectionName: 'Appmonitoring_Validation_Pipeline'
   subscription: '5a3b3ba4-3a42-42ae-b2cb-f882345803bc'
-  containerRegistry: 'aicommon' # this build pushes the aidev image to the dev ACR (caution: ACR that has "prod" in its name is the dev one, the one without "prod" is prod AME)
-  repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/applicationinsights/aidev'
+  containerRegistry: 'aicommon' # this build pushes to aicommon.azurecr.io with an image that is used for testing in validation cluster, then pushes an image once tests pass. That image is latre picked up by the release pipeline and reuploaded to MCR
+  repoImageName: '${{ variables.containerRegistry }}.azurecr.io/validated/azuremonitor/applicationinsights/aiprod'
+  repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/dev/azuremonitor/applicationinsights/aiprod'
   IS_PR: $[eq(variables['Build.Reason'], 'PullRequest')]
 
 jobs:
@@ -54,7 +55,8 @@ jobs:
     name: rambhatt-test-es-pool
   variables:
     imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
-    testImageName: ${{ variables.repoImageName }}-test:$(imageTag)-$(Build.BuildId)
+    testImageTagSuffix: $(imageTag)-$(Build.BuildId)
+    testImageName: ${{ variables.repoTestImageName }}:${{ variables.testImageTagSuffix }}
     fullImageName: ${{ variables.repoImageName }}:$(imageTag)
     javaTestAppImageName: 'aicommon.azurecr.io/demoaks-java-app:latest'
     javaTestAppName: 'test-app-java'
@@ -167,20 +169,18 @@ jobs:
       scriptType: bash
       scriptLocation: inlineScript
       inlineScript: |
-        cd appmonitoring/validation-helm
+        cd appmonitoring/scripts
         pwd
         az account set --subscription ${{ variables.subscription }}
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
-        kubectl delete -f appmonitoring-deployment.yaml
 
-        echo "Wait for 10s for everything to clear up..."
-        sleep 10
+        sudo chmod u+x ./clean-install-appmonitoring.sh
 
-        export AIDEV_IMAGE_NAME=${{ variables.testImageName }}
-        cat appmonitoring-deployment.yaml | envsubst | kubectl apply -f -
-
-        echo "Wait for 10s for charts to be applied..."
-        sleep 10
+        echo "Checking for charts..."
+        if ! ./clean-install-appmonitoring.sh ${{ variables.testImageTagSuffix }}; then
+          echo "Chart installation failed"
+          exit 1
+        fi
 
   - task: AzureCLI@2
     displayName: "Validate charts deployed to AKS"
@@ -197,11 +197,20 @@ jobs:
         sudo chmod u+x ./validate-aks-charts.sh
         sudo chmod u+x ./validate-certs.sh
 
+        echo "Waiting for 30 seconds for charts to be ready..."
+        sleep 30
+
         echo "Checking for charts..."
-        ./validate-aks-charts.sh
-        
+        if ! ./validate-aks-charts.sh; then
+          echo "Chart validation failed"
+          exit 1
+        fi
+
         echo "Checking for certificate installation..."
-        ./validate-certs.sh
+        if ! ./validate-certs.sh; then
+          echo "Certificate validation failed"
+          exit 1
+        fi
 
   - task: AzureCLI@2
     displayName: "Install CR and test apps"
@@ -222,24 +231,12 @@ jobs:
         export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
 
-        cat java-test-app.yaml | envsubst | kubectl delete -f -
-        cat node-test-app.yaml | envsubst | kubectl delete -f -
-        cat appmonitoring-cr.yaml | envsubst | kubectl delete -f -
+        sudo chmod +x ../scripts/install-test-apps.sh
 
-        echo "Wait for 10s for everything to clear up..."
-        sleep 10
-
-        kubectl create namespace $TEST_NS
-
-        cat appmonitoring-cr.yaml | envsubst | kubectl apply -f -
-        echo "Wait for 10s for CR to be applied and picked up..."
-        sleep 10
-
-        cat java-test-app.yaml | envsubst | kubectl apply -f -
-        cat node-test-app.yaml | envsubst | kubectl apply -f -
-
-        echo "Wait for 60s for charts to be applied..."
-        sleep 60
+        if ! ../scripts/install-test-apps.sh; then
+          echo "Test apps installation failed"
+          exit 1
+        fi
 
   - task: AzureCLI@2
     displayName: "Check test apps were mutated correctly"
@@ -254,7 +251,11 @@ jobs:
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }}
         
         sudo chmod u+x ./validate-mutation.sh
-        ./validate-mutation.sh "test-app-java" "test-app-nodejs" "test-ns"
+
+        if ! ./validate-mutation.sh "test-app-java" "test-app-nodejs" "test-ns"; then
+          echo "Mutation validation failed"
+          exit 1
+        fi
 
   - task: AzureCLI@2
     displayName: "Check test apps are sending telemetry to AI"
@@ -274,8 +275,90 @@ jobs:
         sleep 180
         
         sudo chmod u+x ./validate_ai.sh
-        ./validate_ai.sh "test-app-java" "test-app-nodejs" "${{ variables.aiResourceId }}" "test-ns"
 
+        if ! ./validate_ai.sh "${{ variables.aiResourceId }}" "test-ns"; then
+          echo "AI telemetry validation failed"
+          exit 1
+        fi
+
+  - task: AzureCLI@2
+    displayName: "Validate Housekeeper Cron Job"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        cd appmonitoring/scripts
+        pwd
+        az account set --subscription ${{ variables.subscription }}
+        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
+
+        sudo chmod u+x ./test-cronjob.sh
+        sudo chmod u+x ./validate-certs.sh
+
+        echo "Checking for charts..."
+        if ! ./test-cronjob.sh; then
+          echo "Cron Job validation failed"
+          exit 1
+        fi
+
+  - task: AzureCLI@2
+    displayName: "Restart webhook deployment"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        cd appmonitoring/scripts
+        pwd
+        az account set --subscription ${{ variables.subscription }}
+        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
+
+        kubectl rollout restart -n kube-system deployment/app-monitoring-webhook 
+
+  - task: AzureCLI@2
+    displayName: "Check test apps were mutated correctly"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        cd appmonitoring/scripts
+        pwd
+        az account set --subscription ${{ variables.subscription }}
+        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }}
+        
+        sudo chmod u+x ./validate-mutation.sh
+
+        if ! ./validate-mutation.sh "test-app-java" "test-app-nodejs" "test-ns"; then
+          echo "Mutation validation failed"
+          exit 1
+        fi
+
+  - task: AzureCLI@2
+    displayName: "Check test apps are sending telemetry to AI"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        cd appmonitoring/scripts
+        pwd
+        az account set --subscription ${{ variables.subscription }}
+        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
+        export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
+        export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
+
+        echo "Wait for 3m for telemetry to flow..."
+        sleep 180
+        
+        sudo chmod u+x ./validate_ai.sh
+
+        if ! ./validate_ai.sh "${{ variables.aiResourceId }}" "test-ns"; then
+          echo "AI telemetry validation failed"
+          exit 1
+        fi
+        
   - task: AzureCLI@2
     displayName: "Retag the image as ready to deploy"
     inputs:

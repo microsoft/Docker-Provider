@@ -1,0 +1,22 @@
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: app-monitoring-webhook
+  labels:
+    component: app-monitoring
+webhooks:
+  - name: app-monitoring-webhook-service.kube-system.svc
+    clientConfig:
+      service:
+        name: app-monitoring-webhook-service
+        namespace: kube-system
+        path: "/"
+      caBundle: ""
+    rules:
+      - operations: ["CREATE", "UPDATE"]
+        apiGroups: ["*"]
+        apiVersions: ["*"]
+        resources: ["deployments"]  
+    failurePolicy: Ignore
+    sideEffects: None
+    admissionReviewVersions: ["v1"]
