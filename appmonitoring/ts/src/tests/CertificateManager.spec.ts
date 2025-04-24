@@ -71,6 +71,58 @@ describe('CertificateManager', () => {
             jest.resetAllMocks();
         });
 
+        it('Should fail certificate validation if parameters are null', async () => {
+            const IsValidCertificate = await certManager.IsValidCertificate('op-test', null, null, mockClusterArmId, mockClusterArmRegion);
+
+            expect(IsValidCertificate).toBeFalsy();
+        });
+
+        it('Should pass certificate validation if caCert from MWHC is bad', async () => {
+            const certs: WebhookCertData = await certManager.CreateOrUpdateCertificates('op-test');
+            const IsValidCertificate = await certManager.IsValidCertificate('op-test', null, certs, mockClusterArmId, mockClusterArmRegion);
+
+            expect(IsValidCertificate).toBeFalsy();
+        });
+
+        it('Should pass certificate validation if caCert in secret store is bad', async () => {
+            const certs: WebhookCertData = await certManager.CreateOrUpdateCertificates('op-test');
+            certs.caCert = 'bad-ca-cert';
+            const IsValidCertificate = await certManager.IsValidCertificate('op-test', certs.caCert, certs, mockClusterArmId, mockClusterArmRegion);
+
+            expect(IsValidCertificate).toBeFalsy();
+        });
+
+        it('Should pass certificate validation if caKey in secret store is bad', async () => {
+            const certs: WebhookCertData = await certManager.CreateOrUpdateCertificates('op-test');
+            certs.caKey = 'bad-ca-key';
+            const IsValidCertificate = await certManager.IsValidCertificate('op-test', certs.caCert, certs, mockClusterArmId, mockClusterArmRegion);
+
+            expect(IsValidCertificate).toBeFalsy();
+        });
+
+        it('Should pass certificate validation if tls cert in secret store is bad', async () => {
+            const certs: WebhookCertData = await certManager.CreateOrUpdateCertificates('op-test');
+            certs.tlsCert = 'bad-tls-cert';
+            const IsValidCertificate = await certManager.IsValidCertificate('op-test', certs.caCert, certs, mockClusterArmId, mockClusterArmRegion);
+
+            expect(IsValidCertificate).toBeFalsy();
+        });
+
+        it('Should pass certificate validation if tls key in secret store is bad', async () => {
+            const certs: WebhookCertData = await certManager.CreateOrUpdateCertificates('op-test');
+            certs.tlsKey = 'bad-tls-key';
+            const IsValidCertificate = await certManager.IsValidCertificate('op-test', certs.caCert, certs, mockClusterArmId, mockClusterArmRegion);
+
+            expect(IsValidCertificate).toBeFalsy();
+        });
+
+        it('Should pass certificate validation if parameters are good', async () => {
+            const certs: WebhookCertData = await certManager.CreateOrUpdateCertificates('op-test');
+            const IsValidCertificate = await certManager.IsValidCertificate('op-test', certs.caCert, certs, mockClusterArmId, mockClusterArmRegion);
+
+            expect(IsValidCertificate).toBeTruthy();
+        });
+
         it('should not do anything if it installer job has not finished', async () => {
             const checkCertificateJobStatus = jest.spyOn(certManager as any, 'IsCertificateInstallerJobRunning').mockResolvedValue(true);
             const getMutatingWebhookCABundle = jest.spyOn(certManager as any, 'GetMutatingWebhookCABundle').mockResolvedValue(null);

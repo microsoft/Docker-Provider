@@ -107,7 +107,7 @@ export class CertificateManager {
         return newHostCert;
     }
 
-    private CreateOrUpdateCertificates(operationId: string, currentCACert?: forge.pki.Certificate): WebhookCertData {
+    public CreateOrUpdateCertificates(operationId: string, currentCACert?: forge.pki.Certificate): WebhookCertData {
         try {
             let caCertResult: forge.pki.Certificate = currentCACert;
 
@@ -257,7 +257,7 @@ export class CertificateManager {
         return caCertificate.verify(certificate);
     }
 
-    private async IsValidCertificate(operationId: string, mwhcCaBundle: string, webhookCertData: WebhookCertData, clusterArmId: string, clusterArmRegion: string): Promise<boolean> {
+    public async IsValidCertificate(operationId: string, mwhcCaBundle: string, webhookCertData: WebhookCertData, clusterArmId: string, clusterArmRegion: string): Promise<boolean> {
         if (webhookCertData == null)
         {
             logger.info('WebhookCertData is null', operationId, this.requestMetadata);
