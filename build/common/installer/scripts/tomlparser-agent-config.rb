@@ -221,8 +221,8 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             puts "Using config map value: networkflow logs throttle_interval = #{@networkFlowLogsThrottleInterval}"
           end
           networkFlowLogsThrottlePrint = networkflow_logs_config[:throttle_print]
-          if !networkFlowLogsThrottlePrint.nil? && networkFlowLogsThrottlePrint.downcase == "true"
-            @networkFlowLogsThrottlePrint = true
+          if !networkFlowLogsThrottlePrint.nil?
+            @networkFlowLogsThrottlePrint = networkFlowLogsThrottlePrint.to_s.downcase == "true"
             puts "Using config map value: networkflow logs throttle_print = #{@networkFlowLogsThrottlePrint}"
           end
         end
