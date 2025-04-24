@@ -28,6 +28,7 @@ class CAdvisorMetricsAPIClient
   @clusterContainerLogSchemaVersion = ENV["AZMON_CONTAINER_LOG_SCHEMA_VERSION"]
   @clusterMultilineEnabled = ENV["AZMON_MULTILINE_ENABLED"]
   @clusterNetworkFlowLogsEnabled = ENV["AZMON_RETINA_FLOW_LOGS_ENABLED"]
+  @clusterNetworkFlowLogsThrottleEnabled = ENV["NETWORKFLOW_LOGS_THROTTLE_ENABLED"]
   @clusterNetworkFlowLogsThrottleRate = ENV["NETWORKFLOW_LOGS_THROTTLE_RATE"]
   @clusterNetworkFlowLogsThrottleWindow = ENV["NETWORKFLOW_LOGS_THROTTLE_WINDOW"]
   @clusterNetworkFlowLogsThrottleInterval = ENV["NETWORKFLOW_LOGS_THROTTLE_INTERVAL"]
@@ -318,8 +319,11 @@ class CAdvisorMetricsAPIClient
                         telemetryProps["multilineLanguages"] = @clusterMultilineLanguages
                       end
                     end
-                    if (!clusterNetworkFlowLogsEnabled.nil? && !@clusterNetworkFlowLogsEnabled.empty?)
+                    if (!@clusterNetworkFlowLogsEnabled.nil? && !@clusterNetworkFlowLogsEnabled.empty?)
                       telemetryProps["networkFlowLogsEnabled"] = @clusterNetworkFlowLogsEnabled
+                    end
+                    if (!@clusterNetworkFlowLogsThrottleEnabled.nil? && !@clusterNetworkFlowLogsThrottleEnabled.empty?)
+                      telemetryProps["networkFlowLogsThrottleEnabled"] = @clusterNetworkFlowLogsThrottleEnabled
                     end
                     if (!@clusterNetworkFlowLogsThrottleRate.nil? && !@clusterNetworkFlowLogsThrottleRate.empty?)
                       telemetryProps["networkFlowLogsThrottleRate"] = @clusterNetworkFlowLogsThrottleRate
