@@ -91,6 +91,13 @@ def substituteNetworkFlowLogs(networkFlowLogsEnabled, new_contents)
   return new_contents
 end
 
+def substituteNetworkFlowLogsThrottle(networkFlowLogsThrottleEnabled, new_contents)
+  if !networkFlowLogsThrottleEnabled.nil? && networkFlowLogsThrottleEnabled.to_s.downcase == "true"
+    new_contents = new_contents.gsub("#${NetworkFlowLogsThrottleEnabled}", "")
+  end
+  return new_contents
+end
+
 def substituteHighLogScaleConfig(enableFbitThreading, storageType, storageMaxChunksUp, new_contents)
   begin
       if is_high_log_scale_mode? || (!enableFbitThreading.nil? && !enableFbitThreading.empty? && enableFbitThreading.to_s.downcase == "true" )
@@ -139,6 +146,7 @@ def substituteFluentBitPlaceHolders
     stacktraceLanguages = ENV["AZMON_MULTILINE_LANGUAGES"]
     resourceOptimizationEnabled = ENV["AZMON_RESOURCE_OPTIMIZATION_ENABLED"]
     networkFlowLogsEnabled = ENV["AZMON_RETINA_FLOW_LOGS_ENABLED"]
+    networkFlowLogsThrottleEnabled = ENV["NETWORKFLOW_LOGS_THROTTLE_ENABLED"]
     enableCustomMetrics = ENV["ENABLE_CUSTOM_METRICS"]
     windowsFluentBitEnabled = ENV["AZMON_WINDOWS_FLUENT_BIT_ENABLED"]
     kubernetesMetadataCollection = ENV["AZMON_KUBERNETES_METADATA_ENABLED"]
@@ -218,6 +226,15 @@ def substituteFluentBitPlaceHolders
     new_contents = substituteMultiline(multilineLogging, stacktraceLanguages, text)
     File.open(@fluent_bit_common_conf_path, "w") { |file| file.puts new_contents }
     puts "config::Successfully substituted the placeholders in fluent-bit-common.conf file"
+
+    puts "config::Starting to substitute the placeholders in fluent-bit-network-flow-logs.conf file for log collection"
+    network_flow_logs_conf_path = "/etc/opt/microsoft/docker-cimprov/fluent-bit-network-flow-logs.conf"
+    if File.exist?(network_flow_logs_conf_path)
+      text = File.read(network_flow_logs_conf_path)
+      new_contents = substituteNetworkFlowLogsThrottle(networkFlowLogsThrottleEnabled, text)
+      File.open(network_flow_logs_conf_path, "w") { |file| file.puts new_contents }
+      puts "config::Successfully substituted the placeholders in fluent-bit-network-flow-logs.conf file"
+    end
 
   rescue => errorStr
     ConfigParseErrorLogger.logError("fluent-bit-config-customizer: error while substituting values in fluent-bit conf files: #{errorStr}")

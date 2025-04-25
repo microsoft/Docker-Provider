@@ -104,7 +104,8 @@ require_relative "ConfigParseErrorLogger"
 @waittime_port_13000 = 45 # default waittime for AMACA data port
 @waittime_port_12563 = 45 # default waittime for AMACA config port
 
-@networkFlowLogsThrottleRate = 1000
+@networkFlowLogsThrottleEnabled = true
+@networkFlowLogsThrottleRate = 5000
 @networkFlowLogsThrottleWindow = 300
 @networkFlowLogsThrottleInterval = "1s"
 @networkFlowLogsThrottlePrint = false
@@ -195,25 +196,35 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       # networkflow logs settings
       networkflow_logs_config = parsedConfig[:agent_settings][:networkflow_logs_config]
       if !networkflow_logs_config.nil?
-        networkFlowLogsThrottleRate = networkflow_logs_config[:throttle_rate]
-        if is_valid_number?(networkFlowLogsThrottleRate)
-          @networkFlowLogsThrottleRate = networkFlowLogsThrottleRate.to_i
-          puts "Using config map value: networkflow logs throttle_rate = #{@networkFlowLogsThrottleRate}"
+        networkFlowLogsThrottleEnabled = networkflow_logs_config[:throttle_enabled]
+        if !networkFlowLogsThrottleEnabled.nil?
+          @networkFlowLogsThrottleEnabled = networkFlowLogsThrottleEnabled.to_s.downcase == "true"
+          puts "Using config map value: networkflow logs throttle_enabled = #{@networkFlowLogsThrottleEnabled}"
         end
-        networkFlowLogsThrottleWindow = networkflow_logs_config[:throttle_window]
-        if is_valid_number?(networkFlowLogsThrottleWindow)
-          @networkFlowLogsThrottleWindow = networkFlowLogsThrottleWindow.to_i
-          puts "Using config map value: networkflow logsthrottle_window = #{@networkFlowLogsThrottleWindow}"
-        end
-        networkFlowLogsThrottleInterval = networkflow_logs_config[:throttle_interval]
-        if !networkFlowLogsThrottleInterval.nil? && !networkFlowLogsThrottleInterval.empty?
-          @networkFlowLogsThrottleInterval = networkFlowLogsThrottleInterval
-          puts "Using config map value: networkflow logs throttle_interval = #{@networkFlowLogsThrottleInterval}"
-        end
-        networkFlowLogsThrottlePrint = networkflow_logs_config[:throttle_print]
-        if !networkFlowLogsThrottlePrint.nil? && networkFlowLogsThrottlePrint.downcase == "true"
-          @networkFlowLogsThrottlePrint = true
-          puts "Using config map value: networkflow logs throttle_print = #{@networkFlowLogsThrottlePrint}"
+
+        if @networkFlowLogsThrottleEnabled
+          networkFlowLogsThrottleRate = networkflow_logs_config[:throttle_rate]
+          if is_valid_number?(networkFlowLogsThrottleRate) && networkFlowLogsThrottleRate.to_i.between?(1, 25000)
+            @networkFlowLogsThrottleRate = networkFlowLogsThrottleRate.to_i
+            puts "Using config map value: networkflow logs throttle_rate = #{@networkFlowLogsThrottleRate}"
+          else
+            puts "config::warn: provided networkflow logs throttle_rate value is not valid, using default value #{@networkFlowLogsThrottleRate}"
+          end
+          networkFlowLogsThrottleWindow = networkflow_logs_config[:throttle_window]
+          if is_valid_number?(networkFlowLogsThrottleWindow)
+            @networkFlowLogsThrottleWindow = networkFlowLogsThrottleWindow.to_i
+            puts "Using config map value: networkflow logsthrottle_window = #{@networkFlowLogsThrottleWindow}"
+          end
+          networkFlowLogsThrottleInterval = networkflow_logs_config[:throttle_interval]
+          if !networkFlowLogsThrottleInterval.nil? && !networkFlowLogsThrottleInterval.empty?
+            @networkFlowLogsThrottleInterval = networkFlowLogsThrottleInterval
+            puts "Using config map value: networkflow logs throttle_interval = #{@networkFlowLogsThrottleInterval}"
+          end
+          networkFlowLogsThrottlePrint = networkflow_logs_config[:throttle_print]
+          if !networkFlowLogsThrottlePrint.nil?
+            @networkFlowLogsThrottlePrint = networkFlowLogsThrottlePrint.to_s.downcase == "true"
+            puts "Using config map value: networkflow logs throttle_print = #{@networkFlowLogsThrottlePrint}"
+          end
         end
       end
 
@@ -464,10 +475,13 @@ if !file.nil?
   file.write("export NODES_EMIT_STREAM_BATCH_SIZE=#{@nodesEmitStreamBatchSize}\n")
 
   # networkflow logs settings
-  file.write("export NETWORKFLOW_LOGS_THROTTLE_RATE=#{@networkFlowLogsThrottleRate}\n")
-  file.write("export NETWORKFLOW_LOGS_THROTTLE_WINDOW=#{@networkFlowLogsThrottleWindow}\n")
-  file.write("export NETWORKFLOW_LOGS_THROTTLE_INTERVAL=#{@networkFlowLogsThrottleInterval}\n")
-  file.write("export NETWORKFLOW_LOGS_THROTTLE_PRINT=#{@networkFlowLogsThrottlePrint}\n")
+  file.write("export NETWORKFLOW_LOGS_THROTTLE_ENABLED=#{@networkFlowLogsThrottleEnabled}\n")
+  if @networkFlowLogsThrottleEnabled
+    file.write("export NETWORKFLOW_LOGS_THROTTLE_RATE=#{@networkFlowLogsThrottleRate}\n")
+    file.write("export NETWORKFLOW_LOGS_THROTTLE_WINDOW=#{@networkFlowLogsThrottleWindow}\n")
+    file.write("export NETWORKFLOW_LOGS_THROTTLE_INTERVAL=#{@networkFlowLogsThrottleInterval}\n")
+    file.write("export NETWORKFLOW_LOGS_THROTTLE_PRINT=#{@networkFlowLogsThrottlePrint}\n")
+  end
 
   # fbit settings
   file.write("export ENABLE_FBIT_INTERNAL_METRICS=#{@enableFbitInternalMetrics}\n")
