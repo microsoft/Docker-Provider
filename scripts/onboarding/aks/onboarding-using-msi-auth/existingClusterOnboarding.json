@@ -474,7 +474,8 @@
                                         "enabled": true,
                                         "config": {
                                             "logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]",
-                                            "useAADAuth": "true"
+                                            "useAADAuth": "true",
+                                            "enableRetinaNetworkFlags": "true"
                                         }
                                     }
                                 }
