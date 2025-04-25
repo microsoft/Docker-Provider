@@ -39,6 +39,7 @@ RUN tdnf install -y \
 # Copy the fluentd setup script
 
 COPY kubernetes/linux/setup.sh /usr/local/bin/setup.sh
+COPY kubernetes/linux/azure-official-extras.repo /etc/yum.repos.d/
 RUN chmod +x /usr/local/bin/setup.sh
 
 # Run the fluentd setup script
