@@ -1,10 +1,8 @@
 FROM mcr.microsoft.com/azurelinux/base/core:3.0
-
-# Set the platform to ensure we're building for Linux AMD64
-ARG TARGETPLATFORM="linux/amd64"
-
-# Set environment variables
-# ENV DEBIAN_FRONTEND=noninteractive
+ARG TARGETOS TARGETARCH
+LABEL maintainer="OMSContainers@microsoft.com"
+LABEL vendor=Microsoft\ Corp \
+    com.microsoft.product="Azure Monitor for containers"
 
 # Install basic utilities
 RUN tdnf clean all
@@ -20,30 +18,13 @@ RUN tdnf install -y \
         rsyslog \
         dmidecode \
         gnupg \
+        # make \
+        # logrotate \
+        # busybox \
+        # gawk \
         tar \
         ca-certificates \
     && rm -rf /var/lib/apt/lists/*
-
-# RUN /usr/bin/apt-get update && /usr/bin/apt-get install -y --no-install-recommends \
-#     curl \
-#     ca-certificates \
-#     gnupg2 \
-#     apt-transport-https \
-#     software-properties-common \
-#     build-essential \
-#     wget \
-#     tar \
-#     && /usr/bin/apt-get clean \
-#     && rm -rf /var/lib/apt/lists/*
-
-# Copy the fluentd setup script
-
-# COPY kubernetes/linux/setup.sh /usr/local/bin/setup.sh
-# COPY kubernetes/linux/azure-official-extras.repo /etc/yum.repos.d/
-# RUN chmod +x /usr/local/bin/setup.sh
-
-# # Run the fluentd setup script
-# RUN /usr/local/bin/setup.sh
 
 ENV tmpdir /opt
 COPY kubernetes/linux/setup.sh kubernetes/linux/main.sh kubernetes/linux/defaultpromenvvariables kubernetes/linux/defaultpromenvvariables-rs kubernetes/linux/defaultpromenvvariables-sidecar kubernetes/linux/mdsd.xml kubernetes/linux/envmdsd kubernetes/linux/logrotate.conf $tmpdir/
@@ -52,7 +33,22 @@ COPY kubernetes/linux/azure-official-extras.repo /etc/yum.repos.d/
 WORKDIR ${tmpdir}
 
 RUN chmod 775 $tmpdir/*.sh; sync; $tmpdir/setup.sh 
-# ${TARGETARCH}
+
+ENV APPLICATIONINSIGHTS_AUTH NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi
+ENV MALLOC_ARENA_MAX 2
+ENV HOST_MOUNT_PREFIX /hostfs
+ENV HOST_PROC /hostfs/proc
+ENV HOST_SYS /hostfs/sys
+ENV HOST_ETC /hostfs/etc
+ENV HOST_VAR /hostfs/var
+ENV AZMON_COLLECT_ENV False
+ENV KUBE_CLIENT_BACKOFF_BASE 1
+ENV KUBE_CLIENT_BACKOFF_DURATION 0
+ENV RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR 0.9
+
+
+ARG IMAGE_TAG=3.1.26
+ENV AGENT_VERSION ${IMAGE_TAG}
 
 # Default command
 CMD ["fluentd", "-c", "/etc/fluentd/fluent25.conf"]
