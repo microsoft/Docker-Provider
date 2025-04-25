@@ -37,7 +37,8 @@ RUN tdnf install -y \
 #     && rm -rf /var/lib/apt/lists/*
 
 # Copy the fluentd setup script
-COPY setup.sh /usr/local/bin/
+
+COPY kubernetes/linux/setup.sh /usr/local/bin/setup.sh
 RUN chmod +x /usr/local/bin/setup.sh
 
 # Run the fluentd setup script
