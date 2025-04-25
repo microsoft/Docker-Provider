@@ -18,10 +18,6 @@ RUN tdnf install -y \
         rsyslog \
         dmidecode \
         gnupg \
-        # make \
-        # logrotate \
-        # busybox \
-        # gawk \
         tar \
         ca-certificates \
     && rm -rf /var/lib/apt/lists/*
