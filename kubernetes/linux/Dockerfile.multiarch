@@ -4,7 +4,7 @@ FROM mcr.microsoft.com/azurelinux/base/core:3.0
 ARG TARGETPLATFORM="linux/amd64"
 
 # Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
+# ENV DEBIAN_FRONTEND=noninteractive
 
 # Install basic utilities
 RUN tdnf clean all
@@ -38,12 +38,21 @@ RUN tdnf install -y \
 
 # Copy the fluentd setup script
 
-COPY kubernetes/linux/setup.sh /usr/local/bin/setup.sh
-COPY kubernetes/linux/azure-official-extras.repo /etc/yum.repos.d/
-RUN chmod +x /usr/local/bin/setup.sh
+# COPY kubernetes/linux/setup.sh /usr/local/bin/setup.sh
+# COPY kubernetes/linux/azure-official-extras.repo /etc/yum.repos.d/
+# RUN chmod +x /usr/local/bin/setup.sh
 
-# Run the fluentd setup script
-RUN /usr/local/bin/setup.sh
+# # Run the fluentd setup script
+# RUN /usr/local/bin/setup.sh
+
+ENV tmpdir /opt
+COPY kubernetes/linux/setup.sh kubernetes/linux/main.sh kubernetes/linux/defaultpromenvvariables kubernetes/linux/defaultpromenvvariables-rs kubernetes/linux/defaultpromenvvariables-sidecar kubernetes/linux/mdsd.xml kubernetes/linux/envmdsd kubernetes/linux/logrotate.conf $tmpdir/
+COPY kubernetes/linux/azure-official-extras.repo /etc/yum.repos.d/
+
+WORKDIR ${tmpdir}
+
+RUN chmod 775 $tmpdir/*.sh; sync; $tmpdir/setup.sh 
+# ${TARGETARCH}
 
 # Default command
 CMD ["fluentd", "-c", "/etc/fluentd/fluent25.conf"]
