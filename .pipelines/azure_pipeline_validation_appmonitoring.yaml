@@ -15,11 +15,13 @@ pr:
     - 'ai_prod'
 
 variables:
-  armServiceConnectionName: 'Appmonitoring_Validation_Pipeline'
+  armServiceConnectionName: 'Appmonitoring_Validation_Pipeline'          # test subscription
+  armServiceConnectionNameProd: 'ci-1es-acr-connection' # prod subscription (new)
   subscription: '5a3b3ba4-3a42-42ae-b2cb-f882345803bc'
+  testContainerRegistry: 'aicommon' # this build pushes the aidev image to the dev ACR (caution: ACR that has "prod" in its name is the dev one, the one without "prod" is prod AME)
   containerRegistry: 'containerinsightsprod' # this build pushes to aicommon.azurecr.io with an image that is used for testing in validation cluster, then pushes an image once tests pass. That image is latre picked up by the release pipeline and reuploaded to MCR
   repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/applicationinsights/aidev'
-  repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/dev/azuremonitor/applicationinsights/aiprod'
+  repoTestImageName: '${{ variables.testContainerRegistry }}.azurecr.io/dev/azuremonitor/applicationinsights/aiprod'
   javaTestAppImageName: 'aicommon.azurecr.io/demoaks-java-app:latest'
   javaTestAppName: 'test-app-java'
   nodeTestAppImageName: 'aicommon.azurecr.io/demoaks-nodejs-app:latest'
@@ -150,7 +152,7 @@ jobs:
         az --version
         az account show
         az account set -s ${{ variables.subscription }}
-        az acr login -n ${{ variables.containerRegistry }}
+        az acr login -n ${{ variables.testContainerRegistry }}
 
         # NOTE: Using the prometheus-collector team's cached buildx image since moby/buildkit:buildx-stable-1 getting throttled
         docker pull mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1
@@ -390,19 +392,24 @@ jobs:
           exit 1
         fi
         
-  - task: AzureCLI@2
-    displayName: "Retag the image as ready to deploy"
+  - task: AzureCLI@2                               # pull from test ACR
+    displayName: "Pull image from test ACR"
     inputs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: bash
       scriptLocation: inlineScript
       inlineScript: |
-        az --version
-        az account show
-        az account set -s ${{ variables.subscription }}
-        az acr login -n ${{ variables.containerRegistry }}
-
+        az acr login -n ${{ variables.testContainerRegistry }}
         docker pull $(testImageName)
+
+  - task: AzureCLI@2                               # tag & push to prod ACR
+    displayName: "Push image to prod ACR"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionNameProd }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        az acr login -n ${{ variables.containerRegistry }}
         docker tag $(testImageName) $(fullImageName)
         docker push $(fullImageName)
 
