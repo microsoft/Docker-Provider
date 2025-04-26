@@ -159,10 +159,10 @@ jobs:
 
         echo "Build reason = $(Build.Reason)"
 
-        echo ${{ variables.testImageName }}
+        echo $(testImageName)
         
-        docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.testImageName }} -f ./Dockerfile --build-arg IMAGE_TAG="${{ variables.testImageName }}" --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --push --provenance=false .
-        docker pull ${{ variables.testImageName }}
+        docker buildx build --platform linux/amd64,linux/arm64 --tag $(testImageName) -f ./Dockerfile --build-arg IMAGE_TAG="$(testImageName)" --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --push --provenance=false .
+        docker pull $(testImageName)
 
         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
@@ -170,7 +170,7 @@ jobs:
         echo ".trivyignore file:"
         cat .trivyignore
 
-        trivy image --ignore-unfixed --format json --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 $(variables.testImageName)
+        trivy image --ignore-unfixed --format json --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 $(testImageName)
 
   - task: CodeQL3000Finalize@0
 
