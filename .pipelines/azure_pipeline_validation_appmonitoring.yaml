@@ -6,13 +6,13 @@
 trigger:
   batch: true
   branches:
-    exclude:
-    - '*'
+    include:
+    - 'ai_prod'
 
 pr:
   branches:
-    exclude:
-    - '*'
+    include:
+    - 'ai_prod'
 
 variables:
   armServiceConnectionName: 'Appmonitoring_Validation_Pipeline'
