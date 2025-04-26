@@ -58,7 +58,7 @@ jobs:
       cd $(Build.SourcesDirectory)/deployment/mergebranch-webhook-deployment/ServiceGroupRoot/Scripts
     name: setup
 
-- job: build_linux
+- job: build_linux  
   
   timeoutInMinutes: 120
   dependsOn: common
@@ -185,7 +185,7 @@ jobs:
   variables:
     testImageName:  $[ dependencies.build_linux.outputs['exportVars.testImageName'] ]
     fullImageName:  $[ dependencies.build_linux.outputs['exportVars.fullImageName'] ]
-    testImageTagSuffix:  $[ dependencies.build_linux.outputs['exportVars.testImageTagSuffix'] ]
+    testImageTagSuffix: $[ dependencies.build_linux.outputs['exportVars.testImageTagSuffix'] ]
     # This is necessary because of: https://github.com/moby/moby/issues/37965
     DOCKER_BUILDKIT: 1
 
