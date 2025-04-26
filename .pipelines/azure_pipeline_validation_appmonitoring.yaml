@@ -399,9 +399,9 @@ jobs:
         az account set -s ${{ variables.subscription }}
         az acr login -n ${{ variables.containerRegistry }}
 
-        docker pull ${{ variables.testImageName }}
-        docker tag ${{ variables.testImageName }} ${{ variables.fullImageName }}
-        docker push ${{ variables.fullImageName }}
+        docker pull $(testImageName)
+        docker tag $(testImageName) $(fullImageName)
+        docker push $(fullImageName)
         
 
 
