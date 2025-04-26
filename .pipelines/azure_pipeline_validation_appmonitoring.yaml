@@ -20,6 +20,21 @@ variables:
   containerRegistry: 'aicommon' # this build pushes to aicommon.azurecr.io with an image that is used for testing in validation cluster, then pushes an image once tests pass. That image is latre picked up by the release pipeline and reuploaded to MCR
   repoImageName: '${{ variables.containerRegistry }}.azurecr.io/validated/azuremonitor/applicationinsights/aiprod'
   repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/dev/azuremonitor/applicationinsights/aiprod'
+  imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
+  testImageTagSuffix: $(imageTag)-$(Build.BuildId)
+  testImageName: ${{ variables.repoTestImageName }}:${{ variables.testImageTagSuffix }}
+  fullImageName: ${{ variables.repoImageName }}:$(imageTag)
+  javaTestAppImageName: 'aicommon.azurecr.io/demoaks-java-app:latest'
+  javaTestAppName: 'test-app-java'
+  nodeTestAppImageName: 'aicommon.azurecr.io/demoaks-nodejs-app:latest'
+  nodeTestAppName: 'test-app-nodejs'
+  testNamespace: 'test-ns'
+  aiConnectionString: 'InstrumentationKey=2b453402-fcfb-408f-8495-c551f0e82f46;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/'
+  aiResourceId: '/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/microsoft.insights/components/appmonitoring-pipeline-validation-ai'
+  Codeql.Enabled: true
+  Codeql.BuildIdentifier: 'linuxbuild'
+  AKSResourceGroup: 'aks-appmonitoring-pipeline'
+  AKSResourceName: 'appmonitoring-webhook-testbed'
   IS_PR: $[eq(variables['Build.Reason'], 'PullRequest')]
 
 jobs:
@@ -54,21 +69,6 @@ jobs:
   pool:
     name: rambhatt-test-es-pool
   variables:
-    imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
-    testImageTagSuffix: $(imageTag)-$(Build.BuildId)
-    testImageName: ${{ variables.repoTestImageName }}:${{ variables.testImageTagSuffix }}
-    fullImageName: ${{ variables.repoImageName }}:$(imageTag)
-    javaTestAppImageName: 'aicommon.azurecr.io/demoaks-java-app:latest'
-    javaTestAppName: 'test-app-java'
-    nodeTestAppImageName: 'aicommon.azurecr.io/demoaks-nodejs-app:latest'
-    nodeTestAppName: 'test-app-nodejs'
-    testNamespace: 'test-ns'
-    aiConnectionString: 'InstrumentationKey=2b453402-fcfb-408f-8495-c551f0e82f46;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/'
-    aiResourceId: '/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/microsoft.insights/components/appmonitoring-pipeline-validation-ai'
-    Codeql.Enabled: true
-    Codeql.BuildIdentifier: 'linuxbuild'
-    AKSResourceGroup: 'aks-appmonitoring-pipeline'
-    AKSResourceName: 'appmonitoring-webhook-testbed'
     # This is necessary because of: https://github.com/moby/moby/issues/37965
     DOCKER_BUILDKIT: 1
 
@@ -162,6 +162,23 @@ jobs:
         docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.testImageName }} -f ./Dockerfile --build-arg IMAGE_TAG="${{ variables.testImageName }}" --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --push --provenance=false .
         docker pull ${{ variables.testImageName }}
 
+  - task: CodeQL3000Finalize@0
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: drop
+
+- job: validate_webhook_image
+  dependsOn: build_linux
+  condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
+  pool:
+    name: rambhatt-test-es-pool
+  variables:
+    # This is necessary because of: https://github.com/moby/moby/issues/37965
+    DOCKER_BUILDKIT: 1
+
+  steps:
   - task: AzureCLI@2
     displayName: "Create deployment in AKS"
     inputs:
@@ -375,14 +392,6 @@ jobs:
         docker tag ${{ variables.testImageName }} ${{ variables.fullImageName }}
         docker push ${{ variables.fullImageName }}
         
-  - task: CodeQL3000Finalize@0
-
-  - task: PublishBuildArtifacts@1
-    inputs:
-      pathToPublish: '$(Build.ArtifactStagingDirectory)'
-      artifactName: drop
-
-
 
 
 
