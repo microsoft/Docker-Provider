@@ -168,6 +168,12 @@ jobs:
     inputs:
       pathToPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: drop
+  - bash: |
+        echo "##vso[task.setvariable variable=testImageName;isOutput=true]${{ variables.testImageName }}"
+        echo "##vso[task.setvariable variable=fullImageName;isOutput=true]${{ variables.fullImageName }}"
+        echo "##vso[task.setvariable variable=testImageTagSuffix;isOutput=true]${{ variables.testImageTagSuffix }}"
+    name: exportVars
+
 
 - job: validate_webhook_image
   dependsOn: build_linux
@@ -175,10 +181,9 @@ jobs:
   pool:
     name: rambhatt-test-es-pool
   variables:
-    imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
-    testImageTagSuffix: $(imageTag)-$(Build.BuildId)
-    testImageName: ${{ variables.repoTestImageName }}:${{ variables.testImageTagSuffix }}
-    fullImageName: ${{ variables.repoImageName }}:$(imageTag)
+    testImageName:  $[ dependencies.build_linux.outputs['exportVars.testImageName'] ]
+    fullImageName:  $[ dependencies.build_linux.outputs['exportVars.fullImageName'] ]
+    testImageTagSuffix:  $[ dependencies.build_linux.outputs['exportVars.testImageTagSuffix'] ]
     # This is necessary because of: https://github.com/moby/moby/issues/37965
     DOCKER_BUILDKIT: 1
 
