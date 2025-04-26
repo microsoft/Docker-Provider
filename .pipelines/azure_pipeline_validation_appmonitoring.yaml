@@ -20,10 +20,6 @@ variables:
   containerRegistry: 'aicommon' # this build pushes to aicommon.azurecr.io with an image that is used for testing in validation cluster, then pushes an image once tests pass. That image is latre picked up by the release pipeline and reuploaded to MCR
   repoImageName: '${{ variables.containerRegistry }}.azurecr.io/validated/azuremonitor/applicationinsights/aiprod'
   repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/dev/azuremonitor/applicationinsights/aiprod'
-  imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
-  testImageTagSuffix: $(imageTag)-$(Build.BuildId)
-  testImageName: ${{ variables.repoTestImageName }}:${{ variables.testImageTagSuffix }}
-  fullImageName: ${{ variables.repoImageName }}:$(imageTag)
   javaTestAppImageName: 'aicommon.azurecr.io/demoaks-java-app:latest'
   javaTestAppName: 'test-app-java'
   nodeTestAppImageName: 'aicommon.azurecr.io/demoaks-nodejs-app:latest'
@@ -69,6 +65,10 @@ jobs:
   pool:
     name: rambhatt-test-es-pool
   variables:
+    imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
+    testImageTagSuffix: $(imageTag)-$(Build.BuildId)
+    testImageName: ${{ variables.repoTestImageName }}:${{ variables.testImageTagSuffix }}
+    fullImageName: ${{ variables.repoImageName }}:$(imageTag)
     # This is necessary because of: https://github.com/moby/moby/issues/37965
     DOCKER_BUILDKIT: 1
 
@@ -175,6 +175,10 @@ jobs:
   pool:
     name: rambhatt-test-es-pool
   variables:
+    imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
+    testImageTagSuffix: $(imageTag)-$(Build.BuildId)
+    testImageName: ${{ variables.repoTestImageName }}:${{ variables.testImageTagSuffix }}
+    fullImageName: ${{ variables.repoImageName }}:$(imageTag)
     # This is necessary because of: https://github.com/moby/moby/issues/37965
     DOCKER_BUILDKIT: 1
 
