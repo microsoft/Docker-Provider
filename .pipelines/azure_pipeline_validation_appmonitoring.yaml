@@ -173,7 +173,7 @@ jobs:
   - bash: |
         echo "##vso[task.setvariable variable=testImageName;isOutput=true]${{ variables.testImageName }}"
         echo "##vso[task.setvariable variable=fullImageName;isOutput=true]${{ variables.fullImageName }}"
-        echo "##vso[task.setvariable variable=testImageTagSuffix;isOutput=true]${testImageTagSuffix)"
+        echo "##vso[task.setvariable variable=testImageTagSuffix;isOutput=true]$(testImageTagSuffix)"
     name: exportVars
 
 
