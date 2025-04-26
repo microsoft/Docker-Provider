@@ -82,6 +82,327 @@ jobs:
       scriptLocation: inlineScript
       inlineScript: |
         mkdir -p $(Build.ArtifactStagingDirectory)/linux
-        echo "${{ variables.fullImageName }}" > $(Build.ArtifactStagingDirectory)/fullImageName.txt
+        echo "Setting the image name..."
+        echo "${{ variables.fullImageName }}" > $(Build.ArtifactStagingDirectory)/linux/fullImageName.txt
 
+        echo "Installing NPM..."
+        sudo apt-get -y install npm
+
+        echo "Switching the directory..."
+        cd appmonitoring/ts/src
+        pwd
+        ls -a
         
+        echo "Installing npm packages..."
+        sudo npm i
+        sudo npm ci
+
+        #echo "Updating packages..."
+        #npm update
+        
+        echo "Building the typescript project..."
+        tsc --build --force
+        
+        if [ $? -ne 0 ]
+        then
+          echo "Build failed"
+          exit 1
+        fi
+
+        echo "Build is done"
+
+        echo "Running ESLint..."
+        npx eslint .
+
+        if [ $? -ne 0 ]
+        then
+          echo "ESLint failed"
+          exit 1
+        fi
+
+        echo "ESLint is done"
+
+        echo "Running Jest..."
+        npm test
+
+        if [ $? -ne 0 ]
+        then
+          echo "Jest failed"
+          exit 1
+        fi
+
+        echo "Jest is done"
+
+        echo "Pruning packages..."
+        sudo npx modclean -r
+        sudo npm prune --production
+        echo "Pruning packages is done"
+        
+        pwd
+        ls -a
+        
+        sudo apt-get update && sudo apt-get -y install qemu binfmt-support qemu-user-static
+        docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
+        docker buildx create --name testbuilder
+        docker buildx use testbuilder
+
+        az --version
+        az account show
+        az account set -s ${{ variables.subscription }}
+        az acr login -n ${{ variables.containerRegistry }}
+
+        # NOTE: Using the prometheus-collector team's cached buildx image since moby/buildkit:buildx-stable-1 getting throttled
+        docker pull mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1
+        docker buildx create --name dockerbuilder --driver docker-container --driver-opt image=mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1 --use
+        docker buildx inspect --bootstrap
+
+        echo "Build reason = $(Build.Reason)"
+
+        echo ${{ variables.testImageName }}
+        
+        docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.testImageName }} -f ./Dockerfile --build-arg IMAGE_TAG="${{ variables.testImageName }}" --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --push --provenance=false .
+        docker pull ${{ variables.testImageName }}
+
+  - task: CodeQL3000Finalize@0
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: drop
+  - bash: |
+        echo "##vso[task.setvariable variable=testImageName;isOutput=true]${{ variables.testImageName }}"
+        echo "##vso[task.setvariable variable=fullImageName;isOutput=true]${{ variables.fullImageName }}"
+        echo "##vso[task.setvariable variable=testImageTagSuffix;isOutput=true]${{ variables.testImageTagSuffix }}"
+    name: exportVars
+
+
+- job: validate_webhook_image
+  dependsOn: build_linux
+  condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
+  pool:
+    name: rambhatt-test-es-pool
+  variables:
+    testImageName:  $[ dependencies.build_linux.outputs['exportVars.testImageName'] ]
+    fullImageName:  $[ dependencies.build_linux.outputs['exportVars.fullImageName'] ]
+    testImageTagSuffix:  $[ dependencies.build_linux.outputs['exportVars.testImageTagSuffix'] ]
+    # This is necessary because of: https://github.com/moby/moby/issues/37965
+    DOCKER_BUILDKIT: 1
+
+  steps:
+  - task: AzureCLI@2
+    displayName: "Create deployment in AKS"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        cd appmonitoring/scripts
+        pwd
+        az account set --subscription ${{ variables.subscription }}
+        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
+
+        sudo chmod u+x ./clean-install-appmonitoring.sh
+
+        echo "Checking for charts..."
+        if ! ./clean-install-appmonitoring.sh ${{ variables.testImageTagSuffix }}; then
+          echo "Chart installation failed"
+          exit 1
+        fi
+
+  - task: AzureCLI@2
+    displayName: "Validate charts deployed to AKS"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        cd appmonitoring/scripts
+        pwd
+        az account set --subscription ${{ variables.subscription }}
+        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
+
+        sudo chmod u+x ./validate-aks-charts.sh
+        sudo chmod u+x ./validate-certs.sh
+
+        echo "Waiting for 30 seconds for charts to be ready..."
+        sleep 30
+
+        echo "Checking for charts..."
+        if ! ./validate-aks-charts.sh; then
+          echo "Chart validation failed"
+          exit 1
+        fi
+
+        echo "Checking for certificate installation..."
+        if ! ./validate-certs.sh; then
+          echo "Certificate validation failed"
+          exit 1
+        fi
+
+  - task: AzureCLI@2
+    displayName: "Install CR and test apps"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        cd appmonitoring/validation-helm
+        pwd
+        az account set --subscription ${{ variables.subscription }}
+        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
+
+        export JAVA_TEST_IMAGE_NAME=${{ variables.javaTestAppImageName }}
+        export NODEJS_TEST_IMAGE_NAME=${{ variables.nodeTestAppImageName }}
+        export TEST_NS="${{ variables.testNamespace }}"
+        export AI_CONNECTION_STRING="${{ variables.aiConnectionString }}"
+        export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
+        export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
+
+        sudo chmod +x ../scripts/install-test-apps.sh
+
+        if ! ../scripts/install-test-apps.sh; then
+          echo "Test apps installation failed"
+          exit 1
+        fi
+
+  - task: AzureCLI@2
+    displayName: "Check test apps were mutated correctly"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        cd appmonitoring/scripts
+        pwd
+        az account set --subscription ${{ variables.subscription }}
+        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }}
+        
+        sudo chmod u+x ./validate-mutation.sh
+
+        if ! ./validate-mutation.sh "test-app-java" "test-app-nodejs" "test-ns"; then
+          echo "Mutation validation failed"
+          exit 1
+        fi
+
+  - task: AzureCLI@2
+    displayName: "Check test apps are sending telemetry to AI"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        cd appmonitoring/scripts
+        pwd
+        az account set --subscription ${{ variables.subscription }}
+        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
+        export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
+        export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
+
+        echo "Wait for 3m for telemetry to flow..."
+        sleep 180
+        
+        sudo chmod u+x ./validate_ai.sh
+
+        if ! ./validate_ai.sh "${{ variables.aiResourceId }}" "test-ns"; then
+          echo "AI telemetry validation failed"
+          exit 1
+        fi
+
+  - task: AzureCLI@2
+    displayName: "Validate Housekeeper Cron Job"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        cd appmonitoring/scripts
+        pwd
+        az account set --subscription ${{ variables.subscription }}
+        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
+
+        sudo chmod u+x ./test-cronjob.sh
+        sudo chmod u+x ./validate-certs.sh
+
+        echo "Checking for charts..."
+        if ! ./test-cronjob.sh; then
+          echo "Cron Job validation failed"
+          exit 1
+        fi
+
+  - task: AzureCLI@2
+    displayName: "Restart webhook deployment"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        cd appmonitoring/scripts
+        pwd
+        az account set --subscription ${{ variables.subscription }}
+        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
+
+        kubectl rollout restart -n kube-system deployment/app-monitoring-webhook 
+
+  - task: AzureCLI@2
+    displayName: "Check test apps were mutated correctly"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        cd appmonitoring/scripts
+        pwd
+        az account set --subscription ${{ variables.subscription }}
+        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }}
+        
+        sudo chmod u+x ./validate-mutation.sh
+
+        if ! ./validate-mutation.sh "test-app-java" "test-app-nodejs" "test-ns"; then
+          echo "Mutation validation failed"
+          exit 1
+        fi
+
+  - task: AzureCLI@2
+    displayName: "Check test apps are sending telemetry to AI"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        cd appmonitoring/scripts
+        pwd
+        az account set --subscription ${{ variables.subscription }}
+        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
+        export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
+        export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
+
+        echo "Wait for 3m for telemetry to flow..."
+        sleep 180
+        
+        sudo chmod u+x ./validate_ai.sh
+
+        if ! ./validate_ai.sh "${{ variables.aiResourceId }}" "test-ns"; then
+          echo "AI telemetry validation failed"
+          exit 1
+        fi
+        
+  - task: AzureCLI@2
+    displayName: "Retag the image as ready to deploy"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        az --version
+        az account show
+        az account set -s ${{ variables.subscription }}
+        az acr login -n ${{ variables.containerRegistry }}
+
+        docker pull ${{ variables.testImageName }}
+        docker tag ${{ variables.testImageName }} ${{ variables.fullImageName }}
+        docker push ${{ variables.fullImageName }}
+        
+
+
+
