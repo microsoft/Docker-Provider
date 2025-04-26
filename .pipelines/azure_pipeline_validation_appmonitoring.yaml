@@ -17,8 +17,8 @@ pr:
 variables:
   armServiceConnectionName: 'Appmonitoring_Validation_Pipeline'
   subscription: '5a3b3ba4-3a42-42ae-b2cb-f882345803bc'
-  containerRegistry: 'aicommon' # this build pushes to aicommon.azurecr.io with an image that is used for testing in validation cluster, then pushes an image once tests pass. That image is latre picked up by the release pipeline and reuploaded to MCR
-  repoImageName: '${{ variables.containerRegistry }}.azurecr.io/validated/azuremonitor/applicationinsights/aiprod'
+  containerRegistry: 'containerinsightsprod' # this build pushes to aicommon.azurecr.io with an image that is used for testing in validation cluster, then pushes an image once tests pass. That image is latre picked up by the release pipeline and reuploaded to MCR
+  repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/applicationinsights/aidev'
   repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/dev/azuremonitor/applicationinsights/aiprod'
   javaTestAppImageName: 'aicommon.azurecr.io/demoaks-java-app:latest'
   javaTestAppName: 'test-app-java'
@@ -173,11 +173,6 @@ jobs:
         trivy image --ignore-unfixed --format json --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 $(testImageName)
 
   - task: CodeQL3000Finalize@0
-
-  - task: PublishBuildArtifacts@1
-    inputs:
-      pathToPublish: '$(Build.ArtifactStagingDirectory)'
-      artifactName: drop
   - bash: |
         echo "##vso[task.setvariable variable=testImageName;isOutput=true]$(testImageName)"
         echo "##vso[task.setvariable variable=fullImageName;isOutput=true]$(fullImageName)"
@@ -410,7 +405,11 @@ jobs:
         docker pull $(testImageName)
         docker tag $(testImageName) $(fullImageName)
         docker push $(fullImageName)
-        
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: drop
 
 
 
