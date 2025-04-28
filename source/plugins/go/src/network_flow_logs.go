@@ -170,7 +170,9 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 		return fmt.Errorf("'flow' field not found or is not a map")
 	}
 	// TimeGenerated
-	dataMap["TimeGenerated"] = extractString(flow, "time")
+	if timeGenerated := extractString(flow, "time"); timeGenerated != "" {
+		dataMap["TimeGenerated"] = timeGenerated
+	}
 	// UUID
 	if uuidVal := extractString(flow, "uuid"); uuidVal != "" {
 		dataMap["UUID"] = uuidVal
@@ -178,8 +180,12 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 		dataMap["UUID"] = uuid.New().String()
 	}
 	// Verdict and DropReason
-	dataMap["Verdict"] = extractString(flow, "verdict")
-	dataMap["DropReason"] = extractString(flow, "drop_reason_desc")
+	if verdict := extractString(flow, "verdict"); verdict != "" {
+		dataMap["Verdict"] = verdict
+	}
+	if dropReason := extractString(flow, "drop_reason_desc"); dropReason != "" {
+		dataMap["DropReason"] = dropReason
+	}
 	// IP
 	if ip, ok := flow["IP"].(map[string]interface{}); ok {
 		dataMap["IP"] = serializeToJSON(ip)
@@ -190,28 +196,48 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 	}
 	// Source details
 	if source, ok := flow["source"].(map[string]interface{}); ok {
-		dataMap["SourceIdentity"] = safeToInt(source["identity"])
-		dataMap["SourceClusterName"] = extractString(source, "cluster_name")
-		dataMap["SourceNamespace"] = extractString(source, "namespace")
-		dataMap["SourcePodName"] = extractString(source, "pod_name")
-		if workloads, ok := source["workloads"].([]interface{}); ok {
+		if identity := safeToInt(source["identity"]); identity != 0 {
+			dataMap["SourceIdentity"] = identity
+		}
+		if clusterName := extractString(source, "cluster_name"); clusterName != "" {
+			dataMap["SourceClusterName"] = clusterName
+		}
+		if namespace := extractString(source, "namespace"); namespace != "" {
+			dataMap["SourceNamespace"] = namespace
+		}
+		if podName := extractString(source, "pod_name"); podName != "" {
+			dataMap["SourcePodName"] = podName
+		}
+		if workloads, ok := source["workloads"].([]interface{}); ok && len(workloads) > 0 {
 			dataMap["SourceWorkloads"] = serializeToJSON(workloads)
 		}
 	}
 	// Destination details
 	if dest, ok := flow["destination"].(map[string]interface{}); ok {
-		dataMap["DestinationIdentity"] = safeToInt(dest["identity"])
-		dataMap["DestinationClusterName"] = extractString(dest, "cluster_name")
-		dataMap["DestinationNamespace"] = extractString(dest, "namespace")
-		dataMap["DestinationPodName"] = extractString(dest, "pod_name")
-		if workloads, ok := dest["workloads"].([]interface{}); ok {
+		if identity := safeToInt(dest["identity"]); identity != 0 {
+			dataMap["DestinationIdentity"] = identity
+		}
+		if clusterName := extractString(dest, "cluster_name"); clusterName != "" {
+			dataMap["DestinationClusterName"] = clusterName
+		}
+		if namespace := extractString(dest, "namespace"); namespace != "" {
+			dataMap["DestinationNamespace"] = namespace
+		}
+		if podName := extractString(dest, "pod_name"); podName != "" {
+			dataMap["DestinationPodName"] = podName
+		}
+		if workloads, ok := dest["workloads"].([]interface{}); ok && len(workloads) > 0 {
 			dataMap["DestinationWorkloads"] = serializeToJSON(workloads)
 		}
 	}
 	// FlowType
-	dataMap["FlowType"] = extractString(flow, "Type")
+	if flowType := extractString(flow, "Type"); flowType != "" {
+		dataMap["FlowType"] = flowType
+	}
 	// NodeName
-	dataMap["NodeName"] = extractString(flow, "node_name")
+	if nodeName := extractString(flow, "node_name"); nodeName != "" {
+		dataMap["NodeName"] = nodeName
+	}
 	// Layer7
 	if l7, ok := flow["l7"].(map[string]interface{}); ok {
 		dataMap["Layer7"] = serializeToJSON(l7)
@@ -225,17 +251,33 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 		dataMap["EventType"] = serializeToJSON(eventType)
 	}
 	// Service
-	serviceData := map[string]interface{}{
-		"SourceService":               extractString(flow, "source_service.name"),
-		"SourceServiceNamespace":      extractString(flow, "source_service.namespace"),
-		"DestinationService":          extractString(flow, "destination_service.name"),
-		"DestinationServiceNamespace": extractString(flow, "destination_service.namespace"),
+	serviceData := map[string]interface{}{}
+	if sourceService, ok := flow["source_service"].(map[string]interface{}); ok {
+		if serviceName, ok := sourceService["name"].(string); ok {
+			serviceData["SourceService"] = serviceName
+		}
+		if serviceNS, ok := sourceService["namespace"].(string); ok {
+			serviceData["SourceServiceNamespace"] = serviceNS
+		}
 	}
-	dataMap["Service"] = serializeToJSON(serviceData)
+	if destinationService, ok := flow["destination_service"].(map[string]interface{}); ok {
+		if serviceName, ok := destinationService["name"].(string); ok {
+			serviceData["DestinationService"] = serviceName
+		}
+		if serviceNS, ok := destinationService["namespace"].(string); ok {
+			serviceData["DestinationServiceNamespace"] = serviceNS
+		}
+	}
+	if len(serviceData) > 0 {
+		dataMap["Service"] = serializeToJSON(serviceData)
+	}
 	// TrafficDirection and TraceObservationPoint
-	dataMap["TrafficDirection"] = extractString(flow, "traffic_direction")
-	dataMap["TraceObservationPoint"] = extractString(flow, "trace_observation_point")
-
+	if trafficDirection := extractString(flow, "traffic_direction"); trafficDirection != "" {
+		dataMap["TrafficDirection"] = trafficDirection
+	}
+	if traceObservationPoint := extractString(flow, "trace_observation_point"); traceObservationPoint != "" {
+		dataMap["TraceObservationPoint"] = traceObservationPoint
+	}
 	// Packets and Bytes
 	if packetsSent, ok := flow["packets_sent"]; ok {
 		dataMap["PacketsSent"] = safeToInt(packetsSent)
@@ -243,25 +285,48 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 	if packetsReceived, ok := flow["packets_received"]; ok {
 		dataMap["PacketsReceived"] = safeToInt(packetsReceived)
 	}
-
-	// Policies (combined from multiple fields)
-	policiesData := map[string]interface{}{
-		"egress_allowed_by":  flow["egress_allowed_by"],
-		"ingress_allowed_by": flow["ingress_allowed_by"],
-		"egress_denied_by":   flow["egress_denied_by"],
-		"ingress_denied_by":  flow["ingress_denied_by"],
+	// Policies
+	policiesData := map[string]interface{}{}
+	if val, ok := flow["egress_allowed_by"]; ok {
+		policiesData["egress_allowed_by"] = val
 	}
-	dataMap["Policies"] = serializeToJSON(policiesData)
+	if val, ok := flow["ingress_allowed_by"]; ok {
+		policiesData["ingress_allowed_by"] = val
+	}
+	if val, ok := flow["egress_denied_by"]; ok {
+		policiesData["egress_denied_by"] = val
+	}
+	if val, ok := flow["ingress_denied_by"]; ok {
+		policiesData["ingress_denied_by"] = val
+	}
+	if len(policiesData) > 0 {
+		dataMap["Policies"] = serializeToJSON(policiesData)
+	}
 	// AdditionalFlowData
-	additionalData := map[string]interface{}{
-		"EthernetSource":      extractString(flow, "ethernet.source"),
-		"EthernetDestination": extractString(flow, "ethernet.destination"),
-		"SourceLabels":        extractLabels(flow["source"]),
-		"DestinationLabels":   extractLabels(flow["destination"]),
-		"Summary":             flow["Summary"],
-		"Extensions":          flow["extensions"],
+	additionalData := map[string]interface{}{}
+	if ethernet, ok := flow["ethernet"].(map[string]interface{}); ok {
+		if source, ok := ethernet["source"].(string); ok {
+			additionalData["EthernetSource"] = source
+		}
+		if destination, ok := ethernet["destination"].(string); ok {
+			additionalData["EthernetDestination"] = destination
+		}
 	}
-	dataMap["AdditionalFlowData"] = serializeToJSON(additionalData)
+	if sourceLabels := extractLabels(flow["source"]); len(sourceLabels) > 0 {
+		additionalData["SourceLabels"] = sourceLabels
+	}
+	if destinationLabels := extractLabels(flow["destination"]); len(destinationLabels) > 0 {
+		additionalData["DestinationLabels"] = destinationLabels
+	}
+	if summary, ok := flow["Summary"]; ok {
+		additionalData["Summary"] = summary
+	}
+	if extensions, ok := flow["extensions"]; ok {
+		additionalData["Extensions"] = extensions
+	}
+	if len(additionalData) > 0 {
+		dataMap["AdditionalFlowData"] = serializeToJSON(additionalData)
+	}
 	return nil
 }
 
