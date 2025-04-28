@@ -116,6 +116,7 @@ function Set-CommonAMAEnvironmentVariables {
     Set-ProcessAndMachineEnvVariables "MONITORING_VERSION" "2.0"
     Set-ProcessAndMachineEnvVariables "MONITORING_ROLE" "cloudAgentRoleIdentity"
     Set-ProcessAndMachineEnvVariables "MONITORING_IDENTITY" "use_ip_address"
+    Set-ProcessAndMachineEnvVariables "MA_DISABLE_EXTENSIONS" "true"
 
     $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID", "process")
     if (![string]::IsNullOrEmpty($aksResourceId)) {
