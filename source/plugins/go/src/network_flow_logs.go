@@ -173,7 +173,6 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 	if timeGenerated := extractString(flow, "time"); timeGenerated != "" {
 		dataMap["TimeGenerated"] = timeGenerated
 	}
-
 	// UUID
 	if uuidVal := extractString(flow, "uuid"); uuidVal != "" {
 		dataMap["UUID"] = uuidVal
@@ -187,7 +186,6 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 	if dropReason := extractString(flow, "drop_reason_desc"); dropReason != "" {
 		dataMap["DropReason"] = dropReason
 	}
-
 	// IP
 	if ip, ok := flow["IP"].(map[string]interface{}); ok {
 		dataMap["IP"] = serializeToJSON(ip)
@@ -280,7 +278,6 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 	if traceObservationPoint := extractString(flow, "trace_observation_point"); traceObservationPoint != "" {
 		dataMap["TraceObservationPoint"] = traceObservationPoint
 	}
-
 	// Packets and Bytes
 	if packetsSent, ok := flow["packets_sent"]; ok {
 		dataMap["PacketsSent"] = safeToInt(packetsSent)
@@ -288,7 +285,6 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 	if packetsReceived, ok := flow["packets_received"]; ok {
 		dataMap["PacketsReceived"] = safeToInt(packetsReceived)
 	}
-
 	// Policies
 	policiesData := map[string]interface{}{}
 	if val, ok := flow["egress_allowed_by"]; ok {
@@ -306,7 +302,6 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 	if len(policiesData) > 0 {
 		dataMap["Policies"] = serializeToJSON(policiesData)
 	}
-
 	// AdditionalFlowData
 	additionalData := map[string]interface{}{}
 	if ethernet, ok := flow["ethernet"].(map[string]interface{}); ok {
