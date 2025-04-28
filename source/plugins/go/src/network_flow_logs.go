@@ -65,7 +65,6 @@ func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int
 				Log("Error::networkflow:: failed to map networkflow logs to data map: %v", err.Error())
 				continue
 			}
-			Log(fmt.Sprintf("Debug: PostNetworkFlowRecords stringMap data: %+v", dataMap))
 			var networkFlowLogsMsgPackEntry NetworkFlowMsgPackEntry
 			networkFlowLogsMsgPackEntry = NetworkFlowMsgPackEntry{
 				Time:   time.Now().Unix(),
@@ -74,7 +73,6 @@ func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int
 			networkFlowLogsMsgPackEntries = append(networkFlowLogsMsgPackEntries, networkFlowLogsMsgPackEntry)
 		}
 
-		Log(fmt.Sprintf("Debug: PostNetworkFlowRecords networkFlowLogsMsgPackEntries data: %+v", networkFlowLogsMsgPackEntries))
 		if len(networkFlowLogsMsgPackEntries) > 0 {
 			MdsdNetworkFlowLogsStreamTagName = getOutputStreamIdTag(RetinaNetworkFlowLogsStreamName, MdsdNetworkFlowLogsStreamTagName, &NetworkFlowTagRefreshTracker)
 			if MdsdNetworkFlowLogsStreamTagName == "" {
