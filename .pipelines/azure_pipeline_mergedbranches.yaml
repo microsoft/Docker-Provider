@@ -341,9 +341,11 @@ extends:
         steps:
         - task: PowerShell@2
           inputs:
-            targetType: 'filePath'
+            targetType: filePath
             filePath: $(System.DefaultWorkingDirectory)/scripts/build/windows/install-build-pre-requisites.ps1
-          displayName: 'install prereqs'
+          target:
+            container: host
+          displayName: install prereqs
         - task: CodeQL3000Init@0
           condition: eq(variables.IS_MAIN_BRANCH, true)
         - script: |
