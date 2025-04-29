@@ -328,6 +328,9 @@ extends:
           inputs:
             DockerImagesToScan: '$(GOLANG_BASE_IMAGE),$(CI_BASE_IMAGE),${{ variables.repoImageName }}:$(linuxImagetag)'
       - job: build_windows_2019
+        pool:
+          name: Azure-Pipelines-Windows-CI-Test-EO
+          os: windows
         timeoutInMinutes: 120
         dependsOn:
         - common
@@ -341,11 +344,9 @@ extends:
         steps:
         - task: PowerShell@2
           inputs:
-            targetType: filePath
+            targetType: 'filePath'
             filePath: $(System.DefaultWorkingDirectory)/scripts/build/windows/install-build-pre-requisites.ps1
-          target:
-            container: host
-          displayName: install prereqs
+          displayName: 'install prereqs'
         - task: CodeQL3000Init@0
           condition: eq(variables.IS_MAIN_BRANCH, true)
         - script: |
@@ -531,6 +532,9 @@ extends:
         - task: CodeQL3000Finalize@0
           condition: eq(variables.IS_MAIN_BRANCH, true)
       - job: build_windows_2022
+        pool:
+          name: Azure-Pipelines-Windows-CI-Test-EO
+          os: windows
         timeoutInMinutes: 120
         dependsOn:
         - common
