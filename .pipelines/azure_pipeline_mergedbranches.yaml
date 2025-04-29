@@ -41,6 +41,9 @@ resources:
     ref: refs/tags/release
 stages:
 - stage: stage
+  pool:
+    name: Azure-Pipelines-Windows-CI-Test-EO
+    os: windows
   jobs:
   - job: common
     displayName: "Build: Common"
