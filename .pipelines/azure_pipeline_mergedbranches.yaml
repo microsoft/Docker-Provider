@@ -157,7 +157,7 @@ extends:
           outputs:
           - output: pipelineArtifact
             targetPath: '$(Build.ArtifactStagingDirectory)'
-            artifactName: drop
+            artifactName: linux-drop
         steps:
         - task: CodeQL3000Init@0
           condition: eq(variables.IS_MAIN_BRANCH, true)
@@ -743,7 +743,7 @@ extends:
           outputs:
           - output: pipelineArtifact
             targetPath: '$(Build.ArtifactStagingDirectory)'
-            artifactName: drop
+            artifactName: windows-drop
         steps:
         - task: AzureCLI@2
           displayName: "Docker windows build for multi-arc image"
