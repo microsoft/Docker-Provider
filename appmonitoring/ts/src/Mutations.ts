@@ -50,7 +50,7 @@ export class Mutations {
                         name: Mutations.initContainerNameJava,
                         image: Mutations.GenerateImagePath(platforms[i], imageRepoPath),
                         command: ["cp"],
-                        args: ["-a", Mutations.imagePathJava, Mutations.agentVolumeMountPathJava], // cp -a <source> <destination> 
+                        args: ["-r", Mutations.imagePathJava, Mutations.agentVolumeMountPathJava], // cp -r <source> <destination> 
                         volumeMounts: [{
                             name: Mutations.agentVolumeJava,
                             mountPath: Mutations.agentVolumeMountPathJava
@@ -73,7 +73,7 @@ export class Mutations {
                         name: Mutations.initContainerNameNodeJs,
                         image: Mutations.GenerateImagePath(platforms[i], imageRepoPath),
                         command: ["cp"],
-                        args: ["-a", Mutations.imagePathNodeJs, Mutations.agentVolumeMountPathNodeJs], // cp -a <source> <destination>
+                        args: ["-r", Mutations.imagePathNodeJs, Mutations.agentVolumeMountPathNodeJs], // cp -r <source> <destination>
                         volumeMounts: [{
                             name: Mutations.agentVolumeNodeJs,
                             mountPath: Mutations.agentVolumeMountPathNodeJs
