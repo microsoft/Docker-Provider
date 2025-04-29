@@ -1103,25 +1103,23 @@ else
 fi
 
 #start fluentd
-if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ] && [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" != "true" ]; then
-    echo "*** starting fluentd v1 in replicaset"
-    if [ "${ENABLE_CUSTOM_METRICS}" == "true" ]; then
-        mv /etc/fluent/kube-cm.conf /etc/fluent/kube.conf
-    fi
-    fluentd -c /etc/fluent/kube.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
+if [ "${LOGS_AND_EVENTS_ONLY}" == "true" ]; then
+      echo "Skipping fluentd since LOGS_AND_EVENTS_ONLY is set to true"
+elif [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ] && [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" != "true" ]; then
+      echo "*** starting fluentd v1 in replicaset"
+      if [ "${ENABLE_CUSTOM_METRICS}" == "true" ]; then
+            mv /etc/fluent/kube-cm.conf /etc/fluent/kube.conf
+      fi
+      fluentd -c /etc/fluent/kube.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
 elif [ "$AZMON_RESOURCE_OPTIMIZATION_ENABLED" != "true" ]; then
-    # no dependency on fluentd for Prometheus sidecar container
-    if [ "${CONTROLLER_TYPE}" == "DaemonSet" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
-        if [ "$LOGS_AND_EVENTS_ONLY" != "true" ]; then
+      # no dependency on fluentd for Prometheus sidecar container
+      if [ "${CONTROLLER_TYPE}" == "DaemonSet" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ]; then
             echo "*** starting fluentd v1 in daemonset"
             if [ "${ENABLE_CUSTOM_METRICS}" == "true" ]; then
-                mv /etc/fluent/container-cm.conf /etc/fluent/container.conf
+                  mv /etc/fluent/container-cm.conf /etc/fluent/container.conf
             fi
             fluentd -c /etc/fluent/container.conf -o /var/opt/microsoft/docker-cimprov/log/fluentd.log --log-rotate-age 5 --log-rotate-size 20971520 &
-        else
-            echo "Skipping fluentd since LOGS_AND_EVENTS_ONLY is set to true"
-        fi
-    fi
+      fi
 else
     echo "Skipping fluentd for linux daemonset since AZMON_RESOURCE_OPTIMIZATION_ENABLED is set to ${AZMON_RESOURCE_OPTIMIZATION_ENABLED}"
 fi
@@ -1277,7 +1275,9 @@ export HOST_VAR=/hostfs/var
 echo "export HOST_VAR=/hostfs/var" >>~/.bashrc
 
 if [ ! -e "/etc/config/kube.conf" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
-      if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
+      if [ "${LOGS_AND_EVENTS_ONLY}" == "true" ]; then
+            echo "LOGS_AND_EVENTS_ONLY is true, not checking for listener on tcp #25226, tcp #25228 and tcp #25229 (for sidecar)"
+      elif [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
             if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
                   echo "checking for listener on tcp #25229 and waiting for $WAITTIME_PORT_25229 secs if not.."
                   waitforlisteneronTCPport 25229 $WAITTIME_PORT_25229
@@ -1285,15 +1285,11 @@ if [ ! -e "/etc/config/kube.conf" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE
                   echo "no metrics to scrape since MUTE_PROM_SIDECAR is true, not checking for listener on tcp #25229"
             fi
       else
-            if [ "${LOGS_AND_EVENTS_ONLY}" == "true" ]; then
-                  echo "LOGS_AND_EVENTS_ONLY is true, not checking for listener on tcp #25226 and tcp #25228"
-            else
-                  echo "checking for listener on tcp #25226 and waiting for $WAITTIME_PORT_25226 secs if not.."
-                  waitforlisteneronTCPport 25226 $WAITTIME_PORT_25226
-                    if [ "${ENABLE_CUSTOM_METRICS}" == true ]; then
-                        echo "checking for listener on tcp #25228 and waiting for $WAITTIME_PORT_25228 secs if not.."
-                        waitforlisteneronTCPport 25228 $WAITTIME_PORT_25228
-                  fi
+            echo "checking for listener on tcp #25226 and waiting for $WAITTIME_PORT_25226 secs if not.."
+            waitforlisteneronTCPport 25226 $WAITTIME_PORT_25226
+            if [ "${ENABLE_CUSTOM_METRICS}" == true ]; then
+                echo "checking for listener on tcp #25228 and waiting for $WAITTIME_PORT_25228 secs if not.."
+                waitforlisteneronTCPport 25228 $WAITTIME_PORT_25228
             fi
       fi
 elif [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
@@ -1303,13 +1299,13 @@ fi
 
 
 #start telegraf
-if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ]; then
+if [ "${LOGS_AND_EVENTS_ONLY}" == "true" ]; then
+      echo "not starting telegraf for LOGS_AND_EVENTS_ONLY mode"
+elif [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ]; then
     echo "not starting telegraf (no metrics to scrape since GENEVA_LOGS_INTEGRATION_SERVICE_MODE is true)"
 elif [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
     if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ "${TELEMETRY_RS_TELEGRAF_DISABLED}" == "true" ]; then
         echo "not starting telegraf since prom scraping is disabled for replicaset"
-    elif [ "${CONTROLLER_TYPE}" != "ReplicaSet" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${LOGS_AND_EVENTS_ONLY}" == "true" ]; then
-        echo "not starting telegraf for LOGS_AND_EVENTS_ONLY daemonset"
     else
         /opt/telegraf --config $telegrafConfFile &
     fi

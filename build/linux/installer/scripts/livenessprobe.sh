@@ -17,18 +17,15 @@ syslogSetup() {
 }
 
 if [[ "${CONTROLLER_TYPE}" == "DaemonSet" ]]; then
-  if [[ "${CONTAINER_TYPE}" == "PrometheusSidecar" && "${GENEVA_LOGS_INTEGRATION}" == "true" && -d "/var/run/mdsd-ci" ]]; then
-    syslogSetup
-  else
-    syslogSetup
-    CURRENT_LOGS_AND_EVENTS_ONLY=${LOGS_AND_EVENTS_ONLY}
-    ruby /opt/dcr-config-parser.rb > /dev/write-to-traces 2>&1
-    source /opt/dcr_env_var
-    if [ "${LOGS_AND_EVENTS_ONLY}" != "${CURRENT_LOGS_AND_EVENTS_ONLY}" ]; then
-      echo "dcr_env_var has been updated - dcr config changed" > /dev/termination-log
-      exit 1
-    fi
-  fi
+  syslogSetup
+fi
+
+CURRENT_LOGS_AND_EVENTS_ONLY=${LOGS_AND_EVENTS_ONLY}
+ruby /opt/dcr-config-parser.rb > /dev/write-to-traces 2>&1
+source /opt/dcr_env_var
+if [ "${LOGS_AND_EVENTS_ONLY}" != "${CURRENT_LOGS_AND_EVENTS_ONLY}" ]; then
+  echo "dcr_env_var has been updated - dcr config changed" > /dev/termination-log
+  exit 1
 fi
 
 if [ -s "inotifyoutput.txt" ]
@@ -80,8 +77,8 @@ if [[ "${IS_HIGH_LOG_SCALE_MODE}" == "true" || "${AZMON_MULTI_TENANCY_LOGS_SERVI
 fi
 
 
-# LOGS_AND_EVENTS_ONLY mode in daemonset needs only mdsd and fluent-bit
-if [[ "${CONTROLLER_TYPE}" == "DaemonSet" && "${CONTAINER_TYPE}" != "PrometheusSidecar" && "${LOGS_AND_EVENTS_ONLY}" == "true" ]]; then
+# LOGS_AND_EVENTS_ONLY mode needs only mdsd and fluent-bit
+if [[ "${LOGS_AND_EVENTS_ONLY}" == "true" ]]; then
   echo "Logs and events only mode enabled" > /dev/write-to-traces
   exit 0
 fi
