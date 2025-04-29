@@ -41,11 +41,19 @@ resources:
     ref: refs/tags/release
 stages:
 - stage: stage
-  pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
-    os: windows
   jobs:
   - job: common
+    displayName: "Build: Common"
+    pool:
+      name: Azure-Pipelines-CI-Test-EO
+      image: ci-1es-managed-ubuntu-2204
+      os: linux
+    templateContext:
+      outputs:
+      - output: pipelineArtifact
+        displayName: 'Ev2: publish Ev2 deployment artifacts'
+        targetPath: '$(Build.ArtifactStagingDirectory)'
+        artifactName: ev2-drop
     variables:
     - name: OneESPT
       value: true
@@ -641,20 +649,20 @@ stages:
         Verbosity: 'Verbose'
         PackageName: ''
         PackageVersion: ''
-    - task: PublishPipelineArtifact@1
-      displayName: "\U0001F512 Publish to Pipeline Artifact"
-      target:
-        container: host
-      condition: succeeded()
-      inputs:
-        artifactName: drop
-        targetPath: $(Build.ArtifactStagingDirectory)
   - job: build_linux
     timeoutInMinutes: 120
     dependsOn:
     - common
     pool:
       name: Azure-Pipelines-CI-Test-EO
+      image: ci-1es-managed-ubuntu-2204
+      os: linux
+    templateContext:
+      outputs:
+      - output: pipelineArtifact
+        displayName: 'Ev2: Publish image artifacts'
+        targetPath: '$(Build.ArtifactStagingDirectory)'
+        artifactName: linux-drop
     variables:
     - name: OneESPT
       value: true
@@ -1371,14 +1379,6 @@ stages:
         Verbosity: 'Verbose'
         PackageName: ''
         PackageVersion: ''
-    - task: PublishPipelineArtifact@1
-      displayName: "\U0001F512 Publish to Pipeline Artifact"
-      target:
-        container: host
-      condition: succeeded()
-      inputs:
-        artifactName: drop
-        targetPath: $(Build.ArtifactStagingDirectory)
   - job: build_windows_2019
     timeoutInMinutes: 120
     dependsOn:
@@ -2112,6 +2112,16 @@ stages:
         container: host
       continueOnError: true
   - job: build_windows_multi_arc
+    pool:
+      name: Azure-Pipelines-Windows-CI-Test-EO
+      image: ci-1es-managed-windows-2022
+      os: windows
+    templateContext:
+      outputs:
+      - output: pipelineArtifact
+        displayName: 'Ev2: publish image artifacts'
+        targetPath: '$(Build.ArtifactStagingDirectory)/windows'
+        artifactName: windows-drop
     dependsOn:
     - common
     - build_windows_2019
@@ -2725,14 +2735,6 @@ stages:
         Verbosity: 'Verbose'
         PackageName: ''
         PackageVersion: ''
-    - task: PublishPipelineArtifact@1
-      displayName: "\U0001F512 Publish to Pipeline Artifact"
-      target:
-        container: host
-      condition: succeeded()
-      inputs:
-        artifactName: drop
-        targetPath: $(Build.ArtifactStagingDirectory)
 - stage: SDLSources
   displayName: "\U0001F512 SDLSources"
   isSkippable: false
