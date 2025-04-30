@@ -262,6 +262,17 @@ jobs:
         export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
 
+        # Build and push the nodejs test app image
+        cd ../test-apps/nodejs
+        echo "Building nodejs test app Docker image..."
+        docker build -t $NODEJS_TEST_IMAGE_NAME .
+        echo "Pushing nodejs test app Docker image to ACR..."
+        az acr login -n ${{ variables.containerRegistry }}
+        docker push $NODEJS_TEST_IMAGE_NAME
+        cd ../../validation-helm
+
+        exit 1
+
         sudo chmod +x ../scripts/install-test-apps.sh
 
         if ! ../scripts/install-test-apps.sh; then
