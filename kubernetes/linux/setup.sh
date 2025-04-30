@@ -77,7 +77,7 @@ sudo tdnf install libcap -y
 sudo tdnf install telegraf-agent-1.34.2 -y
 telegraf_version=$(sudo tdnf list installed | grep telegraf | awk '{print $2}')
 echo "telegraf $telegraf_version" >> packages_version.txt
-mv /usr/bin/telegraf /opt/telegraf
+mv /usr/bin/telegraf-agent /opt/telegraf
 
 # Use wildcard version so that it doesnt require to touch this file
 /$TMPDIR/docker-cimprov-*.*.*-*.*.sh --install
