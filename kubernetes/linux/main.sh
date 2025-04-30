@@ -1065,8 +1065,8 @@ if [ ! -f /etc/cron.d/ci-agent ]; then
       echo "*/5 * * * * root /usr/sbin/logrotate -s /var/lib/logrotate/ci-agent-status /etc/logrotate.d/ci-agent >/dev/null 2>&1" >/etc/cron.d/ci-agent
 fi
 
-setGlobalEnvVar AZMON_RESOURCE_OPTIMIZATION_ENABLED "${AZMON_RESOURCE_OPTIMIZATION_ENABLED}"
-if [ "${AZMON_RESOURCE_OPTIMIZATION_ENABLED}" == "false" ] || [ -z "${AZMON_RESOURCE_OPTIMIZATION_ENABLED}" ] || [ "${USING_AAD_MSI_AUTH}" != "true" ] || [ "${RS_GENEVA_LOGS_INTEGRATION}" == "true" ]; then
+setGlobalEnvVar AZMON_WINDOWS_FLUENT_BIT_ENABLED "${AZMON_WINDOWS_FLUENT_BIT_ENABLED}"
+if [ "${AZMON_WINDOWS_FLUENT_BIT_ENABLED}" == "false" ] || [ -z "${AZMON_WINDOWS_FLUENT_BIT_ENABLED}" ] || [ "${USING_AAD_MSI_AUTH}" != "true" ] || [ "${RS_GENEVA_LOGS_INTEGRATION}" == "true" ]; then
       if [ -e "/etc/config/kube.conf" ]; then
            # Replace a string in the configmap file
             sed -i "s/#@include windows_rs/@include windows_rs/g" /etc/fluent/kube.conf

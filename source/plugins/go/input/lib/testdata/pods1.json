@@ -190,6 +190,353 @@
 				"containers": [
 					{
 						"name": "azure-ip-masq-agent",
+						"image": "mcr.microsoft.com/aks/ip-masq-agent-v2:v0.1.7@sha256:3a691ceb2fae32df0fbd04f17509babd82f4de3fd6a23f8d9f26381ac89c4822",
+						"args": [
+							"--v=2",
+							"--resync-interval=60"
+						],
+						"env": [
+							{
+								"name": "KUBERNETES_PORT_443_TCP_ADDR",
+								"value": "ci-logs-prod-aks-syslog-dns-1ebf13ac.hcp.eastus.azmk8s.io"
+							},
+							{
+								"name": "KUBERNETES_PORT",
+								"value": "tcp://ci-logs-prod-aks-syslog-dns-1ebf13ac.hcp.eastus.azmk8s.io:443"
+							},
+							{
+								"name": "KUBERNETES_PORT_443_TCP",
+								"value": "tcp://ci-logs-prod-aks-syslog-dns-1ebf13ac.hcp.eastus.azmk8s.io:443"
+							},
+							{
+								"name": "KUBERNETES_SERVICE_HOST",
+								"value": "ci-logs-prod-aks-syslog-dns-1ebf13ac.hcp.eastus.azmk8s.io"
+							}
+						],
+						"resources": {
+							"limits": {
+								"cpu": "500m",
+								"memory": "250Mi"
+							},
+							"requests": {
+								"cpu": "100m",
+								"memory": "50Mi"
+							}
+						},
+						"volumeMounts": [
+							{
+								"name": "azure-ip-masq-agent-config-volume",
+								"mountPath": "/etc/config"
+							},
+							{
+								"name": "iptableslock",
+								"mountPath": "/run/xtables.lock"
+							}
+						],
+						"terminationMessagePath": "/dev/termination-log",
+						"terminationMessagePolicy": "File",
+						"imagePullPolicy": "IfNotPresent",
+						"securityContext": {
+							"capabilities": {
+								"add": [
+									"NET_ADMIN",
+									"NET_RAW"
+								]
+							}
+						}
+					}
+				],
+				"restartPolicy": "Always",
+				"terminationGracePeriodSeconds": 30,
+				"dnsPolicy": "ClusterFirst",
+				"serviceAccountName": "default",
+				"serviceAccount": "default",
+				"automountServiceAccountToken": false,
+				"nodeName": "aks-newpool-21676506-vmss000000",
+				"hostNetwork": true,
+				"securityContext": {},
+				"affinity": {
+					"nodeAffinity": {
+						"requiredDuringSchedulingIgnoredDuringExecution": {
+							"nodeSelectorTerms": [
+								{
+									"matchFields": [
+										{
+											"key": "metadata.name",
+											"operator": "In",
+											"values": [
+												"aks-newpool-21676506-vmss000000"
+											]
+										}
+									]
+								}
+							]
+						}
+					}
+				},
+				"schedulerName": "default-scheduler",
+				"tolerations": [
+					{
+						"key": "CriticalAddonsOnly",
+						"operator": "Exists"
+					},
+					{
+						"operator": "Exists",
+						"effect": "NoExecute"
+					},
+					{
+						"operator": "Exists",
+						"effect": "NoSchedule"
+					}
+				],
+				"priorityClassName": "system-node-critical",
+				"priority": 2000001000,
+				"enableServiceLinks": true,
+				"preemptionPolicy": "PreemptLowerPriority"
+			},
+			"status": {
+				"phase": "Running",
+				"conditions": [
+					{
+						"type": "Initialized",
+						"status": "True",
+						"lastProbeTime": null,
+						"lastTransitionTime": "2023-08-03T16:07:48Z"
+					},
+					{
+						"type": "Ready",
+						"status": "True",
+						"lastProbeTime": null,
+						"lastTransitionTime": "2023-08-03T16:07:53Z"
+					},
+					{
+						"type": "ContainersReady",
+						"status": "True",
+						"lastProbeTime": null,
+						"lastTransitionTime": "2023-08-03T16:07:53Z"
+					},
+					{
+						"type": "PodScheduled",
+						"status": "True",
+						"lastProbeTime": null,
+						"lastTransitionTime": "2023-08-03T16:07:46Z"
+					}
+				],
+				"hostIP": "10.224.0.6",
+				"podIP": "10.224.0.6",
+				"podIPs": [
+					{
+						"ip": "10.224.0.6"
+					}
+				],
+				"startTime": "2023-08-03T16:07:48Z",
+				"containerStatuses": [
+					{
+						"name": "azure-ip-masq-agent",
+						"state": {
+							"running": {
+								"startedAt": "2023-08-03T16:07:52Z"
+							}
+						},
+						"lastState": {},
+						"ready": true,
+						"restartCount": 0,
+						"image": "sha256:7f0239fd72a8664f0cc0c4203a7bbb616d3de1b64d1dac9094a5a28fb2b750b4",
+						"imageID": "mcr.microsoft.com/aks/ip-masq-agent-v2@sha256:3a691ceb2fae32df0fbd04f17509babd82f4de3fd6a23f8d9f26381ac89c4822",
+						"containerID": "containerd://3b988c9fb1dad91e191fbbc8f0db13c37eeaf9a0002b30e75b4fb62a37ee54eb",
+						"started": true
+					}
+				],
+				"qosClass": "Burstable"
+			}
+		},
+		{
+			"metadata": {
+				"name": "azure-ip-masq-agent-jlfv4",
+				"generateName": "azure-ip-masq-agent-",
+				"namespace": "kube-system",
+				"uid": "072529c3-4297-4d1c-96df-8b8a43ba8932",
+				"resourceVersion": "72098978",
+				"creationTimestamp": "2023-08-03T16:07:46Z",
+				"labels": {
+					"controller-revision-hash": "86d676b776",
+					"k8s-app": "azure-ip-masq-agent",
+					"kubernetes.azure.com/managedby": "aks",
+					"pod-template-generation": "4",
+					"tier": "node"
+				},
+				"annotations": {
+					"kubernetes.io/config.seen": "2023-08-03T16:07:48.216168377Z",
+					"kubernetes.io/config.source": "api"
+				},
+				"ownerReferences": [
+					{
+						"apiVersion": "apps/v1",
+						"kind": "DaemonSet",
+						"name": "azure-ip-masq-agent",
+						"uid": "72b38180-3dda-4f4c-be06-b2d5adc02ac1",
+						"controller": true,
+						"blockOwnerDeletion": true
+					}
+				],
+				"managedFields": [
+					{
+						"manager": "kube-controller-manager",
+						"operation": "Update",
+						"apiVersion": "v1",
+						"time": "2023-08-03T16:07:46Z",
+						"fieldsType": "FieldsV1",
+						"fieldsV1": {
+							"f:metadata": {
+								"f:generateName": {},
+								"f:labels": {
+									".": {},
+									"f:controller-revision-hash": {},
+									"f:k8s-app": {},
+									"f:kubernetes.azure.com/managedby": {},
+									"f:pod-template-generation": {},
+									"f:tier": {}
+								},
+								"f:ownerReferences": {
+									".": {},
+									"k:{\"uid\":\"72b38180-3dda-4f4c-be06-b2d5adc02ac1\"}": {}
+								}
+							},
+							"f:spec": {
+								"f:affinity": {
+									".": {},
+									"f:nodeAffinity": {
+										".": {},
+										"f:requiredDuringSchedulingIgnoredDuringExecution": {}
+									}
+								},
+								"f:automountServiceAccountToken": {},
+								"f:containers": {
+									"k:{\"name\":\"azure-ip-masq-agent\"}": {
+										".": {},
+										"f:args": {},
+										"f:image": {},
+										"f:imagePullPolicy": {},
+										"f:name": {},
+										"f:resources": {
+											".": {},
+											"f:limits": {
+												".": {},
+												"f:cpu": {},
+												"f:memory": {}
+											},
+											"f:requests": {
+												".": {},
+												"f:cpu": {},
+												"f:memory": {}
+											}
+										},
+										"f:securityContext": {
+											".": {},
+											"f:capabilities": {
+												".": {},
+												"f:add": {}
+											}
+										},
+										"f:terminationMessagePath": {},
+										"f:terminationMessagePolicy": {},
+										"f:volumeMounts": {
+											".": {},
+											"k:{\"mountPath\":\"/etc/config\"}": {
+												".": {},
+												"f:mountPath": {},
+												"f:name": {}
+											},
+											"k:{\"mountPath\":\"/run/xtables.lock\"}": {
+												".": {},
+												"f:mountPath": {},
+												"f:name": {}
+											}
+										}
+									}
+								},
+								"f:dnsPolicy": {},
+								"f:enableServiceLinks": {},
+								"f:hostNetwork": {},
+								"f:priorityClassName": {},
+								"f:restartPolicy": {},
+								"f:schedulerName": {},
+								"f:securityContext": {},
+								"f:terminationGracePeriodSeconds": {},
+								"f:tolerations": {},
+								"f:volumes": {
+									".": {},
+									"k:{\"name\":\"azure-ip-masq-agent-config-volume\"}": {
+										".": {},
+										"f:name": {},
+										"f:projected": {
+											".": {},
+											"f:defaultMode": {},
+											"f:sources": {}
+										}
+									},
+									"k:{\"name\":\"iptableslock\"}": {
+										".": {},
+										"f:hostPath": {
+											".": {},
+											"f:path": {},
+											"f:type": {}
+										},
+										"f:name": {}
+									}
+								}
+							}
+						}
+					}
+				]
+			},
+			"spec": {
+				"volumes": [
+					{
+						"name": "azure-ip-masq-agent-config-volume",
+						"projected": {
+							"sources": [
+								{
+									"configMap": {
+										"name": "azure-ip-masq-agent-config",
+										"items": [
+											{
+												"key": "ip-masq-agent",
+												"path": "ip-masq-agent",
+												"mode": 444
+											}
+										],
+										"optional": true
+									}
+								},
+								{
+									"configMap": {
+										"name": "azure-ip-masq-agent-config-reconciled",
+										"items": [
+											{
+												"key": "ip-masq-agent-reconciled",
+												"path": "ip-masq-agent-reconciled",
+												"mode": 444
+											}
+										],
+										"optional": true
+									}
+								}
+							],
+							"defaultMode": 420
+						}
+					},
+					{
+						"name": "iptableslock",
+						"hostPath": {
+							"path": "/run/xtables.lock",
+							"type": "FileOrCreate"
+						}
+					}
+				],
+				"containers": [
+					{
+						"name": "azure-ip-masq-agent",
 						"image": "mcr.microsoft.com/aks/ip-masq-agent-v2:v0.1.7",
 						"args": [
 							"--v=2",

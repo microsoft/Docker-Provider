@@ -12,14 +12,9 @@ data:
     # Any errors related to config map settings can be found in the KubeMonAgentEvents table in the Log Analytics workspace that the cluster is sending data to.
 
     [log_collection_settings]
-      #  This feature in private preview and not ready for production use,please reach out us to try out this feature.
-      #  [log_collection_settings.multi_tenancy]
-      #    # High log scale MUST be enabled to use this feature. Refer to https://aka.ms/cihsmode for more details on high log scale mode
-      #    enabled = true
-      ###   Below advanced settings MUST be provided when ama-logs-multitenancy service deployed through AKS Monitoring Addon
-      ##    advanced_mode_enabled = false # Default value is false
-      ##    namespaces = ["app-team-1","app-team-2"]
-      ##    namespace_settings = ["app-team-1:throttle_rate=2000","app-team-2:throttle_rate=5000"]
+       [log_collection_settings.multi_tenancy]
+        enabled = false # High log scale MUST be enabled to use this feature. Refer to https://aka.ms/cihsmode for more details on high log scale mode
+        disable_fallback_ingestion = false # If enabled, logs of the k8s namespaces for which ContainerLogV2Extension DCR is not configured will not be ingested to the default DCR.
 
        [log_collection_settings.stdout]
           # In the absense of this configmap, default value for enabled is true
@@ -76,7 +71,7 @@ data:
           # if include_fields commented out or empty, all fields will be included. If include_fields is set, only the fields listed will be included.
           # include_fields = ["podLabels","podAnnotations","podUid","image","imageID","imageRepo","imageTag"]
        #[log_collection_settings.filter_using_annotations]
-          # if enabled will exclude logs from pods with annotations fluenbit.io/exclude: "true".
+          # if enabled will exclude logs from pods with annotations fluentbit.io/exclude: "true".
           # Read more: https://docs.fluentbit.io/manual/pipeline/filters/kubernetes#kubernetes-annotations
           # enabled = false
 

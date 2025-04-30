@@ -8,6 +8,68 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 03/10/2025 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.26 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.26 (windows)
+- Linux
+  - [cbl-mariner 2.0.20250207](https://github.com/microsoft/azurelinux/releases/tag/2.0.20250207-2.0)
+  - Golang - 1.23.5
+  - Ruby - 3.1.3
+  - MDSD - 1.31.4
+  - Telegraf - 1.29.4-10
+  - Fluent-bit - 3.0.6
+  - Fluentd - 1.16.3
+- Windows
+  - Golang - 1.23.5
+  - Ruby - 3.1.1
+  - Windows AMA - 46.17.2
+  - Telegraf - 1.24.2
+  - Fluent-bit - 3.0.6
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Common
+  * Added test framework build pipeline by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1346
+  * Gangams/multi tenancy private preview customer feedback implementation by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1343
+  * Fix conformance test version conflict with AutoUpgradeMinorVersion by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1349
+  * Tests for containerstatus and livenssprobe by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1347
+  * update golang version to fix CVEs related stdlib  by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1360
+  * Updated source branch for test automation by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1365
+- Linux
+  * fluent-bit-upgrade-3.0.6 for linux by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1356
+  * remove java db dependency for trivy by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1361
+- Windows
+  * Windows build fix by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1364
+
+### 01/21/2025 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.25 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.25 (windows)
+- Linux
+  - [cbl-mariner 2.0.20241230](https://github.com/microsoft/azurelinux/releases/tag/2.0.20241230-2.0)
+  - Golang - 1.22.5
+  - Ruby - 3.1.3
+  - MDSD - 1.31.4
+  - Telegraf - 1.29.4-10
+  - Fluent-bit - 2.2.3
+  - Fluentd - 1.16.3
+- Windows
+  - Golang - 1.22.5
+  - Ruby - 3.1.1
+  - Windows AMA - 46.17.2
+  - Telegraf - 1.24.2
+  - Fluent-bit - 3.0.6
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Common
+  * Handle empty agent config in Go client and fix build failures by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1338
+  * Fix for ImageId and Repository empty in Container Inventory by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1339
+- Linux
+  * Longw/Fix CVEs for linux vulnerabilities by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1340
+- Windows
+  * use windows ama only msi and non geneva mode for insights metrics by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1337
+  * Longw/remove win rexml by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1341
+
 ### 10/07/2024 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.24 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.24 (windows)

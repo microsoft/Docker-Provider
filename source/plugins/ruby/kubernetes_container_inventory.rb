@@ -43,14 +43,19 @@ class KubernetesContainerInventory
               # for containers that have image issues (like invalid image/tag etc..) this will be empty. do not make it all 0
               containerInventoryRecord["InstanceID"] = containerId
             end
-            # imagedId is of the format - repo@sha256:imageid
+            # imagedId is either of the the format - repo@sha256:imageid or sha256:imageid
             imageIdValue = containerStatus["imageID"]
             if !imageIdValue.nil? && !imageIdValue.empty?
               atLocation = imageIdValue.index("@")
               if !atLocation.nil?
                 containerInventoryRecord["ImageId"] = imageIdValue[(atLocation + 1)..-1]
+              else
+                containerInventoryRecord["ImageId"] = imageIdValue
               end
             end
+            
+            addImageInfoToContainerInventoryRecord(containerInventoryRecord, containerStatus["image"])
+
             containerInventoryRecord["ExitCode"] = 0
             isContainerTerminated = false
             isContainerWaiting = false
@@ -84,49 +89,12 @@ class KubernetesContainerInventory
             end
 
             containerInfoMap = containersInfoMap[containerName]
-            # image can be in any one of below format in spec
-            # repository/image[:imagetag | @digest], repository/image:imagetag@digest, repo/image, image:imagetag, image@digest, image
-            imageValue = containerInfoMap["image"]
-            if !imageValue.nil? && !imageValue.empty?
-              # Find delimiters in image format
-              atLocation = imageValue.index("@")
-              isDigestSpecified = false
-              if !atLocation.nil?
-                # repository/image@digest or repository/image:imagetag@digest, image@digest
-                imageValue = imageValue[0..(atLocation - 1)]
-                # Use Digest from the spec's image in case when the status doesnt get populated i.e. container in pending or image pull back etc.
-                if containerInventoryRecord["ImageId"].nil? || containerInventoryRecord["ImageId"].empty?
-                  containerInventoryRecord["ImageId"] = imageValue[(atLocation + 1)..-1]
-                end
-                isDigestSpecified = true
-              end
-              slashLocation = imageValue.index("/")
-              colonLocation = imageValue.index(":")
-              if !colonLocation.nil?
-                if slashLocation.nil?
-                  # image:imagetag
-                  containerInventoryRecord["Image"] = imageValue[0..(colonLocation - 1)]
-                else
-                  # repository/image:imagetag
-                  containerInventoryRecord["Repository"] = imageValue[0..(slashLocation - 1)]
-                  containerInventoryRecord["Image"] = imageValue[(slashLocation + 1)..(colonLocation - 1)]
-                end
-                containerInventoryRecord["ImageTag"] = imageValue[(colonLocation + 1)..-1]
-              else
-                if slashLocation.nil?
-                  # image
-                  containerInventoryRecord["Image"] = imageValue
-                else
-                  # repo/image
-                  containerInventoryRecord["Repository"] = imageValue[0..(slashLocation - 1)]
-                  containerInventoryRecord["Image"] = imageValue[(slashLocation + 1)..-1]
-                end
-                # if no tag specified, k8s assumes latest as imagetag and this is same behavior from docker API and from status.
-                # Ref - https://kubernetes.io/docs/concepts/containers/images/#image-names
-                if isDigestSpecified == false
-                  containerInventoryRecord["ImageTag"] = "latest"
-                end
-              end
+            # Populate the fields related to the image if not already populated
+            addImageInfoToContainerInventoryRecord(containerInventoryRecord, containerInfoMap["image"])
+            
+            # if the repository is still not populated, set a default value as docker.io
+            if containerInventoryRecord["Repository"].nil? || containerInventoryRecord["Repository"].empty?
+              containerInventoryRecord["Repository"] = "docker.io"
             end
 
             podName = containerInfoMap["PodName"]
@@ -167,6 +135,74 @@ class KubernetesContainerInventory
         ApplicationInsightsUtility.sendExceptionTelemetry(error)
       end
       return containerInventoryRecords
+    end
+
+    def addImageInfoToContainerInventoryRecord(containerInventoryRecord, imageValue)
+      begin
+        # image can be in any one of below formats:
+        # repository/image[:imagetag | @digest], repository/image:imagetag@digest, repo/image, image:imagetag, image@digest, image, digest
+        # if the image is in digest format - which is expected in certain scenarios, we do not process the image
+        if imageValue.nil? || imageValue.empty? || imageValue.match?(/^sha256:[a-fA-F0-9]{64}$/)
+          return
+        end
+        # Find delimiters in image format
+        atLocation = imageValue.index("@")
+        isDigestSpecified = false
+        if !atLocation.nil?
+          # Use Digest from the spec's image in case when the status doesnt get populated i.e. container in pending or image pull back etc.
+          if containerInventoryRecord["ImageId"].nil? || containerInventoryRecord["ImageId"].empty?
+            containerInventoryRecord["ImageId"] = imageValue[(atLocation + 1)..-1]
+          end
+          # repository/image@digest or repository/image:imagetag@digest, image@digest
+          imageValue = imageValue[0..(atLocation - 1)]
+          isDigestSpecified = true
+        end
+        slashLocation = imageValue.index("/")
+        colonLocation = imageValue.index(":")
+        if !colonLocation.nil?
+          if slashLocation.nil?
+            # image:imagetag
+            if containerInventoryRecord["Image"].nil? || containerInventoryRecord["Image"].empty?
+              containerInventoryRecord["Image"] = imageValue[0..(colonLocation - 1)]
+            end
+          else
+            # repository/image:imagetag
+            if containerInventoryRecord["Repository"].nil? || containerInventoryRecord["Repository"].empty?
+              containerInventoryRecord["Repository"] = imageValue[0..(slashLocation - 1)]
+            end
+            if containerInventoryRecord["Image"].nil? || containerInventoryRecord["Image"].empty?
+              containerInventoryRecord["Image"] = imageValue[(slashLocation + 1)..(colonLocation - 1)]
+            end
+          end
+          if containerInventoryRecord["ImageTag"].nil? || containerInventoryRecord["ImageTag"].empty?
+            containerInventoryRecord["ImageTag"] = imageValue[(colonLocation + 1)..-1]
+          end
+        else
+          if slashLocation.nil?
+            # image
+            if containerInventoryRecord["Image"].nil? || containerInventoryRecord["Image"].empty?
+              containerInventoryRecord["Image"] = imageValue
+            end
+          else
+            # repo/image
+            if containerInventoryRecord["Repository"].nil? || containerInventoryRecord["Repository"].empty?  
+              containerInventoryRecord["Repository"] = imageValue[0..(slashLocation - 1)]
+            end
+            if containerInventoryRecord["Image"].nil? || containerInventoryRecord["Image"].empty?
+              containerInventoryRecord["Image"] = imageValue[(slashLocation + 1)..-1]
+            end
+          end
+          # if no tag specified, k8s assumes latest as imagetag and this is same behavior from docker API and from status.
+          # Ref - https://kubernetes.io/docs/concepts/containers/images/#image-names
+          if isDigestSpecified == false && (containerInventoryRecord["ImageTag"].nil? || containerInventoryRecord["ImageTag"].empty?)
+            containerInventoryRecord["ImageTag"] = "latest"
+          end
+        end
+      rescue => error
+        $log.warn("KubernetesContainerInventory::addImageInfoToContainerInventoryRecord : Add Image Info to Container Inventory Records failed: #{error}")
+        $log.debug_backtrace(error.backtrace)
+        ApplicationInsightsUtility.sendExceptionTelemetry(error)
+      end
     end
 
     def getContainersInfoMap(podItem, isWindows)

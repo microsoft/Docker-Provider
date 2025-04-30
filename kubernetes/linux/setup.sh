@@ -13,11 +13,15 @@ sudo tdnf install ca-certificates-microsoft -y
 sudo update-ca-trust
 
 # sudo tdnf install ruby-3.1.3 -y
-tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
-wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20230330.tar.gz -O ruby-build.tar.gz
-tar -xzf ruby-build.tar.gz
-PREFIX=/usr/local ./ruby-build-*/install.sh
-ruby-build 3.1.3 /usr
+if [ "$ARCH" == "arm64" ]; then
+    sudo tdnf install ruby-3.1.3-1.cm2.aarch64 -y
+else
+    tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
+    wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20230330.tar.gz -O ruby-build.tar.gz
+    tar -xzf ruby-build.tar.gz
+    PREFIX=/usr/local ./ruby-build-*/install.sh
+    ruby-build 3.1.3 /usr
+fi
 
 # clean up the ruby-build files
 rm ruby-build.tar.gz
@@ -81,7 +85,7 @@ docker_cimprov_version=$(sudo tdnf list installed | grep docker-cimprov | awk '{
 echo "DOCKER_CIMPROV_VERSION=$docker_cimprov_version" >> packages_version.txt
 
 #install fluent-bit
-sudo tdnf install fluent-bit-2.2.3 -y
+sudo tdnf install fluent-bit-3.0.6 -y
 echo "$(fluent-bit --version)" >> packages_version.txt
 
 # install fluentd using the mariner package
