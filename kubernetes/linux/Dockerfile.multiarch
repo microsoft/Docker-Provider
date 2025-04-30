@@ -1,7 +1,7 @@
 # Default base images. If you update them don't forgot to update variables in our build pipelines. Default values can be found in internal wiki. External can use ubuntu 18.04 and golang 1.18.3
 ARG GOLANG_BASE_IMAGE=
-ARG MARINER_BASE_IMAGE=mcr.microsoft.com/cbl-mariner/base/core:2.0
-ARG MARINER_DISTROLESS_IMAGE=mcr.microsoft.com/cbl-mariner/distroless/base:2.0
+ARG MARINER_BASE_IMAGE=mcr.microsoft.com/azurelinux/base/core:3.0
+ARG MARINER_DISTROLESS_IMAGE=mcr.microsoft.com/azurelinux/distroless/base:3.0
 
 FROM --platform=$BUILDPLATFORM ${GOLANG_BASE_IMAGE} AS golang-builder
 ARG TARGETOS TARGETARCH
@@ -10,7 +10,6 @@ RUN /usr/bin/apt-get update && /usr/bin/apt-get install git g++ make pkg-config 
 COPY build /src/build
 COPY source /src/source
 RUN cd /src/build/linux && make arch=${TARGETARCH}
-
 
 FROM ${MARINER_BASE_IMAGE} AS builder
 ARG TARGETOS TARGETARCH
@@ -43,7 +42,7 @@ RUN mkdir /busybin && busybox --install /busybin
 
 COPY --from=golang-builder /src/kubernetes/linux/Linux_ULINUX_1.0_*_64_Release/docker-cimprov-*.*.*-*.*.sh $tmpdir/
 COPY kubernetes/linux/setup.sh kubernetes/linux/main.sh kubernetes/linux/defaultpromenvvariables kubernetes/linux/defaultpromenvvariables-rs kubernetes/linux/defaultpromenvvariables-sidecar kubernetes/linux/mdsd.xml kubernetes/linux/envmdsd kubernetes/linux/logrotate.conf $tmpdir/
-COPY kubernetes/linux/mariner-official-extras.repo /etc/yum.repos.d/
+COPY kubernetes/linux/azure-official-extras.repo /etc/yum.repos.d/
 
 WORKDIR ${tmpdir}
 
@@ -65,7 +64,7 @@ ENV HOST_VAR /hostfs/var
 ENV AZMON_COLLECT_ENV False
 ENV KUBE_CLIENT_BACKOFF_BASE 1
 ENV KUBE_CLIENT_BACKOFF_DURATION 0
-ENV RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR 0.9
+ENV RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR 1.0
 
 # default value will be overwritten by pipeline
 ARG IMAGE_TAG=3.1.26
@@ -105,32 +104,28 @@ COPY --from=builder /usr/share/pki/ca-trust-source /usr/share/pki/ca-trust-sourc
 COPY --from=builder /usr/share/p11-kit/ /usr/share/p11-kit/
 
 # bash dependencies
-COPY --from=builder /lib/libreadline.so.8 /lib/
-COPY --from=builder /usr/lib/libncursesw.so.6 /usr/lib/libtinfo.so.6 /usr/lib/
-# inotifywait dependencies
-COPY --from=builder /lib/libinotifytools.so.0 /lib/
-COPY --from=builder /lib/libc.so.6 /lib/
-# crond dependencies
-COPY --from=builder /lib/libselinux.so.1 /lib/libpam.so.0 /lib/libc.so.6 /lib/libpcre.so.1 /lib/libaudit.so.1 /lib/libcap-ng.so.0/ /lib/
+COPY --from=builder /usr/lib/libreadline.so.8  /usr/lib/libc.so.6 /usr/lib/libncursesw.so.6 /usr/lib/libtinfo.so.6 /usr/lib/
+# inotifywait dependencies 
+COPY --from=builder /usr/lib/libinotifytools.so.0 /usr/lib/libstdc++.so.6 /usr/lib/libgcc_s.so.1 /usr/lib/libc.so.6 /usr/lib/libm.so.6 /usr/lib/
+# crond dependencies 
+COPY --from=builder /usr/lib/libselinux.so.1 /usr/lib/libpam.so.0 /usr/lib/libc.so.6 /usr/lib/
 # ruby dependencies
-COPY --from=builder /usr/lib/libruby.so.3.1 /usr/lib/libz.so.1 /usr/lib/libgmp.so.10 /usr/lib/libcrypt.so.1 /usr/lib/libm.so.6 /usr/lib/libc.so.6 /usr/lib/
+COPY --from=builder /usr/lib/libruby.so.3.3 /usr/lib/libc.so.6 /usr/lib/libz.so.1 /usr/lib/libgmp.so.10 /usr/lib/libcrypt.so.1 /usr/lib/libm.so.6 /usr/lib/
 # fluent-bit dependencies
-# libssl.so.1.1 & libcrypto.so.1.1 are already available with openssl in distroless and copying them over causes FIPS HMAC verification failures
-COPY --from=builder /lib/libyaml-0.so.2 /lib/libsystemd.so.0 /lib/libm.so.6 /lib/libgcc_s.so.1 /lib/libc.so.6 /lib/liblzma.so.5 /lib/liblz4.so.1 /lib/libcap.so.2 /lib/libgcrypt.so.20 /lib/libgpg-error.so.0 /lib/libsasl2.so.3 /lib/
+# libssl.so.3 & libcrypto.so.3 are already available with openssl in distroless and copying them over causes FIPS HMAC verification failures
+COPY --from=builder /usr/lib/libluajit-5.1.so.2 /usr/lib/libyaml-0.so.2 /usr/lib/libsystemd.so.0 /usr/lib/libcurl.so.4 /usr/lib/libz.so.1 /usr/lib/libzstd.so.1 /usr/lib/libsasl2.so.3 /usr/lib/libm.so.6 /usr/lib/libgcc_s.so.1 /usr/lib/libc.so.6 /usr/lib/libcap.so.2 /usr/lib/liblz4.so.1 /usr/lib/liblzma.so.5 /usr/lib/libnghttp2.so.14 /usr/lib/libssh2.so.1 /usr/lib/libgssapi_krb5.so.2 /usr/lib/libresolv.so.2 /usr/lib/libkrb5.so.3 /usr/lib/libk5crypto.so.3 /usr/lib/libcom_err.so.2 /usr/lib/libkrb5support.so.0 /usr/lib/
 # telegraf dependencies
-COPY --from=builder /lib/libresolv.so.2 /lib/libc.so.6 /lib/
+COPY --from=builder /usr/lib/libresolv.so.2 /usr/lib/libc.so.6 /usr/lib/
 # mdsd dependencies
-COPY --from=builder /usr/lib/libdl.so.2 /usr/lib/librt.so.1 /usr/lib/libpthread.so.0 /usr/lib/libm.so.6 /usr/lib/libstdc++.so.6 /usr/lib/libgcc_s.so.1 /usr/lib/
+COPY --from=builder /usr/sbin/../lib/libpthread.so.0 /usr/sbin/../lib/libdl.so.2 /usr/sbin/../lib/libsymcrypt.so.103 /usr/sbin/../lib/librt.so.1 /usr/sbin/../lib/libm.so.6 /usr/sbin/../lib/libc.so.6 /usr/sbin/../lib/libstdc++.so.6 /usr/sbin/../lib/libgcc_s.so.1 /usr/sbin/../lib/
 COPY --from=builder /opt/microsoft/azure-mdsd/lib/libtcmalloc_minimal.so.4 /opt/microsoft/azure-mdsd/lib/
-COPY --from=builder /opt/microsoft/azure-mdsd/lib/libsymcrypt.so.103 /opt/microsoft/azure-mdsd/lib/
-# logrotate dependencies
-COPY --from=builder /lib/libselinux.so.1 /lib/libpopt.so.0 /lib/libc.so.6 /lib/libpcre.so.1 /lib/
+# logrotate dependencies 
+COPY --from=builder /usr/lib/libpopt.so.0 /usr/lib/libc.so.6 /usr/lib/
 # curl dependencies
 # libssl.so.1.1 & libcrypto.so.1.1 are already available with openssl in distroless and copying them over causes FIPS HMAC verification failures
-COPY --from=builder /lib/libcurl.so.4 /lib/libz.so.1 /lib/libc.so.6 /lib/libnghttp2.so.14 /lib/libssh2.so.1 /lib/libgssapi_krb5.so.2 /lib/libzstd.so.1 /lib/
-COPY --from=builder /usr/lib/libkrb5.so.3 /usr/lib/libk5crypto.so.3 /usr/lib/libcom_err.so.2 /usr/lib/libkrb5support.so.0 /usr/lib/libresolv.so.2 /usr/lib/
+COPY --from=builder /usr/lib/libcurl.so.4 /usr/lib/libz.so.1 /usr/lib/libc.so.6 /usr/lib/libnghttp2.so.14 /usr/lib/libssh2.so.1 /usr/lib/libgssapi_krb5.so.2 /usr/lib/libzstd.so.1 /usr/lib/libkrb5.so.3 /usr/lib/libk5crypto.so.3 /usr/lib/libcom_err.so.2 /usr/lib/libkrb5support.so.0 /usr/lib/libresolv.so.2 /usr/lib/
 # jq dependencies
-COPY --from=builder /lib/libjq.so.1 /lib/libc.so.6 /lib/libm.so.6 /lib/libonig.so.5 /lib/
+COPY --from=builder /usr/lib/libjq.so.1 /usr/lib/libc.so.6 /usr/lib/libm.so.6 /usr/lib/libonig.so.5 /usr/lib/
 # update-ca-trust dependencies
 COPY --from=builder /lib/libp11-kit.so.0 /lib/libffi.so.8 /lib/libtasn1.so.6 /lib/
 COPY --from=builder /lib/pkcs11/p11-kit-trust.so /lib/pkcs11/
