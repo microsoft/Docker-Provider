@@ -22,7 +22,7 @@ variables:
   repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/dev/azuremonitor/applicationinsights/aiprod'
   javaTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-java-app:latest'
   javaTestAppName: 'test-app-java'
-  nodeTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-nodejs-app:latest'
+  nodeTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-nodejs-app'
   nodeTestAppName: 'test-app-nodejs'
   testNamespace: 'test-ns'
   aiConnectionString: 'InstrumentationKey=2b453402-fcfb-408f-8495-c551f0e82f46;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/'
