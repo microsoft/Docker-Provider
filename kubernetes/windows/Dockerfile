@@ -16,26 +16,11 @@ RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex (
 RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
 && choco install -y msys2 --version 20211130.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'"
 
+# gangams - optional MSYS2 update via ridk failing in merged docker file so skipping that since we dont need optional update
 RUN refreshenv \
 && ridk install 2 3 \
 && echo gem: --no-document >> C:\ProgramData\gemrc \
-
-# Patch cool.io's buffer.c to fix function signatures
-RUN powershell -Command " \
-  $bufferPath = 'C:\ruby31\lib\ruby\gems\3.1.0\gems\cool.io-1.9.0\ext\cool.io\buffer.c'; \
-  (Get-Content $bufferPath) \
-    -replace 'VALUE Coolio_Buffer_read_from\(VALUE self, VALUE io\)', \
-              'VALUE Coolio_Buffer_read_from(int argc, VALUE *argv, VALUE self)' \
-    -replace 'VALUE Coolio_Buffer_write_to\(VALUE self, VALUE io\)', \
-              'VALUE Coolio_Buffer_write_to(int argc, VALUE *argv, VALUE self)' \
-  | Set-Content $bufferPath; \
-  # Update argument extraction in the functions
-  (Get-Content $bufferPath) \
-    -replace 'VALUE io;', 'VALUE io; rb_scan_args(argc, argv, \"1\", &io);' \
-  | Set-Content $bufferPath"
-
-# Install gems (cool.io will now compile)
-RUN gem install cool.io -v 1.9.0 --platform ruby \
+&& gem install cool.io -v 1.9.0 --platform ruby \
 && gem install oj -v 3.16.10 \
 && gem install fluentd -v 1.16.3 \
 && gem install win32-service -v 1.0.1 \
