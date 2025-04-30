@@ -158,9 +158,10 @@ export class Mutator {
     private pickCR(): string {
         const injectJavaAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-java"];
         const injectNodeJsAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-nodejs"];
+        const injectPythonAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-python"];
         const injectConfigurationAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-configuration"];
 
-        const injectLanguageSpecificAnnotationValues: string[] = [injectJavaAnnotation, injectNodeJsAnnotation];
+        const injectLanguageSpecificAnnotationValues: string[] = [injectJavaAnnotation, injectNodeJsAnnotation, injectPythonAnnotation];
 
         // if any of the annotations contain a value other than "true" or "false", that must be the same value for all annotations, we can't apply multiple CRs to the same pod
         const specificCRNamesFromLanguageSpecific: string[] = injectLanguageSpecificAnnotationValues.filter(value => value && value.toLowerCase() !== "true" && value.toLowerCase() !== "false");
@@ -221,9 +222,10 @@ export class Mutator {
         // annotations are on the pod template spec
         const injectJavaAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-java"];
         const injectNodeJsAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-nodejs"];
+        const injectPythonAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-python"];
         const injectConfigurationAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-configuration"];
 
-        const injectAnnotationValues: string[] = [injectJavaAnnotation, injectNodeJsAnnotation, injectConfigurationAnnotation];
+        const injectAnnotationValues: string[] = [injectJavaAnnotation, injectNodeJsAnnotation, injectPythonAnnotation, injectConfigurationAnnotation];
 
         if(injectAnnotationValues.filter(value => value).length == 0) {
             // no annotations specified, use platform list from the CR
@@ -239,6 +241,10 @@ export class Mutator {
 
         if (injectNodeJsAnnotation && injectNodeJsAnnotation.toLowerCase() !== "false") {
             platforms.push(AutoInstrumentationPlatforms.NodeJs);
+        }
+
+        if (injectPythonAnnotation && injectPythonAnnotation.toLowerCase() !== "false") {
+            platforms.push(AutoInstrumentationPlatforms.Python);
         }
 
         return platforms;

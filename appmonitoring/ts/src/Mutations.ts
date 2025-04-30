@@ -1,5 +1,13 @@
 ﻿import { AutoInstrumentationPlatforms, IContainer, IEnvironmentVariable, IVolume, IVolumeMount, PodInfo } from "./RequestDefinition.js";
 
+//!!!
+/*
+- exposure control - do we just allow Python via a change in CRD, or do we need to read from a settings ConfigMap?
+- unit tests
+- validation pipeline
+- support .NET
+*/
+
 /**
  * Contains a collection of mutations necessary to add functionality to a Pod
  */
@@ -7,29 +15,38 @@ export class Mutations {
     // name of the init container
     private static initContainerNameJava = "azure-monitor-auto-instrumentation-java";
     private static initContainerNameNodeJs = "azure-monitor-auto-instrumentation-nodejs";
+    private static initContainerNamePython = "azure-monitor-auto-instrumentation-python";
     
     // agent image
     private static agentImageCommonPrefix = "mcr.microsoft.com/applicationinsights";
+
+    private static agentImageJava = {
+        repositoryPath: "auto-instrumentation/java",
+        imageTag: "3.7.1-aks"
+    };
     private static agentImageNodeJs = {
         repositoryPath: "opentelemetry-auto-instrumentation/nodejs",
         imageTag: "3.2.5"
     };
-    private static agentImageJava = {
-        repositoryPath: "auto-instrumentation/java",
-        imageTag: "3.7.1-aks"
+    private static agentImagePython = {
+        repositoryPath: "auto-instrumentation/python",
+        imageTag: "1.0.0b23-aks"
     };
     
     // path on agent image to copy from
     private static imagePathJava = "/agents/java/.";
     private static imagePathNodeJs = "/agents/nodejs/.";
+    private static imagePathPython = "/agents/python/.";
 
     // agent volume (where init containers copy agent binaries to)
     private static agentVolumeJava = "azure-monitor-auto-instrumentation-volume-java";
     private static agentVolumeNodeJs = "azure-monitor-auto-instrumentation-volume-nodejs";
+    private static agentVolumePython = "azure-monitor-auto-instrumentation-volume-python";
 
     // agent volume mount path (where customer app's runtime loads agents from)
     private static agentVolumeMountPathJava = "/azure-monitor-auto-instrumentation-java";
     private static agentVolumeMountPathNodeJs = "/azure-monitor-auto-instrumentation-nodejs";
+    private static agentVolumeMountPathPython = "/azure-monitor-auto-instrumentation-python";
 
     // agent logs volume (where agents dump runtime logs)
     private static agentLogsVolume = "azure-monitor-auto-instrumentation-volume-logs";
@@ -77,6 +94,29 @@ export class Mutations {
                         volumeMounts: [{
                             name: Mutations.agentVolumeNodeJs,
                             mountPath: Mutations.agentVolumeMountPathNodeJs
+                        }],
+                        resources: {
+                            requests: {
+                                cpu: "100m",
+                                memory: "128Mi"
+                            },
+                            limits: {
+                                cpu: "2",
+                                memory: "1Gi"
+                            }
+                        }
+                    });
+                    break;
+
+                case AutoInstrumentationPlatforms.Python:
+                    containers.push({
+                        name: Mutations.initContainerNamePython,
+                        image: Mutations.GenerateImagePath(platforms[i], imageRepoPath),
+                        command: ["cp"],
+                        args: ["-r", Mutations.imagePathPython, Mutations.agentVolumeMountPathPython], // cp -r <source> <destination>
+                        volumeMounts: [{
+                            name: Mutations.agentVolumePython,
+                            mountPath: Mutations.agentVolumeMountPathPython
                         }],
                         resources: {
                             requests: {
@@ -202,6 +242,15 @@ ${ownerUidAttribute}`
                         }]);
                     break;
 
+                case AutoInstrumentationPlatforms.Python:
+                    returnValue.push(...[
+                        {
+                            name: "PYTHONPATH",
+                            value: `${Mutations.agentVolumeMountPathPython}`,
+                            platformSpecific: platforms[i]
+                        }]);
+                    break;
+
                 default:
                     throw `Unsupported platform in env(): ${platforms[i]}`;
             }
@@ -233,6 +282,13 @@ ${ownerUidAttribute}`
                     });
                     break;
 
+                case AutoInstrumentationPlatforms.Python:
+                    volumeMounts.push({
+                        name: Mutations.agentVolumePython,
+                        mountPath: Mutations.agentVolumeMountPathPython
+                    });
+                    break;
+
                 default:
                     throw `Unsupported platform in volume_mounts(): ${platforms[i]}`;
             }
@@ -243,6 +299,7 @@ ${ownerUidAttribute}`
             switch (platforms[i] as AutoInstrumentationPlatforms) {
                 case AutoInstrumentationPlatforms.Java:
                 case AutoInstrumentationPlatforms.NodeJs:
+                case AutoInstrumentationPlatforms.Python:
                     if(!logVolumeMounted) {
                         volumeMounts.push({
                             name: Mutations.agentLogsVolume,
@@ -279,6 +336,13 @@ ${ownerUidAttribute}`
                     });
                     break;
 
+                case AutoInstrumentationPlatforms.Python:
+                    volumes.push({
+                        name: Mutations.agentVolumePython,
+                        emptyDir: {}
+                    });
+                    break;
+
                 default:
                     throw `Unsupported platform in volumes(): ${platforms[i]}`;
             }
@@ -289,6 +353,7 @@ ${ownerUidAttribute}`
             switch (platforms[i] as AutoInstrumentationPlatforms) {
                 case AutoInstrumentationPlatforms.Java:
                 case AutoInstrumentationPlatforms.NodeJs:
+                case AutoInstrumentationPlatforms.Python:
                     if(!logVolumeAdded) {
                         volumes.push({
                             name: Mutations.agentLogsVolume,
@@ -315,6 +380,8 @@ ${ownerUidAttribute}`
                 return `${imagePath ?? Mutations.agentImageCommonPrefix}/${Mutations.agentImageJava.repositoryPath}:${Mutations.agentImageJava.imageTag}`;
             case AutoInstrumentationPlatforms.NodeJs:
                 return `${imagePath ?? Mutations.agentImageCommonPrefix}/${Mutations.agentImageNodeJs.repositoryPath}:${Mutations.agentImageNodeJs.imageTag}`;
+            case AutoInstrumentationPlatforms.Python:
+                return `${imagePath ?? Mutations.agentImageCommonPrefix}/${Mutations.agentImagePython.repositoryPath}:${Mutations.agentImagePython.imageTag}`;
             default:
                 throw `Unsupported platform in generateImagePath(): ${platform}`;
         }
