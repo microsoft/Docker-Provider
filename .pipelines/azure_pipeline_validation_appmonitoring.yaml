@@ -264,11 +264,9 @@ jobs:
 
         # Build and push the nodejs test app image
         cd ./test-apps/nodejs
-        echo "Building nodejs test app Docker image..."
-        docker build -t $NODEJS_TEST_IMAGE_NAME .
-        echo "Pushing nodejs test app Docker image to ACR..."
+        echo "Building and pushing nodejs test app Docker image using buildx..."
         az acr login -n ${{ variables.containerRegistry }}
-        docker push $NODEJS_TEST_IMAGE_NAME
+        docker buildx build --platform linux/amd64,linux/arm64 --tag $NODEJS_TEST_IMAGE_NAME --push .
         cd ../../validation-helm
 
         exit 1
