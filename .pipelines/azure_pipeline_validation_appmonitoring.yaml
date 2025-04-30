@@ -22,7 +22,7 @@ variables:
   repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/dev/azuremonitor/applicationinsights/aiprod'
   javaTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-java-app:latest'
   javaTestAppName: 'test-app-java'
-  nodeTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-nodejs-app'
+  nodeTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-nodejs-app:latest'
   nodeTestAppName: 'test-app-nodejs'
   testNamespace: 'test-ns'
   aiConnectionString: 'InstrumentationKey=2b453402-fcfb-408f-8495-c551f0e82f46;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/'
@@ -263,7 +263,7 @@ jobs:
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
 
         # Build and push the nodejs test app image
-        cd ../test-apps/nodejs
+        cd ./test-apps/nodejs
         echo "Building nodejs test app Docker image..."
         docker build -t $NODEJS_TEST_IMAGE_NAME .
         echo "Pushing nodejs test app Docker image to ACR..."
