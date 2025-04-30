@@ -51,6 +51,8 @@ gem uninstall uri --version 0.11.0
 gem uninstall stringio --version 3.0.1
 gem uninstall rexml --version 3.2.5
 gem uninstall webrick --version 1.8.1
+gem uninstall cgi --version 0.3.5
+gem uninstall net-imap --version 0.2.3
 
 sudo tdnf install -y azure-mdsd-1.31.4
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
