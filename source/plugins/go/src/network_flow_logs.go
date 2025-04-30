@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -236,7 +237,12 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 	}
 	// NodeName
 	if nodeName := extractString(flow, "node_name"); nodeName != "" {
-		dataMap["NodeName"] = nodeName
+		parts := strings.SplitN(nodeName, "/", 2)
+		if len(parts) == 2 {
+			dataMap["NodeName"] = parts[1]
+		} else {
+			dataMap["NodeName"] = nodeName
+		}
 	}
 	// Layer7
 	if l7, ok := flow["l7"].(map[string]interface{}); ok {
@@ -288,16 +294,16 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 	// Policies
 	policiesData := map[string]interface{}{}
 	if val, ok := flow["egress_allowed_by"]; ok {
-		policiesData["egress_allowed_by"] = val
+		policiesData["egress_allowed_by"] = serializeToJSON(val)
 	}
 	if val, ok := flow["ingress_allowed_by"]; ok {
-		policiesData["ingress_allowed_by"] = val
+		policiesData["ingress_allowed_by"] = serializeToJSON(val)
 	}
 	if val, ok := flow["egress_denied_by"]; ok {
-		policiesData["egress_denied_by"] = val
+		policiesData["egress_denied_by"] = serializeToJSON(val)
 	}
 	if val, ok := flow["ingress_denied_by"]; ok {
-		policiesData["ingress_denied_by"] = val
+		policiesData["ingress_denied_by"] = serializeToJSON(val)
 	}
 	if len(policiesData) > 0 {
 		dataMap["Policies"] = serializeToJSON(policiesData)
