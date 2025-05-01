@@ -16,6 +16,7 @@ export class Mutations {
     private static initContainerNameJava = "azure-monitor-auto-instrumentation-java";
     private static initContainerNameNodeJs = "azure-monitor-auto-instrumentation-nodejs";
     private static initContainerNamePython = "azure-monitor-auto-instrumentation-python";
+    private static initContainerNameDotNet = "azure-monitor-auto-instrumentation-dotnet";
     
     // agent image
     private static agentImageCommonPrefix = "mcr.microsoft.com/applicationinsights";
@@ -32,21 +33,28 @@ export class Mutations {
         repositoryPath: "auto-instrumentation/python",
         imageTag: "1.0.0b23-aks"
     };
+    private static agentImageDotNet = {
+        repositoryPath: "opentelemetry-auto-instrumentation/dotnet",
+        imageTag: "1.0.0-beta4"
+    };
     
     // path on agent image to copy from
     private static imagePathJava = "/agents/java/.";
     private static imagePathNodeJs = "/agents/nodejs/.";
     private static imagePathPython = "/agents/python/.";
+    private static imagePathDotNet = "/dotnet-tracer-home/.";
 
     // agent volume (where init containers copy agent binaries to)
     private static agentVolumeJava = "azure-monitor-auto-instrumentation-volume-java";
     private static agentVolumeNodeJs = "azure-monitor-auto-instrumentation-volume-nodejs";
     private static agentVolumePython = "azure-monitor-auto-instrumentation-volume-python";
+    private static agentVolumeDotNet = "azure-monitor-auto-instrumentation-volume-dotnet";
 
     // agent volume mount path (where customer app's runtime loads agents from)
     private static agentVolumeMountPathJava = "/azure-monitor-auto-instrumentation-java";
     private static agentVolumeMountPathNodeJs = "/azure-monitor-auto-instrumentation-nodejs";
     private static agentVolumeMountPathPython = "/azure-monitor-auto-instrumentation-python";
+    private static agentVolumeMountPathDotNet = "/azure-monitor-auto-instrumentation-dotnet";
 
     // agent logs volume (where agents dump runtime logs)
     private static agentLogsVolume = "azure-monitor-auto-instrumentation-volume-logs";
@@ -117,6 +125,29 @@ export class Mutations {
                         volumeMounts: [{
                             name: Mutations.agentVolumePython,
                             mountPath: Mutations.agentVolumeMountPathPython
+                        }],
+                        resources: {
+                            requests: {
+                                cpu: "100m",
+                                memory: "128Mi"
+                            },
+                            limits: {
+                                cpu: "2",
+                                memory: "1Gi"
+                            }
+                        }
+                    });
+                    break;
+
+                case AutoInstrumentationPlatforms.DotNet:
+                    containers.push({
+                        name: Mutations.initContainerNameDotNet,
+                        image: Mutations.GenerateImagePath(platforms[i], imageRepoPath),
+                        command: ["cp"],
+                        args: ["-r", Mutations.imagePathDotNet, Mutations.agentVolumeMountPathDotNet], // cp -r <source> <destination>
+                        volumeMounts: [{
+                            name: Mutations.agentVolumeDotNet,
+                            mountPath: Mutations.agentVolumeMountPathDotNet
                         }],
                         resources: {
                             requests: {
@@ -251,6 +282,52 @@ ${ownerUidAttribute}`
                         }]);
                     break;
 
+                case AutoInstrumentationPlatforms.DotNet:
+                    returnValue.push(...[
+                        {
+                            name: "OTEL_DOTNET_AUTO_LOG_DIRECTORY",
+                            value: Mutations.agentLogsVolumeMountPath,
+                            platformSpecific: platforms[i]
+                        },
+                        {
+                            name: "DOTNET_STARTUP_HOOKS",
+                            value: `${Mutations.agentVolumeMountPathDotNet}/net/OpenTelemetry.AutoInstrumentation.StartupHook.dll`,
+                            platformSpecific: platforms[i]
+                        },
+                        {
+                            name: "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES",
+                            value: "OpenTelemetry.AutoInstrumentation.AspNetCoreBootstrapper",
+                            platformSpecific: platforms[i]
+                        },
+                        {
+                            name: "DOTNET_ADDITIONAL_DEPS",
+                            value: `${Mutations.agentVolumeMountPathDotNet}/AdditionalDeps`,
+                            platformSpecific: platforms[i]
+                        },
+                        {
+                            name: "DOTNET_SHARED_STORE",
+                            value: `${Mutations.agentVolumeMountPathDotNet}/store`,
+                            platformSpecific: platforms[i]
+                        },
+                        {
+                            name: "OTEL_DOTNET_AUTO_HOME",
+                            value: `${Mutations.agentVolumeMountPathDotNet}/`,
+                            platformSpecific: platforms[i]
+                        },
+                        {
+                            name: "OTEL_DOTNET_AUTO_PLUGINS",
+                            value: "Azure.Monitor.OpenTelemetry.AutoInstrumentation.AzureMonitorPlugin, Azure.Monitor.OpenTelemetry.AutoInstrumentation, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null",
+                            platformSpecific: platforms[i]
+                        },
+                        {
+                            name: "OTEL_DOTNET_AUTO_LOGS_ENABLED",
+                            value: "false",
+                            platformSpecific: platforms[i],
+                            doNotSet: !disableAppLogs
+                        }]
+                    );
+                    break;
+
                 default:
                     throw `Unsupported platform in env(): ${platforms[i]}`;
             }
@@ -289,6 +366,13 @@ ${ownerUidAttribute}`
                     });
                     break;
 
+                case AutoInstrumentationPlatforms.DotNet:
+                    volumeMounts.push({
+                        name: Mutations.agentVolumeDotNet,
+                        mountPath: Mutations.agentVolumeMountPathDotNet
+                    });
+                    break;
+
                 default:
                     throw `Unsupported platform in volume_mounts(): ${platforms[i]}`;
             }
@@ -300,6 +384,7 @@ ${ownerUidAttribute}`
                 case AutoInstrumentationPlatforms.Java:
                 case AutoInstrumentationPlatforms.NodeJs:
                 case AutoInstrumentationPlatforms.Python:
+                case AutoInstrumentationPlatforms.DotNet:
                     if(!logVolumeMounted) {
                         volumeMounts.push({
                             name: Mutations.agentLogsVolume,
@@ -343,6 +428,13 @@ ${ownerUidAttribute}`
                     });
                     break;
 
+                case AutoInstrumentationPlatforms.DotNet:
+                    volumes.push({
+                        name: Mutations.agentVolumeDotNet,
+                        emptyDir: {}
+                    });
+                    break;
+
                 default:
                     throw `Unsupported platform in volumes(): ${platforms[i]}`;
             }
@@ -354,6 +446,7 @@ ${ownerUidAttribute}`
                 case AutoInstrumentationPlatforms.Java:
                 case AutoInstrumentationPlatforms.NodeJs:
                 case AutoInstrumentationPlatforms.Python:
+                case AutoInstrumentationPlatforms.DotNet:
                     if(!logVolumeAdded) {
                         volumes.push({
                             name: Mutations.agentLogsVolume,
@@ -382,6 +475,8 @@ ${ownerUidAttribute}`
                 return `${imagePath ?? Mutations.agentImageCommonPrefix}/${Mutations.agentImageNodeJs.repositoryPath}:${Mutations.agentImageNodeJs.imageTag}`;
             case AutoInstrumentationPlatforms.Python:
                 return `${imagePath ?? Mutations.agentImageCommonPrefix}/${Mutations.agentImagePython.repositoryPath}:${Mutations.agentImagePython.imageTag}`;
+            case AutoInstrumentationPlatforms.DotNet:
+                return `${imagePath ?? Mutations.agentImageCommonPrefix}/${Mutations.agentImageDotNet.repositoryPath}:${Mutations.agentImageDotNet.imageTag}`;
             default:
                 throw `Unsupported platform in generateImagePath(): ${platform}`;
         }

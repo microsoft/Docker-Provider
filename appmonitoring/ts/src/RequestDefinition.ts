@@ -33,6 +33,7 @@ export interface IAnnotations {
     "instrumentation.opentelemetry.io/inject-java"?: string;
     "instrumentation.opentelemetry.io/inject-nodejs"?: string;
     "instrumentation.opentelemetry.io/inject-python"?: string;
+    "instrumentation.opentelemetry.io/inject-dotnet"?: string;
     "instrumentation.opentelemetry.io/inject-configuration"?: string;
 
     [key: string]: string;
@@ -179,7 +180,8 @@ export class PodInfo {
 export enum AutoInstrumentationPlatforms {
     Java = "Java",
     NodeJs = "NodeJs",
-    Python = "Python"
+    Python = "Python",
+    DotNet = "DotNet"
 }
 
 export const DefaultInstrumentationCRName = "default";
