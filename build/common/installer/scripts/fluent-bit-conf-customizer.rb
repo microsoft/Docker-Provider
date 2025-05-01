@@ -227,13 +227,15 @@ def substituteFluentBitPlaceHolders
     File.open(@fluent_bit_common_conf_path, "w") { |file| file.puts new_contents }
     puts "config::Successfully substituted the placeholders in fluent-bit-common.conf file"
 
-    puts "config::Starting to substitute the placeholders in fluent-bit-network-flow-logs.conf file for log collection"
-    network_flow_logs_conf_path = "/etc/opt/microsoft/docker-cimprov/fluent-bit-network-flow-logs.conf"
-    if File.exist?(network_flow_logs_conf_path)
-      text = File.read(network_flow_logs_conf_path)
-      new_contents = substituteNetworkFlowLogsThrottle(networkFlowLogsThrottleEnabled, text)
-      File.open(network_flow_logs_conf_path, "w") { |file| file.puts new_contents }
-      puts "config::Successfully substituted the placeholders in fluent-bit-network-flow-logs.conf file"
+    if !networkFlowLogsEnabled.nil? && networkFlowLogsEnabled.to_s.downcase == "true"
+      puts "config::Starting to substitute the placeholders in fluent-bit-network-flow-logs.conf file for log collection"
+      network_flow_logs_conf_path = "/etc/opt/microsoft/docker-cimprov/fluent-bit-network-flow-logs.conf"
+      if File.exist?(network_flow_logs_conf_path)
+        text = File.read(network_flow_logs_conf_path)
+        new_contents = substituteNetworkFlowLogsThrottle(networkFlowLogsThrottleEnabled, text)
+        File.open(network_flow_logs_conf_path, "w") { |file| file.puts new_contents }
+        puts "config::Successfully substituted the placeholders in fluent-bit-network-flow-logs.conf file"
+      end
     end
 
   rescue => errorStr

@@ -173,6 +173,8 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 	// TimeGenerated
 	if timeGenerated := extractString(flow, "time"); timeGenerated != "" {
 		dataMap["TimeGenerated"] = timeGenerated
+	} else {
+		Log("Error::networkflow:: critical field TimeGenerated is missing or empty")
 	}
 	// UUID
 	if uuidVal := extractString(flow, "uuid"); uuidVal != "" {
