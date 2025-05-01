@@ -211,14 +211,20 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             puts "config::warn: provided networkflow logs throttle_rate value is not valid, using default value #{@networkFlowLogsThrottleRate}"
           end
           networkFlowLogsThrottleWindow = networkflow_logs_config[:throttle_window]
-          if is_valid_number?(networkFlowLogsThrottleWindow)
+          if is_valid_number?(networkFlowLogsThrottleWindow) && networkFlowLogsThrottleWindow.to_i >= 1
             @networkFlowLogsThrottleWindow = networkFlowLogsThrottleWindow.to_i
             puts "Using config map value: networkflow logsthrottle_window = #{@networkFlowLogsThrottleWindow}"
+          else
+            puts "config::warn: provided networkflow logs throttle_window value is not valid, using default value #{@networkFlowLogsThrottleWindow}"
           end
           networkFlowLogsThrottleInterval = networkflow_logs_config[:throttle_interval]
           if !networkFlowLogsThrottleInterval.nil? && !networkFlowLogsThrottleInterval.empty?
-            @networkFlowLogsThrottleInterval = networkFlowLogsThrottleInterval
-            puts "Using config map value: networkflow logs throttle_interval = #{@networkFlowLogsThrottleInterval}"
+            if networkFlowLogsThrottleInterval =~ /^\d+(\.\d+)?[smh]$/
+              @networkFlowLogsThrottleInterval = networkFlowLogsThrottleInterval
+              puts "Using config map value: networkflow logs throttle_interval = #{@networkFlowLogsThrottleInterval}"
+            else
+              puts "config::warn: provided networkflow logs throttle_interval value '#{networkFlowLogsThrottleInterval}' is not valid, using default value #{@networkFlowLogsThrottleInterval}"
+            end
           end
           networkFlowLogsThrottlePrint = networkflow_logs_config[:throttle_print]
           if !networkFlowLogsThrottlePrint.nil?
