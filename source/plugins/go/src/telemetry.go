@@ -316,11 +316,11 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 					telemetryDimensions["NetworkFlowLogsEnabled"] = "true"
 					IsNetworkFlowLogsThrottleEnabled := os.Getenv("NETWORKFLOW_LOGS_THROTTLE_ENABLED")
 					if IsNetworkFlowLogsThrottleEnabled != "" && strings.EqualFold(IsNetworkFlowLogsThrottleEnabled, "true") {
-						telemetryDimensions["NetworkFlowLogsThrottleEnabled"] = IsNetworkFlowLogsThrottleEnabled
-						telemetryDimensions["NetworkFlowLogsThrottleRate"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_RATE")
-						telemetryDimensions["NetworkFlowLogsThrottleWindow"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_WINDOW")
-						telemetryDimensions["NetworkFlowLogsThrottleInterval"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_INTERVAL")
-						telemetryDimensions["NetworkFlowLogsThrottlePrint"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_PRINT")
+						telemetryDimensions["nflThrottleEnabled"] = IsNetworkFlowLogsThrottleEnabled
+						telemetryDimensions["nflThrottleRate"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_RATE")
+						telemetryDimensions["nflThrottleWindow"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_WINDOW")
+						telemetryDimensions["nflThrottleInterval"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_INTERVAL")
+						telemetryDimensions["nflThrottlePrint"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_PRINT")
 					}
 				} else {
 					telemetryDimensions["NetworkFlowLogsEnabled"] = "false"
