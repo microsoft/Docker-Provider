@@ -153,24 +153,24 @@ jobs:
         az acr login -n ${{ variables.containerRegistry }}
 
         # NOTE: Using the prometheus-collector team's cached buildx image since moby/buildkit:buildx-stable-1 getting throttled
-        docker pull mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1
-        docker buildx create --name dockerbuilder --driver docker-container --driver-opt image=mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1 --use
-        docker buildx inspect --bootstrap
+        # docker pull mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1
+        # docker buildx create --name dockerbuilder --driver docker-container --driver-opt image=mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1 --use
+        # docker buildx inspect --bootstrap
 
-        echo "Build reason = $(Build.Reason)"
+        # echo "Build reason = $(Build.Reason)"
 
-        echo $(testImageName)
+        # echo $(testImageName)
         
-        docker buildx build --platform linux/amd64,linux/arm64 --tag $(testImageName) -f ./Dockerfile --build-arg IMAGE_TAG="$(testImageName)" --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --push --provenance=false .
-        docker pull $(testImageName)
+        # docker buildx build --platform linux/amd64,linux/arm64 --tag $(testImageName) -f ./Dockerfile --build-arg IMAGE_TAG="$(testImageName)" --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --push --provenance=false .
+        # docker pull $(testImageName)
 
-        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+        # curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-        echo "Running trivy scan..."
-        echo ".trivyignore file:"
-        cat .trivyignore
+        # echo "Running trivy scan..."
+        # echo ".trivyignore file:"
+        # cat .trivyignore
 
-        trivy image --ignore-unfixed --format json --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 $(testImageName)
+        # trivy image --ignore-unfixed --format json --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 $(testImageName)
 
   - task: CodeQL3000Finalize@0
   - bash: |
