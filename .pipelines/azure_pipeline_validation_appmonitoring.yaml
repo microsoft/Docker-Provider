@@ -21,9 +21,9 @@ variables:
   repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/applicationinsights/aidev'
   repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/dev/azuremonitor/applicationinsights/aiprod'
   javaTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-java-app:latest'
-  javaTestAppName: 'test-app-java'
+  javaTestAppName: 'java-test-app'
   nodeTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-nodejs-app:latest'
-  nodeTestAppName: 'test-app-nodejs'
+  nodeTestAppName: 'nodejs-test-app'
   testNamespace: 'test-ns'
   aiConnectionString: 'InstrumentationKey=2b453402-fcfb-408f-8495-c551f0e82f46;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/'
   aiResourceId: '/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/microsoft.insights/components/appmonitoring-pipeline-validation-ai'
@@ -257,25 +257,12 @@ jobs:
 
         export JAVA_TEST_IMAGE_NAME=${{ variables.javaTestAppImageName }}
         export NODEJS_TEST_IMAGE_NAME=${{ variables.nodeTestAppImageName }}
-        export TEST_NS="${{ variables.testNamespace }}"
-        export AI_CONNECTION_STRING="${{ variables.aiConnectionString }}"
         export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
-
-        # Build and push the nodejs test app image
-        cd ./test-apps/nodejs
-        echo "Building and pushing nodejs test app Docker image using buildx..."
-        az acr login -n ${{ variables.containerRegistry }}
-
-        docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-
-        docker pull mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1
-        docker buildx create --name nodejsbuilder --driver docker-container --driver-opt image=mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1 --use
-        docker buildx inspect --bootstrap
-        docker buildx build --platform linux/amd64,linux/arm64 --tag $NODEJS_TEST_IMAGE_NAME --push .
-        cd ../../validation-helm
-
-        exit 1
+        export TEST_APP_SOURCE="nodejs-source-app"
+        export NODEJS_CALLER_APP_NAME="nodejs-caller-app"
+        export TEST_NS="${{ variables.testNamespace }}"
+        export AI_CONNECTION_STRING="${{ variables.aiConnectionString }}"
 
         sudo chmod +x ../scripts/install-test-apps.sh
 

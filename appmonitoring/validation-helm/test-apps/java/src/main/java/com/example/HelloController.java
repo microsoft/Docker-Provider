@@ -7,6 +7,8 @@ import org.springframework.web.client.RestTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Random;
+
 @RestController
 public class HelloController {
     private static final Logger logger = LoggerFactory.getLogger(HelloController.class);
@@ -14,6 +16,7 @@ public class HelloController {
     private String targetUrl;
 
     private final RestTemplate restTemplate = new RestTemplate();
+    private final Random random = new Random();
 
     @GetMapping("/")
     public String hello() {
@@ -26,6 +29,11 @@ public class HelloController {
     public String callTarget() {
         logger.info("Received request at '/call-target' endpoint");
         logger.debug("TARGET_URL value: {}", targetUrl);
+        // Occasionally throw an error
+        if (random.nextInt(10) >= 8) { // 20% chance
+            logger.error("Simulated error at '/call-target' endpoint");
+            throw new RuntimeException("Simulated random error at call-target endpoint");
+        }
         if (targetUrl == null || targetUrl.isEmpty()) {
             logger.warn("TARGET_URL not set or empty");
             return "TARGET_URL not set";

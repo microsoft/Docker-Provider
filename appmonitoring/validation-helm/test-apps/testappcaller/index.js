@@ -1,28 +1,49 @@
 const axios = require('axios');
-const http = require('http');
 
-const TARGET_HOST = process.env.TARGET_HOST || 'test-app-nodejs-service.test-ns.svc.cluster.local';
-const TARGET_PORT = process.env.TARGET_PORT || 8080;
+const TARGETS = [
+  {
+    name: 'testapp-java',
+    host: process.env.TARGET_JAVA_HOST || 'java-test-app-service.test-ns.svc.cluster.local',
+    port: process.env.TARGET_JAVA_PORT || 8080,
+    path: process.env.TARGET_JAVA_PATH || '/call-target',
+  },
+  {
+    name: 'testapp-nodejs',
+    host: process.env.TARGET_NODEJS_HOST || 'nodejs-test-app-service.test-ns.svc.cluster.local',
+    port: process.env.TARGET_NODEJS_PORT || 3001,
+    path: process.env.TARGET_NODEJS_PATH || '/call-target',
+  }
+];
+
 const INTERVAL_MS = process.env.INTERVAL_MS || 5000;
-const SERVER_PORT = process.env.SERVER_PORT || 3000;
+const RUN_DURATION_MS = 2 * 60 * 60 * 1000; // 2 hours
 
-const url = `http://${TARGET_HOST}:${TARGET_PORT}/`;
+function getUrl(target) {
+  return `http://${target.host}:${target.port}${target.path}`;
+}
 
-async function callTarget() {
+async function callTarget(target) {
+  const url = getUrl(target);
   try {
     const res = await axios.get(url);
-    console.log(`[${new Date().toISOString()}] Success:`, res.status, res.data);
+    console.log(`[${new Date().toISOString()}] [${target.name}] Success:`, res.status, res.data);
   } catch (err) {
-    console.error(`[${new Date().toISOString()}] Error:`, err.message);
+    console.error(`[${new Date().toISOString()}] [${target.name}] Error:`, err.message);
   }
 }
 
-// Start a simple HTTP server to keep the pod running
-http.createServer((req, res) => {
-  res.writeHead(200, { 'Content-Type': 'text/plain' });
-  res.end('Caller app is running\n');
-}).listen(SERVER_PORT, () => {
-  console.log(`Server listening on port ${SERVER_PORT}`);
-  console.log(`Starting periodic calls to ${url} every ${INTERVAL_MS}ms`);
-  setInterval(callTarget, INTERVAL_MS);
-});
+console.log(`Starting periodic calls to:`);
+TARGETS.forEach(t => console.log(`- ${t.name}: ${getUrl(t)} every ${INTERVAL_MS}ms`));
+
+const intervalId = setInterval(() => {
+  TARGETS.forEach(callTarget);
+}, INTERVAL_MS);
+
+setTimeout(() => {
+  clearInterval(intervalId);
+  console.log('2 hours elapsed. Exiting.');
+  process.exit(0);
+}, RUN_DURATION_MS);
+
+// Keep the process alive
+setInterval(() => {}, 1000);
