@@ -3,8 +3,8 @@ const express = require('express');
 const axios = require('axios');
 
 const app = express();
-const PORT = process.env.PORT || 8080;
-const TARGET_URL = process.env.TARGET_URL || 'http://localhost:8080/'; // Change as needed
+const PORT = process.env.PORT || 3001;
+const TARGET_URL = process.env.TARGET_URL || 'http://localhost:3001/'; // Change as needed
 
 // Endpoint that calls another app's endpoint
 app.get('/call-other', async (req, res) => {

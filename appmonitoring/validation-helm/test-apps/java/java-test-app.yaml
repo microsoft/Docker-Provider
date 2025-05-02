@@ -1,8 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ${JAVA_TEST_APP_NAME}
-  namespace: ${TEST_NS}
+  name: java-test-app
+  namespace: test-ns
   labels:
     app: test-app-java
 spec:
@@ -17,22 +17,25 @@ spec:
     spec:
       containers:
       - name: test-app-java
-        image: ${JAVA_TEST_IMAGE_NAME}
+        image: appmonitoring.azurecr.io/demoaks-java-app:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
+        env:
+        - name: TARGET_URL
+          value: "http://nodejs-source-app-service.default.svc.cluster.local:3001"
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: test-app-java-service
-  namespace: ${TEST_NS}
+  namespace: test-ns
   labels:
     app: test-app-java
 spec:
   type: LoadBalancer
   ports:
-    - port: 80
+    - port: 8080
       protocol: TCP
       targetPort: 8080
   selector:

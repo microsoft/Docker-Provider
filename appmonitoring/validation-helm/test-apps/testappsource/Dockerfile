@@ -6,4 +6,6 @@ WORKDIR /app
 COPY package.json ./
 COPY index.js ./
 
+EXPOSE 3002
+
 CMD ["npm", "start"]

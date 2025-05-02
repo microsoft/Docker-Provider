@@ -17,13 +17,15 @@ spec:
     spec:
       containers:
       - name: test-app-nodejs
-        image: appmonitoring.azurecr.io/validation-aks-nodejs-app:latest
+        image: appmonitoring.azurecr.io/demoaks-nodejs-app:latest
         imagePullPolicy: Always
         env:
         - name: APPLICATIONINSIGHTS_CONFIGURATION_CONTENT
           value: '{"logInstrumentationOptions":{"console": { "enabled": true },"bunyan": { "enabled": true },"winston": { "enabled": true }}}'
+        - name: TARGET_URL
+          value: "http://nodejs-source-app-service.default.svc.cluster.local:3001"
         ports:
-        - containerPort: 8080
+        - containerPort: 3001
 ---
 apiVersion: v1
 kind: Service
@@ -35,8 +37,8 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-    - port: 8080
+    - port: 3001
       protocol: TCP
-      targetPort: 8080
+      targetPort: 3001
   selector:
     app: test-app-nodejs

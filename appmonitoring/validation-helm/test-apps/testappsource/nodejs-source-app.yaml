@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejs-source-app
+  labels:
+    app: nodejs-source-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodejs-source-app
+  template:
+    metadata:
+      labels:
+        app: nodejs-source-app
+    spec:
+      containers:
+      - name: nodejs-source-app
+        image: appmonitoring.azurecr.io/aks-validation-source-app:latest
+        ports:
+        - containerPort: 3001
+        env:
+        - name: MESSAGE
+          value: "Hello from testappsource Node.js app!"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodejs-source-app-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: nodejs-source-app
+  ports:
+    - protocol: TCP
+      port: 3001
+      targetPort: 3001
