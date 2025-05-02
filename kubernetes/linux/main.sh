@@ -8,9 +8,9 @@ echo "startup script start @ $(date +'%Y-%m-%dT%H:%M:%S')"
 startAMACoreAgent() {
       echo "AMACoreAgent: Starting AMA Core Agent since High Log scale mode is enabled"
 
-      AMACALogFileDir="/var/opt/microsoft/linuxmonagent/amaca/log"
-      AMACALogFilePath="$AMACALogFileDir"/amaca.log
-      AMACAConfigFilePath="/etc/opt/microsoft/azuremonitoragent/amacoreagent"
+      export AMACALogFileDir="/var/opt/microsoft/linuxmonagent/amaca/log"
+      export AMACALogFilePath="$AMACALogFileDir"/amaca.log
+      export AMACAConfigFilePath="/etc/opt/microsoft/azuremonitoragent/amacoreagent"
       export PA_FLUENT_SOCKET_PORT=13000
       export PA_DATA_PORT=13000
       export PA_GIG_BRIDGE_MODE=true
@@ -27,6 +27,8 @@ startAMACoreAgent() {
          echo "export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=$DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"
          echo "export PA_CONFIG_PORT=$PA_CONFIG_PORT"
          echo "export CounterDataReportFrequencyInMinutes=$CounterDataReportFrequencyInMinutes"
+         echo "export AMACALogFilePath=$AMACALogFilePath"
+         echo "export AMACAConfigFilePath=$AMACAConfigFilePath"
       } >> ~/.bashrc
 
       source ~/.bashrc
