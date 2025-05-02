@@ -20,9 +20,13 @@ RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
 # Add MSYS2 bin to PATH
 ENV PATH="C:\\ruby31\\msys64\\usr\\bin;C:\\ruby31\\msys64\\mingw64\\bin;${PATH}"
 
-# Install required MSYS2 development packages using pacman directly
-RUN C:\ruby31\msys64\usr\bin\bash.exe -lc "pacman -Syu --noconfirm && \
+# Upgrade core MSYS2 packages (requires a separate layer due to auto-exit behavior)
+RUN C:\ruby31\msys64\usr\bin\bash.exe -lc "pacman -Sy --noconfirm && pacman -Syu --noconfirm || true"
+
+# Install development packages in a new RUN step
+RUN C:\ruby31\msys64\usr\bin\bash.exe -lc "pacman -Sy --noconfirm && \
     pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain"
+
 
 RUN echo gem: --no-document >> C:\ProgramData\gemrc \
 && gem install cool.io -v 1.9.0 --platform ruby \
