@@ -381,7 +381,7 @@ jobs:
   variables:
     windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
     windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
-    windows2019BaseImageVersion: ltsc2019
+    windows2019BaseImageVersion: 10.0.17763.7009
     Codeql.Enabled: true
     Codeql.BuildIdentifier: 'windowsbuild'
     windowsAMAUrl: $[ dependencies.common.outputs['setup.windowsAMAUrl'] ]
@@ -615,7 +615,7 @@ jobs:
   variables:
     windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
     windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
-    windows2022BaseImageVersion: ltsc2022
+    windows2022BaseImageVersion: 10.0.20348.3328
     Codeql.SkipTaskAutoInjection: true
     windowsAMAUrl: $[ dependencies.common.outputs['setup.windowsAMAUrl'] ]
   steps:
@@ -850,8 +850,8 @@ jobs:
   variables:
     windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
     windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
-    windows2019BaseImageVersion: ltsc2019
-    windows2022BaseImageVersion: ltsc2022
+    windows2019BaseImageVersion: 10.0.17763.7009
+    windows2022BaseImageVersion: 10.0.20348.3328
     Codeql.SkipTaskAutoInjection: true
   steps:
   - task: AzureCLI@2
