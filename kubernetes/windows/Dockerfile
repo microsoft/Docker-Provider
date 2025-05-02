@@ -13,22 +13,13 @@ RUN reg add "HKLM\Software\Wow6432Node\Microsoft\Cryptography\Wintrust\Config" /
 ENV chocolateyVersion 1.4.0
 RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
 # Fluentd depends on cool.io whose fat gem is only available for Ruby < 2.5, so need to specify --platform ruby when install Ruby > 2.5 and install msys2 to get dev tools
-# Install Ruby and MSYS2
 RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
- && choco install -y msys2 --version 20211130.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'"
+&& choco install -y msys2 --version 20211130.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'"
 
- # Add Ruby and MSYS2 to PATH
-ENV PATH="C:\\ruby31\\bin;C:\\ruby31\\msys64\\usr\\bin;C:\\ruby31\\msys64\\mingw64\\bin;${PATH}"
-
-# Skip full -Syu to avoid shell termination; update only package database
-RUN C:\ruby31\msys64\usr\bin\bash.exe -lc "pacman -Sy --noconfirm"
-
-# Install development packages without upgrading core components
-RUN C:\ruby31\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain"
-
-RUN ruby -v && gem -v
-
-RUN echo gem: --no-document >> C:\ProgramData\gemrc \
+# gangams - optional MSYS2 update via ridk failing in merged docker file so skipping that since we dont need optional update
+RUN refreshenv \
+&& ridk install 1 2 3 \
+&& echo gem: --no-document >> C:\ProgramData\gemrc \
 && gem install cool.io -v 1.9.0 --platform ruby \
 && gem install oj -v 3.16.10 \
 && gem install fluentd -v 1.16.3 \
