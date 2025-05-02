@@ -1,8 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ${NODEJS_TEST_APP_NAME}
-  namespace: ${TEST_NS}
+  name: nodejs-test-app
+  namespace: test-ns
   labels:
     app: test-app-nodejs
 spec:
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: test-app-nodejs
-        image: ${NODEJS_TEST_IMAGE_NAME}
+        image: appmonitoring.azurecr.io/validation-aks-nodejs-app:latest
         imagePullPolicy: Always
         env:
         - name: APPLICATIONINSIGHTS_CONFIGURATION_CONTENT
@@ -29,13 +29,13 @@ apiVersion: v1
 kind: Service
 metadata:
   name: test-app-nodejs-service
-  namespace: default
+  namespace: test-ns
   labels:
     app: test-app-nodejs
 spec:
   type: LoadBalancer
   ports:
-    - port: 80
+    - port: 8080
       protocol: TCP
       targetPort: 8080
   selector:

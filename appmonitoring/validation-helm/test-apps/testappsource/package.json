@@ -1,0 +1,12 @@
+{
+  "name": "testappsource",
+  "version": "1.0.0",
+  "description": "Node.js app that periodically calls an internal cluster service endpoint.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {},
+  "author": "",
+  "license": "MIT"
+}
