@@ -20,11 +20,10 @@ RUN C:\ruby34\msys64\usr\bin\bash.exe -lc "pacman -Syu --noconfirm" \
  && C:\ruby34\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain"
 
 # Set PATH for MSYS2
-ENV PATH="C:\\ruby34\\msys64\\usr\\bin;C:\\ruby34\\msys64\\mingw64\\bin;${PATH}"
+ENV PATH="C:\\ruby34\\bin;C:\\ruby34\\msys64\\usr\\bin;C:\\ruby34\\msys64\\mingw64\\bin;${PATH}"
 
 # gangams - optional MSYS2 update via ridk failing in merged docker file so skipping that since we dont need optional update
-RUN refreshenv \
-&& ridk install 1 2 3 \
+RUN ridk install 1 2 3 \
 && echo gem: --no-document >> C:\ProgramData\gemrc \
 && gem install cool.io -v 1.9.0 --platform ruby \
 && gem install oj -v 3.16.10 \
