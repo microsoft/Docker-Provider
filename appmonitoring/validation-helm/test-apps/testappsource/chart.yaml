@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nodejs-source-app
+  name: ${TEST_APP_SOURCE_NAME}
   labels:
     app: nodejs-source-app
 spec:
@@ -26,7 +26,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: nodejs-source-app-service
+  name: ${TEST_APP_SOURCE_NAME}-service
 spec:
   type: LoadBalancer
   selector:

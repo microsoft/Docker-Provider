@@ -259,7 +259,7 @@ jobs:
         export NODEJS_TEST_IMAGE_NAME=${{ variables.nodeTestAppImageName }}
         export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
-        export TEST_APP_SOURCE="nodejs-source-app"
+        export TEST_APP_SOURCE_NAME="nodejs-source-app"
         export NODEJS_CALLER_APP_NAME="nodejs-caller-app"
         export TEST_NS="${{ variables.testNamespace }}"
         export AI_CONNECTION_STRING="${{ variables.aiConnectionString }}"

@@ -21,13 +21,13 @@ spec:
         imagePullPolicy: Always
         env:
           - name: TARGET_JAVA_HOST
-            value: "java-test-app-service.test-ns.svc.cluster.local"
+            value: "${JAVA_TEST_APP_NAME}-service.${TEST_NS}.svc.cluster.local"
           - name: TARGET_JAVA_PORT
             value: "8080"
           - name: TARGET_JAVA_PATH
             value: "/call-target"
           - name: TARGET_NODEJS_HOST
-            value: "nodejs-test-app-service.test-ns.svc.cluster.local"
+            value: "${NODEJS_TEST_APP_NAME}-service.${TEST_NS}.svc.cluster.local"
           - name: TARGET_NODEJS_PORT
             value: "3001"
           - name: TARGET_NODEJS_PATH
