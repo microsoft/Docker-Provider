@@ -30,7 +30,7 @@ startAMACoreAgent() {
       } >> ~/.bashrc
 
       source ~/.bashrc
-      /opt/microsoft/azure-mdsd/bin/amacoreagent -c $AMACAConfigFilePath --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath > /dev/null 2>&1 &
+      /opt/microsoft/azure-mdsd/bin/amacoreagent -c $AMACAConfigFilePath --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath --giglaport $PA_DATA_PORT > /dev/null 2>&1 &
 
       waitforlisteneronTCPport "$PA_FLUENT_SOCKET_PORT" "$WAITTIME_PORT_13000"
       waitforlisteneronTCPport "$PA_CONFIG_PORT" "$WAITTIME_PORT_12563"
