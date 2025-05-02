@@ -17,7 +17,8 @@ RUN choco install -y ruby --version 3.4.3.1 --params "'/InstallDir:C:\ruby34'" \
 && choco install -y msys2 --version 20250221.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby34\msys64'"
 
 RUN C:\ruby34\msys64\usr\bin\bash.exe -lc "pacman -Syu --noconfirm" \
- && C:\ruby34\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain"
+ && C:\ruby34\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm base-devel mingw-w64-x86_64-toolchain" \
+ && C:\ruby34\msys64\usr\bin\bash.exe -lc 'pacman -S --noconfirm base-devel mingw-w64-x86_64-gcc=14.2.0-3'
 
 # Set PATH for MSYS2
 ENV PATH="C:\\ruby34\\bin;C:\\ruby34\\msys64\\usr\\bin;C:\\ruby34\\msys64\\mingw64\\bin;${PATH}"
