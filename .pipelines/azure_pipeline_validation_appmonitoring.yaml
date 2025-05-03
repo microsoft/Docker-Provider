@@ -209,7 +209,7 @@ jobs:
         sudo chmod u+x ./prepare-aks-rp-charts.sh
 
         echo "Preparing charts..."
-        if ! ./prepare-aks-rp-charts.sh ./validation-helm/app-monitoring-addon/templates/app-monitoring-certificates.yaml; then
+        if ! ./prepare-aks-rp-charts.sh ../validation-helm/app-monitoring-addon/templates/app-monitoring-agent.yaml; then
           echo "Chart preparation failed"
           exit 1
         fi
