@@ -1,6 +1,9 @@
-cat java-test-app.yaml | envsubst | kubectl delete -f -
-cat node-test-app.yaml | envsubst | kubectl delete -f -
-cat appmonitoring-cr.yaml | envsubst | kubectl delete -f -
+# Delete existing test apps if they exist
+cat ../validation-helm/test-apps/testappsource/chart.yaml | envsubst | kubectl delete -f - --ignore-not-found
+cat ../validation-helm/test-apps/java/chart.yaml | envsubst | kubectl delete -f - --ignore-not-found
+cat ../validation-helm/test-apps/nodejs/chart.yaml | envsubst | kubectl delete -f - --ignore-not-found
+cat ../validation-helm/test-apps/testappcaller/chart.yaml | envsubst | kubectl delete -f - --ignore-not-found
+
 
 echo "Wait for 20s for everything to clear up..."
 sleep 20

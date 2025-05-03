@@ -35,7 +35,7 @@ metadata:
   labels:
     app: nodejs-test-app
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
     - port: 3001
       protocol: TCP

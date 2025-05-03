@@ -28,7 +28,7 @@ kind: Service
 metadata:
   name: ${TEST_APP_SOURCE_NAME}-service
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: nodejs-source-app
   ports:
