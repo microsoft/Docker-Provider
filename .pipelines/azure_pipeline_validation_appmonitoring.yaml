@@ -415,6 +415,10 @@ jobs:
         docker pull $(testImageName)
         docker tag $(testImageName) $(fullImageName)
         docker push $(fullImageName)
+        
+        mkdir -p $(Build.ArtifactStagingDirectory)/linux
+        echo "Setting the image name..."
+        echo $(fullImageName) > $(Build.ArtifactStagingDirectory)/linux/fullImageName.txt
 
   - task: PublishBuildArtifacts@1
     inputs:
