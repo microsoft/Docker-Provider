@@ -19,36 +19,40 @@ echo "$AI_RES_ID"
 url="https://api.loganalytics.io/v1$AI_RES_ID/query"
 
 verify_AI_telemetry() {
-    echo $1
-    json_body="{
-        'query': 'union * | where timestamp > ago(15m) | where cloud_RoleInstance == \"$1\" | count',
-        'options': {
-            'truncationMaxSize': 67108864
-        },
-        'maxRows': 30001,
-        'workspaceFilters': {
-            "regions": []
-        }
-    }";
+    local pod_name="$1"
+    local app_type="$2"
+    local queries=("requests" "dependencies" "exceptions")
+    local found_any=0
 
-    echo "$json_body"
+    for table in "${queries[@]}"; do
+        json_body="{
+            \"query\": \"$table | where timestamp > ago(15m) | where cloud_RoleInstance == '$pod_name' | count\",
+            \"options\": {
+                \"truncationMaxSize\": 67108864
+            },
+            \"maxRows\": 30001,
+            \"workspaceFilters\": {
+                \"regions\": []
+            }
+        }"
 
-    # Make the POST request
-    response=$(curl -s -X POST $url \
-    -H "Authorization: Bearer $access_token" \
-    -H "Content-Type: application/json" \
-    -d "$json_body")
+        echo "Validating $table telemetry for $pod_name ($app_type)..."
+        response=$(curl -s -X POST $url \
+            -H "Authorization: Bearer $access_token" \
+            -H "Content-Type: application/json" \
+            -d "$json_body")
 
+        count_val=$(echo $response | jq '.tables[0].rows[0][0]')
 
-    count_val=$(echo $response | jq '.tables[0].rows[0][0]')
-
-    if (( count_val > 0 )); then
-        echo $count_val
-    else
-        echo "Not found any appropriate records" >&2
-        echo "Validation for $2 pods failed" >&2
-        exit 1
-    fi
+        if (( count_val > 0 )); then
+            echo "$table telemetry found: $count_val"
+            found_any=1
+        else
+            echo "No $table telemetry found for $pod_name ($app_type)" >&2
+            echo "Validation for $app_type pods failed: No $table telemetry found" >&2
+            exit 1
+        fi
+    done
 }
 
 verify_AI_telemetry "$POD_JAVA_NAME" "java"
