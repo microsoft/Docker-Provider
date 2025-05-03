@@ -16,13 +16,20 @@ RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex (
 RUN choco install -y ruby --version 3.4.3.1 --params "'/InstallDir:C:\ruby34'" \
 && choco install -y msys2 --version 20250221.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby34\msys64'"
 
-RUN C:\ruby34\msys64\usr\bin\bash.exe -lc 'pacman -S --noconfirm base-devel mingw-w64-x86_64-gcc=14.2.0-3'
+# RUN C:\ruby34\msys64\usr\bin\bash.exe -lc 'pacman -S --noconfirm base-devel mingw-w64-x86_64-gcc=14.2.0-3'
 
 # Set PATH for MSYS2
 ENV PATH="C:\\ruby34\\bin;C:\\ruby34\\msys64\\usr\\bin;C:\\ruby34\\msys64\\mingw64\\bin;${PATH}"
 
 # gangams - optional MSYS2 update via ridk failing in merged docker file so skipping that since we dont need optional update
 RUN ridk install 1 2 3 \
+&& C:\ruby34\msys64\usr\bin\bash.exe -lc "pacman -Rns --noconfirm mingw-w64-x86_64-gcc" \
+&& C:\ruby34\msys64\usr\bin\bash.exe -lc "curl -O https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst" \
+&& C:\ruby34\msys64\usr\bin\bash.exe -lc 'pacman -U --noconfirm mingw-w64-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst' \
+&& C:\ruby34\msys64\usr\bin\bash.exe -lc "rm mingw-w64-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst" \
+&& C:\ruby34\msys64\usr\bin\bash.exe -lc "curl -O https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-gcc-14.2.0-3-any.pkg.tar.zst" \
+&& C:\ruby34\msys64\usr\bin\bash.exe -lc 'pacman -U --noconfirm mingw-w64-x86_64-gcc-14.2.0-3-any.pkg.tar.zst' \
+&& C:\ruby34\msys64\usr\bin\bash.exe -lc "rm mingw-w64-x86_64-gcc-14.2.0-3-any.pkg.tar.zst" \
 && echo gem: --no-document >> C:\ProgramData\gemrc \
 && gem install cool.io -v 1.9.0 --platform ruby \
 && gem install oj -v 3.16.10 \
