@@ -98,6 +98,11 @@ jobs:
         *.yaml
       TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: drop
+
 - job: build_linux  
   
   timeoutInMinutes: 120
@@ -209,11 +214,6 @@ jobs:
         cat .trivyignore
 
         trivy image --ignore-unfixed --format json --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 $(testImageName)
-
-  - task: PublishBuildArtifacts@1
-    inputs:
-      pathToPublish: '$(Build.ArtifactStagingDirectory)'
-      artifactName: drop
 
   - task: CodeQL3000Finalize@0
   - bash: |
