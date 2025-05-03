@@ -178,6 +178,11 @@ jobs:
         echo "##vso[task.setvariable variable=fullImageName;isOutput=true]$(fullImageName)"
         echo "##vso[task.setvariable variable=testImageTagSuffix;isOutput=true]$(testImageTagSuffix)"
     name: exportVars
+  - task: PublishPipelineArtifact@1
+    inputs:
+      targetPath: '$(Build.ArtifactStagingDirectory)'
+      artifact: 'linux'
+      publishLocation: 'pipeline'
 
 
 - job: validate_webhook_image
@@ -193,6 +198,11 @@ jobs:
     DOCKER_BUILDKIT: 1
 
   steps:
+  - task: DownloadPipelineArtifact@2
+    inputs:
+      artifact: 'linux'
+      path: '$(Build.ArtifactStagingDirectory)'
+      
   - task: AzureCLI@2
     displayName: "Create deployment in AKS"
     inputs:
