@@ -3,7 +3,7 @@
 AI_RES_ID=$1
 NAMESPACE=$2
 
-
+echo "Finding pods in namespace: $NAMESPACE for Java App $JAVA_TEST_APP_NAME and NodeJS App $NODEJS_TEST_APP_NAME"
 POD_JAVA_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$JAVA_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
 POD_NODEJS_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$NODEJS_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
 
@@ -26,7 +26,7 @@ verify_AI_telemetry() {
 
     echo "Validating telemetry for $pod_name ($app_type)..."
     if [[ -z "$pod_name" ]]; then
-        echo "Pod name is empty. Validation failed for $app_type and $pod_name."
+        echo "Pod name is empty. Validation failed for $app_type pod $pod_name."
         exit 1
     fi
 
