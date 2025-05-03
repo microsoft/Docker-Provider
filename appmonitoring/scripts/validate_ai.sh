@@ -24,6 +24,12 @@ verify_AI_telemetry() {
     local queries=("requests" "dependencies" "exceptions")
     local found_any=0
 
+    echo "Validating telemetry for $pod_name ($app_type)..."
+    if [[ -z "$pod_name" ]]; then
+        echo "Pod name is empty. Validation failed for $app_type and $pod_name."
+        exit 1
+    fi
+
     for table in "${queries[@]}"; do
         json_body="{
             \"query\": \"$table | where timestamp > ago(15m) | where cloud_RoleInstance == '$pod_name' | count\",
