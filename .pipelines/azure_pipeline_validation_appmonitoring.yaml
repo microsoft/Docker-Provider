@@ -57,6 +57,46 @@ jobs:
       
       cd $(Build.SourcesDirectory)/deployment/mergebranch-webhook-deployment/ServiceGroupRoot/Scripts
     name: setup
+  
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment artifacts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/deployment"
+      Contents: |
+        **/*
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment scripts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/.pipelines"
+      Contents: |
+        **/*.sh
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment scripts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/kubernetes"
+      Contents: |
+        *.yaml
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment scripts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/charts"
+      Contents: |
+        **/*
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment scripts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/test/e2e"
+      Contents: |
+        *.yaml
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
 - job: build_linux  
   
