@@ -23,7 +23,7 @@ spec:
         - name: APPLICATIONINSIGHTS_CONFIGURATION_CONTENT
           value: '{"logInstrumentationOptions":{"console": { "enabled": true },"bunyan": { "enabled": true },"winston": { "enabled": true }}}'
         - name: TARGET_URL
-          value: "http://${TEST_APP_SOURCE}-service.default.svc.cluster.local:3001"
+          value: "http://${TEST_APP_SOURCE_NAME}-service.default.svc.cluster.local:3001"
         ports:
         - containerPort: 3001
 ---

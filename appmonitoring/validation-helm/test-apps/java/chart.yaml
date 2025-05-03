@@ -23,7 +23,7 @@ spec:
         - containerPort: 8080
         env:
         - name: TARGET_URL
-          value: "http://${TEST_APP_SOURCE}-service.default.svc.cluster.local:3001"
+          value: "http://${TEST_APP_SOURCE_NAME}-service.default.svc.cluster.local:3001"
 ---
 apiVersion: v1
 kind: Service
