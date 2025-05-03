@@ -122,8 +122,6 @@ jobs:
       scriptLocation: inlineScript
       inlineScript: |
         mkdir -p $(Build.ArtifactStagingDirectory)/linux
-        echo "Setting the image name..."
-        echo "${{ variables.fullImageName }}" > $(Build.ArtifactStagingDirectory)/linux/fullImageName.txt
 
         echo "Installing NPM..."
         sudo apt-get -y install npm
@@ -211,6 +209,11 @@ jobs:
         cat .trivyignore
 
         trivy image --ignore-unfixed --format json --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 $(testImageName)
+
+  - task: PublishBuildArtifacts@1
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: drop
 
   - task: CodeQL3000Finalize@0
   - bash: |
