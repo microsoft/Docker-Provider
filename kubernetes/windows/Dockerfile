@@ -13,23 +13,19 @@ LABEL vendor=Microsoft\ Corp \
 ENV chocolateyVersion 1.4.0
 RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
 # Fluentd depends on cool.io whose fat gem is only available for Ruby < 2.5, so need to specify --platform ruby when install Ruby > 2.5 and install msys2 to get dev tools
-RUN choco install -y ruby --version 3.4.3.1 --params "'/InstallDir:C:\ruby34'" \
-&& choco install -y msys2 --version 20250221.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby34\msys64'"
-
-# RUN C:\ruby34\msys64\usr\bin\bash.exe -lc 'pacman -S --noconfirm base-devel mingw-w64-x86_64-gcc=14.2.0-3'
-
-# Set PATH for MSYS2
-ENV PATH="C:\\ruby34\\bin;C:\\ruby34\\msys64\\usr\\bin;C:\\ruby34\\msys64\\mingw64\\bin;${PATH}"
+RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
+&& choco install -y msys2 --version 20211130.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'"
 
 # gangams - optional MSYS2 update via ridk failing in merged docker file so skipping that since we dont need optional update
-RUN ridk install 1 2 3 \
-&& C:\ruby34\msys64\usr\bin\bash.exe -lc "pacman -Rns --noconfirm mingw-w64-x86_64-gcc" \
-&& C:\ruby34\msys64\usr\bin\bash.exe -lc "curl -O https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst" \
-&& C:\ruby34\msys64\usr\bin\bash.exe -lc 'pacman -U --noconfirm mingw-w64-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst' \
-&& C:\ruby34\msys64\usr\bin\bash.exe -lc "rm mingw-w64-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst" \
-&& C:\ruby34\msys64\usr\bin\bash.exe -lc "curl -O https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-gcc-14.2.0-3-any.pkg.tar.zst" \
-&& C:\ruby34\msys64\usr\bin\bash.exe -lc 'pacman -U --noconfirm mingw-w64-x86_64-gcc-14.2.0-3-any.pkg.tar.zst' \
-&& C:\ruby34\msys64\usr\bin\bash.exe -lc "rm mingw-w64-x86_64-gcc-14.2.0-3-any.pkg.tar.zst" \
+RUN refreshenv \
+&& ridk install 2 3 \
+&& C:\ruby31\msys64\usr\bin\bash.exe -lc "pacman -Rns --noconfirm mingw-w64-x86_64-gcc" \
+&& C:\ruby31\msys64\usr\bin\bash.exe -lc "curl -O https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst" \
+&& C:\ruby31\msys64\usr\bin\bash.exe -lc 'pacman -U --noconfirm mingw-w64-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst' \
+&& C:\ruby31\msys64\usr\bin\bash.exe -lc "rm mingw-w64-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst" \
+&& C:\ruby31\msys64\usr\bin\bash.exe -lc "curl -O https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-gcc-14.2.0-3-any.pkg.tar.zst" \
+&& C:\ruby31\msys64\usr\bin\bash.exe -lc 'pacman -U --noconfirm mingw-w64-x86_64-gcc-14.2.0-3-any.pkg.tar.zst' \
+&& C:\ruby31\msys64\usr\bin\bash.exe -lc "rm mingw-w64-x86_64-gcc-14.2.0-3-any.pkg.tar.zst" \
 && echo gem: --no-document >> C:\ProgramData\gemrc \
 && gem install cool.io -v 1.9.0 --platform ruby \
 && gem install oj -v 3.16.10 \
@@ -46,7 +42,7 @@ RUN ridk install 1 2 3 \
 && gem sources --clear-all
 
 # Remove gem cache and chocolatey
-RUN powershell -Command "Remove-Item -Force C:\ruby34\lib\ruby\gems\3.1.0\cache\*.gem; Remove-Item -Recurse -Force 'C:\ProgramData\chocolatey'; Remove-Item -Recurse -Force 'C:\Users\ContainerAdministrator\AppData\Local\Temp'"
+RUN powershell -Command "Remove-Item -Force C:\ruby31\lib\ruby\gems\3.1.0\cache\*.gem; Remove-Item -Recurse -Force 'C:\ProgramData\chocolatey'; Remove-Item -Recurse -Force 'C:\Users\ContainerAdministrator\AppData\Local\Temp'"
 
 SHELL ["powershell"]
 
@@ -115,13 +111,13 @@ ENV CI_CERT_LOCATION "C://oms.crt"
 ENV CI_KEY_LOCATION "C://oms.key"
 
 # Delete unnecessary files
-RUN powershell -Command "Remove-Item -Recurse -Force 'C:\ruby34\share\doc\ruby\html\js'; \
-Remove-Item -Force 'C:\ruby34\ridk_use\ridk.ps1'; \
-Remove-Item -Recurse -Force 'C:\ruby34\msys64\usr\share\texinfo\js'; \
-Remove-Item -Force 'C:\ruby34\msys64\usr\share\terminfo\78\xterm.js'; \
-Remove-Item -Force 'C:\ruby34\msys64\usr\lib\terminfo\78\xterm.js'; \
-Remove-Item -Recurse -Force 'C:\ruby34\lib\ruby\3.4.0\rdoc\generator\template\json_index\js'; \
-Remove-Item -Recurse -Force 'C:\ruby34\lib\ruby\3.4.0\rdoc\generator\template\darkfish\js'; \
-Remove-Item -Force 'C:\ruby34\bin\ridk.ps1'"
+RUN powershell -Command "Remove-Item -Recurse -Force 'C:\ruby31\share\doc\ruby\html\js'; \
+Remove-Item -Force 'C:\ruby31\ridk_use\ridk.ps1'; \
+Remove-Item -Recurse -Force 'C:\ruby31\msys64\usr\share\texinfo\js'; \
+Remove-Item -Force 'C:\ruby31\msys64\usr\share\terminfo\78\xterm.js'; \
+Remove-Item -Force 'C:\ruby31\msys64\usr\lib\terminfo\78\xterm.js'; \
+Remove-Item -Recurse -Force 'C:\ruby31\lib\ruby\3.4.0\rdoc\generator\template\json_index\js'; \
+Remove-Item -Recurse -Force 'C:\ruby31\lib\ruby\3.4.0\rdoc\generator\template\darkfish\js'; \
+Remove-Item -Force 'C:\ruby31\bin\ridk.ps1'"
 
 ENTRYPOINT ["powershell", "C:\\opt\\amalogswindows\\scripts\\powershell\\main.ps1"]
