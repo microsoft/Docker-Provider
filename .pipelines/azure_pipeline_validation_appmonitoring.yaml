@@ -316,7 +316,7 @@ jobs:
         
         sudo chmod u+x ./validate_ai.sh
 
-        if ! ./validate_ai.sh "${{ variables.aiResourceId }}" "{{ variables.testNamespace }}"; then
+        if ! ./validate_ai.sh ${{ variables.aiResourceId }} {{ variables.testNamespace }}; then
           echo "AI telemetry validation failed"
           exit 1
         fi
