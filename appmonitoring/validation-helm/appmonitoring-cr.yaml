@@ -9,4 +9,4 @@ spec:
       - Java
       - NodeJs
   destination: # required
-    applicationInsightsConnectionString: InstrumentationKey=6deff06f-e006-4eb8-8544-248d9946932e;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=deb9370b-bb15-4374-a0bd-ee3398edc805
+    applicationInsightsConnectionString: InstrumentationKey=2b453402-fcfb-408f-8495-c551f0e82f46;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=71a68a81-915e-4686-9f4b-eadcfc28689a

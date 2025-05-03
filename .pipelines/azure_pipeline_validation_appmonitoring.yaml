@@ -19,7 +19,7 @@ variables:
   subscription: '5a3b3ba4-3a42-42ae-b2cb-f882345803bc'
   containerRegistry: 'appmonitoring' # this build pushes to aicommon.azurecr.io with an image that is used for testing in validation cluster, then pushes an image once tests pass. That image is latre picked up by the release pipeline and reuploaded to MCR
   repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/applicationinsights/aidev'
-  repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/dev/azuremonitor/applicationinsights/aiprod'
+  repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/validated/azuremonitor/applicationinsights/aidev'
   javaTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-java-app:latest'
   javaTestAppName: 'java-test-app'
   nodeTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-nodejs-app:latest'
@@ -206,6 +206,13 @@ jobs:
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
         sudo chmod u+x ./clean-install-appmonitoring.sh
+        sudo chmod u+x ./prepare-aks-rp-charts.sh
+
+        echo "Preparing charts..."
+        if ! ./prepare-aks-rp-charts.sh ./validation-helm/app-monitoring-addon/templates/app-monitoring-certificates.yaml; then
+          echo "Chart preparation failed"
+          exit 1
+        fi
 
         echo "Checking for charts..."
         if ! ./clean-install-appmonitoring.sh $(testImageTagSuffix); then
