@@ -292,7 +292,7 @@ jobs:
         
         sudo chmod u+x ./validate-mutation.sh
 
-        if ! ./validate-mutation.sh ${{ variables.javaTestAppImageName }} ${{ variables.nodeTestAppImageName }} ${{ variables.testNamespace }}; then
+        if ! ./validate-mutation.sh ${{ variables.javaTestAppName }} ${{ variables.nodeTestAppName }} ${{ variables.testNamespace }}; then
           echo "Mutation validation failed"
           exit 1
         fi
