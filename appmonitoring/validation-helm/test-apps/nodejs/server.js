@@ -22,7 +22,7 @@ const logger = winston.createLogger({
 // Endpoint that calls another app's endpoint
 app.get('/call-target', async (req, res) => {
   // Occasionally throw an error (20% chance)
-  if (Math.random() < 0.2) {
+  if (Math.random() < 0.3) {
     logger.error('Simulated error at /call-target');
     return res.status(500).json({ message: 'Simulated random error at /call-target' });
   }

@@ -30,7 +30,7 @@ public class HelloController {
         logger.info("Received request at '/call-target' endpoint");
         logger.debug("TARGET_URL value: {}", targetUrl);
         // Occasionally throw an error
-        if (random.nextInt(10) >= 8) { // 20% chance
+        if (random.nextInt(10) >= 7) { // 20% chance
             logger.error("Simulated error at '/call-target' endpoint");
             throw new RuntimeException("Simulated random error at call-target endpoint");
         }
