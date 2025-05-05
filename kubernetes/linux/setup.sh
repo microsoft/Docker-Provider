@@ -57,7 +57,7 @@ gem uninstall stringio --version 3.0.1
 gem uninstall rexml --version 3.2.5
 gem uninstall webrick --version 1.8.1
 
-sudo tdnf install -y azure-mdsd-1.31.4
+sudo tdnf install -y azure-mdsd-1.35.1
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
 rm /usr/sbin/telegraf
