@@ -24,8 +24,8 @@ else
 fi
 
 # Copy _helpers.tpl to the target directory
-SRC_HELPERS_TPL="appmonitoring/validation-helm/_helpers.tpl"
-DEST_HELPERS_TPL="appmonitoring/validation-helm/app-monitoring-addon/templates/_helpers.tpl"
+SRC_HELPERS_TPL="../validation-helm/_helpers.tpl"
+DEST_HELPERS_TPL="../validation-helm/app-monitoring-addon/templates/_helpers.tpl"
 
 if [[ -f "$SRC_HELPERS_TPL" ]]; then
   mv "$SRC_HELPERS_TPL" "$DEST_HELPERS_TPL"
@@ -36,8 +36,8 @@ else
 fi
 
 # Copy values.yaml to the target directory
-SRC_VALUES_YAML="appmonitoring/validation-helm/values.yaml"
-DEST_VALUES_YAML="appmonitoring/validation-helm/app-monitoring-addon/templates/values.yaml"
+SRC_VALUES_YAML="../validation-helm/values.yaml"
+DEST_VALUES_YAML="../validation-helm/app-monitoring-addon/templates/values.yaml"
 
 if [[ -f "$SRC_VALUES_YAML" ]]; then
   cp "$SRC_VALUES_YAML" "$DEST_VALUES_YAML"
