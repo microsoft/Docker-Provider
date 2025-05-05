@@ -44,10 +44,10 @@
                 "description": "Enable ContainerLogV2 in Data Collection Rule"
             }
         },
-        "enableRetinaNetworkFlags": {
+        "enableRetinaNetworkFlowLogs": {
             "type": "bool",
             "metadata": {
-                "description": "Enable Retina Network Flags in omsagent addon profile"
+                "description": "Enable Retina Network Flow Logs in omsagent addon profile"
             },
             "defaultValue": false
         },
@@ -115,7 +115,7 @@
         "workspaceLocation": "[replace(parameters('workspaceRegion'),' ', '')]",
         "dcrNameFull": "[Concat('MSCI', '-', variables('workspaceLocation'), '-', variables('clusterName'))]",
         "dcrName": "[if(greater(length(variables('dcrNameFull')), 64), substring(variables('dcrNameFull'), 0, 64), variables('dcrNameFull'))]",
-        "enableHighLogScaleMode": "[if(or(contains(parameters('streams'),'Microsoft-ContainerLogV2-HighScale'), contains(parameters('streams'),'Microsoft-RetinaNetworkFlowLogs')), bool('true'), bool('false'))]",
+        "enableHighLogScaleMode": "[if(or(contains(parameters('streams'),'Microsoft-ContainerLogV2-HighScale'), parameters('enableRetinaNetworkFlowLogs')), bool('true'), bool('false'))]",
         "associationName": "ContainerInsightsExtension",
         "dataCollectionRuleId": "[resourceId(variables('clusterSubscriptionId'), variables('clusterResourceGroup'), 'Microsoft.Insights/dataCollectionRules', variables('dcrName'))]",
         "configDCENameFull": "[Concat('MSCI-config', '-', variables('clusterLocation'), '-', variables('clusterName'))]",
@@ -482,7 +482,7 @@
                                         "config": {
                                             "logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]",
                                             "useAADAuth": "true",
-                                            "enableRetinaNetworkFlags": "[parameters('enableRetinaNetworkFlags')]"
+                                            "enableRetinaNetworkFlags": "[parameters('enableRetinaNetworkFlowLogs')]"
                                         }
                                     }
                                 }
