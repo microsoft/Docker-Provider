@@ -1075,7 +1075,7 @@ func getContainerCpuMetricItems(metricInfo map[string]interface{}, hostName, met
 							telemetryProps["resoureceOptimizationEnabled"] = os.Getenv("AZMON_RESOURCE_OPTIMIZATION_ENABLED")
 						}
 						if len(os.Getenv("AZMON_RETINA_FLOW_LOGS_ENABLED")) > 0 {
-							telemetryProps["networkFlowLogsEnabled"] = os.Getenv("AZMON_RETINA_FLOW_LOGS_ENABLED")
+							telemetryProps["nflEnabled"] = os.Getenv("AZMON_RETINA_FLOW_LOGS_ENABLED")
 						}
 						if len(os.Getenv("NETWORKFLOW_LOGS_THROTTLE_ENABLED")) > 0 {
 							telemetryProps["nflThrottleEnabled"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_ENABLED")

@@ -313,7 +313,7 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 				telemetryDimensions["PromFbitMemBufLimit"] = os.Getenv("AZMON_FBIT_MEM_BUF_LIMIT")
 
 				if IsNetworkFlowLogsEnabled {
-					telemetryDimensions["NetworkFlowLogsEnabled"] = "true"
+					telemetryDimensions["nflEnabled"] = "true"
 					IsNetworkFlowLogsThrottleEnabled := os.Getenv("NETWORKFLOW_LOGS_THROTTLE_ENABLED")
 					if IsNetworkFlowLogsThrottleEnabled != "" && strings.EqualFold(IsNetworkFlowLogsThrottleEnabled, "true") {
 						telemetryDimensions["nflThrottleEnabled"] = IsNetworkFlowLogsThrottleEnabled
@@ -323,7 +323,7 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 						telemetryDimensions["nflThrottlePrint"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_PRINT")
 					}
 				} else {
-					telemetryDimensions["NetworkFlowLogsEnabled"] = "false"
+					telemetryDimensions["nflEnabled"] = "false"
 				}
 
 				SendEvent(eventNameDaemonSetHeartbeat, telemetryDimensions)

@@ -44,6 +44,13 @@
                 "description": "Enable ContainerLogV2 in Data Collection Rule"
             }
         },
+        "enableRetinaNetworkFlags": {
+            "type": "bool",
+            "metadata": {
+                "description": "Enable Retina Network Flags in omsagent addon profile"
+            },
+            "defaultValue": false
+        },
         "enableSyslog": {
             "type": "bool",
             "metadata": {
@@ -475,7 +482,7 @@
                                         "config": {
                                             "logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]",
                                             "useAADAuth": "true",
-                                            "enableRetinaNetworkFlags": "false"
+                                            "enableRetinaNetworkFlags": "[parameters('enableRetinaNetworkFlags')]"
                                         }
                                     }
                                 }

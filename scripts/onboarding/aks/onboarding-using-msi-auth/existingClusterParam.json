@@ -17,6 +17,9 @@
     "enableContainerLogV2": {
       "value": true
     },
+    "enableRetinaNetworkFlags": {
+      "value": false
+    },
     "enableSyslog": {
       "value": false
     },
