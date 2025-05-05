@@ -22,3 +22,15 @@ else
   echo "Error: Expected 6 matches, found $MATCH_COUNT in $YAML_FILE"
   exit 3
 fi
+
+# Copy _helpers.tpl to the target directory
+SRC_HELPERS_TPL="appmonitoring/validation-helm/_helpers.tpl"
+DEST_HELPERS_TPL="appmonitoring/validation-helm/app-monitoring-addon/templates/_helpers.tpl"
+
+if [[ -f "$SRC_HELPERS_TPL" ]]; then
+  mv "$SRC_HELPERS_TPL" "$DEST_HELPERS_TPL"
+  echo "_helpers.tpl moved to $DEST_HELPERS_TPL"
+else
+  echo "Error: $SRC_HELPERS_TPL not found."
+  exit 4
+fi
