@@ -357,7 +357,7 @@ jobs:
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
 
         echo "Wait for 3m for telemetry to flow..."
-        sleep 180
+        sleep 60
         
         sudo chmod u+x ./validate_ai.sh
 
@@ -388,7 +388,7 @@ jobs:
         fi
 
   - task: AzureCLI@2
-    displayName: "Restart webhook deployment and then test apps"
+    displayName: "Restart webhook deployment"
     inputs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: bash
@@ -404,15 +404,6 @@ jobs:
 
         echo "Waiting for the deployment app-monitoring-webhook to be ready..."
         kubectl rollout status deployment/app-monitoring-webhook -n kube-system --timeout=120s
-        
-        echo "Restarting deployment ${{ variables.javaTestAppName }} in namespace ${{ variables.testNamespace }}..."
-        kubectl rollout restart deployment/${{ variables.javaTestAppName }} -n ${{ variables.testNamespace }}
-        echo "Restarting deployment ${{ variables.nodeTestAppName }} in namespace ${{ variables.testNamespace }}..."
-        kubectl rollout restart deployment/${{ variables.nodeTestAppName }} -n ${{ variables.testNamespace }}
-
-        echo "Waiting for the test app deployments to be ready..."
-        kubectl rollout status deployment/${{ variables.javaTestAppName }} -n ${{ variables.testNamespace }} --timeout=120s
-        kubectl rollout status deployment/${{ variables.nodeTestAppName }} -n ${{ variables.testNamespace }} --timeout=120s
 
   - task: AzureCLI@2
     displayName: "Check test apps were mutated correctly"
@@ -448,7 +439,7 @@ jobs:
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
 
         echo "Wait for 3m for telemetry to flow..."
-        sleep 180
+        sleep 60
         
         sudo chmod u+x ./validate_ai.sh
 
@@ -469,11 +460,11 @@ jobs:
           echo "Current commit is tagged with: $(git describe --exact-match --tags)"
         else
           echo "Current commit is not tagged."
-          echo "##vso[task.logissue type=warning]Current commit is not tagged. We cannot publish images without a tagged commit. Please tag this commit with the appropriate semver value and format."
-          echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with Untagged Commits."
+          echo "##vso[task.logissue type=warning]Current commit is not tagged. YOU CANNOT RELEASE WITH THIS BUILD and we also cannot publish images without a tagged commit. Please tag this commit with the appropriate semver value and format."
+          echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with Untagged Commits. Exiting...."
           exit 0
         fi
-        
+
         az --version
         az account show
         az account set -s ${{ variables.subscription }}

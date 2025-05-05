@@ -61,6 +61,33 @@ verify_AI_telemetry() {
     done
 }
 
-verify_AI_telemetry "$POD_JAVA_NAME" "java"
-verify_AI_telemetry "$POD_NODEJS_NAME" "nodejs"
+max_retries=10
+retry_interval=30
 
+for app in "java" "nodejs"; do
+  if [ "$app" = "java" ]; then
+    pod_name="$POD_JAVA_NAME"
+  else
+    pod_name="$POD_NODEJS_NAME"
+  fi
+
+  attempt=1
+  success=0
+  while [ $attempt -le $max_retries ]; do
+    echo "Attempt $attempt/$max_retries: Validating telemetry for $pod_name ($app)..."
+    if verify_AI_telemetry "$pod_name" "$app"; then
+      echo "Telemetry validation succeeded for $pod_name ($app)"
+      success=1
+      break
+    else
+      echo "Telemetry validation failed for $pod_name ($app) on attempt $attempt"
+      if [ $attempt -eq $max_retries ]; then
+        echo "Telemetry validation failed for $pod_name ($app) after $max_retries attempts"
+        exit 1
+      fi
+      echo "Waiting $retry_interval seconds before retrying..."
+      sleep $retry_interval
+    fi
+    attempt=$((attempt + 1))
+  done
+done
