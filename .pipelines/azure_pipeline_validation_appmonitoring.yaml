@@ -465,9 +465,15 @@ jobs:
       scriptLocation: inlineScript
       inlineScript: |
 
+        if git describe --exact-match --tags >/dev/null 2>&1; then
+          echo "Current commit is tagged with: $(git describe --exact-match --tags)"
+        else
+          echo "Current commit is not tagged."
+          echo "##vso[task.logissue type=warning]Current commit is not tagged. We cannot publish images without a tagged commit. Please tag this commit with the appropriate semver value and format."
+          echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with Untagged Commits."
+          exit 0
+        fi
         
-
-
         az --version
         az account show
         az account set -s ${{ variables.subscription }}
