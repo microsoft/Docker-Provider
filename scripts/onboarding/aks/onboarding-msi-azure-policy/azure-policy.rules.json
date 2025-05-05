@@ -266,7 +266,7 @@
 								"type": "Microsoft.ContainerService/managedClusters",
 								"location": "[parameters('aksResourceLocation')]",
 								"tags": "[parameters('resourceTagValues')]",
-								"apiVersion": "2019-04-01",
+								"apiVersion": "2023-04-01",
 								"properties": {
 								  "mode": "Incremental",
 								  "id": "[parameters('aksResourceId')]",
