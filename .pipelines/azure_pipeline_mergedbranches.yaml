@@ -305,7 +305,7 @@ extends:
               fi
         - task: GoTool@0
           inputs:
-            version: '1.23.5'
+            version: '1.23.8'
         - bash: |
             cd $(System.DefaultWorkingDirectory)/build/linux/
             ls
