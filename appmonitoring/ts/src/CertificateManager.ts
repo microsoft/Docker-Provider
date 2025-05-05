@@ -155,7 +155,7 @@ export class CertificateManager {
         }
     }
 
-    public async GetSecretDetails(operationId: string, kubeConfig: k8s.KubeConfig, clusterArmId: string, clusterArmRegion: string): Promise<WebhookCertData> {
+    public async GetSecretDetails(operationId: string, kubeConfig: k8s.KubeConfig): Promise<WebhookCertData> {
         let secretsObj: k8s.V1Secret;
         let certificate: WebhookCertData = null;
 
@@ -168,7 +168,7 @@ export class CertificateManager {
             });
         } catch (error) {
             logger.error(`Error reading the secret: ${JSON.stringify(error)}`, operationId, this.requestMetadata);
-            logger.SendEvent('ReadNamespacedSecretFailure', operationId, null, clusterArmId, clusterArmRegion, true, error);
+            logger.SendEvent('ReadNamespacedSecretFailure', operationId, null, true, error);
             throw error;
         }
 
@@ -183,7 +183,7 @@ export class CertificateManager {
                 };
             } catch (error) {
                 logger.error(`Failed to decode secret data from base64!${JSON.stringify(error)}`, operationId, this.requestMetadata);
-                await logger.SendEvent("CertificateBase64DecodeFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
+                await logger.SendEvent("CertificateBase64DecodeFailure", operationId, null, true, error);
 
                 certificate = {
                     caCert: null,
@@ -200,7 +200,7 @@ export class CertificateManager {
         return null;
     }
 
-    public async GetMutatingWebhookCABundle(operationId: string, kubeConfig: k8s.KubeConfig, clusterArmId: string, clusterArmRegion: string): Promise<string> {
+    public async GetMutatingWebhookCABundle(operationId: string, kubeConfig: k8s.KubeConfig): Promise<string> {
         let caBundle: string;
         let mutatingWebhookObject: k8s.V1MutatingWebhookConfiguration;
         try {
@@ -209,7 +209,7 @@ export class CertificateManager {
             
         } catch (error) {
             logger.error(`Failed to get MutatingWebhookConfiguration! ${JSON.stringify(error)}`, operationId, this.requestMetadata);
-            await logger.SendEvent("MutatingWebhookConfigurationFetchFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
+            await logger.SendEvent("MutatingWebhookConfigurationFetchFailure", operationId, null, true, error);
             throw error;
         }
 
@@ -221,7 +221,7 @@ export class CertificateManager {
             caBundle = Buffer.from(mutatingWebhookObject.webhooks[0].clientConfig.caBundle, 'base64').toString('utf-8');
         } catch (error) {
             logger.error(`Failed to decode caBundle from MutatingWebhookConfiguration. ${JSON.stringify(error)}`, operationId, this.requestMetadata);
-            await logger.SendEvent("MutatingWebhookCABundleDecodeFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
+            await logger.SendEvent("MutatingWebhookCABundleDecodeFailure", operationId, null, true, error);
 
             caBundle = null; // return null to indicate failure in decoding
             logger.info('Returning null caBundle due to decode failure.', operationId, this.requestMetadata);
@@ -257,11 +257,11 @@ export class CertificateManager {
         return caCertificate.verify(certificate);
     }
 
-    public async IsValidCertificate(operationId: string, mwhcCaBundle: string, webhookCertData: WebhookCertData, clusterArmId: string, clusterArmRegion: string): Promise<boolean> {
+    public async IsValidCertificate(operationId: string, mwhcCaBundle: string, webhookCertData: WebhookCertData): Promise<boolean> {
         if (webhookCertData == null)
         {
             logger.info('WebhookCertData is null', operationId, this.requestMetadata);
-            await logger.SendEvent("CertificateFetchValueFailure", operationId, null, clusterArmId, clusterArmRegion, true);
+            await logger.SendEvent("CertificateFetchValueFailure", operationId, null, true);
             return false;
         }
 
@@ -274,7 +274,7 @@ export class CertificateManager {
             return true;
         } catch (error) {
             logger.error(`Error occured while trying to validate certificates. ${JSON.stringify(error)}`, operationId, this.requestMetadata);
-            await logger.SendEvent("CertificateValidationFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
+            await logger.SendEvent("CertificateValidationFailure", operationId, null, true, error);
             return false;
         }
     }
@@ -285,11 +285,9 @@ export class CertificateManager {
      * If there is an error in getting the job status, it throws an error.
      * @param kubeConfig - The Kubernetes configuration.
      * @param operationId - The operation ID.
-     * @param clusterArmId - The ARM ID of the cluster.
-     * @param clusterArmRegion - The ARM region of the cluster.
      * @returns A promise that resolves to a boolean indicating whether the job is still running
      */
-    private async IsCertificateInstallerJobRunning(kubeConfig: k8s.KubeConfig, operationId: string, clusterArmId: string, clusterArmRegion: string): Promise<boolean> {
+    private async IsCertificateInstallerJobRunning(kubeConfig: k8s.KubeConfig, operationId: string): Promise<boolean> {
         const k8sApi = kubeConfig.makeApiClient(k8s.BatchV1Api);
         const requestMetadata = this.requestMetadata;
         const namespace = KubeSystemNamespaceName;
@@ -301,24 +299,24 @@ export class CertificateManager {
                 for (const condition of job.status.conditions) {
                     if ((condition.type === "Complete" || condition.type === "Failed") && condition.status === "True") {
                         logger.info(`Job ${CertificateInstallerJobName} has reached a terminal state with a condition type of ${condition.type}.`, operationId, requestMetadata);
-                        await logger.SendEvent("CertificateJobTerminated", operationId, null, clusterArmId, clusterArmRegion, true);
+                        await logger.SendEvent("CertificateJobTerminated", operationId, null, true);
                         return false;
                     }
                 }
             }
 
             logger.info(`Job ${CertificateInstallerJobName} has not completed yet and is currently running: ${JSON.stringify(job)}`, operationId, requestMetadata);
-            await logger.SendEvent("CertificateJobNotCompleted", operationId, null, clusterArmId, clusterArmRegion, true);
+            await logger.SendEvent("CertificateJobNotCompleted", operationId, null, true);
             return true;
         } catch (err) {
             if(err?.code === 404) {
                 logger.info(`Job ${CertificateInstallerJobName} not found.`, operationId, requestMetadata);
-                await logger.SendEvent("CertificateJobNotFound", operationId, null, clusterArmId, clusterArmRegion, true);
+                await logger.SendEvent("CertificateJobNotFound", operationId, null, true);
                 return false;
             }
 
             logger.error(`Failed to get job status: ${JSON.stringify(err)}`, operationId, requestMetadata);
-            await logger.SendEvent("CertificateJobStatusFailed", operationId, null, clusterArmId, clusterArmRegion, true, err);
+            await logger.SendEvent("CertificateJobStatusFailed", operationId, null, true, err);
             throw err;
         }
     }
@@ -326,10 +324,8 @@ export class CertificateManager {
     /**
      * This method creates a webhook and certificates for a secret store in AKS.
      * @param operationId - The operation ID.
-     * @param clusterArmId - The ARM ID of the cluster.
-     * @param clusterArmRegion - The ARM region of the cluster.
      */
-    public async CreateWebhookAndCertificates(operationId: string, clusterArmId: string, clusterArmRegion: string): Promise<void> {
+    public async CreateWebhookAndCertificates(operationId: string): Promise<void> {
         /**
          * The code block above creates and updates certificates for a webhook. 
          * It starts by creating a new instance of the Kubernetes configuration and loading it from the default location. 
@@ -343,12 +339,12 @@ export class CertificateManager {
         kc.loadFromDefault();
 
         logger.info('Creating certificates...', operationId, this.requestMetadata);
-        await logger.SendEvent("CertificateCreating", operationId, null, clusterArmId, clusterArmRegion, true);
+        await logger.SendEvent("CertificateCreating", operationId, null, true);
         const certificates: WebhookCertData = this.CreateOrUpdateCertificates(operationId) as WebhookCertData;
         logger.info('Certificates created successfully', operationId, this.requestMetadata);
-        await logger.SendEvent("CertificateCreated", operationId, null, clusterArmId, clusterArmRegion, true);
+        await logger.SendEvent("CertificateCreated", operationId, null, true);
 
-        await this.UpdateWebhookAndSecretStore(operationId, kc, certificates, clusterArmId, clusterArmRegion);
+        await this.UpdateWebhookAndSecretStore(operationId, kc, certificates);
     }
 
     /**
@@ -357,11 +353,9 @@ export class CertificateManager {
      * are valid or not or if they are close to expiry. If either certificate is regenerated, it patches the webhook and certificates and
      * restarts the webhook deployment so it picks up the new certificates.
      * @param operationId - The operation ID.
-     * @param clusterArmId - The ARM ID of the cluster.
-     * @param clusterArmRegion - The ARM region of the cluster.
      * @returns - A promise that resolves when the reconciliation is complete.
      */
-    public async ReconcileWebhookAndCertificates(operationId: string, clusterArmId: string, clusterArmRegion: string): Promise<void> {
+    public async ReconcileWebhookAndCertificates(operationId: string): Promise<void> {
         const kc = new k8s.KubeConfig();
         kc.loadFromDefault();
 
@@ -387,35 +381,35 @@ export class CertificateManager {
 
         try {
             // get the cert installer job
-            const isInstallerJobRunning: boolean = await this.IsCertificateInstallerJobRunning(kc, operationId, clusterArmId, clusterArmRegion);
+            const isInstallerJobRunning: boolean = await this.IsCertificateInstallerJobRunning(kc, operationId);
             if (isInstallerJobRunning) {
                 logger.info('Certificates installer job is currently running, reconciliation is not needed at this time...', operationId, this.requestMetadata);
-                await logger.SendEvent("CertificateInstallerNotCompleteYet", operationId, null, clusterArmId, clusterArmRegion, true);
+                await logger.SendEvent("CertificateInstallerNotCompleteYet", operationId, null, true);
                 return;
             } else {
                 logger.info("Certificates installer job has completed or doesn't exist, continue validation...", operationId, this.requestMetadata);
             }
         } catch (error) {
             logger.error(`Error occurred while trying to get Installer Job\n${JSON.stringify(error)}`, operationId, this.requestMetadata);
-            logger.SendEvent("CertificateInstallerJobFetchFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
+            logger.SendEvent("CertificateInstallerJobFetchFailure", operationId, null, true, error);
             return;
         }
 
         try {
             // get the secret
-            webhookCertData = await this.GetSecretDetails(operationId, kc, clusterArmId, clusterArmRegion);
+            webhookCertData = await this.GetSecretDetails(operationId, kc);
         } catch (error) {
             logger.error(`Error occurred while trying to get Secret Store\n${JSON.stringify(error)}`, operationId, this.requestMetadata);
-            logger.SendEvent("CertificateSecretStoreFetchFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
+            logger.SendEvent("CertificateSecretStoreFetchFailure", operationId, null, true, error);
             return;
         }
 
         try {
             // get mutating webhook configuration's CA bundle
-            mwhcCaBundle = await this.GetMutatingWebhookCABundle(operationId, kc, clusterArmId, clusterArmRegion);
+            mwhcCaBundle = await this.GetMutatingWebhookCABundle(operationId, kc);
         } catch (error) {
             logger.error(`Error occurred while trying to get MutatingWebhookConfiguration\n${JSON.stringify(error)}`, operationId, this.requestMetadata);
-            logger.SendEvent("CertificateMutatingWebhookCABundleFetchFailure", operationId, null, clusterArmId, clusterArmRegion, true, error);
+            logger.SendEvent("CertificateMutatingWebhookCABundleFetchFailure", operationId, null, true, error);
             return;
         }
 
@@ -426,18 +420,18 @@ export class CertificateManager {
          * match by comparing their values. Then, it checks if the webhook certificate is signed by the CA certificate using the `isCertificateSignedByCA` method. 
          * Each step in the validation process is assigned to a boolean variable to track the result.
          */
-        const validCerts: boolean = await this.IsValidCertificate(operationId, mwhcCaBundle, webhookCertData, clusterArmId, clusterArmRegion);
+        const validCerts: boolean = await this.IsValidCertificate(operationId, mwhcCaBundle, webhookCertData);
         const matchAndValidation: boolean = validCerts && mwhcCaBundle && webhookCertData && mwhcCaBundle.localeCompare(webhookCertData.caCert) === 0;
         const certSignedByGivenCA: boolean = matchAndValidation && this.isCertificateSignedByCA(webhookCertData.tlsCert, mwhcCaBundle);
 
         if (!certSignedByGivenCA) {
             logger.info('Creating certificates...', operationId, this.requestMetadata);
-            await logger.SendEvent("CertificateCreating", operationId, null, clusterArmId, clusterArmRegion, true);
+            await logger.SendEvent("CertificateCreating", operationId, null, true);
             certificates = this.CreateOrUpdateCertificates(operationId);
             logger.info('Certificates created successfully', operationId, this.requestMetadata);
-            await logger.SendEvent("CertificateCreated", operationId, null, clusterArmId, clusterArmRegion, true);
-            await this.UpdateWebhookAndSecretStore(operationId, kc, certificates, clusterArmId, clusterArmRegion);
-            await this.RestartWebhookDeployment(operationId, kc, clusterArmId, clusterArmRegion);
+            await logger.SendEvent("CertificateCreated", operationId, null, true);
+            await this.UpdateWebhookAndSecretStore(operationId, kc, certificates);
+            await this.RestartWebhookDeployment(operationId, kc);
             return;
         }
 
@@ -484,17 +478,17 @@ export class CertificateManager {
          * and the webhook deployment is restarted. If neither certificate is regenerated, the reconciliation is complete.
          */
         if (shouldUpdate) {
-            await this.UpdateWebhookAndSecretStore(operationId, kc, webhookCertData, clusterArmId, clusterArmRegion);
+            await this.UpdateWebhookAndSecretStore(operationId, kc, webhookCertData);
             if (shouldRestartDeployment) {
                 logger.info('Restarting webhook deployment so the pods pick up new certificates...', operationId, this.requestMetadata);
-                await logger.SendEvent("CertificateDeploymentRestartStarted", operationId, null, clusterArmId, clusterArmRegion, true);
-                await this.RestartWebhookDeployment(operationId, kc, clusterArmId, clusterArmRegion);
-                await logger.SendEvent("CertificateDeploymentRestartCompleted", operationId, null, clusterArmId, clusterArmRegion, true);
+                await logger.SendEvent("CertificateDeploymentRestartStarted", operationId, null, true);
+                await this.RestartWebhookDeployment(operationId, kc);
+                await logger.SendEvent("CertificateDeploymentRestartCompleted", operationId, null, true);
             }
         }
         else {
             logger.info('Nothing to do. All is good. Ending this run...', operationId, this.requestMetadata);
-            await logger.SendEvent("CertificatesUpToDate", operationId, null, clusterArmId, clusterArmRegion, true);
+            await logger.SendEvent("CertificatesUpToDate", operationId, null, true);
         }
     }
 
@@ -502,10 +496,8 @@ export class CertificateManager {
      * This method restarts the webhook deployment. 
      * @param operationId - The operation ID.
      * @param kc - The Kubernetes configuration.
-     * @param clusterArmId - The ARM ID of the cluster.
-     * @param clusterArmRegion - The ARM region of the cluster.
      */
-    private async RestartWebhookDeployment(operationId: string, kc: k8s.KubeConfig, clusterArmId: string, clusterArmRegion: string): Promise<void> {
+    private async RestartWebhookDeployment(operationId: string, kc: k8s.KubeConfig): Promise<void> {
         /**
          * The try block contains the logic to restart the webhook deployment. It first gets the webhook deployment by
          * its selector. If there is no deployment or more than one deployment with the selector, it throws an error. If
@@ -525,28 +517,28 @@ export class CertificateManager {
             webhookDeployment.spec.template.metadata.annotations = annotations;
 
             logger.info(`Restarting deployment ${webhookDeployment.metadata.name}...`, operationId, this.requestMetadata);
-            await logger.SendEvent("DeploymentRestarting", operationId, null, clusterArmId, clusterArmRegion, true);
+            await logger.SendEvent("DeploymentRestarting", operationId, null, true);
             await k8sApi.replaceNamespacedDeployment({ namespace: KubeSystemNamespaceName, name: webhookDeployment.metadata.name, body: webhookDeployment });
             logger.info(`Successfully restarted Deployment ${webhookDeployment.metadata.name}`, operationId, this.requestMetadata);
-            await logger.SendEvent("DeploymentRestarted", operationId, null, clusterArmId, clusterArmRegion, true);
+            await logger.SendEvent("DeploymentRestarted", operationId, null, true);
         } catch (err) {
             logger.error(`Failed to restart deployment: ${err}`, operationId, this.requestMetadata);
-            await logger.SendEvent("DeploymentRestartFailed", operationId, null, clusterArmId, clusterArmRegion, true, err);
+            await logger.SendEvent("DeploymentRestartFailed", operationId, null, true, err);
             throw err;
         }
     }
 
-    private async UpdateWebhookAndSecretStore(operationId: string, kc: k8s.KubeConfig, certificates: WebhookCertData, clusterArmId: string, clusterArmRegion: string): Promise<void> {
+    private async UpdateWebhookAndSecretStore(operationId: string, kc: k8s.KubeConfig, certificates: WebhookCertData): Promise<void> {
         logger.info('Patching Secret Store...', operationId, this.requestMetadata);
-        await logger.SendEvent("CertificatePatchingSecretStore", operationId, null, clusterArmId, clusterArmRegion, true);
+        await logger.SendEvent("CertificatePatchingSecretStore", operationId, null, true);
         await this.UpdateSecretStore(operationId, kc, certificates);
         logger.info('Secret Store patched successfully', operationId, this.requestMetadata);
-        await logger.SendEvent("CertificatePatchedSecretStore", operationId, null, clusterArmId, clusterArmRegion, true);
+        await logger.SendEvent("CertificatePatchedSecretStore", operationId, null, true);
 
         logger.info('Patching MutatingWebhookConfiguration...', operationId, this.requestMetadata);
-        await logger.SendEvent("CertificatePatchingMWHC", operationId, null, clusterArmId, clusterArmRegion, true);
+        await logger.SendEvent("CertificatePatchingMWHC", operationId, null, true);
         await this.UpdateMutatingWebhook(operationId, kc, certificates);
         logger.info('MutatingWebhookConfiguration patched successfully', operationId, this.requestMetadata);
-        await logger.SendEvent("CertificatePatchedMWHC", operationId, null, clusterArmId, clusterArmRegion, true);
+        await logger.SendEvent("CertificatePatchedMWHC", operationId, null, true);
     }
 }

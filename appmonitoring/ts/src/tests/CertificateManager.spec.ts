@@ -26,8 +26,6 @@ describe('CertificateManager', () => {
     describe('CreateWebhookAndSecretStore', () => {
         it('should create and update webhook and certificates', async () => {
             const mockKubeConfig = new KubeConfig();
-            const mockClusterArmId = 'clusterArmId';
-            const mockClusterArmRegion = 'clusterArmRegion';
             jest.spyOn(KubeConfig.prototype, 'loadFromDefault').mockReturnValue(null);
             const createOrUpdateCertificates = jest.spyOn(certManager as any, 'CreateOrUpdateCertificates').mockReturnValue({
                 caCert: 'mockCACert',
@@ -38,7 +36,7 @@ describe('CertificateManager', () => {
             const updateWebhookAndCertificates = jest.spyOn(certManager as any, 'UpdateWebhookAndSecretStore').mockResolvedValue(null);
 
             const operationId = 'operationId';
-            await certManager.CreateWebhookAndCertificates(operationId, mockClusterArmId, mockClusterArmRegion);
+            await certManager.CreateWebhookAndCertificates(operationId);
 
             expect(createOrUpdateCertificates).toHaveBeenCalledWith(operationId);
             expect(updateWebhookAndCertificates).toHaveBeenCalledWith(operationId, mockKubeConfig, {
@@ -46,21 +44,17 @@ describe('CertificateManager', () => {
                 caKey: 'mockCAKey',
                 tlsKey: 'mockTLSKey',
                 tlsCert: 'mockTLSCert',
-            } as WebhookCertData, mockClusterArmId, mockClusterArmRegion);
+            } as WebhookCertData);
         });
     });
 
     describe('ReconcileWebhookAndCertificates', () => {
         let mockKubeConfig: KubeConfig;
-        let mockClusterArmId: string;
-        let mockClusterArmRegion: string;
         let operationId: string;
         let certManager: CertificateManager;
 
         beforeEach(() => {
             mockKubeConfig = new KubeConfig();
-            mockClusterArmId = 'clusterArmId';
-            mockClusterArmRegion = 'clusterArmRegion';
             operationId = 'operationId';
             jest.spyOn(KubeConfig.prototype, 'loadFromDefault').mockReturnValue(null);
 
@@ -72,14 +66,14 @@ describe('CertificateManager', () => {
         });
 
         it('Should fail certificate validation if parameters are null', async () => {
-            const IsValidCertificate = await certManager.IsValidCertificate('op-test', null, null, mockClusterArmId, mockClusterArmRegion);
+            const IsValidCertificate = await certManager.IsValidCertificate('op-test', null, null);
 
             expect(IsValidCertificate).toBeFalsy();
         });
 
         it('Should pass certificate validation if caCert from MWHC is bad', async () => {
             const certs: WebhookCertData = await certManager.CreateOrUpdateCertificates('op-test');
-            const IsValidCertificate = await certManager.IsValidCertificate('op-test', null, certs, mockClusterArmId, mockClusterArmRegion);
+            const IsValidCertificate = await certManager.IsValidCertificate('op-test', null, certs);
 
             expect(IsValidCertificate).toBeFalsy();
         });
@@ -87,7 +81,7 @@ describe('CertificateManager', () => {
         it('Should pass certificate validation if caCert in secret store is bad', async () => {
             const certs: WebhookCertData = await certManager.CreateOrUpdateCertificates('op-test');
             certs.caCert = 'bad-ca-cert';
-            const IsValidCertificate = await certManager.IsValidCertificate('op-test', certs.caCert, certs, mockClusterArmId, mockClusterArmRegion);
+            const IsValidCertificate = await certManager.IsValidCertificate('op-test', certs.caCert, certs);
 
             expect(IsValidCertificate).toBeFalsy();
         });
@@ -95,7 +89,7 @@ describe('CertificateManager', () => {
         it('Should pass certificate validation if caKey in secret store is bad', async () => {
             const certs: WebhookCertData = await certManager.CreateOrUpdateCertificates('op-test');
             certs.caKey = 'bad-ca-key';
-            const IsValidCertificate = await certManager.IsValidCertificate('op-test', certs.caCert, certs, mockClusterArmId, mockClusterArmRegion);
+            const IsValidCertificate = await certManager.IsValidCertificate('op-test', certs.caCert, certs);
 
             expect(IsValidCertificate).toBeFalsy();
         });
@@ -103,7 +97,7 @@ describe('CertificateManager', () => {
         it('Should pass certificate validation if tls cert in secret store is bad', async () => {
             const certs: WebhookCertData = await certManager.CreateOrUpdateCertificates('op-test');
             certs.tlsCert = 'bad-tls-cert';
-            const IsValidCertificate = await certManager.IsValidCertificate('op-test', certs.caCert, certs, mockClusterArmId, mockClusterArmRegion);
+            const IsValidCertificate = await certManager.IsValidCertificate('op-test', certs.caCert, certs);
 
             expect(IsValidCertificate).toBeFalsy();
         });
@@ -111,14 +105,14 @@ describe('CertificateManager', () => {
         it('Should pass certificate validation if tls key in secret store is bad', async () => {
             const certs: WebhookCertData = await certManager.CreateOrUpdateCertificates('op-test');
             certs.tlsKey = 'bad-tls-key';
-            const IsValidCertificate = await certManager.IsValidCertificate('op-test', certs.caCert, certs, mockClusterArmId, mockClusterArmRegion);
+            const IsValidCertificate = await certManager.IsValidCertificate('op-test', certs.caCert, certs);
 
             expect(IsValidCertificate).toBeFalsy();
         });
 
         it('Should pass certificate validation if parameters are good', async () => {
             const certs: WebhookCertData = await certManager.CreateOrUpdateCertificates('op-test');
-            const IsValidCertificate = await certManager.IsValidCertificate('op-test', certs.caCert, certs, mockClusterArmId, mockClusterArmRegion);
+            const IsValidCertificate = await certManager.IsValidCertificate('op-test', certs.caCert, certs);
 
             expect(IsValidCertificate).toBeTruthy();
         });
@@ -129,7 +123,7 @@ describe('CertificateManager', () => {
             const getSecretDetails = jest.spyOn(certManager as any, 'GetSecretDetails').mockResolvedValue(null);
             const updateWebhookAndCertificates = jest.spyOn(certManager as any, 'UpdateWebhookAndSecretStore').mockResolvedValue(null);
             const restartWebhookDeployment = jest.spyOn(certManager as any, 'RestartWebhookDeployment').mockResolvedValue(null);
-            await certManager.ReconcileWebhookAndCertificates(operationId, mockClusterArmId, mockClusterArmRegion);
+            await certManager.ReconcileWebhookAndCertificates(operationId);
 
             expect(checkCertificateJobStatus).toHaveBeenCalled();
             expect(checkCertificateJobStatus).toHaveBeenCalledTimes(1);
@@ -145,7 +139,7 @@ describe('CertificateManager', () => {
             const getMutatingWebhookCABundle = jest.spyOn(certManager as any, 'GetMutatingWebhookCABundle').mockResolvedValue(null);
             const updateWebhookAndCertificates = jest.spyOn(certManager as any, 'UpdateWebhookAndSecretStore').mockResolvedValue(null);
             const restartWebhookDeployment = jest.spyOn(certManager as any, 'RestartWebhookDeployment').mockResolvedValue(null);
-            await certManager.ReconcileWebhookAndCertificates(operationId, mockClusterArmId, mockClusterArmRegion);
+            await certManager.ReconcileWebhookAndCertificates(operationId);
 
             expect(checkCertificateJobStatus).toHaveBeenCalled();
             expect(checkCertificateJobStatus).toHaveBeenCalledTimes(1);
@@ -162,7 +156,7 @@ describe('CertificateManager', () => {
             const getMutatingWebhookCABundle = jest.spyOn(certManager as any, 'GetMutatingWebhookCABundle').mockRejectedValue(new Error('Mutating webhook not found'));
             const updateWebhookAndCertificates = jest.spyOn(certManager as any, 'UpdateWebhookAndSecretStore').mockResolvedValue(null);
             const restartWebhookDeployment = jest.spyOn(certManager as any, 'RestartWebhookDeployment').mockResolvedValue(null);
-            await certManager.ReconcileWebhookAndCertificates(operationId, mockClusterArmId, mockClusterArmRegion);
+            await certManager.ReconcileWebhookAndCertificates(operationId);
 
             expect(checkCertificateJobStatus).toHaveBeenCalled();
             expect(checkCertificateJobStatus).toHaveBeenCalledTimes(1);
@@ -183,16 +177,16 @@ describe('CertificateManager', () => {
             const IsValidCertificate = jest.spyOn(certManager as any, 'IsValidCertificate').mockResolvedValue(true);
             const updateWebhookAndCertificates = jest.spyOn(certManager as any, 'UpdateWebhookAndSecretStore').mockResolvedValue(null);
             const restartWebhookDeployment = jest.spyOn(certManager as any, 'RestartWebhookDeployment').mockResolvedValue(null);
-            await certManager.ReconcileWebhookAndCertificates(operationId, mockClusterArmId, mockClusterArmRegion);
+            await certManager.ReconcileWebhookAndCertificates(operationId);
 
             expect(checkCertificateJobStatus).toHaveBeenCalled();
             expect(checkCertificateJobStatus).toHaveBeenCalledTimes(1);
             expect(IsValidCertificate).toHaveBeenCalled();
             expect(IsValidCertificate).toHaveBeenCalledTimes(1);
             expect(getSecretDetails).toHaveBeenCalledTimes(1);
-            expect(getSecretDetails).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion); // Ensure it was called with correct parameters
+            expect(getSecretDetails).toHaveBeenCalledWith(operationId, mockKubeConfig); // Ensure it was called with correct parameters
             expect(getMutatingWebhookCABundle).toHaveBeenCalledTimes(1);
-            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion);
+            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig);
             expect(updateWebhookAndCertificates).not.toBeCalled();
             expect(restartWebhookDeployment).not.toBeCalled();
         });
@@ -207,18 +201,18 @@ describe('CertificateManager', () => {
             const updateWebhookAndCertificates = jest.spyOn(certManager as any, 'UpdateWebhookAndSecretStore').mockResolvedValue(null);
             const restartWebhookDeployment = jest.spyOn(certManager as any, 'RestartWebhookDeployment').mockResolvedValue(null);
             const certGenCaller = jest.spyOn(certManager as any, 'CreateOrUpdateCertificates');
-            await certManager.ReconcileWebhookAndCertificates(operationId, mockClusterArmId, mockClusterArmRegion);
+            await certManager.ReconcileWebhookAndCertificates(operationId);
             const generatedCertificate: WebhookCertData = certGenCaller.mock.results[0].value;
 
             expect(checkCertificateJobStatus).toHaveBeenCalled();
             expect(checkCertificateJobStatus).toHaveBeenCalledTimes(1);
             expect(IsValidCertificate).toBeCalled();
-            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion);
-            expect(getSecretDetails).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion);
+            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig);
+            expect(getSecretDetails).toHaveBeenCalledWith(operationId, mockKubeConfig);
             expect(updateWebhookAndCertificates).toHaveBeenCalledTimes(1);
-            expect(updateWebhookAndCertificates).toHaveBeenCalledWith(operationId, mockKubeConfig, generatedCertificate, mockClusterArmId, mockClusterArmRegion);
+            expect(updateWebhookAndCertificates).toHaveBeenCalledWith(operationId, mockKubeConfig, generatedCertificate);
             expect(restartWebhookDeployment).toHaveBeenCalledTimes(1);
-            expect(restartWebhookDeployment).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion);
+            expect(restartWebhookDeployment).toHaveBeenCalledWith(operationId, mockKubeConfig);
         });
 
         it('should generate all new certs for host and CA if certs are corrupted or mismatched', async () => {
@@ -261,7 +255,7 @@ describe('CertificateManager', () => {
                 return null;
             });
 
-            await certManager.ReconcileWebhookAndCertificates(operationId, mockClusterArmId, mockClusterArmRegion);
+            await certManager.ReconcileWebhookAndCertificates(operationId);
 
             //Assert
             expect(checkCertificateJobStatus).toHaveBeenCalled();
@@ -270,11 +264,11 @@ describe('CertificateManager', () => {
             expect(IsValidCertificate).toHaveBeenCalledTimes(1);
             expect(createOrUpdateCertificates).toHaveBeenLastCalledWith(operationId);
             expect(getMutatingWebhookCABundle).toHaveBeenCalledTimes(1);
-            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion);
+            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig);
             expect(updateWebhookAndCertificates).toHaveBeenCalledTimes(1);
-            expect(updateWebhookAndCertificates).toHaveBeenCalledWith(operationId, mockKubeConfig, mockCertData, mockClusterArmId, mockClusterArmRegion);
+            expect(updateWebhookAndCertificates).toHaveBeenCalledWith(operationId, mockKubeConfig, mockCertData);
             expect(restartWebhookDeployment).toHaveBeenCalledTimes(1);
-            expect(restartWebhookDeployment).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion);
+            expect(restartWebhookDeployment).toHaveBeenCalledWith(operationId, mockKubeConfig);
         });
 
         it('should handle only CA cert expiration', async () => {
@@ -316,12 +310,12 @@ describe('CertificateManager', () => {
             });
             const restartWebhookDeployment = jest.spyOn(certManager as any, 'RestartWebhookDeployment').mockResolvedValue(null);
 
-            await certManager.ReconcileWebhookAndCertificates(operationId, mockClusterArmId, mockClusterArmRegion);
+            await certManager.ReconcileWebhookAndCertificates(operationId);
 
             expect(checkCertificateJobStatus).toHaveBeenCalled();
             expect(IsValidCertificate).toBeCalled();
-            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion);
-            expect(getSecretDetails).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion);
+            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig);
+            expect(getSecretDetails).toHaveBeenCalledWith(operationId, mockKubeConfig);
             expect(generateCACertificate).toHaveBeenCalled();
             expect(updateWebhookAndCertificates).toHaveBeenCalled();
             expect(restartWebhookDeployment).not.toBeCalled();
@@ -360,12 +354,12 @@ describe('CertificateManager', () => {
             }).mockResolvedValue(null);
             const restartWebhookDeployment = jest.spyOn(certManager as any, 'RestartWebhookDeployment').mockResolvedValue(null);
 
-            await certManager.ReconcileWebhookAndCertificates(operationId, mockClusterArmId, mockClusterArmRegion);
+            await certManager.ReconcileWebhookAndCertificates(operationId);
 
             expect(checkCertificateJobStatus).toHaveBeenCalled();
             expect(IsValidCertificate).toBeCalled(); 
-            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion);
-            expect(getSecretDetails).toHaveBeenCalledWith(operationId, mockKubeConfig, mockClusterArmId, mockClusterArmRegion);
+            expect(getMutatingWebhookCABundle).toHaveBeenCalledWith(operationId, mockKubeConfig);
+            expect(getSecretDetails).toHaveBeenCalledWith(operationId, mockKubeConfig);
 
             expect(generateHostCertificate).toHaveBeenCalled();
             expect(updateWebhookAndCertificates).toHaveBeenCalled();
