@@ -99,6 +99,8 @@ jobs:
       TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
   - task: PublishBuildArtifacts@1
+    condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
+    displayName: "Publish artifacts for PR"
     inputs:
       pathToPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: drop
@@ -386,7 +388,7 @@ jobs:
         fi
 
   - task: AzureCLI@2
-    displayName: "Restart webhook deployment"
+    displayName: "Restart webhook deployment and then test apps"
     inputs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: bash
@@ -397,7 +399,20 @@ jobs:
         az account set --subscription ${{ variables.subscription }}
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
+        echo "Restarting deployment app-monitoring-webhook in kube-system namespace..."
         kubectl rollout restart -n kube-system deployment/app-monitoring-webhook 
+
+        echo "Waiting for the deployment app-monitoring-webhook to be ready..."
+        kubectl rollout status deployment/app-monitoring-webhook -n kube-system --timeout=120s
+        
+        echo "Restarting deployment ${{ variables.javaTestAppName }} in namespace ${{ variables.testNamespace }}..."
+        kubectl rollout restart deployment/${{ variables.javaTestAppName }} -n ${{ variables.testNamespace }}
+        echo "Restarting deployment ${{ variables.nodeTestAppName }} in namespace ${{ variables.testNamespace }}..."
+        kubectl rollout restart deployment/${{ variables.nodeTestAppName }} -n ${{ variables.testNamespace }}
+
+        echo "Waiting for the test app deployments to be ready..."
+        kubectl rollout status deployment/${{ variables.javaTestAppName }} -n ${{ variables.testNamespace }} --timeout=120s
+        kubectl rollout status deployment/${{ variables.nodeTestAppName }} -n ${{ variables.testNamespace }} --timeout=120s
 
   - task: AzureCLI@2
     displayName: "Check test apps were mutated correctly"
@@ -449,6 +464,10 @@ jobs:
       scriptType: bash
       scriptLocation: inlineScript
       inlineScript: |
+
+        
+
+
         az --version
         az account show
         az account set -s ${{ variables.subscription }}
