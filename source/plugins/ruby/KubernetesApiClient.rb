@@ -132,7 +132,7 @@ class KubernetesApiClient
 
     def getTokenStr
       begin
-        if (@@TokenStr.nil? || (@@TokenExpiry - DateTime.now.to_time.to_i).abs <= Constants::SERVICE_ACCOUNT_TOKEN_REFRESH_INTERVAL_SECONDS) # refresh token from token file if its near expiry
+        if (@@TokenStr.nil? || @@TokenExpiry <= DateTime.now.to_time.to_i || (@@TokenExpiry - DateTime.now.to_time.to_i).abs <= Constants::SERVICE_ACCOUNT_TOKEN_REFRESH_INTERVAL_SECONDS) # refresh token from token file if its near expiry
           if File.exist?(@@TokenFileName) && File.readable?(@@TokenFileName)
             @@TokenStr = File.read(@@TokenFileName).strip
             begin

@@ -8,10 +8,8 @@ echo "startup script start @ $(date +'%Y-%m-%dT%H:%M:%S')"
 startAMACoreAgent() {
       echo "AMACoreAgent: Starting AMA Core Agent since High Log scale mode is enabled"
 
-      AMACALogFileDir="/var/opt/microsoft/linuxmonagent/amaca/log"
-      AMACALogFilePath="$AMACALogFileDir"/amaca.log
-      AMACAConfigFilePath="/etc/opt/microsoft/azuremonitoragent/amacoreagent"
-      export PA_FLUENT_SOCKET_PORT=13000
+      export AMACALogFileDir="/var/opt/microsoft/linuxmonagent/amaca/log"
+      export AMACALogFilePath="$AMACALogFileDir"/amaca.log
       export PA_DATA_PORT=13000
       export PA_GIG_BRIDGE_MODE=true
       export GIG_PA_ENABLE_OPTIMIZATION=true
@@ -20,19 +18,19 @@ startAMACoreAgent() {
       export CounterDataReportFrequencyInMinutes=60
 
       {
-         echo "export PA_FLUENT_SOCKET_PORT=$PA_FLUENT_SOCKET_PORT"
          echo "export PA_DATA_PORT=$PA_DATA_PORT"
          echo "export PA_GIG_BRIDGE_MODE=$PA_GIG_BRIDGE_MODE"
          echo "export GIG_PA_ENABLE_OPTIMIZATION=$GIG_PA_ENABLE_OPTIMIZATION"
          echo "export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=$DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"
          echo "export PA_CONFIG_PORT=$PA_CONFIG_PORT"
          echo "export CounterDataReportFrequencyInMinutes=$CounterDataReportFrequencyInMinutes"
+         echo "export AMACALogFilePath=$AMACALogFilePath"
       } >> ~/.bashrc
 
       source ~/.bashrc
-      /opt/microsoft/azure-mdsd/bin/amacoreagent -c $AMACAConfigFilePath --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath > /dev/null 2>&1 &
+      /opt/microsoft/azure-mdsd/bin/amacoreagent --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath --giglaport $PA_DATA_PORT > /dev/null 2>&1 &
 
-      waitforlisteneronTCPport "$PA_FLUENT_SOCKET_PORT" "$WAITTIME_PORT_13000"
+      waitforlisteneronTCPport "$PA_DATA_PORT" "$WAITTIME_PORT_13000"
       waitforlisteneronTCPport "$PA_CONFIG_PORT" "$WAITTIME_PORT_12563"
       # Extract AMACoreAgent version from log file
       version=""
