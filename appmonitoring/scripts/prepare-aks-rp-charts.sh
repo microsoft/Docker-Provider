@@ -34,3 +34,16 @@ else
   echo "Error: $SRC_HELPERS_TPL not found."
   exit 4
 fi
+
+# Copy values.yaml to the target directory
+SRC_VALUES_YAML="appmonitoring/validation-helm/values.yaml"
+DEST_VALUES_YAML="appmonitoring/validation-helm/app-monitoring-addon/templates/values.yaml"
+
+if [[ -f "$SRC_VALUES_YAML" ]]; then
+  cp "$SRC_VALUES_YAML" "$DEST_VALUES_YAML"
+  echo "values.yaml copied to $DEST_VALUES_YAML"
+else
+  echo "Error: $SRC_VALUES_YAML not found."
+  exit 5
+fi
+
