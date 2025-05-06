@@ -37,11 +37,11 @@ fi
 
 # Copy values.yaml to the target directory
 SRC_VALUES_YAML="../validation-helm/values.yaml"
-DEST_VALUES_YAML="../validation-helm/app-monitoring-addon/templates/values.yaml"
+DEST_VALUES_YAML="../validation-helm/app-monitoring-addon/values.yaml"
 
 if [[ -f "$SRC_VALUES_YAML" ]]; then
-  cp "$SRC_VALUES_YAML" "$DEST_VALUES_YAML"
-  echo "values.yaml copied to $DEST_VALUES_YAML"
+  mv "$SRC_VALUES_YAML" "$DEST_VALUES_YAML"
+  echo "values.yaml moved to $DEST_VALUES_YAML"
 else
   echo "Error: $SRC_VALUES_YAML not found."
   exit 5
