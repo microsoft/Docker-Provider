@@ -10,16 +10,16 @@
    - manually applying it to a cluster
 5. Run [end-to-end validation pipeline](https://github-private.visualstudio.com/microsoft/_build?definitionId=543&_a=summary) on the branch to smoke test it end-to-end. This won't guarantee that end-to-end will work post-merge, but this validation is too heavy for a PR gate.
 6. Merge a PR into the _ai_prod_ branch.
-7. Run [end-to-end validation pipeline](https://github-private.visualstudio.com/microsoft/_build?definitionId=543&_a=summary) on _ai_prod_ to ensure end-to-end passes.
-7. Tag the _ai_prod_ branch's head (_semver_ tag, e.g. _appmonitoring-1.0.0-beta.1_).
+7. Wait for the [end-to-end validation pipeline](https://github-private.visualstudio.com/microsoft/_build?definitionId=543&_a=summary) on _ai_prod_ to finish (with a partial success) to ensure end-to-end passes. 
+8. Tag the _ai_prod_ branch's head (_semver_ tag, e.g. _appmonitoring-1.0.0-beta.1_).
    - checkout _ai_prod_
    - _git tag -a appmonitoring-1.0.0-beta.1 -m "appmonitoring-1.0.0-beta.1 release tag"_
    - _git push origin appmonitoring-1.0.0-beta.1_
-8. Prepare a GitHub release based on the newly create tag (e.g. [Public Preview beta.2](https://github.com/microsoft/Docker-Provider/releases/tag/appmonitoring-1.0.0-beta.2)).
-9. Build _ai_prod_ via the [ContainerInsights-MultiArch-MergedBranches-AppMonitoring](https://github-private.visualstudio.com/microsoft/_build?definitionId=539) build pipeline. Make sure the tag already exists at the time when this is run. Do not use old builds that ran before tagging was done.
-10. Build _ai_prod_ via the [validation pipeline](https://github-private.visualstudio.com/microsoft/_build?definitionId=543&_a=summary) build pipeline. Make sure the tag already exists at the time when this is run. Do not use old builds that ran before tagging was done.
-11. Push the image to MCR by releasing the build via the [application-insights-prod-release](https://github-private.visualstudio.com/microsoft/_release?definitionId=73&view=mine&_a=releases) release. Pick the build from step 9, and use the tag you created earlier in 
+9. Prepare a GitHub release based on the newly create tag (e.g. [Public Preview beta.2](https://github.com/microsoft/Docker-Provider/releases/tag/appmonitoring-1.0.0-beta.2)).
+10. Build _ai_prod_ via the [ContainerInsights-MultiArch-MergedBranches-AppMonitoring](https://github-private.visualstudio.com/microsoft/_build?definitionId=539) build pipeline. Make sure the tag already exists at the time when this is run. Do not use old builds that ran before tagging was done.
+11. Build _ai_prod_ via the [validation pipeline](https://github-private.visualstudio.com/microsoft/_build?definitionId=543&_a=summary) build pipeline. Make sure the tag already exists at the time when this is run. Do not use old builds that ran before tagging was done.
+12. Push the image to MCR by releasing the build via the [application-insights-prod-release](https://github-private.visualstudio.com/microsoft/_release?definitionId=73&view=mine&_a=releases) release. Pick the build from step 9, and use the tag you created earlier in 
 `WebhookImageTagSuffix` paramerter. The image is now publicly available.
-12. Merge a PR into the AKS RP repo that updates the version of the image used.
-13. You need to update the image versions, as per your release tag that you did just now, [here](https://dev.azure.com/msazure/CloudNativeCompute/_git/aks-rp?path=/ccp/charts/addon-charts/app-monitoring-addon/Chart.yaml) and [here](https://dev.azure.com/msazure/CloudNativeCompute/_git/aks-rp?path=/ccp/control-plane-core/charts/kube-control-plane/templates/_images.tpl) in AKS RP repo
-13. Follow daily and weekly rollouts of AKS RP and watch change propagation on the dashboard.
+13. Merge a PR into the AKS RP repo that updates the version of the image used.
+14. You need to update the image versions, as per your release tag that you did just now, [here](https://dev.azure.com/msazure/CloudNativeCompute/_git/aks-rp?path=/ccp/charts/addon-charts/app-monitoring-addon/Chart.yaml) and [here](https://dev.azure.com/msazure/CloudNativeCompute/_git/aks-rp?path=/ccp/control-plane-core/charts/kube-control-plane/templates/_images.tpl) in AKS RP repo
+15. Follow daily and weekly rollouts of AKS RP and watch change propagation on the dashboard.
