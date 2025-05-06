@@ -356,7 +356,7 @@ jobs:
         export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
 
-        echo "Wait for 60s for telemetry to flow..."
+        echo "Wait 60s for telemetry to flow..."
         sleep 60
         
         sudo chmod u+x ./validate_ai.sh
@@ -438,7 +438,7 @@ jobs:
         export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
 
-        echo "Wait for 60s for telemetry to flow..."
+        echo "Wait 60s for telemetry to flow..."
         sleep 60
         
         sudo chmod u+x ./validate_ai.sh
