@@ -56,7 +56,7 @@ verify_AI_telemetry() {
         else
             echo "No $table telemetry found for $pod_name ($app_type)" >&2
             echo "Validation for $app_type pods failed: No $table telemetry found" >&2
-            exit 1
+            return 1
         fi
     done
 }
