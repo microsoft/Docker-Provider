@@ -1,0 +1,12 @@
+{
+  "name": "testappcaller",
+  "version": "1.0.0",
+  "description": "Periodically calls the nodejs test app service",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.8"
+  }
+}

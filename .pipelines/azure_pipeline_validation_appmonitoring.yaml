@@ -6,20 +6,31 @@
 trigger:
   batch: true
   branches:
-    exclude:
-    - '*'
+    include:
+    - 'ai_prod'
 
 pr:
   branches:
-    exclude:
-    - '*'
+    include:
+    - 'ai_prod'
 
 variables:
   armServiceConnectionName: 'Appmonitoring_Validation_Pipeline'
   subscription: '5a3b3ba4-3a42-42ae-b2cb-f882345803bc'
-  containerRegistry: 'aicommon' # this build pushes to aicommon.azurecr.io with an image that is used for testing in validation cluster, then pushes an image once tests pass. That image is latre picked up by the release pipeline and reuploaded to MCR
-  repoImageName: '${{ variables.containerRegistry }}.azurecr.io/validated/azuremonitor/applicationinsights/aiprod'
-  repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/dev/azuremonitor/applicationinsights/aiprod'
+  containerRegistry: 'appmonitoring' # this build pushes to aicommon.azurecr.io with an image that is used for testing in validation cluster, then pushes an image once tests pass. That image is latre picked up by the release pipeline and reuploaded to MCR
+  repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/applicationinsights/aidev'
+  repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/test/azuremonitor/applicationinsights/aidev'
+  javaTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-java-app:latest'
+  javaTestAppName: 'java-test-app'
+  nodeTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-nodejs-app:latest'
+  nodeTestAppName: 'nodejs-test-app'
+  testNamespace: 'test-ns'
+  aiConnectionString: 'InstrumentationKey=2b453402-fcfb-408f-8495-c551f0e82f46;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/'
+  aiResourceId: '/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/microsoft.insights/components/appmonitoring-pipeline-validation-ai'
+  Codeql.Enabled: true
+  Codeql.BuildIdentifier: 'linuxbuild'
+  AKSResourceGroup: 'aks-appmonitoring-pipeline'
+  AKSResourceName: 'appmonitoring-webhook-testbed'
   IS_PR: $[eq(variables['Build.Reason'], 'PullRequest')]
 
 jobs:
@@ -37,7 +48,7 @@ jobs:
   ## prod release are in format Major.Minor.Patch
   ## preview release are in format preview-Major.Minor.Patch
   - bash: |
-      commit=$(git describe --tags)
+      commit=$(git describe --tags --abbrev=0)
       imageTag="$commit"
             
       echo "imageTag is $imageTag"
@@ -46,8 +57,55 @@ jobs:
       
       cd $(Build.SourcesDirectory)/deployment/mergebranch-webhook-deployment/ServiceGroupRoot/Scripts
     name: setup
+  
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment artifacts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/deployment"
+      Contents: |
+        **/*
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
-- job: build_linux
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment scripts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/.pipelines"
+      Contents: |
+        **/*.sh
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment scripts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/kubernetes"
+      Contents: |
+        *.yaml
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment scripts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/charts"
+      Contents: |
+        **/*
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+
+  - task: CopyFiles@2
+    displayName: "Copy ev2 deployment scripts"
+    inputs:
+      SourceFolder: "$(Build.SourcesDirectory)/test/e2e"
+      Contents: |
+        *.yaml
+      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+
+  - task: PublishBuildArtifacts@1
+    condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
+    displayName: "Publish artifacts for PR"
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)'
+      artifactName: drop
+
+- job: build_linux  
   
   timeoutInMinutes: 120
   dependsOn: common
@@ -57,18 +115,7 @@ jobs:
     imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
     testImageTagSuffix: $(imageTag)-$(Build.BuildId)
     testImageName: ${{ variables.repoTestImageName }}:${{ variables.testImageTagSuffix }}
-    fullImageName: ${{ variables.repoImageName }}:$(imageTag)
-    javaTestAppImageName: 'aicommon.azurecr.io/demoaks-java-app:latest'
-    javaTestAppName: 'test-app-java'
-    nodeTestAppImageName: 'aicommon.azurecr.io/demoaks-nodejs-app:latest'
-    nodeTestAppName: 'test-app-nodejs'
-    testNamespace: 'test-ns'
-    aiConnectionString: 'InstrumentationKey=2b453402-fcfb-408f-8495-c551f0e82f46;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/'
-    aiResourceId: '/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/microsoft.insights/components/appmonitoring-pipeline-validation-ai'
-    Codeql.Enabled: true
-    Codeql.BuildIdentifier: 'linuxbuild'
-    AKSResourceGroup: 'aks-appmonitoring-pipeline'
-    AKSResourceName: 'appmonitoring-webhook-testbed'
+    fullImageName: ${{ variables.repoImageName }}:$(imageTag)-rc-$(Build.BuildId)
     # This is necessary because of: https://github.com/moby/moby/issues/37965
     DOCKER_BUILDKIT: 1
 
@@ -157,11 +204,40 @@ jobs:
 
         echo "Build reason = $(Build.Reason)"
 
-        echo ${{ variables.testImageName }}
+        echo $(testImageName)
         
-        docker buildx build --platform linux/amd64,linux/arm64 --tag ${{ variables.testImageName }} -f ./Dockerfile --build-arg IMAGE_TAG="${{ variables.testImageName }}" --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --push --provenance=false .
-        docker pull ${{ variables.testImageName }}
+        docker buildx build --platform linux/amd64,linux/arm64 --tag $(testImageName) -f ./Dockerfile --build-arg IMAGE_TAG="$(testImageName)" --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --push --provenance=false .
+        docker pull $(testImageName)
 
+        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+
+        echo "Running trivy scan..."
+        echo ".trivyignore file:"
+        cat .trivyignore
+
+        trivy image --ignore-unfixed --format json --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 $(testImageName)
+
+  - task: CodeQL3000Finalize@0
+  - bash: |
+        echo "##vso[task.setvariable variable=testImageName;isOutput=true]$(testImageName)"
+        echo "##vso[task.setvariable variable=fullImageName;isOutput=true]$(fullImageName)"
+        echo "##vso[task.setvariable variable=testImageTagSuffix;isOutput=true]$(testImageTagSuffix)"
+    name: exportVars
+
+
+- job: validate_webhook_image
+  dependsOn: build_linux
+  condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
+  pool:
+    name: rambhatt-test-es-pool
+  variables:
+    testImageName:  $[ dependencies.build_linux.outputs['exportVars.testImageName'] ]
+    fullImageName:  $[ dependencies.build_linux.outputs['exportVars.fullImageName'] ]
+    testImageTagSuffix: $[ dependencies.build_linux.outputs['exportVars.testImageTagSuffix'] ]
+    # This is necessary because of: https://github.com/moby/moby/issues/37965
+    DOCKER_BUILDKIT: 1
+
+  steps:
   - task: AzureCLI@2
     displayName: "Create deployment in AKS"
     inputs:
@@ -175,9 +251,16 @@ jobs:
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
         sudo chmod u+x ./clean-install-appmonitoring.sh
+        sudo chmod u+x ./prepare-aks-rp-charts.sh
+
+        echo "Preparing charts..."
+        if ! ./prepare-aks-rp-charts.sh ../validation-helm/app-monitoring-addon/templates/app-monitoring-agent.yaml; then
+          echo "Chart preparation failed"
+          exit 1
+        fi
 
         echo "Checking for charts..."
-        if ! ./clean-install-appmonitoring.sh ${{ variables.testImageTagSuffix }}; then
+        if ! ./clean-install-appmonitoring.sh $(testImageTagSuffix); then
           echo "Chart installation failed"
           exit 1
         fi
@@ -197,8 +280,8 @@ jobs:
         sudo chmod u+x ./validate-aks-charts.sh
         sudo chmod u+x ./validate-certs.sh
 
-        echo "Waiting for 30 seconds for charts to be ready..."
-        sleep 30
+        echo "Waiting for the charts to be ready..."
+        kubectl wait --for=condition=complete job/app-monitoring-secrets-installer -n kube-system --timeout=60s
 
         echo "Checking for charts..."
         if ! ./validate-aks-charts.sh; then
@@ -226,10 +309,12 @@ jobs:
 
         export JAVA_TEST_IMAGE_NAME=${{ variables.javaTestAppImageName }}
         export NODEJS_TEST_IMAGE_NAME=${{ variables.nodeTestAppImageName }}
-        export TEST_NS="${{ variables.testNamespace }}"
-        export AI_CONNECTION_STRING="${{ variables.aiConnectionString }}"
         export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
+        export TEST_APP_SOURCE_NAME="nodejs-source-app"
+        export NODEJS_CALLER_APP_NAME="nodejs-caller-app"
+        export TEST_NS="${{ variables.testNamespace }}"
+        export AI_CONNECTION_STRING="${{ variables.aiConnectionString }}"
 
         sudo chmod +x ../scripts/install-test-apps.sh
 
@@ -252,7 +337,7 @@ jobs:
         
         sudo chmod u+x ./validate-mutation.sh
 
-        if ! ./validate-mutation.sh "test-app-java" "test-app-nodejs" "test-ns"; then
+        if ! ./validate-mutation.sh ${{ variables.javaTestAppName }} ${{ variables.nodeTestAppName }} ${{ variables.testNamespace }}; then
           echo "Mutation validation failed"
           exit 1
         fi
@@ -271,12 +356,12 @@ jobs:
         export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
 
-        echo "Wait for 3m for telemetry to flow..."
-        sleep 180
+        echo "Wait 60s for telemetry to flow..."
+        sleep 60
         
         sudo chmod u+x ./validate_ai.sh
 
-        if ! ./validate_ai.sh "${{ variables.aiResourceId }}" "test-ns"; then
+        if ! ./validate_ai.sh ${{ variables.aiResourceId }} ${{ variables.testNamespace }}; then
           echo "AI telemetry validation failed"
           exit 1
         fi
@@ -314,7 +399,11 @@ jobs:
         az account set --subscription ${{ variables.subscription }}
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
+        echo "Restarting deployment app-monitoring-webhook in kube-system namespace..."
         kubectl rollout restart -n kube-system deployment/app-monitoring-webhook 
+
+        echo "Waiting for the deployment app-monitoring-webhook to be ready..."
+        kubectl rollout status deployment/app-monitoring-webhook -n kube-system --timeout=120s
 
   - task: AzureCLI@2
     displayName: "Check test apps were mutated correctly"
@@ -330,7 +419,7 @@ jobs:
         
         sudo chmod u+x ./validate-mutation.sh
 
-        if ! ./validate-mutation.sh "test-app-java" "test-app-nodejs" "test-ns"; then
+        if ! ./validate-mutation.sh "${{ variables.javaTestAppName }}" "${{ variables.nodeTestAppName }}" "${{ variables.testNamespace }}"; then
           echo "Mutation validation failed"
           exit 1
         fi
@@ -349,12 +438,12 @@ jobs:
         export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
 
-        echo "Wait for 3m for telemetry to flow..."
-        sleep 180
+        echo "Wait 60s for telemetry to flow..."
+        sleep 60
         
         sudo chmod u+x ./validate_ai.sh
 
-        if ! ./validate_ai.sh "${{ variables.aiResourceId }}" "test-ns"; then
+        if ! ./validate_ai.sh ${{ variables.aiResourceId }} ${{ variables.testNamespace }}; then
           echo "AI telemetry validation failed"
           exit 1
         fi
@@ -366,23 +455,42 @@ jobs:
       scriptType: bash
       scriptLocation: inlineScript
       inlineScript: |
+
+        # Check if current commit is tagged and branch is ai_prod
+        CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+        if git describe --exact-match --tags >/dev/null 2>&1 && [ "$CURRENT_BRANCH" = "ai_prod" ]; then
+          echo "Current commit is tagged with: $(git describe --exact-match --tags) and branch is ai_prod."
+        else
+          if [ "$CURRENT_BRANCH" != "ai_prod" ]; then
+            echo "Current branch is not ai_prod. Cannot publish from another branch"
+            echo "##vso[task.logissue type=warning]Current branch is not ai_prod. YOU CANNOT RELEASE WITH THIS BUILD."
+            echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with a branch other than ai_prod. Exiting...."
+          else
+            echo "Current commit is not tagged."
+            echo "##vso[task.logissue type=warning]Current commit is not tagged. YOU CANNOT RELEASE WITH THIS BUILD and we also cannot publish images without a tagged commit on ai_prod. Please tag this commit with the appropriate semver value and format."
+            echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with Untagged Commits. Exiting...."
+          fi
+          exit 0
+        fi
+
         az --version
         az account show
         az account set -s ${{ variables.subscription }}
-        az acr login -n ${{ variables.containerRegistry }}
 
-        docker pull ${{ variables.testImageName }}
-        docker tag ${{ variables.testImageName }} ${{ variables.fullImageName }}
-        docker push ${{ variables.fullImageName }}
+        # Login to prod ACR (destination) to push the image
+        az acr login -n ${{ variables.containerRegistry }}
+        docker pull $(testImageName)
+        docker tag $(testImageName) $(fullImageName)
+        docker push $(fullImageName)
         
-  - task: CodeQL3000Finalize@0
+        mkdir -p $(Build.ArtifactStagingDirectory)/linux
+        echo "Setting the image name..."
+        echo $(fullImageName) > $(Build.ArtifactStagingDirectory)/linux/fullImageName.txt
 
   - task: PublishBuildArtifacts@1
     inputs:
       pathToPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: drop
-
-
 
 
 

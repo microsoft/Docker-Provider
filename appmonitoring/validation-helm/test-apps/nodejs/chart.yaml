@@ -4,39 +4,41 @@ metadata:
   name: ${NODEJS_TEST_APP_NAME}
   namespace: ${TEST_NS}
   labels:
-    app: test-app-nodejs
+    app: nodejs-test-app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: test-app-nodejs
+      app: nodejs-test-app
   template:
     metadata:
       labels:
-        app: test-app-nodejs
+        app: nodejs-test-app
     spec:
       containers:
-      - name: test-app-nodejs
-        image: ${NODEJS_TEST_IMAGE_NAME}
+      - name: nodejs-test-app
+        image: appmonitoring.azurecr.io/demoaks-nodejs-app:latest
         imagePullPolicy: Always
         env:
         - name: APPLICATIONINSIGHTS_CONFIGURATION_CONTENT
           value: '{"logInstrumentationOptions":{"console": { "enabled": true },"bunyan": { "enabled": true },"winston": { "enabled": true }}}'
+        - name: TARGET_URL
+          value: "http://${TEST_APP_SOURCE_NAME}-service.default.svc.cluster.local:3001"
         ports:
-        - containerPort: 8080
+        - containerPort: 3001
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: test-app-nodejs-service
-  namespace: default
+  name: ${NODEJS_TEST_APP_NAME}-service
+  namespace: ${TEST_NS}
   labels:
-    app: test-app-nodejs
+    app: nodejs-test-app
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
-    - port: 80
+    - port: 3001
       protocol: TCP
-      targetPort: 8080
+      targetPort: 3001
   selector:
-    app: test-app-nodejs
+    app: nodejs-test-app
