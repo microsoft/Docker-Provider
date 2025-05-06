@@ -24,6 +24,7 @@ variables:
   IS_RELEASE: $[ne(variables['TELEMETRY_TAG'], '')]
   appRegistrationClientId: $[variables['APP_REGISTRATION_CLIENT_ID']]
   appRegistrationTenantId: $[variables['APP_REGISTRATION_TENANT_ID']]
+  esrpClientId: $[variables['ESRP_CLIENT_ID']]
   authAKVName: $[variables['AUTH_AKV_NAME']]
   authCertName: $[variables['AUTH_CERT_NAME']]
   authSignCertName: $[variables['AUTH_SIGN_CERT_NAME']]
@@ -69,6 +70,7 @@ jobs:
 
       echo "appRegistrationClientId is $APP_REGISTRATION_CLIENT_ID"
       echo "appRegistrationTenantId is $APP_REGISTRATION_TENANT_ID"
+      echo "esrpClientId is $ESRP_CLIENT_ID"
       echo "authAKVName is $AUTH_AKV_NAME"
       echo "authCertName is $AUTH_CERT_NAME"
       echo "authSignCertName is $AUTH_SIGN_CERT_NAME"
@@ -223,9 +225,11 @@ jobs:
   - task: EsrpCodeSigning@5
     condition: eq(variables.IS_PR, false)
     inputs:
-      ConnectedServiceName: 'AME ESRPContainerInsights MSI Service Connection'
+      ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+      UseMSIAuthentication: true
       AppRegistrationClientId: $(appRegistrationClientId)
       AppRegistrationTenantId: $(appRegistrationTenantId)
+      EsrpClientId: $(esrpClientId)
       AuthAKVName: $(authAKVName)
       AuthCertName: $(authCertName)
       AuthSignCertName: $(authSignCertName)
@@ -482,9 +486,11 @@ jobs:
 
   - task: EsrpCodeSigning@5
     inputs:
-      ConnectedServiceName: 'AME ESRPContainerInsights MSI Service Connection'
+      ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+      UseMSIAuthentication: true
       AppRegistrationClientId: $(appRegistrationClientId)
       AppRegistrationTenantId: $(appRegistrationTenantId)
+      EsrpClientId: $(esrpClientId)
       AuthAKVName: $(authAKVName)
       AuthCertName: $(authCertName)
       AuthSignCertName: $(authSignCertName)
@@ -521,9 +527,11 @@ jobs:
 
   - task: EsrpCodeSigning@5
     inputs:
-      ConnectedServiceName: 'AME ESRPContainerInsights MSI Service Connection'
+      ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+      UseMSIAuthentication: true
       AppRegistrationClientId: $(appRegistrationClientId)
       AppRegistrationTenantId: $(appRegistrationTenantId)
+      EsrpClientId: $(esrpClientId)
       AuthAKVName: $(authAKVName)
       AuthCertName: $(authCertName)
       AuthSignCertName: $(authSignCertName)
@@ -716,9 +724,11 @@ jobs:
 
   - task: EsrpCodeSigning@5
     inputs:
-      ConnectedServiceName: 'AME ESRPContainerInsights MSI Service Connection'
+      ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+      UseMSIAuthentication: true
       AppRegistrationClientId: $(appRegistrationClientId)
       AppRegistrationTenantId: $(appRegistrationTenantId)
+      EsrpClientId: $(esrpClientId)
       AuthAKVName: $(authAKVName)
       AuthCertName: $(authCertName)
       AuthSignCertName: $(authSignCertName)
@@ -755,9 +765,11 @@ jobs:
 
   - task: EsrpCodeSigning@5
     inputs:
-      ConnectedServiceName: 'AME ESRPContainerInsights MSI Service Connection'
+      ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+      UseMSIAuthentication: true
       AppRegistrationClientId: $(appRegistrationClientId)
       AppRegistrationTenantId: $(appRegistrationTenantId)
+      EsrpClientId: $(esrpClientId)
       AuthAKVName: $(authAKVName)
       AuthCertName: $(authCertName)
       AuthSignCertName: $(authSignCertName)
@@ -913,9 +925,11 @@ jobs:
   - task: EsrpCodeSigning@5
     condition: eq(variables.IS_PR, false)
     inputs:
-      ConnectedServiceName: 'AME ESRPContainerInsights MSI Service Connection'
+      ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+      UseMSIAuthentication: true
       AppRegistrationClientId: $(appRegistrationClientId)
       AppRegistrationTenantId: $(appRegistrationTenantId)
+      EsrpClientId: $(esrpClientId)
       AuthAKVName: $(authAKVName)
       AuthCertName: $(authCertName)
       AuthSignCertName: $(authSignCertName)
