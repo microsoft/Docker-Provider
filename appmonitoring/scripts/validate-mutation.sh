@@ -33,6 +33,25 @@ checkMutation() {
     local deploymentName="$1"  # The first argument to the function is stored in 'name'
     echo "Checking deployment: $deploymentName"
     DEPLOYMENT=$(kubectl get deployment "$deploymentName" -n "$NAMESPACE" -o json)
+    
+    # Check if deployment pods are running and ready
+    echo "Checking if pods for deployment $deploymentName are running and ready..."
+    rollout_status=$(kubectl rollout status deployment "$deploymentName" -n "$NAMESPACE" --timeout=60s)
+    if [[ $? -ne 0 ]]; then
+        echo "FATAL ERROR: Deployment $deploymentName is not successfully rolled out."
+        echo "$rollout_status"
+        exit 1
+    fi
+    pod_status=$(kubectl get pods -n "$NAMESPACE" -l app="$deploymentName" -o json)
+    not_ready=$(echo "$pod_status" | jq '[.items[] | select(.status.phase != "Running" or (.status.containerStatuses[]?.ready != true))] | length')
+    if [[ "$not_ready" -ne 0 ]]; then
+        echo "FATAL ERROR: One or more pods for deployment $deploymentName are not running and ready."
+        kubectl describe pods -n "$NAMESPACE" -l app="$deploymentName"
+        exit 1
+    else
+        echo "All pods for deployment $deploymentName are running and ready."
+    fi
+
     envVariables=$(jq -r '.spec.template.spec.containers[0].env' <<< $DEPLOYMENT)
     echo "Checking for Expected Environment Variables in deployment $deploymentName"
     for expectedVar in "${EXPECTED_ENV_VARS[@]}"; do
@@ -57,7 +76,7 @@ checkMutation() {
             exit 1
         fi
     done
-
+    
 }
 
 if ! checkMutation "$DEPLOYMENT_JAVA_NAME"; then

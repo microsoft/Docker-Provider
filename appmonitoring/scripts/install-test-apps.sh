@@ -25,6 +25,3 @@ cat ../validation-helm/test-apps/nodejs/chart.yaml | envsubst | kubectl apply -f
 
 # this is the app that will periodically call the instrumented apps to generate request telemetry
 cat ../validation-helm/test-apps/testappcaller/chart.yaml | envsubst | kubectl apply -f -
-
-echo "Wait for 60s for charts to be applied..."
-sleep 60
