@@ -280,8 +280,8 @@ jobs:
         sudo chmod u+x ./validate-aks-charts.sh
         sudo chmod u+x ./validate-certs.sh
 
-        echo "Waiting for 30 seconds for charts to be ready..."
-        sleep 30
+        echo "Waiting for the charts to be ready..."
+        kubectl wait --for=condition=complete job/app-monitoring-secrets-installer -n kube-system --timeout=60s
 
         echo "Checking for charts..."
         if ! ./validate-aks-charts.sh; then
