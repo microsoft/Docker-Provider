@@ -458,7 +458,7 @@ jobs:
 
         # Check if current commit is tagged and branch is ai_prod
         CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-        echo "Current branch is: $CURRENT_BRANCH"
+        echo "Current branch is: $(CURRENT_BRANCH)"
         if git describe --exact-match --tags >/dev/null 2>&1 && [ $CURRENT_BRANCH = "ai_prod" ]; then
           echo "Current commit is tagged with: $(git describe --exact-match --tags) and branch is ai_prod."
         else
