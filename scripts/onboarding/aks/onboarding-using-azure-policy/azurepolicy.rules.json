@@ -57,7 +57,7 @@
 												"type": "Microsoft.ContainerService/managedClusters",
 												"location": "[parameters('clusterLocation')]",
 												"tags": "[parameters('clusterTags')]",
-												"apiVersion": "2019-04-01",
+												"apiVersion": "2023-04-01",
 												"properties": {
 													"mode": "Incremental",
 													"id": "[resourceId(parameters('clusterResourceGroupName'), 'Microsoft.ContainerService/managedClusters', parameters('clusterName'))]",
