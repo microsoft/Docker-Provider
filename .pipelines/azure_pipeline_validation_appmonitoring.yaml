@@ -462,7 +462,6 @@ jobs:
           echo "Current commit is not tagged."
           echo "##vso[task.logissue type=warning]Current commit is not tagged. YOU CANNOT RELEASE WITH THIS BUILD and we also cannot publish images without a tagged commit. Please tag this commit with the appropriate semver value and format."
           echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with Untagged Commits. Exiting...."
-          az acr repository delete --name ${{ variables.containerRegistry }} --image $(testImageName) --yes
           exit 0
         fi
 
@@ -475,7 +474,6 @@ jobs:
         docker pull $(testImageName)
         docker tag $(testImageName) $(fullImageName)
         docker push $(fullImageName)
-        az acr repository delete --name ${{ variables.containerRegistry }} --image $(testImageName) --yes
         
         mkdir -p $(Build.ArtifactStagingDirectory)/linux
         echo "Setting the image name..."
