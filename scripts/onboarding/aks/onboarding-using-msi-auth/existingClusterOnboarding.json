@@ -482,7 +482,7 @@
                                         "config": {
                                             "logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]",
                                             "useAADAuth": "true",
-                                            "enableRetinaNetworkFlags": "[parameters('enableRetinaNetworkFlowLogs')]"
+                                            "enableRetinaNetworkFlags": "[if(parameters('enableRetinaNetworkFlowLogs'), 'true', 'false')]"
                                         }
                                     }
                                 }
