@@ -463,7 +463,7 @@ jobs:
         else
           if [ "$CURRENT_BRANCH" != "ai_prod" ]; then
             echo "Current branch is not ai_prod. Cannot publish from another branch"
-            echo #"##vso[task.logissue type=warning]Current branch is not ai_prod. YOU CANNOT RELEASE WITH THIS BUILD."
+            echo "##vso[task.logissue type=warning]Current branch is not ai_prod. YOU CANNOT RELEASE WITH THIS BUILD."
             echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with a branch other than ai_prod. Exiting...."
           else
             echo "Current commit is not tagged."
