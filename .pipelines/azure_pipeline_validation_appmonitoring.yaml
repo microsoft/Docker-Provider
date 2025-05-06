@@ -457,12 +457,12 @@ jobs:
       inlineScript: |
 
         # Check if current commit is tagged and branch is ai_prod
-        CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-        echo "Current branch is: $CURRENT_BRANCH"
-        if git describe --exact-match --tags >/dev/null 2>&1 && [ $CURRENT_BRANCH = "ai_prod" ]; then
+        CURRENT_BRANCH="${BUILD_SOURCEBRANCHNAME}"
+        echo "Current branch is: $(CURRENT_BRANCH)"
+        if git describe --exact-match --tags >/dev/null 2>&1 && [ "$CURRENT_BRANCH" = "ai_prod" ]; then
           echo "Current commit is tagged with: $(git describe --exact-match --tags) and branch is ai_prod."
         else
-          if [ $CURRENT_BRANCH != "ai_prod" ]; then
+          if [ "$CURRENT_BRANCH" != "ai_prod" ]; then
             echo "Current branch is not ai_prod. Cannot publish from another branch"
             echo "##vso[task.logissue type=warning]Current branch is not ai_prod. YOU CANNOT RELEASE WITH THIS BUILD."
             echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with a branch other than ai_prod. Exiting...."
