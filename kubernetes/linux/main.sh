@@ -160,6 +160,8 @@ isHighLogScaleMode() {
          true
      elif [[ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]]; then
          true
+     elif [[ "${AZMON_RETINA_FLOW_LOGS_ENABLED}" == "true" ]]; then
+         true
      else
          false
      fi
@@ -1099,6 +1101,8 @@ if [ "${ENABLE_CUSTOM_METRICS}" == "true" ]; then
 else
       setGlobalEnvVar AZMON_RESOURCE_OPTIMIZATION_ENABLED "${AZMON_RESOURCE_OPTIMIZATION_ENABLED}"
 fi
+
+setGlobalEnvVar AZMON_RETINA_FLOW_LOGS_ENABLED "${AZMON_RETINA_FLOW_LOGS_ENABLED}"
 
 #start fluentd
 if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ] && [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" != "true" ]; then

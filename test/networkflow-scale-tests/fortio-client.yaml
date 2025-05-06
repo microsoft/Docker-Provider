@@ -1,0 +1,61 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fortio-client
+  labels:
+    app: fortio
+    role: load
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      name: fortio-client
+      app: fortio
+      role: load
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 20%
+      maxSurge: 20%
+  template:
+    metadata:
+      labels:
+        name: fortio-client
+        app: fortio
+        role: load
+    spec:
+      nodeSelector:
+        workload: fortio
+      containers:
+      - name: fortio
+        image: fortio/fortio:latest
+        imagePullPolicy: IfNotPresent
+        args:
+          [
+            "load",
+            "-nocatchup",
+            "-uniform",
+            "-sequential-warmup",
+            "-udp-timeout",
+            "1500ms",
+            "-timeout",
+            "5s",
+            "-c",
+            "100",
+            "-qps",
+            "1000",
+            "-keepalive=false",
+            "-t",
+            "0",
+            "http://fortio-server-service:8080"
+          ]
+        ports:
+          - containerPort: 8078 # tcp echo
+          - containerPort: 8079 # grpc echo
+          - containerPort: 8080 # main serving port
+          - containerPort: 8081 # redirection to https port
+        resources:
+          requests:
+            cpu: 10m
+            memory: 50Mi
