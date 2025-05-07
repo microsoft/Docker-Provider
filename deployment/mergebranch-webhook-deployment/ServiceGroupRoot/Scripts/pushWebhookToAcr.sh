@@ -27,6 +27,11 @@ if [[ "$TAG" =~ ^appmonitoring-([^-]+(?:-[^-]+)*)-rc-[0-9]+$ ]]; then
   echo "$WEBHOOK_IMAGE_TAG_SUFFIX"  # Output: 1.0.0-beta.4
 else
   echo "-e error: Released Image tag not in correct format. check release variables"
+  echo "Source image tag: $SOURCE_IMAGE_TAG"
+  echo "Source image build id: $SOURCE_IMAGE_BUILD_ID"
+  echo "Tag: $TAG"
+  echo "Webhook image tag suffix: $WEBHOOK_IMAGE_TAG_SUFFIX"
+  echo "Bash rematch: ${BASH_REMATCH[1]}"
   exit 1
 fi
 
@@ -45,16 +50,6 @@ fi
 
 if [ -z $WEBHOOK_IMAGE_FULL_PATH ]; then
   echo "-e error WEBHOOK_IMAGE_FULL_PATH shouldnt be empty. check release variables"
-  exit 1
-fi
-
-if [ -z $SOURCE_IMAGE_TAG ]; then
-  echo "-e error value of SOURCE_IMAGE_TAG shouldn't be empty. check release variables"
-  exit 1
-fi
-
-if [ -z $SOURCE_IMAGE_BUILD_ID ]; then
-  echo "-e error value of SOURCE_IMAGE_BUILD_ID shouldn't be empty. check release variables"
   exit 1
 fi
 
