@@ -13,14 +13,14 @@ additional questions or comments.
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.27 (windows)
 - Linux
   - [cbl-mariner 2.0.20250429](https://github.com/microsoft/azurelinux/releases/tag/2.0.20250429-2.0)
-  - Golang - 1.23.5
+  - Golang - 1.23.8
   - Ruby - 3.1.3
-  - MDSD - 1.31.4
+  - MDSD - 1.35.1
   - Telegraf - 1.34.3
   - Fluent-bit - 3.0.6
   - Fluentd - 1.16.3
 - Windows
-  - Golang - 1.23.5
+  - Golang - 1.23.8
   - Ruby - 3.1.1
   - Windows AMA - 46.17.2
   - Telegraf - 1.24.2
@@ -29,9 +29,7 @@ additional questions or comments.
 ##### Code change log
 ## What's Changed
 - Common
-  * Update ARM template parameter check for enableRetinaNetworkFlags @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1421
   * Fix CVEs though updating go packages and ruby gem @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1414
-  * retina networkflow logs @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1372
   * Update managed cluster api versions @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1419
   * Fixed token refresh issue @suyadav1 https://github.com/microsoft/Docker-Provider/pull/1409
   * add a note that local computer build is broken in README @zanejohnson-azure https://github.com/microsoft/Docker-Provider/pull/1401
@@ -46,6 +44,8 @@ additional questions or comments.
   * Test automation: added tests for LA data flow @suyadav1 https://github.com/microsoft/Docker-Provider/pull/1366
   * multi-tenancy public preview configmap updates @ganga1980 https://github.com/microsoft/Docker-Provider/pull/1367
 - Linux
+  * Update ARM template parameter check for enableRetinaNetworkFlags @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1421
+  * retina networkflow logs @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1372
   * Upgrade Telegraf 1.34.3 by@suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1434
   * Upgrade Telegraf version to latest dalec build @suyadav1 https://github.com/microsoft/Docker-Provider/pull/1420
   * azure mdsd 1.35.1 update @ganga1980 https://github.com/microsoft/Docker-Provider/pull/1415
