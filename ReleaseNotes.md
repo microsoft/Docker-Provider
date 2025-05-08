@@ -8,6 +8,52 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 05/08/2025 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.27 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.27 (windows)
+- Linux
+  - [cbl-mariner 2.0.20250429](https://github.com/microsoft/azurelinux/releases/tag/2.0.20250429-2.0)
+  - Golang - 1.23.5
+  - Ruby - 3.1.3
+  - MDSD - 1.31.4
+  - Telegraf - 1.34.3
+  - Fluent-bit - 3.0.6
+  - Fluentd - 1.16.3
+- Windows
+  - Golang - 1.23.5
+  - Ruby - 3.1.1
+  - Windows AMA - 46.17.2
+  - Telegraf - 1.24.2
+  - Fluent-bit - 3.0.6
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Common
+  * Update ARM template parameter check for enableRetinaNetworkFlags @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1421
+  * Fix CVEs though updating go packages and ruby gem @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1414
+  * retina networkflow logs @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1372
+  * Update managed cluster api versions @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1419
+  * Fixed token refresh issue @suyadav1 https://github.com/microsoft/Docker-Provider/pull/1409
+  * add a note that local computer build is broken in README @zanejohnson-azure https://github.com/microsoft/Docker-Provider/pull/1401
+  * Added Readme for test folder @suyadav1 https://github.com/microsoft/Docker-Provider/pull/1399
+  * governed release yaml arc @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1392
+  * Test automation framework: pull testkube images from MCR @suyadav1 https://github.com/microsoft/Docker-Provider/pull/1382
+  * Add converted governed release for arc canary @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1386
+  * Updated Readme for conformance image @suyadav1 https://github.com/microsoft/Docker-Provider/pull/1381
+  * Fixed containerInventory image issue for guid image @suyadav1 https://github.com/microsoft/Docker-Provider/pull/1374
+  * Updated conformance test image @suyadav1 https://github.com/microsoft/Docker-Provider/pull/1377
+  * fix conformance test @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1350
+  * Test automation: added tests for LA data flow @suyadav1 https://github.com/microsoft/Docker-Provider/pull/1366
+  * multi-tenancy public preview configmap updates @ganga1980 https://github.com/microsoft/Docker-Provider/pull/1367
+- Linux
+  * Upgrade Telegraf 1.34.3 by@suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1434
+  * Upgrade Telegraf version to latest dalec build @suyadav1 https://github.com/microsoft/Docker-Provider/pull/1420
+  * azure mdsd 1.35.1 update @ganga1980 https://github.com/microsoft/Docker-Provider/pull/1415
+  * Fix build pipeline where it is broken for ARM64 Build @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1387
+- Windows
+  * Windows build fix for gcc issue @suyadav1 https://github.com/microsoft/Docker-Provider/pull/1416
+  * Fix bug as we now introduced AZMON_WINDOWS_FLUENT_BIT_ENABLED @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1379
+
 ### 03/10/2025 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.26 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.26 (windows)
