@@ -79,7 +79,8 @@ sudo tdnf install jq-1.6-1.cm2 -y
 #used to setcaps for ruby process to read /proc/env
 sudo tdnf install libcap -y
 
-sudo tdnf install telegraf-agent-1.34.2 -y
+sudo curl -L -O https://github.com/microsoft/Docker-Provider/releases/download/mdsd-1.31.0/telegraf-agent-1.34.3-1.cm2.x86_64.rpm
+sudo tdnf install -y --nogpgcheck telegraf-agent-1.34.3-1.cm2.x86_64.rpm
 telegraf_version=$(sudo tdnf list installed | grep telegraf | awk '{print $2}')
 echo "telegraf $telegraf_version" >> packages_version.txt
 mv /usr/bin/telegraf-agent /opt/telegraf
