@@ -378,6 +378,8 @@ jobs:
   -  common
   pool:
     name: Azure-Pipelines-Windows-CI-Test-EO
+    image: ci-1es-windows-2022-compliant
+    os: windows
   variables:
     windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
     windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
