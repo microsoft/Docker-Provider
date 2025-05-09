@@ -343,7 +343,7 @@ spec:
         component: ama-logs-agent
         tier: node
       annotations:
-        agentVersion: "azure-mdsd-1.31.4"
+        agentVersion: "azure-mdsd-1.35.1"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         kubernetes.azure.com/no-http-proxy-vars: "true"
@@ -391,7 +391,7 @@ spec:
         #         - NET_ADMIN
         #         - NET_RAW
         - name: ama-logs
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.26"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.27"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -527,7 +527,7 @@ spec:
             timeoutSeconds: 15
 #Only in sidecar scraping mode
         - name: ama-logs-prometheus
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.26"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.27"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -786,7 +786,7 @@ spec:
 #       labels:
 #         rsName: "ama-logs-multitenancy"
 #       annotations:
-#         agentVersion: "azure-mdsd-1.31.4"
+#         agentVersion: "azure-mdsd-1.35.1"
 #         dockerProviderVersion: "18.0.1-0"
 #         schema-versions: "v1"
 #         kubernetes.azure.com/no-http-proxy-vars: "true"
@@ -959,7 +959,7 @@ spec:
       labels:
         rsName: "ama-logs-rs"
       annotations:
-        agentVersion: "azure-mdsd-1.31.4"
+        agentVersion: "azure-mdsd-1.35.1"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         kubernetes.azure.com/no-http-proxy-vars: "true"
@@ -1039,7 +1039,7 @@ spec:
         #         - NET_ADMIN
         #         - NET_RAW
         - name: ama-logs
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.26"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.27"
           imagePullPolicy: IfNotPresent
           # comment resources if VPA configured since the VPA will set these values
           resources:
@@ -1297,7 +1297,7 @@ spec:
       #       add:
       #         - NET_ADMIN
        - name: ama-logs-windows
-         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.26"
+         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.27"
          imagePullPolicy: IfNotPresent
          resources:
           requests:
