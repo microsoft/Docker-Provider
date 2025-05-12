@@ -12,50 +12,41 @@ fi
 sudo tdnf install ca-certificates-microsoft -y
 sudo update-ca-trust
 
-# sudo tdnf install ruby-3.1.3 -y
 if [ "$ARCH" == "arm64" ]; then
-    sudo tdnf install ruby-3.1.3-1.cm2.aarch64 -y
+    sudo tdnf install ruby-3.3.5-1.azl3.aarch64 -y
 else
     tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
-    wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20230330.tar.gz -O ruby-build.tar.gz
+    wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20250409.tar.gz -O ruby-build.tar.gz
     tar -xzf ruby-build.tar.gz
     PREFIX=/usr/local ./ruby-build-*/install.sh
-    ruby-build 3.1.3 /usr
+    ruby-build 3.3.8 /usr -v
+
+    rm ruby-build.tar.gz
 fi
 
 # clean up the ruby-build files
-rm ruby-build.tar.gz
 rm -rf ruby-build-*
 
 # remove unused default gem openssl, find as they have some known vulns
-rm /usr/lib/ruby/gems/3.1.0/specifications/default/openssl-3.0.1.gemspec
-rm -rf /usr/lib/ruby/gems/3.1.0/gems/openssl-3.0.1
-rm /usr/lib/ruby/gems/3.1.0/specifications/default/find-0.1.1.gemspec
-rm -rf /usr/lib/ruby/gems/3.1.0/gems/find-0.1.1
-rm /usr/lib/ruby/gems/3.1.0/specifications/default/rdoc-6.4.0.gemspec
-rm -rf /usr/lib/ruby/gems/3.1.0/gems/rdoc-6.4.0
+rm /usr/lib/ruby/gems/3.3.0/specifications/default/openssl-3.2.0.gemspec
+rm -rf /usr/lib/ruby/gems/3.3.0/gems/openssl-3.2.0
+rm /usr/lib/ruby/gems/3.3.0/specifications/default/find-0.2.0.gemspec
+rm -rf /usr/lib/ruby/gems/3.3.0/gems/find-0.2.0
+rm /usr/lib/ruby/gems/3.3.0/specifications/default/rdoc-6.6.3.1.gemspec
+rm -rf /usr/lib/ruby/gems/3.3.0/gems/rdoc-6.6.3.1
 
 # update the time and uri package to tackle the vulnerabilities in these gems
-gem update time --default
-gem update uri --default
-gem update stringio --default
-gem update rexml --default
-gem update webrick --default
-mv /usr/lib/ruby/gems/3.1.0/specifications/default/time-0.2.0.gemspec /usr/lib/ruby/gems/3.1.0/specifications/default/..
-mv /usr/lib/ruby/gems/3.1.0/specifications/default/uri-0.11.0.gemspec /usr/lib/ruby/gems/3.1.0/specifications/default/..
-mv /usr/lib/ruby/gems/3.1.0/specifications/default/stringio-3.0.1.gemspec /usr/lib/ruby/gems/3.1.0/specifications/default/..
-mv /usr/lib/ruby/gems/3.1.0/specifications/default/rexml-3.2.5.gemspec /usr/lib/ruby/gems/3.1.0/specifications/default/..
-mv /usr/lib/ruby/gems/3.1.0/specifications/webrick-1.8.1.gemspec /usr/lib/ruby/gems/3.1.0/specifications/..
-gem install cgi -v "0.3.7" --no-document
-gem uninstall cgi --version 0.3.5
-rm -f /usr/lib/ruby/gems/3.1.0/specifications/default/cgi-0.3.5.gemspec
-rm -rf /usr/lib/ruby/gems/3.1.0/gems/cgi-0.3.5
-gem uninstall net-imap --version 0.2.3
-gem uninstall time --version 0.2.0
-gem uninstall uri --version 0.11.0
-gem uninstall stringio --version 3.0.1
-gem uninstall rexml --version 3.2.5
-gem uninstall webrick --version 1.8.1
+gem update time --default --no-document
+gem update uri --default --no-document
+gem update stringio --default --no-document
+
+mv /usr/lib/ruby/gems/3.3.0/specifications/default/time-0.3.0.gemspec /usr/lib/ruby/gems/3.3.0/specifications/default/..
+mv /usr/lib/ruby/gems/3.3.0/specifications/default/uri-0.13.2.gemspec /usr/lib/ruby/gems/3.3.0/specifications/default/..
+mv /usr/lib/ruby/gems/3.3.0/specifications/default/stringio-3.1.1.gemspec /usr/lib/ruby/gems/3.3.0/specifications/default/..
+
+gem uninstall time
+gem uninstall uri
+gem uninstall stringio
 
 sudo tdnf install -y azure-mdsd-1.35.1
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
@@ -74,7 +65,7 @@ sudo tdnf install inotify-tools -y
 
 #used to parse response of kubelet apis
 #ref: https://packages.ubuntu.com/search?keywords=jq
-sudo tdnf install jq-1.6-1.cm2 -y
+sudo tdnf install jq-1.7.1-1.azl3 -y
 
 #used to setcaps for ruby process to read /proc/env
 sudo tdnf install libcap -y
@@ -90,16 +81,16 @@ docker_cimprov_version=$(sudo tdnf list installed | grep docker-cimprov | awk '{
 echo "DOCKER_CIMPROV_VERSION=$docker_cimprov_version" >> packages_version.txt
 
 #install fluent-bit
-sudo tdnf install fluent-bit-3.0.6 -y
+sudo tdnf install fluent-bit-3.1.9 -y
 echo "$(fluent-bit --version)" >> packages_version.txt
 
 # install fluentd using the mariner package
-# sudo tdnf install rubygem-fluentd-1.14.6 -y
-fluentd_version="1.16.3"
+# sudo tdnf install rubygem-fluentd -y
+fluentd_version="1.18.0"
 gem install fluentd -v $fluentd_version --no-document
 
 # remove the test directory from fluentd
-rm -rf /usr/lib/ruby/gems/3.1.0/gems/fluentd-$fluentd_version/test/
+rm -rf /usr/lib/ruby/gems/3.3.0/gems/fluentd-$fluentd_version/test/
 
 echo "$(fluentd --version)" >> packages_version.txt
 fluentd --setup ./fluent
@@ -108,6 +99,7 @@ gem install gyoku iso8601 bigdecimal --no-doc
 gem install tomlrb -v "2.0.1" --no-document
 gem install ipaddress --no-document
 gem install jwt -v "2.7.1" --no-document
+gem install racc --no-document
 
 rm -f $TMPDIR/docker-cimprov*.sh
 rm -f $TMPDIR/mdsd.xml
