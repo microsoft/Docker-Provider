@@ -37,7 +37,7 @@ extends:
     sdl:
       sourceAnalysisPool:
         name: Azure-Pipelines-CI-Test-EO
-        image: ci-1es-managed-windows-2022
+        image: ci-1es-windows-2022-compliant
         os: windows
     customBuildTags:
     - ES365AIMigrationTooling
