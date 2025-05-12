@@ -27,7 +27,7 @@ RUN refreshenv \
 && C:\ruby31\msys64\usr\bin\bash.exe -lc 'pacman -U --noconfirm mingw-w64-ucrt-x86_64-gcc-14.2.0-3-any.pkg.tar.zst' \
 && C:\ruby31\msys64\usr\bin\bash.exe -lc "rm mingw-w64-ucrt-x86_64-gcc-14.2.0-3-any.pkg.tar.zst" \
 && echo gem: --no-document >> C:\ProgramData\gemrc \
-&& gem install cool.io -v 1.8.1 --platform ruby \
+&& gem install cool.io -v 1.9.0 --platform ruby \
 && gem install oj -v 3.16.10 \
 && gem install fluentd -v 1.16.3 \
 && gem install win32-service -v 1.0.1 \
