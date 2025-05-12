@@ -343,7 +343,7 @@ spec:
         component: ama-logs-agent
         tier: node
       annotations:
-        agentVersion: "azure-mdsd-1.31.4"
+        agentVersion: "azure-mdsd-1.35.1"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         kubernetes.azure.com/no-http-proxy-vars: "true"
@@ -391,12 +391,12 @@ spec:
         #         - NET_ADMIN
         #         - NET_RAW
         - name: ama-logs
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.26"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.27"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
-              cpu: 3
-              memory: 2.5Gi
+              cpu: 1
+              memory: 1Gi
             requests:
               cpu: 75m
               memory: 325Mi
@@ -457,6 +457,8 @@ spec:
               value: "false"
             - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
               value: "28331"
+            - name: AZMON_RETINA_FLOW_LOGS_ENABLED
+              value: "false"
           securityContext:
             privileged: true
             capabilities:
@@ -485,6 +487,8 @@ spec:
               mountPropagation: HostToContainer
             - mountPath: /var/run/mdsd-ci
               name: mdsd-sock
+            - mountPath: /var/log/acns/hubble
+              name: acns-hubble
             - mountPath: /var/log
               name: host-log
             - mountPath: /var/lib/docker/containers
@@ -523,7 +527,7 @@ spec:
             timeoutSeconds: 15
 #Only in sidecar scraping mode
         - name: ama-logs-prometheus
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.26"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.27"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -660,6 +664,9 @@ spec:
         - name: mdsd-sock
           hostPath:
             path: /var/run/mdsd-ci
+        - name: acns-hubble
+          hostPath:
+            path: /var/log/acns/hubble
         - name: container-hostname
           hostPath:
             path: /etc/hostname
@@ -779,7 +786,7 @@ spec:
 #       labels:
 #         rsName: "ama-logs-multitenancy"
 #       annotations:
-#         agentVersion: "azure-mdsd-1.31.4"
+#         agentVersion: "azure-mdsd-1.35.1"
 #         dockerProviderVersion: "18.0.1-0"
 #         schema-versions: "v1"
 #         kubernetes.azure.com/no-http-proxy-vars: "true"
@@ -952,7 +959,7 @@ spec:
       labels:
         rsName: "ama-logs-rs"
       annotations:
-        agentVersion: "azure-mdsd-1.31.4"
+        agentVersion: "azure-mdsd-1.35.1"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         kubernetes.azure.com/no-http-proxy-vars: "true"
@@ -1032,7 +1039,7 @@ spec:
         #         - NET_ADMIN
         #         - NET_RAW
         - name: ama-logs
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.26"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.27"
           imagePullPolicy: IfNotPresent
           # comment resources if VPA configured since the VPA will set these values
           resources:
@@ -1290,7 +1297,7 @@ spec:
       #       add:
       #         - NET_ADMIN
        - name: ama-logs-windows
-         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.26"
+         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.27"
          imagePullPolicy: IfNotPresent
          resources:
           requests:

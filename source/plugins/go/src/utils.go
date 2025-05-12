@@ -144,6 +144,18 @@ func CreateMDSDClient(dataType DataType, containerType string) {
 			Log("Successfully created MDSD msgp socket connection for ContainerLogV2: %s", mdsdfluentSocket)
 			MdsdMsgpUnixSocketClient = conn
 		}
+	case NetworkFlowLogs:
+        if MdsdNetworkFlowClient != nil {
+            MdsdNetworkFlowClient.Close()
+            MdsdNetworkFlowClient = nil
+        }
+        conn, err := net.DialTimeout("unix", mdsdfluentSocket, 10*time.Second)
+        if err != nil {
+            Log("Error::mdsd::Unable to open MDSD msgp socket connection for NetworkFlow %s", err.Error())
+        } else {
+			Log("Successfully created MDSD msgp socket connection for NetworkFlow: %s", mdsdfluentSocket)
+            MdsdNetworkFlowClient = conn
+        }
 	case KubeMonAgentEvents:
 		// incase of geneva logs integration mode, KubeMonAgentEvents ingested via sidecar container socket
 		if IsGenevaLogsIntegrationEnabled {
