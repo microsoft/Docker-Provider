@@ -80,7 +80,7 @@ ENV AGENT_VERSION ${IMAGE_TAG}
 
 WORKDIR ${tmpdir}
 
-# files
+# files 
 COPY --from=builder /opt /opt
 COPY --from=builder /etc /etc
 COPY --from=builder /busybin /busybin
