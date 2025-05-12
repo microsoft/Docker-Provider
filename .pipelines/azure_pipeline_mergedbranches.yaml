@@ -17,6 +17,7 @@ variables:
   IS_RELEASE: $[ne(variables['TELEMETRY_TAG'], '')]
   appRegistrationClientId: $[variables['APP_REGISTRATION_CLIENT_ID']]
   appRegistrationTenantId: $[variables['APP_REGISTRATION_TENANT_ID']]
+  esrpClientId: $[variables['ESRP_CLIENT_ID']]
   authAKVName: $[variables['AUTH_AKV_NAME']]
   authCertName: $[variables['AUTH_CERT_NAME']]
   authSignCertName: $[variables['AUTH_SIGN_CERT_NAME']]
@@ -209,9 +210,11 @@ extends:
         - task: EsrpCodeSigning@5
           condition: eq(variables.IS_PR, false)
           inputs:
-            ConnectedServiceName: 'AME ESRPContainerInsights MSI Service Connection'
+            ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+            UseMSIAuthentication: true
             AppRegistrationClientId: $(appRegistrationClientId)
             AppRegistrationTenantId: $(appRegistrationTenantId)
+            EsrpClientId: $(esrpClientId)
             AuthAKVName: $(authAKVName)
             AuthCertName: $(authCertName)
             AuthSignCertName: $(authSignCertName)
@@ -417,9 +420,11 @@ extends:
           displayName: 'List files in Staging Directory'
         - task: EsrpCodeSigning@5
           inputs:
-            ConnectedServiceName: 'AME ESRPContainerInsights MSI Service Connection'
+            ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+            UseMSIAuthentication: true
             AppRegistrationClientId: $(appRegistrationClientId)
             AppRegistrationTenantId: $(appRegistrationTenantId)
+            EsrpClientId: $(esrpClientId)
             AuthAKVName: $(authAKVName)
             AuthCertName: $(authCertName)
             AuthSignCertName: $(authSignCertName)
@@ -455,9 +460,11 @@ extends:
           displayName: 'EsrpCodeSigning for first party'
         - task: EsrpCodeSigning@5
           inputs:
-            ConnectedServiceName: 'AME ESRPContainerInsights MSI Service Connection'
+            ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+            UseMSIAuthentication: true
             AppRegistrationClientId: $(appRegistrationClientId)
             AppRegistrationTenantId: $(appRegistrationTenantId)
+            EsrpClientId: $(esrpClientId)
             AuthAKVName: $(authAKVName)
             AuthCertName: $(authCertName)
             AuthSignCertName: $(authSignCertName)
@@ -620,9 +627,11 @@ extends:
           displayName: 'List files in Staging Directory'
         - task: EsrpCodeSigning@5
           inputs:
-            ConnectedServiceName: 'AME ESRPContainerInsights MSI Service Connection'
+            ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+            UseMSIAuthentication: true
             AppRegistrationClientId: $(appRegistrationClientId)
             AppRegistrationTenantId: $(appRegistrationTenantId)
+            EsrpClientId: $(esrpClientId)
             AuthAKVName: $(authAKVName)
             AuthCertName: $(authCertName)
             AuthSignCertName: $(authSignCertName)
@@ -658,9 +667,11 @@ extends:
           displayName: 'EsrpCodeSigning for first party'
         - task: EsrpCodeSigning@5
           inputs:
-            ConnectedServiceName: 'AME ESRPContainerInsights MSI Service Connection'
+            ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+            UseMSIAuthentication: true
             AppRegistrationClientId: $(appRegistrationClientId)
             AppRegistrationTenantId: $(appRegistrationTenantId)
+            EsrpClientId: $(esrpClientId)
             AuthAKVName: $(authAKVName)
             AuthCertName: $(authCertName)
             AuthSignCertName: $(authSignCertName)
@@ -736,6 +747,10 @@ extends:
         - task: CodeQL3000Finalize@0
           condition: eq(variables.IS_MAIN_BRANCH, true)
       - job: build_windows_multi_arc
+        pool:
+          name: Azure-Pipelines-Windows-CI-Test-EO
+          os: windows
+        timeoutInMinutes: 120
         dependsOn:
         - common
         - build_windows_2019
@@ -804,9 +819,11 @@ extends:
         - task: EsrpCodeSigning@5
           condition: eq(variables.IS_PR, false)
           inputs:
-            ConnectedServiceName: 'AME ESRPContainerInsights MSI Service Connection'
+            ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+            UseMSIAuthentication: true
             AppRegistrationClientId: $(appRegistrationClientId)
             AppRegistrationTenantId: $(appRegistrationTenantId)
+            EsrpClientId: $(esrpClientId)
             AuthAKVName: $(authAKVName)
             AuthCertName: $(authCertName)
             AuthSignCertName: $(authSignCertName)
