@@ -36,7 +36,7 @@ extends:
       os: linux
     sdl:
       sourceAnalysisPool:
-        name: Azure-Pipelines-Windows-CI-Test-EO
+        name: Azure-Pipelines-CI-Test-EO
         image: ci-1es-windows-2022-compliant
         os: windows
     customBuildTags:
