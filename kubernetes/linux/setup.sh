@@ -37,22 +37,6 @@ rm -rf /usr/lib/ruby/gems/3.3.0/gems/find-0.2.0
 rm /usr/lib/ruby/gems/3.3.0/specifications/default/rdoc-6.6.3.1.gemspec
 rm -rf /usr/lib/ruby/gems/3.3.0/gems/rdoc-6.6.3.1
 
-# update the time and uri package to tackle the vulnerabilities in these gems
-echo "Updating gem time"
-gem update time --default
-echo "Updating gem uri"
-gem update uri --default
-echo "Updating gem stringio"
-gem update stringio --default
-
-mv /usr/lib/ruby/gems/3.3.0/specifications/default/time-0.3.0.gemspec /usr/lib/ruby/gems/3.3.0/specifications/default/..
-mv /usr/lib/ruby/gems/3.3.0/specifications/default/uri-0.13.2.gemspec /usr/lib/ruby/gems/3.3.0/specifications/default/..
-mv /usr/lib/ruby/gems/3.3.0/specifications/default/stringio-3.1.1.gemspec /usr/lib/ruby/gems/3.3.0/specifications/default/..
-
-gem uninstall time
-gem uninstall uri
-gem uninstall stringio
-
 sudo tdnf install -y azure-mdsd-1.35.1
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
