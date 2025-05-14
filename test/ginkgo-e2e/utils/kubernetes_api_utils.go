@@ -1,8 +1,11 @@
 package utils
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -10,14 +13,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/rest"
-
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
-
-	"bytes"
-	"fmt"
-	"io"
 )
 
 /*
@@ -469,4 +467,26 @@ func GetAllNodes(clientset *kubernetes.Clientset) ([]corev1.Node, error) {
 	}
 
 	return nodes.Items, nil
+}
+
+// CheckFileForErrors checks if a specific file in a container contains errors.
+func CheckFileForErrors(clientset *kubernetes.Clientset, namespace, labelName, labelValue, containerName, filePath string) error {
+	pods, err := GetPodsWithLabel(clientset, namespace, labelName, labelValue)
+	if err != nil {
+		return fmt.Errorf("failed to get pods with label %s=%s: %v", labelName, labelValue, err)
+	}
+
+	for _, pod := range pods {
+		command := []string{"bash", "-c", fmt.Sprintf("grep -i error %s", filePath)}
+		stdout, stderr, err := ExecCmd(clientset, nil, pod.Name, containerName, namespace, command)
+		if err != nil {
+			return fmt.Errorf("error executing command in pod %s, container %s: %v, stderr: %s", pod.Name, containerName, err, stderr)
+		}
+
+		if stdout != "" {
+			return fmt.Errorf("errors found in file %s in pod %s, container %s: %s", filePath, pod.Name, containerName, stdout)
+		}
+	}
+
+	return nil
 }
