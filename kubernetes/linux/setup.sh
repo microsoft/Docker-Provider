@@ -13,7 +13,9 @@ sudo tdnf install ca-certificates-microsoft -y
 sudo update-ca-trust
 
 if [ "$ARCH" == "arm64" ]; then
+    echo "Ruby installation started"
     sudo tdnf install ruby-3.3.5-1.azl3.aarch64 -y
+    echo "Ruby installation complete"
 else
     tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
     wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20250409.tar.gz -O ruby-build.tar.gz
@@ -36,9 +38,12 @@ rm /usr/lib/ruby/gems/3.3.0/specifications/default/rdoc-6.6.3.1.gemspec
 rm -rf /usr/lib/ruby/gems/3.3.0/gems/rdoc-6.6.3.1
 
 # update the time and uri package to tackle the vulnerabilities in these gems
-gem update time --default --no-document
-gem update uri --default --no-document
-gem update stringio --default --no-document
+echo "Updating gem time"
+gem update time --default
+echo "Updating gem uri"
+gem update uri --default
+echo "Updating gem stringio"
+gem update stringio --default
 
 mv /usr/lib/ruby/gems/3.3.0/specifications/default/time-0.3.0.gemspec /usr/lib/ruby/gems/3.3.0/specifications/default/..
 mv /usr/lib/ruby/gems/3.3.0/specifications/default/uri-0.13.2.gemspec /usr/lib/ruby/gems/3.3.0/specifications/default/..
