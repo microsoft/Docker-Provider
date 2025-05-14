@@ -151,7 +151,7 @@ jobs:
   timeoutInMinutes: 120
   dependsOn: common
   pool:
-    name: Azure-Pipelines-CI-Test-EO
+    name: Azure-Pipelines-ARM-CI-Test-EO
   variables:
     linuxImagetag: $[ dependencies.common.outputs['setup.linuxImagetag'] ]
     linuxTelemetryTag: $[ dependencies.common.outputs['setup.linuxTelemetryTag'] ]
