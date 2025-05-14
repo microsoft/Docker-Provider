@@ -40,7 +40,9 @@ export class K8sWatcher {
                 }
                 
                 // pause for a bit to avoid generating too much load in case of cascading failures
-                await new Promise(r => setTimeout(r, 5000));
+                // randomize the wait time to avoid all pods of the deployment hitting the API server at the same time
+                // if this is caused by networking or node issues and happens for all pods at the same time
+                await new Promise(r => setTimeout(r, Math.random() * 5000.0));
             }
         }
     }
