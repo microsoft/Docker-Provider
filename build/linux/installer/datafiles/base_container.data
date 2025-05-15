@@ -25,6 +25,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/fluent-bit/bin/perf.so;                                       intermediate/${{BUILD_CONFIGURATION}}/perf.so;  	755; root; root
 /etc/opt/microsoft/docker-cimprov/prometheus-side-car.conf;		         build/linux/installer/conf/prometheus-side-car.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit.conf;			            build/linux/installer/conf/fluent-bit.conf;                    644; root; root
+/etc/opt/microsoft/docker-cimprov/fluent-bit-network-flow-logs.conf;	build/linux/installer/conf/fluent-bit-network-flow-logs.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit-prom-side-car.conf;	   build/linux/installer/conf/fluent-bit-prom-side-car.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit-rs.conf;			         build/linux/installer/conf/fluent-bit-rs.conf;                    644; root; root
 /etc/opt/microsoft/docker-cimprov/azm-containers-parser.conf;	         build/common/installer/conf/azm-containers-parser.conf;                    644; root; root
@@ -44,8 +45,6 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/tomlparser-metric-collection-config.rb;                            build/linux/installer/scripts/tomlparser-metric-collection-config.rb;     755; root; root
 
 /opt/tomlparser-geneva-config.rb;                                       build/common/installer/scripts/tomlparser-geneva-config.rb;     755; root; root
-
-/etc/opt/microsoft/azuremonitoragent/amacoreagent/PA.json;              build/linux/installer/conf/PA.json;                             755; root; root
 
 /opt/fluent-bit-geneva-conf-customizer.rb;                     build/common/installer/scripts/fluent-bit-geneva-conf-customizer.rb;     755; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit-input.conf;			       build/linux/installer/conf/fluent-bit-input.conf;                644; root; root
@@ -193,8 +192,6 @@ MAINTAINER:              'Microsoft Corporation'
 /var/opt/microsoft/linuxmonagent/log;                   755; root; root
 /var/opt/microsoft/linuxmonagent/amaca;                 755; root; root
 /var/opt/microsoft/linuxmonagent/amaca/log;             755; root; root
-
-/etc/opt/microsoft/azuremonitoragent/amacoreagent;      755; root; root
 
 /opt/fluent-bit;                          755; root; root;sysdir
 /opt/fluent-bit/bin;                      755; root; root;sysdir

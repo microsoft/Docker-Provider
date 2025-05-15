@@ -8,10 +8,8 @@ echo "startup script start @ $(date +'%Y-%m-%dT%H:%M:%S')"
 startAMACoreAgent() {
       echo "AMACoreAgent: Starting AMA Core Agent since High Log scale mode is enabled"
 
-      AMACALogFileDir="/var/opt/microsoft/linuxmonagent/amaca/log"
-      AMACALogFilePath="$AMACALogFileDir"/amaca.log
-      AMACAConfigFilePath="/etc/opt/microsoft/azuremonitoragent/amacoreagent"
-      export PA_FLUENT_SOCKET_PORT=13000
+      export AMACALogFileDir="/var/opt/microsoft/linuxmonagent/amaca/log"
+      export AMACALogFilePath="$AMACALogFileDir"/amaca.log
       export PA_DATA_PORT=13000
       export PA_GIG_BRIDGE_MODE=true
       export GIG_PA_ENABLE_OPTIMIZATION=true
@@ -20,19 +18,19 @@ startAMACoreAgent() {
       export CounterDataReportFrequencyInMinutes=60
 
       {
-         echo "export PA_FLUENT_SOCKET_PORT=$PA_FLUENT_SOCKET_PORT"
          echo "export PA_DATA_PORT=$PA_DATA_PORT"
          echo "export PA_GIG_BRIDGE_MODE=$PA_GIG_BRIDGE_MODE"
          echo "export GIG_PA_ENABLE_OPTIMIZATION=$GIG_PA_ENABLE_OPTIMIZATION"
          echo "export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=$DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"
          echo "export PA_CONFIG_PORT=$PA_CONFIG_PORT"
          echo "export CounterDataReportFrequencyInMinutes=$CounterDataReportFrequencyInMinutes"
+         echo "export AMACALogFilePath=$AMACALogFilePath"
       } >> ~/.bashrc
 
       source ~/.bashrc
-      /opt/microsoft/azure-mdsd/bin/amacoreagent -c $AMACAConfigFilePath --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath > /dev/null 2>&1 &
+      /opt/microsoft/azure-mdsd/bin/amacoreagent --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath --giglaport $PA_DATA_PORT > /dev/null 2>&1 &
 
-      waitforlisteneronTCPport "$PA_FLUENT_SOCKET_PORT" "$WAITTIME_PORT_13000"
+      waitforlisteneronTCPport "$PA_DATA_PORT" "$WAITTIME_PORT_13000"
       waitforlisteneronTCPport "$PA_CONFIG_PORT" "$WAITTIME_PORT_12563"
       # Extract AMACoreAgent version from log file
       version=""
@@ -161,6 +159,8 @@ isHighLogScaleMode() {
           "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]]; then
          true
      elif [[ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]]; then
+         true
+     elif [[ "${AZMON_RETINA_FLOW_LOGS_ENABLED}" == "true" ]]; then
          true
      else
          false
@@ -1065,8 +1065,8 @@ if [ ! -f /etc/cron.d/ci-agent ]; then
       echo "*/5 * * * * root /usr/sbin/logrotate -s /var/lib/logrotate/ci-agent-status /etc/logrotate.d/ci-agent >/dev/null 2>&1" >/etc/cron.d/ci-agent
 fi
 
-setGlobalEnvVar AZMON_RESOURCE_OPTIMIZATION_ENABLED "${AZMON_RESOURCE_OPTIMIZATION_ENABLED}"
-if [ "${AZMON_RESOURCE_OPTIMIZATION_ENABLED}" == "false" ] || [ -z "${AZMON_RESOURCE_OPTIMIZATION_ENABLED}" ] || [ "${USING_AAD_MSI_AUTH}" != "true" ] || [ "${RS_GENEVA_LOGS_INTEGRATION}" == "true" ]; then
+setGlobalEnvVar AZMON_WINDOWS_FLUENT_BIT_ENABLED "${AZMON_WINDOWS_FLUENT_BIT_ENABLED}"
+if [ "${AZMON_WINDOWS_FLUENT_BIT_ENABLED}" == "false" ] || [ -z "${AZMON_WINDOWS_FLUENT_BIT_ENABLED}" ] || [ "${USING_AAD_MSI_AUTH}" != "true" ] || [ "${RS_GENEVA_LOGS_INTEGRATION}" == "true" ]; then
       if [ -e "/etc/config/kube.conf" ]; then
            # Replace a string in the configmap file
             sed -i "s/#@include windows_rs/@include windows_rs/g" /etc/fluent/kube.conf
@@ -1101,6 +1101,8 @@ if [ "${ENABLE_CUSTOM_METRICS}" == "true" ]; then
 else
       setGlobalEnvVar AZMON_RESOURCE_OPTIMIZATION_ENABLED "${AZMON_RESOURCE_OPTIMIZATION_ENABLED}"
 fi
+
+setGlobalEnvVar AZMON_RETINA_FLOW_LOGS_ENABLED "${AZMON_RETINA_FLOW_LOGS_ENABLED}"
 
 #start fluentd
 if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ] && [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" != "true" ]; then

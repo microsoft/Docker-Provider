@@ -46,13 +46,18 @@ mv /usr/lib/ruby/gems/3.1.0/specifications/default/uri-0.11.0.gemspec /usr/lib/r
 mv /usr/lib/ruby/gems/3.1.0/specifications/default/stringio-3.0.1.gemspec /usr/lib/ruby/gems/3.1.0/specifications/default/..
 mv /usr/lib/ruby/gems/3.1.0/specifications/default/rexml-3.2.5.gemspec /usr/lib/ruby/gems/3.1.0/specifications/default/..
 mv /usr/lib/ruby/gems/3.1.0/specifications/webrick-1.8.1.gemspec /usr/lib/ruby/gems/3.1.0/specifications/..
+gem install cgi -v "0.3.7" --no-document
+gem uninstall cgi --version 0.3.5
+rm -f /usr/lib/ruby/gems/3.1.0/specifications/default/cgi-0.3.5.gemspec
+rm -rf /usr/lib/ruby/gems/3.1.0/gems/cgi-0.3.5
+gem uninstall net-imap --version 0.2.3
 gem uninstall time --version 0.2.0
 gem uninstall uri --version 0.11.0
 gem uninstall stringio --version 3.0.1
 gem uninstall rexml --version 3.2.5
 gem uninstall webrick --version 1.8.1
 
-sudo tdnf install -y azure-mdsd-1.31.4
+sudo tdnf install -y azure-mdsd-1.35.1
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
 rm /usr/sbin/telegraf
@@ -74,10 +79,10 @@ sudo tdnf install jq-1.6-1.cm2 -y
 #used to setcaps for ruby process to read /proc/env
 sudo tdnf install libcap -y
 
-sudo tdnf install telegraf-1.29.4 -y
+sudo tdnf install telegraf-agent-1.34.3 -y
 telegraf_version=$(sudo tdnf list installed | grep telegraf | awk '{print $2}')
 echo "telegraf $telegraf_version" >> packages_version.txt
-mv /usr/bin/telegraf /opt/telegraf
+mv /usr/bin/telegraf-agent /opt/telegraf
 
 # Use wildcard version so that it doesnt require to touch this file
 /$TMPDIR/docker-cimprov-*.*.*-*.*.sh --install

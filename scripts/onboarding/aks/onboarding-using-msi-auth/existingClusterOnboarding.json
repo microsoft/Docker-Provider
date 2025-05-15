@@ -44,6 +44,13 @@
                 "description": "Enable ContainerLogV2 in Data Collection Rule"
             }
         },
+        "enableRetinaNetworkFlowLogs": {
+            "type": "bool",
+            "metadata": {
+                "description": "Enable Retina Network Flow Logs in omsagent addon profile"
+            },
+            "defaultValue": false
+        },
         "enableSyslog": {
             "type": "bool",
             "metadata": {
@@ -108,7 +115,7 @@
         "workspaceLocation": "[replace(parameters('workspaceRegion'),' ', '')]",
         "dcrNameFull": "[Concat('MSCI', '-', variables('workspaceLocation'), '-', variables('clusterName'))]",
         "dcrName": "[if(greater(length(variables('dcrNameFull')), 64), substring(variables('dcrNameFull'), 0, 64), variables('dcrNameFull'))]",
-        "enableHighLogScaleMode": "[if(contains(parameters('streams'),'Microsoft-ContainerLogV2-HighScale'), bool('true'), bool('false'))]",
+        "enableHighLogScaleMode": "[if(or(contains(parameters('streams'),'Microsoft-ContainerLogV2-HighScale'), parameters('enableRetinaNetworkFlowLogs')), bool('true'), bool('false'))]",
         "associationName": "ContainerInsightsExtension",
         "dataCollectionRuleId": "[resourceId(variables('clusterSubscriptionId'), variables('clusterResourceGroup'), 'Microsoft.Insights/dataCollectionRules', variables('dcrName'))]",
         "configDCENameFull": "[Concat('MSCI-config', '-', variables('clusterLocation'), '-', variables('clusterName'))]",
@@ -465,7 +472,7 @@
                             "type": "Microsoft.ContainerService/managedClusters",
                             "location": "[parameters('aksResourceLocation')]",
                             "tags": "[parameters('resourceTagValues')]",
-                            "apiVersion": "2019-04-01",
+                            "apiVersion": "2023-04-01",
                             "properties": {
                                 "mode": "Incremental",
                                 "id": "[parameters('aksResourceId')]",
@@ -474,7 +481,8 @@
                                         "enabled": true,
                                         "config": {
                                             "logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]",
-                                            "useAADAuth": "true"
+                                            "useAADAuth": "true",
+                                            "enableRetinaNetworkFlags": "[if(parameters('enableRetinaNetworkFlowLogs'), 'true', 'false')]"
                                         }
                                     }
                                 }

@@ -397,6 +397,7 @@ type DataType int
 const (
 	// DataType to be used as enum per data type socket client creation
 	ContainerLogV2 DataType = iota
+	NetworkFlowLogs
 	KubeMonAgentEvents
 	InsightsMetrics
 	InputPluginRecords
@@ -1895,7 +1896,6 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			AgentLogProcessingMaxLatencyMsContainer = maxLatencyContainer
 		}
 	}
-
 	return output.FLB_OK
 }
 
@@ -2397,11 +2397,15 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		fmt.Fprintf(os.Stdout, "Container logs schema=%s... \n", ContainerLogV2SchemaVersion)
 	}
 
+	IsNetworkFlowLogsEnabled = false
+	IsNetworkFlowLogsEnabled = (strings.Compare(strings.ToLower(os.Getenv("AZMON_RETINA_FLOW_LOGS_ENABLED")), "true") == 0)
+
 	MdsdInsightsMetricsTagName = MdsdInsightsMetricsSourceName
 	MdsdKubeMonAgentEventsTagName = MdsdKubeMonAgentEventsSourceName
 	MdsdKubeMonAgentEventsTagRefreshTracker = time.Now()
 	MdsdInsightsMetricsTagRefreshTracker = time.Now()
 	MdsdContainerLogTagRefreshTracker = time.Now()
+	NetworkFlowTagRefreshTracker = time.Now()
 
 	if ContainerLogsRouteV2 == true {
 		if IsWindows {

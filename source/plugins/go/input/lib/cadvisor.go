@@ -1074,6 +1074,24 @@ func getContainerCpuMetricItems(metricInfo map[string]interface{}, hostName, met
 						if len(os.Getenv("AZMON_RESOURCE_OPTIMIZATION_ENABLED")) > 0 {
 							telemetryProps["resoureceOptimizationEnabled"] = os.Getenv("AZMON_RESOURCE_OPTIMIZATION_ENABLED")
 						}
+						if len(os.Getenv("AZMON_RETINA_FLOW_LOGS_ENABLED")) > 0 {
+							telemetryProps["nflEnabled"] = os.Getenv("AZMON_RETINA_FLOW_LOGS_ENABLED")
+						}
+						if len(os.Getenv("NETWORKFLOW_LOGS_THROTTLE_ENABLED")) > 0 {
+							telemetryProps["nflThrottleEnabled"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_ENABLED")
+						}
+						if len(os.Getenv("NETWORKFLOW_LOGS_THROTTLE_RATE")) > 0 {
+							telemetryProps["nflThrottleRate"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_RATE")
+						}
+						if len(os.Getenv("NETWORKFLOW_LOGS_THROTTLE_WINDOW")) > 0 {
+							telemetryProps["nflThrottleWindow"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_WINDOW")
+						}
+						if len(os.Getenv("NETWORKFLOW_LOGS_THROTTLE_INTERVAL")) > 0 {
+							telemetryProps["nflThrottleInterval"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_INTERVAL")
+						}
+						if len(os.Getenv("NETWORKFLOW_LOGS_THROTTLE_PRINT")) > 0 {
+							telemetryProps["nflThrottlePrint"] = os.Getenv("NETWORKFLOW_LOGS_THROTTLE_PRINT")
+						}
 						if len(os.Getenv("AZMON_KUBERNETES_METADATA_ENABLED")) > 0 {
 							telemetryProps["metadataEnabled"] = os.Getenv("AZMON_KUBERNETES_METADATA_ENABLED")
 						}
