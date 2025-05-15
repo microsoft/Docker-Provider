@@ -94,15 +94,23 @@ sudo tdnf install fluent-bit-3.0.6 -y
 echo "$(fluent-bit --version)" >> packages_version.txt
 
 # install fluentd using the mariner package
-# sudo tdnf install rubygem-fluentd-1.14.6 -y
 fluentd_version="1.16.3"
-gem install fluentd -v $fluentd_version --no-document
+if [ "$ARCH" == "arm64" ]; then
+    # Install fluentd from Mariner package for ARM64 to avoid native extension issues
+    sudo tdnf install rubygem-fluentd-$fluentd_version -y
+else
+    # Install Fluentd for amd64
+    gem install fluentd -v $fluentd_version --no-document
+fi
 
 # remove the test directory from fluentd
 rm -rf /usr/lib/ruby/gems/3.1.0/gems/fluentd-$fluentd_version/test/
 
 echo "$(fluentd --version)" >> packages_version.txt
 fluentd --setup ./fluent
+
+# Install pure Ruby JSON parser (oj) explicitly
+gem install oj --no-document
 
 gem install gyoku iso8601 bigdecimal --no-doc
 gem install tomlrb -v "2.0.1" --no-document
