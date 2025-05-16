@@ -97,7 +97,7 @@ echo "$(fluent-bit --version)" >> packages_version.txt
 fluentd_version="1.16.3"
 if [ "$ARCH" == "arm64" ]; then
     # Install fluentd from Mariner package for ARM64 to avoid native extension issues
-    sudo tdnf install rubygem-fluentd-$fluentd_version -y
+    sudo tdnf install rubygem-fluentd-1.14.6 -y
 else
     # Install Fluentd for amd64
     gem install fluentd -v $fluentd_version --no-document
