@@ -1,0 +1,246 @@
+trigger: none
+name: $(Date:yyyyMMdd).$(Rev:r)
+variables:
+- name: ACRName
+  value: $(VAR_ACR_NAME)
+- name: ADMIN_SUBSCRIPTION_ID
+  value: $(VAR_ADMIN_SUBSCRIPTION_ID)
+- name: CHART_VERSION
+  value: $(VAR_CHART_VERSION)
+- name: IS_CUSTOMER_HIDDEN
+  value: $(VAR_IS_CUSTOMER_HIDDEN)
+- name: MANAGED_IDENTITY
+  value: $(VAR_MANAGED_IDENTITY)
+- name: REGISTER_REGIONS_CANARY
+  value: $(VAR_REGISTER_REGIONS_CANARY)
+- name: RELEASE_TRAINS_PREVIEW_PATH
+  value: $(VAR_RELEASE_TRAINS_PREVIEW_PATH)
+- name: RELEASE_TRAINS_STABLE_PATH
+  value: $(VAR_RELEASE_TRAINS_STABLE_PATH)
+- name: RepoType
+  value: $(VAR_REPO_TYPE)
+- name: RESOURCE_AUDIENCE
+  value: $(VAR_RESOURCE_AUDIENCE)
+- name: ServiceTreeGuid
+  value: $(VAR_SERVICE_TREE_GUID)
+- name: SPN_CLIENT_ID
+  value: $(VAR_SPN_CLIENT_ID)
+- name: SPN_SECRET
+  value: ''
+- name: SPN_TENANT_ID
+  value: $(VAR_SPN_TENANT_ID)
+resources:
+  pipelines:
+  - pipeline: '_ci-arc-k8s-extension-prod-release'
+    project: 'microsoft'
+    source: 'CDPX\docker-provider\ci-arc-k8s-extension-prod-release'
+  repositories:
+  - repository: 1ESPipelineTemplates
+    type: git
+    name: 1ESPipelineTemplates/1ESPipelineTemplates
+    ref: refs/tags/release
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
+  parameters:
+    pool:
+      name: Azure-Pipelines-Windows-CI-Test-EO
+      os: windows
+    serviceTreeId: 3170cdd2-19f0-4027-912b-1027311691a2
+    customBuildTags:
+    - ES365AIMigrationTooling-Release
+    stages:
+    - stage: Stage_1
+      displayName: ci-arc-k8s-extension-all-regions-prod-release(MCR)
+      templateContext:
+        cloud: Public
+        isProduction: true
+        approval:
+          workflow: approvalService
+      jobs:
+      - job: Ev2_rollout
+        displayName: Agent Job - Ev2
+        condition: succeeded()
+        timeoutInMinutes: 0
+        templateContext:
+          type: releaseJob
+          workflow: ev2-classic
+          inputs:
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'linux-drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'windows-drop'
+          ev2:
+            useServerMonitorTask: true
+            storageContainerURL: $(sasTokenOut)
+            serviceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension/ServiceGroupRoot
+            rolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension/ServiceGroupRoot/RolloutSpecs/Public.Pilot.RolloutSpec.json
+            inlineScopeBindingOverrides: '{   "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",   "contentVersion": "0.0.0.1",   "scopeBindings": [     {       "scopeTagName": "Pilot",       "bindings": [         {           "find": "__ACR_NAME__",           "replaceWith": "$(ACRName)"         },         {           "find": "__REPO_TYPE__",           "replaceWith": "$(RepoType)"         },         {           "find": "__CHART_VERSION__",           "replaceWith": "$(CHART_VERSION)"         },                 {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(MANAGED_IDENTITY)"                 }       ]     }   ] }'
+    - stage: Stage_2
+      displayName: Pilot Regions
+      trigger: manual
+      templateContext:
+        cloud: Public
+        isProduction: true
+        approval:
+          workflow: approvalService
+      jobs:
+      - job: Ev2_rollout
+        displayName: Agent job - Ev2
+        condition: succeeded()
+        timeoutInMinutes: 0
+        templateContext:
+          type: releaseJob
+          workflow: ev2-classic
+          inputs:
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'linux-drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'windows-drop'
+          ev2:
+            useServerMonitorTask: true
+            serviceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
+            rolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/Public.Stable.RolloutSpec.json
+            inlineScopeBindingOverrides: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",     "contentVersion": "0.0.0.1",     "scopeBindings": [                {             "scopeTagName": "Stable",             "bindings": [                 {                     "find": "__RELEASE_STAGE__",                     "replaceWith": "Stable"                 },                 {                     "find": "__ADMIN_SUBSCRIPTION_ID__",                     "replaceWith": "$(ADMIN_SUBSCRIPTION_ID)"                 },                 {                     "find": "__CHART_VERSION__",                     "replaceWith": "$(CHART_VERSION)"                 },                 {                     "find": "__IS_CUSTOMER_HIDDEN__",                     "replaceWith": "$(IS_CUSTOMER_HIDDEN)"                 },                 {                     "find": "__REGISTER_REGIONS_CANARY__",                     "replaceWith": "$(REGISTER_REGIONS_CANARY)"                 },                 {                     "find": "__RELEASE_TRAINS_PREVIEW_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_PREVIEW_PATH)"                 },                 {                     "find": "__RELEASE_TRAINS_STABLE_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_STABLE_PATH)"                 },                 {                     "find": "__REGISTER_REGIONS_BATCH__",                     "replaceWith": "westcentralus"                 },                 {                     "find": "__RESOURCE_AUDIENCE__",                     "replaceWith": "$(RESOURCE_AUDIENCE)"                 },                 {                     "find": "__SPN_CLIENT_ID__",                     "replaceWith": "$(SPN_CLIENT_ID)"                 },                 {                     "find": "__SPN_SECRET__",                     "replaceWith": "$(SPN_SECRET)"                 },                 {                     "find": "__SPN_TENANT_ID__",                     "replaceWith": "$(SPN_TENANT_ID)"                 },                  {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(MANAGED_IDENTITY)"                 }             ]         }                ]         }                                                                                                                       '
+    - stage: Stage_3
+      displayName: Light Load Region
+      dependsOn: Stage_2
+      templateContext:
+        cloud: Public
+        isProduction: true
+        approval:
+          workflow: approvalService
+      jobs:
+      - job: Ev2_rollout
+        displayName: Agent job - Ev2
+        condition: succeeded()
+        timeoutInMinutes: 0
+        templateContext:
+          type: releaseJob
+          workflow: ev2-classic
+          inputs:
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'linux-drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'windows-drop'
+          ev2:
+            useServerMonitorTask: true
+            serviceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
+            rolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/Public.Stable.RolloutSpec.json
+            inlineScopeBindingOverrides: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",     "contentVersion": "0.0.0.1",     "scopeBindings": [                {             "scopeTagName": "Stable",             "bindings": [                 {                     "find": "__RELEASE_STAGE__",                     "replaceWith": "Stable"                 },                 {                     "find": "__ADMIN_SUBSCRIPTION_ID__",                     "replaceWith": "$(ADMIN_SUBSCRIPTION_ID)"                 },                 {                     "find": "__CHART_VERSION__",                     "replaceWith": "$(CHART_VERSION)"                 },                 {                     "find": "__IS_CUSTOMER_HIDDEN__",                     "replaceWith": "$(IS_CUSTOMER_HIDDEN)"                 },                 {                     "find": "__REGISTER_REGIONS_CANARY__",                     "replaceWith": "$(REGISTER_REGIONS_CANARY)"                 },                 {                     "find": "__RELEASE_TRAINS_PREVIEW_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_PREVIEW_PATH)"                 },                 {                     "find": "__RELEASE_TRAINS_STABLE_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_STABLE_PATH)"                 },                 {                     "find": "__REGISTER_REGIONS_BATCH__",                     "replaceWith": "westcentralus,southcentralus,southeastasia,uksouth"                 },                 {                     "find": "__RESOURCE_AUDIENCE__",                     "replaceWith": "$(RESOURCE_AUDIENCE)"                 },                 {                     "find": "__SPN_CLIENT_ID__",                     "replaceWith": "$(SPN_CLIENT_ID)"                 },                 {                     "find": "__SPN_SECRET__",                     "replaceWith": "$(SPN_SECRET)"                 },                 {                     "find": "__SPN_TENANT_ID__",                     "replaceWith": "$(SPN_TENANT_ID)"                 },                  {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(MANAGED_IDENTITY)"                 }             ]         }                ]         }                                                                                                                       '
+    - stage: Stage_4
+      displayName: Medium Load Region
+      dependsOn: Stage_3
+      templateContext:
+        cloud: Public
+        isProduction: true
+        approval:
+          workflow: approvalService
+      jobs:
+      - job: Ev2_rollout
+        displayName: Agent job - Ev2
+        condition: succeeded()
+        timeoutInMinutes: 0
+        templateContext:
+          type: releaseJob
+          workflow: ev2-classic
+          inputs:
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'linux-drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'windows-drop'
+          ev2:
+            useServerMonitorTask: true
+            serviceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
+            rolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/Public.Stable.RolloutSpec.json
+            inlineScopeBindingOverrides: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",     "contentVersion": "0.0.0.1",     "scopeBindings": [                {             "scopeTagName": "Stable",             "bindings": [                 {                     "find": "__RELEASE_STAGE__",                     "replaceWith": "Stable"                 },                 {                     "find": "__ADMIN_SUBSCRIPTION_ID__",                     "replaceWith": "$(ADMIN_SUBSCRIPTION_ID)"                 },                 {                     "find": "__CHART_VERSION__",                     "replaceWith": "$(CHART_VERSION)"                 },                 {                     "find": "__IS_CUSTOMER_HIDDEN__",                     "replaceWith": "$(IS_CUSTOMER_HIDDEN)"                 },                 {                     "find": "__REGISTER_REGIONS_CANARY__",                     "replaceWith": "$(REGISTER_REGIONS_CANARY)"                 },                 {                     "find": "__RELEASE_TRAINS_PREVIEW_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_PREVIEW_PATH)"                 },                 {                     "find": "__RELEASE_TRAINS_STABLE_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_STABLE_PATH)"                 },                 {                     "find": "__REGISTER_REGIONS_BATCH__",                     "replaceWith": "westcentralus,southcentralus,southeastasia,uksouth,westus2,australiaeast,eastus2,northcentralus,koreacentral,eastasia,japaneast"                 },                 {                     "find": "__RESOURCE_AUDIENCE__",                     "replaceWith": "$(RESOURCE_AUDIENCE)"                 },                 {                     "find": "__SPN_CLIENT_ID__",                     "replaceWith": "$(SPN_CLIENT_ID)"                 },                 {                     "find": "__SPN_SECRET__",                     "replaceWith": "$(SPN_SECRET)"                 },                 {                     "find": "__SPN_TENANT_ID__",                     "replaceWith": "$(SPN_TENANT_ID)"                 },                  {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(MANAGED_IDENTITY)"                 }             ]         }                ]         }                                                                                                                       '
+    - stage: Stage_5
+      displayName: High Load Region
+      dependsOn: Stage_4
+      templateContext:
+        cloud: Public
+        isProduction: true
+        approval:
+          workflow: approvalService
+      jobs:
+      - job: Ev2_rollout
+        displayName: Agent job - Ev2
+        condition: succeeded()
+        timeoutInMinutes: 0
+        templateContext:
+          type: releaseJob
+          workflow: ev2-classic
+          inputs:
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'linux-drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'windows-drop'
+          ev2:
+            useServerMonitorTask: true
+            serviceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
+            rolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/Public.Stable.RolloutSpec.json
+            inlineScopeBindingOverrides: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",     "contentVersion": "0.0.0.1",     "scopeBindings": [                {             "scopeTagName": "Stable",             "bindings": [                 {                     "find": "__RELEASE_STAGE__",                     "replaceWith": "Stable"                 },                 {                     "find": "__ADMIN_SUBSCRIPTION_ID__",                     "replaceWith": "$(ADMIN_SUBSCRIPTION_ID)"                 },                 {                     "find": "__CHART_VERSION__",                     "replaceWith": "$(CHART_VERSION)"                 },                 {                     "find": "__IS_CUSTOMER_HIDDEN__",                     "replaceWith": "$(IS_CUSTOMER_HIDDEN)"                 },                 {                     "find": "__REGISTER_REGIONS_CANARY__",                     "replaceWith": "$(REGISTER_REGIONS_CANARY)"                 },                 {                     "find": "__RELEASE_TRAINS_PREVIEW_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_PREVIEW_PATH)"                 },                 {                     "find": "__RELEASE_TRAINS_STABLE_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_STABLE_PATH)"                 },                 {                     "find": "__REGISTER_REGIONS_BATCH__",                     "replaceWith": "westcentralus,southcentralus,southeastasia,uksouth,westus2,australiaeast,eastus2,northcentralus,koreacentral,eastasia,japaneast,westeurope,northeurope,eastus,francecentral,westus,centralus,canadacentral,westus3,australiacentral,australiacentral2,australiasoutheast,brazilsouth,brazilsoutheast,canadaeast,centralindia,francesouth,germanycentral,germanynorth,germanynortheast,germanywestcentral,italynorth,japanwest,jioindiacentral,jioindiawest,koreasouth,norwayeast,norwaywest,polandcentral,qatarcentral,southafricanorth,southafricawest,southindia,swedencentral,swedensouth,switzerlandnorth,switzerlandwest,uaecentral,uaenorth,uknorth,uksouth2,ukwest,westindia"                 },                 {                     "find": "__RESOURCE_AUDIENCE__",                     "replaceWith": "$(RESOURCE_AUDIENCE)"                 },                 {                     "find": "__SPN_CLIENT_ID__",                     "replaceWith": "$(SPN_CLIENT_ID)"                 },                 {                     "find": "__SPN_SECRET__",                     "replaceWith": "$(SPN_SECRET)"                 },                 {                     "find": "__SPN_TENANT_ID__",                     "replaceWith": "$(SPN_TENANT_ID)"                 },                  {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(MANAGED_IDENTITY)"                 }             ]         }                ]         }                                                                                                                       '
+    - stage: Stage_6
+      displayName: 'Fairfax & Mooncake: Create Escort JIT'
+      trigger: manual
+      jobs:
+      - job: Job_1
+        displayName: Agentless job
+        condition: succeeded()
+        timeoutInMinutes: 7200
+        pool: server
+    - stage: Stage_7
+      displayName: Fairfax Region Testing
+      trigger: manual
+      templateContext:
+        cloud: Public
+        isProduction: true
+        approval:
+          workflow: approvalService
+      jobs:
+      - job: Ev2_rollout
+        displayName: Agent job - Ev2
+        condition: succeeded()
+        timeoutInMinutes: 0
+        templateContext:
+          type: releaseJob
+          workflow: ev2-classic
+          inputs:
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'linux-drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'windows-drop'
+          ev2:
+            useServerMonitorTask: true
+            serviceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
+            rolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/Public.Stable.RolloutSpec.json
+            inlineScopeBindingOverrides: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",     "contentVersion": "0.0.0.1",     "scopeBindings": [                {             "scopeTagName": "Stable",             "bindings": [                 {                     "find": "__RELEASE_STAGE__",                     "replaceWith": "Stable"                 },                 {                     "find": "__ADMIN_SUBSCRIPTION_ID__",                     "replaceWith": "$(ADMIN_SUBSCRIPTION_ID)"                 },                 {                     "find": "__CHART_VERSION__",                     "replaceWith": "$(CHART_VERSION)"                 },                 {                     "find": "__IS_CUSTOMER_HIDDEN__",                     "replaceWith": "$(IS_CUSTOMER_HIDDEN)"                 },                 {                     "find": "__REGISTER_REGIONS_CANARY__",                     "replaceWith": "$(REGISTER_REGIONS_CANARY)"                 },                 {                     "find": "__RELEASE_TRAINS_PREVIEW_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_PREVIEW_PATH)"                 },                 {                     "find": "__RELEASE_TRAINS_STABLE_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_STABLE_PATH)"                 },                 {                     "find": "__REGISTER_REGIONS_BATCH__",                     "replaceWith": "westcentralus,southcentralus,southeastasia,uksouth,westus2,australiaeast,eastus2,northcentralus,koreacentral,eastasia,japaneast,westeurope,northeurope,eastus,francecentral,westus,centralus,canadacentral,westus3,australiacentral,australiacentral2,australiasoutheast,brazilsouth,brazilsoutheast,canadaeast,centralindia,francesouth,germanycentral,germanynorth,germanynortheast,germanywestcentral,italynorth,japanwest,jioindiacentral,jioindiawest,koreasouth,norwayeast,norwaywest,polandcentral,qatarcentral,southafricanorth,southafricawest,southindia,swedencentral,swedensouth,switzerlandnorth,switzerlandwest,uaecentral,uaenorth,uknorth,uksouth2,ukwest,westindia,usgovvirginia"                 },                 {                     "find": "__RESOURCE_AUDIENCE__",                     "replaceWith": "$(RESOURCE_AUDIENCE)"                 },                 {                     "find": "__SPN_CLIENT_ID__",                     "replaceWith": "$(SPN_CLIENT_ID)"                 },                 {                     "find": "__SPN_SECRET__",                     "replaceWith": "$(SPN_SECRET)"                 },                 {                     "find": "__SPN_TENANT_ID__",                     "replaceWith": "$(SPN_TENANT_ID)"                 },                  {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(MANAGED_IDENTITY)"                 }             ]         }                ]         }                                                                                                                       '
