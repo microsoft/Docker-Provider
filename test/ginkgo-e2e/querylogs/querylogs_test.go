@@ -42,7 +42,9 @@ var _ = Describe("When querying the logs for the table", func() {
 var _ = Describe("When querying the logs for the ContainerInventory", func() {
 	DescribeTable("Column should have zero empty values",
 		func(column string) {
-			query := "ContainerInventory | where TimeGenerated > ago(1h) | summarize countif(isempty(" + column + ") or isnull(" + column + "))"
+			// Skip records with ContainerState 'Waiting' to avoid false positives due to the container being in a waiting state.
+			// If the pod name contains 'ama-logs', we include it to ensure we capture the ama-logs agent containers.
+			query := "ContainerInventory | where TimeGenerated > ago(1h) and (ContainerState !~ 'Waiting' or ContainerHostname contains 'ama-logs') | summarize countif(isempty(" + column + ") or isnull(" + column + "))"
 			err := utils.QueryLogsForCount(LogsClient, AKSResourceId, query, true)
 			Expect(err).NotTo(HaveOccurred())
 		},
