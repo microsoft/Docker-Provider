@@ -72,7 +72,8 @@ export enum Events {
     SecretsHouseKeeperModeRunFailure, // SecretsHouseKeeperModeRun failed
 
     ArmIdIncorrect, // ARM ID of the cluster we have received is incorrect
-    CertificateLoadFailure, // we have failed to load certificates
+    CertificateLoadFailure, // we have failed to load certificates,
+    WatchDoneCallbackSkipped // watch.watch() has skipped its callback, so we had to go off its return promise's resolution
 }
 
 export enum HeartbeatMetrics {

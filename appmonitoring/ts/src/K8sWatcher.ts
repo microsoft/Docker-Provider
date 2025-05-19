@@ -1,4 +1,4 @@
-﻿import { HeartbeatLogs, HeartbeatMetrics, RequestMetadata, Watchdogs, logger } from "./LoggerWrapper.js";
+﻿import { Events, HeartbeatLogs, HeartbeatMetrics, RequestMetadata, Watchdogs, logger } from "./LoggerWrapper.js";
 import * as k8s from "@kubernetes/client-node";
 import { InstrumentationCR, ListResponse } from "./RequestDefinition.js"
 import { InstrumentationCRsCollection } from "./InstrumentationCRsCollection.js";
@@ -11,7 +11,7 @@ export class K8sWatcher {
 
     private static lastSuccessfulListTimestamp: Date = new Date();
 
-    public static async StartWatchingCRs(crs: InstrumentationCRsCollection, onNewCR: (cr: InstrumentationCR, isRemoved: boolean) => void, onResetCRs: (crs: InstrumentationCR[]) => void, operationId: string): Promise<void> {
+    public static async StartWatchingCRs(crs: InstrumentationCRsCollection, onNewCR: (cr: InstrumentationCR, isRemoved: boolean) => void, onResetCRs: (crs: InstrumentationCR[]) => void, operationId: string, clusterArmId: string, clusterArmRegion: string): Promise<void> {
         const kc = new k8s.KubeConfig();
         kc.loadFromDefault();
 
@@ -23,7 +23,7 @@ export class K8sWatcher {
         let latestResourceVersion: string = null;
         while (true) { // eslint-disable-line
             try {
-                latestResourceVersion = await K8sWatcher.WatchCRs(k8sApi, watch, latestResourceVersion, crs,  operationId, onNewCR, onResetCRs);
+                latestResourceVersion = await K8sWatcher.WatchCRs(k8sApi, watch, latestResourceVersion, crs,  operationId, onNewCR, onResetCRs, clusterArmId, clusterArmRegion);
             } catch (e) {
                 // either the list call or the watch call failed
                 const ex = logger.sanitizeException(e);
@@ -47,7 +47,7 @@ export class K8sWatcher {
         }
     }
 
-    private static async WatchCRs(k8sApi: k8s.CustomObjectsApi, watch: k8s.Watch, latestResourceVersion: string, crs: InstrumentationCRsCollection, operationId: string, onNewCR: (cr: InstrumentationCR, isRemoved: boolean) => void, onResetCRs: (crs: InstrumentationCR[]) => void): Promise<string> {
+    private static async WatchCRs(k8sApi: k8s.CustomObjectsApi, watch: k8s.Watch, latestResourceVersion: string, crs: InstrumentationCRsCollection, operationId: string, onNewCR: (cr: InstrumentationCR, isRemoved: boolean) => void, onResetCRs: (crs: InstrumentationCR[]) => void, clusterArmId: string, clusterArmRegion: string): Promise<string> {
         let requestMetadata = new RequestMetadata("CR watcher", crs);
 
         logger.info(`Listing CRs, resourceVersion=${latestResourceVersion}...`, operationId, requestMetadata);
@@ -58,7 +58,8 @@ export class K8sWatcher {
                 group: K8sWatcher.crdApiGroup,
                 version: K8sWatcher.crdApiVersion,
                 plural: K8sWatcher.crdNamePlural,
-                resourceVersion: latestResourceVersion ?? undefined
+                resourceVersion: latestResourceVersion ?? undefined,
+                timeoutSeconds: 30
             });
 
             logger.addHeartbeatMetric(HeartbeatMetrics.CRsListCallSucceededCount, 1, "200");
@@ -82,7 +83,9 @@ export class K8sWatcher {
         // watch() doesn't block (it starts the loop and returns immediately), so we can't just return the promise it returns to our caller
         // we must instead create our own promise and resolve it manually when the watch informs us that it stopped via a callback
         const watchIsDonePromise: Promise<string> = new Promise((resolve, reject) => {
-            try {
+            try {                
+                let doneCallbackInvoked = false;
+
                 // /api/v1/namespaces
                 // /apis/monitor.azure.com/v1/namespaces/default/instrumentations
                 watch.watch(`/apis/${K8sWatcher.crdApiGroup}/${K8sWatcher.crdApiVersion}/${K8sWatcher.crdNamePlural}`,
@@ -117,7 +120,9 @@ export class K8sWatcher {
                         }
                     },
                     err => { // watch is done callback
-                        logger.info("Watch has completed", operationId, requestMetadata);
+                        doneCallbackInvoked = true;
+
+                        logger.info("Watch has completed via the done callback", operationId, requestMetadata);
                         if (err != null) {
                             // this indicates an issue with the watch encountered once the stream is opened
                             // we want to handle it in the same way as an exception (which is triggered during opening of the stream)
@@ -133,7 +138,33 @@ export class K8sWatcher {
                         logger.addHeartbeatMetric(HeartbeatMetrics.CRsWatchCallSucceededCount, 1, "200");
 
                         resolve(latestResourceVersion);
+                    })
+                    // typically, when the watch is finishing for whatever reason, the done callback will be invoked first, so we don't have to do anything upon the promise's completion
+                    // in extremely rare corner cases though, done callback is not invoked, and this is the only place where we can resolve our promise to avoid it just hanging forever
+                    // in most cases we have already resolved or rejected the promise in the done callback, so this will be a no-op
+                    // this is only required for the corner case when done was never invoked
+                    .then(_result => {
+                        if (!doneCallbackInvoked) {
+                            logger.info("Watch has completed via the promise - then", operationId, requestMetadata);
+
+                            // not awaiting, no rush
+                            logger.SendEvent(Events[Events.WatchDoneCallbackSkipped], operationId, null, clusterArmId, clusterArmRegion, true, "then");
+
+                            resolve(latestResourceVersion);
+                        }
+                    })
+                    .catch(e => {
+                        if (!doneCallbackInvoked) {
+                            logger.info(`Watch has completed via the promise - catch: ${JSON.stringify(e)}`, operationId, requestMetadata);
+
+                            // not awaiting, no rush
+                            logger.SendEvent(Events[Events.WatchDoneCallbackSkipped], operationId, null, clusterArmId, clusterArmRegion, true, `catch: ${JSON.stringify(e)}`);
+
+                            reject(e);
+                        }
                     });
+
+                    logger.info("Watch call returned", operationId, requestMetadata);
             } catch (e) {
                 logger.error(`Watch.watch() threw: ${JSON.stringify(e)}`, operationId, requestMetadata);
                 logger.addHeartbeatMetric(HeartbeatMetrics.CRsWatchCallFailedCount, 1, e?.statusCode ?? 0);
