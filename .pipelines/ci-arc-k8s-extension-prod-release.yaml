@@ -44,7 +44,7 @@ stages:
 - stage: Stage_1
   displayName: ci-arc-k8s-extension-all-regions-prod-release(MCR)
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
     os: windows
   jobs:
   - job: releaseGating
@@ -308,7 +308,7 @@ stages:
   displayName: Pilot Regions
   trigger: manual
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
     os: windows
   jobs:
   - job: releaseGating
@@ -573,7 +573,7 @@ stages:
   dependsOn:
   - Stage_2
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
     os: windows
   jobs:
   - job: releaseGating
@@ -838,7 +838,7 @@ stages:
   dependsOn:
   - Stage_3
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
     os: windows
   jobs:
   - job: releaseGating
@@ -1103,7 +1103,7 @@ stages:
   dependsOn:
   - Stage_4
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
     os: windows
   jobs:
   - job: releaseGating
@@ -1367,7 +1367,7 @@ stages:
   displayName: 'Fairfax & Mooncake: Create Escort JIT'
   trigger: manual
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
     os: windows
   jobs:
   - job: Job_1
@@ -1391,7 +1391,7 @@ stages:
   displayName: Fairfax Region Testing
   trigger: manual
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
     os: windows
   jobs:
   - job: releaseGating
