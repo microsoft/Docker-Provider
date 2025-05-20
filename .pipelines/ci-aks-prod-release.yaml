@@ -55,7 +55,7 @@ resources:
   pipelines:
   - pipeline: '_ci-aks-prod-release'
     project: 'microsoft'
-    source: 'CDPX\docker-provider\ci-aks-prod-release'
+    source: 'CDPX\docker-provider\ContainerInsights-MultiArch-MergedBranches'
   repositories:
   - repository: 1ESPipelineTemplates
     type: git
@@ -82,17 +82,8 @@ extends:
         templateContext:
           inputs:
           - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'drop'
-            targetPath: '$(Pipeline.Workspace)/drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'windows-drop'
-            targetPath: '$(Pipeline.Workspace)/windows-drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'linux-drop'
-            targetPath: '$(Pipeline.Workspace)/linux-drop'
+            pipeline: '_ci-arc-k8s-extension-prod-release'
+            artifactName: 'ev2Artifact'
         steps:
         - task: Bash@3
           displayName: Bash Script
@@ -116,14 +107,8 @@ extends:
           workflow: ev2-classic
           inputs:
           - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'windows-drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'linux-drop'
+            pipeline: '_ci-arc-k8s-extension-prod-release'
+            artifactName: 'ev2Artifact'
           ev2:
             useServerMonitorTask: true
             serviceConnection: ci-ev2-ame
@@ -144,17 +129,8 @@ extends:
           isProduction: true
           inputs:
           - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'drop'
-            targetPath: '$(Pipeline.Workspace)/drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'windows-drop'
-            targetPath: '$(Pipeline.Workspace)/windows-drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'linux-drop'
-            targetPath: '$(Pipeline.Workspace)/linux-drop'
+            pipeline: '_ci-arc-k8s-extension-prod-release'
+            artifactName: 'ev2Artifact'
         steps:
         - task: AzureCLI@2
           displayName: Get Workspace ID and Key
@@ -211,14 +187,5 @@ extends:
         templateContext:
           inputs:
           - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'drop'
-            targetPath: '$(Pipeline.Workspace)/drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'windows-drop'
-            targetPath: '$(Pipeline.Workspace)/windows-drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'linux-drop'
-            targetPath: '$(Pipeline.Workspace)/linux-drop'
+            pipeline: '_ci-arc-k8s-extension-prod-release'
+            artifactName: 'ev2Artifact'
