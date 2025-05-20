@@ -2,6 +2,16 @@
 # https://stackoverflow.com/questions/28682642/powershell-why-is-using-invoke-webrequest-much-slower-than-a-browser-download
 $ProgressPreference = 'SilentlyContinue'
 
+Write-Host 'Enabling WinTrust Cert Padding Check (64-bit and Wow6432Node)'
+try {
+    reg add "HKLM\Software\Microsoft\Cryptography\Wintrust\Config" /v "EnableCertPaddingCheck" /t REG_DWORD /d "1" /f
+    reg add "HKLM\Software\Wow6432Node\Microsoft\Cryptography\Wintrust\Config" /v "EnableCertPaddingCheck" /t REG_DWORD /d "1" /f
+    Write-Host 'Successfully enabled certificate padding checks.'
+} catch {
+    Write-Host 'Failed to set registry keys for certificate padding check.'
+    Write-Host $_.Exception.Message
+}
+
 Write-Host ('Creating folder structure')
     New-Item -Type Directory -Path /installation -ErrorAction SilentlyContinue
 
