@@ -16,6 +16,7 @@ import (
 
 var K8sClient *kubernetes.Clientset
 var Cfg *rest.Config
+var ResourceOptimizationEnabled string
 
 func TestContainerStatus(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -26,6 +27,8 @@ func TestContainerStatus(t *testing.T) {
 var _ = BeforeSuite(func() {
 	var err error
 	K8sClient, Cfg, err = utils.SetupKubernetesClient()
+	Expect(err).NotTo(HaveOccurred())
+	ResourceOptimizationEnabled, err = utils.IsResourceOptimizationEnabled(K8sClient, "kube-system", "component", "ama-logs-agent", "ama-logs")
 	Expect(err).NotTo(HaveOccurred())
 })
 

@@ -55,13 +55,17 @@ var _ = DescribeTable("The pods should be scheduled in all Fips and ARM64 nodes"
  */
 var _ = DescribeTable("All processes are running",
 	func(namespace, labelName, labelValue, containerName string, processes []string) {
+		// Fluentd is not running in linux ds pods if AZMON_RESOURCE_OPTIMIZATION_ENABLED is set to true.
+		if labelValue == "ama-logs-rs" || ResourceOptimizationEnabled != "true" {
+			// Add fluentd process to the list of processes to check
+			processes = append(processes, "fluentd")
+		}
 		err := utils.CheckAllProcessesRunning(K8sClient, Cfg, labelName, labelValue, namespace, containerName, processes)
 		Expect(err).NotTo(HaveOccurred())
 	},
 	Entry("when checking the ama-logs-rs replica pod", "kube-system", "rsName", "ama-logs-rs", "ama-logs",
 		[]string{
 			"fluent-bit",
-			"fluentd",
 			"mdsd -a -A -r",
 			"inotifywait /etc/config/settings",
 			"crond",
@@ -70,7 +74,7 @@ var _ = DescribeTable("All processes are running",
 	Entry("when checking the ama-logs daemonset pods", "kube-system", "component", "ama-logs-agent", "ama-logs",
 		[]string{
 			"fluent-bit",
-			"fluentd",
+			// "fluentd",
 			"mdsd -a -A -r",
 			"inotifywait /etc/config/settings",
 			"crond",
