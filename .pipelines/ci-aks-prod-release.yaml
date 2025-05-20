@@ -52,6 +52,7 @@ variables:
 - name: WorkspaceResourceId
   value: $(VAR_WORKSPACE_RESOURCE_ID)
 resources:
+  containers: []
   pipelines:
   - pipeline: '_ci-aks-prod-release'
     project: 'microsoft'
@@ -61,132 +62,1197 @@ resources:
     type: git
     name: 1ESPipelineTemplates/1ESPipelineTemplates
     ref: refs/tags/release
-extends:
-  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
-  parameters:
+stages:
+- stage: Stage_1
+  displayName: 'Note: Use Build with Telemetry Tag defined'
+  trigger: manual
+  pool:
+    name: Azure-Pipelines-Windows-CI-Test-EO
+    os: windows
+  jobs:
+  - job: Job_1
+    displayName: Agent job
+    condition: succeeded()
+    timeoutInMinutes: '0'
+    variables:
+    - name: OneESPT
+      value: true
+      readonly: true
+    - name: OneESPT.BuildType
+      value: Official
+      readonly: true
+    - name: OneESPT.OS
+      value: windows
+      readonly: true
+    - name: Codeql.SkipTaskAutoInjection
+      value: true
+    - name: skipComponentGovernanceDetection
+      value: false
+    - name: OneES_targetName
+      value: host
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      inputs:
+        repository: self
+        persistCredentials: true
+    - task: DownloadPipelineArtifact@2
+      displayName: ⏬ Pipeline Artifact Download
+      inputs:
+        artifactName: ev2Artifact
+        buildType: specific
+        project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
+        definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
+        allowFailedBuilds: false
+        buildVersionToDownload: specific
+        pipelineId: $(resources.pipeline._ci-arc-k8s-extension-prod-release.runID)
+        pipeline: _ci-arc-k8s-extension-prod-release
+      target:
+        container: host
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: Validate Hosted Pool Information (1ES PT)
+      continueOnError: false
+      target:
+        container: host
+      env:
+        HOST_ARCHITECTURE: amd64
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+        SYSTEM_DEFINITIONID: $(System.DefinitionId)
+        SYSTEM_COLLECTIONURI: $(System.CollectionUri)
+        SYSTEM_TEAMPROJECT: $(System.TeamProject)
+        SYSTEM_TEAMPROJECTID: $(System.TeamProjectId)
+        BUILD_REPOSITORY_ID: $(Build.Repository.ID)
+        BUILD_REPOSITORY_URI: $(Build.Repository.Uri)
+        PIPELINEGOVERNANCESTATUS_AUDITED: variables['PipelineGovernanceStatus_Audited']
+        PIPELINECLASSIFICATION_AUDITED: variables['PipelineClassification_Audited']
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: validateHostedPool.ps1
+        arguments: '-TargetName $(OneES_targetName) -StepTargets [] -StepsLength 1 -SkipStatelessValidation False -OS windows -IsOfficialTemplate -IgnoreProductionPoolCheck '
+    - task: CodeQL3000Init@0
+      displayName: "\U0001F6E1 CodeQL Initialize"
+      condition: and(ne(variables['ONEES_ENFORCED_CODEQL_ENABLED'], 'false'), or(eq(False, true), eq(variables['OneES_DefaultRepoBranch'], variables['Build.SourceBranch'])))
+      target:
+        container: host
+      continueOnError: true
+      inputs:
+        Enabled: true
+        BuildIdentifier: Stage_1_Job_1
+        LanguageDetectorFilter: compiled
+    - task: ms-1es.1es-networkisolation-tasks.661EE24A-9364-4A3B-A725-3CBEB6F35E4B.1ESNetworkIsolation@1
+      displayName: 'Start Network Isolation'
+      continueOnError: true
+      timeoutInMinutes: 2
+      inputs:
+        networkIsolationMode: Enforce
+    - task: Bash@3
+      inputs:
+        targetType: inline
+        script: >
+          echo 'Check that the build image you use has the telemetry tag defined'
+      target:
+        container: host
+      displayName: Bash Script
+    - task: ms-1es.1es-networkisolation-tasks.661EE24A-9364-4A3B-A725-3CBEB6F35E4B.1ESNetworkIsolation@1
+      displayName: 'Stop Network Isolation'
+      condition: always()
+      continueOnError: true
+      timeoutInMinutes: 2
+      inputs:
+        networkIsolationMode: Stop
+    - task: CodeQL3000Finalize@0
+      displayName: "\U0001F6E1 CodeQL Finalize"
+      condition: and(ne(variables['ONEES_ENFORCED_CODEQL_ENABLED'], 'false'), or(eq(False, true), eq(variables['OneES_DefaultRepoBranch'], variables['Build.SourceBranch'])))
+      target:
+        container: host
+      continueOnError: true
+- stage: Stage_2
+  displayName: Push Linux and Windows Agent
+  dependsOn:
+  - SDLSources
+  pool:
+    name: Azure-Pipelines-Windows-CI-Test-EO
+    os: windows
+  jobs:
+  - job: releaseGating
+    displayName: Release Gating
+    variables:
+    - name: OneESPT
+      value: true
+      readonly: true
+    - name: OneESPT.BuildType
+      value: Official
+      readonly: true
+    - name: OneESPT.OS
+      value: windows
+      readonly: true
+    - name: runCodesignValidationInjection
+      value: false
+    - name: Codeql.SkipTaskAutoInjection
+      value: true
+    - name: skipComponentGovernanceDetection
+      value: true
+    - name: skipNugetSecurityAnalysis
+      value: true
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      condition: false
+      inputs:
+        repository: none
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: Branch Validation (1ES PT)
+      continueOnError: true
+      target:
+        container: host
+      env:
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+        SYSTEM_COLLECTIONURI: $(System.CollectionUri)
+        SYSTEM_TEAMPROJECT: $(System.TeamProject)
+        SYSTEM_TEAMPROJECTID: $(System.TeamProjectId)
+        BUILD_REPOSITORY_URI: $(Build.Repository.Uri)
+        BUILD_SOURCEBRANCH: $(Build.SourceBranch)
+        BUILD_REPOSITORY_NAME: $(Build.Repository.Name)
+        BUILD_REPOSITORY_ID: $(Build.Repository.ID)
+        BUILD_REPOSITORYPROVIDER: $(Build.Repository.Provider)
+        BUILD_SOURCEVERSION: $(Build.SourceVersion)
+        TASK_MODE: audit
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: release_gating.py
+  - job: approval
+    variables:
+    - name: OneESPT
+      value: true
+      readonly: true
+    - name: OneESPT.BuildType
+      value: Official
+      readonly: true
+    - name: OneESPT.OS
+      value: windows
+      readonly: true
+    - name: ev2Environment
+      value: Production
+    - name: Ev2MonintoringUrl
+      value: 'https://azureservicedeploy.msft.net/api/monitorrollout'
+    displayName: Approval
     pool:
-      name: Azure-Pipelines-Windows-CI-Test-EO
-      os: windows
-    serviceTreeId: 3170cdd2-19f0-4027-912b-1027311691a2
-    customBuildTags:
-    - ES365AIMigrationTooling-Release
-    stages:
-    - stage: Stage_1
-      displayName: 'Note: Use Build with Telemetry Tag defined'
-      trigger: manual
-      jobs:
-      - job: Job_1
-        displayName: Agent job
-        condition: succeeded()
-        timeoutInMinutes: 0
-        templateContext:
-          inputs:
-          - input: pipelineArtifact
-            pipeline: '_ci-arc-k8s-extension-prod-release'
-            artifactName: 'ev2Artifact'
-        steps:
-        - task: Bash@3
-          displayName: Bash Script
-          inputs:
-            targetType: inline
-            script: |
-              echo 'Check that the build image you use has the telemetry tag defined'
-    - stage: Stage_2
-      displayName: Push Linux and Windows Agent
-      dependsOn: []
-      templateContext:
-        cloud: Public
-        isProduction: true
-        approval:
-          workflow: approvalService
-      jobs:
-      - job: Ev2_rollout
-        displayName: Agent job - Ev2
-        condition: succeeded()
-        timeoutInMinutes: 0
-        templateContext:
-          type: releaseJob
-          workflow: ev2-classic
-          inputs:
-          - input: pipelineArtifact
-            pipeline: '_ci-arc-k8s-extension-prod-release'
-            artifactName: 'ev2Artifact'
-          ev2:
-            useServerMonitorTask: true
-            serviceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment/ServiceGroupRoot
-            rolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment/ServiceGroupRoot/RolloutSpecs/RolloutSpecs.json
-            inlineRolloutSpec: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/rolloutSpecification.json",     "ContentVersion": "1.0.0.0",     "RolloutMetadata": {       "ServiceModelPath": "ServiceModels//Public.ServiceModel.json",          "ScopeBindingsPath": "ScopeBindings//Public.ScopeBindings.json",        "Name": "ContainerInsightsAgent",       "RolloutType": "Major",       "BuildSource": {         "Parameters": {           "VersionFile": "buildver.txt"         }       },       "Notification": {         "Email": {           "To": "sarahpeiffer@microsoft.com"         }       }       },     "OrchestratedSteps": [       {         "name": "PushLinuxAgent",         "targetType": "ServiceResource",         "targetName": "PushLinuxAgent",         "actions": [ "Shell/PushAgentToACR" ],         "dependsOn": [ ]       },       {         "name": "PushWindowsAgent",         "targetType": "ServiceResource",         "targetName": "PushWindowsAgent",         "actions": [ "Shell/PushAgentToACR" ],         "dependsOn": [ ]       }     ]   }'
-            inlineScopeBindingOverrides: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",     "contentVersion": "0.0.0.1",     "scopeBindings": [                {             "scopeTagName": "Global",             "bindings": [                         {                     "find": "__ACR_NAME__",                     "replaceWith": "$(ACRName)"                 },                             {                     "find": "__AGENT_RELEASE__",                     "replaceWith": "$(AgentRelease)"                 },                  {                     "find": "__AGENT_IMAGE_TAG_SUFFIX__",                     "replaceWith": "$(AgentImageTagSuffix)"                 },                 {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(ManagedIdentity)"                 },                  {                     "find": "__CDPX_LINUX_TAG__",                     "replaceWith": "$(CDPXLinuxTag)"                 },                 {                     "find": "__CDPX_WINDOWS_TAG__",                     "replaceWith": "$(CDPXWindowsTag)"                 },                 {                     "find": "__OVERRIDE_TAG__",                     "replaceWith": "$(OverrideTag)"                 }             ]         }                                                                                                                                                     ] }'
-    - stage: Stage_3
-      displayName: Deploy
-      trigger: manual
-      jobs:
-      - job: Job_1
-        displayName: Agent job
-        condition: succeeded()
-        timeoutInMinutes: 0
-        templateContext:
-          type: releaseJob
-          isProduction: true
-          inputs:
-          - input: pipelineArtifact
-            pipeline: '_ci-arc-k8s-extension-prod-release'
-            artifactName: 'ev2Artifact'
-        steps:
-        - task: AzureCLI@2
-          displayName: Get Workspace ID and Key
-          inputs:
-            connectedServiceNameARM: ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)
-            scriptType: bash
-            scriptPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/get-workspace-id-and-key.sh
-            scriptArguments: WorkspaceResourceId=$(WorkspaceResourceId)
-            cwd: $(Pipeline.Workspace)/ev2Artifact/drop/build
-        - task: Bash@3
-          displayName: Update Cluster ResourceId, Region, Image, WSID and WSKEY
-          inputs:
-            filePath: $(Pipeline.Workspace)/ev2Artifact/drop/build/update-place-holders-in-yaml.sh
-            arguments: ClusterResourceId=$(ClusterResourceId) ClusterRegion=$(ClusterRegion) CIRelease=$(CIRelease) CIImageTagSuffix=$(AgentImageTagSuffix)
-            workingDirectory: $(Pipeline.Workspace)/ev2Artifact/drop/build
-        - task: Kubernetes@1
-          displayName: kubectl apply
-          inputs:
-            connectionType: Azure Resource Manager
-            azureSubscriptionEndpoint: ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)
-            azureResourceGroup: ciprod-rc-aks16-weu-rg
-            kubernetesCluster: ciprod-rc-aks16-weu
-            useClusterAdmin: true
-            namespace: kube-system
-            command: apply
-            arguments: -f ama-logs.yaml
-            cwd: $(Pipeline.Workspace)/ev2Artifact/drop/build
-        - task: HelmInstaller@0
-          displayName: Install Helm 3.2.1
-          inputs:
-            helmVersion: 3.2.1
-            checkLatestHelmVersion: false
-        - task: AzureCLI@2
-          displayName: Download Kubeconfig for AKS-Engine
-          inputs:
-            connectedServiceNameARM: ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)
-            scriptType: bash
-            scriptPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/get-kube-config-from-kv.sh
-            scriptArguments: KV=$(CIKV) KVSECRETNAMEKUBECONFIG=$(AKSEngineClusterKubeConfigSecretName)
-        - task: Bash@3
-          displayName: Install chart to aks-engine cluster
-          inputs:
-            filePath: $(Pipeline.Workspace)/ev2Artifact/drop/build/install-chart-to-aks-engine-cluster.sh
-            arguments: ClusterName=$(AKSEngineCluster) CIRelease=$(CIRelease) CIImageTagSuffix=$(AgentImageTagSuffix)
-            workingDirectory: $(Pipeline.Workspace)/ev2Artifact/drop/build
-    - stage: Stage_4
-      displayName: Deploy2ScaleCluster
-      dependsOn: Stage_3
-      jobs:
-      - job: Job_1
-        displayName: Agent job
-        condition: succeeded()
-        timeoutInMinutes: 0
-        templateContext:
-          inputs:
-          - input: pipelineArtifact
-            pipeline: '_ci-arc-k8s-extension-prod-release'
-            artifactName: 'ev2Artifact'
+      name: server
+    timeoutInMinutes: 7200
+    dependsOn:
+    - releaseGating
+    steps:
+    - task: ApprovalTask@1
+      inputs:
+        environment: $(ev2Environment)
+        servicetreeguid: 3170cdd2-19f0-4027-912b-1027311691a2
+  - job: Ev2_rollout_ev2_rollout
+    displayName: Agent job - Ev2 Ev2 Rollout
+    timeoutInMinutes: '0'
+    condition: succeeded()
+    dependsOn:
+    - approval
+    variables:
+    - name: ev2Environment
+      value: Production
+    - name: Ev2MonintoringUrl
+      value: https://azureservicedeploy.msft.net/api/monitorrollout
+    - name: OneESPT.JobType
+      value: releaseJob
+      readonly: true
+    - name: OneESPT
+      value: true
+      readonly: true
+    - name: OneESPT.BuildType
+      value: Official
+      readonly: true
+    - name: OneESPT.OS
+      value: windows
+      readonly: true
+    - name: OneESPT.Workflow
+      value: ev2-classic
+      readonly: true
+    - name: runCodesignValidationInjection
+      value: false
+    - name: Codeql.SkipTaskAutoInjection
+      value: true
+    - name: skipComponentGovernanceDetection
+      value: true
+    - name: skipNugetSecurityAnalysis
+      value: true
+    - name: OneES_targetName
+      value: host
+    steps:
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: Validate Hosted Pool Information (1ES PT)
+      continueOnError: false
+      target:
+        container: host
+      env:
+        HOST_ARCHITECTURE: amd64
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+        SYSTEM_DEFINITIONID: $(System.DefinitionId)
+        SYSTEM_COLLECTIONURI: $(System.CollectionUri)
+        SYSTEM_TEAMPROJECT: $(System.TeamProject)
+        SYSTEM_TEAMPROJECTID: $(System.TeamProjectId)
+        BUILD_REPOSITORY_ID: $(Build.Repository.ID)
+        BUILD_REPOSITORY_URI: $(Build.Repository.Uri)
+        PIPELINEGOVERNANCESTATUS_AUDITED: variables['PipelineGovernanceStatus_Audited']
+        PIPELINECLASSIFICATION_AUDITED: variables['PipelineClassification_Audited']
+        BUILD_REASON: $(Build.Reason)
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: validateHostedPool.ps1
+        arguments: -TargetName '' -StepTargets '' -StepsLength 0 -SkipStatelessValidation True -OS windows -IgnoreProductionPoolCheck  -IsOfficialTemplate -IsProductionReleasePipeline
+    - task: DownloadPipelineArtifact@2
+      displayName: ⏬ Pipeline Artifact Download
+      inputs:
+        artifactName: ev2Artifact
+        buildType: specific
+        project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
+        definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
+        allowFailedBuilds: false
+        buildVersionToDownload: specific
+        pipelineId: $(resources.pipeline._ci-arc-k8s-extension-prod-release.runID)
+        pipeline: _ci-arc-k8s-extension-prod-release
+        targetPath: $(Pipeline.Workspace)/ev2Artifact
+      target:
+        container: host
+    - task: AzureArtifacts.drop-validator-task.drop-validator-task.DropValidatorTask@0
+      displayName: "\U0001F6E1 Validate SBoM Manifest (1ES PT)"
+      condition: succeeded()
+      continueOnError: False
+      timeoutInMinutes: 30
+      env:
+        SBOMVALIDATOR_TEMPIGNOREMISSING: true
+      inputs:
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
+        ValidateSignature: True
+        Verbosity: 'Verbose'
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: Post-SBoM Validation (1ES PT)
+      continueOnError: true
+      target:
+        container: host
+      condition: succeeded()
+      env:
+        OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: post_sbom_validation.py
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: Validate Source Build (1ES PT)
+      continueOnError: false
+      target:
+        container: host
+      env:
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        IsProduction: True
+        OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: validate_source_build.py
+    - task: securedevelopmentteam.vss-secure-development-tools.build-task-codesignvalidation.CodeSign@1
+      displayName: "\U0001F6E1 Guardian: CodeSign Validation"
+      target:
+        container: host
+      condition: and(succeeded(), ne(variables['ONEES_ENFORCED_CODESIGNVALIDATION_ENABLED'], 'false'))
+      continueOnError: true
+      timeoutInMinutes: 10
+      inputs:
+        Path: $(Pipeline.Workspace)/ev2Artifact
+        MaxThreads: $(OneES_UsableProcessorCount)
+        FailIfNoTargetsFound: false
+        ExcludePassesFromLog: False
+        Targets: f|**\*.dll;f|**\*.exe;f|**\*.sys;f|**\*.ps1;f|**\*.psm1;f|**\*.ps1xml;f|**\*.psc1;f|**\*.psd1;f|**\*.cdxml;f|**\*.vbs;f|**\*.js;f|**\*.wsf;-|.gdn\**;
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: "\U0001F6E1 Guardian: Check CodeSign Validation Results (1ES PT)"
+      continueOnError: true
+      target:
+        container: host
+      condition: and(succeeded(), ne(variables['ONEES_ENFORCED_CODESIGNVALIDATION_ENABLED'], 'false'))
+      env:
+        OneES_PipelineWorkspace: $(Pipeline.Workspace)
+        OneES_DeleteCodeSignValidationResult: True
+        OneES_CustomPolicyFile: ''
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: check_csv_results.ps1
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      condition: false
+      inputs:
+        repository: none
+      target:
+        container: host
+    - task: Bash@3
+      displayName: Set CDPX Linux Tag
+      inputs:
+        targetType: inline
+        filePath: $(System.DefaultWorkingDirectory)/_docker-provider-Official-ci_dev/drop
+        script: |
+          # Write your commands here
+
+          LINUX_TAG=$(jq '."image.name"' metadata.json | tr -d '"' | cut -d':' -f2)
+          echo $LINUX_TAG
+
+          set +x
+          echo "##vso[task.setvariable variable=CDPXLinuxTag;]$LINUX_TAG"
+          set -x
+        workingDirectory: $(System.DefaultWorkingDirectory)/_ContainerInsights-MultiArch-MergedBranches/drop/linux/
+        failOnStderr: true
+    - task: Bash@3
+      displayName: Set CDPX Windows Tag
+      inputs:
+        targetType: inline
+        filePath: $(System.DefaultWorkingDirectory)/_docker-provider-Official-ci_dev/drop
+        script: |+
+          # Write your commands here
+
+          WINDOWS_TAG=$(jq '."image.name"' metadata.json | tr -d '"' | cut -d':' -f2)
+          echo $WINDOWS_TAG
+
+          set +x
+          echo "##vso[task.setvariable variable=CDPXWindowsTag;]$WINDOWS_TAG"
+          set -x
+
+        workingDirectory: $(System.DefaultWorkingDirectory)/_ContainerInsights-MultiArch-MergedBranches/drop/windows/
+        failOnStderr: true
+    - task: vsrm-ev2.vss-services-ev2.adm-release-task.ExpressV2Internal@1
+      inputs:
+        UseServerMonitorTask: true
+        EndpointProviderType: ApprovalService
+        ApprovalServiceEnvironment: $(ev2Environment)
+        ServiceRootLocation: LinkedArtifact
+        RolloutSpecType: RSPath
+        ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment/ServiceGroupRoot
+        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment/ServiceGroupRoot/RolloutSpecs/RolloutSpecs.json
+        OutputRolloutId: RolloutId
+        OutputServiceGroupName: ServiceGroupName
+        OutputRolloutStatus: RolloutStatus
+        InlineDynamicBindingOverrides: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",     "contentVersion": "0.0.0.1",     "scopeBindings": [                {             "scopeTagName": "Global",             "bindings": [                         {                     "find": "__ACR_NAME__",                     "replaceWith": "$(ACRName)"                 },                             {                     "find": "__AGENT_RELEASE__",                     "replaceWith": "$(AgentRelease)"                 },                  {                     "find": "__AGENT_IMAGE_TAG_SUFFIX__",                     "replaceWith": "$(AgentImageTagSuffix)"                 },                 {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(ManagedIdentity)"                 },                  {                     "find": "__CDPX_LINUX_TAG__",                     "replaceWith": "$(CDPXLinuxTag)"                 },                 {                     "find": "__CDPX_WINDOWS_TAG__",                     "replaceWith": "$(CDPXWindowsTag)"                 },                 {                     "find": "__OVERRIDE_TAG__",                     "replaceWith": "$(OverrideTag)"                 }             ]         }                                                                                                                                                     ] }'
+      env:
+        ServiceTreeGuid: 3170cdd2-19f0-4027-912b-1027311691a2
+      target:
+        container: host
+      displayName: Ev2 Classic - Deploy
+  - job: Ev2_rollout_ev2_monitoring
+    variables:
+    - name: OneESPT
+      value: true
+      readonly: true
+    - name: OneESPT.BuildType
+      value: Official
+      readonly: true
+    - name: OneESPT.OS
+      value: windows
+      readonly: true
+    - name: OneESPT.Workflow
+      value: ev2-classic
+      readonly: true
+    - name: ev2Environment
+      value: Production
+    - name: Ev2MonintoringUrl
+      value: 'https://azureservicedeploy.msft.net/api/monitorrollout'
+    displayName: Agent job - Ev2 Ev2 Monitoring
+    pool:
+      name: server
+    dependsOn:
+    - Ev2_rollout_ev2_rollout
+    timeoutInMinutes: '0'
+    steps:
+    - task: vsrm-ev2.vss-server-ev2.1950188C-A844-4040-A014-A326BC8332D3.Ev2Agentless@1
+      displayName: Ev2 - Monitoring
+      inputs:
+        Ev2MonintoringUrl: $(Ev2MonintoringUrl)
+- stage: Stage_3
+  displayName: Deploy
+  trigger: manual
+  pool:
+    name: Azure-Pipelines-Windows-CI-Test-EO
+    os: windows
+  jobs:
+  - job: Job_1
+    displayName: Agent job
+    condition: succeeded()
+    timeoutInMinutes: '0'
+    variables:
+    - name: OneESPT.JobType
+      value: releaseJob
+      readonly: true
+    - name: OneESPT
+      value: true
+      readonly: true
+    - name: OneESPT.BuildType
+      value: Official
+      readonly: true
+    - name: OneESPT.OS
+      value: windows
+      readonly: true
+    - name: runCodesignValidationInjection
+      value: false
+    - name: Codeql.SkipTaskAutoInjection
+      value: true
+    - name: skipComponentGovernanceDetection
+      value: true
+    - name: skipNugetSecurityAnalysis
+      value: true
+    - name: OneES_targetName
+      value: host
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      condition: false
+      inputs:
+        repository: none
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: Validate Hosted Pool Information (1ES PT)
+      continueOnError: false
+      target:
+        container: host
+      env:
+        HOST_ARCHITECTURE: amd64
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+        SYSTEM_DEFINITIONID: $(System.DefinitionId)
+        SYSTEM_COLLECTIONURI: $(System.CollectionUri)
+        SYSTEM_TEAMPROJECT: $(System.TeamProject)
+        SYSTEM_TEAMPROJECTID: $(System.TeamProjectId)
+        BUILD_REPOSITORY_ID: $(Build.Repository.ID)
+        BUILD_REPOSITORY_URI: $(Build.Repository.Uri)
+        PIPELINEGOVERNANCESTATUS_AUDITED: variables['PipelineGovernanceStatus_Audited']
+        PIPELINECLASSIFICATION_AUDITED: variables['PipelineClassification_Audited']
+        BUILD_REASON: $(Build.Reason)
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: validateHostedPool.ps1
+        arguments: -TargetName '' -StepTargets '' -StepsLength 0 -SkipStatelessValidation True -OS windows -IgnoreProductionPoolCheck  -IsOfficialTemplate -IsProductionReleasePipeline
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: Branch Validation (1ES PT)
+      continueOnError: true
+      target:
+        container: host
+      env:
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+        SYSTEM_COLLECTIONURI: $(System.CollectionUri)
+        SYSTEM_TEAMPROJECT: $(System.TeamProject)
+        SYSTEM_TEAMPROJECTID: $(System.TeamProjectId)
+        BUILD_REPOSITORY_URI: $(Build.Repository.Uri)
+        BUILD_SOURCEBRANCH: $(Build.SourceBranch)
+        BUILD_REPOSITORY_NAME: $(Build.Repository.Name)
+        BUILD_REPOSITORY_ID: $(Build.Repository.ID)
+        BUILD_REPOSITORYPROVIDER: $(Build.Repository.Provider)
+        BUILD_SOURCEVERSION: $(Build.SourceVersion)
+        TASK_MODE: audit
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: release_gating.py
+    - task: DownloadPipelineArtifact@2
+      displayName: ⏬ Pipeline Artifact Download
+      inputs:
+        artifactName: ev2Artifact
+        buildType: specific
+        project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
+        definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
+        allowFailedBuilds: false
+        buildVersionToDownload: specific
+        pipelineId: $(resources.pipeline._ci-arc-k8s-extension-prod-release.runID)
+        pipeline: _ci-arc-k8s-extension-prod-release
+      target:
+        container: host
+    - task: AzureArtifacts.drop-validator-task.drop-validator-task.DropValidatorTask@0
+      displayName: "\U0001F6E1 Validate SBoM Manifest (1ES PT)"
+      condition: succeeded()
+      continueOnError: False
+      timeoutInMinutes: 30
+      env:
+        SBOMVALIDATOR_TEMPIGNOREMISSING: true
+      inputs:
+        BuildDropPath: $(Pipeline.Workspace)
+        OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
+        ValidateSignature: True
+        Verbosity: 'Verbose'
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: Post-SBoM Validation (1ES PT)
+      continueOnError: true
+      target:
+        container: host
+      condition: succeeded()
+      env:
+        OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: post_sbom_validation.py
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: Validate Source Build (1ES PT)
+      continueOnError: false
+      target:
+        container: host
+      env:
+        BuildDropPath: $(Pipeline.Workspace)
+        IsProduction: True
+        OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: validate_source_build.py
+    - task: securedevelopmentteam.vss-secure-development-tools.build-task-codesignvalidation.CodeSign@1
+      displayName: "\U0001F6E1 Guardian: CodeSign Validation"
+      target:
+        container: host
+      condition: and(succeeded(), ne(variables['ONEES_ENFORCED_CODESIGNVALIDATION_ENABLED'], 'false'))
+      continueOnError: true
+      timeoutInMinutes: 10
+      inputs:
+        Path: $(Pipeline.Workspace)
+        MaxThreads: $(OneES_UsableProcessorCount)
+        FailIfNoTargetsFound: false
+        ExcludePassesFromLog: False
+        Targets: f|**\*.dll;f|**\*.exe;f|**\*.sys;f|**\*.ps1;f|**\*.psm1;f|**\*.ps1xml;f|**\*.psc1;f|**\*.psd1;f|**\*.cdxml;f|**\*.vbs;f|**\*.js;f|**\*.wsf;-|.gdn\**;
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: "\U0001F6E1 Guardian: Check CodeSign Validation Results (1ES PT)"
+      continueOnError: true
+      target:
+        container: host
+      condition: and(succeeded(), ne(variables['ONEES_ENFORCED_CODESIGNVALIDATION_ENABLED'], 'false'))
+      env:
+        OneES_PipelineWorkspace: $(Pipeline.Workspace)
+        OneES_DeleteCodeSignValidationResult: True
+        OneES_CustomPolicyFile: ''
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: check_csv_results.ps1
+    - task: AzureCLI@2
+      displayName: 'Fetch Service Connection Subscription Id (1ES PT)'
+      continueOnError: true
+      inputs:
+        azureSubscription: ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)
+        scriptType: 'pscore'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          try {
+            $accountInfo = az account show --query "{subscriptionId:id, tenantId:tenantId}" --only-show-errors --output json | ConvertFrom-Json
+            Write-Host "Subscription ID: $($accountInfo.subscriptionId)"
+            Write-Host "##vso[task.setvariable variable=ONEES_SERVICE_CONNECTION_SUBSCRIPTIONID;]$($accountInfo.subscriptionId)"
+            Write-Host "Tenant ID: $($accountInfo.tenantId)"
+            Write-Host "##vso[task.setvariable variable=ONEES_SERVICE_CONNECTION_TENANTID;]$($accountInfo.tenantId)"
+          } catch {
+            Write-Host "Failed to fetch subscription id."
+            Write-Host $_.Exception.Message
+            exit 0
+          }
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: Service Connection Environment Verification (1ES PT)
+      continueOnError: true
+      target:
+        container: host
+      env:
+        IGNORE_MSFT_TENANT: True
+        ONEBRANCH_PIPELINE_TYPE: $(PIPELINE_TYPE)
+        SERVICE_CONNECTION_NAME: ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)
+        SERVICE_CONNECTION_SUBSCRIPTIONID: $(ONEES_SERVICE_CONNECTION_SUBSCRIPTIONID)
+        SERVICE_CONNECTION_TENANTID: $(ONEES_SERVICE_CONNECTION_TENANTID)
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+        IS_PRODUCTION: True
+        TASK_NAME: AzureCLI@2
+        SYSTEM_TEAMPROJECTID: $(System.TeamProjectId)
+        SYSTEM_DEFINITIONID: $(System.DefinitionId)
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: serviceConnectionEnvironmentVerification.ps1
+    - task: AzureCLI@2
+      inputs:
+        connectedServiceNameARM: ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)
+        scriptType: bash
+        scriptPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/get-workspace-id-and-key.sh
+        scriptArguments: WorkspaceResourceId=$(WorkspaceResourceId)
+        cwd: $(Pipeline.Workspace)/ev2Artifact/drop/build
+      target:
+        container: host
+      displayName: Get Workspace ID and Key
+    - task: Bash@3
+      inputs:
+        filePath: $(Pipeline.Workspace)/ev2Artifact/drop/build/update-place-holders-in-yaml.sh
+        arguments: ClusterResourceId=$(ClusterResourceId) ClusterRegion=$(ClusterRegion) CIRelease=$(CIRelease) CIImageTagSuffix=$(AgentImageTagSuffix)
+        workingDirectory: $(Pipeline.Workspace)/ev2Artifact/drop/build
+      target:
+        container: host
+      displayName: Update Cluster ResourceId, Region, Image, WSID and WSKEY
+    - task: AzureCLI@2
+      displayName: 'Fetch Service Connection Subscription Id (1ES PT)'
+      continueOnError: true
+      inputs:
+        azureSubscription: ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)
+        scriptType: 'pscore'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          try {
+            $accountInfo = az account show --query "{subscriptionId:id, tenantId:tenantId}" --only-show-errors --output json | ConvertFrom-Json
+            Write-Host "Subscription ID: $($accountInfo.subscriptionId)"
+            Write-Host "##vso[task.setvariable variable=ONEES_SERVICE_CONNECTION_SUBSCRIPTIONID;]$($accountInfo.subscriptionId)"
+            Write-Host "Tenant ID: $($accountInfo.tenantId)"
+            Write-Host "##vso[task.setvariable variable=ONEES_SERVICE_CONNECTION_TENANTID;]$($accountInfo.tenantId)"
+          } catch {
+            Write-Host "Failed to fetch subscription id."
+            Write-Host $_.Exception.Message
+            exit 0
+          }
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: Service Connection Environment Verification (1ES PT)
+      continueOnError: true
+      target:
+        container: host
+      env:
+        IGNORE_MSFT_TENANT: True
+        ONEBRANCH_PIPELINE_TYPE: $(PIPELINE_TYPE)
+        SERVICE_CONNECTION_NAME: ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)
+        SERVICE_CONNECTION_SUBSCRIPTIONID: $(ONEES_SERVICE_CONNECTION_SUBSCRIPTIONID)
+        SERVICE_CONNECTION_TENANTID: $(ONEES_SERVICE_CONNECTION_TENANTID)
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+        IS_PRODUCTION: True
+        TASK_NAME: Kubernetes@1
+        SYSTEM_TEAMPROJECTID: $(System.TeamProjectId)
+        SYSTEM_DEFINITIONID: $(System.DefinitionId)
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: serviceConnectionEnvironmentVerification.ps1
+    - task: Kubernetes@1
+      inputs:
+        connectionType: Azure Resource Manager
+        azureSubscriptionEndpoint: ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)
+        azureResourceGroup: ciprod-rc-aks16-weu-rg
+        kubernetesCluster: ciprod-rc-aks16-weu
+        useClusterAdmin: true
+        namespace: kube-system
+        command: apply
+        arguments: -f ama-logs.yaml
+        cwd: $(Pipeline.Workspace)/ev2Artifact/drop/build
+      target:
+        container: host
+      displayName: kubectl apply
+    - task: HelmInstaller@0
+      inputs:
+        helmVersion: 3.2.1
+        checkLatestHelmVersion: false
+      target:
+        container: host
+      displayName: Install Helm 3.2.1
+    - task: AzureCLI@2
+      displayName: 'Fetch Service Connection Subscription Id (1ES PT)'
+      continueOnError: true
+      inputs:
+        azureSubscription: ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)
+        scriptType: 'pscore'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          try {
+            $accountInfo = az account show --query "{subscriptionId:id, tenantId:tenantId}" --only-show-errors --output json | ConvertFrom-Json
+            Write-Host "Subscription ID: $($accountInfo.subscriptionId)"
+            Write-Host "##vso[task.setvariable variable=ONEES_SERVICE_CONNECTION_SUBSCRIPTIONID;]$($accountInfo.subscriptionId)"
+            Write-Host "Tenant ID: $($accountInfo.tenantId)"
+            Write-Host "##vso[task.setvariable variable=ONEES_SERVICE_CONNECTION_TENANTID;]$($accountInfo.tenantId)"
+          } catch {
+            Write-Host "Failed to fetch subscription id."
+            Write-Host $_.Exception.Message
+            exit 0
+          }
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: Service Connection Environment Verification (1ES PT)
+      continueOnError: true
+      target:
+        container: host
+      env:
+        IGNORE_MSFT_TENANT: True
+        ONEBRANCH_PIPELINE_TYPE: $(PIPELINE_TYPE)
+        SERVICE_CONNECTION_NAME: ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)
+        SERVICE_CONNECTION_SUBSCRIPTIONID: $(ONEES_SERVICE_CONNECTION_SUBSCRIPTIONID)
+        SERVICE_CONNECTION_TENANTID: $(ONEES_SERVICE_CONNECTION_TENANTID)
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+        IS_PRODUCTION: True
+        TASK_NAME: AzureCLI@2
+        SYSTEM_TEAMPROJECTID: $(System.TeamProjectId)
+        SYSTEM_DEFINITIONID: $(System.DefinitionId)
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: serviceConnectionEnvironmentVerification.ps1
+    - task: AzureCLI@2
+      inputs:
+        connectedServiceNameARM: ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)
+        scriptType: bash
+        scriptPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/get-kube-config-from-kv.sh
+        scriptArguments: KV=$(CIKV) KVSECRETNAMEKUBECONFIG=$(AKSEngineClusterKubeConfigSecretName)
+      target:
+        container: host
+      displayName: Download Kubeconfig for AKS-Engine
+    - task: Bash@3
+      inputs:
+        filePath: $(Pipeline.Workspace)/ev2Artifact/drop/build/install-chart-to-aks-engine-cluster.sh
+        arguments: ClusterName=$(AKSEngineCluster) CIRelease=$(CIRelease) CIImageTagSuffix=$(AgentImageTagSuffix)
+        workingDirectory: $(Pipeline.Workspace)/ev2Artifact/drop/build
+      target:
+        container: host
+      displayName: Install chart to aks-engine cluster
+- stage: Stage_4
+  displayName: Deploy2ScaleCluster
+  dependsOn:
+  - Stage_3
+  pool:
+    name: Azure-Pipelines-Windows-CI-Test-EO
+    os: windows
+  jobs:
+  - job: Job_1
+    displayName: Agent job
+    condition: succeeded()
+    timeoutInMinutes: '0'
+    variables:
+    - name: OneESPT
+      value: true
+      readonly: true
+    - name: OneESPT.BuildType
+      value: Official
+      readonly: true
+    - name: OneESPT.OS
+      value: windows
+      readonly: true
+    - name: Codeql.SkipTaskAutoInjection
+      value: true
+    - name: skipComponentGovernanceDetection
+      value: false
+    - name: OneES_targetName
+      value: host
+    steps:
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      inputs:
+        repository: self
+        persistCredentials: true
+    - task: DownloadPipelineArtifact@2
+      displayName: ⏬ Pipeline Artifact Download
+      inputs:
+        artifactName: ev2Artifact
+        buildType: specific
+        project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
+        definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
+        allowFailedBuilds: false
+        buildVersionToDownload: specific
+        pipelineId: $(resources.pipeline._ci-arc-k8s-extension-prod-release.runID)
+        pipeline: _ci-arc-k8s-extension-prod-release
+      target:
+        container: host
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: Validate Hosted Pool Information (1ES PT)
+      continueOnError: false
+      target:
+        container: host
+      env:
+        HOST_ARCHITECTURE: amd64
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+        SYSTEM_DEFINITIONID: $(System.DefinitionId)
+        SYSTEM_COLLECTIONURI: $(System.CollectionUri)
+        SYSTEM_TEAMPROJECT: $(System.TeamProject)
+        SYSTEM_TEAMPROJECTID: $(System.TeamProjectId)
+        BUILD_REPOSITORY_ID: $(Build.Repository.ID)
+        BUILD_REPOSITORY_URI: $(Build.Repository.Uri)
+        PIPELINEGOVERNANCESTATUS_AUDITED: variables['PipelineGovernanceStatus_Audited']
+        PIPELINECLASSIFICATION_AUDITED: variables['PipelineClassification_Audited']
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: validateHostedPool.ps1
+        arguments: '-TargetName $(OneES_targetName) -StepTargets [] -StepsLength 0 -SkipStatelessValidation False -OS windows -IsOfficialTemplate -IgnoreProductionPoolCheck '
+    - task: CodeQL3000Init@0
+      displayName: "\U0001F6E1 CodeQL Initialize"
+      condition: and(ne(variables['ONEES_ENFORCED_CODEQL_ENABLED'], 'false'), or(eq(False, true), eq(variables['OneES_DefaultRepoBranch'], variables['Build.SourceBranch'])))
+      target:
+        container: host
+      continueOnError: true
+      inputs:
+        Enabled: true
+        BuildIdentifier: Stage_4_Job_1
+        LanguageDetectorFilter: compiled
+    - task: ms-1es.1es-networkisolation-tasks.661EE24A-9364-4A3B-A725-3CBEB6F35E4B.1ESNetworkIsolation@1
+      displayName: 'Start Network Isolation'
+      continueOnError: true
+      timeoutInMinutes: 2
+      inputs:
+        networkIsolationMode: Enforce
+    - task: ms-1es.1es-networkisolation-tasks.661EE24A-9364-4A3B-A725-3CBEB6F35E4B.1ESNetworkIsolation@1
+      displayName: 'Stop Network Isolation'
+      condition: always()
+      continueOnError: true
+      timeoutInMinutes: 2
+      inputs:
+        networkIsolationMode: Stop
+    - task: CodeQL3000Finalize@0
+      displayName: "\U0001F6E1 CodeQL Finalize"
+      condition: and(ne(variables['ONEES_ENFORCED_CODEQL_ENABLED'], 'false'), or(eq(False, true), eq(variables['OneES_DefaultRepoBranch'], variables['Build.SourceBranch'])))
+      target:
+        container: host
+      continueOnError: true
+- stage: SDLSources
+  displayName: "\U0001F512 SDLSources"
+  isSkippable: false
+  dependsOn: []
+  pool:
+    name: Azure-Pipelines-Windows-CI-Test-EO
+    os: windows
+  jobs:
+  - job: SDLSources_self
+    displayName: SDL Sources Analysis (self)
+    continueOnError: false
+    timeoutInMinutes: 120
+    variables:
+    - name: OneES_SkipSDLSourcesAnalysis
+      value: false
+    - name: GDN_SUPPRESS_FORKED_BUILD_WARNING
+      value: true
+    - name: runCodesignValidationInjection
+      value: false
+    - name: Codeql.SkipTaskAutoInjection
+      value: true
+    - name: skipComponentGovernanceDetection
+      value: true
+    - name: skipNugetSecurityAnalysis
+      value: true
+    - name: OneESPT
+      value: true
+      readonly: true
+    - name: OneESPT.BuildType
+      value: Official
+      readonly: true
+    - name: OneESPT.OS
+      value: windows
+      readonly: true
+    steps:
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: Validate Hosted Pool Information (1ES PT)
+      continueOnError: false
+      target:
+        container: host
+      env:
+        HOST_ARCHITECTURE: amd64
+        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+        SYSTEM_DEFINITIONID: $(System.DefinitionId)
+        SYSTEM_COLLECTIONURI: $(System.CollectionUri)
+        SYSTEM_TEAMPROJECT: $(System.TeamProject)
+        SYSTEM_TEAMPROJECTID: $(System.TeamProjectId)
+        BUILD_REPOSITORY_ID: $(Build.Repository.ID)
+        BUILD_REPOSITORY_URI: $(Build.Repository.Uri)
+        PIPELINEGOVERNANCESTATUS_AUDITED: variables['PipelineGovernanceStatus_Audited']
+        PIPELINECLASSIFICATION_AUDITED: variables['PipelineClassification_Audited']
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: validateHostedPool.ps1
+        arguments: -TargetName '' -StepTargets '' -StepsLength 0 -SkipStatelessValidation True -OS windows -IgnoreProductionPoolCheck -IsOfficialTemplate
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: Tag build and log custom issues (1ES PT)
+      continueOnError: false
+      target:
+        container: host
+      env:
+        BuildTags: >-
+          [
+            "ES365AIMigrationTooling-Release",
+            "1ES.PT.Official",
+            "1ES.PT.Build",
+            "1ES.PT.Release.Production"
+          ]
+        LogIssues: '[]'
+        SkipBuildTagsForGitHubPullRequests: ''
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: tagBuild.ps1
+    - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+      condition: and(succeeded(), ne(variables['OneES_SkipSDLSourcesAnalysis'], true))
+      inputs:
+        repository: self
+        submodules: True
+        lfs: True
+        fetchDepth: 1
+        fetchTags: False
+        fetchFilter: ''
+        persistCredentials: True
+        path: s
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: Get GitHub Token (1ES PT)
+      continueOnError: true
+      target:
+        container: host
+      condition: and( succeeded(), true, contains(variables['Build.Repository.Uri'], 'github.com'))
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: get_github_token.py
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: Auto-baselining mode and SDL pre-checks (1ES PT)
+      continueOnError: true
+      target:
+        container: host
+      condition: succeeded()
+      env:
+        categories: retail.source
+        condition: and( succeeded(), true )
+        isMultirepoScenario: False
+        enableMultirepoScenario: True
+        autoBaselineFeatureFlag: ''
+        credscanEnabled: True
+        policheckEnabled: False
+        eslintEnabled: True
+        banditEnabled: False
+        csrfEnabled: False
+        psscriptanalyzerEnabled: True
+        armoryEnabled: True
+        binskimEnabled: True
+        prefastEnabled: False
+        spotbugsEnabled: True
+        roslynEnabled: False
+        accessibilityinsightsEnabled: False
+        localRetailBaselineFilePath: $(Build.SourcesDirectory)/.config/guardian/.gdnbaselines
+        systemAccessToken: $(System.AccessToken)
+        systemCollectionUri: $(System.CollectionUri)
+        systemTeamProject: $(System.TeamProject)
+        systemDefinitionId: $(System.DefinitionId)
+        buildSourceVersion: $(Build.SourceVersion)
+        buildSourceBranch: $(Build.SourceBranch)
+        buildSourcesDirectory: $(Build.SourcesDirectory)
+        buildRepositoryId: $(Build.Repository.ID)
+        buildRepositoryName: $(Build.Repository.Name)
+        buildRepositoryProvider: $(Build.Repository.Provider)
+        pipelineWorkspace: $(Pipeline.Workspace)
+        toolsToUpdateAfterCertainDate: retail.source.credscan:2024-02-29,retail.source.policheck:2024-02-29,retail.source.eslint:2024-02-29,retail.source.bandit:2024-02-29,retail.source.csrf:2024-02-29,retail.source.psscriptanalyzer:2024-02-29,retail.source.armory:2024-02-29
+        deleteBaselineEntriesBeforeDate: 2024-02-29 00:00:00Z
+        credscanBreak: True
+        policheckBreak: True
+        eslintBreak: True
+        banditBreak: False
+        csrfBreak: False
+        psscriptanalyzerBreak: True
+        armoryBreak: True
+        binskimBreak: True
+        prefastBreak: False
+        spotbugsBreak: True
+        roslynBreak: True
+        accessibilityinsightsBreak: False
+        GDN_CB_TEMPLATE_INTERNAL: $(GDN_CB_TEMPLATE)
+        isOfficial: True
+        disableAutoBaselineOnNonDefaultBranches: False
+        isMainPipeline: False
+        skipUsingMainPipelineConfig: False
+        agentOS: windows
+        githubToken: $(OneES_GITHUB_TOKEN)
+        enableForGitHub: True
+        isForkedBuild: $(System.PullRequest.IsFork)
+        useGitOps: True
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: autobaselining_mode_and_sdl_breakglass_checks.py
+    - task: PublishPipelineArtifact@1
+      displayName: Publish new tools list (1ES PT)
+      condition: and( succeeded(), true, ne('', variables['OneES_AutoBaseline_MetadataFolder']) )
+      continueOnError: true
+      inputs:
+        artifactName: 1espt-autobaseline-SDLSources-SDLSources
+        targetPath: $(OneES_AutoBaseline_MetadataFolder)
+    - task: NodeTool@0
+      displayName: Install Node.js 20.x for CodeQL (1ES PT)
+      condition: and(ne(variables['ONEES_ENFORCED_CODEQL_ENABLED'], 'false'), or(eq(False, true), eq(variables['OneES_DefaultRepoBranch'], variables['Build.SourceBranch'])))
+      continueOnError: true
+      inputs:
+        versionSpec: '20.x'
+    - task: UsePythonVersion@0
+      displayName: Install Python 3.x for CodeQL (1ES PT)
+      condition: and(ne(variables['ONEES_ENFORCED_CODEQL_ENABLED'], 'false'), or(eq(False, true), eq(variables['OneES_DefaultRepoBranch'], variables['Build.SourceBranch'])))
+      continueOnError: true
+      inputs:
+        versionSpec: '3.x'
+    - task: CodeQL3000Init@0
+      displayName: "\U0001F6E1 CodeQL Initialize"
+      condition: and(ne(variables['ONEES_ENFORCED_CODEQL_ENABLED'], 'false'), or(eq(False, true), eq(variables['OneES_DefaultRepoBranch'], variables['Build.SourceBranch'])))
+      target:
+        container: host
+      continueOnError: true
+      inputs:
+        Enabled: true
+        BuildIdentifier: SDLSources_SDLSources
+        BuildMode: none
+        LanguageDetectorFilter: interpreted
+    - task: CodeQL3000Finalize@0
+      displayName: "\U0001F6E1 CodeQL Finalize"
+      condition: and(ne(variables['ONEES_ENFORCED_CODEQL_ENABLED'], 'false'), or(eq(False, true), eq(variables['OneES_DefaultRepoBranch'], variables['Build.SourceBranch'])))
+      target:
+        container: host
+      continueOnError: true
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: "\U0001F512 Setup AntiMalware (1ES PT)"
+      continueOnError: true
+      target:
+        container: host
+      condition: and(ne(variables['ONEES_ENFORCED_ANTIMALWARESCAN_ENABLED'], 'false'), and(succeeded(), ne(variables['OneES_SkipSDLSourcesAnalysis'], true)))
+      env:
+        OneES_AntiMalware_DirectoryToScan: $(Build.SourcesDirectory)
+        OneES_PipelineWorkspace: $(Pipeline.Workspace)
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: setupAntiMalware.ps1
+    - task: securedevelopmentteam.vss-secure-development-tools.build-task-antimalware.AntiMalware@4
+      displayName: "\U0001F6E1 Guardian: AntiMalware Scanner (Source)"
+      target:
+        container: host
+      condition: and(ne(variables['ONEES_ENFORCED_ANTIMALWARESCAN_ENABLED'], 'false'), and(succeeded(), ne(variables['OneES_SkipSDLSourcesAnalysis'], true)))
+      inputs:
+        InputType: 'Basic'
+        ScanType: 'CustomScan'
+        FileDirPath: $(Build.SourcesDirectory)
+        EnableServices: true
+        SupportLogOnError: true
+        TreatSignatureUpdateFailureAs: 'Warning'
+        SignatureFreshness: 'OneDay'
+        TreatStaleSignatureAs: 'Error'
+        AcceptableOutdatedSignatureInHours: 72
+        TreatAcceptableOutdatedSignatureAs: 'Warning'
+    - task: securedevelopmentteam.vss-secure-development-tools.build-task-credscan.CredScan@3
+      displayName: "\U0001F6E1 Guardian: CredScan (Source)"
+      condition: and(ne(variables['ONEES_ENFORCED_CREDSCAN_ENABLED'], 'false'), and(succeeded(), ne(variables['OneES_SkipSDLSourcesAnalysis'], true)))
+      target:
+        container: host
+      inputs:
+        outputFormat: pre
+        scanFolder: $(Build.SourcesDirectory)
+        suppressionsFile: ''
+        debugMode: false
+        batchSize: $(OneES_UsableProcessorCount)
+    - task: 1ESGPTRunTask@3.0.376
+      displayName: "\U0001F6E1 Guardian: Check if enable ESLint (1ES PT)"
+      continueOnError: false
+      target:
+        container: host
+      condition: and(ne(variables['ONEES_ENFORCED_ESLINT_ENABLED'], 'false'), and(succeeded(), ne(variables['OneES_SkipSDLSourcesAnalysis'], true)))
+      env:
+        OneES_ScanAllEslintScriptExtensions: ''
+        OneES_EslintExclusionPatterns: '*.d.ts\n*.spec.js\n*.spec.jsx\n*.spec.ts\n*.spec.tsx'
+        OneES_EslintExclusionsFilePath: ''
+        OneES_ScanDirectory: $(Build.SourcesDirectory)
+      inputs:
+        repoId: microsoft/Docker-Provider
+        path: checkIfEnableEslint.ps1
+    - task: securedevelopmentteam.vss-secure-development-tools.build-task-eslint.ESLint@1
+      displayName: "\U0001F6E1 Guardian: ESLint (JavaScript)"
+      target:
+        container: host
+      condition: and(ne(variables['ONEES_ENFORCED_ESLINT_ENABLED'], 'false'), and(succeeded(), ne(variables['OneES_SkipSDLSourcesAnalysis'], true)), eq(variables['SDL_INTERNAL_ESLINT_JS_ENABLED'], 'true'))
+      continueOnError: False
+      inputs:
+        Configuration: recommended
+        TargetType: 'eslint'
+        TargetsESLint: >
+          $(Build.SourcesDirectory)/**/*.js
+        ErrorLevel: 'warn'
+    - task: securedevelopmentteam.vss-secure-development-tools.build-task-eslint.ESLint@1
+      displayName: "\U0001F6E1 Guardian: ESLint (TypeScript)"
+      target:
+        container: host
+      condition: and(ne(variables['ONEES_ENFORCED_ESLINT_ENABLED'], 'false'), and(succeeded(), ne(variables['OneES_SkipSDLSourcesAnalysis'], true)), eq(variables['SDL_INTERNAL_ESLINT_TS_ENABLED'], 'true'))
+      continueOnError: False
+      inputs:
+        Configuration: recommended
+        TargetType: 'eslint'
+        TargetsESLint: >
+          $(Build.SourcesDirectory)/**/*.ts
+        ErrorLevel: 'warn'
+    - task: securedevelopmentteam.vss-secure-development-tools.build-task-psscriptanalyzer.PSScriptAnalyzer@1
+      inputs:
+        Path: $(Build.SourcesDirectory)
+        Settings: recommended
+        Recurse: true
+        policyName: Microsoft
+      displayName: "\U0001F6E1 Guardian: PSScriptAnalyzer"
+      condition: and(ne(variables['ONEES_ENFORCED_PSSCRIPTANALYZER_ENABLED'], 'false'), and(succeeded(), ne(variables['OneES_SkipSDLSourcesAnalysis'], true)))
+      target:
+        container: host
+    - task: securedevelopmentteam.vss-secure-development-tools.build-task-armory.Armory@2
+      displayName: "\U0001F6E1 Guardian: ARMory"
+      condition: and(succeeded(), ne(variables['OneES_SkipSDLSourcesAnalysis'], true))
+      target:
+        container: host
+      continueOnError: False
+      inputs:
+        targetDirectory: $(Build.SourcesDirectory)
+        targetFiles: f|**\*.json;-|.gdn\**;
+        excludePassesFromLog: true
+    - task: securedevelopmentteam.vss-secure-development-tools.build-task-report.SdtReport@2
+      displayName: "\U0001F6E1 Guardian: Security Analysis Report"
+      target:
+        container: host
+      continueOnError: true
+      condition: and(succeeded(), ne(variables['OneES_SkipSDLSourcesAnalysis'], true))
+      env:
+        GDN_ALLOW_SHADOW_RC_FILES: true
+        GDN_HYDRATE_RESULT_SETS: true
+        GDN_SUPPRESS_HYDRATION_WARNING: true
+      inputs:
+        GdnExportPolicy: Microsoft
+        GdnExportVstsConsole: false
+        GdnExportSarifFile: true
+        GdnExportTsvFile: false
+        GdnExportHtmlFile: true
+        GdnExportAllTools: true
+        GdnExportOutputBaselineFile: $(Pipeline.Workspace)\.gdn\r\.gdnbaselines
+        GdnExportOutputBaseline: default
+        GdnExportOutputSuppressionFile: $(Pipeline.Workspace)\.gdn\r\.gdnsuppress
+        GdnExportOutputSuppressionSet: default
+        GdnExportBaselines: default
+        GdnExportSuppressionFiles: ''
+        GdnExportSuppressionSets: default
+        GdnExportPolicyMinSev: Error
+        GdnExportGdnToolCredScanSeverity: Default
+        GdnExportGdnToolPoliCheckSeverity: Default
+        GdnExportGdnToolArmorySeverity: Default
+        GdnExportGdnToolESLintSeverity: Default
+        GdnExportGdnToolBanditSeverity: Default
+        GdnExportGdnToolCSRFSeverity: Default
+        GdnExportGdnToolSemmleSeverity: Default
+        GdnExportGdnToolPSScriptAnalyzerSeverity: Default
+    - task: securedevelopmentteam.vss-secure-development-tools.build-task-publishsecurityanalysislogs.PublishSecurityAnalysisLogs@3
+      displayName: "\U0001F6E1 Guardian: Publish SDL Logs to Artifacts"
+      target:
+        container: host
+      continueOnError: true
+      inputs:
+        AllTools: true
+        ArtifactName: drop_sdl_sources
+        ArtifactType: Container
+      condition: and(succeeded(), ne(variables['OneES_SkipSDLSourcesAnalysis'], true))
+    - task: securedevelopmentteam.vss-secure-development-tools.build-task-postanalysis.PostAnalysis@2
+      displayName: "\U0001F6E1 Guardian: Post Analysis"
+      condition: and(succeeded(), ne(variables['OneES_SkipSDLSourcesAnalysis'], true))
+      target:
+        container: host
+      env:
+        GDN_ALLOW_SHADOW_RC_FILES: true
+      inputs:
+        GdnBreakAllTools: false
+        GdnBreakPolicy: Microsoft
+        GdnBreakPolicyMinSev: Error
+        GdnBreakDisableFlighting: False
+        GdnBreakGdnToolCredScan: $(OneES_AutoBaseline_credscan_break)
+        GdnBreakGdnToolCredScanSeverity: Default
+        GdnBreakGdnToolPoliCheckSeverity: Default
+        GdnBreakGdnToolArmorySeverity: Default
+        GdnBreakGdnToolESLintSeverity: Default
+        GdnBreakGdnToolBanditSeverity: Default
+        GdnBreakGdnToolCSRFSeverity: Default
+        GdnBreakGdnToolSemmleSeverity: Default
+        GdnBreakGdnToolPSScriptAnalyzerSeverity: Default
+        GdnBreakGdnToolModernCop: True
+        GdnBreakGdnToolPoliCheck: $(OneES_AutoBaseline_policheck_break)
+        GdnBreakGdnToolArmory: $(OneES_AutoBaseline_armory_break)
+        GdnBreakGdnToolESLint: $(OneES_AutoBaseline_eslint_break)
+        GdnBreakGdnToolApiScan: false
+        GdnBreakGdnToolBinSkim: false
+        GdnBreakGdnToolCodesignValidation: false
+        GdnBreakGdnToolFortifySca: false
+        GdnBreakGdnToolFxCop: false
+        GdnBreakGdnToolRoslynAnalyzers: false
+        GdnBreakGdnToolSDLNativeRules: false
+        GdnBreakGdnToolTSLint: false
+        GdnBreakGdnToolBandit: $(OneES_AutoBaseline_bandit_break)
+        GdnBreakGdnToolCSRF: $(OneES_AutoBaseline_csrf_break)
+        GdnBreakGdnToolSemmle: True
+        GdnBreakGdnToolPSScriptAnalyzer: $(OneES_AutoBaseline_psscriptanalyzer_break)
+        GdnBreakBaselineFiles: $(OneES_Local_Fallback_Retail_Baseline_File_Path)
+        GdnBreakBaselines: default
+        GdnBreakSuppressionFiles: ''
+        GdnBreakSuppressionSets: default
+
