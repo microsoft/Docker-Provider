@@ -97,6 +97,14 @@ func GetAKSResourceID(clientset *kubernetes.Clientset, namespace string, labelKe
 	return envVars["AKS_RESOURCE_ID"], nil
 }
 
+func IsResourceOptimizationEnabled(clientset *kubernetes.Clientset, namespace string, labelKey string, labelValue string, containerName string) (string, error) {
+	envVars, error := GetContainerEnvVars(clientset, namespace, labelKey, labelValue, containerName)
+	if error != nil {
+		return "", fmt.Errorf("failed to get environment variables for container %s in pod with label %s=%s: %v", containerName, labelKey, labelValue, error)
+	}
+	return envVars["AZMON_RESOURCE_OPTIMIZATION_ENABLED"], nil
+}
+
 /*
  * Returns all pods in the given namespace with the given label.
  */
