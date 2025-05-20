@@ -34,7 +34,7 @@ resources:
   pipelines:
   - pipeline: '_ci-arc-k8s-extension-canary-release'
     project: 'microsoft'
-    source: 'CDPX\docker-provider\ci-arc-k8s-extension-canary-release'
+    source: 'CDPX\docker-provider\ci-dev-build-mergedbranches'
   repositories:
   - repository: 1ESPipelineTemplates
     type: git
