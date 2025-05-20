@@ -66,14 +66,8 @@ extends:
           workflow: ev2-classic
           inputs:
           - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'linux-drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'windows-drop'
+            pipeline: '_ci-arc-k8s-extension-prod-release'
+            artifactName: 'ev2Artifact'
           ev2:
             useServerMonitorTask: true
             storageContainerURL: $(sasTokenOut)
@@ -98,14 +92,8 @@ extends:
           workflow: ev2-classic
           inputs:
           - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'linux-drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'windows-drop'
+            pipeline: '_ci-arc-k8s-extension-prod-release'
+            artifactName: 'ev2Artifact'
           ev2:
             useServerMonitorTask: true
             serviceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
@@ -129,14 +117,8 @@ extends:
           workflow: ev2-classic
           inputs:
           - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'linux-drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'windows-drop'
+            pipeline: '_ci-arc-k8s-extension-prod-release'
+            artifactName: 'ev2Artifact'
           ev2:
             useServerMonitorTask: true
             serviceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
@@ -160,14 +142,8 @@ extends:
           workflow: ev2-classic
           inputs:
           - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'linux-drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'windows-drop'
+            pipeline: '_ci-arc-k8s-extension-prod-release'
+            artifactName: 'ev2Artifact'
           ev2:
             useServerMonitorTask: true
             serviceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
@@ -191,14 +167,8 @@ extends:
           workflow: ev2-classic
           inputs:
           - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'linux-drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'windows-drop'
+            pipeline: '_ci-arc-k8s-extension-prod-release'
+            artifactName: 'ev2Artifact'
           ev2:
             useServerMonitorTask: true
             serviceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
@@ -231,14 +201,8 @@ extends:
           workflow: ev2-classic
           inputs:
           - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'linux-drop'
-          - input: pipelineArtifact
-            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
-            artifactName: 'windows-drop'
+            pipeline: '_ci-arc-k8s-extension-prod-release'
+            artifactName: 'ev2Artifact'
           ev2:
             useServerMonitorTask: true
             serviceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
