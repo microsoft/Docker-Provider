@@ -96,7 +96,9 @@ extends:
       dependsOn: []
       templateContext:
         cloud: Public
-        isProduction: false
+        isProduction: true
+        approval:
+          workflow: approvalService
       jobs:
       - job: Ev2_rollout
         displayName: Agent job - Ev2
@@ -111,7 +113,6 @@ extends:
             artifactName: 'ev2Artifact'
           ev2:
             useServerMonitorTask: true
-            serviceConnection: ci-ev2-ame
             serviceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment/ServiceGroupRoot
             rolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment/ServiceGroupRoot/RolloutSpecs/RolloutSpecs.json
             inlineRolloutSpec: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/rolloutSpecification.json",     "ContentVersion": "1.0.0.0",     "RolloutMetadata": {       "ServiceModelPath": "ServiceModels//Public.ServiceModel.json",          "ScopeBindingsPath": "ScopeBindings//Public.ScopeBindings.json",        "Name": "ContainerInsightsAgent",       "RolloutType": "Major",       "BuildSource": {         "Parameters": {           "VersionFile": "buildver.txt"         }       },       "Notification": {         "Email": {           "To": "sarahpeiffer@microsoft.com"         }       }       },     "OrchestratedSteps": [       {         "name": "PushLinuxAgent",         "targetType": "ServiceResource",         "targetName": "PushLinuxAgent",         "actions": [ "Shell/PushAgentToACR" ],         "dependsOn": [ ]       },       {         "name": "PushWindowsAgent",         "targetType": "ServiceResource",         "targetName": "PushWindowsAgent",         "actions": [ "Shell/PushAgentToACR" ],         "dependsOn": [ ]       }     ]   }'
