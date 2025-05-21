@@ -97,6 +97,10 @@ spec:
         name: AZURE_CLIENT_ID
         value: "$AZURE_CLIENT_ID"
         type: basic
+      GENEVA_INTEGRATION:
+        name: GENEVA_INTEGRATION
+        value: "$GENEVA_INTEGRATION"
+        type: basic
     args:
       - "./querylogs"
     executePostRunScriptBeforeScraping: false
