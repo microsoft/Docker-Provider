@@ -105,6 +105,14 @@ func IsResourceOptimizationEnabled(clientset *kubernetes.Clientset, namespace st
 	return envVars["AZMON_RESOURCE_OPTIMIZATION_ENABLED"], nil
 }
 
+func IsRetinaNetworkFlowLogsEnabled(clientset *kubernetes.Clientset, namespace string, labelKey string, labelValue string, containerName string) (string, error) {
+	envVars, error := GetContainerEnvVars(clientset, namespace, labelKey, labelValue, containerName)
+	if error != nil {
+		return "", fmt.Errorf("failed to get environment variables for container %s in pod with label %s=%s: %v", containerName, labelKey, labelValue, error)
+	}
+	return envVars["ENABLE_RETINA_NETWORK_FLOW_LOGS"], nil
+}
+
 /*
  * Returns all pods in the given namespace with the given label.
  */

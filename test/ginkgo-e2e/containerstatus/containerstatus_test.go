@@ -74,7 +74,6 @@ var _ = DescribeTable("All processes are running",
 	Entry("when checking the ama-logs daemonset pods", "kube-system", "component", "ama-logs-agent", "ama-logs",
 		[]string{
 			"fluent-bit",
-			// "fluentd",
 			"mdsd -a -A -r",
 			"inotifywait /etc/config/settings",
 			"crond",

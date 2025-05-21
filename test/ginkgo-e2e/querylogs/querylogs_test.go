@@ -1,7 +1,6 @@
 package querylogs_test
 
 import (
-	"os"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -14,7 +13,7 @@ var _ = Describe("When querying the logs for the table", func() {
 	DescribeTable("All tables should have logs",
 		func(table string) {
 			// Skip RetinaNetworkFlowLogs test if the feature is not enabled
-			if table == "RetinaNetworkFlowLogs" && os.Getenv("ENABLE_RETINA_NETWORK_FLOW_LOGS") != "true" {
+			if table == "RetinaNetworkFlowLogs" && RetinaNetworkFlowLogsEnabled != "true" {
 				Skip("RetinaNetworkFlowLogs test skipped because ENABLE_RETINA_NETWORK_FLOW_LOGS is not set to 'true'")
 			}
 			var err error
