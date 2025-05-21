@@ -1,7 +1,7 @@
 apiVersion: tests.testkube.io/v3
 kind: Test
 metadata:
-  name: containerstatus
+  name: containerstatus-linux
   namespace: testkube
   labels:
     executor: ginkgo-executor
@@ -19,6 +19,30 @@ spec:
     args:
       - "--label-filter"
       - "!(windows)"
+      - "./containerstatus"
+    executePostRunScriptBeforeScraping: false
+---
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: containerstatus-windows
+  namespace: testkube
+  labels:
+    executor: ginkgo-executor
+    test-type: ginkgo-test
+spec:
+  type: ginkgo/test
+  content:
+    type: git
+    repository:
+      type: git
+      uri: https://github.com/microsoft/Docker-Provider/
+      branch: suyadav/taf-skipwaitingstatus
+      path: test/ginkgo-e2e
+  executionRequest:
+    args:
+      - "--label-filter"
+      - "windows"
       - "./containerstatus"
     executePostRunScriptBeforeScraping: false
 ---
@@ -80,13 +104,31 @@ spec:
 apiVersion: tests.testkube.io/v3
 kind: TestSuite
 metadata:
-  name: e2e-tests-merge
+  name: e2e-tests-all
   namespace: testkube
 spec:
   steps:
   - stopOnFailure: false
     execute:
-    - test: containerstatus
+    - test: containerstatus-linux
+    - test: containerstatus-windows
+  - stopOnFailure: false
+    execute:
+    - delay: 2m0s
+  - stopOnFailure: false
+    execute:
+    - test: querylogs
+---
+apiVersion: tests.testkube.io/v3
+kind: TestSuite
+metadata:
+  name: e2e-tests-linux
+  namespace: testkube
+spec:
+  steps:
+  - stopOnFailure: false
+    execute:
+    - test: containerstatus-linux
   - stopOnFailure: false
     execute:
     - delay: 2m0s

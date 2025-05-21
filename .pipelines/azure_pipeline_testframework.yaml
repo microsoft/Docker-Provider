@@ -144,7 +144,7 @@ jobs:
           
         - bash: |
             chmod +x ./install-and-execute-testkube-tests.sh
-            ./install-and-execute-testkube-tests.sh AzureClientId=$(AksWorkLoadIdentityClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
+            ./install-and-execute-testkube-tests.sh AzureClientId=$(AksWorkLoadIdentityClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) LinuxTestsOnly=true
           workingDirectory: $(Build.SourcesDirectory)/test/testkube/
           displayName: "Install and execute testkube tests"
 

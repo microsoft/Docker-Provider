@@ -9,6 +9,7 @@ do
            AzureClientId) AzureClientId=$VALUE ;;
            AzureTenantId) AzureTenantId=$VALUE ;;
            TeamsWebhookUri) TeamsWebhookUri=$VALUE ;;
+           LinuxTestsOnly) LinuxTestsOnly=$VALUE ;;
            *)
     esac
 done
@@ -39,11 +40,16 @@ echo "Wait for cluster to be ready"
 sleep 120
 
 echo "Run testkube tests"
-# Run the full test suite
-kubectl testkube run testsuite e2e-tests-merge --job-template ./custom-job-template.yaml --verbose
-
-# Get the current id of the test suite now running
-execution_id=$(kubectl testkube get testsuiteexecutions --test-suite e2e-tests-merge --limit 1 | grep e2e-tests | awk '{print $1}')
+execution_id=""
+if [[ $LinuxTestsOnly == "true" ]]; then
+    echo "Running Linux tests only"
+    kubectl testkube run testsuite e2e-tests-linux --job-template ./custom-job-template.yaml --verbose
+    execution_id=$(kubectl testkube get testsuiteexecutions --test-suite e2e-tests-linux --limit 1 | grep e2e-tests | awk '{print $1}')
+else
+    echo "Running all tests"
+    kubectl testkube run testsuite e2e-tests-all --job-template ./custom-job-template.yaml --verbose
+    execution_id=$(kubectl testkube get testsuiteexecutions --test-suite e2e-tests-all --limit 1 | grep e2e-tests | awk '{print $1}')
+fi
 
 # Watch until the all the tests in the test suite finish
 kubectl testkube watch testsuiteexecution $execution_id
