@@ -40,14 +40,11 @@ def is_valid_number?(value)
   return !value.nil? && is_number?(value) && value.to_i > 0
 end
 
-def substituteResourceOptimization(resourceOptimizationEnabled, new_contents, isWindows, using_aad_msi_auth, geneva_logs_integration)
-  if (!isWindows && !resourceOptimizationEnabled.nil? && resourceOptimizationEnabled.to_s.downcase == "true") || (isWindows && using_aad_msi_auth && !geneva_logs_integration)
+  #Update the config file for geneva mode linux and resource optimization enabled
+def substituteResourceOptimization(resourceOptimizationEnabled, new_contents, isWindows, using_aad_msi_auth)
+  if !isWindows && !resourceOptimizationEnabled.nil? && resourceOptimizationEnabled.to_s.downcase == "true"
     puts "config::Starting to substitute the placeholders in fluent-bit-geneva conf file for resource optimization"
-    if isWindows
-      new_contents = new_contents.gsub("#${ResourceOptimizationPluginFile}", "plugins_file  /etc/fluent-bit/azm-containers-input-plugins.conf")
-    else
-      new_contents = new_contents.gsub("#${ResourceOptimizationPluginFile}", "plugins_file  /etc/opt/microsoft/docker-cimprov/azm-containers-input-plugins.conf")
-    end
+    new_contents = new_contents.gsub("#${ResourceOptimizationPluginFile}", "plugins_file  /etc/opt/microsoft/docker-cimprov/azm-containers-input-plugins.conf")
     new_contents = new_contents.gsub("#${ResourceOptimizationFBConfigFile}", "@INCLUDE fluent-bit-geneva-input.conf")
   end
   return new_contents
@@ -136,7 +133,7 @@ def substituteFluentBitPlaceHolders(configFilePath)
       end
     end
 
-    new_contents = substituteResourceOptimization(resourceOptimizationEnabled, new_contents, @isWindows, @using_aad_msi_auth, @geneva_logs_integration)
+    new_contents = substituteResourceOptimization(resourceOptimizationEnabled, new_contents, @isWindows, @using_aad_msi_auth)
 
     File.open(configFilePath, "w") { |file| file.puts new_contents }
     puts "config::Successfully substituted the placeholders in #{configFileName} file"
