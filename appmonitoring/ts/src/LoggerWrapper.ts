@@ -73,7 +73,7 @@ export enum Events {
 
     ArmIdIncorrect, // ARM ID of the cluster we have received is incorrect
     CertificateLoadFailure, // we have failed to load certificates,
-    WatchDoneCallbackSkipped // watch.watch() has skipped its callback, so we had to go off its return promise's resolution
+    WatchHung // watch.watch() has hung, so we had to use our own timeout
 }
 
 export enum HeartbeatMetrics {

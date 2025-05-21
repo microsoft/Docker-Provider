@@ -82,17 +82,18 @@ export class K8sWatcher {
         
         // watch() doesn't block (it starts the loop and returns immediately), so we can't just return the promise it returns to our caller
         // we must instead create our own promise and resolve it manually when the watch informs us that it stopped via a callback
+        const watchTimeoutSeconds = 240;
+        let doneCallbackInvoked = false;
+        let watchAbortController: AbortController = null;
         const watchIsDonePromise: Promise<string> = new Promise((resolve, reject) => {
             try {                
-                let doneCallbackInvoked = false;
-
                 // /api/v1/namespaces
                 // /apis/monitor.azure.com/v1/namespaces/default/instrumentations
                 watch.watch(`/apis/${K8sWatcher.crdApiGroup}/${K8sWatcher.crdApiVersion}/${K8sWatcher.crdNamePlural}`,
                     {
                         allowWatchBookmarks: true,
                         resourceVersion: latestResourceVersion,
-                        timeoutSeconds: 240 // watch will be stopped after at most this many seconds
+                        timeoutSeconds: watchTimeoutSeconds // watch will be stopped after at most this many seconds
                         //fieldSelector: fieldSelector
                     },
                     (type, apiObj) => {
@@ -138,30 +139,8 @@ export class K8sWatcher {
                         logger.addHeartbeatMetric(HeartbeatMetrics.CRsWatchCallSucceededCount, 1, "200");
 
                         resolve(latestResourceVersion);
-                    })
-                    // typically, when the watch is finishing for whatever reason, the done callback will be invoked first, so we don't have to do anything upon the promise's completion
-                    // in extremely rare corner cases though, done callback is not invoked, and this is the only place where we can resolve our promise to avoid it just hanging forever
-                    // in most cases we have already resolved or rejected the promise in the done callback, so this will be a no-op
-                    // this is only required for the corner case when done was never invoked
-                    .then(_result => {
-                        if (!doneCallbackInvoked) {
-                            logger.info("Watch has completed via the promise - then", operationId, requestMetadata);
-
-                            // not awaiting, no rush
-                            logger.SendEvent(Events[Events.WatchDoneCallbackSkipped], operationId, null, clusterArmId, clusterArmRegion, true, "then");
-
-                            resolve(latestResourceVersion);
-                        }
-                    })
-                    .catch(e => {
-                        if (!doneCallbackInvoked) {
-                            logger.info(`Watch has completed via the promise - catch: ${JSON.stringify(e)}`, operationId, requestMetadata);
-
-                            // not awaiting, no rush
-                            logger.SendEvent(Events[Events.WatchDoneCallbackSkipped], operationId, null, clusterArmId, clusterArmRegion, true, `catch: ${JSON.stringify(e)}`);
-
-                            reject(e);
-                        }
+                    }).then(abortController => {
+                        watchAbortController = abortController;
                     });
 
                     logger.info("Watch call returned", operationId, requestMetadata);
@@ -174,7 +153,34 @@ export class K8sWatcher {
             }
         });
 
-        return watchIsDonePromise;
+        // the watch has a bug where it may not invoke the callback upon connection being lost, and it will ignore the timeout in that case
+        // we have to handle that with a manual timeout, and log if the manual timeout occures below the watch reports completion via the callback
+        const timeoutPromise = new Promise<string>((resolve, reject) => {
+            setTimeout(() => 
+                {
+                    if(doneCallbackInvoked) {
+                        // the watch completed normally, we don't need to do anything
+                    } else {
+                        // the watch hasn't invoked the callback within the timeout, so need to step in
+                        logger.error(`Watch hung, manual timeout is used`, operationId, requestMetadata);
+                        // no await, no hurry
+                        logger.SendEvent(Events[Events.WatchHung], operationId, null, clusterArmId, clusterArmRegion, true);
+
+                        // try to abort the watch, not sure if it's possible, best effort
+                        try {
+                            watchAbortController?.abort();
+                        } catch(e) {
+                            // swallow, the watch is already in a bad state, we don't care what happens here
+                            logger.error(`Failed to abort the watch: ${e}`, operationId, requestMetadata);
+                        }
+
+                        reject(new Error(`Watch hung, manual timeout is used`));
+                    }
+                },
+            3 * watchTimeoutSeconds * 1000);
+        });
+        
+        return Promise.race([watchIsDonePromise, timeoutPromise]);
     }
 
     private static IsExpectedIntermittentException(e: any) {
