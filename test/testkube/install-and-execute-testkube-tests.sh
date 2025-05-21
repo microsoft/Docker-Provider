@@ -40,7 +40,7 @@ echo "Wait for cluster to be ready"
 sleep 120
 
 echo "Run testkube tests"
-GENEVA_INTEGRATION="true"
+export GENEVA_INTEGRATION="true"
 execution_id=""
 if [[ $LinuxTestsOnly == "true" ]]; then
     echo "Running Linux tests only"
