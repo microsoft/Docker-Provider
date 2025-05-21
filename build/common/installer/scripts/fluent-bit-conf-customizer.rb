@@ -2,7 +2,6 @@
 require_relative "ConfigParseErrorLogger"
 
 @fluent_bit_conf_path = "/etc/opt/microsoft/docker-cimprov/fluent-bit.conf"
-@fluent_bit_conf_path = "/etc/opt/microsoft/docker-cimprov/fluent-bit-geneva.conf"
 @fluent_bit_common_conf_path = "/etc/opt/microsoft/docker-cimprov/fluent-bit-common.conf"
 
 @os_type = ENV["OS_TYPE"]
@@ -22,12 +21,6 @@ end
 if !ENV["GENEVA_LOGS_INTEGRATION"].nil? && !ENV["GENEVA_LOGS_INTEGRATION"].empty? && ENV["GENEVA_LOGS_INTEGRATION"].strip.casecmp("true") == 0
   @geneva_logs_integration = true
 end
-
-if @geneva_logs_integration
-  # If geneva logs integration is enabled, use the fluent-bit-geneva.conf file
-  @fluent_bit_conf_path = "/etc/opt/microsoft/docker-cimprov/fluent-bit-geneva.conf"
-end
-
 
 @default_service_interval = "15"
 @default_mem_buf_limit = "10"

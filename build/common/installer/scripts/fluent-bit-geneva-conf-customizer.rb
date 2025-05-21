@@ -21,6 +21,16 @@ SUPPORTED_CONFIG_TYPES = ["common", "infra", "tenant", "infra_filter", "tenant_f
 @default_service_interval = "15"
 @default_mem_buf_limit = "10"
 
+@using_aad_msi_auth = false
+if !ENV["USING_AAD_MSI_AUTH"].nil? && !ENV["USING_AAD_MSI_AUTH"].empty? && ENV["USING_AAD_MSI_AUTH"].strip.casecmp("true") == 0
+  @using_aad_msi_auth = true
+end
+
+@geneva_logs_integration = false
+if !ENV["GENEVA_LOGS_INTEGRATION"].nil? && !ENV["GENEVA_LOGS_INTEGRATION"].empty? && ENV["GENEVA_LOGS_INTEGRATION"].strip.casecmp("true") == 0
+  @geneva_logs_integration = true
+end
+
 def is_number?(value)
   true if Integer(value) rescue false
 end
@@ -28,6 +38,19 @@ end
 # check if it is number and greater than 0
 def is_valid_number?(value)
   return !value.nil? && is_number?(value) && value.to_i > 0
+end
+
+def substituteResourceOptimization(resourceOptimizationEnabled, new_contents, isWindows, using_aad_msi_auth, geneva_logs_integration)
+  if (!isWindows && !resourceOptimizationEnabled.nil? && resourceOptimizationEnabled.to_s.downcase == "true") || (isWindows && using_aad_msi_auth && !geneva_logs_integration)
+    puts "config::Starting to substitute the placeholders in fluent-bit-geneva conf file for resource optimization"
+    if isWindows
+      new_contents = new_contents.gsub("#${ResourceOptimizationPluginFile}", "plugins_file  /etc/fluent-bit/azm-containers-input-plugins.conf")
+    else
+      new_contents = new_contents.gsub("#${ResourceOptimizationPluginFile}", "plugins_file  /etc/opt/microsoft/docker-cimprov/azm-containers-input-plugins.conf")
+    end
+    new_contents = new_contents.gsub("#${ResourceOptimizationFBConfigFile}", "@INCLUDE fluent-bit-geneva-input.conf")
+  end
+  return new_contents
 end
 
 def substituteFluentBitPlaceHolders(configFilePath)
@@ -46,6 +69,7 @@ def substituteFluentBitPlaceHolders(configFilePath)
     enableFluentBitThreading = ENV["ENABLE_FBIT_THREADING"]
     kubernetesMetadataCollection = ENV["AZMON_KUBERNETES_METADATA_ENABLED"]
     annotationBasedLogFiltering = ENV["AZMON_ANNOTATION_BASED_LOG_FILTERING"]
+    resourceOptimizationEnabled = ENV["AZMON_RESOURCE_OPTIMIZATION_ENABLED"]
 
     serviceInterval = is_valid_number?(interval) ? interval : @default_service_interval
     serviceIntervalSetting = "Flush         " + serviceInterval
@@ -111,6 +135,8 @@ def substituteFluentBitPlaceHolders(configFilePath)
         new_contents = new_contents.gsub(/[^\.]Parser\s{1,}cri/, " Multiline.Parser cri")
       end
     end
+
+    new_contents = substituteResourceOptimization(resourceOptimizationEnabled, new_contents, @isWindows, @using_aad_msi_auth, @geneva_logs_integration)
 
     File.open(configFilePath, "w") { |file| file.puts new_contents }
     puts "config::Successfully substituted the placeholders in #{configFileName} file"
