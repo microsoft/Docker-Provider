@@ -10,6 +10,7 @@ do
            AzureTenantId) AzureTenantId=$VALUE ;;
            TeamsWebhookUri) TeamsWebhookUri=$VALUE ;;
            LinuxTestsOnly) LinuxTestsOnly=$VALUE ;;
+           GenevaIntegration) GenevaIntegration=$VALUE ;;
            *)
     esac
 done
@@ -32,6 +33,7 @@ echo "Install testkube CRIs"
 export AZURE_CLIENT_ID=$AzureClientId
 export AZURE_TENANT_ID=$AzureTenantId
 export WEBHOOK_URI=$TeamsWebhookUri
+export GENEVA_INTEGRATION=$GenevaIntegration
 kubectl apply -f ./api-server-permissions.yaml
 envsubst < ./testkube-test-crs.yaml > ./testkube-test-crs-updated.yaml
 kubectl apply -f ./testkube-test-crs-updated.yaml
@@ -40,7 +42,6 @@ echo "Wait for cluster to be ready"
 sleep 120
 
 echo "Run testkube tests"
-export GENEVA_INTEGRATION="true"
 execution_id=""
 if [[ $LinuxTestsOnly == "true" ]]; then
     echo "Running Linux tests only"
