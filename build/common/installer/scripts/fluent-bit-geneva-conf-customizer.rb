@@ -21,11 +21,6 @@ SUPPORTED_CONFIG_TYPES = ["common", "infra", "tenant", "infra_filter", "tenant_f
 @default_service_interval = "15"
 @default_mem_buf_limit = "10"
 
-@geneva_logs_integration = false
-if !ENV["GENEVA_LOGS_INTEGRATION"].nil? && !ENV["GENEVA_LOGS_INTEGRATION"].empty? && ENV["GENEVA_LOGS_INTEGRATION"].strip.casecmp("true") == 0
-  @geneva_logs_integration = true
-end
-
 def is_number?(value)
   true if Integer(value) rescue false
 end
