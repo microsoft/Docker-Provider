@@ -12,6 +12,8 @@ fi
 sudo tdnf install ca-certificates-microsoft -y
 sudo update-ca-trust
 
+# arm64 build breaks intermittently when installing ruby from global packages, so installing it from mariner packages
+# the mariner package version is behind the global packages so we are using different versions for arm64 and x86_64
 if [ "$ARCH" == "arm64" ]; then
     sudo tdnf install ruby-3.3.5-1.azl3.aarch64 -y
 else
@@ -23,9 +25,6 @@ else
 
     rm ruby-build.tar.gz
 fi
-
-# clean up the ruby-build files
-rm -rf ruby-build-*
 
 # remove unused default gem openssl, find as they have some known vulns
 rm /usr/lib/ruby/gems/3.3.0/specifications/default/openssl-3.2.0.gemspec
@@ -71,8 +70,7 @@ echo "DOCKER_CIMPROV_VERSION=$docker_cimprov_version" >> packages_version.txt
 sudo tdnf install fluent-bit-3.1.9 -y
 echo "$(fluent-bit --version)" >> packages_version.txt
 
-# install fluentd using the mariner package
-# sudo tdnf install rubygem-fluentd -y
+# install fluentd
 fluentd_version="1.16.3"
 gem install fluentd -v $fluentd_version --no-document
 
