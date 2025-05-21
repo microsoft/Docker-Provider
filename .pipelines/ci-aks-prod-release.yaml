@@ -1,0 +1,224 @@
+trigger: none
+name: $(Date:yyyyMMdd).$(Rev:r)
+variables:
+- name: ACRName
+  value: $(VAR_ACR_NAME)
+- name: AgentImageTagSuffix
+  value: $(VAR_AGENT_IMAGE_TAG_SUFFIX)
+- name: AgentRelease
+  value: $(VAR_AGENT_RELEASE)
+- name: AKSEngineCluster
+  value: $(VAR_AKS_ENGINE_CLUSTER)
+- name: AKSEngineClusterKubeConfigSecretName
+  value: $(VAR_AKS_ENGINE_CLUSTER_KUBECONFIG_SECRET_NAME)
+- name: AKSScaleClusterKubeConfigSecretName
+  value: $(VAR_AKS_SCALE_CLUSTER_KUBECONFIG_SECRET_NAME)
+- name: AKSScaleClusterRegion
+  value: $(VAR_AKS_SCALE_CLUSTER_REGION)
+- name: AKSScaleClusterResourceId
+  value: $(VAR_AKS_SCALE_CLUSTER_RESOURCE_ID)
+- name: CDPXLinuxACR
+  value: $(VAR_CDPX_LINUX_ACR)
+- name: CDPXLinuxRegistry
+  value: $(VAR_CDPX_LINUX_REGISTRY)
+- name: CDPXLinuxRepoName
+  value: $(VAR_CDPX_LINUX_REPO_NAME)
+- name: CDPXLinuxTag
+  value: $(VAR_CDPX_LINUX_TAG)
+- name: CDPXWindowsACR
+  value: $(VAR_CDPX_WINDOWS_ACR)
+- name: CDPXWindowsRegistry
+  value: $(VAR_CDPX_WINDOWS_REGISTRY)
+- name: CDPXWindowsRepoName
+  value: $(VAR_CDPX_WINDOWS_REPO_NAME)
+- name: CDPXWindowsTag
+  value: $(VAR_CDPX_WINDOWS_TAG)
+- name: CIKV
+  value: $(VAR_CIKV)
+- name: CIRelease
+  value: $(VAR_CI_RELEASE)
+- name: ClusterRegion
+  value: $(VAR_CLUSTER_REGION)
+- name: ClusterResourceId
+  value: $(VAR_CLUSTER_RESOURCE_ID)
+- name: ManagedIdentity
+  value: $(VAR_MANAGED_IDENTITY)
+- name: OverrideTag
+  value: $(VAR_OVERRIDE_TAG)
+- name: ServiceTreeGuid
+  value: $(VAR_SERVICE_TREE_GUID)
+- name: UserAssignedIdentityClientId
+  value: $(VAR_USER_ASSIGNED_IDENTITY_CLIENT_ID)
+- name: WorkspaceResourceId
+  value: $(VAR_WORKSPACE_RESOURCE_ID)
+resources:
+  pipelines:
+  - pipeline: '_ci-aks-prod-release'
+    project: 'microsoft'
+    source: 'CDPX\docker-provider\ci-aks-prod-release'
+  repositories:
+  - repository: 1ESPipelineTemplates
+    type: git
+    name: 1ESPipelineTemplates/1ESPipelineTemplates
+    ref: refs/tags/release
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
+  parameters:
+    pool:
+      name: Azure-Pipelines-Windows-CI-Test-EO
+      os: windows
+    serviceTreeId: 3170cdd2-19f0-4027-912b-1027311691a2
+    customBuildTags:
+    - ES365AIMigrationTooling-Release
+    stages:
+    - stage: Stage_1
+      displayName: 'Note: Use Build with Telemetry Tag defined'
+      trigger: manual
+      jobs:
+      - job: Job_1
+        displayName: Agent job
+        condition: succeeded()
+        timeoutInMinutes: 0
+        templateContext:
+          inputs:
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'drop'
+            targetPath: '$(Pipeline.Workspace)/drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'windows-drop'
+            targetPath: '$(Pipeline.Workspace)/windows-drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'linux-drop'
+            targetPath: '$(Pipeline.Workspace)/linux-drop'
+        steps:
+        - task: Bash@3
+          displayName: Bash Script
+          inputs:
+            targetType: inline
+            script: |
+              echo 'Check that the build image you use has the telemetry tag defined'
+    - stage: Stage_2
+      displayName: Push Linux and Windows Agent
+      dependsOn: []
+      templateContext:
+        cloud: Public
+        isProduction: false
+      jobs:
+      - job: Ev2_rollout
+        displayName: Agent job - Ev2
+        condition: succeeded()
+        timeoutInMinutes: 0
+        templateContext:
+          type: releaseJob
+          workflow: ev2-classic
+          inputs:
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'windows-drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'linux-drop'
+          ev2:
+            useServerMonitorTask: true
+            serviceConnection: ci-ev2-ame
+            serviceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment/ServiceGroupRoot
+            rolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment/ServiceGroupRoot/RolloutSpecs/RolloutSpecs.json
+            inlineRolloutSpec: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/rolloutSpecification.json",     "ContentVersion": "1.0.0.0",     "RolloutMetadata": {       "ServiceModelPath": "ServiceModels//Public.ServiceModel.json",          "ScopeBindingsPath": "ScopeBindings//Public.ScopeBindings.json",        "Name": "ContainerInsightsAgent",       "RolloutType": "Major",       "BuildSource": {         "Parameters": {           "VersionFile": "buildver.txt"         }       },       "Notification": {         "Email": {           "To": "sarahpeiffer@microsoft.com"         }       }       },     "OrchestratedSteps": [       {         "name": "PushLinuxAgent",         "targetType": "ServiceResource",         "targetName": "PushLinuxAgent",         "actions": [ "Shell/PushAgentToACR" ],         "dependsOn": [ ]       },       {         "name": "PushWindowsAgent",         "targetType": "ServiceResource",         "targetName": "PushWindowsAgent",         "actions": [ "Shell/PushAgentToACR" ],         "dependsOn": [ ]       }     ]   }'
+            inlineScopeBindingOverrides: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",     "contentVersion": "0.0.0.1",     "scopeBindings": [                {             "scopeTagName": "Global",             "bindings": [                         {                     "find": "__ACR_NAME__",                     "replaceWith": "$(ACRName)"                 },                             {                     "find": "__AGENT_RELEASE__",                     "replaceWith": "$(AgentRelease)"                 },                  {                     "find": "__AGENT_IMAGE_TAG_SUFFIX__",                     "replaceWith": "$(AgentImageTagSuffix)"                 },                 {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(ManagedIdentity)"                 },                  {                     "find": "__CDPX_LINUX_TAG__",                     "replaceWith": "$(CDPXLinuxTag)"                 },                 {                     "find": "__CDPX_WINDOWS_TAG__",                     "replaceWith": "$(CDPXWindowsTag)"                 },                 {                     "find": "__OVERRIDE_TAG__",                     "replaceWith": "$(OverrideTag)"                 }             ]         }                                                                                                                                                     ] }'
+    - stage: Stage_3
+      displayName: Deploy
+      trigger: manual
+      jobs:
+      - job: Job_1
+        displayName: Agent job
+        condition: succeeded()
+        timeoutInMinutes: 0
+        templateContext:
+          type: releaseJob
+          isProduction: true
+          inputs:
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'drop'
+            targetPath: '$(Pipeline.Workspace)/drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'windows-drop'
+            targetPath: '$(Pipeline.Workspace)/windows-drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'linux-drop'
+            targetPath: '$(Pipeline.Workspace)/linux-drop'
+        steps:
+        - task: AzureCLI@2
+          displayName: Get Workspace ID and Key
+          inputs:
+            connectedServiceNameARM: ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)
+            scriptType: bash
+            scriptPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/get-workspace-id-and-key.sh
+            scriptArguments: WorkspaceResourceId=$(WorkspaceResourceId)
+            cwd: $(Pipeline.Workspace)/ev2Artifact/drop/build
+        - task: Bash@3
+          displayName: Update Cluster ResourceId, Region, Image, WSID and WSKEY
+          inputs:
+            filePath: $(Pipeline.Workspace)/ev2Artifact/drop/build/update-place-holders-in-yaml.sh
+            arguments: ClusterResourceId=$(ClusterResourceId) ClusterRegion=$(ClusterRegion) CIRelease=$(CIRelease) CIImageTagSuffix=$(AgentImageTagSuffix)
+            workingDirectory: $(Pipeline.Workspace)/ev2Artifact/drop/build
+        - task: Kubernetes@1
+          displayName: kubectl apply
+          inputs:
+            connectionType: Azure Resource Manager
+            azureSubscriptionEndpoint: ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)
+            azureResourceGroup: ciprod-rc-aks16-weu-rg
+            kubernetesCluster: ciprod-rc-aks16-weu
+            useClusterAdmin: true
+            namespace: kube-system
+            command: apply
+            arguments: -f ama-logs.yaml
+            cwd: $(Pipeline.Workspace)/ev2Artifact/drop/build
+        - task: HelmInstaller@0
+          displayName: Install Helm 3.2.1
+          inputs:
+            helmVersion: 3.2.1
+            checkLatestHelmVersion: false
+        - task: AzureCLI@2
+          displayName: Download Kubeconfig for AKS-Engine
+          inputs:
+            connectedServiceNameARM: ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)
+            scriptType: bash
+            scriptPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/get-kube-config-from-kv.sh
+            scriptArguments: KV=$(CIKV) KVSECRETNAMEKUBECONFIG=$(AKSEngineClusterKubeConfigSecretName)
+        - task: Bash@3
+          displayName: Install chart to aks-engine cluster
+          inputs:
+            filePath: $(Pipeline.Workspace)/ev2Artifact/drop/build/install-chart-to-aks-engine-cluster.sh
+            arguments: ClusterName=$(AKSEngineCluster) CIRelease=$(CIRelease) CIImageTagSuffix=$(AgentImageTagSuffix)
+            workingDirectory: $(Pipeline.Workspace)/ev2Artifact/drop/build
+    - stage: Stage_4
+      displayName: Deploy2ScaleCluster
+      dependsOn: Stage_3
+      jobs:
+      - job: Job_1
+        displayName: Agent job
+        condition: succeeded()
+        timeoutInMinutes: 0
+        templateContext:
+          inputs:
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'drop'
+            targetPath: '$(Pipeline.Workspace)/drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'windows-drop'
+            targetPath: '$(Pipeline.Workspace)/windows-drop'
+          - input: pipelineArtifact
+            pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+            artifactName: 'linux-drop'
+            targetPath: '$(Pipeline.Workspace)/linux-drop'

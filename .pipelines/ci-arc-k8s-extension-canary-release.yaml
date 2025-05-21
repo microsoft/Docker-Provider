@@ -2,7 +2,7 @@ trigger: none
 name: $(Date:yyyyMMdd).$(Rev:r)
 variables:
 - name: ACRName
-  value: containerinsights.azurecr.io
+  value: $(VAR_ACR_NAME)
 - name: ADMIN_SUBSCRIPTION_ID
   value: $(VAR_ADMIN_SUBSCRIPTION_ID)
 - name: CHART_VERSION
@@ -34,7 +34,7 @@ resources:
   pipelines:
   - pipeline: '_ci-arc-k8s-extension-canary-release'
     project: 'microsoft'
-    source: 'CDPX\docker-provider\ContainerInsights-MultiArch-MergedBranches'
+    source: 'CDPX\docker-provider\ci-arc-k8s-extension-canary-release'
   repositories:
   - repository: 1ESPipelineTemplates
     type: git
@@ -116,8 +116,8 @@ stages:
       inputs:
         environment: $(ev2Environment)
         servicetreeguid: $(VAR_SERVICE_TREE_GUID)
-  - job: Ev2_ev2_rollout
-    displayName: Agent job - Ev2 Ev2 Rollout
+  - job: Ev2_rollout
+    displayName: Agent job - Ev2
     timeoutInMinutes: '0'
     condition: succeeded()
     dependsOn:
@@ -195,7 +195,7 @@ stages:
       env:
         SBOMVALIDATOR_TEMPIGNOREMISSING: true
       inputs:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/drop/linux
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
         ValidateSignature: True
         Verbosity: 'Verbose'
@@ -271,7 +271,7 @@ stages:
       target:
         container: host
       displayName: Ev2 Classic - Deploy
-  - job: Ev2_ev2_monitoring
+  - job: Ev2_monitoring
     variables:
     - name: OneESPT
       value: true
@@ -293,7 +293,7 @@ stages:
     pool:
       name: server
     dependsOn:
-    - Ev2_ev2_rollout
+    - Ev2_rollout
     timeoutInMinutes: '0'
     steps:
     - task: vsrm-ev2.vss-server-ev2.1950188C-A844-4040-A014-A326BC8332D3.Ev2Agentless@1
@@ -376,7 +376,7 @@ stages:
       inputs:
         environment: $(ev2Environment)
         servicetreeguid: $(VAR_SERVICE_TREE_GUID)
-  - job: Ev2_ev2_rollout
+  - job: Ev2_rollout
     displayName: Agent job - Ev2 Ev2 Rollout
     timeoutInMinutes: '0'
     condition: succeeded()
@@ -455,7 +455,7 @@ stages:
       env:
         SBOMVALIDATOR_TEMPIGNOREMISSING: true
       inputs:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/drop/linux
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
         ValidateSignature: True
         Verbosity: 'Verbose'
@@ -531,7 +531,7 @@ stages:
       target:
         container: host
       displayName: Ev2 Classic - Deploy
-  - job: Ev2_ev2_monitoring
+  - job: Ev2_monitoring
     variables:
     - name: OneESPT
       value: true
@@ -553,7 +553,7 @@ stages:
     pool:
       name: server
     dependsOn:
-    - Ev2_ev2_rollout
+    - Ev2_rollout
     timeoutInMinutes: '0'
     steps:
     - task: vsrm-ev2.vss-server-ev2.1950188C-A844-4040-A014-A326BC8332D3.Ev2Agentless@1
