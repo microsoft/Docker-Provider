@@ -13,10 +13,7 @@ var (
 )
 
 const (
-	OperatorLabel              = "operator"
-	ArcExtensionLabel          = "arc-extension"
-	WindowsLabel               = "windows"
-	ARM64Label                 = "arm64"
-	FIPSLabel                  = "fips"
-	LinuxDaemonsetCustomConfig = "linux-daemonset-custom-config"
+	WindowsLabel = "windows"
+	ARM64Label   = "arm64"
+	FIPSLabel    = "fips"
 )

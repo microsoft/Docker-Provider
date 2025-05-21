@@ -18,7 +18,7 @@ spec:
   executionRequest:
     args:
       - "--label-filter"
-      - "!(arc-extension,linux-daemonset-custom-config)"
+      - "!(windows)"
       - "./containerstatus"
     executePostRunScriptBeforeScraping: false
 ---
@@ -42,7 +42,7 @@ spec:
   executionRequest:
     args:
       - "--label-filter"
-      - "!(arc-extension,linux-daemonset-custom-config)"
+      - "!(windows)"
       - "./livenessprobe"
     executePostRunScriptBeforeScraping: false
 ---
