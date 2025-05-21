@@ -1,6 +1,8 @@
 package querylogs_test
 
 import (
+	"fmt"
+	"os"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -15,6 +17,12 @@ var _ = Describe("When querying the logs for the table", func() {
 			// Skip RetinaNetworkFlowLogs test if the feature is not enabled
 			if table == "RetinaNetworkFlowLogs" && RetinaNetworkFlowLogsEnabled != "true" {
 				Skip("RetinaNetworkFlowLogs test skipped because ENABLE_RETINA_NETWORK_FLOW_LOGS is not set to 'true'")
+			}
+			if os.Getenv("GENEVA_INTEGRATION") == "true" {
+				fmt.Println("Geneva integration is set to true, skipping ContainerLog test")
+			}
+			if table == "ContainerLog" && strings.Contains(AKSResourceId, "geneva-integration") {
+				Skip("ContainerLog test skipped because GENEVA_INTEGRATION is set to 'true'")
 			}
 			var err error
 			query := table + " | where TimeGenerated > ago(15m) | summarize count()"
