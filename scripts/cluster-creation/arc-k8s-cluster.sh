@@ -2,7 +2,7 @@
 set -e
 TEMP_DIR=temp-$RANDOM
 DefaultCloud="AzureCloud"
-HELM_VERSION="v3.2.1"
+HELM_VERSION="v3.17.2"
 
 install-helm()
 {
