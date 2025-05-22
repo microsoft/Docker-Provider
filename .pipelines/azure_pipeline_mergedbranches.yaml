@@ -359,11 +359,15 @@ extends:
             endlocal
             exit /B %ERRORLEVEL%
           displayName: 'build base'
-        - task: PowerShell@2
+        - task: PowerShell@2          
           inputs:
             targetType: 'inline'
             script: |
-              mkdir -p $(Build.ArtifactStagingDirectory)/windows
+              # Check if directory exists and remove it before creating it to handle retry scenarios
+              if (Test-Path -Path "$(Build.ArtifactStagingDirectory)/windows") {
+                Remove-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -Recurse -Force
+              }
+              New-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -ItemType Directory -Force
               cd kubernetes/windows
               
               # Use Az PowerShell modules instead of CLI
