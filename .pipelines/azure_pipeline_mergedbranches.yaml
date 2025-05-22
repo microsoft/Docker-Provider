@@ -381,7 +381,7 @@ jobs:
   dependsOn:
   -  common
   pool:
-    name: Azure-Pipelines-CI-Test-EO
+    name: Azure-Pipelines-Windows-CI-Test-EO
     image: ci-1es-managed-windows-2022
     os: windows
   variables:
@@ -621,7 +621,7 @@ jobs:
   dependsOn:
   -  common
   pool:
-    name: Azure-Pipelines-CI-Test-EO
+    name: Azure-Pipelines-Windows-CI-Test-EO
     image: ci-1es-managed-windows-2022
     os: windows
   variables:
@@ -862,7 +862,7 @@ jobs:
   - build_windows_2019
   - build_windows_2022
   pool:
-    name: Azure-Pipelines-CI-Test-EO
+    name: Azure-Pipelines-Windows-CI-Test-EO
     image: ci-1es-managed-windows-2022
     os: windows
   variables:
