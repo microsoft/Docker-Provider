@@ -86,7 +86,7 @@ export class K8sWatcher {
         let doneCallbackInvoked = false;
         let watchAbortController: AbortController = null;
         const watchIsDonePromise: Promise<string> = new Promise((resolve, reject) => {
-            try {                
+            try {
                 // /api/v1/namespaces
                 // /apis/monitor.azure.com/v1/namespaces/default/instrumentations
                 watch.watch(`/apis/${K8sWatcher.crdApiGroup}/${K8sWatcher.crdApiVersion}/${K8sWatcher.crdNamePlural}`,
@@ -168,7 +168,7 @@ export class K8sWatcher {
 
                         // try to abort the watch, not sure if it's possible, best effort
                         try {
-                            watchAbortController?.abort();
+                            watchAbortController?.abort("Watch hung, manual timeout is used");
                         } catch(e) {
                             // swallow, the watch is already in a bad state, we don't care what happens here
                             logger.error(`Failed to abort the watch: ${e}`, operationId, requestMetadata);
