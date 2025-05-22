@@ -99,12 +99,12 @@ stages:
       displayName: ⏬ Pipeline Artifact Download
       inputs:
         buildType: specific
-        project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
-        definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
+        project: $(resources.pipeline._ci-aks-prod-release.projectID)
+        definition: $(resources.pipeline._ci-aks-prod-release.pipelineID)
         allowFailedBuilds: false
         buildVersionToDownload: specific
-        pipelineId: $(resources.pipeline._ci-arc-k8s-extension-prod-release.runID)
-        pipeline: _ci-arc-k8s-extension-prod-release
+        pipelineId: $(resources.pipeline._ci-aks-prod-release.runID)
+        pipeline: _ci-aks-prod-release
       target:
         container: host
     - task: 1ESGPTRunTask@3.0.376
@@ -305,12 +305,12 @@ stages:
       displayName: ⏬ Pipeline Artifact Download
       inputs:
         buildType: specific
-        project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
-        definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
+        project: $(resources.pipeline._ci-aks-prod-release.projectID)
+        definition: $(resources.pipeline._ci-aks-prod-release.pipelineID)
         allowFailedBuilds: false
         buildVersionToDownload: specific
-        pipelineId: $(resources.pipeline._ci-arc-k8s-extension-prod-release.runID)
-        pipeline: _ci-arc-k8s-extension-prod-release
+        pipelineId: $(resources.pipeline._ci-aks-prod-release.runID)
+        pipeline: _ci-aks-prod-release
         targetPath: $(Pipeline.Workspace)/ev2Artifact
       target:
         container: host
@@ -322,7 +322,7 @@ stages:
       env:
         SBOMVALIDATOR_TEMPIGNOREMISSING: true
       inputs:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
         ValidateSignature: True
         Verbosity: 'Verbose'
@@ -343,7 +343,7 @@ stages:
       target:
         container: host
       env:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         IsProduction: True
         OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
       inputs:
@@ -545,12 +545,12 @@ stages:
       displayName: ⏬ Pipeline Artifact Download
       inputs:
         buildType: specific
-        project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
-        definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
+        project: $(resources.pipeline._ci-aks-prod-release.projectID)
+        definition: $(resources.pipeline._ci-aks-prod-release.pipelineID)
         allowFailedBuilds: false
         buildVersionToDownload: specific
-        pipelineId: $(resources.pipeline._ci-arc-k8s-extension-prod-release.runID)
-        pipeline: _ci-arc-k8s-extension-prod-release
+        pipelineId: $(resources.pipeline._ci-aks-prod-release.runID)
+        pipeline: _ci-aks-prod-release
       target:
         container: host
     - task: AzureArtifacts.drop-validator-task.drop-validator-task.DropValidatorTask@0
@@ -821,12 +821,12 @@ stages:
       displayName: ⏬ Pipeline Artifact Download
       inputs:
         buildType: specific
-        project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
-        definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
+        project: $(resources.pipeline._ci-aks-prod-release.projectID)
+        definition: $(resources.pipeline._ci-aks-prod-release.pipelineID)
         allowFailedBuilds: false
         buildVersionToDownload: specific
-        pipelineId: $(resources.pipeline._ci-arc-k8s-extension-prod-release.runID)
-        pipeline: _ci-arc-k8s-extension-prod-release
+        pipelineId: $(resources.pipeline._ci-aks-prod-release.runID)
+        pipeline: _ci-aks-prod-release
       target:
         container: host
     - task: 1ESGPTRunTask@3.0.376
