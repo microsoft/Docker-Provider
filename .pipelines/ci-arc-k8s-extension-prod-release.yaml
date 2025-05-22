@@ -197,7 +197,7 @@ stages:
       env:
         SBOMVALIDATOR_TEMPIGNOREMISSING: true
       inputs:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
         ValidateSignature: True
         Verbosity: 'Verbose'
@@ -218,7 +218,7 @@ stages:
       target:
         container: host
       env:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         IsProduction: True
         OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
       inputs:
@@ -460,7 +460,7 @@ stages:
       env:
         SBOMVALIDATOR_TEMPIGNOREMISSING: true
       inputs:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
         ValidateSignature: True
         Verbosity: 'Verbose'
@@ -481,7 +481,7 @@ stages:
       target:
         container: host
       env:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         IsProduction: True
         OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
       inputs:
@@ -724,7 +724,7 @@ stages:
       env:
         SBOMVALIDATOR_TEMPIGNOREMISSING: true
       inputs:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
         ValidateSignature: True
         Verbosity: 'Verbose'
@@ -745,7 +745,7 @@ stages:
       target:
         container: host
       env:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         IsProduction: True
         OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
       inputs:
@@ -988,7 +988,7 @@ stages:
       env:
         SBOMVALIDATOR_TEMPIGNOREMISSING: true
       inputs:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
         ValidateSignature: True
         Verbosity: 'Verbose'
@@ -1009,7 +1009,7 @@ stages:
       target:
         container: host
       env:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         IsProduction: True
         OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
       inputs:
@@ -1252,7 +1252,7 @@ stages:
       env:
         SBOMVALIDATOR_TEMPIGNOREMISSING: true
       inputs:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
         ValidateSignature: True
         Verbosity: 'Verbose'
@@ -1273,7 +1273,7 @@ stages:
       target:
         container: host
       env:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         IsProduction: True
         OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
       inputs:
@@ -1539,7 +1539,7 @@ stages:
       env:
         SBOMVALIDATOR_TEMPIGNOREMISSING: true
       inputs:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
         ValidateSignature: True
         Verbosity: 'Verbose'
@@ -1560,7 +1560,7 @@ stages:
       target:
         container: host
       env:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         IsProduction: True
         OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
       inputs:
