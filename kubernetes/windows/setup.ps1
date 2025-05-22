@@ -2,6 +2,22 @@
 # https://stackoverflow.com/questions/28682642/powershell-why-is-using-invoke-webrequest-much-slower-than-a-browser-download
 $ProgressPreference = 'SilentlyContinue'
 
+# Add the registry operations that were previously in Dockerfile
+try {
+    Write-Host 'Adding registry keys for certificate padding check...'
+    New-Item -Path 'HKLM:\Software\Microsoft\Cryptography\Wintrust\Config' -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\Software\Microsoft\Cryptography\Wintrust\Config' -Name 'EnableCertPaddingCheck' -Value 1 -Type DWord
+    Write-Host 'Added first registry key successfully'
+    
+    New-Item -Path 'HKLM:\Software\Wow6432Node\Microsoft\Cryptography\Wintrust\Config' -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-ItemProperty -Path 'HKLM:\Software\Wow6432Node\Microsoft\Cryptography\Wintrust\Config' -Name 'EnableCertPaddingCheck' -Value 1 -Type DWord
+    Write-Host 'Added second registry key successfully'
+}
+catch {
+    Write-Host "Error adding registry keys: $_"
+    # Continue with setup despite registry errors - don't exit
+}
+
 Write-Host ('Creating folder structure')
     New-Item -Type Directory -Path /installation -ErrorAction SilentlyContinue
 
