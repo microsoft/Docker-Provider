@@ -72,7 +72,7 @@ export enum Events {
     SecretsHouseKeeperModeRunFailure, // SecretsHouseKeeperModeRun failed
 
     ArmIdIncorrect, // ARM ID of the cluster we have received is incorrect
-    CertificateLoadFailure, // we have failed to load certificates,
+    CertificateLoadFailure, // we have failed to load certificates
     WatchHung // watch.watch() has hung, so we had to use our own timeout
 }
 
