@@ -363,17 +363,18 @@ extends:
           inputs:
             targetType: 'inline'
             script: |
+              mkdir -p $(Build.ArtifactStagingDirectory)/windows
               cd kubernetes/windows
               
               # Use Az PowerShell modules instead of CLI
-              Connect-AzAccount -ServicePrincipal -Tenant $env:ARM_TENANT_ID -Credential (New-Object System.Management.Automation.PSCredential $env:ARM_CLIENT_ID, (ConvertTo-SecureString $env:ARM_CLIENT_SECRET -AsPlainText -Force))
-              Set-AzContext -Subscription ${{ variables.subscription }}
+              #Connect-AzAccount -ServicePrincipal -Tenant $env:ARM_TENANT_ID -Credential (New-Object System.Management.Automation.PSCredential $env:ARM_CLIENT_ID, (ConvertTo-SecureString $env:ARM_CLIENT_SECRET -AsPlainText -Force))
+              #Set-AzContext -Subscription ${{ variables.subscription }}
               
               # Login to ACR
-              $acrName = "${{ variables.containerRegistry }}"
-              $acrLoginServer = "$acrName.azurecr.io"
-              $acrPassword = (Get-AzAcrToken -ResourceGroupName $acrResourceGroup -RegistryName $acrName).Password
-              docker login $acrLoginServer -u $env:ARM_CLIENT_ID -p $acrPassword
+              #$acrName = "${{ variables.containerRegistry }}"
+              #$acrLoginServer = "$acrName.azurecr.io"
+              #$acrPassword = (Get-AzAcrToken -ResourceGroupName $acrResourceGroup -RegistryName $acrName).Password
+              #docker login $acrLoginServer -u $env:ARM_CLIENT_ID -p $acrPassword
               
               # Build the Docker image
               docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2019BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
