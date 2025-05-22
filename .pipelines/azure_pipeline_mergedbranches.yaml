@@ -365,7 +365,6 @@ extends:
             azureSubscription: ${{ variables.armServiceConnectionName }}
             scriptType: ps
             scriptLocation: inlineScript
-            retryCountOnTaskFailure: 2
             inlineScript: |
               mkdir -p $(Build.ArtifactStagingDirectory)/windows
               cd kubernetes/windows
@@ -375,9 +374,9 @@ extends:
               az acr login -n ${{ variables.containerRegistry }}
               docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2019BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
               if ($LastExitCode -ne 0) {
-                  Write-Error "Docker build failed with exit code $LastExitCode"
-                  exit 1
+                  throw "Docker build failed with exit code $LastExitCode"
               }
+            retryCountOnTaskFailure: 3
         - task: PowerShell@2
           displayName: Extract files to sign
           inputs:
