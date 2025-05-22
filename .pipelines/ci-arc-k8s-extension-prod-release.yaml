@@ -179,7 +179,6 @@ stages:
     - task: DownloadPipelineArtifact@2
       displayName: ⏬ Pipeline Artifact Download
       inputs:
-        artifactName: ev2Artifact
         buildType: specific
         project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
         definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
@@ -443,7 +442,6 @@ stages:
     - task: DownloadPipelineArtifact@2
       displayName: ⏬ Pipeline Artifact Download
       inputs:
-        artifactName: ev2Artifact
         buildType: specific
         project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
         definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
@@ -708,7 +706,6 @@ stages:
     - task: DownloadPipelineArtifact@2
       displayName: ⏬ Pipeline Artifact Download
       inputs:
-        artifactName: ev2Artifact
         buildType: specific
         project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
         definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
@@ -973,7 +970,6 @@ stages:
     - task: DownloadPipelineArtifact@2
       displayName: ⏬ Pipeline Artifact Download
       inputs:
-        artifactName: ev2Artifact
         buildType: specific
         project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
         definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
@@ -1238,7 +1234,6 @@ stages:
     - task: DownloadPipelineArtifact@2
       displayName: ⏬ Pipeline Artifact Download
       inputs:
-        artifactName: ev2Artifact
         buildType: specific
         project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
         definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
@@ -1526,7 +1521,6 @@ stages:
     - task: DownloadPipelineArtifact@2
       displayName: ⏬ Pipeline Artifact Download
       inputs:
-        artifactName: ev2Artifact
         buildType: specific
         project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
         definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
