@@ -359,24 +359,26 @@ extends:
             endlocal
             exit /B %ERRORLEVEL%
           displayName: 'build base'
-        - task: AzureCLI@2
-          displayName: "Docker windows build for ltsc2019"
+        - task: PowerShell@2
           inputs:
-            azureSubscription: ${{ variables.armServiceConnectionName }}
-            scriptType: ps
-            scriptLocation: inlineScript
-            inlineScript: |
-              mkdir -p $(Build.ArtifactStagingDirectory)/windows
+            targetType: 'inline'
+            script: |
               cd kubernetes/windows
-              az --version
-              az account show
-              az account set -s ${{ variables.subscription }}
-              az acr login -n ${{ variables.containerRegistry }}
+              
+              # Use Az PowerShell modules instead of CLI
+              Connect-AzAccount -ServicePrincipal -Tenant $env:ARM_TENANT_ID -Credential (New-Object System.Management.Automation.PSCredential $env:ARM_CLIENT_ID, (ConvertTo-SecureString $env:ARM_CLIENT_SECRET -AsPlainText -Force))
+              Set-AzContext -Subscription ${{ variables.subscription }}
+              
+              # Login to ACR
+              $acrName = "${{ variables.containerRegistry }}"
+              $acrLoginServer = "$acrName.azurecr.io"
+              $acrPassword = (Get-AzAcrToken -ResourceGroupName $acrResourceGroup -RegistryName $acrName).Password
+              docker login $acrLoginServer -u $env:ARM_CLIENT_ID -p $acrPassword
+              
+              # Build the Docker image
               docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2019BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
-              if ($LastExitCode -ne 0) {
-                  throw "Docker build failed with exit code $LastExitCode"
-              }
-            retryCountOnTaskFailure: 3
+          displayName: "Docker windows build for ltsc2019"
+          retryCountOnTaskFailure: 2
         - task: PowerShell@2
           displayName: Extract files to sign
           inputs:
