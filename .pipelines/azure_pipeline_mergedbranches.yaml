@@ -381,8 +381,8 @@ jobs:
   dependsOn:
   -  common
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
-    image: ci-1es-windows-2022-compliant
+    name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-windows-2022
     os: windows
   variables:
     windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
@@ -621,7 +621,9 @@ jobs:
   dependsOn:
   -  common
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-windows-2022
+    os: windows
   variables:
     windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
     windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
@@ -860,7 +862,9 @@ jobs:
   - build_windows_2019
   - build_windows_2022
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-windows-2022
+    os: windows
   variables:
     windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
     windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
