@@ -1,6 +1,9 @@
+podSpec:
+  restartPolicy: Never
+  serviceAccountName: sonobuoy-serviceaccount
 sonobuoy-config:
   driver: Job
-  plugin-name: azure-arc-ci-conformance
+  plugin-name: azure-arc-monitor
   result-format: junit
 spec:
   image: mcr.microsoft.com/azuremonitor/containerinsights/cidev:ciconftest03212025

@@ -80,7 +80,7 @@ data:
         operator: Exists
     sonobuoy-config:
       driver: Job
-      plugin-name: agenttests
+      plugin-name: azure-arc-monitor
       result-format: junit
     spec:
       env:
