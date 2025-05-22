@@ -1,20 +1,3 @@
-# tough-cookie -> request -> kubernetes/client-node, blocked on kubernetes/client-node's migration from request to fetch
-CVE-2023-26136
-CVE-2024-28863
-
-# ws -> kubernetes/client-node
-CVE-2024-37890
-
-
-# @kubernetes/client-node@1.0.0
-# │ └─┬ tar@7.4.3
-# │   └─┬ minizlib@3.0.1
-# │     └─┬ rimraf@5.0.10
-# │       └─┬ glob@10.4.5
-# │         └─┬ foreground-child@3.3.0
-# │           └── cross-spawn@7.0.3 deduped
-CVE-2024-21538
-
 # ┬ @kubernetes/client-node@1.0.0
 # └── jsonpath-plus@10.2.0
-CVE-2025-1302
+#CVE-2025-1302

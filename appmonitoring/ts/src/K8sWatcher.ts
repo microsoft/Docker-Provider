@@ -1,4 +1,4 @@
-﻿import { HeartbeatLogs, HeartbeatMetrics, RequestMetadata, Watchdogs, logger } from "./LoggerWrapper.js";
+﻿import { Events, HeartbeatLogs, HeartbeatMetrics, RequestMetadata, Watchdogs, logger } from "./LoggerWrapper.js";
 import * as k8s from "@kubernetes/client-node";
 import { InstrumentationCR, ListResponse } from "./RequestDefinition.js"
 import { InstrumentationCRsCollection } from "./InstrumentationCRsCollection.js";
@@ -11,7 +11,7 @@ export class K8sWatcher {
 
     private static lastSuccessfulListTimestamp: Date = new Date();
 
-    public static async StartWatchingCRs(crs: InstrumentationCRsCollection, onNewCR: (cr: InstrumentationCR, isRemoved: boolean) => void, onResetCRs: (crs: InstrumentationCR[]) => void, operationId: string): Promise<void> {
+    public static async StartWatchingCRs(crs: InstrumentationCRsCollection, onNewCR: (cr: InstrumentationCR, isRemoved: boolean) => void, onResetCRs: (crs: InstrumentationCR[]) => void, operationId: string, clusterArmId: string, clusterArmRegion: string): Promise<void> {
         const kc = new k8s.KubeConfig();
         kc.loadFromDefault();
 
@@ -23,7 +23,7 @@ export class K8sWatcher {
         let latestResourceVersion: string = null;
         while (true) { // eslint-disable-line
             try {
-                latestResourceVersion = await K8sWatcher.WatchCRs(k8sApi, watch, latestResourceVersion, crs,  operationId, onNewCR, onResetCRs);
+                latestResourceVersion = await K8sWatcher.WatchCRs(k8sApi, watch, latestResourceVersion, crs,  operationId, onNewCR, onResetCRs, clusterArmId, clusterArmRegion);
             } catch (e) {
                 // either the list call or the watch call failed
                 const ex = logger.sanitizeException(e);
@@ -40,12 +40,14 @@ export class K8sWatcher {
                 }
                 
                 // pause for a bit to avoid generating too much load in case of cascading failures
-                await new Promise(r => setTimeout(r, 5000));
+                // randomize the wait time to avoid all pods of the deployment hitting the API server at the same time
+                // if this is caused by networking or node issues and happens for all pods at the same time
+                await new Promise(r => setTimeout(r, Math.random() * 5000.0));
             }
         }
     }
 
-    private static async WatchCRs(k8sApi: k8s.CustomObjectsApi, watch: k8s.Watch, latestResourceVersion: string, crs: InstrumentationCRsCollection, operationId: string, onNewCR: (cr: InstrumentationCR, isRemoved: boolean) => void, onResetCRs: (crs: InstrumentationCR[]) => void): Promise<string> {
+    private static async WatchCRs(k8sApi: k8s.CustomObjectsApi, watch: k8s.Watch, latestResourceVersion: string, crs: InstrumentationCRsCollection, operationId: string, onNewCR: (cr: InstrumentationCR, isRemoved: boolean) => void, onResetCRs: (crs: InstrumentationCR[]) => void, clusterArmId: string, clusterArmRegion: string): Promise<string> {
         let requestMetadata = new RequestMetadata("CR watcher", crs);
 
         logger.info(`Listing CRs, resourceVersion=${latestResourceVersion}...`, operationId, requestMetadata);
@@ -56,7 +58,8 @@ export class K8sWatcher {
                 group: K8sWatcher.crdApiGroup,
                 version: K8sWatcher.crdApiVersion,
                 plural: K8sWatcher.crdNamePlural,
-                resourceVersion: latestResourceVersion ?? undefined
+                resourceVersion: latestResourceVersion ?? undefined,
+                timeoutSeconds: 30
             });
 
             logger.addHeartbeatMetric(HeartbeatMetrics.CRsListCallSucceededCount, 1, "200");
@@ -79,6 +82,9 @@ export class K8sWatcher {
         
         // watch() doesn't block (it starts the loop and returns immediately), so we can't just return the promise it returns to our caller
         // we must instead create our own promise and resolve it manually when the watch informs us that it stopped via a callback
+        const watchTimeoutSeconds = 240;
+        let doneCallbackInvoked = false;
+        let watchAbortController: AbortController = null;
         const watchIsDonePromise: Promise<string> = new Promise((resolve, reject) => {
             try {
                 // /api/v1/namespaces
@@ -87,7 +93,7 @@ export class K8sWatcher {
                     {
                         allowWatchBookmarks: true,
                         resourceVersion: latestResourceVersion,
-                        timeoutSeconds: 240 // watch will be stopped after at most this many seconds
+                        timeoutSeconds: watchTimeoutSeconds // watch will be stopped after at most this many seconds
                         //fieldSelector: fieldSelector
                     },
                     (type, apiObj) => {
@@ -115,7 +121,9 @@ export class K8sWatcher {
                         }
                     },
                     err => { // watch is done callback
-                        logger.info("Watch has completed", operationId, requestMetadata);
+                        doneCallbackInvoked = true;
+
+                        logger.info("Watch has completed via the done callback", operationId, requestMetadata);
                         if (err != null) {
                             // this indicates an issue with the watch encountered once the stream is opened
                             // we want to handle it in the same way as an exception (which is triggered during opening of the stream)
@@ -131,7 +139,11 @@ export class K8sWatcher {
                         logger.addHeartbeatMetric(HeartbeatMetrics.CRsWatchCallSucceededCount, 1, "200");
 
                         resolve(latestResourceVersion);
+                    }).then(abortController => {
+                        watchAbortController = abortController;
                     });
+
+                    logger.info("Watch call returned", operationId, requestMetadata);
             } catch (e) {
                 logger.error(`Watch.watch() threw: ${JSON.stringify(e)}`, operationId, requestMetadata);
                 logger.addHeartbeatMetric(HeartbeatMetrics.CRsWatchCallFailedCount, 1, e?.statusCode ?? 0);
@@ -141,7 +153,34 @@ export class K8sWatcher {
             }
         });
 
-        return watchIsDonePromise;
+        // the watch has a bug where it may not invoke the callback upon connection being lost, and it will ignore the timeout in that case
+        // we have to handle that with a manual timeout, and log if the manual timeout occures below the watch reports completion via the callback
+        const timeoutPromise = new Promise<string>((resolve, reject) => {
+            setTimeout(() => 
+                {
+                    if(doneCallbackInvoked) {
+                        // the watch completed normally, we don't need to do anything
+                    } else {
+                        // the watch hasn't invoked the callback within the timeout, so need to step in
+                        logger.error(`Watch hung, manual timeout is used`, operationId, requestMetadata);
+                        // no await, no hurry
+                        logger.SendEvent(Events[Events.WatchHung], operationId, null, clusterArmId, clusterArmRegion, true);
+
+                        // try to abort the watch, not sure if it's possible, best effort
+                        try {
+                            watchAbortController?.abort("Watch hung, manual timeout is used");
+                        } catch(e) {
+                            // swallow, the watch is already in a bad state, we don't care what happens here
+                            logger.error(`Failed to abort the watch: ${e}`, operationId, requestMetadata);
+                        }
+
+                        reject(new Error(`Watch hung, manual timeout is used`));
+                    }
+                },
+            3 * watchTimeoutSeconds * 1000);
+        });
+        
+        return Promise.race([watchIsDonePromise, timeoutPromise]);
     }
 
     private static IsExpectedIntermittentException(e: any) {
