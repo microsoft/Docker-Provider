@@ -82,7 +82,7 @@ extends:
         templateContext:
           inputs:
           - input: pipelineArtifact
-            pipeline: '_ci-arc-k8s-extension-prod-release'
+            pipeline: '_ci-aks-prod-release'
             artifactName: 'ev2Artifact'
         steps:
         - task: Bash@3
@@ -109,7 +109,7 @@ extends:
           workflow: ev2-classic
           inputs:
           - input: pipelineArtifact
-            pipeline: '_ci-arc-k8s-extension-prod-release'
+            pipeline: '_ci-aks-prod-release'
             artifactName: 'ev2Artifact'
           ev2:
             useServerMonitorTask: true
@@ -130,7 +130,7 @@ extends:
           isProduction: true
           inputs:
           - input: pipelineArtifact
-            pipeline: '_ci-arc-k8s-extension-prod-release'
+            pipeline: '_ci-aks-prod-release'
             artifactName: 'ev2Artifact'
         steps:
         - task: AzureCLI@2
@@ -188,5 +188,5 @@ extends:
         templateContext:
           inputs:
           - input: pipelineArtifact
-            pipeline: '_ci-arc-k8s-extension-prod-release'
+            pipeline: '_ci-aks-prod-release'
             artifactName: 'ev2Artifact'
