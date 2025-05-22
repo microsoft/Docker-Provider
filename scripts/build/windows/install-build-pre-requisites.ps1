@@ -163,8 +163,8 @@ Build-Dependencies
 Write-Host "Install .NET core sdk 3.1"
 Install-DotNetCoreSDK
 
-Write-Host "Install Docker"
-Install-Docker
+# Write-Host "Install Docker"
+# Install-Docker
 
 Write-Host "Install cmetrics library"
 Install-cmetrics
