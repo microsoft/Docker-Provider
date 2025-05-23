@@ -35,7 +35,7 @@ def substituteResourceOptimization(resourceOptimizationEnabled, new_contents, is
   if !isWindows && !resourceOptimizationEnabled.nil? && resourceOptimizationEnabled.to_s.downcase == "true"
     puts "config::Starting to substitute the placeholders in fluent-bit-geneva conf file for resource optimization"
     new_contents = new_contents.gsub("#${ResourceOptimizationPluginFile}", "plugins_file  /etc/opt/microsoft/docker-cimprov/azm-containers-input-plugins.conf")
-    new_contents = new_contents.gsub("#${ResourceOptimizationFBConfigFile}", "@INCLUDE fluent-bit-geneva-input.conf")
+    new_contents = new_contents.gsub("#${ResourceOptimizationFBConfigFile}", "@INCLUDE fluent-bit-input.conf")
   end
   return new_contents
 end
