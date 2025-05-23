@@ -394,7 +394,7 @@ stages:
           set +x
           echo "##vso[task.setvariable variable=CDPXLinuxTag;]$LINUX_TAG"
           set -x
-        workingDirectory: $(Pipeline.Workspace)/ev2Artifact/linux-drop
+        workingDirectory: $(Pipeline.Workspace)/ev2Artifact/linux-drop/linux
         failOnStderr: true
     - task: Bash@3
       displayName: Set CDPX Windows Tag
@@ -410,7 +410,7 @@ stages:
           echo "##vso[task.setvariable variable=CDPXWindowsTag;]$WINDOWS_TAG"
           set -x
 
-        workingDirectory: $(Pipeline.Workspace)/ev2Artifact/windows-drop
+        workingDirectory: $(Pipeline.Workspace)/ev2Artifact/windows-drop/windows
         failOnStderr: true
     - task: vsrm-ev2.vss-services-ev2.adm-release-task.ExpressV2Internal@1
       inputs:
