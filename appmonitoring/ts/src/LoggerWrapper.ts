@@ -262,14 +262,55 @@ class LocalLogger {
     }
 
     private async sendHeartbeat(operationId: string, flush = false) {
-        for(const [metricName, metric] of this.heartbeatAccumulator.metrics) {
-            for(const [dim1, value] of metric) {
+        try {
+            for (const [metricName, metric] of this.heartbeatAccumulator.metrics) {
+                for (const [dim1, value] of metric) {
+                    const telemetryItem: applicationInsights.Contracts.MetricPointTelemetry & applicationInsights.Contracts.MetricTelemetry = {
+                        name: HeartbeatMetrics[metricName],
+                        value: value,
+                        count: 1,
+                        properties: {
+                            dimension1: dim1,
+                            operationId: operationId,
+                            clusterMetadata: JSON.stringify(this.clusterMetadata)
+                        }
+                    };
+
+                    this.client.trackMetric(telemetryItem);
+                }
+            }
+
+            for (const [logName, logMap] of this.heartbeatAccumulator.logs) {
+                const logArray = Array.from(logMap, ([key, value]) => ({ message: key, count: value }));
+
+                logArray.sort((one, two) => (one.count > two.count ? -1 : 1));
+
+                // send top N logs by count of this type
+                let i = 0;
+                for (let j = 0; j < logArray.length; j++) {
+                    if (i++ >= 5) {
+                        break;
+                    }
+
+                    const telemetryItem: applicationInsights.Contracts.TraceTelemetry = {
+                        message: logArray[j].message,
+                        properties: {
+                            logName: HeartbeatLogs[logName],
+                            operationId: operationId,
+                            clusterMetadata: JSON.stringify(this.clusterMetadata)
+                        }
+                    };
+
+                    this.client.trackTrace(telemetryItem);
+                }
+            }
+
+            for (const [watchdog, onReport] of this.watchdogs) {
                 const telemetryItem: applicationInsights.Contracts.MetricPointTelemetry & applicationInsights.Contracts.MetricTelemetry = {
-                    name: HeartbeatMetrics[metricName],
-                    value: value,
+                    name: Watchdogs[watchdog],
+                    value: onReport(),
                     count: 1,
                     properties: {
-                        dimension1: dim1,
                         operationId: operationId,
                         clusterMetadata: JSON.stringify(this.clusterMetadata)
                     }
@@ -277,53 +318,13 @@ class LocalLogger {
 
                 this.client.trackMetric(telemetryItem);
             }
-        }
 
-        this.heartbeatAccumulator.metrics.clear();
-
-        for(const [logName, logMap] of this.heartbeatAccumulator.logs) {
-            const logArray = Array.from(logMap, ([key, value]) => ({ message: key, count: value }));
-            
-            logArray.sort((one, two) => (one.count > two.count ? -1 : 1));
-
-            // send top N logs by count of this type
-            let i = 0;
-            for(let j = 0; j < logArray.length; j++) {
-                if(i++ >= 5) {
-                    break;
-                }
-
-                const telemetryItem: applicationInsights.Contracts.TraceTelemetry  = {
-                    message: logArray[j].message,
-                    properties: {
-                        logName: HeartbeatLogs[logName],
-                        operationId: operationId,
-                        clusterMetadata: JSON.stringify(this.clusterMetadata)
-                    }
-                };
-
-                this.client.trackTrace(telemetryItem);
+            if (flush) {
+                await this.client.flush();
             }
         }
-
-        this.heartbeatAccumulator.logs.clear();
-
-        for(const [watchdog, onReport] of this.watchdogs) {
-            const telemetryItem: applicationInsights.Contracts.MetricPointTelemetry & applicationInsights.Contracts.MetricTelemetry = {
-                name: Watchdogs[watchdog],
-                value: onReport(),
-                count: 1,
-                properties: {
-                    operationId: operationId,
-                    clusterMetadata: JSON.stringify(this.clusterMetadata)
-                }
-            };
-
-            this.client.trackMetric(telemetryItem);
-        }
-
-        if (flush) {
-            await this.client.flush();
+        finally {
+            this.heartbeatAccumulator = new HeartbeatAccumulator();
         }
     }
 
