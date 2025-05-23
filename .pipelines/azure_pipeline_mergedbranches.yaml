@@ -359,6 +359,18 @@ extends:
             endlocal
             exit /B %ERRORLEVEL%
           displayName: 'build base'
+        - task: AzureCLI@2
+          displayName: "set up acr for ltsc2019"
+          inputs:
+            azureSubscription: ${{ variables.armServiceConnectionName }}
+            scriptType: ps
+            scriptLocation: inlineScript
+            retryCountOnTaskFailure: 2
+            inlineScript: |
+              az --version
+              az account show
+              az account set -s ${{ variables.subscription }}
+              az acr login -n ${{ variables.containerRegistry }}
         - task: PowerShell@2          
           inputs:
             targetType: 'inline'
