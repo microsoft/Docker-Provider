@@ -98,14 +98,13 @@ stages:
     - task: DownloadPipelineArtifact@2
       displayName: ⏬ Pipeline Artifact Download
       inputs:
-        artifactName: ev2Artifact
         buildType: specific
-        project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
-        definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
+        project: $(resources.pipeline._ci-aks-prod-release.projectID)
+        definition: $(resources.pipeline._ci-aks-prod-release.pipelineID)
         allowFailedBuilds: false
         buildVersionToDownload: specific
-        pipelineId: $(resources.pipeline._ci-arc-k8s-extension-prod-release.runID)
-        pipeline: _ci-arc-k8s-extension-prod-release
+        pipelineId: $(resources.pipeline._ci-aks-prod-release.runID)
+        pipeline: _ci-aks-prod-release
       target:
         container: host
     - task: 1ESGPTRunTask@3.0.376
@@ -305,14 +304,13 @@ stages:
     - task: DownloadPipelineArtifact@2
       displayName: ⏬ Pipeline Artifact Download
       inputs:
-        artifactName: ev2Artifact
         buildType: specific
-        project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
-        definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
+        project: $(resources.pipeline._ci-aks-prod-release.projectID)
+        definition: $(resources.pipeline._ci-aks-prod-release.pipelineID)
         allowFailedBuilds: false
         buildVersionToDownload: specific
-        pipelineId: $(resources.pipeline._ci-arc-k8s-extension-prod-release.runID)
-        pipeline: _ci-arc-k8s-extension-prod-release
+        pipelineId: $(resources.pipeline._ci-aks-prod-release.runID)
+        pipeline: _ci-aks-prod-release
         targetPath: $(Pipeline.Workspace)/ev2Artifact
       target:
         container: host
@@ -324,7 +322,7 @@ stages:
       env:
         SBOMVALIDATOR_TEMPIGNOREMISSING: true
       inputs:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
         ValidateSignature: True
         Verbosity: 'Verbose'
@@ -345,7 +343,7 @@ stages:
       target:
         container: host
       env:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         IsProduction: True
         OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
       inputs:
@@ -387,7 +385,6 @@ stages:
       displayName: Set CDPX Linux Tag
       inputs:
         targetType: inline
-        filePath: $(System.DefaultWorkingDirectory)/_docker-provider-Official-ci_dev/drop
         script: |
           # Write your commands here
 
@@ -397,13 +394,12 @@ stages:
           set +x
           echo "##vso[task.setvariable variable=CDPXLinuxTag;]$LINUX_TAG"
           set -x
-        workingDirectory: $(System.DefaultWorkingDirectory)/_ContainerInsights-MultiArch-MergedBranches/drop/linux/
+        workingDirectory: $(Pipeline.Workspace)/ev2Artifact/linux-drop/linux
         failOnStderr: true
     - task: Bash@3
       displayName: Set CDPX Windows Tag
       inputs:
         targetType: inline
-        filePath: $(System.DefaultWorkingDirectory)/_docker-provider-Official-ci_dev/drop
         script: |+
           # Write your commands here
 
@@ -414,7 +410,7 @@ stages:
           echo "##vso[task.setvariable variable=CDPXWindowsTag;]$WINDOWS_TAG"
           set -x
 
-        workingDirectory: $(System.DefaultWorkingDirectory)/_ContainerInsights-MultiArch-MergedBranches/drop/windows/
+        workingDirectory: $(Pipeline.Workspace)/ev2Artifact/windows-drop/windows
         failOnStderr: true
     - task: vsrm-ev2.vss-services-ev2.adm-release-task.ExpressV2Internal@1
       inputs:
@@ -546,14 +542,13 @@ stages:
     - task: DownloadPipelineArtifact@2
       displayName: ⏬ Pipeline Artifact Download
       inputs:
-        artifactName: ev2Artifact
         buildType: specific
-        project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
-        definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
+        project: $(resources.pipeline._ci-aks-prod-release.projectID)
+        definition: $(resources.pipeline._ci-aks-prod-release.pipelineID)
         allowFailedBuilds: false
         buildVersionToDownload: specific
-        pipelineId: $(resources.pipeline._ci-arc-k8s-extension-prod-release.runID)
-        pipeline: _ci-arc-k8s-extension-prod-release
+        pipelineId: $(resources.pipeline._ci-aks-prod-release.runID)
+        pipeline: _ci-aks-prod-release
       target:
         container: host
     - task: AzureArtifacts.drop-validator-task.drop-validator-task.DropValidatorTask@0
@@ -823,14 +818,13 @@ stages:
     - task: DownloadPipelineArtifact@2
       displayName: ⏬ Pipeline Artifact Download
       inputs:
-        artifactName: ev2Artifact
         buildType: specific
-        project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
-        definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
+        project: $(resources.pipeline._ci-aks-prod-release.projectID)
+        definition: $(resources.pipeline._ci-aks-prod-release.pipelineID)
         allowFailedBuilds: false
         buildVersionToDownload: specific
-        pipelineId: $(resources.pipeline._ci-arc-k8s-extension-prod-release.runID)
-        pipeline: _ci-arc-k8s-extension-prod-release
+        pipelineId: $(resources.pipeline._ci-aks-prod-release.runID)
+        pipeline: _ci-aks-prod-release
       target:
         container: host
     - task: 1ESGPTRunTask@3.0.376
