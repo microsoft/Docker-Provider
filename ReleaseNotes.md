@@ -28,6 +28,8 @@ additional questions or comments.
   - Fluentd - 1.16.3
 ##### Code change log
 ## What's Changed
+- Note
+  * Due to Telegraf version upgrade @suyadav1 https://github.com/microsoft/Docker-Provider/pull/1420, network metrics bytes_sent, bytes_recv, err_in and error_out are collected for loopback interface and ingested to InsightsMetrics.
 - Common
   * Fix CVEs though updating go packages and ruby gem @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1414
   * Update managed cluster api versions @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1419
