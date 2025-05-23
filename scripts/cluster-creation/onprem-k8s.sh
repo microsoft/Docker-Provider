@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 TEMP_DIR=temp-$RANDOM
-KIND_VERSION="v0.17.0"
+KIND_VERSION="v0.27.0"
 
 install-kind()
 {
