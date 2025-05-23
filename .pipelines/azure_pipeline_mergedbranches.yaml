@@ -332,7 +332,7 @@ extends:
             DockerImagesToScan: '$(GOLANG_BASE_IMAGE),$(CI_BASE_IMAGE),${{ variables.repoImageName }}:$(linuxImagetag)'
       - job: build_windows_2019
         pool:
-          name: Azure-Pipelines-Windows-CI-Test-EO
+          name: Azure-Pipelines-CI-Test-EO
           image: ci-1es-managed-windows-2022
           os: windows
         timeoutInMinutes: 120
@@ -552,7 +552,7 @@ extends:
           condition: eq(variables.IS_MAIN_BRANCH, true)
       - job: build_windows_2022
         pool:
-          name: Azure-Pipelines-Windows-CI-Test-EO
+          name: Azure-Pipelines-CI-Test-EO
           image: ci-1es-managed-windows-2022
           os: windows
         timeoutInMinutes: 120
