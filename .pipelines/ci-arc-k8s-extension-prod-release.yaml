@@ -179,7 +179,6 @@ stages:
     - task: DownloadPipelineArtifact@2
       displayName: ⏬ Pipeline Artifact Download
       inputs:
-        artifactName: ev2Artifact
         buildType: specific
         project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
         definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
@@ -198,7 +197,7 @@ stages:
       env:
         SBOMVALIDATOR_TEMPIGNOREMISSING: true
       inputs:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
         ValidateSignature: True
         Verbosity: 'Verbose'
@@ -219,7 +218,7 @@ stages:
       target:
         container: host
       env:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         IsProduction: True
         OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
       inputs:
@@ -443,7 +442,6 @@ stages:
     - task: DownloadPipelineArtifact@2
       displayName: ⏬ Pipeline Artifact Download
       inputs:
-        artifactName: ev2Artifact
         buildType: specific
         project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
         definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
@@ -462,7 +460,7 @@ stages:
       env:
         SBOMVALIDATOR_TEMPIGNOREMISSING: true
       inputs:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
         ValidateSignature: True
         Verbosity: 'Verbose'
@@ -483,7 +481,7 @@ stages:
       target:
         container: host
       env:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         IsProduction: True
         OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
       inputs:
@@ -708,7 +706,6 @@ stages:
     - task: DownloadPipelineArtifact@2
       displayName: ⏬ Pipeline Artifact Download
       inputs:
-        artifactName: ev2Artifact
         buildType: specific
         project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
         definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
@@ -727,7 +724,7 @@ stages:
       env:
         SBOMVALIDATOR_TEMPIGNOREMISSING: true
       inputs:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
         ValidateSignature: True
         Verbosity: 'Verbose'
@@ -748,7 +745,7 @@ stages:
       target:
         container: host
       env:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         IsProduction: True
         OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
       inputs:
@@ -973,7 +970,6 @@ stages:
     - task: DownloadPipelineArtifact@2
       displayName: ⏬ Pipeline Artifact Download
       inputs:
-        artifactName: ev2Artifact
         buildType: specific
         project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
         definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
@@ -992,7 +988,7 @@ stages:
       env:
         SBOMVALIDATOR_TEMPIGNOREMISSING: true
       inputs:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
         ValidateSignature: True
         Verbosity: 'Verbose'
@@ -1013,7 +1009,7 @@ stages:
       target:
         container: host
       env:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         IsProduction: True
         OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
       inputs:
@@ -1238,7 +1234,6 @@ stages:
     - task: DownloadPipelineArtifact@2
       displayName: ⏬ Pipeline Artifact Download
       inputs:
-        artifactName: ev2Artifact
         buildType: specific
         project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
         definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
@@ -1257,7 +1252,7 @@ stages:
       env:
         SBOMVALIDATOR_TEMPIGNOREMISSING: true
       inputs:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
         ValidateSignature: True
         Verbosity: 'Verbose'
@@ -1278,7 +1273,7 @@ stages:
       target:
         container: host
       env:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         IsProduction: True
         OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
       inputs:
@@ -1526,7 +1521,6 @@ stages:
     - task: DownloadPipelineArtifact@2
       displayName: ⏬ Pipeline Artifact Download
       inputs:
-        artifactName: ev2Artifact
         buildType: specific
         project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
         definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
@@ -1545,7 +1539,7 @@ stages:
       env:
         SBOMVALIDATOR_TEMPIGNOREMISSING: true
       inputs:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
         ValidateSignature: True
         Verbosity: 'Verbose'
@@ -1566,7 +1560,7 @@ stages:
       target:
         container: host
       env:
-        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact
+        BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
         IsProduction: True
         OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
       inputs:
