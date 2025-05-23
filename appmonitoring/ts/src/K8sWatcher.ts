@@ -52,15 +52,26 @@ export class K8sWatcher {
 
         logger.info(`Listing CRs, resourceVersion=${latestResourceVersion}...`, operationId, requestMetadata);
 
+        const listTimeoutSeconds = 30;
         let crsResult: ListResponse;
         try {
-            crsResult = <ListResponse>await k8sApi.listClusterCustomObject({
+            const listPromise: Promise<ListResponse> = k8sApi.listClusterCustomObject({
                 group: K8sWatcher.crdApiGroup,
                 version: K8sWatcher.crdApiVersion,
                 plural: K8sWatcher.crdNamePlural,
                 resourceVersion: latestResourceVersion ?? undefined,
-                timeoutSeconds: 30
+                timeoutSeconds: listTimeoutSeconds
             });
+
+            const timeoutPromise = new Promise<ListResponse>((resolve, reject) => {
+                setTimeout(() => 
+                    {
+                        reject(new Error("List hung, manual timeout is used"));
+                    },
+                    3 * listTimeoutSeconds * 1000);
+            });
+
+            crsResult = <ListResponse>await Promise.race([listPromise, timeoutPromise]);
 
             logger.addHeartbeatMetric(HeartbeatMetrics.CRsListCallSucceededCount, 1, "200");
         } catch(e) {
