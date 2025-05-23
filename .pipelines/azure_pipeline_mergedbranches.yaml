@@ -871,3 +871,4 @@ extends:
             ScanType: CustomScan
             FileDirPath: '$(Build.ArtifactStagingDirectory)'
             DisableRemediation: false
+            AcceptableOutdatedSignatureInHours: 72
