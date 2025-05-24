@@ -75,10 +75,10 @@ else
 fi     
 
 echo "Pushing ${WEBHOOK_IMAGE_FULL_PATH} to ${ACR_NAME} with source ${SOURCE_IMAGE_FULL_PATH} and force option set to ${AZ_ACR_IMPORT_FORCE}"
-# az acr import --name $ACR_NAME --source $SOURCE_IMAGE_FULL_PATH --image $WEBHOOK_IMAGE_FULL_PATH $AZ_ACR_IMPORT_FORCE
-# if [ $? -eq 0 ]; then
-#   echo "Retagged and pushed image successfully"
-# else
-#   echo "-e error failed to retag and push image to destination ACR"
-#   exit 1
-# fi
+az acr import --name $ACR_NAME --source $SOURCE_IMAGE_FULL_PATH --image $WEBHOOK_IMAGE_FULL_PATH $AZ_ACR_IMPORT_FORCE
+if [ $? -eq 0 ]; then
+  echo "Retagged and pushed image successfully"
+else
+  echo "-e error failed to retag and push image to destination ACR"
+  exit 1
+fi
