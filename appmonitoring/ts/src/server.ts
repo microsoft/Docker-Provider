@@ -75,9 +75,7 @@ K8sWatcher.StartWatchingCRs(crs,
 
         logCRs(crs);
     },
-    operationId, 
-    clusterArmId, 
-    clusterArmRegion);
+    operationId);
 
 let options: https.ServerOptions;
 try {

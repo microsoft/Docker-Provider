@@ -11,7 +11,7 @@ export class K8sWatcher {
 
     private static lastSuccessfulListTimestamp: Date = new Date();
 
-    public static async StartWatchingCRs(crs: InstrumentationCRsCollection, onNewCR: (cr: InstrumentationCR, isRemoved: boolean) => void, onResetCRs: (crs: InstrumentationCR[]) => void, operationId: string, clusterArmId: string, clusterArmRegion: string): Promise<void> {
+    public static async StartWatchingCRs(crs: InstrumentationCRsCollection, onNewCR: (cr: InstrumentationCR, isRemoved: boolean) => void, onResetCRs: (crs: InstrumentationCR[]) => void, operationId: string): Promise<void> {
         const kc = new k8s.KubeConfig();
         kc.loadFromDefault();
 
@@ -23,7 +23,7 @@ export class K8sWatcher {
         let latestResourceVersion: string = null;
         while (true) { // eslint-disable-line
             try {
-                latestResourceVersion = await K8sWatcher.WatchCRs(k8sApi, watch, latestResourceVersion, crs,  operationId, onNewCR, onResetCRs, clusterArmId, clusterArmRegion);
+                latestResourceVersion = await K8sWatcher.WatchCRs(k8sApi, watch, latestResourceVersion, crs,  operationId, onNewCR, onResetCRs);
             } catch (e) {
                 // either the list call or the watch call failed
                 const ex = logger.sanitizeException(e);
@@ -47,7 +47,7 @@ export class K8sWatcher {
         }
     }
 
-    private static async WatchCRs(k8sApi: k8s.CustomObjectsApi, watch: k8s.Watch, latestResourceVersion: string, crs: InstrumentationCRsCollection, operationId: string, onNewCR: (cr: InstrumentationCR, isRemoved: boolean) => void, onResetCRs: (crs: InstrumentationCR[]) => void, clusterArmId: string, clusterArmRegion: string): Promise<string> {
+    private static async WatchCRs(k8sApi: k8s.CustomObjectsApi, watch: k8s.Watch, latestResourceVersion: string, crs: InstrumentationCRsCollection, operationId: string, onNewCR: (cr: InstrumentationCR, isRemoved: boolean) => void, onResetCRs: (crs: InstrumentationCR[]) => void): Promise<string> {
         let requestMetadata = new RequestMetadata("CR watcher", crs);
 
         logger.info(`Listing CRs, resourceVersion=${latestResourceVersion}...`, operationId, requestMetadata);
