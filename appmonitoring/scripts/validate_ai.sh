@@ -3,7 +3,7 @@
 AI_RES_ID=$1
 NAMESPACE=$2
 
-
+echo "Finding pods in namespace: $NAMESPACE for Java App $JAVA_TEST_APP_NAME and NodeJS App $NODEJS_TEST_APP_NAME"
 POD_JAVA_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$JAVA_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
 POD_NODEJS_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$NODEJS_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
 
@@ -19,38 +19,75 @@ echo "$AI_RES_ID"
 url="https://api.loganalytics.io/v1$AI_RES_ID/query"
 
 verify_AI_telemetry() {
-    echo $1
-    json_body="{
-        'query': 'union * | where timestamp > ago(15m) | where cloud_RoleInstance == \"$1\" | count',
-        'options': {
-            'truncationMaxSize': 67108864
-        },
-        'maxRows': 30001,
-        'workspaceFilters': {
-            "regions": []
-        }
-    }";
+    local pod_name="$1"
+    local app_type="$2"
+    local queries=("requests" "dependencies" "exceptions")
+    local found_any=0
 
-    echo "$json_body"
-
-    # Make the POST request
-    response=$(curl -s -X POST $url \
-    -H "Authorization: Bearer $access_token" \
-    -H "Content-Type: application/json" \
-    -d "$json_body")
-
-
-    count_val=$(echo $response | jq '.tables[0].rows[0][0]')
-
-    if (( count_val > 0 )); then
-        echo $count_val
-    else
-        echo "Not found any appropriate records" >&2
-        echo "Validation for $2 pods failed" >&2
+    echo "Validating telemetry for $pod_name ($app_type)..."
+    if [[ -z "$pod_name" ]]; then
+        echo "Pod name is empty. Validation failed for $app_type pod $pod_name."
         exit 1
     fi
+
+    for table in "${queries[@]}"; do
+        json_body="{
+            \"query\": \"$table | where timestamp > ago(15m) | where cloud_RoleInstance == '$pod_name' | count\",
+            \"options\": {
+                \"truncationMaxSize\": 67108864
+            },
+            \"maxRows\": 30001,
+            \"workspaceFilters\": {
+                \"regions\": []
+            }
+        }"
+
+        echo "Validating $table telemetry for $pod_name ($app_type)..."
+        response=$(curl -s -X POST $url \
+            -H "Authorization: Bearer $access_token" \
+            -H "Content-Type: application/json" \
+            -d "$json_body")
+
+        count_val=$(echo $response | jq '.tables[0].rows[0][0]')
+
+        if (( count_val > 0 )); then
+            echo "$table telemetry found: $count_val"
+            found_any=1
+        else
+            echo "No $table telemetry found for $pod_name ($app_type)" >&2
+            echo "Validation for $app_type pods failed: No $table telemetry found" >&2
+            return 1
+        fi
+    done
 }
 
-verify_AI_telemetry "$POD_JAVA_NAME" "java"
-verify_AI_telemetry "$POD_NODEJS_NAME" "nodejs"
+max_retries=10
+retry_interval=30
 
+for app in "java" "nodejs"; do
+  if [ "$app" = "java" ]; then
+    pod_name="$POD_JAVA_NAME"
+  else
+    pod_name="$POD_NODEJS_NAME"
+  fi
+
+  attempt=1
+  success=0
+  while [ $attempt -le $max_retries ]; do
+    echo "Attempt $attempt/$max_retries: Validating telemetry for $pod_name ($app)..."
+    if verify_AI_telemetry "$pod_name" "$app"; then
+      echo "Telemetry validation succeeded for $pod_name ($app)"
+      success=1
+      break
+    else
+      echo "Telemetry validation failed for $pod_name ($app) on attempt $attempt"
+      if [ $attempt -eq $max_retries ]; then
+        echo "Telemetry validation failed for $pod_name ($app) after $max_retries attempts"
+        exit 1
+      fi
+      echo "Waiting $retry_interval seconds before retrying..."
+      sleep $retry_interval
+    fi
+    attempt=$((attempt + 1))
+  done
+done
