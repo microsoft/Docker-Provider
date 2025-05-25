@@ -18,9 +18,7 @@
     "@kubernetes/client-node": "^1.2.0",
     "@types/node": "20.2.4",
     "@types/npm": "^7.19.0",
-    "applicationinsights": "^3.6.0",
-    "http-proxy-agent": "7.0.0",
-    "https-proxy-agent": "7.0.0",
+    "applicationinsights": "^3.7.0",
     "log4js": "^6.9.1",
     "node-forge": "^1.3.1"
   },
