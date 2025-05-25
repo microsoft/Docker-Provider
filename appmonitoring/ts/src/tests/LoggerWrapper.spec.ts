@@ -35,12 +35,14 @@ describe("Heartbeats", () => {
         for(let i = 0; i < 75; i++) {
             logger.appendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, "blah-blah-blah-75");
         }
-        
+
         const tracesSent = <applicationInsights.Contracts.TraceTelemetry[]>[];
 
         jest.spyOn(applicationInsights.TelemetryClient.prototype, "trackTrace").mockImplementation((telemetry: applicationInsights.Contracts.TraceTelemetry) => {
             tracesSent.push(telemetry);
         });
+
+        expect((logger as any).heartbeatAccumulator.logs.size).toBe(1);
 
         await logger.startHeartbeats(null);
        
@@ -50,6 +52,8 @@ describe("Heartbeats", () => {
         expect(tracesSent[2].message).toBe("blah-blah-blah-75");
         expect(tracesSent[3].message).toBe("blah-blah-blah-25");
         expect(tracesSent[4].message).toBe("blah-blah-blah-10");
+
+        expect((logger as any).heartbeatAccumulator.logs.size).toBe(0);
     });
 
     it("Sends metrics", async () => {
@@ -65,6 +69,8 @@ describe("Heartbeats", () => {
             metricsSent.push(telemetry);
         });
 
+        expect((logger as any).heartbeatAccumulator.metrics.size).toBe(2);
+
         await logger.startHeartbeats(null);
         
         expect(metricsSent.length).toBe(2);
@@ -76,6 +82,8 @@ describe("Heartbeats", () => {
         expect(metricsSent[1].name).toBe(HeartbeatMetrics[HeartbeatMetrics.InstrumentedNamespaceCount]);
         expect(metricsSent[1].value).toBe(1);
         expect(metricsSent[1].count).toBe(1);
+
+        expect((logger as any).heartbeatAccumulator.metrics.size).toBe(0);
     });
 
     it("Sends metrics with dimensions", async () => {
@@ -93,6 +101,8 @@ describe("Heartbeats", () => {
         jest.spyOn(applicationInsights.TelemetryClient.prototype, "trackMetric").mockImplementation((telemetry: applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry) => {
             metricsSent.push(telemetry);
         });
+
+        expect((logger as any).heartbeatAccumulator.metrics.size).toBe(2);
 
         await logger.startHeartbeats(null);
         
@@ -112,6 +122,8 @@ describe("Heartbeats", () => {
         expect((<applicationInsights.Contracts.Telemetry>metricsSent[2]).properties["dimension1"]).toBe("403");
         expect(metricsSent[2].value).toBe(3);
         expect(metricsSent[2].count).toBe(1);
+
+        expect((logger as any).heartbeatAccumulator.metrics.size).toBe(0);
     });
 
     it("Sends watchgdogs", async () => {
@@ -124,6 +136,8 @@ describe("Heartbeats", () => {
         jest.spyOn(applicationInsights.TelemetryClient.prototype, "trackMetric").mockImplementation((telemetry: applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry) => {
             metricsSent.push(telemetry);
         });
+
+        expect((logger as any).watchdogs.size).toBe(1);
 
         await logger.startHeartbeats(null);
 
@@ -138,6 +152,8 @@ describe("Heartbeats", () => {
         
         expect(metricsSent[1].name).toBe(Watchdogs[Watchdogs.SecondsSinceLastSuccessfulCRList]);
         expect(metricsSent[1].value).toBe(1025.2);
-        expect(metricsSent[1].count).toBe(1);    
+        expect(metricsSent[1].count).toBe(1);
+
+        expect((logger as any).watchdogs.size).toBe(1);
     });
 });
