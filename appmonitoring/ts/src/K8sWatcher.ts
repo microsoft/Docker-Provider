@@ -175,7 +175,7 @@ export class K8sWatcher {
                         // the watch hasn't invoked the callback within the timeout, so need to step in
                         logger.error(`Watch hung, manual timeout is used`, operationId, requestMetadata);
                         // no await, no hurry
-                        logger.SendEvent(Events[Events.WatchHung], operationId, null, clusterArmId, clusterArmRegion, true);
+                        logger.SendEvent(Events[Events.WatchHung], operationId, null, true);
 
                         // try to abort the watch, not sure if it's possible, best effort
                         try {
