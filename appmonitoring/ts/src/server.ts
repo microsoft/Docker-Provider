@@ -17,13 +17,13 @@ let operationId = randomUUID();
 if ("secrets-manager".localeCompare(containerMode) === 0) {
     try {
         logger.info("Running in certificate manager mode...", operationId, null);
-        await logger.SendEvent(Events[Events.CertificateManagerModeRun], operationId, null, clusterArmId, clusterArmRegion, true);
-        await new CertificateManager().CreateWebhookAndCertificates(operationId, clusterArmId, clusterArmRegion);
+        await logger.SendEvent(Events[Events.CertificateManagerModeRun], operationId, null, true);
+        await new CertificateManager().CreateWebhookAndCertificates(operationId);
         logger.info("Certificate manager mode is done", operationId, null);
-        await logger.SendEvent(Events[Events.CertificateManagerModeRunSuccess], operationId, null, clusterArmId, clusterArmRegion, true);
+        await logger.SendEvent(Events[Events.CertificateManagerModeRunSuccess], operationId, null, true);
     } catch (error) {
         logger.error(`Certificate manager mode failed: ${JSON.stringify(error)}`, operationId, null);
-        await logger.SendEvent(Events[Events.CertificateManagerModeRunFailure], operationId, null, clusterArmId, clusterArmRegion, true, error);
+        await logger.SendEvent(Events[Events.CertificateManagerModeRunFailure], operationId, null, true, error);
         throw error;
     }
 
@@ -31,13 +31,13 @@ if ("secrets-manager".localeCompare(containerMode) === 0) {
 } else if ("secrets-housekeeper".localeCompare(containerMode) === 0) {
     try {
         logger.info("Running in certificate housekeeper mode...", operationId, null);
-        await logger.SendEvent(Events[Events.SecretsHouseKeeperModeRun], operationId, null, clusterArmId, clusterArmRegion, true);
-        await new CertificateManager().ReconcileWebhookAndCertificates(operationId, clusterArmId, clusterArmRegion);
+        await logger.SendEvent(Events[Events.SecretsHouseKeeperModeRun], operationId, null, true);
+        await new CertificateManager().ReconcileWebhookAndCertificates(operationId);
         logger.info("Certificate housekeeper mode is done", operationId, null);
-        await logger.SendEvent(Events[Events.SecretsHouseKeeperModeRunSuccess], operationId, null, clusterArmId, clusterArmRegion, true);
+        await logger.SendEvent(Events[Events.SecretsHouseKeeperModeRunSuccess], operationId, null, true);
     } catch (error) {
         logger.error(`Failed to update certificates, terminating...\n${JSON.stringify(error)}`, operationId, null);
-        await logger.SendEvent(Events[Events.SecretsHouseKeeperModeRunFailure], operationId, null, clusterArmId, clusterArmRegion, true, error);
+        await logger.SendEvent(Events[Events.SecretsHouseKeeperModeRunFailure], operationId, null, true, error);
         throw error;
     }
 
@@ -47,12 +47,12 @@ if ("secrets-manager".localeCompare(containerMode) === 0) {
 const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
 
 logger.info("Running in server mode...", operationId, null);
-await logger.SendEvent(Events[Events.ServerModeRun], operationId, null, clusterArmId, clusterArmRegion, true);
+await logger.SendEvent(Events[Events.ServerModeRun], operationId, null, true);
 
 const armIdMatches = /^\/subscriptions\/(?<SubscriptionId>[^/]+)\/resourceGroups\/(?<ResourceGroup>[^/]+)\/providers\/(?<Provider>[^/]+)\/(?<ResourceType>[^/]+)\/(?<ResourceName>[^/]+).*$/i.exec(clusterArmId);
 if (!armIdMatches || armIdMatches.length != 6) {
     logger.error(`Cluster ARM ID is in a wrong format: ${clusterArmId}`, operationId, null);
-    await logger.SendEvent(Events[Events.ArmIdIncorrect], operationId, null, clusterArmId, clusterArmRegion, true);
+    await logger.SendEvent(Events[Events.ArmIdIncorrect], operationId, null, true);
     throw `Cluster ARM ID is in a wrong format: ${clusterArmId}`;
 }
 
@@ -75,9 +75,7 @@ K8sWatcher.StartWatchingCRs(crs,
 
         logCRs(crs);
     },
-    operationId, 
-    clusterArmId, 
-    clusterArmRegion);
+    operationId);
 
 let options: https.ServerOptions;
 try {
@@ -89,7 +87,7 @@ try {
     logger.info(`Certs successfully loaded`, operationId, null);
 } catch (e) {
     logger.error(`Failed to load certs: ${e}`, operationId, null);
-    await logger.SendEvent(Events[Events.CertificateLoadFailure], operationId, null, clusterArmId, clusterArmRegion, true, e);
+    await logger.SendEvent(Events[Events.CertificateLoadFailure], operationId, null, true, e);
     throw e;
 }
 

@@ -328,15 +328,13 @@ class LocalLogger {
         }
     }
 
-    public async SendEvent(eventName: string, operationId: string, uid: string, clusterArmId: string, clusterArmRegion: string, flush = false, ...args: unknown[]): Promise<void> {
+    public async SendEvent(eventName: string, operationId: string, uid: string, flush = false, ...args: unknown[]): Promise<void> {
         try {
             const event: applicationInsights.Contracts.EventTelemetry = {
                 name: eventName,
                 properties: {
                     extra: JSON.stringify(args),
                     operationId: operationId,
-                    clusterArmId: clusterArmId,
-                    clusterArmRegion: clusterArmRegion,
                     clusterMetadata: JSON.stringify(this.clusterMetadata),
                     uid: uid
                 }
