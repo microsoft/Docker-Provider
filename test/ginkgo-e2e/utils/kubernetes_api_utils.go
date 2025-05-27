@@ -3,7 +3,6 @@ package utils
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -84,13 +83,13 @@ func GetContainerEnvVars(clientset *kubernetes.Clientset, namespace string, labe
 		}
 	}
 
-	return nil, fmt.Errorf("container %s not found in pod %s", containerName, &pods[0].Name)
+	return nil, fmt.Errorf("container %s not found in pod %s", containerName, pods[0].Name)
 }
 
 func GetAKSResourceID(clientset *kubernetes.Clientset, namespace string, labelKey string, labelValue string, containerName string) (string, error) {
-	envVars, error := GetContainerEnvVars(clientset, namespace, labelKey, labelValue, containerName)
-	if error != nil {
-		return "", fmt.Errorf("failed to get environment variables for container %s in pod with label %s=%s: %v", containerName, labelKey, labelValue, error)
+	envVars, err := GetContainerEnvVars(clientset, namespace, labelKey, labelValue, containerName)
+	if err != nil {
+		return "", fmt.Errorf("failed to get environment variables for container %s in pod with label %s=%s: %v", containerName, labelKey, labelValue, err)
 	}
 	return envVars["AKS_RESOURCE_ID"], nil
 }
@@ -154,13 +153,13 @@ func CheckAllProcessesRunning(K8sClient *kubernetes.Clientset, Cfg *rest.Config,
 
 	pods, err := GetPodsWithLabel(K8sClient, namespace, labelName, labelValue)
 	if err != nil {
-		return fmt.Errorf("Error when getting pods with label %s=%s: %v", labelName, labelValue, err)
+		return fmt.Errorf("error when getting pods with label %s=%s: %v", labelName, labelValue, err)
 	}
 
 	for _, pod := range pods {
 		_, _, err := ExecCmd(K8sClient, Cfg, pod.Name, containerName, namespace, command)
 		if err != nil {
-			return fmt.Errorf("Error when running command %v in the container: %v", command, err)
+			return fmt.Errorf("error when running command %v in the container: %v", command, err)
 		}
 	}
 	return nil
@@ -182,18 +181,18 @@ func CheckAllWindowsProcessesRunning(K8sClient *kubernetes.Clientset, Cfg *rest.
 
 	pods, err := GetPodsWithLabel(K8sClient, namespace, labelName, labelValue)
 	if err != nil {
-		return fmt.Errorf("Error when getting pods with label %s=%s: %v", labelName, labelValue, err)
+		return fmt.Errorf("error when getting pods with label %s=%s: %v", labelName, labelValue, err)
 	}
 
 	for _, pod := range pods {
 		ret_stdout, _, err := ExecCmd(K8sClient, Cfg, pod.Name, containerName, namespace, command)
 		if err != nil {
-			return fmt.Errorf("Error when running command %v in the container: %v", command, err)
+			return fmt.Errorf("error when running command %v in the container: %v", command, err)
 		}
 		// Check if all processes are present in the ret_stdout
 		for _, process := range processes {
 			if !strings.Contains(ret_stdout, process) {
-				return fmt.Errorf("Process %s is not running in pod %s container %s", process, pod.Name, containerName)
+				return fmt.Errorf("process %s is not running in pod %s container %s", process, pod.Name, containerName)
 			}
 		}
 	}
@@ -211,7 +210,7 @@ func ExecCmd(client *kubernetes.Clientset, config *rest.Config, podName string, 
 		SubResource("exec")
 	scheme := runtime.NewScheme()
 	if err := corev1.AddToScheme(scheme); err != nil {
-		return "", "", fmt.Errorf("Error setting up exec request: %v", err)
+		return "", "", fmt.Errorf("error setting up exec request: %v", err)
 	}
 
 	parameterCodec := runtime.NewParameterCodec(scheme)
@@ -226,7 +225,7 @@ func ExecCmd(client *kubernetes.Clientset, config *rest.Config, podName string, 
 
 	exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
 	if err != nil {
-		return "", "", fmt.Errorf("Error while creating command executor: %v", err)
+		return "", "", fmt.Errorf("error while creating command executor: %v", err)
 	}
 
 	ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
@@ -235,7 +234,7 @@ func ExecCmd(client *kubernetes.Clientset, config *rest.Config, podName string, 
 		Stdout: &stdoutB,
 		Stderr: &stderrB,
 	}); err != nil {
-		return stdoutB.String(), stderrB.String(), fmt.Errorf("Error when running command %v in the container: %v. Stderr: %s", command, err, stderrB.String())
+		return stdoutB.String(), stderrB.String(), fmt.Errorf("error when running command %v in the container: %v. Stderr: %s", command, err, stderrB.String())
 	}
 
 	return stdoutB.String(), stderrB.String(), nil
@@ -319,17 +318,17 @@ func WatchForPodRestart(K8sClient *kubernetes.Clientset, namespace, labelName, l
 func CheckIfAllContainersAreRunning(clientset *kubernetes.Clientset, namespace, labelKey string, labelValue string) error {
 	pods, err := GetPodsWithLabel(clientset, namespace, labelKey, labelValue)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Error getting pods with the specified labels: %v", err))
+		return fmt.Errorf("error getting pods with the specified labels: %v", err)
 	}
 
 	for _, pod := range pods {
 		if pod.Status.Phase != corev1.PodRunning {
-			return errors.New(fmt.Sprintf("Pod is not runinng. Phase is: %v", pod.Status.Phase))
+			return fmt.Errorf("pod is not running. Phase is: %v", pod.Status.Phase)
 		}
 
 		for _, containerStatus := range pod.Status.ContainerStatuses {
 			if containerStatus.State.Running == nil {
-				return errors.New(fmt.Sprintf("Container %s is not running", containerStatus.Name))
+				return fmt.Errorf("container %s is not running", containerStatus.Name)
 			}
 		}
 	}
@@ -347,7 +346,7 @@ func CheckIfAllPodsScheduleOnNodes(clientset *kubernetes.Clientset, namespace, l
 	nodes, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 
 	if err != nil {
-		return errors.New(fmt.Sprintf("Error getting nodes with the specified labels: %v", err))
+		return fmt.Errorf("error getting nodes with the specified labels: %v", err)
 	}
 
 	for _, node := range nodes.Items {
@@ -359,17 +358,17 @@ func CheckIfAllPodsScheduleOnNodes(clientset *kubernetes.Clientset, namespace, l
 			})
 
 			if err != nil || pods == nil || len(pods.Items) == 0 {
-				return errors.New(fmt.Sprintf("Error getting pods on node %s:", node.Name))
+				return fmt.Errorf("error getting pods on node %s:", node.Name)
 			}
 
 			for _, pod := range pods.Items {
 				if pod.Status.Phase != corev1.PodRunning {
-					return errors.New(fmt.Sprintf("Pod is not runinng. Phase is: %v", pod.Status.Phase))
+					return fmt.Errorf("pod is not running. Phase is: %v", pod.Status.Phase)
 				}
 
 				for _, containerStatus := range pod.Status.ContainerStatuses {
 					if containerStatus.State.Running == nil {
-						return errors.New(fmt.Sprintf("Container %s is not running", containerStatus.Name))
+						return fmt.Errorf("container %s is not running", containerStatus.Name)
 					}
 				}
 			}
@@ -389,7 +388,7 @@ func CheckIfAllPodsScheduleOnSpecificNodesLabels(clientset *kubernetes.Clientset
 	nodes, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
 
 	if err != nil {
-		return errors.New(fmt.Sprintf("Error getting nodes with the specified labels: %v", err))
+		return fmt.Errorf("error getting nodes with the specified labels: %v", err)
 	}
 
 	for _, node := range nodes.Items {
@@ -402,16 +401,16 @@ func CheckIfAllPodsScheduleOnSpecificNodesLabels(clientset *kubernetes.Clientset
 			})
 
 			if err != nil || pods == nil || len(pods.Items) == 0 {
-				return errors.New(fmt.Sprintf("Error getting pods on node %s:", node.Name))
+				return fmt.Errorf("error getting pods on node %s:", node.Name)
 			}
 			for _, pod := range pods.Items {
 				if pod.Status.Phase != corev1.PodRunning {
-					return errors.New(fmt.Sprintf("Pod is not runinng. Phase is: %v", pod.Status.Phase))
+					return fmt.Errorf("pod is not running. Phase is: %v", pod.Status.Phase)
 				}
 
 				for _, containerStatus := range pod.Status.ContainerStatuses {
 					if containerStatus.State.Running == nil {
-						return errors.New(fmt.Sprintf("Container %s is not running", containerStatus.Name))
+						return fmt.Errorf("container %s is not running", containerStatus.Name)
 					}
 				}
 			}
@@ -430,14 +429,14 @@ func GetAndUpdateConfigMap(clientset *kubernetes.Clientset, configMapName, confi
 	// Get the configmap
 	configMap, err := clientset.CoreV1().ConfigMaps(configMapNamespace).Get(ctx, configMapName, metav1.GetOptions{})
 	if err != nil {
-		return fmt.Errorf("Failed to get configmap: %s", err.Error())
+		return fmt.Errorf("failed to get configmap: %s", err.Error())
 	}
 
 	// Update the configmap
 	configMap.Data["test_field"] = uuid.New().String()
 	_, err = clientset.CoreV1().ConfigMaps(configMapNamespace).Update(ctx, configMap, metav1.UpdateOptions{})
 	if err != nil {
-		return fmt.Errorf("Failed to update configmap: %s", err.Error())
+		return fmt.Errorf("failed to update configmap: %s", err.Error())
 	}
 
 	return nil
@@ -470,7 +469,7 @@ func GetAllNodes(clientset *kubernetes.Clientset) ([]corev1.Node, error) {
 }
 
 // CheckFileForErrors checks if a specific file in a container contains errors.
-func CheckFileForErrors(clientset *kubernetes.Clientset, namespace, labelName, labelValue, containerName, filePath string) error {
+func CheckFileForErrors(clientset *kubernetes.Clientset, Cfg *rest.Config, namespace, labelName, labelValue, containerName, filePath string) error {
 	pods, err := GetPodsWithLabel(clientset, namespace, labelName, labelValue)
 	if err != nil {
 		return fmt.Errorf("failed to get pods with label %s=%s: %v", labelName, labelValue, err)
@@ -478,12 +477,44 @@ func CheckFileForErrors(clientset *kubernetes.Clientset, namespace, labelName, l
 
 	for _, pod := range pods {
 		command := []string{"bash", "-c", fmt.Sprintf("grep -i error %s", filePath)}
-		stdout, stderr, err := ExecCmd(clientset, nil, pod.Name, containerName, namespace, command)
+		stdout, stderr, err := ExecCmd(clientset, Cfg, pod.Name, containerName, namespace, command)
 		if err != nil {
+			// If grep returns exit code 1, it means no matches were found, which is not an error for our use case
+			if strings.Contains(err.Error(), "exit code 1") {
+				// No errors found in the file, continue
+				continue
+			}
 			return fmt.Errorf("error executing command in pod %s, container %s: %v, stderr: %s", pod.Name, containerName, err, stderr)
 		}
 
 		if stdout != "" {
+			return fmt.Errorf("errors found in file %s in pod %s, container %s: %s", filePath, pod.Name, containerName, stdout)
+		}
+	}
+
+	return nil
+}
+
+// CheckFileForErrorsWindows checks if a specific file in a Windows container contains errors (case-insensitive).
+func CheckFileForErrorsWindows(clientset *kubernetes.Clientset, Cfg *rest.Config, namespace, labelName, labelValue, containerName, filePath string) error {
+	pods, err := GetPodsWithLabel(clientset, namespace, labelName, labelValue)
+	if err != nil {
+		return fmt.Errorf("failed to get pods with label %s=%s: %v", labelName, labelValue, err)
+	}
+
+	for _, pod := range pods {
+		// Use PowerShell to search for 'error' (case-insensitive) in the file
+		command := []string{"powershell", "-Command", fmt.Sprintf("Select-String -Path '%s' -Pattern 'error' -CaseSensitive:$false", filePath)}
+		stdout, stderr, err := ExecCmd(clientset, Cfg, pod.Name, containerName, namespace, command)
+		if err != nil {
+			// If Select-String returns exit code 1, it means no matches were found, which is not an error for our use case
+			if strings.Contains(err.Error(), "exit code 1") {
+				continue
+			}
+			return fmt.Errorf("error executing command in pod %s, container %s: %v, stderr: %s", pod.Name, containerName, err, stderr)
+		}
+
+		if strings.TrimSpace(stdout) != "" {
 			return fmt.Errorf("errors found in file %s in pod %s, container %s: %s", filePath, pod.Name, containerName, stdout)
 		}
 	}

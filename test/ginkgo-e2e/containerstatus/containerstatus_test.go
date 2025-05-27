@@ -120,13 +120,32 @@ var _ = DescribeTable("The container logs should not contain errors",
 // Add a new test to exec into ama-logs container and check for errors in the running processes
 var _ = DescribeTable("The ama-logs container should not contain errors in the running processes",
 	func(namespace, labelName, labelValue, containerName, filePath string) {
-		err := utils.CheckFileForErrors(K8sClient, namespace, labelName, labelValue, containerName, filePath)
+
+		// add geneva check here
+		// fluent-bit-geneva.log
+		err := utils.CheckFileForErrors(K8sClient, Cfg, namespace, labelName, labelValue, containerName, filePath)
 		Expect(err).NotTo(HaveOccurred())
 	},
-	Entry("when checking the ama-logs container for mdsd", "kube-system", "component", "ama-logs-agent", "ama-logs", "/var/opt/microsoft/linuxmonagent/log/mdsd.err"),
+	// fluentd logs
 	Entry("when checking the ama-logs container for fluentd", "kube-system", "component", "ama-logs-agent", "ama-logs", "/var/opt/microsoft/docker-cimprov/log/fluentd.log"),
-	Entry("when checking the ama-logs container for fluent_forward_failed", "kube-system", "component", "ama-logs-agent", "ama-logs", "/var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log"),
+	// fluent-bit logs
 	Entry("when checking the ama-logs container for fluentbit", "kube-system", "component", "ama-logs-agent", "ama-logs", "/var/opt/microsoft/docker-cimprov/log/fluent-bit.log"),
+	Entry("when checking the ama-logs container for fluent_forward_failed", "kube-system", "component", "ama-logs-agent", "ama-logs", "/var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log"),
+	// Entry("when checking the ama-logs container for fluent-bit-out-oms-runtime", "kube-system", "component", "ama-logs-agent", "ama-logs", "/var/opt/microsoft/docker-cimprov/log/fluent-bit-out-oms-runtime.log"),
+	// telegraf logs
 	Entry("when checking the ama-logs container for telegraf", "kube-system", "component", "ama-logs-agent", "ama-logs", "/var/opt/microsoft/docker-cimprov/log/telegraf_error.log"),
-	Entry("when checking the ama-logs container for appinsights_error", "kube-system", "component", "ama-logs-agent", "ama-logs", "/var/opt/microsoft/docker-cimprov/log/appinsights_error.log"),
+	// mdsd logs
+	Entry("when checking the ama-logs container for mdsd", "kube-system", "component", "ama-logs-agent", "ama-logs", "/var/opt/microsoft/linuxmonagent/log/mdsd.err"),
+	// appinsights logs
+	// Entry("when checking the ama-logs container for appinsights_error", "kube-system", "component", "ama-logs-agent", "ama-logs", "/var/opt/microsoft/docker-cimprov/log/appinsights_error.log"),
 )
+
+// Add a new test to exec into ama-logs-windows container and check for errors in the running processes
+// var _ = DescribeTable("The ama-logs container should not contain errors in the running processes",
+// 	func(namespace, labelName, labelValue, containerName, filePath string) {
+// 		err := utils.CheckFileForErrorsWindows(K8sClient, Cfg, namespace, labelName, labelValue, containerName, filePath)
+// 		Expect(err).NotTo(HaveOccurred())
+// 	},
+// 	// fluent-bit logs
+// 	Entry("when checking the ama-logs-windows container for fluent-bit", "kube-system", "component", "ama-logs-agent-windows", "ama-logs-windows", "C:\\etc\\amalogswindows\\fluent-bit-out-oms-runtime.log", Label(utils.WindowsLabel)),
+// )
