@@ -26,9 +26,9 @@ Write-Host ('Creating folder structure')
 Write-Host ('Installing Fluent Bit');
 
     try {
-        $fluentBitUri='https://releases.fluentbit.io/4.0/source-4.0.2.tar.gz'
-        Invoke-WebRequest -Uri $fluentBitUri -OutFile /installation/fluent-bit.tar.gz
-        Expand-Archive -Path /installation/fluent-bit.tar.gz -Destination /installation/fluent-bit
+        $fluentBitUri='https://packages.fluentbit.io/windows/fluent-bit-4.0.1-win64.zip'
+        Invoke-WebRequest -Uri $fluentBitUri -OutFile /installation/fluent-bit.zip
+        Expand-Archive -Path /installation/fluent-bit.zip -Destination /installation/fluent-bit
         Move-Item -Path /installation/fluent-bit/*/* -Destination /opt/fluent-bit/ -ErrorAction SilentlyContinue
     }
     catch {
