@@ -97,6 +97,22 @@ func GetAKSResourceID(clientset *kubernetes.Clientset, namespace string, labelKe
 	return envVars["AKS_RESOURCE_ID"], nil
 }
 
+func IsResourceOptimizationEnabled(clientset *kubernetes.Clientset, namespace string, labelKey string, labelValue string, containerName string) (string, error) {
+	envVars, error := GetContainerEnvVars(clientset, namespace, labelKey, labelValue, containerName)
+	if error != nil {
+		return "", fmt.Errorf("failed to get environment variables for container %s in pod with label %s=%s: %v", containerName, labelKey, labelValue, error)
+	}
+	return envVars["AZMON_RESOURCE_OPTIMIZATION_ENABLED"], nil
+}
+
+func IsRetinaNetworkFlowLogsEnabled(clientset *kubernetes.Clientset, namespace string, labelKey string, labelValue string, containerName string) (string, error) {
+	envVars, error := GetContainerEnvVars(clientset, namespace, labelKey, labelValue, containerName)
+	if error != nil {
+		return "", fmt.Errorf("failed to get environment variables for container %s in pod with label %s=%s: %v", containerName, labelKey, labelValue, error)
+	}
+	return envVars["ENABLE_RETINA_NETWORK_FLOW_LOGS"], nil
+}
+
 /*
  * Returns all pods in the given namespace with the given label.
  */
@@ -385,7 +401,7 @@ func CheckIfAllPodsScheduleOnNodes(clientset *kubernetes.Clientset, namespace, l
  * Check that pods with the specified namespace and label value are scheduled in all the Fips and ARM64 nodes. If a node has no schduled pod on it, return an error.
  * Also check that the containers are scheduled and running on those nodes.
  */
-func CheckIfAllPodsScheduleOnSpecificNodesLabels(clientset *kubernetes.Clientset, namespace, labelKey string, labelValue string, nodeLabelKey string, nodeLabelValue string) error {
+func CheckIfAllPodsScheduleOnSpecificNodesLabels(clientset *kubernetes.Clientset, namespace, contollerLabelKey string, ControllerLabelValue string, nodeLabelKey string, nodeLabelValue string) error {
 
 	// Get list of all nodes
 	nodes, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
@@ -394,13 +410,19 @@ func CheckIfAllPodsScheduleOnSpecificNodesLabels(clientset *kubernetes.Clientset
 		return errors.New(fmt.Sprintf("Error getting nodes with the specified labels: %v", err))
 	}
 
+	osLabel := "kubernetes.io/os"
+	osLabelValue := "linux"
+	if ControllerLabelValue == "ama-logs-agent-windows" {
+		osLabelValue = "windows"
+	}
+
 	for _, node := range nodes.Items {
-		if value, ok := node.Labels[nodeLabelKey]; ok && value == nodeLabelValue {
+		if value, ok := node.Labels[nodeLabelKey]; ok && value == nodeLabelValue && node.Labels[osLabel] == osLabelValue {
 
 			// Get list of pods scheduled on this node
 			pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
 				FieldSelector: "spec.nodeName=" + node.Name,
-				LabelSelector: labelKey + "=" + labelValue,
+				LabelSelector: contollerLabelKey + "=" + ControllerLabelValue,
 			})
 
 			if err != nil || pods == nil || len(pods.Items) == 0 {
