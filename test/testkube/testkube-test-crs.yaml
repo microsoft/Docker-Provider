@@ -13,9 +13,14 @@ spec:
     repository:
       type: git
       uri: https://github.com/microsoft/Docker-Provider/
-      branch: ci_prod
+      branch: suyadav/taf-newtest-fileerrorcheck
       path: test/ginkgo-e2e
   executionRequest:
+    variables:
+      GENEVA_INTEGRATION:
+        name: GENEVA_INTEGRATION
+        value: "$GENEVA_INTEGRATION"
+        type: basic
     args:
       - "--label-filter"
       - "!(windows)"
@@ -37,9 +42,14 @@ spec:
     repository:
       type: git
       uri: https://github.com/microsoft/Docker-Provider/
-      branch: ci_prod
+      branch: suyadav/taf-newtest-fileerrorcheck
       path: test/ginkgo-e2e
   executionRequest:
+    variables:
+      GENEVA_INTEGRATION:
+        name: GENEVA_INTEGRATION
+        value: "$GENEVA_INTEGRATION"
+        type: basic
     args:
       - "--label-filter"
       - "windows"
@@ -61,7 +71,7 @@ spec:
     repository:
       type: git
       uri: https://github.com/microsoft/Docker-Provider/
-      branch: ci_prod
+      branch: suyadav/taf-newtest-fileerrorcheck
       path: test/ginkgo-e2e
   executionRequest:
     args:
@@ -85,7 +95,7 @@ spec:
     repository:
       type: git
       uri: https://github.com/microsoft/Docker-Provider/
-      branch: ci_prod
+      branch: suyadav/taf-newtest-fileerrorcheck
       path: test/ginkgo-e2e
   executionRequest:
     variables:

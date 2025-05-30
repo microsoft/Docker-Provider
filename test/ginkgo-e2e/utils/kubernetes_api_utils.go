@@ -492,3 +492,30 @@ func GetAllNodes(clientset *kubernetes.Clientset) ([]corev1.Node, error) {
 
 	return nodes.Items, nil
 }
+
+// CheckFileForErrors checks if a specific file in a linux container contains errors.
+func CheckFileForErrors(clientset *kubernetes.Clientset, Cfg *rest.Config, namespace, labelName, labelValue, containerName, filePath string) error {
+	pods, err := GetPodsWithLabel(clientset, namespace, labelName, labelValue)
+	if err != nil {
+		return fmt.Errorf("failed to get pods with label %s=%s: %v", labelName, labelValue, err)
+	}
+
+	for _, pod := range pods {
+		command := []string{"bash", "-c", fmt.Sprintf("grep -i error %s", filePath)}
+		stdout, stderr, err := ExecCmd(clientset, Cfg, pod.Name, containerName, namespace, command)
+		if err != nil {
+			// If grep returns exit code 1, it means no matches were found, which is not an error for our use case
+			if strings.Contains(err.Error(), "exit code 1") {
+				// No errors found in the file, continue
+				continue
+			}
+			return fmt.Errorf("error executing command in pod %s, container %s: %v, stderr: %s", pod.Name, containerName, err, stderr)
+		}
+
+		if stdout != "" {
+			return fmt.Errorf("errors found in file %s in pod %s, container %s: %s", filePath, pod.Name, containerName, stdout)
+		}
+	}
+
+	return nil
+}
