@@ -66,8 +66,8 @@ amalogs:
   # This flag to enable and disable service account timebound token and default is enabled
   enableServiceAccountTimeBoundToken: true
 
-  # This flag to enable and disable custom metrics and default is enabled
-  enableCustomMetrics: true
+  # This flag to enable and disable custom metrics. Custom metrics is getting deprecated so default is disabled
+  enableCustomMetrics: false
 
   # This flag to enable and disable Telegraf livenessprobe and default is disabled
   enableTelegrafLivenessprobe: false
