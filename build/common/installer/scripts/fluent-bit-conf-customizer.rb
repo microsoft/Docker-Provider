@@ -17,12 +17,6 @@ if !ENV["USING_AAD_MSI_AUTH"].nil? && !ENV["USING_AAD_MSI_AUTH"].empty? && ENV["
   @using_aad_msi_auth = true
 end
 
-@geneva_logs_integration = false
-if !ENV["GENEVA_LOGS_INTEGRATION"].nil? && !ENV["GENEVA_LOGS_INTEGRATION"].empty? && ENV["GENEVA_LOGS_INTEGRATION"].strip.casecmp("true") == 0
-  @geneva_logs_integration = true
-end
-
-
 @default_service_interval = "15"
 @default_mem_buf_limit = "10"
 @default_high_log_scale_service_interval = "1"
@@ -70,8 +64,8 @@ def substituteStorageTotalLimitSize(new_contents)
 end
 
 def substituteResourceOptimization(resourceOptimizationEnabled, new_contents)
-  #Update the config file only in two conditions: 1. Linux and resource optimization is enabled 2. Windows and using aad msi auth and not using geneva logs integration
-  if (!@isWindows && !resourceOptimizationEnabled.nil? && resourceOptimizationEnabled.to_s.downcase == "true") || (@isWindows && @using_aad_msi_auth && !@geneva_logs_integration)
+  #Update the config file for two scnenarios for non-geneva mode: 1. Linux and resource optimization is enabled 2. Windows and using aad msi auth
+  if (!@isWindows && !resourceOptimizationEnabled.nil? && resourceOptimizationEnabled.to_s.downcase == "true") || (@isWindows && @using_aad_msi_auth)
     puts "config::Starting to substitute the placeholders in fluent-bit.conf file for resource optimization"
     if (@isWindows)
       new_contents = new_contents.gsub("#${ResourceOptimizationPluginFile}", "plugins_file  /etc/fluent-bit/azm-containers-input-plugins.conf")
