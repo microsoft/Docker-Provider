@@ -527,7 +527,7 @@ stages:
         ServiceRootLocation: LinkedArtifact
         RolloutSpecType: RSPath
         ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
-        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/Public.Stable.RolloutSpec.json
+        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot/RolloutSpecs/Public.Stable.RolloutSpec.json
         OutputRolloutId: RolloutId
         OutputServiceGroupName: ServiceGroupName
         OutputRolloutStatus: RolloutStatus
@@ -791,7 +791,7 @@ stages:
         ServiceRootLocation: LinkedArtifact
         RolloutSpecType: RSPath
         ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
-        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/Public.Stable.RolloutSpec.json
+        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot/RolloutSpecs/Public.Stable.RolloutSpec.json
         OutputRolloutId: RolloutId
         OutputServiceGroupName: ServiceGroupName
         OutputRolloutStatus: RolloutStatus
@@ -1055,7 +1055,7 @@ stages:
         ServiceRootLocation: LinkedArtifact
         RolloutSpecType: RSPath
         ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
-        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/Public.Stable.RolloutSpec.json
+        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot/RolloutSpecs/Public.Stable.RolloutSpec.json
         OutputRolloutId: RolloutId
         OutputServiceGroupName: ServiceGroupName
         OutputRolloutStatus: RolloutStatus
@@ -1319,7 +1319,7 @@ stages:
         ServiceRootLocation: LinkedArtifact
         RolloutSpecType: RSPath
         ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
-        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/Public.Stable.RolloutSpec.json
+        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot/RolloutSpecs/Public.Stable.RolloutSpec.json
         OutputRolloutId: RolloutId
         OutputServiceGroupName: ServiceGroupName
         OutputRolloutStatus: RolloutStatus
@@ -1606,7 +1606,7 @@ stages:
         ServiceRootLocation: LinkedArtifact
         RolloutSpecType: RSPath
         ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
-        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/Public.Stable.RolloutSpec.json
+        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot/RolloutSpecs/Public.Stable.RolloutSpec.json
         OutputRolloutId: RolloutId
         OutputServiceGroupName: ServiceGroupName
         OutputRolloutStatus: RolloutStatus
