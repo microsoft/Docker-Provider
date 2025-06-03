@@ -75,30 +75,6 @@ jobs:
         **/*.sh
       TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
-  - task: CopyFiles@2
-    displayName: "Copy ev2 deployment scripts"
-    inputs:
-      SourceFolder: "$(Build.SourcesDirectory)/kubernetes"
-      Contents: |
-        *.yaml
-      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
-
-  - task: CopyFiles@2
-    displayName: "Copy ev2 deployment scripts"
-    inputs:
-      SourceFolder: "$(Build.SourcesDirectory)/charts"
-      Contents: |
-        **/*
-      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
-
-  - task: CopyFiles@2
-    displayName: "Copy ev2 deployment scripts"
-    inputs:
-      SourceFolder: "$(Build.SourcesDirectory)/test/e2e"
-      Contents: |
-        *.yaml
-      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
-
   - task: PublishBuildArtifacts@1
     condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
     displayName: "Publish artifacts for PR"
