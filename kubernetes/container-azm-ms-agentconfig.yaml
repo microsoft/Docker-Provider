@@ -257,9 +257,6 @@ data:
     # [agent_settings.k8s_metadata_config]
     #   kube_meta_cache_ttl_secs = 60  # if this is not applied, default value is 60s
 
-    # [agent_settings.chunk_config]
-    #    PODS_CHUNK_SIZE = 10  # default value is 1000 and for large clusters with high number of pods, this can reduced to smaller value if the gaps in KubePodInventory/KubeNodeInventory data.
-
 metadata:
   name: container-azm-ms-agentconfig
   namespace: kube-system
