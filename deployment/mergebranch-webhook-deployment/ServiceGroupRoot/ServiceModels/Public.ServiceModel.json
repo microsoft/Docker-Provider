@@ -1,0 +1,51 @@
+{
+    "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/serviceModel.json",
+    "contentVersion": "1.0.0.2",
+      "ServiceMetadata": {
+        "ServiceGroup": "ApplicationInsightsWebhook",
+        "Environment": "Prod"
+      },
+      "ServiceResourceGroupDefinitions": [
+        {
+          "Name": "AI-Webhook-ServiceResourceGroupDefinition",
+          "ServiceResourceDefinitions": [
+            {
+              "Name": "ShellExtension",
+              "ComposedOf": {
+                "Extension": {
+                  "Shell": [
+                    {
+                      "type": "ShellExtensionType",
+                      "properties": {
+                        "imageName": "adm-ubuntu-1804-l",
+                        "imageVersion": "v18"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "ServiceResourceGroups": [
+        {
+          "AzureResourceGroupName": "ApplicationInsights-Webhook-Release",
+          "Location": "eastus2",
+          "InstanceOf": "AI-Webhook-ServiceResourceGroupDefinition",
+          "AzureSubscriptionId": "30c56c3a-54da-46ea-b004-06eb33432687",
+          "ScopeTags": [
+            {
+              "Name": "Global"
+            }
+          ],
+          "ServiceResources": [
+            {
+              "Name": "PushWebhook",
+              "InstanceOf": "ShellExtension",
+              "RolloutParametersPath": "Parameters\\ApplicationInsights.Parameters.json"
+            }
+          ]
+        }
+      ]
+    }
