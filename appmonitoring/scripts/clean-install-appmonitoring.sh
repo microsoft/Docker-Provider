@@ -19,14 +19,14 @@ else
 fi
 
 echo "Deleting appmonitoring CRD..."
-if ! kubectl delete -f ./appmonitoring-crd.yaml; then
+if ! kubectl delete -f ./app-monitoring-addon/crds/app-monitoring-crd-v2.yaml; then
   echo "Error: CRD deletion failed."
 else
     echo "CRD deletion complete."
 fi
 
 echo "Installing appmonitoring addon with image tag: $IMAGE_TAG"
-if ! helm install -n kube-system appmonitoring-addon ./app-monitoring-addon --set AppmonitoringAgent.imageTag=$IMAGE_TAG; then
+if ! helm install -n kube-system appmonitoring-addon ./app-monitoring-addon --set AppmonitoringAgent.imageTag=$IMAGE_TAG --set AppmonitoringAgent.replicas=2; then
   echo "Error: helm install failed."
   exit 1
 fi

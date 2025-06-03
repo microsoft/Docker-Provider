@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${NODEJS_CALLER_APP_NAME}
+  namespace: default
+  labels:
+    app: nodejs-caller-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodejs-caller-app
+  template:
+    metadata:
+      labels:
+        app: nodejs-caller-app
+    spec:
+      containers:
+      - name: nodejs-caller-app
+        image: appmonitoring.azurecr.io/nodejs-caller-app:latest
+        imagePullPolicy: Always
+        env:
+          - name: TARGET_JAVA_HOST
+            value: "${JAVA_TEST_APP_NAME}-service.${TEST_NS}.svc.cluster.local"
+          - name: TARGET_JAVA_PORT
+            value: "8080"
+          - name: TARGET_JAVA_PATH
+            value: "/call-target"
+          - name: TARGET_NODEJS_HOST
+            value: "${NODEJS_TEST_APP_NAME}-service.${TEST_NS}.svc.cluster.local"
+          - name: TARGET_NODEJS_PORT
+            value: "3001"
+          - name: TARGET_NODEJS_PATH
+            value: "/call-target"
+          - name: INTERVAL_MS
+            value: "5000"
