@@ -1,7 +1,0 @@
-%Variables
-PERFORMING_UPGRADE_NOT: '[ "$1" != "upgrade" ]'
-PACKAGE_TYPE: 'DPKG'
-
-%Dependencies
-
-

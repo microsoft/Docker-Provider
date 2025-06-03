@@ -1,4 +1,0 @@
-export AZMON_DS_PROM_INTERVAL="1m"
-export AZMON_DS_PROM_URLS="[]"
-export AZMON_DS_PROM_FIELDPASS="[]"
-export AZMON_DS_PROM_FIELDDROP="[]"
