@@ -527,7 +527,7 @@ stages:
         ServiceRootLocation: LinkedArtifact
         RolloutSpecType: RSPath
         ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
-        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/Public.Stable.RolloutSpec.json
+        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot/RolloutSpecs/Public.Stable.RolloutSpec.json
         OutputRolloutId: RolloutId
         OutputServiceGroupName: ServiceGroupName
         OutputRolloutStatus: RolloutStatus
@@ -566,10 +566,21 @@ stages:
       displayName: Ev2 - Monitoring
       inputs:
         Ev2MonintoringUrl: $(Ev2MonintoringUrl)
+- stage: Wait_After_Stage_2
+  displayName: Wait after Pilot Region
+  dependsOn: Stage_2
+  jobs:
+  - job: WaitJob
+    displayName: Wait for Bake Time
+    pool: server
+    steps:
+    - task: Delay@1
+      inputs:
+        delayForMinutes: 1500
 - stage: Stage_3
   displayName: Light Load Region
   dependsOn:
-  - Stage_2
+  - Wait_After_Stage_2
   pool:
     name: Azure-Pipelines-Windows-CI-Test-EO
     os: windows
@@ -791,7 +802,7 @@ stages:
         ServiceRootLocation: LinkedArtifact
         RolloutSpecType: RSPath
         ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
-        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/Public.Stable.RolloutSpec.json
+        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot/RolloutSpecs/Public.Stable.RolloutSpec.json
         OutputRolloutId: RolloutId
         OutputServiceGroupName: ServiceGroupName
         OutputRolloutStatus: RolloutStatus
@@ -830,10 +841,21 @@ stages:
       displayName: Ev2 - Monitoring
       inputs:
         Ev2MonintoringUrl: $(Ev2MonintoringUrl)
+- stage: Wait_After_Stage_3
+  displayName: Wait after Light Load Region
+  dependsOn: Stage_3
+  jobs:
+  - job: WaitJob
+    displayName: Wait for Bake Time
+    pool: server
+    steps:
+    - task: Delay@1
+      inputs:
+        delayForMinutes: 1500
 - stage: Stage_4
   displayName: Medium Load Region
   dependsOn:
-  - Stage_3
+  - Wait_After_Stage_3
   pool:
     name: Azure-Pipelines-Windows-CI-Test-EO
     os: windows
@@ -1055,7 +1077,7 @@ stages:
         ServiceRootLocation: LinkedArtifact
         RolloutSpecType: RSPath
         ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
-        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/Public.Stable.RolloutSpec.json
+        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot/RolloutSpecs/Public.Stable.RolloutSpec.json
         OutputRolloutId: RolloutId
         OutputServiceGroupName: ServiceGroupName
         OutputRolloutStatus: RolloutStatus
@@ -1094,10 +1116,21 @@ stages:
       displayName: Ev2 - Monitoring
       inputs:
         Ev2MonintoringUrl: $(Ev2MonintoringUrl)
+- stage: Wait_After_Stage_4
+  displayName: Wait after Medium Load Region
+  dependsOn: Stage_4
+  jobs:
+  - job: WaitJob
+    displayName: Wait for Bake Time
+    pool: server
+    steps:
+    - task: Delay@1
+      inputs:
+        delayForMinutes: 1500
 - stage: Stage_5
   displayName: High Load Region
   dependsOn:
-  - Stage_4
+  - Wait_After_Stage_4
   pool:
     name: Azure-Pipelines-Windows-CI-Test-EO
     os: windows
@@ -1319,7 +1352,7 @@ stages:
         ServiceRootLocation: LinkedArtifact
         RolloutSpecType: RSPath
         ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
-        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/Public.Stable.RolloutSpec.json
+        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot/RolloutSpecs/Public.Stable.RolloutSpec.json
         OutputRolloutId: RolloutId
         OutputServiceGroupName: ServiceGroupName
         OutputRolloutStatus: RolloutStatus
@@ -1606,7 +1639,7 @@ stages:
         ServiceRootLocation: LinkedArtifact
         RolloutSpecType: RSPath
         ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
-        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/Public.Stable.RolloutSpec.json
+        RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot/RolloutSpecs/Public.Stable.RolloutSpec.json
         OutputRolloutId: RolloutId
         OutputServiceGroupName: ServiceGroupName
         OutputRolloutStatus: RolloutStatus

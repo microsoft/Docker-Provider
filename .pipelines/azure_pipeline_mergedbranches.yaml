@@ -111,6 +111,7 @@ extends:
             SourceFolder: "$(Build.SourcesDirectory)/deployment"
             Contents: |
               **/*
+              !**/ScanTelemetry_*.json
             TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
         - task: CopyFiles@2
           displayName: "Copy ev2 deployment scripts"
