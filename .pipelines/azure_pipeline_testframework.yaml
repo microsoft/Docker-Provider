@@ -175,3 +175,31 @@ jobs:
             ./install-and-execute-testkube-tests.sh AzureClientId=$(WcusFipsClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
           workingDirectory: $(Build.SourcesDirectory)/test/testkube/
           displayName: "Install and execute testkube tests"
+
+- deployment: Testkube_ci_logs_prod_aks_networkflowlogs
+  environment: container-insights
+  timeoutInMinutes: 120
+  displayName: "ci-logs-prod-aks-networkflowlogs tests"
+  pool:
+    name: Azure-Pipelines-CI-Test-EO
+  variables:
+    skipComponentGovernanceDetection: true
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+        - checkout: self
+          persistCredentials: true
+
+        - task: AzureCLI@1
+          displayName: Get kubeconfig
+          inputs:
+            azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+            scriptLocation: 'inlineScript'
+            inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-networkflowlogs'
+          
+        - bash: |
+            chmod +x ./install-and-execute-testkube-tests.sh
+            ./install-and-execute-testkube-tests.sh AzureClientId=$(NetworkFlowLogsClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
+          workingDirectory: $(Build.SourcesDirectory)/test/testkube/
+          displayName: "Install and execute testkube tests"
