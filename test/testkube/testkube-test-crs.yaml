@@ -16,6 +16,11 @@ spec:
       branch: ci_prod
       path: test/ginkgo-e2e
   executionRequest:
+    variables:
+      GENEVA_INTEGRATION:
+        name: GENEVA_INTEGRATION
+        value: "$GENEVA_INTEGRATION"
+        type: basic
     args:
       - "--label-filter"
       - "!(windows)"
@@ -40,6 +45,11 @@ spec:
       branch: ci_prod
       path: test/ginkgo-e2e
   executionRequest:
+    variables:
+      GENEVA_INTEGRATION:
+        name: GENEVA_INTEGRATION
+        value: "$GENEVA_INTEGRATION"
+        type: basic
     args:
       - "--label-filter"
       - "windows"
