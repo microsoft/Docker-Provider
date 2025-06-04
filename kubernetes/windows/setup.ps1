@@ -55,17 +55,19 @@ catch {
 }
 Write-Host ('Finished downloading Telegraf')
 
-Write-Host ('Installing Visual C++ Redistributable Package')
-    $vcRedistLocation = 'https://aka.ms/vs/16/release/vc_redist.x64.exe'
-    $vcInstallerLocation = "\installation\vc_redist.x64.exe"
-    $vcArgs = "/install /quiet /norestart"
-    $ProgressPreference = 'SilentlyContinue'
-    Invoke-WebRequest -Uri $vcRedistLocation -OutFile $vcInstallerLocation
-    Start-Process $vcInstallerLocation -ArgumentList $vcArgs -NoNewWindow -Wait
-    Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /opt/fluent-bit/bin
-    Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /opt/fluent-bit/bin
-    Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /opt/fluent-bit/bin
-Write-Host ('Finished Installing Visual C++ Redistributable Package')
+
+# Write-Host ('Installing Visual C++ Redistributable Package')
+#     $vcRedistLocation = 'https://aka.ms/vs/16/release/vc_redist.x64.exe'
+#     $vcInstallerLocation = "\installation\vc_redist.x64.exe"
+#     $vcArgs = "/install /quiet /norestart"
+#     $ProgressPreference = 'SilentlyContinue'
+#     Invoke-WebRequest -Uri $vcRedistLocation -OutFile $vcInstallerLocation
+#     Start-Process $vcInstallerLocation -ArgumentList $vcArgs -NoNewWindow -Wait
+#     Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /opt/fluent-bit/bin
+#     Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /opt/fluent-bit/bin
+#     Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /opt/fluent-bit/bin
+# Write-Host ('Finished Installing Visual C++ Redistributable Package')
+
 
 Write-Host ('Extracting Certificate Generator Package')
     Expand-Archive -Path /opt/amalogswindows/certificategenerator.zip -Destination /opt/amalogswindows/certgenerator/ -Force
