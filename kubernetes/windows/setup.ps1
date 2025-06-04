@@ -56,18 +56,39 @@ catch {
 Write-Host ('Finished downloading Telegraf')
 
 
-Write-Host ('Installing Visual C++ Redistributable Package')
-    $vcRedistLocation = 'https://aka.ms/vs/17/release/vc_redist.x64.exe'
-    $vcInstallerLocation = "\installation\vc_redist.x64.exe"
-    $vcArgs = "/install /quiet /norestart"
-    $ProgressPreference = 'SilentlyContinue'
-    Invoke-WebRequest -Uri $vcRedistLocation -OutFile $vcInstallerLocation
-    Start-Process $vcInstallerLocation -ArgumentList $vcArgs -NoNewWindow -Wait
-    Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /opt/fluent-bit/bin
-    Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /opt/fluent-bit/bin
-    Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /opt/fluent-bit/bin
-Write-Host ('Finished Installing Visual C++ Redistributable Package')
+# Write-Host ('Installing Visual C++ Redistributable Package')
+#     $vcRedistLocation = 'https://aka.ms/vs/17/release/vc_redist.x64.exe'
+#     $vcInstallerLocation = "\installation\vc_redist.x64.exe"
+#     $vcArgs = "/install /quiet /norestart"
+#     $ProgressPreference = 'SilentlyContinue'
+#     Invoke-WebRequest -Uri $vcRedistLocation -OutFile $vcInstallerLocation
+#     Start-Process $vcInstallerLocation -ArgumentList $vcArgs -NoNewWindow -Wait
+#     Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /opt/fluent-bit/bin
+#     Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /opt/fluent-bit/bin
+#     Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /opt/fluent-bit/bin
+# Write-Host ('Finished Installing Visual C++ Redistributable Package')
 
+Write-Host ('Installing MINGW Runtime Libraries for Ruby Native Extensions')
+try {
+    # copy to Ruby bin directory
+    Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libgcc_s_seh-1.dll" -Destination "C:\ruby31\bin" -ErrorAction SilentlyContinue
+    Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libstdc++-6.dll" -Destination "C:\ruby31\bin" -ErrorAction SilentlyContinue
+    Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libwinpthread-1.dll" -Destination "C:\ruby31\bin" -ErrorAction SilentlyContinue
+    
+    # Add MINGW bin directory to PATH
+    $mingwPath = "C:\ruby31\msys64\ucrt64\bin"
+    $currentPath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
+    if ($currentPath -notlike "*$mingwPath*") {
+        [Environment]::SetEnvironmentVariable("PATH", "$currentPath;$mingwPath", "Machine")
+    }
+    
+    Write-Host "Successfully installed MINGW runtime libraries"
+}
+catch {
+    $ex = $_.Exception
+    Write-Host "Warning: Error copying MINGW runtime libraries"
+    Write-Host $ex
+}
 
 Write-Host ('Extracting Certificate Generator Package')
     Expand-Archive -Path /opt/amalogswindows/certificategenerator.zip -Destination /opt/amalogswindows/certgenerator/ -Force
