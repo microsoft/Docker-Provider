@@ -75,6 +75,11 @@ try {
     Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libstdc++-6.dll" -Destination "C:\ruby31\bin" -ErrorAction SilentlyContinue
     Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libwinpthread-1.dll" -Destination "C:\ruby31\bin" -ErrorAction SilentlyContinue
     
+    # Copy to System32 for Windows services
+    Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libgcc_s_seh-1.dll" -Destination "C:\Windows\System32" -ErrorAction SilentlyContinue
+    Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libstdc++-6.dll" -Destination "C:\Windows\System32" -ErrorAction SilentlyContinue
+    Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libwinpthread-1.dll" -Destination "C:\Windows\System32" -ErrorAction SilentlyContinue
+    
     # Add MINGW bin directory to PATH
     $mingwPath = "C:\ruby31\msys64\ucrt64\bin"
     $currentPath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
