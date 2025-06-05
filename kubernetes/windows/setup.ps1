@@ -55,37 +55,62 @@ catch {
 }
 Write-Host ('Finished downloading Telegraf')
 
-
-Write-Host ('Installing Visual C++ Redistributable Package')
-    $vcRedistLocation = 'https://aka.ms/vs/16/release/vc_redist.x64.exe'
-    $vcInstallerLocation = "\installation\vc_redist.x64.exe"
-    $vcArgs = "/install /quiet /norestart"
-    $ProgressPreference = 'SilentlyContinue'
-    Invoke-WebRequest -Uri $vcRedistLocation -OutFile $vcInstallerLocation
-    Start-Process $vcInstallerLocation -ArgumentList $vcArgs -NoNewWindow -Wait
-    Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /opt/fluent-bit/bin
-    Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /opt/fluent-bit/bin
-    Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /opt/fluent-bit/bin
-Write-Host ('Finished Installing Visual C++ Redistributable Package')
+# Write-Host ('Installing Visual C++ Redistributable Package')
+#     $vcRedistLocation = 'https://aka.ms/vs/16/release/vc_redist.x64.exe'
+#     $vcInstallerLocation = "\installation\vc_redist.x64.exe"
+#     $vcArgs = "/install /quiet /norestart"
+#     $ProgressPreference = 'SilentlyContinue'
+#     Invoke-WebRequest -Uri $vcRedistLocation -OutFile $vcInstallerLocation
+#     Start-Process $vcInstallerLocation -ArgumentList $vcArgs -NoNewWindow -Wait
+#     Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /opt/fluent-bit/bin
+#     Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /opt/fluent-bit/bin
+#     Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /opt/fluent-bit/bin
+# Write-Host ('Finished Installing Visual C++ Redistributable Package')
 
 Write-Host ('Installing MINGW Runtime Libraries for Ruby Native Extensions')
 try {
     # copy to Ruby bin directory
-    Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libgcc_s_seh-1.dll" -Destination "C:\ruby31\bin" -ErrorAction SilentlyContinue
-    Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libstdc++-6.dll" -Destination "C:\ruby31\bin" -ErrorAction SilentlyContinue
-    Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libwinpthread-1.dll" -Destination "C:\ruby31\bin" -ErrorAction SilentlyContinue
+    $dlls = @("libgcc_s_seh-1.dll", "libstdc++-6.dll", "libwinpthread-1.dll")
+    $mingwBin = "C:\ruby31\msys64\ucrt64\bin"
+    $rubyBin = "C:\ruby31\bin"
+    $system32 = "C:\Windows\System32"
+    foreach ($dll in $dlls) {
+        $src = Join-Path $mingwBin $dll
+        $dstRuby = Join-Path $rubyBin $dll
+        $dstSys = Join-Path $system32 $dll
+        Copy-Item -Path $src -Destination $dstRuby -ErrorAction SilentlyContinue
+        if (Test-Path $dstRuby) {
+            Write-Host "Copied $dll to Ruby bin directory."
+        } else {
+            Write-Host "ERROR: Failed to copy $dll to Ruby bin directory!"
+        }
+        Copy-Item -Path $src -Destination $dstSys -ErrorAction SilentlyContinue
+        if (Test-Path $dstSys) {
+            Write-Host "Copied $dll to System32."
+        } else {
+            Write-Host "ERROR: Failed to copy $dll to System32!"
+        }
+    }
+    # Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libgcc_s_seh-1.dll" -Destination "C:\ruby31\bin" -ErrorAction SilentlyContinue
+    # Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libstdc++-6.dll" -Destination "C:\ruby31\bin" -ErrorAction SilentlyContinue
+    # Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libwinpthread-1.dll" -Destination "C:\ruby31\bin" -ErrorAction SilentlyContinue
     
     # Copy to System32 for Windows services
-    Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libgcc_s_seh-1.dll" -Destination "C:\Windows\System32" -ErrorAction SilentlyContinue
-    Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libstdc++-6.dll" -Destination "C:\Windows\System32" -ErrorAction SilentlyContinue
-    Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libwinpthread-1.dll" -Destination "C:\Windows\System32" -ErrorAction SilentlyContinue
+    # Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libgcc_s_seh-1.dll" -Destination "C:\Windows\System32" -ErrorAction SilentlyContinue
+    # Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libstdc++-6.dll" -Destination "C:\Windows\System32" -ErrorAction SilentlyContinue
+    # Copy-Item -Path "C:\ruby31\msys64\ucrt64\bin\libwinpthread-1.dll" -Destination "C:\Windows\System32" -ErrorAction SilentlyContinue
     
-    # Add MINGW bin directory to PATH
+    # Add MINGW bin directory to PATH for Machine, User, and current process
     $mingwPath = "C:\ruby31\msys64\ucrt64\bin"
-    $currentPath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
-    if ($currentPath -notlike "*$mingwPath*") {
-        [Environment]::SetEnvironmentVariable("PATH", "$currentPath;$mingwPath", "Machine")
+    $currentMachinePath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
+    if ($currentMachinePath -notlike "*$mingwPath*") {
+        [Environment]::SetEnvironmentVariable("PATH", "$currentMachinePath;$mingwPath", "Machine")
     }
+    $currentUserPath = [Environment]::GetEnvironmentVariable("PATH", "User")
+    if ($currentUserPath -notlike "*$mingwPath*") {
+        [Environment]::SetEnvironmentVariable("PATH", "$currentUserPath;$mingwPath", "User")
+    }
+    $env:PATH = "$env:PATH;$mingwPath"
     
     Write-Host "Successfully installed MINGW runtime libraries"
 }
