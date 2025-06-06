@@ -118,7 +118,7 @@ int _tmain(int argc, wchar_t *argv[])
     wchar_t msiModeValue[bufferSize];
     GetEnvironmentVariable(L"ENABLE_CUSTOM_METRICS", enableCustomMetricsValue, bufferSize);
     GetEnvironmentVariable(L"USING_AAD_MSI_AUTH", msiModeValue, bufferSize);
-
+    /*
     if (_wcsicmp(enableCustomMetricsValue, L"true") == 0 || _wcsicmp(msiModeValue, L"true") != 0)
     {
         DWORD dwStatus = GetServiceStatus(argv[2]);
@@ -128,6 +128,7 @@ int _tmain(int argc, wchar_t *argv[])
             return FLUENTDWINAKS_SERVICE_NOT_RUNNING;
         }
     }
+    */
 
     if (IsFileExists(argv[3]))
     {
