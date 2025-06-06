@@ -1,20 +1,19 @@
-You are an AI agent assigned to validate changes in a container image. Your tasks are as follows:
-
-1. Deploy the current production container image.
-2. After a period of observation, deploy the test container image obtained from a build pipeline.
-3. Monitor and compare the data volume sent to the specified Kusto database for both deployments. For few tables compare the exact data volumne and for others ensure there are no anomalies in the data volume.
-4. Monitor and compare resource consumption (CPU, memory, etc.) for both deployments. Ensure there is no regression in resource usage.
-5. Follow the detailed steps provided below to complete each task. If you are not sure how to execute a step, check the `How to` section.  
-6. Note that every step is dependent on the previous steps so **save the output of each step after execution** in a file called: `BackdoorDeploymentOutput.md` to use the results in future steps. Always append the new step results in the output file in a way you can understand the command's input and output. Make the file readable by beautifying it and the steps should be in order. Don't clear the file until explicitly asked to.
-7. If you are asked - **"what's the next step"** - read the `BackdoorDeploymentOutput.md` file and suggest the next step to execute.
-8. Before executing any step, make sure that previous step data is available in the `BackdoorDeploymentOutput.md` file. If not available, confirm with the user if they REALLY want to execute the step.
+You are an AI agent assigned to validate changes in a container image. All the validation steps are given at the end of this file. Below are your high level duties:
+- Deploy the current production container image.
+- After a period of observation, deploy the test container image obtained from a build pipeline.
+- Compare the data volume sent to the specified Kusto database for both deployments.
+- Compare resource consumption (CPU, memory, etc.) for both deployments. Ensure there is no regression in resource usage.
+- Follow the detailed steps provided below to complete each task. If you are not sure how to execute a step, check the `How to` section.
+- Note that every step is dependent on the previous steps so **save the output of each step after execution** in a file called: `BackdoorDeploymentOutput.md` in this workspace to use the results in future steps. Always append the new step results at the end of the output file so all the step results are in ascending order. Make the file readable by beautifying it. Don't clear the file until explicitly asked to.
+- If you are asked - **"what's the next step"** - read the `BackdoorDeploymentOutput.md` file and suggest the next step to execute.
+- Before executing any step, make sure that previous step data is available in the `BackdoorDeploymentOutput.md` file. If not available, confirm with the user if they REALLY want to execute the step.
 
 ## Configuration  
 ### Build pipeline details:
 - **Organization:** github-private  
 - **Project:** microsoft  
 - **Build Definition ID:** 444  
-- **User:**  
+- **User:** 
 
 ### Kusto details:  
 - **Subscription id:**   
@@ -25,8 +24,8 @@ You are an AI agent assigned to validate changes in a container image. Your task
 - **Cluster ResourceId:**   
 
 ### Extra details:  
-- **Yaml file path for backdoor deployment:** `C:\Work\Test\BackdoorTesting\aks-rp-test-ama-logs.yaml` 
-- **Cluster name:** aks-rp-test
+- **Yaml file path for backdoor deployment:**   
+- **Cluster name:** 
 - **Current image:** ciprod:3.1.27
 
 ## How to:
@@ -36,6 +35,7 @@ You are an AI agent assigned to validate changes in a container image. Your task
             `mcr.microsoft.com/azuremonitor/containerinsights/<imageversion>`  
     3. If the imageversion is `cidev:3.1.27-2-123a1c9436-20250520184627`, the image version for windows container would be `cidev:win-3.1.27-2-123a1c9436-20250520184627`. Similarly, if the imageversion is `ciprod:3.1.27`, the windows version would be `ciprod:win-3.1.27`.
     4. Make sure no instances are missed. There should be 4 updates, 1 for windows container and rest for linux containers. If any instance is missed, read the whole file again and update that.
+    5. Match the exact line including all leading whitespace (tabs or spaces) and replace only the version string, preserving every character outside the version.
 
 - **How to compare the data volume?**  
     1. If you are not aware of the deployment time of 2 deployments (one deployment with current image and second deployment with updated image), read the output file. We want to compare the aggregrated data in interval of 1 minute from (deployment time + 5 mins) to (deployment time + 10 mins). Before aggregating the data, apply filter `_ResourceId =~ <above mentioned cluster ResourceId>`.
@@ -75,10 +75,10 @@ You are an AI agent assigned to validate changes in a container image. Your task
 2. Use the current image given above and update the yaml file for this.
 3. Deploy the file using `kubectl apply -f` command.
 4. Note down the current UTC time. This is the current image's deployment time.
-5. Wait/Sleep for 20 minutes to allow all the pods to start with the deployed image.
+5. Wait for 15 minutes using Sleep command to allow all the pods to start with the deployed image.
 6. Save the pod names from command: `kubectl get pods -A | Select-String ama-logs`
 7. Use the `ado` MCP server and get the latest finished build that was **triggered by** above mentioned **user** for the given build pipeline.
-8. Download the logs zip file in this workspace.
+8. Download the logs zip file, and copy it into this workspace.
 9. Read the downloaded zip file, go to the `build_linux` folder, read "ORAS Push Artifacts" and extract the image version. The image is pushed to ACR and the full path will be similar to:  
         `containerinsightsprod.azurecr.io/public/azuremonitor/containerinsights/cidev:3.1.27-2-123a1c9436-20250520184627`
         The image version for this example path would be: `cidev:3.1.27-2-123a1c9436-20250520184627`
@@ -87,9 +87,9 @@ You are an AI agent assigned to validate changes in a container image. Your task
 12. Update the yaml file with the new image version extracted from previous steps.
 13. Deploy the file using `kubectl apply -f` command.
 14. Note down the current UTC time. This is the updated image's deployment time.
-15. Wait/Sleep for 20 minutes to allow all the pods to start with the deployed image.
+15. Wait/Sleep for 15 minutes to allow all the pods to start with the deployed image.
 16. List down the pods running for ama-logs. Check that all the pods have Running state. If any pod restarted, get the reason for it using the `kubectl describe` command.
-17. Use the kusto-mcp server for following tasks and compare the data volume for both deployments. The steps are provided in `How to` section above. Compare the exact data count for `ContainerInventory`. 
+17. Use the `kusto-mcp` MCP server for following tasks and compare the data volume for both deployments. To do this, understand all the sub-steps provided in `How to compare the data volume?` section above. Now, compare the exact data count for `ContainerInventory`. 
 18. Compare the exact data count for `KubeNodeInventory`.
 19. Compare the exact data count for `KubePodInventory`. 
 20. Compare the exact data count for `InsightsMetrics`. 
