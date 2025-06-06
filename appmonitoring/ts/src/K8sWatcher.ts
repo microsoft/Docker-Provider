@@ -18,7 +18,11 @@ export class K8sWatcher {
         const k8sApi = kc.makeApiClient(k8s.CustomObjectsApi);
         const watch = new k8s.Watch(kc);
 
-        logger.registerWatchdog(Watchdogs.SecondsSinceLastSuccessfulCRList, () => (new Date().getTime() - K8sWatcher.lastSuccessfulListTimestamp.getTime()) / 1000.0);
+        logger.registerWatchdog(Watchdogs.SecondsSinceLastSuccessfulCRList, () => { 
+            const secondsElapsed = (new Date().getTime() - K8sWatcher.lastSuccessfulListTimestamp.getTime()) / 1000.0;
+            logger.SecondsSinceLastSuccessfulCRListSummary.observe(secondsElapsed);
+            return secondsElapsed;
+        });
 
         let latestResourceVersion: string = null;
         while (true) { // eslint-disable-line

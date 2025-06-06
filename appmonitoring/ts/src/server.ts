@@ -91,8 +91,25 @@ try {
     throw e;
 }
 
+const promPort = 4000;
+logger.info(`Prom endpoint is available on port ${promPort}`, operationId, null);
+const promServer = https.createServer(options, async (req, res) => {
+    if (req.method === "GET" && (req.url === "/metrics" || req.url === "/metrics/") && logger?.Register) {
+        try {
+            res.writeHead(200, { "Content-Type": logger.Register.contentType });
+            res.end(await logger.Register.metrics());
+        } catch (e) {
+            res.writeHead(500, { "Content-Type": "application/json" });
+            res.end(JSON.stringify(e));
+        }
+    } else {
+        res.writeHead(404);
+        res.end('Not Found');
+    }
+}).listen(promPort);
+
 const port = process.env.port || 1337;
-logger.info(`listening on port ${port}`, operationId, null);
+logger.info(`Webhook is listening on port ${port}`, operationId, null);
 
 const server = https.createServer(options, (req, res) => {
     logger.info(`Received request with url: ${req.url}, method: ${req.method}, content-type: ${req.headers["content-type"]}`, operationId, null);
@@ -150,12 +167,19 @@ const server = https.createServer(options, (req, res) => {
         res.writeHead(404);
         res.end();
     }
-
 }).listen(port);
 
 logger.info(`Server created on port ${port}`, null, null);
 
-function shutdownServer() {
+function shutdownServers() {
+    promServer.close((err) => {
+        if (err) {
+            logger.error(`Error shutting down prom server: ${err}`, operationId, null);
+        } else {
+            logger.info("Prom server has shut down gracefully", operationId, null);
+        }
+    });
+
     server.close((err) => {
         if (err) {
             logger.error(`Error shutting down server: ${err}`, operationId, null);
@@ -168,8 +192,8 @@ function shutdownServer() {
 }
   
 // listen for process termination signals
-process.on("SIGINT", shutdownServer);
-process.on("SIGTERM", shutdownServer);
+process.on("SIGINT", shutdownServers);
+process.on("SIGTERM", shutdownServers);
 
 const keepAlive = new Promise<void>((resolve) => {
     process.on('SIGINT', resolve);

@@ -6,6 +6,8 @@ import { PodInfo } from "./RequestDefinition.js";
 import log4js from "log4js";
 import { InstrumentationCRsCollection } from "./InstrumentationCRsCollection.js";
 
+import { Registry, collectDefaultMetrics, Summary } from "prom-client";
+
 const { configure, getLogger } = log4js;
 
 configure({
@@ -126,6 +128,9 @@ class LocalLogger {
         }
     }
 
+    public Register: Registry;
+    public SecondsSinceLastSuccessfulCRListSummary: Summary;
+
     private static instance: LocalLogger = null;
 
     private isUnitTestMode = false;
@@ -144,6 +149,18 @@ class LocalLogger {
         this.clusterMetadata = new ClusterMetadata(clusterArmId, clusterArmRegion, podName, imageTag);
 
         this.log.info(`Application Insights has been set up and started. Default telemetry client is: ${this.client}, cluster metadata: ${JSON.stringify(this.clusterMetadata)}`);
+
+        this.Register = new Registry();
+        
+        collectDefaultMetrics({ register: this.Register });
+
+        this.SecondsSinceLastSuccessfulCRListSummary = new Summary({
+            name: 'cr_list_seconds_since_last_successful',
+            help: 'Seconds elapsed since the last successful CR list call'
+        });
+        this.Register.registerMetric(this.SecondsSinceLastSuccessfulCRListSummary);
+
+        this.log.info(`Prometheus client has been set up.`);
     }
 
     public trace(message: string, operationId: string, requestMetadata: RequestMetadata) {

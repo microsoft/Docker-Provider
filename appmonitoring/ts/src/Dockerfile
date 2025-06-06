@@ -18,4 +18,5 @@ COPY ./package.json /mutating-webhook
 COPY ./node_modules /mutating-webhook/node_modules
 
 EXPOSE 1337
+EXPOSE 4000
 CMD [ "node", "server.js" ]
