@@ -17,22 +17,22 @@ RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
 && choco install -y msys2 --version 20211130.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'"
 
 # gangams - optional MSYS2 update via ridk failing in merged docker file so skipping that since we dont need optional update
-RUN refreshenv \
-&& ridk install 2 3 \
-&& echo gem: --no-document >> C:\ProgramData\gemrc \
-#&& gem install cool.io -v 1.9.0 --platform ruby \
-&& gem install oj -v 3.16.10 \
-&& gem install fluentd -v 1.16.3 \
-&& gem install win32-service -v 1.0.1 \
-&& gem install win32-ipc -v 0.7.0 \
-&& gem install win32-event -v 0.6.3 \
-&& gem install windows-pr -v 1.2.6 \
-&& gem install tomlrb -v 2.0.1 \
-&& gem install gyoku -v 1.3.1 \
-&& gem install ipaddress -v 0.8.3 \
-&& gem install jwt -v 2.7.1 \
-&& gem uninstall rexml -v 3.2.5 --force \
-&& gem sources --clear-all
+# RUN refreshenv \
+# && ridk install 2 3 \
+# && echo gem: --no-document >> C:\ProgramData\gemrc \
+# #&& gem install cool.io -v 1.9.0 --platform ruby \
+# && gem install oj -v 3.16.10 \
+# && gem install fluentd -v 1.16.3 \
+# && gem install win32-service -v 1.0.1 \
+# && gem install win32-ipc -v 0.7.0 \
+# && gem install win32-event -v 0.6.3 \
+# && gem install windows-pr -v 1.2.6 \
+# && gem install tomlrb -v 2.0.1 \
+# && gem install gyoku -v 1.3.1 \
+# && gem install ipaddress -v 0.8.3 \
+# && gem install jwt -v 2.7.1 \
+# && gem uninstall rexml -v 3.2.5 --force \
+# && gem sources --clear-all
 
 # Remove gem cache and chocolatey
 RUN powershell -Command "Remove-Item -Force C:\ruby31\lib\ruby\gems\3.1.0\cache\*.gem; Remove-Item -Recurse -Force 'C:\ProgramData\chocolatey'; Remove-Item -Recurse -Force 'C:\Users\ContainerAdministrator\AppData\Local\Temp'"
