@@ -20,19 +20,8 @@ RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
 RUN refreshenv \
 && ridk install 2 3 \
 && C:\ruby31\msys64\usr\bin\bash.exe -lc "pacman -Rns --noconfirm mingw-w64-ucrt-x86_64-gcc" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-ucrt-x86_64-libwinpthread mingw-w64-ucrt-x86_64-libstdc++ mingw-w64-ucrt-x86_64-gcc-libs" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "curl -O https://repo.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc 'pacman -U --noconfirm mingw-w64-ucrt-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst' \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "rm mingw-w64-ucrt-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "curl -O https://repo.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-gcc-14.2.0-3-any.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc 'pacman -U --noconfirm mingw-w64-ucrt-x86_64-gcc-14.2.0-3-any.pkg.tar.zst' \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "rm mingw-w64-ucrt-x86_64-gcc-14.2.0-3-any.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "curl -O https://repo.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-libwinpthread-14.2.0-3-any.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc 'pacman -U --noconfirm mingw-w64-ucrt-x86_64-libwinpthread-14.2.0-3-any.pkg.tar.zst' \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "rm mingw-w64-ucrt-x86_64-libwinpthread-14.2.0-3-any.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "curl -O https://repo.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-libstdc++-14.2.0-3-any.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc 'pacman -U --noconfirm mingw-w64-ucrt-x86_64-libstdc++-14.2.0-3-any.pkg.tar.zst' \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "rm mingw-w64-ucrt-x86_64-libstdc++-14.2.0-3-any.pkg.tar.zst" \
+&& C:\ruby31\msys64\usr\bin\bash.exe -lc "pacman -Syu --noconfirm" \
+&& C:\ruby31\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-gcc-libs mingw-w64-ucrt-x86_64-libwinpthread mingw-w64-ucrt-x86_64-libstdc++"\
 && echo gem: --no-document >> C:\ProgramData\gemrc \
 && gem install cool.io -v 1.9.0 --platform ruby \
 && gem install oj -v 3.16.10 \
