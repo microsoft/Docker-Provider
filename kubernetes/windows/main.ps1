@@ -770,7 +770,7 @@ function Start-Fluent-Telegraf {
     $isAADMSIAuth = [System.Environment]::GetEnvironmentVariable("USING_AAD_MSI_AUTH")
     # Start fluentd as a windows service only if custom metrics is enabled or legacy mode
     if ((![string]::IsNullOrEmpty($enableCustomMetrics) -and $enableCustomMetrics.ToLower() -eq 'true') -or [string]::IsNullOrEmpty($isAADMSIAuth) -or $isAADMSIAuth.ToLower() -eq "false") {
-        fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
+        # fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
     }
 
     Notepad.exe | Out-Null
