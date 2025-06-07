@@ -23,8 +23,8 @@ RUN refreshenv \
 && gem install oj -v 3.16.1 \
 && gem install json -v 2.6.3 \
 && gem install rexml -v 3.2.6 \
-&& gem install fluentd -v 1.16.5 \
-&& gem install win32-service -v 1.0.1 \
+&& gem install fluentd -v 1.16.3 \
+&& gem install win32-service -v 2.3.2 \
 && gem install win32-ipc -v 0.7.0 \
 && gem install win32-event -v 0.6.3 \
 && gem install windows-pr -v 1.2.6 \
@@ -32,6 +32,7 @@ RUN refreshenv \
 && gem install gyoku -v 1.3.1 \
 && gem install ipaddress -v 0.8.3 \
 && gem install jwt -v 2.7.1 \
+#&& gem uninstall rexml -v 3.2.6 --force \
 && gem sources --clear-all
 
 # Remove gem cache and chocolatey
