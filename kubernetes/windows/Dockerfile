@@ -12,26 +12,21 @@ RUN reg add "HKLM\Software\Wow6432Node\Microsoft\Cryptography\Wintrust\Config" /
 # Docker creates a layer for every RUN-Statement
 ENV chocolateyVersion 1.4.0
 RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
-# Fluentd depends on cool.io whose fat gem is only available for Ruby < 2.5, so need to specify --platform ruby when install Ruby > 2.5 and install msys2 to get dev tools
-RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
-&& choco install -y msys2 --version 20211130.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'"
 
-# gangams - optional MSYS2 update via ridk failing in merged docker file so skipping that since we dont need optional update
+# ref: https://github.com/fluent/fluentd-docker-image/blob/master/v1.16/windows-ltsc2022/Dockerfile
+# NOTE: For avoiding stalling with docker build on windows, we must use latest version of msys2.
+RUN choco install -y ruby --version 3.1.3.1 --params "'/InstallDir:C:\ruby31'" \
+&& choco install -y msys2 --version 20240113.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'"
 RUN refreshenv \
-&& ridk install 2 3 \
+&& ridk install 3 \
 && echo gem: --no-document >> C:\ProgramData\gemrc \
-&& gem install cool.io -v 1.7.1 --platform x64-mingw32 \
-&& gem install oj -v 3.16.10 \
-&& gem install fluentd -v 1.16.3 \
-&& gem install win32-service -v 1.0.1 \
+&& gem install oj -v 3.16.1 \
+&& gem install json -v 2.6.3 \
+&& gem install rexml -v 3.2.6 \
+&& gem install fluentd -v 1.16.5 \
+&& gem install win32-service -v 2.3.2 \
 && gem install win32-ipc -v 0.7.0 \
 && gem install win32-event -v 0.6.3 \
-&& gem install windows-pr -v 1.2.6 \
-&& gem install tomlrb -v 2.0.1 \
-&& gem install gyoku -v 1.3.1 \
-&& gem install ipaddress -v 0.8.3 \
-&& gem install jwt -v 2.7.1 \
-&& gem uninstall rexml -v 3.2.5 --force \
 && gem sources --clear-all
 
 # Remove gem cache and chocolatey
