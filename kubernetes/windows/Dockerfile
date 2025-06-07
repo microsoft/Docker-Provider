@@ -27,6 +27,12 @@ RUN refreshenv \
 && gem install win32-service -v 2.3.2 \
 && gem install win32-ipc -v 0.7.0 \
 && gem install win32-event -v 0.6.3 \
+&& gem install windows-pr -v 1.2.6 \
+&& gem install tomlrb -v 2.0.1 \
+&& gem install gyoku -v 1.3.1 \
+&& gem install ipaddress -v 0.8.3 \
+&& gem install jwt -v 2.7.1 \
+&& gem uninstall rexml -v 3.2.5 --force \
 && gem sources --clear-all
 
 # Remove gem cache and chocolatey
