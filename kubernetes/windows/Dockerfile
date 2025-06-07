@@ -19,20 +19,8 @@ RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
 # gangams - optional MSYS2 update via ridk failing in merged docker file so skipping that since we dont need optional update
 RUN refreshenv \
 && ridk install 2 3 \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "pacman -Sy" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "curl -L -O https://repo.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-crt-git-12.0.0.r688.g6b2176247-1-any.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "curl -L -O https://repo.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-headers-git-12.0.0.r688.g6b2176247-1-any.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "curl -L -O https://repo.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-libmangle-git-12.0.0.r688.g6b2176247-1-any.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "curl -L -O https://repo.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-libwinpthread-git-12.0.0.r688.g6b2176247-1-any.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "curl -L -O https://repo.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-tools-git-12.0.0.r688.g6b2176247-1-any.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "curl -L -O https://repo.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-winpthreads-git-12.0.0.r688.g6b2176247-1-any.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "curl -L -O https://repo.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "curl -L -O https://repo.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-gcc-14.2.0-3-any.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "ls -la *.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc 'pacman -U --noconfirm *.pkg.tar.zst' \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "rm *.pkg.tar.zst" \
 && echo gem: --no-document >> C:\ProgramData\gemrc \
-&& gem install cool.io -v 1.9.0 --platform ruby \
+&& gem install cool.io -v 1.9.0\
 && gem install oj -v 3.16.10 \
 && gem install fluentd -v 1.16.3 \
 && gem install win32-service -v 1.0.1 \
