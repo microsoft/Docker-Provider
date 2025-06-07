@@ -20,7 +20,7 @@ RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
 RUN refreshenv \
 && ridk install 2 3 \
 && echo gem: --no-document >> C:\ProgramData\gemrc \
-&& gem install cool.io -v 1.7.1 x64-mingw32\
+&& gem install cool.io -v 1.7.1 --platform x64-mingw32\
 && gem install oj -v 3.16.10 \
 && gem install fluentd -v 1.16.3 \
 && gem install win32-service -v 1.0.1 \
