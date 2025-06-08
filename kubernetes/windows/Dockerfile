@@ -15,7 +15,7 @@ RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex (
 
 # ref: https://github.com/fluent/fluentd-docker-image/blob/master/v1.16/windows-ltsc2022/Dockerfile
 # NOTE: For avoiding stalling with docker build on windows, we must use latest version of msys2.
-RUN choco install -y ruby --version 3.1.3.1 --params "'/InstallDir:C:\ruby31'" \
+RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
 && choco install -y msys2 --version 20240113.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'"
 RUN refreshenv \
 && ridk install 3 \
@@ -24,7 +24,7 @@ RUN refreshenv \
 && gem install json -v 2.6.3 \
 && gem install rexml -v 3.2.6 \
 && gem install fluentd -v 1.16.3 \
-&& gem install win32-service -v 2.3.2 \
+&& gem install win32-service -v 1.0.1 \
 && gem install win32-ipc -v 0.7.0 \
 && gem install win32-event -v 0.6.3 \
 && gem install windows-pr -v 1.2.6 \
