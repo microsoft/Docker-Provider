@@ -303,10 +303,6 @@ class CAdvisorMetricsAPIClient
                     if (!@subnetIpUsageMetrics.nil? && !@subnetIpUsageMetrics.empty?)
                       telemetryProps["int-ipsubnetusage"] = "1"
                     end
-                    #telemetry for Container log schema version clusterContainerLogSchemaVersion
-                    if (!@clusterContainerLogSchemaVersion.nil? && !@clusterContainerLogSchemaVersion.empty?)
-                      telemetryProps["containerLogVer"] = @clusterContainerLogSchemaVersion
-                    end
                     if (!@clusterMultilineEnabled.nil? && !@clusterMultilineEnabled.empty?)
                       telemetryProps["multilineEnabled"] = @clusterMultilineEnabled
                       if (!@clusterMultilineLanguages.nil? && !@clusterMultilineLanguages.empty?)
