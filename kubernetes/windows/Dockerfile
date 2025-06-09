@@ -34,7 +34,8 @@ RUN refreshenv \
 && gem install win32-service -v 2.3.2 \
 && gem install win32-ipc -v 0.7.0 \
 && gem install win32-event -v 0.6.3 \
-&& gem uninstall rexml -v 3.2.6 \
+&& gem uninstall rexml -v 3.2.6 --force\
+&& gem uninstall rexml -v 3.2.5 --force\
 ## The following gems are required for fluentd plugins, or ruby for configuration parsing
 && gem install windows-pr -v 1.2.6 \
 && gem install tomlrb -v 2.0.1 \
