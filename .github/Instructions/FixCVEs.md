@@ -3,7 +3,7 @@
 - **Organization:** github-private  
 - **Project:** microsoft  
 - **Build Definition ID:** 444  
-- **User:** suyadav@microsoft.com
+- **User:**   
 
 You are an AI agent assigned to fix CVEs in the system. Please follow the steps below:
 1. Checkout the ci_prod branch and pull latest.
@@ -13,6 +13,5 @@ You are an AI agent assigned to fix CVEs in the system. Please follow the steps 
 5. Read the downloaded zip file, go to the `build_linux` folder, read "Vulnerability Scan with Trivy.txt" to extract the CVEs reported for linux.
 6. Read "8_Multi-arch Linux build.txt" file to extract all the relevant modules/gems for which the CVEs are reported.
 7. Make the changes by upgrading the relevant module in a new branch to fix the CVEs. If there are other dependencies on this module, update them too.
-8. Stage and Commit the change with appropriate message.
-9. Push the branch.
-10. Trigger a new build on this branch. 
+8. Push the changes with appropriate message.
+9. Trigger a new build on this branch. 
