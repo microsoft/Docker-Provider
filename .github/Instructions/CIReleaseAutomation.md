@@ -23,41 +23,29 @@ You are an agent assigned to release a new image version. The release will be tr
 - **Project:** CloudNativeCompute  
 - **Repo name:** aks-rp  
 - **Repo link:** https://msazure.visualstudio.com/CloudNativeCompute/_git/aks-rp
-- **Local path:** 
 - **Linux toggle file relative path:** toggles\global\sigs\containerinsights\omsagent-image-tag-linux.yaml
 - **Winodws toggle file relative path:** toggles\global\sigs\containerinsights\omsagent-image-tag-windows.yaml
+- **Local path:** 
 
 ### Docker-Provider repo details: 
 - **Repo name:** Docker-Provider  
 - **Repo link:** https://github.com/microsoft/Docker-Provider
-- **Local path:** 
 - **Default branch name:** ci_prod
+- **Local path:** 
 
 ### Agent baker repo details:
 - **Repo name:** AgentBaker
 - **Repo link:** https://github.com/Azure/AgentBaker
 - **Local path:** 
 
-### Docker-Provider build and publish pipeline details:
+### Docker-Provider build and pipeline details:
 - **Organization:** github-private  
 - **Project:** microsoft  
 - **Build definition ID:** 444  
-- **Publish image build definition ID:** 1032    
-
-### Test automation pipeline details:
-- **Organization:** github-private  
-- **Project:** microsoft  
-- **Build definition ID:** 950 
-
-### Arc extension Canary region pipeline details:
-- **Organization:** github-private  
-- **Project:** microsoft  
-- **Build definition ID:** 1021 
-
-### Arc extension prod regions pipeline details:
-- **Organization:** github-private  
-- **Project:** microsoft  
-- **Build definition ID:** 1031 
+- **Publish image pipeline definition ID:** 1032    
+- **Test automation pipeline definition ID:** 950
+- **Arc extension Canary region pipeline definition ID:** 1021
+- **Arc extension prod regions pipeline definition ID:** 1031
 
 ## How To:
 - **How to trigger a build for the new version?**
@@ -97,8 +85,8 @@ You are an agent assigned to release a new image version. The release will be tr
 ## Steps:  
 1. Trigger the `Docker-Provider` build for the new version and save the details of this build.
 2. Check if the above build is successfully completed.
-3. Trigger the `Docker-Provider` build to publish the image to MCR for the new version. Save the details of this build.
-4. Check if the release is successfully completed.
+3. Trigger the `Docker-Provider` pipeline to publish the image to MCR for the new version. Save the details of this build.
+4. Check if the above pipeline is successfully completed.
 5. Make changes in the AKS RP repo for `CI CD` clusters only.
 6. Trigger the `Test automation pipeline` and save the details of it.
 7. Make changes in the AKS RP repo for for `Cosmic` clusters only. 
