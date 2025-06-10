@@ -12,11 +12,11 @@ export class Mutations {
     private static agentImageCommonPrefix = "mcr.microsoft.com/applicationinsights";
     private static agentImageNodeJs = {
         repositoryPath: "opentelemetry-auto-instrumentation/nodejs",
-        imageTag: "3.2.7"
+        imageTag: "3.2.7" // https://mcr.microsoft.com/v2/applicationinsights/opentelemetry-auto-instrumentation/nodejs/tags/list
     };
     private static agentImageJava = {
         repositoryPath: "auto-instrumentation/java",
-        imageTag: "3.7.1-aks"
+        imageTag: "3.7.2-aks" // https://mcr.microsoft.com/v2/applicationinsights/auto-instrumentation/java/tags/list
     };
     
     // path on agent image to copy from
