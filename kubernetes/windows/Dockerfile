@@ -28,7 +28,6 @@ RUN refreshenv \
 && echo gem: --no-document >> C:\ProgramData\gemrc \
 # Install fluentd and its dependencies
 && gem install oj -v 3.16.1 \
-&& gem install json -v 2.6.3 \
 && gem install fluentd -v 1.16.3 \
 && gem install win32-service -v 2.3.2 \
 && gem install win32-ipc -v 0.7.0 \
