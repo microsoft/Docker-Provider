@@ -435,7 +435,7 @@ jobs:
       inlineScript: |
 
         # Debug output
-        fullImageNameResolved = "$(fullImageName)"
+        fullImageNameResolved="$(fullImageName)"
         imageName="${fullImageNameResolved#${{ variables.containerRegistry }}/}"
 
         echo "--name ${{ variables.containerRegistry }}"
@@ -469,7 +469,7 @@ jobs:
         az acr login -n ${{ variables.containerRegistry }}
         
         echo "Retagging ${testImageName} as ${fullImageName} at ${{ variables.containerRegistry }}..."
-        fullImageNameResolved = "$(fullImageName)"
+        fullImageNameResolved="$(fullImageName)"
         imageName="${fullImageNameResolved#${{ variables.containerRegistry }}/}"
         echo "Image name: $imageName"
         az acr import --name ${{ variables.containerRegistry }} --source $(testImageName) --image $imageName
