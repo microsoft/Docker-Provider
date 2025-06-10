@@ -435,11 +435,12 @@ jobs:
       inlineScript: |
 
         # Debug output
-        imageName="${fullImageName#${{ variables.containerRegistry }}/}"
+        fullImageNameResolved = $(fullImageName)
+        imageName="${fullImageNameResolved#${{ variables.containerRegistry }}/}"
 
         echo "--name ${{ variables.containerRegistry }}"
         echo "--source $(testImageName)"
-        echo "fullImageName: $fullImageName"
+        echo "fullImageName: $(fullImageName)"
         echo "--image $imageName"        
 
         # Check if current commit is tagged and branch is ai_prod
@@ -468,7 +469,8 @@ jobs:
         az acr login -n ${{ variables.containerRegistry }}
         
         echo "Retagging ${testImageName} as ${fullImageName} at ${{ variables.containerRegistry }}..."
-        imageName="${fullImageName#${{ variables.containerRegistry }}/}"
+        fullImageNameResolved = $(fullImageName)
+        imageName="${fullImageNameResolved#${{ variables.containerRegistry }}/}"
         echo "Image name: $imageName"
         az acr import --name ${{ variables.containerRegistry }} --source $(testImageName) --image $imageName
         
