@@ -50,6 +50,14 @@ var ingestionDceNameFull = 'MSCI-ingest-${workspaceLocation}-${clusterName}'
 var ingestionDceName = (length(ingestionDceNameFull) > 43) ? substring(ingestionDceNameFull, 0, 43) : ingestionDceNameFull
 var ingestionDataCollectionEndpointId = resourceId(clusterSubscriptionId, clusterResourceGroup, 'Microsoft.Insights/dataCollectionEndpoints', ingestionDceName)
 
+resource ingestionDataCollectionEndpoint 'Microsoft.Insights/dataCollectionEndpoints@2022-06-01' = if (enableHighLogScaleMode) {
+  name: ingestionDceName
+  location: workspaceRegion
+  tags: resourceTagValues
+  kind: 'Linux'
+  properties: {}
+}
+
 resource aks_monitoring_msi_dcr 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
   name: dcrName
   location: workspaceRegion
