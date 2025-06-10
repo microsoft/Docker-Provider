@@ -435,11 +435,11 @@ jobs:
       inlineScript: |
 
         # Debug output
-        imageName="${fullImageName#${{ variables.containerRegistry }}}"
+        imageName="${$(fullImageName)#${{ variables.containerRegistry }}/}"
 
         echo "--name ${{ variables.containerRegistry }}"
-        echo "--source $(testImageName)"
-        echo "--image $imageName"        
+        echo "--source ${testImageName}"
+        echo "--image ${imageName}"        
 
         # Check if current commit is tagged and branch is ai_prod
         CURRENT_BRANCH="$BUILD_SOURCEBRANCHNAME"
@@ -467,9 +467,9 @@ jobs:
         az acr login -n ${{ variables.containerRegistry }}
         
         echo "Retagging ${testImageName} as ${fullImageName} at ${{ variables.containerRegistry }}..."
-        imageName="${fullImageName#${{ variables.containerRegistry }}}"
-        echo "Image name: $imageName"
-        az acr import --name ${{ variables.containerRegistry }} --source $(testImageName) --image $imageName #--force
+        imageName="${$(fullImageName)#${{ variables.containerRegistry }}/}"
+        echo "Image name: ${imageName}"
+        az acr import --name ${{ variables.containerRegistry }} --source ${testImageName} --image ${imageName}
         
         mkdir -p $(Build.ArtifactStagingDirectory)/linux
         echo "Setting the image name..."
