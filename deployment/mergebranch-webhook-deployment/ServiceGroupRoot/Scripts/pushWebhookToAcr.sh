@@ -74,6 +74,21 @@ else
   exit 1
 fi     
 
+# Get manifest details
+MANIFEST_JSON=$(az acr manifest show $SOURCE_IMAGE_FULL_PATH)
+echo "Manifest: $MANIFEST_JSON"
+
+# Extract the mediaType
+MEDIA_TYPE=$(echo "$MANIFEST_JSON" | jq -r '.mediaType')
+echo "Media Type: $MEDIA_TYPE"
+
+if [[ "$MEDIA_TYPE" == "application/vnd.docker.distribution.manifest.list.v2+json" ]]; then
+    echo "The image is multi-architecture, continuing with retagging and pushing..."
+else
+    echo "The image is single-architecture, something has to be wrong. Exiting..."
+    exit 1
+fi
+
 echo "Pushing ${WEBHOOK_IMAGE_FULL_PATH} to ${ACR_NAME} with source ${SOURCE_IMAGE_FULL_PATH} and force option set to ${AZ_ACR_IMPORT_FORCE}"
 az acr import --name $ACR_NAME --source $SOURCE_IMAGE_FULL_PATH --image $WEBHOOK_IMAGE_FULL_PATH $AZ_ACR_IMPORT_FORCE
 if [ $? -eq 0 ]; then

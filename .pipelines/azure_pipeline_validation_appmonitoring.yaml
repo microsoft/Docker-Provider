@@ -458,9 +458,12 @@ jobs:
 
         # Login to prod ACR (destination) to push the image
         az acr login -n ${{ variables.containerRegistry }}
-        docker pull $(testImageName)
-        docker tag $(testImageName) $(fullImageName)
-        docker push $(fullImageName)
+        
+        fullImageNameResolved="$(fullImageName)"
+        imageName="${fullImageNameResolved#*/}"
+
+        echo "Retagging $(testImageName) as ${imageName} at ${{ variables.containerRegistry }}..."
+        az acr import --name ${{ variables.containerRegistry }} --source $(testImageName) --image ${imageName}
         
         mkdir -p $(Build.ArtifactStagingDirectory)/linux
         echo "Setting the image name..."

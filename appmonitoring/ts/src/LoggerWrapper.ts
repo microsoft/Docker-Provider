@@ -48,12 +48,14 @@ class ClusterMetadata {
     private clusterArmRegion: string;
     private podName: string;
     private imageTag: string;
+    private arch: string;
 
-    public constructor(clusterArmId: string, clusterArmRegion: string, podName: string, imageTag: string) {
+    public constructor(clusterArmId: string, clusterArmRegion: string, podName: string, imageTag: string, arch: string) {
         this.clusterArmId = clusterArmId;
         this.clusterArmRegion = clusterArmRegion;
         this.podName = podName;
         this.imageTag = imageTag;
+        this.arch = arch;
     }
 }
 
@@ -102,9 +104,9 @@ class HeartbeatAccumulator {
 }
 
 class LocalLogger {
-    public static Instance(clusterArmId: string, clusterArmRegion: string, podName: string, imageTag: string) {
+    public static Instance(clusterArmId: string, clusterArmRegion: string, podName: string, imageTag: string, arch: string) {
         if (!LocalLogger.instance) {
-            LocalLogger.instance = new LocalLogger(clusterArmId, clusterArmRegion, podName, imageTag);
+            LocalLogger.instance = new LocalLogger(clusterArmId, clusterArmRegion, podName, imageTag, arch);
         }
 
         return LocalLogger.instance;
@@ -138,10 +140,10 @@ class LocalLogger {
 
     private heartbeatRequestMetadata = new RequestMetadata(null, null);
 
-    private constructor(clusterArmId: string, clusterArmRegion: string, podName: string, imageTag: string) {
+    private constructor(clusterArmId: string, clusterArmRegion: string, podName: string, imageTag: string, arch: string) {
         this.client = telemetryClient.telemetryClient;
 
-        this.clusterMetadata = new ClusterMetadata(clusterArmId, clusterArmRegion, podName, imageTag);
+        this.clusterMetadata = new ClusterMetadata(clusterArmId, clusterArmRegion, podName, imageTag, arch);
 
         this.log.info(`Application Insights has been set up and started. Default telemetry client is: ${this.client}, cluster metadata: ${JSON.stringify(this.clusterMetadata)}`);
     }
@@ -355,4 +357,4 @@ class LocalLogger {
     }
 }
 
-export const logger = LocalLogger.Instance(process.env.ARM_ID, process.env.ARM_REGION, process.env.POD_NAME, process.env.IMAGE_TAG);
+export const logger = LocalLogger.Instance(process.env.ARM_ID, process.env.ARM_REGION, process.env.POD_NAME, process.env.IMAGE_TAG, process.env.ARCH);
