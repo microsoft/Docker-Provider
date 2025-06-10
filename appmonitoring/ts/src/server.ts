@@ -91,7 +91,7 @@ try {
     throw e;
 }
 
-const promPort = 4000;
+const promPort = process.env.PROM_PORT;
 logger.info(`Prom endpoint is available on port ${promPort}`, operationId, null);
 const promServer = https.createServer(options, async (req, res) => {
     if (req.method === "GET" && (req.url === "/metrics" || req.url === "/metrics/") && logger?.Register) {
@@ -108,7 +108,7 @@ const promServer = https.createServer(options, async (req, res) => {
     }
 }).listen(promPort);
 
-const port = process.env.port || 1337;
+const port = process.env.WEBHOOK_PORT;
 logger.info(`Webhook is listening on port ${port}`, operationId, null);
 
 const server = https.createServer(options, (req, res) => {

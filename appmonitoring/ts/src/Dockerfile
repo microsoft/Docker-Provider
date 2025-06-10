@@ -6,6 +6,12 @@ FROM mcr.microsoft.com/cbl-mariner/base/nodejs:18
 ARG IMAGE_TAG
 ENV IMAGE_TAG=$IMAGE_TAG
 
+ARG WEBHOOK_PORT=1337
+ENV WEBHOOK_PORT=$WEBHOOK_PORT
+
+ARG PROM_PORT=4000
+ENV PROM_PORT=$PROM_PORT
+
 RUN tdnf upgrade -y && tdnf clean all
 
 # Smoke test ensuring that NodeJS was installed.
@@ -17,6 +23,6 @@ COPY ./out/* /mutating-webhook
 COPY ./package.json /mutating-webhook
 COPY ./node_modules /mutating-webhook/node_modules
 
-EXPOSE 1337
-EXPOSE 4000
+EXPOSE $WEBHOOK_PORT
+EXPOSE $PROM_PORT
 CMD [ "node", "server.js" ]
