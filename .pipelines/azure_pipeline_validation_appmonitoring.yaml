@@ -436,7 +436,7 @@ jobs:
 
         # Debug output
         fullImageNameResolved="$(fullImageName)"
-        imageName="${fullImageNameResolved#${{ variables.containerRegistry }}/}"
+        imageName="${fullImageNameResolved#*/}"
 
         echo "--name ${{ variables.containerRegistry }}"
         echo "--source $(testImageName)"
@@ -470,7 +470,7 @@ jobs:
         
         echo "Retagging ${testImageName} as ${fullImageName} at ${{ variables.containerRegistry }}..."
         fullImageNameResolved="$(fullImageName)"
-        imageName="${fullImageNameResolved#${{ variables.containerRegistry }}/}"
+        imageName="${fullImageNameResolved#*/}"
         echo "Image name: $imageName"
         az acr import --name ${{ variables.containerRegistry }} --source $(testImageName) --image $imageName
         
