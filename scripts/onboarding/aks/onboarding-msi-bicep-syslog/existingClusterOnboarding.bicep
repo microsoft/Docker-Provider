@@ -53,10 +53,11 @@ var dataCollectionRuleId = resourceId(clusterSubscriptionId, clusterResourceGrou
 var enableHighLogScaleMode = contains(streams, 'Microsoft-ContainerLogV2-HighScale') || enableRetinaNetworkFlowLogs
 var ingestionDceNameFull = 'MSCI-ingest-${workspaceLocation}-${clusterName}'
 var ingestionDceName = (length(ingestionDceNameFull) > 43) ? substring(ingestionDceNameFull, 0, 43) : ingestionDceNameFull
-var ingestionDataCollectionEndpointId = resourceId(clusterSubscriptionId, clusterResourceGroup, 'Microsoft.Insights/dataCollectionEndpoints', ingestionDceName)
+var ingestionDce = endsWith(ingestionDceName, '-') ? substring(ingestionDceName, 0, 42) : ingestionDceName
+var ingestionDataCollectionEndpointId = resourceId(clusterSubscriptionId, clusterResourceGroup, 'Microsoft.Insights/dataCollectionEndpoints', ingestionDce)
 
 resource ingestionDataCollectionEndpoint 'Microsoft.Insights/dataCollectionEndpoints@2022-06-01' = if (enableHighLogScaleMode) {
-  name: ingestionDceName
+  name: ingestionDce
   location: workspaceRegion
   tags: resourceTagValues
   kind: 'Linux'
