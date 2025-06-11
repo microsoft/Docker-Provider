@@ -1,0 +1,25 @@
+{
+  "tool": "credscan",
+  "suppressions": [
+    {
+      "file": "scripts/troubleshoot/TroubleshootError.ps1",
+      "line": 935,
+      "justification": "xx"
+    },
+    {
+      "file": "scripts/troubleshoot/TroubleshootError_nonAzureK8s.ps1", 
+      "line": 452,
+      "justification": "xx"
+    },
+    {
+      "file": "test/testkube/helm-testkube-values.yaml",
+      "line": 506,
+      "justification": "xx"
+    },
+    {
+      "file": "test/testkube/helm-testkube-values.yaml",
+      "line": 687,
+      "justification": "xx"
+    }
+  ]
+}
