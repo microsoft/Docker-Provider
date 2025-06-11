@@ -1613,6 +1613,10 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			}
 			useFromCache := checkIfUseFromCache(&MdsdContainerLogTagRefreshTracker)
 			ContainerLogSchemaV2 = extension.GetInstance(FLBLogger, ContainerType).IsContainerLogV2(useFromCache)
+			// Check if schema version is already set to v2 in environment, otherwise use DCR
+			if strings.Compare(strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION"))), ContainerLogV2SchemaVersion) != 0 {
+				os.Setenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION", ContainerLogV2SchemaVersion)
+			}
 		}
 
 		//ADX Schema & LAv2 schema are almost the same (except resourceId)
