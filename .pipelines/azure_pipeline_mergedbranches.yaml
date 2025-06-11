@@ -70,7 +70,7 @@ extends:
             cp .gdn/.gdnsuppress /mnt/vss/_work/1/.gdn/.gdnsuppress
             echo "Verification - suppression file copied:"
             ls -la /mnt/vss/_work/1/.gdn/
-          displayName: 'Debug and fix Guardian suppression file location'
+          displayName: 'copy over Guardian suppression file'
         - task: ComponentGovernanceComponentDetection@0
         - bash: |
             commit=$(git describe)
