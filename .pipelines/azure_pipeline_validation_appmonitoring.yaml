@@ -18,6 +18,7 @@ variables:
   armServiceConnectionName: 'Appmonitoring_Validation_Pipeline'
   subscription: '5a3b3ba4-3a42-42ae-b2cb-f882345803bc'
   containerRegistry: 'appmonitoring' # this build pushes to aicommon.azurecr.io with an image that is used for testing in validation cluster, then pushes an image once tests pass. That image is latre picked up by the release pipeline and reuploaded to MCR
+  containerRegistryResourceGroup: 'aks-appmonitoring-container-registry'
   repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/applicationinsights/aidev'
   repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/test/azuremonitor/applicationinsights/aidev'
   javaTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-java-app:latest'
@@ -458,12 +459,16 @@ jobs:
 
         # Login to prod ACR (destination) to push the image
         az acr login -n ${{ variables.containerRegistry }}
+        if [ $? -ne 0 ]; then
+          echo "##vso[task.logissue type=error]az acr login to ${{ variables.containerRegistry }} failed."
+          exit 1
+        fi
         
         fullImageNameResolved="$(fullImageName)"
         imageName="${fullImageNameResolved#*/}"
 
         echo "Retagging $(testImageName) as ${imageName} at ${{ variables.containerRegistry }}..."
-        az acr import --name ${{ variables.containerRegistry }} --source $(testImageName) --image ${imageName}
+        az acr import --name ${{ variables.containerRegistry }} --source $(testImageName) --image ${imageName} --resource-group ${{ variables.containerRegistryResourceGroup }}
         if [ $? -ne 0 ]; then
           echo "##vso[task.logissue type=error]az acr import failed."
           exit 1
