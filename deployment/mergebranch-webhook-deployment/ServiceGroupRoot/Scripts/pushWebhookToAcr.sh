@@ -3,11 +3,6 @@ set -e
 
 # Note - This script used in the pipeline as inline script
 
-if [ -z $WEBHOOK_RELEASE ]; then
-  echo "-e error WEBHOOK_RELEASE shouldnt be empty. check release variables"
-  exit 1
-fi
-
 #Make sure that tag being pushed will not overwrite an existing tag in mcr
 echo "Reading existing tags from MCR..."
 #MCR_TAG_RESULT="{\"name\": \"azuremonitor/applicationinsights/aiprod\",  \"tags\": []}"
@@ -75,8 +70,10 @@ else
 fi     
 
 # Get manifest details
-echo "Getting manifest details for source image: $SOURCE_IMAGE_FULL_PATH"
-MANIFEST_JSON=$(docker manifest inspect $SOURCE_IMAGE_FULL_PATH)
+MANIFEST_PATH="https://mcr.microsoft.com/v2/azuremonitor/applicationinsights/aidev/manifests/$TAG"
+echo "Getting manifest details for source image: $SOURCE_IMAGE_FULL_PATH from $MANIFEST_PATH"
+
+MANIFEST_JSON=$(curl -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json" $MANIFEST_PATH)
 echo "Manifest: $MANIFEST_JSON"
 
 # Extract the mediaType
@@ -86,7 +83,7 @@ echo "Media Type: $MEDIA_TYPE"
 if [[ "$MEDIA_TYPE" == "application/vnd.docker.distribution.manifest.list.v2+json" ]]; then
     echo "The image is multi-architecture, continuing with retagging and pushing..."
 else
-    echo "The image is single-architecture, something has to be wrong. Exiting..."
+    echo "The image is single-architecture or could not be checked, something has to be wrong. Exiting..."
     exit 1
 fi
 

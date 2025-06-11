@@ -32,12 +32,8 @@
             "value": "__ACR_NAME__"
           },
           {
-            "name": "WEBHOOK_RELEASE",
-            "value": "__WEBHOOK_RELEASE__"
-          },
-          {
             "name": "WEBHOOK_IMAGE_FULL_PATH",
-            "value": "public/azuremonitor/applicationinsights/__WEBHOOK_RELEASE__:__SOURCE_IMAGE_TAG__"
+            "value": "public/azuremonitor/applicationinsights/aiprod:__SOURCE_IMAGE_TAG__"
           }, 
           {
             "name": "SOURCE_IMAGE_TAG",
