@@ -75,7 +75,8 @@ else
 fi     
 
 # Get manifest details
-MANIFEST_JSON=$(az acr manifest show $SOURCE_IMAGE_FULL_PATH)
+echo "Getting manifest details for source image: $SOURCE_IMAGE_FULL_PATH"
+MANIFEST_JSON=$(docker manifest inspect $SOURCE_IMAGE_FULL_PATH)
 echo "Manifest: $MANIFEST_JSON"
 
 # Extract the mediaType
