@@ -17,8 +17,8 @@
                     {
                       "type": "ShellExtensionType",
                       "properties": {
-                        "imageName": "adm-azurelinux-30-l",
-                        "imageVersion": "v1"
+                        "imageName": "adm-mariner-20-l",
+                        "imageVersion": "v12"
                       }
                     }
                   ]
