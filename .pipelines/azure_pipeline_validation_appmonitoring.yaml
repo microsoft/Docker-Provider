@@ -464,6 +464,10 @@ jobs:
 
         echo "Retagging $(testImageName) as ${imageName} at ${{ variables.containerRegistry }}..."
         az acr import --name ${{ variables.containerRegistry }} --source $(testImageName) --image ${imageName}
+        if [ $? -ne 0 ]; then
+          echo "##vso[task.logissue type=error]az acr import failed."
+          exit 1
+        fi
         
         mkdir -p $(Build.ArtifactStagingDirectory)/linux
         echo "Setting the image name..."
