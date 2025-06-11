@@ -4,22 +4,22 @@
     {
       "file": "scripts/troubleshoot/TroubleshootError.ps1",
       "line": 935,
-      "justification": "xx"
+      "justification": "general kubectl command to get cres for troubleshooting"
     },
     {
       "file": "scripts/troubleshoot/TroubleshootError_nonAzureK8s.ps1", 
       "line": 452,
-      "justification": "xx"
+      "justification": "general kubectl command to get cres for troubleshooting"
     },
     {
       "file": "test/testkube/helm-testkube-values.yaml",
       "line": 506,
-      "justification": "xx"
+      "justification": "a configuration key name, not a secret"
     },
     {
       "file": "test/testkube/helm-testkube-values.yaml",
       "line": 687,
-      "justification": "xx"
+      "justification": "used for ci testing clusters, not public accessible"
     }
   ]
 }
