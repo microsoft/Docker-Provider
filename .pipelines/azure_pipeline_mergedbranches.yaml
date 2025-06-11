@@ -57,7 +57,7 @@ extends:
           - output: pipelineArtifact
             targetPath: '$(Build.ArtifactStagingDirectory)'
             artifactName: drop
-        steps:
+        steps:        
         - bash: |
             echo "Current directory: $(pwd)"
             echo "Contents of .gdn directory:"
@@ -65,7 +65,12 @@ extends:
             ls -la .gdn/ || echo ".gdn directory not found"
             echo "Build.SourcesDirectory: $(Build.SourcesDirectory)"
             echo "System.DefaultWorkingDirectory: $(System.DefaultWorkingDirectory)"
-          displayName: 'Debug Guardian suppression file location'
+            echo "Copying Guardian suppression file to workspace root..."
+            mkdir -p /mnt/vss/_work/1/.gdn
+            cp .gdn/.gdnsuppress /mnt/vss/_work/1/.gdn/.gdnsuppress
+            echo "Verification - suppression file copied:"
+            ls -la /mnt/vss/_work/1/.gdn/
+          displayName: 'Debug and fix Guardian suppression file location'
         - task: ComponentGovernanceComponentDetection@0
         - bash: |
             commit=$(git describe)
