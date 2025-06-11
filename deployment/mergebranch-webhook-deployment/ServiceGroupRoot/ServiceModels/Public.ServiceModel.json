@@ -17,8 +17,8 @@
                     {
                       "type": "ShellExtensionType",
                       "properties": {
-                        "imageName": "adm-ubuntu-1804-l",
-                        "imageVersion": "v18"
+                        "imageName": "adm-azurelinux-30-l",
+                        "imageVersion": "v1"
                       }
                     }
                   ]
