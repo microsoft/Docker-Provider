@@ -17,7 +17,6 @@ RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex (
 # Original code: https://github.com/fluent/fluentd-docker-image/blob/master/v1.16/windows-ltsc2022/Dockerfile
 # rexml 3.2.5 gem was installed during ruby 3.1.1.1 installation for xml parsing, not related to fluentd (dependency of fluentd 1.16.3: https://rubygems.org/gems/fluentd/versions/1.16.3-x64-mingw-ucrt)
 # removed it for vulnerability reasons.
-    # https://github.com/microsoft/Docker-Provider/pull/1341
     # https://github.com/ManageIQ/rbvmomi2/issues/62
     # when ruby has a version change, a different version of rexml might be installed, 
     # so need to review the installed version of rexml, and uninstall it.
