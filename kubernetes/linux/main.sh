@@ -8,7 +8,7 @@ echo "startup script start @ $(date +'%Y-%m-%dT%H:%M:%S')"
 getClusterCloudEnvironment() {
       # Use provided cloud environment variable if its set
       if [ -n "$CLUSTER_CLOUD_ENVIRONMENT" ]; then
-            echo "$CLUSTER_CLOUD_ENVIRONMENT" | tr '[:upper:]' '[:lower:]'
+            echo "$CLUSTER_CLOUD_ENVIRONMENT"
             return
       fi
 

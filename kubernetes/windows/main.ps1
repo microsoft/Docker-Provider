@@ -202,7 +202,7 @@ function Get-ClusterCloudEnvironment {
     $cloud_environment = "azurepubliccloud"
     $clusterCloudEnvironment = [System.Environment]::GetEnvironmentVariable("CLUSTER_CLOUD_ENVIRONMENT", "process")
     if (![string]::IsNullOrEmpty($clusterCloudEnvironment)) {
-        $cloud_environment = $clusterCloudEnvironment.ToLower()
+        $cloud_environment = $clusterCloudEnvironment
     } else {
         Write-Host "CLUSTER_CLOUD_ENVIRONMENT environment variable is not set. Determining cloud environment based on Log Analytics Workspace DOMAIN..."
         # If CLUSTER_CLOUD_ENVIRONMENT is not set, we will determine the cloud environment based on this.

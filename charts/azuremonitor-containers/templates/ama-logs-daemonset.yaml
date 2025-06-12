@@ -140,7 +140,7 @@ spec:
          value: {{ .Values.amalogs.enableTelegrafLivenessprobe | quote }}
        {{- end }}
        - name: CLUSTER_CLOUD_ENVIRONMENT
-         value: {{ .Values.Azure.Cluster.Cloud | quote }}
+         value: "{{ lower .Values.Azure.Cluster.Cloud }}"
        - name: HOSTNAME
          valueFrom:
             fieldRef:
@@ -254,7 +254,7 @@ spec:
             fieldRef:
               fieldPath: spec.nodeName
        - name: CLUSTER_CLOUD_ENVIRONMENT
-         value: {{ .Values.Azure.Cluster.Cloud | quote }}
+         value: "{{ lower .Values.Azure.Cluster.Cloud }}"
        securityContext:
          privileged: true
          capabilities:

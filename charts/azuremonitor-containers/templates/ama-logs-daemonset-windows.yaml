@@ -110,7 +110,7 @@ spec:
          value: "true"
        {{- end }}
        - name: CLUSTER_CLOUD_ENVIRONMENT
-         value: {{ .Values.Azure.Cluster.Cloud | quote }}
+         value: "{{ lower .Values.Azure.Cluster.Cloud }}"
        volumeMounts:
         #  Uncomment when telegraf upgraded to 1.28.5 or higher
         # {{- if .Values.amalogs.enableServiceAccountTimeBoundToken }}
