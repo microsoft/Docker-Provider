@@ -205,7 +205,7 @@ function Get-ClusterCloudEnvironment {
         $cloud_environment = $clusterCloudEnvironment.ToLower()
     } else {
         Write-Host "CLUSTER_CLOUD_ENVIRONMENT environment variable is not set. Determining cloud environment based on Log Analytics Workspace DOMAIN..."
-        # If CLUSTER_CLOUD_ENVIRONMENT is not set, we will determine the cloud environment based on the Log Analytics Workspace DOMAIN.
+        # If CLUSTER_CLOUD_ENVIRONMENT is not set, we will determine the cloud environment based on this.
         # This is a fallback mechanism to ensure that we can still determine the cloud environment.
         $domain = Get-LogAnalyticsWorkspaceDomain
         if (![string]::IsNullOrEmpty($domain)) {

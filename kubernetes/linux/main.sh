@@ -12,6 +12,7 @@ getClusterCloudEnvironment() {
             return
       fi
 
+      # Fallback to reading from the AMA logs secret if not set
       # Default domain
       domain="opinsights.azure.com"
       if [ -e "/etc/ama-logs-secret/DOMAIN" ]; then
