@@ -6,13 +6,20 @@ startTime=$(date +%s)
 echo "startup script start @ $(date +'%Y-%m-%dT%H:%M:%S')"
 
 getClusterCloudEnvironment() {
-      # Use provided cloud environment variable if its set
+      # Supported cloud environments
+      SUPPORTED_CLOUDS=("azurepubliccloud" "azurechinacloud" "azureusgovernmentcloud" "usnat" "ussec" "bleu")
+
+      # Use provided cloud environment variable if it's set and valid
       if [ -n "$CLUSTER_CLOUD_ENVIRONMENT" ]; then
-            echo "$CLUSTER_CLOUD_ENVIRONMENT"
-            return
+            for cloud in "${SUPPORTED_CLOUDS[@]}"; do
+                  if [ "$CLUSTER_CLOUD_ENVIRONMENT" == "$cloud" ]; then
+                        echo "$CLUSTER_CLOUD_ENVIRONMENT"
+                        return
+                  fi
+            done
       fi
 
-      # Fallback to reading from the AMA logs secret if not set
+      # Fallback to reading from the AMA logs secret if not set or not supported
       # Default domain
       domain="opinsights.azure.com"
       if [ -e "/etc/ama-logs-secret/DOMAIN" ]; then

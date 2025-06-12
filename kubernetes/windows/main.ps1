@@ -198,15 +198,26 @@ function Generate-GenevaInfraNameSpaceConfig {
    Remove-Item C:/etc/fluent-bit/fluent-bit-geneva-logs_infra.conf
 }
 
+function Is-SupportedCloudEnvironment {
+    param (
+        [string]$cloudEnvironment
+    )
+    $supportedCloudEnvironments = @("azurepubliccloud", "azurechinacloud", "azureusgovernmentcloud", "usnat", "ussec", "bleu")
+    if ($supportedCloudEnvironments -contains $cloudEnvironment) {
+        return $true
+    }
+    return $false
+}
+
 function Get-ClusterCloudEnvironment {
     $cloud_environment = "azurepubliccloud"
     $clusterCloudEnvironment = [System.Environment]::GetEnvironmentVariable("CLUSTER_CLOUD_ENVIRONMENT", "process")
-    if (![string]::IsNullOrEmpty($clusterCloudEnvironment)) {
+    if (![string]::IsNullOrEmpty($clusterCloudEnvironment) -and (Is-SupportedCloudEnvironment $clusterCloudEnvironment)) {
         $cloud_environment = $clusterCloudEnvironment
     } else {
-        Write-Host "CLUSTER_CLOUD_ENVIRONMENT environment variable is not set. Determining cloud environment based on Log Analytics Workspace DOMAIN..."
-        # If CLUSTER_CLOUD_ENVIRONMENT is not set, we will determine the cloud environment based on this.
-        # This is a fallback mechanism to ensure that we can still determine the cloud environment.
+        Write-Host "CLUSTER_CLOUD_ENVIRONMENT environment variable is not set. Falling back to determine the cloud environment based on the Log Analytics Workspace DOMAIN, as this is required for correct configuration in multi-cloud scenarios when the explicit environment variable is missing."
+        # If CLUSTER_CLOUD_ENVIRONMENT is not set, fall back to determining the cloud environment using the Log Analytics Workspace DOMAIN.
+        # This fallback ensures the agent can still identify the correct cloud environment.
         $domain = Get-LogAnalyticsWorkspaceDomain
         if (![string]::IsNullOrEmpty($domain)) {
             switch ($domain) {
@@ -237,6 +248,7 @@ function Get-LogAnalyticsWorkspaceDomain() {
                 "opinsights.azure.eaglex.ic.gov"      { $domain = "opinsights.azure.eaglex.ic.gov" }
                 "opinsights.azure.microsoft.scloud"   { $domain = "opinsights.azure.microsoft.scloud" }
                 "opinsights.sovcloud-api.fr"          { $domain = "opinsights.sovcloud-api.fr" }
+                default                              { Write-Host "Unknown domain '$domain'. Defaulting to opinsights.azure.com."; $domain = "opinsights.azure.com" }
             }
         } else {
             Write-Host "Domain name either null or empty. Defaulting to opinsights.azure.com."
