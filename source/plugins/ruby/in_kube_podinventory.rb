@@ -80,7 +80,7 @@ module Fluent::Plugin
         else
           # this shouldnt happen just setting default here as safe guard
           $log.warn("in_kube_podinventory::start: setting to default value since got PODS_CHUNK_SIZE nil or empty")
-          @PODS_CHUNK_SIZE = 1000
+          @PODS_CHUNK_SIZE = 10
         end
         $log.info("in_kube_podinventory::start: PODS_CHUNK_SIZE  @ #{@PODS_CHUNK_SIZE}")
 
