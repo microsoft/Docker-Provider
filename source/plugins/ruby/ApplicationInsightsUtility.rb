@@ -303,8 +303,12 @@ class ApplicationInsightsUtility
           workspaceCloud = "AzureChinaCloud"
         elsif workspaceDomain.casecmp("opinsights.azure.us") == 0
           workspaceCloud = "AzureUSGovernment"
-        elsif workspaceDomain.casecmp("opinsights.azure.de") == 0
-          workspaceCloud = "AzureGermanCloud"
+        elsif workspaceDomain.casecmp("opinsights.azure.eaglex.ic.gov") == 0
+          workspaceCloud = "usnat"
+        elsif workspaceDomain.casecmp("opinsights.azure.microsoft.scloud") == 0
+          workspaceCloud = "ussec"
+        elsif workspaceDomain.casecmp("opinsights.sovcloud-api.fr") == 0
+          workspaceCloud = "bleu"
         else
           workspaceCloud = "Unknown"
         end

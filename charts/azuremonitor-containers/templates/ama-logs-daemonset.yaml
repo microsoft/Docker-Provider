@@ -139,6 +139,8 @@ spec:
        - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
          value: {{ .Values.amalogs.enableTelegrafLivenessprobe | quote }}
        {{- end }}
+       - name: CLUSTER_CLOUD_ENVIRONMENT
+         value: {{ .Values.Azure.Cluster.Cloud | quote }}
        - name: HOSTNAME
          valueFrom:
             fieldRef:
@@ -251,6 +253,8 @@ spec:
          valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
+       - name: CLUSTER_CLOUD_ENVIRONMENT
+         value: {{ .Values.Azure.Cluster.Cloud | quote }}
        securityContext:
          privileged: true
          capabilities:

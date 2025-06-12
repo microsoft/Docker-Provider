@@ -5,6 +5,45 @@ startTime=$(date +%s)
 
 echo "startup script start @ $(date +'%Y-%m-%dT%H:%M:%S')"
 
+getClusterCloudEnvironment() {
+      # Use provided cloud environment variable if its set
+      if [ -n "$CLUSTER_CLOUD_ENVIRONMENT" ]; then
+            echo "$CLUSTER_CLOUD_ENVIRONMENT" | tr '[:upper:]' '[:lower:]'
+            return
+      fi
+
+      # Default domain
+      domain="opinsights.azure.com"
+      if [ -e "/etc/ama-logs-secret/DOMAIN" ]; then
+            domain=$(cat /etc/ama-logs-secret/DOMAIN)
+      fi
+
+      # Map domain to cloud environment
+      case "$domain" in
+            "opinsights.azure.com")
+                  echo "azurepubliccloud"
+                  ;;
+            "opinsights.azure.cn")
+                  echo "azurechinacloud"
+                  ;;
+            "opinsights.azure.us")
+                  echo "azureusgovernmentcloud"
+                  ;;
+            "opinsights.azure.eaglex.ic.gov")
+                  echo "usnat"
+                  ;;
+            "opinsights.azure.microsoft.scloud")
+                  echo "ussec"
+                  ;;
+            "opinsights.sovcloud-api.fr")
+                  echo "bleu"
+                  ;;
+            ""|*)
+                  echo "unknown"
+                  ;;
+      esac
+}
+
 startAMACoreAgent() {
       echo "AMACoreAgent: Starting AMA Core Agent since High Log scale mode is enabled"
 
@@ -70,6 +109,15 @@ setCloudSpecificApplicationInsightsConfig() {
          "ussec")
             APPLICATIONINSIGHTS_AUTH="NTc5ZDRiZjUtMTA1Mi0wODQzLThhNTYtMjU5YzEyZmJhZTkyCg=="
             APPLICATIONINSIGHTS_ENDPOINT="https://dc.applicationinsights.azure.microsoft.scloud/v2/track"
+            echo "export APPLICATIONINSIGHTS_AUTH=$APPLICATIONINSIGHTS_AUTH" >>~/.bashrc
+            echo "export APPLICATIONINSIGHTS_ENDPOINT=$APPLICATIONINSIGHTS_ENDPOINT" >>~/.bashrc
+            source ~/.bashrc
+            ;;
+         "bleu")
+            # Bleu cloud is a new cloud environment, we dont have AI in this cloud yet so using Public cloud for now.
+            # update this once we have AI in Bleu cloud.
+            APPLICATIONINSIGHTS_AUTH="NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi"
+            APPLICATIONINSIGHTS_ENDPOINT="https://dc.applicationinsights.azure.com/v2/track"
             echo "export APPLICATIONINSIGHTS_AUTH=$APPLICATIONINSIGHTS_AUTH" >>~/.bashrc
             echo "export APPLICATIONINSIGHTS_ENDPOINT=$APPLICATIONINSIGHTS_ENDPOINT" >>~/.bashrc
             source ~/.bashrc
@@ -455,28 +503,11 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${GENEVA_LOGS_INTEGRATIO
       done
       source integration_npm_config_env_var
 fi
-if [ -e "/etc/ama-logs-secret/DOMAIN" ]; then
-      domain=$(cat /etc/ama-logs-secret/DOMAIN)
-else
-      domain="opinsights.azure.com"
-fi
 
-# Set environment variable for if public cloud by checking the workspace domain.
-if [ -z $domain ]; then
-      CLOUD_ENVIRONMENT="unknown"
-elif [ $domain == "opinsights.azure.com" ]; then
-      CLOUD_ENVIRONMENT="azurepubliccloud"
-elif [ $domain == "opinsights.azure.cn" ]; then
-      CLOUD_ENVIRONMENT="azurechinacloud"
-elif [ $domain == "opinsights.azure.us" ]; then
-      CLOUD_ENVIRONMENT="azureusgovernmentcloud"
-elif [ $domain == "opinsights.azure.eaglex.ic.gov" ]; then
-      CLOUD_ENVIRONMENT="usnat"
-elif [ $domain == "opinsights.azure.microsoft.scloud" ]; then
-      CLOUD_ENVIRONMENT="ussec"
-fi
-export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT
+
+export CLOUD_ENVIRONMENT=$(getClusterCloudEnvironment)
 echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >>~/.bashrc
+echo "Cluster Cloud Environment: $CLOUD_ENVIRONMENT"
 
 export PROXY_ENDPOINT=""
 # Check for internet connectivity or workspace deletion

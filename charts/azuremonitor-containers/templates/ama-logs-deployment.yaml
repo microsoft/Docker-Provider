@@ -126,6 +126,8 @@ spec:
          valueFrom:
             fieldRef:
               fieldPath: spec.nodeName
+       - name: CLUSTER_CLOUD_ENVIRONMENT
+         value: {{ .Values.Azure.Cluster.Cloud | quote }}
        securityContext:
          privileged: true
          capabilities:
