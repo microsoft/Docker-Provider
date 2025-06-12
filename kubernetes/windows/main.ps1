@@ -215,9 +215,7 @@ function Get-ClusterCloudEnvironment {
     if (![string]::IsNullOrEmpty($clusterCloudEnvironment) -and (Is-SupportedCloudEnvironment $clusterCloudEnvironment)) {
         $cloud_environment = $clusterCloudEnvironment
     } else {
-        Write-Host "CLUSTER_CLOUD_ENVIRONMENT environment variable is not set. Falling back to determine the cloud environment based on the Log Analytics Workspace DOMAIN, as this is required for correct configuration in multi-cloud scenarios when the explicit environment variable is missing."
-        # If CLUSTER_CLOUD_ENVIRONMENT is not set, fall back to determining the cloud environment using the Log Analytics Workspace DOMAIN.
-        # This fallback ensures the agent can still identify the correct cloud environment.
+        Write-Host "CLUSTER_CLOUD_ENVIRONMENT environment variable is not set. Falling back to determine the cloud environment based on the Log Analytics Workspace DOMAIN"
         $domain = Get-LogAnalyticsWorkspaceDomain
         if (![string]::IsNullOrEmpty($domain)) {
             switch ($domain) {
