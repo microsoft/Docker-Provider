@@ -1614,7 +1614,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			useFromCache := checkIfUseFromCache(&MdsdContainerLogTagRefreshTracker)
 			ContainerLogSchemaV2 = extension.GetInstance(FLBLogger, ContainerType).IsContainerLogV2(useFromCache)
 			// Check if schema version is already set to v2 in environment, otherwise use DCR
-			Log(fmt.Sprintf("lwtest ContainerLogSchemaV2:", ContainerLogSchemaV2))
+			Log(fmt.Sprintf("lwtest ContainerLogSchemaV2: %v", ContainerLogSchemaV2))
 			if strings.Compare(strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION"))), ContainerLogV2SchemaVersion) != 0 {
 				os.Setenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION", ContainerLogV2SchemaVersion)
 				Log(fmt.Sprintf("AZMON_CONTAINER_LOG_SCHEMA_VERSION set to: %s", os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION")))
