@@ -39,8 +39,6 @@ extends:
         name: Azure-Pipelines-CI-Test-EO
         image: ci-1es-managed-windows-2022
         os: windows
-      suppression:
-        suppressionFile: $(Build.SourcesDirectory)\guardian\SDL\.gdnsuppress 
     customBuildTags:
     - ES365AIMigrationTooling
     stages:
