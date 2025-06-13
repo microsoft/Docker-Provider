@@ -41,7 +41,6 @@ extends:
         os: windows
       suppression:
         suppressionFile: $(Build.SourcesDirectory)\guardian\SDL\.gdnsuppress 
-      
     customBuildTags:
     - ES365AIMigrationTooling
     stages:
