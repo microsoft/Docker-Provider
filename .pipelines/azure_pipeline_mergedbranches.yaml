@@ -60,19 +60,6 @@ extends:
             targetPath: '$(Build.ArtifactStagingDirectory)'
             artifactName: drop
         steps:
-        - bash: |
-            echo "Current directory: $(pwd)"
-            echo "Contents of .gdn directory:"
-            find . -name ".gdnsuppress" -type f
-            ls -la .gdn/ || echo ".gdn directory not found"
-            echo "Build.SourcesDirectory: $(Build.SourcesDirectory)"
-            echo "System.DefaultWorkingDirectory: $(System.DefaultWorkingDirectory)"
-            echo "Copying Guardian suppression file to workspace root..."
-            mkdir -p /mnt/vss/_work/1/.gdn
-            cp .gdn/.gdnsuppress /mnt/vss/_work/1/.gdn/.gdnsuppress
-            echo "Verification - suppression file copied:"
-            ls -la /mnt/vss/_work/1/.gdn/
-          displayName: 'copy over Guardian suppression file'
         - task: ComponentGovernanceComponentDetection@0
         - bash: |
             commit=$(git describe)
