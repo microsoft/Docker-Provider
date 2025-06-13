@@ -305,7 +305,7 @@ class CAdvisorMetricsAPIClient
                     end
                     #telemetry for Container log schema version clusterContainerLogSchemaVersion
                     if (!@clusterContainerLogSchemaVersion.nil? && !@clusterContainerLogSchemaVersion.empty?)
-                      telemetryProps["containerLogVer"] = @clusterContainerLogSchemaVersion
+                      telemetryProps["containerLogVerConf"] = @clusterContainerLogSchemaVersion
                     end
                     if (!@clusterMultilineEnabled.nil? && !@clusterMultilineEnabled.empty?)
                       telemetryProps["multilineEnabled"] = @clusterMultilineEnabled

@@ -1066,7 +1066,7 @@ func getContainerCpuMetricItems(metricInfo map[string]interface{}, hostName, met
 							telemetryProps["int-int-ipsubnetusage"] = "1"
 						}
 						if len(os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION")) > 0 {
-							telemetryProps["containerLogVer"] = os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION")
+							telemetryProps["containerLogVerConf"] = os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION")
 						}
 						if len(os.Getenv("AZMON_MULTILINE_ENABLED")) > 0 {
 							telemetryProps["multilineEnabled"] = os.Getenv("AZMON_MULTILINE_ENABLED")

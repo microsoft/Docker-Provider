@@ -312,6 +312,18 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 				telemetryDimensions["PromFbitBufferSize"] = os.Getenv("AZMON_FBIT_BUFFER_SIZE")
 				telemetryDimensions["PromFbitMemBufLimit"] = os.Getenv("AZMON_FBIT_MEM_BUF_LIMIT")
 
+				containerLogSchemaVersion := os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION")
+				if containerLogSchemaVersion != "" {
+					telemetryDimensions["containerLogVerConf"] = containerLogSchemaVersion
+				}
+				if IsAADMSIAuthMode {
+					if ContainerLogSchemaV2 {
+						telemetryDimensions["containerLogVerDCR"] = "v2"
+					} else {
+						telemetryDimensions["containerLogVerDCR"] = "v1"
+					}
+				}
+
 				if IsNetworkFlowLogsEnabled {
 					telemetryDimensions["nflEnabled"] = "true"
 					IsNetworkFlowLogsThrottleEnabled := os.Getenv("NETWORKFLOW_LOGS_THROTTLE_ENABLED")
