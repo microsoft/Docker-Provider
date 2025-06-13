@@ -326,6 +326,19 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 					telemetryDimensions["nflEnabled"] = "false"
 				}
 
+				containerLogSchemaVersion := os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION")
+				if containerLogSchemaVersion != "" {
+					telemetryDimensions["containerLogVer"] = containerLogSchemaVersion
+				}
+
+				if IsAADMSIAuthMode {
+					if ContainerLogSchemaV2 {
+						telemetryDimensions["containerLogVerDCR"] = "v2"
+					} else {
+						telemetryDimensions["containerLogVerDCR"] = "v1"
+					}
+				}
+
 				SendEvent(eventNameDaemonSetHeartbeat, telemetryDimensions)
 				flushRateMetric := appinsights.NewMetricTelemetry(metricNameAvgFlushRate, flushRate)
 				TelemetryClient.Track(flushRateMetric)

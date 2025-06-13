@@ -25,7 +25,6 @@ class CAdvisorMetricsAPIClient
   @clusterLogTailPath = ENV["AZMON_LOG_TAIL_PATH"]
   @clusterAgentSchemaVersion = ENV["AZMON_AGENT_CFG_SCHEMA_VERSION"]
   @clusterContainerLogEnrich = ENV["AZMON_CLUSTER_CONTAINER_LOG_ENRICH"]
-  @clusterContainerLogSchemaVersion = ENV["AZMON_CONTAINER_LOG_SCHEMA_VERSION"]
   @clusterMultilineEnabled = ENV["AZMON_MULTILINE_ENABLED"]
   @clusterMultilineLanguages = ENV["AZMON_MULTILINE_LANGUAGES"]
   @clusterKubernetesMetadataEnabled = ENV["AZMON_KUBERNETES_METADATA_ENABLED"]
@@ -302,10 +301,6 @@ class CAdvisorMetricsAPIClient
                     # telemetry for subnet ip usage integration
                     if (!@subnetIpUsageMetrics.nil? && !@subnetIpUsageMetrics.empty?)
                       telemetryProps["int-ipsubnetusage"] = "1"
-                    end
-                    #telemetry for Container log schema version clusterContainerLogSchemaVersion
-                    if (!@clusterContainerLogSchemaVersion.nil? && !@clusterContainerLogSchemaVersion.empty?)
-                      telemetryProps["containerLogVer"] = @clusterContainerLogSchemaVersion
                     end
                     if (!@clusterMultilineEnabled.nil? && !@clusterMultilineEnabled.empty?)
                       telemetryProps["multilineEnabled"] = @clusterMultilineEnabled

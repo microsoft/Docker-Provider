@@ -1617,7 +1617,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			Log(fmt.Sprintf("lwtest ContainerLogSchemaV2: %v", ContainerLogSchemaV2))
 			if strings.Compare(strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION"))), ContainerLogV2SchemaVersion) != 0 {
 				os.Setenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION", ContainerLogV2SchemaVersion)
-				Log(fmt.Sprintf("AZMON_CONTAINER_LOG_SCHEMA_VERSION set to: %s", os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION")))
+				Log(fmt.Sprintf("lwtest AZMON_CONTAINER_LOG_SCHEMA_VERSION set to: %s", os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION")))
 			}
 		}
 

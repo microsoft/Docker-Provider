@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	"Docker-Provider/source/plugins/go/src/extension"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -74,6 +76,8 @@ var (
 	winContainerPrevMetricRate              = make(map[string]float64)
 	Log                                     *logrus.Logger
 	osType                                  string
+	IsContainerLogV2DCR                     bool
+	ContainerType                           = os.Getenv("CONTAINER_TYPE")
 )
 
 func init() {
@@ -99,6 +103,8 @@ func init() {
 
 	Log.SetOutput(file)
 	Log.SetLevel(logrus.InfoLevel)
+
+	FLBLogger = CreateLogger(LogPath)
 }
 
 type metricDataItem map[string]interface{}
@@ -229,6 +235,10 @@ func getResponse(winNode map[string]string, relativeUri string) (*http.Response,
 }
 
 func GetMetrics(winNode map[string]string, namespaceFilteringMode string, namespaces []string, metricTime string) []metricDataItem {
+	if IsAADMSIAuthMode() {
+		IsContainerLogV2DCR = extension.GetInstance(FLBLogger, ContainerType).IsContainerLogV2(false)
+	}
+
 	cAdvisorStats, err := getSummaryStatsFromCAdvisor(winNode)
 
 	if err != nil {
@@ -1067,6 +1077,13 @@ func getContainerCpuMetricItems(metricInfo map[string]interface{}, hostName, met
 						}
 						if len(os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION")) > 0 {
 							telemetryProps["containerLogVer"] = os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION")
+							if IsAADMSIAuthMode() {
+								if IsContainerLogV2DCR {
+									telemetryProps["containerLogVerDCR"] = "v2"
+								} else {
+									telemetryProps["containerLogVerDCR"] = "v1"
+								}
+							}
 						}
 						if len(os.Getenv("AZMON_MULTILINE_ENABLED")) > 0 {
 							telemetryProps["multilineEnabled"] = os.Getenv("AZMON_MULTILINE_ENABLED")
