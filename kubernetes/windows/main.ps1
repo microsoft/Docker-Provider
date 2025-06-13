@@ -144,11 +144,10 @@ function Set-CommonAMAEnvironmentVariables {
 
     $clusterCloudEnvironment = Get-ClusterCloudEnvironment
      if (![string]::IsNullOrEmpty($clusterCloudEnvironment)) {
-        [System.Environment]::SetEnvironmentVariable("CLUSTER_CLOUD_ENVIRONMENT", $clusterCloudEnvironment, "machine")
-        Write-Host "Successfully set environment variable CLUSTER_CLOUD_ENVIRONMENT - $($clusterCloudEnvironment) for target 'machine'..."
+        Set-ProcessAndMachineEnvVariables "CLUSTER_CLOUD_ENVIRONMENT" $clusterCloudEnvironment
     }
     else {
-        Write-Host "Failed to set environment variable CLUSTER_CLOUD_ENVIRONMENT for target 'machine' since it is either null or empty"
+        Write-Host "Failed to set environment variable CLUSTER_CLOUD_ENVIRONMENT since it is either null or empty"
     }
 
     Set-ProcessAndMachineEnvVariables "MA_RoleEnvironment_Location" $aksRegion
@@ -293,7 +292,7 @@ function Get-McsGlobalEndpoint() {
             "azureusgovernmentcloud"  { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.us" }
             "usnat"                   { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.eaglex.ic.gov" }
             "ussec"                   { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.microsoft.scloud" }
-            "bleu"                    { $mcs_globalendpoint = "https://global.handler.control..sovcloud-api.fr"}
+            "bleu"                    { $mcs_globalendpoint = "https://global.handler.control.sovcloud-api.fr" }
         }
     }
     return $mcs_globalendpoint
