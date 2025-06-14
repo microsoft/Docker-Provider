@@ -5,10 +5,10 @@ startTime=$(date +%s)
 
 echo "startup script start @ $(date +'%Y-%m-%dT%H:%M:%S')"
 
-getClusterCloudEnvironment() {
-      # Supported cloud environments
-      SUPPORTED_CLOUDS=("azurepubliccloud" "azurechinacloud" "azureusgovernmentcloud" "usnat" "ussec" "bleu")
+# Supported cloud environments
+SUPPORTED_CLOUDS=("azurepubliccloud" "azurechinacloud" "azureusgovernmentcloud" "usnat" "ussec" "bleu")
 
+getClusterCloudEnvironment() {
       # Use provided cloud environment variable if it's set and valid
       if [ -n "$CLUSTER_CLOUD_ENVIRONMENT" ]; then
             for cloud in "${SUPPORTED_CLOUDS[@]}"; do
@@ -27,7 +27,7 @@ getClusterCloudEnvironment() {
       fi
 
       # Map domain to cloud environment
-      case "$domain" in
+            case "$domain" in
             "opinsights.azure.com")
                   echo "azurepubliccloud"
                   ;;
