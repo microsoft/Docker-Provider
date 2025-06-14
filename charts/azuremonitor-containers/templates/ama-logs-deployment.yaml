@@ -127,7 +127,7 @@ spec:
             fieldRef:
               fieldPath: spec.nodeName
        - name: CLUSTER_CLOUD_ENVIRONMENT
-         value: "{{ lower .Values.Azure.Cluster.Cloud }}"
+         value: "{{ .Values.Azure.Cluster.Cloud | lower }}"
        securityContext:
          privileged: true
          capabilities:
