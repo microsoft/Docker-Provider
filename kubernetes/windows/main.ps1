@@ -142,9 +142,10 @@ function Set-CommonAMAEnvironmentVariables {
         Write-Host "Failed to set environment variable AKS_REGION for target 'machine' since it is either null or empty"
     }
 
-    $clusterCloudEnvironment = Get-ClusterCloudEnvironment
-     if (![string]::IsNullOrEmpty($clusterCloudEnvironment)) {
-        Set-ProcessAndMachineEnvVariables "CLUSTER_CLOUD_ENVIRONMENT" $clusterCloudEnvironment
+    $clusterCloudEnvironment = [System.Environment]::GetEnvironmentVariable("CLUSTER_CLOUD_ENVIRONMENT", "process")
+    if (![string]::IsNullOrEmpty($clusterCloudEnvironment)) {
+        [System.Environment]::SetEnvironmentVariable("CLUSTER_CLOUD_ENVIRONMENT", $clusterCloudEnvironment, "machine")
+        Write-Host "Successfully set environment variable CLUSTER_CLOUD_ENVIRONMENT - $($clusterCloudEnvironment) for target 'machine'..."
     }
     else {
         Write-Host "Failed to set environment variable CLUSTER_CLOUD_ENVIRONMENT since it is either null or empty"
@@ -162,8 +163,10 @@ function Set-AMA3PEnvironmentVariables {
     Set-ProcessAndMachineEnvVariables "customRegion" $aksRegion
     Set-ProcessAndMachineEnvVariables "customResourceId" $aksResourceId
     Set-ProcessAndMachineEnvVariables "MCS_CUSTOM_RESOURCE_ID" $aksResourceId
-    $mcs_endpoint = Get-McsEndpoint
-    $mcs_globalendpoint = Get-McsGlobalEndpoint
+    $domain = Get-LogAnalyticsWorkspaceDomain
+    $cloud_environment = Get-ClusterCloudEnvironment($domain)
+    $mcs_endpoint = Get-McsEndpoint($cloud_environment)
+    $mcs_globalendpoint = Get-McsGlobalEndpoint($cloud_environment)
     Set-ProcessAndMachineEnvVariables "MCS_AZURE_RESOURCE_ENDPOINT" $mcs_endpoint
     Set-ProcessAndMachineEnvVariables "MCS_GLOBAL_ENDPOINT" $mcs_globalendpoint
 }
@@ -208,15 +211,17 @@ function Is-SupportedCloudEnvironment {
     return $false
 }
 
-function Get-ClusterCloudEnvironment {
+function Get-ClusterCloudEnvironment{
+    param (
+        [string]$logAnalyticsWorkspaceDomain
+    )
     $cloud_environment = "azurepubliccloud"
     $clusterCloudEnvironment = [System.Environment]::GetEnvironmentVariable("CLUSTER_CLOUD_ENVIRONMENT", "process")
     if (![string]::IsNullOrEmpty($clusterCloudEnvironment) -and (Is-SupportedCloudEnvironment $clusterCloudEnvironment)) {
         $cloud_environment = $clusterCloudEnvironment
     } else {
         Write-Host "CLUSTER_CLOUD_ENVIRONMENT environment variable is not set. Falling back to determine the cloud environment based on the Log Analytics Workspace DOMAIN"
-        $domain = Get-LogAnalyticsWorkspaceDomain
-        if (![string]::IsNullOrEmpty($domain)) {
+        if (![string]::IsNullOrEmpty($logAnalyticsWorkspaceDomain)) {
             switch ($domain) {
                 "opinsights.azure.com"                { $cloud_environment = "azurepubliccloud" }
                 "opinsights.azure.cn"                 { $cloud_environment = "azurechinacloud" }
@@ -254,16 +259,20 @@ function Get-LogAnalyticsWorkspaceDomain() {
     return $domain
 }
 
-function Get-McsEndpoint() {
+function Get-McsEndpoint {
+    param (
+        [string]$cloud_environment
+    )
     $mcs_endpoint = "https://monitor.azure.com/"
-    $cloud_environment = Get-ClusterCloudEnvironment
-    switch ($cloud_environment) {
-        "azurepubliccloud"        { $mcs_endpoint = "https://monitor.azure.com/" }
-        "azurechinacloud"         { $mcs_endpoint = "https://monitor.azure.cn/" }
-        "azureusgovernmentcloud"  { $mcs_endpoint = "https://monitor.azure.us/" }
-        "usnat"                   { $mcs_endpoint = "https://monitor.azure.eaglex.ic.gov/" }
-        "ussec"                   { $mcs_endpoint = "https://monitor.azure.microsoft.scloud/" }
-        "bleu"                    { $mcs_endpoint = "https://monitor.sovcloud-api.fr/" }
+    if (![string]::IsNullOrEmpty($cloud_environment)) {
+        switch ($cloud_environment) {
+            "azurepubliccloud"        { $mcs_endpoint = "https://monitor.azure.com/" }
+            "azurechinacloud"         { $mcs_endpoint = "https://monitor.azure.cn/" }
+            "azureusgovernmentcloud"  { $mcs_endpoint = "https://monitor.azure.us/" }
+            "usnat"                   { $mcs_endpoint = "https://monitor.azure.eaglex.ic.gov/" }
+            "ussec"                   { $mcs_endpoint = "https://monitor.azure.microsoft.scloud/" }
+            "bleu"                    { $mcs_endpoint = "https://monitor.sovcloud-api.fr/" }
+        }
     }
     return $mcs_endpoint
 }
@@ -279,20 +288,24 @@ function Is-CanaryRegion () {
     return $false
 }
 
-function Get-McsGlobalEndpoint() {
+function Get-McsGlobalEndpoint{
+    param (
+        [string]$cloud_environment
+    )
     $mcs_globalendpoint = "https://global.handler.control.monitor.azure.com"
     $aksRegion = [System.Environment]::GetEnvironmentVariable("AKS_REGION", "process")
     if Is-CanaryRegion $aksRegion {
         $mcs_globalendpoint = "https://global.handler.canary.control.monitor.azure.com"
     } else {
-        $cloud_environment = Get-ClusterCloudEnvironment
-        switch ($cloud_environment) {
-            "azurepubliccloud"        { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.com" }
-            "azurechinacloud"         { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.cn" }
-            "azureusgovernmentcloud"  { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.us" }
-            "usnat"                   { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.eaglex.ic.gov" }
-            "ussec"                   { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.microsoft.scloud" }
-            "bleu"                    { $mcs_globalendpoint = "https://global.handler.control.sovcloud-api.fr" }
+         if (![string]::IsNullOrEmpty($cloud_environment)) {
+            switch ($cloud_environment) {
+                "azurepubliccloud"        { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.com" }
+                "azurechinacloud"         { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.cn" }
+                "azureusgovernmentcloud"  { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.us" }
+                "usnat"                   { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.eaglex.ic.gov" }
+                "ussec"                   { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.microsoft.scloud" }
+                "bleu"                    { $mcs_globalendpoint = "https://global.handler.control.sovcloud-api.fr" }
+            }
         }
     }
     return $mcs_globalendpoint
@@ -301,9 +314,9 @@ function Get-McsGlobalEndpoint() {
 #register fluentd as a windows service
 
 function Set-EnvironmentVariables {
-    $cloud_environment = Get-ClusterCloudEnvironment
     $domain = Get-LogAnalyticsWorkspaceDomain
-    $mcs_endpoint = Get-McsEndpoint
+    $cloud_environment = Get-ClusterCloudEnvironment($domain)
+    $mcs_endpoint = Get-McsEndpoint($cloud_environment)
 
     Write-Host "Log analytics domain: $($domain)"
     Write-Host "MCS endpoint: $($mcs_endpoint)"
