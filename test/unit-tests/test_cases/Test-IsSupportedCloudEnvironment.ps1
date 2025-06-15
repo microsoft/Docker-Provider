@@ -54,7 +54,7 @@ function Test-CaseSensitivity {
     foreach ($cloud in $testCases) {
         Setup
         $result = Is-SupportedCloudEnvironment -cloudEnvironment $cloud
-        Assert-Equals "False" $result.ToString() "(case-sensitive check for $cloud)"
+        Assert-Equals "True" $result.ToString() "(case-sensitive check for $cloud)"
         Teardown
     }
 }

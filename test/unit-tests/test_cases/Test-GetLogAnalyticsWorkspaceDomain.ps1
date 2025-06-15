@@ -34,7 +34,7 @@ function Test-ValidDomains {
 
     foreach ($testCase in $testCases) {
         Setup
-        Mock-File "etc/ama-logs-secret/DOMAIN" $testCase.domain
+        Mock-File "/etc/ama-logs-secret/DOMAIN" $testCase.domain
         $result = Get-LogAnalyticsWorkspaceDomain
         Assert-Equals $testCase.expected $result "(for domain $($testCase.domain))"
         Teardown
@@ -52,7 +52,7 @@ function Test-UnknownDomain {
 
     foreach ($domain in $testCases) {
         Setup
-        Mock-File "etc/ama-logs-secret/DOMAIN" $domain
+        Mock-File "/etc/ama-logs-secret/DOMAIN" $domain
         $result = Get-LogAnalyticsWorkspaceDomain
         Assert-Equals "opinsights.azure.com" $result "(unknown domain $domain should default to opinsights.azure.com)"
         Teardown
@@ -61,7 +61,7 @@ function Test-UnknownDomain {
 
 function Test-EmptyDomain {
     Setup
-    Mock-File "etc/ama-logs-secret/DOMAIN" ""
+    Mock-File "/etc/ama-logs-secret/DOMAIN" ""
     $result = Get-LogAnalyticsWorkspaceDomain
     Assert-Equals "opinsights.azure.com" $result "(empty domain should default to opinsights.azure.com)"
     Teardown
@@ -85,7 +85,7 @@ function Test-CaseSensitivity {
 
     foreach ($domain in $testCases) {
         Setup
-        Mock-File "etc/ama-logs-secret/DOMAIN" $domain
+        Mock-File "/etc/ama-logs-secret/DOMAIN" $domain
         $result = Get-LogAnalyticsWorkspaceDomain
         Assert-Equals "opinsights.azure.com" $result "(case-sensitive check for $domain)"
         Teardown
