@@ -1,41 +1,37 @@
-# PowerShell function for testing Get-ClusterCloudEnvironment
-# Original source: kubernetes/windows/main.ps1
+function Is-SupportedCloudEnvironment {
+    param (
+        [string]$cloudEnvironment
+    )
+    $supportedCloudEnvironments = @("azurepubliccloud", "azurechinacloud", "azureusgovernmentcloud", "usnat", "ussec", "bleu")
+    if ($supportedCloudEnvironments -contains $cloudEnvironment) {
+        return $true
+    }
+    return $false
+}
 
-$script:SUPPORTED_CLOUDS = @(
-    "azurepubliccloud",
-    "azurechinacloud",
-    "azureusgovernmentcloud",
-    "usnat",
-    "ussec",
-    "bleu"
-)
-
-function Get-ClusterCloudEnvironment() {
-    # Use provided cloud environment variable if it's set and valid
-    if ($env:CLUSTER_CLOUD_ENVIRONMENT) {
-        foreach ($cloud in $SUPPORTED_CLOUDS) {
-            if ($env:CLUSTER_CLOUD_ENVIRONMENT -eq $cloud) {
-                return $env:CLUSTER_CLOUD_ENVIRONMENT
+function Get-ClusterCloudEnvironment {
+    param (
+        [string]$logAnalyticsWorkspaceDomain
+    )
+    $cloud_environment = "azurepubliccloud"
+    $clusterCloudEnvironment = [System.Environment]::GetEnvironmentVariable("CLUSTER_CLOUD_ENVIRONMENT", "process")
+    if (![string]::IsNullOrEmpty($clusterCloudEnvironment) -and (Is-SupportedCloudEnvironment $clusterCloudEnvironment)) {
+        $cloud_environment = $clusterCloudEnvironment
+    } else {
+        Write-Host "CLUSTER_CLOUD_ENVIRONMENT environment variable is not set. Falling back to determine the cloud environment based on the Log Analytics Workspace DOMAIN"
+        if (![string]::IsNullOrEmpty($logAnalyticsWorkspaceDomain)) {
+            switch ($logAnalyticsWorkspaceDomain) {
+                "opinsights.azure.com"                { $cloud_environment = "azurepubliccloud" }
+                "opinsights.azure.cn"                 { $cloud_environment = "azurechinacloud" }
+                "opinsights.azure.us"                 { $cloud_environment = "azureusgovernmentcloud" }
+                "opinsights.azure.eaglex.ic.gov"      { $cloud_environment = "usnat" }
+                "opinsights.azure.microsoft.scloud"   { $cloud_environment = "ussec" }
+                "opinsights.sovcloud-api.fr"          { $cloud_environment = "bleu" }
+                default                               { Write-Host "Unknown domain '$logAnalyticsWorkspaceDomain'. Defaulting to azurepubliccloud."; $cloud_environment = "azurepubliccloud" }
             }
+        } else {
+            Write-Host "Domain name either null or empty. Defaulting to azurepubliccloud."
         }
     }
-
-    # Fallback to reading from the AMA logs secret if not set or not supported
-    # Default domain
-    $domain = "opinsights.azure.com"
-    $domainPath = Join-Path $script:TEST_DIR "etc/ama-logs-secret/DOMAIN"
-    if (Test-Path $domainPath) {
-        $domain = Get-Content $domainPath
-    }
-
-    # Map domain to cloud environment
-    switch ($domain) {
-        "opinsights.azure.com"                { return "azurepubliccloud" }
-        "opinsights.azure.cn"                 { return "azurechinacloud" }
-        "opinsights.azure.us"                 { return "azureusgovernmentcloud" }
-        "opinsights.azure.eaglex.ic.gov"      { return "usnat" }
-        "opinsights.azure.microsoft.scloud"   { return "ussec" }
-        "opinsights.sovcloud-api.fr"          { return "bleu" }
-        default                               { return "unknown" }
-    }
+    return $cloud_environment
 }

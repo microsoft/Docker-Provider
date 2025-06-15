@@ -17,7 +17,7 @@ function Test-ValidEnvironmentVariables {
     foreach ($cloud in $testCases) {
         Setup
         $env:CLUSTER_CLOUD_ENVIRONMENT = $cloud
-        $result = Get-ClusterCloudEnvironment
+        $result = Get-ClusterCloudEnvironment "dummy"  # domain parameter won't be used due to env var
         Assert-Equals $cloud $result "(with CLUSTER_CLOUD_ENVIRONMENT=$cloud)"
         Teardown
     }
@@ -26,8 +26,8 @@ function Test-ValidEnvironmentVariables {
 function Test-InvalidEnvironmentVariable {
     Setup
     $env:CLUSTER_CLOUD_ENVIRONMENT = "invalidcloud"
-    $result = Get-ClusterCloudEnvironment
-    Assert-Equals "unknown" $result "(with invalid CLUSTER_CLOUD_ENVIRONMENT)"
+    $result = Get-ClusterCloudEnvironment "dummy"
+    Assert-Equals "azurepubliccloud" $result "(with invalid CLUSTER_CLOUD_ENVIRONMENT - should default to public cloud)"
     Teardown
 }
 
@@ -44,8 +44,7 @@ function Test-DomainFileFallback {
     foreach ($testCase in $testCases) {
         Setup
         Remove-Item Env:\CLUSTER_CLOUD_ENVIRONMENT -ErrorAction SilentlyContinue
-        Mock-File "etc/ama-logs-secret/DOMAIN" $testCase.domain
-        $result = Get-ClusterCloudEnvironment
+        $result = Get-ClusterCloudEnvironment $testCase.domain
         Assert-Equals $testCase.expected $result "(with domain=$($testCase.domain))"
         Teardown
     }
@@ -54,36 +53,40 @@ function Test-DomainFileFallback {
 function Test-InvalidDomain {
     Setup
     Remove-Item Env:\CLUSTER_CLOUD_ENVIRONMENT -ErrorAction SilentlyContinue
-    Mock-File "etc/ama-logs-secret/DOMAIN" "invalid.domain.com"
-    $result = Get-ClusterCloudEnvironment
-    Assert-Equals "unknown" $result "(with invalid domain)"
+    $result = Get-ClusterCloudEnvironment "invalid.domain.com"
+    Assert-Equals "azurepubliccloud" $result "(with invalid domain - should default to public cloud)"
     Teardown
 }
 
 function Test-EmptyDomain {
     Setup
     Remove-Item Env:\CLUSTER_CLOUD_ENVIRONMENT -ErrorAction SilentlyContinue
-    Mock-File "etc/ama-logs-secret/DOMAIN" ""
-    $result = Get-ClusterCloudEnvironment
-    Assert-Equals "unknown" $result "(with empty domain)"
+    $result = Get-ClusterCloudEnvironment ""
+    Assert-Equals "azurepubliccloud" $result "(with empty domain - should default to public cloud)"
     Teardown
 }
 
-function Test-MissingDomainFile {
+function Test-NullDomain {
     Setup
     Remove-Item Env:\CLUSTER_CLOUD_ENVIRONMENT -ErrorAction SilentlyContinue
-    # Don't create the domain file
-    $result = Get-ClusterCloudEnvironment
-    Assert-Equals "azurepubliccloud" $result "(with missing domain file - should use default)"
+    $result = Get-ClusterCloudEnvironment $null
+    Assert-Equals "azurepubliccloud" $result "(with null domain - should default to public cloud)"
     Teardown
 }
 
 function Test-EnvPrecedenceOverDomain {
     Setup
     $env:CLUSTER_CLOUD_ENVIRONMENT = "azurepubliccloud"
-    Mock-File "etc/ama-logs-secret/DOMAIN" "opinsights.azure.cn"
-    $result = Get-ClusterCloudEnvironment
+    $result = Get-ClusterCloudEnvironment "opinsights.azure.cn"
     Assert-Equals "azurepubliccloud" $result "(env should take precedence over domain)"
+    Teardown
+}
+
+function Test-SupportedCloudCheck {
+    Setup
+    $env:CLUSTER_CLOUD_ENVIRONMENT = "AzurePublicCloud"  # Case sensitive
+    $result = Get-ClusterCloudEnvironment "dummy"
+    Assert-Equals "azurepubliccloud" $result "(should default to public cloud for unsupported case)"
     Teardown
 }
 
@@ -97,8 +100,9 @@ function Run-AllTests {
     Test-DomainFileFallback
     Test-InvalidDomain
     Test-EmptyDomain
-    Test-MissingDomainFile
+    Test-NullDomain
     Test-EnvPrecedenceOverDomain
+    Test-SupportedCloudCheck
 
     Print-TestSummary
 }
