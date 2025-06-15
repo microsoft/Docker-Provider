@@ -1,6 +1,23 @@
 # PowerShell function for testing Get-LogAnalyticsWorkspaceDomain
 # Original source: kubernetes/windows/main.ps1
 
+# Mock Test-Path and Get-Content for testing
+function Test-Path {
+    param([string]$Path)
+    if ($Path -eq "/etc/ama-logs-secret/DOMAIN") {
+        return Test-Path (Join-Path $script:TEST_DIR "/etc/ama-logs-secret/DOMAIN")
+    }
+    Microsoft.PowerShell.Management\Test-Path $Path
+}
+
+function Get-Content {
+    param([string]$Path)
+    if ($Path -eq "/etc/ama-logs-secret/DOMAIN") {
+        return Microsoft.PowerShell.Management\Get-Content (Join-Path $script:TEST_DIR "/etc/ama-logs-secret/DOMAIN")
+    }
+    Microsoft.PowerShell.Management\Get-Content $Path
+}
+
 function Get-LogAnalyticsWorkspaceDomain() {
     $defaultDomain = "opinsights.azure.com"
     $domainFile = "/etc/ama-logs-secret/DOMAIN"

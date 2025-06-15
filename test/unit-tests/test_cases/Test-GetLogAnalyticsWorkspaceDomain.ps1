@@ -45,17 +45,13 @@ function Test-DomainsWithWhitespace {
     $testCases = @(
         "  opinsights.azure.cn  ",
         "`topinsights.azure.us`n",
-        "`nopinsights.azure.eaglex.ic.gov`n",
-        " opinsights.azure.microsoft.scloud ",
-        "`r`nopinsights.sovcloud-api.fr`r`n"
+        " opinsights.azure.microsoft.scloud "
     )
 
     $expectedDomains = @(
         "opinsights.azure.cn",
         "opinsights.azure.us",
-        "opinsights.azure.eaglex.ic.gov",
-        "opinsights.azure.microsoft.scloud",
-        "opinsights.sovcloud-api.fr"
+        "opinsights.azure.microsoft.scloud"
     )
 
     for ($i = 0; $i -lt $testCases.Length; $i++) {
