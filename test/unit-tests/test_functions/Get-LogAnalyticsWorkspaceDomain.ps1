@@ -5,24 +5,23 @@ function Get-LogAnalyticsWorkspaceDomain() {
     $defaultDomain = "opinsights.azure.com"
     $domainFile = "/etc/ama-logs-secret/DOMAIN"
     if (Test-Path $domainFile) {
-        $domain = Get-Content $domainFile
+        $domain = (Get-Content $domainFile).Trim()
         if (![string]::IsNullOrEmpty($domain)) {
-            switch ($domain) {
-                "opinsights.azure.cn"                 { $domain = "opinsights.azure.cn" }
-                "opinsights.azure.us"                 { $domain = "opinsights.azure.us" }
-                "opinsights.azure.eaglex.ic.gov"      { $domain = "opinsights.azure.eaglex.ic.gov" }
-                "opinsights.azure.microsoft.scloud"   { $domain = "opinsights.azure.microsoft.scloud" }
-                "opinsights.sovcloud-api.fr"          { $domain = "opinsights.sovcloud-api.fr" }
-                default                              { Write-Host "Unknown domain '$domain'. Defaulting to opinsights.azure.com."; $domain = $defaultDomain }
+            switch ($domain.ToLower()) {
+                "opinsights.azure.cn"                 { return "opinsights.azure.cn" }
+                "opinsights.azure.us"                 { return "opinsights.azure.us" }
+                "opinsights.azure.eaglex.ic.gov"      { return "opinsights.azure.eaglex.ic.gov" }
+                "opinsights.azure.microsoft.scloud"   { return "opinsights.azure.microsoft.scloud" }
+                "opinsights.sovcloud-api.fr"          { return "opinsights.sovcloud-api.fr" }
+                "opinsights.azure.com"                { return "opinsights.azure.com" }
+                default                              { Write-Host "Unknown domain '$domain'. Defaulting to opinsights.azure.com."; return $defaultDomain }
             }
         } else {
-            $domain = $defaultDomain
             Write-Host "Domain name either null or empty. Defaulting to opinsights.azure.com."
+            return $defaultDomain
         }
     } else {
         Write-Host "Domain file not found. Defaulting to opinsights.azure.com."
-        $domain = $defaultDomain
+        return $defaultDomain
     }
-
-    return $domain
 }

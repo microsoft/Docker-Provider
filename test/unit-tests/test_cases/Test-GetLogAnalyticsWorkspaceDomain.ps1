@@ -41,6 +41,32 @@ function Test-ValidDomains {
     }
 }
 
+function Test-DomainsWithWhitespace {
+    $testCases = @(
+        "  opinsights.azure.cn  ",
+        "`topinsights.azure.us`n",
+        "`nopinsights.azure.eaglex.ic.gov`n",
+        " opinsights.azure.microsoft.scloud ",
+        "`r`nopinsights.sovcloud-api.fr`r`n"
+    )
+
+    $expectedDomains = @(
+        "opinsights.azure.cn",
+        "opinsights.azure.us",
+        "opinsights.azure.eaglex.ic.gov",
+        "opinsights.azure.microsoft.scloud",
+        "opinsights.sovcloud-api.fr"
+    )
+
+    for ($i = 0; $i -lt $testCases.Length; $i++) {
+        Setup
+        Mock-File "/etc/ama-logs-secret/DOMAIN" $testCases[$i]
+        $result = Get-LogAnalyticsWorkspaceDomain
+        Assert-Equals $expectedDomains[$i] $result "(for domain with whitespace: $($testCases[$i]))"
+        Teardown
+    }
+}
+
 function Test-UnknownDomain {
     $testCases = @(
         "unknown.domain.com",
@@ -77,17 +103,18 @@ function Test-MissingDomainFile {
 
 function Test-CaseSensitivity {
     $testCases = @(
-        "OPINSIGHTS.AZURE.COM",
-        "Opinsights.Azure.Com",
-        "opinsights.AZURE.cn",
-        "OPINSIGHTS.azure.us"
+        @{input="OPINSIGHTS.AZURE.CN"; expected="opinsights.azure.cn"},
+        @{input="Opinsights.Azure.Us"; expected="opinsights.azure.us"},
+        @{input="opinsights.AZURE.eaglex.ic.gov"; expected="opinsights.azure.eaglex.ic.gov"},
+        @{input="OPINSIGHTS.azure.microsoft.SCLOUD"; expected="opinsights.azure.microsoft.scloud"},
+        @{input="OpInsights.SovCloud-Api.Fr"; expected="opinsights.sovcloud-api.fr"}
     )
 
-    foreach ($domain in $testCases) {
+    foreach ($testCase in $testCases) {
         Setup
-        Mock-File "/etc/ama-logs-secret/DOMAIN" $domain
+        Mock-File "/etc/ama-logs-secret/DOMAIN" $testCase.input
         $result = Get-LogAnalyticsWorkspaceDomain
-        Assert-Equals "opinsights.azure.com" $result "(case-sensitive check for $domain)"
+        Assert-Equals $testCase.expected $result "(case-insensitive check for $($testCase.input))"
         Teardown
     }
 }
@@ -98,6 +125,7 @@ function Run-AllTests {
     Write-Host "================================================"
 
     Test-ValidDomains
+    Test-DomainsWithWhitespace
     Test-UnknownDomain
     Test-EmptyDomain
     Test-MissingDomainFile

@@ -222,7 +222,7 @@ function Get-ClusterCloudEnvironment{
     } else {
         Write-Host "CLUSTER_CLOUD_ENVIRONMENT environment variable is not set. Falling back to determine the cloud environment based on the Log Analytics Workspace DOMAIN"
         if (![string]::IsNullOrEmpty($logAnalyticsWorkspaceDomain)) {
-            switch ($domain) {
+            switch ($logAnalyticsWorkspaceDomain.ToLower()) {
                 "opinsights.azure.com"                { $cloud_environment = "azurepubliccloud" }
                 "opinsights.azure.cn"                 { $cloud_environment = "azurechinacloud" }
                 "opinsights.azure.us"                 { $cloud_environment = "azureusgovernmentcloud" }
@@ -242,26 +242,25 @@ function Get-LogAnalyticsWorkspaceDomain() {
     $defaultDomain = "opinsights.azure.com"
     $domainFile = "/etc/ama-logs-secret/DOMAIN"
     if (Test-Path $domainFile) {
-        $domain = Get-Content $domainFile
+        $domain = (Get-Content $domainFile).Trim()
         if (![string]::IsNullOrEmpty($domain)) {
-            switch ($domain) {
-                "opinsights.azure.cn"                 { $domain = "opinsights.azure.cn" }
-                "opinsights.azure.us"                 { $domain = "opinsights.azure.us" }
-                "opinsights.azure.eaglex.ic.gov"      { $domain = "opinsights.azure.eaglex.ic.gov" }
-                "opinsights.azure.microsoft.scloud"   { $domain = "opinsights.azure.microsoft.scloud" }
-                "opinsights.sovcloud-api.fr"          { $domain = "opinsights.sovcloud-api.fr" }
-                default                              { Write-Host "Unknown domain '$domain'. Defaulting to opinsights.azure.com."; $domain = $defaultDomain }
+            switch ($domain.ToLower()) {
+                "opinsights.azure.cn"                 { return "opinsights.azure.cn" }
+                "opinsights.azure.us"                 { return "opinsights.azure.us" }
+                "opinsights.azure.eaglex.ic.gov"      { return "opinsights.azure.eaglex.ic.gov" }
+                "opinsights.azure.microsoft.scloud"   { return "opinsights.azure.microsoft.scloud" }
+                "opinsights.sovcloud-api.fr"          { return "opinsights.sovcloud-api.fr" }
+                "opinsights.azure.com"                { return "opinsights.azure.com" }
+                default                              { Write-Host "Unknown domain '$domain'. Defaulting to opinsights.azure.com."; return $defaultDomain }
             }
         } else {
-            $domain = $defaultDomain
             Write-Host "Domain name either null or empty. Defaulting to opinsights.azure.com."
+            return $defaultDomain
         }
     } else {
         Write-Host "Domain file not found. Defaulting to opinsights.azure.com."
-        $domain = $defaultDomain
+        return $defaultDomain
     }
-
-    return $domain
 }
 
 function Get-McsEndpoint {
@@ -270,7 +269,7 @@ function Get-McsEndpoint {
     )
     $mcs_endpoint = "https://monitor.azure.com/"
     if (![string]::IsNullOrEmpty($cloud_environment)) {
-        switch ($cloud_environment) {
+        switch ($cloud_environment.ToLower()) {
             "azurepubliccloud"        { $mcs_endpoint = "https://monitor.azure.com/" }
             "azurechinacloud"         { $mcs_endpoint = "https://monitor.azure.cn/" }
             "azureusgovernmentcloud"  { $mcs_endpoint = "https://monitor.azure.us/" }
@@ -282,7 +281,7 @@ function Get-McsEndpoint {
     return $mcs_endpoint
 }
 
-function Is-CanaryRegion () {
+function Is-CanaryRegion {
     param (
         [string]$aksRegion
     )
@@ -299,11 +298,11 @@ function Get-McsGlobalEndpoint{
     )
     $mcs_globalendpoint = "https://global.handler.control.monitor.azure.com"
     $aksRegion = [System.Environment]::GetEnvironmentVariable("AKS_REGION", "process")
-    if Is-CanaryRegion $aksRegion {
+    if (Is-CanaryRegion($aksRegion)) {
         $mcs_globalendpoint = "https://global.handler.canary.control.monitor.azure.com"
     } else {
          if (![string]::IsNullOrEmpty($cloud_environment)) {
-            switch ($cloud_environment) {
+            switch ($cloud_environment.ToLower()) {
                 "azurepubliccloud"        { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.com" }
                 "azurechinacloud"         { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.cn" }
                 "azureusgovernmentcloud"  { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.us" }
