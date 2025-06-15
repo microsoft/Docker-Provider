@@ -1,6 +1,3 @@
-# PowerShell function for testing Get-McsGlobalEndpoint
-# Original source: kubernetes/windows/main.ps1
-
 function Is-CanaryRegion {
     param (
         [string]$aksRegion
@@ -12,16 +9,16 @@ function Is-CanaryRegion {
     return $false
 }
 
-function Get-McsGlobalEndpoint{
+function Get-McsGlobalEndpoint {
     param (
         [string]$cloud_environment
     )
     $mcs_globalendpoint = "https://global.handler.control.monitor.azure.com"
     $aksRegion = [System.Environment]::GetEnvironmentVariable("AKS_REGION", "process")
-    if Is-CanaryRegion $aksRegion {
+    if (Is-CanaryRegion $aksRegion) {
         $mcs_globalendpoint = "https://global.handler.canary.control.monitor.azure.com"
     } else {
-         if (![string]::IsNullOrEmpty($cloud_environment)) {
+        if (![string]::IsNullOrEmpty($cloud_environment)) {
             switch ($cloud_environment) {
                 "azurepubliccloud"        { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.com" }
                 "azurechinacloud"         { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.cn" }
