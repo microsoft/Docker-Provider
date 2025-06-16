@@ -22,8 +22,8 @@ export class Mutations {
         imageTag: "3.2.7" // https://mcr.microsoft.com/v2/applicationinsights/opentelemetry-auto-instrumentation/nodejs/tags/list
     };
     private static agentImagePython = {
-        repositoryPath: "auto-instrumentation/python", // https://mcr.microsoft.com/v2/applicationinsights/auto-instrumentation/python/tags/list
-        imageTag: "1.0.0b23-aks"
+        repositoryPath: "auto-instrumentation/python",
+        imageTag: "1.0.0b23-aks" // https://mcr.microsoft.com/v2/applicationinsights/auto-instrumentation/python/tags/list
     };
     private static agentImageDotNet = {
         repositoryPath: "opentelemetry-auto-instrumentation/dotnet",
