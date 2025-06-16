@@ -2,10 +2,8 @@
 
 //!!!
 /*
-- exposure control - do we just allow Python via a change in CRD, or do we need to read from a settings ConfigMap?
 - unit tests
 - validation pipeline
-- support .NET
 */
 
 /**

@@ -3,9 +3,11 @@
 AI_RES_ID=$1
 NAMESPACE=$2
 
-echo "Finding pods in namespace: $NAMESPACE for Java App $JAVA_TEST_APP_NAME and NodeJS App $NODEJS_TEST_APP_NAME"
+echo "Finding pods in namespace: $NAMESPACE for Java App $JAVA_TEST_APP_NAME, NodeJS App $NODEJS_TEST_APP_NAME, Python App $PYTHON_TEST_APP_NAME, and Dotnet App $DOTNET_TEST_APP_NAME"
 POD_JAVA_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$JAVA_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
 POD_NODEJS_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$NODEJS_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
+POD_PYTHON_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$PYTHON_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
+POD_DOTNET_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$DOTNET_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
 
 
 # Get an access token
@@ -64,12 +66,20 @@ verify_AI_telemetry() {
 max_retries=10
 retry_interval=30
 
-for app in "java" "nodejs"; do
+for app in "java" "nodejs" "python" "dotnet"; do
   if [ "$app" = "java" ]; then
     pod_name="$POD_JAVA_NAME"
+  elif [ "$app" = "nodejs" ]; then
+      pod_name="$POD_NODEJS_NAME"
+  elif [ "$app" = "python" ]; then
+      pod_name="$POD_PYTHON_NAME"
+  elif [ "$app" = "dotnet" ]; then
+      pod_name="$POD_DOTNET_NAME"
   else
-    pod_name="$POD_NODEJS_NAME"
+      echo "Unsupported application type: $app"
+      exit 1
   fi
+  
 
   attempt=1
   success=0

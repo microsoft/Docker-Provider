@@ -3,13 +3,17 @@
 # Define the pod name and namespace
 DEPLOYMENT_JAVA_NAME=$1
 DEPLOYMENT_NODEJS_NAME=$2
-NAMESPACE=$3
+DEPLOYMENT_PYTHON_NAME=$3
+DEPLOYMENT_DOTNET_NAME=$4
+NAMESPACE=$5
 
 # Define the property to check for
 PROPERTY="APPLICATIONINSIGHTS_CONNECTION_STRING"
 
 JAVA_DEPLOYMENT_NAME=$(kubectl get deployment -n "$NAMESPACE" -o custom-columns=NAME:.metadata.name | grep "$DEPLOYMENT_JAVA_NAME")
 NODEJS_DEPLOYMENT_NAME=$(kubectl get deployment -n "$NAMESPACE" -o custom-columns=NAME:.metadata.name | grep "$DEPLOYMENT_NODEJS_NAME")
+PYTHON_DEPLOYMENT_NAME=$(kubectl get deployment -n "$NAMESPACE" -o custom-columns=NAME:.metadata.name | grep "$DEPLOYMENT_PYTHON_NAME")
+DOTNET_DEPLOYMENT_NAME=$(kubectl get deployment -n "$NAMESPACE" -o custom-columns=NAME:.metadata.name | grep "$DEPLOYMENT_DOTNET_NAME")
 EXPECTED_ENV_VARS=(
   "NODE_NAME"
   "POD_NAMESPACE"
@@ -22,11 +26,22 @@ EXPECTED_ENV_VARS=(
   "APPLICATIONINSIGHTS_INSTRUMENTATION_LOGGING_ENABLED"
   "NODE_OPTIONS"
   "APPLICATIONINSIGHTS_CONFIGURATION_CONTENT"
+  "PYTHONPATH"
+  "OTEL_DOTNET_AUTO_LOG_DIRECTORY"
+  "DOTNET_STARTUP_HOOKS"
+  "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES"
+  "DOTNET_ADDITIONAL_DEPS"
+  "DOTNET_SHARED_STORE"
+  "OTEL_DOTNET_AUTO_HOME"
+  "OTEL_DOTNET_AUTO_PLUGINS"
+  "OTEL_DOTNET_AUTO_LOGS_ENABLED"
 )
 
 EXPECTED_INIT_CONTAINERS=(
     "azure-monitor-auto-instrumentation-java"
     "azure-monitor-auto-instrumentation-nodejs"
+    "azure-monitor-auto-instrumentation-python"
+    "azure-monitor-auto-instrumentation-dotnet"
 )
 
 checkMutation() {
@@ -86,5 +101,15 @@ fi
 
 if ! checkMutation "$DEPLOYMENT_NODEJS_NAME"; then
     echo "FATAL ERROR: checkMutation failed for $DEPLOYMENT_NODEJS_NAME"
+    exit 1
+fi
+
+if ! checkMutation "$DEPLOYMENT_PYTHON_NAME"; then
+    echo "FATAL ERROR: checkMutation failed for $DEPLOYMENT_PYTHON_NAME"
+    exit 1
+fi
+
+if ! checkMutation "$DEPLOYMENT_DOTNET_NAME"; then
+    echo "FATAL ERROR: checkMutation failed for $DEPLOYMENT_DOTNET_NAME"
     exit 1
 fi

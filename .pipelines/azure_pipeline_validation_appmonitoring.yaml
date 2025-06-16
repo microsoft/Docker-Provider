@@ -25,6 +25,10 @@ variables:
   javaTestAppName: 'java-test-app'
   nodeTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-nodejs-app:latest'
   nodeTestAppName: 'nodejs-test-app'
+  pythonTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-python-app:latest'
+  pythonTestAppName: 'python-test-app'
+  dotnetTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-dotnet-app:latest'
+  dotnetTestAppName: 'dotnet-test-app'
   testNamespace: 'test-ns'
   aiConnectionString: 'InstrumentationKey=2b453402-fcfb-408f-8495-c551f0e82f46;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/'
   aiResourceId: '/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/microsoft.insights/components/appmonitoring-pipeline-validation-ai'
@@ -288,8 +292,14 @@ jobs:
 
         export JAVA_TEST_IMAGE_NAME=${{ variables.javaTestAppImageName }}
         export NODEJS_TEST_IMAGE_NAME=${{ variables.nodeTestAppImageName }}
+        export PYTHON_TEST_IMAGE_NAME=${{ variables.pythonTestAppImageName }}
+        export DOTNET_TEST_IMAGE_NAME=${{ variables.dotnetTestAppImageName }}
+
         export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
+        export PYTHON_TEST_APP_NAME="${{ variables.pythonTestAppName }}"
+        export DOTNET_TEST_APP_NAME="${{ variables.dotnetTestAppName }}"
+
         export TEST_APP_SOURCE_NAME="nodejs-source-app"
         export NODEJS_CALLER_APP_NAME="nodejs-caller-app"
         export TEST_NS="${{ variables.testNamespace }}"
@@ -316,7 +326,7 @@ jobs:
         
         sudo chmod u+x ./validate-mutation.sh
 
-        if ! ./validate-mutation.sh ${{ variables.javaTestAppName }} ${{ variables.nodeTestAppName }} ${{ variables.testNamespace }}; then
+        if ! ./validate-mutation.sh ${{ variables.javaTestAppName }} ${{ variables.nodeTestAppName }} ${{ variables.pythonTestAppName }} ${{ variables.dotnetTestAppName }} ${{ variables.testNamespace }}; then
           echo "Mutation validation failed"
           exit 1
         fi
@@ -334,9 +344,11 @@ jobs:
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
         export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
+        export PYTHON_TEST_APP_NAME="${{ variables.pythonTestAppName }}"
+        export DOTNET_TEST_APP_NAME="${{ variables.dotnetTestAppName }}"
 
-        echo "Wait 60s for telemetry to flow..."
-        sleep 60
+        echo "Wait 30s for telemetry to flow..."
+        sleep 30
         
         sudo chmod u+x ./validate_ai.sh
 
@@ -398,7 +410,7 @@ jobs:
         
         sudo chmod u+x ./validate-mutation.sh
 
-        if ! ./validate-mutation.sh "${{ variables.javaTestAppName }}" "${{ variables.nodeTestAppName }}" "${{ variables.testNamespace }}"; then
+        if ! ./validate-mutation.sh "${{ variables.javaTestAppName }}" "${{ variables.nodeTestAppName }}" "${{ variables.pythonTestAppName }}" "${{ variables.dotnetTestAppName }}" "${{ variables.testNamespace }}"; then
           echo "Mutation validation failed"
           exit 1
         fi
@@ -416,9 +428,11 @@ jobs:
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
         export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
+        export PYTHON_TEST_APP_NAME="${{ variables.pythonTestAppName }}"
+        export DOTNET_TEST_APP_NAME="${{ variables.dotnetTestAppName }}"
 
-        echo "Wait 60s for telemetry to flow..."
-        sleep 60
+        echo "Wait 30s for telemetry to flow..."
+        sleep 30
         
         sudo chmod u+x ./validate_ai.sh
 

@@ -4,6 +4,7 @@ import { IAdmissionReview, IAnnotations, IMetadata, InstrumentationCR, AutoInstr
 import { TestObject2, TestObject4, crs, clusterArmId, clusterArmRegion } from "tests/testConsts.js";
 import { logger } from "LoggerWrapper.js"
 import { InstrumentationCRsCollection } from "InstrumentationCRsCollection.js";
+import { meta } from "@typescript-eslint/eslint-plugin";
 
 beforeEach(() => {
     logger.setUnitTestMode(true);
@@ -180,12 +181,56 @@ describe("Mutator", () => {
             {
                 "instrumentation.opentelemetry.io/inject-java": "cr1",
                 "instrumentation.opentelemetry.io/inject-nodejs": "cr2"
+            },
+            {
+                "instrumentation.opentelemetry.io/inject-java": "cr1",
+                "instrumentation.opentelemetry.io/private-preview-inject-python": "cr2"
+            },
+            {
+                "instrumentation.opentelemetry.io/inject-java": "cr1",
+                "instrumentation.opentelemetry.io/private-preview-inject-dotnet": "cr2"
+            },
+            {
+                "instrumentation.opentelemetry.io/inject-nodejs": "cr1",
+                "instrumentation.opentelemetry.io/inject-java": "cr2"
+            },
+            {
+                "instrumentation.opentelemetry.io/inject-nodejs": "cr1",
+                "instrumentation.opentelemetry.io/private-preview-inject-python": "cr2"
+            },
+            {
+                "instrumentation.opentelemetry.io/inject-nodejs": "cr1",
+                "instrumentation.opentelemetry.io/private-preview-inject-dotnet": "cr2"
+            },
+            {
+                "instrumentation.opentelemetry.io/private-preview-inject-python": "cr1",
+                "instrumentation.opentelemetry.io/inject-java": "cr2"
+            },
+            {
+                "instrumentation.opentelemetry.io/private-preview-inject-python": "cr1",
+                "instrumentation.opentelemetry.io/inject-nodejs": "cr2"
+            },
+            {
+                "instrumentation.opentelemetry.io/private-preview-inject-python": "cr1",
+                "instrumentation.opentelemetry.io/private-preview-inject-dotnet": "cr2"
+            },
+            {
+                "instrumentation.opentelemetry.io/private-preview-inject-dotnet": "cr1",
+                "instrumentation.opentelemetry.io/inject-java": "cr2"
+            },
+            {
+                "instrumentation.opentelemetry.io/private-preview-inject-dotnet": "cr1",
+                "instrumentation.opentelemetry.io/inject-nodejs": "cr2"
+            },
+            {
+                "instrumentation.opentelemetry.io/private-preview-inject-dotnet": "cr1",
+                "instrumentation.opentelemetry.io/private-preview-inject-python": "cr2"
             }
         ];
        
         admissionReview.request.object.metadata.namespace = "ns1";
 
-        invalidAnnotationSets.forEach(async annotationSet => {
+        for (const annotationSet of invalidAnnotationSets) {
             const metadata: IMetadata = <IMetadata> { annotations: annotationSet };
 
             admissionReview.request.object.spec.template.metadata = metadata;
@@ -199,7 +244,7 @@ describe("Mutator", () => {
             expect(result.response.uid).toBe(admissionReview.request.uid);
             expect(result.response.status.code).toBe(400);
             expect(result.response.status.message).toBe("Exception encountered: Multiple specific CR names specified in instrumentation.opentelemetry.io/inject-* annotations, that is not supported.");
-        });
+        }
     });
 
     it("Mutating deployment - per language inject - annotations with default CR", async () => {
@@ -245,37 +290,67 @@ describe("Mutator", () => {
         admissionReview.request.object.metadata.namespace = "ns1";
         admissionReview.request.object.metadata.annotations = { preExistingAnnotationName: "preExistingAnnotationValue" };
 
-        const metadata: IMetadata = <IMetadata>{
-            annotations: {
-                "instrumentation.opentelemetry.io/inject-java": "false",
-                "instrumentation.opentelemetry.io/inject-nodejs": "true"
+        const metadataArray = [
+            {
+                annotations: {
+                    "instrumentation.opentelemetry.io/inject-java": "true",
+                    "instrumentation.opentelemetry.io/inject-nodejs": "false",
+                    "instrumentation.opentelemetry.io/private-preview-inject-python": "false",
+                    "instrumentation.opentelemetry.io/private-preview-inject-dotnet": "false"
+                }, correctPlatforms: [AutoInstrumentationPlatforms.Java]
+            },
+            {
+                annotations: {
+                    "instrumentation.opentelemetry.io/inject-java": "false",
+                    "instrumentation.opentelemetry.io/inject-nodejs": "true",
+                    "instrumentation.opentelemetry.io/private-preview-inject-python": "false",
+                    "instrumentation.opentelemetry.io/private-preview-inject-dotnet": "false"
+                }, correctPlatforms: [AutoInstrumentationPlatforms.NodeJs]
+            },
+            {
+                annotations: {
+                    "instrumentation.opentelemetry.io/inject-java": "false",
+                    "instrumentation.opentelemetry.io/inject-nodejs": "false",
+                    "instrumentation.opentelemetry.io/private-preview-inject-python": "true",
+                    "instrumentation.opentelemetry.io/private-preview-inject-dotnet": "false"
+                }, correctPlatforms: [AutoInstrumentationPlatforms.Python]
+            },
+            {
+                annotations: {
+                    "instrumentation.opentelemetry.io/inject-java": "false",
+                    "instrumentation.opentelemetry.io/inject-nodejs": "false",
+                    "instrumentation.opentelemetry.io/private-preview-inject-python": "false",
+                    "instrumentation.opentelemetry.io/private-preview-inject-dotnet": "true"
+                }, correctPlatforms: [AutoInstrumentationPlatforms.DotNet]
             }
-        };
+        ];
 
-        admissionReview.request.object.spec.template.metadata = metadata;
+        for (const metadata of metadataArray) {
+            admissionReview.request.object.spec.template.metadata = <IMetadata><unknown>metadata;
 
-        // ACT
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+            // ACT
+            const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
 
-        // ASSERT
-        expect(result.response.allowed).toBe(true);
-        expect(result.response.patchType).toBe("JSONPatch");
-        expect(result.response.uid).toBe(admissionReview.request.uid);
-        expect(result.response.status.code).toBe(200);
-        expect(result.response.status.message).toBe("OK");
+            // ASSERT
+            expect(result.response.allowed).toBe(true);
+            expect(result.response.patchType).toBe("JSONPatch");
+            expect(result.response.uid).toBe(admissionReview.request.uid);
+            expect(result.response.status.code).toBe(200);
+            expect(result.response.status.message).toBe("OK");
 
-        // confirm default CR and annotation-enabled platforms were written into the annotations
-        const patchString: string = atob(result.response.patch);
-        const patches: object[] = JSON.parse(patchString);
+            // confirm default CR and annotation-enabled platforms were written into the annotations
+            const patchString: string = atob(result.response.patch);
+            const patches: object[] = JSON.parse(patchString);
 
-        expect((<[]>patches).length).toBe(1);
+            expect((<[]>patches).length).toBe(1);
 
-        const obj: IObjectType = (<any>patches[0]).value as IObjectType;
-        const annotationValue: IInstrumentationState = JSON.parse(obj.metadata.annotations[InstrumentationAnnotationName]) as IInstrumentationState;
-        
-        expect(annotationValue.crName).toBe(DefaultInstrumentationCRName);
-        expect(annotationValue.crResourceVersion).toBe("1");
-        expect(annotationValue.platforms).toStrictEqual([AutoInstrumentationPlatforms.NodeJs]);
+            const obj: IObjectType = (<any>patches[0]).value as IObjectType;
+            const annotationValue: IInstrumentationState = JSON.parse(obj.metadata.annotations[InstrumentationAnnotationName]) as IInstrumentationState;
+            
+            expect(annotationValue.crName).toBe(DefaultInstrumentationCRName);
+            expect(annotationValue.crResourceVersion).toBe("1");
+            expect(annotationValue.platforms).toStrictEqual(metadata.correctPlatforms);
+        }
     });
 
     it("Mutating deployment - per language inject - annotations with specific CR", async () => {
@@ -321,37 +396,65 @@ describe("Mutator", () => {
         admissionReview.request.object.metadata.namespace = "ns1";
         admissionReview.request.object.metadata.annotations = { preExistingAnnotationName: "preExistingAnnotationValue" };
 
-        const metadata: IMetadata = <IMetadata>{
+        const metadataArray = [{
+            annotations: {
+                "instrumentation.opentelemetry.io/inject-java": "cr1",
+                "instrumentation.opentelemetry.io/inject-nodejs": "false",
+                "instrumentation.opentelemetry.io/private-preview-inject-python": "false",
+                "instrumentation.opentelemetry.io/private-preview-inject-dotnet": "false"
+            }, correctPlatforms: [AutoInstrumentationPlatforms.Java]
+        },
+        {
             annotations: {
                 "instrumentation.opentelemetry.io/inject-java": "false",
-                "instrumentation.opentelemetry.io/inject-nodejs": "cr1"
-            }
-        };
+                "instrumentation.opentelemetry.io/inject-nodejs": "cr1",
+                "instrumentation.opentelemetry.io/private-preview-inject-python": "false",
+                "instrumentation.opentelemetry.io/private-preview-inject-dotnet": "false"
+            }, correctPlatforms: [AutoInstrumentationPlatforms.NodeJs]
+        },
+        {
+            annotations: {
+                "instrumentation.opentelemetry.io/inject-java": "false",
+                "instrumentation.opentelemetry.io/inject-nodejs": "false",
+                "instrumentation.opentelemetry.io/private-preview-inject-python": "cr1",
+                "instrumentation.opentelemetry.io/private-preview-inject-dotnet": "false",
+            }, correctPlatforms: [AutoInstrumentationPlatforms.Python]
+        },
+        {
+            annotations: {
+                "instrumentation.opentelemetry.io/inject-java": "false",
+                "instrumentation.opentelemetry.io/inject-nodejs": "false",
+                "instrumentation.opentelemetry.io/private-preview-inject-python": "false",
+                "instrumentation.opentelemetry.io/private-preview-inject-dotnet": "cr1"
+            }, correctPlatforms: [AutoInstrumentationPlatforms.DotNet]
+        }];
 
-        admissionReview.request.object.spec.template.metadata = metadata;
+        for (const metadata of metadataArray) {
+            admissionReview.request.object.spec.template.metadata = <IMetadata><unknown>metadata;
 
-        // ACT
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+            // ACT
+            const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
 
-        // ASSERT
-        expect(result.response.allowed).toBe(true);
-        expect(result.response.patchType).toBe("JSONPatch");
-        expect(result.response.uid).toBe(admissionReview.request.uid);
-        expect(result.response.status.code).toBe(200);
-        expect(result.response.status.message).toBe("OK");
+            // ASSERT
+            expect(result.response.allowed).toBe(true);
+            expect(result.response.patchType).toBe("JSONPatch");
+            expect(result.response.uid).toBe(admissionReview.request.uid);
+            expect(result.response.status.code).toBe(200);
+            expect(result.response.status.message).toBe("OK");
 
-        // confirm default CR and annotation-enabled platforms were written into the annotations
-        const patchString: string = atob(result.response.patch);
-        const patches: object[] = JSON.parse(patchString);
+            // confirm default CR and annotation-enabled platforms were written into the annotations
+            const patchString: string = atob(result.response.patch);
+            const patches: object[] = JSON.parse(patchString);
 
-        expect((<[]>patches).length).toBe(1);
-        
-        const obj: IObjectType = (<any>patches[0]).value as IObjectType;
-        const annotationValue: IInstrumentationState = JSON.parse(obj.metadata.annotations[InstrumentationAnnotationName]) as IInstrumentationState;
-        
-        expect(annotationValue.crName).toBe(cr1.metadata.name);
-        expect(annotationValue.crResourceVersion).toBe("1");
-        expect(annotationValue.platforms).toStrictEqual([AutoInstrumentationPlatforms.NodeJs]);
+            expect((<[]>patches).length).toBe(1);
+
+            const obj: IObjectType = (<any>patches[0]).value as IObjectType;
+            const annotationValue: IInstrumentationState = JSON.parse(obj.metadata.annotations[InstrumentationAnnotationName]) as IInstrumentationState;
+
+            expect(annotationValue.crName).toBe(cr1.metadata.name);
+            expect(annotationValue.crResourceVersion).toBe("1");
+            expect(annotationValue.platforms).toStrictEqual(metadata.correctPlatforms);
+        }
     });
 
     it("Mutating deployment - per language inject - single inject - annotations is set to false", async () => {
@@ -398,7 +501,7 @@ describe("Mutator", () => {
         expect(result.response.status.code).toBe(200);
         expect(result.response.status.message).toBe("OK");
 
-        // confirm default CR and annotation-enabled platforms were written into the annotations
+        // confirm default CR had no effect, this is a way to opt a deployment out of auto-instrumentation
         const patchString: string = atob(result.response.patch);
         const patches: object[] = JSON.parse(patchString);
 
@@ -732,7 +835,7 @@ describe("Mutator", () => {
        
         admissionReview.request.object.metadata.namespace = "ns1";
 
-        invalidAnnotationSets.forEach(async annotationSet => {
+        for (const annotationSet of invalidAnnotationSets) {
             const metadata: IMetadata = <IMetadata> { annotations: annotationSet };
 
             admissionReview.request.object.spec.template.metadata = metadata;
@@ -751,6 +854,6 @@ describe("Mutator", () => {
 
             expect(result.response.status.code).toBe(400);
             expect(result.response.status.message).toBe("Exception encountered: Mix of language-specific instrumentation.opentelemetry.io/inject-* annotations with instrumentation.opentelemetry.io/inject-configuration annotation, that is not supported.");
-        });
+        }
     });
 });

@@ -158,8 +158,8 @@ export class Mutator {
     private pickCR(): string {
         const injectJavaAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-java"];
         const injectNodeJsAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-nodejs"];
-        const injectPythonAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-python"];
-        const injectDotNetAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-dotnet"];
+        const injectPythonAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/private-preview-inject-python"];
+        const injectDotNetAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/private-preview-inject-dotnet"];
         const injectConfigurationAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-configuration"];
 
         const injectLanguageSpecificAnnotationValues: string[] = [injectJavaAnnotation, injectNodeJsAnnotation, injectPythonAnnotation, injectDotNetAnnotation];
@@ -223,8 +223,8 @@ export class Mutator {
         // annotations are on the pod template spec
         const injectJavaAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-java"];
         const injectNodeJsAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-nodejs"];
-        const injectPythonAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-python"];
-        const injectDotNetAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-dotnet"];
+        const injectPythonAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/private-preview-inject-python"];
+        const injectDotNetAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/private-preview-inject-dotnet"];
         const injectConfigurationAnnotation: string = this.admissionReview.request.object.spec.template.metadata?.annotations?.["instrumentation.opentelemetry.io/inject-configuration"];
 
         const injectAnnotationValues: string[] = [injectJavaAnnotation, injectNodeJsAnnotation, injectPythonAnnotation, injectDotNetAnnotation, injectConfigurationAnnotation];
