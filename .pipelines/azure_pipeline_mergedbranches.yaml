@@ -327,12 +327,12 @@ extends:
           condition: eq(variables.IS_PR, true)
           inputs:
             DockerImagesToScan: '$(GOLANG_BASE_IMAGE),$(CI_BASE_IMAGE),${{ variables.repoImageName }}:$(linuxImagetag)'
-            ignoreDirectories: '$(Build.ArtifactStagingDirectory)'
+            ignoreDirectories: '$(Build.ArtifactStagingDirectory)/$(artifactName)'
         - task: ComponentGovernanceComponentDetection@0
           condition: eq(variables.IS_PR, false)
           inputs:
             DockerImagesToScan: '$(GOLANG_BASE_IMAGE),$(CI_BASE_IMAGE),${{ variables.repoImageName }}:$(linuxImagetag)'
-            ignoreDirectories: '$(Build.ArtifactStagingDirectory)'
+            ignoreDirectories: '$(Build.ArtifactStagingDirectory)/$(artifactName)'
 
       - job: build_windows_2019
         pool:
