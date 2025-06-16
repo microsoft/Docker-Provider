@@ -6,6 +6,9 @@ FROM mcr.microsoft.com/cbl-mariner/base/nodejs:18
 ARG IMAGE_TAG
 ENV IMAGE_TAG=$IMAGE_TAG
 
+ARG TARGETARCH
+ENV ARCH=$TARGETARCH
+
 RUN tdnf upgrade -y && tdnf clean all
 
 # Smoke test ensuring that NodeJS was installed.

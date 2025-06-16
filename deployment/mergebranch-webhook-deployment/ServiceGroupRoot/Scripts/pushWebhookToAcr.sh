@@ -3,11 +3,6 @@ set -e
 
 # Note - This script used in the pipeline as inline script
 
-if [ -z $WEBHOOK_RELEASE ]; then
-  echo "-e error WEBHOOK_RELEASE shouldnt be empty. check release variables"
-  exit 1
-fi
-
 #Make sure that tag being pushed will not overwrite an existing tag in mcr
 echo "Reading existing tags from MCR..."
 #MCR_TAG_RESULT="{\"name\": \"azuremonitor/applicationinsights/aiprod\",  \"tags\": []}"
@@ -73,6 +68,24 @@ else
   echo "-e error failed to login to az with managed identity credentials"
   exit 1
 fi     
+
+# Get manifest details
+MANIFEST_PATH="https://mcr.microsoft.com/v2/azuremonitor/applicationinsights/aidev/manifests/$TAG"
+echo "Getting manifest details for source image: $SOURCE_IMAGE_FULL_PATH from $MANIFEST_PATH"
+
+MANIFEST_JSON=$(curl -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json" $MANIFEST_PATH)
+echo "Manifest: $MANIFEST_JSON"
+
+# Extract the mediaType
+MEDIA_TYPE=$(echo "$MANIFEST_JSON" | jq -r '.mediaType')
+echo "Media Type: $MEDIA_TYPE"
+
+if [[ "$MEDIA_TYPE" == "application/vnd.docker.distribution.manifest.list.v2+json" ]]; then
+    echo "The image is multi-architecture, continuing with retagging and pushing..."
+else
+    echo "The image is single-architecture or could not be checked, something has to be wrong. Exiting..."
+    exit 1
+fi
 
 echo "Pushing ${WEBHOOK_IMAGE_FULL_PATH} to ${ACR_NAME} with source ${SOURCE_IMAGE_FULL_PATH} and force option set to ${AZ_ACR_IMPORT_FORCE}"
 az acr import --name $ACR_NAME --source $SOURCE_IMAGE_FULL_PATH --image $WEBHOOK_IMAGE_FULL_PATH $AZ_ACR_IMPORT_FORCE
