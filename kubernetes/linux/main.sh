@@ -8,6 +8,15 @@ echo "startup script start @ $(date +'%Y-%m-%dT%H:%M:%S')"
 # Supported cloud environments
 SUPPORTED_CLOUDS=("azurepubliccloud" "azurechinacloud" "azureusgovernmentcloud" "usnat" "ussec" "bleu")
 
+getDomainFromSecret() {
+      # Read the domain from the AMA logs secret
+      domain="opinsights.azure.com"
+      if [ -e "/etc/ama-logs-secret/DOMAIN" ]; then
+            domain=$(cat /etc/ama-logs-secret/DOMAIN)
+      fi
+      echo "$domain"
+}
+
 getClusterCloudEnvironment() {
       # Use provided cloud environment variable if it's set and valid
       if [ -n "$CLUSTER_CLOUD_ENVIRONMENT" ]; then
@@ -19,13 +28,8 @@ getClusterCloudEnvironment() {
             done
       fi
 
-      # Fallback to reading from the AMA logs secret if not set or not supported
-      # Default domain
-      domain="opinsights.azure.com"
-      if [ -e "/etc/ama-logs-secret/DOMAIN" ]; then
-            domain=$(cat /etc/ama-logs-secret/DOMAIN)
-      fi
-
+      # Fallback to reading from the AMA logs secret if CLUSTER_CLOUD_ENVIRONMENT is not set or invalid
+      domain=$(getDomainFromSecret)
       # Map domain to cloud environment
             case "$domain" in
             "opinsights.azure.com")
@@ -512,7 +516,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${GENEVA_LOGS_INTEGRATIO
       source integration_npm_config_env_var
 fi
 
-
+export domain=$(getDomainFromSecret)
 export CLOUD_ENVIRONMENT=$(getClusterCloudEnvironment)
 echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >>~/.bashrc
 echo "Cluster Cloud Environment: $CLOUD_ENVIRONMENT"
