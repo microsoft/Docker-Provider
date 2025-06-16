@@ -24,6 +24,7 @@ resource "azurerm_kubernetes_cluster" "k8s" {
   oms_agent {
     log_analytics_workspace_id = var.workspace_resource_id
     msi_auth_for_monitoring_enabled = true
+    enable_retina_network_flags = var.enable_retina_network_flow_logs ? "true" : "false"
   }
 }
 

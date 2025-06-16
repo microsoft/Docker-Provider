@@ -68,7 +68,6 @@ variable "enableContainerLogV2" {
 }
 
 variable "enable_retina_network_flow_logs" {
-  type    = bool
   default = false
 }
 
