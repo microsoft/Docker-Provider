@@ -119,6 +119,7 @@ extends:
             SourceFolder: "$(Build.SourcesDirectory)/.pipelines"
             Contents: |
               **/*.sh
+              !**/ScanTelemetry_*.json
             TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
         - task: CopyFiles@2
           displayName: "Copy ev2 deployment scripts"
@@ -126,6 +127,7 @@ extends:
             SourceFolder: "$(Build.SourcesDirectory)/kubernetes"
             Contents: |
               *.yaml
+              !**/ScanTelemetry_*.json
             TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
         - task: CopyFiles@2
           displayName: "Copy ev2 deployment scripts"
@@ -133,6 +135,7 @@ extends:
             SourceFolder: "$(Build.SourcesDirectory)/charts"
             Contents: |
               **/*
+              !**/ScanTelemetry_*.json
             TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
         - task: CopyFiles@2
           displayName: "Copy ev2 deployment scripts"
@@ -140,6 +143,7 @@ extends:
             SourceFolder: "$(Build.SourcesDirectory)/test/e2e"
             Contents: |
               *.yaml
+              !**/ScanTelemetry_*.json
             TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
         - task: Armory@2
           displayName: 'Run ARMory'
