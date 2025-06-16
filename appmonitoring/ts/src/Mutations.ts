@@ -1,11 +1,5 @@
 ﻿import { AutoInstrumentationPlatforms, IContainer, IEnvironmentVariable, IVolume, IVolumeMount, PodInfo } from "./RequestDefinition.js";
 
-//!!!
-/*
-- unit tests
-- validation pipeline
-*/
-
 /**
  * Contains a collection of mutations necessary to add functionality to a Pod
  */
