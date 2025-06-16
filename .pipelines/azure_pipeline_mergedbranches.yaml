@@ -763,127 +763,127 @@ extends:
       #   - task: CodeQL3000Finalize@0
       #     condition: eq(variables.IS_MAIN_BRANCH, true)
       # - job: build_windows_multi_arc
-        pool:
-          name: Azure-Pipelines-CI-Test-EO
-          image: ci-1es-managed-windows-2022
-          os: windows
-        timeoutInMinutes: 120
-        dependsOn:
-        - common
-        - build_windows_2019
-        - build_windows_2022
-        variables:
-          windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
-          windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
-          windows2019BaseImageVersion: ltsc2019
-          windows2022BaseImageVersion: ltsc2022
-          Codeql.SkipTaskAutoInjection: true
-        templateContext:
-          outputs:
-          - output: pipelineArtifact
-            targetPath: '$(Build.ArtifactStagingDirectory)'
-            artifactName: windows-drop
-        steps:
-        - task: AzureCLI@2
-          displayName: "Docker windows build for multi-arc image"
-          inputs:
-            azureSubscription: ${{ variables.armServiceConnectionName }}
-            scriptType: ps
-            scriptLocation: inlineScript
-            inlineScript: |
-              mkdir -p $(Build.ArtifactStagingDirectory)/windows
-              cd kubernetes/windows
-              az --version
-              az account show
-              az account set -s ${{ variables.subscription }}
-              az acr login -n ${{ variables.containerRegistry }}
-              @{"image.name"="${{ variables.repoImageName }}:$(windowsImageTag)"} | ConvertTo-Json -Compress | Out-File -Encoding ascii $(Build.ArtifactStagingDirectory)/windows/metadata.json
-              if ("$(Build.Reason)" -ne "PullRequest") {
-                 docker manifest create ${{ variables.repoImageName }}:$(windowsImageTag) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
-                 docker manifest push ${{ variables.repoImageName }}:$(windowsImageTag)
-                 Write-Host "##vso[task.logissue type=warning]Windows image built with tag: ${{ variables.repoImageName }}:$(windowsImageTag)"
-              }
-        - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-          displayName: 'Generation Task'
-          condition: eq(variables.IS_PR, true)
-          inputs:
-            BuildDropPath: '$(Build.ArtifactStagingDirectory)/windows'
-            DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019,mcr.microsoft.com/windows/servercore:ltsc2022'
-        - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-          displayName: 'Generation Task'
-          condition: eq(variables.IS_PR, false)
-          inputs:
-            BuildDropPath: '$(Build.ArtifactStagingDirectory)/windows'
-            DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019,mcr.microsoft.com/windows/servercore:ltsc2022,${{ variables.repoImageName }}:$(windowsImageTag)'
-        - powershell: |
-            curl.exe -sLO  "https://github.com/oras-project/oras/releases/download/v1.0.0/oras_1.0.0_windows_amd64.zip"
-            $currentDirectory = Get-Location
-            Expand-Archive -Path $currentDirectory\oras_1.0.0_windows_amd64.zip -DestinationPath . -Force
-            New-Item -ItemType Directory -Force -Path $env:USERPROFILE\bin
-            Copy-Item -Path $currentDirectory\oras.exe -Destination "$env:USERPROFILE\bin\"
-            $env:PATH = "$env:USERPROFILE\bin;$env:PATH"
-            $output = oras manifest fetch ${{ variables.repoImageName }}:$(windowsImageTag) --descriptor
-            $outputObject = $output | ConvertFrom-Json
-            $payload = @{
-                targetArtifact = $outputObject
-            } | ConvertTo-Json -Depth 2
-            $utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $false
-            [System.IO.File]::WriteAllLines("$(Build.ArtifactStagingDirectory)/windows/payload.json", $payload, $utf8NoBomEncoding)
-            Get-Content "$(Build.ArtifactStagingDirectory)/windows/payload.json"
-          workingDirectory: $(Build.ArtifactStagingDirectory)/windows
-          displayName: "Install oras and build the payload json file"
-          condition: eq(variables.IS_PR, false)
-        - task: EsrpCodeSigning@5
-          condition: eq(variables.IS_PR, false)
-          inputs:
-            ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
-            UseMSIAuthentication: true
-            AppRegistrationClientId: $(appRegistrationClientId)
-            AppRegistrationTenantId: $(appRegistrationTenantId)
-            EsrpClientId: $(esrpClientId)
-            AuthAKVName: $(authAKVName)
-            AuthCertName: $(authCertName)
-            AuthSignCertName: $(authSignCertName)
-            FolderPath: '$(Build.ArtifactStagingDirectory)/windows'
-            Pattern: 'payload.json'
-            signConfigType: 'inlineSignParams'
-            inlineOperation: |
-              [
-                          {
-                              "keyCode": "CP-469451",
-                              "operationSetCode": "NotaryCoseSign",
-                              "parameters": [
-                                {
-                                  "parameterName": "CoseFlags",
-                                  "parameterValue": "chainunprotected"
-                                }
-                              ],
-                              "toolName": "sign",
-                              "toolVersion": "1.0"
-                          }
-                        ]
-            SessionTimeout: '60'
-            MaxConcurrency: '50'
-            MaxRetryAttempts: '5'
-            PendingAnalysisWaitTimeoutMinutes: '5'
-          displayName: 'Esrp Image Signing for windows image'
-        - powershell: |
-            $env:PATH = "$env:USERPROFILE\bin;$env:PATH"
-            oras attach ${{ variables.repoImageName }}:$(windowsImageTag) --artifact-type application/vnd.cncf.notary.signature ./payload.json:application/cose -a io.cncf.notary.x509chain.thumbprint#S256=[\"49D6CD5DB42623144D6990AA1669CE5D97F1F3D7\"]
-          workingDirectory: $(Build.ArtifactStagingDirectory)/windows
-          displayName: "Run oras attach"
-          condition: eq(variables.IS_PR, false)
-        - powershell: |
-            $env:PATH = "$env:USERPROFILE\bin;$env:PATH"
-            oras attach ${{ variables.repoImageName }}:$(windowsImageTag) --artifact-type 'application/vnd.microsoft.artifact.lifecycle' --annotation "vnd.microsoft.artifact.lifecycle.end-of-life.date=$(powershell -Command "(Get-Date).AddHours(-1).ToString('yyyy-MM-ddTHH:mm:ssZ')")"
-          workingDirectory: $(Build.ArtifactStagingDirectory)/windows
-          displayName: "Run oras attach"
-          condition: and(eq(variables.IS_RELEASE, false), eq(variables.IS_PR, false))
-        - task: AntiMalware@4
-          displayName: 'Run MpCmdRun.exe'
-          inputs:
-            InputType: Basic
-            ScanType: CustomScan
-            FileDirPath: '$(Build.ArtifactStagingDirectory)'
-            DisableRemediation: false
-            AcceptableOutdatedSignatureInHours: 72
+        # pool:
+        #   name: Azure-Pipelines-CI-Test-EO
+        #   image: ci-1es-managed-windows-2022
+        #   os: windows
+        # timeoutInMinutes: 120
+        # dependsOn:
+        # - common
+        # - build_windows_2019
+        # - build_windows_2022
+        # variables:
+        #   windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
+        #   windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
+        #   windows2019BaseImageVersion: ltsc2019
+        #   windows2022BaseImageVersion: ltsc2022
+        #   Codeql.SkipTaskAutoInjection: true
+        # templateContext:
+        #   outputs:
+        #   - output: pipelineArtifact
+        #     targetPath: '$(Build.ArtifactStagingDirectory)'
+        #     artifactName: windows-drop
+        # steps:
+        # - task: AzureCLI@2
+        #   displayName: "Docker windows build for multi-arc image"
+        #   inputs:
+        #     azureSubscription: ${{ variables.armServiceConnectionName }}
+        #     scriptType: ps
+        #     scriptLocation: inlineScript
+        #     inlineScript: |
+        #       mkdir -p $(Build.ArtifactStagingDirectory)/windows
+        #       cd kubernetes/windows
+        #       az --version
+        #       az account show
+        #       az account set -s ${{ variables.subscription }}
+        #       az acr login -n ${{ variables.containerRegistry }}
+        #       @{"image.name"="${{ variables.repoImageName }}:$(windowsImageTag)"} | ConvertTo-Json -Compress | Out-File -Encoding ascii $(Build.ArtifactStagingDirectory)/windows/metadata.json
+        #       if ("$(Build.Reason)" -ne "PullRequest") {
+        #          docker manifest create ${{ variables.repoImageName }}:$(windowsImageTag) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
+        #          docker manifest push ${{ variables.repoImageName }}:$(windowsImageTag)
+        #          Write-Host "##vso[task.logissue type=warning]Windows image built with tag: ${{ variables.repoImageName }}:$(windowsImageTag)"
+        #       }
+        # - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+        #   displayName: 'Generation Task'
+        #   condition: eq(variables.IS_PR, true)
+        #   inputs:
+        #     BuildDropPath: '$(Build.ArtifactStagingDirectory)/windows'
+        #     DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019,mcr.microsoft.com/windows/servercore:ltsc2022'
+        # - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+        #   displayName: 'Generation Task'
+        #   condition: eq(variables.IS_PR, false)
+        #   inputs:
+        #     BuildDropPath: '$(Build.ArtifactStagingDirectory)/windows'
+        #     DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019,mcr.microsoft.com/windows/servercore:ltsc2022,${{ variables.repoImageName }}:$(windowsImageTag)'
+        # - powershell: |
+        #     curl.exe -sLO  "https://github.com/oras-project/oras/releases/download/v1.0.0/oras_1.0.0_windows_amd64.zip"
+        #     $currentDirectory = Get-Location
+        #     Expand-Archive -Path $currentDirectory\oras_1.0.0_windows_amd64.zip -DestinationPath . -Force
+        #     New-Item -ItemType Directory -Force -Path $env:USERPROFILE\bin
+        #     Copy-Item -Path $currentDirectory\oras.exe -Destination "$env:USERPROFILE\bin\"
+        #     $env:PATH = "$env:USERPROFILE\bin;$env:PATH"
+        #     $output = oras manifest fetch ${{ variables.repoImageName }}:$(windowsImageTag) --descriptor
+        #     $outputObject = $output | ConvertFrom-Json
+        #     $payload = @{
+        #         targetArtifact = $outputObject
+        #     } | ConvertTo-Json -Depth 2
+        #     $utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $false
+        #     [System.IO.File]::WriteAllLines("$(Build.ArtifactStagingDirectory)/windows/payload.json", $payload, $utf8NoBomEncoding)
+        #     Get-Content "$(Build.ArtifactStagingDirectory)/windows/payload.json"
+        #   workingDirectory: $(Build.ArtifactStagingDirectory)/windows
+        #   displayName: "Install oras and build the payload json file"
+        #   condition: eq(variables.IS_PR, false)
+        # - task: EsrpCodeSigning@5
+        #   condition: eq(variables.IS_PR, false)
+        #   inputs:
+        #     ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+        #     UseMSIAuthentication: true
+        #     AppRegistrationClientId: $(appRegistrationClientId)
+        #     AppRegistrationTenantId: $(appRegistrationTenantId)
+        #     EsrpClientId: $(esrpClientId)
+        #     AuthAKVName: $(authAKVName)
+        #     AuthCertName: $(authCertName)
+        #     AuthSignCertName: $(authSignCertName)
+        #     FolderPath: '$(Build.ArtifactStagingDirectory)/windows'
+        #     Pattern: 'payload.json'
+        #     signConfigType: 'inlineSignParams'
+        #     inlineOperation: |
+        #       [
+        #                   {
+        #                       "keyCode": "CP-469451",
+        #                       "operationSetCode": "NotaryCoseSign",
+        #                       "parameters": [
+        #                         {
+        #                           "parameterName": "CoseFlags",
+        #                           "parameterValue": "chainunprotected"
+        #                         }
+        #                       ],
+        #                       "toolName": "sign",
+        #                       "toolVersion": "1.0"
+        #                   }
+        #                 ]
+        #     SessionTimeout: '60'
+        #     MaxConcurrency: '50'
+        #     MaxRetryAttempts: '5'
+        #     PendingAnalysisWaitTimeoutMinutes: '5'
+        #   displayName: 'Esrp Image Signing for windows image'
+        # - powershell: |
+        #     $env:PATH = "$env:USERPROFILE\bin;$env:PATH"
+        #     oras attach ${{ variables.repoImageName }}:$(windowsImageTag) --artifact-type application/vnd.cncf.notary.signature ./payload.json:application/cose -a io.cncf.notary.x509chain.thumbprint#S256=[\"49D6CD5DB42623144D6990AA1669CE5D97F1F3D7\"]
+        #   workingDirectory: $(Build.ArtifactStagingDirectory)/windows
+        #   displayName: "Run oras attach"
+        #   condition: eq(variables.IS_PR, false)
+        # - powershell: |
+        #     $env:PATH = "$env:USERPROFILE\bin;$env:PATH"
+        #     oras attach ${{ variables.repoImageName }}:$(windowsImageTag) --artifact-type 'application/vnd.microsoft.artifact.lifecycle' --annotation "vnd.microsoft.artifact.lifecycle.end-of-life.date=$(powershell -Command "(Get-Date).AddHours(-1).ToString('yyyy-MM-ddTHH:mm:ssZ')")"
+        #   workingDirectory: $(Build.ArtifactStagingDirectory)/windows
+        #   displayName: "Run oras attach"
+        #   condition: and(eq(variables.IS_RELEASE, false), eq(variables.IS_PR, false))
+        # - task: AntiMalware@4
+        #   displayName: 'Run MpCmdRun.exe'
+        #   inputs:
+        #     InputType: Basic
+        #     ScanType: CustomScan
+        #     FileDirPath: '$(Build.ArtifactStagingDirectory)'
+        #     DisableRemediation: false
+        #     AcceptableOutdatedSignatureInHours: 72
