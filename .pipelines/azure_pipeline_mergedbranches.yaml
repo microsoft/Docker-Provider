@@ -328,13 +328,13 @@ extends:
           inputs:
             DockerImagesToScan: '$(GOLANG_BASE_IMAGE),$(CI_BASE_IMAGE),${{ variables.repoImageName }}:$(linuxImagetag)'
             SourceDirectory: /mnt/vss/_work/1/s
-            ignoreDirectories: '.'
+            ignoreDirectories: '$(Build.ArtifactStagingDirectory)/linux-drop'
         - task: ComponentGovernanceComponentDetection@0
           condition: eq(variables.IS_PR, false)
           inputs:
             DockerImagesToScan: '$(GOLANG_BASE_IMAGE),$(CI_BASE_IMAGE),${{ variables.repoImageName }}:$(linuxImagetag)'
             SourceDirectory: /mnt/vss/_work/1/s
-            ignoreDirectories: '.'
+            ignoreDirectories: '$(Build.ArtifactStagingDirectory)/linux-drop'
 
       # - job: build_windows_2019
       #   pool:
