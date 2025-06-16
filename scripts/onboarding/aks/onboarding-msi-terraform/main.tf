@@ -27,6 +27,22 @@ resource "azurerm_kubernetes_cluster" "k8s" {
   }
 }
 
+locals {
+  enable_high_log_scale_mode = contains(var.streams, "Microsoft-ContainerLogV2-HighScale") || var.enable_retina_network_flow_logs
+  ingestion_dce_name_full    = "MSCI-ingest-${var.workspace_region}-${var.cluster_name}"
+  ingestion_dce_name_trimmed = substr(local.ingestion_dce_name_full, 0, 43)
+  ingestion_dce_name         = endswith(local.ingestion_dce_name_trimmed, "-") ? substr(local.ingestion_dce_name_trimmed, 0, 42) : local.ingestion_dce_name_trimmed
+}
+
+resource "azurerm_monitor_data_collection_endpoint" "ingestion_dce" {
+  count               = local.enable_high_log_scale_mode ? 1 : 0
+  name                = local.ingestion_dce_name
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = var.workspace_region
+  kind                = "Linux"
+  tags                = var.resource_tag_values
+}
+
 resource "azurerm_monitor_data_collection_rule" "dcr" {
   name                = "MSCI-${var.workspace_region}-${var.cluster_name}"
   resource_group_name = azurerm_resource_group.rg.name
@@ -59,6 +75,8 @@ resource "azurerm_monitor_data_collection_rule" "dcr" {
       name               = "ContainerInsightsExtension"
     }
   }
+
+  data_collection_endpoint_id = local.enable_high_log_scale_mode ? azurerm_monitor_data_collection_endpoint.ingestion_dce[0].id : null
 
   description = "DCR for Azure Monitor Container Insights"
 }
