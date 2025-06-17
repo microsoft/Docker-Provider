@@ -22,7 +22,8 @@ $testFiles = @(
     "Test-IsSupportedCloudEnvironment.ps1",
     "Test-GetLogAnalyticsWorkspaceDomain.ps1",
     "Test-GetMcsEndpoint.ps1",
-    "Test-GetMcsGlobalEndpoint.ps1"
+    "Test-GetMcsGlobalEndpoint.ps1",
+    "Test-IsCanaryRegion.ps1"
 )
 
 foreach ($testFile in $testFiles) {
