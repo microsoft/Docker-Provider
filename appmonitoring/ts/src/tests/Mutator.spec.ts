@@ -58,7 +58,7 @@ describe("Mutator", () => {
         // no annotations
         admissionReview.request.object.spec.template.metadata = <IMetadata>{ annotations: <IAnnotations>{} };
         admissionReview.request.object.metadata.namespace = "ns1";
-        
+
         admissionReview.request.object.metadata.annotations = <IAnnotations>{};
         admissionReview.request.object.metadata.annotations.preExistingAnnotationName = "preExistingAnnotationValue";
 
@@ -169,7 +169,7 @@ describe("Mutator", () => {
         expect((<[]>patches).length).toBe(1);
 
         const obj: IObjectType = (<any>patches[0]).value as IObjectType;
-        expect(obj.metadata?.annotations?.[InstrumentationAnnotationName]).toBeUndefined();        
+        expect(obj.metadata?.annotations?.[InstrumentationAnnotationName]).toBeUndefined();
     });
 
     it("Mutating deployment - invalid annotations - multiple CRs", async () => {
@@ -227,17 +227,17 @@ describe("Mutator", () => {
                 "instrumentation.opentelemetry.io/private-preview-inject-python": "cr2"
             }
         ];
-       
+
         admissionReview.request.object.metadata.namespace = "ns1";
 
         for (const annotationSet of invalidAnnotationSets) {
-            const metadata: IMetadata = <IMetadata> { annotations: annotationSet };
+            const metadata: IMetadata = <IMetadata>{ annotations: annotationSet };
 
             admissionReview.request.object.spec.template.metadata = metadata;
 
-             // ACT
+            // ACT
             const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
-            
+
             // ASSERT
             expect(result.response.allowed).toBe(true);
             expect(result.response.patchType).toBe("JSONPatch");
@@ -280,9 +280,9 @@ describe("Mutator", () => {
                 }
             }
         };
-        
+
         const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
-        crs.Upsert(cr1);       
+        crs.Upsert(cr1);
         crs.Upsert(crDefault);
 
         const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject4));
@@ -346,7 +346,7 @@ describe("Mutator", () => {
 
             const obj: IObjectType = (<any>patches[0]).value as IObjectType;
             const annotationValue: IInstrumentationState = JSON.parse(obj.metadata.annotations[InstrumentationAnnotationName]) as IInstrumentationState;
-            
+
             expect(annotationValue.crName).toBe(DefaultInstrumentationCRName);
             expect(annotationValue.crResourceVersion).toBe("1");
             expect(annotationValue.platforms).toStrictEqual(metadata.correctPlatforms);
@@ -386,9 +386,9 @@ describe("Mutator", () => {
                 }
             }
         };
-        
+
         const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
-        crs.Upsert(cr1);       
+        crs.Upsert(cr1);
         crs.Upsert(crDefault);
 
         const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject4));
@@ -474,7 +474,7 @@ describe("Mutator", () => {
                 }
             }
         };
-        
+
         const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
         crs.Upsert(crDefault);
 
@@ -530,7 +530,7 @@ describe("Mutator", () => {
                 }
             }
         };
-        
+
         const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
         crs.Upsert(crDefault);
 
@@ -603,9 +603,9 @@ describe("Mutator", () => {
                 }
             }
         };
-        
+
         const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
-        crs.Upsert(cr1);       
+        crs.Upsert(cr1);
         crs.Upsert(crDefault);
 
         const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject4));
@@ -641,10 +641,10 @@ describe("Mutator", () => {
         const patches: object[] = JSON.parse(patchString);
 
         expect((<[]>patches).length).toBe(1);
-        
+
         const obj: IObjectType = (<any>patches[0]).value as IObjectType;
         const annotationValue: IInstrumentationState = JSON.parse(obj.metadata.annotations[InstrumentationAnnotationName]) as IInstrumentationState;
-        
+
         expect(annotationValue.crName).toBe(cr1.metadata.name);
         expect(annotationValue.crResourceVersion).toBe("1");
         expect(annotationValue.platforms).toStrictEqual([]);
@@ -685,9 +685,9 @@ describe("Mutator", () => {
                 }
             }
         };
-        
+
         const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
-        crs.Upsert(cr1);       
+        crs.Upsert(cr1);
         crs.Upsert(crDefault);
 
         const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject4));
@@ -722,10 +722,10 @@ describe("Mutator", () => {
         const patches: object[] = JSON.parse(patchString);
 
         expect((<[]>patches).length).toBe(1);
-        
+
         const obj: IObjectType = (<any>patches[0]).value as IObjectType;
         const annotationValue: IInstrumentationState = JSON.parse(obj.metadata.annotations[InstrumentationAnnotationName]) as IInstrumentationState;
-        
+
         expect(annotationValue.crName).toBe(crDefault.metadata.name);
         expect(annotationValue.crResourceVersion).toBe("2");
         expect(annotationValue.platforms).toStrictEqual([]);
@@ -765,9 +765,9 @@ describe("Mutator", () => {
                 }
             }
         };
-        
+
         const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
-        crs.Upsert(cr1);       
+        crs.Upsert(cr1);
         crs.Upsert(crDefault);
 
         const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject4));
@@ -802,8 +802,8 @@ describe("Mutator", () => {
         const patches: object[] = JSON.parse(patchString);
 
         expect((<[]>patches).length).toBe(1);
-        
-        const obj: IObjectType = (<any>patches[0]).value as IObjectType;        
+
+        const obj: IObjectType = (<any>patches[0]).value as IObjectType;
         expect(obj.metadata.annotations[InstrumentationAnnotationName]).toBeUndefined();
 
         expect((<any>patches[0]).value.spec.template.spec.initContainers).toBeUndefined();
@@ -832,17 +832,17 @@ describe("Mutator", () => {
                 "instrumentation.opentelemetry.io/inject-configuration": "cr1"
             }
         ];
-       
+
         admissionReview.request.object.metadata.namespace = "ns1";
 
         for (const annotationSet of invalidAnnotationSets) {
-            const metadata: IMetadata = <IMetadata> { annotations: annotationSet };
+            const metadata: IMetadata = <IMetadata>{ annotations: annotationSet };
 
             admissionReview.request.object.spec.template.metadata = metadata;
 
-             // ACT
+            // ACT
             const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
-            
+
             // ASSERT
             expect(result.response.allowed).toBe(true);
             expect(result.response.patchType).toBe("JSONPatch");
