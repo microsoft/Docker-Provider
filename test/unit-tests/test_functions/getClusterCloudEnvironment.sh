@@ -6,6 +6,17 @@
 # Required variables
 SUPPORTED_CLOUDS=("azurepubliccloud" "azurechinacloud" "azureusgovernmentcloud" "usnat" "ussec" "bleu")
 
+ggetDomainFromSecret() {
+      # Read the domain from the AMA logs secret and convert to lowercase
+      domain="opinsights.azure.com"
+      if [ -e "/etc/ama-logs-secret/DOMAIN" ]; then
+            domain=$(cat /etc/ama-logs-secret/DOMAIN)
+      fi
+      # Convert to lowercase
+      domain=$(echo "$domain" | tr '[:upper:]' '[:lower:]')
+      echo "$domain"
+}
+
 getClusterCloudEnvironment() {
       # Use provided cloud environment variable if it's set and valid
       if [ -n "$CLUSTER_CLOUD_ENVIRONMENT" ]; then
@@ -15,20 +26,12 @@ getClusterCloudEnvironment() {
                         return
                   fi
             done
-            # If environment variable is set but not valid, return unknown without domain prefix
-            echo "unknown"
-            return
       fi
 
-      # Fallback to reading from the AMA logs secret if not set or not supported
-      # Default domain
-      domain="opinsights.azure.com"
-      if [ -e "$TEST_DIR/etc/ama-logs-secret/DOMAIN" ]; then
-            domain=$(cat "$TEST_DIR/etc/ama-logs-secret/DOMAIN")
-      fi
-
+      # Fallback to reading from the AMA logs secret if CLUSTER_CLOUD_ENVIRONMENT is not set or invalid
+      domain=$(getDomainFromSecret)
       # Map domain to cloud environment
-      case "$domain" in
+            case "$domain" in
             "opinsights.azure.com")
                   echo "azurepubliccloud"
                   ;;

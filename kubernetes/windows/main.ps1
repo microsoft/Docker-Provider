@@ -104,8 +104,8 @@ function Set-CloudSpecificApplicationInsightsConfig {
             Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_ENDPOINT" "https://dc.applicationinsights.azure.microsoft.scloud/v2/track"
         }
         "bleu" {
-            # Bleu cloud is a new cloud environment, we dont have AI in this cloud yet so using Public cloud for now.
-            # update this once we have AI in Bleu cloud.
+            # TODO: Bleu cloud is a new cloud environment, we don't have AI in this cloud yet so using Public cloud for now.
+            # Update this once we have AI in Bleu cloud.
             Write-Host "Set-CloudSpecificApplicationInsightsConfig: Setting Application Insights configuration for Bleu Cloud"
             Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_AUTH" "NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi"
             Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_ENDPOINT" "https://dc.applicationinsights.azure.com/v2/track"
