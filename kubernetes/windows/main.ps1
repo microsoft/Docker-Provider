@@ -292,6 +292,7 @@ function Is-CanaryRegion {
     return $false
 }
 
+
 function Get-McsGlobalEndpoint{
     param (
         [string]$cloud_environment
