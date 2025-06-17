@@ -88,9 +88,6 @@ gem install ipaddress --no-document
 gem install jwt -v "2.7.1" --no-document
 gem install racc --no-document
 
-# Fix CVE-2025-43857: Update net-imap to a non-vulnerable version
-gem install net-imap -v 0.5.8 --no-document
-
 rm -f $TMPDIR/docker-cimprov*.sh
 rm -f $TMPDIR/mdsd.xml
 rm -f $TMPDIR/envmdsd
