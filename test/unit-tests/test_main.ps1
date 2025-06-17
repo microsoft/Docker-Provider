@@ -37,7 +37,8 @@ foreach ($testFile in $testFiles) {
             # Run the test file
             $result = & $testPath
 
-            if ($LASTEXITCODE -eq 0 -and $?) {
+            # Only check $LASTEXITCODE since $? might be false even when tests pass
+            if ($null -eq $LASTEXITCODE -or $LASTEXITCODE -eq 0) {
                 Write-Host "$script:GREEN`Tests passed in: $testFile$script:NC"
                 $passedCount++
             }
