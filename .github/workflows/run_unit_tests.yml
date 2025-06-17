@@ -10,6 +10,22 @@ on:
       - ci_dev
       - ci_prod
 jobs:
+  Linux-Bash-Tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Make test files executable
+        run: |
+          chmod +x test/unit-tests/test_main.sh
+          chmod +x test/unit-tests/test_framework.sh
+          find test/unit-tests/test_functions -type f -name "*.sh" -exec chmod +x {} \;
+          find test/unit-tests/test_cases -type f -name "*.sh" -exec chmod +x {} \;
+      - name: Run Bash unit tests
+        run: |
+          cd ${{ github.workspace }}
+          ./test/unit-tests/test_main.sh
+
   Golang-Tests:
     runs-on: ubuntu-latest
     steps:
