@@ -64,16 +64,23 @@ jobs:
         shell: pwsh
         run: |
           Set-PSRepository PSGallery -InstallationPolicy Trusted
-          Install-Module -Name Pester -Force -SkipPublisherCheck
+          Install-Module -Name Pester -RequiredVersion 5.3.3 -Force -SkipPublisherCheck
           Install-Module -Name PSScriptAnalyzer -Force
 
-      - name: Set execution policy
+      - name: Set execution policy and Import modules
         shell: pwsh
         run: |
           Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+          Import-Module Pester -RequiredVersion 5.3.3
 
       - name: Run PowerShell unit tests
         shell: pwsh
         run: |
           cd ${{ github.workspace }}
-          ./test/unit-tests/test_main.ps1
+          $config = New-PesterConfiguration
+          $config.Run.Path = "./test/unit-tests/test_main.ps1"
+          $config.Output.Verbosity = "Detailed"
+          $config.TestResult.Enabled = $true
+          $config.TestResult.OutputFormat = "NUnitXml"
+          $config.TestResult.OutputPath = "test-results.xml"
+          Invoke-Pester -Configuration $config
