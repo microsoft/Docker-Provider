@@ -6,7 +6,7 @@
 # Required variables
 SUPPORTED_CLOUDS=("azurepubliccloud" "azurechinacloud" "azureusgovernmentcloud" "usnat" "ussec" "bleu")
 
-ggetDomainFromSecret() {
+getDomainFromSecret() {
       # Read the domain from the AMA logs secret and convert to lowercase
       domain="opinsights.azure.com"
       if [ -e "/etc/ama-logs-secret/DOMAIN" ]; then
@@ -20,6 +20,7 @@ ggetDomainFromSecret() {
 getClusterCloudEnvironment() {
       # Use provided cloud environment variable if it's set and valid
       if [ -n "$CLUSTER_CLOUD_ENVIRONMENT" ]; then
+            CLUSTER_CLOUD_ENVIRONMENT=$(echo "$CLUSTER_CLOUD_ENVIRONMENT" | tr '[:upper:]' '[:lower:]')
             for cloud in "${SUPPORTED_CLOUDS[@]}"; do
                   if [ "$CLUSTER_CLOUD_ENVIRONMENT" == "$cloud" ]; then
                         echo "$CLUSTER_CLOUD_ENVIRONMENT"
