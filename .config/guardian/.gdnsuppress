@@ -1,9 +1,0 @@
-{
-  "tool": "credscan",
-  "suppressions": [
-    {
-      "file": "ScanTelemetry_*.json",
-      "justification": "Component Governance scan telemetry files contain metadata hashes and signatures, not actual credentials. These files are generated during pipeline execution and contain scan results, not secrets."
-    }
-  ]
-}
