@@ -28,6 +28,11 @@ variable "cluster_name" {
   default = "<ClusterName>"
 }
 
+variable "cluster_location" {
+  type    = string
+  default = "ClusterLocation"
+}
+
 variable "dns_prefix" {
   type    = string
   default = "k8stest"
@@ -73,11 +78,6 @@ variable "enableContainerLogV2" {
   default = true
 }
 
-variable "enable_retina_network_flow_logs" {
-  type    = bool
-  default = false
-}
-
 variable "streams" {
   type    = list(string)
   default = [
@@ -92,7 +92,6 @@ variable "streams" {
     "Microsoft-InsightsMetrics",
     "Microsoft-ContainerInventory",
     "Microsoft-ContainerNodeInventory",
-    "Microsoft-Perf",
-    "Microsoft-RetinaNetworkFlowLogs"
+    "Microsoft-Perf"
   ]
 }

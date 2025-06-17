@@ -5,7 +5,7 @@ resource "azurerm_resource_group" "rg" {
 
 resource "azurerm_kubernetes_cluster" "k8s" {
   name                = var.cluster_name
-  location            = azurerm_resource_group.rg.location
+  location            = var.cluster_location
   resource_group_name = azurerm_resource_group.rg.name
   dns_prefix          = var.dns_prefix
 
@@ -24,12 +24,11 @@ resource "azurerm_kubernetes_cluster" "k8s" {
   oms_agent {
     log_analytics_workspace_id = var.workspace_resource_id
     msi_auth_for_monitoring_enabled = true
-    enable_retina_network_flags = var.enable_retina_network_flow_logs ? "true" : "false"
   }
 }
 
 locals {
-  enable_high_log_scale_mode = contains(var.streams, "Microsoft-ContainerLogV2-HighScale") || var.enable_retina_network_flow_logs
+  enable_high_log_scale_mode = contains(var.streams, "Microsoft-ContainerLogV2-HighScale")
   ingestion_dce_name_full    = "MSCI-ingest-${var.workspace_region}-${var.cluster_name}"
   ingestion_dce_name_trimmed = substr(local.ingestion_dce_name_full, 0, 43)
   ingestion_dce_name         = endswith(local.ingestion_dce_name_trimmed, "-") ? substr(local.ingestion_dce_name_trimmed, 0, 42) : local.ingestion_dce_name_trimmed
