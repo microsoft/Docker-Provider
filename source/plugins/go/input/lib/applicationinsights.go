@@ -279,6 +279,12 @@ func getWorkspaceCloud() string {
 		workspaceCloud = "AzureUSGovernment"
 	case "opinsights.azure.de":
 		workspaceCloud = "AzureGermanCloud"
+	case "opinsights.azure.eaglex.ic.gov":
+		workspaceCloud = "usnat"
+	case "opinsights.azure.microsoft.scloud":
+		workspaceCloud = "ussec"
+	case "opinsights.sovcloud-api.fr":
+		workspaceCloud = "bleu"
 	default:
 		workspaceCloud = "Unknown"
 	}

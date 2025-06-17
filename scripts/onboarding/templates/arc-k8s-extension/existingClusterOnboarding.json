@@ -33,7 +33,8 @@
         "opinsights.azure.cn",
         "opinsights.azure.us",
         "opinsights.azure.eaglex.ic.gov",
-        "opinsights.azure.microsoft.scloud"
+        "opinsights.azure.microsoft.scloud",
+        "opinsights.sovcloud-api.fr"
       ],
       "defaultValue": "opinsights.azure.com",
       "metadata": {

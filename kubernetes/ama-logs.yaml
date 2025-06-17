@@ -459,6 +459,8 @@ spec:
               value: "28331"
             - name: AZMON_RETINA_FLOW_LOGS_ENABLED
               value: "false"
+            - name: CLUSTER_CLOUD_ENVIRONMENT
+              value: "azurepubliccloud" # Change this to the cloud environment of your cluster
           securityContext:
             privileged: true
             capabilities:
@@ -576,6 +578,8 @@ spec:
             # Uncomment below lines for MSI Auth Mode  testing
             # - name: USING_AAD_MSI_AUTH
             #   value: "true"
+            - name: CLUSTER_CLOUD_ENVIRONMENT
+              value: "azurepubliccloud" # Change this to the cloud environment of your cluster
           securityContext:
             privileged: true
             capabilities:
@@ -863,6 +867,8 @@ spec:
 #                   fieldPath: status.hostIP
 #             - name: USING_AAD_MSI_AUTH
 #               value: "true"
+#             - name: CLUSTER_CLOUD_ENVIRONMENT
+#               value: "azurepubliccloud" # Change this to the cloud environment of your cluster
 #           securityContext:
 #             privileged: true
 #             capabilities:
@@ -1104,6 +1110,8 @@ spec:
               value: "false"
             - name: AZMON_WINDOWS_FLUENT_BIT_ENABLED
               value: "false"
+            - name: CLUSTER_CLOUD_ENVIRONMENT
+              value: "azurepubliccloud" # Change this to the cloud environment of your cluster
           securityContext:
             privileged: true
             capabilities:
@@ -1364,6 +1372,8 @@ spec:
             value: "false"
           - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
             value: "28331"
+          - name: CLUSTER_CLOUD_ENVIRONMENT
+            value: "azurepubliccloud" # Change this to the cloud environment of your cluster
          volumeMounts:
           #  Uncomment below lines when telegraf upgraded to 1.28.5 or higher
           # - name: kube-api-access

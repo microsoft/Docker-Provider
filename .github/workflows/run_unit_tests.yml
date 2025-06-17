@@ -10,6 +10,22 @@ on:
       - ci_dev
       - ci_prod
 jobs:
+  Linux-Bash-Tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - name: Make test files executable
+        run: |
+          chmod +x test/unit-tests/test_main.sh
+          chmod +x test/unit-tests/test_framework.sh
+          find test/unit-tests/test_functions -type f -name "*.sh" -exec chmod +x {} \;
+          find test/unit-tests/test_cases -type f -name "*.sh" -exec chmod +x {} \;
+      - name: Run Bash unit tests
+        run: |
+          cd ${{ github.workspace }}
+          ./test/unit-tests/test_main.sh
+
   Golang-Tests:
     runs-on: ubuntu-latest
     steps:
@@ -37,3 +53,28 @@ jobs:
         run: |
           cd ${{ github.workspace }}
           ./test/unit-tests/run_ruby_tests.sh
+
+  Windows-PowerShell-Tests:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v2
+
+      - name: Setup PowerShell modules
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module -Name Pester -RequiredVersion 5.3.3 -Force -SkipPublisherCheck
+          Install-Module -Name PSScriptAnalyzer -Force
+
+      - name: Set execution policy and Import modules
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+          Import-Module Pester -RequiredVersion 5.3.3
+
+      - name: Run PowerShell unit tests
+        shell: pwsh
+        run: |
+          cd ${{ github.workspace }}
+          ./test/unit-tests/test_main.ps1
