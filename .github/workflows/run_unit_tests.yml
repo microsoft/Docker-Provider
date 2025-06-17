@@ -81,6 +81,7 @@ jobs:
           $config.Run.Path = "./test/unit-tests/test_cases"
           $config.Run.TestExtension = ".ps1"
           $config.Output.Verbosity = "Detailed"
+          $config.Run.PassThru = $true
           $config.TestResult.Enabled = $true
           $config.TestResult.OutputFormat = "NUnitXml"
           $config.TestResult.OutputPath = "test-results.xml"
@@ -89,7 +90,13 @@ jobs:
           Get-ChildItem "./test/unit-tests/test_functions" -Filter "*.ps1" | ForEach-Object {
               Import-Module $_.FullName -Force
           }
-          $result = Invoke-Pester -Configuration $config -PassThru
-          if ($result.FailedCount -gt 0) {
+          # Run all test files in test_cases directory
+          $result = Invoke-Pester -Configuration $config
+
+          # Handle test results
+          if ($result.Failed.Count -gt 0) {
+              Write-Host "Tests failed: $($result.Failed.Count) of $($result.Total) tests failed"
               exit 1
+          } else {
+              Write-Host "All tests passed: $($result.Passed.Count) tests"
           }
