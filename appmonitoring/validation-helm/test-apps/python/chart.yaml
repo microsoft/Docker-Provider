@@ -14,6 +14,8 @@ spec:
     metadata:
       labels:
         app: python-test-app
+      annotations:
+        instrumentation.opentelemetry.io/private-preview-inject-python: "true" # private-preview is enabled via an annotation only
     spec:
       containers:
       - name: python-test-app
