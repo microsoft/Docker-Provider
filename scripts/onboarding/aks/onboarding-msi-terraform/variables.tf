@@ -30,7 +30,7 @@ variable "cluster_name" {
 
 variable "cluster_location" {
   type    = string
-  default = "ClusterLocation"
+  default = "<ClusterLocation>"
 }
 
 variable "dns_prefix" {
