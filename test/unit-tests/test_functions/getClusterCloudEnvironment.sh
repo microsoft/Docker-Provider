@@ -9,8 +9,14 @@ SUPPORTED_CLOUDS=("azurepubliccloud" "azurechinacloud" "azureusgovernmentcloud" 
 getDomainFromSecret() {
       # Read the domain from the AMA logs secret and convert to lowercase
       domain="opinsights.azure.com"
-      if [ -e "/etc/ama-logs-secret/DOMAIN" ]; then
-            domain=$(cat /etc/ama-logs-secret/DOMAIN)
+      domainFile="/etc/ama-logs-secret/DOMAIN"
+      # override this for unit tests
+      if [ -n "$TEST_DIR" ] && [ -e "$TEST_DIR/etc/ama-logs-secret/DOMAIN" ]; then
+            domainFile="$TEST_DIR/etc/ama-logs-secret/DOMAIN"
+      fi
+
+      if [ -e "$domainFile" ]; then
+            domain=$(cat $domainFile)
       fi
       # Convert to lowercase
       domain=$(echo "$domain" | tr '[:upper:]' '[:lower:]')

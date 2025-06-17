@@ -31,7 +31,9 @@ test_invalid_environment_variable() {
     setup
     export CLUSTER_CLOUD_ENVIRONMENT="invalidcloud"
     result=$(getClusterCloudEnvironment)
-    assert_equals "unknown" "$result" "(with invalid CLUSTER_CLOUD_ENVIRONMENT)"
+    # Should fallback to default value which is "azurepubliccloud"
+    # as the environment variable is not valid
+    assert_equals "azurepubliccloud" "$result" "(with invalid CLUSTER_CLOUD_ENVIRONMENT)"
     teardown
 }
 
