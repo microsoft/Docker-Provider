@@ -32,7 +32,9 @@ RUN refreshenv \
 && gem install win32-ipc -v 0.7.0 \
 && gem install win32-event -v 0.6.3 \
 # remove rexml gem to avoid vulnerability
-&& gem uninstall rexml -v 3.2.5 --force\
+&& gem uninstall rexml -v 3.2.5 --force \
+# remove net-imap gem as it has a known CVE (CVE-2025-43857) and is not used by the agent
+&& gem uninstall net-imap --force \
 # The following gems are required for fluentd plugins, or ruby for configuration parsing
 && gem install windows-pr -v 1.2.6 \
 && gem install tomlrb -v 2.0.1 \
