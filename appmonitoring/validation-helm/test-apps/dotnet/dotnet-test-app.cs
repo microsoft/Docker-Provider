@@ -3,23 +3,17 @@ builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
-// Add this line before your endpoints:
-app.UseExceptionHandler("/error");
-
-app.Map("/error", (HttpContext context) =>
-{
-    // This will be called for unhandled exceptions
-    context.Response.StatusCode = 500;
-    return context.Response.WriteAsync("{\"error\": \"An unhandled exception occurred\"}");
-});
-
 app.MapGet("/", () => ".NET application is running!");
 
-app.MapGet("/call-target", async (HttpContext context, IHttpClientFactory httpClientFactory) =>
+app.MapGet("/call-target", async (HttpContext context, IHttpClientFactory httpClientFactory, ILogger<Program> logger) =>
 {
     if (new Random().NextDouble() < 0.4)
     {
-        throw new Exception("An unexpected error occurred");
+        var ex = new Exception("An unexpected error occurred");
+        logger.LogError(ex, "Random failure in /call-target");
+        context.Response.StatusCode = 500;
+        await context.Response.WriteAsync("{\"error\": \"An unexpected error occurred\"}");
+        return;
     }
 
     var targetUrl = Environment.GetEnvironmentVariable("TARGET_URL");
