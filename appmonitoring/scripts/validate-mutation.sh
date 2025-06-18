@@ -14,6 +14,7 @@ JAVA_DEPLOYMENT_NAME=$(kubectl get deployment -n "$NAMESPACE" -o custom-columns=
 NODEJS_DEPLOYMENT_NAME=$(kubectl get deployment -n "$NAMESPACE" -o custom-columns=NAME:.metadata.name | grep "$DEPLOYMENT_NODEJS_NAME")
 PYTHON_DEPLOYMENT_NAME=$(kubectl get deployment -n "$NAMESPACE" -o custom-columns=NAME:.metadata.name | grep "$DEPLOYMENT_PYTHON_NAME")
 DOTNET_DEPLOYMENT_NAME=$(kubectl get deployment -n "$NAMESPACE" -o custom-columns=NAME:.metadata.name | grep "$DEPLOYMENT_DOTNET_NAME")
+
 EXPECTED_ENV_VARS=(
   "NODE_NAME"
   "POD_NAMESPACE"
@@ -26,7 +27,11 @@ EXPECTED_ENV_VARS=(
   "APPLICATIONINSIGHTS_INSTRUMENTATION_LOGGING_ENABLED"
   "NODE_OPTIONS"
   "APPLICATIONINSIGHTS_CONFIGURATION_CONTENT"
+)
+PYTHON_ENV_VARS=(
   "PYTHONPATH"
+)
+DOTNET_ENV_VARS=(
   "OTEL_DOTNET_AUTO_LOG_DIRECTORY"
   "DOTNET_STARTUP_HOOKS"
   "ASPNETCORE_HOSTINGSTARTUPASSEMBLIES"
@@ -40,12 +45,20 @@ EXPECTED_ENV_VARS=(
 EXPECTED_INIT_CONTAINERS=(
     "azure-monitor-auto-instrumentation-java"
     "azure-monitor-auto-instrumentation-nodejs"
+)
+PYTHON_EXPECTED_INIT_CONTAINERS=(
     "azure-monitor-auto-instrumentation-python"
+)
+DOTNET_EXPECTED_INIT_CONTAINERS=(
     "azure-monitor-auto-instrumentation-dotnet"
 )
 
 checkMutation() {
-    local deploymentName="$1"  # The first argument to the function is stored in 'name'
+    local deploymentName="$1"
+    local env_arr_name="$2"
+    local init_arr_name="$3"
+    local expectedEnvVars=( "${!env_arr_name}" )
+    local expectedInitContainers=( "${!init_arr_name}" )
     echo "Checking deployment: $deploymentName"
     DEPLOYMENT=$(kubectl get deployment "$deploymentName" -n "$NAMESPACE" -o json)
     
@@ -69,7 +82,7 @@ checkMutation() {
 
     envVariables=$(jq -r '.spec.template.spec.containers[0].env' <<< $DEPLOYMENT)
     echo "Checking for Expected Environment Variables in deployment $deploymentName"
-    for expectedVar in "${EXPECTED_ENV_VARS[@]}"; do
+    for expectedVar in "${expectedEnvVars[@]}"; do
         currentVar=$(echo "$envVariables" | jq -r --arg var "$expectedVar" '.[] | select(.name == $var)')
 
         if [[ -n "$currentVar" ]]; then
@@ -82,7 +95,7 @@ checkMutation() {
 
     echo "Checking for Expected Init Containers in deployment $deploymentName"
     initContainers=$(jq -r '.spec.template.spec.initContainers' <<< $DEPLOYMENT)
-    for initContainer in "${EXPECTED_INIT_CONTAINERS[@]}"; do
+    for initContainer in "${expectedInitContainers[@]}"; do
         currentInitContainer=$(echo "$initContainers" | jq -r --arg container "$initContainer" '.[] | select(.name == $container)')
         if [[ -n "$currentInitContainer" ]]; then
             echo "Success! Found expected init container: $initContainer"
@@ -94,22 +107,22 @@ checkMutation() {
     
 }
 
-if ! checkMutation "$DEPLOYMENT_JAVA_NAME"; then
+if ! checkMutation "$DEPLOYMENT_JAVA_NAME" EXPECTED_ENV_VARS[@] EXPECTED_INIT_CONTAINERS[@]; then
     echo "FATAL ERROR: checkMutation failed for $DEPLOYMENT_JAVA_NAME"
     exit 1
 fi
 
-if ! checkMutation "$DEPLOYMENT_NODEJS_NAME"; then
+if ! checkMutation "$DEPLOYMENT_NODEJS_NAME" EXPECTED_ENV_VARS[@] EXPECTED_INIT_CONTAINERS[@]; then
     echo "FATAL ERROR: checkMutation failed for $DEPLOYMENT_NODEJS_NAME"
     exit 1
 fi
 
-if ! checkMutation "$DEPLOYMENT_PYTHON_NAME"; then
+if ! checkMutation "$DEPLOYMENT_PYTHON_NAME" PYTHON_ENV_VARS[@] PYTHON_EXPECTED_INIT_CONTAINERS[@]; then
     echo "FATAL ERROR: checkMutation failed for $DEPLOYMENT_PYTHON_NAME"
     exit 1
 fi
 
-if ! checkMutation "$DEPLOYMENT_DOTNET_NAME"; then
+if ! checkMutation "$DEPLOYMENT_DOTNET_NAME" DOTNET_ENV_VARS[@] DOTNET_EXPECTED_INIT_CONTAINERS[@]; then
     echo "FATAL ERROR: checkMutation failed for $DEPLOYMENT_DOTNET_NAME"
     exit 1
 fi
