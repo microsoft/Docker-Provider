@@ -15,10 +15,12 @@ app.Run();
 public class HomeController : ControllerBase
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<HomeController> _logger;
 
-    public HomeController(IHttpClientFactory httpClientFactory)
+    public HomeController(IHttpClientFactory httpClientFactory, ILogger<HomeController> logger)
     {
         _httpClientFactory = httpClientFactory;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -32,7 +34,10 @@ public class HomeController : ControllerBase
     {
         if (new Random().NextDouble() < 0.4)
         {
-            throw new Exception("An unexpected error occurred - thrown and unhandled");
+            var ex = new Exception("An unexpected error occurred");
+            _logger.LogError(ex, "Random failure in /call-target");
+            // Throw to allow OTel to capture the exception
+            throw ex;
         }
 
         var targetUrl = Environment.GetEnvironmentVariable("TARGET_URL");
