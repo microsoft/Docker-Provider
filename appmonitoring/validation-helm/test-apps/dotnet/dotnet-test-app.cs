@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpClient();
@@ -34,10 +36,16 @@ public class HomeController : ControllerBase
     {
         if (new Random().NextDouble() < 0.4)
         {
-            var ex = new Exception("An unexpected error occurred");
-            _logger.LogError(ex, "Random failure in /call-target");
-            // Throw to allow OTel to capture the exception
-            throw ex;
+            using var activity = Activity.Current ?? new Activity("MyOperation").Start();
+            try
+            {
+                throw new Exception("Something went wrong!");
+            }
+            catch (Exception ex)
+            {
+                activity.RecordException(ex);
+                activity.SetStatus(ActivityStatusCode.Error);
+            }
         }
 
         var targetUrl = Environment.GetEnvironmentVariable("TARGET_URL");
