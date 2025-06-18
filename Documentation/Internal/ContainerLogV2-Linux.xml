@@ -8,9 +8,9 @@
       <IdentityComponent name="ClusterResourceId" envariable="AKS_RESOURCE_ID"/>
       <IdentityComponent name="ClusterRegion" envariable="AKS_REGION"/>
       <IdentityComponent name="Computer" envariable="HOSTNAME"/>
-      <IdentityComponent name="Tenant">TENANT_ID</IdentityComponent>
-      <IdentityComponent name="Role">ROLE_ID</IdentityComponent>
-      <IdentityComponent name="RoleInstance">ROLEINSTANCE_ID</IdentityComponent>
+      <IdentityComponent name="Tenant" envariable="AKS_RESOURCE_ID"/>
+      <IdentityComponent name="Role" envariable="AKS_REGION"/>
+      <IdentityComponent name="RoleInstance" envariable="HOSTNAME"/>
     </Identity>
     <AgentResourceUsage diskQuotaInMB="50000" />
   </Management>

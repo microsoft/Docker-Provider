@@ -7,9 +7,9 @@
       <IdentityComponent name="ClusterResourceId">GetEnvironmentVariable("AKS_RESOURCE_ID")</IdentityComponent>
       <IdentityComponent name="ClusterRegion">GetEnvironmentVariable("AKS_REGION")</IdentityComponent>
       <IdentityComponent name="Computer">GetEnvironmentVariable("HOSTNAME")</IdentityComponent>
-      <IdentityComponent name="Tenant">"TENANT_ID"</IdentityComponent>
-      <IdentityComponent name="Role">"ROLE_ID"</IdentityComponent>
-      <IdentityComponent name="RoleInstance">"ROLEINSTANCE_ID"</IdentityComponent>
+      <IdentityComponent name="Tenant">GetEnvironmentVariable("AKS_RESOURCE_ID")</IdentityComponent>
+      <IdentityComponent name="Role">GetEnvironmentVariable("AKS_REGION")</IdentityComponent>
+      <IdentityComponent name="RoleInstance">GetEnvironmentVariable("HOSTNAME")</IdentityComponent>
     </Identity>
     <AgentResourceUsage diskQuotaInMB="50000" />
   </Management>
