@@ -1,3 +1,6 @@
+# docker build -t appmonitoring.azurecr.io/demoaks-python-app:latest .
+# docker push appmonitoring.azurecr.io/demoaks-python-app:latest 
+
 # Use the official Python image
 FROM python:3.9
 

@@ -1,3 +1,6 @@
+# docker build -t appmonitoring.azurecr.io/demoaks-dotnet-app:latest .
+# docker push appmonitoring.azurecr.io/demoaks-dotnet-app:latest 
+
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
 WORKDIR /app
 
