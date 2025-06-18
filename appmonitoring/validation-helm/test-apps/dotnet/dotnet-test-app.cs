@@ -16,7 +16,6 @@ app.MapGet("/call-target", async (HttpContext context, IHttpClientFactory httpCl
 {
     if (new Random().NextDouble() < 0.4)
     {
-        context.Response.StatusCode = 500;
         throw new Exception("An unexpected error occurred");
     }
 
