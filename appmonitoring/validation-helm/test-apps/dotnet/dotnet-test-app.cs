@@ -1,42 +1,56 @@
+using Microsoft.AspNetCore.Mvc;
+
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpClient();
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
-app.MapGet("/", () => ".NET application is running!");
-
-app.MapGet("/call-target", async (HttpContext context, IHttpClientFactory httpClientFactory, ILogger<Program> logger) =>
-{
-    if (new Random().NextDouble() < 0.4)
-    {
-        var ex = new Exception("An unexpected error occurred");
-        logger.LogError(ex, "Random failure in /call-target");
-        context.Response.StatusCode = 500;
-        await context.Response.WriteAsync("{\"error\": \"An unexpected error occurred\"}");
-        return;
-    }
-
-    var targetUrl = Environment.GetEnvironmentVariable("TARGET_URL");
-    if (string.IsNullOrEmpty(targetUrl))
-    {
-        context.Response.StatusCode = 500;
-        await context.Response.WriteAsync("{\"error\": \"TARGET_URL environment variable not set\"}");
-        return;
-    }
-
-    try
-    {
-        var client = httpClientFactory.CreateClient();
-        var response = await client.GetAsync(targetUrl);
-        var responseText = await response.Content.ReadAsStringAsync();
-        context.Response.StatusCode = (int)response.StatusCode;
-        await context.Response.WriteAsync(responseText);
-    }
-    catch (Exception ex)
-    {
-        context.Response.StatusCode = 500;
-        await context.Response.WriteAsync($"{{\"error\": \"Failed to reach {targetUrl}: {ex.Message}\"}}");
-    }
-});
+app.MapControllers();
 
 app.Run();
+
+[ApiController]
+[Route("/")]
+public class HomeController : ControllerBase
+{
+    private readonly IHttpClientFactory _httpClientFactory;
+
+    public HomeController(IHttpClientFactory httpClientFactory)
+    {
+        _httpClientFactory = httpClientFactory;
+    }
+
+    [HttpGet]
+    public IActionResult Get()
+    {
+        return Ok(".NET application is running!");
+    }
+
+    [HttpGet("call-target")]
+    public async Task<IActionResult> CallTarget()
+    {
+        if (new Random().NextDouble() < 0.4)
+        {
+            throw new Exception("An unexpected error occurred - thrown and unhandled");
+        }
+
+        var targetUrl = Environment.GetEnvironmentVariable("TARGET_URL");
+        if (string.IsNullOrEmpty(targetUrl))
+        {
+            return StatusCode(500, new { error = "TARGET_URL environment variable not set" });
+        }
+
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            var response = await client.GetAsync(targetUrl);
+            var responseText = await response.Content.ReadAsStringAsync();
+            return StatusCode((int)response.StatusCode, responseText);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { error = $"Failed to reach {targetUrl}: {ex.Message}" });
+        }
+    }
+}
