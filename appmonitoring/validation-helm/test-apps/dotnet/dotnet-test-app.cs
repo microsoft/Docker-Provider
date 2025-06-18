@@ -1,14 +1,17 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Net.Http;
-using System.Threading.Tasks;
-
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpClient();
 
 var app = builder.Build();
+
+// Add this line before your endpoints:
+app.UseExceptionHandler("/error");
+
+app.Map("/error", (HttpContext context) =>
+{
+    // This will be called for unhandled exceptions
+    context.Response.StatusCode = 500;
+    return context.Response.WriteAsync("{\"error\": \"An unhandled exception occurred\"}");
+});
 
 app.MapGet("/", () => ".NET application is running!");
 
