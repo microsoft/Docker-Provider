@@ -36,6 +36,9 @@ echo "Validating the secret store..."
 echo "Breaking the Mutating Webhook Configuration..."
 kubectl apply -f ../validation-helm/appmonitoring-broken-mwhc.yaml
 
+echo "Current MutatingWebhookConfiguration after applying broken config:"
+kubectl get mutatingwebhookconfiguration app-monitoring-webhook -o yaml || echo "Resource not found"
+
 echo "Run the housekeeper cronjob now to fix the Mutating Webhook Configuration..."
 test_cronjob_pod=$(echo $housekeeper_cronjob-$randomString-1)
 kubectl create job -n $namespace --from=cronjob/app-monitoring-cert-housekeeper-hook $test_cronjob_pod
@@ -57,5 +60,9 @@ else
 fi
 
 sleep 10
+
+echo "New MutatingWebhookConfiguration after having been fixed by the job:"
+kubectl get mutatingwebhookconfiguration app-monitoring-webhook -o yaml || echo "Resource not found"
+
 echo "Validating the Mutating Webhook Configuration after being repaired by the cronjob..."
 ../scripts/validate-certs.sh
