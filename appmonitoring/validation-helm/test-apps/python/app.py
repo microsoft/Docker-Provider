@@ -1,9 +1,13 @@
 import os
 import random
 import requests
+import logging
+
 from flask import Flask, jsonify
 
 app = Flask(__name__)
+
+logging.basicConfig(level=logging.ERROR)
 
 @app.route('/')
 def home():
@@ -12,6 +16,10 @@ def home():
 @app.route('/call-target')
 def call_target():
     if random.random() < 0.4:  # 40% chance of failure
+        try:
+            raise ValueError("Something went wrong!")
+        except Exception as e:
+            logging.exception("An error occurred")  # auto-instrumentation captures this
         return jsonify({"error": "Python: an unexpected error occurred"}), 500
 
     target_url = os.getenv("TARGET_URL")
