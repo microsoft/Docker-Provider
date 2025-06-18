@@ -7,7 +7,7 @@ echo "Breaking the secret store..."
 kubectl apply -f ../validation-helm/appmonitoring-broken-secret.yaml
 
 echo "Secret store state after breaking:"
-kubectl get secret appmonitoring-cert-store -n $namespace -o yaml || echo "Secret not found"
+kubectl get secret app-monitoring-webhook-cert -n $namespace -o yaml || echo "Secret not found"
 
 echo "Run the housekeeper cronjob now to fix the secret store after being repaired by the cronjob..."
 randomString=$(head /dev/urandom | tr -dc a-z0-9 | head -c 5)
@@ -31,7 +31,7 @@ else
 fi
 
 echo "Secret store state after having been repaired:"
-kubectl get secret appmonitoring-cert-store -n $namespace -o yaml || echo "Secret not found"
+kubectl get secret app-monitoring-webhook-cert -n $namespace -o yaml || echo "Secret not found"
 
 kubectl get jobs -n $namespace $test_cronjob_pod
 kubectl get pods -n $namespace --selector=job-name=$test_cronjob_pod
