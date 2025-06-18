@@ -390,6 +390,9 @@ jobs:
         az account set --subscription ${{ variables.subscription }}
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
+        # Track time for rollout
+        rollout_start=$(date +%s%3N)
+
         echo "Restarting deployment app-monitoring-webhook in kube-system namespace..."
         kubectl rollout restart -n kube-system deployment/app-monitoring-webhook 
 
@@ -399,6 +402,8 @@ jobs:
         # Check if all pods are Running and Ready
         desired_replicas=$(kubectl get deployment app-monitoring-webhook -n kube-system -o jsonpath='{.spec.replicas}')
         ready_replicas=$(kubectl get deployment app-monitoring-webhook -n kube-system -o jsonpath='{.status.readyReplicas}')
+        running_pods=$(kubectl get pods -n kube-system -l app=app-monitoring-webhook --field-selector=status.phase=Running --no-headers | wc -l)
+
         if [ "$desired_replicas" != "$ready_replicas" ]; then
           echo "Deployment is not healthy: $ready_replicas/$desired_replicas pods are ready."
           kubectl get pods -n kube-system -l app=app-monitoring-webhook -o wide
@@ -423,8 +428,11 @@ jobs:
           exit 1
         fi
 
-        echo "Webhook deployment is healthy again"
-  
+        rollout_end=$(date +%s%3N)
+        rollout_duration_ms=$((rollout_end-rollout_start))
+
+        echo "Webhook deployment is healthy again, took ${rollout_duration_ms} milliseconds to restart. ${running_pods}/${desired_replicas} pods are running."
+
   - task: AzureCLI@2
     displayName: "Retag the image as ready to deploy"
     inputs:
