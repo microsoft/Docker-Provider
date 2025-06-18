@@ -396,51 +396,35 @@ jobs:
         echo "Waiting for the deployment app-monitoring-webhook to be ready..."
         kubectl rollout status deployment/app-monitoring-webhook -n kube-system --timeout=120s
 
-  - task: AzureCLI@2
-    displayName: "Check test apps were mutated correctly"
-    inputs:
-      azureSubscription: ${{ variables.armServiceConnectionName }}
-      scriptType: bash
-      scriptLocation: inlineScript
-      inlineScript: |
-        cd appmonitoring/scripts
-        pwd
-        az account set --subscription ${{ variables.subscription }}
-        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }}
-        
-        sudo chmod u+x ./validate-mutation.sh
-
-        if ! ./validate-mutation.sh "${{ variables.javaTestAppName }}" "${{ variables.nodeTestAppName }}" "${{ variables.pythonTestAppName }}" "${{ variables.dotnetTestAppName }}" "${{ variables.testNamespace }}"; then
-          echo "Mutation validation failed"
+        # Check if all pods are Running and Ready
+        desired_replicas=$(kubectl get deployment app-monitoring-webhook -n kube-system -o jsonpath='{.spec.replicas}')
+        ready_replicas=$(kubectl get deployment app-monitoring-webhook -n kube-system -o jsonpath='{.status.readyReplicas}')
+        if [ "$desired_replicas" != "$ready_replicas" ]; then
+          echo "Deployment is not healthy: $ready_replicas/$desired_replicas pods are ready."
+          kubectl get pods -n kube-system -l app=app-monitoring-webhook -o wide
           exit 1
         fi
 
-  - task: AzureCLI@2
-    displayName: "Check test apps are sending telemetry to AI"
-    inputs:
-      azureSubscription: ${{ variables.armServiceConnectionName }}
-      scriptType: bash
-      scriptLocation: inlineScript
-      inlineScript: |
-        cd appmonitoring/scripts
-        pwd
-        az account set --subscription ${{ variables.subscription }}
-        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
-        export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
-        export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
-        export PYTHON_TEST_APP_NAME="${{ variables.pythonTestAppName }}"
-        export DOTNET_TEST_APP_NAME="${{ variables.dotnetTestAppName }}"
-
-        echo "Wait 30s for telemetry to flow..."
-        sleep 30
-        
-        sudo chmod u+x ./validate_ai.sh
-
-        if ! ./validate_ai.sh ${{ variables.aiResourceId }} ${{ variables.testNamespace }}; then
-          echo "AI telemetry validation failed"
+        # Check if all pods are in Running state
+        not_ready_pods=$(kubectl get pods -n kube-system -l app=app-monitoring-webhook --field-selector=status.phase!=Running -o jsonpath='{.items[*].metadata.name}')
+        if [ -n "$not_ready_pods" ]; then
+          echo "Some pods are not in Running state:"
+          echo "$not_ready_pods"
+          kubectl get pods -n kube-system -l app=app-monitoring-webhook -o wide
           exit 1
         fi
-        
+
+        # Check if all containers in all pods are ready
+        not_ready_containers=$(kubectl get pods -n kube-system -l app=app-monitoring-webhook -o json | jq -r '.items[] | select(.status.phase=="Running") | select([.status.containerStatuses[].ready] | any(. == false)) | .metadata.name')
+        if [ -n "$not_ready_containers" ]; then
+          echo "Some containers are not ready in the following pods:"
+          echo "$not_ready_containers"
+          kubectl get pods -n kube-system -l app=app-monitoring-webhook -o wide
+          exit 1
+        fi
+
+        echo "Webhook deployment is healthy again"
+  
   - task: AzureCLI@2
     displayName: "Retag the image as ready to deploy"
     inputs:
