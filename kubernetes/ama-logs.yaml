@@ -437,9 +437,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-            # Update this with the user assigned msi client id for ama-logs
-            - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-              value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
             - name: AZMON_CONTAINERLOGS_ONEAGENT_REGIONS
               value: "koreacentral,norwayeast,eastus2"
             # Uncomment below lines for MSI Auth Mode  testing
@@ -572,9 +569,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-            # Update this with the user assigned msi client id for ama-logs
-            - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-              value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
             # Uncomment below lines for MSI Auth Mode  testing
             # - name: USING_AAD_MSI_AUTH
             #   value: "true"
@@ -1088,9 +1082,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-            # Update this with the user assigned msi client id for ama-logs
-            - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-              value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
             # Add the below environment variable to true only in sidecar enabled regions, else set it to false
             - name: SIDECAR_SCRAPING_ENABLED
               value: "true"
@@ -1355,9 +1346,6 @@ spec:
                  fieldPath: status.hostIP
           - name: SIDECAR_SCRAPING_ENABLED
             value: "true"
-          # Update this with the user assigned msi client id for ama-logs
-          - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-            value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
           # Add this only for clouds that require cert bootstrapping
           # - name: REQUIRES_CERT_BOOTSTRAP
           #   value: "true"
