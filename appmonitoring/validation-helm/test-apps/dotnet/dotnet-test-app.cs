@@ -1,6 +1,4 @@
-using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using OpenTelemetry.Trace;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpClient();
@@ -36,16 +34,7 @@ public class HomeController : ControllerBase
     {
         if (new Random().NextDouble() < 0.4)
         {
-            using var activity = Activity.Current ?? new Activity("MyOperation").Start();
-            try
-            {
-                throw new Exception("Something went wrong!");
-            }
-            catch (Exception ex)
-            {
-                activity.RecordException(ex);
-                activity.SetStatus(ActivityStatusCode.Error);
-            }
+            throw new Exception("An unexpected error occurred");
         }
 
         var targetUrl = Environment.GetEnvironmentVariable("TARGET_URL");
