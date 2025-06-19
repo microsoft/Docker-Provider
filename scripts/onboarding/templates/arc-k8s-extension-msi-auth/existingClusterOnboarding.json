@@ -128,6 +128,11 @@
     "dceName":"[if(greater(length(variables('dcrName')), 43), substring(variables('dcrName'), 0, 43), variables('dcrName'))]",
     "dceAssociationName": "configurationAccessEndpoint",
     "dataCollectionEndpointId": "[resourceId(variables('clusterSubscriptionId'), variables('clusterResourceGroup'), 'Microsoft.Insights/dataCollectionEndpoints', variables('dceName'))]",
+    "enableHighLogScaleMode": "[if(contains(parameters('streams'),'Microsoft-ContainerLogV2-HighScale'), bool('true'), bool('false'))]",
+    "ingestionDCENameFull": "[Concat('MSCI-ingest', '-', variables('workspaceLocation'), '-', variables('clusterName'))]",
+    "ingestionDCEName": "[if(greater(length(variables('ingestionDCENameFull')), 43), substring(variables('ingestionDCENameFull'), 0, 43), variables('ingestionDCENameFull'))]",
+    "ingestionDCE": "[if(endsWith(variables('ingestionDCEName'), '-'), substring(variables('ingestionDCEName'), 0, 42), variables('ingestionDCEName'))]",
+    "ingestionDataCollectionEndpointId": "[resourceId(variables('clusterSubscriptionId'), variables('clusterResourceGroup'), 'Microsoft.Insights/dataCollectionEndpoints', variables('ingestionDCE'))]",
     "privateLinkScopeName": "[split(parameters('azureMonitorPrivateLinkScopeResourceId'),'/')[8]]",
     "privateLinkScopeResourceGroup": "[split(parameters('azureMonitorPrivateLinkScopeResourceId'),'/')[4]]",
     "privateLinkScopeSubscriptionId": "[split(parameters('azureMonitorPrivateLinkScopeResourceId'),'/')[2]]",
@@ -178,7 +183,7 @@
                 ]
               }
             ],
-            "dataCollectionEndpointId": "[if(parameters('useAzureMonitorPrivateLinkScope'), variables('dataCollectionEndpointId'), json('null'))]"
+            "dataCollectionEndpointId": "[if(variables('enableHighLogScaleMode'), variables('ingestionDataCollectionEndpointId'), json('null'))]"
           }
         }
       ]
@@ -248,7 +253,7 @@
                 ]
               }
             ],
-            "dataCollectionEndpointId": "[if(parameters('useAzureMonitorPrivateLinkScope'), variables('dataCollectionEndpointId'), json('null'))]"
+            "dataCollectionEndpointId": "[if(variables('enableHighLogScaleMode'), variables('ingestionDataCollectionEndpointId'), json('null'))]"
           }
         }
       ]
@@ -267,6 +272,16 @@
               "publicNetworkAccess": "Disabled"
           }
       }
+    },
+    {
+      "condition": "[variables('enableHighLogScaleMode')]",
+      "type": "Microsoft.Insights/dataCollectionEndpoints",
+      "apiVersion": "2022-06-01",
+      "name": "[variables('ingestionDCE')]",
+      "location": "[variables('workspaceLocation')]",
+      "tags": "[parameters('resourceTagValues')]",
+      "kind": "Linux",
+      "properties": {}
     },
     {
       "type": "Microsoft.Resources/deployments",
@@ -345,7 +360,7 @@
       }
   },
   {
-      "condition": "[parameters('useAzureMonitorPrivateLinkScope')]",
+      "condition": "[and(parameters('useAzureMonitorPrivateLinkScope'), variables('enableHighLogScaleMode'))]",
       "type": "Microsoft.Resources/deployments",
       "name": "[Concat('arc-k8s-monitoring-msi-ampls-scope', '-',  uniqueString(parameters('clusterResourceId')))]",
       "apiVersion": "2017-05-10",
