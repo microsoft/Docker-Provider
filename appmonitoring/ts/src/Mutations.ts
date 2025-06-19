@@ -27,7 +27,7 @@ export class Mutations {
     };
     private static agentImageDotNet = {
         repositoryPath: "opentelemetry-auto-instrumentation/dotnet",
-        imageTag: "1.0.0-beta4" // https://mcr.microsoft.com/v2/applicationinsights/opentelemetry-auto-instrumentation/dotnet/tags/list
+        imageTag: "1.0.0-beta5" // https://mcr.microsoft.com/v2/applicationinsights/opentelemetry-auto-instrumentation/dotnet/tags/list
     };
     
     // path on agent image to copy from
