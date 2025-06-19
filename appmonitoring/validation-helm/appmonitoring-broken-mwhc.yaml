@@ -11,7 +11,7 @@ webhooks:
         name: app-monitoring-webhook-service
         namespace: kube-system
         path: "/"
-      caBundle: ""
+      caBundle: "QlJPS0VO" # Base64 encoded "BROKEN"
     rules:
       - operations: ["CREATE", "UPDATE"]
         apiGroups: ["*"]

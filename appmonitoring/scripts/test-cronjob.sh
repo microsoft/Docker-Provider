@@ -45,9 +45,9 @@ kubectl apply -f ../validation-helm/appmonitoring-broken-mwhc.yaml
 
 CABUNDLE=$(kubectl get mutatingwebhookconfiguration app-monitoring-webhook -o jsonpath='{.webhooks[0].clientConfig.caBundle}' 2>/dev/null)
 if [ -n "$CABUNDLE" ]; then
-  echo "MutatingWebhookConfiguration's CABundle after applying broken config: $CABUNDLE"
+  echo "MutatingWebhookConfiguration's caBundle after applying broken config: $CABUNDLE"
 else
-  echo "MutatingWebhookConfiguration's CABundle not found or resource not found"
+  echo "MutatingWebhookConfiguration's caBundle not found or resource not found"
 fi
 
 echo "Run the housekeeper cronjob now to fix the Mutating Webhook Configuration..."
