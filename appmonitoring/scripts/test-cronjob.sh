@@ -74,9 +74,9 @@ sleep 10
 
 CABUNDLE=$(kubectl get mutatingwebhookconfiguration app-monitoring-webhook -o jsonpath='{.webhooks[0].clientConfig.caBundle}' 2>/dev/null)
 if [ -n "$CABUNDLE" ]; then
-  echo "MutatingWebhookConfiguration's CABundle after having been fixed by the job: $CABUNDLE"
+  echo "MutatingWebhookConfiguration's caBundle after having been fixed by the job: $CABUNDLE"
 else
-  echo "MutatingWebhookConfiguration's CABundle after having been fixed by the job: resource not found"
+  echo "MutatingWebhookConfiguration's caBundle after having been fixed by the job: resource not found"
 fi
 
 echo "Validating the Mutating Webhook Configuration after being repaired by the cronjob..."
