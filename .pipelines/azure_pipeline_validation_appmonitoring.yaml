@@ -397,44 +397,19 @@ jobs:
         kubectl rollout restart -n kube-system deployment/app-monitoring-webhook 
 
         echo "Waiting for the deployment app-monitoring-webhook to be ready..."
-        kubectl rollout status deployment/app-monitoring-webhook -n kube-system --timeout=120s
-
-        # Get the latest ReplicaSet name for the deployment
-        latest_rs=$(kubectl get deployment app-monitoring-webhook -n kube-system -o jsonpath='{.status.updatedReplicaSet}')
-
-        # Check if all pods are Running and Ready (limit to latest ReplicaSet)
-        desired_replicas=$(kubectl get deployment app-monitoring-webhook -n kube-system -o jsonpath='{.spec.replicas}')
-        ready_replicas=$(kubectl get deployment app-monitoring-webhook -n kube-system -o jsonpath='{.status.readyReplicas}')
-        running_pods=$(kubectl get pods -n kube-system -l app=app-monitoring-webhook -o json | jq -r --arg rs "$latest_rs" '.items[] | select(.metadata.ownerReferences[0].kind=="ReplicaSet" and .metadata.ownerReferences[0].name==$rs and .status.phase=="Running") | .metadata.name' | wc -l)
-
-        if [ "$desired_replicas" != "$ready_replicas" ]; then
-          echo "Deployment is not healthy: $ready_replicas/$desired_replicas pods are ready."
+        if ! kubectl rollout status deployment/app-monitoring-webhook -n kube-system --timeout=120s; then
+          echo "Deployment failed to roll out successfully within the timeout."
+          kubectl describe deployment app-monitoring-webhook -n kube-system
           kubectl get pods -n kube-system -l app=app-monitoring-webhook -o wide
           exit 1
         fi
-
-        # Check if all pods of the latest ReplicaSet are in Running state
-        not_ready_pods=$(kubectl get pods -n kube-system -l app=app-monitoring-webhook -o json | jq -r --arg rs "$latest_rs" '.items[] | select(.metadata.ownerReferences[0].kind=="ReplicaSet" and .metadata.ownerReferences[0].name==$rs and .status.phase!="Running") | .metadata.name')
-        if [ -n "$not_ready_pods" ]; then
-          echo "Some pods of the latest ReplicaSet are not in Running state:"
-          echo "$not_ready_pods"
-          kubectl get pods -n kube-system -l app=app-monitoring-webhook -o wide
-          exit 1
-        fi
-
-        # Check if all containers in all pods of the latest ReplicaSet are ready
-        not_ready_containers=$(kubectl get pods -n kube-system -l app=app-monitoring-webhook -o json | jq -r --arg rs "$latest_rs" '.items[] | select(.metadata.ownerReferences[0].kind=="ReplicaSet" and .metadata.ownerReferences[0].name==$rs and .status.phase=="Running") | select([.status.containerStatuses[].ready] | any(. == false)) | .metadata.name')
-        if [ -n "$not_ready_containers" ]; then
-          echo "Some containers are not ready in the following pods of the latest ReplicaSet:"
-          echo "$not_ready_containers"
-          kubectl get pods -n kube-system -l app=app-monitoring-webhook -o wide
-          exit 1
-        fi
-
+        
         rollout_end=$(date +%s%3N)
         rollout_duration_ms=$((rollout_end-rollout_start))
 
-        echo "Webhook deployment is healthy again, took ${rollout_duration_ms} milliseconds to restart. ${running_pods}/${desired_replicas} pods are running."
+        kubectl describe deployment app-monitoring-webhook -n kube-system
+        kubectl get pods -n kube-system -l app=app-monitoring-webhook -o wide
+        echo "Webhook deployment is healthy again, took ${rollout_duration_ms} milliseconds to restart."
 
   - task: AzureCLI@2
     displayName: "Retag the image as ready to deploy"
