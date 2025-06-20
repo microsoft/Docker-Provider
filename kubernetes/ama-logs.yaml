@@ -1277,7 +1277,7 @@ spec:
       #     - --secret-name=aad-msi-auth-token
       #     - --token-server-listening-port=7777
       #     - --health-server-listening-port=9999
-      #    image: "mcr.microsoft.com/aks/msi/addon-token-adapter:master.240102.1"
+      #    image: "mcr.microsoft.com/aks/msi/addon-token-adapter:master.250604.1"
       #    imagePullPolicy: Always
       #    livenessProbe:
       #     httpGet:
