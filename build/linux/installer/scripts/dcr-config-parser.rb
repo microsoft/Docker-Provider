@@ -59,7 +59,6 @@ if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.cas
       @logs_and_events_only = true
     end
     
-    # Separate logic for high scale mode detection
     # Check if CONTAINERINSIGHTS_CONTAINERLOGV2 stream exists in a gigl-dce channel
     data_sources = data["dataSources"].select { |ds| ds["id"].start_with?("ContainerInsightsExtension") }
     data_sources.each do |ds|
