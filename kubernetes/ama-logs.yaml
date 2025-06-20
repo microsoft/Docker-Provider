@@ -365,7 +365,7 @@ spec:
         #     - --health-server-listening-port=9999
         #     - --restart-pod-waiting-minutes-on-broken-connection=240
         #   # Make sure this matching with version in AKS RP side
-        #   image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.230804.1
+        #   image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.250604.1
         #   imagePullPolicy: IfNotPresent
         #   env:
         #     - name: AZMON_COLLECT_ENV
@@ -801,7 +801,7 @@ spec:
 #             - --health-server-listening-port=9999
 #             - --restart-pod-waiting-minutes-on-broken-connection=240
 #           # Make sure this matching with version in AKS RP side
-#           image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.230804.1
+#           image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.250604.1
 #           imagePullPolicy: IfNotPresent
 #           env:
 #             - name: AZMON_COLLECT_ENV
@@ -1013,7 +1013,7 @@ spec:
         #     - --health-server-listening-port=9999
         #     - --restart-pod-waiting-minutes-on-broken-connection=240
         #   # Make sure this matching with version in AKS RP side
-        #   image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.230804.1
+        #   image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.250604.1
         #   imagePullPolicy: IfNotPresent
         #   env:
         #     - name: AZMON_COLLECT_ENV
