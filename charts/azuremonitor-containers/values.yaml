@@ -29,7 +29,7 @@ amalogs:
     pullPolicy: IfNotPresent
     dockerProviderVersion: "18.0.1-0"
     agentVersion: "azure-mdsd-1.35.1"
-    winAgentVersion: "46.17.2" # there is no base agent version for windows agent
+    winAgentVersion: "46.31.3" # there is no base agent version for windows agent
 
   # The priority used by the ama-logs priority class for the daemonset pods
   # Note that this is not execution piority - it is scheduling priority, as
