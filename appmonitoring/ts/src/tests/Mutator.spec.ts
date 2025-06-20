@@ -70,7 +70,7 @@ describe("Mutator", () => {
             },
             spec: {
                 settings: {
-                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs]
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs, AutoInstrumentationPlatforms.Python, AutoInstrumentationPlatforms.DotNet]
                 },
                 destination: {
                     applicationInsightsConnectionString: "InstrumentationKey=default"
@@ -86,7 +86,7 @@ describe("Mutator", () => {
             },
             spec: {
                 settings: {
-                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs]
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs, AutoInstrumentationPlatforms.Python, AutoInstrumentationPlatforms.DotNet]
                 },
                 destination: {
                     applicationInsightsConnectionString: "InstrumentationKey=cr1"
@@ -119,7 +119,7 @@ describe("Mutator", () => {
 
         expect(annotationValue.crName).toBe(DefaultInstrumentationCRName);
         expect(annotationValue.crResourceVersion).toBe("1");
-        expect(annotationValue.platforms).toStrictEqual([AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs]);
+        expect(annotationValue.platforms).toStrictEqual([AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs, AutoInstrumentationPlatforms.Python, AutoInstrumentationPlatforms.DotNet]);
     });
 
     it("Mutating deployment - no inject- annotations, default CR not found", async () => {
@@ -141,7 +141,7 @@ describe("Mutator", () => {
             },
             spec: {
                 settings: {
-                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs]
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs, AutoInstrumentationPlatforms.Python, AutoInstrumentationPlatforms.DotNet]
                 },
                 destination: {
                     applicationInsightsConnectionString: "InstrumentationKey=cr1"
@@ -257,7 +257,7 @@ describe("Mutator", () => {
             },
             spec: {
                 settings: {
-                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs]
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs, AutoInstrumentationPlatforms.Python, AutoInstrumentationPlatforms.DotNet]
                 },
                 destination: {
                     applicationInsightsConnectionString: "InstrumentationKey=default"
@@ -363,7 +363,7 @@ describe("Mutator", () => {
             },
             spec: {
                 settings: {
-                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs]
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs, AutoInstrumentationPlatforms.Python, AutoInstrumentationPlatforms.DotNet]
                 },
                 destination: {
                     applicationInsightsConnectionString: "InstrumentationKey=default"
@@ -570,6 +570,74 @@ describe("Mutator", () => {
         expect(annotationValue.platforms).toStrictEqual([AutoInstrumentationPlatforms.Java]);
     });
 
+    it("Mutating deployment - per language inject - multiple injects", async () => {
+        // ASSUME
+        const crDefault: InstrumentationCR = {
+            metadata: {
+                name: "default",
+                namespace: "ns1",
+                resourceVersion: "1"
+            },
+            spec: {
+                settings: {
+                    autoInstrumentationPlatforms: [
+                        AutoInstrumentationPlatforms.Java,
+                        AutoInstrumentationPlatforms.NodeJs,
+                        AutoInstrumentationPlatforms.Python,
+                        AutoInstrumentationPlatforms.DotNet
+                    ]
+                },
+                destination: {
+                    applicationInsightsConnectionString: "InstrumentationKey=default"
+                }
+            }
+        };
+
+        const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
+        crs.Upsert(crDefault);
+
+        const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject4));
+        admissionReview.request.object.metadata.namespace = "ns1";
+        admissionReview.request.object.metadata.annotations = { preExistingAnnotationName: "preExistingAnnotationValue" };
+
+        const metadata: IMetadata = <IMetadata>{
+            annotations: {
+                "instrumentation.opentelemetry.io/inject-java": "true",
+                "instrumentation.opentelemetry.io/inject-nodejs": "false",
+                "instrumentation.opentelemetry.io/private-preview-inject-python": "true",
+                "instrumentation.opentelemetry.io/private-preview-inject-dotnet": "false"
+            }
+        };
+
+        admissionReview.request.object.spec.template.metadata = metadata;
+
+        // ACT
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+
+        // ASSERT
+        expect(result.response.allowed).toBe(true);
+        expect(result.response.patchType).toBe("JSONPatch");
+        expect(result.response.uid).toBe(admissionReview.request.uid);
+        expect(result.response.status.code).toBe(200);
+        expect(result.response.status.message).toBe("OK");
+
+        // confirm annotation-enabled platforms were written into the annotations
+        const patchString: string = atob(result.response.patch);
+        const patches: object[] = JSON.parse(patchString);
+
+        expect((<[]>patches).length).toBe(1);
+
+        const obj: IObjectType = (<any>patches[0]).value as IObjectType;
+        const annotationValue: IInstrumentationState = JSON.parse(obj.metadata.annotations[InstrumentationAnnotationName]) as IInstrumentationState;
+
+        expect(annotationValue.crName).toBe(DefaultInstrumentationCRName);
+        expect(annotationValue.crResourceVersion).toBe("1");
+        expect(annotationValue.platforms).toStrictEqual([
+            AutoInstrumentationPlatforms.Java,
+            AutoInstrumentationPlatforms.Python
+        ]);
+    });
+
     it("Mutating deployment - configuration inject - annotations with specific CR", async () => {
         // ASSUME
         const crDefault: InstrumentationCR = {
@@ -580,7 +648,7 @@ describe("Mutator", () => {
             },
             spec: {
                 settings: {
-                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs]
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs, AutoInstrumentationPlatforms.Python, AutoInstrumentationPlatforms.DotNet]
                 },
                 destination: {
                     applicationInsightsConnectionString: "InstrumentationKey=default"
@@ -662,7 +730,7 @@ describe("Mutator", () => {
             },
             spec: {
                 settings: {
-                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs]
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs, AutoInstrumentationPlatforms.Python, AutoInstrumentationPlatforms.DotNet]
                 },
                 destination: {
                     applicationInsightsConnectionString: "InstrumentationKey=default"
@@ -713,6 +781,8 @@ describe("Mutator", () => {
 
         expect(result.response.status.code).toBe(400);
         expect(result.response.status.message).toBe("Exception encountered: inject-configuration annotation is not supported yet, please use language-specific inject-* annotations instead.");
+
+        // remove once implemented
         return;
 
         expect(result.response.status.code).toBe(200);
@@ -742,7 +812,7 @@ describe("Mutator", () => {
             },
             spec: {
                 settings: {
-                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs]
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java, AutoInstrumentationPlatforms.NodeJs, AutoInstrumentationPlatforms.Python, AutoInstrumentationPlatforms.DotNet]
                 },
                 destination: {
                     applicationInsightsConnectionString: "InstrumentationKey=default"
@@ -793,6 +863,8 @@ describe("Mutator", () => {
 
         expect(result.response.status.code).toBe(400);
         expect(result.response.status.message).toBe("Exception encountered: inject-configuration annotation is not supported yet, please use language-specific inject-* annotations instead.");
+
+        // remove once implemented
         return;
 
         expect(result.response.status.code).toBe(200);
