@@ -14,6 +14,7 @@ require_relative "ConfigParseErrorLogger"
   "KUBE_POD_INVENTORY_BLOB" => true,
 }
 @logs_and_events_only = false
+@enable_high_log_scale_mode = false
 
 return if ENV['GENEVA_LOGS_INTEGRATION']&.strip&.casecmp?('true') && !ENV['AZMON_MULTI_TENANCY_LOG_COLLECTION']&.strip&.casecmp?('true')
 return if ENV['GENEVA_LOGS_INTEGRATION_SERVICE_MODE']&.strip&.casecmp?('true')
@@ -57,8 +58,25 @@ if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.cas
       puts "DCR config matches Log and Events only profile. Setting LOGS_AND_EVENTS_ONLY to true"
       @logs_and_events_only = true
     end
+    
+    # Separate logic for high scale mode detection
+    # Check if CONTAINERINSIGHTS_CONTAINERLOGV2 stream exists in a gigl-dce channel
+    data_sources = data["dataSources"].select { |ds| ds["id"].start_with?("ContainerInsightsExtension") }
+    data_sources.each do |ds|
+      if ds["id"].include?("gigl-dce") && ds.key?("streams")
+        ds["streams"].each do |stream|
+          if stream.key?("stream") && stream["stream"] == "CONTAINERINSIGHTS_CONTAINERLOGV2"
+            puts "CONTAINERINSIGHTS_CONTAINERLOGV2 is using gigl-dce channel. Setting ENABLE_HIGH_LOG_SCALE_MODE to true"
+            @enable_high_log_scale_mode = true
+            break
+          end
+        end
+      end
+    end
+    
     file = File.open("/opt/dcr_env_var", "w")
     file.write("LOGS_AND_EVENTS_ONLY=#{@logs_and_events_only}\n")
+    file.write("ENABLE_HIGH_LOG_SCALE_MODE=#{@enable_high_log_scale_mode}\n")
     file.close
   rescue Exception => e
     ConfigParseErrorLogger.logError("Exception while parsing dcr : #{e}. DCR Json data: #{data}")

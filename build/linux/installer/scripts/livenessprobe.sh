@@ -22,9 +22,10 @@ if [[ "${CONTROLLER_TYPE}" == "DaemonSet" ]]; then
   else
     syslogSetup
     CURRENT_LOGS_AND_EVENTS_ONLY=${LOGS_AND_EVENTS_ONLY}
+    CURRENT_ENABLE_HIGH_LOG_SCALE_MODE=${ENABLE_HIGH_LOG_SCALE_MODE}
     ruby /opt/dcr-config-parser.rb > /dev/write-to-traces 2>&1
     source /opt/dcr_env_var
-    if [ "${LOGS_AND_EVENTS_ONLY}" != "${CURRENT_LOGS_AND_EVENTS_ONLY}" ]; then
+    if [ "${LOGS_AND_EVENTS_ONLY}" != "${CURRENT_LOGS_AND_EVENTS_ONLY}" ] || [ "${ENABLE_HIGH_LOG_SCALE_MODE}" != "${CURRENT_ENABLE_HIGH_LOG_SCALE_MODE}" ]; then
       echo "dcr_env_var has been updated - dcr config changed" > /dev/termination-log
       exit 1
     fi
