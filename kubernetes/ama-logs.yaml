@@ -1257,6 +1257,7 @@ spec:
         component: ama-logs-agent-windows
         tier: node-win
       annotations:
+        # TODO: update it to 46.31.3 after windows ama agent version update is merged
         agentVersion: "46.17.2"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
