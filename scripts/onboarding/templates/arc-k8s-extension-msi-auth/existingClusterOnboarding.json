@@ -364,7 +364,7 @@
       }
   },
   {
-      "condition": "[(parameters('useAzureMonitorPrivateLinkScope')]",
+      "condition": "[parameters('useAzureMonitorPrivateLinkScope')]",
       "type": "Microsoft.Resources/deployments",
       "name": "[Concat('arc-k8s-monitoring-msi-ampls-scope', '-',  uniqueString(parameters('clusterResourceId')))]",
       "apiVersion": "2017-05-10",
