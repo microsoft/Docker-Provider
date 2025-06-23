@@ -8,6 +8,14 @@
     "workspaceRegion": {
       "type": "string"
     },
+    "enableContainerLogV2": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "enableRetinaNetworkFlowLogs": {
+      "type": "bool",
+      "defaultValue": false
+    },
     "enableSyslog": {
       "type": "bool",
       "defaultValue": false
@@ -69,10 +77,6 @@
         "kube-system", "gatekeeper-system", "azure-arc"
       ]
     },
-    "enableContainerLogV2": {
-      "type": "bool",
-      "defaultValue": true
-    },
     "streams": {
        "type": "array",
        "defaultValue": [
@@ -87,7 +91,8 @@
         "Microsoft-InsightsMetrics",
         "Microsoft-ContainerInventory",
         "Microsoft-ContainerNodeInventory",
-        "Microsoft-Perf"
+        "Microsoft-Perf",
+        "Microsoft-RetinaNetworkFlowLogs"
       ]
     }
 }
