@@ -309,7 +309,7 @@ function Get-McsGlobalEndpoint{
                 "azureusgovernmentcloud"  { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.us" }
                 "usnat"                   { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.eaglex.ic.gov" }
                 "ussec"                   { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.microsoft.scloud" }
-                "bleu"                    { $mcs_globalendpoint = "https://global.handler.control.sovcloud-api.fr" }
+                "bleu"                    { $mcs_globalendpoint = "https://global.handler.control.monitor.sovcloud-api.fr" }
             }
         }
     }
