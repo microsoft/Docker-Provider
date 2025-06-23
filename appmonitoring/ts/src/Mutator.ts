@@ -44,7 +44,7 @@ export class Mutator {
         } catch (e) {
             const exceptionMessage = `Exception encountered: ${e}${e?.stack ?? ""}`;
 
-            logger.addHeartbeatMetric(HeartbeatMetrics.AdmissionReviewFailedCount, 1, e?.mutationDetails != null ? JSON.stringify(e.mutationDetails) : "");
+            logger.addHeartbeatMetric(HeartbeatMetrics.AdmissionReviewFailedCount, 1, e?.mutationDetails != null ? JSON.stringify(e.mutationDetails) : exceptionMessage);
         
             logger.error(exceptionMessage, this.operationId, this.requestMetadata);
             
