@@ -14,4 +14,4 @@ You can create the policy assignment with command:
     - After creating the policy definition through the above command, go to Azure portal -> Policy -> Definitions and select the definition you just created.
     - Click on 'Assign' and then go to the 'Parameters' tab and fill in the details. Then click 'Review + Create'.
     - Now that the policy is assigned to the subscription, whenever you create a new cluster which does not have container insights enabled, the policy will run and deploy the resources. If you want to apply the policy to existing AKS cluster, create a 'Remediation task' for that resource after going to the 'Policy Assignment'.
-    - For update policy and parameters, please run az policy assignment delete --name aks-monitoring-addon --scope /subscriptions/<subscriptionId> first then re-create the policy assignment.
+    - For update policy and parameters, please run az policy assignment delete --name aks-monitoring-addon --scope /subscriptions/<subscriptionId> and az policy definition delete --name AKS-Monitoring-Addon-MSI and az aks disable-addons -a monitoring first then re-create the policy definition.
