@@ -10,10 +10,6 @@
                     "replaceWith": "$(ACRName)"
                 },            
                 {
-                    "find": "__WEBHOOK_RELEASE__",
-                    "replaceWith": "$(WebhookRelease)"
-                }, 
-                {
                     "find": "__MANAGED_IDENTITY__",
                     "replaceWith": "$(ManagedIdentity)"
                 }, 
