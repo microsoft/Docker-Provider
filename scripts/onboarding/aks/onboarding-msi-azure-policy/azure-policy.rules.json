@@ -64,6 +64,10 @@
 				"enableContainerLogV2": {
 				  "type": "bool"
 				},
+				"enableRetinaNetworkFlowLogs": {
+				  "type": "bool",
+				  "defaultValue": false
+				},
 				"streams": {
 					"type": "array"
 				}
@@ -76,8 +80,13 @@
 				"workspaceLocation":"[replace(parameters('workspaceRegion'),' ', '')]",
 				"dcrNameFull": "[Concat('MSCI', '-', variables('workspaceLocation'), '-', variables('clusterName'))]",
 				"dcrName":"[if(greater(length(variables('dcrNameFull')), 64), substring(variables('dcrNameFull'), 0, 64), variables('dcrNameFull'))]",
+				"enableHighLogScaleMode": "[if(or(contains(parameters('streams'),'Microsoft-ContainerLogV2-HighScale'), parameters('enableRetinaNetworkFlowLogs')), bool('true'), bool('false'))]",
 				"associationName":  "ContainerInsightsExtension",
 				"dataCollectionRuleId": "[resourceId(variables('clusterSubscriptionId'), variables('clusterResourceGroup'), 'Microsoft.Insights/dataCollectionRules', variables('dcrName'))]",
+				"ingestionDCENameFull": "[Concat('MSCI-ingest', '-', variables('workspaceLocation'), '-', variables('clusterName'))]",
+				"ingestionDCEName": "[if(greater(length(variables('ingestionDCENameFull')), 43), substring(variables('ingestionDCENameFull'), 0, 43), variables('ingestionDCENameFull'))]",
+				"ingestionDCE": "[if(endsWith(variables('ingestionDCEName'), '-'), substring(variables('ingestionDCEName'), 0, 42), variables('ingestionDCEName'))]",
+				"ingestionDataCollectionEndpointId": "[resourceId(variables('clusterSubscriptionId'), variables('clusterResourceGroup'), 'Microsoft.Insights/dataCollectionEndpoints', variables('ingestionDCE'))]",
 				"ciOnlyTemplate": {
 					"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
 					"contentVersion": "1.0.0.0",
@@ -124,7 +133,8 @@
 											"ciworkspace"
 										]
 									}
-								]
+								],
+								"dataCollectionEndpointId": "[if(variables('enableHighLogScaleMode'), variables('ingestionDataCollectionEndpointId'), json('null'))]"
 							}
 						}
 					]
@@ -193,13 +203,28 @@
 											"ciworkspace"
 										]
 									}
-								]
+								],
+								"dataCollectionEndpointId": "[if(variables('enableHighLogScaleMode'), variables('ingestionDataCollectionEndpointId'), json('null'))]"
 							}
 						}
 					]
 				}
 			  },
 			  "resources": [
+				{
+					"condition": "[variables('enableHighLogScaleMode')]",
+					"type": "Microsoft.Insights/dataCollectionEndpoints",
+					"apiVersion": "2022-06-01",
+					"name": "[variables('ingestionDCE')]",
+					"location": "[variables('workspaceLocation')]",
+					"tags": "[parameters('resourceTagValues')]",
+					"kind": "Linux",
+					"properties": {
+						"networkAcls": {
+							"publicNetworkAccess": "Enabled"
+						}
+					}
+				},
 				{
 					"type": "Microsoft.Resources/deployments",
 					"name": "[Concat('aks-monitoring-msi-dcr', '-',  uniqueString(variables('dcrName')))]",
@@ -275,7 +300,8 @@
 									  "enabled": true,
 									  "config": {
 										"logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]",
-										"useAADAuth": "true"
+										"useAADAuth": "true",
+										"enableRetinaNetworkFlags": "[if(parameters('enableRetinaNetworkFlowLogs'), 'true', 'false')]"
 									  }
 									}
 								  }
@@ -324,6 +350,9 @@
 			  },
 			  "enableContainerLogV2": {
 				"value": "[parameters('enableContainerLogV2')]"
+			  },
+			  "enableRetinaNetworkFlowLogs": {
+				"value": "[parameters('enableRetinaNetworkFlowLogs')]"
 			  },
 			  "streams": {
 				"value": "[parameters('streams')]"
