@@ -1,4 +1,5 @@
-﻿import * as https from "https";
+﻿import * as http from "http";
+import * as https from "https";
 import { Mutator } from "./Mutator.js";
 import { Events, HeartbeatMetrics, HeartbeatLogs, logger, RequestMetadata } from "./LoggerWrapper.js";
 import { InstrumentationCR, IAdmissionReview } from "./RequestDefinition.js";
@@ -93,7 +94,7 @@ try {
 
 const promPort = process.env.PROM_PORT;
 logger.info(`Prom endpoint is available on port ${promPort}`, operationId, null);
-const promServer = https.createServer(options, async (req, res) => {
+const promServer = http.createServer(async (req, res) => {
     if (req.method === "GET" && (req.url === "/metrics" || req.url === "/metrics/") && logger?.Register) {
         try {
             res.writeHead(200, { "Content-Type": logger.Register.contentType });
