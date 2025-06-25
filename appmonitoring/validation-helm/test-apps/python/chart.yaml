@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${PYTHON_TEST_APP_NAME}
+  namespace: ${TEST_NS}
+  labels:
+    app: python-test-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: python-test-app
+  template:
+    metadata:
+      labels:
+        app: python-test-app
+      annotations:
+        instrumentation.opentelemetry.io/private-preview-inject-python: "true" # private-preview is enabled via an annotation only
+    spec:
+      containers:
+      - name: python-test-app
+        image: appmonitoring.azurecr.io/demoaks-python-app:latest
+        imagePullPolicy: Always
+        env:
+        - name: TARGET_URL
+          value: "http://${TEST_APP_SOURCE_NAME}-service.default.svc.cluster.local:3001"
+        ports:
+        - containerPort: 3001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${PYTHON_TEST_APP_NAME}-service
+  namespace: ${TEST_NS}
+  labels:
+    app: python-test-app
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3001
+      protocol: TCP
+      targetPort: 3001
+  selector:
+    app: python-test-app

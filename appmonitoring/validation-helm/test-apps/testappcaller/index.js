@@ -12,6 +12,18 @@ const TARGETS = [
     host: process.env.TARGET_NODEJS_HOST || 'nodejs-test-app-service.test-ns.svc.cluster.local',
     port: process.env.TARGET_NODEJS_PORT || 3001,
     path: process.env.TARGET_NODEJS_PATH || '/call-target',
+  },
+  {
+    name: 'testapp-python',
+    host: process.env.TARGET_PYTHON_HOST || 'python-test-app-service.test-ns.svc.cluster.local',
+    port: process.env.TARGET_PYTHON_PORT || 3001,
+    path: process.env.TARGET_PYTHON_PATH || '/call-target',
+  },
+  {
+    name: 'testapp-dotnet',
+    host: process.env.TARGET_DOTNET_HOST || 'dotnet-test-app-service.test-ns.svc.cluster.local',
+    port: process.env.TARGET_DOTNET_PORT || 3001,
+    path: process.env.TARGET_DOTNET_PATH || '/call-target',
   }
 ];
 

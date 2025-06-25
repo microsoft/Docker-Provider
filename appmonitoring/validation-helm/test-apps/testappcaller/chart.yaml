@@ -32,5 +32,17 @@ spec:
             value: "3001"
           - name: TARGET_NODEJS_PATH
             value: "/call-target"
+          - name: TARGET_PYTHON_HOST
+            value: "${PYTHON_TEST_APP_NAME}-service.${TEST_NS}.svc.cluster.local"
+          - name: TARGET_PYTHON_PORT
+            value: "3001"
+          - name: TARGET_PYTHON_PATH
+            value: "/call-target"
+          - name: TARGET_DOTNET_HOST
+            value: "${DOTNET_TEST_APP_NAME}-service.${TEST_NS}.svc.cluster.local"
+          - name: TARGET_DOTNET_PORT
+            value: "3001"
+          - name: TARGET_DOTNET_PATH
+            value: "/call-target"
           - name: INTERVAL_MS
             value: "5000"
