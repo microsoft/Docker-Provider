@@ -209,9 +209,11 @@ logger.info("Server shut down, exiting now", operationId, null);
 function logCRs(crs: InstrumentationCRsCollection) {
     const items: InstrumentationCR[] = crs.ListCRs();
     logger.setHeartbeatMetric(HeartbeatMetrics.CRCount, items.length);
+    logger.CRCountSummary.observe(items.length);
 
     const uniqueNamespaces = new Set<string>(items.map(cr => cr.metadata.namespace, this));
     logger.setHeartbeatMetric(HeartbeatMetrics.InstrumentedNamespaceCount, uniqueNamespaces.size);
+    logger.InstrumentedNamespaceCountSummary.observe(uniqueNamespaces.size);
 
     let log = "CRs: [";
     for (let i = 0; i < items.length; i++) {

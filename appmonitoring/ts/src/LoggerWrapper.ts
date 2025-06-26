@@ -132,7 +132,9 @@ class LocalLogger {
 
     public Register: Registry;
     public SecondsSinceLastSuccessfulCRListSummary: Summary;
-
+    public CRCountSummary: Summary;
+    public InstrumentedNamespaceCountSummary: Summary;
+    
     private static instance: LocalLogger = null;
 
     private isUnitTestMode = false;
@@ -160,7 +162,17 @@ class LocalLogger {
             name: 'cr_list_seconds_since_last_successful',
             help: 'Seconds elapsed since the last successful CR list call'
         });
+        this.CRCountSummary = new Summary({
+            name: 'cr_count',
+            help: 'Number of CRs in the cluster'
+        });
+        this.InstrumentedNamespaceCountSummary = new Summary({
+            name: 'instrumented_namespace_count',
+            help: 'Number of namespaces in the cluster that have at least one CR'
+        });
         this.Register.registerMetric(this.SecondsSinceLastSuccessfulCRListSummary);
+        this.Register.registerMetric(this.CRCountSummary);
+        this.Register.registerMetric(this.InstrumentedNamespaceCountSummary);
 
         this.log.info(`Prometheus client has been set up.`);
     }
