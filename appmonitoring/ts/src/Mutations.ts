@@ -23,7 +23,7 @@ export class Mutations {
     };
     private static agentImagePython = {
         repositoryPath: "auto-instrumentation/python",
-        imageTag: "1.0.0b25-aks" // https://mcr.microsoft.com/v2/applicationinsights/auto-instrumentation/python/tags/list
+        imageTag: "1.0.0b23-aks" // https://mcr.microsoft.com/v2/applicationinsights/auto-instrumentation/python/tags/list
     };
     private static agentImageDotNet = {
         repositoryPath: "opentelemetry-auto-instrumentation/dotnet",
