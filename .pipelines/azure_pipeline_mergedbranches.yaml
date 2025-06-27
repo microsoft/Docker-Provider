@@ -759,6 +759,8 @@ extends:
       - job: build_windows_2025
         pool:
           name: Azure-Pipelines-CI-Test-Nano25-EO
+          image: ci-1es-win2025
+          os: windows
         timeoutInMinutes: 120
         dependsOn:
         - common
