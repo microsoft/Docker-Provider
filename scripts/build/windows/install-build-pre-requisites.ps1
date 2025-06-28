@@ -195,13 +195,13 @@ Install-DotNetCoreSDK
 Write-Host "Install Docker"
 Install-Docker
 
-Write-Host "Install Chocolatey"
-Install-Chocolatey
+#Write-Host "Install Chocolatey"
+#Install-Chocolatey
 
-Write-Host "Install CMake"
-Install-CMake
+#Write-Host "Install CMake"
+#Install-CMake
 
-Write-Host "Install cmetrics library"
-Install-cmetrics
+#Write-Host "Install cmetrics library"
+#Install-cmetrics
 
 Write-Host "successfully installed required pre-requisites" -ForegroundColor Green
