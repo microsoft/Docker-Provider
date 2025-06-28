@@ -105,15 +105,25 @@ function Install-DotNetCoreSDK() {
     .\dotnet-install.ps1 -Channel 6.0 -InstallDir "C:\dotnet"
     Write-Host("Successfully installed .NET 6.0 SDK") -ForegroundColor Green
     
-    # Add .NET to PATH
+    # Add .NET to PATH at Machine level for persistence across processes
     Write-Host("Adding .NET to PATH...")
     $dotnetPath = "C:\dotnet"
+    
+    # Update PATH at all levels to ensure persistence
     $ProcessPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "PROCESS")
+    $UserPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "USER")
+    $MachinePathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "MACHINE")
+    
+    # Add to Machine level PATH for system-wide persistence
+    $MachinePathEnv = $MachinePathEnv + ";" + $dotnetPath
+    [System.Environment]::SetEnvironmentVariable("PATH", $MachinePathEnv, "MACHINE")
+    
+    # Update current process PATH
     $ProcessPathEnv = $ProcessPathEnv + ";" + $dotnetPath
     [System.Environment]::SetEnvironmentVariable("PATH", $ProcessPathEnv, "PROCESS")
     
-    # Refresh environment variables to make dotnet available
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User") + ";" + $dotnetPath
+    # Refresh environment variables to make dotnet available immediately
+    $env:Path = $MachinePathEnv + ";" + $UserPathEnv
 }
 
 function Install-Docker() {
@@ -199,7 +209,7 @@ Install-Go
 Write-Host "Install Build dependencies"
 Build-Dependencies
 
-Write-Host "Install .NET core sdk 3.1"
+Write-Host "Install .NET 6.0 SDK"
 Install-DotNetCoreSDK
 
 Write-Host "Install Docker"
