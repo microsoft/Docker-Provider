@@ -7,6 +7,9 @@
 
 $dotnetcoreframework = "net6.0"
 
+# Define the dotnet executable path
+$dotnetExe = "C:\dotnet\dotnet.exe"
+
 Write-Host("Building Certificate generator code...")
 $currentdir =  $PSScriptRoot
 Write-Host("current script dir : " + $currentdir + " ")
@@ -63,7 +66,6 @@ if ([string]::IsNullOrEmpty($BuildVersionMajor) -or
 $buildVersionString = $BuildVersionMajor + "." + $BuildVersionMinor + "." + $BuildVersionPatch + "-" + $BuildVersionBuildNR
 $buildVersionDate = $BuildVersionDate
 
-
 $certsrcdir = Join-Path -Path $builddir -ChildPath "windows\installer\certificategenerator"
 Write-Host("certsrc dir : " + $certsrcdir + " ")
 if ($false -eq (Test-Path -Path $certsrcdir)) {
@@ -74,10 +76,10 @@ Write-Host("set the cerificate generator source code directory : " + $certsrcdir
 Set-Location -Path $certsrcdir
 
 Write-Host("Adding dotnet packages Newtonsoft.json and BouncyCastle ...")
-dotnet add package Newtonsoft.json
-dotnet add package BouncyCastle
+& $dotnetExe add package Newtonsoft.json
+& $dotnetExe add package BouncyCastle
 Write-Host("Successfully added dotnet packages") -ForegroundColor Green
-dotnet build  -f $dotnetcoreframework
+& $dotnetExe build  -f $dotnetcoreframework
 Write-Host("Building Certificate generator code and ...") -ForegroundColor Green
 
 Write-Host("Publish release and win10-x64 binaries of certificate generator code  ...")
@@ -90,9 +92,9 @@ if (![string]::IsNullOrEmpty([System.Environment]::GetEnvironmentVariable("IsCDP
 }
 if ($isCDPxEnvironment) {
     Write-Host("running on CDPX build machine so setting --no-restore since there is no n/w connectivity during build")
-    dotnet publish -c Release -r win10-x64 --no-restore
+    & $dotnetExe publish -c Release -r win10-x64 --no-restore
 } else {
-  dotnet publish -c Release -r win10-x64
+  & $dotnetExe publish -c Release -r win10-x64
 }
 
 Write-Host("Successfully published certificate generator code binaries") -ForegroundColor Green
@@ -192,7 +194,6 @@ if ($isCDPxEnvironment) {
   go build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -buildmode=c-shared -o perf.so .
 
 }
-
 
 Write-Host("copying out_oms.so file to : $publishdir")
 Copy-Item -Path (Join-path -Path $outomsgoplugindir -ChildPath "out_oms.so")  -Destination $publishdir -Force
