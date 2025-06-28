@@ -133,6 +133,17 @@ function Install-Docker() {
    Write-Host("installing docker for desktop completed")
 }
 
+function Install-Chocolatey() {
+    Write-Host "Installing Chocolatey..."
+    Set-ExecutionPolicy Bypass -Scope Process -Force
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+    Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+    
+    # Refresh environment variables to make choco available
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    Write-Host "Chocolatey installation completed"
+}
+
 function Install-cmetrics() {
     #Install flex and bison
     choco install -y winflexbison3
@@ -165,6 +176,9 @@ Install-DotNetCoreSDK
 
 Write-Host "Install Docker"
 Install-Docker
+
+Write-Host "Install Chocolatey"
+Install-Chocolatey
 
 Write-Host "Install cmetrics library"
 Install-cmetrics
