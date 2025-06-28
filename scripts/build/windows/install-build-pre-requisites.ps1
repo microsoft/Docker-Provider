@@ -93,17 +93,21 @@ function Install-DotNetCoreSDK() {
         exit 1
     }
 
-   $url = "https://download.visualstudio.microsoft.com/download/pr/4e88f517-196e-4b17-a40c-2692c689661d/eed3f5fca28262f764d8b650585a7278/dotnet-sdk-3.1.301-win-x64.exe"
-   $output = Join-Path -Path $dotNetSdkTemp -ChildPath "dotnet-sdk-3.1.301-win-x64.exe"
+   # Install .NET 6.0 SDK which is required by the Makefile.ps1
+   $url = "https://download.visualstudio.microsoft.com/download/pr/5226a5fa-8c0b-474f-b79a-8984ad7c5beb/3113ccbf789c9fd29972835f0f334b7a/dotnet-sdk-6.0.428-win-x64.exe"
+   $output = Join-Path -Path $dotNetSdkTemp -ChildPath "dotnet-sdk-6.0.428-win-x64.exe"
 
-   Write-Host("downloading .net core sdk 3.1: " + $dotNetSdkTemp + "  ...")
+   Write-Host("downloading .net 6.0 sdk: " + $dotNetSdkTemp + "  ...")
    Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
-   Write-Host("downloading .net core sdk 3.1: " + $dotNetSdkTemp + " completed")
+   Write-Host("downloading .net 6.0 sdk: " + $dotNetSdkTemp + " completed")
 
-   # install dotNet core sdk
-   Write-Host("installing .net core sdk 3.1 ...")
-   Start-Process -Wait $output -ArgumentList " /q /norestart"
-   Write-Host("installing .net core sdk 3.1 completed")
+   # install dotNet 6.0 sdk
+   Write-Host("installing .net 6.0 sdk ...")
+   Start-Process -Wait $output -ArgumentList "/quiet", "/norestart"
+   Write-Host("installing .net 6.0 sdk completed")
+   
+   # Refresh environment variables to make dotnet available
+   $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
 }
 
 function Install-Docker() {
