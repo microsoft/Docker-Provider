@@ -156,19 +156,28 @@ function Install-CMake() {
 function Install-cmetrics() {
     #Install flex and bison
     choco install -y winflexbison3
+    
+    #Install make (mingw32-make)
+    choco install -y mingw
 
     $destinationPath = Join-Path -Path $env:SYSTEMDRIVE -ChildPath "cmetrics"
     New-Item -Path $destinationPath -ItemType "directory" -Force -ErrorAction Stop
+    
+    # Refresh PATH to include mingw make
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    
     #Clone cmetrics repo and install cmetrics and all its dependencies
     git clone --recursive https://github.com/calyptia/cmetrics.git
-	cd cmetrics
-	git checkout v0.6.0
-	git submodule sync
-	git -c protocol.version=2 submodule update --init --force --depth=1
-	git submodule foreach git config --local gc.auto 0
-	cmake --fresh -G "MinGW Makefiles" -DCMAKE_INSTALL_PREFIX="$destinationPath" .
-	make
-	make install
+    cd cmetrics
+    git checkout v0.6.0
+    git submodule sync
+    git -c protocol.version=2 submodule update --init --force --depth=1
+    git submodule foreach git config --local gc.auto 0
+    
+    # Use cmake with policy version to handle compatibility and use mingw32-make instead of make
+    cmake --fresh -G "MinGW Makefiles" -DCMAKE_POLICY_DEFAULT_CMP0000=NEW -DCMAKE_INSTALL_PREFIX="$destinationPath" .
+    mingw32-make
+    mingw32-make install
 }
 
 # speed up Invoke-WebRequest
