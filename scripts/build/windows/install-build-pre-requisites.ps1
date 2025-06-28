@@ -144,6 +144,15 @@ function Install-Chocolatey() {
     Write-Host "Chocolatey installation completed"
 }
 
+function Install-CMake() {
+    Write-Host "Installing CMake via Chocolatey..."
+    choco install -y cmake
+    
+    # Refresh environment variables to make cmake available
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    Write-Host "CMake installation completed"
+}
+
 function Install-cmetrics() {
     #Install flex and bison
     choco install -y winflexbison3
@@ -179,6 +188,9 @@ Install-Docker
 
 Write-Host "Install Chocolatey"
 Install-Chocolatey
+
+Write-Host "Install CMake"
+Install-CMake
 
 Write-Host "Install cmetrics library"
 Install-cmetrics
