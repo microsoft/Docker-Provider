@@ -174,8 +174,8 @@ function Install-cmetrics() {
     git -c protocol.version=2 submodule update --init --force --depth=1
     git submodule foreach git config --local gc.auto 0
     
-    # Use cmake with policy version to handle compatibility and use mingw32-make instead of make
-    cmake --fresh -G "MinGW Makefiles" -DCMAKE_POLICY_DEFAULT_CMP0000=NEW -DCMAKE_INSTALL_PREFIX="$destinationPath" .
+    # Use cmake with minimum version flag to handle compatibility and use mingw32-make instead of make
+    cmake --fresh -G "MinGW Makefiles" -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX="$destinationPath" .
     mingw32-make
     mingw32-make install
 }
