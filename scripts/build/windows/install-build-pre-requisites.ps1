@@ -93,21 +93,27 @@ function Install-DotNetCoreSDK() {
         exit 1
     }
 
-   # Install .NET 6.0 SDK which is required by the Makefile.ps1
-   $url = "https://download.visualstudio.microsoft.com/download/pr/5226a5fa-8c0b-474f-b79a-8984ad7c5beb/3113ccbf789c9fd29972835f0f334b7a/dotnet-sdk-6.0.428-win-x64.exe"
-   $output = Join-Path -Path $dotNetSdkTemp -ChildPath "dotnet-sdk-6.0.428-win-x64.exe"
+    Set-Location -Path $dotNetSdkTemp
 
-   Write-Host("downloading .net 6.0 sdk: " + $dotNetSdkTemp + "  ...")
-   Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
-   Write-Host("downloading .net 6.0 sdk: " + $dotNetSdkTemp + " completed")
+    Write-Host("Downloading Microsoft's official .NET installation script...")
+    # Use the official Microsoft .NET installation script
+    Invoke-WebRequest -Uri "https://dot.net/v1/dotnet-install.ps1" -OutFile "dotnet-install.ps1" -ErrorAction Stop
+    Write-Host("Downloaded .NET installation script successfully")
 
-   # install dotNet 6.0 sdk
-   Write-Host("installing .net 6.0 sdk ...")
-   Start-Process -Wait $output -ArgumentList "/quiet", "/norestart"
-   Write-Host("installing .net 6.0 sdk completed")
-   
-   # Refresh environment variables to make dotnet available
-   $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    Write-Host("Installing .NET 6.0 SDK...")
+    # Install .NET 6.0 SDK which is required by the Makefile.ps1
+    .\dotnet-install.ps1 -Channel 6.0 -InstallDir "C:\dotnet"
+    Write-Host("Successfully installed .NET 6.0 SDK") -ForegroundColor Green
+    
+    # Add .NET to PATH
+    Write-Host("Adding .NET to PATH...")
+    $dotnetPath = "C:\dotnet"
+    $ProcessPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "PROCESS")
+    $ProcessPathEnv = $ProcessPathEnv + ";" + $dotnetPath
+    [System.Environment]::SetEnvironmentVariable("PATH", $ProcessPathEnv, "PROCESS")
+    
+    # Refresh environment variables to make dotnet available
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User") + ";" + $dotnetPath
 }
 
 function Install-Docker() {
