@@ -173,6 +173,15 @@ function Install-CMake() {
     Write-Host "CMake installation completed"
 }
 
+function Install-AzureCLI() {
+    Write-Host "Installing Azure CLI via Chocolatey..."
+    choco install -y azure-cli
+    
+    # Refresh environment variables to make az available
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    Write-Host "Azure CLI installation completed"
+}
+
 function Install-cmetrics() {
     #Install flex and bison
     choco install -y winflexbison3
@@ -215,11 +224,14 @@ Install-DotNetCoreSDK
 Write-Host "Install Docker"
 Install-Docker
 
-#Write-Host "Install Chocolatey"
-#Install-Chocolatey
+Write-Host "Install Chocolatey"
+Install-Chocolatey
 
 #Write-Host "Install CMake"
 #Install-CMake
+
+Write-Host "Install Azure CLI"
+Install-AzureCLI
 
 #Write-Host "Install cmetrics library"
 #Install-cmetrics
