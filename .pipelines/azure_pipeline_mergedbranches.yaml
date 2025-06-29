@@ -841,17 +841,14 @@ extends:
                   Write-Error "Azure CLI command execution failed: $_"
                   exit 1
               }
-        - task: PowerShell@2
+        - task: AzureCLI@2
           displayName: "Docker windows build for nano server ltsc2025"
-          env:
-            ARM_CLIENT_ID: $(servicePrincipalId)
-            ARM_CLIENT_SECRET: $(servicePrincipalKey)
-            ARM_TENANT_ID: $(tenantId)
-            ARM_SUBSCRIPTION_ID: ${{ variables.subscription }}
           inputs:
-            targetType: 'inline'
+            azureSubscription: ${{ variables.armServiceConnectionName }}
+            scriptType: ps
+            scriptLocation: inlineScript
             retryCountOnTaskFailure: 2
-            script: |
+            inlineScript: |
               # Find and use Azure CLI
               $azureCLIPaths = @(
                   "C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin\az.cmd",
@@ -869,7 +866,44 @@ extends:
               }
               
               if (-not $azPath) {
-                  Write-Error "Azure CLI not found in any expected location"
+                  # Try using az from PATH as fallback
+                  try {
+                      $azPath = "az"
+                      & $azPath --version
+                      Write-Host "Using Azure CLI from PATH" -ForegroundColor Green
+                  } catch {
+                      Write-Error "Azure CLI not found in any expected location or PATH"
+                      exit 1
+                  }
+              }
+              
+              # Find Docker
+              $dockerPaths = @(
+                  "C:\Program Files\Docker\Docker\resources\bin\docker.exe",
+                  "C:\ProgramData\DockerDesktop\version-bin\docker.exe",
+                  "docker"
+              )
+              
+              $dockerPath = $null
+              foreach ($path in $dockerPaths) {
+                  try {
+                      if ($path -eq "docker") {
+                          & docker --version
+                          $dockerPath = "docker"
+                      } elseif (Test-Path $path) {
+                          $dockerPath = $path
+                      }
+                      if ($dockerPath) {
+                          Write-Host "Using Docker at: $dockerPath" -ForegroundColor Green
+                          break
+                      }
+                  } catch {
+                      continue
+                  }
+              }
+              
+              if (-not $dockerPath) {
+                  Write-Error "Docker not found. Please ensure Docker is installed and running."
                   exit 1
               }
               
@@ -882,11 +916,7 @@ extends:
               # Change to build directory
               Set-Location kubernetes/windows-nano
               
-              # Login to Azure using service principal
-              Write-Host "Logging into Azure using service principal..."
-              & $azPath login --service-principal --username $env:ARM_CLIENT_ID --password $env:ARM_CLIENT_SECRET --tenant $env:ARM_TENANT_ID
-              
-              # Execute Azure CLI commands
+              # Execute Azure CLI commands (authenticated via AzureCLI@2 task)
               Write-Host "Running Azure CLI version check..."
               & $azPath --version
               
@@ -900,7 +930,7 @@ extends:
               & $azPath acr login -n ${{ variables.containerRegistry }}
               
               Write-Host "Building Docker image..."
-              docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2025BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
+              & $dockerPath build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2025BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
         # - task: PowerShell@2
         #   displayName: Extract files to sign
         #   inputs:
