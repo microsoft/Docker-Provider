@@ -177,8 +177,39 @@ function Install-AzureCLI() {
     Write-Host "Installing Azure CLI via Chocolatey..."
     choco install -y azure-cli
     
-    # Refresh environment variables to make az available
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    # Add Azure CLI to PATH at Machine level for persistence
+    $azureCLIPath = "C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin"
+    $altAzureCLIPath = "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin"
+    
+    # Check which path exists and use it
+    $azCliPathToAdd = ""
+    if (Test-Path $azureCLIPath) {
+        $azCliPathToAdd = $azureCLIPath
+    } elseif (Test-Path $altAzureCLIPath) {
+        $azCliPathToAdd = $altAzureCLIPath
+    } else {
+        Write-Host "Warning: Azure CLI installation path not found, relying on Chocolatey shim"
+        $azCliPathToAdd = "C:\ProgramData\chocolatey\bin"
+    }
+    
+    Write-Host "Adding Azure CLI path to environment: $azCliPathToAdd"
+    
+    # Update PATH at all levels
+    $ProcessPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "PROCESS")
+    $UserPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "USER")
+    $MachinePathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "MACHINE")
+    
+    # Add to Machine level PATH for system-wide persistence
+    $MachinePathEnv = $MachinePathEnv + ";" + $azCliPathToAdd
+    [System.Environment]::SetEnvironmentVariable("PATH", $MachinePathEnv, "MACHINE")
+    
+    # Update current process PATH
+    $ProcessPathEnv = $ProcessPathEnv + ";" + $azCliPathToAdd
+    [System.Environment]::SetEnvironmentVariable("PATH", $ProcessPathEnv, "PROCESS")
+    
+    # Refresh environment variables
+    $env:Path = $MachinePathEnv + ";" + $UserPathEnv
+    
     Write-Host "Azure CLI installation completed"
 }
 
