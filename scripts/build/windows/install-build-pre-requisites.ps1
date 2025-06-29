@@ -174,10 +174,25 @@ function Install-CMake() {
 }
 
 function Install-AzureCLI() {
-    Write-Host "Installing Azure CLI via Chocolatey..."
-    choco install -y azure-cli
+    Write-Host "Installing Azure CLI using Microsoft's official installer..."
     
-    # Add Azure CLI to PATH at Machine level for persistence
+    $tempDir = $env:TEMP
+    $azureCliTemp = Join-Path -Path $tempDir -ChildPath "azurecli"
+    New-Item -Path $azureCliTemp -ItemType "directory" -Force -ErrorAction Stop
+    
+    $azureCliUrl = "https://aka.ms/installazurecliwindows"
+    $azureCliInstaller = Join-Path -Path $azureCliTemp -ChildPath "azurecli.msi"
+    
+    Write-Host "Downloading Azure CLI installer..."
+    Invoke-WebRequest -Uri $azureCliUrl -OutFile $azureCliInstaller -ErrorAction Stop
+    Write-Host "Downloaded Azure CLI installer successfully"
+    
+    Write-Host "Installing Azure CLI..."
+    # Install Azure CLI silently
+    Start-Process msiexec.exe -Wait -ArgumentList '/I', $azureCliInstaller, '/quiet', '/norestart'
+    Write-Host "Azure CLI installation completed"
+    
+    # Add Azure CLI to PATH at Machine level for persistence  
     $azureCLIPath = "C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin"
     $altAzureCLIPath = "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin"
     
@@ -185,32 +200,48 @@ function Install-AzureCLI() {
     $azCliPathToAdd = ""
     if (Test-Path $azureCLIPath) {
         $azCliPathToAdd = $azureCLIPath
+        Write-Host "Found Azure CLI at: $azureCLIPath"
     } elseif (Test-Path $altAzureCLIPath) {
         $azCliPathToAdd = $altAzureCLIPath
+        Write-Host "Found Azure CLI at: $altAzureCLIPath"
     } else {
-        Write-Host "Warning: Azure CLI installation path not found, relying on Chocolatey shim"
-        $azCliPathToAdd = "C:\ProgramData\chocolatey\bin"
+        Write-Error "Azure CLI installation path not found after installation"
+        exit 1
     }
     
     Write-Host "Adding Azure CLI path to environment: $azCliPathToAdd"
     
-    # Update PATH at all levels
+    # Update PATH at all levels for maximum compatibility
     $ProcessPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "PROCESS")
     $UserPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "USER")
     $MachinePathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "MACHINE")
     
-    # Add to Machine level PATH for system-wide persistence
-    $MachinePathEnv = $MachinePathEnv + ";" + $azCliPathToAdd
-    [System.Environment]::SetEnvironmentVariable("PATH", $MachinePathEnv, "MACHINE")
+    # Only add if not already present
+    if ($MachinePathEnv -notlike "*$azCliPathToAdd*") {
+        $MachinePathEnv = $MachinePathEnv + ";" + $azCliPathToAdd
+        [System.Environment]::SetEnvironmentVariable("PATH", $MachinePathEnv, "MACHINE")
+        Write-Host "Added Azure CLI to Machine PATH"
+    }
     
-    # Update current process PATH
-    $ProcessPathEnv = $ProcessPathEnv + ";" + $azCliPathToAdd
-    [System.Environment]::SetEnvironmentVariable("PATH", $ProcessPathEnv, "PROCESS")
+    if ($ProcessPathEnv -notlike "*$azCliPathToAdd*") {
+        $ProcessPathEnv = $ProcessPathEnv + ";" + $azCliPathToAdd
+        [System.Environment]::SetEnvironmentVariable("PATH", $ProcessPathEnv, "PROCESS")
+        Write-Host "Added Azure CLI to Process PATH"
+    }
     
     # Refresh environment variables
     $env:Path = $MachinePathEnv + ";" + $UserPathEnv
     
-    Write-Host "Azure CLI installation completed"
+    # Verify installation
+    $azPath = Join-Path -Path $azCliPathToAdd -ChildPath "az.cmd"
+    if (Test-Path $azPath) {
+        Write-Host "Azure CLI installation verified at: $azPath" -ForegroundColor Green
+    } else {
+        Write-Error "Azure CLI verification failed - az.cmd not found at expected location"
+        exit 1
+    }
+    
+    Write-Host "Azure CLI installation and configuration completed successfully" -ForegroundColor Green
 }
 
 function Install-cmetrics() {

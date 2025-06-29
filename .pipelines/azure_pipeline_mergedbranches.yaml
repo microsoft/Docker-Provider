@@ -784,6 +784,63 @@ extends:
             endlocal
             exit /B %ERRORLEVEL%
           displayName: 'build base'
+        - task: PowerShell@2
+          displayName: "Verify Azure CLI installation and refresh PATH"
+          inputs:
+            targetType: 'inline'
+            script: |
+              Write-Host "Checking for Azure CLI installation..."
+              
+              # Common Azure CLI installation paths
+              $azureCLIPaths = @(
+                  "C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin\az.cmd",
+                  "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd",
+                  "C:\ProgramData\chocolatey\bin\az.cmd"
+              )
+              
+              $foundAzCli = $false
+              foreach ($path in $azureCLIPaths) {
+                  if (Test-Path $path) {
+                      Write-Host "Found Azure CLI at: $path" -ForegroundColor Green
+                      $azCliDir = Split-Path $path -Parent
+                      
+                      # Ensure this path is in Machine PATH
+                      $machinePath = [System.Environment]::GetEnvironmentVariable("PATH", "Machine")
+                      if ($machinePath -notlike "*$azCliDir*") {
+                          Write-Host "Adding $azCliDir to Machine PATH"
+                          $newMachinePath = $machinePath + ";" + $azCliDir
+                          [System.Environment]::SetEnvironmentVariable("PATH", $newMachinePath, "Machine")
+                      }
+                      
+                      # Refresh current process PATH
+                      $currentPath = [System.Environment]::GetEnvironmentVariable("PATH", "Process")
+                      if ($currentPath -notlike "*$azCliDir*") {
+                          Write-Host "Adding $azCliDir to Process PATH"
+                          $newCurrentPath = $currentPath + ";" + $azCliDir
+                          [System.Environment]::SetEnvironmentVariable("PATH", $newCurrentPath, "Process")
+                          $env:PATH = $newCurrentPath
+                      }
+                      
+                      $foundAzCli = $true
+                      break
+                  }
+              }
+              
+              if (-not $foundAzCli) {
+                  Write-Error "Azure CLI not found in any expected location"
+                  Write-Host "Current PATH: $env:PATH"
+                  exit 1
+              }
+              
+              # Final verification
+              try {
+                  $azVersion = & az --version 2>&1
+                  Write-Host "Azure CLI verification successful:" -ForegroundColor Green
+                  Write-Host $azVersion
+              } catch {
+                  Write-Error "Azure CLI command execution failed: $_"
+                  exit 1
+              }
         - task: AzureCLI@2
           displayName: "Docker windows build for nano server ltsc2025"
           inputs:
