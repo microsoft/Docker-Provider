@@ -841,16 +841,21 @@ extends:
                   Write-Error "Azure CLI command execution failed: $_"
                   exit 1
               }
-        - task: AzurePowerShell@5
+        - task: PowerShell@2
           displayName: "Docker windows build for nano server ltsc2025"
+          env:
+            ARM_CLIENT_ID: $(servicePrincipalId)
+            ARM_CLIENT_SECRET: $(servicePrincipalKey)
+            ARM_TENANT_ID: $(tenantId)
+            ARM_SUBSCRIPTION_ID: ${{ variables.subscription }}
           inputs:
-            azureSubscription: ${{ variables.armServiceConnectionName }}
-            ScriptType: 'InlineScript'
-            Inline: |
+            targetType: 'inline'
+            retryCountOnTaskFailure: 2
+            script: |
               # Find and use Azure CLI
               $azureCLIPaths = @(
                   "C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin\az.cmd",
-                  "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd",
+                  "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd", 
                   "C:\ProgramData\chocolatey\bin\az.cmd"
               )
               
@@ -858,7 +863,7 @@ extends:
               foreach ($path in $azureCLIPaths) {
                   if (Test-Path $path) {
                       $azPath = $path
-                      Write-Host "Using Azure CLI at: $azPath"
+                      Write-Host "Using Azure CLI at: $azPath" -ForegroundColor Green
                       break
                   }
               }
@@ -877,23 +882,25 @@ extends:
               # Change to build directory
               Set-Location kubernetes/windows-nano
               
+              # Login to Azure using service principal
+              Write-Host "Logging into Azure using service principal..."
+              & $azPath login --service-principal --username $env:ARM_CLIENT_ID --password $env:ARM_CLIENT_SECRET --tenant $env:ARM_TENANT_ID
+              
               # Execute Azure CLI commands
               Write-Host "Running Azure CLI version check..."
               & $azPath --version
               
-              Write-Host "Showing current Azure account..."
-              & $azPath account show
-              
               Write-Host "Setting Azure subscription..."
               & $azPath account set -s ${{ variables.subscription }}
+              
+              Write-Host "Showing current Azure account..."
+              & $azPath account show
               
               Write-Host "Logging into Azure Container Registry..."
               & $azPath acr login -n ${{ variables.containerRegistry }}
               
               Write-Host "Building Docker image..."
               docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2025BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
-            azurePowerShellVersion: LatestVersion
-            pwsh: false
         # - task: PowerShell@2
         #   displayName: Extract files to sign
         #   inputs:
