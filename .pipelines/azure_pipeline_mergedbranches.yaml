@@ -841,21 +841,59 @@ extends:
                   Write-Error "Azure CLI command execution failed: $_"
                   exit 1
               }
-        - task: AzureCLI@2
+        - task: AzurePowerShell@5
           displayName: "Docker windows build for nano server ltsc2025"
           inputs:
             azureSubscription: ${{ variables.armServiceConnectionName }}
-            scriptType: ps
-            scriptLocation: inlineScript
-            retryCountOnTaskFailure: 2
-            inlineScript: |
-              mkdir -p $(Build.ArtifactStagingDirectory)/windows
-              cd kubernetes/windows-nano
-              az --version
-              az account show
-              az account set -s ${{ variables.subscription }}
-              az acr login -n ${{ variables.containerRegistry }}
+            ScriptType: 'InlineScript'
+            Inline: |
+              # Find and use Azure CLI
+              $azureCLIPaths = @(
+                  "C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin\az.cmd",
+                  "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd",
+                  "C:\ProgramData\chocolatey\bin\az.cmd"
+              )
+              
+              $azPath = $null
+              foreach ($path in $azureCLIPaths) {
+                  if (Test-Path $path) {
+                      $azPath = $path
+                      Write-Host "Using Azure CLI at: $azPath"
+                      break
+                  }
+              }
+              
+              if (-not $azPath) {
+                  Write-Error "Azure CLI not found in any expected location"
+                  exit 1
+              }
+              
+              # Create staging directory
+              if (Test-Path "$(Build.ArtifactStagingDirectory)/windows") {
+                  Remove-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -Recurse -Force
+              }
+              New-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -ItemType Directory -Force
+              
+              # Change to build directory
+              Set-Location kubernetes/windows-nano
+              
+              # Execute Azure CLI commands
+              Write-Host "Running Azure CLI version check..."
+              & $azPath --version
+              
+              Write-Host "Showing current Azure account..."
+              & $azPath account show
+              
+              Write-Host "Setting Azure subscription..."
+              & $azPath account set -s ${{ variables.subscription }}
+              
+              Write-Host "Logging into Azure Container Registry..."
+              & $azPath acr login -n ${{ variables.containerRegistry }}
+              
+              Write-Host "Building Docker image..."
               docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2025BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
+            azurePowerShellVersion: LatestVersion
+            pwsh: false
         # - task: PowerShell@2
         #   displayName: Extract files to sign
         #   inputs:
