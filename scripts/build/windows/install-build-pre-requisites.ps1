@@ -297,32 +297,35 @@ function Install-AzureCLI() {
     Write-Host "Azure CLI should now be detectable by AzureCLI@2 task" -ForegroundColor Cyan
 }
 
-function Install-cmetrics() {
-    #Install flex and bison
-    choco install -y winflexbison3
+#function Install-cmetrics() {
+    # Commented out to resolve PowerShell syntax errors
+    # #Install flex and bison
+    # choco install -y winflexbison3
     
-    #Install make (mingw32-make)
-    choco install -y mingw
+    # #Install make (mingw32-make)
+    # choco install -y mingw
 
-    $destinationPath = Join-Path -Path $env:SYSTEMDRIVE -ChildPath "cmetrics"
-    New-Item -Path $destinationPath -ItemType "directory" -Force -ErrorAction Stop
+    # $destinationPath = Join-Path -Path $env:SYSTEMDRIVE -ChildPath "cmetrics"
+    # New-Item -Path $destinationPath -ItemType "directory" -Force -ErrorAction Stop
     
-    # Refresh PATH to include mingw make
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    # # Refresh PATH to include mingw make
+    # $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
     
-    #Clone cmetrics repo and install cmetrics and all its dependencies
-    git clone --recursive https://github.com/calyptia/cmetrics.git
-    cd cmetrics
-    git checkout v0.6.0
-    git submodule sync
-    git -c protocol.version=2 submodule update --init --force --depth=1
-    git submodule foreach git config --local gc.auto 0
+    # #Clone cmetrics repo and install cmetrics and all its dependencies
+    # git clone --recursive https://github.com/calyptia/cmetrics.git
+    # cd cmetrics
+    # git checkout v0.6.0
+    # git submodule sync
+    # git -c protocol.version=2 submodule update --init --force --depth=1
+    # git submodule foreach git config --local gc.auto 0
     
-    # Use cmake with minimum version flag to handle compatibility and use mingw32-make instead of make
-    cmake --fresh -G "MinGW Makefiles" -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX="$destinationPath" .
-    mingw32-make
-    mingw32-make install
-}
+    # # Use cmake with minimum version flag to handle compatibility and use mingw32-make instead of make
+    # cmake --fresh -G "MinGW Makefiles" -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX="$destinationPath" .
+    # mingw32-make
+    # mingw32-make install
+    
+    Write-Host "Install-cmetrics function temporarily commented out"
+#}
 
 # speed up Invoke-WebRequest
 # https://stackoverflow.com/questions/28682642/powershell-why-is-using-invoke-webrequest-much-slower-than-a-browser-download
