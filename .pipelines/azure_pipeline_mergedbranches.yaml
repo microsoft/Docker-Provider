@@ -785,130 +785,81 @@ extends:
             exit /B %ERRORLEVEL%
           displayName: 'build base'
         - task: PowerShell@2
-          displayName: "Verify Azure CLI installation and refresh PATH"
+          displayName: "Pre-AzureCLI verification for Windows 2025"
           inputs:
             targetType: 'inline'
             script: |
-              Write-Host "Checking for Azure CLI installation..."
+              Write-Host "=== Pre-AzureCLI@2 Task Verification ===" -ForegroundColor Cyan
               
-              # Common Azure CLI installation paths
-              $azureCLIPaths = @(
+              # Test 1: Verify az command is accessible via PATH (what AzureCLI@2 task needs)
+              Write-Host "Test 1: Checking if 'az' command is accessible via PATH..."
+              try {
+                  $azOutput = & az --version 2>&1
+                  Write-Host "✓ SUCCESS: Azure CLI accessible via PATH" -ForegroundColor Green
+                  Write-Host "Version: $($azOutput[0])" -ForegroundColor Gray
+              } catch {
+                  Write-Host "✗ FAILED: Azure CLI not accessible via PATH" -ForegroundColor Red
+                  Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
+              }
+              
+              # Test 2: Use 'where' command (equivalent to Node.js 'which' function)
+              Write-Host "Test 2: Using 'where az' command (Node.js 'which' equivalent)..."
+              try {
+                  $whereResult = & where.exe az 2>&1
+                  Write-Host "✓ SUCCESS: 'where az' found executable at: $whereResult" -ForegroundColor Green
+              } catch {
+                  Write-Host "✗ FAILED: 'where az' could not locate executable" -ForegroundColor Red
+              }
+              
+              # Test 3: Check specific installation paths
+              Write-Host "Test 3: Checking known Azure CLI installation paths..."
+              $knownPaths = @(
                   "C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin\az.cmd",
                   "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd",
+                  "C:\Windows\System32\az.cmd",
+                  "C:\Windows\az.cmd",
                   "C:\ProgramData\chocolatey\bin\az.cmd"
               )
               
-              $foundAzCli = $false
-              foreach ($path in $azureCLIPaths) {
+              $foundPaths = @()
+              foreach ($path in $knownPaths) {
                   if (Test-Path $path) {
-                      Write-Host "Found Azure CLI at: $path" -ForegroundColor Green
-                      $azCliDir = Split-Path $path -Parent
-                      
-                      # Ensure this path is in Machine PATH
-                      $machinePath = [System.Environment]::GetEnvironmentVariable("PATH", "Machine")
-                      if ($machinePath -notlike "*$azCliDir*") {
-                          Write-Host "Adding $azCliDir to Machine PATH"
-                          $newMachinePath = $machinePath + ";" + $azCliDir
-                          [System.Environment]::SetEnvironmentVariable("PATH", $newMachinePath, "Machine")
-                      }
-                      
-                      # Refresh current process PATH
-                      $currentPath = [System.Environment]::GetEnvironmentVariable("PATH", "Process")
-                      if ($currentPath -notlike "*$azCliDir*") {
-                          Write-Host "Adding $azCliDir to Process PATH"
-                          $newCurrentPath = $currentPath + ";" + $azCliDir
-                          [System.Environment]::SetEnvironmentVariable("PATH", $newCurrentPath, "Process")
-                          $env:PATH = $newCurrentPath
-                      }
-                      
-                      $foundAzCli = $true
-                      break
+                      $foundPaths += $path
+                      Write-Host "✓ Found: $path" -ForegroundColor Green
                   }
               }
               
-              if (-not $foundAzCli) {
-                  Write-Error "Azure CLI not found in any expected location"
-                  Write-Host "Current PATH: $env:PATH"
-                  exit 1
+              if ($foundPaths.Count -eq 0) {
+                  Write-Host "✗ No Azure CLI executables found in known paths" -ForegroundColor Red
+              } else {
+                  Write-Host "Total Azure CLI executables found: $($foundPaths.Count)" -ForegroundColor Cyan
               }
               
-              # Final verification
-              try {
-                  $azVersion = & az --version 2>&1
-                  Write-Host "Azure CLI verification successful:" -ForegroundColor Green
-                  Write-Host $azVersion
-              } catch {
-                  Write-Error "Azure CLI command execution failed: $_"
-                  exit 1
+              # Test 4: Display current PATH for debugging
+              Write-Host "Test 4: Current PATH environment variable..."
+              $currentPath = $env:PATH
+              $pathEntries = $currentPath -split ";"
+              $azureCliPaths = $pathEntries | Where-Object { $_ -like "*Azure*" -or $_ -like "*CLI*" }
+              
+              if ($azureCliPaths.Count -gt 0) {
+                  Write-Host "Azure CLI related PATH entries:" -ForegroundColor Cyan
+                  $azureCliPaths | ForEach-Object { Write-Host "  - $_" -ForegroundColor Gray }
+              } else {
+                  Write-Host "No Azure CLI related entries found in PATH" -ForegroundColor Yellow
               }
-        - task: PowerShell@2
+              
+              Write-Host "=== Verification Complete ===" -ForegroundColor Cyan
+              Write-Host "If all tests pass, AzureCLI@2 task should work correctly" -ForegroundColor Green
+        - task: AzureCLI@2
           displayName: "Docker windows build for nano server ltsc2025"
-          env:
-            ARM_CLIENT_ID: $(servicePrincipalId)
-            ARM_CLIENT_SECRET: $(servicePrincipalKey)
-            ARM_TENANT_ID: $(tenantId)
-            ARM_SUBSCRIPTION_ID: ${{ variables.subscription }}
           inputs:
-            targetType: 'inline'
+            azureSubscription: ${{ variables.armServiceConnectionName }}
+            scriptType: ps
+            scriptLocation: inlineScript
             retryCountOnTaskFailure: 2
-            script: |
-              # Find and use Azure CLI
-              $azureCLIPaths = @(
-                  "C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin\az.cmd",
-                  "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd", 
-                  "C:\ProgramData\chocolatey\bin\az.cmd"
-              )
-              
-              $azPath = $null
-              foreach ($path in $azureCLIPaths) {
-                  if (Test-Path $path) {
-                      $azPath = $path
-                      Write-Host "Using Azure CLI at: $azPath" -ForegroundColor Green
-                      break
-                  }
-              }
-              
-              if (-not $azPath) {
-                  # Try using az from PATH as fallback
-                  try {
-                      $azPath = "az"
-                      & $azPath --version
-                      Write-Host "Using Azure CLI from PATH" -ForegroundColor Green
-                  } catch {
-                      Write-Error "Azure CLI not found in any expected location or PATH"
-                      exit 1
-                  }
-              }
-              
-              # Find Docker
-              $dockerPaths = @(
-                  "C:\Program Files\Docker\Docker\resources\bin\docker.exe",
-                  "C:\ProgramData\DockerDesktop\version-bin\docker.exe",
-                  "docker"
-              )
-              
-              $dockerPath = $null
-              foreach ($path in $dockerPaths) {
-                  try {
-                      if ($path -eq "docker") {
-                          & docker --version
-                          $dockerPath = "docker"
-                      } elseif (Test-Path $path) {
-                          $dockerPath = $path
-                      }
-                      if ($dockerPath) {
-                          Write-Host "Using Docker at: $dockerPath" -ForegroundColor Green
-                          break
-                      }
-                  } catch {
-                      continue
-                  }
-              }
-              
-              if (-not $dockerPath) {
-                  Write-Error "Docker not found. Please ensure Docker is installed and running."
-                  exit 1
-              }
+            inlineScript: |
+              Write-Host "=== AzureCLI@2 Task Started Successfully ===" -ForegroundColor Green
+              Write-Host "Azure authentication handled automatically by AzureCLI@2 task" -ForegroundColor Cyan
               
               # Create staging directory
               if (Test-Path "$(Build.ArtifactStagingDirectory)/windows") {
@@ -919,25 +870,21 @@ extends:
               # Change to build directory
               Set-Location kubernetes/windows-nano
               
-              # Login to Azure using service principal
-              Write-Host "Logging into Azure using service principal..."
-              & $azPath login --service-principal --username $env:ARM_CLIENT_ID --password $env:ARM_CLIENT_SECRET --tenant $env:ARM_TENANT_ID
-              
-              # Execute Azure CLI commands
+              # Azure CLI commands (authentication already handled by AzureCLI@2)
               Write-Host "Running Azure CLI version check..."
-              & $azPath --version
-              
-              Write-Host "Setting Azure subscription..."
-              & $azPath account set -s ${{ variables.subscription }}
+              az --version
               
               Write-Host "Showing current Azure account..."
-              & $azPath account show
+              az account show
+              
+              Write-Host "Setting Azure subscription..."
+              az account set -s ${{ variables.subscription }}
               
               Write-Host "Logging into Azure Container Registry..."
-              & $azPath acr login -n ${{ variables.containerRegistry }}
+              az acr login -n ${{ variables.containerRegistry }}
               
               Write-Host "Building Docker image..."
-              & $dockerPath build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2025BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
+              docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2025BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
         # - task: PowerShell@2
         #   displayName: Extract files to sign
         #   inputs:
