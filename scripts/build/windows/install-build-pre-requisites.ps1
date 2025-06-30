@@ -164,6 +164,34 @@ function Install-Chocolatey() {
     Write-Host "Chocolatey installation completed"
 }
 
+function Install-Python() {
+    Write-Host "Installing Python for Azure CLI compatibility..."
+    
+    # Install Python via Chocolatey
+    choco install -y python
+    
+    # Refresh environment variables to make python available
+    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
+    
+    # Verify Python installation
+    $pythonPath = Get-Command python -ErrorAction SilentlyContinue
+    if ($pythonPath) {
+        Write-Host "Python installed successfully at: $($pythonPath.Source)" -ForegroundColor Green
+        
+        # Test Python execution
+        $pythonVersion = & python --version 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "Python version: $pythonVersion" -ForegroundColor Green
+        } else {
+            Write-Host "Python installation may have issues" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "Python installation verification failed - not found in PATH" -ForegroundColor Yellow
+    }
+    
+    Write-Host "Python installation completed"
+}
+
 function Install-CMake() {
     Write-Host "Installing CMake via Chocolatey..."
     choco install -y cmake
@@ -326,6 +354,9 @@ Install-Docker
 
 Write-Host "Install Chocolatey"
 Install-Chocolatey
+
+Write-Host "Install Python"
+Install-Python
 
 #Write-Host "Install CMake"
 #Install-CMake
