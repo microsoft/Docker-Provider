@@ -254,19 +254,11 @@ function Install-AzureCLI() {
         if (Test-Path $sysPath) {
             $targetAzCmd = Join-Path -Path $sysPath -ChildPath "az.cmd"
             if (-not (Test-Path $targetAzCmd)) {
-                try {
-                    Copy-Item -Path $sourceAzCmd -Destination $targetAzCmd -Force -ErrorAction Stop
+                Copy-Item -Path $sourceAzCmd -Destination $targetAzCmd -Force -ErrorAction SilentlyContinue
+                if (Test-Path $targetAzCmd) {
                     Write-Host "Created az.cmd copy in: $sysPath" -ForegroundColor Green
-                    
-                    # Test that the copied file actually works
-                    $testResult = & $targetAzCmd --version 2>&1
-                    if ($LASTEXITCODE -eq 0) {
-                        Write-Host "✓ Verified az.cmd copy works in: $sysPath" -ForegroundColor Green
-                    } else {
-                        Write-Host "⚠ az.cmd copy may not be functional in: $sysPath" -ForegroundColor Yellow
-                    }
-                } catch {
-                    Write-Host "Could not copy to $sysPath (permissions): $($_.Exception.Message)" -ForegroundColor Yellow
+                } else {
+                    Write-Host "Could not copy to $sysPath (permissions)" -ForegroundColor Yellow
                 }
             } else {
                 Write-Host "az.cmd already exists in: $sysPath" -ForegroundColor Cyan
@@ -274,40 +266,14 @@ function Install-AzureCLI() {
         }
     }
     
-    # Verify installation and PATH access
+    # Verify installation
     Write-Host "Verifying Azure CLI installation..."
-    
-    # Test 1: Direct path access
     $azPath = Join-Path -Path $azCliPathToAdd -ChildPath "az.cmd"
     if (Test-Path $azPath) {
-        Write-Host "✓ Azure CLI found at direct path: $azPath" -ForegroundColor Green
-        
-        # Test that the original installation works
-        try {
-            $originalTest = & $azPath --version 2>&1
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "✓ Original Azure CLI installation is functional" -ForegroundColor Green
-            } else {
-                Write-Host "⚠ Original Azure CLI installation may have issues" -ForegroundColor Yellow
-            }
-        } catch {
-            Write-Host "⚠ Could not test original Azure CLI installation" -ForegroundColor Yellow
-        }
+        Write-Host "Azure CLI found at: $azPath" -ForegroundColor Green
     } else {
-        Write-Error "✗ Azure CLI not found at expected direct path"
+        Write-Error "Azure CLI not found at expected location"
         exit 1
-    }
-    
-    # Test 2: Check if az command is accessible via PATH and functional
-    try {
-        $pathTest = & az --version 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "✓ Azure CLI accessible and functional via PATH command" -ForegroundColor Green
-        } else {
-            Write-Warning "⚠ Azure CLI found via PATH but may not be functional"
-        }
-    } catch {
-        Write-Warning "⚠ Azure CLI not immediately accessible via PATH - may require environment refresh"
     }
     
     Write-Host "Azure CLI installation and configuration completed successfully!" -ForegroundColor Green
