@@ -192,56 +192,111 @@ function Install-AzureCLI() {
     Start-Process msiexec.exe -Wait -ArgumentList '/I', $azureCliInstaller, '/quiet', '/norestart'
     Write-Host "Azure CLI installation completed"
     
-    # Add Azure CLI to PATH at Machine level for persistence  
-    $azureCLIPath = "C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin"
-    $altAzureCLIPath = "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin"
+    # Find installed Azure CLI paths - check both x86 and x64 locations
+    $possiblePaths = @(
+        "C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin",
+        "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin"
+    )
     
-    # Check which path exists and use it
     $azCliPathToAdd = ""
-    if (Test-Path $azureCLIPath) {
-        $azCliPathToAdd = $azureCLIPath
-        Write-Host "Found Azure CLI at: $azureCLIPath"
-    } elseif (Test-Path $altAzureCLIPath) {
-        $azCliPathToAdd = $altAzureCLIPath
-        Write-Host "Found Azure CLI at: $altAzureCLIPath"
-    } else {
+    foreach ($path in $possiblePaths) {
+        if (Test-Path $path) {
+            $azPath = Join-Path -Path $path -ChildPath "az.cmd"
+            if (Test-Path $azPath) {
+                $azCliPathToAdd = $path
+                Write-Host "Found Azure CLI at: $path" -ForegroundColor Green
+                break
+            }
+        }
+    }
+    
+    if (-not $azCliPathToAdd) {
         Write-Error "Azure CLI installation path not found after installation"
         exit 1
     }
     
-    Write-Host "Adding Azure CLI path to environment: $azCliPathToAdd"
+    Write-Host "Adding Azure CLI to PATH environment variables..."
     
     # Update PATH at all levels for maximum compatibility
     $ProcessPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "PROCESS")
     $UserPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "USER")
     $MachinePathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "MACHINE")
     
-    # Only add if not already present
+    # Add to Machine PATH for system-wide persistence
     if ($MachinePathEnv -notlike "*$azCliPathToAdd*") {
         $MachinePathEnv = $MachinePathEnv + ";" + $azCliPathToAdd
         [System.Environment]::SetEnvironmentVariable("PATH", $MachinePathEnv, "MACHINE")
-        Write-Host "Added Azure CLI to Machine PATH"
+        Write-Host "Added Azure CLI to Machine PATH: $azCliPathToAdd" -ForegroundColor Green
     }
     
+    # Add to Process PATH for immediate availability
     if ($ProcessPathEnv -notlike "*$azCliPathToAdd*") {
         $ProcessPathEnv = $ProcessPathEnv + ";" + $azCliPathToAdd
         [System.Environment]::SetEnvironmentVariable("PATH", $ProcessPathEnv, "PROCESS")
-        Write-Host "Added Azure CLI to Process PATH"
+        Write-Host "Added Azure CLI to Process PATH" -ForegroundColor Green
     }
     
-    # Refresh environment variables
-    $env:Path = $MachinePathEnv + ";" + $UserPathEnv
+    # CRITICAL: Create az.cmd copies in system directories for AzureCLI@2 task detection
+    Write-Host "Creating Azure CLI copies in system directories for AzureCLI@2 detection..."
+    $systemPaths = @(
+        "C:\Windows\System32",
+        "C:\Windows",
+        "C:\ProgramData\chocolatey\bin"
+    )
     
-    # Verify installation
+    $sourceAzCmd = Join-Path -Path $azCliPathToAdd -ChildPath "az.cmd"
+    
+    foreach ($sysPath in $systemPaths) {
+        if (Test-Path $sysPath) {
+            $targetAzCmd = Join-Path -Path $sysPath -ChildPath "az.cmd"
+            if (-not (Test-Path $targetAzCmd)) {
+                try {
+                    Copy-Item -Path $sourceAzCmd -Destination $targetAzCmd -Force -ErrorAction Stop
+                    Write-Host "Created az.cmd copy in: $sysPath" -ForegroundColor Green
+                } catch {
+                    Write-Host "Could not copy to $sysPath (permissions): $($_.Exception.Message)" -ForegroundColor Yellow
+                }
+            }
+            
+            # Also create az.exe as some systems might look for .exe
+            $targetAzExe = Join-Path -Path $sysPath -ChildPath "az.exe"
+            if (-not (Test-Path $targetAzExe)) {
+                try {
+                    Copy-Item -Path $sourceAzCmd -Destination $targetAzExe -Force -ErrorAction Stop
+                    Write-Host "Created az.exe copy in: $sysPath" -ForegroundColor Green
+                } catch {
+                    Write-Host "Could not copy az.exe to $sysPath (permissions): $($_.Exception.Message)" -ForegroundColor Yellow
+                }
+            }
+        }
+    }
+    
+    # Refresh current process environment variables
+    $env:Path = $MachinePathEnv + ";" + $UserPathEnv
+    Write-Host "Refreshed environment PATH variables" -ForegroundColor Green
+    
+    # Verify installation and PATH access
+    Write-Host "Verifying Azure CLI installation..."
+    
+    # Test 1: Direct path access
     $azPath = Join-Path -Path $azCliPathToAdd -ChildPath "az.cmd"
     if (Test-Path $azPath) {
-        Write-Host "Azure CLI installation verified at: $azPath" -ForegroundColor Green
+        Write-Host "✓ Azure CLI found at direct path: $azPath" -ForegroundColor Green
     } else {
-        Write-Error "Azure CLI verification failed - az.cmd not found at expected location"
+        Write-Error "✗ Azure CLI not found at expected direct path"
         exit 1
     }
     
-    Write-Host "Azure CLI installation and configuration completed successfully" -ForegroundColor Green
+    # Test 2: Check if az command is now accessible via PATH
+    $azCommandTest = Get-Command az -ErrorAction SilentlyContinue
+    if ($azCommandTest) {
+        Write-Host "✓ Azure CLI accessible via PATH command" -ForegroundColor Green
+    } else {
+        Write-Warning "⚠ Azure CLI not immediately accessible via PATH - may require environment refresh"
+    }
+    
+    Write-Host "Azure CLI installation and configuration completed successfully!" -ForegroundColor Green
+    Write-Host "Azure CLI should now be detectable by AzureCLI@2 task" -ForegroundColor Cyan
 }
 
 function Install-cmetrics() {
