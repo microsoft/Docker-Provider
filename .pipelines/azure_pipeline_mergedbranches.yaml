@@ -866,14 +866,104 @@ extends:
           inputs:
             targetType: 'inline'
             script: |
+              Write-Host "=== Docker Build Setup for Windows 2025 ===" -ForegroundColor Cyan
+              
               # Check if directory exists and remove it before creating it to handle retry scenarios
               if (Test-Path -Path "$(Build.ArtifactStagingDirectory)/windows") {
                 Remove-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -Recurse -Force
               }
               New-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -ItemType Directory -Force
+              
+              # Verify Docker is accessible
+              Write-Host "Checking Docker availability..."
+              $dockerFound = $false
+              
+              # Test 1: Try direct docker command
+              try {
+                  $dockerVersion = & docker --version 2>&1
+                  if ($LASTEXITCODE -eq 0) {
+                      Write-Host "✓ Docker found via PATH: $dockerVersion" -ForegroundColor Green
+                      $dockerFound = $true
+                  } else {
+                      Write-Host "✗ Docker command failed with exit code $LASTEXITCODE" -ForegroundColor Red
+                  }
+              } catch {
+                  Write-Host "✗ Docker not accessible via PATH: $($_.Exception.Message)" -ForegroundColor Red
+              }
+              
+              # Test 2: Check common Docker installation paths
+              if (-not $dockerFound) {
+                  Write-Host "Searching for Docker installations..."
+                  $dockerPaths = @(
+                      "C:\Program Files\Docker\Docker\resources\bin",
+                      "C:\ProgramData\DockerDesktop\version-bin",
+                      "C:\Windows\System32"
+                  )
+                  
+                  foreach ($path in $dockerPaths) {
+                      $dockerExe = Join-Path $path "docker.exe"
+                      if (Test-Path $dockerExe) {
+                          Write-Host "✓ Found Docker at: $dockerExe" -ForegroundColor Green
+                          $env:PATH = "$path;$env:PATH"
+                          
+                          # Test if it works
+                          try {
+                              $dockerVersion = & docker --version 2>&1
+                              if ($LASTEXITCODE -eq 0) {
+                                  Write-Host "✓ Docker is now accessible: $dockerVersion" -ForegroundColor Green
+                                  $dockerFound = $true
+                                  break
+                              }
+                          } catch {
+                              Write-Host "⚠ Found Docker executable but it's not working" -ForegroundColor Yellow
+                          }
+                      }
+                  }
+              }
+              
+              # Test 3: Check if Docker service is running
+              if ($dockerFound) {
+                  Write-Host "Checking Docker service status..."
+                  try {
+                      $dockerInfo = & docker info 2>&1
+                      if ($LASTEXITCODE -eq 0) {
+                          Write-Host "✓ Docker service is running" -ForegroundColor Green
+                      } else {
+                          Write-Host "⚠ Docker executable found but service may not be running" -ForegroundColor Yellow
+                          Write-Host "Docker info output: $dockerInfo" -ForegroundColor Gray
+                      }
+                  } catch {
+                      Write-Host "⚠ Could not check Docker service status" -ForegroundColor Yellow
+                  }
+              }
+              
+              if (-not $dockerFound) {
+                  Write-Error "Docker is not available. Cannot proceed with Docker build."
+                  exit 1
+              }
+              
+              # Determine Docker executable path for build command
+              $dockerExecutable = "docker"
+              if ($dockerFound) {
+                  # Try to get the full path to docker.exe for more reliable execution
+                  try {
+                      $dockerPath = Get-Command docker -ErrorAction SilentlyContinue
+                      if ($dockerPath) {
+                          $dockerExecutable = $dockerPath.Source
+                          Write-Host "Using Docker executable: $dockerExecutable" -ForegroundColor Green
+                      }
+                  } catch {
+                      Write-Host "Using default 'docker' command" -ForegroundColor Yellow
+                  }
+              }
+              
+              # Navigate to build directory
+              Write-Host "Navigating to build directory: kubernetes/windows-nano"
               cd kubernetes/windows-nano
-              # Build the Docker image
-              docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2025BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
+              
+              # Build the Docker image using the determined executable path
+              Write-Host "Starting Docker build with executable: $dockerExecutable"
+              & $dockerExecutable build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2025BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
           displayName: "Docker windows build for nano server ltsc2025"
           retryCountOnTaskFailure: 2
         # - task: PowerShell@2

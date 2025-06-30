@@ -127,30 +127,107 @@ function Install-DotNetCoreSDK() {
 }
 
 function Install-Docker() {
-    $tempDir =  $env:TEMP
-    if ($false -eq (Test-Path -Path $tempDir)) {
-        Write-Host("Invalid TEMP dir PATH : " + $tempDir + " ") -ForegroundColor Red
-        exit 1
+    Write-Host "Installing Docker for Windows 2025 build agents..." -ForegroundColor Cyan
+    
+    # Check if Docker is already installed and working
+    $dockerFound = $false
+    try {
+        $dockerVersion = & docker --version 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "✓ Docker already installed: $dockerVersion" -ForegroundColor Green
+            $dockerFound = $true
+        }
+    } catch {
+        Write-Host "Docker not found in PATH, proceeding with installation..." -ForegroundColor Yellow
     }
+    
+    if (-not $dockerFound) {
+        $tempDir = $env:TEMP
+        if ($false -eq (Test-Path -Path $tempDir)) {
+            Write-Host("Invalid TEMP dir PATH : " + $tempDir + " ") -ForegroundColor Red
+            exit 1
+        }
 
-    $dockerTemp = Join-Path -Path $tempDir -ChildPath "docker"
-    Write-Host("creating docker temp dir : " + $dockerTemp + " ")
-    New-Item -Path $dockerTemp -ItemType "directory" -Force -ErrorAction Stop
-    if ($false -eq (Test-Path -Path $dockerTemp)) {
-        Write-Host("Invalid dockerTemp : " + $tempDir + " ") -ForegroundColor Red
-        exit 1
+        $dockerTemp = Join-Path -Path $tempDir -ChildPath "docker"
+        Write-Host("Creating docker temp dir : " + $dockerTemp + " ")
+        New-Item -Path $dockerTemp -ItemType "directory" -Force -ErrorAction Stop
+        if ($false -eq (Test-Path -Path $dockerTemp)) {
+            Write-Host("Invalid dockerTemp : " + $tempDir + " ") -ForegroundColor Red
+            exit 1
+        }
+
+        # Download Docker Desktop installer
+        $url = "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe"
+        $output = Join-Path -Path $dockerTemp -ChildPath "docker-desktop-installer.exe"
+        Write-Host("Downloading Docker Desktop installer...")
+        Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
+        Write-Host("Download completed")
+
+        # Install Docker Desktop
+        Write-Host("Installing Docker Desktop...")
+        Start-Process $output -Wait -ArgumentList 'install', '--quiet', '--accept-license'
+        Write-Host("Docker Desktop installation completed")
     }
-
-   $url = "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe"
-   $output = Join-Path -Path $dockerTemp -ChildPath "docker-desktop-installer.exe"
-   Write-Host("downloading docker-desktop-installer: " + $dockerTemp + "  ...")
-   Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
-   Write-Host("downloading docker-desktop-installer: " + $dockerTemp + "  completed")
-
-   # install docker
-   Write-Host("installing docker for desktop ...")
-   Start-Process $output -Wait -ArgumentList 'install --quiet'
-   Write-Host("installing docker for desktop completed")
+    
+    # Add Docker to PATH and verify installation
+    Write-Host "Configuring Docker PATH and verifying installation..."
+    
+    # Common Docker installation paths
+    $dockerPaths = @(
+        "C:\Program Files\Docker\Docker\resources\bin",
+        "C:\ProgramData\DockerDesktop\version-bin",
+        "C:\Program Files\Docker\Docker\Resources\bin"
+    )
+    
+    $dockerPathToAdd = $null
+    foreach ($path in $dockerPaths) {
+        $dockerExe = Join-Path $path "docker.exe"
+        if (Test-Path $dockerExe) {
+            $dockerPathToAdd = $path
+            Write-Host "✓ Found Docker at: $path" -ForegroundColor Green
+            break
+        }
+    }
+    
+    # Add Docker to PATH if found
+    if ($dockerPathToAdd) {
+        # Update PATH at all levels for persistence
+        $ProcessPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "PROCESS")
+        $UserPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "USER")
+        $MachinePathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "MACHINE")
+        
+        # Add to Machine PATH for system-wide persistence
+        if ($MachinePathEnv -notlike "*$dockerPathToAdd*") {
+            $MachinePathEnv = $MachinePathEnv + ";" + $dockerPathToAdd
+            [System.Environment]::SetEnvironmentVariable("PATH", $MachinePathEnv, "MACHINE")
+            Write-Host "✓ Added Docker to Machine PATH" -ForegroundColor Green
+        }
+        
+        # Add to Process PATH for immediate availability
+        if ($ProcessPathEnv -notlike "*$dockerPathToAdd*") {
+            $ProcessPathEnv = $ProcessPathEnv + ";" + $dockerPathToAdd
+            [System.Environment]::SetEnvironmentVariable("PATH", $ProcessPathEnv, "PROCESS")
+            Write-Host "✓ Added Docker to Process PATH" -ForegroundColor Green
+        }
+        
+        # Refresh current environment
+        $env:Path = $MachinePathEnv + ";" + $UserPathEnv
+    }
+    
+    # Final verification
+    Write-Host "Verifying Docker installation..."
+    try {
+        $dockerVersion = & docker --version 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "✓ Docker verification successful: $dockerVersion" -ForegroundColor Green
+        } else {
+            Write-Host "⚠ Docker installed but verification failed" -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "⚠ Docker installation may need manual configuration" -ForegroundColor Yellow
+    }
+    
+    Write-Host "Docker installation and configuration completed" -ForegroundColor Green
 }
 
 function Install-Chocolatey() {
