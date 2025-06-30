@@ -878,27 +878,32 @@ extends:
               function Install-DockerFallback {
                   Write-Host "Installing Docker as fallback..." -ForegroundColor Yellow
                   
-                  # Try using Chocolatey first (faster)
+                  # Check if chocolatey is available first
+                  $chocoAvailable = $false
                   try {
-                      Write-Host "Attempting Docker installation via Chocolatey..."
-                      choco install docker-desktop -y --no-progress --force
-                      Write-Host "Docker Desktop installed via Chocolatey" -ForegroundColor Green
-                      
-                      # Wait for installation to complete
-                      Start-Sleep -Seconds 30
-                      
-                      # Try to start Docker Desktop
-                      $dockerDesktopPath = "C:\Program Files\Docker\Docker\Docker Desktop.exe"
-                      if (Test-Path $dockerDesktopPath) {
-                          Write-Host "Starting Docker Desktop..."
-                          Start-Process -FilePath $dockerDesktopPath -WindowStyle Hidden
-                          Start-Sleep -Seconds 60  # Wait for Docker to start
+                      $chocoVersion = & choco --version 2>&1
+                      if ($LASTEXITCODE -eq 0) {
+                          $chocoAvailable = $true
+                          Write-Host "Chocolatey is available: $chocoVersion"
                       }
                   } catch {
-                      Write-Host "Chocolatey installation failed: $($_.Exception.Message)" -ForegroundColor Red
-                      
-                      # Fallback to direct download
-                      Write-Host "Falling back to direct Docker Desktop download..."
+                      Write-Host "Chocolatey not available, will use direct download"
+                  }
+                  
+                  if ($chocoAvailable) {
+                      try {
+                          Write-Host "Attempting Docker installation via Chocolatey..."
+                          choco install docker-desktop -y --no-progress --force
+                          Write-Host "Docker Desktop installed via Chocolatey" -ForegroundColor Green
+                          Start-Sleep -Seconds 30
+                      } catch {
+                          Write-Host "Chocolatey installation failed: $($_.Exception.Message)" -ForegroundColor Red
+                          $chocoAvailable = $false
+                      }
+                  }
+                  
+                  if (-not $chocoAvailable) {
+                      Write-Host "Using direct Docker Desktop download..."
                       $tempDir = $env:TEMP
                       $dockerTemp = Join-Path -Path $tempDir -ChildPath "docker_fallback"
                       New-Item -Path $dockerTemp -ItemType "directory" -Force -ErrorAction SilentlyContinue
@@ -911,14 +916,80 @@ extends:
                       
                       Write-Host "Installing Docker Desktop..."
                       Start-Process $output -Wait -ArgumentList 'install', '--quiet', '--accept-license'
-                      Start-Sleep -Seconds 30
+                      Write-Host "Docker Desktop installation completed"
                   }
+                  
+                  # Give installation time to complete
+                  Write-Host "Waiting for Docker installation to complete..."
+                  Start-Sleep -Seconds 45
+                  
+                  # Try to start Docker Desktop
+                  $dockerDesktopPaths = @(
+                      "C:\Program Files\Docker\Docker\Docker Desktop.exe",
+                      "C:\Program Files (x86)\Docker\Docker\Docker Desktop.exe"
+                  )
+                  
+                  foreach ($dockerDesktopPath in $dockerDesktopPaths) {
+                      if (Test-Path $dockerDesktopPath) {
+                          Write-Host "Starting Docker Desktop from: $dockerDesktopPath"
+                          try {
+                              Start-Process -FilePath $dockerDesktopPath -WindowStyle Hidden
+                              Write-Host "Docker Desktop started successfully"
+                              Start-Sleep -Seconds 90  # Extended wait for Docker to fully start
+                              break
+                          } catch {
+                              Write-Host "Failed to start Docker Desktop: $($_.Exception.Message)"
+                          }
+                      }
+                  }
+              }
+              
+              # Function to search for Docker installations more thoroughly
+              function Find-DockerInstallation {
+                  Write-Host "Performing comprehensive Docker search..."
+                  
+                  # Extended list of possible Docker locations
+                  $dockerPaths = @(
+                      "C:\Program Files\Docker\Docker\resources\bin",
+                      "C:\ProgramData\DockerDesktop\version-bin",
+                      "C:\Program Files\Docker\Docker\Resources\bin",
+                      "C:\Program Files (x86)\Docker\Docker\resources\bin",
+                      "C:\Windows\System32",
+                      "C:\Docker\bin"
+                  )
+                  
+                  foreach ($path in $dockerPaths) {
+                      $dockerExe = Join-Path $path "docker.exe"
+                      if (Test-Path $dockerExe) {
+                          Write-Host "Found Docker executable at: $dockerExe" -ForegroundColor Green
+                          
+                          # Add to PATH if not already there
+                          if ($env:PATH -notlike "*$path*") {
+                              $env:PATH = "$path;$env:PATH"
+                              Write-Host "Added $path to PATH"
+                          }
+                          
+                          # Test if it works
+                          try {
+                              $dockerVersion = & $dockerExe --version 2>&1
+                              if ($LASTEXITCODE -eq 0) {
+                                  Write-Host "SUCCESS: Docker is working: $dockerVersion" -ForegroundColor Green
+                                  return $dockerExe
+                              }
+                          } catch {
+                              Write-Host "Docker executable found but not working from: $dockerExe"
+                          }
+                      }
+                  }
+                  
+                  return $null
               }
               
               # Verify Docker is accessible
               Write-Host "Checking Docker availability..."
               $dockerFound = $false
-              $maxRetries = 3
+              $dockerExecutable = "docker"
+              $maxRetries = 5  # Increased retries
               $retryCount = 0
               
               while (-not $dockerFound -and $retryCount -lt $maxRetries) {
@@ -931,70 +1002,69 @@ extends:
                       if ($LASTEXITCODE -eq 0) {
                           Write-Host "SUCCESS: Docker found via PATH: $dockerVersion" -ForegroundColor Green
                           $dockerFound = $true
+                          $dockerExecutable = "docker"
                           break
-                      } else {
-                          Write-Host "Docker command failed with exit code $LASTEXITCODE" -ForegroundColor Red
                       }
                   } catch {
                       Write-Host "Docker not accessible via PATH: $($_.Exception.Message)" -ForegroundColor Red
                   }
                   
-                  # Test 2: Check common Docker installation paths
+                  # Test 2: Comprehensive search for Docker installations
                   if (-not $dockerFound) {
-                      Write-Host "Searching for Docker installations..."
-                      $dockerPaths = @(
-                          "C:\Program Files\Docker\Docker\resources\bin",
-                          "C:\ProgramData\DockerDesktop\version-bin",
-                          "C:\Program Files\Docker\Docker\Resources\bin"
+                      $foundDockerExe = Find-DockerInstallation
+                      if ($foundDockerExe) {
+                          $dockerFound = $true
+                          $dockerExecutable = $foundDockerExe
+                          break
+                      }
+                  }
+                  
+                  # Test 3: Try to start Docker Desktop service
+                  if (-not $dockerFound) {
+                      Write-Host "Attempting to start Docker Desktop service..."
+                      
+                      # Check for Docker Desktop in multiple locations
+                      $dockerDesktopPaths = @(
+                          "C:\Program Files\Docker\Docker\Docker Desktop.exe",
+                          "C:\Program Files (x86)\Docker\Docker\Docker Desktop.exe"
                       )
                       
-                      foreach ($path in $dockerPaths) {
-                          $dockerExe = Join-Path $path "docker.exe"
-                          if (Test-Path $dockerExe) {
-                              Write-Host "SUCCESS: Found Docker at: $dockerExe" -ForegroundColor Green
-                              $env:PATH = "$path;$env:PATH"
-                              
-                              # Test if it works
+                      $desktopStarted = $false
+                      foreach ($dockerDesktopPath in $dockerDesktopPaths) {
+                          if (Test-Path $dockerDesktopPath) {
+                              Write-Host "Starting Docker Desktop from: $dockerDesktopPath"
                               try {
-                                  $dockerVersion = & docker --version 2>&1
-                                  if ($LASTEXITCODE -eq 0) {
-                                      Write-Host "SUCCESS: Docker is now accessible: $dockerVersion" -ForegroundColor Green
-                                      $dockerFound = $true
-                                      break
-                                  }
+                                  Start-Process -FilePath $dockerDesktopPath -WindowStyle Hidden
+                                  Write-Host "Docker Desktop process started"
+                                  $desktopStarted = $true
+                                  break
                               } catch {
-                                  Write-Host "WARNING: Found Docker executable but it's not working" -ForegroundColor Yellow
+                                  Write-Host "Failed to start Docker Desktop: $($_.Exception.Message)"
                               }
                           }
                       }
-                  }
-                  
-                  # Test 3: Check if Docker service needs to be started
-                  if (-not $dockerFound) {
-                      Write-Host "Attempting to start Docker service..."
-                      try {
-                          # Try to start Docker Desktop if it exists
-                          $dockerDesktopPath = "C:\Program Files\Docker\Docker\Docker Desktop.exe"
-                          if (Test-Path $dockerDesktopPath) {
-                              Write-Host "Starting Docker Desktop..."
-                              Start-Process -FilePath $dockerDesktopPath -WindowStyle Hidden
-                              Start-Sleep -Seconds 45  # Wait for Docker to start
-                              continue  # Retry Docker detection
-                          }
-                      } catch {
-                          Write-Host "Failed to start Docker Desktop: $($_.Exception.Message)" -ForegroundColor Yellow
+                      
+                      if ($desktopStarted) {
+                          Write-Host "Waiting for Docker Desktop to initialize..."
+                          Start-Sleep -Seconds 75  # Extended wait for Docker Desktop
+                          continue  # Retry Docker detection
                       }
                   }
                   
-                  # If still not found and this isn't the last retry, try installing Docker
+                  # Test 4: Install Docker if needed (only on first retry)
                   if (-not $dockerFound -and $retryCount -eq 1) {
+                      Write-Host "Installing Docker as fallback..."
                       Install-DockerFallback
-                      Start-Sleep -Seconds 30  # Wait after installation
+                      Write-Host "Waiting after Docker installation..."
+                      Start-Sleep -Seconds 45
+                      continue
                   }
                   
+                  # Wait before next retry
                   if (-not $dockerFound -and $retryCount -lt $maxRetries) {
-                      Write-Host "Docker not found, waiting before retry..." -ForegroundColor Yellow
-                      Start-Sleep -Seconds 20
+                      $waitTime = 30  # Increased wait time
+                      Write-Host "Docker not found, waiting $waitTime seconds before retry..." -ForegroundColor Yellow
+                      Start-Sleep -Seconds $waitTime
                   }
               }
               
