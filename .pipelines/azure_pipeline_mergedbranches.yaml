@@ -784,107 +784,98 @@ extends:
             endlocal
             exit /B %ERRORLEVEL%
           displayName: 'build base'
-        - task: PowerShell@2
-          displayName: "Pre-AzureCLI verification for Windows 2025"
+        # - task: PowerShell@2
+        #   displayName: "Pre-AzureCLI verification for Windows 2025"
+        #   inputs:
+        #     targetType: 'inline'
+        #     script: |
+        #       Write-Host "=== Pre-AzureCLI@2 Task Verification ===" -ForegroundColor Cyan
+              
+        #       # Test 1: Find Azure CLI installation locations
+        #       Write-Host "Test 1: Searching for Azure CLI installations..."
+        #       $azurePaths = @(
+        #           "C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin",
+        #           "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin",
+        #           "C:\hostedtoolcache\windows\Azure-CLI",
+        #           "C:\tools\azure-cli"
+        #       )
+              
+        #       $foundAzureCLI = $null
+        #       foreach ($path in $azurePaths) {
+        #           if (Test-Path $path) {
+        #               $azCmd = Join-Path $path "az.cmd"
+        #               if (Test-Path $azCmd) {
+        #                   $foundAzureCLI = $path
+        #                   Write-Host "✓ Found Azure CLI at: $path" -ForegroundColor Green
+        #                   break
+        #               }
+        #           }
+        #       }
+              
+        #       # Test 2: If found, add to PATH
+        #       if ($foundAzureCLI) {
+        #           Write-Host "Test 2: Adding Azure CLI to PATH..."
+        #           $env:PATH = "$foundAzureCLI;$env:PATH"
+        #           Write-Host "✓ Added $foundAzureCLI to PATH" -ForegroundColor Green
+        #       } else {
+        #           Write-Host "✗ No Azure CLI installation found" -ForegroundColor Red
+        #       }
+              
+        #       # Test 3: Verify az command accessibility
+        #       Write-Host "Test 3: Testing az command accessibility..."
+        #       try {
+        #           $azOutput = & az --version 2>&1
+        #           if ($LASTEXITCODE -eq 0) {
+        #               Write-Host "✓ SUCCESS: Azure CLI accessible via PATH" -ForegroundColor Green
+        #               Write-Host "Version: $($azOutput[0])" -ForegroundColor Gray
+        #           } else {
+        #               Write-Host "✗ FAILED: Azure CLI returned error code $LASTEXITCODE" -ForegroundColor Red
+        #           }
+        #       } catch {
+        #           Write-Host "✗ FAILED: Azure CLI not accessible via PATH" -ForegroundColor Red
+        #           Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
+        #       }
+              
+        #       # Test 4: Check where command finds az
+        #       Write-Host "Test 4: Using 'where az' command..."
+        #       try {
+        #           $whereResult = & where.exe az 2>&1
+        #           if ($LASTEXITCODE -eq 0) {
+        #               Write-Host "✓ SUCCESS: 'where az' found: $whereResult" -ForegroundColor Green
+        #           } else {
+        #               Write-Host "✗ FAILED: 'where az' could not locate executable" -ForegroundColor Red
+        #           }
+        #       } catch {
+        #           Write-Host "✗ FAILED: 'where az' command failed" -ForegroundColor Red
+        #       }
+              
+        #       Write-Host "=== Verification Complete ===" -ForegroundColor Cyan
+        # - task: AzureCLI@2
+        #   displayName: "Set up acr for windows nano server ltsc2025 build"
+        #   inputs:
+        #     azureSubscription: ${{ variables.armServiceConnectionName }}
+        #     scriptType: ps
+        #     scriptLocation: inlineScript
+        #     retryCountOnTaskFailure: 2
+        #     inlineScript: |
+        #       az --version
+        #       az account show
+        #       az account set -s ${{ variables.subscription }}
+        #       az acr login -n ${{ variables.containerRegistry }}
+        - task: PowerShell@2          
           inputs:
             targetType: 'inline'
             script: |
-              Write-Host "=== Pre-AzureCLI@2 Task Verification ===" -ForegroundColor Cyan
-              
-              # Test 1: Find Azure CLI installation locations
-              Write-Host "Test 1: Searching for Azure CLI installations..."
-              $azurePaths = @(
-                  "C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin",
-                  "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin",
-                  "C:\hostedtoolcache\windows\Azure-CLI",
-                  "C:\tools\azure-cli"
-              )
-              
-              $foundAzureCLI = $null
-              foreach ($path in $azurePaths) {
-                  if (Test-Path $path) {
-                      $azCmd = Join-Path $path "az.cmd"
-                      if (Test-Path $azCmd) {
-                          $foundAzureCLI = $path
-                          Write-Host "✓ Found Azure CLI at: $path" -ForegroundColor Green
-                          break
-                      }
-                  }
-              }
-              
-              # Test 2: If found, add to PATH
-              if ($foundAzureCLI) {
-                  Write-Host "Test 2: Adding Azure CLI to PATH..."
-                  $env:PATH = "$foundAzureCLI;$env:PATH"
-                  Write-Host "✓ Added $foundAzureCLI to PATH" -ForegroundColor Green
-              } else {
-                  Write-Host "✗ No Azure CLI installation found" -ForegroundColor Red
-              }
-              
-              # Test 3: Verify az command accessibility
-              Write-Host "Test 3: Testing az command accessibility..."
-              try {
-                  $azOutput = & az --version 2>&1
-                  if ($LASTEXITCODE -eq 0) {
-                      Write-Host "✓ SUCCESS: Azure CLI accessible via PATH" -ForegroundColor Green
-                      Write-Host "Version: $($azOutput[0])" -ForegroundColor Gray
-                  } else {
-                      Write-Host "✗ FAILED: Azure CLI returned error code $LASTEXITCODE" -ForegroundColor Red
-                  }
-              } catch {
-                  Write-Host "✗ FAILED: Azure CLI not accessible via PATH" -ForegroundColor Red
-                  Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
-              }
-              
-              # Test 4: Check where command finds az
-              Write-Host "Test 4: Using 'where az' command..."
-              try {
-                  $whereResult = & where.exe az 2>&1
-                  if ($LASTEXITCODE -eq 0) {
-                      Write-Host "✓ SUCCESS: 'where az' found: $whereResult" -ForegroundColor Green
-                  } else {
-                      Write-Host "✗ FAILED: 'where az' could not locate executable" -ForegroundColor Red
-                  }
-              } catch {
-                  Write-Host "✗ FAILED: 'where az' command failed" -ForegroundColor Red
-              }
-              
-              Write-Host "=== Verification Complete ===" -ForegroundColor Cyan
-        - task: AzureCLI@2
-          displayName: "Docker windows build for nano server ltsc2025"
-          inputs:
-            azureSubscription: ${{ variables.armServiceConnectionName }}
-            scriptType: ps
-            scriptLocation: inlineScript
-            retryCountOnTaskFailure: 2
-            inlineScript: |
-              Write-Host "=== AzureCLI@2 Task Started Successfully ===" -ForegroundColor Green
-              Write-Host "Azure authentication handled automatically by AzureCLI@2 task" -ForegroundColor Cyan
-              
-              # Create staging directory
-              if (Test-Path "$(Build.ArtifactStagingDirectory)/windows") {
-                  Remove-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -Recurse -Force
+              # Check if directory exists and remove it before creating it to handle retry scenarios
+              if (Test-Path -Path "$(Build.ArtifactStagingDirectory)/windows") {
+                Remove-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -Recurse -Force
               }
               New-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -ItemType Directory -Force
-              
-              # Change to build directory
-              Set-Location kubernetes/windows-nano
-              
-              # Azure CLI commands (authentication already handled by AzureCLI@2)
-              Write-Host "Running Azure CLI version check..."
-              az --version
-              
-              Write-Host "Showing current Azure account..."
-              az account show
-              
-              Write-Host "Setting Azure subscription..."
-              az account set -s ${{ variables.subscription }}
-              
-              Write-Host "Logging into Azure Container Registry..."
-              az acr login -n ${{ variables.containerRegistry }}
-              
-              Write-Host "Building Docker image..."
+              cd kubernetes/windows-nano
+              # Build the Docker image
               docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2025BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
+          displayName: "Docker windows build for nano server ltsc2025"
+          retryCountOnTaskFailure: 2
         # - task: PowerShell@2
         #   displayName: Extract files to sign
         #   inputs:
