@@ -874,87 +874,163 @@ extends:
               }
               New-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -ItemType Directory -Force
               
+              # Function to install Docker if not found
+              function Install-DockerFallback {
+                  Write-Host "Installing Docker as fallback..." -ForegroundColor Yellow
+                  
+                  # Try using Chocolatey first (faster)
+                  try {
+                      Write-Host "Attempting Docker installation via Chocolatey..."
+                      choco install docker-desktop -y --no-progress --force
+                      Write-Host "Docker Desktop installed via Chocolatey" -ForegroundColor Green
+                      
+                      # Wait for installation to complete
+                      Start-Sleep -Seconds 30
+                      
+                      # Try to start Docker Desktop
+                      $dockerDesktopPath = "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+                      if (Test-Path $dockerDesktopPath) {
+                          Write-Host "Starting Docker Desktop..."
+                          Start-Process -FilePath $dockerDesktopPath -WindowStyle Hidden
+                          Start-Sleep -Seconds 60  # Wait for Docker to start
+                      }
+                  } catch {
+                      Write-Host "Chocolatey installation failed: $($_.Exception.Message)" -ForegroundColor Red
+                      
+                      # Fallback to direct download
+                      Write-Host "Falling back to direct Docker Desktop download..."
+                      $tempDir = $env:TEMP
+                      $dockerTemp = Join-Path -Path $tempDir -ChildPath "docker_fallback"
+                      New-Item -Path $dockerTemp -ItemType "directory" -Force -ErrorAction SilentlyContinue
+                      
+                      $url = "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe"
+                      $output = Join-Path -Path $dockerTemp -ChildPath "docker-desktop-installer.exe"
+                      
+                      Write-Host "Downloading Docker Desktop installer..."
+                      Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
+                      
+                      Write-Host "Installing Docker Desktop..."
+                      Start-Process $output -Wait -ArgumentList 'install', '--quiet', '--accept-license'
+                      Start-Sleep -Seconds 30
+                  }
+              }
+              
               # Verify Docker is accessible
               Write-Host "Checking Docker availability..."
               $dockerFound = $false
+              $maxRetries = 3
+              $retryCount = 0
               
-              # Test 1: Try direct docker command
-              try {
-                  $dockerVersion = & docker --version 2>&1
-                  if ($LASTEXITCODE -eq 0) {
-                      Write-Host "✓ Docker found via PATH: $dockerVersion" -ForegroundColor Green
-                      $dockerFound = $true
-                  } else {
-                      Write-Host "✗ Docker command failed with exit code $LASTEXITCODE" -ForegroundColor Red
-                  }
-              } catch {
-                  Write-Host "✗ Docker not accessible via PATH: $($_.Exception.Message)" -ForegroundColor Red
-              }
-              
-              # Test 2: Check common Docker installation paths
-              if (-not $dockerFound) {
-                  Write-Host "Searching for Docker installations..."
-                  $dockerPaths = @(
-                      "C:\Program Files\Docker\Docker\resources\bin",
-                      "C:\ProgramData\DockerDesktop\version-bin",
-                      "C:\Windows\System32"
-                  )
+              while (-not $dockerFound -and $retryCount -lt $maxRetries) {
+                  $retryCount++
+                  Write-Host "Docker discovery attempt $retryCount of $maxRetries"
                   
-                  foreach ($path in $dockerPaths) {
-                      $dockerExe = Join-Path $path "docker.exe"
-                      if (Test-Path $dockerExe) {
-                          Write-Host "✓ Found Docker at: $dockerExe" -ForegroundColor Green
-                          $env:PATH = "$path;$env:PATH"
-                          
-                          # Test if it works
-                          try {
-                              $dockerVersion = & docker --version 2>&1
-                              if ($LASTEXITCODE -eq 0) {
-                                  Write-Host "✓ Docker is now accessible: $dockerVersion" -ForegroundColor Green
-                                  $dockerFound = $true
-                                  break
+                  # Test 1: Try direct docker command
+                  try {
+                      $dockerVersion = & docker --version 2>&1
+                      if ($LASTEXITCODE -eq 0) {
+                          Write-Host "SUCCESS: Docker found via PATH: $dockerVersion" -ForegroundColor Green
+                          $dockerFound = $true
+                          break
+                      } else {
+                          Write-Host "Docker command failed with exit code $LASTEXITCODE" -ForegroundColor Red
+                      }
+                  } catch {
+                      Write-Host "Docker not accessible via PATH: $($_.Exception.Message)" -ForegroundColor Red
+                  }
+                  
+                  # Test 2: Check common Docker installation paths
+                  if (-not $dockerFound) {
+                      Write-Host "Searching for Docker installations..."
+                      $dockerPaths = @(
+                          "C:\Program Files\Docker\Docker\resources\bin",
+                          "C:\ProgramData\DockerDesktop\version-bin",
+                          "C:\Program Files\Docker\Docker\Resources\bin"
+                      )
+                      
+                      foreach ($path in $dockerPaths) {
+                          $dockerExe = Join-Path $path "docker.exe"
+                          if (Test-Path $dockerExe) {
+                              Write-Host "SUCCESS: Found Docker at: $dockerExe" -ForegroundColor Green
+                              $env:PATH = "$path;$env:PATH"
+                              
+                              # Test if it works
+                              try {
+                                  $dockerVersion = & docker --version 2>&1
+                                  if ($LASTEXITCODE -eq 0) {
+                                      Write-Host "SUCCESS: Docker is now accessible: $dockerVersion" -ForegroundColor Green
+                                      $dockerFound = $true
+                                      break
+                                  }
+                              } catch {
+                                  Write-Host "WARNING: Found Docker executable but it's not working" -ForegroundColor Yellow
                               }
-                          } catch {
-                              Write-Host "⚠ Found Docker executable but it's not working" -ForegroundColor Yellow
                           }
                       }
                   }
-              }
-              
-              # Test 3: Check if Docker service is running
-              if ($dockerFound) {
-                  Write-Host "Checking Docker service status..."
-                  try {
-                      $dockerInfo = & docker info 2>&1
-                      if ($LASTEXITCODE -eq 0) {
-                          Write-Host "✓ Docker service is running" -ForegroundColor Green
-                      } else {
-                          Write-Host "⚠ Docker executable found but service may not be running" -ForegroundColor Yellow
-                          Write-Host "Docker info output: $dockerInfo" -ForegroundColor Gray
+                  
+                  # Test 3: Check if Docker service needs to be started
+                  if (-not $dockerFound) {
+                      Write-Host "Attempting to start Docker service..."
+                      try {
+                          # Try to start Docker Desktop if it exists
+                          $dockerDesktopPath = "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+                          if (Test-Path $dockerDesktopPath) {
+                              Write-Host "Starting Docker Desktop..."
+                              Start-Process -FilePath $dockerDesktopPath -WindowStyle Hidden
+                              Start-Sleep -Seconds 45  # Wait for Docker to start
+                              continue  # Retry Docker detection
+                          }
+                      } catch {
+                          Write-Host "Failed to start Docker Desktop: $($_.Exception.Message)" -ForegroundColor Yellow
                       }
-                  } catch {
-                      Write-Host "⚠ Could not check Docker service status" -ForegroundColor Yellow
+                  }
+                  
+                  # If still not found and this isn't the last retry, try installing Docker
+                  if (-not $dockerFound -and $retryCount -eq 1) {
+                      Install-DockerFallback
+                      Start-Sleep -Seconds 30  # Wait after installation
+                  }
+                  
+                  if (-not $dockerFound -and $retryCount -lt $maxRetries) {
+                      Write-Host "Docker not found, waiting before retry..." -ForegroundColor Yellow
+                      Start-Sleep -Seconds 20
                   }
               }
               
               if (-not $dockerFound) {
-                  Write-Error "Docker is not available. Cannot proceed with Docker build."
+                  Write-Error "Docker is not available after $maxRetries attempts. Cannot proceed with Docker build."
                   exit 1
+              }
+              
+              # Test Docker service status
+              Write-Host "Verifying Docker service status..."
+              try {
+                  $dockerInfo = & docker info 2>&1
+                  if ($LASTEXITCODE -eq 0) {
+                      Write-Host "SUCCESS: Docker service is running" -ForegroundColor Green
+                  } else {
+                      Write-Host "WARNING: Docker executable found but service may not be fully ready" -ForegroundColor Yellow
+                      Write-Host "Docker info output: $dockerInfo" -ForegroundColor Gray
+                      
+                      # Wait a bit longer for Docker to be ready
+                      Write-Host "Waiting for Docker service to be ready..."
+                      Start-Sleep -Seconds 30
+                  }
+              } catch {
+                  Write-Host "WARNING: Could not check Docker service status" -ForegroundColor Yellow
               }
               
               # Determine Docker executable path for build command
               $dockerExecutable = "docker"
-              if ($dockerFound) {
-                  # Try to get the full path to docker.exe for more reliable execution
-                  try {
-                      $dockerPath = Get-Command docker -ErrorAction SilentlyContinue
-                      if ($dockerPath) {
-                          $dockerExecutable = $dockerPath.Source
-                          Write-Host "Using Docker executable: $dockerExecutable" -ForegroundColor Green
-                      }
-                  } catch {
-                      Write-Host "Using default 'docker' command" -ForegroundColor Yellow
+              try {
+                  $dockerPath = Get-Command docker -ErrorAction SilentlyContinue
+                  if ($dockerPath) {
+                      $dockerExecutable = $dockerPath.Source
+                      Write-Host "Using Docker executable: $dockerExecutable" -ForegroundColor Green
                   }
+              } catch {
+                  Write-Host "Using default 'docker' command" -ForegroundColor Yellow
               }
               
               # Navigate to build directory
