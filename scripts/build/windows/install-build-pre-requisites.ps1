@@ -164,34 +164,6 @@ function Install-Chocolatey() {
     Write-Host "Chocolatey installation completed"
 }
 
-function Install-Python() {
-    Write-Host "Installing Python for Azure CLI compatibility..."
-    
-    # Install Python via Chocolatey
-    choco install -y python
-    
-    # Refresh environment variables to make python available
-    $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-    
-    # Verify Python installation
-    $pythonPath = Get-Command python -ErrorAction SilentlyContinue
-    if ($pythonPath) {
-        Write-Host "Python installed successfully at: $($pythonPath.Source)" -ForegroundColor Green
-        
-        # Test Python execution
-        $pythonVersion = & python --version 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "Python version: $pythonVersion" -ForegroundColor Green
-        } else {
-            Write-Host "Python installation may have issues" -ForegroundColor Yellow
-        }
-    } else {
-        Write-Host "Python installation verification failed - not found in PATH" -ForegroundColor Yellow
-    }
-    
-    Write-Host "Python installation completed"
-}
-
 function Install-CMake() {
     Write-Host "Installing CMake via Chocolatey..."
     choco install -y cmake
@@ -199,113 +171,6 @@ function Install-CMake() {
     # Refresh environment variables to make cmake available
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
     Write-Host "CMake installation completed"
-}
-
-function Install-AzureCLI() {
-    Write-Host "Installing Azure CLI for maximum compatibility with AzureCLI@2 task..."
-    
-    $tempDir = $env:TEMP
-    $azureCliTemp = Join-Path -Path $tempDir -ChildPath "azurecli"
-    New-Item -Path $azureCliTemp -ItemType "directory" -Force -ErrorAction Stop
-    
-    $azureCliUrl = "https://aka.ms/installazurecliwindows"
-    $azureCliInstaller = Join-Path -Path $azureCliTemp -ChildPath "azurecli.msi"
-    
-    Write-Host "Downloading Azure CLI installer..."
-    Invoke-WebRequest -Uri $azureCliUrl -OutFile $azureCliInstaller -ErrorAction Stop
-    Write-Host "Downloaded Azure CLI installer successfully"
-    
-    Write-Host "Installing Azure CLI..."
-    # Install Azure CLI silently
-    Start-Process msiexec.exe -Wait -ArgumentList '/I', $azureCliInstaller, '/quiet', '/norestart'
-    Write-Host "Azure CLI installation completed"
-    
-    # Find installed Azure CLI paths - check both x86 and x64 locations
-    $possiblePaths = @(
-        "C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin",
-        "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin"
-    )
-    
-    $azCliPathToAdd = ""
-    foreach ($path in $possiblePaths) {
-        if (Test-Path $path) {
-            $azPath = Join-Path -Path $path -ChildPath "az.cmd"
-            if (Test-Path $azPath) {
-                $azCliPathToAdd = $path
-                Write-Host "Found Azure CLI at: $path" -ForegroundColor Green
-                break
-            }
-        }
-    }
-    
-    if (-not $azCliPathToAdd) {
-        Write-Error "Azure CLI installation path not found after installation"
-        exit 1
-    }
-    
-    Write-Host "Adding Azure CLI to PATH environment variables..."
-    
-    # Update PATH at all levels for maximum compatibility
-    $ProcessPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "PROCESS")
-    $UserPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "USER")
-    $MachinePathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "MACHINE")
-    
-    # Add to Machine PATH for system-wide persistence
-    if ($MachinePathEnv -notlike "*$azCliPathToAdd*") {
-        $MachinePathEnv = $MachinePathEnv + ";" + $azCliPathToAdd
-        [System.Environment]::SetEnvironmentVariable("PATH", $MachinePathEnv, "MACHINE")
-        Write-Host "Added Azure CLI to Machine PATH: $azCliPathToAdd" -ForegroundColor Green
-    }
-    
-    # Add to Process PATH for immediate availability
-    if ($ProcessPathEnv -notlike "*$azCliPathToAdd*") {
-        $ProcessPathEnv = $ProcessPathEnv + ";" + $azCliPathToAdd
-        [System.Environment]::SetEnvironmentVariable("PATH", $ProcessPathEnv, "PROCESS")
-        Write-Host "Added Azure CLI to Process PATH" -ForegroundColor Green
-    }
-    
-    # Refresh current process environment variables first
-    $env:Path = $MachinePathEnv + ";" + $UserPathEnv
-    Write-Host "Refreshed environment PATH variables" -ForegroundColor Green
-    
-    # CRITICAL: Create az.cmd copies in system directories for AzureCLI@2 task detection
-    # Note: Only creating .cmd files, not fake .exe files to avoid "not a valid application" errors
-    Write-Host "Creating Azure CLI copies in system directories for AzureCLI@2 detection..."
-    $systemPaths = @(
-        "C:\Windows\System32",
-        "C:\Windows"
-    )
-    
-    $sourceAzCmd = Join-Path -Path $azCliPathToAdd -ChildPath "az.cmd"
-    
-    foreach ($sysPath in $systemPaths) {
-        if (Test-Path $sysPath) {
-            $targetAzCmd = Join-Path -Path $sysPath -ChildPath "az.cmd"
-            if (-not (Test-Path $targetAzCmd)) {
-                Copy-Item -Path $sourceAzCmd -Destination $targetAzCmd -Force -ErrorAction SilentlyContinue
-                if (Test-Path $targetAzCmd) {
-                    Write-Host "Created az.cmd copy in: $sysPath" -ForegroundColor Green
-                } else {
-                    Write-Host "Could not copy to $sysPath (permissions)" -ForegroundColor Yellow
-                }
-            } else {
-                Write-Host "az.cmd already exists in: $sysPath" -ForegroundColor Cyan
-            }
-        }
-    }
-    
-    # Verify installation
-    Write-Host "Verifying Azure CLI installation..."
-    $azPath = Join-Path -Path $azCliPathToAdd -ChildPath "az.cmd"
-    if (Test-Path $azPath) {
-        Write-Host "Azure CLI found at: $azPath" -ForegroundColor Green
-    } else {
-        Write-Error "Azure CLI not found at expected location"
-        exit 1
-    }
-    
-    Write-Host "Azure CLI installation and configuration completed successfully!" -ForegroundColor Green
-    Write-Host "Azure CLI should now be detectable and functional for AzureCLI@2 task" -ForegroundColor Cyan
 }
 
 function Install-cmetrics() {
@@ -355,14 +220,8 @@ Install-Docker
 Write-Host "Install Chocolatey"
 Install-Chocolatey
 
-Write-Host "Install Python"
-Install-Python
-
 #Write-Host "Install CMake"
 #Install-CMake
-
-Write-Host "Install Azure CLI"
-Install-AzureCLI
 
 #Write-Host "Install cmetrics library"
 #Install-cmetrics

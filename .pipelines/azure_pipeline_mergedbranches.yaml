@@ -791,65 +791,65 @@ extends:
             script: |
               Write-Host "=== Pre-AzureCLI@2 Task Verification ===" -ForegroundColor Cyan
               
-              # Test 1: Verify az command is accessible via PATH (what AzureCLI@2 task needs)
-              Write-Host "Test 1: Checking if 'az' command is accessible via PATH..."
+              # Test 1: Find Azure CLI installation locations
+              Write-Host "Test 1: Searching for Azure CLI installations..."
+              $azurePaths = @(
+                  "C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin",
+                  "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin",
+                  "C:\hostedtoolcache\windows\Azure-CLI",
+                  "C:\tools\azure-cli"
+              )
+              
+              $foundAzureCLI = $null
+              foreach ($path in $azurePaths) {
+                  if (Test-Path $path) {
+                      $azCmd = Join-Path $path "az.cmd"
+                      if (Test-Path $azCmd) {
+                          $foundAzureCLI = $path
+                          Write-Host "✓ Found Azure CLI at: $path" -ForegroundColor Green
+                          break
+                      }
+                  }
+              }
+              
+              # Test 2: If found, add to PATH
+              if ($foundAzureCLI) {
+                  Write-Host "Test 2: Adding Azure CLI to PATH..."
+                  $env:PATH = "$foundAzureCLI;$env:PATH"
+                  Write-Host "✓ Added $foundAzureCLI to PATH" -ForegroundColor Green
+              } else {
+                  Write-Host "✗ No Azure CLI installation found" -ForegroundColor Red
+              }
+              
+              # Test 3: Verify az command accessibility
+              Write-Host "Test 3: Testing az command accessibility..."
               try {
                   $azOutput = & az --version 2>&1
-                  Write-Host "✓ SUCCESS: Azure CLI accessible via PATH" -ForegroundColor Green
-                  Write-Host "Version: $($azOutput[0])" -ForegroundColor Gray
+                  if ($LASTEXITCODE -eq 0) {
+                      Write-Host "✓ SUCCESS: Azure CLI accessible via PATH" -ForegroundColor Green
+                      Write-Host "Version: $($azOutput[0])" -ForegroundColor Gray
+                  } else {
+                      Write-Host "✗ FAILED: Azure CLI returned error code $LASTEXITCODE" -ForegroundColor Red
+                  }
               } catch {
                   Write-Host "✗ FAILED: Azure CLI not accessible via PATH" -ForegroundColor Red
                   Write-Host "Error: $($_.Exception.Message)" -ForegroundColor Red
               }
               
-              # Test 2: Use 'where' command (equivalent to Node.js 'which' function)
-              Write-Host "Test 2: Using 'where az' command (Node.js 'which' equivalent)..."
+              # Test 4: Check where command finds az
+              Write-Host "Test 4: Using 'where az' command..."
               try {
                   $whereResult = & where.exe az 2>&1
-                  Write-Host "✓ SUCCESS: 'where az' found executable at: $whereResult" -ForegroundColor Green
-              } catch {
-                  Write-Host "✗ FAILED: 'where az' could not locate executable" -ForegroundColor Red
-              }
-              
-              # Test 3: Check specific installation paths
-              Write-Host "Test 3: Checking known Azure CLI installation paths..."
-              $knownPaths = @(
-                  "C:\Program Files (x86)\Microsoft SDKs\Azure\CLI2\wbin\az.cmd",
-                  "C:\Program Files\Microsoft SDKs\Azure\CLI2\wbin\az.cmd",
-                  "C:\Windows\System32\az.cmd",
-                  "C:\Windows\az.cmd",
-                  "C:\ProgramData\chocolatey\bin\az.cmd"
-              )
-              
-              $foundPaths = @()
-              foreach ($path in $knownPaths) {
-                  if (Test-Path $path) {
-                      $foundPaths += $path
-                      Write-Host "✓ Found: $path" -ForegroundColor Green
+                  if ($LASTEXITCODE -eq 0) {
+                      Write-Host "✓ SUCCESS: 'where az' found: $whereResult" -ForegroundColor Green
+                  } else {
+                      Write-Host "✗ FAILED: 'where az' could not locate executable" -ForegroundColor Red
                   }
-              }
-              
-              if ($foundPaths.Count -eq 0) {
-                  Write-Host "✗ No Azure CLI executables found in known paths" -ForegroundColor Red
-              } else {
-                  Write-Host "Total Azure CLI executables found: $($foundPaths.Count)" -ForegroundColor Cyan
-              }
-              
-              # Test 4: Display current PATH for debugging
-              Write-Host "Test 4: Current PATH environment variable..."
-              $currentPath = $env:PATH
-              $pathEntries = $currentPath -split ";"
-              $azureCliPaths = $pathEntries | Where-Object { $_ -like "*Azure*" -or $_ -like "*CLI*" }
-              
-              if ($azureCliPaths.Count -gt 0) {
-                  Write-Host "Azure CLI related PATH entries:" -ForegroundColor Cyan
-                  $azureCliPaths | ForEach-Object { Write-Host "  - $_" -ForegroundColor Gray }
-              } else {
-                  Write-Host "No Azure CLI related entries found in PATH" -ForegroundColor Yellow
+              } catch {
+                  Write-Host "✗ FAILED: 'where az' command failed" -ForegroundColor Red
               }
               
               Write-Host "=== Verification Complete ===" -ForegroundColor Cyan
-              Write-Host "If all tests pass, AzureCLI@2 task should work correctly" -ForegroundColor Green
         - task: AzureCLI@2
           displayName: "Docker windows build for nano server ltsc2025"
           inputs:
