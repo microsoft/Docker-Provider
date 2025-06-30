@@ -39,6 +39,9 @@ param streams array
 @description('The flag for enable containerlogv2 schema')
 param enableContainerLogV2 bool
 
+@description('Enable Retina Network Flow Logs in omsagent addon profile')
+param enableRetinaNetworkFlowLogs bool = false
+
 var clusterSubscriptionId = split(aksResourceId, '/')[2]
 var clusterResourceGroup = split(aksResourceId, '/')[4]
 var clusterName = split(aksResourceId, '/')[8]
@@ -47,6 +50,19 @@ var dcrNameFull = 'MSCI-${workspaceLocation}-${clusterName}'
 var dcrName = ((length(dcrNameFull) > 64) ? substring(dcrNameFull, 0, 64) : dcrNameFull)
 var associationName = 'ContainerInsightsExtension'
 var dataCollectionRuleId = resourceId(clusterSubscriptionId, clusterResourceGroup, 'Microsoft.Insights/dataCollectionRules', dcrName)
+var enableHighLogScaleMode = contains(streams, 'Microsoft-ContainerLogV2-HighScale') || enableRetinaNetworkFlowLogs
+var ingestionDceNameFull = 'MSCI-ingest-${workspaceLocation}-${clusterName}'
+var ingestionDceName = (length(ingestionDceNameFull) > 43) ? substring(ingestionDceNameFull, 0, 43) : ingestionDceNameFull
+var ingestionDce = endsWith(ingestionDceName, '-') ? substring(ingestionDceName, 0, 42) : ingestionDceName
+var ingestionDataCollectionEndpointId = resourceId(clusterSubscriptionId, clusterResourceGroup, 'Microsoft.Insights/dataCollectionEndpoints', ingestionDce)
+
+resource ingestionDataCollectionEndpoint 'Microsoft.Insights/dataCollectionEndpoints@2022-06-01' = if (enableHighLogScaleMode) {
+  name: ingestionDce
+  location: workspaceRegion
+  tags: resourceTagValues
+  kind: 'Linux'
+  properties: {}
+}
 
 resource aks_monitoring_msi_dcr 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
   name: dcrName
@@ -105,6 +121,7 @@ resource aks_monitoring_msi_dcr 'Microsoft.Insights/dataCollectionRules@2022-06-
         ]
       }
     ]
+    dataCollectionEndpointId: enableHighLogScaleMode ? ingestionDataCollectionEndpointId : null
   }
 }
 
@@ -119,6 +136,7 @@ resource aks_monitoring_msi_addon 'Microsoft.ContainerService/managedClusters@20
         config: {
           logAnalyticsWorkspaceResourceID: workspaceResourceId
           useAADAuth: 'true'
+          enableRetinaNetworkFlags: enableRetinaNetworkFlowLogs ? 'true' : 'false'
         }
       }
     }

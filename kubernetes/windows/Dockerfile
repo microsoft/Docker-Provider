@@ -12,33 +12,35 @@ RUN reg add "HKLM\Software\Wow6432Node\Microsoft\Cryptography\Wintrust\Config" /
 # Docker creates a layer for every RUN-Statement
 ENV chocolateyVersion 1.4.0
 RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
-# Fluentd depends on cool.io whose fat gem is only available for Ruby < 2.5, so need to specify --platform ruby when install Ruby > 2.5 and install msys2 to get dev tools
-RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
-&& choco install -y msys2 --version 20211130.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'"
 
-# gangams - optional MSYS2 update via ridk failing in merged docker file so skipping that since we dont need optional update
+
+# Original code: https://github.com/fluent/fluentd-docker-image/blob/master/v1.16/windows-ltsc2022/Dockerfile
+# rexml 3.2.5 gem was installed during ruby 3.1.1.1 installation for xml parsing, not related to fluentd (dependency of fluentd 1.16.3: https://rubygems.org/gems/fluentd/versions/1.16.3-x64-mingw-ucrt)
+# removed it for vulnerability reasons.
+    # https://github.com/ManageIQ/rbvmomi2/issues/62
+    # when ruby has a version change, a different version of rexml might be installed, 
+    # so need to review the installed version of rexml, and uninstall it.
+RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
+&& choco install -y msys2 --version 20240113.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'"
 RUN refreshenv \
-&& ridk install 2 3 \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "pacman -Rns --noconfirm mingw-w64-ucrt-x86_64-gcc" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "curl -O https://repo.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc 'pacman -U --noconfirm mingw-w64-ucrt-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst' \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "rm mingw-w64-ucrt-x86_64-gcc-libs-14.2.0-3-any.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "curl -O https://repo.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-gcc-14.2.0-3-any.pkg.tar.zst" \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc 'pacman -U --noconfirm mingw-w64-ucrt-x86_64-gcc-14.2.0-3-any.pkg.tar.zst' \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "rm mingw-w64-ucrt-x86_64-gcc-14.2.0-3-any.pkg.tar.zst" \
+&& ridk install 3 \
 && echo gem: --no-document >> C:\ProgramData\gemrc \
-&& gem install cool.io -v 1.9.0 --platform ruby \
-&& gem install oj -v 3.16.10 \
+# Install fluentd and its dependencies
+&& gem install oj -v 3.16.1 \
 && gem install fluentd -v 1.16.3 \
-&& gem install win32-service -v 1.0.1 \
+&& gem install win32-service -v 2.3.2 \
 && gem install win32-ipc -v 0.7.0 \
 && gem install win32-event -v 0.6.3 \
+# remove rexml gem to avoid vulnerability
+&& gem uninstall rexml -v 3.2.5 --force \
+# remove net-imap gem as it has a known CVE (CVE-2025-43857) and is not used by the agent
+&& gem uninstall net-imap --force \
+# The following gems are required for fluentd plugins, or ruby for configuration parsing
 && gem install windows-pr -v 1.2.6 \
 && gem install tomlrb -v 2.0.1 \
 && gem install gyoku -v 1.3.1 \
 && gem install ipaddress -v 0.8.3 \
 && gem install jwt -v 2.7.1 \
-&& gem uninstall rexml -v 3.2.5 --force \
 && gem sources --clear-all
 
 # Remove gem cache and chocolatey

@@ -28,7 +28,7 @@ amalogs:
     tagWindows: "win-3.1.27"
     pullPolicy: IfNotPresent
     dockerProviderVersion: "18.0.1-0"
-    agentVersion: "azure-mdsd-1.31.4"
+    agentVersion: "azure-mdsd-1.35.7"
     winAgentVersion: "46.17.2" # there is no base agent version for windows agent
 
   # The priority used by the ama-logs priority class for the daemonset pods
@@ -66,8 +66,8 @@ amalogs:
   # This flag to enable and disable service account timebound token and default is enabled
   enableServiceAccountTimeBoundToken: true
 
-  # This flag to enable and disable custom metrics and default is enabled
-  enableCustomMetrics: true
+  # This flag to enable and disable custom metrics. Custom metrics is getting deprecated so default is disabled
+  enableCustomMetrics: false
 
   # This flag to enable and disable Telegraf livenessprobe and default is disabled
   enableTelegrafLivenessprobe: false

@@ -312,6 +312,8 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 				telemetryDimensions["PromFbitBufferSize"] = os.Getenv("AZMON_FBIT_BUFFER_SIZE")
 				telemetryDimensions["PromFbitMemBufLimit"] = os.Getenv("AZMON_FBIT_MEM_BUF_LIMIT")
 
+				telemetryDimensions["containerLogVer"] = strconv.FormatBool(ContainerLogSchemaV2)
+
 				if IsNetworkFlowLogsEnabled {
 					telemetryDimensions["nflEnabled"] = "true"
 					IsNetworkFlowLogsThrottleEnabled := os.Getenv("NETWORKFLOW_LOGS_THROTTLE_ENABLED")

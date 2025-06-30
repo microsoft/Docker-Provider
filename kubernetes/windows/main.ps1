@@ -103,6 +103,13 @@ function Set-CloudSpecificApplicationInsightsConfig {
             Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_AUTH" "NTc5ZDRiZjUtMTA1Mi0wODQzLThhNTYtMjU5YzEyZmJhZTkyCg=="
             Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_ENDPOINT" "https://dc.applicationinsights.azure.microsoft.scloud/v2/track"
         }
+        "bleu" {
+            # TODO: Bleu cloud is a new cloud environment, we don't have AI in this cloud yet so using Public cloud for now.
+            # Update this once we have AI in Bleu cloud.
+            Write-Host "Set-CloudSpecificApplicationInsightsConfig: Setting Application Insights configuration for Bleu Cloud"
+            Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_AUTH" "NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi"
+            Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_ENDPOINT" "https://dc.applicationinsights.azure.com/v2/track"
+        }
         default {
             Write-Host "Set-CloudSpecificApplicationInsightsConfig: defaulting to Public Cloud Application Insights configuration"
         }
@@ -134,6 +141,16 @@ function Set-CommonAMAEnvironmentVariables {
     else {
         Write-Host "Failed to set environment variable AKS_REGION for target 'machine' since it is either null or empty"
     }
+
+    $clusterCloudEnvironment = [System.Environment]::GetEnvironmentVariable("CLUSTER_CLOUD_ENVIRONMENT", "process")
+    if (![string]::IsNullOrEmpty($clusterCloudEnvironment)) {
+        [System.Environment]::SetEnvironmentVariable("CLUSTER_CLOUD_ENVIRONMENT", $clusterCloudEnvironment, "machine")
+        Write-Host "Successfully set environment variable CLUSTER_CLOUD_ENVIRONMENT - $($clusterCloudEnvironment) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable CLUSTER_CLOUD_ENVIRONMENT since it is either null or empty"
+    }
+
     Set-ProcessAndMachineEnvVariables "MA_RoleEnvironment_Location" $aksRegion
     Set-ProcessAndMachineEnvVariables "MA_RoleEnvironment_ResourceId" $aksResourceId
     Set-ProcessAndMachineEnvVariables "MA_ENABLE_LARGE_EVENTS" "1"
@@ -146,42 +163,10 @@ function Set-AMA3PEnvironmentVariables {
     Set-ProcessAndMachineEnvVariables "customRegion" $aksRegion
     Set-ProcessAndMachineEnvVariables "customResourceId" $aksResourceId
     Set-ProcessAndMachineEnvVariables "MCS_CUSTOM_RESOURCE_ID" $aksResourceId
-
-    $domain = "opinsights.azure.com"
-    $mcs_endpoint = "https://monitor.azure.com/"
-    $mcs_globalendpoint = "https://global.handler.control.monitor.azure.com"
-    if ($aksRegion.ToLower() -eq "eastus2euap" -or $aksRegion.ToLower() -eq "centraluseuap") {
-        $mcs_globalendpoint = "https://global.handler.canary.control.monitor.azure.com"
-    }
-    if (Test-Path /etc/ama-logs-secret/DOMAIN) {
-        $domain = Get-Content /etc/ama-logs-secret/DOMAIN
-        if (![string]::IsNullOrEmpty($domain)) {
-            if ($domain -eq "opinsights.azure.cn") {
-                $mcs_globalendpoint = "https://global.handler.control.monitor.azure.cn"
-                $mcs_endpoint = "https://monitor.azure.cn/"
-            }
-            elseif ($domain -eq "opinsights.azure.us") {
-                $mcs_globalendpoint = "https://global.handler.control.monitor.azure.us"
-                $mcs_endpoint = "https://monitor.azure.us/"
-            }
-            elseif ($domain -eq "opinsights.azure.eaglex.ic.gov") {
-                $mcs_globalendpoint = "https://global.handler.control.monitor.azure.eaglex.ic.gov"
-                $mcs_endpoint = "https://monitor.azure.eaglex.ic.gov/"
-            }
-            elseif ($domain -eq "opinsights.azure.microsoft.scloud") {
-                $mcs_globalendpoint = "https://global.handler.control.monitor.azure.microsoft.scloud"
-                $mcs_endpoint = "https://monitor.azure.microsoft.scloud/"
-            }
-            else {
-                Write-Host "Invalid or Unsupported domain name $($domain). EXITING....."
-                exit 1
-            }
-        }
-        else {
-            Write-Host "Domain name either null or empty. EXITING....."
-            exit 1
-        }
-    }
+    $domain = Get-LogAnalyticsWorkspaceDomain
+    $cloud_environment = Get-ClusterCloudEnvironment($domain)
+    $mcs_endpoint = Get-McsEndpoint($cloud_environment)
+    $mcs_globalendpoint = Get-McsGlobalEndpoint($cloud_environment)
     Set-ProcessAndMachineEnvVariables "MCS_AZURE_RESOURCE_ENDPOINT" $mcs_endpoint
     Set-ProcessAndMachineEnvVariables "MCS_GLOBAL_ENDPOINT" $mcs_globalendpoint
 }
@@ -215,66 +200,145 @@ function Generate-GenevaInfraNameSpaceConfig {
    Remove-Item C:/etc/fluent-bit/fluent-bit-geneva-logs_infra.conf
 }
 
+function Is-SupportedCloudEnvironment {
+    param (
+        [string]$cloudEnvironment
+    )
+    $supportedCloudEnvironments = @("azurepubliccloud", "azurechinacloud", "azureusgovernmentcloud", "usnat", "ussec", "bleu")
+    if ($supportedCloudEnvironments -contains $cloudEnvironment) {
+        return $true
+    }
+    return $false
+}
+
+function Get-ClusterCloudEnvironment{
+    param (
+        [string]$logAnalyticsWorkspaceDomain
+    )
+    $cloud_environment = "azurepubliccloud"
+    $clusterCloudEnvironment = [System.Environment]::GetEnvironmentVariable("CLUSTER_CLOUD_ENVIRONMENT", "process")
+    if (![string]::IsNullOrEmpty($clusterCloudEnvironment) -and (Is-SupportedCloudEnvironment $clusterCloudEnvironment)) {
+        $cloud_environment = $clusterCloudEnvironment
+    } else {
+        Write-Host "CLUSTER_CLOUD_ENVIRONMENT environment variable is not set. Falling back to determine the cloud environment based on the Log Analytics Workspace DOMAIN"
+        if (![string]::IsNullOrEmpty($logAnalyticsWorkspaceDomain)) {
+            switch ($logAnalyticsWorkspaceDomain.ToLower()) {
+                "opinsights.azure.com"                { $cloud_environment = "azurepubliccloud" }
+                "opinsights.azure.cn"                 { $cloud_environment = "azurechinacloud" }
+                "opinsights.azure.us"                 { $cloud_environment = "azureusgovernmentcloud" }
+                "opinsights.azure.eaglex.ic.gov"      { $cloud_environment = "usnat" }
+                "opinsights.azure.microsoft.scloud"   { $cloud_environment = "ussec" }
+                "opinsights.sovcloud-api.fr"          { $cloud_environment = "bleu" }
+            }
+        } else {
+            Write-Host "Domain name either null or empty. Defaulting to azurepubliccloud."
+            $cloud_environment = "azurepubliccloud"
+        }
+    }
+    return $cloud_environment
+}
+
+function Get-LogAnalyticsWorkspaceDomain() {
+    $defaultDomain = "opinsights.azure.com"
+    $domainFile = "/etc/ama-logs-secret/DOMAIN"
+    if (Test-Path $domainFile) {
+        $domain = (Get-Content $domainFile).Trim()
+        if (![string]::IsNullOrEmpty($domain)) {
+            switch ($domain.ToLower()) {
+                "opinsights.azure.cn"                 { return "opinsights.azure.cn" }
+                "opinsights.azure.us"                 { return "opinsights.azure.us" }
+                "opinsights.azure.eaglex.ic.gov"      { return "opinsights.azure.eaglex.ic.gov" }
+                "opinsights.azure.microsoft.scloud"   { return "opinsights.azure.microsoft.scloud" }
+                "opinsights.sovcloud-api.fr"          { return "opinsights.sovcloud-api.fr" }
+                "opinsights.azure.com"                { return "opinsights.azure.com" }
+                default                              { Write-Host "Unknown domain '$domain'. Defaulting to opinsights.azure.com."; return $defaultDomain }
+            }
+        } else {
+            Write-Host "Domain name either null or empty. Defaulting to opinsights.azure.com."
+            return $defaultDomain
+        }
+    } else {
+        Write-Host "Domain file not found. Defaulting to opinsights.azure.com."
+        return $defaultDomain
+    }
+}
+
+function Get-McsEndpoint {
+    param (
+        [string]$cloud_environment
+    )
+    $mcs_endpoint = "https://monitor.azure.com/"
+    if (![string]::IsNullOrEmpty($cloud_environment)) {
+        switch ($cloud_environment.ToLower()) {
+            "azurepubliccloud"        { $mcs_endpoint = "https://monitor.azure.com/" }
+            "azurechinacloud"         { $mcs_endpoint = "https://monitor.azure.cn/" }
+            "azureusgovernmentcloud"  { $mcs_endpoint = "https://monitor.azure.us/" }
+            "usnat"                   { $mcs_endpoint = "https://monitor.azure.eaglex.ic.gov/" }
+            "ussec"                   { $mcs_endpoint = "https://monitor.azure.microsoft.scloud/" }
+            "bleu"                    { $mcs_endpoint = "https://monitor.sovcloud-api.fr/" }
+        }
+    }
+    return $mcs_endpoint
+}
+
+function Is-CanaryRegion {
+    param (
+        [string]$aksRegion
+    )
+    $canaryRegions = @("eastus2euap", "centraluseuap")
+    if ($canaryRegions -contains $aksRegion.ToLower()) {
+        return $true
+    }
+    return $false
+}
+
+
+function Get-McsGlobalEndpoint{
+    param (
+        [string]$cloud_environment
+    )
+    $mcs_globalendpoint = "https://global.handler.control.monitor.azure.com"
+    $aksRegion = [System.Environment]::GetEnvironmentVariable("AKS_REGION", "process")
+    if (Is-CanaryRegion($aksRegion)) {
+        $mcs_globalendpoint = "https://global.handler.canary.control.monitor.azure.com"
+    } else {
+         if (![string]::IsNullOrEmpty($cloud_environment)) {
+            switch ($cloud_environment.ToLower()) {
+                "azurepubliccloud"        { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.com" }
+                "azurechinacloud"         { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.cn" }
+                "azureusgovernmentcloud"  { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.us" }
+                "usnat"                   { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.eaglex.ic.gov" }
+                "ussec"                   { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.microsoft.scloud" }
+                "bleu"                    { $mcs_globalendpoint = "https://global.handler.control.monitor.sovcloud-api.fr" }
+            }
+        }
+    }
+    return $mcs_globalendpoint
+}
+
 #register fluentd as a windows service
 
 function Set-EnvironmentVariables {
-    $domain = "opinsights.azure.com"
-    $mcs_endpoint = "monitor.azure.com"
-    $cloud_environment = "azurepubliccloud"
-    if (Test-Path /etc/ama-logs-secret/DOMAIN) {
-        # TODO: Change to ama-logs-secret before merging
-        $domain = Get-Content /etc/ama-logs-secret/DOMAIN
-        if (![string]::IsNullOrEmpty($domain)) {
-            if ($domain -eq "opinsights.azure.com") {
-                $cloud_environment = "azurepubliccloud"
-                $mcs_endpoint = "monitor.azure.com"
-            }
-            elseif ($domain -eq "opinsights.azure.cn") {
-                $cloud_environment = "azurechinacloud"
-                $mcs_endpoint = "monitor.azure.cn"
-            }
-            elseif ($domain -eq "opinsights.azure.us") {
-                $cloud_environment = "azureusgovernmentcloud"
-                $mcs_endpoint = "monitor.azure.us"
-            }
-            elseif ($domain -eq "opinsights.azure.eaglex.ic.gov") {
-                $cloud_environment = "usnat"
-                $mcs_endpoint = "monitor.azure.eaglex.ic.gov"
-            }
-            elseif ($domain -eq "opinsights.azure.microsoft.scloud") {
-                $cloud_environment = "ussec"
-                $mcs_endpoint = "monitor.azure.microsoft.scloud"
-            }
-            else {
-                Write-Host "Invalid or Unsupported domain name $($domain). EXITING....."
-                exit 1
-            }
-        }
-        else {
-            Write-Host "Domain name either null or empty. EXITING....."
-            exit 1
-        }
-    }
+    $domain = Get-LogAnalyticsWorkspaceDomain
+    $cloud_environment = Get-ClusterCloudEnvironment($domain)
+    $mcs_endpoint = Get-McsEndpoint($cloud_environment)
 
     Write-Host "Log analytics domain: $($domain)"
     Write-Host "MCS endpoint: $($mcs_endpoint)"
     Write-Host "Cloud Environment: $($cloud_environment)"
 
     # Set DOMAIN
-    [System.Environment]::SetEnvironmentVariable("DOMAIN", $domain, "Process")
-    [System.Environment]::SetEnvironmentVariable("DOMAIN", $domain, "Machine")
-
+    Set-ProcessAndMachineEnvVariables "DOMAIN" $domain
+    Write-Host "Successfully set environment variable DOMAIN - $($domain) for target 'machine'..."
     # Set MCS Endpoint
-    [System.Environment]::SetEnvironmentVariable("MCS_ENDPOINT", $mcs_endpoint, "Process")
-    [System.Environment]::SetEnvironmentVariable("MCS_ENDPOINT", $mcs_endpoint, "Machine")
-
+    Set-ProcessAndMachineEnvVariables "MCS_ENDPOINT" $mcs_endpoint
+    Write-Host "Successfully set environment variable MCS_ENDPOINT - $($mcs_endpoint) for target 'machine'..."
     # Set CLOUD_ENVIRONMENT
-    [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Process")
-    [System.Environment]::SetEnvironmentVariable("CLOUD_ENVIRONMENT", $cloud_environment, "Machine")
+    Set-ProcessAndMachineEnvVariables "CLOUD_ENVIRONMENT" $cloud_environment
+    Write-Host "Successfully set environment variable CLOUD_ENVIRONMENT - $($cloud_environment) for target 'machine'..."
 
     $wsID = ""
     if (Test-Path /etc/ama-logs-secret/WSID) {
-        # TODO: Change to ama-logs-secret before merging
         $wsID = Get-Content /etc/ama-logs-secret/WSID
     }
 

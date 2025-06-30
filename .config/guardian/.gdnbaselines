@@ -1,0 +1,157 @@
+{
+  "properties": {
+    "helpUri": "https://eng.ms/docs/microsoft-security/security/azure-security/cloudai-security-fundamentals-engineering/security-integration/guardian-wiki/microsoft-guardian/general/baselines"
+  },
+  "version": "1.0.0",
+  "baselines": {
+    "default": {
+      "name": "default",
+      "createdDate": "2025-05-20 20:30:11Z",
+      "lastUpdatedDate": "2025-05-20 20:30:11Z"
+    }
+  },
+  "results": {
+    "d7b5848a2ae854218463e08d9f4a5f1af219efd2318303f0e2809a19c32ce23f": {
+      "signature": "d7b5848a2ae854218463e08d9f4a5f1af219efd2318303f0e2809a19c32ce23f",
+      "alternativeSignatures": [
+        "98f4afedbedfa04373e931a638012b5e2f446f5e83bb88e7ad5951b9066c33b0"
+      ],
+      "target": "scripts/troubleshoot/TroubleshootError.ps1",
+      "line": 935,
+      "memberOf": [
+        "default"
+      ],
+      "tool": "credscan",
+      "ruleId": "CSCAN-GENERAL0060",
+      "createdDate": "2025-05-23 19:35:22Z",
+      "expirationDate": "2025-11-09 20:28:14Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-05-23 20:28:14Z"
+    },
+    "64ea9fed7769d951c48c06c4e7b75263a9524b1c201368536a7a0e3a414aa4ab": {
+      "signature": "64ea9fed7769d951c48c06c4e7b75263a9524b1c201368536a7a0e3a414aa4ab",
+      "alternativeSignatures": [
+        "04bcc5c9d0c2adfebddc329bf3d5c807fbc664d14bb645464c27194c7148c314"
+      ],
+      "target": "scripts/troubleshoot/TroubleshootError_nonAzureK8s.ps1",
+      "line": 452,
+      "memberOf": [
+        "default"
+      ],
+      "tool": "credscan",
+      "ruleId": "CSCAN-GENERAL0060",
+      "createdDate": "2025-05-23 19:35:22Z",
+      "expirationDate": "2025-11-09 20:28:14Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-05-23 20:28:14Z"
+    },
+    "8be214bf6f5d10a2ef39860ea5377f78c060e33eccbd4772982e373aec36f16a": {
+      "signature": "8be214bf6f5d10a2ef39860ea5377f78c060e33eccbd4772982e373aec36f16a",
+      "alternativeSignatures": [
+        "a4ef3f2ddce4b1f1406668b076cdc894306513180d585e67762df93e03f3c290"
+      ],
+      "target": "test/testkube/helm-testkube-values.yaml",
+      "line": 506,
+      "memberOf": [
+        "default"
+      ],
+      "tool": "credscan",
+      "ruleId": "CSCAN-GENERAL0060",
+      "createdDate": "2025-05-23 19:35:22Z",
+      "expirationDate": "2025-11-09 20:28:14Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-05-23 20:28:14Z"
+    },
+    "c0fca0f0214bc1300d3f3754bc97b4da3a2abd024179334879dd93c7b3d208a1": {
+      "signature": "c0fca0f0214bc1300d3f3754bc97b4da3a2abd024179334879dd93c7b3d208a1",
+      "alternativeSignatures": [
+        "ca46c26304eef58b280fc0eef9f0676ccfaa2a3c9ab48fbff3bd2e432a59ea32"
+      ],
+      "target": "test/testkube/helm-testkube-values.yaml",
+      "line": 687,
+      "memberOf": [
+        "default"
+      ],
+      "tool": "credscan",
+      "ruleId": "CSCAN-GENERAL0060",
+      "createdDate": "2025-05-23 19:35:22Z",
+      "expirationDate": "2025-11-09 20:28:14Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-05-23 20:28:14Z"
+    },
+    "3d8e556d40bc888b9c30e845873d5e0ea40bb8527a1bc81cbaa06b6301e3fdda": {
+      "signature": "3d8e556d40bc888b9c30e845873d5e0ea40bb8527a1bc81cbaa06b6301e3fdda",
+      "alternativeSignatures": [
+        "54bd7e0de4742e68d7902013d263370863323ed2d84670e77d9ce028228bd1bc"
+      ],
+      "target": "scripts/onboarding/managed/disable-monitoring.ps1",
+      "line": 246,
+      "memberOf": [
+        "default"
+      ],
+      "tool": "psscriptanalyzer",
+      "ruleId": "PSAvoidUsingConvertToSecureStringWithPlainText",
+      "createdDate": "2025-05-23 19:34:57Z",
+      "expirationDate": "2025-11-09 20:28:14Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-05-23 20:28:14Z"
+    },
+    "57b6901f1c1d9b34844e88e8f356be82a07c1fb9f008be8048fc8d157e343d31": {
+      "signature": "57b6901f1c1d9b34844e88e8f356be82a07c1fb9f008be8048fc8d157e343d31",
+      "alternativeSignatures": [
+        "138dbb42bc62a71b24cf665368d1d6e5151b80ff886357a2a85d2890726e2e4f"
+      ],
+      "target": "scripts/onboarding/managed/disable-monitoring.ps1",
+      "line": 274,
+      "memberOf": [
+        "default"
+      ],
+      "tool": "psscriptanalyzer",
+      "ruleId": "PSAvoidUsingConvertToSecureStringWithPlainText",
+      "createdDate": "2025-05-23 19:34:57Z",
+      "expirationDate": "2025-11-09 20:28:14Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-05-23 20:28:14Z"
+    },
+    "d27d42137d4b2e54272b8be2631324bd7efc218e45336c98748d40c6988b4276": {
+      "signature": "d27d42137d4b2e54272b8be2631324bd7efc218e45336c98748d40c6988b4276",
+      "alternativeSignatures": [
+        "7e09eb86f9bb7f8a10287807407086b04686c131e437d9240f44cb3365fdff1c"
+      ],
+      "target": "scripts/onboarding/managed/enable-monitoring.ps1",
+      "line": 266,
+      "memberOf": [
+        "default"
+      ],
+      "tool": "psscriptanalyzer",
+      "ruleId": "PSAvoidUsingConvertToSecureStringWithPlainText",
+      "createdDate": "2025-05-23 19:34:57Z",
+      "expirationDate": "2025-11-09 20:28:14Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-05-23 20:28:14Z"
+    },
+    "20fc7a5b33bea1fcfc5bcb3c76d826ae825f84aea86e49d6b4c49ccd8c4e03c0": {
+      "signature": "20fc7a5b33bea1fcfc5bcb3c76d826ae825f84aea86e49d6b4c49ccd8c4e03c0",
+      "alternativeSignatures": [
+        "9051d3d9e1556014d33a1083110caf6b6a5a7a06c1f7e609f60f6d5637b2d0f2"
+      ],
+      "target": "scripts/onboarding/managed/enable-monitoring.ps1",
+      "line": 293,
+      "memberOf": [
+        "default"
+      ],
+      "tool": "psscriptanalyzer",
+      "ruleId": "PSAvoidUsingConvertToSecureStringWithPlainText",
+      "createdDate": "2025-05-23 19:34:57Z",
+      "expirationDate": "2025-11-09 20:28:14Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-05-23 20:28:14Z"
+    },
+    "f8511e0c6c4a4a210eb94c601d5e0bf40c1f5554d79eee1797cd8895bc57e8cf": {
+      "signature": "f8511e0c6c4a4a210eb94c601d5e0bf40c1f5554d79eee1797cd8895bc57e8cf",
+      "alternativeSignatures": [],
+      "target": "ScanTelemetry_20250520231245892.json",
+      "line": 1,
+      "memberOf": [
+        "default"
+      ],
+      "tool": "credscan",
+      "ruleId": "CSCAN-GENERAL0140",
+      "createdDate": "2025-05-20 23:15:18Z",
+      "expirationDate": "2025-11-06 23:41:13Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-05-20 23:41:13Z"
+    }
+  }
+}
