@@ -795,7 +795,7 @@ extends:
               az --version
               az account show
               az account set -s ${{ variables.subscription }}
-              az acr login -n ${{ variables.containerRegistry }}
+              az acr login -n ${{ variables.containerRegistry }} --expose-token
         - task: PowerShell@2          
           inputs:
             targetType: 'inline'
