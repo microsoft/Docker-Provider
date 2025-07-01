@@ -963,38 +963,65 @@ extends:
                       Write-Host "Starting Docker daemon with TCP host for build agent..."
                       $dockerdPath = Join-Path $dockerBinPath "dockerd.exe"
                       
-                      # Use TCP host directly to avoid named pipe elevation issues
-                      $daemonArgs = @("--host", "tcp://127.0.0.1:2375", "--config-file", $daemonConfigPath)
-                      Start-Process -FilePath $dockerdPath -ArgumentList $daemonArgs -WindowStyle Hidden
+                      # Kill any existing Docker processes first
+                      try {
+                          Get-Process -Name "dockerd" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+                          Start-Sleep -Seconds 3
+                          Write-Host "Cleaned up existing Docker processes"
+                      } catch {
+                          Write-Host "No existing Docker processes to clean up"
+                      }
                       
-                      # Wait for daemon to start
-                      Start-Sleep -Seconds 30
+                      # Use TCP host directly to avoid named pipe elevation issues
+                      $daemonArgs = @(
+                          "--host", "tcp://0.0.0.0:2375",
+                          "--host", "npipe://",
+                          "--config-file", $daemonConfigPath,
+                          "--storage-driver", "windowsfilter",
+                          "--log-level", "info"
+                      )
+                      
+                      Write-Host "Starting Docker daemon with args: $($daemonArgs -join ' ')"
+                      $dockerdProcess = Start-Process -FilePath $dockerdPath -ArgumentList $daemonArgs -WindowStyle Hidden -PassThru
+                      Write-Host "Docker daemon process started with PID: $($dockerdProcess.Id)"
+                      
+                      # Wait longer for daemon to start and test TCP connectivity
+                      Start-Sleep -Seconds 45
                       
                       # Test Docker functionality with TCP connection
-                      for ($i = 1; $i -le 10; $i++) {
+                      $env:DOCKER_HOST = "tcp://127.0.0.1:2375"
+                      Write-Host "Testing Docker connectivity on tcp://127.0.0.1:2375..."
+                      
+                      for ($i = 1; $i -le 15; $i++) {
                           try {
-                              # Use DOCKER_HOST environment variable for TCP connection
-                              $env:DOCKER_HOST = "tcp://127.0.0.1:2375"
-                              
-                              $dockerVersion = & $dockerExePath --version 2>&1
-                              if ($LASTEXITCODE -eq 0) {
-                                  Write-Host "SUCCESS: Docker Engine is working: $dockerVersion" -ForegroundColor Green
+                              # Test if TCP port is listening
+                              $tcpConnection = Test-NetConnection -ComputerName "127.0.0.1" -Port 2375 -ErrorAction SilentlyContinue
+                              if ($tcpConnection.TcpTestSucceeded) {
+                                  Write-Host "SUCCESS: TCP port 2375 is accessible" -ForegroundColor Green
                                   
-                                  # Test docker info with TCP connection
-                                  $dockerInfo = & $dockerExePath info 2>&1
+                                  # Test Docker version
+                                  $dockerVersion = & $dockerExePath --version 2>&1
                                   if ($LASTEXITCODE -eq 0) {
-                                      Write-Host "SUCCESS: Docker daemon is responding via TCP" -ForegroundColor Green
-                                      return $true
-                                  } else {
-                                      Write-Host "Docker version works but info failed, continuing..."
+                                      Write-Host "SUCCESS: Docker Engine is working: $dockerVersion" -ForegroundColor Green
+                                      
+                                      # Test docker info with TCP connection
+                                      $dockerInfo = & $dockerExePath info 2>&1
+                                      if ($LASTEXITCODE -eq 0) {
+                                          Write-Host "SUCCESS: Docker daemon is responding via TCP" -ForegroundColor Green
+                                          return $true
+                                      } else {
+                                          Write-Host "Docker version works but info command failed, retrying..."
+                                      }
                                   }
+                              } else {
+                                  Write-Host "TCP port 2375 not yet accessible, attempt $i/15..."
                               }
                           } catch { 
-                              Write-Host "Docker test attempt $i failed, continuing..."
+                              Write-Host "Docker test attempt $i failed: $($_.Exception.Message)"
                           }
                           
-                          Write-Host "Docker Engine not ready yet, attempt $i/10, waiting..."
-                          Start-Sleep -Seconds 10
+                          Write-Host "Docker Engine not ready yet, attempt $i/15, waiting..."
+                          Start-Sleep -Seconds 8
                       }
                       
                       Write-Host "Docker Engine installed but may need more time to initialize" -ForegroundColor Yellow
