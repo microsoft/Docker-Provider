@@ -758,7 +758,7 @@ extends:
       #     condition: eq(variables.IS_MAIN_BRANCH, true)
       - job: build_windows_2025
         pool:
-          name: Azure-Pipelines-CI-Test-Nano25-EO-v2
+          name: Azure-Pipelines-CI-Test-EO
           image: ci-1es-win2025-customized
           os: windows
         timeoutInMinutes: 120
