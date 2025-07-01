@@ -793,6 +793,7 @@ extends:
                 Remove-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -Recurse -Force
               }
               New-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -ItemType Directory -Force
+              
               # Navigate to correct build directory
               Write-Host "Navigating to build directory: kubernetes/windows-nano"
               cd kubernetes/windows-nano
@@ -803,26 +804,77 @@ extends:
               
               # Check for Dockerfile
               if (Test-Path "Dockerfile") {
-                  Write-Host "Found standard Dockerfile"
+                  Write-Host "Found standard Dockerfile for nano server"
               }
 
               # Build Docker image for Windows nano server ltsc2025
               Write-Host "Starting Docker build for Windows nano server ltsc2025..."
               docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2025BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
+              
+              if ($LASTEXITCODE -ne 0) {
+                  Write-Error "Docker build failed with exit code $LASTEXITCODE"
+                  exit 1
+              }
+              
+              Write-Host "Docker build completed successfully"
           displayName: "Docker windows build for nano server ltsc2025"
           retryCountOnTaskFailure: 2
         - task: AzureCLI@2
-          displayName: "Set up acr for windows nano server ltsc2025 build"
+          displayName: "Authenticate with ACR and push image"
           inputs:
             azureSubscription: ${{ variables.armServiceConnectionName }}
             scriptType: ps
             scriptLocation: inlineScript
             retryCountOnTaskFailure: 2
             inlineScript: |
+              # Authenticate with Azure Container Registry using refresh token
+              Write-Host "Setting up ACR authentication..."
               az --version
               az account show
               az account set -s ${{ variables.subscription }}
-              az acr login -n ${{ variables.containerRegistry }} --expose-token
+              
+              # Get ACR refresh token
+              Write-Host "Getting ACR refresh token..."
+              $acrTokenOutput = az acr login -n ${{ variables.containerRegistry }} --expose-token
+              
+              if ($LASTEXITCODE -ne 0) {
+                  Write-Error "Failed to get ACR token"
+                  exit 1
+              }
+              
+              # Parse the JSON output to extract refresh token and login server
+              $acrInfo = $acrTokenOutput | ConvertFrom-Json
+              $refreshToken = $acrInfo.refreshToken
+              $loginServer = $acrInfo.loginServer
+              
+              Write-Host "Login server: $loginServer"
+              Write-Host "Refresh token obtained (length: $($refreshToken.Length))"
+              
+              # Login to Docker with refresh token
+              Write-Host "Logging into Docker with ACR refresh token..."
+              docker login $loginServer -u 00000000-0000-0000-0000-000000000000 -p $refreshToken
+              
+              if ($LASTEXITCODE -ne 0) {
+                  Write-Error "Docker login to ACR failed"
+                  exit 1
+              }
+              
+              Write-Host "Successfully authenticated with ACR"
+              
+              # Push the image if not a pull request
+              if ("$(Build.Reason)" -ne "PullRequest") {
+                  Write-Host "Pushing Docker image to ACR..."
+                  docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)-unsigned
+                  
+                  if ($LASTEXITCODE -ne 0) {
+                      Write-Error "Docker push failed"
+                      exit 1
+                  }
+                  
+                  Write-Host "Successfully pushed image: ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)-unsigned"
+              } else {
+                  Write-Host "Skipping push for pull request build"
+              }
         # - task: PowerShell@2
         #   displayName: Extract files to sign
         #   inputs:
@@ -978,14 +1030,6 @@ extends:
         #       docker cp $(Build.ArtifactStagingDirectory)/ossSigning/out_oms.so pushContainer:C:\opt\amalogswindows\out_oms.so
         #       docker commit pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
         #       docker rm pushContainer
-        - task: PowerShell@2
-          displayName: Push Docker Image
-          inputs:
-            targetType: 'inline'
-            script: |
-              if ("$(Build.Reason)" -ne "PullRequest") {
-                docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)-unsigned
-              }
         # - task: CodeQL3000Finalize@0
         #   condition: eq(variables.IS_MAIN_BRANCH, true)
       # - job: build_windows_multi_arc
