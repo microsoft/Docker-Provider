@@ -784,18 +784,6 @@ extends:
             endlocal
             exit /B %ERRORLEVEL%
           displayName: 'build base'
-        - task: AzureCLI@2
-          displayName: "Set up acr for windows nano server ltsc2025 build"
-          inputs:
-            azureSubscription: ${{ variables.armServiceConnectionName }}
-            scriptType: ps
-            scriptLocation: inlineScript
-            retryCountOnTaskFailure: 2
-            inlineScript: |
-              az --version
-              az account show
-              az account set -s ${{ variables.subscription }}
-              az acr login -n ${{ variables.containerRegistry }} --expose-token
         - task: PowerShell@2          
           inputs:
             targetType: 'inline'
@@ -823,6 +811,18 @@ extends:
               docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2025BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
           displayName: "Docker windows build for nano server ltsc2025"
           retryCountOnTaskFailure: 2
+        - task: AzureCLI@2
+          displayName: "Set up acr for windows nano server ltsc2025 build"
+          inputs:
+            azureSubscription: ${{ variables.armServiceConnectionName }}
+            scriptType: ps
+            scriptLocation: inlineScript
+            retryCountOnTaskFailure: 2
+            inlineScript: |
+              az --version
+              az account show
+              az account set -s ${{ variables.subscription }}
+              az acr login -n ${{ variables.containerRegistry }}
         # - task: PowerShell@2
         #   displayName: Extract files to sign
         #   inputs:
