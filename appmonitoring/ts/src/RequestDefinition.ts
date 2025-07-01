@@ -1,5 +1,3 @@
-import * as http from "http"
-
 export interface IKind {
     group: string;
     version: string;
@@ -32,6 +30,8 @@ export const EnableApplicationLogsAnnotationName = "monitor.azure.com/enable-app
 export interface IAnnotations {
     "instrumentation.opentelemetry.io/inject-java"?: string;
     "instrumentation.opentelemetry.io/inject-nodejs"?: string;
+    "instrumentation.opentelemetry.io/private-preview-inject-python"?: string;
+    "instrumentation.opentelemetry.io/private-preview-inject-dotnet"?: string;
     "instrumentation.opentelemetry.io/inject-configuration"?: string;
 
     [key: string]: string;
@@ -177,7 +177,9 @@ export class PodInfo {
 
 export enum AutoInstrumentationPlatforms {
     Java = "Java",
-    NodeJs = "NodeJs"
+    NodeJs = "NodeJs",
+    Python = "Python",
+    DotNet = "DotNet"
 }
 
 export const DefaultInstrumentationCRName = "default";

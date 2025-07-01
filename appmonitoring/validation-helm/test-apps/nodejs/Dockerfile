@@ -1,3 +1,6 @@
+# docker build -t appmonitoring.azurecr.io/demoaks-nodejs-app:latest .
+# docker push appmonitoring.azurecr.io/demoaks-nodejs-app:latest 
+
 # Use official Node.js LTS image
 FROM node:20
 

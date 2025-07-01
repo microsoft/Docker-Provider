@@ -9,7 +9,7 @@
       }
     ]
   },
-  "transformIgnorePatterns": [],
+  "transformIgnorePatterns": ["\\.json$"],
   "testEnvironment": "node",
   "testRegex": "tests/.*\\.spec\\.ts$",
   "moduleDirectories": ["node_modules", "<rootDir>", "out"],

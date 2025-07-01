@@ -1,3 +1,6 @@
+# docker build -t appmonitoring.azurecr.io/nodejs-caller-app:latest .
+# docker push appmonitoring.azurecr.io/nodejs-caller-app:latest 
+
 FROM node:20
 
 WORKDIR /usr/src/app

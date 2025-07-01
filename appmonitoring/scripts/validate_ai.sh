@@ -3,9 +3,11 @@
 AI_RES_ID=$1
 NAMESPACE=$2
 
-echo "Finding pods in namespace: $NAMESPACE for Java App $JAVA_TEST_APP_NAME and NodeJS App $NODEJS_TEST_APP_NAME"
+echo "Finding pods in namespace: $NAMESPACE for Java App $JAVA_TEST_APP_NAME, NodeJS App $NODEJS_TEST_APP_NAME, Python App $PYTHON_TEST_APP_NAME, and Dotnet App $DOTNET_TEST_APP_NAME"
 POD_JAVA_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$JAVA_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
 POD_NODEJS_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$NODEJS_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
+POD_PYTHON_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$PYTHON_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
+POD_DOTNET_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$DOTNET_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
 
 
 # Get an access token
@@ -21,8 +23,13 @@ url="https://api.loganalytics.io/v1$AI_RES_ID/query"
 verify_AI_telemetry() {
     local pod_name="$1"
     local app_type="$2"
-    local queries=("requests" "dependencies" "exceptions")
+    local skip_exceptions="$3"
+    local queries=("requests" "dependencies")
     local found_any=0
+
+    if [[ "$skip_exceptions" != "true" ]]; then
+        queries+=("exceptions")
+    fi
 
     echo "Validating telemetry for $pod_name ($app_type)..."
     if [[ -z "$pod_name" ]]; then
@@ -64,18 +71,27 @@ verify_AI_telemetry() {
 max_retries=10
 retry_interval=30
 
-for app in "java" "nodejs"; do
+for app in "java" "nodejs" "python" "dotnet"; do
+  skip_exceptions="false"
   if [ "$app" = "java" ]; then
     pod_name="$POD_JAVA_NAME"
-  else
+  elif [ "$app" = "nodejs" ]; then
     pod_name="$POD_NODEJS_NAME"
+  elif [ "$app" = "python" ]; then
+    pod_name="$POD_PYTHON_NAME"
+  elif [ "$app" = "dotnet" ]; then
+    pod_name="$POD_DOTNET_NAME"
+    skip_exceptions="true"
+  else
+    echo "Unsupported application type: $app"
+    exit 1
   fi
 
   attempt=1
   success=0
   while [ $attempt -le $max_retries ]; do
     echo "Attempt $attempt/$max_retries: Validating telemetry for $pod_name ($app)..."
-    if verify_AI_telemetry "$pod_name" "$app"; then
+    if verify_AI_telemetry "$pod_name" "$app" "$skip_exceptions"; then
       echo "Telemetry validation succeeded for $pod_name ($app)"
       success=1
       break

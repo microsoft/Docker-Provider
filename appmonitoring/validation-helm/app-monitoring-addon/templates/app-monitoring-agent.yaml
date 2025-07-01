@@ -176,6 +176,9 @@ metadata:
   namespace: kube-system
   labels:
     component: app-monitoring
+  annotations:
+    "helm.sh/hook": post-install # this job is only run once on initial install, not on every upgrade. Runs once all objects are created.
+    "helm.sh/hook-delete-policy": before-hook-creation # the hook job is by definition not a part of the chart, so its lifecycle is separate. This job will exist on the cluster until a new job needs to be created following an uninstall/reinstall sequence.
 spec:
   template:
     spec:
