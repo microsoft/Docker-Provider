@@ -784,22 +784,28 @@ extends:
             endlocal
             exit /B %ERRORLEVEL%
           displayName: 'build base'
-        # - task: AzureCLI@2
-        #   displayName: "Set up acr for windows nano server ltsc2025 build"
-        #   inputs:
-        #     azureSubscription: ${{ variables.armServiceConnectionName }}
-        #     scriptType: ps
-        #     scriptLocation: inlineScript
-        #     retryCountOnTaskFailure: 2
-        #     inlineScript: |
-        #       az --version
-        #       az account show
-        #       az account set -s ${{ variables.subscription }}
-        #       az acr login -n ${{ variables.containerRegistry }}
+        - task: AzureCLI@2
+          displayName: "Set up acr for windows nano server ltsc2025 build"
+          inputs:
+            azureSubscription: ${{ variables.armServiceConnectionName }}
+            scriptType: ps
+            scriptLocation: inlineScript
+            retryCountOnTaskFailure: 2
+            inlineScript: |
+              az --version
+              az account show
+              az account set -s ${{ variables.subscription }}
+              az acr login -n ${{ variables.containerRegistry }}
         - task: PowerShell@2          
           inputs:
             targetType: 'inline'
             script: |
+              # Check if directory exists and remove it before creating it to handle retry scenarios
+              if (Test-Path -Path "$(Build.ArtifactStagingDirectory)/windows") {
+                Remove-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -Recurse -Force
+              }
+              New-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -ItemType Directory -Force
+              cd kubernetes/windows-nano
               echo "Creating docker image for windows nano server ltsc2025"
               docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2025BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) -f kubernetes/windows/Dockerfile.nano .
           displayName: "Docker windows build for nano server ltsc2025"
