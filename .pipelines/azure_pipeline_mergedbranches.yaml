@@ -805,9 +805,22 @@ extends:
                 Remove-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -Recurse -Force
               }
               New-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -ItemType Directory -Force
+              # Navigate to correct build directory
+              Write-Host "Navigating to build directory: kubernetes/windows-nano"
               cd kubernetes/windows-nano
-              echo "Creating docker image for windows nano server ltsc2025"
-              docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2025BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) -f kubernetes/windows/Dockerfile.nano .
+              
+              # List available files to verify correct location
+              Write-Host "Available files in build directory:"
+              Get-ChildItem -Path . | Select-Object Name, LastWriteTime
+              
+              # Check for Dockerfile
+              if (Test-Path "Dockerfile") {
+                  Write-Host "Found standard Dockerfile"
+              }
+              
+              # Build Docker image for Windows nano server ltsc2025
+              Write-Host "Starting Docker build for Windows nano server ltsc2025..."
+              docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2025BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
           displayName: "Docker windows build for nano server ltsc2025"
           retryCountOnTaskFailure: 2
         # - task: PowerShell@2
