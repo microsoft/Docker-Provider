@@ -129,94 +129,94 @@ function Install-DotNetCoreSDK() {
 function Install-Docker() {
     Write-Host "Installing Docker for Windows 2025 build agents..." -ForegroundColor Cyan
     
-    $dockerFound = $false
-    try {
-        $dockerVersion = & docker --version 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "SUCCESS: Docker already installed: $dockerVersion" -ForegroundColor Green
-            $dockerFound = $true
-        }
-    } catch {
-        Write-Host "Docker not found in PATH, proceeding with installation..." -ForegroundColor Yellow
-    }
+    # $dockerFound = $false
+    # try {
+    #     $dockerVersion = & docker --version 2>&1
+    #     if ($LASTEXITCODE -eq 0) {
+    #         Write-Host "SUCCESS: Docker already installed: $dockerVersion" -ForegroundColor Green
+    #         $dockerFound = $true
+    #     }
+    # } catch {
+    #     Write-Host "Docker not found in PATH, proceeding with installation..." -ForegroundColor Yellow
+    # }
     
-    if (-not $dockerFound) {
-        $tempDir = $env:TEMP
-        if ($false -eq (Test-Path -Path $tempDir)) {
-            Write-Host "Invalid TEMP dir PATH: $tempDir" -ForegroundColor Red
-            exit 1
-        }
+    # if (-not $dockerFound) {
+    #     $tempDir = $env:TEMP
+    #     if ($false -eq (Test-Path -Path $tempDir)) {
+    #         Write-Host "Invalid TEMP dir PATH: $tempDir" -ForegroundColor Red
+    #         exit 1
+    #     }
 
-        $dockerTemp = Join-Path -Path $tempDir -ChildPath "docker"
-        Write-Host "Creating docker temp dir: $dockerTemp"
-        New-Item -Path $dockerTemp -ItemType "directory" -Force -ErrorAction Stop
-        if ($false -eq (Test-Path -Path $dockerTemp)) {
-            Write-Host "Invalid dockerTemp: $tempDir" -ForegroundColor Red
-            exit 1
-        }
+    #     $dockerTemp = Join-Path -Path $tempDir -ChildPath "docker"
+    #     Write-Host "Creating docker temp dir: $dockerTemp"
+    #     New-Item -Path $dockerTemp -ItemType "directory" -Force -ErrorAction Stop
+    #     if ($false -eq (Test-Path -Path $dockerTemp)) {
+    #         Write-Host "Invalid dockerTemp: $tempDir" -ForegroundColor Red
+    #         exit 1
+    #     }
 
-        $url = "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe"
-        $output = Join-Path -Path $dockerTemp -ChildPath "docker-desktop-installer.exe"
-        Write-Host "Downloading Docker Desktop installer..."
-        Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
-        Write-Host "Download completed"
+    #     $url = "https://desktop.docker.com/win/main/amd64/Docker%20Desktop%20Installer.exe"
+    #     $output = Join-Path -Path $dockerTemp -ChildPath "docker-desktop-installer.exe"
+    #     Write-Host "Downloading Docker Desktop installer..."
+    #     Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
+    #     Write-Host "Download completed"
 
-        Write-Host "Installing Docker Desktop..."
-        Start-Process $output -Wait -ArgumentList 'install', '--quiet', '--accept-license'
-        Write-Host "Docker Desktop installation completed"
-    }
+    #     Write-Host "Installing Docker Desktop..."
+    #     Start-Process $output -Wait -ArgumentList 'install', '--quiet', '--accept-license'
+    #     Write-Host "Docker Desktop installation completed"
+    # }
     
-    Write-Host "Configuring Docker PATH and verifying installation..."
+    # Write-Host "Configuring Docker PATH and verifying installation..."
     
-    $dockerPaths = @(
-        "C:\Program Files\Docker\Docker\resources\bin",
-        "C:\ProgramData\DockerDesktop\version-bin",
-        "C:\Program Files\Docker\Docker\Resources\bin"
-    )
+    # $dockerPaths = @(
+    #     "C:\Program Files\Docker\Docker\resources\bin",
+    #     "C:\ProgramData\DockerDesktop\version-bin",
+    #     "C:\Program Files\Docker\Docker\Resources\bin"
+    # )
     
-    $dockerPathToAdd = $null
-    foreach ($path in $dockerPaths) {
-        $dockerExe = Join-Path $path "docker.exe"
-        if (Test-Path $dockerExe) {
-            $dockerPathToAdd = $path
-            Write-Host "SUCCESS: Found Docker at: $path" -ForegroundColor Green
-            break
-        }
-    }
+    # $dockerPathToAdd = $null
+    # foreach ($path in $dockerPaths) {
+    #     $dockerExe = Join-Path $path "docker.exe"
+    #     if (Test-Path $dockerExe) {
+    #         $dockerPathToAdd = $path
+    #         Write-Host "SUCCESS: Found Docker at: $path" -ForegroundColor Green
+    #         break
+    #     }
+    # }
     
-    if ($dockerPathToAdd) {
-        $ProcessPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "PROCESS")
-        $UserPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "USER")
-        $MachinePathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "MACHINE")
+    # if ($dockerPathToAdd) {
+    #     $ProcessPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "PROCESS")
+    #     $UserPathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "USER")
+    #     $MachinePathEnv = [System.Environment]::GetEnvironmentVariable("PATH", "MACHINE")
         
-        if ($MachinePathEnv -notlike "*$dockerPathToAdd*") {
-            $MachinePathEnv = $MachinePathEnv + ";" + $dockerPathToAdd
-            [System.Environment]::SetEnvironmentVariable("PATH", $MachinePathEnv, "MACHINE")
-            Write-Host "SUCCESS: Added Docker to Machine PATH" -ForegroundColor Green
-        }
+    #     if ($MachinePathEnv -notlike "*$dockerPathToAdd*") {
+    #         $MachinePathEnv = $MachinePathEnv + ";" + $dockerPathToAdd
+    #         [System.Environment]::SetEnvironmentVariable("PATH", $MachinePathEnv, "MACHINE")
+    #         Write-Host "SUCCESS: Added Docker to Machine PATH" -ForegroundColor Green
+    #     }
         
-        if ($ProcessPathEnv -notlike "*$dockerPathToAdd*") {
-            $ProcessPathEnv = $ProcessPathEnv + ";" + $dockerPathToAdd
-            [System.Environment]::SetEnvironmentVariable("PATH", $ProcessPathEnv, "PROCESS")
-            Write-Host "SUCCESS: Added Docker to Process PATH" -ForegroundColor Green
-        }
+    #     if ($ProcessPathEnv -notlike "*$dockerPathToAdd*") {
+    #         $ProcessPathEnv = $ProcessPathEnv + ";" + $dockerPathToAdd
+    #         [System.Environment]::SetEnvironmentVariable("PATH", $ProcessPathEnv, "PROCESS")
+    #         Write-Host "SUCCESS: Added Docker to Process PATH" -ForegroundColor Green
+    #     }
         
-        $env:Path = $MachinePathEnv + ";" + $UserPathEnv
-    }
+    #     $env:Path = $MachinePathEnv + ";" + $UserPathEnv
+    # }
     
-    Write-Host "Verifying Docker installation..."
-    try {
-        $dockerVersion = & docker --version 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "SUCCESS: Docker verification successful: $dockerVersion" -ForegroundColor Green
-        } else {
-            Write-Host "WARNING: Docker installed but verification failed" -ForegroundColor Yellow
-        }
-    } catch {
-        Write-Host "WARNING: Docker installation may need manual configuration" -ForegroundColor Yellow
-    }
+    # Write-Host "Verifying Docker installation..."
+    # try {
+    #     $dockerVersion = & docker --version 2>&1
+    #     if ($LASTEXITCODE -eq 0) {
+    #         Write-Host "SUCCESS: Docker verification successful: $dockerVersion" -ForegroundColor Green
+    #     } else {
+    #         Write-Host "WARNING: Docker installed but verification failed" -ForegroundColor Yellow
+    #     }
+    # } catch {
+    #     Write-Host "WARNING: Docker installation may need manual configuration" -ForegroundColor Yellow
+    # }
     
-    Write-Host "Docker installation and configuration completed" -ForegroundColor Green
+    # Write-Host "Docker installation and configuration completed" -ForegroundColor Green
 }
 
 function Install-Chocolatey() {
@@ -280,8 +280,8 @@ Build-Dependencies
 Write-Host "Install .NET 6.0 SDK"
 Install-DotNetCoreSDK
 
-Write-Host "Install Docker"
-Install-Docker
+#Write-Host "Install Docker"
+#Install-Docker
 
 Write-Host "Install Chocolatey"
 Install-Chocolatey
