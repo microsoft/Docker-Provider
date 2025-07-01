@@ -984,7 +984,7 @@ extends:
             targetType: 'inline'
             script: |
               if ("$(Build.Reason)" -ne "PullRequest") {
-                docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)
+                docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)-unsigned
               }
         # - task: CodeQL3000Finalize@0
         #   condition: eq(variables.IS_MAIN_BRANCH, true)
