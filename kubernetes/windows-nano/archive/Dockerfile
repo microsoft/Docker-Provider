@@ -12,10 +12,6 @@ RUN mkdir C:\download
 RUN mkdir C:\opt\scripts
 
 COPY install-fluent-bit.ps1 C:/opt/scripts/
-COPY install-telegraf.ps1 C:/opt/scripts/
-COPY telegraf-basic.conf C:/opt/scripts/
-COPY test-components.ps1 C:/opt/scripts/
-COPY main.ps1 C:/opt/scripts/
 
 # Download PowerShell Core directly in Nano Server using curl (which is available in Nano Server)
 # Define PowerShell version and download URL
@@ -28,26 +24,21 @@ RUN curl.exe -L -o C:\download\%POWERSHELL_PACKAGE% %DOWNLOAD_URL% && \
     tar.exe -xf C:\download\%POWERSHELL_PACKAGE% -C C:\PowerShell && \
     del C:\download\%POWERSHELL_PACKAGE%
 
+
 # Add PowerShell to the PATH
 ENV PATH="C:\PowerShell;${PATH}"
 
 # Switch to PowerShell for remaining commands
 SHELL ["C:\\PowerShell\\pwsh.exe", "-Command"]
 
-# Install Fluent Bit
+# install Fluent Bit
+# Run setup.ps1
 RUN & C:\opt\scripts\install-fluent-bit.ps1
 
-# Install Telegraf
-RUN & C:\opt\scripts\install-telegraf.ps1
 
-# Copy basic Telegraf configuration
-RUN Copy-Item -Path C:\opt\scripts\telegraf-basic.conf -Destination C:\etc\telegraf\telegraf.conf
+# Set PATH environment variable using ENV instead of setx /M
+ENV PATH="C:\opt\fluent-bit\bin;${PATH}"
 
-# Verify installations
-RUN & C:\opt\scripts\test-components.ps1
-
-# Set PATH environment variable to include both Fluent Bit and Telegraf
-ENV PATH="C:\opt\fluent-bit\bin;C:\opt\telegraf\bin;${PATH}"
-
-# Run the main orchestration script that starts both Fluent Bit and Telegraf
-ENTRYPOINT ["C:\\PowerShell\\pwsh.exe", "-File", "C:\\opt\\scripts\\main.ps1"]
+ENTRYPOINT [ "fluent-bit.exe" ]
+#CMD [ "fluent-bit.exe", "-c", "/fluent-bit/etc/fluent-bit.conf" ]
+CMD [ "fluent-bit.exe", "-i", "dummy", "-o", "stdout"]
