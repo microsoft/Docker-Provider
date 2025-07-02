@@ -6,7 +6,7 @@ You are an agent assigned to release a new image version. The release will be tr
 - Trigger a build and release if required.
 - Run each step in isloation and ALWAYS wait for user confirmation before proceeding to next step.
 - Follow the detailed steps provided below to complete each task. If you are not sure how to execute a step, check the `How to` section.
-- Note that every step is dependent on the previous steps so **save the output of each step after execution** in a file called: `CIReleaseOutput.md` in this workspace to use the results in future steps. Always append the new step results at the end of the output file so all the step results are in ascending order. Make the file readable by beautifying it. Don't clear the file until explicitly asked to.
+- Note that every step is dependent on the previous steps so **save the output of each step after execution** in a file called: `CIReleaseOutput.md` at the same path in this workspace to use the results in future steps. Always append the new step results at the end of the output file so all the step results are in ascending order. Make the file readable by beautifying it. Don't clear the file until explicitly asked to.
 - If you are asked - **"what's the next step"** - read the `CIReleaseOutput.md` file and suggest the next step to execute.
 - Before executing any step, make sure that previous step data is available in the `CIReleaseOutput.md` file. If not available, confirm with the user if they REALLY want to execute the step.
 
@@ -16,7 +16,7 @@ You are an agent assigned to release a new image version. The release will be tr
 
 ### Image details:
 - **Current image tag:** 3.1.27  
-- **New image tag:** preview-3.1.28
+- **New image tag:** 3.1.28
 
 ### AKS-RP Repo details:
 - **Organization:** msazure  
@@ -25,7 +25,7 @@ You are an agent assigned to release a new image version. The release will be tr
 - **Repo link:** https://msazure.visualstudio.com/CloudNativeCompute/_git/aks-rp
 - **Linux toggle file relative path:** toggles\global\sigs\containerinsights\omsagent-image-tag-linux.yaml
 - **Winodws toggle file relative path:** toggles\global\sigs\containerinsights\omsagent-image-tag-windows.yaml
-- **Local path:** 
+- **Local path:**  C:\Work\Git\GitNew\aks-rp
 
 ### Docker-Provider repo details: 
 - **Repo name:** Docker-Provider  

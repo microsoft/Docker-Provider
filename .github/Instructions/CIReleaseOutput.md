@@ -1,49 +1,34 @@
 # CI Release Automation Output
 
-## Step 1: Trigger Docker-Provider Build
-- Started at: 2025-06-06 16:07:04 PDT
-- Build Definition: 444
+## Step 1: Docker-Provider Build Trigger
+
+Build triggered successfully with the following details:
+- Build ID: 101202
+- Build Number: 20250625.3
+- Definition: ContainerInsights-MultiArch-MergedBranches
 - Branch: ci_prod
-- Variables:
-  - TELEMETRY_TAG: preview-3.1.28
-- Build Details:
-  - Build ID: 100127
-  - Build Number: 20250606.10
-  - Status: Running (Started at 2025-06-06 23:07:53 GMT+00:00)
-  - Duration: 50 seconds
-  - URL: https://github-private.visualstudio.com/546fe6cc-3ea0-4218-9233-c28bfc2f36ca/_build/results?buildId=100127
+- Status: Queued
+- Build URL: [Build 101202](https://github-private.visualstudio.com/546fe6cc-3ea0-4218-9233-c28bfc2f36ca/_build/results?buildId=101202)
 
-## Step 2: Verify Docker-Provider Build
-- Status: Skipped as per user request
+The build has been queued with TELEMETRY_TAG set to 3.1.28. Please monitor the build progress using the URL above.
 
-## Step 3: Trigger MCR Publish Build
-- Started at: 2025-06-06 16:09:28 PDT
-- Build Definition: 1032
-- Branch: ci_prod
-- Variables:
-  - VAR_AGENT_IMAGE_TAG_SUFFIX: preview-3.1.28
-- Build Details:
-  - Build ID: 100128
-  - Build Number: 20250606.3
-  - Status: Running (Started at 2025-06-06 23:09:57 GMT+00:00)
-  - URL: https://github-private.visualstudio.com/546fe6cc-3ea0-4218-9233-c28bfc2f36ca/_build/results?buildId=100128
+## Step 5: AKS RP Changes for CI CD Clusters
 
-## Step 4: Verify MCR Publish Build Completion
-- Status: Skipped as per user request
+Successfully updated the image version for CI CD clusters in AKS RP repo:
+- Linux toggle file (`omsagent-image-tag-linux.yaml`): Updated from 3.1.27 to 3.1.28
+- Windows toggle file (`omsagent-image-tag-windows.yaml`): Updated from win-3.1.27 to win-3.1.28
 
-## Step 5: Update AKS RP for CI CD clusters
-- Modified Files:
-  - toggles/global/sigs/containerinsights/omsagent-image-tag-linux.yaml: Updated first matcher block to version preview-3.1.28
-  - toggles/global/sigs/containerinsights/omsagent-image-tag-windows.yaml: Updated first matcher block to version win-preview-3.1.28
-  - Branch pushed to origin: update-omsagent-preview-3.1.28
-  - Draft PR created: #12625807 (https://msazure.visualstudio.com/CloudNativeCompute/_git/aks-rp/pullrequest/12625807)
+The changes were made only to the first matcher block which controls the CI CD clusters configuration.
 
-## Step 6: Trigger Test Automation Pipeline
-- Started at: 2025-06-06 16:13:44 PDT
-- Build Definition: 950 (container-insights-test-automation)
-- Branch: ci_prod
-- Build Details:
-  - Build ID: 100130
-  - Build Number: 20250606.2
-  - Status: Running (Started at 2025-06-06 23:13:44 GMT+00:00)
-  - URL: https://github-private.visualstudio.com/546fe6cc-3ea0-4218-9233-c28bfc2f36ca/_build/results?buildId=100130
+## Step 6: Trigger Test Automation pipeline
+
+Build triggered successfully: https://github-private.visualstudio.com/microsoft/_build/results?buildId=101417&view=results
+
+## ## Step 7: AKS RP Changes for Cosmic Clusters
+
+Successfully updated the image version for Cosmic clusters in AKS RP repo:
+
+- Linux toggle file (`omsagent-image-tag-linux.yaml`): Updated from 3.1.27 to 3.1.28
+- Windows toggle file (`omsagent-image-tag-windows.yaml`): Updated from win-3.1.27 to win-3.1.28
+
+The changes were made only to the second matcher block which controls the Cosmic clusters configuration. Changes have been committed and pushed to branch: containerinsights/cosmic-release-3.1.28
