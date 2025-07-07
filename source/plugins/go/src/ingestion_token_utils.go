@@ -154,7 +154,7 @@ func getAccessTokenFromIMDS() (string, int64, error) {
 	if useIMDSTokenProxyEndPoint != "" && strings.Compare(strings.ToLower(useIMDSTokenProxyEndPoint), "true") == 0 {
 		Log("Info Reading IMDS Access Token from IMDS Token proxy endpoint")
 		mcsEndpoint := os.Getenv("MCS_ENDPOINT")
-		msi_endpoint_string := fmt.Sprintf("http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://%s/", mcsEndpoint)
+		msi_endpoint_string := fmt.Sprintf("http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=%s", mcsEndpoint)
 		var msi_endpoint *url.URL
 		msi_endpoint, err := url.Parse(msi_endpoint_string)
 		if err != nil {
@@ -332,12 +332,8 @@ func getAgentConfiguration(imdsAccessToken string) (configurationId string, chan
 	osType := os.Getenv("OS_TYPE")
 	resourceId := os.Getenv("AKS_RESOURCE_ID")
 	resourceRegion := os.Getenv("AKS_REGION")
-	mcsEndpoint := os.Getenv("MCS_ENDPOINT")
+	AmcsEndpoint = os.Getenv("MCS_GLOBAL_ENDPOINT")
 
-	AmcsEndpoint = fmt.Sprintf("https://global.handler.control.%s", mcsEndpoint)
-	if strings.Compare(strings.ToLower(resourceRegion), "eastus2euap") == 0 || strings.Compare(strings.ToLower(resourceRegion), "centraluseuap") == 0 {
-		AmcsEndpoint = fmt.Sprintf("https://global.handler.canary.control.%s", mcsEndpoint)
-	}
 	if AMCSRedirectedEndpoint != "" {
 		AmcsEndpoint = AMCSRedirectedEndpoint
 	}
@@ -489,9 +485,8 @@ func getIngestionAuthToken(imdsAccessToken string, configurationId string, chann
 	osType := os.Getenv("OS_TYPE")
 	resourceId := os.Getenv("AKS_RESOURCE_ID")
 	resourceRegion := os.Getenv("AKS_REGION")
-	mcsEndpoint := os.Getenv("MCS_ENDPOINT")
+	AmcsEndpoint = os.Getenv("MCS_GLOBAL_ENDPOINT")
 
-	AmcsEndpoint = fmt.Sprintf("https://global.handler.control.%s", mcsEndpoint)
 	if AMCSRedirectedEndpoint != "" {
 		AmcsEndpoint = AMCSRedirectedEndpoint
 	}
