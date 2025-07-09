@@ -7,7 +7,7 @@ param aksResourceLocation string
 @description('Workspace Region for data collection rule')
 param workspaceRegion string
 
-@description('Full Resource ID of the log analitycs workspace that will be used for data destination. For example /subscriptions/00000000-0000-0000-0000-0000-00000000/resourceGroups/ResourceGroupName/providers/Microsoft.operationalinsights/workspaces/ws_xyz')
+@description('Full Resource ID of the log analitycs workspace that will be used for data destination')
 param workspaceResourceId string
 
 @description('Existing or new tags to use on AKS, ContainerInsights and DataCollectionRule Resources')
