@@ -30,7 +30,7 @@ var associationName = 'ContainerLogV2Extension-${uniqueString(workspaceResourceI
 var dataCollectionRuleId = resourceId(clusterSubscriptionId, clusterResourceGroup, 'Microsoft.Insights/dataCollectionRules', dcrName)
 var ingestionDCENameFull = 'MSCI-multi-tenancy-${workspaceLocation}-${uniqueString(workspaceResourceId)}'
 var ingestionDCEName = length(ingestionDCENameFull) > 43 ? substring(ingestionDCENameFull, 0, 43) : ingestionDCENameFull
-var ingestionDCE = endsWith(ingestionDCEName, '-') ? substring(ingestionDCEName, 0, 42) : ingestionDCEName
+var ingestionDCE = endsWith(ingestionDCEName, '-') ? substring(ingestionDCEName, 0, length(ingestionDCEName) - 1) : ingestionDCEName
 var ingestionDataCollectionEndpointId = resourceId(clusterSubscriptionId, clusterResourceGroup, 'Microsoft.Insights/dataCollectionEndpoints', ingestionDCE)
 
 resource ingestionDataCollectionEndpoint 'Microsoft.Insights/dataCollectionEndpoints@2023-03-11' = {
