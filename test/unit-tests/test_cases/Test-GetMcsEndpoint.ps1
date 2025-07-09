@@ -8,27 +8,27 @@ function Test-CloudEnvironments {
     $testCases = @(
         @{
             cloud = "azurepubliccloud"
-            expected = "https://monitor.azure.com/"
+            expected = "monitor.azure.com"
         },
         @{
             cloud = "azurechinacloud"
-            expected = "https://monitor.azure.cn/"
+            expected = "monitor.azure.cn"
         },
         @{
             cloud = "azureusgovernmentcloud"
-            expected = "https://monitor.azure.us/"
+            expected = "monitor.azure.us"
         },
         @{
             cloud = "usnat"
-            expected = "https://monitor.azure.eaglex.ic.gov/"
+            expected = "monitor.azure.eaglex.ic.gov"
         },
         @{
             cloud = "ussec"
-            expected = "https://monitor.azure.microsoft.scloud/"
+            expected = "monitor.azure.microsoft.scloud"
         },
         @{
             cloud = "bleu"
-            expected = "https://monitor.sovcloud-api.fr/"
+            expected = "monitor.sovcloud-api.fr"
         }
     )
 
@@ -43,13 +43,13 @@ function Test-CloudEnvironments {
 function Test-DefaultEndpoint {
     Setup
     $result = Get-McsEndpoint -cloud_environment $null
-    Assert-Equals "https://monitor.azure.com/" $result "(with null cloud environment)"
+    Assert-Equals "monitor.azure.com" $result "(with null cloud environment)"
 
     $result = Get-McsEndpoint -cloud_environment ""
-    Assert-Equals "https://monitor.azure.com/" $result "(with empty cloud environment)"
+    Assert-Equals "monitor.azure.com" $result "(with empty cloud environment)"
 
     $result = Get-McsEndpoint -cloud_environment "invalid"
-    Assert-Equals "https://monitor.azure.com/" $result "(with invalid cloud environment)"
+    Assert-Equals "monitor.azure.com" $result "(with invalid cloud environment)"
     Teardown
 }
 
@@ -63,7 +63,7 @@ function Test-CaseSensitivity {
     foreach ($cloud in $testCases) {
         Setup
         $result = Get-McsEndpoint -cloud_environment $cloud
-        Assert-Equals "https://monitor.azure.com/" $result "(case sensitivity check for $cloud)"
+        Assert-Equals "monitor.azure.com" $result "(case sensitivity check for $cloud)"
         Teardown
     }
 }
