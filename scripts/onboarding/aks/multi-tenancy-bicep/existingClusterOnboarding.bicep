@@ -19,9 +19,6 @@ param k8sNamespaces array
 @description('KQL filter for ingestion transformation')
 param transformKql string
 
-@description('Flag to indicate if Azure Monitor Private Link Scope should be used or not')
-param useAzureMonitorPrivateLinkScope bool
-
 var clusterSubscriptionId = split(aksResourceId, '/')[2]
 var clusterResourceGroup = split(aksResourceId, '/')[4]
 var clusterName = split(aksResourceId, '/')[8]
@@ -41,11 +38,7 @@ resource ingestionDataCollectionEndpoint 'Microsoft.Insights/dataCollectionEndpo
   location: workspaceLocation
   tags: resourceTagValues
   kind: 'Linux'
-  properties: {
-    networkAcls: {
-      publicNetworkAccess: useAzureMonitorPrivateLinkScope ? 'Disabled' : 'Enabled'
-    }
-  }
+  properties: {}
 }
 
 resource aks_monitoring_msi_dcr 'Microsoft.Insights/dataCollectionRules@2023-03-11' = {
