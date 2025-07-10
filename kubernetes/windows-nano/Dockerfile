@@ -3,9 +3,9 @@ FROM mcr.microsoft.com/windows/nanoserver:ltsc2025
 
 # install performance monitor
 WORKDIR /install
-COPY install_perf_monitor.cmd .
+COPY install-perf-monitor.cmd .
 USER ContainerAdministrator
-RUN install_perf_monitor.cmd
+RUN install-perf-monitor.cmd
 USER ContainerUser
 
 # Create a working directory
