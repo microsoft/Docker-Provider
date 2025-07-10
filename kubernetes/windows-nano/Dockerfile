@@ -1,6 +1,13 @@
 # Dockerfile for Fluent Bit on Windows Nano Server
 FROM mcr.microsoft.com/windows/nanoserver:ltsc2025
 
+# install performance monitor
+WORKDIR /install
+COPY install_perf_monitor.cmd .
+USER ContainerAdministrator
+RUN install_perf_monitor.cmd
+USER ContainerUser
+
 # Create a working directory
 WORKDIR C:/fluent-bit
 
