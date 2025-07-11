@@ -343,7 +343,7 @@ spec:
         component: ama-logs-agent
         tier: node
       annotations:
-        agentVersion: "azure-mdsd-1.35.7"
+        agentVersion: "azure-mdsd-1.35.8"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         kubernetes.azure.com/no-http-proxy-vars: "true"
@@ -473,6 +473,10 @@ spec:
             - name: syslog
               containerPort: 28330
               hostPort: 28330
+              protocol: TCP
+            - name: otlp-logs
+              containerPort: 4317
+              hostPort: 28331
               protocol: TCP
           volumeMounts:
             - name: kube-api-access
@@ -784,7 +788,7 @@ spec:
 #       labels:
 #         rsName: "ama-logs-multitenancy"
 #       annotations:
-#         agentVersion: "azure-mdsd-1.35.7"
+#         agentVersion: "azure-mdsd-1.35.8"
 #         dockerProviderVersion: "18.0.1-0"
 #         schema-versions: "v1"
 #         kubernetes.azure.com/no-http-proxy-vars: "true"
@@ -959,7 +963,7 @@ spec:
       labels:
         rsName: "ama-logs-rs"
       annotations:
-        agentVersion: "azure-mdsd-1.35.7"
+        agentVersion: "azure-mdsd-1.35.8"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         kubernetes.azure.com/no-http-proxy-vars: "true"
