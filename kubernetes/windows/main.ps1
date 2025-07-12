@@ -165,9 +165,9 @@ function Set-AMA3PEnvironmentVariables {
     Set-ProcessAndMachineEnvVariables "MCS_CUSTOM_RESOURCE_ID" $aksResourceId
     $domain = Get-LogAnalyticsWorkspaceDomain
     $cloud_environment = Get-ClusterCloudEnvironment($domain)
-    $mcs_endpoint = Get-McsEndpoint($cloud_environment)
+    $mcs_azure_resource_endpoint = Get-McsAzureResourceEndpoint($cloud_environment)
     $mcs_globalendpoint = Get-McsGlobalEndpoint($cloud_environment)
-    Set-ProcessAndMachineEnvVariables "MCS_AZURE_RESOURCE_ENDPOINT" $mcs_endpoint
+    Set-ProcessAndMachineEnvVariables "MCS_AZURE_RESOURCE_ENDPOINT" $mcs_azure_resource_endpoint
     Set-ProcessAndMachineEnvVariables "MCS_GLOBAL_ENDPOINT" $mcs_globalendpoint
 }
 
@@ -263,19 +263,37 @@ function Get-LogAnalyticsWorkspaceDomain() {
     }
 }
 
+function Get-McsAzureResourceEndpoint {
+    param (
+        [string]$cloud_environment
+    )
+    $mcs_azure_resource_endpoint = "https://monitor.azure.com/"
+    if (![string]::IsNullOrEmpty($cloud_environment)) {
+        switch ($cloud_environment.ToLower()) {
+            "azurepubliccloud"        { $mcs_azure_resource_endpoint = "https://monitor.azure.com/" }
+            "azurechinacloud"         { $mcs_azure_resource_endpoint = "https://monitor.azure.cn/" }
+            "azureusgovernmentcloud"  { $mcs_azure_resource_endpoint = "https://monitor.azure.us/" }
+            "usnat"                   { $mcs_azure_resource_endpoint = "https://monitor.azure.eaglex.ic.gov/" }
+            "ussec"                   { $mcs_azure_resource_endpoint = "https://monitor.azure.microsoft.scloud/" }
+            "bleu"                    { $mcs_azure_resource_endpoint = "https://monitor.sovcloud-api.fr/" }
+        }
+    }
+    return $mcs_azure_resource_endpoint
+}
+
 function Get-McsEndpoint {
     param (
         [string]$cloud_environment
     )
-    $mcs_endpoint = "https://monitor.azure.com/"
+    $mcs_endpoint = "monitor.azure.com"
     if (![string]::IsNullOrEmpty($cloud_environment)) {
         switch ($cloud_environment.ToLower()) {
-            "azurepubliccloud"        { $mcs_endpoint = "https://monitor.azure.com/" }
-            "azurechinacloud"         { $mcs_endpoint = "https://monitor.azure.cn/" }
-            "azureusgovernmentcloud"  { $mcs_endpoint = "https://monitor.azure.us/" }
-            "usnat"                   { $mcs_endpoint = "https://monitor.azure.eaglex.ic.gov/" }
-            "ussec"                   { $mcs_endpoint = "https://monitor.azure.microsoft.scloud/" }
-            "bleu"                    { $mcs_endpoint = "https://monitor.sovcloud-api.fr/" }
+            "azurepubliccloud"        { $mcs_endpoint = "monitor.azure.com" }
+            "azurechinacloud"         { $mcs_endpoint = "monitor.azure.cn" }
+            "azureusgovernmentcloud"  { $mcs_endpoint = "monitor.azure.us" }
+            "usnat"                   { $mcs_endpoint = "monitor.azure.eaglex.ic.gov" }
+            "ussec"                   { $mcs_endpoint = "monitor.azure.microsoft.scloud" }
+            "bleu"                    { $mcs_endpoint = "monitor.sovcloud-api.fr" }
         }
     }
     return $mcs_endpoint
