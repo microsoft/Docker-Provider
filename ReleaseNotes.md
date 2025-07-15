@@ -33,7 +33,7 @@ additional questions or comments.
 - Linux
   * Mariner 3 upgrade by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1439
   * Filter out loopback metrics by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1444
-  * Fix geneva resource optimization by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1447
+  * Update QoS dashboard json templates by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1465
   * CVE 202543857: uninstall net-imap gem by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1480
   * mdsd version upgrade 1.35.7 by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1492
 
@@ -44,13 +44,17 @@ additional questions or comments.
   * Fix AMCS endpoint by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1501
   * AMCS bug fix for Geneva by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1503
 
+- Azure Arc K8s Extension
+  * Disable custom metrics for Arc by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1481
+  * Add high logs scale support for ARC by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1491
+
 - Common
+  * Fix geneva resource optimization by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1447
   * Update script version for kind cluster by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1451
   * Test Automation Framework improvements by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1449
   * Update conformnace test by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1452
   * Longw/update arc pipeline by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1461
   * TAF: Check errors in process files by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1460
-  * Update QoS dashboard json templates by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1465
   * Zane/guardian fix by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1482
   * rename gdnsuppress by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1484
   * Longw/high scale and networkflow logs Bicep templates by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1470
@@ -59,10 +63,8 @@ additional questions or comments.
   * inject images to default component detection used by 1ES by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1490
   * Gangams/bleu updates by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1477
   * Longw/high scale terraform by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1488
-  * Disable custom metrics for Arc by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1481
   * geneva identity by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1489
   * Longw/containerlogv2 telemetry dcr by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1487
-  * Add high logs scale support for ARC by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1491
   * fix endpoint name for bleu by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1496
   * Longw/high scale policy by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1497
   * Longw/networkflow testkube by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1499
@@ -105,6 +107,9 @@ additional questions or comments.
   * fix conformance test @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1350
   * Test automation: added tests for LA data flow @suyadav1 https://github.com/microsoft/Docker-Provider/pull/1366
   * multi-tenancy public preview configmap updates @ganga1980 https://github.com/microsoft/Docker-Provider/pull/1367
+  * Migrate esrp from corp to ame by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1438
+  * Migrate merged build pipeline to governed pipeline template  by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1442
+  * Governed release yamls migration by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1448
 - Linux
   * Update ARM template parameter check for enableRetinaNetworkFlags @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1421
   * retina networkflow logs @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1372
