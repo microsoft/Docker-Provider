@@ -17,8 +17,7 @@ try {
         throw "Docker not accessible"
     }
     Write-Host "✓ Docker is running (version: $dockerVersion)" -ForegroundColor Green
-}
-catch {
+} catch {
     Write-Error "❌ Docker is not running or not installed. Please start Docker Desktop."
     exit 1
 }

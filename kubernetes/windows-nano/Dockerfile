@@ -2,11 +2,11 @@
 FROM mcr.microsoft.com/windows/nanoserver:ltsc2025
 
 # install performance monitor
-WORKDIR /install
-COPY install-perf-monitor.cmd .
-USER ContainerAdministrator
-RUN install-perf-monitor.cmd
-USER ContainerUser
+# WORKDIR /install
+# COPY install-perf-monitor.cmd .
+# USER ContainerAdministrator
+# RUN install-perf-monitor.cmd
+# USER ContainerUser
 
 # Create a working directory
 WORKDIR C:/fluent-bit
@@ -17,9 +17,11 @@ RUN mkdir C:\opt\fluent-bit
 RUN mkdir C:\PowerShell
 RUN mkdir C:\download
 RUN mkdir C:\opt\scripts
+RUN mkdir C:\opt\windowsazuremonitoragent
 
 COPY install-fluent-bit.ps1 C:/opt/scripts/
 COPY install-telegraf.ps1 C:/opt/scripts/
+COPY install-windows-ama.ps1 C:/opt/scripts/
 COPY telegraf-basic.conf C:/opt/scripts/
 COPY test-components.ps1 C:/opt/scripts/
 COPY main.ps1 C:/opt/scripts/
@@ -49,6 +51,9 @@ RUN & C:\opt\scripts\install-telegraf.ps1
 
 # Copy basic Telegraf configuration
 RUN Copy-Item -Path C:\opt\scripts\telegraf-basic.conf -Destination C:\etc\telegraf\telegraf.conf
+
+# Install Windows Azure Monitor Agent
+RUN & C:\opt\scripts\install-windows-ama.ps1
 
 # Verify installations
 RUN & C:\opt\scripts\test-components.ps1

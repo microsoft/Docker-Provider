@@ -85,6 +85,42 @@ catch {
     # Continue without Telegraf - Fluent Bit can still work
 }
 
+# Start Windows Azure Monitor Agent as background job
+Write-Host "Starting Windows Azure Monitor Agent..."
+try {
+    # Check if AMA installation exists
+    $amaLauncherPath = "C:\opt\windowsazuremonitoragent\windowsazuremonitoragent\Monitoring\Agent\MonAgentLauncher.exe"
+    $versionPath = "C:\opt\windowsazuremonitoragent\version.txt"
+    
+    if (Test-Path $versionPath) {
+        $versionInfo = Get-Content $versionPath -Raw
+        Write-Host "Windows AMA Status: $($versionInfo.Trim())"
+    }
+    
+    if (Test-Path $amaLauncherPath) {
+        Write-Host "✓ Windows AMA executable found, starting..."
+        $amaJob = Start-Job -ScriptBlock {
+            Write-Host "Windows AMA starting..."
+            try {
+                & "C:\opt\windowsazuremonitoragent\windowsazuremonitoragent\Monitoring\Agent\MonAgentLauncher.exe" -useenv
+            }
+            catch {
+                Write-Host "Windows AMA execution failed: $($_.Exception.Message)"
+                throw
+            }
+        }
+        Write-Host "✓ Windows AMA started as background job (ID: $($amaJob.Id))"
+    } else {
+        Write-Host "⚠ Windows AMA executable not found at $amaLauncherPath"
+        Write-Host "  This is expected if AMA installation failed during build"
+        Write-Host "  Container will continue with Fluent Bit and Telegraf only"
+    }
+}
+catch {
+    Write-Host "❌ Failed to start Windows AMA: $($_.Exception.Message)"
+    Write-Host "⚠ Container will continue without Windows AMA functionality"
+}
+
 # Monitor running jobs
 Write-Host "`nMonitoring running services..."
 Write-Host "Press Ctrl+C to stop all services"
@@ -95,6 +131,7 @@ try {
         $jobs = Get-Job
         $runningJobs = $jobs | Where-Object { $_.State -eq 'Running' }
         $failedJobs = $jobs | Where-Object { $_.State -eq 'Failed' }
+        $stoppedJobs = $jobs | Where-Object { $_.State -eq 'Stopped' }
         
         if ($failedJobs) {
             Write-Host "⚠ Failed jobs detected:"
@@ -104,6 +141,24 @@ try {
                 $jobOutput = Receive-Job -Job $job
                 if ($jobOutput) {
                     Write-Host "    Output: $jobOutput"
+                }
+            }
+        }
+
+        if ($stoppedJobs) {
+            Write-Host "⚠ Stopped jobs detected:"
+            foreach ($job in $stoppedJobs) {
+                Write-Host "  - Job $($job.Id): $($job.Name) - $($job.State)"
+                # Log stopped job details
+                try {
+                    $jobOutput = Receive-Job -Job $job -ErrorAction SilentlyContinue
+                    if ($jobOutput) {
+                        Write-Host "    Output: $jobOutput"
+                    } else {
+                        Write-Host "    No output available for job $($job.Id)"
+                    }
+                } catch {
+                    Write-Host "    Failed to retrieve output for job $($job.Id): $($_.Exception.Message)"
                 }
             }
         }
