@@ -46,6 +46,11 @@ rm /usr/sbin/telegraf
 mdsd_version=$(sudo tdnf list installed | grep mdsd | awk '{print $2}')
 echo "Azure mdsd: $mdsd_version" >> packages_version.txt
 
+# install AMACA for otel
+sudo curl -L -O https://github.com/microsoft/Docker-Provider/releases/download/windows-ama-bits/Azure.Monitor.CoreAgent.Linux-x64-AOT.1.0.2903-alpha.nupkg
+sudo nuget install Azure.Monitor.CoreAgent.Linux-x64-AOT.1.0.2903-alpha.nupkg -o /opt
+rm Azure.Monitor.CoreAgent.Linux-x64-AOT.1.0.2903-alpha.nupkg
+
 # log rotate conf for mdsd and can be extended for other log files as well
 cp -f $TMPDIR/logrotate.conf /etc/logrotate.d/ci-agent
 
