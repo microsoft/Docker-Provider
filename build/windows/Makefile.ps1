@@ -1,3 +1,6 @@
+param(
+    [string]$TargetFolder = "windows-simplify"
+)
 #  Build script to build the .NET and Go lang code for the Windows agent.
 #  It does following  tasks
 #  1. Builds the certificate generator code in .NET and copy the binaries in zip file to ..\..\kubernetes\windows\amalogswindows
@@ -109,9 +112,6 @@ if ($false -eq (Test-Path -Path $rootdir)) {
     exit 1
 }
 
-param(
-    [string]$TargetFolder = "windows"
-)
 $publishdir = Join-Path -Path $rootdir -ChildPath ("kubernetes\" + $TargetFolder + "\amalogswindows")
 if ($true -eq (Test-Path -Path $publishdir)) {
     Write-Host("publish dir exist hence deleting: " + $publishdir + " ")
