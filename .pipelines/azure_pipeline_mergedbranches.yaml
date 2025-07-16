@@ -353,7 +353,7 @@ extends:
           condition: eq(variables.IS_MAIN_BRANCH, true)
         - script: |
             setlocal enabledelayedexpansion
-            powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\windows\Makefile.ps1"
+            powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\windows\Makefile.ps1" -TargetFolder windows-simplify
             endlocal
             exit /B %ERRORLEVEL%
           displayName: 'build base'
@@ -572,7 +572,7 @@ extends:
           condition: eq(variables.IS_MAIN_BRANCH, true)
         - script: |
             setlocal enabledelayedexpansion
-            powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\windows\Makefile.ps1"
+            powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\windows\Makefile.ps1" -TargetFolder windows-simplify
             endlocal
             exit /B %ERRORLEVEL%
           displayName: 'build base'
