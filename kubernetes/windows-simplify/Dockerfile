@@ -99,9 +99,9 @@ COPY ./amalogswindows/installer/conf/telegraf.conf /etc/telegraf/
 # copy keepcert alive ruby scripts
 COPY ./amalogswindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluent/plugin/
 
-# Install minimal Ruby
-ADD https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-3.1.4-1/rubyinstaller-3.1.4-1-x64.7z C:/ruby31.7z
-RUN powershell -Command "Expand-Archive -Path C:/ruby31.7z -DestinationPath C:/ruby31; Remove-Item C:/ruby31.7z"
+# Install minimal Ruby using Chocolatey to ensure gem is present
+RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
+RUN choco install -y ruby --version 3.1.1.1 --params \"'/InstallDir:C:\ruby31'\"
 ENV PATH="C:/ruby31/bin;%PATH%"
 RUN gem install toml
 
