@@ -35,6 +35,7 @@ RUN tdnf install -y \
         make \
         logrotate \
         busybox \
+        nuget \
         gawk \
         tar \
         ca-certificates \
