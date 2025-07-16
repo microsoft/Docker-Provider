@@ -378,7 +378,7 @@ extends:
                 Remove-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -Recurse -Force
               }
               New-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -ItemType Directory -Force
-              cd kubernetes/windows
+              cd kubernetes/windows-simplify
               # Build the Docker image
               docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2019BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
           displayName: "Docker windows build for ltsc2019"
@@ -585,7 +585,7 @@ extends:
             retryCountOnTaskFailure: 2
             inlineScript: |
               mkdir -p $(Build.ArtifactStagingDirectory)/windows
-              cd kubernetes/windows
+              cd kubernetes/windows-simplify
               az --version
               az account show
               az account set -s ${{ variables.subscription }}
