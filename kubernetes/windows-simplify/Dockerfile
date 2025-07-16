@@ -99,6 +99,12 @@ COPY ./amalogswindows/installer/conf/telegraf.conf /etc/telegraf/
 # copy keepcert alive ruby scripts
 COPY ./amalogswindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluent/plugin/
 
+# Install minimal Ruby
+ADD https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-3.1.4-1/rubyinstaller-3.1.4-1-x64.7z C:/ruby31.7z
+RUN powershell -Command "Expand-Archive -Path C:/ruby31.7z -DestinationPath C:/ruby31; Remove-Item C:/ruby31.7z"
+ENV PATH="C:/ruby31/bin;%PATH%"
+RUN gem install toml
+
 #Copy fluentd ruby plugins
 COPY ./amalogswindows/ruby/ /etc/fluent/plugin/
 
