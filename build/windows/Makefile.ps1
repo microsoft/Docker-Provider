@@ -115,7 +115,7 @@ if ($false -eq (Test-Path -Path $rootdir)) {
     exit 1
 }
 
-$publishdir = Join-Path -Path $rootdir -ChildPath "kubernetes\windows\amalogswindows"
+$publishdir = Join-Path -Path $rootdir -ChildPath "kubernetes\windows-nano\amalogswindows"
 if ($true -eq (Test-Path -Path $publishdir)) {
     Write-Host("publish dir exist hence deleting: " + $publishdir + " ")
     Remove-Item -Path $publishdir  -Recurse -Force
