@@ -22,9 +22,9 @@ This Terraform configuration enables multi-tenancy monitoring for an existing AK
 2. Create a `terraform.tfvars` file with your configuration values:
    ```hcl
    aksResourceId         = "/subscriptions/<SubscriptionId>/resourcegroups/<ResourceGroup>/providers/Microsoft.ContainerService/managedClusters/<ClusterName>"
-   aksResourceLocation   = "eastus"
+   aksResourceLocation   = "<aksClusterLocation>"
    workspaceResourceId   = "/subscriptions/<SubscriptionId>/resourceGroups/<ResourceGroup>/providers/Microsoft.OperationalInsights/workspaces/<WorkspaceName>"
-   workspaceRegion       = "eastus"
+   workspaceRegion       = "<workspaceRegion>"
    k8sNamespaces        = ["namespace1", "namespace2"]
    resourceTagValues     = {
      "environment" = "production"

@@ -5,7 +5,7 @@ variable "aksResourceId" {
 
 variable "aksResourceLocation" {
   type        = string
-  description = "Location of the AKS resource e.g. \"East US\""
+  description = "Location of the AKS Resource"
 }
 
 variable "workspaceRegion" {
