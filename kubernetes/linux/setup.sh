@@ -48,7 +48,7 @@ echo "Azure mdsd: $mdsd_version" >> packages_version.txt
 
 # install AMACA for otel
 sudo curl -L -O https://github.com/microsoft/Docker-Provider/releases/download/windows-ama-bits/Azure.Monitor.CoreAgent.Linux-x64-AOT.1.0.2903-alpha.nupkg
-unzip -o Azure.Monitor.CoreAgent.Linux-x64-AOT.1.0.2903-alpha.nupkg -d amaca
+sudo unzip -o Azure.Monitor.CoreAgent.Linux-x64-AOT.1.0.2903-alpha.nupkg -d amaca
 cp -r amaca/* /opt/
 rm -rf amaca Azure.Monitor.CoreAgent.Linux-x64-AOT.1.0.2903-alpha.nupkg
 
