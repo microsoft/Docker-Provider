@@ -1,9 +1,12 @@
 ARG WINDOWS_VERSION=
 FROM mcr.microsoft.com/windows/nanoserver:ltsc2025
-LABEL maintainer="OMSContainers@microsoft.com"
-LABEL vendor=Microsoft\ Corp \
-    com.microsoft.product="Azure Monitor for containers"
+# LABEL maintainer="OMSContainers@microsoft.com"
+# LABEL vendor=Microsoft\ Corp \
+#     com.microsoft.product="Azure Monitor for containers"
 
+SHELL ["cmd", "/S", "/C"]
+RUN mkdir C:\download
+RUN mkdir C:\PowerShell
 # Download PowerShell Core directly in Nano Server using curl (which is available in Nano Server)
 # Define PowerShell version and download URL
 ENV POWERSHELL_VERSION=7.3.4 \
