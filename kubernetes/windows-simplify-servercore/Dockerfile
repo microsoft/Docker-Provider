@@ -1,30 +1,12 @@
+# Supported values of windows version are ltsc2019 or ltsc2022 which are being passed by the build script or build pipeline
 ARG WINDOWS_VERSION=
-FROM mcr.microsoft.com/windows/nanoserver:ltsc2025
+FROM mcr.microsoft.com/windows/servercore:${WINDOWS_VERSION}
 LABEL maintainer="OMSContainers@microsoft.com"
 LABEL vendor=Microsoft\ Corp \
     com.microsoft.product="Azure Monitor for containers"
 
-# Download PowerShell Core directly in Nano Server using curl (which is available in Nano Server)
-# Define PowerShell version and download URL
-ENV POWERSHELL_VERSION=7.3.4 \
-    POWERSHELL_PACKAGE=PowerShell-7.3.4-win-x64.zip \
-    DOWNLOAD_URL=https://github.com/PowerShell/PowerShell/releases/download/v7.3.4/PowerShell-7.3.4-win-x64.zip
-
-# Download PowerShell using curl and extract it
-RUN curl.exe -L -o C:\download\%POWERSHELL_PACKAGE% %DOWNLOAD_URL% && \
-    tar.exe -xf C:\download\%POWERSHELL_PACKAGE% -C C:\PowerShell && \
-    del C:\download\%POWERSHELL_PACKAGE%
-
-
-# Add PowerShell to the PATH
-ENV PATH="C:\PowerShell;${PATH}"
-
-# Switch to PowerShell for remaining commands
-SHELL ["C:\\PowerShell\\pwsh.exe", "-Command"]
-
-
-#RUN reg add "HKLM\Software\Microsoft\Cryptography\Wintrust\Config" /v "EnableCertPaddingCheck" /t REG_DWORD /d "1" /f
-#RUN reg add "HKLM\Software\Wow6432Node\Microsoft\Cryptography\Wintrust\Config" /v "EnableCertPaddingCheck" /t REG_DWORD /d "1" /f
+RUN reg add "HKLM\Software\Microsoft\Cryptography\Wintrust\Config" /v "EnableCertPaddingCheck" /t REG_DWORD /d "1" /f
+RUN reg add "HKLM\Software\Wow6432Node\Microsoft\Cryptography\Wintrust\Config" /v "EnableCertPaddingCheck" /t REG_DWORD /d "1" /f
 
 # # Do not split this into multiple RUN!
 # # Docker creates a layer for every RUN-Statement
@@ -64,7 +46,7 @@ SHELL ["C:\\PowerShell\\pwsh.exe", "-Command"]
 # # Remove gem cache and chocolatey
 # RUN powershell -Command "Remove-Item -Force C:\ruby31\lib\ruby\gems\3.1.0\cache\*.gem; Remove-Item -Recurse -Force 'C:\ProgramData\chocolatey'; Remove-Item -Recurse -Force 'C:\Users\ContainerAdministrator\AppData\Local\Temp'"
 
-#SHELL ["powershell"]
+SHELL ["powershell"]
 
 ENV tmpdir /opt/amalogswindows/scripts/powershell
 ARG WINDOWS_AMA_URL=
