@@ -8,6 +8,68 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 07/11/2025 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.28 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.28 (windows)
+- Linux
+  - [azurelinux 3.0.20250702](https://github.com/microsoft/azurelinux/releases/tag/3.0.20250702-3.0)
+  - Golang - 1.23.8
+  - Ruby - arm64 - 3.3.5, x86_64 - 3.3.8
+  - MDSD - 1.35.7
+  - Telegraf - 1.34.3
+  - Fluent-bit - 3.1.9
+  - Fluentd - 1.16.3
+- Windows
+  - Golang - 1.23.8
+  - Ruby - 3.1.1
+  - Windows AMA - 46.31.3
+  - Telegraf - 1.24.2
+  - Fluent-bit - 4.0.3
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Note
+  * Additional network metrics bytes_sent, bytes_recv, err_in and error_out collected for loopback interface to InsightsMetrics in the previous release is reverted back in this release.
+- Linux
+  * Mariner 3 upgrade by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1439
+  * Filter out loopback metrics by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1444
+  * Update QoS dashboard json templates by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1465
+  * CVE 202543857: uninstall net-imap gem by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1480
+  * mdsd version upgrade 1.35.7 by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1492
+
+- Windows
+  * fix fluentd startup failure in legacy cluster and guardian check ignore by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1467
+  * Upgraded fluent-bit for windows with latest version by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1479
+  * Zane/win ama agent 46.31.3 by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1493
+  * Fix AMCS endpoint by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1501
+  * AMCS bug fix for Geneva by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1503
+
+- Azure Arc K8s Extension
+  * Disable custom metrics for Arc by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1481
+  * Add high logs scale support for ARC by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1491
+
+- Common
+  * Fix geneva resource optimization by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1447
+  * Update script version for kind cluster by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1451
+  * Test Automation Framework improvements by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1449
+  * Update conformnace test by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1452
+  * Longw/update arc pipeline by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1461
+  * TAF: Check errors in process files by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1460
+  * Zane/guardian fix by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1482
+  * rename gdnsuppress by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1484
+  * Longw/high scale and networkflow logs Bicep templates by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1470
+  * remove manual suppression by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1486
+  * Auto-generated baselines by 1ES Pipeline Templates by @microsoft-github-policy-service in https://github.com/microsoft/Docker-Provider/pull/1446
+  * inject images to default component detection used by 1ES by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1490
+  * Gangams/bleu updates by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1477
+  * Longw/high scale terraform by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1488
+  * geneva identity by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1489
+  * Longw/containerlogv2 telemetry dcr by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1487
+  * fix endpoint name for bleu by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1496
+  * Longw/high scale policy by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1497
+  * Longw/networkflow testkube by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1499
+  * Longw/multi tenant templates by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1502
+
 ### 05/08/2025 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.27 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.27 (windows)
@@ -45,6 +107,9 @@ additional questions or comments.
   * fix conformance test @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1350
   * Test automation: added tests for LA data flow @suyadav1 https://github.com/microsoft/Docker-Provider/pull/1366
   * multi-tenancy public preview configmap updates @ganga1980 https://github.com/microsoft/Docker-Provider/pull/1367
+  * Migrate esrp from corp to ame by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1438
+  * Migrate merged build pipeline to governed pipeline template  by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1442
+  * Governed release yamls migration by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1448
 - Linux
   * Update ARM template parameter check for enableRetinaNetworkFlags @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1421
   * retina networkflow logs @wanlonghenry https://github.com/microsoft/Docker-Provider/pull/1372
