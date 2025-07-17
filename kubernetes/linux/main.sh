@@ -60,15 +60,15 @@ getClusterCloudEnvironment() {
 }
 
 startAMACoreAgent() {
-      echo "AMACoreAgent: Starting AMA Core Agent since High Log scale mode is enabled"
+      echo "AMACoreAgent: Starting AMA Core Agent for otel"
 
-      export AMACALogFileDir="/var/opt/microsoft/linuxmonagent/amaca/log"
+      export AMACALogFileDir="/var/opt/microsoft/azuremonitoragent/log"
       export AMACALogFilePath="$AMACALogFileDir"/amaca.log
-      export PA_DATA_PORT=13000
+      export PA_DATA_PORT=13005
       export PA_GIG_BRIDGE_MODE=true
       export GIG_PA_ENABLE_OPTIMIZATION=true
       export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
-      export PA_CONFIG_PORT=12563
+      export PA_CONFIG_PORT=12564
       export CounterDataReportFrequencyInMinutes=60
 
       {
@@ -82,7 +82,7 @@ startAMACoreAgent() {
       } >> ~/.bashrc
 
       source ~/.bashrc
-      /opt/microsoft/azure-mdsd/bin/amacoreagent --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath --giglaport $PA_DATA_PORT > /dev/null 2>&1 &
+      /opt/microsoft/azuremonitoragent/content/AMACoreAgent --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath --giglaport $PA_DATA_PORT > /dev/null 2>&1 &
 
       waitforlisteneronTCPport "$PA_DATA_PORT" "$WAITTIME_PORT_13000"
       waitforlisteneronTCPport "$PA_CONFIG_PORT" "$WAITTIME_PORT_12563"
@@ -1088,9 +1088,10 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
     fi
 else
       echo "starting mdsd in main container..."
-      if isHighLogScaleMode; then
-            startAMACoreAgent
-      fi
+      # if isHighLogScaleMode; then
+      # start core agent for otlp
+      startAMACoreAgent
+      # fi
       export MDSD_ROLE_PREFIX=/var/run/mdsd-ci/default
       echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >> ~/.bashrc
       if [[ "${GENEVA_LOGS_INTEGRATION}" != "true" ]]; then
