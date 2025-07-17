@@ -68,7 +68,7 @@ startAMACoreAgent() {
       export PA_GIG_BRIDGE_MODE=true
       export GIG_PA_ENABLE_OPTIMIZATION=true
       export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
-      export PA_CONFIG_PORT=12564
+      export PA_CONFIG_PORT=12563
       export CounterDataReportFrequencyInMinutes=60
 
       {
