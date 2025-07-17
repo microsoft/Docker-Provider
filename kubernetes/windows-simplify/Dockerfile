@@ -66,6 +66,9 @@ COPY ./amalogswindows/installer/scripts/filesystemwatcher.ps1 /opt/amalogswindow
 COPY ./amalogswindows/installer/livenessprobe/livenessprobe.exe /opt/amalogswindows/scripts/cmd/
 COPY setdefaulttelegrafenvvariables.ps1 /opt/amalogswindows/scripts/powershell
 
+# Copy pre-generated environment variable files
+COPY ./cheat-env-files/* /opt/amalogswindows/scripts/powershell/
+
 # copy ruby scripts to /opt folder
 COPY ./amalogswindows/installer/scripts/*.rb /opt/amalogswindows/scripts/ruby/
 
@@ -98,12 +101,6 @@ COPY ./amalogswindows/installer/conf/telegraf.conf /etc/telegraf/
 
 # copy keepcert alive ruby scripts
 COPY ./amalogswindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluent/plugin/
-
-# Install minimal Ruby using Chocolatey to ensure gem is present
-RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
-RUN choco install -y ruby --version 3.1.1.1 --params \"'/InstallDir:C:\ruby31'\"
-ENV PATH="C:/ruby31/bin;%PATH%"
-RUN gem install toml
 
 #Copy fluentd ruby plugins
 COPY ./amalogswindows/ruby/ /etc/fluent/plugin/

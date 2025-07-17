@@ -523,7 +523,7 @@ function Set-EnvironmentVariables {
 
 function Read-Configs {
     #Parse the configmap to set the right environment variables for agent config.
-    ruby /opt/amalogswindows/scripts/ruby/tomlparser-common-agent-config.rb
+    # ruby /opt/amalogswindows/scripts/ruby/tomlparser-common-agent-config.rb
     Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setcommonagentenv.txt"
 
     # check if high log scale mode enabled
@@ -534,14 +534,14 @@ function Read-Configs {
     }
 
     # run config parser
-    ruby /opt/amalogswindows/scripts/ruby/tomlparser.rb
+    # ruby /opt/amalogswindows/scripts/ruby/tomlparser.rb
     Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setenv.txt"
 
     #Parse the configmap to set the right environment variables for agent config.
-    ruby /opt/amalogswindows/scripts/ruby/tomlparser-agent-config.rb
+    # ruby /opt/amalogswindows/scripts/ruby/tomlparser-agent-config.rb
     Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setagentenv.txt"
 
-    ruby /opt/amalogswindows/scripts/ruby/tomlparser-geneva-config.rb
+    # ruby /opt/amalogswindows/scripts/ruby/tomlparser-geneva-config.rb
     Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setgenevaconfigenv.txt"
 
     $genevaLogsIntegration = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_INTEGRATION", "process")
@@ -556,7 +556,7 @@ function Read-Configs {
     }
 
     #Replace placeholders in fluent-bit.conf
-    ruby /opt/amalogswindows/scripts/ruby/fluent-bit-conf-customizer.rb
+    # ruby /opt/amalogswindows/scripts/ruby/fluent-bit-conf-customizer.rb
 
     $enableFbitInternalMetrics = [System.Environment]::GetEnvironmentVariable("ENABLE_FBIT_INTERNAL_METRICS", "process")
     if (![string]::IsNullOrEmpty($enableFbitInternalMetrics)) {
@@ -630,7 +630,7 @@ function Read-Configs {
     }
 
     # run mdm config parser
-    ruby /opt/amalogswindows/scripts/ruby/tomlparser-mdm-metrics-config.rb
+    #ruby /opt/amalogswindows/scripts/ruby/tomlparser-mdm-metrics-config.rb
     Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setmdmenv.txt"
 }
 
@@ -785,7 +785,7 @@ function Start-Fluent-Telegraf {
     Set-ProcessAndMachineEnvVariables "TELEMETRY_CUSTOM_PROM_MONITOR_PODS" "false"
     # run prometheus custom config parser
     Write-Host "**********Running config parser for custom prometheus scraping**********"
-    ruby /opt/amalogswindows/scripts/ruby/tomlparser-prom-customconfig.rb
+    #ruby /opt/amalogswindows/scripts/ruby/tomlparser-prom-customconfig.rb
 
     Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setpromenv.txt"
 
