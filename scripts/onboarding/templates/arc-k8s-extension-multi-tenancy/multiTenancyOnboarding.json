@@ -1,0 +1,174 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "clusterResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource Id of the Azure Arc Connected Cluster"
+      }
+    },
+    "clusterRegion": {
+      "type": "string",
+      "metadata": {
+        "description": "Location of the Azure Arc Connected Cluster Resource e.g. \"eastus\""
+      }
+    },
+    "workspaceResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure Monitor Log Analytics Resource ID"
+      }
+    },
+    "workspaceRegion": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure Monitor Log Analytics Workspace region e.g. \"eastus\""
+      }
+    },
+    "resourceTagValues": {
+      "type": "object",
+      "metadata": {
+        "description": "Existing or new tags to use on DCR resources"
+      }
+    },
+    "k8sNamespaces": {
+      "type": "array",
+      "metadata": {
+        "description": "An array of Kubernetes namespaces for Multi-tenancy logs filtering"
+      }
+    },
+    "transformKql": {
+      "type": "string",
+      "metadata": {
+        "description": "KQL filter for ingestion transformation"
+      }
+    }
+  },
+  "variables": {
+    "clusterSubscriptionId": "[split(parameters('clusterResourceId'),'/')[2]]",
+    "clusterResourceGroup": "[split(parameters('clusterResourceId'),'/')[4]]",
+    "clusterName": "[split(parameters('clusterResourceId'),'/')[8]]",
+    "workspaceName": "[split(parameters('workspaceResourceId'),'/')[8]]",
+    "workspaceLocation": "[replace(parameters('workspaceRegion'),' ', '')]",
+    "dcrNameFull": "[Concat('MSCI-multi-tenancy', '-', variables('workspaceLocation'), '-', variables('clusterName'))]",
+    "dcrName": "[if(greater(length(variables('dcrNameFull')), 64), substring(variables('dcrNameFull'), 0, 64), variables('dcrNameFull'))]",
+    "associationName": "ContainerLogV2MultiTenancyExtension",
+    "dataCollectionRuleId": "[resourceId(variables('clusterSubscriptionId'), variables('clusterResourceGroup'), 'Microsoft.Insights/dataCollectionRules', variables('dcrName'))]",
+    "ingestionDCENameFull": "[Concat('MSCI-ingest', '-', variables('workspaceLocation'), '-', variables('clusterName'))]",
+    "ingestionDCEName": "[if(greater(length(variables('ingestionDCENameFull')), 43), substring(variables('ingestionDCENameFull'), 0, 43), variables('ingestionDCENameFull'))]",
+    "ingestionDCE": "[if(endsWith(variables('ingestionDCEName'), '-'), substring(variables('ingestionDCEName'), 0, 42), variables('ingestionDCEName'))]",
+    "ingestionDataCollectionEndpointId": "[resourceId(variables('clusterSubscriptionId'), variables('clusterResourceGroup'), 'Microsoft.Insights/dataCollectionEndpoints', variables('ingestionDCE'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Insights/dataCollectionEndpoints",
+      "apiVersion": "2022-06-01",
+      "name": "[variables('ingestionDCE')]",
+      "location": "[variables('workspaceLocation')]",
+      "kind": "Linux",
+      "tags": "[parameters('resourceTagValues')]",
+      "properties": {
+        "networkAcls": {
+          "publicNetworkAccess": "Enabled"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "name": "[Concat('arc-k8s-monitoring-msi-dcr', '-',  uniqueString(variables('dcrName')))]",
+      "apiVersion": "2017-05-10",
+      "subscriptionId": "[variables('clusterSubscriptionId')]",
+      "resourceGroup": "[variables('clusterResourceGroup')]",
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "variables": {},
+          "resources": [
+            {
+              "type": "Microsoft.Insights/dataCollectionRules",
+              "apiVersion": "2022-06-01",
+              "name": "[variables('dcrName')]",
+              "location": "[parameters('workspaceRegion')]",
+              "kind": "Linux",
+              "tags": "[parameters('resourceTagValues')]",
+              "properties": {
+                "dataSources": {
+                  "extensions": [
+                    {
+                      "name": "ContainerLogV2Extension",
+                      "streams": [
+                        "Microsoft-ContainerLogV2-HighScale"
+                      ],
+                      "extensionSettings": {
+                        "dataCollectionSettings": {
+                          "namespaces": "[parameters('k8sNamespaces')]"
+                        }
+                      },
+                      "extensionName": "ContainerLogV2Extension"
+                    }
+                  ]
+                },
+                "destinations": {
+                  "logAnalytics": [
+                    {
+                      "workspaceResourceId": "[parameters('workspaceResourceId')]",
+                      "name": "ciworkspace"
+                    }
+                  ]
+                },
+                "dataFlows": [
+                  {
+                    "streams": [
+                      "Microsoft-ContainerLogV2-HighScale"
+                    ],
+                    "destinations": [
+                      "ciworkspace"
+                    ],
+                    "transformKql": "[if(empty(parameters('transformKql')), json('null'), parameters('transformKql'))]"
+                  }
+                ],
+                "dataCollectionEndpointId": "[variables('ingestionDataCollectionEndpointId')]"
+              }
+            }
+          ]
+        },
+        "parameters": {}
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "name": "[Concat('arc-k8s-monitoring-msi-dcra', '-',  uniqueString(parameters('clusterResourceId')))]",
+      "apiVersion": "2017-05-10",
+      "subscriptionId": "[variables('clusterSubscriptionId')]",
+      "resourceGroup": "[variables('clusterResourceGroup')]",
+      "dependsOn": [
+        "[Concat('arc-k8s-monitoring-msi-dcr', '-',  uniqueString(variables('dcrName')))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "variables": {},
+          "resources": [
+            {
+              "type": "Microsoft.Kubernetes/connectedClusters/providers/dataCollectionRuleAssociations",
+              "name": "[concat(variables('clusterName'),'/microsoft.insights/', variables('associationName'))]",
+              "apiVersion": "2022-06-01",
+              "properties": {
+                "description": "Association of data collection rule for Multi-tenancy logs. Deleting this association will break the Multi-tenancy logs collection for this Arc K8s Cluster.",
+                "dataCollectionRuleId": "[variables('dataCollectionRuleId')]"
+              }
+            }
+          ]
+        },
+        "parameters": {}
+      }
+    }
+  ]
+}
