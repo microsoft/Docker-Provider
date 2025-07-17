@@ -55,7 +55,7 @@
     "dcrName": "[if(greater(length(variables('dcrNameFull')), 64), substring(variables('dcrNameFull'), 0, 64), variables('dcrNameFull'))]",
     "associationName": "ContainerLogV2MultiTenancyExtension",
     "dataCollectionRuleId": "[resourceId(variables('clusterSubscriptionId'), variables('clusterResourceGroup'), 'Microsoft.Insights/dataCollectionRules', variables('dcrName'))]",
-    "ingestionDCENameFull": "[Concat('MSCI-ingest', '-', variables('workspaceLocation'), '-', variables('clusterName'))]",
+    "ingestionDCENameFull": "[Concat('MSCI-multi-tenancy', '-', variables('workspaceLocation'), '-', variables('clusterName'))]",
     "ingestionDCEName": "[if(greater(length(variables('ingestionDCENameFull')), 43), substring(variables('ingestionDCENameFull'), 0, 43), variables('ingestionDCENameFull'))]",
     "ingestionDCE": "[if(endsWith(variables('ingestionDCEName'), '-'), substring(variables('ingestionDCEName'), 0, 42), variables('ingestionDCEName'))]",
     "ingestionDataCollectionEndpointId": "[resourceId(variables('clusterSubscriptionId'), variables('clusterResourceGroup'), 'Microsoft.Insights/dataCollectionEndpoints', variables('ingestionDCE'))]"
