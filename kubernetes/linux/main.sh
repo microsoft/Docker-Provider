@@ -79,10 +79,11 @@ startAMACoreAgent() {
          echo "export PA_CONFIG_PORT=$PA_CONFIG_PORT"
          echo "export CounterDataReportFrequencyInMinutes=$CounterDataReportFrequencyInMinutes"
          echo "export AMACALogFilePath=$AMACALogFilePath"
+         echo "export PA_VERBOSE=true"
       } >> ~/.bashrc
 
       source ~/.bashrc
-      /opt/microsoft/azuremonitoragent/content/AMACoreAgent --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath --giglaport $PA_DATA_PORT > /dev/null 2>&1 &
+      /opt/microsoft/azuremonitoragent/content/AMACoreAgent --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath --giglaport $PA_DATA_PORT -v > /dev/null 2>&1 &
 
       waitforlisteneronTCPport "$PA_DATA_PORT" "$WAITTIME_PORT_13000"
       waitforlisteneronTCPport "$PA_CONFIG_PORT" "$WAITTIME_PORT_12563"
