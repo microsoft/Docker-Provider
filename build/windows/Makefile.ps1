@@ -11,7 +11,7 @@ $dotnetcoreframework = "net6.0"
 $dotnetExe = "C:\dotnet\dotnet.exe"
 
 # Define Go and GCC executable paths
-$goExe = "C:\GO\bin\go.exe"
+$goExe = "go"
 $gccExe = "C:\gcc\bin\g++.exe"
 
 Write-Host("Building Certificate generator code...")
