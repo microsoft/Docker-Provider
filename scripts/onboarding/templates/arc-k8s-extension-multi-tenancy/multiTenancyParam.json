@@ -1,0 +1,35 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "clusterResourceId": {
+      "value": "/subscriptions/<SubscriptionId>/resourceGroups/<ResourceGroup>/providers/Microsoft.Kubernetes/connectedClusters/<ResourceName>"
+    },
+    "clusterRegion": {
+      "value": "<aksClusterLocation>"
+    },
+    "workspaceResourceId": {
+      "value": "/subscriptions/<SubscriptionId>/resourceGroups/<ResourceGroup>/providers/Microsoft.OperationalInsights/workspaces/<workspaceName>"
+    },
+    "workspaceRegion": {
+      "value": "<workspaceRegion>"
+    },
+    "k8sNamespaces": {
+      "value": [
+        "<namespace1>",
+        "<namespace2>",
+        "<namespaceN>"
+      ]
+    },
+    "transformKql": {
+      "value": "<KQL filter for ingestion transformation>"
+    },
+    "resourceTagValues": {
+      "value": {
+        "<existingOrnew-tag-name1>": "<existingOrnew-tag-value1>",
+        "<existingOrnew-tag-name2>": "<existingOrnew-tag-value2>",
+        "<existingOrnew-tag-nameN>": "<existingOrnew-tag-valueN>"
+      }
+    }
+  }
+}
