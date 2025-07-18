@@ -28,3 +28,4 @@ require (
 )
 
 replace Docker-Provider/source/plugins/go/src => ../src
+replace github.com/calyptia/cmetrics-go => ./cmetrics-go

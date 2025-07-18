@@ -93,12 +93,12 @@ COPY ./cheat-env-files/* /opt/amalogswindows/scripts/powershell/
 # copy ruby scripts to /opt folder
 COPY ./amalogswindows/installer/scripts/*.rb /opt/amalogswindows/scripts/ruby/
 
-# copy out_oms.so file
-COPY ./amalogswindows/out_oms.so /opt/amalogswindows/out_oms.so
+# # copy out_oms.so file
+# COPY ./amalogswindows/out_oms.so /opt/amalogswindows/out_oms.so
 
-# copy containerinventory.so and perf.so file
-COPY ./amalogswindows/containerinventory.so /opt/fluent-bit/bin/containerinventory.so
-COPY ./amalogswindows/perf.so /opt/fluent-bit/bin/perf.so
+# # copy containerinventory.so and perf.so file
+# COPY ./amalogswindows/containerinventory.so /opt/fluent-bit/bin/containerinventory.so
+# COPY ./amalogswindows/perf.so /opt/fluent-bit/bin/perf.so
 
 # copy fluent, fluent-bit and out_oms conf files
 COPY ./amalogswindows/installer/conf/fluent.conf /etc/fluent/
