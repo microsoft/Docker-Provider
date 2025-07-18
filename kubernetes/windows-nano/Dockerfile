@@ -152,4 +152,5 @@ ENV CI_KEY_LOCATION "C://oms.key"
 # Remove-Item -Force 'C:\ruby31\bin\ridk.ps1'"
 
 #ENTRYPOINT ["powershell", "C:\\opt\\amalogswindows\\scripts\\powershell\\main.ps1"]
-ENTRYPOINT ["cmd.exe", "/K"]
+#ENTRYPOINT ["cmd.exe", "/K"]
+ENTRYPOINT ["C:\\PowerShell\\pwsh.exe", "-NoExit"]
