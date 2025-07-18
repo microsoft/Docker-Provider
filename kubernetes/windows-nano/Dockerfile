@@ -151,4 +151,5 @@ ENV CI_KEY_LOCATION "C://oms.key"
 # Remove-Item -Recurse -Force 'C:\ruby31\lib\ruby\3.1.0\rdoc\generator\template\darkfish\js'; \
 # Remove-Item -Force 'C:\ruby31\bin\ridk.ps1'"
 
-ENTRYPOINT ["powershell", "C:\\opt\\amalogswindows\\scripts\\powershell\\main.ps1"]
+#ENTRYPOINT ["powershell", "C:\\opt\\amalogswindows\\scripts\\powershell\\main.ps1"]
+ENTRYPOINT ["cmd.exe"]
