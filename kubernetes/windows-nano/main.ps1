@@ -70,7 +70,7 @@ function Test-FluentbitTcpListener {
 }
 
 function Start-FileSystemWatcher {
-    Start-Process powershell -NoNewWindow .\filesystemwatcher.ps1
+    Start-Process pwsh -NoNewWindow .\filesystemwatcher.ps1
 }
 
 function Set-ProcessAndMachineEnvVariables($name, $value) {
