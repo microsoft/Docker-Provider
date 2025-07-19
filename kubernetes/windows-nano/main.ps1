@@ -43,8 +43,8 @@ function Test-FluentbitTcpListener {
     $waitTimeSecs = [System.Environment]::GetEnvironmentVariable("WAITTIME_PORT_25229", "process")
     if (![string]::IsNullOrEmpty($waitTimeSecs)) {
         [System.Environment]::SetEnvironmentVariable("WAITTIME_PORT_25229", $waitTimeSecs, "Process")
-        [System.Environment]::SetEnvironmentVariable("WAITTIME_PORT_25229", $waitTimeSecs, "Machine")
-        Write-Host "Successfully set environment variable WAITTIME_PORT_25229 - $($waitTimeSecs) for target 'machine'..."
+        #[System.Environment]::SetEnvironmentVariable("WAITTIME_PORT_25229", $waitTimeSecs, "Machine")
+        #Write-Host "Successfully set environment variable WAITTIME_PORT_25229 - $($waitTimeSecs) for target 'machine'..."
     } else {
         Write-Host "Failed to set environment variable WAITTIME_PORT_25229 for target 'machine' since it is either null or empty"
         $waitTimeSecs = 30
@@ -56,9 +56,10 @@ function Test-FluentbitTcpListener {
     while ($retryAttempts -lt $retryCount) {
         $retryAttempts++
         Write-Host "Test-FluentbitTcpListener: Retry attempt $retryAttempts/$retryCount..."
-        # $netstatOutput = netstat -an | Select-String "LISTENING"
-        $netstatOutput = Get-NetTCPConnection | Where-Object { $_.State -eq 'Listen' }
-        if ($netstatOutput -match ":$port") {
+        # Use full path to netstat.exe and filter output in PowerShell
+        $netstatOutput = & "C:\Windows\System32\netstat.exe" -an
+        $listenerLines = $netstatOutput | Select-String "LISTENING"
+        if ($listenerLines -match ":$port") {
             Write-Host "Test-FluentbitTcpListener: Fluentbit TCP listener is UP and running on port $port."
             return $true
         }
