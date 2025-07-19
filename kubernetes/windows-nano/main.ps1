@@ -1017,7 +1017,7 @@ Start-Transcript -Path main.txt
 Set-AgentConfigSchemaVersion
 Read-Configs
 Set-EnvironmentVariables
-Start-FileSystemWatcher
+#Start-FileSystemWatcher
 
 #Bootstrapping CA certs for non public clouds and AKS clusters
 $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID")
