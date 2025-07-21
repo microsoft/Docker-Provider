@@ -64,7 +64,7 @@ This Terraform configuration enables multi-tenancy monitoring for an existing AK
 | Variable | Description | Required |
 |----------|-------------|----------|
 | aksResourceId | Full resource ID of the existing AKS cluster | Yes |
-| aksResourceLocation | Location of the AKS resource (e.g., "East US") | Yes |
+| aksResourceLocation | Location of the AKS resource (e.g., "eastus") | Yes |
 | workspaceResourceId | Full resource ID of the Log Analytics workspace | Yes |
 | workspaceRegion | Region of the Log Analytics workspace | Yes |
 | k8sNamespaces | Array of Kubernetes namespaces to monitor | Yes |
