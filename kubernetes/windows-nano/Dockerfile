@@ -156,4 +156,4 @@ ENV CI_KEY_LOCATION "C://oms.key"
 #ENTRYPOINT ["C:\\PowerShell\\pwsh.exe", "-NoExit"]
 #ENTRYPOINT ["C:\\PowerShell\\pwsh.exe", "-File", "C:\\opt\\amalogswindows\\scripts\\powershell\\main.ps1"]
 COPY main_keep_alive.ps1 /opt/amalogswindows/scripts/powershell
-ENTRYPOINT ["C:\\PowerShell\\pwsh.exe", "-File", "C:\\opt\\amalogswindows\\scripts\\powershell\\main.ps1"]
+ENTRYPOINT ["C:\\PowerShell\\pwsh.exe", "-File", "C:\\opt\\amalogswindows\\scripts\\powershell\\main_keep_alive.ps1"]
