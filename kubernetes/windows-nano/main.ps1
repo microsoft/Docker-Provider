@@ -43,8 +43,8 @@ function Test-FluentbitTcpListener {
     $waitTimeSecs = [System.Environment]::GetEnvironmentVariable("WAITTIME_PORT_25229", "process")
     if (![string]::IsNullOrEmpty($waitTimeSecs)) {
         [System.Environment]::SetEnvironmentVariable("WAITTIME_PORT_25229", $waitTimeSecs, "Process")
-        #[System.Environment]::SetEnvironmentVariable("WAITTIME_PORT_25229", $waitTimeSecs, "Machine")
-        #Write-Host "Successfully set environment variable WAITTIME_PORT_25229 - $($waitTimeSecs) for target 'machine'..."
+        [System.Environment]::SetEnvironmentVariable("WAITTIME_PORT_25229", $waitTimeSecs, "Machine")
+        Write-Host "Successfully set environment variable WAITTIME_PORT_25229 - $($waitTimeSecs) for target 'machine'..."
     } else {
         Write-Host "Failed to set environment variable WAITTIME_PORT_25229 for target 'machine' since it is either null or empty"
         $waitTimeSecs = 30
@@ -126,32 +126,32 @@ function Set-CommonAMAEnvironmentVariables {
     Set-ProcessAndMachineEnvVariables "MONITORING_ROLE" "cloudAgentRoleIdentity"
     Set-ProcessAndMachineEnvVariables "MONITORING_IDENTITY" "use_ip_address"
 
-    # $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID", "process")
-    # if (![string]::IsNullOrEmpty($aksResourceId)) {
-    #     [System.Environment]::SetEnvironmentVariable("AKS_RESOURCE_ID", $aksResourceId, "machine")
-    #     Write-Host "Successfully set environment variable AKS_RESOURCE_ID - $($aksResourceId) for target 'machine'..."
-    # }
-    # else {
-    #     Write-Host "Failed to set environment variable AKS_RESOURCE_ID for target 'machine' since it is either null or empty"
-    # }
+    $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID", "process")
+    if (![string]::IsNullOrEmpty($aksResourceId)) {
+        [System.Environment]::SetEnvironmentVariable("AKS_RESOURCE_ID", $aksResourceId, "machine")
+        Write-Host "Successfully set environment variable AKS_RESOURCE_ID - $($aksResourceId) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable AKS_RESOURCE_ID for target 'machine' since it is either null or empty"
+    }
 
-    # $aksRegion = [System.Environment]::GetEnvironmentVariable("AKS_REGION", "process")
-    # if (![string]::IsNullOrEmpty($aksRegion)) {
-    #     [System.Environment]::SetEnvironmentVariable("AKS_REGION", $aksRegion, "machine")
-    #     Write-Host "Successfully set environment variable AKS_REGION - $($aksRegion) for target 'machine'..."
-    # }
-    # else {
-    #     Write-Host "Failed to set environment variable AKS_REGION for target 'machine' since it is either null or empty"
-    # }
+    $aksRegion = [System.Environment]::GetEnvironmentVariable("AKS_REGION", "process")
+    if (![string]::IsNullOrEmpty($aksRegion)) {
+        [System.Environment]::SetEnvironmentVariable("AKS_REGION", $aksRegion, "machine")
+        Write-Host "Successfully set environment variable AKS_REGION - $($aksRegion) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable AKS_REGION for target 'machine' since it is either null or empty"
+    }
 
-    # $clusterCloudEnvironment = [System.Environment]::GetEnvironmentVariable("CLUSTER_CLOUD_ENVIRONMENT", "process")
-    # if (![string]::IsNullOrEmpty($clusterCloudEnvironment)) {
-    #     [System.Environment]::SetEnvironmentVariable("CLUSTER_CLOUD_ENVIRONMENT", $clusterCloudEnvironment, "machine")
-    #     Write-Host "Successfully set environment variable CLUSTER_CLOUD_ENVIRONMENT - $($clusterCloudEnvironment) for target 'machine'..."
-    # }
-    # else {
-    #     Write-Host "Failed to set environment variable CLUSTER_CLOUD_ENVIRONMENT since it is either null or empty"
-    # }
+    $clusterCloudEnvironment = [System.Environment]::GetEnvironmentVariable("CLUSTER_CLOUD_ENVIRONMENT", "process")
+    if (![string]::IsNullOrEmpty($clusterCloudEnvironment)) {
+        [System.Environment]::SetEnvironmentVariable("CLUSTER_CLOUD_ENVIRONMENT", $clusterCloudEnvironment, "machine")
+        Write-Host "Successfully set environment variable CLUSTER_CLOUD_ENVIRONMENT - $($clusterCloudEnvironment) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable CLUSTER_CLOUD_ENVIRONMENT since it is either null or empty"
+    }
 
     Set-ProcessAndMachineEnvVariables "MA_RoleEnvironment_Location" $aksRegion
     Set-ProcessAndMachineEnvVariables "MA_RoleEnvironment_ResourceId" $aksResourceId
@@ -176,7 +176,7 @@ function Set-AMA3PEnvironmentVariables {
 function Generate-GenevaTenantNameSpaceConfig {
      $genevaLogsTenantNameSpaces = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_TENANT_NAMESPACES", "process")
     if (![string]::IsNullOrEmpty($genevaLogsTenantNameSpaces)) {
-        #[System.Environment]::SetEnvironmentVariable("GENEVA_LOGS_TENANT_NAMESPACES", $genevaLogsTenantNameSpaces, "machine")
+        [System.Environment]::SetEnvironmentVariable("GENEVA_LOGS_TENANT_NAMESPACES", $genevaLogsTenantNameSpaces, "machine")
         $genevaLogsTenantNameSpacesArray = $genevaLogsTenantNameSpaces.Split(",")
         for ($i = 0; $i -lt $genevaLogsTenantNameSpacesArray.Length; $i = $i + 1) {
           $tenantName = $genevaLogsTenantNameSpacesArray[$i]
@@ -190,7 +190,7 @@ function Generate-GenevaTenantNameSpaceConfig {
 function Generate-GenevaInfraNameSpaceConfig {
    $genevaLogsInfraNameSpaces = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_INFRA_NAMESPACES", "process")
    if (![string]::IsNullOrEmpty($genevaLogsInfraNameSpaces)) {
-       #[System.Environment]::SetEnvironmentVariable("GENEVA_LOGS_INFRA_NAMESPACES", $genevaLogsInfraNameSpaces, "machine")
+       [System.Environment]::SetEnvironmentVariable("GENEVA_LOGS_INFRA_NAMESPACES", $genevaLogsInfraNameSpaces, "machine")
        $genevaLogsInfraNameSpacesArray = $genevaLogsInfraNameSpaces.Split(",")
        for ($i = 0; $i -lt $genevaLogsInfraNameSpacesArray.Length; $i = $i + 1) {
          $infraNameSpaceName = $genevaLogsInfraNameSpacesArray[$i]
@@ -364,14 +364,14 @@ function Set-EnvironmentVariables {
 
     # Set WSID
     [System.Environment]::SetEnvironmentVariable("WSID", $wsID, "Process")
-    #[System.Environment]::SetEnvironmentVariable("WSID", $wsID, "Machine")
+    [System.Environment]::SetEnvironmentVariable("WSID", $wsID, "Machine")
 
     # Don't store WSKEY as environment variable
     $isIgnoreProxySettings = [System.Environment]::GetEnvironmentVariable("IGNORE_PROXY_SETTINGS", "process")
     if (![string]::IsNullOrEmpty($isIgnoreProxySettings)) {
         [System.Environment]::SetEnvironmentVariable("IGNORE_PROXY_SETTINGS", $isIgnoreProxySettings, "Process")
-        #[System.Environment]::SetEnvironmentVariable("IGNORE_PROXY_SETTINGS", $isIgnoreProxySettings, "Machine")
-        #Write-Host "Successfully set environment variable IGNORE_PROXY_SETTINGS - $($isIgnoreProxySettings) for target 'machine'..."
+        [System.Environment]::SetEnvironmentVariable("IGNORE_PROXY_SETTINGS", $isIgnoreProxySettings, "Machine")
+        Write-Host "Successfully set environment variable IGNORE_PROXY_SETTINGS - $($isIgnoreProxySettings) for target 'machine'..."
     }
     if (![string]::IsNullOrEmpty($isIgnoreProxySettings) -and $isIgnoreProxySettings.ToLower() -eq 'true') {
         Write-Host "Ignoring Proxy Setttings since IGNORE_PROXY_SETTINGS is - $($isIgnoreProxySettings)"
@@ -414,68 +414,68 @@ function Set-EnvironmentVariables {
 
         # Set PROXY
         [System.Environment]::SetEnvironmentVariable("PROXY", $proxy, "Process")
-        #[System.Environment]::SetEnvironmentVariable("PROXY", $proxy, "Machine")
+        [System.Environment]::SetEnvironmentVariable("PROXY", $proxy, "Machine")
     }
 
     Set-CloudSpecificApplicationInsightsConfig $cloud_environment
 
-    # Setting environment variables required by the fluentd plugins
-    # $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID", "process")
-    # if (![string]::IsNullOrEmpty($aksResourceId)) {
-    #     [System.Environment]::SetEnvironmentVariable("AKS_RESOURCE_ID", $aksResourceId, "machine")
-    #     Write-Host "Successfully set environment variable AKS_RESOURCE_ID - $($aksResourceId) for target 'machine'..."
-    # }
-    # else {
-    #     Write-Host "Failed to set environment variable AKS_RESOURCE_ID for target 'machine' since it is either null or empty"
-    # }
+    Setting environment variables required by the fluentd plugins
+    $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID", "process")
+    if (![string]::IsNullOrEmpty($aksResourceId)) {
+        [System.Environment]::SetEnvironmentVariable("AKS_RESOURCE_ID", $aksResourceId, "machine")
+        Write-Host "Successfully set environment variable AKS_RESOURCE_ID - $($aksResourceId) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable AKS_RESOURCE_ID for target 'machine' since it is either null or empty"
+    }
 
-    # $aksRegion = [System.Environment]::GetEnvironmentVariable("AKS_REGION", "process")
-    # if (![string]::IsNullOrEmpty($aksRegion)) {
-    #     [System.Environment]::SetEnvironmentVariable("AKS_REGION", $aksRegion, "machine")
-    #     Write-Host "Successfully set environment variable AKS_REGION - $($aksRegion) for target 'machine'..."
-    # }
-    # else {
-    #     Write-Host "Failed to set environment variable AKS_REGION for target 'machine' since it is either null or empty"
-    # }
+    $aksRegion = [System.Environment]::GetEnvironmentVariable("AKS_REGION", "process")
+    if (![string]::IsNullOrEmpty($aksRegion)) {
+        [System.Environment]::SetEnvironmentVariable("AKS_REGION", $aksRegion, "machine")
+        Write-Host "Successfully set environment variable AKS_REGION - $($aksRegion) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable AKS_REGION for target 'machine' since it is either null or empty"
+    }
 
-    # $controllerType = [System.Environment]::GetEnvironmentVariable("CONTROLLER_TYPE", "process")
-    # if (![string]::IsNullOrEmpty($controllerType)) {
-    #     [System.Environment]::SetEnvironmentVariable("CONTROLLER_TYPE", $controllerType, "machine")
-    #     Write-Host "Successfully set environment variable CONTROLLER_TYPE - $($controllerType) for target 'machine'..."
-    # }
-    # else {
-    #     Write-Host "Failed to set environment variable CONTROLLER_TYPE for target 'machine' since it is either null or empty"
-    # }
+    $controllerType = [System.Environment]::GetEnvironmentVariable("CONTROLLER_TYPE", "process")
+    if (![string]::IsNullOrEmpty($controllerType)) {
+        [System.Environment]::SetEnvironmentVariable("CONTROLLER_TYPE", $controllerType, "machine")
+        Write-Host "Successfully set environment variable CONTROLLER_TYPE - $($controllerType) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable CONTROLLER_TYPE for target 'machine' since it is either null or empty"
+    }
 
-    # $osType = [System.Environment]::GetEnvironmentVariable("OS_TYPE", "process")
-    # if (![string]::IsNullOrEmpty($osType)) {
-    #     [System.Environment]::SetEnvironmentVariable("OS_TYPE", $osType, "machine")
-    #     Write-Host "Successfully set environment variable OS_TYPE - $($osType) for target 'machine'..."
-    # }
-    # else {
-    #     Write-Host "Failed to set environment variable OS_TYPE for target 'machine' since it is either null or empty"
-    # }
+    $osType = [System.Environment]::GetEnvironmentVariable("OS_TYPE", "process")
+    if (![string]::IsNullOrEmpty($osType)) {
+        [System.Environment]::SetEnvironmentVariable("OS_TYPE", $osType, "machine")
+        Write-Host "Successfully set environment variable OS_TYPE - $($osType) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable OS_TYPE for target 'machine' since it is either null or empty"
+    }
 
-    # $userMsi = [System.Environment]::GetEnvironmentVariable("USER_ASSIGNED_IDENTITY_CLIENT_ID", "process")
-    # if (![string]::IsNullOrEmpty($userMsi)) {
-    #     [System.Environment]::SetEnvironmentVariable("USER_ASSIGNED_IDENTITY_CLIENT_ID", $userMsi, "machine")
-    #     Write-Host "Successfully set environment variable USER_ASSIGNED_IDENTITY_CLIENT_ID - $($userMsi) for target 'machine'..."
-    # }
+    $userMsi = [System.Environment]::GetEnvironmentVariable("USER_ASSIGNED_IDENTITY_CLIENT_ID", "process")
+    if (![string]::IsNullOrEmpty($userMsi)) {
+        [System.Environment]::SetEnvironmentVariable("USER_ASSIGNED_IDENTITY_CLIENT_ID", $userMsi, "machine")
+        Write-Host "Successfully set environment variable USER_ASSIGNED_IDENTITY_CLIENT_ID - $($userMsi) for target 'machine'..."
+    }
 
-    # $hostName = [System.Environment]::GetEnvironmentVariable("HOSTNAME", "process")
-    # if (![string]::IsNullOrEmpty($hostName)) {
-    #     [System.Environment]::SetEnvironmentVariable("HOSTNAME", $hostName, "machine")
-    #     Write-Host "Successfully set environment variable HOSTNAME - $($hostName) for target 'machine'..."
-    # }
-    # else {
-    #     Write-Host "Failed to set environment variable HOSTNAME for target 'machine' since it is either null or empty"
-    # }
+    $hostName = [System.Environment]::GetEnvironmentVariable("HOSTNAME", "process")
+    if (![string]::IsNullOrEmpty($hostName)) {
+        [System.Environment]::SetEnvironmentVariable("HOSTNAME", $hostName, "machine")
+        Write-Host "Successfully set environment variable HOSTNAME - $($hostName) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable HOSTNAME for target 'machine' since it is either null or empty"
+    }
 
     # check if its AAD Auth MSI mode via USING_AAD_MSI_AUTH environment variable
     $isAADMSIAuth = [System.Environment]::GetEnvironmentVariable("USING_AAD_MSI_AUTH", "process")
     if (![string]::IsNullOrEmpty($isAADMSIAuth)) {
         [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", $isAADMSIAuth, "Process")
-        #[System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", $isAADMSIAuth, "Machine")
+        [System.Environment]::SetEnvironmentVariable("AAD_MSI_AUTH_MODE", $isAADMSIAuth, "Machine")
         Write-Host "Successfully set environment variable AAD_MSI_AUTH_MODE - $($isAADMSIAuth) for target 'machine'..."
     }
 
@@ -483,44 +483,44 @@ function Set-EnvironmentVariables {
     $useIMDSTokenProxyEndpoint = [System.Environment]::GetEnvironmentVariable("USE_IMDS_TOKEN_PROXY_END_POINT", "process")
     if (![string]::IsNullOrEmpty($useIMDSTokenProxyEndpoint)) {
         [System.Environment]::SetEnvironmentVariable("USE_IMDS_TOKEN_PROXY_END_POINT", $useIMDSTokenProxyEndpoint, "Process")
-        #[System.Environment]::SetEnvironmentVariable("USE_IMDS_TOKEN_PROXY_END_POINT", $useIMDSTokenProxyEndpoint, "Machine")
-        #Write-Host "Successfully set environment variable USE_IMDS_TOKEN_PROXY_END_POINT - $($useIMDSTokenProxyEndpoint) for target 'machine'..."
+        [System.Environment]::SetEnvironmentVariable("USE_IMDS_TOKEN_PROXY_END_POINT", $useIMDSTokenProxyEndpoint, "Machine")
+        Write-Host "Successfully set environment variable USE_IMDS_TOKEN_PROXY_END_POINT - $($useIMDSTokenProxyEndpoint) for target 'machine'..."
     }
-    # $nodeIp = [System.Environment]::GetEnvironmentVariable("NODE_IP", "process")
-    # if (![string]::IsNullOrEmpty($nodeIp)) {
-    #     [System.Environment]::SetEnvironmentVariable("NODE_IP", $nodeIp, "machine")
-    #     Write-Host "Successfully set environment variable NODE_IP - $($nodeIp) for target 'machine'..."
-    # }
-    # else {
-    #     Write-Host "Failed to set environment variable NODE_IP for target 'machine' since it is either null or empty"
-    # }
+    $nodeIp = [System.Environment]::GetEnvironmentVariable("NODE_IP", "process")
+    if (![string]::IsNullOrEmpty($nodeIp)) {
+        [System.Environment]::SetEnvironmentVariable("NODE_IP", $nodeIp, "machine")
+        Write-Host "Successfully set environment variable NODE_IP - $($nodeIp) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable NODE_IP for target 'machine' since it is either null or empty"
+    }
 
-    # $agentVersion = [System.Environment]::GetEnvironmentVariable("AGENT_VERSION", "process")
-    # if (![string]::IsNullOrEmpty($agentVersion)) {
-    #     [System.Environment]::SetEnvironmentVariable("AGENT_VERSION", $agentVersion, "machine")
-    #     Write-Host "Successfully set environment variable AGENT_VERSION - $($agentVersion) for target 'machine'..."
-    # }
-    # else {
-    #     Write-Host "Failed to set environment variable AGENT_VERSION for target 'machine' since it is either null or empty"
-    # }
+    $agentVersion = [System.Environment]::GetEnvironmentVariable("AGENT_VERSION", "process")
+    if (![string]::IsNullOrEmpty($agentVersion)) {
+        [System.Environment]::SetEnvironmentVariable("AGENT_VERSION", $agentVersion, "machine")
+        Write-Host "Successfully set environment variable AGENT_VERSION - $($agentVersion) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable AGENT_VERSION for target 'machine' since it is either null or empty"
+    }
 
-    # $kubernetesPort = [System.Environment]::GetEnvironmentVariable("KUBERNETES_PORT_443_TCP_PORT", "process")
-    # if (![string]::IsNullOrEmpty($kubernetesPort)) {
-    #     [System.Environment]::SetEnvironmentVariable("KUBERNETES_PORT_443_TCP_PORT", $kubernetesPort, "machine")
-    #     Write-Host "Successfully set environment variable KUBERNETES_PORT_443_TCP_PORT - $($kubernetesPort) for target 'machine'..."
-    # }
-    # else {
-    #     Write-Host "Failed to set environment variable KUBERNETES_PORT_443_TCP_PORT for target 'machine' since it is either null or empty"
-    # }
+    $kubernetesPort = [System.Environment]::GetEnvironmentVariable("KUBERNETES_PORT_443_TCP_PORT", "process")
+    if (![string]::IsNullOrEmpty($kubernetesPort)) {
+        [System.Environment]::SetEnvironmentVariable("KUBERNETES_PORT_443_TCP_PORT", $kubernetesPort, "machine")
+        Write-Host "Successfully set environment variable KUBERNETES_PORT_443_TCP_PORT - $($kubernetesPort) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable KUBERNETES_PORT_443_TCP_PORT for target 'machine' since it is either null or empty"
+    }
 
-    # $kubernetesServiceHost = [System.Environment]::GetEnvironmentVariable("KUBERNETES_SERVICE_HOST", "process")
-    # if (![string]::IsNullOrEmpty($kubernetesServiceHost)) {
-    #     [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_HOST", $kubernetesServiceHost, "machine")
-    #     Write-Host "Successfully set environment variable KUBERNETES_SERVICE_HOST - $($kubernetesServiceHost) for target 'machine'..."
-    # }
-    # else {
-    #     Write-Host "Failed to set environment variable KUBERNETES_SERVICE_HOST for target 'machine' since it is either null or empty"
-    # }
+    $kubernetesServiceHost = [System.Environment]::GetEnvironmentVariable("KUBERNETES_SERVICE_HOST", "process")
+    if (![string]::IsNullOrEmpty($kubernetesServiceHost)) {
+        [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_HOST", $kubernetesServiceHost, "machine")
+        Write-Host "Successfully set environment variable KUBERNETES_SERVICE_HOST - $($kubernetesServiceHost) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable KUBERNETES_SERVICE_HOST for target 'machine' since it is either null or empty"
+    }
 }
 
 function Read-Configs {
@@ -561,13 +561,13 @@ function Read-Configs {
     # ruby /opt/amalogswindows/scripts/ruby/fluent-bit-conf-customizer.rb
 
     $enableFbitInternalMetrics = [System.Environment]::GetEnvironmentVariable("ENABLE_FBIT_INTERNAL_METRICS", "process")
-    # if (![string]::IsNullOrEmpty($enableFbitInternalMetrics)) {
-    #     [System.Environment]::SetEnvironmentVariable("ENABLE_FBIT_INTERNAL_METRICS", $enableFbitInternalMetrics, "machine")
-    #     Write-Host "Successfully set environment variable ENABLE_FBIT_INTERNAL_METRICS - $($enableFbitInternalMetrics) for target 'machine'..."
-    # }
-    # else {
-    #     Write-Host "Failed to set environment variable ENABLE_FBIT_INTERNAL_METRICS for target 'machine' since it is either null or empty"
-    # }
+    if (![string]::IsNullOrEmpty($enableFbitInternalMetrics)) {
+        [System.Environment]::SetEnvironmentVariable("ENABLE_FBIT_INTERNAL_METRICS", $enableFbitInternalMetrics, "machine")
+        Write-Host "Successfully set environment variable ENABLE_FBIT_INTERNAL_METRICS - $($enableFbitInternalMetrics) for target 'machine'..."
+    }
+    else {
+        Write-Host "Failed to set environment variable ENABLE_FBIT_INTERNAL_METRICS for target 'machine' since it is either null or empty"
+    }
 
     if (![string]::IsNullOrEmpty($enableFbitInternalMetrics) -and $enableFbitInternalMetrics.ToLower() -eq 'true') {
         Write-Host "Fluent-bit Internal metrics configured"
@@ -575,38 +575,38 @@ function Read-Configs {
         Clear-Content C:/etc/fluent-bit/fluent-bit-internal-metrics.conf
     }
 
-    # $genevaLogsMultitenancy = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_MULTI_TENANCY", "process")
-    # if (![string]::IsNullOrEmpty($genevaLogsMultitenancy)) {
-    #     if ($genevaLogsMultitenancy.ToLower() -eq 'true') {
-    #       [System.Environment]::SetEnvironmentVariable("GENEVA_LOGS_MULTI_TENANCY", $genevaLogsMultitenancy, "machine")
-    #       Write-Host "Successfully set environment variable GENEVA_LOGS_MULTI_TENANCY - $($genevaLogsMultitenancy) for target 'machine'..."
-    #     }
-    # }
-    # else {
-    #     Write-Host "Failed to set environment variable GENEVA_LOGS_MULTI_TENANCY for target 'machine' since it is either null or empty"
-    # }
+    $genevaLogsMultitenancy = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_MULTI_TENANCY", "process")
+    if (![string]::IsNullOrEmpty($genevaLogsMultitenancy)) {
+        if ($genevaLogsMultitenancy.ToLower() -eq 'true') {
+          [System.Environment]::SetEnvironmentVariable("GENEVA_LOGS_MULTI_TENANCY", $genevaLogsMultitenancy, "machine")
+          Write-Host "Successfully set environment variable GENEVA_LOGS_MULTI_TENANCY - $($genevaLogsMultitenancy) for target 'machine'..."
+        }
+    }
+    else {
+        Write-Host "Failed to set environment variable GENEVA_LOGS_MULTI_TENANCY for target 'machine' since it is either null or empty"
+    }
 
-    # $azmonLogsMultitenancy = [System.Environment]::GetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION", "process")
-    # if (![string]::IsNullOrEmpty($azmonLogsMultitenancy)) {
-    #     if ($azmonLogsMultitenancy.ToLower() -eq 'true') {
-    #       [System.Environment]::SetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION", $azmonLogsMultitenancy, "machine")
-    #       Write-Host "Successfully set environment variable AZMON_MULTI_TENANCY_LOG_COLLECTION - $($azmonLogsMultitenancy) for target 'machine'..."
-    #     }
-    # }
+    $azmonLogsMultitenancy = [System.Environment]::GetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION", "process")
+    if (![string]::IsNullOrEmpty($azmonLogsMultitenancy)) {
+        if ($azmonLogsMultitenancy.ToLower() -eq 'true') {
+          [System.Environment]::SetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION", $azmonLogsMultitenancy, "machine")
+          Write-Host "Successfully set environment variable AZMON_MULTI_TENANCY_LOG_COLLECTION - $($azmonLogsMultitenancy) for target 'machine'..."
+        }
+    }
 
-    # $azmonLogsMultitenancyAdvancedMode = [System.Environment]::GetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE", "process")
-    # if (![string]::IsNullOrEmpty($azmonLogsMultitenancyAdvancedMode)) {
-    #     if ($azmonLogsMultitenancyAdvancedMode.ToLower() -eq 'true') {
-    #       [System.Environment]::SetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE", $azmonLogsMultitenancyAdvancedMode, "machine")
-    #       Write-Host "Successfully set environment variable AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE - $($azmonLogsMultitenancyAdvancedMode) for target 'machine'..."
-    #     }
-    # }
+    $azmonLogsMultitenancyAdvancedMode = [System.Environment]::GetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE", "process")
+    if (![string]::IsNullOrEmpty($azmonLogsMultitenancyAdvancedMode)) {
+        if ($azmonLogsMultitenancyAdvancedMode.ToLower() -eq 'true') {
+          [System.Environment]::SetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE", $azmonLogsMultitenancyAdvancedMode, "machine")
+          Write-Host "Successfully set environment variable AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE - $($azmonLogsMultitenancyAdvancedMode) for target 'machine'..."
+        }
+    }
 
-    # $azmonLogsMultitenancyNamespaces = [System.Environment]::GetEnvironmentVariable("AZMON_MULTI_TENANCY_NAMESPACES", "process")
-    # if (![string]::IsNullOrEmpty($azmonLogsMultitenancyNamespaces)) {
-    #     [System.Environment]::SetEnvironmentVariable("AZMON_MULTI_TENANCY_NAMESPACES", $azmonLogsMultitenancyNamespaces, "machine")
-    #     Write-Host "Successfully set environment variable AZMON_MULTI_TENANCY_NAMESPACES - $($azmonLogsMultitenancyNamespaces) for target 'machine'..."
-    # }
+    $azmonLogsMultitenancyNamespaces = [System.Environment]::GetEnvironmentVariable("AZMON_MULTI_TENANCY_NAMESPACES", "process")
+    if (![string]::IsNullOrEmpty($azmonLogsMultitenancyNamespaces)) {
+        [System.Environment]::SetEnvironmentVariable("AZMON_MULTI_TENANCY_NAMESPACES", $azmonLogsMultitenancyNamespaces, "machine")
+        Write-Host "Successfully set environment variable AZMON_MULTI_TENANCY_NAMESPACES - $($azmonLogsMultitenancyNamespaces) for target 'machine'..."
+    }
 
     if (![string]::IsNullOrEmpty($genevaLogsIntegration) -and $genevaLogsIntegration.ToLower() -eq 'true') {
         Write-Host "Setting Geneva Windows AMA Environment variables"
@@ -650,8 +650,7 @@ function Set-EnvironmentVariablesFromFile {
         $envVars[$key] = $value
     }
 
-    #$scopes = @("Process", "Machine")
-    $scopes = @("Process")
+    $scopes = @("Process", "Machine")
     foreach ($key in $envVars.Keys) {
         foreach ($scope in $scopes) {
             [System.Environment]::SetEnvironmentVariable($key, $envVars[$key], $scope)
@@ -666,7 +665,7 @@ function Set-AgentConfigSchemaVersion {
           $schemaVersion = Get-Content $schemaVersionFile | ForEach-Object { $_.TrimEnd() }
           if ($schemaVersion.GetType().Name -eq 'String') {
               [System.Environment]::SetEnvironmentVariable("AZMON_AGENT_CFG_SCHEMA_VERSION", $schemaVersion, "Process")
-              #[System.Environment]::SetEnvironmentVariable("AZMON_AGENT_CFG_SCHEMA_VERSION", $schemaVersion, "Machine")
+              [System.Environment]::SetEnvironmentVariable("AZMON_AGENT_CFG_SCHEMA_VERSION", $schemaVersion, "Machine")
           }
           $env:AZMON_AGENT_CFG_SCHEMA_VERSION
       }
@@ -726,7 +725,7 @@ function Get-ContainerRuntime {
             # set IS_SECURE_CADVISOR_PORT env for debug and telemetry purpose
             Write-Host "Setting IS_SECURE_CADVISOR_PORT environment variable as $($cAdvisorIsSecure)"
             [System.Environment]::SetEnvironmentVariable("IS_SECURE_CADVISOR_PORT", $cAdvisorIsSecure, "Process")
-            #[System.Environment]::SetEnvironmentVariable("IS_SECURE_CADVISOR_PORT", $cAdvisorIsSecure, "Machine")
+            [System.Environment]::SetEnvironmentVariable("IS_SECURE_CADVISOR_PORT", $cAdvisorIsSecure, "Machine")
 
             if ($isPodsAPISuccess) {
                 if (![string]::IsNullOrEmpty($response.Content)) {
@@ -772,7 +771,7 @@ function Get-ContainerRuntime {
         }
         # set CONTAINER_RUNTIME env for debug and telemetry purpose
         [System.Environment]::SetEnvironmentVariable("CONTAINER_RUNTIME", $containerRuntime, "Process")
-        #[System.Environment]::SetEnvironmentVariable("CONTAINER_RUNTIME", $containerRuntime, "Machine")
+        [System.Environment]::SetEnvironmentVariable("CONTAINER_RUNTIME", $containerRuntime, "Machine")
     }
     catch {
         $e = $_.Exception
@@ -872,30 +871,30 @@ function Start-Telegraf {
         # Set required environment variable for telegraf prometheus plugin to run properly
         Write-Host "Setting required environment variables for telegraf prometheus input plugin to run properly..."
         $kubernetesServiceHost = [System.Environment]::GetEnvironmentVariable("KUBERNETES_SERVICE_HOST", "process")
-        # if (![string]::IsNullOrEmpty($kubernetesServiceHost)) {
-        #     [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_HOST", $kubernetesServiceHost, "machine")
-        #     Write-Host "Successfully set environment variable KUBERNETES_SERVICE_HOST - $($kubernetesServiceHost) for target 'machine'..."
-        # }
-        # else {
-        #     Write-Host "Failed to set environment variable KUBERNETES_SERVICE_HOST for target 'machine' since it is either null or empty"
-        # }
+        if (![string]::IsNullOrEmpty($kubernetesServiceHost)) {
+            [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_HOST", $kubernetesServiceHost, "machine")
+            Write-Host "Successfully set environment variable KUBERNETES_SERVICE_HOST - $($kubernetesServiceHost) for target 'machine'..."
+        }
+        else {
+            Write-Host "Failed to set environment variable KUBERNETES_SERVICE_HOST for target 'machine' since it is either null or empty"
+        }
 
-        # $kubernetesServicePort = [System.Environment]::GetEnvironmentVariable("KUBERNETES_SERVICE_PORT", "process")
-        # if (![string]::IsNullOrEmpty($kubernetesServicePort)) {
-        #     [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_PORT", $kubernetesServicePort, "machine")
-        #     Write-Host "Successfully set environment variable KUBERNETES_SERVICE_PORT - $($kubernetesServicePort) for target 'machine'..."
-        # }
-        # else {
-        #     Write-Host "Failed to set environment variable KUBERNETES_SERVICE_PORT for target 'machine' since it is either null or empty"
-        # }
-        # $nodeIp = [System.Environment]::GetEnvironmentVariable("NODE_IP", "process")
-        # if (![string]::IsNullOrEmpty($nodeIp)) {
-        #     [System.Environment]::SetEnvironmentVariable("NODE_IP", $nodeIp, "machine")
-        #     Write-Host "Successfully set environment variable NODE_IP - $($nodeIp) for target 'machine'..."
-        # }
-        # else {
-        #     Write-Host "Failed to set environment variable NODE_IP for target 'machine' since it is either null or empty"
-        # }
+        $kubernetesServicePort = [System.Environment]::GetEnvironmentVariable("KUBERNETES_SERVICE_PORT", "process")
+        if (![string]::IsNullOrEmpty($kubernetesServicePort)) {
+            [System.Environment]::SetEnvironmentVariable("KUBERNETES_SERVICE_PORT", $kubernetesServicePort, "machine")
+            Write-Host "Successfully set environment variable KUBERNETES_SERVICE_PORT - $($kubernetesServicePort) for target 'machine'..."
+        }
+        else {
+            Write-Host "Failed to set environment variable KUBERNETES_SERVICE_PORT for target 'machine' since it is either null or empty"
+        }
+        $nodeIp = [System.Environment]::GetEnvironmentVariable("NODE_IP", "process")
+        if (![string]::IsNullOrEmpty($nodeIp)) {
+            [System.Environment]::SetEnvironmentVariable("NODE_IP", $nodeIp, "machine")
+            Write-Host "Successfully set environment variable NODE_IP - $($nodeIp) for target 'machine'..."
+        }
+        else {
+            Write-Host "Failed to set environment variable NODE_IP for target 'machine' since it is either null or empty"
+        }
 
         $hostName = [System.Environment]::GetEnvironmentVariable("HOSTNAME", "process")
         Write-Host "nodename: $($hostName)"
