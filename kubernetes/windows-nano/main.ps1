@@ -419,7 +419,7 @@ function Set-EnvironmentVariables {
 
     Set-CloudSpecificApplicationInsightsConfig $cloud_environment
 
-    Setting environment variables required by the fluentd plugins
+    # Setting environment variables required by the fluentd plugins
     $aksResourceId = [System.Environment]::GetEnvironmentVariable("AKS_RESOURCE_ID", "process")
     if (![string]::IsNullOrEmpty($aksResourceId)) {
         [System.Environment]::SetEnvironmentVariable("AKS_RESOURCE_ID", $aksResourceId, "machine")
