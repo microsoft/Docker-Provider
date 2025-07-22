@@ -75,7 +75,7 @@ function Start-FileSystemWatcher {
 
 function Set-ProcessAndMachineEnvVariables($name, $value) {
     [System.Environment]::SetEnvironmentVariable($name, $value, "Process")
-    #[System.Environment]::SetEnvironmentVariable($name, $value, "Machine")
+    [System.Environment]::SetEnvironmentVariable($name, $value, "Machine")
 }
 
 function Set-CloudSpecificApplicationInsightsConfig {
