@@ -1061,11 +1061,11 @@ else {
 }
 
 
-Start-Fluent-Telegraf
+#Start-Fluent-Telegraf
 
 # List all powershell processes running. This should have main.ps1 and filesystemwatcher.ps1
 #Get-WmiObject Win32_process | Where-Object { $_.Name -match 'powershell' } | Format-Table -Property Name, CommandLine, ProcessId
-Get-Process | Where-Object { $_.ProcessName -match 'powershell' } | Format-Table -Property ProcessName, Id, Path
+#Get-Process | Where-Object { $_.ProcessName -match 'powershell' } | Format-Table -Property ProcessName, Id, Path
 
 #check if fluentd service is running
 #Get-Service fluentdwinaks
