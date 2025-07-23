@@ -931,13 +931,24 @@ function Start-Telegraf {
             C:\opt\telegraf\telegraf.exe --service start
 
             # Trying to start telegraf again if it did not start due to fluent bit not being ready at startup
-            Get-Service telegraf | findstr Running
-            if ($? -eq $false) {
+            # Get-Service telegraf | findstr Running
+            # if ($? -eq $false) {
+            #     Write-Host "trying to start telegraf in again in 30 seconds, since fluentbit might not have been ready..."
+            #     Start-Sleep -s 30
+            #     C:\opt\telegraf\telegraf.exe --service start
+            #     Get-Service telegraf
+            # }
+
+            if ((Get-Service telegraf).Status -eq 'Running') {
+                Write-Host "Telegraf service is running"
+            } else {
+                Write-Host "Telegraf service is NOT running"
                 Write-Host "trying to start telegraf in again in 30 seconds, since fluentbit might not have been ready..."
                 Start-Sleep -s 30
                 C:\opt\telegraf\telegraf.exe --service start
                 Get-Service telegraf
             }
+
         } else {
             Write-Host "Telegraf not started since Fluentbit tcp listener is not up and running on port 25229"
         }

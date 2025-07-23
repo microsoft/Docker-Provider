@@ -4,6 +4,13 @@ FROM mcr.microsoft.com/windows/nanoserver:ltsc2025
 # LABEL vendor=Microsoft\ Corp \
 #     com.microsoft.product="Azure Monitor for containers"
 
+# install performance monitor
+WORKDIR /install
+COPY ./fod/install-perf-monitor.cmd .
+USER ContainerAdministrator
+RUN install-perf-monitor.cmd
+USER ContainerUser
+
 SHELL ["cmd", "/S", "/C"]
 RUN mkdir C:\download
 RUN mkdir C:\PowerShell
