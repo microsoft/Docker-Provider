@@ -524,8 +524,9 @@ function Set-EnvironmentVariables {
 }
 
 function Read-Configs {
-    #Parse the configmap to set the right environment variables for agent config.
     # ruby /opt/amalogswindows/scripts/ruby/tomlparser-common-agent-config.rb
+    # Parse the configmap to set the right environment variables for agent config using Go executable
+    & "C:\opt\amalogswindows\scripts\cmd\agentconfigparser.exe" common-agent-config
     Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setcommonagentenv.txt"
 
     # check if high log scale mode enabled
