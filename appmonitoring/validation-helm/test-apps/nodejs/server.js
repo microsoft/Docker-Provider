@@ -21,12 +21,13 @@ const logger = winston.createLogger({
 
 // Endpoint that calls another app's endpoint
 app.get('/call-target', async (req, res) => {
-  // Occasionally throw an error (20% chance)
-  if (Math.random() < 0.4) {
-    logger.error('Simulated error at /call-target');
-    throw new Error('Simulated random error at /call-target');
-  }
   try {
+    // Occasionally throw an error (20% chance)
+    if (Math.random() < 0.4) {
+      logger.error('Simulated error at /call-target');
+      throw new Error('Simulated random error at /call-target');
+    }
+    
     const response = await axios.get(TARGET_URL);
     logger.info(`Successfully called target: ${TARGET_URL}`);
     res.json({ message: 'Success', data: response.data });
