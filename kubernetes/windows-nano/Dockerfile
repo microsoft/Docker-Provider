@@ -103,7 +103,7 @@ COPY ./cheat-env-files/setmdmenv.txt /opt/amalogswindows/scripts/powershell/
 COPY ./cheat-env-files/setpromenv.txt /opt/amalogswindows/scripts/powershell/
 
 # Copy Go parser executable to /opt/amalogswindows/scripts/cmd/
-COPY ./agentparser/agentconfigparser.exe /opt/amalogswindows/scripts/cmd/
+COPY ./agentparser/config-parser.exe /opt/amalogswindows/scripts/cmd/
 
 # copy ruby scripts to /opt folder
 COPY ./amalogswindows/installer/scripts/*.rb /opt/amalogswindows/scripts/ruby/

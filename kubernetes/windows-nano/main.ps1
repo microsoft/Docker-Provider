@@ -526,8 +526,18 @@ function Set-EnvironmentVariables {
 function Read-Configs {
     # ruby /opt/amalogswindows/scripts/ruby/tomlparser-common-agent-config.rb
     # Parse the configmap to set the right environment variables for agent config using Go executable
-    & "C:\opt\amalogswindows\scripts\cmd\agentconfigparser.exe" common-agent-config
-    Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setcommonagentenv.txt"
+    try {
+        Write-Host "Processing common agent configuration..."
+        & "C:\opt\amalogswindows\scripts\cmd\config-parser.exe" parse common-agent-config
+        if ($LASTEXITCODE -ne 0) {
+            throw "Common agent config processing failed"  # Fixed typo
+        }
+        Write-Host "Common agent configuration processed successfully"
+        Set-EnvironmentVariablesFromFile "C:\opt\amalogswindows\scripts\powershell\setcommonagentenv.txt"  # Fixed path
+    } catch {
+        Write-Error "Failed to process common agent configuration: $_"
+        exit 1
+    }
 
     # check if high log scale mode enabled
     $enableHighLogScaleMode = [System.Environment]::GetEnvironmentVariable("ENABLE_HIGH_LOG_SCALE_MODE", "process")

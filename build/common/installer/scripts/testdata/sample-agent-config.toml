@@ -1,0 +1,13 @@
+[agent_settings]
+
+[agent_settings.telemetry_config]
+disable_telemetry = true
+
+[agent_settings.k8s_metadata_config]
+kube_meta_cache_ttl_secs = 120
+
+[agent_settings.high_log_scale]
+enabled = true
+
+[agent_settings.custom_metrics]
+enabled = true
