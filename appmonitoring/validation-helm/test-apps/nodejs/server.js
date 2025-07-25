@@ -22,10 +22,18 @@ const logger = winston.createLogger({
 // Endpoint that calls another app's endpoint
 app.get('/call-target', async (req, res) => {
   try {
-    // Occasionally throw an error (20% chance)
+    // Occasionally throw an error (40% chance)
     if (Math.random() < 0.4) {
       logger.error('Simulated error at /call-target');
-      throw new Error('Simulated random error at /call-target');
+      
+      // Throw unhandled exception asynchronously
+      setImmediate(() => {
+        throw new Error('Unhandled async error - server should continue');
+      });
+      
+      // Still respond to the client
+      res.status(500).json({ message: 'Error triggered asynchronously' });
+      return;
     }
     
     const response = await axios.get(TARGET_URL);
