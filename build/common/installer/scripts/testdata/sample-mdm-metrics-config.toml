@@ -1,0 +1,12 @@
+[alertable_metrics_configuration_settings]
+
+[alertable_metrics_configuration_settings.container_resource_utilization_thresholds]
+container_cpu_threshold_percentage = 85.0
+container_memory_rss_threshold_percentage = 75.0
+container_memory_working_set_threshold_percentage = 88.0
+
+[alertable_metrics_configuration_settings.pv_utilization_thresholds]
+pv_usage_threshold_percentage = 70.0
+
+[alertable_metrics_configuration_settings.job_completion_threshold]
+job_completion_threshold_time_minutes = 240

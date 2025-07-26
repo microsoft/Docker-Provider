@@ -644,7 +644,18 @@ function Read-Configs {
 
     # run mdm config parser
     #ruby /opt/amalogswindows/scripts/ruby/tomlparser-mdm-metrics-config.rb
-    Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setmdmenv.txt"
+    try {
+        Write-Host "Processing MDM metrics configuration..."
+        & "C:\opt\amalogswindows\scripts\cmd\config-parser.exe" parse mdm-metrics-config
+        if ($LASTEXITCODE -ne 0) {
+            throw "MDM metrics config processing failed"
+        }
+        Write-Host "MDM metrics configuration processed successfully"
+        Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setmdmenv.txt"
+    } catch {
+        Write-Error "Failed to process MDM metrics configuration: $_"
+        # Continue with defaults - don't exit since this is not critical
+    }
 }
 
 function Set-EnvironmentVariablesFromFile {

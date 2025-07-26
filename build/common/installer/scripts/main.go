@@ -45,8 +45,9 @@ func init() {
 		},
 	})
 
-	// Add the real common agent config command
+	// Add the real parser commands
 	parseCmd.AddCommand(parsers.CommonAgentConfigCmd())
+	parseCmd.AddCommand(parsers.MDMMetricsConfigCmd())
 
 	// Modify commands (placeholders for now)
 	modifyCmd.AddCommand(&cobra.Command{

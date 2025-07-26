@@ -99,7 +99,7 @@ COPY ./cheat-env-files/setagentenv.txt /opt/amalogswindows/scripts/powershell/
 #COPY ./cheat-env-files/setcommonagentenv.txt /opt/amalogswindows/scripts/powershell/
 COPY ./cheat-env-files/setenv.txt /opt/amalogswindows/scripts/powershell/
 COPY ./cheat-env-files/setgenevaconfigenv.txt /opt/amalogswindows/scripts/powershell/
-COPY ./cheat-env-files/setmdmenv.txt /opt/amalogswindows/scripts/powershell/
+#COPY ./cheat-env-files/setmdmenv.txt /opt/amalogswindows/scripts/powershell/
 COPY ./cheat-env-files/setpromenv.txt /opt/amalogswindows/scripts/powershell/
 
 # Copy Go parser executable to /opt/amalogswindows/scripts/cmd/
