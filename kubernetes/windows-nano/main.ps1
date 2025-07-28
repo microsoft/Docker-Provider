@@ -934,7 +934,7 @@ function Start-Telegraf {
             try {
                 $serverName = [System.Environment]::GetEnvironmentVariable("PODNAME", "process")
                 if (![string]::IsNullOrEmpty($serverName)) {
-                    sc.exe \\$serverName config telegraf start= delayed-auto
+                    & "C:\Windows\System32\sc.exe" \\$serverName config telegraf start= delayed-auto
                     Write-Host "Successfully set delayed start for telegraf"
 
                 }
