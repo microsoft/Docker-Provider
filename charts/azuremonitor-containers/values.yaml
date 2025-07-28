@@ -10,9 +10,14 @@ Azure:
     Cloud: <your_cluster_cloud>
     Region: <your_cluster_region>
     ResourceId: <your_cluster_id>
+    Distribution: ""  # Will be populated with "openshift" for OpenShift clusters
   Extension:
     Name: ""
     ResourceId: ""
+  SystemParams:
+    # Opt-in system parameter for ForceUpdateMsiAdapter feature
+    # When enabled, the platform will automatically manage MSI adapter versions
+    enableForceUpdateMsiAdapter: false
   proxySettings:
     isProxyEnabled: false
     httpProxy: ""

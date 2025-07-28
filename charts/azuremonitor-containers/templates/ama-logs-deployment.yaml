@@ -35,13 +35,45 @@ spec:
    containers:
 {{- if and (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>") (.Values.amalogs.useAADAuth) }}
      - name: addon-token-adapter
+       # Extension specifies default, platform overrides during deployment if needed
+       image: "mcr.microsoft.com/aks/msi/addon-token-adapter:master.250604.1"
        imagePullPolicy: IfNotPresent
        env:
        - name: AZMON_COLLECT_ENV
          value: "false"
        - name: TOKEN_NAMESPACE
          value: "azure-arc"
-{{-  .Values.Azure.Identity.MSIAdapterYaml | nindent 7 }}
+       securityContext:
+         {{- if eq .Values.Azure.Cluster.Distribution "openshift" }}
+         privileged: true
+         {{- end }}
+         capabilities:
+           add:
+             - NET_ADMIN
+             - NET_RAW
+           drop:
+             - ALL
+       resources:
+         limits:
+           cpu: 500m
+           memory: 500Mi
+         requests:
+           cpu: 100m
+           memory: 100Mi
+       livenessProbe:
+         httpGet:
+           path: /healthz
+           port: 9999
+           scheme: HTTP
+         initialDelaySeconds: 10
+         timeoutSeconds: 1
+         periodSeconds: 60
+         failureThreshold: 3
+       args:
+         - --secret-namespace=kube-system
+         - --secret-name=aad-msi-auth-token
+         - --token-server-listening-port=8888
+         - --health-server-listening-port=9999
 {{- end }}
      - name: ama-logs
        image: {{ printf "%s:%s" .Values.amalogs.image.repo .Values.amalogs.image.tag }}
