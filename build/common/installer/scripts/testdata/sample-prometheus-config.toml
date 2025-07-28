@@ -1,0 +1,18 @@
+[prometheus_data_collection_settings]
+
+[prometheus_data_collection_settings.cluster]
+interval = "30s"
+fieldpass = ["cpu_usage", "memory_usage"]
+fielddrop = ["debug_metrics"]
+urls = ["http://localhost:9090/metrics"]
+kubernetes_services = ["prometheus", "grafana"]
+monitor_kubernetes_pods = true
+monitor_kubernetes_pods_namespaces = ["default", "kube-system", "monitoring"]
+kubernetes_label_selector = "app=prometheus"
+kubernetes_field_selector = "status.phase=Running"
+
+[prometheus_data_collection_settings.node]
+interval = "1m"
+fieldpass = ["node_cpu", "node_memory"]
+fielddrop = ["node_debug"]
+urls = ["http://localhost:9100/metrics"]

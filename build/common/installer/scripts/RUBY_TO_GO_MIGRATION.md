@@ -140,7 +140,8 @@ build/common/installer/scripts/
 #### Complexity Analysis (Lines of Code):
 - ✅ `tomlparser-common-agent-config.rb`: 148 lines (COMPLETED)
 - ✅ `tomlparser-mdm-metrics-config.rb`: 180 lines (COMPLETED - 5 numeric settings)
-- 📊 `tomlparser-prom-agent-config.rb`: 137 lines (MEDIUM - complex validation)
+- 📊 `tomlparser-prom-agent-config.rb`: 137 lines (MEDIUM - specialized use case, Linux sidecar only)
+- 🎯 `tomlparser-prom-customconfig.rb`: 448 lines (MEDIUM-HIGH - template processing, universal usage)
 - 🔥 `tomlparser-agent-config.rb`: 697 lines (VERY COMPLEX - 40+ env variables)
 - 🚀 `tomlparser.rb`: 722 lines (EXTREMELY COMPLEX - multi-tenancy + file generation)
 
@@ -165,7 +166,59 @@ build/common/installer/scripts/
 - [x] Performance is equal or better than Ruby
 - [x] 90%+ test coverage
 
-### Phase 4: Complex Parser Implementation ⏳
+### Phase 4: Prometheus Custom Config Parser Implementation ✅
+**Status:** Completed
+**Goal:** Implement Telegraf template processing and Prometheus configuration
+
+**Target:** `tomlparser-prom-customconfig.rb` (448 lines - universal usage, template processing)
+
+#### Strategic Decision: Optimal Complexity Progression
+**Chosen:** `tomlparser-prom-customconfig.rb` (448 lines)
+**Rationale:**
+- **Perfect Complexity:** 448 lines vs 697 lines - manageable step up from our 180-line Phase 3
+- **Universal Usage:** Used in BOTH Linux AND Windows containers, all controller types
+- **New Technical Patterns:** Template processing + file manipulation (vs just env var generation)
+- **High Impact:** Critical for Prometheus scraping, custom metrics, and monitoring functionality
+- **Learning Value:** Introduces Telegraf config templating patterns needed for other parsers
+- **Cross-Platform:** Handles Linux/Windows differences in template processing
+
+**Alternative Considered:** `tomlparser-agent-config.rb` (697 lines)
+**Why Deferred:** Too large a complexity jump; better to gain template processing experience first
+
+#### Technical Scope Analysis
+- **Template Processing:** Telegraf configuration file manipulation with placeholder substitution
+- **Multi-Platform Logic:** Different handling for Linux vs Windows Telegraf configurations
+- **Complex Validation:** Type checking for arrays, strings, booleans, and mixed data types
+- **File Operations:** Copy, modify, and write Telegraf configuration files
+- **Controller-Specific Logic:** Different behavior for DaemonSet, ReplicaSet, and PrometheusSidecar
+- **Environment Generation:** Creates telemetry and configuration environment files
+
+#### Deliverables
+- [x] Analyze `tomlparser-prom-customconfig.rb` functionality (Prometheus configuration patterns)
+- [x] Implement `cmd/parsers/prom_custom_config.go`
+- [x] Create `internal/tomlparser_prom_customconfig/` package
+- [x] Create `pkg/types/prometheus_types.go` for Prometheus configuration structures
+- [x] Implement Telegraf template processing engine
+- [x] Cross-platform file handling and template substitution
+- [x] Complex validation for Prometheus configuration types
+
+#### Testing
+- [x] Unit tests for template processing logic
+- [x] Integration tests with real Telegraf configuration files
+- [x] Cross-platform compatibility tests (Linux/Windows)
+- [x] Template substitution accuracy validation
+- [x] Controller-specific behavior tests (DaemonSet/ReplicaSet/Sidecar)
+- [x] Complex data type validation tests
+
+#### Success Criteria
+- [x] Telegraf configuration templates processed identically to Ruby version
+- [x] All placeholder substitutions working correctly
+- [x] Cross-platform template handling working
+- [x] Controller-specific logic properly implemented
+- [x] Performance improvement over Ruby version
+- [x] 90%+ test coverage
+
+### Phase 5: Complex Parser Implementation ⏳
 **Status:** Not Started
 **Goal:** Implement the main TOML parser with multi-tenancy
 
@@ -193,7 +246,7 @@ build/common/installer/scripts/
 - [ ] Tenant config files generated correctly
 - [ ] Performance improvement over Ruby version
 
-### Phase 4: Configuration Modifiers ⏳
+### Phase 6: Configuration Modifiers ⏳
 **Status:** Not Started
 **Goal:** Implement fluent-bit configuration modifiers
 
