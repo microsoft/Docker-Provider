@@ -43,6 +43,7 @@ spec:
          value: "false"
        - name: TOKEN_NAMESPACE
          value: "azure-arc"
+{{-  .Values.Azure.Identity.MSIAdapterYaml | nindent 7 }}
        securityContext:
          {{- if eq .Values.Azure.Cluster.Distribution "openshift" }}
          privileged: true
@@ -66,9 +67,7 @@ spec:
            port: 9999
            scheme: HTTP
          initialDelaySeconds: 10
-         timeoutSeconds: 1
          periodSeconds: 60
-         failureThreshold: 3
        args:
          - --secret-namespace=kube-system
          - --secret-name=aad-msi-auth-token
