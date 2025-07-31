@@ -15,7 +15,6 @@ Azure:
     Name: ""
     ResourceId: ""
   SystemParams:
-    # Opt-in system parameter for ForceUpdateMsiAdapter feature
     # When enabled, the platform will automatically manage MSI adapter versions
     enableForceUpdateMsiAdapter: false
   proxySettings:
