@@ -94,5 +94,13 @@
         "Microsoft-Perf",
         "Microsoft-RetinaNetworkFlowLogs"
       ]
+    },
+    "useAzureMonitorPrivateLinkScope": {
+      "type": "Boolean",
+      "defaultValue": false
+    },
+    "azureMonitorPrivateLinkScopeResourceId": {
+      "type": "String",
+      "defaultValue": "/subscriptions/<SubscriptionId>/resourceGroups/<ResourceGroup>/providers/microsoft.insights/privateLinkScopes/<azureMonitorPrivateLinkScopeName>"
     }
 }

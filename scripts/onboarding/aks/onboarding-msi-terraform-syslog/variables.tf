@@ -105,3 +105,15 @@ variable "streams" {
     "Microsoft-Perf"
   ]
 }
+
+variable "use_azure_monitor_private_link_scope" {
+  description = "Flag to indicate if Azure Monitor Private Link Scope should be used or not"
+  type        = bool
+  default     = false
+}
+
+variable "azure_monitor_private_link_scope_resource_id" {
+  description = "Resource Id of the Azure Monitor Private Link Scope"
+  type        = string
+  default     = ""
+}
