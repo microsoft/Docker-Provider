@@ -1,0 +1,44 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceGroupName": {
+      "value": "<resourceGroupName>"
+    },
+    "location": {
+      "value": "<configDCELocation>"
+    },
+    "subscriptionId": {
+      "value": "<subscriptionId>"
+    },
+    "workspaceRegion": {
+      "value": "<workspaceRegion>"
+    },
+    "workspaceResourceId": {
+      "value": "/subscriptions/<SubscriptionId>/resourceGroups/<ResourceGroup>/providers/Microsoft.OperationalInsights/workspaces/<workspaceName>"
+    },
+    "k8sNamespaces": {
+      "value": [
+        "<namespace1>",
+        "<namespace2>",
+        "<namespaceN>"
+      ]
+    },
+    "resourceTagValues": {
+      "value": {
+        "<existingOrnew-tag-name1>": "<existingOrnew-tag-value1>",
+        "<existingOrnew-tag-name2>": "<existingOrnew-tag-value2>",
+        "<existingOrnew-tag-nameN>": "<existingOrnew-tag-valueN>"
+      }
+    },
+    "transformKql": {
+      "value": "<KQL filter for ingestion transformation>"
+    },
+    "useAzureMonitorPrivateLinkScope": {
+      "value": false
+    },
+    "azureMonitorPrivateLinkScopeResourceId": {
+      "value": "/subscriptions/<SubscriptionId>/resourceGroups/<ResourceGroup>/providers/microsoft.insights/privateLinkScopes/<azureMonitorPrivateLinkScopeName>"
+    }
+  }
+}
