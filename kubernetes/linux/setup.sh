@@ -37,8 +37,8 @@ rm -rf /usr/lib/ruby/gems/3.3.0/gems/rdoc-6.6.3.1
 # remove net-imap gem as it has a known CVE (CVE-2025-43857) and is not used by the agent
 gem uninstall net-imap --force
 
-sudo curl -L -O https://github.com/microsoft/Docker-Provider/releases/download/mdsd-1.31.0/azure-mdsd-1.36.0-1043.x86_64.rpm
-sudo tdnf install -y --nogpgcheck azure-mdsd-1.36.0-1043.x86_64.rpm
+sudo curl -L -O https://github.com/microsoft/Docker-Provider/releases/download/mdsd-1.31.0/azure-mdsd-1.37.0-pr.13111611.merge.5461.x86_64.rpm
+sudo tdnf install -y --nogpgcheck azure-mdsd-1.37.0-pr.13111611.merge.5461.x86_64.rpm
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
 rm /usr/sbin/telegraf
@@ -46,13 +46,13 @@ rm /usr/sbin/telegraf
 mdsd_version=$(sudo tdnf list installed | grep mdsd | awk '{print $2}')
 echo "Azure mdsd: $mdsd_version" >> packages_version.txt
 
-# install AMACA for otel
-sudo curl -L -O https://github.com/microsoft/Docker-Provider/releases/download/windows-ama-bits/Azure.Monitor.CoreAgent.Linux-x64-AOT.2.0.31.nupkg
-sudo unzip -o Azure.Monitor.CoreAgent.Linux-x64-AOT.2.0.31.nupkg -d amaca
-sudo mkdir -p /opt/microsoft/azuremonitoragent
-cp -r amaca/* /opt/microsoft/azuremonitoragent/
-chmod +x /opt/microsoft/azuremonitoragent/content/AMACoreAgent
-rm -rf amaca Azure.Monitor.CoreAgent.Linux-x64-AOT.2.0.31.nupkg
+# # install AMACA for otel
+# sudo curl -L -O https://github.com/microsoft/Docker-Provider/releases/download/windows-ama-bits/Azure.Monitor.CoreAgent.Linux-x64-AOT.2.0.31.nupkg
+# sudo unzip -o Azure.Monitor.CoreAgent.Linux-x64-AOT.2.0.31.nupkg -d amaca
+# sudo mkdir -p /opt/microsoft/azuremonitoragent
+# cp -r amaca/* /opt/microsoft/azuremonitoragent/
+# chmod +x /opt/microsoft/azuremonitoragent/content/AMACoreAgent
+# rm -rf amaca Azure.Monitor.CoreAgent.Linux-x64-AOT.2.0.31.nupkg
 
 # log rotate conf for mdsd and can be extended for other log files as well
 cp -f $TMPDIR/logrotate.conf /etc/logrotate.d/ci-agent
