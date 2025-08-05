@@ -120,7 +120,7 @@ COPY ./cheat-so-files/containerinventory.so /opt/fluent-bit/bin/containerinvento
 COPY ./cheat-so-files/perf.so /opt/fluent-bit/bin/perf.so
 
 # copy fluent-bit binary
-COPY ./cheat-fb-exe/fluent-bit.exe /opt/fluent-bit/bin/fluent-bit
+COPY ./cheat-fb-exe/fluent-bit.exe /opt/fluent-bit/bin/fluent-bit.exe
 
 # copy fluent, fluent-bit and out_oms conf files
 COPY ./amalogswindows/installer/conf/fluent.conf /etc/fluent/
