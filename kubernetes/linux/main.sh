@@ -72,6 +72,7 @@ startAMACoreAgent() {
       export CounterDataReportFrequencyInMinutes=60
       export PA_AMCS_PROTOCOL="HttpProtobuf"
       export PA_AMCS_PORT=4319
+      export PA_AMCS_HOST="0.0.0.0"
 
       {
          echo "export PA_DATA_PORT=$PA_DATA_PORT"
@@ -84,6 +85,7 @@ startAMACoreAgent() {
          echo "export PA_VERBOSE=true"
          echo "export PA_AMCS_PROTOCOL=$PA_AMCS_PROTOCOL"
          echo "export PA_AMCS_PORT=$PA_AMCS_PORT"
+         echo "export PA_AMCS_HOST=$PA_AMCS_HOST"
       } >> ~/.bashrc
 
       source ~/.bashrc
