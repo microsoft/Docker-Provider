@@ -137,6 +137,6 @@ Write-Host "Install .NET core sdk 3.1"
 Install-DotNetCoreSDK
 
 Write-Host "Install cmetrics library"
-Install-cmetrics
+#Install-cmetrics
 
 Write-Host "successfully installed required pre-requisites" -ForegroundColor Green
