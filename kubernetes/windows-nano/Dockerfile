@@ -109,15 +109,15 @@ COPY ./agentparser/config-parser.exe /opt/amalogswindows/scripts/cmd/
 COPY ./amalogswindows/installer/scripts/*.rb /opt/amalogswindows/scripts/ruby/
 
 # # copy out_oms.so file
-# COPY ./amalogswindows/out_oms.so /opt/amalogswindows/out_oms.so
-COPY ./cheat-so-files/out_oms.so /opt/amalogswindows/out_oms.so
+COPY ./amalogswindows/out_oms.so /opt/amalogswindows/out_oms.so
+# COPY ./cheat-so-files/out_oms.so /opt/amalogswindows/out_oms.so
 
 # # copy containerinventory.so and perf.so file
-# COPY ./amalogswindows/containerinventory.so /opt/fluent-bit/bin/containerinventory.so
-COPY ./cheat-so-files/containerinventory.so /opt/fluent-bit/bin/containerinventory.so
+COPY ./amalogswindows/containerinventory.so /opt/fluent-bit/bin/containerinventory.so
+# COPY ./cheat-so-files/containerinventory.so /opt/fluent-bit/bin/containerinventory.so
 
-# COPY ./amalogswindows/perf.so /opt/fluent-bit/bin/perf.so
-COPY ./cheat-so-files/perf.so /opt/fluent-bit/bin/perf.so
+COPY ./amalogswindows/perf.so /opt/fluent-bit/bin/perf.so
+# COPY ./cheat-so-files/perf.so /opt/fluent-bit/bin/perf.so
 
 # copy fluent-bit binary
 COPY ./cheat-fb-exe/fluent-bit.exe /opt/fluent-bit/bin/fluent-bit.exe
