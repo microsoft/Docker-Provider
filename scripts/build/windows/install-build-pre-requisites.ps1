@@ -119,7 +119,8 @@ function Install-cmetrics() {
 	git submodule sync
 	git -c protocol.version=2 submodule update --init --force --depth=1
 	git submodule foreach git config --local gc.auto 0
-	cmake --fresh -G "MinGW Makefiles" -DCMAKE_INSTALL_PREFIX="$destinationPath" .
+	# cmake --fresh -G "MinGW Makefiles" -DCMAKE_INSTALL_PREFIX="$destinationPath" .
+    cmake --fresh -G "MinGW Makefiles" -DCMAKE_INSTALL_PREFIX="$destinationPath" -DCMAKE_C_FLAGS="-D_WIN32 -include io.h" .
 	make
 	make install
 }
@@ -137,6 +138,6 @@ Write-Host "Install .NET core sdk 3.1"
 Install-DotNetCoreSDK
 
 Write-Host "Install cmetrics library"
-#Install-cmetrics
+Install-cmetrics
 
 Write-Host "successfully installed required pre-requisites" -ForegroundColor Green
