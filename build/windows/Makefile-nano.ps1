@@ -7,13 +7,6 @@
 
 $dotnetcoreframework = "net6.0"
 
-# Define the dotnet executable path
-$dotnetExe = "C:\dotnet\dotnet.exe"
-
-# Define Go and GCC executable paths
-$goExe = "go"
-$gccExe = "C:\gcc\bin\g++.exe"
-
 Write-Host("Building Certificate generator code...")
 $currentdir =  $PSScriptRoot
 Write-Host("current script dir : " + $currentdir + " ")
@@ -70,6 +63,7 @@ if ([string]::IsNullOrEmpty($BuildVersionMajor) -or
 $buildVersionString = $BuildVersionMajor + "." + $BuildVersionMinor + "." + $BuildVersionPatch + "-" + $BuildVersionBuildNR
 $buildVersionDate = $BuildVersionDate
 
+
 $certsrcdir = Join-Path -Path $builddir -ChildPath "windows\installer\certificategenerator"
 Write-Host("certsrc dir : " + $certsrcdir + " ")
 if ($false -eq (Test-Path -Path $certsrcdir)) {
@@ -80,10 +74,10 @@ Write-Host("set the cerificate generator source code directory : " + $certsrcdir
 Set-Location -Path $certsrcdir
 
 Write-Host("Adding dotnet packages Newtonsoft.json and BouncyCastle ...")
-& $dotnetExe add package Newtonsoft.json
-& $dotnetExe add package BouncyCastle
+dotnet add package Newtonsoft.json
+dotnet add package BouncyCastle
 Write-Host("Successfully added dotnet packages") -ForegroundColor Green
-& $dotnetExe build  -f $dotnetcoreframework
+dotnet build  -f $dotnetcoreframework
 Write-Host("Building Certificate generator code and ...") -ForegroundColor Green
 
 Write-Host("Publish release and win10-x64 binaries of certificate generator code  ...")
@@ -96,9 +90,9 @@ if (![string]::IsNullOrEmpty([System.Environment]::GetEnvironmentVariable("IsCDP
 }
 if ($isCDPxEnvironment) {
     Write-Host("running on CDPX build machine so setting --no-restore since there is no n/w connectivity during build")
-    & $dotnetExe publish -c Release -r win10-x64 --no-restore
+    dotnet publish -c Release -r win10-x64 --no-restore
 } else {
-  & $dotnetExe publish -c Release -r win10-x64
+  dotnet publish -c Release -r win10-x64
 }
 
 Write-Host("Successfully published certificate generator code binaries") -ForegroundColor Green
@@ -143,7 +137,7 @@ Remove-Item -Path $outomsgoplugindir\* -Include *.so,*.h -Force -ErrorAction Sto
 Write-Host("cleanup existing .so and .h file")
 
 if ($isCDPxEnvironment) {
-     & $goExe build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -buildmode=c-shared -o out_oms.so .
+     go build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -buildmode=c-shared -o out_oms.so .
 }  else {
    $platform = "windows"
    if (![string]::IsNullOrEmpty($PSVersionTable) -and ![string]::IsNullOrEmpty($PSVersionTable.Platform)) {
@@ -163,10 +157,10 @@ if ($isCDPxEnvironment) {
   }
 
   Write-Host("getting latest go modules ...")
-  & $goExe get
+  go get
   Write-Host("successfully got latest go modules") -ForegroundColor Green
 
-  & $goExe build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -buildmode=c-shared -o out_oms.so .
+  go build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -buildmode=c-shared -o out_oms.so .
 
   $inputdir = Join-Path -Path $rootdir -ChildPath "source\plugins\go\input"
   Set-Location -Path $inputdir
@@ -186,18 +180,19 @@ if ($isCDPxEnvironment) {
   cat $inputdir\go.mod
 
   Write-Host("getting latest go modules ...")
-  & $goExe get
+  go get
   Write-Host("successfully got latest go modules") -ForegroundColor Green
   $containerinventorydir = Join-Path -Path $rootdir -ChildPath "source\plugins\go\input\containerinventory"
   Remove-Item -Path $containerinventorydir\* -Include *.so,*.h -Force -ErrorAction Stop
   Set-Location -Path $containerinventorydir
-  & $goExe build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -buildmode=c-shared -o containerinventory.so .
+  go build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -buildmode=c-shared -o containerinventory.so .
 
   $perfdir = Join-Path -Path $rootdir -ChildPath "source\plugins\go\input\perf"
   Set-Location -Path $perfdir
-  & $goExe build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -buildmode=c-shared -o perf.so .
+  go build -ldflags "-X 'main.revision=$buildVersionString' -X 'main.builddate=$buildVersionDate'" -buildmode=c-shared -o perf.so .
 
 }
+
 
 Write-Host("copying out_oms.so file to : $publishdir")
 Copy-Item -Path (Join-path -Path $outomsgoplugindir -ChildPath "out_oms.so")  -Destination $publishdir -Force
@@ -215,7 +210,7 @@ Write-Host("successfully copied perf.so file to : $publishdir") -ForegroundColor
 Write-Host("Start:build livenessprobe cpp code")
 $livenessprobesrcpath = Join-Path -Path $builddir  -ChildPath "windows\installer\livenessprobe\livenessprobe.cpp"
 $livenessprobeexepath = Join-Path -Path $builddir  -ChildPath "windows\installer\livenessprobe\livenessprobe.exe"
-& $gccExe $livenessprobesrcpath -o $livenessprobeexepath -municode
+g++ $livenessprobesrcpath -o $livenessprobeexepath -municode
 Write-Host("End:build livenessprobe cpp code")
 if (Test-Path -Path $livenessprobeexepath){
     Write-Host("livenessprobe.exe exists which indicates cpp build step succeeded") -ForegroundColor Green
