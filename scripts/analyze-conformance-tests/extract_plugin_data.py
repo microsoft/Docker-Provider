@@ -10,7 +10,7 @@ def find_plugin_txt_files(base_folder):
     """
     Find all plugin.txt files in the specified pattern within the base folder
     """
-    pattern = os.path.join(base_folder, "podlogs", "sonobuoy", "sonobuoy-azure-arc-ci-conformance-job-*", "logs", "plugin.txt")
+    pattern = os.path.join(base_folder, "podlogs", "sonobuoy", "sonobuoy-azure-arc-monitor-job-*", "logs", "plugin.txt")
     return glob.glob(pattern)
 
 def extract_test_summary(file_path):

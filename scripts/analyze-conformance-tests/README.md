@@ -14,7 +14,7 @@ The tools in this repository work together in a sequential workflow:
 
 ### 1. extract_tar_files.py
 
-This script locates and extracts all `10_results.tar.gz` files from a directory tree.
+This script locates and extracts all `11_results.tar.gz` files from a directory tree.
 
 **Usage:**
 ```powershell
@@ -58,7 +58,7 @@ python convert_summaries_to_markdown.py ".\ReleaseLogs_6700_05222025"
 - `path`: Path to folder containing test_summaries.txt (required positional argument)
 
 **Output:**
-- A Markdown file with the folder name appended (e.g., `test_summaries_ReleaseLogs_6700_05222025.md`) containing:
+- A Markdown file with:
   - Summary table showing test results by platform
   - Detailed sections for each platform
   - Clickable links to open the original log files
@@ -78,10 +78,9 @@ python extract_plugin_data.py ".\ReleaseLogs_6700_05222025"
 
 # Step 3: Convert to Markdown format
 python convert_summaries_to_markdown.py ".\ReleaseLogs_6700_05222025"
-# This creates test_summaries_ReleaseLogs_6700_05222025.md in the folder
 ```
 
-After running these commands, open the generated Markdown file (e.g., `test_summaries_ReleaseLogs_6700_05222025.md`) in any Markdown viewer to:
+After running these commands, open `test_summaries.md` in any Markdown viewer to:
 - Review the summary of test results across all platforms
 - Click on links to open specific log files for detailed analysis
 - Identify patterns in test failures across different environments

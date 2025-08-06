@@ -6,7 +6,7 @@ import argparse
 
 def find_and_extract_tar_files(root_folder):
     """
-    Find all 10_results.tar.gz files in the given folder, check if they've been
+    Find all 11_results.tar.gz files in the given folder, check if they've been
     extracted, and extract them if not.
     """
     tar_files_found = []
@@ -15,9 +15,9 @@ def find_and_extract_tar_files(root_folder):
     
     # Walk through all directories and files
     for dirpath, dirnames, filenames in os.walk(root_folder):
-        # Check if 10_results.tar.gz exists in current directory
-        if '10_results.tar.gz' in filenames:            
-            tar_path = os.path.join(dirpath, '10_results.tar.gz')
+        # Check if 11_results.tar.gz exists in current directory
+        if '11_results.tar.gz' in filenames:            
+            tar_path = os.path.join(dirpath, '11_results.tar.gz')
             tar_files_found.append(tar_path)
             print(f"Found tar file: {tar_path}")
               # Check if the tar file has already been extracted
@@ -56,7 +56,7 @@ def find_and_extract_tar_files(root_folder):
     return tar_files_found, files_extracted, extracted_contents
 
 def main():
-    parser = argparse.ArgumentParser(description='Find and extract 10_results.tar.gz files')
+    parser = argparse.ArgumentParser(description='Find and extract 11_results.tar.gz files')
     parser.add_argument('folder', help='Root folder to search for tar.gz files')
     parser.add_argument('--output', '-o', help='Output file to save extraction results', default='extraction_results.txt')
     args = parser.parse_args()
@@ -89,7 +89,7 @@ def main():
             print("Operation cancelled by user.")
             return 0
     
-    print(f"\nSearching for 10_results.tar.gz files in {args.folder}")
+    print(f"\nSearching for 11_results.tar.gz files in {args.folder}")
     
     tar_files, extracted_files, extracted_contents = find_and_extract_tar_files(args.folder)
     print("\nSummary:")
