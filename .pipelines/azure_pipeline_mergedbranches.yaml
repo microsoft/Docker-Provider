@@ -795,7 +795,7 @@ extends:
             retryCountOnTaskFailure: 2
             inlineScript: |
               mkdir -p $(Build.ArtifactStagingDirectory)/windows
-              cd kubernetes/windows
+              cd kubernetes/windows-nano
               az --version
               az account show
               az account set -s ${{ variables.subscription }}
