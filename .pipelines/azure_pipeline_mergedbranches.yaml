@@ -330,435 +330,436 @@ extends:
       #     displayName: 'Set Docker images to scan'
       
       
-      - job: build_windows_2019
-        pool:
-          name: Azure-Pipelines-CI-Test-EO
-          image: ci-1es-managed-windows-2022
-          os: windows
-        timeoutInMinutes: 120
-        dependsOn:
-        - common
-        variables:
-          windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
-          windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
-          windows2019BaseImageVersion: ltsc2019
-          Codeql.Enabled: true
-          Codeql.BuildIdentifier: 'windowsbuild'
-          windowsAMAUrl: $[ dependencies.common.outputs['setup.windowsAMAUrl'] ]
-        steps:
-        - task: PowerShell@2
-          inputs:
-            targetType: 'filePath'
-            filePath: $(System.DefaultWorkingDirectory)/scripts/build/windows/install-build-pre-requisites.ps1
-          displayName: 'install prereqs'
-        - task: CodeQL3000Init@0
-          condition: eq(variables.IS_MAIN_BRANCH, true)
-        - script: |
-            setlocal enabledelayedexpansion
-            powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\windows\Makefile.ps1"
-            endlocal
-            exit /B %ERRORLEVEL%
-          displayName: 'build base'
-        - task: AzureCLI@2
-          displayName: "Set up acr for windows ltsc2019 build"
-          inputs:
-            azureSubscription: ${{ variables.armServiceConnectionName }}
-            scriptType: ps
-            scriptLocation: inlineScript
-            retryCountOnTaskFailure: 2
-            inlineScript: |
-              az --version
-              az account show
-              az account set -s ${{ variables.subscription }}
-              az acr login -n ${{ variables.containerRegistry }}
-        - task: PowerShell@2          
-          inputs:
-            targetType: 'inline'
-            script: |
-              # Check if directory exists and remove it before creating it to handle retry scenarios
-              if (Test-Path -Path "$(Build.ArtifactStagingDirectory)/windows") {
-                Remove-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -Recurse -Force
-              }
-              New-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -ItemType Directory -Force
-              cd kubernetes/windows
-              # Build the Docker image
-              docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2019BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
-          displayName: "Docker windows build for ltsc2019"
-          retryCountOnTaskFailure: 2
-        - task: PowerShell@2
-          displayName: Extract files to sign
-          inputs:
-            targetType: 'inline'
-            script: |
-              echo "Creating docker container"
-              docker create --name signingContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned
-              echo "Creating fist party directory"
-              mkdir -p $(Build.ArtifactStagingDirectory)/fpSigning
-              cd $(Build.ArtifactStagingDirectory)/fpSigning
-              echo "Extract CertificateGenerator"
-              docker cp signingContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.exe .
-              docker cp signingContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.dll .
-              echo "Extract LivenessProbe"
-              docker cp signingContainer:C:\opt\amalogswindows\scripts\cmd\livenessprobe.exe .
-              echo "Extract ps scripts"
-              docker cp signingContainer:C:\opt\amalogswindows\scripts\powershell .
-              echo "Creating OSS directory"
-              mkdir -p $(Build.ArtifactStagingDirectory)/ossSigning
-              cd $(Build.ArtifactStagingDirectory)/ossSigning
-              echo "Extract CertificateGenerator"
-              docker cp signingContainer:C:\opt\amalogswindows\certgenerator\BouncyCastle.Crypto.dll .
-              docker cp signingContainer:C:\opt\amalogswindows\certgenerator\Newtonsoft.Json.dll .
-              echo "Extract fluent-bit"
-              docker cp signingContainer:C:\opt\fluent-bit .
-              echo "Extract Ruby"
-              docker cp signingContainer:C:\ruby31 .
-              echo "Extract telegraf"
-              docker cp signingContainer:C:\opt\telegraf\telegraf.exe .
-              echo "Extract out oms"
-              docker cp signingContainer:C:\opt\amalogswindows\out_oms.so .
-              echo "Extract containerinventory.so"
-              docker cp signingContainer:C:\opt\fluent-bit\bin\containerinventory.so .
-              echo "Extract perf.so"
-              docker cp signingContainer:C:\opt\fluent-bit\bin\perf.so .
-              echo "Removing container"
-              docker rm signingContainer
-              echo "List ArtifactStagingDirectory"
-              ls $(Build.ArtifactStagingDirectory)
-              ls .
-        - script: dir $(System.DefaultWorkingDirectory)
-          displayName: 'List files in DefaultWorking Directory'
-        - script: dir $(Build.ArtifactStagingDirectory)
-          displayName: 'List files in Staging Directory'
-        - task: EsrpCodeSigning@5
-          inputs:
-            ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
-            UseMSIAuthentication: true
-            AppRegistrationClientId: $(appRegistrationClientId)
-            AppRegistrationTenantId: $(appRegistrationTenantId)
-            EsrpClientId: $(esrpClientId)
-            AuthAKVName: $(authAKVName)
-            AuthCertName: $(authCertName)
-            AuthSignCertName: $(authSignCertName)
-            FolderPath: '$(Build.ArtifactStagingDirectory)/fpSigning'
-            Pattern: '*.dll,*.exe,*.so,*.ps1'
-            signConfigType: 'inlineSignParams'
-            inlineOperation: |
-              [
-                      {
-                          "KeyCode" : "CP-230012",
-                          "OperationCode" : "SigntoolSign",
-                          "Parameters" : {
-                              "OpusName" : "Microsoft",
-                              "OpusInfo" : "http://www.microsoft.com",
-                              "FileDigest" : "/fd \"SHA256\"",
-                              "PageHash" : "/NPH",
-                              "TimeStamp" : "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
-                          },
-                          "ToolName" : "sign",
-                          "ToolVersion" : "1.0"
-                      },
-                      {
-                          "KeyCode" : "CP-230012",
-                          "OperationCode" : "SigntoolVerify",
-                          "Parameters" : {},
-                          "ToolName" : "sign",
-                          "ToolVersion" : "1.0"
-                      }
-                  ]
-            SessionTimeout: '60'
-            MaxConcurrency: '50'
-            MaxRetryAttempts: '5'
-          displayName: 'EsrpCodeSigning for first party'
-        - task: EsrpCodeSigning@5
-          inputs:
-            ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
-            UseMSIAuthentication: true
-            AppRegistrationClientId: $(appRegistrationClientId)
-            AppRegistrationTenantId: $(appRegistrationTenantId)
-            EsrpClientId: $(esrpClientId)
-            AuthAKVName: $(authAKVName)
-            AuthCertName: $(authCertName)
-            AuthSignCertName: $(authSignCertName)
-            FolderPath: '$(Build.ArtifactStagingDirectory)/ossSigning'
-            Pattern: '*.dll,*.exe,*.so'
-            signConfigType: 'inlineSignParams'
-            inlineOperation: |
-              [
-                      {
-                          "KeyCode" : "CP-231522",
-                          "OperationCode" : "SigntoolSign",
-                          "Parameters" : {
-                              "OpusName" : "Microsoft",
-                              "OpusInfo" : "http://www.microsoft.com",
-                              "Append" : "/as",
-                              "FileDigest" : "/fd \"SHA256\"",
-                              "PageHash" : "/NPH",
-                              "TimeStamp" : "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
-                          },
-                          "ToolName" : "sign",
-                          "ToolVersion" : "1.0"
-                      },
-                      {
-                          "KeyCode" : "CP-231522",
-                          "OperationCode" : "SigntoolVerify",
-                          "Parameters" : {},
-                          "ToolName" : "sign",
-                          "ToolVersion" : "1.0"
-                      }
-                  ]
-            SessionTimeout: '60'
-            MaxConcurrency: '50'
-            MaxRetryAttempts: '5'
-          displayName: 'EsrpCodeSigning for OSS'
-        - task: BinSkim@4
-          displayName: 'SDL: run binskim'
-          inputs:
-            InputType: 'CommandLine'
-            arguments: 'analyze --rich-return-code $(Build.ArtifactStagingDirectory)\ossSigning\out_oms.so $(Build.ArtifactStagingDirectory)\ossSigning\perf.so $(Build.ArtifactStagingDirectory)\ossSigning\containerinventory.so $(Build.ArtifactStagingDirectory)\fpSigning\livenessprobe.exe $(Build.ArtifactStagingDirectory)\fpSigning\CertificateGenerator.exe $(Build.ArtifactStagingDirectory)\fpSigning\CertificateGenerator.dll'
-          retryCountOnTaskFailure: 1
-        - task: PoliCheck@2
-          displayName: "SDL : Run PoliCheck"
-          inputs:
-            targetType: 'F'
-            targetArgument: '$(Build.SourcesDirectory)'
-        - task: PowerShell@2
-          displayName: Replace files in origin Image
-          inputs:
-            targetType: 'inline'
-            script: |
-              docker create --name pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned
-              echo "Copy Signed binaries/folders back to docker image"
-              docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.exe pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.exe
-              docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.dll pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.dll
-              docker cp $(Build.ArtifactStagingDirectory)/fpSigning/livenessprobe.exe pushContainer:C:\opt\amalogswindows\scripts\cmd\livenessprobe.exe
-              docker cp $(Build.ArtifactStagingDirectory)/fpSigning/powershell/. pushContainer:C:\opt\amalogswindows\scripts\powershell/
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/BouncyCastle.Crypto.dll pushContainer:C:\opt\amalogswindows\certgenerator\BouncyCastle.Crypto.dll
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/Newtonsoft.Json.dll pushContainer:C:\opt\amalogswindows\certgenerator\Newtonsoft.Json.dll
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/fluent-bit/. pushContainer:C:\opt\fluent-bit/
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/ruby31/. pushContainer:C:\ruby31/
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/telegraf.exe pushContainer:C:\opt\telegraf\telegraf.exe
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/out_oms.so pushContainer:C:\opt\amalogswindows\out_oms.so
-              docker commit pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
-              docker rm pushContainer
-        - task: PowerShell@2
-          displayName: Push Docker Image
-          inputs:
-            targetType: 'inline'
-            script: |
-              if ("$(Build.Reason)" -ne "PullRequest") {
-                docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
-              }
-        - task: CodeQL3000Finalize@0
-          condition: eq(variables.IS_MAIN_BRANCH, true)
+      # - job: build_windows_2019
+      #   pool:
+      #     name: Azure-Pipelines-CI-Test-EO
+      #     image: ci-1es-managed-windows-2022
+      #     os: windows
+      #   timeoutInMinutes: 120
+      #   dependsOn:
+      #   - common
+      #   variables:
+      #     windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
+      #     windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
+      #     windows2019BaseImageVersion: ltsc2019
+      #     Codeql.Enabled: true
+      #     Codeql.BuildIdentifier: 'windowsbuild'
+      #     windowsAMAUrl: $[ dependencies.common.outputs['setup.windowsAMAUrl'] ]
+      #   steps:
+      #   - task: PowerShell@2
+      #     inputs:
+      #       targetType: 'filePath'
+      #       filePath: $(System.DefaultWorkingDirectory)/scripts/build/windows/install-build-pre-requisites.ps1
+      #     displayName: 'install prereqs'
+      #   - task: CodeQL3000Init@0
+      #     condition: eq(variables.IS_MAIN_BRANCH, true)
+      #   - script: |
+      #       setlocal enabledelayedexpansion
+      #       powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\windows\Makefile.ps1"
+      #       endlocal
+      #       exit /B %ERRORLEVEL%
+      #     displayName: 'build base'
+      #   - task: AzureCLI@2
+      #     displayName: "Set up acr for windows ltsc2019 build"
+      #     inputs:
+      #       azureSubscription: ${{ variables.armServiceConnectionName }}
+      #       scriptType: ps
+      #       scriptLocation: inlineScript
+      #       retryCountOnTaskFailure: 2
+      #       inlineScript: |
+      #         az --version
+      #         az account show
+      #         az account set -s ${{ variables.subscription }}
+      #         az acr login -n ${{ variables.containerRegistry }}
+      #   - task: PowerShell@2          
+      #     inputs:
+      #       targetType: 'inline'
+      #       script: |
+      #         # Check if directory exists and remove it before creating it to handle retry scenarios
+      #         if (Test-Path -Path "$(Build.ArtifactStagingDirectory)/windows") {
+      #           Remove-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -Recurse -Force
+      #         }
+      #         New-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -ItemType Directory -Force
+      #         cd kubernetes/windows
+      #         # Build the Docker image
+      #         docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2019BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
+      #     displayName: "Docker windows build for ltsc2019"
+      #     retryCountOnTaskFailure: 2
+      #   - task: PowerShell@2
+      #     displayName: Extract files to sign
+      #     inputs:
+      #       targetType: 'inline'
+      #       script: |
+      #         echo "Creating docker container"
+      #         docker create --name signingContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned
+      #         echo "Creating fist party directory"
+      #         mkdir -p $(Build.ArtifactStagingDirectory)/fpSigning
+      #         cd $(Build.ArtifactStagingDirectory)/fpSigning
+      #         echo "Extract CertificateGenerator"
+      #         docker cp signingContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.exe .
+      #         docker cp signingContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.dll .
+      #         echo "Extract LivenessProbe"
+      #         docker cp signingContainer:C:\opt\amalogswindows\scripts\cmd\livenessprobe.exe .
+      #         echo "Extract ps scripts"
+      #         docker cp signingContainer:C:\opt\amalogswindows\scripts\powershell .
+      #         echo "Creating OSS directory"
+      #         mkdir -p $(Build.ArtifactStagingDirectory)/ossSigning
+      #         cd $(Build.ArtifactStagingDirectory)/ossSigning
+      #         echo "Extract CertificateGenerator"
+      #         docker cp signingContainer:C:\opt\amalogswindows\certgenerator\BouncyCastle.Crypto.dll .
+      #         docker cp signingContainer:C:\opt\amalogswindows\certgenerator\Newtonsoft.Json.dll .
+      #         echo "Extract fluent-bit"
+      #         docker cp signingContainer:C:\opt\fluent-bit .
+      #         echo "Extract Ruby"
+      #         docker cp signingContainer:C:\ruby31 .
+      #         echo "Extract telegraf"
+      #         docker cp signingContainer:C:\opt\telegraf\telegraf.exe .
+      #         echo "Extract out oms"
+      #         docker cp signingContainer:C:\opt\amalogswindows\out_oms.so .
+      #         echo "Extract containerinventory.so"
+      #         docker cp signingContainer:C:\opt\fluent-bit\bin\containerinventory.so .
+      #         echo "Extract perf.so"
+      #         docker cp signingContainer:C:\opt\fluent-bit\bin\perf.so .
+      #         echo "Removing container"
+      #         docker rm signingContainer
+      #         echo "List ArtifactStagingDirectory"
+      #         ls $(Build.ArtifactStagingDirectory)
+      #         ls .
+      #   - script: dir $(System.DefaultWorkingDirectory)
+      #     displayName: 'List files in DefaultWorking Directory'
+      #   - script: dir $(Build.ArtifactStagingDirectory)
+      #     displayName: 'List files in Staging Directory'
+      #   - task: EsrpCodeSigning@5
+      #     inputs:
+      #       ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+      #       UseMSIAuthentication: true
+      #       AppRegistrationClientId: $(appRegistrationClientId)
+      #       AppRegistrationTenantId: $(appRegistrationTenantId)
+      #       EsrpClientId: $(esrpClientId)
+      #       AuthAKVName: $(authAKVName)
+      #       AuthCertName: $(authCertName)
+      #       AuthSignCertName: $(authSignCertName)
+      #       FolderPath: '$(Build.ArtifactStagingDirectory)/fpSigning'
+      #       Pattern: '*.dll,*.exe,*.so,*.ps1'
+      #       signConfigType: 'inlineSignParams'
+      #       inlineOperation: |
+      #         [
+      #                 {
+      #                     "KeyCode" : "CP-230012",
+      #                     "OperationCode" : "SigntoolSign",
+      #                     "Parameters" : {
+      #                         "OpusName" : "Microsoft",
+      #                         "OpusInfo" : "http://www.microsoft.com",
+      #                         "FileDigest" : "/fd \"SHA256\"",
+      #                         "PageHash" : "/NPH",
+      #                         "TimeStamp" : "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+      #                     },
+      #                     "ToolName" : "sign",
+      #                     "ToolVersion" : "1.0"
+      #                 },
+      #                 {
+      #                     "KeyCode" : "CP-230012",
+      #                     "OperationCode" : "SigntoolVerify",
+      #                     "Parameters" : {},
+      #                     "ToolName" : "sign",
+      #                     "ToolVersion" : "1.0"
+      #                 }
+      #             ]
+      #       SessionTimeout: '60'
+      #       MaxConcurrency: '50'
+      #       MaxRetryAttempts: '5'
+      #     displayName: 'EsrpCodeSigning for first party'
+      #   - task: EsrpCodeSigning@5
+      #     inputs:
+      #       ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+      #       UseMSIAuthentication: true
+      #       AppRegistrationClientId: $(appRegistrationClientId)
+      #       AppRegistrationTenantId: $(appRegistrationTenantId)
+      #       EsrpClientId: $(esrpClientId)
+      #       AuthAKVName: $(authAKVName)
+      #       AuthCertName: $(authCertName)
+      #       AuthSignCertName: $(authSignCertName)
+      #       FolderPath: '$(Build.ArtifactStagingDirectory)/ossSigning'
+      #       Pattern: '*.dll,*.exe,*.so'
+      #       signConfigType: 'inlineSignParams'
+      #       inlineOperation: |
+      #         [
+      #                 {
+      #                     "KeyCode" : "CP-231522",
+      #                     "OperationCode" : "SigntoolSign",
+      #                     "Parameters" : {
+      #                         "OpusName" : "Microsoft",
+      #                         "OpusInfo" : "http://www.microsoft.com",
+      #                         "Append" : "/as",
+      #                         "FileDigest" : "/fd \"SHA256\"",
+      #                         "PageHash" : "/NPH",
+      #                         "TimeStamp" : "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+      #                     },
+      #                     "ToolName" : "sign",
+      #                     "ToolVersion" : "1.0"
+      #                 },
+      #                 {
+      #                     "KeyCode" : "CP-231522",
+      #                     "OperationCode" : "SigntoolVerify",
+      #                     "Parameters" : {},
+      #                     "ToolName" : "sign",
+      #                     "ToolVersion" : "1.0"
+      #                 }
+      #             ]
+      #       SessionTimeout: '60'
+      #       MaxConcurrency: '50'
+      #       MaxRetryAttempts: '5'
+      #     displayName: 'EsrpCodeSigning for OSS'
+      #   - task: BinSkim@4
+      #     displayName: 'SDL: run binskim'
+      #     inputs:
+      #       InputType: 'CommandLine'
+      #       arguments: 'analyze --rich-return-code $(Build.ArtifactStagingDirectory)\ossSigning\out_oms.so $(Build.ArtifactStagingDirectory)\ossSigning\perf.so $(Build.ArtifactStagingDirectory)\ossSigning\containerinventory.so $(Build.ArtifactStagingDirectory)\fpSigning\livenessprobe.exe $(Build.ArtifactStagingDirectory)\fpSigning\CertificateGenerator.exe $(Build.ArtifactStagingDirectory)\fpSigning\CertificateGenerator.dll'
+      #     retryCountOnTaskFailure: 1
+      #   - task: PoliCheck@2
+      #     displayName: "SDL : Run PoliCheck"
+      #     inputs:
+      #       targetType: 'F'
+      #       targetArgument: '$(Build.SourcesDirectory)'
+      #   - task: PowerShell@2
+      #     displayName: Replace files in origin Image
+      #     inputs:
+      #       targetType: 'inline'
+      #       script: |
+      #         docker create --name pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned
+      #         echo "Copy Signed binaries/folders back to docker image"
+      #         docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.exe pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.exe
+      #         docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.dll pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.dll
+      #         docker cp $(Build.ArtifactStagingDirectory)/fpSigning/livenessprobe.exe pushContainer:C:\opt\amalogswindows\scripts\cmd\livenessprobe.exe
+      #         docker cp $(Build.ArtifactStagingDirectory)/fpSigning/powershell/. pushContainer:C:\opt\amalogswindows\scripts\powershell/
+      #         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/BouncyCastle.Crypto.dll pushContainer:C:\opt\amalogswindows\certgenerator\BouncyCastle.Crypto.dll
+      #         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/Newtonsoft.Json.dll pushContainer:C:\opt\amalogswindows\certgenerator\Newtonsoft.Json.dll
+      #         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/fluent-bit/. pushContainer:C:\opt\fluent-bit/
+      #         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/ruby31/. pushContainer:C:\ruby31/
+      #         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/telegraf.exe pushContainer:C:\opt\telegraf\telegraf.exe
+      #         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/out_oms.so pushContainer:C:\opt\amalogswindows\out_oms.so
+      #         docker commit pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
+      #         docker rm pushContainer
+      #   - task: PowerShell@2
+      #     displayName: Push Docker Image
+      #     inputs:
+      #       targetType: 'inline'
+      #       script: |
+      #         if ("$(Build.Reason)" -ne "PullRequest") {
+      #           docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
+      #         }
+      #   - task: CodeQL3000Finalize@0
+      #     condition: eq(variables.IS_MAIN_BRANCH, true)
       
-      - job: build_windows_2022
-        pool:
-          name: Azure-Pipelines-CI-Test-EO
-          image: ci-1es-managed-windows-2022
-          os: windows
-        timeoutInMinutes: 120
-        dependsOn:
-        - common
-        variables:
-          windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
-          windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
-          windows2022BaseImageVersion: ltsc2022
-          Codeql.SkipTaskAutoInjection: true
-          windowsAMAUrl: $[ dependencies.common.outputs['setup.windowsAMAUrl'] ]
-        steps:
-        - task: PowerShell@2
-          inputs:
-            targetType: 'filePath'
-            filePath: $(System.DefaultWorkingDirectory)/scripts/build/windows/install-build-pre-requisites.ps1
-          displayName: 'install prereqs'
-        - task: CodeQL3000Init@0
-          condition: eq(variables.IS_MAIN_BRANCH, true)
-        - script: |
-            setlocal enabledelayedexpansion
-            powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\windows\Makefile.ps1"
-            endlocal
-            exit /B %ERRORLEVEL%
-          displayName: 'build base'
-        - task: AzureCLI@2
-          displayName: "Docker windows build for ltsc2022"
-          inputs:
-            azureSubscription: ${{ variables.armServiceConnectionName }}
-            scriptType: ps
-            scriptLocation: inlineScript
-            retryCountOnTaskFailure: 2
-            inlineScript: |
-              mkdir -p $(Build.ArtifactStagingDirectory)/windows
-              cd kubernetes/windows
-              az --version
-              az account show
-              az account set -s ${{ variables.subscription }}
-              az acr login -n ${{ variables.containerRegistry }}
-              docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2022BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
-        - task: PowerShell@2
-          displayName: Extract files to sign
-          inputs:
-            targetType: 'inline'
-            script: |
-              echo "Creating docker container"
-              docker create --name signingContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)-unsigned
-              echo "Creating fist party directory"
-              mkdir -p $(Build.ArtifactStagingDirectory)/fpSigning
-              cd $(Build.ArtifactStagingDirectory)/fpSigning
-              echo "Extract CertificateGenerator"
-              docker cp signingContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.exe .
-              docker cp signingContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.dll .
-              echo "Extract LivenessProbe"
-              docker cp signingContainer:C:\opt\amalogswindows\scripts\cmd\livenessprobe.exe .
-              echo "Extract ps scripts"
-              docker cp signingContainer:C:\opt\amalogswindows\scripts\powershell .
-              echo "Creating OSS directory"
-              mkdir -p $(Build.ArtifactStagingDirectory)/ossSigning
-              cd $(Build.ArtifactStagingDirectory)/ossSigning
-              echo "Extract CertificateGenerator"
-              docker cp signingContainer:C:\opt\amalogswindows\certgenerator\BouncyCastle.Crypto.dll .
-              docker cp signingContainer:C:\opt\amalogswindows\certgenerator\Newtonsoft.Json.dll .
-              echo "Extract fluent-bit"
-              docker cp signingContainer:C:\opt\fluent-bit .
-              echo "Extract Ruby"
-              docker cp signingContainer:C:\ruby31 .
-              echo "Extract telegraf"
-              docker cp signingContainer:C:\opt\telegraf\telegraf.exe .
-              echo "Extract out oms"
-              docker cp signingContainer:C:\opt\amalogswindows\out_oms.so .
-              echo "Extract containerinventory.so"
-              docker cp signingContainer:C:\opt\fluent-bit\bin\containerinventory.so .
-              echo "Extract perf.so"
-              docker cp signingContainer:C:\opt\fluent-bit\bin\perf.so .
-              echo "Removing container"
-              docker rm signingContainer
-              echo "List ArtifactStagingDirectory"
-              ls $(Build.ArtifactStagingDirectory)
-              ls .
-        - script: dir $(System.DefaultWorkingDirectory)
-          displayName: 'List files in DefaultWorking Directory'
-        - script: dir $(Build.ArtifactStagingDirectory)
-          displayName: 'List files in Staging Directory'
-        - task: EsrpCodeSigning@5
-          inputs:
-            ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
-            UseMSIAuthentication: true
-            AppRegistrationClientId: $(appRegistrationClientId)
-            AppRegistrationTenantId: $(appRegistrationTenantId)
-            EsrpClientId: $(esrpClientId)
-            AuthAKVName: $(authAKVName)
-            AuthCertName: $(authCertName)
-            AuthSignCertName: $(authSignCertName)
-            FolderPath: '$(Build.ArtifactStagingDirectory)/fpSigning'
-            Pattern: '*.dll,*.exe,*.so,*.ps1'
-            signConfigType: 'inlineSignParams'
-            inlineOperation: |
-              [
-                      {
-                          "KeyCode" : "CP-230012",
-                          "OperationCode" : "SigntoolSign",
-                          "Parameters" : {
-                              "OpusName" : "Microsoft",
-                              "OpusInfo" : "http://www.microsoft.com",
-                              "FileDigest" : "/fd \"SHA256\"",
-                              "PageHash" : "/NPH",
-                              "TimeStamp" : "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
-                          },
-                          "ToolName" : "sign",
-                          "ToolVersion" : "1.0"
-                      },
-                      {
-                          "KeyCode" : "CP-230012",
-                          "OperationCode" : "SigntoolVerify",
-                          "Parameters" : {},
-                          "ToolName" : "sign",
-                          "ToolVersion" : "1.0"
-                      }
-                  ]
-            SessionTimeout: '60'
-            MaxConcurrency: '50'
-            MaxRetryAttempts: '5'
-          displayName: 'EsrpCodeSigning for first party'
-        - task: EsrpCodeSigning@5
-          inputs:
-            ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
-            UseMSIAuthentication: true
-            AppRegistrationClientId: $(appRegistrationClientId)
-            AppRegistrationTenantId: $(appRegistrationTenantId)
-            EsrpClientId: $(esrpClientId)
-            AuthAKVName: $(authAKVName)
-            AuthCertName: $(authCertName)
-            AuthSignCertName: $(authSignCertName)
-            FolderPath: '$(Build.ArtifactStagingDirectory)/ossSigning'
-            Pattern: '*.dll,*.exe,*.so'
-            signConfigType: 'inlineSignParams'
-            inlineOperation: |
-              [
-                      {
-                          "KeyCode" : "CP-231522",
-                          "OperationCode" : "SigntoolSign",
-                          "Parameters" : {
-                              "OpusName" : "Microsoft",
-                              "OpusInfo" : "http://www.microsoft.com",
-                              "Append" : "/as",
-                              "FileDigest" : "/fd \"SHA256\"",
-                              "PageHash" : "/NPH",
-                              "TimeStamp" : "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
-                          },
-                          "ToolName" : "sign",
-                          "ToolVersion" : "1.0"
-                      },
-                      {
-                          "KeyCode" : "CP-231522",
-                          "OperationCode" : "SigntoolVerify",
-                          "Parameters" : {},
-                          "ToolName" : "sign",
-                          "ToolVersion" : "1.0"
-                      }
-                  ]
-            SessionTimeout: '60'
-            MaxConcurrency: '50'
-            MaxRetryAttempts: '5'
-          displayName: 'EsrpCodeSigning for OSS'
-        - task: BinSkim@4
-          displayName: 'SDL: run binskim'
-          inputs:
-            InputType: 'CommandLine'
-            arguments: 'analyze --rich-return-code $(Build.ArtifactStagingDirectory)\ossSigning\out_oms.so $(Build.ArtifactStagingDirectory)\ossSigning\perf.so $(Build.ArtifactStagingDirectory)\ossSigning\containerinventory.so $(Build.ArtifactStagingDirectory)\fpSigning\livenessprobe.exe $(Build.ArtifactStagingDirectory)\fpSigning\CertificateGenerator.exe $(Build.ArtifactStagingDirectory)\fpSigning\CertificateGenerator.dll'
-          retryCountOnTaskFailure: 1
-        - task: PoliCheck@2
-          displayName: "SDL : Run PoliCheck"
-          inputs:
-            targetType: 'F'
-            targetArgument: '$(Build.SourcesDirectory)'
-        - task: PowerShell@2
-          displayName: Replace files in origin Image
-          inputs:
-            targetType: 'inline'
-            script: |
-              docker create --name pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)-unsigned
-              echo "Copy Signed binaries/folders back to docker image"
-              docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.exe pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.exe
-              docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.dll pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.dll
-              docker cp $(Build.ArtifactStagingDirectory)/fpSigning/livenessprobe.exe pushContainer:C:\opt\amalogswindows\scripts\cmd\livenessprobe.exe
-              docker cp $(Build.ArtifactStagingDirectory)/fpSigning/powershell/. pushContainer:C:\opt\amalogswindows\scripts\powershell/
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/BouncyCastle.Crypto.dll pushContainer:C:\opt\amalogswindows\certgenerator\BouncyCastle.Crypto.dll
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/Newtonsoft.Json.dll pushContainer:C:\opt\amalogswindows\certgenerator\Newtonsoft.Json.dll
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/fluent-bit/. pushContainer:C:\opt\fluent-bit/
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/ruby31/. pushContainer:C:\ruby31/
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/telegraf.exe pushContainer:C:\opt\telegraf\telegraf.exe
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/out_oms.so pushContainer:C:\opt\amalogswindows\out_oms.so
-              docker commit pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
-              docker rm pushContainer
-        - task: PowerShell@2
-          displayName: Push Docker Image
-          inputs:
-            targetType: 'inline'
-            script: |
-              if ("$(Build.Reason)" -ne "PullRequest") {
-                docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
-              }
-        - task: CodeQL3000Finalize@0
-          condition: eq(variables.IS_MAIN_BRANCH, true)
+
+      # - job: build_windows_2022
+      #   pool:
+      #     name: Azure-Pipelines-CI-Test-EO
+      #     image: ci-1es-managed-windows-2022
+      #     os: windows
+      #   timeoutInMinutes: 120
+      #   dependsOn:
+      #   - common
+      #   variables:
+      #     windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
+      #     windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
+      #     windows2022BaseImageVersion: ltsc2022
+      #     Codeql.SkipTaskAutoInjection: true
+      #     windowsAMAUrl: $[ dependencies.common.outputs['setup.windowsAMAUrl'] ]
+      #   steps:
+      #   - task: PowerShell@2
+      #     inputs:
+      #       targetType: 'filePath'
+      #       filePath: $(System.DefaultWorkingDirectory)/scripts/build/windows/install-build-pre-requisites.ps1
+      #     displayName: 'install prereqs'
+      #   - task: CodeQL3000Init@0
+      #     condition: eq(variables.IS_MAIN_BRANCH, true)
+      #   - script: |
+      #       setlocal enabledelayedexpansion
+      #       powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\windows\Makefile.ps1"
+      #       endlocal
+      #       exit /B %ERRORLEVEL%
+      #     displayName: 'build base'
+      #   - task: AzureCLI@2
+      #     displayName: "Docker windows build for ltsc2022"
+      #     inputs:
+      #       azureSubscription: ${{ variables.armServiceConnectionName }}
+      #       scriptType: ps
+      #       scriptLocation: inlineScript
+      #       retryCountOnTaskFailure: 2
+      #       inlineScript: |
+      #         mkdir -p $(Build.ArtifactStagingDirectory)/windows
+      #         cd kubernetes/windows
+      #         az --version
+      #         az account show
+      #         az account set -s ${{ variables.subscription }}
+      #         az acr login -n ${{ variables.containerRegistry }}
+      #         docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2022BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
+      #   - task: PowerShell@2
+      #     displayName: Extract files to sign
+      #     inputs:
+      #       targetType: 'inline'
+      #       script: |
+      #         echo "Creating docker container"
+      #         docker create --name signingContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)-unsigned
+      #         echo "Creating fist party directory"
+      #         mkdir -p $(Build.ArtifactStagingDirectory)/fpSigning
+      #         cd $(Build.ArtifactStagingDirectory)/fpSigning
+      #         echo "Extract CertificateGenerator"
+      #         docker cp signingContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.exe .
+      #         docker cp signingContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.dll .
+      #         echo "Extract LivenessProbe"
+      #         docker cp signingContainer:C:\opt\amalogswindows\scripts\cmd\livenessprobe.exe .
+      #         echo "Extract ps scripts"
+      #         docker cp signingContainer:C:\opt\amalogswindows\scripts\powershell .
+      #         echo "Creating OSS directory"
+      #         mkdir -p $(Build.ArtifactStagingDirectory)/ossSigning
+      #         cd $(Build.ArtifactStagingDirectory)/ossSigning
+      #         echo "Extract CertificateGenerator"
+      #         docker cp signingContainer:C:\opt\amalogswindows\certgenerator\BouncyCastle.Crypto.dll .
+      #         docker cp signingContainer:C:\opt\amalogswindows\certgenerator\Newtonsoft.Json.dll .
+      #         echo "Extract fluent-bit"
+      #         docker cp signingContainer:C:\opt\fluent-bit .
+      #         echo "Extract Ruby"
+      #         docker cp signingContainer:C:\ruby31 .
+      #         echo "Extract telegraf"
+      #         docker cp signingContainer:C:\opt\telegraf\telegraf.exe .
+      #         echo "Extract out oms"
+      #         docker cp signingContainer:C:\opt\amalogswindows\out_oms.so .
+      #         echo "Extract containerinventory.so"
+      #         docker cp signingContainer:C:\opt\fluent-bit\bin\containerinventory.so .
+      #         echo "Extract perf.so"
+      #         docker cp signingContainer:C:\opt\fluent-bit\bin\perf.so .
+      #         echo "Removing container"
+      #         docker rm signingContainer
+      #         echo "List ArtifactStagingDirectory"
+      #         ls $(Build.ArtifactStagingDirectory)
+      #         ls .
+      #   - script: dir $(System.DefaultWorkingDirectory)
+      #     displayName: 'List files in DefaultWorking Directory'
+      #   - script: dir $(Build.ArtifactStagingDirectory)
+      #     displayName: 'List files in Staging Directory'
+      #   - task: EsrpCodeSigning@5
+      #     inputs:
+      #       ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+      #       UseMSIAuthentication: true
+      #       AppRegistrationClientId: $(appRegistrationClientId)
+      #       AppRegistrationTenantId: $(appRegistrationTenantId)
+      #       EsrpClientId: $(esrpClientId)
+      #       AuthAKVName: $(authAKVName)
+      #       AuthCertName: $(authCertName)
+      #       AuthSignCertName: $(authSignCertName)
+      #       FolderPath: '$(Build.ArtifactStagingDirectory)/fpSigning'
+      #       Pattern: '*.dll,*.exe,*.so,*.ps1'
+      #       signConfigType: 'inlineSignParams'
+      #       inlineOperation: |
+      #         [
+      #                 {
+      #                     "KeyCode" : "CP-230012",
+      #                     "OperationCode" : "SigntoolSign",
+      #                     "Parameters" : {
+      #                         "OpusName" : "Microsoft",
+      #                         "OpusInfo" : "http://www.microsoft.com",
+      #                         "FileDigest" : "/fd \"SHA256\"",
+      #                         "PageHash" : "/NPH",
+      #                         "TimeStamp" : "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+      #                     },
+      #                     "ToolName" : "sign",
+      #                     "ToolVersion" : "1.0"
+      #                 },
+      #                 {
+      #                     "KeyCode" : "CP-230012",
+      #                     "OperationCode" : "SigntoolVerify",
+      #                     "Parameters" : {},
+      #                     "ToolName" : "sign",
+      #                     "ToolVersion" : "1.0"
+      #                 }
+      #             ]
+      #       SessionTimeout: '60'
+      #       MaxConcurrency: '50'
+      #       MaxRetryAttempts: '5'
+      #     displayName: 'EsrpCodeSigning for first party'
+      #   - task: EsrpCodeSigning@5
+      #     inputs:
+      #       ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+      #       UseMSIAuthentication: true
+      #       AppRegistrationClientId: $(appRegistrationClientId)
+      #       AppRegistrationTenantId: $(appRegistrationTenantId)
+      #       EsrpClientId: $(esrpClientId)
+      #       AuthAKVName: $(authAKVName)
+      #       AuthCertName: $(authCertName)
+      #       AuthSignCertName: $(authSignCertName)
+      #       FolderPath: '$(Build.ArtifactStagingDirectory)/ossSigning'
+      #       Pattern: '*.dll,*.exe,*.so'
+      #       signConfigType: 'inlineSignParams'
+      #       inlineOperation: |
+      #         [
+      #                 {
+      #                     "KeyCode" : "CP-231522",
+      #                     "OperationCode" : "SigntoolSign",
+      #                     "Parameters" : {
+      #                         "OpusName" : "Microsoft",
+      #                         "OpusInfo" : "http://www.microsoft.com",
+      #                         "Append" : "/as",
+      #                         "FileDigest" : "/fd \"SHA256\"",
+      #                         "PageHash" : "/NPH",
+      #                         "TimeStamp" : "/tr \"http://rfc3161.gtm.corp.microsoft.com/TSS/HttpTspServer\" /td sha256"
+      #                     },
+      #                     "ToolName" : "sign",
+      #                     "ToolVersion" : "1.0"
+      #                 },
+      #                 {
+      #                     "KeyCode" : "CP-231522",
+      #                     "OperationCode" : "SigntoolVerify",
+      #                     "Parameters" : {},
+      #                     "ToolName" : "sign",
+      #                     "ToolVersion" : "1.0"
+      #                 }
+      #             ]
+      #       SessionTimeout: '60'
+      #       MaxConcurrency: '50'
+      #       MaxRetryAttempts: '5'
+      #     displayName: 'EsrpCodeSigning for OSS'
+      #   - task: BinSkim@4
+      #     displayName: 'SDL: run binskim'
+      #     inputs:
+      #       InputType: 'CommandLine'
+      #       arguments: 'analyze --rich-return-code $(Build.ArtifactStagingDirectory)\ossSigning\out_oms.so $(Build.ArtifactStagingDirectory)\ossSigning\perf.so $(Build.ArtifactStagingDirectory)\ossSigning\containerinventory.so $(Build.ArtifactStagingDirectory)\fpSigning\livenessprobe.exe $(Build.ArtifactStagingDirectory)\fpSigning\CertificateGenerator.exe $(Build.ArtifactStagingDirectory)\fpSigning\CertificateGenerator.dll'
+      #     retryCountOnTaskFailure: 1
+      #   - task: PoliCheck@2
+      #     displayName: "SDL : Run PoliCheck"
+      #     inputs:
+      #       targetType: 'F'
+      #       targetArgument: '$(Build.SourcesDirectory)'
+      #   - task: PowerShell@2
+      #     displayName: Replace files in origin Image
+      #     inputs:
+      #       targetType: 'inline'
+      #       script: |
+      #         docker create --name pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)-unsigned
+      #         echo "Copy Signed binaries/folders back to docker image"
+      #         docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.exe pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.exe
+      #         docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.dll pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.dll
+      #         docker cp $(Build.ArtifactStagingDirectory)/fpSigning/livenessprobe.exe pushContainer:C:\opt\amalogswindows\scripts\cmd\livenessprobe.exe
+      #         docker cp $(Build.ArtifactStagingDirectory)/fpSigning/powershell/. pushContainer:C:\opt\amalogswindows\scripts\powershell/
+      #         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/BouncyCastle.Crypto.dll pushContainer:C:\opt\amalogswindows\certgenerator\BouncyCastle.Crypto.dll
+      #         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/Newtonsoft.Json.dll pushContainer:C:\opt\amalogswindows\certgenerator\Newtonsoft.Json.dll
+      #         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/fluent-bit/. pushContainer:C:\opt\fluent-bit/
+      #         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/ruby31/. pushContainer:C:\ruby31/
+      #         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/telegraf.exe pushContainer:C:\opt\telegraf\telegraf.exe
+      #         docker cp $(Build.ArtifactStagingDirectory)/ossSigning/out_oms.so pushContainer:C:\opt\amalogswindows\out_oms.so
+      #         docker commit pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
+      #         docker rm pushContainer
+      #   - task: PowerShell@2
+      #     displayName: Push Docker Image
+      #     inputs:
+      #       targetType: 'inline'
+      #       script: |
+      #         if ("$(Build.Reason)" -ne "PullRequest") {
+      #           docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
+      #         }
+      #   - task: CodeQL3000Finalize@0
+      #     condition: eq(variables.IS_MAIN_BRANCH, true)
           
       - job: build_windows_2025
         pool:
@@ -1247,131 +1248,132 @@ extends:
         #       docker rm pushContainer
         # - task: CodeQL3000Finalize@0
         #   condition: eq(variables.IS_MAIN_BRANCH, true)
-         
-      - job: build_windows_multi_arc
-        pool:
-          name: Azure-Pipelines-CI-Test-EO
-          image: ci-1es-managed-windows-2025
-          os: windows
-        timeoutInMinutes: 120
-        dependsOn:
-        - common
-        - build_windows_2019
-        - build_windows_2022
-        - build_windows_2025
-        variables:
-          windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
-          windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
-          windows2019BaseImageVersion: ltsc2019
-          windows2022BaseImageVersion: ltsc2022
-          windows2025BaseImageVersion: ltsc2025
-          Codeql.SkipTaskAutoInjection: true
-        templateContext:
-          outputs:
-          - output: pipelineArtifact
-            targetPath: '$(Build.ArtifactStagingDirectory)'
-            artifactName: windows-drop
-        steps:
-        - task: AzureCLI@2
-          displayName: "Docker windows build for multi-arc image"
-          inputs:
-            azureSubscription: ${{ variables.armServiceConnectionName }}
-            scriptType: ps
-            scriptLocation: inlineScript
-            inlineScript: |
-              mkdir -p $(Build.ArtifactStagingDirectory)/windows
-              cd kubernetes/windows
-              az --version
-              az account show
-              az account set -s ${{ variables.subscription }}
-              az acr login -n ${{ variables.containerRegistry }}
-              @{"image.name"="${{ variables.repoImageName }}:$(windowsImageTag)"} | ConvertTo-Json -Compress | Out-File -Encoding ascii $(Build.ArtifactStagingDirectory)/windows/metadata.json
-              if ("$(Build.Reason)" -ne "PullRequest") {
-                 docker manifest create ${{ variables.repoImageName }}:$(windowsImageTag) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)
-                 docker manifest push ${{ variables.repoImageName }}:$(windowsImageTag)
-                 Write-Host "##vso[task.logissue type=warning]Windows image built with tag: ${{ variables.repoImageName }}:$(windowsImageTag)"
-              }
-        - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-          displayName: 'Generation Task'
-          condition: eq(variables.IS_PR, true)
-          inputs:
-            BuildDropPath: '$(Build.ArtifactStagingDirectory)/windows'
-            DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019,mcr.microsoft.com/windows/servercore:ltsc2022,mcr.microsoft.com/windows/nanoserver:ltsc2025'
-        - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-          displayName: 'Generation Task'
-          condition: eq(variables.IS_PR, false)
-          inputs:
-            BuildDropPath: '$(Build.ArtifactStagingDirectory)/windows'
-            DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019,mcr.microsoft.com/windows/servercore:ltsc2022,mcr.microsoft.com/windows/nanoserver:ltsc2025,${{ variables.repoImageName }}:$(windowsImageTag)'
-        - powershell: |
-            curl.exe -sLO  "https://github.com/oras-project/oras/releases/download/v1.0.0/oras_1.0.0_windows_amd64.zip"
-            $currentDirectory = Get-Location
-            Expand-Archive -Path $currentDirectory\oras_1.0.0_windows_amd64.zip -DestinationPath . -Force
-            New-Item -ItemType Directory -Force -Path $env:USERPROFILE\bin
-            Copy-Item -Path $currentDirectory\oras.exe -Destination "$env:USERPROFILE\bin\"
-            $env:PATH = "$env:USERPROFILE\bin;$env:PATH"
-            $output = oras manifest fetch ${{ variables.repoImageName }}:$(windowsImageTag) --descriptor
-            $outputObject = $output | ConvertFrom-Json
-            $payload = @{
-                targetArtifact = $outputObject
-            } | ConvertTo-Json -Depth 2
-            $utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $false
-            [System.IO.File]::WriteAllLines("$(Build.ArtifactStagingDirectory)/windows/payload.json", $payload, $utf8NoBomEncoding)
-            Get-Content "$(Build.ArtifactStagingDirectory)/windows/payload.json"
-          workingDirectory: $(Build.ArtifactStagingDirectory)/windows
-          displayName: "Install oras and build the payload json file"
-          condition: eq(variables.IS_PR, false)
-        - task: EsrpCodeSigning@5
-          condition: eq(variables.IS_PR, false)
-          inputs:
-            ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
-            UseMSIAuthentication: true
-            AppRegistrationClientId: $(appRegistrationClientId)
-            AppRegistrationTenantId: $(appRegistrationTenantId)
-            EsrpClientId: $(esrpClientId)
-            AuthAKVName: $(authAKVName)
-            AuthCertName: $(authCertName)
-            AuthSignCertName: $(authSignCertName)
-            FolderPath: '$(Build.ArtifactStagingDirectory)/windows'
-            Pattern: 'payload.json'
-            signConfigType: 'inlineSignParams'
-            inlineOperation: |
-              [
-                          {
-                              "keyCode": "CP-469451",
-                              "operationSetCode": "NotaryCoseSign",
-                              "parameters": [
-                                {
-                                  "parameterName": "CoseFlags",
-                                  "parameterValue": "chainunprotected"
-                                }
-                              ],
-                              "toolName": "sign",
-                              "toolVersion": "1.0"
-                          }
-                        ]
-            SessionTimeout: '60'
-            MaxConcurrency: '50'
-            MaxRetryAttempts: '5'
-            PendingAnalysisWaitTimeoutMinutes: '5'
-          displayName: 'Esrp Image Signing for windows image'
-        - powershell: |
-            $env:PATH = "$env:USERPROFILE\bin;$env:PATH"
-            oras attach ${{ variables.repoImageName }}:$(windowsImageTag) --artifact-type application/vnd.cncf.notary.signature ./payload.json:application/cose -a io.cncf.notary.x509chain.thumbprint#S256=[\"49D6CD5DB42623144D6990AA1669CE5D97F1F3D7\"]
-          workingDirectory: $(Build.ArtifactStagingDirectory)/windows
-          displayName: "Run oras attach"
-          condition: eq(variables.IS_PR, false)
-        - powershell: |
-            $env:PATH = "$env:USERPROFILE\bin;$env:PATH"
-            oras attach ${{ variables.repoImageName }}:$(windowsImageTag) --artifact-type 'application/vnd.microsoft.artifact.lifecycle' --annotation "vnd.microsoft.artifact.lifecycle.end-of-life.date=$(powershell -Command "(Get-Date).AddHours(-1).ToString('yyyy-MM-ddTHH:mm:ssZ')")"
-          workingDirectory: $(Build.ArtifactStagingDirectory)/windows
-          displayName: "Run oras attach"
-          condition: and(eq(variables.IS_RELEASE, false), eq(variables.IS_PR, false))
-        - task: AntiMalware@4
-          displayName: 'Run MpCmdRun.exe'
-          inputs:
-            InputType: Basic
-            ScanType: CustomScan
-            FileDirPath: '$(Build.ArtifactStagingDirectory)'
-            DisableRemediation: false
-            AcceptableOutdatedSignatureInHours: 72
+
+
+      # - job: build_windows_multi_arc
+      #   pool:
+      #     name: Azure-Pipelines-CI-Test-EO
+      #     image: ci-1es-managed-windows-2025
+      #     os: windows
+      #   timeoutInMinutes: 120
+      #   dependsOn:
+      #   - common
+      #   - build_windows_2019
+      #   - build_windows_2022
+      #   - build_windows_2025
+      #   variables:
+      #     windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
+      #     windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
+      #     windows2019BaseImageVersion: ltsc2019
+      #     windows2022BaseImageVersion: ltsc2022
+      #     windows2025BaseImageVersion: ltsc2025
+      #     Codeql.SkipTaskAutoInjection: true
+      #   templateContext:
+      #     outputs:
+      #     - output: pipelineArtifact
+      #       targetPath: '$(Build.ArtifactStagingDirectory)'
+      #       artifactName: windows-drop
+      #   steps:
+      #   - task: AzureCLI@2
+      #     displayName: "Docker windows build for multi-arc image"
+      #     inputs:
+      #       azureSubscription: ${{ variables.armServiceConnectionName }}
+      #       scriptType: ps
+      #       scriptLocation: inlineScript
+      #       inlineScript: |
+      #         mkdir -p $(Build.ArtifactStagingDirectory)/windows
+      #         cd kubernetes/windows
+      #         az --version
+      #         az account show
+      #         az account set -s ${{ variables.subscription }}
+      #         az acr login -n ${{ variables.containerRegistry }}
+      #         @{"image.name"="${{ variables.repoImageName }}:$(windowsImageTag)"} | ConvertTo-Json -Compress | Out-File -Encoding ascii $(Build.ArtifactStagingDirectory)/windows/metadata.json
+      #         if ("$(Build.Reason)" -ne "PullRequest") {
+      #            docker manifest create ${{ variables.repoImageName }}:$(windowsImageTag) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2025BaseImageVersion)
+      #            docker manifest push ${{ variables.repoImageName }}:$(windowsImageTag)
+      #            Write-Host "##vso[task.logissue type=warning]Windows image built with tag: ${{ variables.repoImageName }}:$(windowsImageTag)"
+      #         }
+      #   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+      #     displayName: 'Generation Task'
+      #     condition: eq(variables.IS_PR, true)
+      #     inputs:
+      #       BuildDropPath: '$(Build.ArtifactStagingDirectory)/windows'
+      #       DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019,mcr.microsoft.com/windows/servercore:ltsc2022,mcr.microsoft.com/windows/nanoserver:ltsc2025'
+      #   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+      #     displayName: 'Generation Task'
+      #     condition: eq(variables.IS_PR, false)
+      #     inputs:
+      #       BuildDropPath: '$(Build.ArtifactStagingDirectory)/windows'
+      #       DockerImagesToScan: 'mcr.microsoft.com/windows/servercore:ltsc2019,mcr.microsoft.com/windows/servercore:ltsc2022,mcr.microsoft.com/windows/nanoserver:ltsc2025,${{ variables.repoImageName }}:$(windowsImageTag)'
+      #   - powershell: |
+      #       curl.exe -sLO  "https://github.com/oras-project/oras/releases/download/v1.0.0/oras_1.0.0_windows_amd64.zip"
+      #       $currentDirectory = Get-Location
+      #       Expand-Archive -Path $currentDirectory\oras_1.0.0_windows_amd64.zip -DestinationPath . -Force
+      #       New-Item -ItemType Directory -Force -Path $env:USERPROFILE\bin
+      #       Copy-Item -Path $currentDirectory\oras.exe -Destination "$env:USERPROFILE\bin\"
+      #       $env:PATH = "$env:USERPROFILE\bin;$env:PATH"
+      #       $output = oras manifest fetch ${{ variables.repoImageName }}:$(windowsImageTag) --descriptor
+      #       $outputObject = $output | ConvertFrom-Json
+      #       $payload = @{
+      #           targetArtifact = $outputObject
+      #       } | ConvertTo-Json -Depth 2
+      #       $utf8NoBomEncoding = New-Object System.Text.UTF8Encoding $false
+      #       [System.IO.File]::WriteAllLines("$(Build.ArtifactStagingDirectory)/windows/payload.json", $payload, $utf8NoBomEncoding)
+      #       Get-Content "$(Build.ArtifactStagingDirectory)/windows/payload.json"
+      #     workingDirectory: $(Build.ArtifactStagingDirectory)/windows
+      #     displayName: "Install oras and build the payload json file"
+      #     condition: eq(variables.IS_PR, false)
+      #   - task: EsrpCodeSigning@5
+      #     condition: eq(variables.IS_PR, false)
+      #     inputs:
+      #       ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+      #       UseMSIAuthentication: true
+      #       AppRegistrationClientId: $(appRegistrationClientId)
+      #       AppRegistrationTenantId: $(appRegistrationTenantId)
+      #       EsrpClientId: $(esrpClientId)
+      #       AuthAKVName: $(authAKVName)
+      #       AuthCertName: $(authCertName)
+      #       AuthSignCertName: $(authSignCertName)
+      #       FolderPath: '$(Build.ArtifactStagingDirectory)/windows'
+      #       Pattern: 'payload.json'
+      #       signConfigType: 'inlineSignParams'
+      #       inlineOperation: |
+      #         [
+      #                     {
+      #                         "keyCode": "CP-469451",
+      #                         "operationSetCode": "NotaryCoseSign",
+      #                         "parameters": [
+      #                           {
+      #                             "parameterName": "CoseFlags",
+      #                             "parameterValue": "chainunprotected"
+      #                           }
+      #                         ],
+      #                         "toolName": "sign",
+      #                         "toolVersion": "1.0"
+      #                     }
+      #                   ]
+      #       SessionTimeout: '60'
+      #       MaxConcurrency: '50'
+      #       MaxRetryAttempts: '5'
+      #       PendingAnalysisWaitTimeoutMinutes: '5'
+      #     displayName: 'Esrp Image Signing for windows image'
+      #   - powershell: |
+      #       $env:PATH = "$env:USERPROFILE\bin;$env:PATH"
+      #       oras attach ${{ variables.repoImageName }}:$(windowsImageTag) --artifact-type application/vnd.cncf.notary.signature ./payload.json:application/cose -a io.cncf.notary.x509chain.thumbprint#S256=[\"49D6CD5DB42623144D6990AA1669CE5D97F1F3D7\"]
+      #     workingDirectory: $(Build.ArtifactStagingDirectory)/windows
+      #     displayName: "Run oras attach"
+      #     condition: eq(variables.IS_PR, false)
+      #   - powershell: |
+      #       $env:PATH = "$env:USERPROFILE\bin;$env:PATH"
+      #       oras attach ${{ variables.repoImageName }}:$(windowsImageTag) --artifact-type 'application/vnd.microsoft.artifact.lifecycle' --annotation "vnd.microsoft.artifact.lifecycle.end-of-life.date=$(powershell -Command "(Get-Date).AddHours(-1).ToString('yyyy-MM-ddTHH:mm:ssZ')")"
+      #     workingDirectory: $(Build.ArtifactStagingDirectory)/windows
+      #     displayName: "Run oras attach"
+      #     condition: and(eq(variables.IS_RELEASE, false), eq(variables.IS_PR, false))
+      #   - task: AntiMalware@4
+      #     displayName: 'Run MpCmdRun.exe'
+      #     inputs:
+      #       InputType: Basic
+      #       ScanType: CustomScan
+      #       FileDirPath: '$(Build.ArtifactStagingDirectory)'
+      #       DisableRemediation: false
+      #       AcceptableOutdatedSignatureInHours: 72
