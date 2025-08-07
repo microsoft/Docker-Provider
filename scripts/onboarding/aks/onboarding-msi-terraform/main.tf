@@ -46,10 +46,7 @@ resource "azurerm_monitor_data_collection_endpoint" "ingestion_dce" {
   location            = var.workspace_region
   kind                = "Linux"
   tags                = var.resource_tag_values
-
-  network_access_control {
-    public_network_access = var.use_azure_monitor_private_link_scope ? "Disabled" : "Enabled"
-  }
+  public_network_access_enabled = var.use_azure_monitor_private_link_scope ? false : true
 }
 
 resource "azurerm_monitor_data_collection_endpoint" "config_dce" {
@@ -59,10 +56,7 @@ resource "azurerm_monitor_data_collection_endpoint" "config_dce" {
   location            = var.cluster_location
   kind                = "Linux"
   tags                = var.resource_tag_values
-  
-  network_access_control {
-    public_network_access = var.use_azure_monitor_private_link_scope ? "Disabled" : "Enabled"
-  }
+  public_network_access_enabled = var.use_azure_monitor_private_link_scope ? false : true
 }
 
 resource "azurerm_monitor_data_collection_rule" "dcr" {
