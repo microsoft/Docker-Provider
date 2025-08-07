@@ -36,7 +36,7 @@ locals {
   config_dce_name_full       = "MSCI-config-${var.cluster_location}-${var.cluster_name}"
   config_dce_name_trimmed    = substr(local.config_dce_name_full, 0, 43)
   config_dce_name            = endswith(local.config_dce_name_trimmed, "-") ? substr(local.config_dce_name_trimmed, 0, 42) : local.config_dce_name_trimmed
-  private_link_scope_name    = split(var.azure_monitor_private_link_scope_resource_id, "/")[8]
+  private_link_scope_name    = element(split("/", var.azure_monitor_private_link_scope_resource_id), 8)
 }
 
 resource "azurerm_monitor_data_collection_endpoint" "ingestion_dce" {
@@ -115,7 +115,7 @@ resource "azurerm_monitor_data_collection_rule_association" "config_dcra" {
 resource "azurerm_monitor_private_link_scoped_service" "config_dce_connection" {
   count               = var.use_azure_monitor_private_link_scope ? 1 : 0
   name                = "${local.config_dce_name}-connection"
-  resource_group_name = split(var.azure_monitor_private_link_scope_resource_id, "/")[4]
+  resource_group_name = element(split("/", var.azure_monitor_private_link_scope_resource_id), 4)
   scope_name          = local.private_link_scope_name
   linked_resource_id  = azurerm_monitor_data_collection_endpoint.config_dce[0].id
 }
@@ -123,15 +123,15 @@ resource "azurerm_monitor_private_link_scoped_service" "config_dce_connection" {
 resource "azurerm_monitor_private_link_scoped_service" "ingestion_dce_connection" {
   count               = var.use_azure_monitor_private_link_scope && local.enable_high_log_scale_mode ? 1 : 0
   name                = "${local.ingestion_dce_name}-connection"
-  resource_group_name = split(var.azure_monitor_private_link_scope_resource_id, "/")[4]
+  resource_group_name = element(split("/", var.azure_monitor_private_link_scope_resource_id), 4)
   scope_name          = local.private_link_scope_name
   linked_resource_id  = azurerm_monitor_data_collection_endpoint.ingestion_dce[0].id
 }
 
 resource "azurerm_monitor_private_link_scoped_service" "workspace_connection" {
   count               = var.use_azure_monitor_private_link_scope ? 1 : 0
-  name                = "${split(var.workspace_resource_id, "/")[8]}-connection"
-  resource_group_name = split(var.azure_monitor_private_link_scope_resource_id, "/")[4]
+  name                = "${element(split("/", var.workspace_resource_id), 8)}-connection"
+  resource_group_name = element(split("/", var.azure_monitor_private_link_scope_resource_id), 4)
   scope_name          = local.private_link_scope_name
   linked_resource_id  = var.workspace_resource_id
 }
