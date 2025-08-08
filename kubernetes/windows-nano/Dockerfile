@@ -1,8 +1,33 @@
+# Stage 1: Build Ruby installation on Server Core
+FROM mcr.microsoft.com/windows/servercore:ltsc2025 AS ruby-builder
+
+WORKDIR C:/build
+
+# Download RubyInstaller, install Ruby, and add essential gems
+RUN powershell -Command "\
+    Write-Host 'Downloading RubyInstaller standalone...'; \
+    $url = 'https://github.com/oneclick/rubyinstaller2/releases/download/RubyInstaller-3.1.1-1/rubyinstaller-3.1.1-1-x64.exe'; \
+    Invoke-WebRequest -Uri $url -OutFile ruby-installer.exe; \
+    Write-Host 'Installing Ruby from RubyInstaller...'; \
+    Start-Process -FilePath 'ruby-installer.exe' -ArgumentList '/silent', '/dir=C:\ruby31' -Wait; \
+    Remove-Item ruby-installer.exe; \
+    Write-Host 'Installing gems...'; \
+    $env:PATH = 'C:\ruby31\bin;C:\ruby31\bin\ruby_builtin_dlls;' + $env:PATH; \
+    New-Item -ItemType Directory -Path 'C:\ruby31\etc' -Force -ErrorAction SilentlyContinue; \
+    echo 'gem: --no-document' | Out-File -FilePath 'C:\ruby31\etc\gemrc' -Encoding UTF8; \
+    & 'C:\ruby31\bin\gem.cmd' install tomlrb -v 2.0.1; \
+    Write-Host 'Cleaning up...'; \
+    Remove-Item -Recurse -Force 'C:\ruby31\share\doc' -ErrorAction SilentlyContinue; \
+    Remove-Item -Recurse -Force 'C:\ruby31\share\man' -ErrorAction SilentlyContinue; \
+    Remove-Item -Recurse -Force 'C:\ruby31\lib\ruby\gems\3.1.0\cache' -ErrorAction SilentlyContinue"
+
+
 ARG WINDOWS_VERSION=
 FROM mcr.microsoft.com/windows/nanoserver:ltsc2025
 # LABEL maintainer="OMSContainers@microsoft.com"
 # LABEL vendor=Microsoft\ Corp \
 #     com.microsoft.product="Azure Monitor for containers"
+
 
 # install performance monitor
 WORKDIR /install
@@ -10,6 +35,14 @@ COPY ./fod/install-perf-monitor.cmd .
 USER ContainerAdministrator
 RUN install-perf-monitor.cmd
 USER ContainerUser
+
+
+# Copy Ruby installation from builder stage
+COPY --from=ruby-builder C:/ruby31 C:/ruby31
+# Set up environment for Ruby
+ENV PATH="C:\ruby31\bin;C:\ruby31\bin\ruby_builtin_dlls;C:\Windows\system32"
+
+
 
 SHELL ["cmd", "/S", "/C"]
 RUN mkdir C:\download
