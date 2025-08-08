@@ -29,12 +29,12 @@ FROM mcr.microsoft.com/windows/nanoserver:ltsc2025
 #     com.microsoft.product="Azure Monitor for containers"
 
 
-# install performance monitor
-WORKDIR /install
-COPY ./fod/install-perf-monitor.cmd .
-USER ContainerAdministrator
-RUN install-perf-monitor.cmd
-USER ContainerUser
+# # install performance monitor
+# WORKDIR /install
+# COPY ./fod/install-perf-monitor.cmd .
+# USER ContainerAdministrator
+# RUN install-perf-monitor.cmd
+# USER ContainerUser
 
 
 # Copy Ruby installation from builder stage
