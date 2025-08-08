@@ -524,20 +524,20 @@ function Set-EnvironmentVariables {
 }
 
 function Read-Configs {
-    # ruby /opt/amalogswindows/scripts/ruby/tomlparser-common-agent-config.rb
+    ruby /opt/amalogswindows/scripts/ruby/tomlparser-common-agent-config.rb
     # Parse the configmap to set the right environment variables for agent config using Go executable
-    try {
-        Write-Host "Processing common agent configuration..."
-        & "C:\opt\amalogswindows\scripts\cmd\config-parser.exe" parse common-agent-config
-        if ($LASTEXITCODE -ne 0) {
-            throw "Common agent config processing failed"  # Fixed typo
-        }
-        Write-Host "Common agent configuration processed successfully"
-        Set-EnvironmentVariablesFromFile "C:\opt\amalogswindows\scripts\powershell\setcommonagentenv.txt"  # Fixed path
-    } catch {
-        Write-Error "Failed to process common agent configuration: $_"
-        exit 1
-    }
+    # try {
+    #     Write-Host "Processing common agent configuration..."
+    #     & "C:\opt\amalogswindows\scripts\cmd\config-parser.exe" parse common-agent-config
+    #     if ($LASTEXITCODE -ne 0) {
+    #         throw "Common agent config processing failed"  # Fixed typo
+    #     }
+    #     Write-Host "Common agent configuration processed successfully"
+    #     Set-EnvironmentVariablesFromFile "C:\opt\amalogswindows\scripts\powershell\setcommonagentenv.txt"  # Fixed path
+    # } catch {
+    #     Write-Error "Failed to process common agent configuration: $_"
+    #     exit 1
+    # }
 
     # check if high log scale mode enabled
     $enableHighLogScaleMode = [System.Environment]::GetEnvironmentVariable("ENABLE_HIGH_LOG_SCALE_MODE", "process")
@@ -547,14 +547,14 @@ function Read-Configs {
     }
 
     # run config parser
-    # ruby /opt/amalogswindows/scripts/ruby/tomlparser.rb
+    ruby /opt/amalogswindows/scripts/ruby/tomlparser.rb
     Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setenv.txt"
 
     #Parse the configmap to set the right environment variables for agent config.
-    # ruby /opt/amalogswindows/scripts/ruby/tomlparser-agent-config.rb
+    ruby /opt/amalogswindows/scripts/ruby/tomlparser-agent-config.rb
     Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setagentenv.txt"
 
-    # ruby /opt/amalogswindows/scripts/ruby/tomlparser-geneva-config.rb
+    ruby /opt/amalogswindows/scripts/ruby/tomlparser-geneva-config.rb
     Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setgenevaconfigenv.txt"
 
     $genevaLogsIntegration = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_INTEGRATION", "process")
@@ -569,7 +569,7 @@ function Read-Configs {
     }
 
     #Replace placeholders in fluent-bit.conf
-    # ruby /opt/amalogswindows/scripts/ruby/fluent-bit-conf-customizer.rb
+    ruby /opt/amalogswindows/scripts/ruby/fluent-bit-conf-customizer.rb
 
     $enableFbitInternalMetrics = [System.Environment]::GetEnvironmentVariable("ENABLE_FBIT_INTERNAL_METRICS", "process")
     if (![string]::IsNullOrEmpty($enableFbitInternalMetrics)) {
@@ -643,19 +643,19 @@ function Read-Configs {
     }
 
     # run mdm config parser
-    #ruby /opt/amalogswindows/scripts/ruby/tomlparser-mdm-metrics-config.rb
-    try {
-        Write-Host "Processing MDM metrics configuration..."
-        & "C:\opt\amalogswindows\scripts\cmd\config-parser.exe" parse mdm-metrics-config
-        if ($LASTEXITCODE -ne 0) {
-            throw "MDM metrics config processing failed"
-        }
-        Write-Host "MDM metrics configuration processed successfully"
-        Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setmdmenv.txt"
-    } catch {
-        Write-Error "Failed to process MDM metrics configuration: $_"
-        # Continue with defaults - don't exit since this is not critical
-    }
+    ruby /opt/amalogswindows/scripts/ruby/tomlparser-mdm-metrics-config.rb
+    # try {
+    #     Write-Host "Processing MDM metrics configuration..."
+    #     & "C:\opt\amalogswindows\scripts\cmd\config-parser.exe" parse mdm-metrics-config
+    #     if ($LASTEXITCODE -ne 0) {
+    #         throw "MDM metrics config processing failed"
+    #     }
+    #     Write-Host "MDM metrics configuration processed successfully"
+    #     Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setmdmenv.txt"
+    # } catch {
+    #     Write-Error "Failed to process MDM metrics configuration: $_"
+    #     # Continue with defaults - don't exit since this is not critical
+    # }
 }
 
 function Set-EnvironmentVariablesFromFile {
@@ -809,7 +809,7 @@ function Start-Fluent-Telegraf {
     Set-ProcessAndMachineEnvVariables "TELEMETRY_CUSTOM_PROM_MONITOR_PODS" "false"
     # run prometheus custom config parser
     Write-Host "**********Running config parser for custom prometheus scraping**********"
-    #ruby /opt/amalogswindows/scripts/ruby/tomlparser-prom-customconfig.rb
+    ruby /opt/amalogswindows/scripts/ruby/tomlparser-prom-customconfig.rb
 
     Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setpromenv.txt"
 

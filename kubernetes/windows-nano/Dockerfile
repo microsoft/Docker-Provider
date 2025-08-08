@@ -128,15 +128,15 @@ COPY ./amalogswindows/installer/livenessprobe/livenessprobe.exe /opt/amalogswind
 COPY setdefaulttelegrafenvvariables.ps1 /opt/amalogswindows/scripts/powershell
 
 # Copy pre-generated environment variable files
-COPY ./cheat-env-files/setagentenv.txt /opt/amalogswindows/scripts/powershell/
+#COPY ./cheat-env-files/setagentenv.txt /opt/amalogswindows/scripts/powershell/
 #COPY ./cheat-env-files/setcommonagentenv.txt /opt/amalogswindows/scripts/powershell/
-COPY ./cheat-env-files/setenv.txt /opt/amalogswindows/scripts/powershell/
-COPY ./cheat-env-files/setgenevaconfigenv.txt /opt/amalogswindows/scripts/powershell/
+#COPY ./cheat-env-files/setenv.txt /opt/amalogswindows/scripts/powershell/
+#COPY ./cheat-env-files/setgenevaconfigenv.txt /opt/amalogswindows/scripts/powershell/
 #COPY ./cheat-env-files/setmdmenv.txt /opt/amalogswindows/scripts/powershell/
-COPY ./cheat-env-files/setpromenv.txt /opt/amalogswindows/scripts/powershell/
+#COPY ./cheat-env-files/setpromenv.txt /opt/amalogswindows/scripts/powershell/
 
 # Copy Go parser executable to /opt/amalogswindows/scripts/cmd/
-COPY ./agentparser/config-parser.exe /opt/amalogswindows/scripts/cmd/
+#COPY ./agentparser/config-parser.exe /opt/amalogswindows/scripts/cmd/
 
 # copy ruby scripts to /opt folder
 COPY ./amalogswindows/installer/scripts/*.rb /opt/amalogswindows/scripts/ruby/
