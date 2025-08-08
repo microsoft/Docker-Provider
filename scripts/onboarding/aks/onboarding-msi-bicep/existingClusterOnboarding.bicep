@@ -36,6 +36,12 @@ param streams array
 @description('Enable Retina Network Flow Logs in omsagent addon profile')
 param enableRetinaNetworkFlowLogs bool = false
 
+@description('Flag to indicate if Azure Monitor Private Link Scope should be used or not')
+param useAzureMonitorPrivateLinkScope bool
+
+@description('Specify the Resource Id of the Azure Monitor Private Link Scope.')
+param azureMonitorPrivateLinkScopeResourceId string
+
 var clusterSubscriptionId = split(aksResourceId, '/')[2]
 var clusterResourceGroup = split(aksResourceId, '/')[4]
 var clusterName = split(aksResourceId, '/')[8]
@@ -49,14 +55,38 @@ var enableHighLogScaleMode = contains(streams, 'Microsoft-ContainerLogV2-HighSca
 var ingestionDceNameFull = 'MSCI-ingest-${workspaceLocation}-${clusterName}'
 var ingestionDceName = (length(ingestionDceNameFull) > 43) ? substring(ingestionDceNameFull, 0, 43) : ingestionDceNameFull
 var ingestionDce = endsWith(ingestionDceName, '-') ? substring(ingestionDceName, 0, 42) : ingestionDceName
+var clusterLocation = replace(aksResourceLocation, ' ', '')
+var configDceNameFull = 'MSCI-config-${clusterLocation}-${clusterName}'
+var configDceName = (length(configDceNameFull) > 43) ? substring(configDceNameFull, 0, 43) : configDceNameFull
+var configDce = endsWith(configDceName, '-') ? substring(configDceName, 0, 42) : configDceName
+var configDceAssociationName = 'configurationAccessEndpoint'
+var configDataCollectionEndpointId = resourceId(clusterSubscriptionId, clusterResourceGroup, 'Microsoft.Insights/dataCollectionEndpoints', configDce)
+var privateLinkScopeName = split(azureMonitorPrivateLinkScopeResourceId, '/')[8]
+
 var ingestionDataCollectionEndpointId = resourceId(clusterSubscriptionId, clusterResourceGroup, 'Microsoft.Insights/dataCollectionEndpoints', ingestionDce)
+
+resource configDataCollectionEndpoint 'Microsoft.Insights/dataCollectionEndpoints@2022-06-01' = if (useAzureMonitorPrivateLinkScope) {
+  name: configDce
+  location: clusterLocation
+  tags: resourceTagValues
+  kind: 'Linux'
+  properties: {
+    networkAcls: {
+      publicNetworkAccess: useAzureMonitorPrivateLinkScope ? 'Disabled' : 'Enabled'
+    }
+  }
+}
 
 resource ingestionDataCollectionEndpoint 'Microsoft.Insights/dataCollectionEndpoints@2022-06-01' = if (enableHighLogScaleMode) {
   name: ingestionDce
   location: workspaceRegion
   tags: resourceTagValues
   kind: 'Linux'
-  properties: {}
+  properties: {
+    networkAcls: {
+      publicNetworkAccess: useAzureMonitorPrivateLinkScope ? 'Disabled' : 'Enabled'
+    }
+  }
 }
 
 resource aks_monitoring_msi_dcr 'Microsoft.Insights/dataCollectionRules@2022-06-01' = {
@@ -99,6 +129,45 @@ resource aks_monitoring_msi_dcr 'Microsoft.Insights/dataCollectionRules@2022-06-
       }
     ]
     dataCollectionEndpointId: enableHighLogScaleMode ? ingestionDataCollectionEndpointId : null
+  }
+}
+
+#disable-next-line BCP174
+resource aks_monitoring_msi_dcra_config 'Microsoft.ContainerService/managedClusters/providers/dataCollectionRuleAssociations@2022-06-01' = if (useAzureMonitorPrivateLinkScope) {
+  name: '${clusterName}/microsoft.insights/${configDceAssociationName}'
+  properties: {
+    description: 'Association of data collection rule endpoint. Deleting this association will break the data collection endpoint for this AKS Cluster.'
+    dataCollectionEndpointId: configDataCollectionEndpointId
+  }
+  dependsOn: [
+    configDataCollectionEndpoint
+  ]
+}
+
+resource privateLinkScope_config 'Microsoft.Insights/privateLinkScopes/scopedResources@2021-07-01-preview' = if (useAzureMonitorPrivateLinkScope) {
+  name: '${privateLinkScopeName}/${configDce}-connection'
+  properties: {
+    linkedResourceId: configDataCollectionEndpointId
+  }
+  dependsOn: [
+    configDataCollectionEndpoint
+  ]
+}
+
+resource privateLinkScope_ingestion 'Microsoft.Insights/privateLinkScopes/scopedResources@2021-07-01-preview' = if (useAzureMonitorPrivateLinkScope && enableHighLogScaleMode) {
+  name: '${privateLinkScopeName}/${ingestionDce}-connection'
+  properties: {
+    linkedResourceId: ingestionDataCollectionEndpointId
+  }
+  dependsOn: [
+    ingestionDataCollectionEndpoint
+  ]
+}
+
+resource privateLinkScope_workspace 'Microsoft.Insights/privateLinkScopes/scopedResources@2021-07-01-preview' = if (useAzureMonitorPrivateLinkScope) {
+  name: '${privateLinkScopeName}/${split(workspaceResourceId, '/')[8]}-connection'
+  properties: {
+    linkedResourceId: workspaceResourceId
   }
 }
 
