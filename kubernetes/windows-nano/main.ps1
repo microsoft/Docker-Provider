@@ -863,7 +863,8 @@ function Start-Fluent-Telegraf {
     }
 
     # Start telegraf only in sidecar scraping mode
-    $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
+    # $sidecarScrapingEnabled = [System.Environment]::GetEnvironmentVariable('SIDECAR_SCRAPING_ENABLED')
+    $sidecarScrapingEnabled = 'true'
     if (![string]::IsNullOrEmpty($sidecarScrapingEnabled) -and $sidecarScrapingEnabled.ToLower() -eq 'true') {
         Start-Telegraf
     }
@@ -887,7 +888,9 @@ function Start-Telegraf {
     Write-Host "**********Setting default environment variables for telegraf prometheus plugin..."
     .\setdefaulttelegrafenvvariables.ps1
 
-    $monitorKubernetesPods = [System.Environment]::GetEnvironmentVariable('TELEMETRY_CUSTOM_PROM_MONITOR_PODS')
+    #$monitorKubernetesPods = [System.Environment]::GetEnvironmentVariable('TELEMETRY_CUSTOM_PROM_MONITOR_PODS')
+    $monitorKubernetesPods = 'true'
+
     if (![string]::IsNullOrEmpty($monitorKubernetesPods) -and $monitorKubernetesPods.ToLower() -eq 'true') {
         Write-Host "Starting telegraf..."
         # Set required environment variable for telegraf prometheus plugin to run properly
