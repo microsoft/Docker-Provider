@@ -29,10 +29,6 @@ spec:
     checksum/config: {{ toYaml .Values.amalogs.resources | sha256sum }}
     checksum/logsettings: {{ toYaml .Values.amalogs.logsettings | sha256sum }}
   spec:
-  {{- if eq .Values.Azure.Cluster.Distribution "openshift" }}
-   securityContext:
-     privileged: true
-  {{- end }}
   {{- if .Values.amalogs.rbac }}
    serviceAccountName: ama-logs
   {{- end }}
