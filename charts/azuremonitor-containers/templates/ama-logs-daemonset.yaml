@@ -28,6 +28,10 @@ spec:
     checksum/config: {{ toYaml .Values.amalogs.resources | sha256sum }}
     checksum/logsettings: {{ toYaml .Values.amalogs.logsettings | sha256sum }}
   spec:
+   {{- if eq .Values.Azure.Cluster.Distribution "openshift" }}
+   securityContext:
+     privileged: true
+   {{- end }}
    priorityClassName: ama-logs
    dnsConfig:
      options:
@@ -39,8 +43,9 @@ spec:
    containers:
 {{- if and (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>") (.Values.amalogs.useAADAuth) }}
      - name: addon-token-adapter
-       # Extension specifies default, platform overrides during deployment if needed
+       {{- if eq .Values.Azure.Cluster.Distribution "openshift" }}
        image: "mcr.microsoft.com/aks/msi/addon-token-adapter:master.250604.1"
+       {{- end}}
        imagePullPolicy: IfNotPresent
        env:
        - name: AZMON_COLLECT_ENV
