@@ -37,8 +37,8 @@ rm -rf /usr/lib/ruby/gems/3.3.0/gems/rdoc-6.6.3.1
 # remove net-imap gem as it has a known CVE (CVE-2025-43857) and is not used by the agent
 gem uninstall net-imap --force
 
-sudo curl -L -O https://github.com/microsoft/Docker-Provider/releases/download/mdsd-1.31.0/azure-mdsd-1.37.0-pr.13111611.merge.5461.x86_64.rpm
-sudo tdnf install -y --nogpgcheck azure-mdsd-1.37.0-pr.13111611.merge.5461.x86_64.rpm
+sudo curl -L -O https://github.com/microsoft/Docker-Provider/releases/download/mdsd-1.31.0/azure-mdsd-1.37.0-pr.13153063.merge.5487.x86_64.rpm
+sudo tdnf install -y --nogpgcheck azure-mdsd-1.37.0-pr.13153063.merge.5487.x86_64.rpm
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
 rm /usr/sbin/telegraf
