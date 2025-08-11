@@ -99,3 +99,9 @@ Write-Host ("Removing Install folder")
 Remove-Item /installation -Recurse
 #Remove gemfile.lock for http_parser gem 0.6.0
 #see  - https://github.com/fluent/fluentd/issues/3374 https://github.com/tmm1/http_parser.rb/issues/70
+
+
+# Remove Unused Monitoring Agent Extensions
+Remove-Item -Path /opt/windowsazuremonitoragent/windowsazuremonitoragent/Monitoring/Agent/Extensions/AzurePerfCollectorExtension -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path /opt/windowsazuremonitoragent/windowsazuremonitoragent/Monitoring/Agent/Extensions/AzureProfilerExtension -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item -Path /opt/windowsazuremonitoragent/windowsazuremonitoragent/Monitoring/Agent/Extensions/AzureProfilerTriggerExtension -Recurse -Force -ErrorAction SilentlyContinue
