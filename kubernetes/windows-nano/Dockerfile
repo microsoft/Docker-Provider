@@ -30,11 +30,11 @@ FROM mcr.microsoft.com/windows/nanoserver:ltsc2025
 
 
 # # install performance monitor
-WORKDIR /install
-COPY ./fod/install-perf-monitor.cmd .
-USER ContainerAdministrator
-RUN install-perf-monitor.cmd
-USER ContainerUser
+# WORKDIR /install
+# COPY ./fod/install-perf-monitor.cmd .
+# USER ContainerAdministrator
+# RUN install-perf-monitor.cmd
+# USER ContainerUser
 
 
 # Copy Ruby installation from builder stage
