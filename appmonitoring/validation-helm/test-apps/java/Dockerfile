@@ -1,5 +1,4 @@
-# docker build -t appmonitoring.azurecr.io/demoaks-java-app:latest .
-# docker push appmonitoring.azurecr.io/demoaks-java-app:latest 
+# docker buildx build --platform linux/amd64,linux/arm64 -t appmonitoring.azurecr.io/demoaks-java-app:latest --push .
 
 FROM maven:3.9.6-eclipse-temurin-17 AS build
 WORKDIR /app
