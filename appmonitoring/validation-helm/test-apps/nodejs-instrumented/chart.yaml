@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ${NODEJS_INSTRUMENTED_TEST_APP_NAME}
+  namespace: ${TEST_NS}
+  labels:
+    app: nodejs-instrumented-test-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodejs-instrumented-test-app
+  template:
+    metadata:
+      labels:
+        app: nodejs-instrumented-test-app
+      annotations:
+        # Enable OpenTelemetry auto-instrumentation if using operator
+        instrumentation.opentelemetry.io/inject-nodejs: "true"
+    spec:
+      containers:
+      - name: nodejs-instrumented-test-app
+        image: appmonitoring.azurecr.io/demoaks-nodejs-instrumented-app:latest
+        imagePullPolicy: Always
+        env:
+        # OpenTelemetry configuration
+        - name: OTEL_SERVICE_NAME
+          value: "nodejs-instrumented-test-app"
+        - name: OTEL_SERVICE_VERSION
+          value: "1.0.0"
+        - name: OTEL_ENVIRONMENT
+          value: "kubernetes"
+        - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+          value: "http://jaeger-collector.observability:14268/api/traces"
+        - name: OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
+          value: "http://prometheus-server.observability:9090/api/v1/write"
+        - name: OTEL_LOG_LEVEL
+          value: "info"
+        # Application configuration
+        - name: TARGET_URL
+          value: "http://${TEST_APP_SOURCE_NAME}-service.default.svc.cluster.local:3001"
+        - name: PORT
+          value: "3001"
+        # Node.js configuration
+        - name: NODE_ENV
+          value: "production"
+        ports:
+        - containerPort: 3001
+          name: http
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ${NODEJS_INSTRUMENTED_TEST_APP_NAME}-service
+  namespace: ${TEST_NS}
+  labels:
+    app: nodejs-instrumented-test-app
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3001
+      protocol: TCP
+      targetPort: 3001
+      name: http
+  selector:
+    app: nodejs-instrumented-test-app
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nodejs-instrumented-test-app-config
+  namespace: ${TEST_NS}
+  labels:
+    app: nodejs-instrumented-test-app
+data:
+  # OpenTelemetry configuration that could be mounted as a file
+  otel-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+    
+    processors:
+      batch:
+        timeout: 1s
+        send_batch_size: 1024
+      
+    exporters:
+      jaeger:
+        endpoint: http://jaeger-collector.observability:14250
+        tls:
+          insecure: true
+      
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [jaeger]
