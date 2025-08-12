@@ -42,9 +42,6 @@ COPY --from=ruby-builder C:/ruby31 C:/ruby31
 # Set up environment for Ruby
 ENV PATH="C:\ruby31\bin;C:\ruby31\bin\ruby_builtin_dlls;C:\Windows\system32"
 
-# debug for windows ama dll error
-# Copy required system DLL from servercore
-COPY --from=ruby-builder C:/Windows/System32/advapi32.dll C:/Windows/System32/advapi32.dll
 
 SHELL ["cmd", "/S", "/C"]
 RUN mkdir C:\download
@@ -182,6 +179,10 @@ COPY ./amalogswindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluen
 
 #Copy fluentd ruby plugins
 COPY ./amalogswindows/ruby/ /etc/fluent/plugin/
+
+# debug for windows ama dll error
+# Copy required system DLL from servercore
+COPY --from=ruby-builder C:/Windows/System32/advapi32.dll C:/Windows/System32/advapi32.dll
 
 # default value will be overwritten by pipeline
 ARG IMAGE_TAG=win-3.1.27
