@@ -181,8 +181,9 @@ COPY ./amalogswindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluen
 COPY ./amalogswindows/ruby/ /etc/fluent/plugin/
 
 # debug for windows ama dll error
-# Copy required system DLL from servercore
-COPY --from=ruby-builder C:/Windows/System32/advapi32.dll C:/Windows/System32/advapi32.dll
+# Copy required system DLL from servercore.
+# below operation will cause container start up failure
+# COPY --from=ruby-builder C:/Windows/System32/advapi32.dll C:/Windows/System32/advapi32.dll
 
 # default value will be overwritten by pipeline
 ARG IMAGE_TAG=win-3.1.27
