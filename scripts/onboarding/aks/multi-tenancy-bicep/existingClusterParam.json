@@ -28,8 +28,14 @@
         "<existingOrnew-tag-nameN>": "<existingOrnew-tag-valueN>"
       }
     },
-    "transformKql":{
-       "value": "<KQL filter for ingestion transformation>"
+    "transformKql": {
+      "value": "<KQL filter for ingestion transformation>"
+    },
+    "useAzureMonitorPrivateLinkScope": {
+      "value": false
+    },
+    "azureMonitorPrivateLinkScopeResourceId": {
+      "value": "/subscriptions/<SubscriptionId>/resourceGroups/<ResourceGroup>/providers/microsoft.insights/privateLinkScopes/<azureMonitorPrivateLinkScopeName>"
     }
   }
 }

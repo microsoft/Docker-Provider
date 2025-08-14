@@ -34,3 +34,15 @@ variable "transformKql" {
   description = "KQL filter for ingestion transformation"
   default     = ""
 }
+
+variable "use_azure_monitor_private_link_scope" {
+  type        = bool
+  description = "Flag to indicate if Azure Monitor Private Link Scope should be used or not"
+  default     = false
+}
+
+variable "azure_monitor_private_link_scope_resource_id" {
+  type        = string
+  description = "Specify the Resource Id of the Azure Monitor Private Link Scope"
+  default     = ""
+}

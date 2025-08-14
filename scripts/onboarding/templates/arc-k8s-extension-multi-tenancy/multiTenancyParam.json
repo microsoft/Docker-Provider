@@ -30,6 +30,12 @@
         "<existingOrnew-tag-name2>": "<existingOrnew-tag-value2>",
         "<existingOrnew-tag-nameN>": "<existingOrnew-tag-valueN>"
       }
+    },
+    "useAzureMonitorPrivateLinkScope": {
+      "value": false
+    },
+    "azureMonitorPrivateLinkScopeResourceId": {
+      "value": "/subscriptions/<SubscriptionId>/resourceGroups/<ResourceGroup>/providers/microsoft.insights/privateLinkScopes/<azureMonitorPrivateLinkScopeName>"
     }
   }
 }
