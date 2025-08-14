@@ -525,19 +525,6 @@ function Set-EnvironmentVariables {
 
 function Read-Configs {
     ruby /opt/amalogswindows/scripts/ruby/tomlparser-common-agent-config.rb
-    # Parse the configmap to set the right environment variables for agent config using Go executable
-    # try {
-    #     Write-Host "Processing common agent configuration..."
-    #     & "C:\opt\amalogswindows\scripts\cmd\config-parser.exe" parse common-agent-config
-    #     if ($LASTEXITCODE -ne 0) {
-    #         throw "Common agent config processing failed"  # Fixed typo
-    #     }
-    #     Write-Host "Common agent configuration processed successfully"
-    #     Set-EnvironmentVariablesFromFile "C:\opt\amalogswindows\scripts\powershell\setcommonagentenv.txt"  # Fixed path
-    # } catch {
-    #     Write-Error "Failed to process common agent configuration: $_"
-    #     exit 1
-    # }
 
     # check if high log scale mode enabled
     $enableHighLogScaleMode = [System.Environment]::GetEnvironmentVariable("ENABLE_HIGH_LOG_SCALE_MODE", "process")
@@ -560,8 +547,8 @@ function Read-Configs {
     $genevaLogsIntegration = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_INTEGRATION", "process")
     if (![string]::IsNullOrEmpty($genevaLogsIntegration)) {
         if ($genevaLogsIntegration.ToLower() -eq 'true') {
-            #[System.Environment]::SetEnvironmentVariable("GENEVA_LOGS_INTEGRATION", $genevaLogsIntegration, "machine")
-            #Write-Host "Successfully set environment variable GENEVA_LOGS_INTEGRATION - $($genevaLogsIntegration) for target 'machine'..."
+            [System.Environment]::SetEnvironmentVariable("GENEVA_LOGS_INTEGRATION", $genevaLogsIntegration, "machine")
+            Write-Host "Successfully set environment variable GENEVA_LOGS_INTEGRATION - $($genevaLogsIntegration) for target 'machine'..."
         }
     }
     else {
@@ -644,18 +631,6 @@ function Read-Configs {
 
     # run mdm config parser
     ruby /opt/amalogswindows/scripts/ruby/tomlparser-mdm-metrics-config.rb
-    # try {
-    #     Write-Host "Processing MDM metrics configuration..."
-    #     & "C:\opt\amalogswindows\scripts\cmd\config-parser.exe" parse mdm-metrics-config
-    #     if ($LASTEXITCODE -ne 0) {
-    #         throw "MDM metrics config processing failed"
-    #     }
-    #     Write-Host "MDM metrics configuration processed successfully"
-    #     Set-EnvironmentVariablesFromFile "/opt/amalogswindows/scripts/powershell/setmdmenv.txt"
-    # } catch {
-    #     Write-Error "Failed to process MDM metrics configuration: $_"
-    #     # Continue with defaults - don't exit since this is not critical
-    # }
 }
 
 function Set-EnvironmentVariablesFromFile {
@@ -870,18 +845,6 @@ function Start-Fluent-Telegraf {
         Start-Telegraf
     }
 
-    $enableCustomMetrics = [System.Environment]::GetEnvironmentVariable("ENABLE_CUSTOM_METRICS", "process")
-    if (![string]::IsNullOrEmpty($enableCustomMetrics) -and $enableCustomMetrics.ToLower() -eq 'true') {
-        Move-Item -Path "C:/etc/fluent/fluent-cm.conf" -Destination "C:/etc/fluent/fluent.conf" -Force
-    }
-
-    $isAADMSIAuth = [System.Environment]::GetEnvironmentVariable("USING_AAD_MSI_AUTH")
-    # Start fluentd as a windows service only if custom metrics is enabled or legacy mode
-    # if ((![string]::IsNullOrEmpty($enableCustomMetrics) -and $enableCustomMetrics.ToLower() -eq 'true') -or [string]::IsNullOrEmpty($isAADMSIAuth) -or $isAADMSIAuth.ToLower() -eq "false") {
-    #     fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
-    # }
-
-    # Notepad.exe | Out-Null
 }
 
 function Start-Telegraf {
@@ -957,13 +920,13 @@ function Start-Telegraf {
             C:\opt\telegraf\telegraf.exe --service start
 
             # Trying to start telegraf again if it did not start due to fluent bit not being ready at startup
-            # Get-Service telegraf | findstr Running
-            # if ($? -eq $false) {
-            #     Write-Host "trying to start telegraf in again in 30 seconds, since fluentbit might not have been ready..."
-            #     Start-Sleep -s 30
-            #     C:\opt\telegraf\telegraf.exe --service start
-            #     Get-Service telegraf
-            # }
+            Get-Service telegraf | findstr Running
+            if ($? -eq $false) {
+                Write-Host "trying to start telegraf in again in 30 seconds, since fluentbit might not have been ready..."
+                Start-Sleep -s 30
+                C:\opt\telegraf\telegraf.exe --service start
+                Get-Service telegraf
+            }
 
             if ((Get-Service telegraf).Status -eq 'Running') {
                 Write-Host "Telegraf service is running"
@@ -1049,7 +1012,6 @@ function IsGenevaMode() {
 
 Start-Transcript -Path main.txt
 
-#Remove-WindowsServiceIfItExists "fluentdwinaks"
 Set-AgentConfigSchemaVersion
 Read-Configs
 Set-EnvironmentVariables
@@ -1103,6 +1065,3 @@ while ($true) { Start-Sleep -Seconds 3600 }
 # List all powershell processes running. This should have main.ps1 and filesystemwatcher.ps1
 #Get-WmiObject Win32_process | Where-Object { $_.Name -match 'powershell' } | Format-Table -Property Name, CommandLine, ProcessId
 #Get-Process | Where-Object { $_.ProcessName -match 'powershell' } | Format-Table -Property ProcessName, Id, Path
-
-#check if fluentd service is running
-#Get-Service fluentdwinaks
