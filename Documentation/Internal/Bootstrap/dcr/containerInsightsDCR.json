@@ -285,7 +285,7 @@
         {
             "condition": "[parameters('useAzureMonitorPrivateLinkScope')]",
             "type": "Microsoft.Resources/deployments",
-            "name": "[Concat('aks-monitoring-msi-ampls-scope-config', '-',  uniqueString(parameters('aksResourceId')))]",
+            "name": "[Concat('aks-monitoring-msi-ampls-scope-config', '-',  uniqueString(parameters('workspaceResourceId')))]",
             "apiVersion": "2017-05-10",
             "subscriptionId": "[variables('privateLinkScopeSubscriptionId')]",
             "resourceGroup": "[variables('privateLinkScopeResourceGroup')]",
@@ -316,7 +316,7 @@
         {
             "condition": "[and(parameters('useAzureMonitorPrivateLinkScope'), variables('enableHighLogScaleMode'))]",
             "type": "Microsoft.Resources/deployments",
-            "name": "[Concat('aks-monitoring-msi-ampls-scope-ingest', '-',  uniqueString(parameters('aksResourceId')))]",
+            "name": "[Concat('aks-monitoring-msi-ampls-scope-ingest', '-',  uniqueString(parameters('workspaceResourceId')))]",
             "apiVersion": "2017-05-10",
             "subscriptionId": "[variables('privateLinkScopeSubscriptionId')]",
             "resourceGroup": "[variables('privateLinkScopeResourceGroup')]",
