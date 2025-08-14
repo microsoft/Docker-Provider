@@ -26,7 +26,7 @@ Note > DCE resources created only when enableRetinaNetworkFlowLogs or Microsoft-
 ```
 
 # 3. Enable the ContainerInsights Monitoring Addon
-Note > workspaceResourceId in existingClusterParam.json not used for data ingestion and this MUST be any arbitery workspace in Bleu cloud.
+Note > workspaceResourceId in existingClusterParam.json not used for data ingestion and this MUST be any arbitrary workspace in Bleu cloud.
 ```sh
  # download the ARM template and parameter files to enable the containerinsights addon
  curl -LO https://raw.githubusercontent.com/microsoft/Docker-Provider/refs/heads/ci_prod/Documentation/Internal/Bootstrap/addon/existingClusterOnboarding.json
