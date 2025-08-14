@@ -26,7 +26,7 @@ Note > DCE resources created only when enableRetinaNetworkFlowLogs or Microsoft-
 ```
 
 # 3. Enable the ContainerInsights Monitoring Addon
-Note >
+Note > workspaceResourceId in existingClusterParam.json not used for data ingestion and this MUST be any arbitery workspace in Bleu cloud.
 ```sh
  # download the ARM template and parameter files to enable the containerinsights addon
  curl -LO https://raw.githubusercontent.com/microsoft/Docker-Provider/refs/heads/ci_prod/Documentation/Internal/Bootstrap/addon/existingClusterOnboarding.json
@@ -42,5 +42,5 @@ Note >
     kubectl logs <ama-logs-pod-name> -n kube-system -c ama-logs # verify the logs of the pods to ensure no errors
   ```
 # 4.2. Check the data flow
- Navigate to configured Azure Log Analytics workspace in Bleu cloud and verify all the tables such as KubePodInventory, KubeNodeInventory and ContainerLogV2 etc.
- 
+ Navigate to configured Azure Log Analytics workspace in Public cloud and verify all the tables such as KubePodInventory, KubeNodeInventory and ContainerLogV2 etc.
+
