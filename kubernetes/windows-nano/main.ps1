@@ -793,7 +793,6 @@ function Start-Fluent-Telegraf {
     $containerRuntime = Get-ContainerRuntime
 
     $monitorKubernetesPods = [System.Environment]::GetEnvironmentVariable('TELEMETRY_CUSTOM_PROM_MONITOR_PODS')
-    $monitorKubernetesPods = 'true'
     if ([string]::IsNullOrEmpty($monitorKubernetesPods) -or $monitorKubernetesPods.ToLower() -eq 'false') {
         Write-Host "Disabling telegraf tcp input plugin since TELEMETRY_CUSTOM_PROM_MONITOR_PODS is not set or set to false"
         Clear-Content C:/etc/fluent-bit/fluent-bit-telegraf-tcp.conf
@@ -852,8 +851,7 @@ function Start-Telegraf {
     Write-Host "**********Setting default environment variables for telegraf prometheus plugin..."
     .\setdefaulttelegrafenvvariables.ps1
 
-    #$monitorKubernetesPods = [System.Environment]::GetEnvironmentVariable('TELEMETRY_CUSTOM_PROM_MONITOR_PODS')
-    $monitorKubernetesPods = 'true'
+    $monitorKubernetesPods = [System.Environment]::GetEnvironmentVariable('TELEMETRY_CUSTOM_PROM_MONITOR_PODS')
 
     if (![string]::IsNullOrEmpty($monitorKubernetesPods) -and $monitorKubernetesPods.ToLower() -eq 'true') {
         Write-Host "Starting telegraf..."
