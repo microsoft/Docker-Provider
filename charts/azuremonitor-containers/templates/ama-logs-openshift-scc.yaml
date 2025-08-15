@@ -3,19 +3,12 @@ apiVersion: security.openshift.io/v1
 kind: SecurityContextConstraints
 metadata:
   name: ama-logs-ds-scc
-  labels:
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
-    release: {{ .Release.Name }}
-    heritage: {{ .Release.Service }}
 allowPrivilegedContainer: true
 allowPrivilegeEscalation: true
 allowHostDirVolumePlugin: true
-allowHostIPC: false
-allowHostNetwork: false
-allowHostPID: false
-allowHostPorts: {{ ternary "true" "false" .Values.amalogs.syslog.enabled }}
-requiredDropCapabilities: []
-defaultAddCapabilities: []
+allowedCapabilities:
+- NET_ADMIN
+- NET_RAW
 readOnlyRootFilesystem: false
 runAsUser:
   type: RunAsAny
@@ -26,11 +19,8 @@ fsGroup:
 supplementalGroups:
   type: RunAsAny
 volumes:
-- configMap
-- downwardAPI
-- emptyDir
 - hostPath
-- projected
+- configMap
 - secret
 users:
 - system:serviceaccount:kube-system:ama-logs
