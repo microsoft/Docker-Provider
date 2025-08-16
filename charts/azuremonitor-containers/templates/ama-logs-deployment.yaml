@@ -36,7 +36,7 @@ spec:
 {{- if and (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>") (.Values.amalogs.useAADAuth) }}
      - name: addon-token-adapter
        {{- if eq .Values.Azure.Cluster.Distribution "openshift" }}
-       image: "mcr.microsoft.com/aks/msi/addon-token-adapter:master.250604.1"
+       image: "mcr.microsoft.com/azurearck8s/msi-adapter:1.28.0"
        {{- end}}
        imagePullPolicy: IfNotPresent
        env:
@@ -44,7 +44,24 @@ spec:
          value: "false"
        - name: TOKEN_NAMESPACE
          value: "azure-arc"
-{{-  .Values.Azure.Identity.MSIAdapterYaml | nindent 7 }}
+       - name: CLUSTER_IDENTITY
+         value: "true"
+       - name: CLUSTER_TYPE
+         value: {{ (split "/" .Values.Azure.Cluster.ResourceId)._7 }}
+       - name: EXTENSION_ARMID
+         value: {{ .Values.Azure.Extension.ResourceId }}
+       - name: EXTENSION_NAME
+         value: {{ .Values.Azure.Extension.Name }}
+       - name: MSI_ADAPTER_LISTENING_PORT
+         value: "8421"
+       - name: MANAGED_IDENTITY_AUTH
+         value: "true"
+       - name: MSI_ADAPTER_LIVENESS_PORT
+         value: "9090"
+       - name: TEST_MODE
+         value: "false"
+       - name: TEST_FILE
+         value: /data/token
        securityContext:
          {{- if eq .Values.Azure.Cluster.Distribution "openshift" }}
          privileged: true
@@ -53,27 +70,25 @@ spec:
            add:
              - NET_ADMIN
              - NET_RAW
-           drop:
-             - ALL
        resources:
          limits:
-           cpu: 500m
-           memory: 500Mi
-         requests:
-           cpu: 100m
+           cpu: 50m
            memory: 100Mi
+         requests:
+           cpu: 20m
+           memory: 50Mi
        livenessProbe:
+         failureThreshold: 3
          httpGet:
            path: /healthz
-           port: 9999
-           scheme: HTTP
+           port: 9090
+           scheme: "HTTP"
          initialDelaySeconds: 10
-         periodSeconds: 60
-       args:
-         - --secret-namespace=kube-system
-         - --secret-name=aad-msi-auth-token
-         - --token-server-listening-port=8888
-         - --health-server-listening-port=9999
+         periodSeconds: 15
+       lifecycle:
+         postStart:
+           exec:
+             command: ["/data/msi-adapter-ready-watcher"]
 {{- end }}
      - name: ama-logs
        image: {{ printf "%s:%s" .Values.amalogs.image.repo .Values.amalogs.image.tag }}
