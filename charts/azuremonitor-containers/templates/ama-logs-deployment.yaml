@@ -44,6 +44,7 @@ spec:
          value: "false"
        - name: TOKEN_NAMESPACE
          value: "azure-arc"
+{{-  .Values.Azure.Identity.MSIAdapterYaml | nindent 7 }}
        - name: CLUSTER_IDENTITY
          value: "true"
        - name: CLUSTER_TYPE
@@ -62,6 +63,7 @@ spec:
          value: "false"
        - name: TEST_FILE
          value: /data/token
+       {{- end }}
        securityContext:
          {{- if eq .Values.Azure.Cluster.Distribution "openshift" }}
          privileged: true
