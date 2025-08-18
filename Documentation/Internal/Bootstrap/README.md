@@ -3,7 +3,7 @@
 Note > DCE resources created only when enableRetinaNetworkFlowLogs or Microsoft-ContainerLogV2-HighScale or useAzureMonitorPrivateLinkScope enabled.
 ```sh
  az login --use-device-code --tenant
- az account -s <subscriptionId> # replace <subscriptionId> with value of the azure log analytics subscription Id
+ az account set --subscription <subscriptionId> # replace <subscriptionId> with value of the azure log analytics subscription Id
  # Download the ARM template and paramater file to create the ContainerInsights DCR
  curl -LO https://raw.githubusercontent.com/microsoft/Docker-Provider/refs/heads/ci_prod/Documentation/Internal/Bootstrap/dcr/containerInsightsDCR.json
  curl -LO https://raw.githubusercontent.com/microsoft/Docker-Provider/refs/heads/ci_prod/Documentation/Internal/Bootstrap/dcr/containerInsightsDCRParam.json
