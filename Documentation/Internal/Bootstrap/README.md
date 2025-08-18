@@ -34,7 +34,7 @@ Note > workspaceResourceId in existingClusterParam.json not used for data ingest
  # update the parameter values in existingClusterParam.json and then run below command
  az group deployment create --resource-group <aksClusterRG> --template-file ./existingClusterOnboarding.json --parameters @./existingClusterParam.json
 ```
-# 4. Validatation
+# 4. Validation
 
 # 4.1. Check health of ama-logs pods
   ``` sh
