@@ -16,7 +16,7 @@ Note > DCE resources created only when enableRetinaNetworkFlowLogs or Microsoft-
 # 2. Associate the DCR and DCEs to the AKS cluster in Bleu Cloud
 ```sh
  az login --use-device-code --tenant
- az account -s <subscriptionId> # replace <subscriptionId> with value of the AKS cluster subscription Id
+ az account set --subscription <subscriptionId> # replace <subscriptionId> with value of the AKS cluster subscription Id
  export DCR_RESOURCE_ID="<dcrResourceId>" # get the DCR resource id created in step #1
  export AKS_RESOURCE_ID="<aksResourceId>"
  az monitor data-collection rule association create \
