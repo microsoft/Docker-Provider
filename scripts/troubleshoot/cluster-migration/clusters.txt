@@ -1,0 +1,3 @@
+myResourceGroup1,myCluster1
+myResourceGroup2,myCluster2
+myResourceGroup3,myCluster3
