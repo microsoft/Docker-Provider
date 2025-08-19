@@ -1,0 +1,100 @@
+# http://<public ip>:8080/generate-load?iterations=5
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: java-instrumented-test-app
+  namespace: ns1
+  labels:
+    app: java-instrumented-test-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: java-instrumented-test-app
+  template:
+    metadata:
+      labels:
+        app: java-instrumented-test-app
+      annotations:
+        #instrumentation.opentelemetry.io/inject-configuration: "true"
+    spec:
+      containers:
+      - name: java-instrumented-test-app
+        image: appmonitoring.azurecr.io/demoaks-java-instrumented-app:latest
+        imagePullPolicy: Always
+        env:
+        # OpenTelemetry configuration
+        - name: OTEL_SERVICE_NAME
+          value: "java-instrumented-test-app"
+        - name: OTEL_SERVICE_VERSION
+          value: "1.0.0"
+        - name: OTEL_ENVIRONMENT
+          value: "production"
+        # Kubernetes resource attributes
+        - name: K8S_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: K8S_NAMESPACE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: K8S_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: K8S_POD_UID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.uid
+        - name: K8S_CONTAINER_NAME
+          value: "java-instrumented-test-app"
+        # Application configuration
+        - name: SERVER_PORT
+          value: "8080"
+        - name: TARGET_URL
+          value: "http://localhost:8080/"
+        # Java configuration
+        - name: JAVA_OPTS
+          value: "-Xmx512m -Xms256m"
+        ports:
+        - containerPort: 8080
+          name: http
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: java-instrumented-test-app-service
+  namespace: ns1
+  labels:
+    app: java-instrumented-test-app
+spec:
+  selector:
+    app: java-instrumented-test-app
+  ports:
+  - port: 8080
+    targetPort: 8080
+    name: http
+  type: LoadBalancer
