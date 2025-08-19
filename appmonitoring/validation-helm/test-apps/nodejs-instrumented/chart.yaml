@@ -1,3 +1,4 @@
+# http://<public ip>:3001/generate-load?iterations=5
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -65,7 +66,7 @@ metadata:
   labels:
     app: nodejs-instrumented-test-app
 spec:
-  type: ClusterIP
+  type: LoadBalancer
   ports:
     - port: 3001
       protocol: TCP
@@ -73,39 +74,3 @@ spec:
       name: http
   selector:
     app: nodejs-instrumented-test-app
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: nodejs-instrumented-test-app-config
-  namespace: ${TEST_NS}
-  labels:
-    app: nodejs-instrumented-test-app
-data:
-  # OpenTelemetry configuration that could be mounted as a file
-  otel-config.yaml: |
-    receivers:
-      otlp:
-        protocols:
-          grpc:
-            endpoint: 0.0.0.0:4317
-          http:
-            endpoint: 0.0.0.0:4318
-    
-    processors:
-      batch:
-        timeout: 1s
-        send_batch_size: 1024
-      
-    exporters:
-      jaeger:
-        endpoint: http://jaeger-collector.observability:14250
-        tls:
-          insecure: true
-      
-    service:
-      pipelines:
-        traces:
-          receivers: [otlp]
-          processors: [batch]
-          exporters: [jaeger]
