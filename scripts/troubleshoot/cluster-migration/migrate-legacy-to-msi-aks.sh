@@ -8,7 +8,7 @@
 #      myRG-prod,cluster-prod
 #
 #   2. Run the script:
-#      ./migrate-to-msi.sh clusters.txt
+#      ./migrate-legacy-to-msi-aks.sh clusters.txt
 #
 
 if [ "$1" == "--help" ] || [ "$1" == "-h" ] || [ -z "$1" ]; then
