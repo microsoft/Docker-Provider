@@ -28,6 +28,10 @@ const errorCounter = meter.createCounter('http_errors_total', {
   description: 'Total number of HTTP errors',
 });
 
+const cowsSoldCounter = meter.createCounter('cows_sold_total', {
+  description: 'Total number of cows sold',
+});
+
 // Winston logger setup with correlation IDs
 const logger = winston.createLogger({
   level: 'debug',
@@ -68,6 +72,7 @@ app.use((req, res, next) => {
       status_code: res.statusCode.toString(),
     };
     
+    cowsSoldCounter.add(1, { cow_type: 'Holstein', endpoint: process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT, protocol: process.env.OTEL_EXPORTER_OTLP_METRICS_PROTOCOL });
     requestCounter.add(1, labels);
     requestDuration.record(duration, labels);
     
@@ -290,5 +295,9 @@ app.listen(PORT, () => {
   logger.info(`OpenTelemetry instrumented server listening on port ${PORT}`);
   logger.info(`Service: ${process.env.OTEL_SERVICE_NAME || 'nodejs-instrumented-test-app'}`);
   logger.info(`Environment: ${process.env.OTEL_ENVIRONMENT || 'development'}`);
-  logger.info(`OTLP Endpoint: ${process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT || 'http://localhost:4318/v1/traces'}`);
+  logger.info(`OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: ${process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT}`);
+  logger.info(`OTEL_EXPORTER_OTLP_LOGS_ENDPOINT: ${process.env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT}`);
+  logger.info(`OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: ${process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT}`);
+  logger.info(`OTEL_EXPORTER_OTLP_METRICS_PROTOCOL: ${process.env.OTEL_EXPORTER_OTLP_METRICS_PROTOCOL}`);
+  logger.info(`OTEL_EXPORTER_OTLP_METRICS_INSECURE: ${process.env.OTEL_EXPORTER_OTLP_METRICS_INSECURE}`);
 });

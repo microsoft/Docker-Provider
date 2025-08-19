@@ -18,8 +18,6 @@ COPY server.js ./
 ENV OTEL_SERVICE_NAME=nodejs-instrumented-test-app
 ENV OTEL_SERVICE_VERSION=1.0.0
 ENV OTEL_ENVIRONMENT=production
-ENV OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://localhost:4318/v1/traces
-ENV OTEL_EXPORTER_OTLP_METRICS_ENDPOINT=http://localhost:4318/v1/metrics
 ENV OTEL_LOG_LEVEL=info
 
 # Expose port
