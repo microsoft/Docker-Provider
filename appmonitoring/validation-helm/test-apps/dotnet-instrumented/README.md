@@ -7,7 +7,7 @@ This is a .NET 8.0 web application instrumented with OpenTelemetry SDK that mirr
 - **OpenTelemetry Metrics**: Exports metrics using OTLP (OpenTelemetry Protocol)
 - **Configurable Endpoint**: Metrics endpoint configurable via `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` environment variable
 - **Configurable Protocol**: Protocol configurable via `OTEL_EXPORTER_OTLP_METRICS_PROTOCOL` environment variable (supports `http/protobuf` and `grpc`)
-- **Resource Attributes**: Respects `OTEL_RESOURCE_ATTRIBUTES` environment variable
+- **Resource Attributes**: Respects `OTEL_RESOURCE_ATTRIBUTES` environment variable automatically via the OpenTelemetry .NET SDK
 - **Custom Metrics**: Includes HTTP request counters, duration histograms, error counters, and business metrics (cows sold)
 - **Health Check**: Provides `/health` endpoint for container health checks
 - **Load Generation**: Provides `/generate-load` endpoint for testing
@@ -75,7 +75,7 @@ This .NET application provides equivalent functionality to the nodejs-instrument
 1. **Same Metrics**: Implements the same custom metrics with similar naming and labels
 2. **Same Configuration**: Uses the same environment variables for endpoint and protocol configuration
 3. **Same Endpoints**: Provides equivalent REST endpoints
-4. **Resource Attributes**: Properly respects `OTEL_RESOURCE_ATTRIBUTES` environment variable
+4. **Resource Attributes**: The OpenTelemetry .NET SDK automatically respects the `OTEL_RESOURCE_ATTRIBUTES` environment variable via the `ResourceBuilder.AddEnvironmentVariableDetector()` method
 5. **Protocol Support**: Supports both HTTP/Protobuf and gRPC protocols for OTLP export
 
 The main differences are:

@@ -34,23 +34,8 @@ builder.Services.AddOpenTelemetry()
         .AddAttributes(new Dictionary<string, object>
         {
             ["deployment.environment"] = Environment.GetEnvironmentVariable("OTEL_ENVIRONMENT") ?? "development"
-        });
-
-        // Parse and add OTEL_RESOURCE_ATTRIBUTES if present
-        var resourceAttributes = Environment.GetEnvironmentVariable("OTEL_RESOURCE_ATTRIBUTES");
-        if (!string.IsNullOrEmpty(resourceAttributes))
-        {
-            var attributes = new Dictionary<string, object>();
-            foreach (var pair in resourceAttributes.Split(','))
-            {
-                var keyValue = pair.Split('=', 2);
-                if (keyValue.Length == 2)
-                {
-                    attributes[keyValue[0].Trim()] = keyValue[1].Trim();
-                }
-            }
-            resource.AddAttributes(attributes);
-        }
+        })
+        .AddEnvironmentVariableDetector(); // This automatically handles OTEL_RESOURCE_ATTRIBUTES
     })
     .WithMetrics(metrics =>
     {
