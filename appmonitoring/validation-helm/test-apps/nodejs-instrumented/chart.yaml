@@ -61,8 +61,8 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ${NODEJS_INSTRUMENTED_TEST_APP_NAME}-service
-  namespace: ${TEST_NS}
+  name: nodejs-instrumented-test-app-service
+  namespace: ns1
   labels:
     app: nodejs-instrumented-test-app
 spec:
