@@ -55,7 +55,7 @@ while IFS=, read -r resource_group cluster_name || [ -n "$resource_group" ]; do
 
     # Get workspace ID using exact command
     echo "[$(date)] Getting workspace ID for $cluster_name"
-    workspace_line=$(az aks show -g "$resource_group" -n "$cluster_name" | grep -i "logAnalyticsWorkspaceResourceID")
+    workspace_resource_id=$(az aks show -g "$resource_group" -n "$cluster_name" | grep -i "logAnalyticsWorkspaceResourceID")
     if [ $? -ne 0 ]; then
         echo "[Error] Failed to get workspace ID"
         echo "[$(date)] Skipping cluster $cluster_name due to workspace ID error"
@@ -63,10 +63,10 @@ while IFS=, read -r resource_group cluster_name || [ -n "$resource_group" ]; do
         failed_clusters+=("$cluster_name - Failed to get workspace ID")
         continue
     fi
-    echo "[$(date)] Found workspace info: $workspace_line"
+    echo "[$(date)] Found workspace info: $workspace_resource_id"
 
     # Extract workspace ID
-    workspace_id=$(echo "$workspace_line" | cut -d'"' -f4)
+    workspace_id=$(echo "$workspace_resource_id" | cut -d'"' -f4)
     if [ -z "$workspace_id" ]; then
         echo "[Error] Could not extract workspace ID for $cluster_name"
         echo "[$(date)] Skipping cluster $cluster_name due to workspace ID extraction error"
