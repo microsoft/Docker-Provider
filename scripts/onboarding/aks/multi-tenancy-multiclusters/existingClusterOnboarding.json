@@ -8,12 +8,6 @@
                 "description": "Resource group where DCR and DCE will be created"
             }
         },
-        "location": {
-            "type": "string",
-            "metadata": {
-                "description": "Location for the config DCE"
-            }
-        },
         "subscriptionId": {
             "type": "string",
             "metadata": {
@@ -72,30 +66,12 @@
         "ingestionDCEName": "[if(greater(length(variables('ingestionDCENameFull')), 43), substring(variables('ingestionDCENameFull'), 0, 43), variables('ingestionDCENameFull'))]",
         "ingestionDCE": "[if(endsWith(variables('ingestionDCEName'), '-'), substring(variables('ingestionDCEName'), 0, 42), variables('ingestionDCEName'))]",
         "ingestionDataCollectionEndpointId": "[resourceId(parameters('subscriptionId'), parameters('resourceGroupName'), 'Microsoft.Insights/dataCollectionEndpoints', variables('ingestionDCE'))]",
-        "configDCENameFull": "[Concat('MSCI-config-shared', '-', parameters('location'), '-', uniqueString(parameters('workspaceResourceId')))]",
-        "configDCEName": "[if(greater(length(variables('configDCENameFull')), 43), substring(variables('configDCENameFull'), 0, 43), variables('configDCENameFull'))]",
-        "configDCE": "[if(endsWith(variables('configDCEName'), '-'), substring(variables('configDCEName'), 0, 42), variables('configDCEName'))]",
-        "configDataCollectionEndpointId": "[resourceId(parameters('subscriptionId'), parameters('resourceGroupName'), 'Microsoft.Insights/dataCollectionEndpoints', variables('configDCE'))]",
         "dataCollectionRuleId": "[resourceId(parameters('subscriptionId'), parameters('resourceGroupName'), 'Microsoft.Insights/dataCollectionRules', variables('dcrName'))]",
         "privateLinkScopeName": "[split(parameters('azureMonitorPrivateLinkScopeResourceId'),'/')[8]]",
         "privateLinkScopeResourceGroup": "[split(parameters('azureMonitorPrivateLinkScopeResourceId'),'/')[4]]",
         "privateLinkScopeSubscriptionId": "[split(parameters('azureMonitorPrivateLinkScopeResourceId'),'/')[2]]"
     },
     "resources": [
-        {
-            "condition": "[parameters('useAzureMonitorPrivateLinkScope')]",
-            "type": "Microsoft.Insights/dataCollectionEndpoints",
-            "apiVersion": "2022-06-01",
-            "name": "[variables('configDCE')]",
-            "location": "[parameters('location')]",
-            "tags": "[parameters('resourceTagValues')]",
-            "kind": "Linux",
-            "properties": {
-                "networkAcls": {
-                    "publicNetworkAccess": "[if(parameters('useAzureMonitorPrivateLinkScope'), 'Disabled', 'Enabled')]"
-                }
-            }
-        },
         {
             "type": "Microsoft.Insights/dataCollectionEndpoints",
             "apiVersion": "2023-03-11",
@@ -180,37 +156,6 @@
         {
             "condition": "[parameters('useAzureMonitorPrivateLinkScope')]",
             "type": "Microsoft.Resources/deployments",
-            "name": "[Concat('shared-monitoring-ampls-scope-config', '-',  uniqueString(parameters('workspaceResourceId')))]",
-            "apiVersion": "2017-05-10",
-            "subscriptionId": "[variables('privateLinkScopeSubscriptionId')]",
-            "resourceGroup": "[variables('privateLinkScopeResourceGroup')]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Insights/dataCollectionEndpoints/', variables('configDCE'))]"
-            ],
-            "properties": {
-                "mode": "Incremental",
-                "template": {
-                    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
-                    "contentVersion": "1.0.0.0",
-                    "parameters": {},
-                    "variables": {},
-                    "resources": [
-                        {
-                            "type": "microsoft.insights/privatelinkscopes/scopedresources",
-                            "name": "[concat(variables('privateLinkScopeName'), '/', concat(variables('configDCE'), '-connection'))]",
-                            "apiVersion": "2021-07-01-preview",
-                            "properties": {
-                                "linkedResourceId": "[variables('configDataCollectionEndpointId')]"
-                            }
-                        }
-                    ]
-                },
-                "parameters": {}
-            }
-        },
-        {
-            "condition": "[parameters('useAzureMonitorPrivateLinkScope')]",
-            "type": "Microsoft.Resources/deployments",
             "name": "[Concat('shared-monitoring-ampls-scope-ingest', '-',  uniqueString(parameters('workspaceResourceId')))]",
             "apiVersion": "2017-05-10",
             "subscriptionId": "[variables('privateLinkScopeSubscriptionId')]",
@@ -269,10 +214,6 @@
         }
     ],
     "outputs": {
-        "configDceId": {
-            "type": "string",
-            "value": "[variables('configDataCollectionEndpointId')]"
-        },
         "dcrId": {
             "type": "string",
             "value": "[variables('dataCollectionRuleId')]"

@@ -5,9 +5,6 @@
     "resourceGroupName": {
       "value": "<resourceGroupName>"
     },
-    "location": {
-      "value": "<configDCELocation>"
-    },
     "subscriptionId": {
       "value": "<subscriptionId>"
     },

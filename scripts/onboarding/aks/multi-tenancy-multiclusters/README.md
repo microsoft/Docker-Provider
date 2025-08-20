@@ -15,11 +15,11 @@ az deployment group create \
   --template-file existingClusterOnboarding.json \
   --parameters existingClusterParam.json 
 ```
-After deployment, note the DCR ID from the output. You'll need this to connect clusters.
+After deployment, note the DCR ID from the output. You'll need this to associate clusters.
 
-### 2. Connect AKS Clusters to the Shared DCR
+### 2. Associate shared DCR and DCE to all AKS Clusters
 
-After deploying the DCR/DCE setup, you'll need to connect your AKS clusters. Below are simple commands to connect multiple clusters:
+After deploying the DCR/DCE setup, you'll need to associate your AKS clusters. Below are simple commands to associate multiple clusters:
 
 #### For Multiple Clusters (Bash)
 
@@ -54,7 +54,7 @@ done
 
 ### Notes
 
-1. The shared DCR/DCE setup needs to be done only once. After that, you can connect multiple clusters to the same DCR.
+1. The shared DCR/DCE setup needs to be done only once. After that, you can associate multiple clusters to the same DCR.
 
 2. Each cluster needs:
    - DCR Association (always required)
