@@ -73,7 +73,14 @@ View associations:
 az monitor data-collection rule association list --resource "<aks-cluster-resource-id>"
 ```
 
-Remove association:
+Remove DCR association:
 ```bash
 az monitor data-collection rule association delete --name "<association-name>" --resource "<aks-cluster-resource-id>"
 ```
+
+Remove DCE association:
+```bash
+az monitor data-collection endpoint association delete --name "<association-name>" --resource-group "<my-resource-group>"
+```
+
+Note: For private link scenarios, make sure to remove the Config DCE association before removing the Config DCE resource itself to ensure proper cleanup.
