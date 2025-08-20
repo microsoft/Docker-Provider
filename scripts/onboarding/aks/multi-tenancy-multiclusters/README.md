@@ -1,10 +1,16 @@
 # Multi-Tenant Container Insights Setup with Shared DCR/DCE
 
-This guide explains how to set up Container Insights monitoring for multiple AKS clusters using a shared Data Collection Rule (DCR) and Data Collection Endpoint (DCE).
+This guide explains how to set up Container Insights monitoring for multiple AKS clusters using a shared Data Collection Rule (DCR) and Data Collection Endpoints (DCE).
+
+## Important Note About Config DCE for private link scenarios
+
+The Configuration Data Collection Endpoint (Config DCE) is required ONLY for private link scenarios. When using private links, the Config DCE must be created in a one-to-one relationship with each AKS cluster and deployed in the same region as the cluster. The Config DCE is not included in the shared template and must be created separately for each cluster that needs private link access.
 
 ## Setup Process
 
-### 1. Deploy Shared DCR and DCE
+### Standard Setup (Non-Private Link)
+
+1. Deploy Shared DCR and DCE
 
 First, deploy the shared DCR and DCE using the `existingClusterOnboarding.json` template. This creates the core monitoring infrastructure that will be shared across multiple clusters.
 
@@ -13,73 +19,61 @@ az deployment group create \
   --name shared-monitoring-setup \
   --resource-group <resource-group-name> \
   --template-file existingClusterOnboarding.json \
-  --parameters existingClusterParam.json 
+  --parameters existingClusterParam.json
 ```
+
 After deployment, note the DCR ID from the output. You'll need this to associate clusters.
 
-### 2. Associate shared DCR and DCE to all AKS Clusters
+2. Associate shared DCR and DCE to all AKS Clusters
+   ```bash
+   az monitor data-collection rule association create \
+     --name "aks-dcr-<cluster-name>" \
+     --rule-id "<dcr-id>" \
+     --resource "<cluster-resource-id>"
+   ```
 
-After deploying the DCR/DCE setup, you'll need to associate your AKS clusters. Below are simple commands to associate multiple clusters:
+### Private Link Setup
 
-#### For Multiple Clusters (Bash)
+For clusters requiring private link access, complete these additional steps after the standard setup:
 
-```bash
-# Store the DCR ID
-DCR_ID="/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Insights/dataCollectionRules/<dcr-name>"
+1. Prerequisites
+   - Azure Monitor Private Link Scope (AMPLS)
+   - Properly configured virtual network
+   - Network security group rules ready
 
-# If using private link, store the Config DCE ID
-CONFIG_DCE_ID="/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.Insights/dataCollectionEndpoints/<dce-name>"
+2. Create Config DCE for Each Private Link Cluster
+   ```bash
+   az monitor data-collection endpoint create \
+     --name "MSCI-config-<region>-<cluster-name>" \
+     --resource-group <resource-group-name> \
+     --location <same-as-cluster-region> \
+   ```
+   - Important: Location parameter MUST match the cluster's region exactly
+   - Each private link cluster requires its own dedicated Config DCE
+   - Do not share Config DCEs between clusters
 
-# Loop through your clusters
-for cluster in \
-  "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.ContainerService/managedClusters/<cluster1-name>" \
-  "/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.ContainerService/managedClusters/<cluster2-name>"; do
-  echo "Connecting cluster: $cluster"
-  
-  # Create DCR association
-  az monitor data-collection rule association create \
-    --name "aks-dcr-association" \
-    --rule-id "$DCR_ID" \
-    --resource "$cluster"
+3. Configure Private Link
+   1. Set Config DCE `publicNetworkAccess` to "Disabled"
+   2. Link Config DCE to AMPLS
+   3. Create private endpoint in cluster's VNet
+   4. Update network security group rules
+   5. Verify DNS resolution works
 
-  # If using private link, create Config DCE association
-  if [ ! -z "$CONFIG_DCE_ID" ]; then
-    az monitor data-collection rule association create \
-      --name "configurationAccessEndpoint" \
-      --endpoint-id "$CONFIG_DCE_ID" \
-      --resource "$cluster"
-  fi
-done
-```
+4. Create Config DCE Association
+   ```bash
+   az monitor data-collection endpoint association create \
+     --name "MSCI-config-<cluster-name>" \
+     --endpoint-id "<config-dce-id>" \
+     --resource "<cluster-resource-id>"
 
-### Notes
+## Resource Management
 
-1. The shared DCR/DCE setup needs to be done only once. After that, you can associate multiple clusters to the same DCR.
-
-2. Each cluster needs:
-   - DCR Association (always required)
-   - Config DCE Association (only required when using private link)
-
-3. Parameters explanation:
-   - `subscriptionId`: The subscription where DCR/DCE will be created
-   - `resourceGroupName`: Resource group for DCR/DCE resources
-   - `location`: Location for the config DCE (only used with private link)
-   - `workspaceRegion`: Region of the Log Analytics workspace
-   - `workspaceResourceId`: Full resource ID of the Log Analytics workspace
-   - `k8sNamespaces`: Array of Kubernetes namespaces to collect logs from
-   - `transformKql`: Optional KQL query for log transformation
-   - `useAzureMonitorPrivateLinkScope`: Whether to use private link scope
-   - `azureMonitorPrivateLinkScopeResourceId`: Resource ID of private link scope (if used)
-   - `resourceTagValues`: Tags to apply to the created resources
-
-4. To list existing DCRAs for a cluster:
+View associations:
 ```bash
 az monitor data-collection rule association list --resource "<aks-cluster-resource-id>"
 ```
 
-5. To remove a DCRA:
+Remove association:
 ```bash
-az monitor data-collection rule association delete \
-  --name "aks-dcr-association" \
-  --resource "<aks-cluster-resource-id>"
+az monitor data-collection rule association delete --name "<association-name>" --resource "<aks-cluster-resource-id>"
 ```
