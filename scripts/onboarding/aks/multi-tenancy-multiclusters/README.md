@@ -47,13 +47,14 @@ For clusters requiring private link access, complete these additional steps afte
      --name "MSCI-config-<region>-<cluster-name>" \
      --resource-group <resource-group-name> \
      --location <same-as-cluster-region> \
+     --public-network-access "Disabled"
    ```
    - Important: Location parameter MUST match the cluster's region exactly
    - Each private link cluster requires its own dedicated Config DCE
    - Do not share Config DCEs between clusters
 
 3. Configure Private Link
-   1. Set Config DCE `publicNetworkAccess` to "Disabled"
+   1. Set Config and Ingest DCE `publicNetworkAccess` to "Disabled"
    2. Link Config DCE to AMPLS
    3. Create private endpoint in cluster's VNet
    4. Update network security group rules
