@@ -74,6 +74,21 @@ check_prerequisites() {
     return 0
 }
 
+# Function to get AMPLS ID for private cluster
+get_ampls_id() {
+    local workspace_id=$1
+    
+    # Parse workspace details
+    local workspace_name=$(echo "$workspace_id" | cut -d'/' -f9)
+    local workspace_rg=$(echo "$workspace_id" | cut -d'/' -f5)
+    
+    # Get AMPLS ID
+    az monitor log-analytics workspace show \
+      --workspace-name "$workspace_name" \
+      --resource-group "$workspace_rg" \
+      --query "privateLinkScopedResources[0].resourceId" -o tsv | sed 's|/scopedresources/.*||'
+}
+
 # Function to discover clusters
 discover_clusters() {
     local subscription_id=$1
@@ -141,12 +156,35 @@ perform_migration() {
     # 2. Re-enable monitoring with MSI
     echo "[$(date)] Re-enabling monitoring with MSI for $name"
     if [ "$cluster_type" = "aks" ]; then
-        az aks enable-addons -a monitoring -g "$resource_group" -n "$name" \
-          --workspace-resource-id "$workspace_id" \
-          --enable-msi-auth-for-monitoring || {
-            echo "[Error] Could not enable monitoring with MSI"
-            return 1
-        }
+        # Check if private cluster
+        local is_private=$(az aks show -g "$resource_group" -n "$name" \
+          --query "apiServerAccessProfile.enablePrivateCluster" -o tsv)
+
+        if [ "$is_private" = "true" ]; then
+            echo "[$(date)] Private cluster detected, preserving AMPLS configuration"
+            # For private clusters, get AMPLS ID
+            local ampls_id=$(get_ampls_id "$workspace_id")
+            if [ -n "$ampls_id" ]; then
+                echo "[$(date)] Using AMPLS: $ampls_id"
+                az aks enable-addons -a monitoring -g "$resource_group" -n "$name" \
+                  --workspace-resource-id "$workspace_id" \
+                  --ampls-resource-id "$ampls_id" || {
+                    echo "[Error] Could not enable monitoring with MSI and AMPLS"
+                    return 1
+                }
+            else
+                echo "[Error] Could not get AMPLS ID for private cluster"
+                return 1
+            fi
+        else
+            echo "[$(date)] Non-private cluster, proceeding without AMPLS"
+            # For non-private clusters, proceed without AMPLS
+            az aks enable-addons -a monitoring -g "$resource_group" -n "$name" \
+              --workspace-resource-id "$workspace_id" || {
+                echo "[Error] Could not enable monitoring with MSI"
+                return 1
+            }
+        fi
         
         # Verify MSI auth is enabled
         local auth_mode=$(az aks show -g "$resource_group" -n "$name" --query "addonProfiles.omsagent.config.useAADAuth" -o tsv)
