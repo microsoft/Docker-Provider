@@ -165,12 +165,37 @@ export class Mutations {
     /**
      * Generates environment variables necessary to configure agents. Agents take configuration from these environment variables once they run.
      */
-    public static GenerateEnvironmentVariables(podInfo: PodInfo, platforms: AutoInstrumentationPlatforms[], disableAppLogs: boolean, connectionString: string, armId: string, armRegion: string, clusterName: string, otelParams: OtelParams): IEnvironmentVariable[] {
+    public static GenerateEnvironmentVariables(podInfo: PodInfo, platforms: AutoInstrumentationPlatforms[], disableAppLogs: boolean, connectionString: string, armId: string, armRegion: string, clusterName: string, otelParams: OtelParams, existingEnvironmentVariables?: Record<string, IEnvironmentVariable>): IEnvironmentVariable[] {
         const ownerNameAttribute = `k8s.${podInfo.ownerKind?.toLowerCase()}.name=${podInfo.ownerName}`;
         const ownerUidAttribute = `k8s.${podInfo.ownerKind?.toLowerCase()}.uid=${podInfo.ownerUid}`;
         const containerNameAttribute = `k8s.container.name=${podInfo.onlyContainerName}`;
         const applicationId = Mutations.parseApplicationIdFromConnectionString(connectionString);
-        const microsoftApplicationIdAttribute = applicationId ? `microsoft.applicationId=${applicationId},` : '';
+        
+        // Build our OTEL resource attributes
+        const otelResourceAttributesList = [
+            `cloud.resource_id=${armId}`,
+            `cloud.region=${armRegion}`,
+            `k8s.cluster.name=${clusterName}`,
+            `k8s.namespace.name=$(POD_NAMESPACE)`,
+            `k8s.node.name=$(NODE_NAME)`,
+            `k8s.pod.name=$(POD_NAME)`,
+            `k8s.pod.uid=$(POD_UID)`,
+            containerNameAttribute,
+            `cloud.provider=Azure`,
+            `cloud.platform=azure_aks`,
+            ownerNameAttribute,
+            ownerUidAttribute
+        ];
+        
+        if (applicationId) {
+            otelResourceAttributesList.push(`microsoft.applicationId=${applicationId}`);
+        }
+        
+        const otelResourceAttributes = otelResourceAttributesList.join(',');
+
+        // Check if there's an existing OTEL_RESOURCE_ATTRIBUTES and merge if needed
+        const existingOtelResourceAttributes = existingEnvironmentVariables?.["OTEL_RESOURCE_ATTRIBUTES"]?.value;
+        const mergedOtelResourceAttributes = Mutations.mergeOtelResourceAttributes(existingOtelResourceAttributes, otelResourceAttributes);
         
         const returnValue: IEnvironmentVariable[] = [
             // Downward API environment variables must come first as they are referenced later
@@ -210,19 +235,7 @@ export class Mutations {
             // now we can reference Downward API values from environment variables above
             {
                 name: "OTEL_RESOURCE_ATTRIBUTES",
-                value: `cloud.resource_id=${armId},\
-cloud.region=${armRegion},\
-k8s.cluster.name=${clusterName},\
-k8s.namespace.name=$(POD_NAMESPACE),\
-k8s.node.name=$(NODE_NAME),\
-k8s.pod.name=$(POD_NAME),\
-k8s.pod.uid=$(POD_UID),\
-${containerNameAttribute},\
-cloud.provider=Azure,\
-cloud.platform=azure_aks,\
-${ownerNameAttribute},\
-${microsoftApplicationIdAttribute}\
-${ownerUidAttribute}`
+                value: mergedOtelResourceAttributes
             },
             {
                 name: "AKS_ARM_NAMESPACE_ID",
@@ -556,5 +569,50 @@ ${ownerUidAttribute}`
         }
 
         return null;
+    }
+
+    /**
+     * Merges OTEL resource attributes, with our attributes taking precedence over existing ones
+     */
+    private static mergeOtelResourceAttributes(existingValue: string, newAttributes: string): string {
+        if (!existingValue) {
+            return newAttributes;
+        }
+        
+        // Parse existing attributes into a map
+        const existingAttributes: Record<string, string> = {};
+        const existingPairs = existingValue.split(',');
+        
+        for (const pair of existingPairs) {
+            const trimmedPair = pair.trim();
+            if (trimmedPair) {
+                const [key, ...valueParts] = trimmedPair.split('=');
+                if (key && valueParts.length > 0) {
+                    existingAttributes[key.trim()] = valueParts.join('=').trim();
+                }
+            }
+        }
+        
+        // Parse new attributes into a map
+        const newAttributesMap: Record<string, string> = {};
+        const newPairs = newAttributes.split(',');
+        
+        for (const pair of newPairs) {
+            const trimmedPair = pair.trim();
+            if (trimmedPair) {
+                const [key, ...valueParts] = trimmedPair.split('=');
+                if (key && valueParts.length > 0) {
+                    newAttributesMap[key.trim()] = valueParts.join('=').trim();
+                }
+            }
+        }
+        
+        // Merge attributes with our attributes taking precedence
+        const mergedAttributes = { ...existingAttributes, ...newAttributesMap };
+        
+        // Convert back to string
+        return Object.entries(mergedAttributes)
+            .map(([key, value]) => `${key}=${value}`)
+            .join(',');
     }
 }

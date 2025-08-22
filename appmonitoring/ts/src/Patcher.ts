@@ -57,15 +57,15 @@ export class Patcher {
             const newInitContainers: IContainer[] = Mutations.GenerateInitContainers(platforms);
             podSpec.initContainers = (podSpec.initContainers ?? <IContainer[]>[]).concat(newInitContainers);
 
-            // add new environment variables (used to configure agents)
-            const newEnvironmentVariables: IEnvironmentVariable[] = Mutations.GenerateEnvironmentVariables(podInfo, platforms, !enableApplicationLogs, cr.spec?.destination?.applicationInsightsConnectionString, armId, armRegion, clusterName, otelParams);
-
             podSpec.containers?.forEach(container => {
                 // hold all environment variables in a dictionary, both existing and new ones
                 const allEnvironmentVariables: Record<string, IEnvironmentVariable> = {};
 
                 // add existing environment variables to the dictionary
                 container.env?.forEach(env => allEnvironmentVariables[env.name] = env);
+
+                // Generate environment variables with knowledge of existing ones for OTEL_RESOURCE_ATTRIBUTES merging
+                const newEnvironmentVariables: IEnvironmentVariable[] = Mutations.GenerateEnvironmentVariables(podInfo, platforms, !enableApplicationLogs, cr.spec?.destination?.applicationInsightsConnectionString, armId, armRegion, clusterName, otelParams, allEnvironmentVariables);
 
                 /*
                     We could be receiving customer's original set of environment variables (e.g. in case of kubectl apply),

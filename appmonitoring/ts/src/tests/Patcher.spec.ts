@@ -876,4 +876,105 @@ describe("Patcher", () => {
         expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL")).toBeUndefined();
         expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_EXPORTER_OTLP_METRICS_INSECURE")).toBeUndefined();
     });
+
+    describe("OTEL Resource Attributes Merging", () => {
+        const podInfo = new PodInfo();
+        podInfo.ownerKind = "Deployment";
+        podInfo.ownerName = "test-app";
+        podInfo.ownerUid = "uid-123";
+        podInfo.onlyContainerName = "main-container";
+
+        const testOtelParams: OtelParams = {
+            logsEnabled: false,
+            metricsEnabled: false,
+            logsPortHttpProtobuf: 4318,
+            metricsPortHttpProtobuf: 4318
+        };
+
+        it("should merge OTEL_RESOURCE_ATTRIBUTES with existing attributes", () => {
+            // Create a test deployment with existing OTEL_RESOURCE_ATTRIBUTES
+            const testDeployment = JSON.parse(JSON.stringify(TestDeployment2.request.object));
+            testDeployment.spec.template.spec.containers[0].env = [{
+                name: "OTEL_RESOURCE_ATTRIBUTES",
+                value: "service.name=my-service,service.version=1.0.0,custom.attr=value"
+            }];
+
+            const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
+            const platforms = [AutoInstrumentationPlatforms.Java];
+
+            const result: object[] = Patcher.PatchObject(testDeployment, cr1, podInfo, platforms, clusterArmId, clusterArmRegion, clusterName, testOtelParams);
+
+            const obj: IObjectType = (<any>result[0]).value as IObjectType;
+            const containerEnv = obj.spec.template.spec.containers[0].env;
+            const otelResourceAttributes = containerEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            
+            expect(otelResourceAttributes).toBeDefined();
+            expect(otelResourceAttributes!.value).toContain("service.name=my-service");
+            expect(otelResourceAttributes!.value).toContain("service.version=1.0.0");
+            expect(otelResourceAttributes!.value).toContain("custom.attr=value");
+            expect(otelResourceAttributes!.value).toContain("cloud.provider=Azure");
+            expect(otelResourceAttributes!.value).toContain("k8s.cluster.name=" + clusterName);
+        });
+
+        it("should handle conflicting attributes with our attributes winning", () => {
+            // Create a test deployment with conflicting OTEL_RESOURCE_ATTRIBUTES
+            const testDeployment = JSON.parse(JSON.stringify(TestDeployment2.request.object));
+            testDeployment.spec.template.spec.containers[0].env = [{
+                name: "OTEL_RESOURCE_ATTRIBUTES",
+                value: "cloud.provider=AWS,service.name=my-service,k8s.cluster.name=customer-cluster"
+            }];
+
+            const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
+            const platforms = [AutoInstrumentationPlatforms.Java];
+
+            const result: object[] = Patcher.PatchObject(testDeployment, cr1, podInfo, platforms, clusterArmId, clusterArmRegion, clusterName, testOtelParams);
+
+            const obj: IObjectType = (<any>result[0]).value as IObjectType;
+            const containerEnv = obj.spec.template.spec.containers[0].env;
+            const otelResourceAttributes = containerEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            
+            expect(otelResourceAttributes).toBeDefined();
+            expect(otelResourceAttributes!.value).toContain("service.name=my-service"); // customer's attribute preserved
+            expect(otelResourceAttributes!.value).toContain("cloud.provider=Azure"); // our attribute wins
+            expect(otelResourceAttributes!.value).toContain("k8s.cluster.name=" + clusterName); // our attribute wins
+        });
+
+        it("should work without existing OTEL_RESOURCE_ATTRIBUTES", () => {
+            // Create a test deployment without OTEL_RESOURCE_ATTRIBUTES
+            const testDeployment = JSON.parse(JSON.stringify(TestDeployment2.request.object));
+            testDeployment.spec.template.spec.containers[0].env = [];
+
+            const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
+            const platforms = [AutoInstrumentationPlatforms.Java];
+
+            const result: object[] = Patcher.PatchObject(testDeployment, cr1, podInfo, platforms, clusterArmId, clusterArmRegion, clusterName, testOtelParams);
+
+            const obj: IObjectType = (<any>result[0]).value as IObjectType;
+            const containerEnv = obj.spec.template.spec.containers[0].env;
+            const otelResourceAttributes = containerEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            
+            expect(otelResourceAttributes).toBeDefined();
+            expect(otelResourceAttributes!.value).toContain("cloud.provider=Azure");
+            expect(otelResourceAttributes!.value).toContain("k8s.cluster.name=" + clusterName);
+        });
+
+        it("should work when no existing environment variables are present", () => {
+            // Create a test deployment with no env array
+            const testDeployment = JSON.parse(JSON.stringify(TestDeployment2.request.object));
+            delete testDeployment.spec.template.spec.containers[0].env;
+
+            const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
+            const platforms = [AutoInstrumentationPlatforms.Java];
+
+            const result: object[] = Patcher.PatchObject(testDeployment, cr1, podInfo, platforms, clusterArmId, clusterArmRegion, clusterName, testOtelParams);
+
+            const obj: IObjectType = (<any>result[0]).value as IObjectType;
+            const containerEnv = obj.spec.template.spec.containers[0].env;
+            const otelResourceAttributes = containerEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            
+            expect(otelResourceAttributes).toBeDefined();
+            expect(otelResourceAttributes!.value).toContain("cloud.provider=Azure");
+            expect(otelResourceAttributes!.value).toContain("k8s.cluster.name=" + clusterName);
+        });
+    });
 });
