@@ -1,5 +1,5 @@
 ﻿import { Mutations } from "./Mutations.js";
-import { PodInfo, IContainer, ISpec, IVolume, IEnvironmentVariable, AutoInstrumentationPlatforms, IVolumeMount, InstrumentationAnnotationName, EnableApplicationLogsAnnotationName, InstrumentationCR, IInstrumentationState, IMetadata, IAnnotations, IObjectType } from "./RequestDefinition.js";
+import { PodInfo, IContainer, ISpec, IVolume, IEnvironmentVariable, AutoInstrumentationPlatforms, IVolumeMount, InstrumentationAnnotationName, EnableApplicationLogsAnnotationName, InstrumentationCR, IInstrumentationState, IMetadata, IAnnotations, IObjectType, OtelParams } from "./RequestDefinition.js";
 
 export class Patcher {
 
@@ -9,7 +9,7 @@ export class Patcher {
      * Calculates a JsonPatch string describing the difference between the old (incoming) and new (outgoing) spec
      * The spec is also patched in-place
     */
-    public static PatchObject(obj: IObjectType, cr: InstrumentationCR, podInfo: PodInfo, platforms: AutoInstrumentationPlatforms[], armId: string, armRegion: string, clusterName: string): object[] {
+    public static PatchObject(obj: IObjectType, cr: InstrumentationCR, podInfo: PodInfo, platforms: AutoInstrumentationPlatforms[], armId: string, armRegion: string, clusterName: string, otelParams: OtelParams): object[] {
         if (!obj?.spec) {
             throw `Unable to parse request.object.spec in AdmissionReview: ${obj}`;
         }
@@ -18,7 +18,7 @@ export class Patcher {
         this.unpatch(obj);
 
         // mutate
-        this.patch(cr, platforms, obj, podInfo, armId, armRegion, clusterName);
+        this.patch(cr, platforms, obj, podInfo, armId, armRegion, clusterName, otelParams);
 
         const jsonPatch: object[] = [
             // replace the entire root section with the mutated one
@@ -31,7 +31,7 @@ export class Patcher {
         return jsonPatch;
     }
 
-    private static patch(cr: InstrumentationCR, platforms: AutoInstrumentationPlatforms[], obj: IObjectType, podInfo: PodInfo, armId: string, armRegion: string, clusterName: string) {
+    private static patch(cr: InstrumentationCR, platforms: AutoInstrumentationPlatforms[], obj: IObjectType, podInfo: PodInfo, armId: string, armRegion: string, clusterName: string, otelParams: OtelParams) {
         if (cr) {
             const spec: ISpec = obj.spec;
             const podSpec: ISpec = spec.template.spec;
@@ -58,7 +58,7 @@ export class Patcher {
             podSpec.initContainers = (podSpec.initContainers ?? <IContainer[]>[]).concat(newInitContainers);
 
             // add new environment variables (used to configure agents)
-            const newEnvironmentVariables: IEnvironmentVariable[] = Mutations.GenerateEnvironmentVariables(podInfo, platforms, !enableApplicationLogs, cr.spec?.destination?.applicationInsightsConnectionString, armId, armRegion, clusterName);
+            const newEnvironmentVariables: IEnvironmentVariable[] = Mutations.GenerateEnvironmentVariables(podInfo, platforms, !enableApplicationLogs, cr.spec?.destination?.applicationInsightsConnectionString, armId, armRegion, clusterName, otelParams);
 
             podSpec.containers?.forEach(container => {
                 // hold all environment variables in a dictionary, both existing and new ones
@@ -146,7 +146,8 @@ export class Patcher {
 
         // remove environment variables and volume mounts from all containers by name
         // we don't care about values of environment variables here, we just need all names, so set parameters to get all of them
-        const environmentVariablesToRemove: IEnvironmentVariable[] = Mutations.GenerateEnvironmentVariables(new PodInfo(), allPlatforms, true, "", "", "", "");
+        const otelParams: OtelParams = { logsEnabled: true, metricsEnabled: true, logsPortHttpProtobuf: 0, metricsPortHttpProtobuf: 0 };
+        const environmentVariablesToRemove: IEnvironmentVariable[] = Mutations.GenerateEnvironmentVariables(new PodInfo(), allPlatforms, true, "", "", "", "", otelParams);
         const volumeMountsToRemove: IVolumeMount[] = Mutations.GenerateVolumeMounts(allPlatforms);
 
         podSpec.containers?.forEach(container => {

@@ -1,6 +1,6 @@
 ﻿import { Patcher } from "./Patcher.js";
 import { logger, RequestMetadata, HeartbeatMetrics } from "./LoggerWrapper.js";
-import { PodInfo, IAdmissionReview, InstrumentationCR, AutoInstrumentationPlatforms, DefaultInstrumentationCRName } from "./RequestDefinition.js";
+import { PodInfo, IAdmissionReview, InstrumentationCR, AutoInstrumentationPlatforms, DefaultInstrumentationCRName, OtelParams } from "./RequestDefinition.js";
 import { AdmissionReviewValidator } from "./AdmissionReviewValidator.js";
 import { InstrumentationCRsCollection } from "./InstrumentationCRsCollection.js";
 import { Mutations } from "./Mutations.js"
@@ -11,13 +11,15 @@ export class Mutator {
     private readonly clusterArmId: string;
     private readonly clusterArmRegion: string;
     private readonly operationId: string;
+    private readonly otelParams: OtelParams;
     private readonly requestMetadata: RequestMetadata;
 
-    public constructor(admissionReview: IAdmissionReview, crs: InstrumentationCRsCollection, clusterArmId: string, clusterArmRegion: string, operationId: string) {
+    public constructor(admissionReview: IAdmissionReview, crs: InstrumentationCRsCollection, clusterArmId: string, clusterArmRegion: string, operationId: string, otelParams: OtelParams) {
         this.admissionReview = admissionReview;
         this.crs = crs;
         this.clusterArmId = clusterArmId;
         this.clusterArmRegion = clusterArmRegion;
+        this.otelParams = otelParams;
         this.operationId = operationId;
         this.requestMetadata = new RequestMetadata(this.admissionReview?.request?.uid, this.crs);
     }
@@ -106,7 +108,8 @@ export class Mutator {
                 platforms,
                 this.clusterArmId,
                 this.clusterArmRegion,
-                clusterName);
+                clusterName,
+                this.otelParams);
 
             const patchDataString: string = JSON.stringify(patchData);
             logger.info(`Mutated a deployment, returning: ${patchDataString}`, this.operationId, this.requestMetadata);
@@ -170,7 +173,7 @@ export class Mutator {
             throw `Multiple specific CR names specified in instrumentation.opentelemetry.io/inject-* annotations, that is not supported.`;
         }
 
-        // remove this when we are ready to ship the inject-configuration annotation
+        // remove this when we are ready to ship the inject-configuration annotation //!!!
         if(injectConfigurationAnnotation) {
             throw `inject-configuration annotation is not supported yet, please use language-specific inject-* annotations instead.`;
         }

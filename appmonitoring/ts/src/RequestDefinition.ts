@@ -200,6 +200,13 @@ export class InstrumentationCR {
     }
 }
 
+export interface OtelParams {
+    logsEnabled: boolean;
+    metricsEnabled: boolean;
+    logsPortHttpProtobuf: number;
+    metricsPortHttpProtobuf: number;
+}
+
 export class ListResponse {
     metadata: {
         resourceVersion: string

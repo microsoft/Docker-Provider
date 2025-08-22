@@ -1,10 +1,17 @@
-﻿import { expect, describe, it } from "@jest/globals";
+import { expect, describe, it } from "@jest/globals";
 import { Mutator } from "Mutator.js";
-import { IAdmissionReview, IAnnotations, IMetadata, InstrumentationCR, AutoInstrumentationPlatforms, DefaultInstrumentationCRName, IInstrumentationState, IObjectType, InstrumentationAnnotationName } from "RequestDefinition.js";
+import { IAdmissionReview, IAnnotations, IMetadata, InstrumentationCR, AutoInstrumentationPlatforms, DefaultInstrumentationCRName, IInstrumentationState, IObjectType, InstrumentationAnnotationName, OtelParams } from "RequestDefinition.js";
 import { TestObject2, TestObject4, crs, clusterArmId, clusterArmRegion } from "tests/testConsts.js";
 import { logger } from "LoggerWrapper.js"
 import { InstrumentationCRsCollection } from "InstrumentationCRsCollection.js";
 import { meta } from "@typescript-eslint/eslint-plugin";
+
+const testOtelParams: OtelParams = {
+    logsEnabled: true,
+    metricsEnabled: true,
+    logsPortHttpProtobuf: 0,
+    metricsPortHttpProtobuf: 0
+};
 
 beforeEach(() => {
     logger.setUnitTestMode(true);
@@ -16,7 +23,7 @@ afterEach(() => {
 
 describe("Mutator", () => {
     it("Null admission review", async () => {
-        const result = JSON.parse(await new Mutator(null, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = JSON.parse(await new Mutator(null, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
 
         expect(result.response.allowed).toBe(true);
         expect(result.response.patchType).toBe("JSONPatch");
@@ -29,7 +36,7 @@ describe("Mutator", () => {
         const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject2));
         admissionReview.request.resource.resource = "Not a pod!";
 
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
 
         expect(result.response.allowed).toBe(true);
         expect(result.response.patchType).toBe("JSONPatch");
@@ -42,7 +49,7 @@ describe("Mutator", () => {
         const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject2));
         admissionReview.request.operation = "DELETE";
 
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
 
         expect(result.response.allowed).toBe(true);
         expect(result.response.patchType).toBe("JSONPatch");
@@ -99,7 +106,7 @@ describe("Mutator", () => {
         crs.Upsert(crDefault);
 
         // ACT
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
 
         // ASSERT
         expect(result.response.allowed).toBe(true);
@@ -153,7 +160,7 @@ describe("Mutator", () => {
         crs.Upsert(cr1);
 
         // ACT
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
 
         // ASSERT
         expect(result.response.allowed).toBe(true);
@@ -236,7 +243,7 @@ describe("Mutator", () => {
             admissionReview.request.object.spec.template.metadata = metadata;
 
             // ACT
-            const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+            const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
 
             // ASSERT
             expect(result.response.allowed).toBe(true);
@@ -329,7 +336,7 @@ describe("Mutator", () => {
             admissionReview.request.object.spec.template.metadata = <IMetadata><unknown>metadata;
 
             // ACT
-            const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+            const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
 
             // ASSERT
             expect(result.response.allowed).toBe(true);
@@ -433,7 +440,7 @@ describe("Mutator", () => {
             admissionReview.request.object.spec.template.metadata = <IMetadata><unknown>metadata;
 
             // ACT
-            const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+            const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
 
             // ASSERT
             expect(result.response.allowed).toBe(true);
@@ -492,7 +499,7 @@ describe("Mutator", () => {
         admissionReview.request.object.spec.template.metadata = metadata;
 
         // ACT
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
 
         // ASSERT
         expect(result.response.allowed).toBe(true);
@@ -548,7 +555,7 @@ describe("Mutator", () => {
         admissionReview.request.object.spec.template.metadata = metadata;
 
         // ACT
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
 
         // ASSERT
         expect(result.response.allowed).toBe(true);
@@ -612,7 +619,7 @@ describe("Mutator", () => {
         admissionReview.request.object.spec.template.metadata = metadata;
 
         // ACT
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
 
         // ASSERT
         expect(result.response.allowed).toBe(true);
@@ -690,7 +697,7 @@ describe("Mutator", () => {
         admissionReview.request.object.spec.template.metadata = metadata;
 
         // ACT
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
 
         // ASSERT
         expect(result.response.allowed).toBe(true);
@@ -772,7 +779,7 @@ describe("Mutator", () => {
         admissionReview.request.object.spec.template.metadata = metadata;
 
         // ACT
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
 
         // ASSERT
         expect(result.response.allowed).toBe(true);
@@ -854,7 +861,7 @@ describe("Mutator", () => {
         admissionReview.request.object.spec.template.metadata = metadata;
 
         // ACT
-        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
 
         // ASSERT
         expect(result.response.allowed).toBe(true);
@@ -913,7 +920,7 @@ describe("Mutator", () => {
             admissionReview.request.object.spec.template.metadata = metadata;
 
             // ACT
-            const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null).Mutate());
+            const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
 
             // ASSERT
             expect(result.response.allowed).toBe(true);

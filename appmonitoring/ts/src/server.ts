@@ -2,7 +2,7 @@
 import * as https from "https";
 import { Mutator } from "./Mutator.js";
 import { Events, HeartbeatMetrics, HeartbeatLogs, logger, RequestMetadata } from "./LoggerWrapper.js";
-import { InstrumentationCR, IAdmissionReview } from "./RequestDefinition.js";
+import { InstrumentationCR, IAdmissionReview, OtelParams } from "./RequestDefinition.js";
 import { K8sWatcher } from "./K8sWatcher.js";
 import { InstrumentationCRsCollection } from "./InstrumentationCRsCollection.js"
 import fs from "fs";
@@ -12,6 +12,12 @@ import { randomUUID } from 'crypto';
 const containerMode = process.env.CONTAINER_MODE;
 const clusterArmId = process.env.ARM_ID;
 const clusterArmRegion = process.env.ARM_REGION;
+const otelParams: OtelParams = {
+    logsEnabled: String(process.env.OTEL_LOGS_ENABLED).trim().toLowerCase() === "true",
+    metricsEnabled: String(process.env.OTEL_METRICS_ENABLED).trim().toLowerCase() === "true",
+    logsPortHttpProtobuf: Number(process.env.OTEL_LOGS_PORT_HTTPPROTOBUF) || 28331,
+    metricsPortHttpProtobuf: Number(process.env.OTEL_METRICS_PORT_HTTPPROTOBUF) || 28333
+};
 
 let operationId = randomUUID();
 
@@ -141,7 +147,7 @@ const server = https.createServer(options, (req, res) => {
                     throw `Unable to get request.uid from the incoming admission review`;
                 }
 
-                const mutator: Mutator = new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, operationId);
+                const mutator: Mutator = new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, operationId, otelParams);
                 const mutatedObject: string = await mutator.Mutate();
 
                 const end = Date.now();
