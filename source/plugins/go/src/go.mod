@@ -1,6 +1,6 @@
 module Docker-Provider/source/plugins/go/src
 
-go 1.23.8
+go 1.24.6
 
 require (
 	github.com/Microsoft/go-winio v0.6.1
