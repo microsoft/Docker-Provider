@@ -675,7 +675,7 @@ if [ $CLOUD_ENVIRONMENT == "usnat" ] || [ $CLOUD_ENVIRONMENT == "ussec" ] || [ "
     if [ -e "/etc/ama-logs-secret/PROXYCERT.crt" ]; then
       cp /etc/ama-logs-secret/PROXYCERT.crt /etc/pki/ca-trust/source/PROXYCERT.crt
     fi
-    update-ca-trust     
+    update-ca-trust
   else
     if [ $OS_ID != "ubuntu" ]; then
       echo "Error: The ID in /etc/os-release is not ubuntu or azurelinux. Defaulting to ubuntu."
