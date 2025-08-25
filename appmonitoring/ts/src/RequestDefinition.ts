@@ -140,10 +140,18 @@ export interface IObjectType {
     status: object;
 }
 
+export interface IFieldRef {
+    fieldPath: string;
+}
+
+export interface IEnvVarSource {
+    fieldRef?: IFieldRef;
+}
+
 export interface IEnvironmentVariable {
     name: string;
     value?: string;
-    valueFrom?: object;
+    valueFrom?: IEnvVarSource;
     doNotSet?: boolean; // indicates we shouldn't set this environment variable during mutation
     platformSpecific?: AutoInstrumentationPlatforms; // indicates this environment is platform-specific
 }
