@@ -173,14 +173,14 @@ export class Mutator {
             throw `Multiple specific CR names specified in instrumentation.opentelemetry.io/inject-* annotations, that is not supported.`;
         }
 
-        // remove this when we are ready to ship the inject-configuration annotation //!!!
-        if(injectConfigurationAnnotation) {
-            throw `inject-configuration annotation is not supported yet, please use language-specific inject-* annotations instead.`;
-        }
-
         // if there's a inject-configuration annotation, no language-specific annotations are allowed
         if(injectConfigurationAnnotation && injectLanguageSpecificAnnotationValues.filter(value => value).length > 0) {
             throw `Mix of language-specific instrumentation.opentelemetry.io/inject-* annotations with instrumentation.opentelemetry.io/inject-configuration annotation, that is not supported.`;
+        }
+
+        // if inject-configuration annotation is present (and not "false") and OTEL is disabled, throw an exception
+        if(injectConfigurationAnnotation && injectConfigurationAnnotation.toLowerCase() !== "false" && !this.shouldEnableOtelInjection()) {
+            throw `inject-configuration annotation is not supported when OTEL is disabled (logsEnabled=${this.otelParams.logsEnabled}, metricsEnabled=${this.otelParams.metricsEnabled}).`;
         }
 
         const crNameFromConfiguration: string = (injectConfigurationAnnotation?.toLowerCase() !== "true" && injectConfigurationAnnotation?.toLowerCase() !== "false") ? injectConfigurationAnnotation : null;
@@ -256,6 +256,14 @@ export class Mutator {
             platforms.push(AutoInstrumentationPlatforms.DotNet);
         }
 
+        if (injectConfigurationAnnotation && injectConfigurationAnnotation.toLowerCase() !== "false") {
+            // no platforms to add for auto-configure annotation
+        }
+
         return platforms;
+    }
+
+    private shouldEnableOtelInjection(): boolean {
+        return this.otelParams.logsEnabled || this.otelParams.metricsEnabled;
     }
 }
