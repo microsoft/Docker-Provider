@@ -68,6 +68,7 @@ stages:
   trigger: manual
   pool:
     name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-windows-2022
     os: windows
   jobs:
   - job: Job_1
@@ -170,6 +171,7 @@ stages:
   - SDLSources
   pool:
     name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-windows-2022
     os: windows
   jobs:
   - job: releaseGating
@@ -464,6 +466,7 @@ stages:
   trigger: manual
   pool:
     name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-windows-2022
     os: windows
   jobs:
   - job: Job_1
@@ -788,6 +791,7 @@ stages:
   - Stage_3
   pool:
     name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-windows-2022
     os: windows
   jobs:
   - job: Job_1
@@ -882,6 +886,7 @@ stages:
   dependsOn: []
   pool:
     name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-windows-2022
     os: windows
   jobs:
   - job: SDLSources_self
