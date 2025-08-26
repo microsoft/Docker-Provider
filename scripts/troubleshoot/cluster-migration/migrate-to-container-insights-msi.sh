@@ -49,6 +49,19 @@ check_prerequisites() {
         if [ "$identity_type" != "SystemAssigned" ] && [ "$identity_type" != "UserAssigned" ]; then
             echo "Current identity type: $identity_type (requires SystemAssigned or UserAssigned)" >&2
             echo "To migrate to managed identity, visit: https://learn.microsoft.com/en-us/azure/aks/use-managed-identity" >&2
+            echo "Please migrate to managed identity and then rerun this script" >&2
+            return 1
+        fi
+    elif [ "$cluster_type" = "arc" ]; then
+        local identity_type=$(az connectedk8s show -g "$resource_group" -n "$name" --query "identity.type" -o tsv)
+        if [ "$identity_type" != "SystemAssigned" ] && [ "$identity_type" != "UserAssigned" ]; then
+            echo "Current identity type: $identity_type (requires SystemAssigned or UserAssigned)" >&2
+            echo "Arc-enabled clusters require managed identity for monitoring. Current authentication method: Service Principal" >&2
+            echo "To use managed identity:" >&2
+            echo "1. Offboard monitoring" >&2
+            echo "2. Delete and re-register Arc connection using managed identity" >&2
+            echo "3. Re-onboard monitoring with the new identity" >&2
+            echo "Please migrate to managed identity and then rerun this script" >&2
             return 1
         fi
     fi
