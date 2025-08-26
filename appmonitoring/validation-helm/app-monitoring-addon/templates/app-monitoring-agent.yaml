@@ -310,6 +310,7 @@ spec:
               value: "{{ .Values.global.commonGlobals.Region }}"
           ports:
             - containerPort: 1337
+            - containerPort: 4000
           resources:
             requests:
               cpu: "{{ .Values.AppmonitoringAgent.cpuRequest }}"

@@ -1,5 +1,4 @@
-# docker build -t appmonitoring.azurecr.io/nodejs-caller-app:latest .
-# docker push appmonitoring.azurecr.io/nodejs-caller-app:latest 
+# docker buildx build --platform linux/amd64,linux/arm64 -t appmonitoring.azurecr.io/nodejs-caller-app:latest --push .
 
 FROM node:20
 

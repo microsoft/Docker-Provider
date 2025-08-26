@@ -1,0 +1,76 @@
+# http://<public ip>:3001/generate-load?iterations=5
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejs-instrumented-test-app
+  namespace: ns1
+  labels:
+    app: nodejs-instrumented-test-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodejs-instrumented-test-app
+  template:
+    metadata:
+      labels:
+        app: nodejs-instrumented-test-app
+      annotations:
+        #instrumentation.opentelemetry.io/inject-configuration: "true"
+    spec:
+      containers:
+      - name: nodejs-instrumented-test-app
+        image: appmonitoring.azurecr.io/demoaks-nodejs-instrumented-app:latest
+        imagePullPolicy: Always
+        env:
+        - name: OTEL_LOG_LEVEL
+          value: "verbose"
+        # Application configuration
+        - name: PORT
+          value: "3001"
+        # Node.js configuration
+        - name: NODE_ENV
+          value: "production"
+        ports:
+        - containerPort: 3001
+          name: http
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 3001
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodejs-instrumented-test-app-service
+  namespace: ns1
+  labels:
+    app: nodejs-instrumented-test-app
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 3001
+      protocol: TCP
+      targetPort: 3001
+      name: http
+  selector:
+    app: nodejs-instrumented-test-app

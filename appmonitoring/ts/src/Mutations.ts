@@ -1,4 +1,4 @@
-﻿import { AutoInstrumentationPlatforms, IContainer, IEnvironmentVariable, IVolume, IVolumeMount, PodInfo } from "./RequestDefinition.js";
+﻿import { AutoInstrumentationPlatforms, IContainer, IEnvironmentVariable, IVolume, IVolumeMount, PodInfo, OtelParams } from "./RequestDefinition.js";
 
 /**
  * Contains a collection of mutations necessary to add functionality to a Pod
@@ -165,11 +165,38 @@ export class Mutations {
     /**
      * Generates environment variables necessary to configure agents. Agents take configuration from these environment variables once they run.
      */
-    public static GenerateEnvironmentVariables(podInfo: PodInfo, platforms: AutoInstrumentationPlatforms[], disableAppLogs: boolean, connectionString: string, armId: string, armRegion: string, clusterName: string): IEnvironmentVariable[] {
+    public static GenerateEnvironmentVariables(podInfo: PodInfo, platforms: AutoInstrumentationPlatforms[], disableAppLogs: boolean, connectionString: string, armId: string, armRegion: string, clusterName: string, otelParams: OtelParams, existingEnvironmentVariables?: Record<string, IEnvironmentVariable>): IEnvironmentVariable[] {
         const ownerNameAttribute = `k8s.${podInfo.ownerKind?.toLowerCase()}.name=${podInfo.ownerName}`;
         const ownerUidAttribute = `k8s.${podInfo.ownerKind?.toLowerCase()}.uid=${podInfo.ownerUid}`;
         const containerNameAttribute = `k8s.container.name=${podInfo.onlyContainerName}`;
+        const applicationId = Mutations.parseApplicationIdFromConnectionString(connectionString);
+        
+        // Build our OTEL resource attributes
+        const otelResourceAttributesList = [
+            `cloud.resource_id=${armId}`,
+            `cloud.region=${armRegion}`,
+            `k8s.cluster.name=${clusterName}`,
+            `k8s.namespace.name=$(POD_NAMESPACE)`,
+            `k8s.node.name=$(NODE_NAME)`,
+            `k8s.pod.name=$(POD_NAME)`,
+            `k8s.pod.uid=$(POD_UID)`,
+            containerNameAttribute,
+            `cloud.provider=Azure`,
+            `cloud.platform=azure_aks`,
+            ownerNameAttribute,
+            ownerUidAttribute
+        ];
+        
+        if (applicationId) {
+            otelResourceAttributesList.push(`microsoft.applicationId=${applicationId}`);
+        }
+        
+        const otelResourceAttributes = otelResourceAttributesList.join(',');
 
+        // Check if there's an existing OTEL_RESOURCE_ATTRIBUTES and merge if needed
+        const existingOtelResourceAttributes = existingEnvironmentVariables?.["OTEL_RESOURCE_ATTRIBUTES"]?.value;
+        const mergedOtelResourceAttributes = Mutations.mergeOtelResourceAttributes(existingOtelResourceAttributes, otelResourceAttributes);
+        
         const returnValue: IEnvironmentVariable[] = [
             // Downward API environment variables must come first as they are referenced later
             {
@@ -204,22 +231,11 @@ export class Mutations {
                     }
                 }
             },
-
+                       
             // now we can reference Downward API values from environment variables above
             {
                 name: "OTEL_RESOURCE_ATTRIBUTES",
-                value: `cloud.resource_id=${armId},\
-cloud.region=${armRegion},\
-k8s.cluster.name=${clusterName},\
-k8s.namespace.name=$(POD_NAMESPACE),\
-k8s.node.name=$(NODE_NAME),\
-k8s.pod.name=$(POD_NAME),\
-k8s.pod.uid=$(POD_UID),\
-${containerNameAttribute},\
-cloud.provider=Azure,\
-cloud.platform=azure_aks,\
-${ownerNameAttribute},\
-${ownerUidAttribute}`
+                value: mergedOtelResourceAttributes
             },
             {
                 name: "AKS_ARM_NAMESPACE_ID",
@@ -228,8 +244,70 @@ ${ownerUidAttribute}`
             {
                 name: "APPLICATIONINSIGHTS_CONNECTION_STRING",
                 value: connectionString
-            },
+            },           
         ];
+
+        // OTEL environment variables
+
+        if (otelParams.logsEnabled || otelParams.metricsEnabled) {
+            returnValue.push(
+                {
+                    name: "OTEL_ENDPOINT_NODE_IP",
+                    valueFrom: {
+                        fieldRef: {
+                            fieldPath: "status.hostIP"
+                        }
+                    }
+                }
+            );
+        }
+
+        if (otelParams.logsEnabled) {
+            returnValue.push(
+                {
+                    name: "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", //!!! http -> https
+                    value: `http://$(OTEL_ENDPOINT_NODE_IP):${otelParams.logsPortHttpProtobuf}/v1/traces`
+                },
+                {
+                    name: "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL", //!!!
+                    value: "http/protobuf"
+                },
+                {
+                    name: "OTEL_EXPORTER_OTLP_TRACES_INSECURE", //!!!
+                    value: "true"
+                },
+
+                {
+                    name: "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", //!!! http -> https
+                    value: `http://$(OTEL_ENDPOINT_NODE_IP):${otelParams.logsPortHttpProtobuf}/v1/logs`
+                },
+                {
+                    name: "OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", //!!!
+                    value: "http/protobuf"
+                },
+                {
+                    name: "OTEL_EXPORTER_OTLP_LOGS_INSECURE", //!!!
+                    value: "true"
+                },
+            );
+        }
+
+        if (otelParams.metricsEnabled) {
+            returnValue.push(
+                {
+                    name: "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", //!!! http -> https
+                    value: `http://$(OTEL_ENDPOINT_NODE_IP):${otelParams.metricsPortHttpProtobuf}/v1/metrics`
+                },
+                {
+                    name: "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL", //!!!
+                    value: "http/protobuf"
+                },
+                {
+                    name: "OTEL_EXPORTER_OTLP_METRICS_INSECURE", //!!!
+                    value: "true"
+                },
+            );
+        }
 
         // platform-specific environment variables
         for (let i = 0; i < platforms.length; i++) {
@@ -472,5 +550,69 @@ ${ownerUidAttribute}`
             default:
                 throw `Unsupported platform in generateImagePath(): ${platform}`;
         }
+    }
+
+    private static parseApplicationIdFromConnectionString(connectionString: string): string | null {
+        if (!connectionString) {
+            return null;
+        }
+
+        // Split the connection string by semicolons to get individual key-value pairs
+        const parts = connectionString.split(';');
+
+        for (const part of parts) {
+            const trimmedPart = part.trim();
+            if (trimmedPart.toLowerCase().startsWith('applicationid=')) {
+                const applicationId = trimmedPart.substring('applicationid='.length).trim();
+                return applicationId || null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Merges OTEL resource attributes, with our attributes taking precedence over existing ones
+     */
+    private static mergeOtelResourceAttributes(existingValue: string, newAttributes: string): string {
+        if (!existingValue) {
+            return newAttributes;
+        }
+        
+        // Parse existing attributes into a map
+        const existingAttributes: Record<string, string> = {};
+        const existingPairs = existingValue.split(',');
+        
+        for (const pair of existingPairs) {
+            const trimmedPair = pair.trim();
+            if (trimmedPair) {
+                const [key, ...valueParts] = trimmedPair.split('=');
+                if (key && valueParts.length > 0) {
+                    existingAttributes[key.trim()] = valueParts.join('=').trim();
+                }
+            }
+        }
+        
+        // Parse new attributes into a map
+        const newAttributesMap: Record<string, string> = {};
+        const newPairs = newAttributes.split(',');
+        
+        for (const pair of newPairs) {
+            const trimmedPair = pair.trim();
+            if (trimmedPair) {
+                const [key, ...valueParts] = trimmedPair.split('=');
+                if (key && valueParts.length > 0) {
+                    newAttributesMap[key.trim()] = valueParts.join('=').trim();
+                }
+            }
+        }
+        
+        // Merge attributes with our attributes taking precedence
+        const mergedAttributes = { ...existingAttributes, ...newAttributesMap };
+        
+        // Convert back to string
+        return Object.entries(mergedAttributes)
+            .map(([key, value]) => `${key}=${value}`)
+            .join(',');
     }
 }

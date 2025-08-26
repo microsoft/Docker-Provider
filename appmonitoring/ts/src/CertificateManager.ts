@@ -1,5 +1,5 @@
 import * as k8s from '@kubernetes/client-node';
-import { CertificateStoreName, KubeSystemNamespaceName, WebhookDNSEndpoint, WebhookDeploymentName, MutatingWebhookConfigurationName, CertificateInstallerJobName } from './Constants.js'
+import { CertificateStoreName, KubeSystemNamespaceName, WebhookDNSEndpoint, WebhookDeploymentName, MutatingWebhookConfigurationName, CertificateInstallerJobName } from './AppConstants.js'
 import forge from 'node-forge';
 import { logger, RequestMetadata } from './LoggerWrapper.js';
 
