@@ -43,8 +43,15 @@ check_prerequisites() {
     local resource_group=$2
     local name=$3
 
-    # 1. Check if cluster uses managed identity
     if [ "$cluster_type" = "aks" ]; then
+        # 1. Check AKS cluster health first
+        local provisioning_state=$(az aks show -g "$resource_group" -n "$name" --query "provisioningState" -o tsv)
+        if [ "$provisioning_state" != "Succeeded" ]; then
+            echo "Cluster not ready (current state: $provisioning_state)" >&2
+            return 1
+        fi
+
+        # 2. Check if cluster uses managed identity
         local identity_type=$(az aks show -g "$resource_group" -n "$name" --query "identity.type" -o tsv)
         if [ "$identity_type" != "SystemAssigned" ] && [ "$identity_type" != "UserAssigned" ]; then
             echo "Current identity type: $identity_type (requires SystemAssigned or UserAssigned)" >&2
@@ -52,7 +59,27 @@ check_prerequisites() {
             echo "Please migrate to managed identity and then rerun this script" >&2
             return 1
         fi
+
+        # 3. Check if monitoring is already using MSI
+        local auth_mode=$(az aks show -g "$resource_group" -n "$name" --query "addonProfiles.omsagent.config.useAADAuth" -o tsv)
+        if [ "$auth_mode" = "true" ]; then
+            echo "Monitoring already using MSI authentication" >&2
+            return 1
+        fi
+    
     elif [ "$cluster_type" = "arc" ]; then
+        # 1. Check Arc extension health first
+        local extension_state=$(az k8s-extension show --name azuremonitor-containers \
+                              --cluster-name "$name" \
+                              --resource-group "$resource_group" \
+                              --cluster-type connectedClusters \
+                              --query "provisioningState" -o tsv)
+        if [ "$extension_state" != "Succeeded" ]; then
+            echo "Container insights extension not ready (current state: $extension_state)" >&2
+            return 1
+        fi
+
+        # 2. Check if cluster uses managed identity
         local identity_type=$(az connectedk8s show -g "$resource_group" -n "$name" --query "identity.type" -o tsv)
         if [ "$identity_type" != "SystemAssigned" ] && [ "$identity_type" != "UserAssigned" ]; then
             echo "Current identity type: $identity_type (requires SystemAssigned or UserAssigned)" >&2
@@ -64,22 +91,15 @@ check_prerequisites() {
             echo "Please migrate to managed identity and then rerun this script" >&2
             return 1
         fi
-    fi
 
-    # 2. Check if monitoring is already using MSI
-    if [ "$cluster_type" = "aks" ]; then
-        local auth_mode=$(az aks show -g "$resource_group" -n "$name" --query "addonProfiles.omsagent.config.useAADAuth" -o tsv)
-        if [ "$auth_mode" = "true" ]; then
+        # 3. Check if using MSI authentication
+        local use_aad_auth=$(az k8s-extension show --name azuremonitor-containers \
+                            --cluster-name "$name" \
+                            --resource-group "$resource_group" \
+                            --cluster-type connectedClusters \
+                            --query "configurationSettings.\"amalogs.useAADAuth\"" -o tsv)
+        if [ "$use_aad_auth" = "true" ]; then
             echo "Monitoring already using MSI authentication" >&2
-            return 1
-        fi
-    fi
-
-    # 3. Check cluster health
-    if [ "$cluster_type" = "aks" ]; then
-        local provisioning_state=$(az aks show -g "$resource_group" -n "$name" --query "provisioningState" -o tsv)
-        if [ "$provisioning_state" != "Succeeded" ]; then
-            echo "Cluster not ready (current state: $provisioning_state)" >&2
             return 1
         fi
     fi
