@@ -33,7 +33,7 @@ usage() {
     echo "  -s : Comma-separated list of subscription IDs"
     echo "  -c : Comma-separated list of cluster types (aks,arc)"
     echo "Example:"
-    echo "  $0 -s \"sub1,sub2\" -c \"aks,arc\""
+    echo "  $0 -s \"subId1,subId2\" -c \"aks,arc\""
     exit 1
 }
 
@@ -234,6 +234,13 @@ command -v az > /dev/null || {
     echo "[Error] Azure CLI not found. Please install Azure CLI"
     exit 1
 }
+
+# Check Azure CLI version
+az_version=$(az version --query \"azure-cli\" -o tsv)
+if [ "$(printf '%s\n' "2.49.0" "$az_version" | sort -V | head -n1)" != "2.49.0" ]; then
+    echo "[Error] Azure CLI version must be 2.49.0 or higher (current version: $az_version)"
+    exit 1
+fi
 
 # Check login status and verify subscriptions
 az account show > /dev/null || {
