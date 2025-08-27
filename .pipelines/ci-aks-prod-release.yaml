@@ -182,7 +182,7 @@ extends:
     - stage: Stage_2
       displayName: Push Linux and Windows Agent
       dependsOn:
-      - SDLSources
+      - SDL_Analysis
       pool:
         name: Azure-Pipelines-CI-Test-EO
         image: ci-1es-managed-ubuntu-2204
@@ -894,7 +894,7 @@ extends:
           target:
             container: host
           continueOnError: true
-    - stage: SDLSources
+    - stage: SDL_Analysis
       displayName: "\U0001F512 SDLSources"
       isSkippable: false
       dependsOn: []
