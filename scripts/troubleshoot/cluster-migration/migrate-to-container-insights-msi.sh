@@ -1,7 +1,8 @@
 #!/bin/bash
 #
 # Script to migrate container insights monitoring to managed identity authentication
-#
+# For network and firewall endpoints setup, refer to following doc for detailed configuration:
+# https://learn.microsoft.com/en-us/azure/azure-monitor/containers/kubernetes-monitoring-firewall
 # High Level Steps:
 # 1. Prerequisites Check:
 #    - Validate Azure CLI and login status
