@@ -1051,7 +1051,7 @@ extends:
           inputs:
             repoId: microsoft/Docker-Provider
             path: autobaselining_mode_and_sdl_breakglass_checks.py
-        - task: PublishPipelineArtifact@1
+        - task: 1ES.PublishPipelineArtifact@1
           displayName: Publish new tools list (1ES PT)
           condition: and( succeeded(), true, ne('', variables['OneES_AutoBaseline_MetadataFolder']) )
           continueOnError: true
