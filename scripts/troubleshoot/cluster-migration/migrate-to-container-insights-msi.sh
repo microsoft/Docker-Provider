@@ -60,7 +60,14 @@ check_prerequisites() {
             return 1
         fi
 
-        # 3. Check if monitoring is already using MSI
+        # 3. Check if monitoring is enabled
+        local monitoring_enabled=$(az aks show -g "$resource_group" -n "$name" --query "addonProfiles.omsagent.enabled" -o tsv)
+        if [ "$monitoring_enabled" != "true" ]; then
+            echo "Container insights not enabled on this cluster" >&2
+            return 1
+        fi
+
+        # 4. Check if monitoring is already using MSI
         local auth_mode=$(az aks show -g "$resource_group" -n "$name" --query "addonProfiles.omsagent.config.useAADAuth" -o tsv)
         if [ "$auth_mode" = "true" ]; then
             echo "Monitoring already using MSI authentication" >&2
@@ -68,14 +75,10 @@ check_prerequisites() {
         fi
     
     elif [ "$cluster_type" = "arc" ]; then
-        # 1. Check Arc extension health first
-        local extension_state=$(az k8s-extension show --name azuremonitor-containers \
-                              --cluster-name "$name" \
-                              --resource-group "$resource_group" \
-                              --cluster-type connectedClusters \
-                              --query "provisioningState" -o tsv)
-        if [ "$extension_state" != "Succeeded" ]; then
-            echo "Container insights extension not ready (current state: $extension_state)" >&2
+        # 1. Check Arc cluster health first
+        local cluster_state=$(az connectedk8s show -g "$resource_group" -n "$name" --query "provisioningState" -o tsv)
+        if [ "$cluster_state" != "Succeeded" ]; then
+            echo "Arc cluster not ready (current state: $cluster_state)" >&2
             return 1
         fi
 
@@ -92,7 +95,22 @@ check_prerequisites() {
             return 1
         fi
 
-        # 3. Check if using MSI authentication
+        # 3. Check if extension exists and its state
+        local extension_exists=$(az k8s-extension show --name azuremonitor-containers \
+                              --cluster-name "$name" \
+                              --resource-group "$resource_group" \
+                              --cluster-type connectedClusters 2>/dev/null)
+        if [ -z "$extension_exists" ]; then
+            echo "Container insights extension not installed" >&2
+            return 1
+        fi
+        local extension_state=$(echo "$extension_exists" | jq -r '.provisioningState')
+        if [ "$extension_state" != "Succeeded" ]; then
+            echo "Container insights extension not ready (current state: $extension_state)" >&2
+            return 1
+        fi
+
+        # 4. Check if already using MSI authentication
         local use_aad_auth=$(az k8s-extension show --name azuremonitor-containers \
                             --cluster-name "$name" \
                             --resource-group "$resource_group" \
