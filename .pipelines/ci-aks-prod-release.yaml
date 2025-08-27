@@ -67,8 +67,8 @@ extends:
   parameters:
     pool:
       name: Azure-Pipelines-CI-Test-EO
-      image: ci-1es-managed-ubuntu-2204
-      os: linux
+      image: ci-1es-managed-windows-2022
+      os: windows
     sdl:
       sourceAnalysisPool:
         name: Azure-Pipelines-CI-Test-EO
@@ -82,8 +82,8 @@ extends:
       trigger: manual
       pool:
         name: Azure-Pipelines-CI-Test-EO
-        image: ci-1es-managed-ubuntu-2204
-        os: linux
+        image: ci-1es-managed-windows-2022
+        os: windows
       jobs:
       - job: Job_1
         displayName: Agent job
@@ -185,8 +185,8 @@ extends:
       - SDL_Analysis
       pool:
         name: Azure-Pipelines-CI-Test-EO
-        image: ci-1es-managed-ubuntu-2204
-        os: linux
+        image: ci-1es-managed-windows-2022
+        os: windows
       jobs:
       - job: releaseGating
         displayName: Release Gating
@@ -480,8 +480,8 @@ extends:
       trigger: manual
       pool:
         name: Azure-Pipelines-CI-Test-EO
-        image: ci-1es-managed-ubuntu-2204
-        os: linux
+        image: ci-1es-managed-windows-2022
+        os: windows
       jobs:
       - job: Job_1
         displayName: Agent job
@@ -805,8 +805,8 @@ extends:
       - Stage_3
       pool:
         name: Azure-Pipelines-CI-Test-EO
-        image: ci-1es-managed-ubuntu-2204
-        os: linux
+        image: ci-1es-managed-windows-2022
+        os: windows
       jobs:
       - job: Job_1
         displayName: Agent job
@@ -900,8 +900,8 @@ extends:
       dependsOn: []
       pool:
         name: Azure-Pipelines-CI-Test-EO
-        image: ci-1es-managed-ubuntu-2204
-        os: linux
+        image: ci-1es-managed-windows-2022
+        os: windows
       jobs:
       - job: SDLSources_self
         displayName: SDL Sources Analysis (self)
