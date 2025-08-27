@@ -6,6 +6,7 @@ This is a sample Node.js application instrumented with the latest OpenTelemetry 
 
 - **OpenTelemetry Instrumentation**: Comprehensive tracing and metrics collection
 - **Auto-Instrumentation**: Automatic instrumentation for HTTP, Express, Winston, and other popular libraries
+- **Resource Attributes**: Respects `OTEL_RESOURCE_ATTRIBUTES` environment variable automatically via the OpenTelemetry Node.js SDK
 - **Custom Spans**: Manual span creation for business logic
 - **Custom Metrics**: Counter, histogram, and gauge metrics
 - **Distributed Tracing**: Correlation IDs in logs and proper trace propagation
@@ -35,6 +36,7 @@ This is a sample Node.js application instrumented with the latest OpenTelemetry 
 - `OTEL_SERVICE_NAME`: Service name (default: nodejs-instrumented-test-app)
 - `OTEL_SERVICE_VERSION`: Service version (default: 1.0.0)
 - `OTEL_ENVIRONMENT`: Deployment environment (default: development)
+- `OTEL_RESOURCE_ATTRIBUTES`: Additional resource attributes (comma-separated key=value pairs)
 - `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`: OTLP traces endpoint (default: http://localhost:4318/v1/traces)
 - `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT`: OTLP metrics endpoint (default: http://localhost:4318/v1/metrics)
 - `OTEL_LOG_LEVEL`: OpenTelemetry log level (default: info)
@@ -103,6 +105,7 @@ docker build -t nodejs-instrumented-test-app .
 ```bash
 docker run -p 3001:3001 \
   -e OTEL_EXPORTER_OTLP_TRACES_ENDPOINT=http://host.docker.internal:4318/v1/traces \
+  -e OTEL_RESOURCE_ATTRIBUTES="deployment.environment=production,service.version=1.0.0" \
   nodejs-instrumented-test-app
 ```
 
@@ -225,6 +228,19 @@ const traceExporter = new AzureMonitorTraceExporter({
 - Sampling can be configured to reduce trace volume in production
 - Batch processing reduces the frequency of exports
 - Resource attributes are set once at startup to avoid overhead
+
+## Architecture
+
+### Resource Attributes Handling
+
+The Node.js OpenTelemetry SDK automatically respects the `OTEL_RESOURCE_ATTRIBUTES` environment variable using the built-in resource detection system. This includes:
+
+1. **Environment Variable Detection**: The `EnvDetector` automatically parses `OTEL_RESOURCE_ATTRIBUTES` and includes all specified attributes in the resource
+2. **Standard Attribute Support**: Standard OpenTelemetry environment variables like `OTEL_SERVICE_NAME` are automatically detected
+3. **Automatic Merging**: Custom attributes from `OTEL_RESOURCE_ATTRIBUTES` are merged with service information and system-detected attributes (process, host information)
+4. **Universal Application**: These resource attributes are automatically attached to all traces, metrics, and logs exported by the application
+
+This ensures that metadata like deployment environment, service version, team ownership, and custom business attributes are consistently applied across all telemetry data without requiring code changes.
 
 ## Security Considerations
 
