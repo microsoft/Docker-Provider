@@ -31,7 +31,6 @@ import (
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/gorilla/mux"
@@ -84,11 +83,11 @@ func initOpenTelemetry(ctx context.Context) (*sdkmetric.MeterProvider, *sdktrace
 	// Create resource with service information
 	// resource.WithFromEnv() automatically handles OTEL_RESOURCE_ATTRIBUTES
 	res, err := resource.New(ctx,
-		resource.WithAttributes(
-			semconv.ServiceName(serviceName),
-			semconv.ServiceVersion(serviceVersion),
-			attribute.String("deployment.environment", environment),
-		),
+		// resource.WithAttributes(
+		// 	//semconv.ServiceName(serviceName),
+		// 	//semconv.ServiceVersion(serviceVersion),
+		// 	attribute.String("deployment.environment", environment),
+		// ),
 		resource.WithFromEnv(), // This automatically reads OTEL_RESOURCE_ATTRIBUTES
 		resource.WithProcessPID(),
 		resource.WithProcessExecutableName(),
