@@ -1,5 +1,5 @@
 // Import instrumentation first - this must be at the top
-require('./instrumentation');
+const { sdk, loggerOtel } = require('./instrumentation');
 
 // OpenTelemetry API imports
 const { trace, metrics, context, SpanStatusCode } = require('@opentelemetry/api');
@@ -73,6 +73,34 @@ app.use((req, res, next) => {
     };
     
     cowsSoldCounter.add(1, { cow_type: 'Holstein', endpoint: process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT, protocol: process.env.OTEL_EXPORTER_OTLP_METRICS_PROTOCOL });
+    
+    // Emit a span for the cow sold event
+    const cowSpan = tracer.startSpan('cow_sold_once');
+    cowSpan.setAttributes({
+      'cow.type': 'Holstein',
+      'cow.endpoint': process.env.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT,
+      'cow.protocol': process.env.OTEL_EXPORTER_OTLP_TRACES_PROTOCOL,
+      'http.method': req.method,
+      'http.route': req.route?.path || req.path,
+      'http.status_code': res.statusCode
+    });
+    cowSpan.addEvent('Cow sold successfully');
+    cowSpan.end();
+
+    loggerOtel?.emit({
+      severityNumber: logsAPI.SeverityNumber.INFO,
+      severityText: 'INFO',
+      body: 'cow_sold_log',
+      attributes: {
+        'cow.type': 'Holstein',
+        'cow.endpoint': process.env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT,
+        'cow.protocol': process.env.OTEL_EXPORTER_OTLP_LOGS_PROTOCOL,
+        'http.method': req.method,
+        'http.route': req.route?.path || req.path,
+        'http.status_code': res.statusCode
+      }
+    });
+
     requestCounter.add(1, labels);
     requestDuration.record(duration, labels);
     

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	stdlog "log"
 	"math/rand"
 	"net/http"
 	"os"
@@ -17,23 +17,30 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/log"
+	"go.opentelemetry.io/otel/log/global"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/propagation"
+	sdklog "go.opentelemetry.io/otel/sdk/log"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/gorilla/mux"
-	"github.com/sirupsen/logrus"
 )
 
 var (
 	// OpenTelemetry instruments
 	tracer trace.Tracer
 	meter  metric.Meter
+	logger log.Logger
 
 	// Custom metrics (same as nodejs-instrumented)
 	httpRequestsTotal   metric.Int64Counter
@@ -51,8 +58,10 @@ var (
 	// OTLP configuration
 	metricsEndpoint = getEnv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "http://localhost:56682")
 	metricsProtocol = getEnv("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL", "http/protobuf")
-
-	logger *logrus.Logger
+	tracesEndpoint  = getEnv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "http://localhost:56682")
+	tracesProtocol  = getEnv("OTEL_EXPORTER_OTLP_TRACES_PROTOCOL", "http/protobuf")
+	logsEndpoint    = getEnv("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", "http://localhost:56682")
+	logsProtocol    = getEnv("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", "http/protobuf")
 )
 
 func getEnv(key, defaultValue string) string {
@@ -62,27 +71,87 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-// initOpenTelemetry initializes OpenTelemetry with configurable OTLP exporter
-func initOpenTelemetry(ctx context.Context) (*sdkmetric.MeterProvider, error) {
+// initOpenTelemetry initializes OpenTelemetry with configurable OTLP exporters
+func initOpenTelemetry(ctx context.Context) (*sdkmetric.MeterProvider, *sdktrace.TracerProvider, *sdklog.LoggerProvider, error) {
 	fmt.Printf("OpenTelemetry Metrics Endpoint: %s\n", metricsEndpoint)
 	fmt.Printf("OpenTelemetry Metrics Protocol: %s\n", metricsProtocol)
+	fmt.Printf("OpenTelemetry Traces Endpoint: %s\n", tracesEndpoint)
+	fmt.Printf("OpenTelemetry Traces Protocol: %s\n", tracesProtocol)
+	fmt.Printf("OpenTelemetry Logs Endpoint: %s\n", logsEndpoint)
+	fmt.Printf("OpenTelemetry Logs Protocol: %s\n", logsProtocol)
 
 	// Create resource with service information
 	// resource.WithFromEnv() automatically handles OTEL_RESOURCE_ATTRIBUTES
 	res, err := resource.New(ctx,
-		resource.WithAttributes(
-			semconv.ServiceName(serviceName),
-			semconv.ServiceVersion(serviceVersion),
-			attribute.String("deployment.environment", environment),
-		),
+		// resource.WithAttributes(
+		// 	//semconv.ServiceName(serviceName),
+		// 	//semconv.ServiceVersion(serviceVersion),
+		// 	attribute.String("deployment.environment", environment),
+		// ),
 		resource.WithFromEnv(), // This automatically reads OTEL_RESOURCE_ATTRIBUTES
 		resource.WithProcessPID(),
 		resource.WithProcessExecutableName(),
 		resource.WithProcessCommandArgs(),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create resource: %w", err)
+		return nil, nil, nil, fmt.Errorf("failed to create resource: %w", err)
 	}
+
+	// Initialize Trace Provider
+	var traceProvider *sdktrace.TracerProvider
+
+	// Create OTLP trace exporter based on protocol
+	if tracesProtocol == "grpc" {
+		// For gRPC, we need to remove the http:// prefix and /v1/traces path
+		endpoint := tracesEndpoint
+		endpoint = strings.TrimPrefix(endpoint, "http://")
+		endpoint = strings.TrimPrefix(endpoint, "https://")
+		endpoint = strings.TrimSuffix(endpoint, "/v1/traces")
+
+		fmt.Printf("Attempting gRPC trace connection to: %s\n", endpoint)
+		traceExporter, err := otlptracegrpc.New(ctx,
+			otlptracegrpc.WithEndpoint(endpoint),
+			otlptracegrpc.WithInsecure(),
+		)
+		if err != nil {
+			fmt.Printf("Failed to create gRPC OTLP trace exporter: %v\n", err)
+			fmt.Println("Using no-op trace provider")
+			traceProvider = sdktrace.NewTracerProvider(sdktrace.WithResource(res))
+		} else {
+			fmt.Println("Using gRPC protocol for OTLP traces export")
+			traceProvider = sdktrace.NewTracerProvider(
+				sdktrace.WithResource(res),
+				sdktrace.WithBatcher(traceExporter),
+			)
+		}
+	} else if tracesProtocol == "http/protobuf" {
+		// For HTTP, remove /v1/traces if present (the exporter adds it automatically)
+		endpoint := tracesEndpoint
+		endpoint = strings.TrimSuffix(endpoint, "/v1/traces")
+
+		fmt.Printf("Attempting HTTP trace connection to: %s\n", endpoint)
+		traceExporter, err := otlptracehttp.New(ctx,
+			otlptracehttp.WithEndpointURL(endpoint),
+			otlptracehttp.WithInsecure(),
+		)
+		if err != nil {
+			fmt.Printf("Failed to create HTTP OTLP trace exporter: %v\n", err)
+			fmt.Println("Using no-op trace provider")
+			traceProvider = sdktrace.NewTracerProvider(sdktrace.WithResource(res))
+		} else {
+			fmt.Println("Using HTTP/Protobuf protocol for OTLP traces export")
+			traceProvider = sdktrace.NewTracerProvider(
+				sdktrace.WithResource(res),
+				sdktrace.WithBatcher(traceExporter),
+			)
+		}
+	} else {
+		fmt.Printf("Unsupported OTLP traces protocol: %s, using no-op provider\n", tracesProtocol)
+		traceProvider = sdktrace.NewTracerProvider(sdktrace.WithResource(res))
+	}
+
+	// Set global trace provider
+	otel.SetTracerProvider(traceProvider)
 
 	// Try to create OTLP metric exporter, fall back to no-op if it fails
 	var metricExporter sdkmetric.Exporter
@@ -150,14 +219,63 @@ func initOpenTelemetry(ctx context.Context) (*sdkmetric.MeterProvider, error) {
 	// Set global propagator
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
-	return meterProvider, nil
+	// Initialize Log Provider
+	var logProvider *sdklog.LoggerProvider
+
+	// Create OTLP log exporter based on protocol
+	if logsProtocol == "grpc" {
+		// For gRPC, we need to remove the http:// prefix and add port if needed
+		endpoint := logsEndpoint
+		endpoint = strings.TrimPrefix(endpoint, "http://")
+		endpoint = strings.TrimPrefix(endpoint, "https://")
+		if !strings.Contains(endpoint, ":") {
+			endpoint = endpoint + ":4317"
+		}
+
+		logExporter, err := otlploggrpc.New(ctx,
+			otlploggrpc.WithEndpoint(endpoint),
+			otlploggrpc.WithInsecure(),
+		)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to create OTLP log gRPC exporter: %w", err)
+		}
+
+		processor := sdklog.NewBatchProcessor(logExporter)
+		logProvider = sdklog.NewLoggerProvider(
+			sdklog.WithProcessor(processor),
+			sdklog.WithResource(res),
+		)
+	} else {
+		// Default to HTTP
+		logExporter, err := otlploghttp.New(ctx,
+			//otlploghttp.WithEndpointURL(logsEndpoint),
+			otlploghttp.WithInsecure(),
+		)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to create OTLP log HTTP exporter: %w", err)
+		}
+
+		processor := sdklog.NewBatchProcessor(logExporter)
+		logProvider = sdklog.NewLoggerProvider(
+			sdklog.WithProcessor(processor),
+			sdklog.WithResource(res),
+		)
+
+		stdlog.Printf("Logs exporter is set for HTTP. logsEndpoint is %s", logsEndpoint)
+	}
+
+	// Set global logger provider
+	global.SetLoggerProvider(logProvider)
+
+	return meterProvider, traceProvider, logProvider, nil
 }
 
-// initMetrics initializes custom metrics
+// initMetrics initializes custom metrics and logger
 func initMetrics() error {
-	// Get tracer and meter instances
+	// Get tracer, meter, and logger instances
 	tracer = otel.Tracer(serviceName, trace.WithInstrumentationVersion(serviceVersion))
 	meter = otel.Meter(serviceName, metric.WithInstrumentationVersion(serviceVersion))
+	logger = global.GetLoggerProvider().Logger(serviceName, log.WithInstrumentationVersion(serviceVersion))
 
 	var err error
 
@@ -187,16 +305,6 @@ func initMetrics() error {
 	}
 
 	return nil
-}
-
-// setupLogger initializes the logger
-func setupLogger() {
-	logger = logrus.New()
-	logger.SetLevel(logrus.DebugLevel)
-	logger.SetFormatter(&logrus.TextFormatter{
-		TimestampFormat: time.RFC3339,
-		FullTimestamp:   true,
-	})
 }
 
 // metricsMiddleware tracks request metrics
@@ -230,6 +338,29 @@ func metricsMiddleware(next http.Handler) http.Handler {
 			attribute.String("protocol", metricsProtocol),
 		))
 
+		// Create a custom span for cow sold tracking
+		ctx := r.Context()
+		_, callSpan := tracer.Start(ctx, "cow-sold-once")
+		defer callSpan.End()
+		// Add custom attributes
+		callSpan.SetAttributes(
+			attribute.String("cow_type", "Holstein"),
+			attribute.String("endpoint", tracesEndpoint),
+			attribute.String("protocol", tracesProtocol),
+		)
+
+		record := log.Record{}
+		record.SetSeverity(log.SeverityError)
+		record.SetBody(log.StringValue("cow-sold-once-log"))
+		record.AddAttributes(
+			log.String("cow_type", "Holstein"),
+			log.String("endpoint", logsEndpoint),
+			log.String("protocol", logsProtocol),
+		)
+		logger.Emit(ctx, record)
+
+		stdlog.Printf("Logs emitted")
+
 		// Record error metrics for 4xx and 5xx status codes
 		if wrappedWriter.statusCode >= 400 {
 			httpErrorsTotal.Add(r.Context(), 1, metric.WithAttributes(labels...))
@@ -254,6 +385,18 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	span := trace.SpanFromContext(ctx)
 
+	// Log incoming request
+	record := log.Record{}
+	record.SetSeverity(log.SeverityInfo)
+	record.SetBody(log.StringValue("Root endpoint accessed"))
+	record.AddAttributes(
+		log.String("method", r.Method),
+		log.String("path", r.URL.Path),
+		log.String("user_agent", r.Header.Get("User-Agent")),
+		log.String("remote_addr", r.RemoteAddr),
+	)
+	logger.Emit(ctx, record)
+
 	// Add custom span attributes
 	span.SetAttributes(
 		attribute.String("http.user_agent", r.Header.Get("User-Agent")),
@@ -261,16 +404,13 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		attribute.String("custom.endpoint", r.URL.Path),
 	)
 
-	logger.WithFields(logrus.Fields{
-		"trace_id": span.SpanContext().TraceID().String(),
-		"span_id":  span.SpanContext().SpanID().String(),
-	}).Info("Go instrumented application is running!")
-
 	response := map[string]interface{}{
 		"message":   "Go instrumented application is running!",
 		"timestamp": time.Now().UTC().Format(time.RFC3339),
 		"service":   serviceName,
 		"version":   serviceVersion,
+		"trace_id":  span.SpanContext().TraceID().String(),
+		"span_id":   span.SpanContext().SpanID().String(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -297,13 +437,52 @@ func metricsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func callTargetHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	span := trace.SpanFromContext(ctx)
+
+	// Create a custom span for this operation
+	_, callSpan := tracer.Start(ctx, "call-target-operation")
+	defer callSpan.End()
+
+	// Add custom attributes
+	callSpan.SetAttributes(
+		attribute.String("target.url", targetURL),
+		attribute.String("operation", "call-target"),
+	)
+
 	// Simulate random errors like nodejs-instrumented
 	if rand.Float64() < 0.4 {
+		callSpan.SetAttributes(attribute.Bool("error", true))
+		callSpan.RecordError(fmt.Errorf("simulated random error"))
+
+		// Log the error using OpenTelemetry
+		errorRecord := log.Record{}
+		errorRecord.SetSeverity(log.SeverityError)
+		errorRecord.SetBody(log.StringValue("Simulated random error occurred"))
+		errorRecord.AddAttributes(
+			log.String("operation", "call-target"),
+			log.String("error.type", "random"),
+		)
+		logger.Emit(ctx, errorRecord)
+
 		http.Error(w, `{"error": "An unexpected error occurred"}`, http.StatusInternalServerError)
 		return
 	}
 
 	if targetURL == "" {
+		callSpan.SetAttributes(attribute.Bool("error", true))
+		callSpan.RecordError(fmt.Errorf("TARGET_URL environment variable not set"))
+
+		// Log the configuration error
+		configErrorRecord := log.Record{}
+		configErrorRecord.SetSeverity(log.SeverityError)
+		configErrorRecord.SetBody(log.StringValue("TARGET_URL environment variable not set"))
+		configErrorRecord.AddAttributes(
+			log.String("operation", "call-target"),
+			log.String("error.type", "config"),
+		)
+		logger.Emit(ctx, configErrorRecord)
+
 		http.Error(w, `{"error": "TARGET_URL environment variable not set"}`, http.StatusInternalServerError)
 		return
 	}
@@ -316,7 +495,8 @@ func callTargetHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := client.Get(targetURL)
 	if err != nil {
-		logger.WithError(err).Errorf("Failed to reach target URL: %s", targetURL)
+		callSpan.SetAttributes(attribute.Bool("error", true))
+		callSpan.RecordError(err)
 		errorResponse := map[string]interface{}{
 			"error": fmt.Sprintf("Failed to reach %s: %s", targetURL, err.Error()),
 		}
@@ -327,15 +507,28 @@ func callTargetHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	logger.WithFields(logrus.Fields{
-		"target_url":  targetURL,
-		"status_code": resp.StatusCode,
-	}).Info("Successfully called target URL")
+	callSpan.SetAttributes(
+		attribute.Int("http.response.status_code", resp.StatusCode),
+		attribute.Bool("success", true),
+	)
+
+	// Log successful call
+	successRecord := log.Record{}
+	successRecord.SetSeverity(log.SeverityInfo)
+	successRecord.SetBody(log.StringValue("Successfully called target URL"))
+	successRecord.AddAttributes(
+		log.String("operation", "call-target"),
+		log.String("target.url", targetURL),
+		log.Int("response.status_code", resp.StatusCode),
+		log.String("trace_id", span.SpanContext().TraceID().String()),
+	)
+	logger.Emit(ctx, successRecord)
 
 	response := map[string]interface{}{
 		"target_url": targetURL,
 		"status":     resp.StatusCode,
 		"timestamp":  time.Now().UTC().Format(time.RFC3339),
+		"trace_id":   span.SpanContext().TraceID().String(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -344,6 +537,13 @@ func callTargetHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func generateLoadHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	span := trace.SpanFromContext(ctx)
+
+	// Create a custom span for the entire load generation
+	_, loadSpan := tracer.Start(ctx, "generate-load-operation")
+	defer loadSpan.End()
+
 	// Get iterations parameter
 	iterationsStr := r.URL.Query().Get("iterations")
 	iterations := 10
@@ -353,10 +553,10 @@ func generateLoadHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	logger.WithFields(logrus.Fields{
-		"iterations": iterations,
-		"target_url": targetURL,
-	}).Info("Starting load generation")
+	loadSpan.SetAttributes(
+		attribute.Int("load.iterations", iterations),
+		attribute.String("target.url", targetURL),
+	)
 
 	startTime := time.Now()
 	results := make([]map[string]interface{}, 0, iterations)
@@ -368,11 +568,17 @@ func generateLoadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i := 0; i < iterations; i++ {
+		// Create a span for each iteration
+		_, iterSpan := tracer.Start(ctx, fmt.Sprintf("load-iteration-%d", i+1))
 		iterationStart := time.Now()
 
 		resp, err := client.Get(targetURL)
 		if err != nil {
-			logger.WithError(err).Errorf("Error in iteration %d", i+1)
+			iterSpan.SetAttributes(
+				attribute.Bool("error", true),
+				attribute.Int("iteration", i+1),
+			)
+			iterSpan.RecordError(err)
 			results = append(results, map[string]interface{}{
 				"iteration": i + 1,
 				"error":     err.Error(),
@@ -382,6 +588,13 @@ func generateLoadHandler(w http.ResponseWriter, r *http.Request) {
 			resp.Body.Close()
 			iterationDuration := time.Since(iterationStart).Milliseconds()
 
+			iterSpan.SetAttributes(
+				attribute.Int("iteration", i+1),
+				attribute.Int("http.response.status_code", resp.StatusCode),
+				attribute.Int64("duration_ms", iterationDuration),
+				attribute.Bool("success", resp.StatusCode >= 200 && resp.StatusCode < 400),
+			)
+
 			results = append(results, map[string]interface{}{
 				"iteration":   i + 1,
 				"status_code": resp.StatusCode,
@@ -390,11 +603,18 @@ func generateLoadHandler(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 
+		iterSpan.End()
+
 		// Add delay between requests
 		time.Sleep(100 * time.Millisecond)
 	}
 
 	totalDuration := time.Since(startTime).Milliseconds()
+
+	loadSpan.SetAttributes(
+		attribute.Int64("total_duration_ms", totalDuration),
+		attribute.Bool("load_generation_complete", true),
+	)
 
 	response := map[string]interface{}{
 		"message":           fmt.Sprintf("Load generation completed with %d iterations", iterations),
@@ -402,6 +622,7 @@ func generateLoadHandler(w http.ResponseWriter, r *http.Request) {
 		"target_url":        targetURL,
 		"results":           results,
 		"timestamp":         time.Now().UTC().Format(time.RFC3339),
+		"trace_id":          span.SpanContext().TraceID().String(),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -409,27 +630,31 @@ func generateLoadHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	setupLogger()
-
 	ctx := context.Background()
 
 	// Initialize OpenTelemetry
-	meterProvider, err := initOpenTelemetry(ctx)
+	meterProvider, traceProvider, logProvider, err := initOpenTelemetry(ctx)
 	if err != nil {
-		log.Fatalf("Failed to initialize OpenTelemetry: %v", err)
+		stdlog.Fatalf("Failed to initialize OpenTelemetry: %v", err)
 	}
 	defer func() {
 		if err := meterProvider.Shutdown(ctx); err != nil {
-			logger.WithError(err).Error("Error shutting down meter provider")
+			stdlog.Printf("Error shutting down meter provider: %v", err)
+		}
+		if err := traceProvider.Shutdown(ctx); err != nil {
+			stdlog.Printf("Error shutting down trace provider: %v", err)
+		}
+		if err := logProvider.Shutdown(ctx); err != nil {
+			stdlog.Printf("Error shutting down log provider: %v", err)
 		}
 	}()
 
 	// Initialize metrics
 	if err := initMetrics(); err != nil {
-		log.Fatalf("Failed to initialize metrics: %v", err)
+		stdlog.Fatalf("Failed to initialize metrics: %v", err)
 	}
 
-	logger.Info("OpenTelemetry instrumentation initialized successfully")
+	stdlog.Println("OpenTelemetry instrumentation initialized successfully")
 
 	// Setup router
 	router := mux.NewRouter()
@@ -458,21 +683,21 @@ func main() {
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		logger.Infof("Server starting on port %s", port)
+		stdlog.Printf("Server starting on port %s", port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Failed to start server: %v", err)
+			stdlog.Fatalf("Failed to start server: %v", err)
 		}
 	}()
 
 	<-quit
-	logger.Info("Server shutting down...")
+	stdlog.Println("Server shutting down...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := server.Shutdown(ctx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
+		stdlog.Fatalf("Server forced to shutdown: %v", err)
 	}
 
-	logger.Info("Server exited")
+	stdlog.Println("Server exited")
 }

@@ -1,7 +1,7 @@
 # docker buildx build --platform linux/amd64,linux/arm64 -t appmonitoring.azurecr.io/demoaks-go-instrumented-app:latest --push .
 
 # Build stage
-FROM golang:1.21-alpine AS builder
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
