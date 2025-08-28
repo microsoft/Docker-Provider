@@ -12,9 +12,13 @@ import { randomUUID } from 'crypto';
 const containerMode = process.env.CONTAINER_MODE;
 const clusterArmId = process.env.ARM_ID;
 const clusterArmRegion = process.env.ARM_REGION;
+
+// hiding OTEL functionality behind an additional environment variable OTEL_TOGGLE
+// this environment variable is controlled by a private preview toggle, once toggle is gone we have to remove this boolean and assume it's true
+const otelToggleEnabled: boolean = String(process.env.OTEL_TOGGLE).trim().toLowerCase() === "true";
 const otelParams: OtelParams = {
-    logsEnabled: String(process.env.OTEL_LOGS_ENABLED).trim().toLowerCase() === "true",
-    metricsEnabled: String(process.env.OTEL_METRICS_ENABLED).trim().toLowerCase() === "true",
+    logsEnabled: otelToggleEnabled && String(process.env.OTEL_LOGS_ENABLED).trim().toLowerCase() === "true",
+    metricsEnabled: otelToggleEnabled && String(process.env.OTEL_METRICS_ENABLED).trim().toLowerCase() === "true",
     logsPortHttpProtobuf: Number(process.env.OTEL_LOGS_PORT_HTTPPROTOBUF) || 28331,
     metricsPortHttpProtobuf: Number(process.env.OTEL_METRICS_PORT_HTTPPROTOBUF) || 28333
 };
