@@ -62,14 +62,14 @@ check_prerequisites() {
         fi
 
         # 3. Check if monitoring is enabled
-        local monitoring_enabled=$(az aks show -g "$resource_group" -n "$name" --query "addonProfiles.omsagent.enabled" -o tsv)
+        local monitoring_enabled=$(az aks show -g "$resource_group" -n "$name" --query "addonProfiles[?contains(keys(@), 'omsagent') || contains(keys(@), 'omsAgent')].{enabled: enabled} | [0].enabled" -o tsv | tr '[:upper:]' '[:lower:]')
         if [ "$monitoring_enabled" != "true" ]; then
             echo "Container insights not enabled on this cluster" >&2
             return 1
         fi
 
         # 4. Check if monitoring is already using MSI
-        local auth_mode=$(az aks show -g "$resource_group" -n "$name" --query "addonProfiles.omsagent.config.useAADAuth" -o tsv)
+        local auth_mode=$(az aks show -g "$resource_group" -n "$name" --query "[?contains(keys(addonProfiles), 'omsagent')].addonProfiles.omsagent.config.useAADAuth || [?contains(keys(addonProfiles), 'omsAgent')].addonProfiles.omsAgent.config.useAADAuth | [0]" -o tsv | tr '[:upper:]' '[:lower:]')
         if [ "$auth_mode" = "true" ]; then
             echo "Monitoring already using MSI authentication" >&2
             return 1
@@ -116,7 +116,7 @@ check_prerequisites() {
                             --cluster-name "$name" \
                             --resource-group "$resource_group" \
                             --cluster-type connectedClusters \
-                            --query "configurationSettings.\"amalogs.useAADAuth\"" -o tsv)
+                            --query "configurationSettings.\"amalogs.useAADAuth\"" -o tsv | tr '[:upper:]' '[:lower:]')
         if [ "$use_aad_auth" = "true" ]; then
             echo "Monitoring already using MSI authentication" >&2
             return 1
@@ -180,7 +180,7 @@ perform_migration() {
             sleep 180
 
             # Check if monitoring is actually disabled
-            local monitoring_state=$(az aks show -g "$resource_group" -n "$name" --query "addonProfiles.omsagent.enabled" -o tsv)
+            local monitoring_state=$(az aks show -g "$resource_group" -n "$name" --query "[?contains(keys(addonProfiles), 'omsagent')].addonProfiles.omsagent.enabled || [?contains(keys(addonProfiles), 'omsAgent')].addonProfiles.omsAgent.enabled | [0]" -o tsv | tr '[:upper:]' '[:lower:]')
             if [ "$monitoring_state" != "true" ]; then
                 echo "[$(date)] Successfully disabled monitoring"
                 break
@@ -239,7 +239,7 @@ perform_migration() {
         fi
         
         # Verify MSI auth is enabled
-        local auth_mode=$(az aks show -g "$resource_group" -n "$name" --query "addonProfiles.omsagent.config.useAADAuth" -o tsv)
+        local auth_mode=$(az aks show -g "$resource_group" -n "$name" --query "[?contains(keys(addonProfiles), 'omsagent')].addonProfiles.omsagent.config.useAADAuth || [?contains(keys(addonProfiles), 'omsAgent')].addonProfiles.omsAgent.config.useAADAuth | [0]" -o tsv | tr '[:upper:]' '[:lower:]')
         [ "$auth_mode" = "true" ] || {
             echo "[Error] MSI authentication not enabled after configuration"
             return 1
@@ -350,7 +350,7 @@ for subscription_id in "${SUBS[@]}"; do
             # Get workspace ID
             echo "[$(date)] Getting workspace ID for $name"
             if [ "$cluster_type" = "aks" ]; then
-                workspace_id=$(az aks show -g "$resource_group" -n "$name" --query "addonProfiles.omsagent.config.logAnalyticsWorkspaceResourceID" -o tsv)
+                workspace_id=$(az aks show -g "$resource_group" -n "$name" --query "[?contains(keys(addonProfiles), 'omsagent')].addonProfiles.omsagent.config.logAnalyticsWorkspaceResourceID || [?contains(keys(addonProfiles), 'omsAgent')].addonProfiles.omsAgent.config.logAnalyticsWorkspaceResourceID | [0]" -o tsv)
             else
                 workspace_id=$(az connectedk8s show -g "$resource_group" -n "$name" --query "extendedProperties.logAnalyticsWorkspaceResourceId" -o tsv)
             fi
