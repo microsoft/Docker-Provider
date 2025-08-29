@@ -343,7 +343,7 @@ spec:
         component: ama-logs-agent
         tier: node
       annotations:
-        agentVersion: "azure-mdsd-1.35.8"
+        agentVersion: "azure-mdsd-1.35.7"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         kubernetes.azure.com/no-http-proxy-vars: "true"
@@ -454,6 +454,8 @@ spec:
               value: "false"
             - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
               value: "28331"
+            - name: AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT
+              value: "4319"
             - name: AZMON_RETINA_FLOW_LOGS_ENABLED
               value: "false"
             - name: CLUSTER_CLOUD_ENVIRONMENT
@@ -475,7 +477,7 @@ spec:
               hostPort: 28330
               protocol: TCP
             - name: otlp-logs
-              containerPort: 4317
+              containerPort: 4319
               hostPort: 28331
               protocol: TCP
           volumeMounts:
@@ -788,7 +790,7 @@ spec:
 #       labels:
 #         rsName: "ama-logs-multitenancy"
 #       annotations:
-#         agentVersion: "azure-mdsd-1.35.8"
+#         agentVersion: "azure-mdsd-1.35.7"
 #         dockerProviderVersion: "18.0.1-0"
 #         schema-versions: "v1"
 #         kubernetes.azure.com/no-http-proxy-vars: "true"
@@ -963,7 +965,7 @@ spec:
       labels:
         rsName: "ama-logs-rs"
       annotations:
-        agentVersion: "azure-mdsd-1.35.8"
+        agentVersion: "azure-mdsd-1.35.7"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         kubernetes.azure.com/no-http-proxy-vars: "true"
@@ -1097,10 +1099,6 @@ spec:
             #   value: "true"
             - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
               value: "false"
-            - name: APPMONITORING_OPENTELEMETRYLOGS_ENABLED
-              value: "false"
-            - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
-              value: "28331"
             - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
               value: "false"
             - name: AZMON_WINDOWS_FLUENT_BIT_ENABLED

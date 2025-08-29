@@ -60,19 +60,18 @@ getClusterCloudEnvironment() {
 }
 
 startAMACoreAgent() {
-      echo "AMACoreAgent: Starting AMA Core Agent for otel"
-
-      export AMACALogFileDir="/var/opt/microsoft/azuremonitoragent/log"
+      if isHighLogScaleMode; then
+             echo "AMACoreAgent: Starting AMA Core Agent since High Log scale mode is enabled"
+      fi
+      
+      export AMACALogFileDir="/var/opt/microsoft/linuxmonagent/amaca/log"
       export AMACALogFilePath="$AMACALogFileDir"/amaca.log
-      export PA_DATA_PORT=13005
+      export PA_DATA_PORT=13000
       export PA_GIG_BRIDGE_MODE=true
       export GIG_PA_ENABLE_OPTIMIZATION=true
       export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
       export PA_CONFIG_PORT=12563
       export CounterDataReportFrequencyInMinutes=60
-      export PA_AMCS_PROTOCOL="HttpProtobuf"
-      export PA_AMCS_PORT=4319
-      export PA_AMCS_HOST="0.0.0.0"
 
       {
          echo "export PA_DATA_PORT=$PA_DATA_PORT"
@@ -82,14 +81,30 @@ startAMACoreAgent() {
          echo "export PA_CONFIG_PORT=$PA_CONFIG_PORT"
          echo "export CounterDataReportFrequencyInMinutes=$CounterDataReportFrequencyInMinutes"
          echo "export AMACALogFilePath=$AMACALogFilePath"
-         echo "export PA_VERBOSE=true"
-         echo "export PA_AMCS_PROTOCOL=$PA_AMCS_PROTOCOL"
-         echo "export PA_AMCS_PORT=$PA_AMCS_PORT"
-         echo "export PA_AMCS_HOST=$PA_AMCS_HOST"
-      } >> ~/.bashrc
+      } >> ~/.bashrc  
+
+      if isOpenTelemetryLogsEnabled; then
+            echo "AMACoreAgent: Starting AMA Core Agent for otel"
+            export PA_AMCS_PROTOCOL="HttpProtobuf"
+            export PA_AMCS_HOST="0.0.0.0"
+            export PA_AMCS_PORT=4319
+            if [ -n "${AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT}" ]; then
+                  # Convert AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT from string to int
+                  port_int=$((AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT + 0))
+                  if [ "$port_int" -gt 0 ] 2>/dev/null; then
+                        export PA_AMCS_PORT=$port_int
+                  fi
+            fi
+            
+            {
+                  echo "export PA_AMCS_PROTOCOL=$PA_AMCS_PROTOCOL"
+                  echo "export PA_AMCS_PORT=$PA_AMCS_PORT"
+                  echo "export PA_AMCS_HOST=$PA_AMCS_HOST"
+            } >> ~/.bashrc
+      fi
 
       source ~/.bashrc
-      /opt/microsoft/azure-mdsd/bin/amacoreagent --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath --giglaport $PA_DATA_PORT -v > /dev/null 2>&1 &
+      /opt/microsoft/azure-mdsd/bin/amacoreagent --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath --giglaport $PA_DATA_PORT > /dev/null 2>&1 &
 
       waitforlisteneronTCPport "$PA_DATA_PORT" "$WAITTIME_PORT_13000"
       waitforlisteneronTCPport "$PA_CONFIG_PORT" "$WAITTIME_PORT_12563"
@@ -235,6 +250,14 @@ isHighLogScaleMode() {
      else
          false
      fi
+}
+
+isOpenTelemetryLogsEnabled() {
+      if [[ "${APPMONITORING_OPENTELEMETRYLOGS_ENABLED}" == "true" ]]; then
+          true
+      else
+          false
+      fi
 }
 
 checkAgentOnboardingStatus() {
@@ -1095,10 +1118,9 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
     fi
 else
       echo "starting mdsd in main container..."
-      # if isHighLogScaleMode; then
-      # start core agent for otlp
-      startAMACoreAgent
-      # fi
+      if isHighLogScaleMode || isOpenTelemetryLogsEnabled; then
+            startAMACoreAgent
+      fi
       export MDSD_ROLE_PREFIX=/var/run/mdsd-ci/default
       echo "export MDSD_ROLE_PREFIX=$MDSD_ROLE_PREFIX" >> ~/.bashrc
       if [[ "${GENEVA_LOGS_INTEGRATION}" != "true" ]]; then

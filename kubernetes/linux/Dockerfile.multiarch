@@ -34,7 +34,6 @@ RUN tdnf install -y \
         gnupg \
         make \
         logrotate \
-        unzip \
         busybox \
         gawk \
         tar \
