@@ -98,15 +98,15 @@ check_prerequisites() {
         fi
 
         # 3. Check if extension exists and its state
-        local extension_exists=$(az k8s-extension show --name azuremonitor-containers \
+        local extension_state=$(az k8s-extension show --name azuremonitor-containers \
                               --cluster-name "$name" \
                               --resource-group "$resource_group" \
-                              --cluster-type connectedClusters 2>/dev/null)
-        if [ -z "$extension_exists" ]; then
+                              --cluster-type connectedClusters \
+                              --query "provisioningState" -o tsv 2>/dev/null)
+        if [ -z "$extension_state" ]; then
             echo "Container insights extension not installed" >&2
             return 1
         fi
-        local extension_state=$(echo "$extension_exists" | jq -r '.provisioningState')
         if [ "$extension_state" != "Succeeded" ]; then
             echo "Container insights extension not ready (current state: $extension_state)" >&2
             return 1
@@ -353,7 +353,7 @@ for subscription_id in "${SUBS[@]}"; do
             if [ "$cluster_type" = "aks" ]; then
                 workspace_id=$(az aks show -g "$resource_group" -n "$name" --query "addonProfiles.omsagent.config.logAnalyticsWorkspaceResourceID || addonProfiles.omsAgent.config.logAnalyticsWorkspaceResourceID || addonProfiles.omsagent.config.loganalyticsworkspaceresourceid || addonProfiles.omsAgent.config.loganalyticsworkspaceresourceid" -o tsv)
             else
-                workspace_id=$(az connectedk8s show -g "$resource_group" -n "$name" --query "extendedProperties.logAnalyticsWorkspaceResourceId" -o tsv)
+                workspace_id=$(az k8s-extension show --name azuremonitor-containers --resource-group "$resource_group" --cluster-name "$name"  --cluster-type connectedClusters --query "configurationSettings.logAnalyticsWorkspaceResourceID" -o tsv)
             fi
 
             if [ -z "$workspace_id" ] || [ "$workspace_id" = "null" ]; then
