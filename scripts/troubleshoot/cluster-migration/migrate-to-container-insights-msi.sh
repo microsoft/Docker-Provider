@@ -336,7 +336,8 @@ for subscription_id in "${SUBS[@]}"; do
 
         echo "=== STEP 3: Migration Process ==="
         # Process each discovered cluster
-        while IFS=$'\t' read -r name resource_group; do
+        if [ -n "$clusters" ]; then
+            while IFS=$'\t' read -r name resource_group; do
             [ -z "$name" ] && continue
             
             echo "[$(date)] Processing $cluster_type cluster: $name"
@@ -370,7 +371,8 @@ for subscription_id in "${SUBS[@]}"; do
                 echo "[$(date)] Failed to migrate $name"
                 failed_clusters+=("$name")
             fi
-        done <<< "$clusters"
+            done <<< "$clusters"
+        fi
     done
 done
 
