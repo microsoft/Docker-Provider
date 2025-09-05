@@ -857,8 +857,8 @@ stages:
   dependsOn:
   - Wait_After_Stage_3
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
-    os: windows
+    name: Azure-Pipelines-CI-Test-EO
+    os: linux
   jobs:
   - job: releaseGating
     displayName: Release Gating
@@ -1132,8 +1132,8 @@ stages:
   dependsOn:
   - Wait_After_Stage_4
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
-    os: windows
+    name: Azure-Pipelines-CI-Test-EO
+    os: linux
   jobs:
   - job: releaseGating
     displayName: Release Gating
