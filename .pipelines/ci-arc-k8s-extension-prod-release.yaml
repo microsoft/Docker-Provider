@@ -45,8 +45,7 @@ stages:
   displayName: ci-arc-k8s-extension-all-regions-prod-release(MCR)
   pool:
     name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-vanilla-windows-2022
-    os: windows
+    os: linux
   jobs:
   - job: releaseGating
     displayName: Release Gating
@@ -309,8 +308,7 @@ stages:
   trigger: manual
   pool:
     name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-vanilla-windows-2022
-    os: windows
+    os: linux
   jobs:
   - job: releaseGating
     displayName: Release Gating
@@ -585,8 +583,7 @@ stages:
   - Wait_After_Stage_2
   pool:
     name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-vanilla-windows-2022
-    os: windows
+    os: linux
   jobs:
   - job: releaseGating
     displayName: Release Gating
@@ -860,8 +857,7 @@ stages:
   dependsOn:
   - Wait_After_Stage_3
   pool:
-    name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-vanilla-windows-2022
+    name: Azure-Pipelines-Windows-CI-Test-EO
     os: windows
   jobs:
   - job: releaseGating
@@ -1136,8 +1132,7 @@ stages:
   dependsOn:
   - Wait_After_Stage_4
   pool:
-    name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-vanilla-windows-2022
+    name: Azure-Pipelines-Windows-CI-Test-EO
     os: windows
   jobs:
   - job: releaseGating
@@ -1401,8 +1396,7 @@ stages:
   trigger: manual
   pool:
     name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-vanilla-windows-2022
-    os: windows
+    os: linux
   jobs:
   - job: Job_1
     displayName: Agentless job
@@ -1734,4 +1728,3 @@ stages:
       inputs:
         repoId: microsoft/Docker-Provider
         path: tagBuild.ps1
-
