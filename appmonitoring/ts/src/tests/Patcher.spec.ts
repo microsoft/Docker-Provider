@@ -726,6 +726,7 @@ describe("Patcher", () => {
         expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")).toBeDefined();
         expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL")).toBeDefined();
         expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_EXPORTER_OTLP_METRICS_INSECURE")).toBeDefined();
+        expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_METRICS_EXPORTER")).toBeDefined();
 
         // Verify correct port values
         const tracesEndpointEnv = containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT");
@@ -736,6 +737,9 @@ describe("Patcher", () => {
         
         const metricsEndpointEnv = containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT");
         expect(metricsEndpointEnv.value).toBe("http://$(OTEL_ENDPOINT_NODE_IP):4319/v1/metrics");
+
+        const metricsExporterEnv = containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_METRICS_EXPORTER");
+        expect(metricsExporterEnv.value).toBe("otlp");
     });
 
     it("OTEL environment variables - includes only logs variables when only logsEnabled is true", async () => {
@@ -783,6 +787,7 @@ describe("Patcher", () => {
         expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")).toBeUndefined();
         expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL")).toBeUndefined();
         expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_EXPORTER_OTLP_METRICS_INSECURE")).toBeUndefined();
+        expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_METRICS_EXPORTER")).toBeUndefined();
     });
 
     it("OTEL environment variables - includes only metrics variables when only metricsEnabled is true", async () => {
@@ -830,6 +835,10 @@ describe("Patcher", () => {
         expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")).toBeDefined();
         expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL")).toBeDefined();
         expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_EXPORTER_OTLP_METRICS_INSECURE")).toBeDefined();
+        expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_METRICS_EXPORTER")).toBeDefined();
+
+        const metricsExporterEnv = containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_METRICS_EXPORTER");
+        expect(metricsExporterEnv.value).toBe("otlp");
     });
 
     it("OTEL environment variables - excludes all OTEL variables when both logsEnabled and metricsEnabled are false", async () => {
@@ -875,6 +884,7 @@ describe("Patcher", () => {
         expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")).toBeUndefined();
         expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL")).toBeUndefined();
         expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_EXPORTER_OTLP_METRICS_INSECURE")).toBeUndefined();
+        expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_METRICS_EXPORTER")).toBeUndefined();
     });
 
     describe("OTEL Resource Attributes Merging", () => {

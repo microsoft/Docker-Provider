@@ -264,12 +264,17 @@ export class Mutations {
 
         if (otelParams.logsEnabled) {
             returnValue.push(
+                // not setting this to ensure Microsoft distros don't send OTLP traces. For OSS SDKs this defaults to "otlp" anyway, so no impact
+                // {
+                //     name: "OTEL_TRACES_EXPORTER",
+                //     value: `otlp`
+                // },
                 {
                     name: "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", //!!! http -> https
                     value: `http://$(OTEL_ENDPOINT_NODE_IP):${otelParams.logsPortHttpProtobuf}/v1/traces`
                 },
                 {
-                    name: "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL", //!!!
+                    name: "OTEL_EXPORTER_OTLP_TRACES_PROTOCOL",
                     value: "http/protobuf"
                 },
                 {
@@ -277,12 +282,17 @@ export class Mutations {
                     value: "true"
                 },
 
+                // not setting this to ensure Microsoft distros don't send OTLP logs. For OSS SDKs this defaults to "otlp" anyway, so no impact
+                // {
+                //     name: "OTEL_LOGS_EXPORTER",
+                //     value: `otlp`
+                // },
                 {
                     name: "OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", //!!! http -> https
                     value: `http://$(OTEL_ENDPOINT_NODE_IP):${otelParams.logsPortHttpProtobuf}/v1/logs`
                 },
                 {
-                    name: "OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", //!!!
+                    name: "OTEL_EXPORTER_OTLP_LOGS_PROTOCOL",
                     value: "http/protobuf"
                 },
                 {
@@ -294,12 +304,17 @@ export class Mutations {
 
         if (otelParams.metricsEnabled) {
             returnValue.push(
+                // setting this to ensure Microsoft distros do send OTLP metrics (forked, sent to Breeze and OTLP endpoint). For OSS SDKs this defaults to "otlp" anyway, so no impact
+                {
+                    name: "OTEL_METRICS_EXPORTER",
+                    value: `otlp`
+                },
                 {
                     name: "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", //!!! http -> https
                     value: `http://$(OTEL_ENDPOINT_NODE_IP):${otelParams.metricsPortHttpProtobuf}/v1/metrics`
                 },
                 {
-                    name: "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL", //!!!
+                    name: "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL",
                     value: "http/protobuf"
                 },
                 {

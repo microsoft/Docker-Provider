@@ -1176,6 +1176,10 @@ describe("Mutator", () => {
         const otelMetricsProtocol = container.env.find(env => env.name === "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL");
         expect(otelMetricsProtocol).toBeUndefined();
 
+        // Verify OTEL_METRICS_EXPORTER is NOT present when metrics are disabled
+        const otelMetricsExporter = container.env.find(env => env.name === "OTEL_METRICS_EXPORTER");
+        expect(otelMetricsExporter).toBeUndefined();
+
         // Verify common environment variables are still present
         const otelResourceAttrsEnv = container.env.find(env => env.name === "OTEL_RESOURCE_ATTRIBUTES");
         expect(otelResourceAttrsEnv.value).toContain("microsoft.applicationId=partial-app-id");
@@ -1244,6 +1248,11 @@ describe("Mutator", () => {
 
         const otelMetricsProtocol = container.env.find(env => env.name === "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL");
         expect(otelMetricsProtocol.value).toBe("http/protobuf");
+
+        // Verify OTEL_METRICS_EXPORTER is present and set to "otlp"
+        const otelMetricsExporter = container.env.find(env => env.name === "OTEL_METRICS_EXPORTER");
+        expect(otelMetricsExporter).toBeDefined();
+        expect(otelMetricsExporter.value).toBe("otlp");
 
         // Verify logs-related OTEL environment variables are NOT present
         const otelTracesEndpoint = container.env.find(env => env.name === "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT");
