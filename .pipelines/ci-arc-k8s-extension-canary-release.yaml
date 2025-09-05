@@ -40,11 +40,26 @@ resources:
     type: git
     name: 1ESPipelineTemplates/1ESPipelineTemplates
     ref: refs/tags/release
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
+  parameters:
+    pool:
+      name: Azure-Pipelines-CI-Test-EO
+      image: ci-1es-managed-windows-2022
+      os: windows
+    sdl:
+      sourceAnalysisPool:
+        name: Azure-Pipelines-CI-Test-EO
+        image: ci-1es-managed-windows-2022
+        os: windows
+    customBuildTags:
+    - ES365AIMigrationTooling
 stages:
 - stage: Stage_1
   displayName: Canary MCR
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-windows-2022
     os: windows
   jobs:
   - job: releaseGating
@@ -304,7 +319,8 @@ stages:
   displayName: Canary Regions Release
   trigger: manual
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-windows-2022
     os: windows
   jobs:
   - job: releaseGating
@@ -609,4 +625,3 @@ stages:
       inputs:
         repoId: microsoft/Docker-Provider
         path: tagBuild.ps1
-

@@ -40,11 +40,26 @@ resources:
     type: git
     name: 1ESPipelineTemplates/1ESPipelineTemplates
     ref: refs/tags/release
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
+  parameters:
+    pool:
+      name: Azure-Pipelines-CI-Test-EO
+      image: ci-1es-managed-windows-2022
+      os: windows
+    sdl:
+      sourceAnalysisPool:
+        name: Azure-Pipelines-CI-Test-EO
+        image: ci-1es-managed-windows-2022
+        os: windows
+    customBuildTags:
+    - ES365AIMigrationTooling
 stages:
 - stage: Stage_1
   displayName: ci-arc-k8s-extension-all-regions-prod-release(MCR)
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-windows-2022
     os: windows
   jobs:
   - job: releaseGating
@@ -307,7 +322,8 @@ stages:
   displayName: Pilot Regions
   trigger: manual
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-windows-2022
     os: windows
   jobs:
   - job: releaseGating
@@ -582,7 +598,8 @@ stages:
   dependsOn:
   - Wait_After_Stage_2
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-windows-2022
     os: windows
   jobs:
   - job: releaseGating
@@ -857,7 +874,8 @@ stages:
   dependsOn:
   - Wait_After_Stage_3
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-windows-2022
     os: windows
   jobs:
   - job: releaseGating
@@ -1132,7 +1150,8 @@ stages:
   dependsOn:
   - Wait_After_Stage_4
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-windows-2022
     os: windows
   jobs:
   - job: releaseGating
@@ -1395,7 +1414,8 @@ stages:
   displayName: 'Fairfax & Mooncake: Create Escort JIT'
   trigger: manual
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-windows-2022
     os: windows
   jobs:
   - job: Job_1
@@ -1419,7 +1439,8 @@ stages:
   displayName: Fairfax Region Testing
   trigger: manual
   pool:
-    name: Azure-Pipelines-Windows-CI-Test-EO
+    name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-windows-2022
     os: windows
   jobs:
   - job: releaseGating
@@ -1727,4 +1748,3 @@ stages:
       inputs:
         repoId: microsoft/Docker-Provider
         path: tagBuild.ps1
-
