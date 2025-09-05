@@ -1420,8 +1420,7 @@ stages:
   trigger: manual
   pool:
     name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-vanilla-windows-2022
-    os: windows
+    os: linux
   jobs:
   - job: releaseGating
     displayName: Release Gating
