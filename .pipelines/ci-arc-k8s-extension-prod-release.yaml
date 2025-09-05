@@ -45,7 +45,7 @@ stages:
   displayName: ci-arc-k8s-extension-all-regions-prod-release(MCR)
   pool:
     name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-managed-windows-2022
+    image: ci-1es-vanilla-windows-2022
     os: windows
   jobs:
   - job: releaseGating
@@ -309,7 +309,7 @@ stages:
   trigger: manual
   pool:
     name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-managed-windows-2022
+    image: ci-1es-vanilla-windows-2022
     os: windows
   jobs:
   - job: releaseGating
@@ -585,7 +585,7 @@ stages:
   - Wait_After_Stage_2
   pool:
     name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-managed-windows-2022
+    image: ci-1es-vanilla-windows-2022
     os: windows
   jobs:
   - job: releaseGating
@@ -861,7 +861,7 @@ stages:
   - Wait_After_Stage_3
   pool:
     name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-managed-windows-2022
+    image: ci-1es-vanilla-windows-2022
     os: windows
   jobs:
   - job: releaseGating
@@ -1137,7 +1137,7 @@ stages:
   - Wait_After_Stage_4
   pool:
     name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-managed-windows-2022
+    image: ci-1es-vanilla-windows-2022
     os: windows
   jobs:
   - job: releaseGating
@@ -1401,7 +1401,7 @@ stages:
   trigger: manual
   pool:
     name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-managed-windows-2022
+    image: ci-1es-vanilla-windows-2022
     os: windows
   jobs:
   - job: Job_1
@@ -1426,7 +1426,7 @@ stages:
   trigger: manual
   pool:
     name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-managed-windows-2022
+    image: ci-1es-vanilla-windows-2022
     os: windows
   jobs:
   - job: releaseGating
