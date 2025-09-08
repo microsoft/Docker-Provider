@@ -44,7 +44,6 @@ spec:
          value: "false"
        - name: TOKEN_NAMESPACE
          value: "azure-arc"
-{{-  .Values.Azure.Identity.MSIAdapterYaml | nindent 7 }}
        - name: CLUSTER_IDENTITY
          value: "true"
        - name: CLUSTER_TYPE
