@@ -2,6 +2,7 @@
 2. Register following feature on subscription if not registered already
 ``` sh
   az feature register --name Amcs20240311 --namespace Microsoft.Insights
+  az provider register -n Microsoft.Insights
 ```
 2. Create Application Insights in eastus2euap
 ``` sh
