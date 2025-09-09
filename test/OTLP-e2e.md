@@ -22,7 +22,7 @@ az rest --method put \
  ```
 3.Associate Managed DCR to the AKS cluster created in step 1
  ``` sh
-az monitor data-collection rule association create --name "otel-test-2-ai" --rule-id "/subscriptions/<subscriptionId> /resourceGroups/<managedResourceGroup>/providers/microsoft.insights/dataCollectionRules/<dcrName> " --resource "/subscriptions/<subscriptionId> /resourcegroups/<resourceGroup>/providers/Microsoft.ContainerService/managedClusters/<clusterName>"
+az monitor data-collection rule association create --name "otel-test-2-ai" --rule-id "/subscriptions/<subscriptionId>/resourceGroups/<managedResourceGroup>/providers/microsoft.insights/dataCollectionRules/<dcrName> " --resource "/subscriptions/<subscriptionId>/resourcegroups/<resourceGroup>/providers/Microsoft.ContainerService/managedClusters/<clusterName>"
 ```
 4. Deploy the CI Addon with backdoor and image tag should be used is - mcr.microsoft.com/azuremonitor/containerinsights/cidev:3.1.28-24-g10402783c-20250908135555
 5. Deploy the test app with following details:
