@@ -75,12 +75,12 @@ ENV KUBE_CLIENT_BACKOFF_DURATION 0
 ENV RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR 1.0
 
 # default value will be overwritten by pipeline
-ARG IMAGE_TAG=3.1.28
+ARG IMAGE_TAG=3.1.29
 ENV AGENT_VERSION ${IMAGE_TAG}
 
 WORKDIR ${tmpdir}
 
-# files 
+# files
 COPY --from=builder /opt /opt
 COPY --from=builder /etc /etc
 COPY --from=builder /busybin /busybin
@@ -113,9 +113,9 @@ COPY --from=builder /usr/share/p11-kit/ /usr/share/p11-kit/
 
 # bash dependencies
 COPY --from=builder /usr/lib/libreadline.so.8  /usr/lib/libc.so.6 /usr/lib/libncursesw.so.6 /usr/lib/libtinfo.so.6 /usr/lib/
-# inotifywait dependencies 
+# inotifywait dependencies
 COPY --from=builder /usr/lib/libinotifytools.so.0 /usr/lib/libstdc++.so.6 /usr/lib/libgcc_s.so.1 /usr/lib/libc.so.6 /usr/lib/libm.so.6 /usr/lib/
-# crond dependencies 
+# crond dependencies
 COPY --from=builder /usr/lib/libselinux.so.1 /usr/lib/libpam.so.0 /usr/lib/libc.so.6 /usr/lib/
 # ruby dependencies
 COPY --from=builder /usr/lib/libruby.so.3.3 /usr/lib/libc.so.6 /usr/lib/libz.so.1 /usr/lib/libgmp.so.10 /usr/lib/libcrypt.so.1 /usr/lib/libm.so.6 /usr/lib/
@@ -127,7 +127,7 @@ COPY --from=builder /usr/lib/libresolv.so.2 /usr/lib/libc.so.6 /usr/lib/
 # mdsd dependencies
 COPY --from=builder /usr/sbin/../lib/libpthread.so.0 /usr/sbin/../lib/libdl.so.2 /usr/sbin/../lib/libsymcrypt.so.103 /usr/sbin/../lib/librt.so.1 /usr/sbin/../lib/libm.so.6 /usr/sbin/../lib/libc.so.6 /usr/sbin/../lib/libstdc++.so.6 /usr/sbin/../lib/libgcc_s.so.1 /usr/sbin/../lib/
 COPY --from=builder /opt/microsoft/azure-mdsd/lib/libtcmalloc_minimal.so.4 /opt/microsoft/azure-mdsd/lib/
-# logrotate dependencies 
+# logrotate dependencies
 COPY --from=builder /usr/lib/libpopt.so.0 /usr/lib/libc.so.6 /usr/lib/
 # curl dependencies
 # libssl.so.1.1 & libcrypto.so.1.1 are already available with openssl in distroless and copying them over causes FIPS HMAC verification failures
