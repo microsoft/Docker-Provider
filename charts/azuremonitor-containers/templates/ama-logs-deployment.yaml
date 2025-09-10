@@ -34,16 +34,20 @@ spec:
   {{- end }}
    containers:
 {{- if and (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>") (.Values.amalogs.useAADAuth) }}
+     {{- if not (eq .Values.Azure.Cluster.Distribution "openshift") }}
      - name: addon-token-adapter
-       {{- if eq .Values.Azure.Cluster.Distribution "openshift" }}
-       image: "mcr.microsoft.com/azurearck8s/msi-adapter:1.28.0"
-       {{- end}}
        imagePullPolicy: IfNotPresent
        env:
        - name: AZMON_COLLECT_ENV
          value: "false"
        - name: TOKEN_NAMESPACE
          value: "azure-arc"
+{{-  .Values.Azure.Identity.MSIAdapterYaml | nindent 7 }}
+     {{- else }}
+     - name: msi-adapter
+       env:
+       - name: TOKEN_NAMESPACE
+         value: azure-arc
        - name: CLUSTER_IDENTITY
          value: "true"
        - name: CLUSTER_TYPE
@@ -62,21 +66,13 @@ spec:
          value: "false"
        - name: TEST_FILE
          value: /data/token
+       image: mcr.microsoft.com/azurearck8s/msi-adapter:1.29.3
        securityContext:
-         {{- if eq .Values.Azure.Cluster.Distribution "openshift" }}
          privileged: true
-         {{- end }}
          capabilities:
            add:
              - NET_ADMIN
              - NET_RAW
-       resources:
-         limits:
-           cpu: 50m
-           memory: 100Mi
-         requests:
-           cpu: 20m
-           memory: 50Mi
        livenessProbe:
          failureThreshold: 3
          httpGet:
@@ -85,10 +81,18 @@ spec:
            scheme: "HTTP"
          initialDelaySeconds: 10
          periodSeconds: 15
+       resources:
+         limits:
+           cpu: 50m
+           memory: 100Mi
+         requests:
+           cpu: 20m
+           memory: 50Mi
        lifecycle:
          postStart:
            exec:
              command: ["/data/msi-adapter-ready-watcher"]
+     {{- end }}
 {{- end }}
      - name: ama-logs
        image: {{ printf "%s:%s" .Values.amalogs.image.repo .Values.amalogs.image.tag }}
