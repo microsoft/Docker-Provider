@@ -53,7 +53,7 @@ spec:
        - name: TOKEN_NAMESPACE
          value: azure-arc
        - name: CLUSTER_IDENTITY
-         value: "true"
+         value: "false"
        - name: CLUSTER_TYPE
          value: {{ (split "/" .Values.Azure.Cluster.ResourceId)._7 }}
        - name: EXTENSION_ARMID
