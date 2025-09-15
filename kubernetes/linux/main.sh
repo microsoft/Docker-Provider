@@ -85,7 +85,7 @@ startAMACoreAgent() {
 
       if isOpenTelemetryLogsEnabled; then
             echo "AMACoreAgent: Starting AMA Core Agent for otel"
-            export PA_AMCS_PROTOCOL="HttpProtobuf"
+            export PA_AMCS_PROTOCOL="Grpc"
             export PA_AMCS_HOST="0.0.0.0"
             export PA_AMCS_PORT=4319
             if [ -n "${AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT}" ]; then
@@ -104,7 +104,12 @@ startAMACoreAgent() {
       fi
 
       source ~/.bashrc
-      /opt/microsoft/azure-mdsd/bin/amacoreagent --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath --giglaport $PA_DATA_PORT > /dev/null 2>&1 &
+      # Start AMA Core Agent with OpenTelemetry parameters if enabled
+      if isOpenTelemetryLogsEnabled; then
+            /opt/microsoft/azure-mdsd/bin/amacoreagent --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath --giglaport $PA_DATA_PORT --amcsport $PA_AMCS_PORT --amcshost $PA_AMCS_HOST --amcsprotocol $PA_AMCS_PROTOCOL > /dev/null 2>&1 &
+      else
+            /opt/microsoft/azure-mdsd/bin/amacoreagent --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath --giglaport $PA_DATA_PORT > /dev/null 2>&1 &
+      fi
 
       waitforlisteneronTCPport "$PA_DATA_PORT" "$WAITTIME_PORT_13000"
       waitforlisteneronTCPport "$PA_CONFIG_PORT" "$WAITTIME_PORT_12563"
