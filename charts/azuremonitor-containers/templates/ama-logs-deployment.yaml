@@ -46,6 +46,8 @@ spec:
      {{- else }}
      - name: msi-adapter
        env:
+       - name: AZMON_COLLECT_ENV
+         value: "false"
        - name: TOKEN_NAMESPACE
          value: azure-arc
        - name: CLUSTER_IDENTITY
