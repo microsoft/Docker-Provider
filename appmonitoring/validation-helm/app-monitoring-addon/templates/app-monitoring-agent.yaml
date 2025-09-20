@@ -308,6 +308,18 @@ spec:
               value: "{{ .Values.global.commonGlobals.Customer.AzureResourceID }}"
             - name: ARM_REGION
               value: "{{ .Values.global.commonGlobals.Region }}"
+{{- if .Values.AppmonitoringAgent.isOtelToggleEnabled }}
+            - name: OTEL_TOGGLE
+              value: "true"
+{{- end }}
+            - name: OTEL_LOGS_ENABLED
+              value: "{{ .Values.AppmonitoringAgent.isOpenTelemetryLogsEnabled }}"
+            - name: OTEL_LOGS_PORT_HTTPPROTOBUF
+              value: "{{ .Values.AppmonitoringAgent.openTelemetryLogsPort | default 28331 }}"
+            - name: OTEL_METRICS_ENABLED
+              value: "{{ .Values.AppmonitoringAgent.isOpenTelemetryMetricsEnabled }}"
+            - name: OTEL_METRICS_PORT_HTTPPROTOBUF
+              value: "{{ .Values.AppmonitoringAgent.openTelemetryMetricsPort | default 28333 }}"              
           ports:
             - containerPort: 1337
             - containerPort: 4000
