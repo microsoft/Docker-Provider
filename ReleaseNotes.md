@@ -8,6 +8,38 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 09/09/2025 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.29 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.29 (windows)
+- Linux
+  - [azurelinux 3.0.20250822](https://github.com/microsoft/azurelinux/releases/tag/3.0.20250822-3.0)
+  - Golang - 1.23.8
+  - Ruby - arm64 - 3.3.5, x86_64 - 3.3.8
+  - MDSD - 1.35.7
+  - Telegraf - 1.34.3
+  - Fluent-bit - 3.1.9
+  - Fluentd - 1.16.3
+- Windows
+  - Golang - 1.23.8
+  - Ruby - 3.1.1
+  - Windows AMA - 46.31.3
+  - Telegraf - 1.24.2
+  - Fluent-bit - 4.0.3
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+> Note: There are no changes to either Linux or Windows agent other than base image version update.
+- Linux
+  * N/A
+- Windows
+  * N/A
+- Common
+  * Fix release pipeline nodepool issue in https://github.com/microsoft/Docker-Provider/pull/1522
+  * Bash script to migrate for customers to migrate from legacy to msi in https://github.com/microsoft/Docker-Provider/pull/1517
+  * Add private link support for high log scale onboarding methods - Policy, ARM templates, Bicep and Terraform in  https://github.com/microsoft/Docker-Provider/pull/1512
+  * ARM templates for multi-tenancy for Arc for Kubernetes - https://github.com/microsoft/Docker-Provider/pull/1506/files
+  * Terraform templates for multi-tenancy for AKS - https://github.com/microsoft/Docker-Provider/pull/1505
+
 ### 07/11/2025 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.28 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.28 (windows)
