@@ -34,16 +34,17 @@ rm -rf /usr/lib/ruby/gems/3.3.0/gems/find-0.2.0
 rm /usr/lib/ruby/gems/3.3.0/specifications/default/rdoc-6.6.3.1.gemspec
 rm -rf /usr/lib/ruby/gems/3.3.0/gems/rdoc-6.6.3.1
 # Remove vulnerable rexml 3.3.9 if it exists as a default gem
-if [ -f "/usr/lib/ruby/gems/3.3.0/specifications/default/rexml-3.3.9.gemspec" ]; then
-    rm /usr/lib/ruby/gems/3.3.0/specifications/default/rexml-3.3.9.gemspec
-    rm -rf /usr/lib/ruby/gems/3.3.0/gems/rexml-3.3.9
-fi
+# if [ -f "/usr/lib/ruby/gems/3.3.0/specifications/default/rexml-3.3.9.gemspec" ]; then
+#     rm /usr/lib/ruby/gems/3.3.0/specifications/default/rexml-3.3.9.gemspec
+#     rm -rf /usr/lib/ruby/gems/3.3.0/gems/rexml-3.3.9
+# fi
 
 # remove net-imap gem as it has a known CVE (CVE-2025-43857) and is not used by the agent
 gem uninstall net-imap --force
 
-# Fix CVE-2025-58767: Install secure version of rexml gem (>= 3.4.2)
-gem install rexml -v 3.4.2 --no-document
+# Fix CVE-2025-58767: Uninstall rexml gem
+# gem install rexml -v 3.4.2 --no-document
+gem uninstall rexml --force
 
 sudo tdnf install -y azure-mdsd-1.35.7
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
