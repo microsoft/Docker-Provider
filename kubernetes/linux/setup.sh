@@ -33,17 +33,11 @@ rm /usr/lib/ruby/gems/3.3.0/specifications/default/find-0.2.0.gemspec
 rm -rf /usr/lib/ruby/gems/3.3.0/gems/find-0.2.0
 rm /usr/lib/ruby/gems/3.3.0/specifications/default/rdoc-6.6.3.1.gemspec
 rm -rf /usr/lib/ruby/gems/3.3.0/gems/rdoc-6.6.3.1
-# Remove vulnerable rexml 3.3.9 if it exists as a default gem
-# if [ -f "/usr/lib/ruby/gems/3.3.0/specifications/default/rexml-3.3.9.gemspec" ]; then
-#     rm /usr/lib/ruby/gems/3.3.0/specifications/default/rexml-3.3.9.gemspec
-#     rm -rf /usr/lib/ruby/gems/3.3.0/gems/rexml-3.3.9
-# fi
 
 # remove net-imap gem as it has a known CVE (CVE-2025-43857) and is not used by the agent
 gem uninstall net-imap --force
 
-# Fix CVE-2025-58767: Uninstall rexml gem
-# gem install rexml -v 3.4.2 --no-document
+# remove rexml gem as it has a known CVE (CVE-2025-58767) and is not used by the agent
 gem uninstall rexml --force
 
 sudo tdnf install -y azure-mdsd-1.35.7
@@ -68,9 +62,7 @@ sudo tdnf install jq-1.7.1-1.azl3 -y
 #used to setcaps for ruby process to read /proc/env
 sudo tdnf install libcap -y
 
-sudo curl -L -O https://github.com/microsoft/Docker-Provider/releases/download/mdsd-1.31.0/telegraf-agent-1.36.1-1.azl3.x86_64.rpm
-sudo tdnf install -y --nogpgcheck telegraf-agent-1.36.1-1.azl3.x86_64.rpm
-# sudo tdnf install telegraf-agent-1.34.3 -y
+sudo tdnf install telegraf-agent-1.36.1 -y
 telegraf_version=$(sudo tdnf list installed | grep telegraf | awk '{print $2}')
 echo "telegraf $telegraf_version" >> packages_version.txt
 mv /usr/bin/telegraf-agent /opt/telegraf
