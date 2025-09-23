@@ -18,7 +18,7 @@ RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex (
 # rexml 3.2.5 gem was installed during ruby 3.1.1.1 installation for xml parsing, not related to fluentd (dependency of fluentd 1.16.3: https://rubygems.org/gems/fluentd/versions/1.16.3-x64-mingw-ucrt)
 # removed it for vulnerability reasons.
     # https://github.com/ManageIQ/rbvmomi2/issues/62
-    # when ruby has a version change, a different version of rexml might be installed, 
+    # when ruby has a version change, a different version of rexml might be installed,
     # so need to review the installed version of rexml, and uninstall it.
 RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
 && choco install -y msys2 --version 20240113.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'"
@@ -103,7 +103,7 @@ COPY ./amalogswindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluen
 COPY ./amalogswindows/ruby/ /etc/fluent/plugin/
 
 # default value will be overwritten by pipeline
-ARG IMAGE_TAG=win-3.1.28
+ARG IMAGE_TAG=win-3.1.29
 ENV AGENT_VERSION ${IMAGE_TAG}
 
 ENV OS_TYPE "windows"
