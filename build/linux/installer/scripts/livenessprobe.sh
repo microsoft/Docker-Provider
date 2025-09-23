@@ -71,12 +71,21 @@ then
 fi
 
 if [[ "${IS_HIGH_LOG_SCALE_MODE}" == "true" || "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]]; then
-      (ps -ef | grep "amacoreagent" | grep -v "grep")
-      if [ $? -ne 0 ]
-      then
-        echo "amacoreagent is not running" > /dev/termination-log
-        exit 1
-      fi
+  (ps -ef | grep "amacoreagent" | grep -v "grep")
+  if [ $? -ne 0 ]
+  then
+    echo "amacoreagent is not running when high log scale mode is enabled" > /dev/termination-log
+    exit 1
+  fi
+fi
+
+if [[ "${CONTROLLER_TYPE}" == "DaemonSet" && "${CONTAINER_TYPE}" != "PrometheusSidecar" && "${IS_OPENTELEMETRY_LOGS_ENABLED}" == "true" ]]; then
+  (ps -ef | grep "amacoreagent" | grep -v "grep")
+  if [ $? -ne 0 ]
+  then
+    echo "amacoreagent is not running when OpenTelemetry logs are enabled" > /dev/termination-log
+    exit 1
+  fi
 fi
 
 

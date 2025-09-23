@@ -292,6 +292,21 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 					telemetryDimensions["isHighLogScaleMode"] = isHighLogScaleMode
 				}
 
+				isOpenTelemetryLogsEnabled := os.Getenv("IS_OPENTELEMETRY_LOGS_ENABLED")
+				if isOpenTelemetryLogsEnabled != "" {
+					telemetryDimensions["isOpenTelemetryLogsEnabled"] = isOpenTelemetryLogsEnabled
+					if strings.EqualFold(isOpenTelemetryLogsEnabled, "true") {
+						openTelemetryPort := os.Getenv("OPENTELEMETRY_LOGS_PORT")
+						if openTelemetryPort != "" {
+							telemetryDimensions["openTelemetryLogsPort"] = openTelemetryPort
+						}
+						openTelemetryContainerPort := os.Getenv("OPENTELEMETRY_LOGS_CONTAINER_PORT")
+						if openTelemetryContainerPort != "" {
+							telemetryDimensions["openTelemetryLogsContainerPort"] = openTelemetryContainerPort
+						}
+					}
+				}
+
 				isAzMonMultitenancyEnabled := os.Getenv("AZMON_MULTI_TENANCY_LOG_COLLECTION")
 				isAzMonMultitenancyAdvancedMode := os.Getenv("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE")
 				isAzMonMultitenancyDefaultFallbackIngestionDisabled := os.Getenv("AZMON_MULTI_TENANCY_FALLBACK_INGESTION_DISABLED")

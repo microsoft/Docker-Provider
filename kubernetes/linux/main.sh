@@ -524,10 +524,25 @@ source common_agent_config_env_var
 
 # check if high log scale mode enabled
 if isHighLogScaleMode; then
-    echo "Enabled High Log Scale Mode"
-    export IS_HIGH_LOG_SCALE_MODE=true
-    echo "export IS_HIGH_LOG_SCALE_MODE=$IS_HIGH_LOG_SCALE_MODE" >>~/.bashrc
-    source ~/.bashrc
+      echo "Enabled High Log Scale Mode"
+      export IS_HIGH_LOG_SCALE_MODE=true
+      echo "export IS_HIGH_LOG_SCALE_MODE=$IS_HIGH_LOG_SCALE_MODE" >>~/.bashrc
+      source ~/.bashrc
+fi
+
+if isOpenTelemetryLogsEnabled; then
+      echo "Enabled OpenTelemetry Logs Mode"
+      export IS_OPENTELEMETRY_LOGS_ENABLED=true
+      echo "export IS_OPENTELEMETRY_LOGS_ENABLED=$IS_OPENTELEMETRY_LOGS_ENABLED" >>~/.bashrc
+      if [ -n "${APPMONITORING_OPENTELEMETRYLOGS_PORT}" ]; then
+            export OPENTELEMETRY_LOGS_PORT="${APPMONITORING_OPENTELEMETRYLOGS_PORT}"
+            echo "export OPENTELEMETRY_LOGS_PORT=${OPENTELEMETRY_LOGS_PORT}" >>~/.bashrc
+      fi
+      if [ -n "${AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT}" ]; then
+            export OPENTELEMETRY_LOGS_CONTAINER_PORT="${AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT}"
+            echo "export OPENTELEMETRY_LOGS_CONTAINER_PORT=${OPENTELEMETRY_LOGS_CONTAINER_PORT}" >>~/.bashrc
+      fi
+      source ~/.bashrc
 fi
 
 #Parse the configmap to set the right environment variables for agent config.
