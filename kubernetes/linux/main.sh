@@ -669,17 +669,7 @@ fi
 # Adding AzureLinux now even though the elif will never currently evaluate.
 if [ $CLOUD_ENVIRONMENT == "usnat" ] || [ $CLOUD_ENVIRONMENT == "ussec" ] || [ "$IS_CUSTOM_CERT" == "true" ]; then
   OS_ID=$(cat /etc/os-release | grep ^ID= | cut -d '=' -f2 | tr -d '"' | tr -d "'")
-  if [ $OS_ID == "azurelinux" ]; then
-    cp /anchors/ubuntu/* /etc/pki/ca-trust/source/anchors
-    cp /anchors/mariner/* /etc/pki/ca-trust/source/anchors
-    if [ -e "/etc/ama-logs-secret/PROXYCERT.crt" ]; then
-      cp /etc/ama-logs-secret/PROXYCERT.crt /etc/pki/ca-trust/source/PROXYCERT.crt
-    fi
-    update-ca-trust
-  else
-    if [ $OS_ID != "ubuntu" ]; then
-      echo "Error: The ID in /etc/os-release is not ubuntu or azurelinux. Defaulting to ubuntu."
-    fi
+  if [ $OS_ID == "ubuntu" ]; then
     cp /anchors/ubuntu/* /usr/local/share/ca-certificates/
     cp /anchors/mariner/* /usr/local/share/ca-certificates/
     if [ -e "/etc/ama-logs-secret/PROXYCERT.crt" ]; then
@@ -687,6 +677,16 @@ if [ $CLOUD_ENVIRONMENT == "usnat" ] || [ $CLOUD_ENVIRONMENT == "ussec" ] || [ "
     fi
     update-ca-certificates
     cp /etc/ssl/certs/ca-certificates.crt /usr/lib/ssl/cert.pem
+  else
+    if [ $OS_ID != "azurelinux" ]; then
+      echo "Error: The ID in /etc/os-release is not ubuntu or azurelinux. Defaulting to azurelinux."
+    fi
+    cp /anchors/ubuntu/* /etc/pki/ca-trust/source/anchors
+    cp /anchors/mariner/* /etc/pki/ca-trust/source/anchors
+    if [ -e "/etc/ama-logs-secret/PROXYCERT.crt" ]; then
+      cp /etc/ama-logs-secret/PROXYCERT.crt /etc/pki/ca-trust/source/PROXYCERT.crt
+    fi
+    update-ca-trust
   fi
 fi
 
