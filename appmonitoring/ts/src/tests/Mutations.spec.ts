@@ -143,7 +143,7 @@ describe("OTEL Metrics Exporter Environment Variable", () => {
 
         const otelMetricsExporter = generatedEnvVars.find(env => env.name === "OTEL_METRICS_EXPORTER");
         expect(otelMetricsExporter).toBeDefined();
-        expect(otelMetricsExporter!.value).toBe("otlp");
+        expect(otelMetricsExporter!.value).toBe("otlp,azure_monitor");
     });
 
     it("should not include OTEL_METRICS_EXPORTER when metrics are disabled", () => {
@@ -193,7 +193,7 @@ describe("OTEL Metrics Exporter Environment Variable", () => {
         // Should have OTEL_METRICS_EXPORTER
         const otelMetricsExporter = generatedEnvVars.find(env => env.name === "OTEL_METRICS_EXPORTER");
         expect(otelMetricsExporter).toBeDefined();
-        expect(otelMetricsExporter!.value).toBe("otlp");
+        expect(otelMetricsExporter!.value).toBe("otlp,azure_monitor");
 
         // Should also have other metrics-related variables
         const otelMetricsEndpoint = generatedEnvVars.find(env => env.name === "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT");

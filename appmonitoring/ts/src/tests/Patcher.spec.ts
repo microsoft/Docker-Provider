@@ -739,7 +739,7 @@ describe("Patcher", () => {
         expect(metricsEndpointEnv.value).toBe("http://$(OTEL_ENDPOINT_NODE_IP):4319/v1/metrics");
 
         const metricsExporterEnv = containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_METRICS_EXPORTER");
-        expect(metricsExporterEnv.value).toBe("otlp");
+        expect(metricsExporterEnv.value).toBe("otlp,azure_monitor");
     });
 
     it("OTEL environment variables - includes only logs variables when only logsEnabled is true", async () => {
@@ -838,7 +838,7 @@ describe("Patcher", () => {
         expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_METRICS_EXPORTER")).toBeDefined();
 
         const metricsExporterEnv = containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_METRICS_EXPORTER");
-        expect(metricsExporterEnv.value).toBe("otlp");
+        expect(metricsExporterEnv.value).toBe("otlp,azure_monitor");
     });
 
     it("OTEL environment variables - excludes all OTEL variables when both logsEnabled and metricsEnabled are false", async () => {

@@ -1252,7 +1252,7 @@ describe("Mutator", () => {
         // Verify OTEL_METRICS_EXPORTER is present and set to "otlp"
         const otelMetricsExporter = container.env.find(env => env.name === "OTEL_METRICS_EXPORTER");
         expect(otelMetricsExporter).toBeDefined();
-        expect(otelMetricsExporter.value).toBe("otlp");
+        expect(otelMetricsExporter.value).toBe("otlp,azure_monitor");
 
         // Verify logs-related OTEL environment variables are NOT present
         const otelTracesEndpoint = container.env.find(env => env.name === "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT");

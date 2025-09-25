@@ -307,7 +307,7 @@ export class Mutations {
                 // setting this to ensure Microsoft distros do send OTLP metrics (forked, sent to Breeze and OTLP endpoint). For OSS SDKs this defaults to "otlp" anyway, so no impact
                 {
                     name: "OTEL_METRICS_EXPORTER",
-                    value: `otlp`
+                    value: `otlp,azure_monitor`
                 },
                 {
                     name: "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", //!!! http -> https
