@@ -9,7 +9,7 @@ REGISTER_REGIONS_BATCH='"'$(echo "$REGISTER_REGIONS_BATCH" | sed 's/,/","/g')'"'
 IS_CUSTOMER_HIDDEN=$IS_CUSTOMER_HIDDEN
 CHART_VERSION=${CHART_VERSION}
 
-PACKAGE_CONFIG_NAME="${PACKAGE_CONFIG_NAME:-microsoft.azuremonitor.containers-pkg022022}"
+PACKAGE_CONFIG_NAME="${PACKAGE_CONFIG_NAME:-microsoft.azuremonitor.containers-pkg092025}"
 API_VERSION="${API_VERSION:-2021-05-01}"
 METHOD="${METHOD:-put}"
 REGISTRY_PATH_CANARY_STABLE="https://mcr.microsoft.com/azuremonitor/containerinsights/canary/stable/azuremonitor-containers"

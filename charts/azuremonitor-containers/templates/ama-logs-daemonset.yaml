@@ -38,6 +38,7 @@ spec:
    {{- end }}
    containers:
 {{- if and (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>") (.Values.amalogs.useAADAuth) }}
+     {{- if not (eq .Values.Azure.Cluster.Distribution "openshift") }}
      - name: addon-token-adapter
        imagePullPolicy: IfNotPresent
        env:
@@ -46,6 +47,58 @@ spec:
        - name: TOKEN_NAMESPACE
          value: "azure-arc"
 {{-  .Values.Azure.Identity.MSIAdapterYaml | nindent 7 }}
+     {{- else }}
+     - name: msi-adapter
+       env:
+       - name: AZMON_COLLECT_ENV
+         value: "false"
+       - name: TOKEN_NAMESPACE
+         value: azure-arc
+       - name: CLUSTER_IDENTITY
+         value: "false"
+       - name: CLUSTER_TYPE
+         value: {{ (split "/" .Values.Azure.Cluster.ResourceId)._7 }}
+       - name: EXTENSION_ARMID
+         value: {{ .Values.Azure.Extension.ResourceId }}
+       - name: EXTENSION_NAME
+         value: {{ .Values.Azure.Extension.Name }}
+       - name: MSI_ADAPTER_LISTENING_PORT
+         value: "8421"
+       - name: MANAGED_IDENTITY_AUTH
+         value: "true"
+       - name: MSI_ADAPTER_LIVENESS_PORT
+         value: "9090"
+       - name: TEST_MODE
+         value: "false"
+       - name: TEST_FILE
+         value: /data/token
+       image: mcr.microsoft.com/azurearck8s/msi-adapter:1.29.3
+       securityContext:
+         privileged: true
+         capabilities:
+           add:
+             - NET_ADMIN
+             - NET_RAW
+       livenessProbe:
+         failureThreshold: 3
+         httpGet:
+           path: /healthz
+           port: 9090
+           scheme: "HTTP"
+         initialDelaySeconds: 10
+         periodSeconds: 15
+       resources:
+         limits:
+           cpu: 50m
+           memory: 100Mi
+         requests:
+           cpu: 20m
+           memory: 50Mi
+       lifecycle:
+         postStart:
+           exec:
+             command: ["/data/msi-adapter-ready-watcher"]
+     {{- end }}
 {{- end }}
      - name: ama-logs
        image: {{ printf "%s:%s" .Values.amalogs.image.repo .Values.amalogs.image.tag }}
