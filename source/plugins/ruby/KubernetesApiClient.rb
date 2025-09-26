@@ -10,6 +10,8 @@ class KubernetesApiClient
   require "time"
   require "ipaddress"
   require "jwt"
+  require "zlib"
+  require "stringio"
 
   require_relative "oms_common"
   require_relative "constants"
@@ -864,20 +866,14 @@ class KubernetesApiClient
       resourceInventory = nil
       responseCode = nil
       begin
-        # Localized implementation with gzip request + streaming decompression + incremental JSON item parsing.
-        # Caller already paginates (passes limited chunk via 'uri'), so we optimize single-chunk parse CPU & memory.
-        require 'zlib'
-        require 'stringio'
-
         resource_path = getResourceUri(uri, api_group)
         if resource_path.nil?
           @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: resource path nil for #{uri}"
           return continuationToken, resourceInventory, responseCode
         end
-
         parsed_items = []
         metadata_continue = nil
-        parse_mode = 'stream'
+        parse_mode = "stream"
         total_uncompressed_bytes = 0
         total_compressed_bytes = 0
         started_at = Time.now.utc
@@ -894,7 +890,7 @@ class KubernetesApiClient
             kubeApiRequest['User-Agent'] = getUserAgent
             kubeApiRequest['Accept-Encoding'] = 'gzip'
             kubeApiRequest['Accept'] = 'application/json'
-
+            
             @Log.info "KubernetesApiClient::getResourcesAndContinuationTokenV2(stream): Requesting #{uri} (api_group=#{api_group}) @ #{started_at.iso8601}"
 
             http.request(kubeApiRequest) do |response|
