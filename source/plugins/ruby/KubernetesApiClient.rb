@@ -864,18 +864,219 @@ class KubernetesApiClient
       resourceInventory = nil
       responseCode = nil
       begin
-        @Log.info "KubernetesApiClient::getResourcesAndContinuationTokenV2 : Getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
-        responseCode, resourceInfo = getKubeResourceInfoV2(uri, api_group: api_group)
-        @Log.info "KubernetesApiClient::getResourcesAndContinuationTokenV2 : Done getting resources from Kube API using url: #{uri} @ #{Time.now.utc.iso8601}"
-        if !responseCode.nil? && responseCode == "200" && !resourceInfo.nil?
-          @Log.info "KubernetesApiClient::getResourcesAndContinuationTokenV2:Start:Parsing data for #{uri} using JSON @ #{Time.now.utc.iso8601}"
-          resourceInventory = JSON.parse(resourceInfo.body)
-          @Log.info "KubernetesApiClient::getResourcesAndContinuationTokenV2:End:Parsing data for #{uri} using JSON @ #{Time.now.utc.iso8601}"
-          resourceInfo = nil
+        # Localized implementation with gzip request + streaming decompression + incremental JSON item parsing.
+        # Caller already paginates (passes limited chunk via 'uri'), so we optimize single-chunk parse CPU & memory.
+        require 'zlib'
+        require 'stringio'
+
+        resource_path = getResourceUri(uri, api_group)
+        if resource_path.nil?
+          @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: resource path nil for #{uri}"
+          return continuationToken, resourceInventory, responseCode
         end
-        if (!resourceInventory.nil? && !resourceInventory["metadata"].nil?)
-          continuationToken = resourceInventory["metadata"]["continue"]
+
+        parsed_items = []
+        metadata_continue = nil
+        parse_mode = 'stream'
+        total_uncompressed_bytes = 0
+        total_compressed_bytes = 0
+        started_at = Time.now.utc
+
+        begin
+          parsed_uri = URI.parse(resource_path)
+          if !File.exist?(@@CaFile)
+            raise "#{@@CaFile} doesnt exist"
+          end
+
+          Net::HTTP.start(parsed_uri.host, parsed_uri.port, :use_ssl => true, :ca_file => @@CaFile, :verify_mode => OpenSSL::SSL::VERIFY_PEER, :open_timeout => 20, :read_timeout => 60) do |http|
+            kubeApiRequest = Net::HTTP::Get.new(parsed_uri.request_uri)
+            kubeApiRequest['Authorization'] = 'Bearer ' + getTokenStr
+            kubeApiRequest['User-Agent'] = getUserAgent
+            kubeApiRequest['Accept-Encoding'] = 'gzip'
+            kubeApiRequest['Accept'] = 'application/json'
+
+            @Log.info "KubernetesApiClient::getResourcesAndContinuationTokenV2(stream): Requesting #{uri} (api_group=#{api_group}) @ #{started_at.iso8601}"
+
+            http.request(kubeApiRequest) do |response|
+              responseCode = response.code
+              unless responseCode == '200'
+                parse_mode = 'error'
+                @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: Non-success code #{responseCode} for #{uri}"
+                break
+              end
+
+              # Decide whether to stream or fallback to full parse based on Content-Length (if small, cheaper to full-parse)
+              content_length = nil
+              begin
+                content_length = Integer(response['Content-Length']) if response['Content-Length']
+              rescue; end
+              small_threshold = 256 * 1024 # 256KB
+
+              if content_length && content_length <= small_threshold
+                # Read whole (possibly compressed) body then JSON.parse normally (fast path for small payloads)
+                body_buf = +"" # mutable string
+                response.read_body { |c| body_buf << c }
+                total_compressed_bytes = body_buf.bytesize
+                if response['Content-Encoding'] == 'gzip'
+                  begin
+                    body_buf = Zlib::GzipReader.new(StringIO.new(body_buf)).read
+                    parse_mode = 'full_gzip'
+                  rescue => gzerr
+                    @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: gzip decompress(small) failed: #{gzerr}; using compressed body (parse will likely fail)"
+                  end
+                else
+                  parse_mode = 'full_plain'
+                end
+                total_uncompressed_bytes = body_buf.bytesize
+                resourceInventory = JSON.parse(body_buf)
+              else
+                # Streaming path
+                is_gzip = (response['Content-Encoding'] == 'gzip')
+                inflater = nil
+                if is_gzip
+                  # Use Inflate with gzip window bits for streaming
+                  inflater = Zlib::Inflate.new(Zlib::MAX_WBITS + 32)
+                end
+
+                # Simple streaming JSON list parser tailored to k8s list structure.
+                header_scanned = false
+                header_buffer = +""
+                in_items_array = false
+                brace_depth = 0
+                in_string = false
+                escape_next = false
+                current_item = nil
+                after_items = false
+
+                response.read_body do |compressed_chunk|
+                  total_compressed_bytes += compressed_chunk.bytesize
+                  chunk = compressed_chunk
+                  if is_gzip
+                    begin
+                      decompressed = inflater.inflate(chunk)
+                    rescue Zlib::Error => zerr
+                      @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: gzip inflate failed mid-stream: #{zerr}"
+                      raise
+                    end
+                  else
+                    decompressed = chunk
+                  end
+                  total_uncompressed_bytes += decompressed.bytesize
+
+                  # If we've already passed items end, ignore rest
+                  next if after_items
+
+                  decompressed.each_char do |ch|
+                    # Basic JSON string handling to not confuse braces inside strings
+                    if in_string
+                      if escape_next
+                        escape_next = false
+                      elsif ch == '\\'
+                        escape_next = true
+                      elsif ch == '"'
+                        in_string = false
+                      end
+                      current_item << ch if brace_depth > 0 && current_item
+                      next
+                    else
+                      if ch == '"'
+                        in_string = true
+                        if brace_depth > 0 && current_item
+                          current_item << ch
+                        elsif brace_depth == 0 && in_items_array && current_item
+                          current_item << ch
+                        end
+                        next
+                      end
+                    end
+
+                    unless in_items_array
+                      header_buffer << ch unless header_scanned
+                      # Detect start of items array
+                      if header_buffer.include?('"items"')
+                        # Look for the '[' following '"items"'
+                        if ch == '['
+                          in_items_array = true
+                          header_scanned = true
+                          # Attempt to extract continuation token (if present) from header_buffer
+                          if header_buffer.include?('"continue"')
+                            # naive regex extraction
+                            m = header_buffer.match(/"continue"\s*:\s*"([^"]*)"/)
+                            metadata_continue = m[1] if m && !m[1].empty?
+                          end
+                        end
+                      end
+                      next unless in_items_array
+                    end
+
+                    # Inside items array
+                    if !current_item
+                      if ch == '{'
+                        current_item = +"{"
+                        brace_depth = 1
+                      elsif ch == ']'
+                        # End of items array
+                        in_items_array = false
+                        after_items = true
+                        break
+                      else
+                        # Skip commas/whitespace
+                      end
+                    else
+                      # Building current item
+                      if ch == '{'
+                        brace_depth += 1
+                        current_item << ch
+                      elsif ch == '}'
+                        brace_depth -= 1
+                        current_item << ch
+                        if brace_depth == 0
+                          # Complete object
+                          begin
+                            parsed_items << JSON.parse(current_item)
+                          rescue => perr
+                            @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: failed to parse item (ignored): #{perr}"
+                          end
+                          current_item = nil
+                        end
+                      else
+                        current_item << ch
+                      end
+                    end
+                  end # each_char
+                end # read_body
+
+                # Finish inflater
+                inflater.finish if inflater
+                inflater.close if inflater
+
+                # Build minimal inventory structure
+                resourceInventory = { 'metadata' => { 'continue' => metadata_continue }, 'items' => parsed_items }
+              end # streaming path
+            end # http.request
+          end # Net::HTTP.start
+        rescue => inner_err
+          @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: streaming fetch/parse failed for #{uri}: #{inner_err}; falling back to legacy getKubeResourceInfoV2"
+          parse_mode = 'fallback'
+          begin
+            # Fallback to legacy path
+            responseCode, resourceInfo = getKubeResourceInfoV2(uri, api_group: api_group)
+            if responseCode == '200' && resourceInfo && resourceInfo.body
+              resourceInventory = JSON.parse(resourceInfo.body)
+              continuationToken = resourceInventory.dig('metadata', 'continue') if resourceInventory && resourceInventory['metadata']
+            end
+          rescue => legacy_err
+            @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: legacy fallback also failed: #{legacy_err}"
+            ApplicationInsightsUtility.sendExceptionTelemetry(legacy_err)
+          end
         end
+
+        # Derive continuation token if not already set
+        if continuationToken.nil? && resourceInventory && resourceInventory['metadata']
+          continuationToken = resourceInventory['metadata']['continue']
+        end
+        duration_ms = ((Time.now.utc - started_at) * 1000).round(1)
+        @Log.info "KubernetesApiClient::getResourcesAndContinuationTokenV2: mode=#{parse_mode} code=#{responseCode} items=#{resourceInventory && resourceInventory['items'] ? resourceInventory['items'].length : 'n/a'} cont=#{continuationToken.nil? ? 'nil' : continuationToken.empty? ? 'empty' : 'set'} compBytes=#{total_compressed_bytes} uncompBytes=#{total_uncompressed_bytes} ms=#{duration_ms} uri=#{uri}"
       rescue => errorStr
         @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2:Failed in get resources for #{uri} and continuation token: #{errorStr}"
         ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
