@@ -294,16 +294,9 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 
 				isOpenTelemetryLogsEnabled := os.Getenv("IS_OPENTELEMETRY_LOGS_ENABLED")
 				if isOpenTelemetryLogsEnabled != "" {
-					telemetryDimensions["isOpenTelemetryLogsEnabled"] = isOpenTelemetryLogsEnabled
+					telemetryDimensions["OtelLogs"] = isOpenTelemetryLogsEnabled
 					if strings.EqualFold(isOpenTelemetryLogsEnabled, "true") {
-						openTelemetryPort := os.Getenv("OPENTELEMETRY_LOGS_PORT")
-						if openTelemetryPort != "" {
-							telemetryDimensions["openTelemetryLogsPort"] = openTelemetryPort
-						}
-						openTelemetryContainerPort := os.Getenv("OPENTELEMETRY_LOGS_CONTAINER_PORT")
-						if openTelemetryContainerPort != "" {
-							telemetryDimensions["openTelemetryLogsContainerPort"] = openTelemetryContainerPort
-						}
+						telemetryDimensions["OtelLogsPort"] = os.Getenv("OPENTELEMETRY_LOGS_PORT")
 					}
 				}
 

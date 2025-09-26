@@ -60,9 +60,7 @@ getClusterCloudEnvironment() {
 }
 
 startAMACoreAgent() {
-      if isHighLogScaleMode; then
-            echo "AMACoreAgent: Starting AMA Core Agent since High Log scale mode is enabled"
-      fi
+      echo "AMACoreAgent: Starting AMA Core Agent since High Log scale or OpenTelemetry logs is enabled"
 
       export AMACALogFileDir="/var/opt/microsoft/linuxmonagent/amaca/log"
       export AMACALogFilePath="$AMACALogFileDir"/amaca.log
@@ -84,7 +82,6 @@ startAMACoreAgent() {
       } >> ~/.bashrc  
 
       if isOpenTelemetryLogsEnabled; then
-            echo "AMACoreAgent: Starting AMA Core Agent for Open Telemetry logs(and traces)"
             export PA_AMCS_PROTOCOL="HttpProtobuf"
             export PA_AMCS_HOST="0.0.0.0"
             export PA_AMCS_PORT=4319
@@ -534,14 +531,8 @@ if isOpenTelemetryLogsEnabled; then
       echo "Enabled OpenTelemetry Logs Mode"
       export IS_OPENTELEMETRY_LOGS_ENABLED=true
       echo "export IS_OPENTELEMETRY_LOGS_ENABLED=$IS_OPENTELEMETRY_LOGS_ENABLED" >>~/.bashrc
-      if [ -n "${APPMONITORING_OPENTELEMETRYLOGS_PORT}" ]; then
-            export OPENTELEMETRY_LOGS_PORT="${APPMONITORING_OPENTELEMETRYLOGS_PORT}"
-            echo "export OPENTELEMETRY_LOGS_PORT=${OPENTELEMETRY_LOGS_PORT}" >>~/.bashrc
-      fi
-      if [ -n "${AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT}" ]; then
-            export OPENTELEMETRY_LOGS_CONTAINER_PORT="${AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT}"
-            echo "export OPENTELEMETRY_LOGS_CONTAINER_PORT=${OPENTELEMETRY_LOGS_CONTAINER_PORT}" >>~/.bashrc
-      fi
+      export OPENTELEMETRY_LOGS_PORT="${APPMONITORING_OPENTELEMETRYLOGS_PORT}"
+      echo "export OPENTELEMETRY_LOGS_PORT=${OPENTELEMETRY_LOGS_PORT}" >>~/.bashrc
       source ~/.bashrc
 fi
 
