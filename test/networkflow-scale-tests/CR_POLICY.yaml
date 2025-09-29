@@ -1,0 +1,18 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: block-http
+  namespace: pets
+spec:
+  podSelector:
+    matchLabels:
+      app: store-front
+  policyTypes: [Egress]
+  egress:
+  - to:
+    - namespaceSelector: {}
+    ports: 
+    - port: 3002 # product-service
+      protocol: TCP
+    - port: 53 # DNS
+      protocol: UDP

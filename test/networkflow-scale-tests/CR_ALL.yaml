@@ -1,0 +1,19 @@
+apiVersion: acn.azure.com/v1alpha1
+kind: RetinaNetworkFlowLog
+metadata:
+  name: all-traffic
+spec:
+  includefilters:
+    - name: pets-traffic
+      from:
+        namespacedPod: ["pets/"]
+      to:
+        namespacedPod: ["pets/"]
+      protocol: [tcp, udp, dns]
+      
+    - name: dns-traffic
+      from:
+        namespacedPod: ["pets/"]
+      to:
+        namespacedPod: ["kube-system/coredns-"]
+      protocol: [dns]

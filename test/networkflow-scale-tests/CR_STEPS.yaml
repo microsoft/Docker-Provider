@@ -1,0 +1,128 @@
+
+1. Check Service Definition
+bash
+Copy
+Download
+kubectl get svc -n pets product-service -o yaml
+Look for spec.ports[*].targetPort in the output. This shows which port the service is using.
+
+2. Verify Pod Container Ports
+bash
+Copy
+Download
+kubectl describe pod -n pets product-service-65c7fc7bf-s8s6q | grep -i port
+This will show any declared container ports in the pod spec.
+
+3. Use kubectl port-forward for Direct Test
+bash
+Copy
+Download
+# Forward local port 8080 to pod's port 80 (common web port)
+kubectl port-forward -n pets product-service-65c7fc7bf-s8s6q 8080:80 &
+curl -I localhost:8080
+If you get HTTP headers, port 80 is active. Adjust the ports as needed.
+
+4. Check Application Logs
+bash
+Copy
+Download
+kubectl logs -n pets product-service-65c7fc7bf-s8s6q | grep -i listening
+Look for lines like:
+log
+Copy
+Download
+Listening on port 8080
+Server running on :3000
+
+5. Create Debug Pod with Networking Tools
+bash
+Copy
+Download
+kubectl run debug-pod -n pets --image=nicolaka/netshoot -it --rm --restart=Never -- /bin/sh
+
+# Inside debug pod:
+nmap -p 1-65535 <product-service-pod-ip>
+exit
+Get Pod IP:
+bash
+Copy
+Download
+kubectl get pod -n pets product-service-65c7fc7bf-s8s6q -o jsonpath='{.status.podIP}'
+
+6. NetworkPolicy Adjustment (Temporary Allow)
+bash
+Copy
+Download
+cat <<EOF | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all
+  namespace: pets
+spec:
+  podSelector: {}
+  ingress: [{}]
+  egress: [{}]
+EOF
+
+# Now test connectivity freely
+kubectl delete networkpolicy -n pets allow-all
+
+Key Findings So Far
+NetworkPolicies Exist:
+block-http targets store-front
+block-mongodb targets virtual-worker
+Next Steps:
+Verify product-service actual port
+Ensure NetworkPolicy matches real port
+Use valid service ports for drop testing
+
+
+
+
+
+
+
+1. Update NetworkPolicy for Port 3002
+bash
+Copy
+Download
+cat <<EOF | kubectl apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: block-http
+  namespace: pets
+spec:
+  podSelector:
+    matchLabels:
+      app=store-front
+  policyTypes: [Egress]
+  egress:
+  - to: []
+    ports: 
+    - port: 3002
+      protocol: TCP
+EOF
+2. Generate Valid Traffic
+bash
+Copy
+Download
+# From store-front pod (should fail)
+kubectl exec -n pets store-front-66ccf8d74d-qtww7 -- \
+  sh -c 'timeout 3 nc -zv product-service.pets 3002 && echo "SUCCESS" || echo "FAILED"'
+3. Verify Drops in Logs
+kusto
+Copy
+Download
+RetinaNetworkFlowLogs
+| where TimeGenerated > ago(5m)
+| where Verdict == "dropped"
+| where DestinationPort == 3002
+| project SourcePodName, DestinationPodName, Protocol
+
+
+kubectl get rnfl -o name
+kubectl delete rnfl --all
+kubectl exec -n pets store-front-66ccf8d74d-qtww7 -- \
+  sh -c 'timeout 3 nc -zv product-service.pets 3002 && echo "SUCCESS" || echo "FAILED"'
