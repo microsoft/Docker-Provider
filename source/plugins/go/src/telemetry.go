@@ -296,7 +296,16 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 				if isOpenTelemetryLogsEnabled != "" {
 					telemetryDimensions["OtelLogs"] = isOpenTelemetryLogsEnabled
 					if strings.EqualFold(isOpenTelemetryLogsEnabled, "true") {
-						telemetryDimensions["OtelLogsPort"] = os.Getenv("OPENTELEMETRY_LOGS_PORT")
+						otelLogsPort := os.Getenv("OPENTELEMETRY_LOGS_PORT")
+						// Otel node port 28331 is the default port. We will send the port only if it is configured to a different port
+						if otelLogsPort != "28331" {
+							telemetryDimensions["OtelLogsPort"] = otelLogsPort
+						}
+						isAppMonitoringAutoInstrumentationEnabled := os.Getenv("IS_APPMONITORING_AUTOINSTRUMENTATION_ENABLED")
+						// By default otel is enabled with App monitoring auto instrumentation so only send the value if it is set to false
+						if isAppMonitoringAutoInstrumentationEnabled == "false" {
+							telemetryDimensions["AppMonAutoInstrument"] = "false"
+						}
 					}
 				}
 
