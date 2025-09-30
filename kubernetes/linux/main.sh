@@ -60,7 +60,7 @@ getClusterCloudEnvironment() {
 }
 
 startAMACoreAgent() {
-      echo "AMACoreAgent: Starting AMA Core Agent since High Log scale mode is enabled"
+      echo "AMACoreAgent: Starting AMA Core Agent since High Log scale or OpenTelemetry logs is enabled"
 
       export AMACALogFileDir="/var/opt/microsoft/linuxmonagent/amaca/log"
       export AMACALogFilePath="$AMACALogFileDir"/amaca.log
@@ -79,7 +79,26 @@ startAMACoreAgent() {
          echo "export PA_CONFIG_PORT=$PA_CONFIG_PORT"
          echo "export CounterDataReportFrequencyInMinutes=$CounterDataReportFrequencyInMinutes"
          echo "export AMACALogFilePath=$AMACALogFilePath"
-      } >> ~/.bashrc
+      } >> ~/.bashrc  
+
+      if isOpenTelemetryLogsEnabled; then
+            export PA_AMCS_PROTOCOL="HttpProtobuf"
+            export PA_AMCS_HOST="0.0.0.0"
+            export PA_AMCS_PORT=4319
+            if [ -n "${AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT}" ]; then
+                  # Convert AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT from string to int
+                  port_int=$((AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT + 0))
+                  if [ "$port_int" -gt 0 ] 2>/dev/null; then
+                        export PA_AMCS_PORT=$port_int
+                  fi
+            fi
+            
+            {
+                  echo "export PA_AMCS_PROTOCOL=$PA_AMCS_PROTOCOL"
+                  echo "export PA_AMCS_PORT=$PA_AMCS_PORT"
+                  echo "export PA_AMCS_HOST=$PA_AMCS_HOST"
+            } >> ~/.bashrc
+      fi
 
       source ~/.bashrc
       /opt/microsoft/azure-mdsd/bin/amacoreagent --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath --giglaport $PA_DATA_PORT > /dev/null 2>&1 &
@@ -228,6 +247,14 @@ isHighLogScaleMode() {
      else
          false
      fi
+}
+
+isOpenTelemetryLogsEnabled() {
+      if [[ "${APPMONITORING_OPENTELEMETRYLOGS_ENABLED}" == "true" ]]; then
+          true
+      else
+          false
+      fi
 }
 
 checkAgentOnboardingStatus() {
@@ -494,10 +521,10 @@ source common_agent_config_env_var
 
 # check if high log scale mode enabled
 if isHighLogScaleMode; then
-    echo "Enabled High Log Scale Mode"
-    export IS_HIGH_LOG_SCALE_MODE=true
-    echo "export IS_HIGH_LOG_SCALE_MODE=$IS_HIGH_LOG_SCALE_MODE" >>~/.bashrc
-    source ~/.bashrc
+      echo "Enabled High Log Scale Mode"
+      export IS_HIGH_LOG_SCALE_MODE=true
+      echo "export IS_HIGH_LOG_SCALE_MODE=$IS_HIGH_LOG_SCALE_MODE" >>~/.bashrc
+      source ~/.bashrc
 fi
 
 #Parse the configmap to set the right environment variables for agent config.
@@ -660,26 +687,16 @@ else
       echo "LA Onboarding:Workspace Id not mounted, skipping the telemetry check"
 fi
 
-# Copying over CA certs for airgapped clouds. This is needed for Mariner vs Ubuntu hosts.
-# We are unable to tell if the host is Mariner or Ubuntu,
-# so both /anchors/ubuntu and /anchors/mariner are mounted in the yaml.
+# Copying over CA certs for airgapped clouds. This is needed for AzureLinux vs Ubuntu hosts.
+# We are unable to tell if the host is AzureLinux or Ubuntu,
+# so both /anchors/ubuntu and /anchors/mariner (for AzureLinux) are mounted in the yaml.
 # One will have the certs and the other will be empty.
-# These need to be copied to a different location for Mariner vs Ubuntu containers.
+# These need to be copied to a different location for AzureLinux vs Ubuntu containers.
 # OS_ID here is the container distro.
-# Adding Mariner now even though the elif will never currently evaluate.
+# Adding AzureLinux now even though the elif will never currently evaluate.
 if [ $CLOUD_ENVIRONMENT == "usnat" ] || [ $CLOUD_ENVIRONMENT == "ussec" ] || [ "$IS_CUSTOM_CERT" == "true" ]; then
   OS_ID=$(cat /etc/os-release | grep ^ID= | cut -d '=' -f2 | tr -d '"' | tr -d "'")
-  if [ $OS_ID == "mariner" ]; then
-    cp /anchors/ubuntu/* /etc/pki/ca-trust/source/anchors
-    cp /anchors/mariner/* /etc/pki/ca-trust/source/anchors
-    if [ -e "/etc/ama-logs-secret/PROXYCERT.crt" ]; then
-      cp /etc/ama-logs-secret/PROXYCERT.crt /etc/pki/ca-trust/source/PROXYCERT.crt
-    fi
-    update-ca-trust
-  else
-    if [ $OS_ID != "ubuntu" ]; then
-      echo "Error: The ID in /etc/os-release is not ubuntu or mariner. Defaulting to ubuntu."
-    fi
+  if [ $OS_ID == "ubuntu" ]; then
     cp /anchors/ubuntu/* /usr/local/share/ca-certificates/
     cp /anchors/mariner/* /usr/local/share/ca-certificates/
     if [ -e "/etc/ama-logs-secret/PROXYCERT.crt" ]; then
@@ -687,6 +704,16 @@ if [ $CLOUD_ENVIRONMENT == "usnat" ] || [ $CLOUD_ENVIRONMENT == "ussec" ] || [ "
     fi
     update-ca-certificates
     cp /etc/ssl/certs/ca-certificates.crt /usr/lib/ssl/cert.pem
+  else
+    if [ $OS_ID != "azurelinux" ]; then
+      echo "Error: The ID in /etc/os-release is not ubuntu or azurelinux. Defaulting to azurelinux."
+    fi
+    cp /anchors/ubuntu/* /etc/pki/ca-trust/source/anchors
+    cp /anchors/mariner/* /etc/pki/ca-trust/source/anchors
+    if [ -e "/etc/ama-logs-secret/PROXYCERT.crt" ]; then
+      cp /etc/ama-logs-secret/PROXYCERT.crt /etc/pki/ca-trust/source/PROXYCERT.crt
+    fi
+    update-ca-trust
   fi
 fi
 
@@ -1088,7 +1115,7 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
     fi
 else
       echo "starting mdsd in main container..."
-      if isHighLogScaleMode; then
+      if isHighLogScaleMode || isOpenTelemetryLogsEnabled; then
             startAMACoreAgent
       fi
       export MDSD_ROLE_PREFIX=/var/run/mdsd-ci/default
