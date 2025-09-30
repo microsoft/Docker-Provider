@@ -1,20 +1,49 @@
+Azure: # These helm values are provided by extension platform
+  Cluster:
+    ResourceId: ""
+    Region: ""
+    Cloud: ""
+    Distribution: ""
+    Infrastructure: ""
+  proxySettings:
+    isProxyEnabled: "false"
+    httpProxy: ""
+    httpsProxy: ""
+    noProxy: ""
+    proxyCert: ""
+    isCustomCert: false
+  Identity:
+    isEnabled: ""
+    Type: ""
+    ClientId: ""
+  Extension:
+    Name: ""
+    ResourceId: ""
 global:
   commonGlobals:
+    CloudEnvironment: AZUREPUBLICCLOUD
     Customer:
-      AzureResourceID: "/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/Microsoft.ContainerService/managedClusters/appmonitoring-webhook-testbed"
-    Region: "westus2"
+      AzureResourceID: ""
+    Region: ""
     Versions:
-      Kubernetes: "1.25.0"
+      Kubernetes: ""
 AppmonitoringAgent:
-  cpuRequest: "100m"
-  memoryRequest: "128Mi"
-  cpuLimit: "500m"
-  memoryLimit: "512Mi"
+  cpuLimit: "200m"
+  cpuRequest: "200m"
+  enabled: false
+  imageTag: ""
+  isOpenTelemetryLogsEnabled: true
+  isOpenTelemetryMetricsEnabled: true
+  isOtelToggleEnabled: false
+  memoryLimit: "200Mi"
+  memoryRequest: "200Mi"
+  openTelemetryLogsPort: "28331"
+  openTelemetryMetricsPort: "28333"
 replicaCount: 2
 resources:
   limits:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 200m
+    memory: 200Mi
   requests:
-    cpu: 250m
-    memory: 256Mi
+    cpu: 200m
+    memory: 200Mi
