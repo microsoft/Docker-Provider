@@ -70,12 +70,12 @@ then
  exit 1
 fi
 
-if [[ "${IS_HIGH_LOG_SCALE_MODE}" == "true" || "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" || "${IS_OPENTELEMETRY_LOGS_ENABLED}" == "true" ]]; then
+if [[ "${IS_HIGH_LOG_SCALE_MODE}" == "true" || "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" || "${APPMONITORING_OPENTELEMETRYLOGS_ENABLED}" == "true" ]]; then
   (ps -ef | grep "amacoreagent" | grep -v "grep")
   if [ $? -ne 0 ]
   then
-    echo "amacoreagent is not running when high log scale or OpenTelemetry logs is enabled" > /dev/termination-log
-    exit 1
+   echo "amacoreagent is not running when high log scale or OpenTelemetry logs is enabled" > /dev/termination-log
+   exit 1
   fi
 fi
 

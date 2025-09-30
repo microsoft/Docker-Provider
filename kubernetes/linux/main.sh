@@ -527,17 +527,6 @@ if isHighLogScaleMode; then
       source ~/.bashrc
 fi
 
-if isOpenTelemetryLogsEnabled; then
-      echo "Enabled OpenTelemetry Logs Mode"
-      export IS_OPENTELEMETRY_LOGS_ENABLED=true
-      echo "export IS_OPENTELEMETRY_LOGS_ENABLED=$IS_OPENTELEMETRY_LOGS_ENABLED" >>~/.bashrc
-      export OPENTELEMETRY_LOGS_PORT="${APPMONITORING_OPENTELEMETRYLOGS_PORT}"
-      echo "export OPENTELEMETRY_LOGS_PORT=${OPENTELEMETRY_LOGS_PORT}" >>~/.bashrc
-      export IS_APPMONITORING_AUTOINSTRUMENTATION_ENABLED="${APPMONITORING_AUTOINSTRUMENTATION_ENABLED}"
-      echo "export IS_APPMONITORING_AUTOINSTRUMENTATION_ENABLED=${IS_APPMONITORING_AUTOINSTRUMENTATION_ENABLED}" >>~/.bashrc
-      source ~/.bashrc
-fi
-
 #Parse the configmap to set the right environment variables for agent config.
 #Note > tomlparser-agent-config.rb has to be parsed first before fluent-bit-conf-customizer.rb for fbit agent settings
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
