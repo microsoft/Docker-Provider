@@ -71,7 +71,7 @@ echo "DOCKER_CIMPROV_VERSION=$docker_cimprov_version" >> packages_version.txt
 
 #install fluent-bit
 sudo tdnf install azcu-fluent-bit-4.0.9 -y
-sudo tdnf install postgresql-libs -y  # Add PostgreSQL dependencies for fluent-bit
+sudo tdnf install postgresql-libs openldap-libs -y
 echo "$(fluent-bit --version)" >> packages_version.txt
 
 # install fluentd
