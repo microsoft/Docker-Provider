@@ -494,10 +494,10 @@ source common_agent_config_env_var
 
 # check if high log scale mode enabled
 if isHighLogScaleMode; then
-    echo "Enabled High Log Scale Mode"
-    export IS_HIGH_LOG_SCALE_MODE=true
-    echo "export IS_HIGH_LOG_SCALE_MODE=$IS_HIGH_LOG_SCALE_MODE" >>~/.bashrc
-    source ~/.bashrc
+      echo "Enabled High Log Scale Mode"
+      setGlobalEnvVar IS_HIGH_LOG_SCALE_MODE true
+else
+      setGlobalEnvVar IS_HIGH_LOG_SCALE_MODE false
 fi
 
 #Parse the configmap to set the right environment variables for agent config.
