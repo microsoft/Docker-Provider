@@ -152,10 +152,14 @@ spec:
                   fieldRef:
                     fieldPath: metadata.name
               - name: ARM_ID
-                value: "{{ .Values.Azure.Cluster.ResourceId }}"
+                value: "{{ .Values.global.commonGlobals.Customer.AzureResourceID }}"
               - name: ARM_REGION
-                value: "{{ .Values.Azure.Cluster.Region }}"
+                value: "{{ .Values.global.commonGlobals.Region }}"
+{{- if .Values.AppmonitoringAgent.imageTag }}
               image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"
+{{- else }}
+              image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{- dict "component" "appmonitoring-webhook" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag" -}}"
+{{- end }}
               securityContext:
                 capabilities:
                   drop:
@@ -220,14 +224,18 @@ spec:
               fieldRef:
                 fieldPath: metadata.name
           - name: ARM_ID
-            value: "{{ .Values.Azure.Cluster.ResourceId }}"
+            value: "{{ .Values.global.commonGlobals.Customer.AzureResourceID }}"
           - name: ARM_REGION
-            value: "{{ .Values.Azure.Cluster.Region }}"
+            value: "{{ .Values.global.commonGlobals.Region }}"
           securityContext:
             capabilities:
               drop:
                 - ALL
+{{- if .Values.AppmonitoringAgent.imageTag }}
           image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"
+{{- else }}
+          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{- dict "component" "appmonitoring-webhook" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag" -}}"
+{{- end }}
           imagePullPolicy: IfNotPresent
           name: app-monitoring-secrets-installer
       restartPolicy: OnFailure
@@ -285,7 +293,11 @@ spec:
           effect: PreferNoSchedule
       containers:
         - name: app-monitoring-webhook
+{{- if .Values.AppmonitoringAgent.imageTag }}
           image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"
+{{- else }}
+          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{- dict "component" "appmonitoring-webhook" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag" -}}"
+{{- end }}
           imagePullPolicy: IfNotPresent
           env:
             - name: POD_NAME
@@ -293,21 +305,9 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
             - name: ARM_ID
-              value: "{{ .Values.Azure.Cluster.ResourceId }}"
+              value: "{{ .Values.global.commonGlobals.Customer.AzureResourceID }}"
             - name: ARM_REGION
-              value: "{{ .Values.Azure.Cluster.Region }}"
-{{- if .Values.AppmonitoringAgent.isOtelToggleEnabled }}
-            - name: OTEL_TOGGLE
-              value: "true"
-{{- end }}
-            - name: OTEL_LOGS_ENABLED
-              value: "{{ .Values.AppmonitoringAgent.isOpenTelemetryLogsEnabled }}"
-            - name: OTEL_LOGS_PORT_HTTPPROTOBUF
-              value: "{{ .Values.AppmonitoringAgent.openTelemetryLogsPort | default 28331 }}"
-            - name: OTEL_METRICS_ENABLED
-              value: "{{ .Values.AppmonitoringAgent.isOpenTelemetryMetricsEnabled }}"
-            - name: OTEL_METRICS_PORT_HTTPPROTOBUF
-              value: "{{ .Values.AppmonitoringAgent.openTelemetryMetricsPort | default 28333 }}"              
+              value: "{{ .Values.global.commonGlobals.Region }}"
           ports:
             - containerPort: 1337
             - containerPort: 4000
