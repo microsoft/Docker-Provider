@@ -454,6 +454,8 @@ spec:
               value: "false"
             - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
               value: "28331"
+            - name: AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT
+              value: "4319"
             - name: AZMON_RETINA_FLOW_LOGS_ENABLED
               value: "false"
             - name: CLUSTER_CLOUD_ENVIRONMENT
@@ -473,6 +475,10 @@ spec:
             - name: syslog
               containerPort: 28330
               hostPort: 28330
+              protocol: TCP
+            - name: otlp-logs
+              containerPort: 4319
+              hostPort: 28331
               protocol: TCP
           volumeMounts:
             - name: kube-api-access
@@ -1093,10 +1099,6 @@ spec:
             #   value: "true"
             - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
               value: "false"
-            - name: APPMONITORING_OPENTELEMETRYLOGS_ENABLED
-              value: "false"
-            - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
-              value: "28331"
             - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
               value: "false"
             - name: AZMON_WINDOWS_FLUENT_BIT_ENABLED
