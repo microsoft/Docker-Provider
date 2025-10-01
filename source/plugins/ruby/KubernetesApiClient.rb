@@ -885,10 +885,10 @@ class KubernetesApiClient
             raise "#{@@CaFile} doesnt exist"
           end
 
-          Net::HTTP.start(parsed_uri.host, parsed_uri.port, :use_ssl => true, :ca_file => @@CaFile, :verify_mode => OpenSSL::SSL::VERIFY_PEER, :open_timeout => 20, :read_timeout => 60) do |http|
+          Net::HTTP.start(parsed_uri.host, parsed_uri.port, :use_ssl => true, :ca_file => @@CaFile, :verify_mode => OpenSSL::SSL::VERIFY_PEER, :open_timeout => 20, :read_timeout => 40) do |http|
             kubeApiRequest = Net::HTTP::Get.new(parsed_uri.request_uri)
             kubeApiRequest['Authorization'] = 'Bearer ' + getTokenStr
-            kubeApiRequest['User-Agent'] = getUserAgent
+            kubeApiRequest['User-Agent'] = getUserAgent()
             kubeApiRequest['Accept-Encoding'] = 'gzip'
             kubeApiRequest['Accept'] = 'application/json'
 
