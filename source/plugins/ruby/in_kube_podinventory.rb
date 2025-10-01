@@ -689,7 +689,9 @@ module Fluent::Plugin
           records.push(record)
         end  #container status block end
 
-        @mdmPodRecordItems.push(mdmPodRecord.dup)
+        if CustomMetricsUtils.check_custom_metrics_availability
+            @mdmPodRecordItems.push(mdmPodRecord.dup)
+        end
 
         records.each do |record|
           if !record.nil?
