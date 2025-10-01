@@ -874,6 +874,7 @@ class KubernetesApiClient
         end
         parsed_items = []
         metadata_continue = nil
+        resource_version = nil
         parse_mode = "stream"
         total_uncompressed_bytes = 0
         total_compressed_bytes = 0
@@ -953,6 +954,7 @@ class KubernetesApiClient
                       end
                       if obj.key?('metadata') && obj['metadata'].is_a?(Hash)
                         metadata_continue = obj['metadata']['continue']
+                        resource_version = obj['metadata']['resourceVersion'] if obj['metadata'].key?('resourceVersion')
                       end
                     end
                   end
@@ -1000,7 +1002,7 @@ class KubernetesApiClient
 
                   # Build minimal inventory structure
                   resourceInventory = {
-                    'metadata' => { 'continue' => metadata_continue },
+                    'metadata' => { 'continue' => metadata_continue, 'resourceVersion' => resource_version },
                     'items' => parsed_items
                   }
 
