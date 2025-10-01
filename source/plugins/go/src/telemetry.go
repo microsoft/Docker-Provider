@@ -292,6 +292,23 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 					telemetryDimensions["isHighLogScaleMode"] = isHighLogScaleMode
 				}
 
+				isOpenTelemetryLogsEnabled := os.Getenv("APPMONITORING_OPENTELEMETRYLOGS_ENABLED")
+				if isOpenTelemetryLogsEnabled != "" {
+					telemetryDimensions["OtelLogs"] = isOpenTelemetryLogsEnabled
+					if strings.EqualFold(isOpenTelemetryLogsEnabled, "true") {
+						otelLogsPort := os.Getenv("APPMONITORING_OPENTELEMETRYLOGS_PORT")
+						// Otel node port 28331 is the default port. We will send the port only if it is configured to a different port
+						if otelLogsPort != "28331" {
+							telemetryDimensions["OtelLogsPort"] = otelLogsPort
+						}
+						isAppMonitoringAutoInstrumentationEnabled := os.Getenv("APPMONITORING_AUTOINSTRUMENTATION_ENABLED")
+						// By default otel is enabled with App monitoring auto instrumentation so only send the value if it is set to false
+						if isAppMonitoringAutoInstrumentationEnabled == "false" {
+							telemetryDimensions["AppMonAutoInstrument"] = "false"
+						}
+					}
+				}
+
 				isAzMonMultitenancyEnabled := os.Getenv("AZMON_MULTI_TENANCY_LOG_COLLECTION")
 				isAzMonMultitenancyAdvancedMode := os.Getenv("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE")
 				isAzMonMultitenancyDefaultFallbackIngestionDisabled := os.Getenv("AZMON_MULTI_TENANCY_FALLBACK_INGESTION_DISABLED")
