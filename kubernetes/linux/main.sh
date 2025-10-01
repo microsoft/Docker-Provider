@@ -60,7 +60,7 @@ getClusterCloudEnvironment() {
 }
 
 startAMACoreAgent() {
-      echo "AMACoreAgent: Starting AMA Core Agent since High Log scale mode is enabled"
+      echo "AMACoreAgent: Starting AMA Core Agent since High Log scale or OpenTelemetry logs is enabled"
 
       export AMACALogFileDir="/var/opt/microsoft/linuxmonagent/amaca/log"
       export AMACALogFilePath="$AMACALogFileDir"/amaca.log
@@ -80,6 +80,25 @@ startAMACoreAgent() {
          echo "export CounterDataReportFrequencyInMinutes=$CounterDataReportFrequencyInMinutes"
          echo "export AMACALogFilePath=$AMACALogFilePath"
       } >> ~/.bashrc
+
+      if isOpenTelemetryLogsEnabled; then
+            export PA_AMCS_PROTOCOL="HttpProtobuf"
+            export PA_AMCS_HOST="0.0.0.0"
+            export PA_AMCS_PORT=4319
+            if [ -n "${AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT}" ]; then
+                  # Convert AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT from string to int
+                  port_int=$((AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT + 0))
+                  if [ "$port_int" -gt 0 ] 2>/dev/null; then
+                        export PA_AMCS_PORT=$port_int
+                  fi
+            fi
+
+            {
+                  echo "export PA_AMCS_PROTOCOL=$PA_AMCS_PROTOCOL"
+                  echo "export PA_AMCS_PORT=$PA_AMCS_PORT"
+                  echo "export PA_AMCS_HOST=$PA_AMCS_HOST"
+            } >> ~/.bashrc
+      fi
 
       source ~/.bashrc
       /opt/microsoft/azure-mdsd/bin/amacoreagent --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath --giglaport $PA_DATA_PORT > /dev/null 2>&1 &
@@ -228,6 +247,14 @@ isHighLogScaleMode() {
      else
          false
      fi
+}
+
+isOpenTelemetryLogsEnabled() {
+      if [[ "${APPMONITORING_OPENTELEMETRYLOGS_ENABLED}" == "true" ]]; then
+          true
+      else
+          false
+      fi
 }
 
 checkAgentOnboardingStatus() {
@@ -494,10 +521,10 @@ source common_agent_config_env_var
 
 # check if high log scale mode enabled
 if isHighLogScaleMode; then
-    echo "Enabled High Log Scale Mode"
-    export IS_HIGH_LOG_SCALE_MODE=true
-    echo "export IS_HIGH_LOG_SCALE_MODE=$IS_HIGH_LOG_SCALE_MODE" >>~/.bashrc
-    source ~/.bashrc
+      echo "Enabled High Log Scale Mode"
+      setGlobalEnvVar IS_HIGH_LOG_SCALE_MODE true
+else
+      setGlobalEnvVar IS_HIGH_LOG_SCALE_MODE false
 fi
 
 #Parse the configmap to set the right environment variables for agent config.
@@ -1088,7 +1115,7 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
     fi
 else
       echo "starting mdsd in main container..."
-      if isHighLogScaleMode; then
+      if isHighLogScaleMode || isOpenTelemetryLogsEnabled; then
             startAMACoreAgent
       fi
       export MDSD_ROLE_PREFIX=/var/run/mdsd-ci/default
