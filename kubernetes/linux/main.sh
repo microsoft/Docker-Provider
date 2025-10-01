@@ -79,7 +79,7 @@ startAMACoreAgent() {
          echo "export PA_CONFIG_PORT=$PA_CONFIG_PORT"
          echo "export CounterDataReportFrequencyInMinutes=$CounterDataReportFrequencyInMinutes"
          echo "export AMACALogFilePath=$AMACALogFilePath"
-      } >> ~/.bashrc  
+      } >> ~/.bashrc
 
       if isOpenTelemetryLogsEnabled; then
             export PA_AMCS_PROTOCOL="HttpProtobuf"
@@ -92,7 +92,7 @@ startAMACoreAgent() {
                         export PA_AMCS_PORT=$port_int
                   fi
             fi
-            
+
             {
                   echo "export PA_AMCS_PROTOCOL=$PA_AMCS_PROTOCOL"
                   echo "export PA_AMCS_PORT=$PA_AMCS_PORT"
@@ -522,9 +522,9 @@ source common_agent_config_env_var
 # check if high log scale mode enabled
 if isHighLogScaleMode; then
       echo "Enabled High Log Scale Mode"
-      export IS_HIGH_LOG_SCALE_MODE=true
-      echo "export IS_HIGH_LOG_SCALE_MODE=$IS_HIGH_LOG_SCALE_MODE" >>~/.bashrc
-      source ~/.bashrc
+      setGlobalEnvVar IS_HIGH_LOG_SCALE_MODE true
+else
+      setGlobalEnvVar IS_HIGH_LOG_SCALE_MODE false
 fi
 
 #Parse the configmap to set the right environment variables for agent config.
