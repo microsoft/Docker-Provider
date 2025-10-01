@@ -121,7 +121,7 @@ COPY --from=builder /usr/lib/libselinux.so.1 /usr/lib/libpam.so.0 /usr/lib/libc.
 COPY --from=builder /usr/lib/libruby.so.3.3 /usr/lib/libc.so.6 /usr/lib/libz.so.1 /usr/lib/libgmp.so.10 /usr/lib/libcrypt.so.1 /usr/lib/libm.so.6 /usr/lib/
 # fluent-bit dependencies
 # libssl.so.3 & libcrypto.so.3 are already available with openssl in distroless and copying them over causes FIPS HMAC verification failures
-COPY --from=builder /usr/lib/libyaml-0.so.2 /usr/lib/libsystemd.so.0 /usr/lib/libcurl.so.4 /usr/lib/libz.so.1 /usr/lib/libzstd.so.1 /usr/lib/libsasl2.so.3 /usr/lib/libm.so.6 /usr/lib/libgcc_s.so.1 /usr/lib/libc.so.6 /usr/lib/libcap.so.2 /usr/lib/liblz4.so.1 /usr/lib/liblzma.so.5 /usr/lib/libnghttp2.so.14 /usr/lib/libssh2.so.1 /usr/lib/libgssapi_krb5.so.2 /usr/lib/libresolv.so.2 /usr/lib/libkrb5.so.3 /usr/lib/libk5crypto.so.3 /usr/lib/libcom_err.so.2 /usr/lib/libkrb5support.so.0 /usr/lib/libpq.so.5 /usr/lib/libldap.so.2 /usr/lib/
+COPY --from=builder /usr/lib/libyaml-0.so.2 /usr/lib/libsystemd.so.0 /usr/lib/libcurl.so.4 /usr/lib/libz.so.1 /usr/lib/libzstd.so.1 /usr/lib/libsasl2.so.3 /usr/lib/libm.so.6 /usr/lib/libgcc_s.so.1 /usr/lib/libc.so.6 /usr/lib/libcap.so.2 /usr/lib/liblz4.so.1 /usr/lib/liblzma.so.5 /usr/lib/libnghttp2.so.14 /usr/lib/libssh2.so.1 /usr/lib/libgssapi_krb5.so.2 /usr/lib/libresolv.so.2 /usr/lib/libkrb5.so.3 /usr/lib/libk5crypto.so.3 /usr/lib/libcom_err.so.2 /usr/lib/libkrb5support.so.0 /usr/lib/libpq.so.5 /usr/lib/libldap.so.2 /usr/lib/liblber.so.2 /usr/lib/
 # telegraf dependencies
 COPY --from=builder /usr/lib/libresolv.so.2 /usr/lib/libc.so.6 /usr/lib/
 # mdsd dependencies
