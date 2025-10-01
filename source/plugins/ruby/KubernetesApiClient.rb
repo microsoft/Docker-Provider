@@ -12,6 +12,7 @@ class KubernetesApiClient
   require "jwt"
   require "zlib"
   require "stringio"
+  require 'yajl'
 
   require_relative "oms_common"
   require_relative "constants"
@@ -890,7 +891,7 @@ class KubernetesApiClient
             kubeApiRequest['User-Agent'] = getUserAgent
             kubeApiRequest['Accept-Encoding'] = 'gzip'
             kubeApiRequest['Accept'] = 'application/json'
-            
+
             @Log.info "KubernetesApiClient::getResourcesAndContinuationTokenV2(stream): Requesting #{uri} (api_group=#{api_group}) @ #{started_at.iso8601}"
 
             http.request(kubeApiRequest) do |response|
@@ -898,6 +899,8 @@ class KubernetesApiClient
               unless responseCode == '200'
                 parse_mode = 'error'
                 @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: Non-success code #{responseCode} for #{uri}"
+                # Send telemetry for non-success response codes
+                @@K8sApiResponseTelemetryTimeTracker = ApplicationInsightsUtility.sendAPIResponseTelemetry(responseCode, uri, "K8sAPIStatus", @@K8sApiResponseCodeHash, @@K8sApiResponseTelemetryTimeTracker)
                 break
               end
 
@@ -909,7 +912,7 @@ class KubernetesApiClient
               small_threshold = 256 * 1024 # 256KB
 
               if content_length && content_length <= small_threshold
-                # Read whole (possibly compressed) body then JSON.parse normally (fast path for small payloads)
+                # Read whole (possibly compressed) body then use faster parser for small payloads
                 body_buf = +"" # mutable string
                 response.read_body { |c| body_buf << c }
                 total_compressed_bytes = body_buf.bytesize
@@ -926,128 +929,89 @@ class KubernetesApiClient
                 total_uncompressed_bytes = body_buf.bytesize
                 resourceInventory = JSON.parse(body_buf)
               else
-                # Streaming path
+                # Streaming path - CRITICAL: Create parser ONCE outside the read_body loop
+                parse_mode = 'stream'
                 is_gzip = (response['Content-Encoding'] == 'gzip')
                 inflater = nil
-                if is_gzip
-                  # Use Inflate with gzip window bits for streaming
-                  inflater = Zlib::Inflate.new(Zlib::MAX_WBITS + 32)
-                end
-
-                # Simple streaming JSON list parser tailored to k8s list structure.
-                header_scanned = false
-                header_buffer = +""
-                in_items_array = false
-                brace_depth = 0
-                in_string = false
-                escape_next = false
-                current_item = nil
-                after_items = false
-
-                response.read_body do |compressed_chunk|
-                  total_compressed_bytes += compressed_chunk.bytesize
-                  chunk = compressed_chunk
+                yajl_parser = nil
+                accumulated_buffer = +""  # Buffer for incomplete JSON chunks
+                begin
                   if is_gzip
-                    begin
-                      decompressed = inflater.inflate(chunk)
-                    rescue Zlib::Error => zerr
-                      @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: gzip inflate failed mid-stream: #{zerr}"
-                      raise
-                    end
-                  else
-                    decompressed = chunk
+                    # Use Inflate with gzip window bits for streaming
+                    inflater = Zlib::Inflate.new(Zlib::MAX_WBITS + 32)
+                    parse_mode = 'stream_gzip'
                   end
-                  total_uncompressed_bytes += decompressed.bytesize
 
-                  # If we've already passed items end, ignore rest
-                  next if after_items
+                  # Create Yajl parser ONCE and reuse for all chunks
+                  yajl_parser = Yajl::Parser.new
 
-                  decompressed.each_char do |ch|
-                    # Basic JSON string handling to not confuse braces inside strings
-                    if in_string
-                      if escape_next
-                        escape_next = false
-                      elsif ch == '\\'
-                        escape_next = true
-                      elsif ch == '"'
-                        in_string = false
+                  # Set up the parser callback to extract items and continuation token
+                  yajl_parser.on_parse_complete = lambda do |obj|
+                    if obj.is_a?(Hash)
+                      if obj.key?('items') && obj['items'].is_a?(Array)
+                        parsed_items.concat(obj['items'])
                       end
-                      current_item << ch if brace_depth > 0 && current_item
-                      next
-                    else
-                      if ch == '"'
-                        in_string = true
-                        if brace_depth > 0 && current_item
-                          current_item << ch
-                        elsif brace_depth == 0 && in_items_array && current_item
-                          current_item << ch
-                        end
-                        next
+                      if obj.key?('metadata') && obj['metadata'].is_a?(Hash)
+                        metadata_continue = obj['metadata']['continue']
                       end
                     end
+                  end
 
-                    unless in_items_array
-                      header_buffer << ch unless header_scanned
-                      # Detect start of items array
-                      if header_buffer.include?('"items"')
-                        # Look for the '[' following '"items"'
-                        if ch == '['
-                          in_items_array = true
-                          header_scanned = true
-                          # Attempt to extract continuation token (if present) from header_buffer
-                          if header_buffer.include?('"continue"')
-                            # naive regex extraction
-                            m = header_buffer.match(/"continue"\s*:\s*"([^"]*)"/)
-                            metadata_continue = m[1] if m && !m[1].empty?
-                          end
-                        end
-                      end
-                      next unless in_items_array
-                    end
+                  # Stream and parse chunks
+                  chunk_count = 0
+                  response.read_body do |compressed_chunk|
+                    chunk_count += 1
+                    total_compressed_bytes += compressed_chunk.bytesize
 
-                    # Inside items array
-                    if !current_item
-                      if ch == '{'
-                        current_item = +"{"
-                        brace_depth = 1
-                      elsif ch == ']'
-                        # End of items array
-                        in_items_array = false
-                        after_items = true
-                        break
-                      else
-                        # Skip commas/whitespace
+                    decompressed = if is_gzip
+                      begin
+                        inflater.inflate(compressed_chunk)
+                      rescue Zlib::Error => zerr
+                        @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: gzip inflate failed at chunk #{chunk_count}: #{zerr}"
+                        raise
                       end
                     else
-                      # Building current item
-                      if ch == '{'
-                        brace_depth += 1
-                        current_item << ch
-                      elsif ch == '}'
-                        brace_depth -= 1
-                        current_item << ch
-                        if brace_depth == 0
-                          # Complete object
-                          begin
-                            parsed_items << JSON.parse(current_item)
-                          rescue => perr
-                            @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: failed to parse item (ignored): #{perr}"
-                          end
-                          current_item = nil
-                        end
-                      else
-                        current_item << ch
-                      end
+                      compressed_chunk
                     end
-                  end # each_char
-                end # read_body
 
-                # Finish inflater
-                inflater.finish if inflater
-                inflater.close if inflater
+                    total_uncompressed_bytes += decompressed.bytesize
 
-                # Build minimal inventory structure
-                resourceInventory = { 'metadata' => { 'continue' => metadata_continue }, 'items' => parsed_items }
+                    # Feed decompressed chunk to the parser
+                    # Yajl can handle incomplete JSON and will buffer internally
+                    begin
+                      yajl_parser << decompressed
+                    rescue Yajl::ParseError => perr
+                      # Only log parse errors, don't break the stream - might be incomplete chunk
+                      @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: Yajl parse error at chunk #{chunk_count}: #{perr}"
+                    end
+
+                    # Yield control periodically to allow other threads to run (every 10 chunks)
+                    Thread.pass if chunk_count % 10 == 0
+                  end # read_body
+
+                  # Finalize the parsing - this triggers on_parse_complete callback
+                  yajl_parser.parse("")  rescue nil
+
+                  # Finish and clean up inflater
+                  if inflater
+                    inflater.finish rescue nil
+                    inflater.close rescue nil
+                  end
+
+                  # Build minimal inventory structure
+                  resourceInventory = {
+                    'metadata' => { 'continue' => metadata_continue },
+                    'items' => parsed_items
+                  }
+
+                  @Log.info "KubernetesApiClient::getResourcesAndContinuationTokenV2: Successfully parsed #{parsed_items.length} items in #{chunk_count} chunks"
+
+                rescue => stream_err
+                  @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: Stream processing error: #{stream_err}"
+                  # Clean up resources
+                  inflater.close if inflater rescue nil
+                  raise
+                end
               end # streaming path
             end # http.request
           end # Net::HTTP.start
@@ -1056,10 +1020,14 @@ class KubernetesApiClient
           parse_mode = 'fallback'
           begin
             # Fallback to legacy path
-            responseCode, resourceInfo = getKubeResourceInfoV2(uri, api_group: api_group)
-            if responseCode == '200' && resourceInfo && resourceInfo.body
+            fallbackResponseCode, resourceInfo = getKubeResourceInfoV2(uri, api_group: api_group)
+            responseCode = fallbackResponseCode if responseCode.nil?
+            if fallbackResponseCode == '200' && resourceInfo && resourceInfo.body && !resourceInfo.body.empty?
               resourceInventory = JSON.parse(resourceInfo.body)
-              continuationToken = resourceInventory.dig('metadata', 'continue') if resourceInventory && resourceInventory['metadata']
+              # Set continuationToken from fallback response
+              if resourceInventory && resourceInventory['metadata']
+                continuationToken = resourceInventory['metadata']['continue']
+              end
             end
           rescue => legacy_err
             @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: legacy fallback also failed: #{legacy_err}"
