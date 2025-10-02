@@ -19,7 +19,7 @@ export class Mutations {
     };
     private static agentImageNodeJs = {
         repositoryPath: "opentelemetry-auto-instrumentation/nodejs",
-        imageTag: "3.3.1" // https://mcr.microsoft.com/v2/applicationinsights/opentelemetry-auto-instrumentation/nodejs/tags/list
+        imageTag: "3.3.2" // https://mcr.microsoft.com/v2/applicationinsights/opentelemetry-auto-instrumentation/nodejs/tags/list
     };
     private static agentImagePython = {
         repositoryPath: "auto-instrumentation/python",
