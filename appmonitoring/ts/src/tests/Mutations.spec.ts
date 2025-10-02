@@ -113,3 +113,99 @@ describe("OTEL Resource Attributes Merging", () => {
         expect(otelResourceAttributes!.value).toContain("k8s.cluster.name=test-cluster");
     });
 });
+
+describe("OTEL Metrics Exporter Environment Variable", () => {
+    const podInfo = new PodInfo();
+    podInfo.ownerKind = "Deployment";
+    podInfo.ownerName = "test-app";
+    podInfo.ownerUid = "uid-123";
+    podInfo.onlyContainerName = "main-container";
+
+    it("should include OTEL_METRICS_EXPORTER when metrics are enabled", () => {
+        const testOtelParams: OtelParams = {
+            logsEnabled: false,
+            metricsEnabled: true,
+            logsPortHttpProtobuf: 4318,
+            metricsPortHttpProtobuf: 4319
+        };
+
+        const generatedEnvVars = Mutations.GenerateEnvironmentVariables(
+            podInfo,
+            [AutoInstrumentationPlatforms.Java],
+            false,
+            "InstrumentationKey=test-key",
+            "/subscriptions/test/resourceGroups/test-rg",
+            "eastus",
+            "test-cluster",
+            testOtelParams,
+            undefined
+        );
+
+        const otelMetricsExporter = generatedEnvVars.find(env => env.name === "OTEL_METRICS_EXPORTER");
+        expect(otelMetricsExporter).toBeDefined();
+        expect(otelMetricsExporter!.value).toBe("otlp,azure_monitor");
+    });
+
+    it("should not include OTEL_METRICS_EXPORTER when metrics are disabled", () => {
+        const testOtelParams: OtelParams = {
+            logsEnabled: true,
+            metricsEnabled: false,
+            logsPortHttpProtobuf: 4318,
+            metricsPortHttpProtobuf: 4319
+        };
+
+        const generatedEnvVars = Mutations.GenerateEnvironmentVariables(
+            podInfo,
+            [AutoInstrumentationPlatforms.Java],
+            false,
+            "InstrumentationKey=test-key",
+            "/subscriptions/test/resourceGroups/test-rg",
+            "eastus",
+            "test-cluster",
+            testOtelParams,
+            undefined
+        );
+
+        const otelMetricsExporter = generatedEnvVars.find(env => env.name === "OTEL_METRICS_EXPORTER");
+        expect(otelMetricsExporter).toBeUndefined();
+    });
+
+    it("should include OTEL_METRICS_EXPORTER with other metrics environment variables when both logs and metrics are enabled", () => {
+        const testOtelParams: OtelParams = {
+            logsEnabled: true,
+            metricsEnabled: true,
+            logsPortHttpProtobuf: 4318,
+            metricsPortHttpProtobuf: 4319
+        };
+
+        const generatedEnvVars = Mutations.GenerateEnvironmentVariables(
+            podInfo,
+            [AutoInstrumentationPlatforms.Java],
+            false,
+            "InstrumentationKey=test-key",
+            "/subscriptions/test/resourceGroups/test-rg",
+            "eastus",
+            "test-cluster",
+            testOtelParams,
+            undefined
+        );
+
+        // Should have OTEL_METRICS_EXPORTER
+        const otelMetricsExporter = generatedEnvVars.find(env => env.name === "OTEL_METRICS_EXPORTER");
+        expect(otelMetricsExporter).toBeDefined();
+        expect(otelMetricsExporter!.value).toBe("otlp,azure_monitor");
+
+        // Should also have other metrics-related variables
+        const otelMetricsEndpoint = generatedEnvVars.find(env => env.name === "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT");
+        expect(otelMetricsEndpoint).toBeDefined();
+        expect(otelMetricsEndpoint!.value).toBe("http://$(OTEL_ENDPOINT_NODE_IP):4319/v1/metrics");
+
+        const otelMetricsProtocol = generatedEnvVars.find(env => env.name === "OTEL_EXPORTER_OTLP_METRICS_PROTOCOL");
+        expect(otelMetricsProtocol).toBeDefined();
+        expect(otelMetricsProtocol!.value).toBe("http/protobuf");
+
+        const otelMetricsInsecure = generatedEnvVars.find(env => env.name === "OTEL_EXPORTER_OTLP_METRICS_INSECURE");
+        expect(otelMetricsInsecure).toBeDefined();
+        expect(otelMetricsInsecure!.value).toBe("true");
+    });
+});

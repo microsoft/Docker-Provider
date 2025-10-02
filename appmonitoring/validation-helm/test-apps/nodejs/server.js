@@ -2,10 +2,17 @@
 const express = require('express');
 const axios = require('axios');
 const winston = require('winston');
+const  { metrics } = require('@opentelemetry/api');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const TARGET_URL = process.env.TARGET_URL || 'http://localhost:3001/'; // Change as needed
+const TARGET_URL = process.env.TARGET_URL || 'https://bing.com'; // Change as needed
+
+const meter = metrics.getMeter('nodejs-test-app', '1.0.0');
+
+const cowsSoldCounter = meter.createCounter('cows_sold_total', {
+  description: 'Total number of cows sold',
+});
 
 // Winston logger setup
 const logger = winston.createLogger({
@@ -22,6 +29,8 @@ const logger = winston.createLogger({
 // Endpoint that calls another app's endpoint
 app.get('/call-target', async (req, res) => {
   try {
+    cowsSoldCounter.add(1, { cow_type: 'Holstein', endpoint: process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT, protocol: process.env.OTEL_EXPORTER_OTLP_METRICS_PROTOCOL });
+  
     // Occasionally throw an error (40% chance)
     if (Math.random() < 0.4) {
       logger.error('Simulated error at /call-target');
@@ -47,6 +56,9 @@ app.get('/call-target', async (req, res) => {
 
 app.get('/', (req, res) => {
   logger.info('Root endpoint hit');
+
+  cowsSoldCounter.add(1, { cow_type: 'Holstein', endpoint: process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT, protocol: process.env.OTEL_EXPORTER_OTLP_METRICS_PROTOCOL });
+    
   res.send('Node.js test server is running.');
 });
 
