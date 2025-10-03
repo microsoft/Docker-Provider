@@ -14,6 +14,8 @@ jobs:
   displayName: "Monitoring-Model-Cluster-WCUS tests"
   pool:
     name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-ubuntu-2204
+    os: linux
   variables:
     skipComponentGovernanceDetection: true
   strategy:
@@ -42,6 +44,8 @@ jobs:
   displayName: "Monitoring-Model-Cluster-WEU tests"
   pool:
     name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-ubuntu-2204
+    os: linux
   variables:
     skipComponentGovernanceDetection: true
   strategy:
@@ -70,6 +74,8 @@ jobs:
   displayName: "ci-logs-prod-aks-geneva-integration tests"
   pool:
     name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-ubuntu-2204
+    os: linux
   variables:
     skipComponentGovernanceDetection: true
   strategy:
@@ -98,6 +104,8 @@ jobs:
   displayName: "ci-logs-prod-aks-geneva-integration-multi-tenancy tests"
   pool:
     name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-ubuntu-2204
+    os: linux
   variables:
     skipComponentGovernanceDetection: true
   strategy:
@@ -126,6 +134,8 @@ jobs:
   displayName: "ci-logs-prod-aks-work-load-identity tests"
   pool:
     name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-ubuntu-2204
+    os: linux
   variables:
     skipComponentGovernanceDetection: true
   strategy:
@@ -154,6 +164,8 @@ jobs:
   displayName: "ci-logs-prod-wcus-fips tests"
   pool:
     name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-ubuntu-2204
+    os: linux
   variables:
     skipComponentGovernanceDetection: true
   strategy:
@@ -182,6 +194,8 @@ jobs:
   displayName: "ci-logs-prod-aks-networkflowlogs tests"
   pool:
     name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-ubuntu-2204
+    os: linux
   variables:
     skipComponentGovernanceDetection: true
   strategy:
