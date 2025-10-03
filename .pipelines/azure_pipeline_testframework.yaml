@@ -26,7 +26,7 @@ jobs:
           persistCredentials: true
 
         - task: AzureCLI@1
-          displayName: Get kubeconfig
+          displayName: Get 2 kubeconfig
           inputs:
             azureSubscription: 'ContainerInsights_Build_Subscription_CI'
             scriptLocation: 'inlineScript'
