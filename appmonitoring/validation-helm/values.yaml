@@ -7,6 +7,8 @@ global:
       Kubernetes: "1.25.0"
 AppmonitoringAgent:
   isOtelToggleEnabled: true
+  isOpenTelemetryLogsEnabled: false
+  isOpenTelemetryMetricsEnabled: false
   cpuRequest: "100m"
   memoryRequest: "128Mi"
   cpuLimit: "500m"
