@@ -117,7 +117,7 @@ extends:
                 
               - bash: |
                   chmod +x ./install-and-execute-testkube-tests.sh
-                  ./install-and-execute-testkube-tests.sh AzureClientId=$(AksGenevaIntegrationClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) GenevaIntegration=true
+                  ./install-and-execute-testkube-tests.sh AzureClientId=$(AksGenevaIntegrationClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) GenevaIntegration=false
                 workingDirectory: $(Build.SourcesDirectory)/test/testkube/
                 displayName: "Install and execute testkube tests"
 
