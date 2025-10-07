@@ -165,7 +165,7 @@ export class Mutations {
     /**
      * Generates environment variables necessary to configure agents. Agents take configuration from these environment variables once they run.
      */
-    public static GenerateEnvironmentVariables(podInfo: PodInfo, platforms: AutoInstrumentationPlatforms[], disableAppLogs: boolean, connectionString: string, armId: string, armRegion: string, clusterName: string, otelParams: OtelParams, existingEnvironmentVariables?: Record<string, IEnvironmentVariable>): IEnvironmentVariable[] {
+    public static GenerateEnvironmentVariables(podInfo: PodInfo, platforms: AutoInstrumentationPlatforms[], disableAppLogs: boolean, connectionString: string, armId: string, armRegion: string, clusterName: string, otelParams: OtelParams, existingEnvironmentVariables?: Record<string, IEnvironmentVariable>, isPythonEnabled?: boolean): IEnvironmentVariable[] {
         const ownerNameAttribute = `k8s.${podInfo.ownerKind?.toLowerCase()}.name=${podInfo.ownerName}`;
         const ownerUidAttribute = `k8s.${podInfo.ownerKind?.toLowerCase()}.uid=${podInfo.ownerUid}`;
         const containerNameAttribute = `k8s.container.name=${podInfo.onlyContainerName}`;
@@ -303,11 +303,14 @@ export class Mutations {
         }
 
         if (otelParams.metricsEnabled) {
+            // //!!! temporary special case: when Python is enabled (via private-preview annotation), set OTEL_METRICS_EXPORTER to "otlp" only
+            // Python distro can't handle azure_monitor currently
+            const metricsExporterValue = isPythonEnabled ? "otlp" : "otlp,azure_monitor";
             returnValue.push(
                 // setting this to ensure Microsoft distros do send OTLP metrics (forked, sent to Breeze and OTLP endpoint). For OSS SDKs this defaults to "otlp" anyway, so no impact
                 {
                     name: "OTEL_METRICS_EXPORTER",
-                    value: `otlp,azure_monitor`
+                    value: metricsExporterValue
                 },
                 {
                     name: "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", //!!! http -> https
