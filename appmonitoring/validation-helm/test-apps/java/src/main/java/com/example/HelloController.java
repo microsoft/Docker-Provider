@@ -67,7 +67,7 @@ public class HelloController {
         try {
             logger.info("Attempting to call target URL: {}", targetUrl);
             String response = restTemplate.getForObject(targetUrl, String.class);
-            logger.info("Received response from target: {}", response);
+            logger.info("Received response from target.");
             return "Response from target: " + response;
         } catch (Exception e) {
             logger.error("Error calling target URL: {}", targetUrl, e);

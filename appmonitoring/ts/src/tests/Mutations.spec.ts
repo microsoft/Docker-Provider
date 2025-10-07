@@ -34,7 +34,8 @@ describe("OTEL Resource Attributes Merging", () => {
             "eastus", 
             "test-cluster", 
             testOtelParams,
-            existingEnvironmentVariables
+            existingEnvironmentVariables,
+            false
         );
 
         const otelResourceAttributes = generatedEnvVars.find(env => env.name === "OTEL_RESOURCE_ATTRIBUTES");
@@ -207,5 +208,57 @@ describe("OTEL Metrics Exporter Environment Variable", () => {
         const otelMetricsInsecure = generatedEnvVars.find(env => env.name === "OTEL_EXPORTER_OTLP_METRICS_INSECURE");
         expect(otelMetricsInsecure).toBeDefined();
         expect(otelMetricsInsecure!.value).toBe("true");
+    });
+
+    it("should set OTEL_METRICS_EXPORTER to 'otlp' only when Python is enabled", () => {
+        const testOtelParams: OtelParams = {
+            logsEnabled: false,
+            metricsEnabled: true,
+            logsPortHttpProtobuf: 4318,
+            metricsPortHttpProtobuf: 4319
+        };
+
+        const generatedEnvVars = Mutations.GenerateEnvironmentVariables(
+            podInfo,
+            [AutoInstrumentationPlatforms.Python],
+            false,
+            "InstrumentationKey=test-key",
+            "/subscriptions/test/resourceGroups/test-rg",
+            "eastus",
+            "test-cluster",
+            testOtelParams,
+            undefined,
+            true // isPythonEnabled = true
+        );
+
+        const otelMetricsExporter = generatedEnvVars.find(env => env.name === "OTEL_METRICS_EXPORTER");
+        expect(otelMetricsExporter).toBeDefined();
+        expect(otelMetricsExporter!.value).toBe("otlp");
+    });
+
+    it("should set OTEL_METRICS_EXPORTER to 'otlp,azure_monitor' when Python is not enabled", () => {
+        const testOtelParams: OtelParams = {
+            logsEnabled: false,
+            metricsEnabled: true,
+            logsPortHttpProtobuf: 4318,
+            metricsPortHttpProtobuf: 4319
+        };
+
+        const generatedEnvVars = Mutations.GenerateEnvironmentVariables(
+            podInfo,
+            [AutoInstrumentationPlatforms.Python],
+            false,
+            "InstrumentationKey=test-key",
+            "/subscriptions/test/resourceGroups/test-rg",
+            "eastus",
+            "test-cluster",
+            testOtelParams,
+            undefined,
+            false // isPythonEnabled = false
+        );
+
+        const otelMetricsExporter = generatedEnvVars.find(env => env.name === "OTEL_METRICS_EXPORTER");
+        expect(otelMetricsExporter).toBeDefined();
+        expect(otelMetricsExporter!.value).toBe("otlp,azure_monitor");
     });
 });

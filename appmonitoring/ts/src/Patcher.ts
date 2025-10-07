@@ -49,6 +49,9 @@ export class Patcher {
             const enableApplicationLogsAnnotation = spec.template.metadata?.annotations?.[EnableApplicationLogsAnnotationName]; 
             const enableApplicationLogs: boolean = enableApplicationLogsAnnotation?.toLocaleLowerCase() === "true" || enableApplicationLogsAnnotation?.toLocaleLowerCase() === "1";
             
+            // determine if Python is enabled (Python can only be enabled via private-preview annotation)
+            const isPythonPrivatePreview: boolean = platforms.includes(AutoInstrumentationPlatforms.Python);
+            
             // add new volumes (used to store agent binaries)
             const newVolumes: IVolume[] = Mutations.GenerateVolumes(platforms);
             podSpec.volumes = (podSpec.volumes ?? <IVolume[]>[]).concat(newVolumes);
@@ -65,7 +68,7 @@ export class Patcher {
                 container.env?.forEach(env => allEnvironmentVariables[env.name] = env);
 
                 // Generate environment variables with knowledge of existing ones for OTEL_RESOURCE_ATTRIBUTES merging
-                const newEnvironmentVariables: IEnvironmentVariable[] = Mutations.GenerateEnvironmentVariables(podInfo, platforms, !enableApplicationLogs, cr.spec?.destination?.applicationInsightsConnectionString, armId, armRegion, clusterName, otelParams, allEnvironmentVariables);
+                const newEnvironmentVariables: IEnvironmentVariable[] = Mutations.GenerateEnvironmentVariables(podInfo, platforms, !enableApplicationLogs, cr.spec?.destination?.applicationInsightsConnectionString, armId, armRegion, clusterName, otelParams, allEnvironmentVariables, isPythonPrivatePreview);
 
                 /*
                     We could be receiving customer's original set of environment variables (e.g. in case of kubectl apply),
@@ -147,7 +150,7 @@ export class Patcher {
         // remove environment variables and volume mounts from all containers by name
         // we don't care about values of environment variables here, we just need all names, so set parameters to get all of them
         const otelParams: OtelParams = { logsEnabled: true, metricsEnabled: true, logsPortHttpProtobuf: 0, metricsPortHttpProtobuf: 0 };
-        const environmentVariablesToRemove: IEnvironmentVariable[] = Mutations.GenerateEnvironmentVariables(new PodInfo(), allPlatforms, true, "", "", "", "", otelParams);
+        const environmentVariablesToRemove: IEnvironmentVariable[] = Mutations.GenerateEnvironmentVariables(new PodInfo(), allPlatforms, true, "", "", "", "", otelParams, undefined, false);
         const volumeMountsToRemove: IVolumeMount[] = Mutations.GenerateVolumeMounts(allPlatforms);
 
         podSpec.containers?.forEach(container => {

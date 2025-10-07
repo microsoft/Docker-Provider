@@ -52,7 +52,7 @@ public class HomeController : ControllerBase
         }
         catch (Exception ex)
         {
-            return StatusCode(500, new { error = $"Failed to reach {targetUrl}: {ex.Message}" });
+            return StatusCode(500, new { error = $"Failed to reach {targetUrl}" });
         }
     }
 }
