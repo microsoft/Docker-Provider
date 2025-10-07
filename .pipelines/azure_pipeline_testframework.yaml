@@ -7,213 +7,236 @@
 trigger: none
 pr: none
 
-jobs:
-- deployment: Testkube_Monitoring_Model_Cluster_WCUS
-  environment: container-insights
-  timeoutInMinutes: 120
-  displayName: "Monitoring-Model-Cluster-WCUS tests"
-  pool:
-    name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-managed-ubuntu-2204
-    os: linux
-  variables:
-    skipComponentGovernanceDetection: true
-  strategy:
-    runOnce:
-      deploy:
-        steps:
-        - checkout: self
-          persistCredentials: true
+resources:
+  repositories:
+  - repository: 1ESPipelineTemplates
+    type: git
+    name: 1ESPipelineTemplates/1ESPipelineTemplates
+    ref: refs/tags/release
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
+  parameters:
+    pool:
+      name: Azure-Pipelines-CI-Test-EO
+      image: ci-1es-managed-ubuntu-2204
+      os: linux
+    sdl:
+      sourceAnalysisPool:
+        name: Azure-Pipelines-CI-Test-EO
+        image: ci-1es-managed-windows-2022
+        os: windows
+    customBuildTags:
+    - ES365AIMigrationTooling
 
-        - task: AzureCLI@1
-          displayName: Get 2 kubeconfig
-          inputs:
-            azureSubscription: 'ContainerInsights_Build_Subscription_CI'
-            scriptLocation: 'inlineScript'
-            inlineScript: 'az aks get-credentials -g monitoring-model-cluster-wcus -n Monitoring-Model-Cluster-WCUS'
-          
-        - bash: |
-            chmod +x ./install-and-execute-testkube-tests.sh
-            ./install-and-execute-testkube-tests.sh AzureClientId=$(MonitoringModelClusterWCUSClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
-          workingDirectory: $(Build.SourcesDirectory)/test/testkube/
-          displayName: "Install and execute testkube tests"
+    stages:
+    - stage: TestKube
+      jobs:
+      - deployment: Testkube_Monitoring_Model_Cluster_WCUS
+        environment: container-insights
+        timeoutInMinutes: 120
+        displayName: "Monitoring-Model-Cluster-WCUS tests"
+        pool:
+          name: Azure-Pipelines-CI-Test-EO
+          image: ci-1es-managed-ubuntu-2204
+          os: linux
+        variables:
+          skipComponentGovernanceDetection: true
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - checkout: self
+                persistCredentials: true
 
-- deployment: Testkube_Monitoring_Model_Cluster_WEU
-  environment: container-insights
-  timeoutInMinutes: 120
-  displayName: "Monitoring-Model-Cluster-WEU tests"
-  pool:
-    name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-managed-ubuntu-2204
-    os: linux
-  variables:
-    skipComponentGovernanceDetection: true
-  strategy:
-    runOnce:
-      deploy:
-        steps:
-        - checkout: self
-          persistCredentials: true
+              - task: AzureCLI@1
+                displayName: Get 2 kubeconfig
+                inputs:
+                  azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+                  scriptLocation: 'inlineScript'
+                  inlineScript: 'az aks get-credentials -g monitoring-model-cluster-wcus -n Monitoring-Model-Cluster-WCUS'
+                
+              - bash: |
+                  chmod +x ./install-and-execute-testkube-tests.sh
+                  ./install-and-execute-testkube-tests.sh AzureClientId=$(MonitoringModelClusterWCUSClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
+                workingDirectory: $(Build.SourcesDirectory)/test/testkube/
+                displayName: "Install and execute testkube tests"
 
-        - task: AzureCLI@1
-          displayName: Get kubeconfig
-          inputs:
-            azureSubscription: 'ContainerInsights_Build_Subscription_CI'
-            scriptLocation: 'inlineScript'
-            inlineScript: 'az aks get-credentials -g Monitoring-Model-Cluster-WEU -n Monitoring-Model-Cluster-WEU'
-          
-        - bash: |
-            chmod +x ./install-and-execute-testkube-tests.sh
-            ./install-and-execute-testkube-tests.sh AzureClientId=$(MonitoringModelClusterWEUClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
-          workingDirectory: $(Build.SourcesDirectory)/test/testkube/
-          displayName: "Install and execute testkube tests"
+      - deployment: Testkube_Monitoring_Model_Cluster_WEU
+        environment: container-insights
+        timeoutInMinutes: 120
+        displayName: "Monitoring-Model-Cluster-WEU tests"
+        pool:
+          name: Azure-Pipelines-CI-Test-EO
+          image: ci-1es-managed-ubuntu-2204
+          os: linux
+        variables:
+          skipComponentGovernanceDetection: true
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - checkout: self
+                persistCredentials: true
 
-- deployment: Testkube_ci_logs_prod_aks_geneva_integration
-  environment: container-insights
-  timeoutInMinutes: 120
-  displayName: "ci-logs-prod-aks-geneva-integration tests"
-  pool:
-    name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-managed-ubuntu-2204
-    os: linux
-  variables:
-    skipComponentGovernanceDetection: true
-  strategy:
-    runOnce:
-      deploy:
-        steps:
-        - checkout: self
-          persistCredentials: true
+              - task: AzureCLI@1
+                displayName: Get kubeconfig
+                inputs:
+                  azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+                  scriptLocation: 'inlineScript'
+                  inlineScript: 'az aks get-credentials -g Monitoring-Model-Cluster-WEU -n Monitoring-Model-Cluster-WEU'
+                
+              - bash: |
+                  chmod +x ./install-and-execute-testkube-tests.sh
+                  ./install-and-execute-testkube-tests.sh AzureClientId=$(MonitoringModelClusterWEUClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
+                workingDirectory: $(Build.SourcesDirectory)/test/testkube/
+                displayName: "Install and execute testkube tests"
 
-        - task: AzureCLI@1
-          displayName: Get kubeconfig
-          inputs:
-            azureSubscription: 'ContainerInsights_Build_Subscription_CI'
-            scriptLocation: 'inlineScript'
-            inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-geneva-integration'
-          
-        - bash: |
-            chmod +x ./install-and-execute-testkube-tests.sh
-            ./install-and-execute-testkube-tests.sh AzureClientId=$(AksGenevaIntegrationClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) GenevaIntegration=true
-          workingDirectory: $(Build.SourcesDirectory)/test/testkube/
-          displayName: "Install and execute testkube tests"
+      - deployment: Testkube_ci_logs_prod_aks_geneva_integration
+        environment: container-insights
+        timeoutInMinutes: 120
+        displayName: "ci-logs-prod-aks-geneva-integration tests"
+        pool:
+          name: Azure-Pipelines-CI-Test-EO
+          image: ci-1es-managed-ubuntu-2204
+          os: linux
+        variables:
+          skipComponentGovernanceDetection: true
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - checkout: self
+                persistCredentials: true
 
-- deployment: Testkube_ci_logs_prod_aks_geneva_integration_multi_tenancy
-  environment: container-insights
-  timeoutInMinutes: 120
-  displayName: "ci-logs-prod-aks-geneva-integration-multi-tenancy tests"
-  pool:
-    name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-managed-ubuntu-2204
-    os: linux
-  variables:
-    skipComponentGovernanceDetection: true
-  strategy:
-    runOnce:
-      deploy:
-        steps:
-        - checkout: self
-          persistCredentials: true
+              - task: AzureCLI@1
+                displayName: Get kubeconfig
+                inputs:
+                  azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+                  scriptLocation: 'inlineScript'
+                  inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-geneva-integration'
+                
+              - bash: |
+                  chmod +x ./install-and-execute-testkube-tests.sh
+                  ./install-and-execute-testkube-tests.sh AzureClientId=$(AksGenevaIntegrationClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) GenevaIntegration=true
+                workingDirectory: $(Build.SourcesDirectory)/test/testkube/
+                displayName: "Install and execute testkube tests"
 
-        - task: AzureCLI@1
-          displayName: Get kubeconfig
-          inputs:
-            azureSubscription: 'ContainerInsights_Build_Subscription_CI'
-            scriptLocation: 'inlineScript'
-            inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-geneva-integration-multi-tenancy'
-          
-        - bash: |
-            chmod +x ./install-and-execute-testkube-tests.sh
-            ./install-and-execute-testkube-tests.sh AzureClientId=$(AksGenevaIntegrationMultiTenancyClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) GenevaIntegration=true
-          workingDirectory: $(Build.SourcesDirectory)/test/testkube/
-          displayName: "Install and execute testkube tests"
+      - deployment: Testkube_ci_logs_prod_aks_geneva_integration_multi_tenancy
+        environment: container-insights
+        timeoutInMinutes: 120
+        displayName: "ci-logs-prod-aks-geneva-integration-multi-tenancy tests"
+        pool:
+          name: Azure-Pipelines-CI-Test-EO
+          image: ci-1es-managed-ubuntu-2204
+          os: linux
+        variables:
+          skipComponentGovernanceDetection: true
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - checkout: self
+                persistCredentials: true
 
-- deployment: Testkube_ci_logs_prod_aks_work_load_identity
-  environment: container-insights
-  timeoutInMinutes: 120
-  displayName: "ci-logs-prod-aks-work-load-identity tests"
-  pool:
-    name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-managed-ubuntu-2204
-    os: linux
-  variables:
-    skipComponentGovernanceDetection: true
-  strategy:
-    runOnce:
-      deploy:
-        steps:
-        - checkout: self
-          persistCredentials: true
+              - task: AzureCLI@1
+                displayName: Get kubeconfig
+                inputs:
+                  azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+                  scriptLocation: 'inlineScript'
+                  inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-geneva-integration-multi-tenancy'
+                
+              - bash: |
+                  chmod +x ./install-and-execute-testkube-tests.sh
+                  ./install-and-execute-testkube-tests.sh AzureClientId=$(AksGenevaIntegrationMultiTenancyClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) GenevaIntegration=true
+                workingDirectory: $(Build.SourcesDirectory)/test/testkube/
+                displayName: "Install and execute testkube tests"
 
-        - task: AzureCLI@1
-          displayName: Get kubeconfig
-          inputs:
-            azureSubscription: 'ContainerInsights_Build_Subscription_CI'
-            scriptLocation: 'inlineScript'
-            inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-work-load-identity'
-          
-        - bash: |
-            chmod +x ./install-and-execute-testkube-tests.sh
-            ./install-and-execute-testkube-tests.sh AzureClientId=$(AksWorkLoadIdentityClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) LinuxTestsOnly=true
-          workingDirectory: $(Build.SourcesDirectory)/test/testkube/
-          displayName: "Install and execute testkube tests"
+      - deployment: Testkube_ci_logs_prod_aks_work_load_identity
+        environment: container-insights
+        timeoutInMinutes: 120
+        displayName: "ci-logs-prod-aks-work-load-identity tests"
+        pool:
+          name: Azure-Pipelines-CI-Test-EO
+          image: ci-1es-managed-ubuntu-2204
+          os: linux
+        variables:
+          skipComponentGovernanceDetection: true
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - checkout: self
+                persistCredentials: true
 
-- deployment: Testkube_ci_logs_prod_wcus_fips
-  environment: container-insights
-  timeoutInMinutes: 120
-  displayName: "ci-logs-prod-wcus-fips tests"
-  pool:
-    name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-managed-ubuntu-2204
-    os: linux
-  variables:
-    skipComponentGovernanceDetection: true
-  strategy:
-    runOnce:
-      deploy:
-        steps:
-        - checkout: self
-          persistCredentials: true
+              - task: AzureCLI@1
+                displayName: Get kubeconfig
+                inputs:
+                  azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+                  scriptLocation: 'inlineScript'
+                  inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-work-load-identity'
+                
+              - bash: |
+                  chmod +x ./install-and-execute-testkube-tests.sh
+                  ./install-and-execute-testkube-tests.sh AzureClientId=$(AksWorkLoadIdentityClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) LinuxTestsOnly=true
+                workingDirectory: $(Build.SourcesDirectory)/test/testkube/
+                displayName: "Install and execute testkube tests"
 
-        - task: AzureCLI@1
-          displayName: Get kubeconfig
-          inputs:
-            azureSubscription: 'ContainerInsights_Build_Subscription_CI'
-            scriptLocation: 'inlineScript'
-            inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-wcus-fips'
-          
-        - bash: |
-            chmod +x ./install-and-execute-testkube-tests.sh
-            ./install-and-execute-testkube-tests.sh AzureClientId=$(WcusFipsClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
-          workingDirectory: $(Build.SourcesDirectory)/test/testkube/
-          displayName: "Install and execute testkube tests"
+      - deployment: Testkube_ci_logs_prod_wcus_fips
+        environment: container-insights
+        timeoutInMinutes: 120
+        displayName: "ci-logs-prod-wcus-fips tests"
+        pool:
+          name: Azure-Pipelines-CI-Test-EO
+          image: ci-1es-managed-ubuntu-2204
+          os: linux
+        variables:
+          skipComponentGovernanceDetection: true
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - checkout: self
+                persistCredentials: true
 
-- deployment: Testkube_ci_logs_prod_aks_networkflowlogs
-  environment: container-insights
-  timeoutInMinutes: 120
-  displayName: "ci-logs-prod-aks-networkflowlogs tests"
-  pool:
-    name: Azure-Pipelines-CI-Test-EO
-    image: ci-1es-managed-ubuntu-2204
-    os: linux
-  variables:
-    skipComponentGovernanceDetection: true
-  strategy:
-    runOnce:
-      deploy:
-        steps:
-        - checkout: self
-          persistCredentials: true
+              - task: AzureCLI@1
+                displayName: Get kubeconfig
+                inputs:
+                  azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+                  scriptLocation: 'inlineScript'
+                  inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-wcus-fips'
+                
+              - bash: |
+                  chmod +x ./install-and-execute-testkube-tests.sh
+                  ./install-and-execute-testkube-tests.sh AzureClientId=$(WcusFipsClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
+                workingDirectory: $(Build.SourcesDirectory)/test/testkube/
+                displayName: "Install and execute testkube tests"
 
-        - task: AzureCLI@1
-          displayName: Get kubeconfig
-          inputs:
-            azureSubscription: 'ContainerInsights_Build_Subscription_CI'
-            scriptLocation: 'inlineScript'
-            inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-networkflowlogs'
-          
-        - bash: |
-            chmod +x ./install-and-execute-testkube-tests.sh
-            ./install-and-execute-testkube-tests.sh AzureClientId=$(NetworkFlowLogsClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) LinuxTestsOnly=true
-          workingDirectory: $(Build.SourcesDirectory)/test/testkube/
-          displayName: "Install and execute testkube tests"
+      - deployment: Testkube_ci_logs_prod_aks_networkflowlogs
+        environment: container-insights
+        timeoutInMinutes: 120
+        displayName: "ci-logs-prod-aks-networkflowlogs tests"
+        pool:
+          name: Azure-Pipelines-CI-Test-EO
+          image: ci-1es-managed-ubuntu-2204
+          os: linux
+        variables:
+          skipComponentGovernanceDetection: true
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+              - checkout: self
+                persistCredentials: true
+
+              - task: AzureCLI@1
+                displayName: Get kubeconfig
+                inputs:
+                  azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+                  scriptLocation: 'inlineScript'
+                  inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-networkflowlogs'
+                
+              - bash: |
+                  chmod +x ./install-and-execute-testkube-tests.sh
+                  ./install-and-execute-testkube-tests.sh AzureClientId=$(NetworkFlowLogsClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) LinuxTestsOnly=true
+                workingDirectory: $(Build.SourcesDirectory)/test/testkube/
+                displayName: "Install and execute testkube tests"
