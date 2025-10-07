@@ -8,6 +8,37 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 10/06/2025 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.30 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.30 (windows)
+- Linux
+  - [azurelinux 3.0.20250910](https://github.com/microsoft/azurelinux/releases/tag/3.0.20250910-3.0)
+  - Golang - 1.24.6
+  - Ruby - arm64 - 3.3.5, x86_64 - 3.3.8
+  - MDSD - 1.37.0
+  - Telegraf - 1.36.1
+  - Fluent-bit - 3.1.9
+  - Fluentd - 1.16.3
+- Windows
+  - Golang - 1.24.6
+  - Ruby - 3.1.1
+  - Windows AMA - 46.31.3
+  - Telegraf - 1.24.2
+  - Fluent-bit - 4.0.3
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Linux
+  * Cert mount fix for AGC by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1518
+  * Enabled OTel logs and traces support by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1527
+  * CVEs Fix by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1526
+  * fix amaca liveness probe issue in high scale mode by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1530
+- Windows
+  * N/A
+- Common
+  * Remove custom metrics tests from conformance tests by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1528
+  * Longw/arc openshift by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1511
+
 ### 09/09/2025 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.29 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.29 (windows)
