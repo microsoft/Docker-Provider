@@ -1,0 +1,49 @@
+Azure: # These helm values are provided by extension platform
+  Cluster:
+    ResourceId: ""
+    Region: ""
+    Cloud: ""
+    Distribution: ""
+    Infrastructure: ""
+  proxySettings:
+    isProxyEnabled: "false"
+    httpProxy: ""
+    httpsProxy: ""
+    noProxy: ""
+    proxyCert: ""
+    isCustomCert: false
+  Identity:
+    isEnabled: ""
+    Type: ""
+    ClientId: ""
+  Extension:
+    Name: ""
+    ResourceId: ""
+global:
+  commonGlobals:
+    CloudEnvironment: AZUREPUBLICCLOUD
+    Customer:
+      AzureResourceID: ""
+    Region: ""
+    Versions:
+      Kubernetes: ""
+AppmonitoringAgent:
+  cpuLimit: "200m"
+  cpuRequest: "200m"
+  enabled: false
+  imageTag: ""
+  isOpenTelemetryLogsEnabled: true
+  isOpenTelemetryMetricsEnabled: true
+  isOtelToggleEnabled: false
+  memoryLimit: "200Mi"
+  memoryRequest: "200Mi"
+  openTelemetryLogsPort: "28331"
+  openTelemetryMetricsPort: "28333"
+replicaCount: 2
+resources:
+  limits:
+    cpu: 200m
+    memory: 200Mi
+  requests:
+    cpu: 200m
+    memory: 200Mi
