@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: java-test-app
+  labels:
+    app: java-test-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: java-test-app
+  template:
+    metadata:
+      labels:
+        app: java-test-app
+    spec:
+      containers:
+      - name: java-test-app
+        image: "{{ .Values.image }}"
+        imagePullPolicy: Always
+        ports:
+        - containerPort: {{ .Values.port }}
+        env:
+        - name: TARGET_URL
+          value: "{{ .Values.targetUrl }}"

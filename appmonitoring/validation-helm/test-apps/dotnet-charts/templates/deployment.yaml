@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dotnet-test-app
+  labels:
+    app: dotnet-test-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dotnet-test-app
+  template:
+    metadata:
+      labels:
+        app: dotnet-test-app
+      {{- if .Values.otelInstrumentation }}
+      annotations:
+        instrumentation.opentelemetry.io/private-preview-inject-dotnet: "true"
+      {{- end }}
+    spec:
+      containers:
+      - name: dotnet-test-app
+        image: "{{ .Values.image }}"
+        imagePullPolicy: Always
+        env:
+        - name: TARGET_URL
+          value: "{{ .Values.targetUrl }}"
+        ports:
+        - containerPort: {{ .Values.port }}

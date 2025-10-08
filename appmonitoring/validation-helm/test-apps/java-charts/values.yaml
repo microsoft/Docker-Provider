@@ -1,0 +1,8 @@
+# Default values for java-test-app
+image: appmonitoringaddontestacr.azurecr.io/demoaks-java-app:latest
+
+# Port the service runs on
+port: 8080
+
+# Target URL for the app to call
+targetUrl: "http://testappsource-service.default.svc.cluster.local:3001"

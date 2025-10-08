@@ -1,0 +1,11 @@
+# Default values for nodejs-test-app
+image: appmonitoringaddontestacr.azurecr.io/demoaks-nodejs-app:latest
+
+# Port the service runs on
+port: 3001
+
+# Target URL for the /call-target endpoint
+targetUrl: "http://testappsource-service.default.svc.cluster.local:3001"
+
+# Application Insights configuration for logging
+appInsightsConfig: '{"logInstrumentationOptions":{"console":{"enabled":true},"bunyan":{"enabled":true},"winston":{"enabled":true}}}'

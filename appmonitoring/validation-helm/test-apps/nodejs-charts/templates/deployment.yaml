@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejs-test-app
+  labels:
+    app: nodejs-test-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodejs-test-app
+  template:
+    metadata:
+      labels:
+        app: nodejs-test-app
+    spec:
+      containers:
+      - name: nodejs-test-app
+        image: "{{ .Values.image }}"
+        imagePullPolicy: Always
+        env:
+        - name: PORT
+          value: "{{ .Values.port }}"
+        - name: APPLICATIONINSIGHTS_CONFIGURATION_CONTENT
+          value: {{ .Values.appInsightsConfig | quote }}
+        - name: TARGET_URL
+          value: "{{ .Values.targetUrl }}"
+        ports:
+        - containerPort: {{ .Values.port }}

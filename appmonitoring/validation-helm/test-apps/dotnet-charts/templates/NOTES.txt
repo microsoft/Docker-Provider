@@ -1,0 +1,13 @@
+dotnet-test-app has been deployed!
+
+To check the service:
+  kubectl get service dotnet-test-app-service
+
+To view the logs:
+  kubectl logs -f deployment/dotnet-test-app
+
+The app is running on port {{ .Values.port }}.
+{{- if .Values.otelInstrumentation }}
+
+OpenTelemetry auto-instrumentation is enabled (private preview).
+{{- end }}
