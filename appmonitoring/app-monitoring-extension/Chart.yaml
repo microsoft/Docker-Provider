@@ -1,6 +1,6 @@
 {
     "apiVersion": "v2",
-    "name": "app-monitoring-addon",
+    "name": "app-monitoring-extension",
     "description": "app-monitoring addon helm chart",
     "type": "application",
     "version": "1.0.0-beta.7"
