@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: dotnet-test-app
-        image: appmonitoring.azurecr.io/demoaks-dotnet-app:latest
+        image: appmonitoringaddontestacr.azurecr.io/demoaks-dotnet-app:latest
         imagePullPolicy: Always
         env:
         - name: TARGET_URL

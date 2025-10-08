@@ -1,0 +1,18 @@
+demoaks-java-app has been deployed!
+
+To check the service:
+  kubectl get service demoaks-java-app-service
+
+To view the logs:
+  kubectl logs -f deployment/demoaks-java-app
+
+The app is running on port {{ .Values.port }} with OpenTelemetry instrumentation.
+
+{{- if eq .Values.serviceType "LoadBalancer" }}
+
+To get the external IP (if using LoadBalancer):
+  kubectl get service java-instrumented-test-app-service
+
+Test the app with:
+  curl http://<EXTERNAL-IP>:{{ .Values.port }}/generate-load?iterations=5
+{{- end }}

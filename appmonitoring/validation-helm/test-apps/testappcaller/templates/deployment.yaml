@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: testappcaller
+  labels:
+    app: testappcaller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: testappcaller
+  template:
+    metadata:
+      labels:
+        app: testappcaller
+    spec:
+      containers:
+      - name: testappcaller
+        image: "{{ .Values.image }}"
+        imagePullPolicy: Always
+        env:
+          - name: TARGET_JAVA_HOST
+            value: "{{ .Values.javaHost }}"
+          - name: TARGET_JAVA_PORT
+            value: "8080"
+          - name: TARGET_JAVA_PATH
+            value: "/call-target"
+          - name: TARGET_NODEJS_HOST
+            value: "{{ .Values.nodejsHost }}"
+          - name: TARGET_NODEJS_PORT
+            value: "3001"
+          - name: TARGET_NODEJS_PATH
+            value: "/call-target"
+          - name: TARGET_PYTHON_HOST
+            value: "{{ .Values.pythonHost }}"
+          - name: TARGET_PYTHON_PORT
+            value: "3001"
+          - name: TARGET_PYTHON_PATH
+            value: "/call-target"
+          - name: TARGET_DOTNET_HOST
+            value: "{{ .Values.dotnetHost }}"
+          - name: TARGET_DOTNET_PORT
+            value: "3001"
+          - name: TARGET_DOTNET_PATH
+            value: "/call-target"
+          - name: INTERVAL_MS
+            value: "{{ .Values.intervalMs }}"

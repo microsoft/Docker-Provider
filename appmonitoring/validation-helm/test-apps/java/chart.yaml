@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: java-test-app
-        image: appmonitoring.azurecr.io/demoaks-java-app:latest
+        image: appmonitoringaddontestacr.azurecr.io/demoaks-java-app:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080

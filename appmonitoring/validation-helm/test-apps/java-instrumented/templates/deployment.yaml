@@ -1,50 +1,46 @@
-# http://<public ip>:8080/generate-load?iterations=5
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: java-instrumented-test-app
-  namespace: ns1
+  name: demoaks-java-app
   labels:
-    app: java-instrumented-test-app
+    app: demoaks-java-app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: java-instrumented-test-app
+      app: demoaks-java-app
   template:
     metadata:
       labels:
-        app: java-instrumented-test-app
-      annotations:
-        #instrumentation.opentelemetry.io/inject-configuration: "true"
+        app: demoaks-java-app
     spec:
       containers:
-      - name: java-instrumented-test-app
-        image: appmonitoringaddontestacr.azurecr.io/demoaks-java-instrumented-app:latest
+      - name: demoaks-java-app
+        image: "{{ .Values.image }}"
         imagePullPolicy: Always
         env:
         # OpenTelemetry configuration
         - name: OTEL_SERVICE_NAME
-          value: "java-instrumented-test-app"
+          value: "{{ .Values.serviceName }}"
         - name: OTEL_SERVICE_VERSION
-          value: "1.0.0"
+          value: "{{ .Values.otel.version }}"
         - name: OTEL_ENVIRONMENT
-          value: "production"
+          value: "{{ .Values.otel.environment }}"
         # Application configuration
         - name: SERVER_PORT
-          value: "8080"
+          value: "{{ .Values.port }}"
         - name: TARGET_URL
-          value: "http://localhost:8080/"
+          value: "{{ .Values.targetUrl }}"
         # Java configuration
         - name: JAVA_OPTS
           value: "-Xmx512m -Xms256m"
         ports:
-        - containerPort: 8080
+        - containerPort: {{ .Values.port }}
           name: http
         livenessProbe:
           httpGet:
             path: /actuator/health
-            port: 8080
+            port: {{ .Values.port }}
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -52,7 +48,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /actuator/health
-            port: 8080
+            port: {{ .Values.port }}
           initialDelaySeconds: 10
           periodSeconds: 5
           timeoutSeconds: 3
@@ -63,19 +59,3 @@ spec:
           limits:
             memory: "512Mi"
             cpu: "500m"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: java-instrumented-test-app-service
-  namespace: ns1
-  labels:
-    app: java-instrumented-test-app
-spec:
-  selector:
-    app: java-instrumented-test-app
-  ports:
-  - port: 8080
-    targetPort: 8080
-    name: http
-  type: LoadBalancer
