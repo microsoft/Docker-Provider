@@ -1,8 +1,0 @@
-# Default values for testappsource
-image: appmonitoringaddontestacr.azurecr.io/aks-validation-source-app:latest
-
-# Port the service runs on
-port: 3001
-
-# Message returned by the HTTP endpoint
-message: "Hello from testappsource Node.js app!"

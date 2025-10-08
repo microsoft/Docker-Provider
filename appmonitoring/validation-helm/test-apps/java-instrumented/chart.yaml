@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
       - name: java-instrumented-test-app
-        image: appmonitoringaddontestacr.azurecr.io/demoaks-java-instrumented-app:latest
+        image: appmonitoring.azurecr.io/demoaks-java-instrumented-app:latest
         imagePullPolicy: Always
         env:
         # OpenTelemetry configuration

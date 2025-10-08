@@ -1,6 +1,0 @@
-testappcaller has been deployed!
-
-To check the logs:
-  kubectl logs -f deployment/testappcaller
-
-The caller will periodically call your test applications every {{ .Values.intervalMs }}ms for 2 hours.
