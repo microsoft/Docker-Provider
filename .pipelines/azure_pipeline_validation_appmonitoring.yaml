@@ -290,6 +290,9 @@ jobs:
         az account set --subscription ${{ variables.subscription }}
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
+        # Login to ACR for Helm to pull OCI charts
+        az acr login -n ${{ variables.containerRegistry }}
+
         export TEST_NS="${{ variables.testNamespace }}"
 
         sudo chmod +x ../scripts/install-oci-test-apps.sh
