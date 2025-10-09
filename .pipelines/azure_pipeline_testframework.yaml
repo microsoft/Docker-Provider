@@ -7,12 +7,6 @@
 trigger: none
 pr: none
 
-resources:
-  repositories:
-  - repository: 1ESPipelineTemplates
-    type: git
-    name: 1ESPipelineTemplates/1ESPipelineTemplates
-    ref: refs/tags/release
 extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
   parameters:
@@ -20,13 +14,6 @@ extends:
       name: Azure-Pipelines-CI-Test-EO
       image: ci-1es-managed-ubuntu-2204
       os: linux
-    sdl:
-      sourceAnalysisPool:
-        name: Azure-Pipelines-CI-Test-EO
-        image: ci-1es-managed-windows-2022
-        os: windows
-    customBuildTags:
-    - ES365AIMigrationTooling
 
     stages:
     - stage: TestKube
