@@ -8,7 +8,6 @@ trigger: none
 pr: none
 
 extends:
-  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
   parameters:
     pool:
       name: Azure-Pipelines-CI-Test-EO
