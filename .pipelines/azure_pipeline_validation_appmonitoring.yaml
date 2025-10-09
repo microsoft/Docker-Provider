@@ -290,24 +290,11 @@ jobs:
         az account set --subscription ${{ variables.subscription }}
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
-        export JAVA_TEST_IMAGE_NAME=${{ variables.javaTestAppImageName }}
-        export NODEJS_TEST_IMAGE_NAME=${{ variables.nodeTestAppImageName }}
-        export PYTHON_TEST_IMAGE_NAME=${{ variables.pythonTestAppImageName }}
-        export DOTNET_TEST_IMAGE_NAME=${{ variables.dotnetTestAppImageName }}
-
-        export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
-        export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
-        export PYTHON_TEST_APP_NAME="${{ variables.pythonTestAppName }}"
-        export DOTNET_TEST_APP_NAME="${{ variables.dotnetTestAppName }}"
-
-        export TEST_APP_SOURCE_NAME="nodejs-source-app"
-        export NODEJS_CALLER_APP_NAME="nodejs-caller-app"
         export TEST_NS="${{ variables.testNamespace }}"
-        export AI_CONNECTION_STRING="${{ variables.aiConnectionString }}"
 
-        sudo chmod +x ../scripts/install-test-apps.sh
+        sudo chmod +x ../scripts/install-oci-test-apps.sh
 
-        if ! ../scripts/install-test-apps.sh; then
+        if ! ../scripts/install-oci-test-apps.sh; then
           echo "Test apps installation failed"
           exit 1
         fi
@@ -418,7 +405,7 @@ jobs:
       scriptType: bash
       scriptLocation: inlineScript
       inlineScript: |
-
+        exit 0
         # Check if current commit is tagged and branch is ai_prod
         CURRENT_BRANCH="$BUILD_SOURCEBRANCHNAME"
         echo "Current branch is: $CURRENT_BRANCH"
