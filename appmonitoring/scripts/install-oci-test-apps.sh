@@ -18,7 +18,7 @@ echo "Wait for 10s for CR to be applied and picked up..."
 sleep 10
 
 # ACR and chart version
-ACR_NAME="appmonitoringaddontestacr.azurecr.io"
+ACR_NAME="aicommon.azurecr.io"
 CHART_VERSION="0.1.0"
 
 echo "Installing test apps from OCI registry..."
