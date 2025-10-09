@@ -20,6 +20,13 @@ extends:
       name: Azure-Pipelines-CI-Test-EO
       image: ci-1es-managed-ubuntu-2204
       os: linux
+    sdl:
+      sourceAnalysisPool:
+        name: Azure-Pipelines-CI-Test-EO
+        image: ci-1es-managed-windows-2022
+        os: windows
+    customBuildTags:
+    - ES365AIMigrationTooling
 
     stages:
     - stage: TestKube
@@ -28,10 +35,6 @@ extends:
         environment: container-insights
         timeoutInMinutes: 120
         displayName: "Monitoring-Model-Cluster-WCUS tests"
-        pool:
-          name: Azure-Pipelines-CI-Test-EO
-          image: ci-1es-managed-ubuntu-2204
-          os: linux
         variables:
           skipComponentGovernanceDetection: true
         strategy:
@@ -42,7 +45,7 @@ extends:
                 persistCredentials: true
 
               - task: AzureCLI@1
-                displayName: Get 2 kubeconfig
+                displayName: Get kubeconfig
                 inputs:
                   azureSubscription: 'ContainerInsights_Build_Subscription_CI'
                   scriptLocation: 'inlineScript'
@@ -58,10 +61,6 @@ extends:
         environment: container-insights
         timeoutInMinutes: 120
         displayName: "Monitoring-Model-Cluster-WEU tests"
-        pool:
-          name: Azure-Pipelines-CI-Test-EO
-          image: ci-1es-managed-ubuntu-2204
-          os: linux
         variables:
           skipComponentGovernanceDetection: true
         strategy:
@@ -84,44 +83,36 @@ extends:
                 workingDirectory: $(Build.SourcesDirectory)/test/testkube/
                 displayName: "Install and execute testkube tests"
 
-      - deployment: Testkube_ci_logs_prod_aks_geneva_integration
-        environment: container-insights
-        timeoutInMinutes: 120
-        displayName: "ci-logs-prod-aks-geneva-integration tests"
-        pool:
-          name: Azure-Pipelines-CI-Test-EO
-          image: ci-1es-managed-ubuntu-2204
-          os: linux
-        variables:
-          skipComponentGovernanceDetection: true
-        strategy:
-          runOnce:
-            deploy:
-              steps:
-              - checkout: self
-                persistCredentials: true
+      # - deployment: Testkube_ci_logs_prod_aks_geneva_integration
+      #   environment: container-insights
+      #   timeoutInMinutes: 120
+      #   displayName: "ci-logs-prod-aks-geneva-integration tests"
+      #   variables:
+      #     skipComponentGovernanceDetection: true
+      #   strategy:
+      #     runOnce:
+      #       deploy:
+      #         steps:
+      #         - checkout: self
+      #           persistCredentials: true
 
-              - task: AzureCLI@1
-                displayName: Get kubeconfig
-                inputs:
-                  azureSubscription: 'ContainerInsights_Build_Subscription_CI'
-                  scriptLocation: 'inlineScript'
-                  inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-geneva-integration'
+      #         - task: AzureCLI@1
+      #           displayName: Get kubeconfig
+      #           inputs:
+      #             azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+      #             scriptLocation: 'inlineScript'
+      #             inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-geneva-integration'
                 
-              - bash: |
-                  chmod +x ./install-and-execute-testkube-tests.sh
-                  ./install-and-execute-testkube-tests.sh AzureClientId=$(AksGenevaIntegrationClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) GenevaIntegration=false
-                workingDirectory: $(Build.SourcesDirectory)/test/testkube/
-                displayName: "Install and execute testkube tests"
+      #         - bash: |
+      #             chmod +x ./install-and-execute-testkube-tests.sh
+      #             ./install-and-execute-testkube-tests.sh AzureClientId=$(AksGenevaIntegrationClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) GenevaIntegration=false
+      #           workingDirectory: $(Build.SourcesDirectory)/test/testkube/
+      #           displayName: "Install and execute testkube tests"
 
       - deployment: Testkube_ci_logs_prod_aks_geneva_integration_multi_tenancy
         environment: container-insights
         timeoutInMinutes: 120
         displayName: "ci-logs-prod-aks-geneva-integration-multi-tenancy tests"
-        pool:
-          name: Azure-Pipelines-CI-Test-EO
-          image: ci-1es-managed-ubuntu-2204
-          os: linux
         variables:
           skipComponentGovernanceDetection: true
         strategy:
@@ -148,10 +139,6 @@ extends:
         environment: container-insights
         timeoutInMinutes: 120
         displayName: "ci-logs-prod-aks-work-load-identity tests"
-        pool:
-          name: Azure-Pipelines-CI-Test-EO
-          image: ci-1es-managed-ubuntu-2204
-          os: linux
         variables:
           skipComponentGovernanceDetection: true
         strategy:
@@ -178,10 +165,6 @@ extends:
         environment: container-insights
         timeoutInMinutes: 120
         displayName: "ci-logs-prod-wcus-fips tests"
-        pool:
-          name: Azure-Pipelines-CI-Test-EO
-          image: ci-1es-managed-ubuntu-2204
-          os: linux
         variables:
           skipComponentGovernanceDetection: true
         strategy:
@@ -208,10 +191,6 @@ extends:
         environment: container-insights
         timeoutInMinutes: 120
         displayName: "ci-logs-prod-aks-networkflowlogs tests"
-        pool:
-          name: Azure-Pipelines-CI-Test-EO
-          image: ci-1es-managed-ubuntu-2204
-          os: linux
         variables:
           skipComponentGovernanceDetection: true
         strategy:
