@@ -31,7 +31,7 @@ extends:
     stages:
     - stage: TestKube
       jobs:
-      - deployment: Testkube_Monitoring_Model_Cluster_WCUS
+      - job: Testkube_Monitoring_Model_Cluster_WCUS
         environment: container-insights
         timeoutInMinutes: 120
         displayName: "Monitoring-Model-Cluster-WCUS tests"
@@ -57,7 +57,7 @@ extends:
                 workingDirectory: $(Build.SourcesDirectory)/test/testkube/
                 displayName: "Install and execute testkube tests"
 
-      - deployment: Testkube_Monitoring_Model_Cluster_WEU
+      - job: Testkube_Monitoring_Model_Cluster_WEU
         environment: container-insights
         timeoutInMinutes: 120
         displayName: "Monitoring-Model-Cluster-WEU tests"
@@ -83,7 +83,7 @@ extends:
                 workingDirectory: $(Build.SourcesDirectory)/test/testkube/
                 displayName: "Install and execute testkube tests"
 
-      # - deployment: Testkube_ci_logs_prod_aks_geneva_integration
+      # - job: Testkube_ci_logs_prod_aks_geneva_integration
       #   environment: container-insights
       #   timeoutInMinutes: 120
       #   displayName: "ci-logs-prod-aks-geneva-integration tests"
@@ -109,7 +109,7 @@ extends:
       #           workingDirectory: $(Build.SourcesDirectory)/test/testkube/
       #           displayName: "Install and execute testkube tests"
 
-      - deployment: Testkube_ci_logs_prod_aks_geneva_integration_multi_tenancy
+      - job: Testkube_ci_logs_prod_aks_geneva_integration_multi_tenancy
         environment: container-insights
         timeoutInMinutes: 120
         displayName: "ci-logs-prod-aks-geneva-integration-multi-tenancy tests"
@@ -135,7 +135,7 @@ extends:
                 workingDirectory: $(Build.SourcesDirectory)/test/testkube/
                 displayName: "Install and execute testkube tests"
 
-      - deployment: Testkube_ci_logs_prod_aks_work_load_identity
+      - job: Testkube_ci_logs_prod_aks_work_load_identity
         environment: container-insights
         timeoutInMinutes: 120
         displayName: "ci-logs-prod-aks-work-load-identity tests"
@@ -161,7 +161,7 @@ extends:
                 workingDirectory: $(Build.SourcesDirectory)/test/testkube/
                 displayName: "Install and execute testkube tests"
 
-      - deployment: Testkube_ci_logs_prod_wcus_fips
+      - job: Testkube_ci_logs_prod_wcus_fips
         environment: container-insights
         timeoutInMinutes: 120
         displayName: "ci-logs-prod-wcus-fips tests"
@@ -187,7 +187,7 @@ extends:
                 workingDirectory: $(Build.SourcesDirectory)/test/testkube/
                 displayName: "Install and execute testkube tests"
 
-      - deployment: Testkube_ci_logs_prod_aks_networkflowlogs
+      - job: Testkube_ci_logs_prod_aks_networkflowlogs
         environment: container-insights
         timeoutInMinutes: 120
         displayName: "ci-logs-prod-aks-networkflowlogs tests"
