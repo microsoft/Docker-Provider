@@ -15,15 +15,13 @@ stages:
     displayName: "Monitoring-Model-Cluster-WCUS tests"
     pool:
       name: Azure-Pipelines-CI-Test-EO
-      image: ci-1es-managed-ubuntu-2204
-      os: linux
     variables:
       skipComponentGovernanceDetection: true
     steps:
     - checkout: self
       persistCredentials: true
 
-    - task: AzureCLI@1
+    - task: AzureCLI@2
       displayName: Get kubeconfig
       inputs:
         azureSubscription: 'ContainerInsights_Build_Subscription_CI'
@@ -41,15 +39,13 @@ stages:
     displayName: "Monitoring-Model-Cluster-WEU tests"
     pool:
       name: Azure-Pipelines-CI-Test-EO
-      image: ci-1es-managed-ubuntu-2204
-      os: linux
     variables:
       skipComponentGovernanceDetection: true
     steps:
     - checkout: self
       persistCredentials: true
 
-    - task: AzureCLI@1
+    - task: AzureCLI@2
       displayName: Get kubeconfig
       inputs:
         azureSubscription: 'ContainerInsights_Build_Subscription_CI'
@@ -65,13 +61,15 @@ stages:
   # - job: Testkube_ci_logs_prod_aks_geneva_integration
   #   timeoutInMinutes: 120
   #   displayName: "ci-logs-prod-aks-geneva-integration tests"
+  #   pool:
+  #     name: Azure-Pipelines-CI-Test-EO
   #   variables:
   #     skipComponentGovernanceDetection: true
   #   steps:
   #   - checkout: self
   #     persistCredentials: true
 
-  #   - task: AzureCLI@1
+  #   - task: AzureCLI@2
   #     displayName: Get kubeconfig
   #     inputs:
   #       azureSubscription: 'ContainerInsights_Build_Subscription_CI'
@@ -87,13 +85,15 @@ stages:
   - job: Testkube_ci_logs_prod_aks_geneva_integration_multi_tenancy
     timeoutInMinutes: 120
     displayName: "ci-logs-prod-aks-geneva-integration-multi-tenancy tests"
+    pool:
+      name: Azure-Pipelines-CI-Test-EO
     variables:
       skipComponentGovernanceDetection: true
     steps:
     - checkout: self
       persistCredentials: true
 
-    - task: AzureCLI@1
+    - task: AzureCLI@2
       displayName: Get kubeconfig
       inputs:
         azureSubscription: 'ContainerInsights_Build_Subscription_CI'
@@ -109,13 +109,15 @@ stages:
   - job: Testkube_ci_logs_prod_aks_work_load_identity
     timeoutInMinutes: 120
     displayName: "ci-logs-prod-aks-work-load-identity tests"
+    pool:
+      name: Azure-Pipelines-CI-Test-EO
     variables:
       skipComponentGovernanceDetection: true
     steps:
     - checkout: self
       persistCredentials: true
 
-    - task: AzureCLI@1
+    - task: AzureCLI@2
       displayName: Get kubeconfig
       inputs:
         azureSubscription: 'ContainerInsights_Build_Subscription_CI'
@@ -131,13 +133,15 @@ stages:
   - job: Testkube_ci_logs_prod_wcus_fips
     timeoutInMinutes: 120
     displayName: "ci-logs-prod-wcus-fips tests"
+    pool:
+      name: Azure-Pipelines-CI-Test-EO
     variables:
       skipComponentGovernanceDetection: true
     steps:
     - checkout: self
       persistCredentials: true
 
-    - task: AzureCLI@1
+    - task: AzureCLI@2
       displayName: Get kubeconfig
       inputs:
         azureSubscription: 'ContainerInsights_Build_Subscription_CI'
@@ -153,13 +157,15 @@ stages:
   - job: Testkube_ci_logs_prod_aks_networkflowlogs
     timeoutInMinutes: 120
     displayName: "ci-logs-prod-aks-networkflowlogs tests"
+    pool:
+      name: Azure-Pipelines-CI-Test-EO
     variables:
       skipComponentGovernanceDetection: true
     steps:
     - checkout: self
       persistCredentials: true
 
-    - task: AzureCLI@1
+    - task: AzureCLI@2
       displayName: Get kubeconfig
       inputs:
         azureSubscription: 'ContainerInsights_Build_Subscription_CI'
