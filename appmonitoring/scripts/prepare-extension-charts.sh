@@ -1,25 +1,22 @@
 #!/bin/bash
 
-YAML_FILE="$1"
+CHART_DIR="$1"
+IMAGE_TAG="$2"
 
-if [[ -z "$YAML_FILE" ]]; then
-  echo "Usage: $0 <yaml-file>"
+if [[ -z "$CHART_DIR" ]] || [[ -z "$IMAGE_TAG" ]]; then
+  echo "Usage: $0 <chart-directory> <image-tag>"
   exit 1
 fi
 
-SEARCH='image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"'
-REPLACE='image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aidev:{{ .Values.AppmonitoringAgent.imageTag }}"'
+echo "Preparing chart in directory: $CHART_DIR"
+echo "Using image tag: $IMAGE_TAG"
 
-MATCH_COUNT=$(grep -cF "$SEARCH" "$YAML_FILE")
+# Replace <CHART_VERSION> in Chart.yaml
+sed -i "s|<CHART_VERSION>|$IMAGE_TAG|g" "$CHART_DIR/Chart.yaml"
+echo "Replaced <CHART_VERSION> in Chart.yaml"
 
-if [[ "$MATCH_COUNT" -eq 3 ]]; then
-  sed -i "s|$SEARCH|$REPLACE|g" "$YAML_FILE"
-  echo "Replacement done in $YAML_FILE"
-elif [[ "$MATCH_COUNT" -eq 0 ]]; then
-  echo "Error: Target image line not found in $YAML_FILE"
-  exit 2
-else
-  echo "Error: Expected 3 matches, found $MATCH_COUNT in $YAML_FILE"
-  exit 3
-fi
+# Replace <IMAGE_TAG> in values.yaml
+sed -i "s|<IMAGE_TAG>|$IMAGE_TAG|g" "$CHART_DIR/values.yaml"
+echo "Replaced <IMAGE_TAG> in values.yaml"
 
+echo "Chart preparation complete"

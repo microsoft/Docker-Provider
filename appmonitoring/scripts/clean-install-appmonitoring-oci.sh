@@ -6,15 +6,26 @@ IMAGE_TAG=$1
 namespace=kube-system
 secrets_installer_job=app-monitoring-secrets-installer
 webhook_deployment=app-monitoring-webhook
-ACR_NAME=${ACR_NAME:-appmonitoringaddontestacr.azurecr.io}
-CHART_VERSION=${CHART_VERSION:-1.0.0-beta.7}
+TEST_CHART_REPO=${CHART_REPO:-appmonitoringaddontestacr.azurecr.io/test/azuremonitor/applicationinsights/helm}
+TEST_CHART_VERSION=${CHART_VERSION}
+
+if [[ -z "$TEST_CHART_VERSION" ]]; then
+  echo "Error: TEST_CHART_VERSION must be set"
+  exit 1
+fi
+
+if [[ -z "$TEST_IMAGE_RELATIVE_PATH" ]]; then
+  echo "Error: TEST_IMAGE_RELATIVE_PATH must be set"
+  exit 1
+fi
 
 echo "Image Tag: $IMAGE_TAG"
-echo "ACR: $ACR_NAME"
-echo "Chart Version: $CHART_VERSION"
+echo "Chart Repo: $TEST_CHART_REPO"
+echo "Chart Version: $TEST_CHART_VERSION"
+echo "Test Image Relative Path: $TEST_IMAGE_RELATIVE_PATH"
 
-echo "Uninstalling appmonitoring addon helm..."
-if ! helm uninstall -n kube-system appmonitoring-addon --ignore-not-found; then
+echo "Uninstalling appmonitoring extension helm..."
+if ! helm uninstall -n kube-system appmonitoring-extension --ignore-not-found; then
   echo "Error: helm uninstall failed."
 else
     echo "Uninstall complete."
@@ -27,16 +38,11 @@ else
     echo "CRD deletion complete."
 fi
 
-echo "Installing appmonitoring addon from OCI with image tag: $IMAGE_TAG"
-if ! helm install -n kube-system appmonitoring-addon oci://${ACR_NAME}/helm/app-monitoring-extension --version ${CHART_VERSION} \
+echo "Installing appmonitoring extension from OCI with image tag: $IMAGE_TAG"
+if ! helm install -n kube-system appmonitoring-extension oci://${TEST_CHART_REPO}/appmonitoring-extension --version ${TEST_CHART_VERSION} \
+  -f ./oci-values.yaml \
   --set AppmonitoringAgent.imageTag=$IMAGE_TAG \
-  --set AppmonitoringAgent.replicas=2 \
-  --set global.commonGlobals.Customer.AzureResourceID="/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/Microsoft.ContainerService/managedClusters/appmonitoring-webhook-testbed" \
-  --set global.commonGlobals.Region="eastus" \
-  --set global.commonGlobals.CloudEnvironment="AZUREPUBLICCLOUD" \
-  --set Azure.Cluster.ResourceId="/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/Microsoft.ContainerService/managedClusters/appmonitoring-webhook-testbed" \
-  --set Azure.Cluster.Region="westus2" \
-  --set Azure.Cluster.Cloud="AZUREPUBLICCLOUD"; then
+  --set AppmonitoringAgent.imageRelativePath=$TEST_IMAGE_RELATIVE_PATH; then
   echo "Error: helm install from OCI failed."
   exit 1
 fi

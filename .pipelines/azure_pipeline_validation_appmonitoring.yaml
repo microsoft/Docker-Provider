@@ -20,7 +20,10 @@ variables:
   containerRegistry: 'appmonitoringaddontestacr' # this build pushes to aicommon.azurecr.io with an image that is used for testing in validation cluster, then pushes an image once tests pass. That image is latre picked up by the release pipeline and reuploaded to MCR
   containerRegistryResourceGroup: 'aks-appmonitoring-container-registry'
   repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/applicationinsights/aidev'
-  repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/test/azuremonitor/applicationinsights/aidev'
+  repoTestImageRelativePath: 'test/azuremonitor/applicationinsights/aidev'
+  repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/${{ variables.repoTestImageRelativePath }}'
+  repoTestExtensionPath: '${{ variables.containerRegistry }}.azurecr.io/test/azuremonitor/applicationinsights/helm'
+  repoExtensionPath: '${{ variables.containerRegistry }}.azurecr.io/azuremonitor/applicationinsights/helm'
   javaTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-java-app:latest'
   javaTestAppName: 'java-test-app'
   nodeTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-nodejs-app:latest'
@@ -96,8 +99,9 @@ jobs:
   variables:
     imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
     testImageTagSuffix: $(imageTag)-$(Build.BuildId)
+    prodImageTagSuffix: $(imageTag)-rc-$(Build.BuildId)
     testImageName: ${{ variables.repoTestImageName }}:${{ variables.testImageTagSuffix }}
-    fullImageName: ${{ variables.repoImageName }}:$(imageTag)-rc-$(Build.BuildId)
+    fullImageName: ${{ variables.repoImageName }}:${{ variables.prodImageTagSuffix }}
     # This is necessary because of: https://github.com/moby/moby/issues/37965
     DOCKER_BUILDKIT: 1
 
@@ -233,20 +237,38 @@ jobs:
         az account set --subscription ${{ variables.subscription }}
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
-        sudo chmod u+x ./clean-install-appmonitoring.sh
         sudo chmod u+x ./prepare-extension-charts.sh
 
-        echo "Preparing charts..."
-        if ! ./prepare-extension-charts.sh ../app-monitoring-extension/templates/app-monitoring-agent.yaml; then
+        echo "Preparing extension charts (replacing placeholders with runtime values)..."
+        if ! ./prepare-extension-charts.sh ../app-monitoring-extension $(prodImageTagSuffix); then
           echo "Chart preparation failed"
           exit 1
         fi
 
-        echo "Checking for charts..."
-        if ! ./clean-install-appmonitoring.sh $(testImageTagSuffix); then
+        echo "Packaging modified chart..."
+        cd ..
+        helm package app-monitoring-extension
+        
+        echo "Logging into ACR..."
+        az acr login -n ${{ variables.containerRegistry }}
+
+        echo "Pushing modified chart to OCI registry..."
+        helm push app-monitoring-extension-$(testImageTagSuffix).tgz oci://${{ variables.repoTestExtensionPath }}
+
+        cd scripts
+        sudo chmod u+x ./clean-install-appmonitoring-oci.sh
+
+        export TEST_CHART_REPO="${{ variables.repoTestExtensionPath }}"
+        export TEST_CHART_VERSION="$(testImageTagSuffix)"
+        export TEST_IMAGE_RELATIVE_PATH="${{ variables.repoTestImageRelativePath }}"
+        
+        echo "Installing appmonitoring addon from OCI..."
+        if ! ./clean-install-appmonitoring-oci.sh $(testImageTagSuffix); then
           echo "Chart installation failed"
           exit 1
         fi
+
+        exit 0 # EXIT FOR TESTING NOW
 
   - task: AzureCLI@2
     displayName: "Validate charts deployed to AKS"

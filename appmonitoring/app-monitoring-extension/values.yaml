@@ -31,7 +31,8 @@ AppmonitoringAgent:
   cpuLimit: "200m"
   cpuRequest: "200m"
   enabled: false
-  imageTag: ""
+  imageRelativePath: "azuremonitor/applicationinsights/aiprod"
+  imageTag: "<IMAGE_TAG>"
   isOpenTelemetryLogsEnabled: true
   isOpenTelemetryMetricsEnabled: true
   isOtelToggleEnabled: false

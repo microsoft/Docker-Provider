@@ -155,7 +155,7 @@ spec:
                 value: "{{ .Values.Azure.Cluster.ResourceId }}"
               - name: ARM_REGION
                 value: "{{ .Values.Azure.Cluster.Region }}"
-              image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"
+              image: "{{ template "addon_mcr_repository_base" . }}/{{ .Values.AppmonitoringAgent.imageRelativePath }}:{{ .Values.AppmonitoringAgent.imageTag }}"
               securityContext:
                 capabilities:
                   drop:
