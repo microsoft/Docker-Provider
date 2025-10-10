@@ -234,10 +234,10 @@ jobs:
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
         sudo chmod u+x ./clean-install-appmonitoring.sh
-        sudo chmod u+x ./prepare-aks-rp-charts.sh
+        sudo chmod u+x ./prepare-extension-charts.sh
 
         echo "Preparing charts..."
-        if ! ./prepare-aks-rp-charts.sh ../validation-helm/app-monitoring-addon/templates/app-monitoring-agent.yaml; then
+        if ! ./prepare-extension-charts.sh ../app-monitoring-extension/templates/app-monitoring-agent.yaml; then
           echo "Chart preparation failed"
           exit 1
         fi
