@@ -1,0 +1,8 @@
+# Default values for python-test-app
+image: appmonitoringaddontestacr.azurecr.io/demoaks-python-app:latest
+
+# Port the service runs on
+port: 3001
+
+# Target URL for the app to call
+targetUrl: "http://testappsource-service.default.svc.cluster.local:3001"

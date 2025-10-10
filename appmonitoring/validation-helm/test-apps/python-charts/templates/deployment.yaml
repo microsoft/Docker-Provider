@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-test-app
+  labels:
+    app: python-test-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: python-test-app
+  template:
+    metadata:
+      labels:
+        app: python-test-app
+      annotations:
+        instrumentation.opentelemetry.io/private-preview-inject-python: "true" # private-preview is enabled via an annotation only
+    spec:
+      containers:
+      - name: python-test-app
+        image: "{{ .Values.image }}"
+        imagePullPolicy: Always
+        env:
+        - name: TARGET_URL
+          value: "{{ .Values.targetUrl }}"
+        ports:
+        - containerPort: {{ .Values.port }}
