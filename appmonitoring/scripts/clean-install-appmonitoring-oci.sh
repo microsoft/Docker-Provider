@@ -28,7 +28,15 @@ else
 fi
 
 echo "Installing appmonitoring addon from OCI with image tag: $IMAGE_TAG"
-if ! helm install -n kube-system appmonitoring-addon oci://${ACR_NAME}/helm/app-monitoring-extension --version ${CHART_VERSION} --set AppmonitoringAgent.imageTag=$IMAGE_TAG --set AppmonitoringAgent.replicas=2; then
+if ! helm install -n kube-system appmonitoring-addon oci://${ACR_NAME}/helm/app-monitoring-extension --version ${CHART_VERSION} \
+  --set AppmonitoringAgent.imageTag=$IMAGE_TAG \
+  --set AppmonitoringAgent.replicas=2 \
+  --set global.commonGlobals.Customer.AzureResourceID="/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/Microsoft.ContainerService/managedClusters/appmonitoring-webhook-testbed" \
+  --set global.commonGlobals.Region="eastus" \
+  --set global.commonGlobals.CloudEnvironment="AZUREPUBLICCLOUD" \
+  --set Azure.Cluster.ResourceId="/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/Microsoft.ContainerService/managedClusters/appmonitoring-webhook-testbed" \
+  --set Azure.Cluster.Region="westus2" \
+  --set Azure.Cluster.Cloud="AZUREPUBLICCLOUD"; then
   echo "Error: helm install from OCI failed."
   exit 1
 fi
