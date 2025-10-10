@@ -295,6 +295,11 @@ jobs:
 
         export TEST_NS="${{ variables.testNamespace }}"
         export ACR_NAME="${{ variables.containerRegistry }}.azurecr.io"
+        
+        export JAVA_TEST_IMAGE_NAME=${{ variables.javaTestAppImageName }}
+        export NODEJS_TEST_IMAGE_NAME=${{ variables.nodeTestAppImageName }}
+        export PYTHON_TEST_IMAGE_NAME=${{ variables.pythonTestAppImageName }}
+        export DOTNET_TEST_IMAGE_NAME=${{ variables.dotnetTestAppImageName }}
 
         sudo chmod +x ../scripts/install-oci-test-apps.sh
 

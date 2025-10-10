@@ -30,25 +30,25 @@ fi
 
 # this is the instrumented java app
 echo "Installing java-test-app..."
-if ! helm install java-test-app oci://${ACR_NAME}/helm/testapps/java-test-app --version ${CHART_VERSION} -n ${TEST_NS}; then
+if ! helm install java-test-app oci://${ACR_NAME}/helm/testapps/java-test-app --version ${CHART_VERSION} -n ${TEST_NS} --set image=${JAVA_TEST_IMAGE_NAME}; then
   echo "Error: java-test-app installation failed"
   exit 1
 fi
 
 # this is the instrumented nodejs app
 echo "Installing nodejs-test-app..."
-if ! helm install nodejs-test-app oci://${ACR_NAME}/helm/testapps/nodejs-test-app --version ${CHART_VERSION} -n ${TEST_NS}; then
+if ! helm install nodejs-test-app oci://${ACR_NAME}/helm/testapps/nodejs-test-app --version ${CHART_VERSION} -n ${TEST_NS} --set image=${NODEJS_TEST_IMAGE_NAME}; then
   echo "Error: nodejs-test-app installation failed"
   exit 1
 fi
 
 # this is the instrumented python app (if available, skip if not)
 echo "Installing python-test-app..."
-helm install python-test-app oci://${ACR_NAME}/helm/testapps/python-test-app --version ${CHART_VERSION} -n ${TEST_NS} 2>/dev/null || echo "Python test app not available, skipping..."
+helm install python-test-app oci://${ACR_NAME}/helm/testapps/python-test-app --version ${CHART_VERSION} -n ${TEST_NS} --set image=${PYTHON_TEST_IMAGE_NAME} 2>/dev/null || echo "Python test app not available, skipping..."
 
 # this is the instrumented dotnet app
 echo "Installing dotnet-test-app..."
-if ! helm install dotnet-test-app oci://${ACR_NAME}/helm/testapps/dotnet-test-app --version ${CHART_VERSION} -n ${TEST_NS}; then
+if ! helm install dotnet-test-app oci://${ACR_NAME}/helm/testapps/dotnet-test-app --version ${CHART_VERSION} -n ${TEST_NS} --set image=${DOTNET_TEST_IMAGE_NAME}; then
   echo "Error: dotnet-test-app installation failed"
   exit 1
 fi
