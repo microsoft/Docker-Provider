@@ -57,7 +57,8 @@ jobs:
   ## preview release are in format preview-Major.Minor.Patch
   - bash: |
       commit=$(git describe --tags --abbrev=0)
-      imageTag="$commit"
+      # Remove 'appmonitoring-' prefix if present for SemVer compatibility
+      imageTag="${commit#appmonitoring-}"
             
       echo "imageTag is $imageTag"
       
