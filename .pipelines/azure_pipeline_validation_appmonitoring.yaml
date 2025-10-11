@@ -99,7 +99,7 @@ jobs:
   variables:
     imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
     testImageTagSuffix: $(imageTag)-$(Build.BuildId)
-    prodImageTagSuffix: $(imageTag)-rc-$(Build.BuildId)
+    prodImageTagSuffix: $(imageTag)-rc.$(Build.BuildId)
     testImageName: ${{ variables.repoTestImageName }}:${{ variables.testImageTagSuffix }}
     fullImageName: ${{ variables.repoImageName }}:${{ variables.prodImageTagSuffix }}
     # This is necessary because of: https://github.com/moby/moby/issues/37965
