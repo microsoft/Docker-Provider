@@ -240,7 +240,7 @@ jobs:
         sudo chmod u+x ./prepare-extension-charts.sh
 
         echo "Preparing extension charts (replacing placeholders with runtime values)..."
-        if ! ./prepare-extension-charts.sh ../app-monitoring-extension $(prodImageTagSuffix); then
+        if ! ./prepare-extension-charts.sh ../app-monitoring-extension ${{ variables.prodImageTagSuffix }}; then
           echo "Chart preparation failed"
           exit 1
         fi
@@ -248,6 +248,12 @@ jobs:
         echo "Packaging modified chart..."
         cd ..
         helm package app-monitoring-extension
+        
+        echo "Linting Helm chart..."
+        if ! helm lint app-monitoring-extension; then
+          echo "Helm chart lint failed"
+          exit 1
+        fi
         
         echo "Logging into ACR..."
         az acr login -n ${{ variables.containerRegistry }}
