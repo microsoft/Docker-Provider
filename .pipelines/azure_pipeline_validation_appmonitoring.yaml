@@ -209,6 +209,7 @@ jobs:
         echo "##vso[task.setvariable variable=testImageName;isOutput=true]$(testImageName)"
         echo "##vso[task.setvariable variable=fullImageName;isOutput=true]$(fullImageName)"
         echo "##vso[task.setvariable variable=testImageTagSuffix;isOutput=true]$(testImageTagSuffix)"
+        echo "##vso[task.setvariable variable=prodImageTagSuffix;isOutput=true]$(prodImageTagSuffix)"
     name: exportVars
 
 
@@ -221,6 +222,7 @@ jobs:
     testImageName:  $[ dependencies.build_linux.outputs['exportVars.testImageName'] ]
     fullImageName:  $[ dependencies.build_linux.outputs['exportVars.fullImageName'] ]
     testImageTagSuffix: $[ dependencies.build_linux.outputs['exportVars.testImageTagSuffix'] ]
+    prodImageTagSuffix: $[ dependencies.build_linux.outputs['exportVars.prodImageTagSuffix'] ]
     # This is necessary because of: https://github.com/moby/moby/issues/37965
     DOCKER_BUILDKIT: 1
 
@@ -240,7 +242,7 @@ jobs:
         sudo chmod u+x ./prepare-extension-charts.sh
 
         echo "Preparing extension charts (replacing placeholders with runtime values)..."
-        if ! ./prepare-extension-charts.sh ../app-monitoring-extension ${{ variables.prodImageTagSuffix }}; then
+        if ! ./prepare-extension-charts.sh ../app-monitoring-extension $(prodImageTagSuffix); then
           echo "Chart preparation failed"
           exit 1
         fi
