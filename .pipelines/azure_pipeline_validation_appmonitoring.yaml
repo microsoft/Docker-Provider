@@ -101,6 +101,7 @@ jobs:
     imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
     testImageTagSuffix: $(imageTag)-$(Build.BuildId)
     prodImageTagSuffix: $(imageTag)-rc.$(Build.BuildId)
+    prodOciTagSufix: $(imageTag)
     testImageName: ${{ variables.repoTestImageName }}:${{ variables.testImageTagSuffix }}
     fullImageName: ${{ variables.repoImageName }}:${{ variables.prodImageTagSuffix }}
     # This is necessary because of: https://github.com/moby/moby/issues/37965
@@ -211,6 +212,7 @@ jobs:
         echo "##vso[task.setvariable variable=fullImageName;isOutput=true]$(fullImageName)"
         echo "##vso[task.setvariable variable=testImageTagSuffix;isOutput=true]$(testImageTagSuffix)"
         echo "##vso[task.setvariable variable=prodImageTagSuffix;isOutput=true]$(prodImageTagSuffix)"
+        echo "##vso[task.setvariable variable=prodOciTagSufix;isOutput=true]$(prodOciTagSufix)"
     name: exportVars
 
 
@@ -224,6 +226,7 @@ jobs:
     fullImageName:  $[ dependencies.build_linux.outputs['exportVars.fullImageName'] ]
     testImageTagSuffix: $[ dependencies.build_linux.outputs['exportVars.testImageTagSuffix'] ]
     prodImageTagSuffix: $[ dependencies.build_linux.outputs['exportVars.prodImageTagSuffix'] ]
+    prodOciTagSufix: $[ dependencies.build_linux.outputs['exportVars.prodOciTagSufix'] ]
     # This is necessary because of: https://github.com/moby/moby/issues/37965
     DOCKER_BUILDKIT: 1
 
@@ -243,7 +246,7 @@ jobs:
         sudo chmod u+x ./prepare-extension-charts.sh
 
         echo "Preparing extension charts (replacing placeholders with runtime values)..."
-        if ! ./prepare-extension-charts.sh ../app-monitoring-extension $(prodImageTagSuffix); then
+        if ! ./prepare-extension-charts.sh ../app-monitoring-extension $(testImageTagSuffix) $(prodOciTagSufix); then
           echo "Chart preparation failed"
           exit 1
         fi
@@ -266,17 +269,17 @@ jobs:
         az acr login -n ${{ variables.containerRegistry }}
 
         echo "Pushing modified chart to OCI registry..."
-        helm push app-monitoring-extension-$(prodImageTagSuffix).tgz oci://${{ variables.repoTestExtensionPath }}
+        helm push app-monitoring-extension-$(prodOciTagSufix).tgz oci://${{ variables.repoTestExtensionPath }}
 
         cd scripts
         sudo chmod u+x ./clean-install-appmonitoring-oci.sh
 
         export TEST_CHART_REPO="${{ variables.repoTestExtensionPath }}"
-        export TEST_CHART_VERSION="$(prodImageTagSuffix)"
+        export TEST_CHART_VERSION="$(prodOciTagSufix)"
         export TEST_IMAGE_RELATIVE_PATH="${{ variables.repoTestImageRelativePath }}"
         
         echo "Installing appmonitoring addon from OCI..."
-        if ! ./clean-install-appmonitoring-oci.sh $(prodImageTagSuffix); then
+        if ! ./clean-install-appmonitoring-oci.sh $(testImageTagSuffix); then
           echo "Chart installation failed"
           exit 1
         fi
