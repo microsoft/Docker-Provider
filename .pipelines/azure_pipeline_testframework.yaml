@@ -21,11 +21,6 @@ stages:
     - checkout: self
       persistCredentials: true
 
-    - task: AzureCLIInstaller@0
-      displayName: 'Install Azure CLI'
-      inputs:
-        azureCLIVersion: 'latest'
-
     - task: AzureCLI@2
       displayName: Get kubeconfig
       inputs:
@@ -50,11 +45,6 @@ stages:
     steps:
     - checkout: self
       persistCredentials: true
-
-    - task: AzureCLIInstaller@0
-      displayName: 'Install Azure CLI'
-      inputs:
-        azureCLIVersion: 'latest'
 
     - task: AzureCLI@2
       displayName: Get kubeconfig
@@ -81,11 +71,6 @@ stages:
     - checkout: self
       persistCredentials: true
 
-    - task: AzureCLIInstaller@0
-      displayName: 'Install Azure CLI'
-      inputs:
-        azureCLIVersion: 'latest'
-
     - task: AzureCLI@2
       displayName: Get kubeconfig
       inputs:
@@ -110,11 +95,6 @@ stages:
     steps:
     - checkout: self
       persistCredentials: true
-
-    - task: AzureCLIInstaller@0
-      displayName: 'Install Azure CLI'
-      inputs:
-        azureCLIVersion: 'latest'
 
     - task: AzureCLI@2
       displayName: Get kubeconfig
@@ -141,11 +121,6 @@ stages:
     - checkout: self
       persistCredentials: true
 
-    - task: AzureCLIInstaller@0
-      displayName: 'Install Azure CLI'
-      inputs:
-        azureCLIVersion: 'latest'
-
     - task: AzureCLI@2
       displayName: Get kubeconfig
       inputs:
@@ -171,11 +146,6 @@ stages:
     - checkout: self
       persistCredentials: true
 
-    - task: AzureCLIInstaller@0
-      displayName: 'Install Azure CLI'
-      inputs:
-        azureCLIVersion: 'latest'
-
     - task: AzureCLI@2
       displayName: Get kubeconfig
       inputs:
@@ -200,11 +170,6 @@ stages:
     steps:
     - checkout: self
       persistCredentials: true
-
-    - task: AzureCLIInstaller@0
-      displayName: 'Install Azure CLI'
-      inputs:
-        azureCLIVersion: 'latest'
 
     - task: AzureCLI@2
       displayName: Get kubeconfig
