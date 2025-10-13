@@ -38,7 +38,7 @@ else
 fi
 
 echo "Installing appmonitoring extension from OCI with image tag: $IMAGE_TAG"
-if ! helm install -n kube-system appmonitoring-extension oci://${TEST_CHART_REPO}/appmonitoring-extension --version ${TEST_CHART_VERSION} \
+if ! helm install -n kube-system app-monitoring-extension oci://${TEST_CHART_REPO}/app-monitoring-extension --version ${TEST_CHART_VERSION} \
   -f ./oci-values.yaml \
   --set AppmonitoringAgent.imageTag=$IMAGE_TAG \
   --set AppmonitoringAgent.imageRelativePath=$TEST_IMAGE_RELATIVE_PATH; then
