@@ -252,6 +252,10 @@ jobs:
         cd ..
         helm package app-monitoring-extension
         
+        echo "Copying packaged chart to artifact staging directory..."
+        mkdir -p $(Build.ArtifactStagingDirectory)/charts
+        cp app-monitoring-extension-*.tgz $(Build.ArtifactStagingDirectory)/charts/
+        
         echo "Linting Helm chart..."
         if ! helm lint app-monitoring-extension; then
           echo "Helm chart lint failed"
@@ -278,6 +282,13 @@ jobs:
         fi
 
         exit 0 # EXIT FOR TESTING NOW
+
+  - task: PublishBuildArtifacts@1
+    condition: always()
+    displayName: "Publish Helm chart package (even on failure)"
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)/charts'
+      artifactName: helm-charts
 
   - task: AzureCLI@2
     displayName: "Validate charts deployed to AKS"
