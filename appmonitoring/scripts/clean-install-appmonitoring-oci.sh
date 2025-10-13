@@ -7,7 +7,6 @@ namespace=kube-system
 secrets_installer_job=app-monitoring-secrets-installer
 webhook_deployment=app-monitoring-webhook
 TEST_CHART_REPO=${CHART_REPO:-appmonitoringaddontestacr.azurecr.io/test/azuremonitor/applicationinsights/helm}
-TEST_CHART_VERSION=${CHART_VERSION}
 
 if [[ -z "$TEST_CHART_VERSION" ]]; then
   echo "Error: TEST_CHART_VERSION must be set"
