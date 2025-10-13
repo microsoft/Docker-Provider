@@ -22,6 +22,10 @@ stages:
     - checkout: self
       persistCredentials: true
 
+    - script: |
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+      displayName: 'Install Azure CLI'
+
     - task: AzureCLI@2
       displayName: Get kubeconfig
       inputs:
