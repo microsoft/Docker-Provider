@@ -15,6 +15,7 @@ stages:
     displayName: "Monitoring-Model-Cluster-WCUS tests"
     pool:
       name: Azure-Pipelines-CI-Test-EO
+      vmImage: 'ubuntu-latest'
     variables:
       skipComponentGovernanceDetection: true
     steps:
