@@ -15,7 +15,6 @@ stages:
     displayName: "Monitoring-Model-Cluster-WCUS tests"
     pool:
       name: Azure-Pipelines-CI-Test-EO
-      vmImage: 'ubuntu-latest'
     variables:
       skipComponentGovernanceDetection: true
     steps:
@@ -51,6 +50,10 @@ stages:
     - checkout: self
       persistCredentials: true
 
+    - script: |
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+      displayName: 'Install Azure CLI'
+
     - task: AzureCLI@2
       displayName: Get kubeconfig
       inputs:
@@ -75,6 +78,10 @@ stages:
     steps:
     - checkout: self
       persistCredentials: true
+
+    - script: |
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+      displayName: 'Install Azure CLI'
 
     - task: AzureCLI@2
       displayName: Get kubeconfig
@@ -101,6 +108,10 @@ stages:
     - checkout: self
       persistCredentials: true
 
+    - script: |
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+      displayName: 'Install Azure CLI'
+
     - task: AzureCLI@2
       displayName: Get kubeconfig
       inputs:
@@ -125,6 +136,10 @@ stages:
     steps:
     - checkout: self
       persistCredentials: true
+
+    - script: |
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+      displayName: 'Install Azure CLI'
 
     - task: AzureCLI@2
       displayName: Get kubeconfig
@@ -151,6 +166,10 @@ stages:
     - checkout: self
       persistCredentials: true
 
+    - script: |
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+      displayName: 'Install Azure CLI'
+
     - task: AzureCLI@2
       displayName: Get kubeconfig
       inputs:
@@ -175,6 +194,10 @@ stages:
     steps:
     - checkout: self
       persistCredentials: true
+
+    - script: |
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+      displayName: 'Install Azure CLI'
 
     - task: AzureCLI@2
       displayName: Get kubeconfig
