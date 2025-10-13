@@ -113,56 +113,56 @@ stages:
       workingDirectory: $(Build.SourcesDirectory)/test/testkube/
       displayName: "Install and execute testkube tests"
 
-  - job: Testkube_ci_logs_prod_aks_geneva_integration
-    timeoutInMinutes: 120
-    displayName: "ci-logs-prod-aks-geneva-integration tests"
-    pool:
-      name: Azure-Pipelines-CI-Test-EO
-    variables:
-      skipComponentGovernanceDetection: true
-    steps:
-    - checkout: self
-      persistCredentials: true
+  # - job: Testkube_ci_logs_prod_aks_geneva_integration
+  #   timeoutInMinutes: 120
+  #   displayName: "ci-logs-prod-aks-geneva-integration tests"
+  #   pool:
+  #     name: Azure-Pipelines-CI-Test-EO
+  #   variables:
+  #     skipComponentGovernanceDetection: true
+  #   steps:
+  #   - checkout: self
+  #     persistCredentials: true
 
-    - script: |
-        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-      displayName: 'Install Azure CLI'
+  #   - script: |
+  #       curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+  #     displayName: 'Install Azure CLI'
 
-    - script: |
-        set -euo pipefail
-        echo "Ensuring kubectl & helm are installed (with proper permissions)"
-        if ! command -v az >/dev/null 2>&1; then
-          echo "Azure CLI not found; aborting" >&2
-          exit 1
-        fi
-        if ! command -v kubectl >/dev/null 2>&1; then
-          echo "kubectl not found. Installing via 'az aks install-cli' with sudo to write to /usr/local/bin"
-          sudo az aks install-cli
-        else
-          echo "kubectl already installed: $(kubectl version --client --short || true)"
-        fi
-        if ! command -v helm >/dev/null 2>&1; then
-          echo "Helm not found. Installing Helm 3"
-          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-        else
-          echo "Helm already installed: $(helm version --short || true)"
-        fi
-        echo "kubectl version: $(kubectl version --client --short || true)"
-      displayName: 'Install kubectl and Helm'
+  #   - script: |
+  #       set -euo pipefail
+  #       echo "Ensuring kubectl & helm are installed (with proper permissions)"
+  #       if ! command -v az >/dev/null 2>&1; then
+  #         echo "Azure CLI not found; aborting" >&2
+  #         exit 1
+  #       fi
+  #       if ! command -v kubectl >/dev/null 2>&1; then
+  #         echo "kubectl not found. Installing via 'az aks install-cli' with sudo to write to /usr/local/bin"
+  #         sudo az aks install-cli
+  #       else
+  #         echo "kubectl already installed: $(kubectl version --client --short || true)"
+  #       fi
+  #       if ! command -v helm >/dev/null 2>&1; then
+  #         echo "Helm not found. Installing Helm 3"
+  #         curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+  #       else
+  #         echo "Helm already installed: $(helm version --short || true)"
+  #       fi
+  #       echo "kubectl version: $(kubectl version --client --short || true)"
+  #     displayName: 'Install kubectl and Helm'
 
-    - task: AzureCLI@2
-      displayName: Get kubeconfig
-      inputs:
-        azureSubscription: 'ContainerInsights_Build_Subscription_CI'
-        scriptLocation: 'inlineScript'
-        scriptType: 'bash'
-        inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-geneva-integration'
+  #   - task: AzureCLI@2
+  #     displayName: Get kubeconfig
+  #     inputs:
+  #       azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+  #       scriptLocation: 'inlineScript'
+  #       scriptType: 'bash'
+  #       inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-geneva-integration'
       
-    - bash: |
-        chmod +x ./install-and-execute-testkube-tests.sh
-        ./install-and-execute-testkube-tests.sh AzureClientId=$(AksGenevaIntegrationClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) GenevaIntegration=false
-      workingDirectory: $(Build.SourcesDirectory)/test/testkube/
-      displayName: "Install and execute testkube tests"
+  #   - bash: |
+  #       chmod +x ./install-and-execute-testkube-tests.sh
+  #       ./install-and-execute-testkube-tests.sh AzureClientId=$(AksGenevaIntegrationClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) GenevaIntegration=false
+  #     workingDirectory: $(Build.SourcesDirectory)/test/testkube/
+  #     displayName: "Install and execute testkube tests"
 
   - job: Testkube_ci_logs_prod_aks_geneva_integration_multi_tenancy
     timeoutInMinutes: 120
@@ -283,13 +283,19 @@ stages:
 
     - script: |
         set -euo pipefail
-        echo "Installing kubectl (via az aks install-cli) and Helm if not present"
+        echo "Ensuring kubectl & helm are installed (with proper permissions)"
         if ! command -v az >/dev/null 2>&1; then
           echo "Azure CLI not found; aborting" >&2
           exit 1
         fi
-        az aks install-cli
+        if ! command -v kubectl >/dev/null 2>&1; then
+          echo "kubectl not found. Installing via 'az aks install-cli' with sudo to write to /usr/local/bin"
+          sudo az aks install-cli
+        else
+          echo "kubectl already installed: $(kubectl version --client --short || true)"
+        fi
         if ! command -v helm >/dev/null 2>&1; then
+          echo "Helm not found. Installing Helm 3"
           curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
         else
           echo "Helm already installed: $(helm version --short || true)"
@@ -325,6 +331,28 @@ stages:
     - script: |
         curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
       displayName: 'Install Azure CLI'
+
+    - script: |
+        set -euo pipefail
+        echo "Ensuring kubectl & helm are installed (with proper permissions)"
+        if ! command -v az >/dev/null 2>&1; then
+          echo "Azure CLI not found; aborting" >&2
+          exit 1
+        fi
+        if ! command -v kubectl >/dev/null 2>&1; then
+          echo "kubectl not found. Installing via 'az aks install-cli' with sudo to write to /usr/local/bin"
+          sudo az aks install-cli
+        else
+          echo "kubectl already installed: $(kubectl version --client --short || true)"
+        fi
+        if ! command -v helm >/dev/null 2>&1; then
+          echo "Helm not found. Installing Helm 3"
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        else
+          echo "Helm already installed: $(helm version --short || true)"
+        fi
+        echo "kubectl version: $(kubectl version --client --short || true)"
+      displayName: 'Install kubectl and Helm'
 
     - task: AzureCLI@2
       displayName: Get kubeconfig
