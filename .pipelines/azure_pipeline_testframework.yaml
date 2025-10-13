@@ -25,6 +25,23 @@ stages:
         curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
       displayName: 'Install Azure CLI'
 
+    # Ensure kubectl & helm are available before running tests
+    - script: |
+        set -euo pipefail
+        echo "Installing kubectl (via az aks install-cli) and Helm if not present"
+        if ! command -v az >/dev/null 2>&1; then
+          echo "Azure CLI not found; aborting" >&2
+          exit 1
+        fi
+        az aks install-cli
+        if ! command -v helm >/dev/null 2>&1; then
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        else
+          echo "Helm already installed: $(helm version --short || true)"
+        fi
+        echo "kubectl version: $(kubectl version --client --short || true)"
+      displayName: 'Install kubectl and Helm'
+
     - task: AzureCLI@2
       displayName: Get kubeconfig
       inputs:
@@ -53,6 +70,22 @@ stages:
     - script: |
         curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
       displayName: 'Install Azure CLI'
+
+    - script: |
+        set -euo pipefail
+        echo "Installing kubectl (via az aks install-cli) and Helm if not present"
+        if ! command -v az >/dev/null 2>&1; then
+          echo "Azure CLI not found; aborting" >&2
+          exit 1
+        fi
+        az aks install-cli
+        if ! command -v helm >/dev/null 2>&1; then
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        else
+          echo "Helm already installed: $(helm version --short || true)"
+        fi
+        echo "kubectl version: $(kubectl version --client --short || true)"
+      displayName: 'Install kubectl and Helm'
 
     - task: AzureCLI@2
       displayName: Get kubeconfig
@@ -83,6 +116,22 @@ stages:
         curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
       displayName: 'Install Azure CLI'
 
+    - script: |
+        set -euo pipefail
+        echo "Installing kubectl (via az aks install-cli) and Helm if not present"
+        if ! command -v az >/dev/null 2>&1; then
+          echo "Azure CLI not found; aborting" >&2
+          exit 1
+        fi
+        az aks install-cli
+        if ! command -v helm >/dev/null 2>&1; then
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        else
+          echo "Helm already installed: $(helm version --short || true)"
+        fi
+        echo "kubectl version: $(kubectl version --client --short || true)"
+      displayName: 'Install kubectl and Helm'
+
     - task: AzureCLI@2
       displayName: Get kubeconfig
       inputs:
@@ -111,6 +160,22 @@ stages:
     - script: |
         curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
       displayName: 'Install Azure CLI'
+
+    - script: |
+        set -euo pipefail
+        echo "Installing kubectl (via az aks install-cli) and Helm if not present"
+        if ! command -v az >/dev/null 2>&1; then
+          echo "Azure CLI not found; aborting" >&2
+          exit 1
+        fi
+        az aks install-cli
+        if ! command -v helm >/dev/null 2>&1; then
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        else
+          echo "Helm already installed: $(helm version --short || true)"
+        fi
+        echo "kubectl version: $(kubectl version --client --short || true)"
+      displayName: 'Install kubectl and Helm'
 
     - task: AzureCLI@2
       displayName: Get kubeconfig
@@ -141,6 +206,22 @@ stages:
         curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
       displayName: 'Install Azure CLI'
 
+    - script: |
+        set -euo pipefail
+        echo "Installing kubectl (via az aks install-cli) and Helm if not present"
+        if ! command -v az >/dev/null 2>&1; then
+          echo "Azure CLI not found; aborting" >&2
+          exit 1
+        fi
+        az aks install-cli
+        if ! command -v helm >/dev/null 2>&1; then
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        else
+          echo "Helm already installed: $(helm version --short || true)"
+        fi
+        echo "kubectl version: $(kubectl version --client --short || true)"
+      displayName: 'Install kubectl and Helm'
+
     - task: AzureCLI@2
       displayName: Get kubeconfig
       inputs:
@@ -169,6 +250,22 @@ stages:
     - script: |
         curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
       displayName: 'Install Azure CLI'
+
+    - script: |
+        set -euo pipefail
+        echo "Installing kubectl (via az aks install-cli) and Helm if not present"
+        if ! command -v az >/dev/null 2>&1; then
+          echo "Azure CLI not found; aborting" >&2
+          exit 1
+        fi
+        az aks install-cli
+        if ! command -v helm >/dev/null 2>&1; then
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        else
+          echo "Helm already installed: $(helm version --short || true)"
+        fi
+        echo "kubectl version: $(kubectl version --client --short || true)"
+      displayName: 'Install kubectl and Helm'
 
     - task: AzureCLI@2
       displayName: Get kubeconfig
