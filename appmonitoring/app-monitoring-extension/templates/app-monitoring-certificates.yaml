@@ -1,5 +1,6 @@
 {{- $mwhc := lookup "admissionregistration.k8s.io/v1" "MutatingWebhookConfiguration" "" "app-monitoring-webhook" }}
 {{- if not ($mwhc) }}
+---
 {{- include (print $.Template.BasePath "/ensureExistsResources/_app-monitoring-webhook-mwhc.yaml") . }}
 {{- else }}
 ---
