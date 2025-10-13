@@ -28,13 +28,19 @@ stages:
     # Ensure kubectl & helm are available before running tests
     - script: |
         set -euo pipefail
-        echo "Installing kubectl (via az aks install-cli) and Helm if not present"
+        echo "Ensuring kubectl & helm are installed (with proper permissions)"
         if ! command -v az >/dev/null 2>&1; then
           echo "Azure CLI not found; aborting" >&2
           exit 1
         fi
-        az aks install-cli
+        if ! command -v kubectl >/dev/null 2>&1; then
+          echo "kubectl not found. Installing via 'az aks install-cli' with sudo to write to /usr/local/bin"
+          sudo az aks install-cli
+        else
+          echo "kubectl already installed: $(kubectl version --client --short || true)"
+        fi
         if ! command -v helm >/dev/null 2>&1; then
+          echo "Helm not found. Installing Helm 3"
           curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
         else
           echo "Helm already installed: $(helm version --short || true)"
@@ -73,13 +79,19 @@ stages:
 
     - script: |
         set -euo pipefail
-        echo "Installing kubectl (via az aks install-cli) and Helm if not present"
+        echo "Ensuring kubectl & helm are installed (with proper permissions)"
         if ! command -v az >/dev/null 2>&1; then
           echo "Azure CLI not found; aborting" >&2
           exit 1
         fi
-        az aks install-cli
+        if ! command -v kubectl >/dev/null 2>&1; then
+          echo "kubectl not found. Installing via 'az aks install-cli' with sudo to write to /usr/local/bin"
+          sudo az aks install-cli
+        else
+          echo "kubectl already installed: $(kubectl version --client --short || true)"
+        fi
         if ! command -v helm >/dev/null 2>&1; then
+          echo "Helm not found. Installing Helm 3"
           curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
         else
           echo "Helm already installed: $(helm version --short || true)"
@@ -118,13 +130,19 @@ stages:
 
     - script: |
         set -euo pipefail
-        echo "Installing kubectl (via az aks install-cli) and Helm if not present"
+        echo "Ensuring kubectl & helm are installed (with proper permissions)"
         if ! command -v az >/dev/null 2>&1; then
           echo "Azure CLI not found; aborting" >&2
           exit 1
         fi
-        az aks install-cli
+        if ! command -v kubectl >/dev/null 2>&1; then
+          echo "kubectl not found. Installing via 'az aks install-cli' with sudo to write to /usr/local/bin"
+          sudo az aks install-cli
+        else
+          echo "kubectl already installed: $(kubectl version --client --short || true)"
+        fi
         if ! command -v helm >/dev/null 2>&1; then
+          echo "Helm not found. Installing Helm 3"
           curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
         else
           echo "Helm already installed: $(helm version --short || true)"
@@ -163,13 +181,19 @@ stages:
 
     - script: |
         set -euo pipefail
-        echo "Installing kubectl (via az aks install-cli) and Helm if not present"
+        echo "Ensuring kubectl & helm are installed (with proper permissions)"
         if ! command -v az >/dev/null 2>&1; then
           echo "Azure CLI not found; aborting" >&2
           exit 1
         fi
-        az aks install-cli
+        if ! command -v kubectl >/dev/null 2>&1; then
+          echo "kubectl not found. Installing via 'az aks install-cli' with sudo to write to /usr/local/bin"
+          sudo az aks install-cli
+        else
+          echo "kubectl already installed: $(kubectl version --client --short || true)"
+        fi
         if ! command -v helm >/dev/null 2>&1; then
+          echo "Helm not found. Installing Helm 3"
           curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
         else
           echo "Helm already installed: $(helm version --short || true)"
@@ -208,13 +232,19 @@ stages:
 
     - script: |
         set -euo pipefail
-        echo "Installing kubectl (via az aks install-cli) and Helm if not present"
+        echo "Ensuring kubectl & helm are installed (with proper permissions)"
         if ! command -v az >/dev/null 2>&1; then
           echo "Azure CLI not found; aborting" >&2
           exit 1
         fi
-        az aks install-cli
+        if ! command -v kubectl >/dev/null 2>&1; then
+          echo "kubectl not found. Installing via 'az aks install-cli' with sudo to write to /usr/local/bin"
+          sudo az aks install-cli
+        else
+          echo "kubectl already installed: $(kubectl version --client --short || true)"
+        fi
         if ! command -v helm >/dev/null 2>&1; then
+          echo "Helm not found. Installing Helm 3"
           curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
         else
           echo "Helm already installed: $(helm version --short || true)"
