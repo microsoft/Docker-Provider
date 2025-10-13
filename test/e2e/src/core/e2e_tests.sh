@@ -159,28 +159,36 @@ login_to_azure() {
 	if [[ -v SYSTEM_ACCESSTOKEN && -n "$SYSTEM_ACCESSTOKEN" &&
 	      -v SERVICE_CONNECTION_ID && -n "$SERVICE_CONNECTION_ID" &&
 	      -v SYSTEM_OIDCREQUESTURI && -n "$SYSTEM_OIDCREQUESTURI" ]]; then
+
+      echo "Ensuring jq is available..."
+      if ! command -v jq &> /dev/null; then
+         echo "jq not found, installing..."
+         sudo apt-get update && sudo apt-get install -y jq
+      else
+         echo "jq already installed: $(jq --version)"
+      fi
 	
-	  export OIDC_REQUEST_URL="${SYSTEM_OIDCREQUESTURI}?api-version=7.1&serviceConnectionId=${SERVICE_CONNECTION_ID}"
-	  echo "OIDC_REQUEST_URL= $OIDC_REQUEST_URL"
-	
-	  FED_TOKEN=$(curl -s -H "Content-Length: 0" -H "Content-Type: application/json" -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" -X POST $OIDC_REQUEST_URL | jq -r '.oidcToken')
-	  echo "FED_TOKEN= $FED_TOKEN"
-	
-	  echo "logging in using Federated Identity"
-	  az login --service-principal -u $FED_CLIENT_ID  --tenant $TENANT_ID --allow-no-subscriptions --federated-token $FED_TOKEN 2> >(tee "${results_dir}/error" >&2) || python3 setup_failure_handler.py
+      export OIDC_REQUEST_URL="${SYSTEM_OIDCREQUESTURI}?api-version=7.1&serviceConnectionId=${SERVICE_CONNECTION_ID}"
+      echo "OIDC_REQUEST_URL= $OIDC_REQUEST_URL"
+
+      FED_TOKEN=$(curl -s -H "Content-Length: 0" -H "Content-Type: application/json" -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" -X POST $OIDC_REQUEST_URL | jq -r '.oidcToken')
+      echo "FED_TOKEN= $FED_TOKEN"
+
+      echo "logging in using Federated Identity"
+      az login --service-principal -u $FED_CLIENT_ID  --tenant $TENANT_ID --allow-no-subscriptions --federated-token $FED_TOKEN 2> >(tee "${results_dir}/error" >&2) || python3 setup_failure_handler.py
 	
 	elif [[ -v BASE_64_CLIENT_CERTIFICATE && -n "$BASE_64_CLIENT_CERTIFICATE" ]]; then
-	  BASE_64_CLIENT_CERTIFICATE=${BASE_64_CLIENT_CERTIFICATE#\"}   # Remove leading quote
-	  BASE_64_CLIENT_CERTIFICATE=${BASE_64_CLIENT_CERTIFICATE%\"} # Remove trailing quote
-	  echo "logging in using Certificate '${BASE_64_CLIENT_CERTIFICATE}'"
-	  ## create base64 cert to pem
-	  echo ${BASE_64_CLIENT_CERTIFICATE:0} | tr ' ' "\n" > base64_cert
-	  # convert base64 to PEM
-	  openssl base64 -d -in base64_cert -out clientcert.pem
-	  # minutes=60
-	  # seconds=$((minutes * 60))
-	  # sleep $seconds
-	  az login --service-principal --use-cert-sn-issuer -u $CLIENT_ID -p clientcert.pem --tenant $TENANT_ID 2> >(tee "${results_dir}/error" >&2) || python3 setup_failure_handler.py
+      BASE_64_CLIENT_CERTIFICATE=${BASE_64_CLIENT_CERTIFICATE#\"}   # Remove leading quote
+      BASE_64_CLIENT_CERTIFICATE=${BASE_64_CLIENT_CERTIFICATE%\"} # Remove trailing quote
+      echo "logging in using Certificate '${BASE_64_CLIENT_CERTIFICATE}'"
+      ## create base64 cert to pem
+      echo ${BASE_64_CLIENT_CERTIFICATE:0} | tr ' ' "\n" > base64_cert
+      # convert base64 to PEM
+      openssl base64 -d -in base64_cert -out clientcert.pem
+      # minutes=60
+      # seconds=$((minutes * 60))
+      # sleep $seconds
+      az login --service-principal --use-cert-sn-issuer -u $CLIENT_ID -p clientcert.pem --tenant $TENANT_ID 2> >(tee "${results_dir}/error" >&2) || python3 setup_failure_handler.py
 	  
 	elif [[ -z $WORKLOAD_CLIENT_ID ]]; then
       echo "logging in using service principal '${CLIENT_ID}'"
@@ -195,7 +203,6 @@ login_to_azure() {
    fi
 	
    echo "setting subscription: ${SUBSCRIPTION_ID} as default subscription"
-	##
 	az account set \
 	  --subscription ${SUBSCRIPTION_ID} 2> >(tee "${results_dir}/error" >&2) || python3 setup_failure_handler.py
 }
