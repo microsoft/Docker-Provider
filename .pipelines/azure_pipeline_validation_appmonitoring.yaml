@@ -266,17 +266,17 @@ jobs:
         az acr login -n ${{ variables.containerRegistry }}
 
         echo "Pushing modified chart to OCI registry..."
-        helm push app-monitoring-extension-$(testImageTagSuffix).tgz oci://${{ variables.repoTestExtensionPath }}
+        helm push app-monitoring-extension-$(prodImageTagSuffix).tgz oci://${{ variables.repoTestExtensionPath }}
 
         cd scripts
         sudo chmod u+x ./clean-install-appmonitoring-oci.sh
 
         export TEST_CHART_REPO="${{ variables.repoTestExtensionPath }}"
-        export TEST_CHART_VERSION="$(testImageTagSuffix)"
+        export TEST_CHART_VERSION="$(prodImageTagSuffix)"
         export TEST_IMAGE_RELATIVE_PATH="${{ variables.repoTestImageRelativePath }}"
         
         echo "Installing appmonitoring addon from OCI..."
-        if ! ./clean-install-appmonitoring-oci.sh $(testImageTagSuffix); then
+        if ! ./clean-install-appmonitoring-oci.sh $(prodImageTagSuffix); then
           echo "Chart installation failed"
           exit 1
         fi
