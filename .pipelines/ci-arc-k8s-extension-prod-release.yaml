@@ -115,6 +115,9 @@ extends:
         - name: OneESPT.BuildType
           value: Official
           readonly: true
+        - name: OneESPT.JobType
+          value: releaseJob
+          readonly: true
         - name: OneESPT.OS
           value: windows
           readonly: true
@@ -378,6 +381,9 @@ extends:
           readonly: true
         - name: OneESPT.BuildType
           value: Official
+          readonly: true
+        - name: OneESPT.JobType
+          value: releaseJob
           readonly: true
         - name: OneESPT.OS
           value: windows
@@ -655,6 +661,9 @@ extends:
         - name: OneESPT.BuildType
           value: Official
           readonly: true
+        - name: OneESPT.JobType
+          value: releaseJob
+          readonly: true
         - name: OneESPT.OS
           value: windows
           readonly: true
@@ -931,6 +940,9 @@ extends:
         - name: OneESPT.BuildType
           value: Official
           readonly: true
+        - name: OneESPT.JobType
+          value: releaseJob
+          readonly: true
         - name: OneESPT.OS
           value: windows
           readonly: true
@@ -1206,6 +1218,9 @@ extends:
           readonly: true
         - name: OneESPT.BuildType
           value: Official
+          readonly: true
+        - name: OneESPT.JobType
+          value: releaseJob
           readonly: true
         - name: OneESPT.OS
           value: windows
@@ -1495,6 +1510,9 @@ extends:
           readonly: true
         - name: OneESPT.BuildType
           value: Official
+          readonly: true
+        - name: OneESPT.JobType
+          value: releaseJob
           readonly: true
         - name: OneESPT.OS
           value: windows

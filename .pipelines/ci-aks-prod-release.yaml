@@ -241,6 +241,9 @@ extends:
         - name: OneESPT.BuildType
           value: Official
           readonly: true
+        - name: OneESPT.JobType
+          value: releaseJob
+          readonly: true
         - name: OneESPT.OS
           value: windows
           readonly: true
