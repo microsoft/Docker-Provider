@@ -155,18 +155,18 @@ deleteArcCIExtension() {
 }
 
 login_to_azure() {
+   echo "Ensuring jq is available..."
+   if ! command -v jq &> /dev/null; then
+      echo "jq not found, installing..."
+      sudo apt-get update && sudo apt-get install -y jq
+   else
+      echo "jq already installed: $(jq --version)"
+   fi
+
    ## Federted Identity credentials authentication mechanism added.
 	if [[ -v SYSTEM_ACCESSTOKEN && -n "$SYSTEM_ACCESSTOKEN" &&
 	      -v SERVICE_CONNECTION_ID && -n "$SERVICE_CONNECTION_ID" &&
 	      -v SYSTEM_OIDCREQUESTURI && -n "$SYSTEM_OIDCREQUESTURI" ]]; then
-
-      echo "Ensuring jq is available..."
-      if ! command -v jq &> /dev/null; then
-         echo "jq not found, installing..."
-         sudo apt-get update && sudo apt-get install -y jq
-      else
-         echo "jq already installed: $(jq --version)"
-      fi
 	
       export OIDC_REQUEST_URL="${SYSTEM_OIDCREQUESTURI}?api-version=7.1&serviceConnectionId=${SERVICE_CONNECTION_ID}"
       echo "OIDC_REQUEST_URL= $OIDC_REQUEST_URL"
