@@ -1,5 +1,5 @@
 {{- $mwhc := lookup "admissionregistration.k8s.io/v1" "MutatingWebhookConfiguration" "" "app-monitoring-webhook" }}
-{{- if not ($mwhc) }}
+{{- if or (not $mwhc) (not $mwhc.metadata) }}
 {{- include (print $.Template.BasePath "/ensureExistsResources/_app-monitoring-webhook-mwhc.yaml") . }}
 {{- else }}
 ---
@@ -14,7 +14,7 @@ webhooks:
 
 {{ end }}
 {{ $secret := lookup "v1" "Secret" "kube-system" "app-monitoring-webhook-cert" }}
-{{ if not ($secret) }}
+{{ if or (not $secret) (not $secret.metadata) }}
 {{- include (print $.Template.BasePath "/ensureExistsResources/_app-monitoring-secrets.yaml") . }}
 {{- else }}
 ---
