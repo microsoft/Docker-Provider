@@ -23,8 +23,8 @@ echo "Chart Repo: $TEST_CHART_REPO"
 echo "Chart Version: $TEST_CHART_VERSION"
 echo "Test Image Relative Path: $TEST_IMAGE_RELATIVE_PATH"
 
-echo "Uninstalling appmonitoring extension helm..."
-if ! helm uninstall -n kube-system appmonitoring-extension --ignore-not-found; then
+echo "Uninstalling app-monitoring extension helm..."
+if ! helm uninstall -n kube-system app-monitoring-extension --ignore-not-found; then
   echo "Error: helm uninstall failed."
 else
     echo "Uninstall complete."
