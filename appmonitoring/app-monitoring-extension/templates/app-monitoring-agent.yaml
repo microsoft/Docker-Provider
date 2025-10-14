@@ -227,7 +227,7 @@ spec:
             capabilities:
               drop:
                 - ALL
-          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"
+          image: "{{ template "addon_mcr_repository_base" . }}/{{ .Values.AppmonitoringAgent.imageRelativePath }}:{{ .Values.AppmonitoringAgent.imageTag }}"
           imagePullPolicy: IfNotPresent
           name: app-monitoring-secrets-installer
       restartPolicy: OnFailure
@@ -285,7 +285,7 @@ spec:
           effect: PreferNoSchedule
       containers:
         - name: app-monitoring-webhook
-          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/applicationinsights/aiprod:{{ .Values.AppmonitoringAgent.imageTag }}"
+          image: "{{ template "addon_mcr_repository_base" . }}/{{ .Values.AppmonitoringAgent.imageRelativePath }}:{{ .Values.AppmonitoringAgent.imageTag }}"
           imagePullPolicy: IfNotPresent
           env:
             - name: POD_NAME
