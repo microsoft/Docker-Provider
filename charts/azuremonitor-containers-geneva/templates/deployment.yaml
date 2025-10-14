@@ -18,12 +18,11 @@ spec:
     metadata:
       annotations:
         agentVersion: {{ .Values.image.agentVersion }}
-        {{- if eq (.Values.genevaLogsConfig.authidType | lower) "authworkloadidentity" }}
-        azure.workload.identity/use: "true"
-        {{- end }}
       labels:
         rsName: "ama-logs-geneva"
-        {{- if eq (.Values.genevaLogsConfig.authidType | lower) "authmsitoken" }}
+        {{- if eq (.Values.genevaLogsConfig.authidType | lower) "authworkloadidentity" }}
+        azure.workload.identity/use: "true"
+        {{- else }}
         aadpodidbinding: {{ .Values.genevaLogsConfig.aadpodidbinding }}
         {{- end }}
     spec:
