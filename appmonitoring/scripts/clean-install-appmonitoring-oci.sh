@@ -39,6 +39,7 @@ fi
 
 echo "Installing appmonitoring extension from OCI with image tag: $IMAGE_TAG"
 if ! helm install -n kube-system app-monitoring-extension oci://${TEST_CHART_REPO}/app-monitoring-extension --version ${TEST_CHART_VERSION} \
+  --set Azure.Cluster.Cloud=ValidationCluster \
   --set AppmonitoringAgent.imageTag=$IMAGE_TAG \
   --set AppmonitoringAgent.imageRelativePath=$TEST_IMAGE_RELATIVE_PATH; then
   echo "Error: helm install from OCI failed."
