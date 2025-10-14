@@ -75,12 +75,14 @@ spec:
             {{- else if eq (.Values.genevaLogsConfig.authidType | lower) "authmsitoken" }}
             - name: MONITORING_GCS_AUTH_ID_TYPE
               value: "AuthMSIToken"
+            - name: MONITORING_GCS_AUTH_ID
+              value: {{ .Values.genevaLogsConfig.authid | quote }}
             {{- else }}
             - name: MONITORING_GCS_AUTH_ID_TYPE
               value: "AuthMSIToken"
-            {{- end }}
             - name: MONITORING_GCS_AUTH_ID
               value: {{ .Values.genevaLogsConfig.authid | quote }}
+            {{- end }}
             - name: MONITORING_GCS_REGION
               value: {{ .Values.genevaLogsConfig.region | quote }}
             - name: MONITORING_USE_GENEVA_CONFIG_SERVICE
