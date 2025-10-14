@@ -39,6 +39,7 @@ fi
 
 echo "Installing appmonitoring extension from OCI with image tag: $IMAGE_TAG"
 if ! helm install -n kube-system app-monitoring-extension oci://${TEST_CHART_REPO}/app-monitoring-extension --version ${TEST_CHART_VERSION} \
+  --debug \
   --set Azure.Cluster.Cloud=ValidationCluster \
   --set Azure.Cluster.ResourceId="/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/Microsoft.ContainerService/managedClusters/appmonitoring-webhook-testbed" \
   --set Azure.Cluster.Region="West US 2" \
