@@ -1007,6 +1007,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && isGenevaMode; then
     else
         export MONITORING_GCS_AUTH_ID_TYPE=AuthMSIToken
         echo "export MONITORING_GCS_AUTH_ID_TYPE=AuthMSIToken" >> ~/.bashrc
+        echo "Using AuthMSIToken for MONITORING_GCS_AUTH_ID_TYPE"
     fi
     MDSD_AAD_MSI_AUTH_ARGS="-A"
     # except logs, all other data types ingested via sidecar container MDSD port
