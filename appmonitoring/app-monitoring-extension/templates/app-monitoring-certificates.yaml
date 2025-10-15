@@ -13,8 +13,8 @@ webhooks:
 {{- $mwhc.webhooks | toYaml | nindent 2 }}
 
 {{ end }}
-{{ $secret := lookup "v1" "Secret" "kube-system" "app-monitoring-webhook-cert" }}
-{{ if or (not $secret) (not $secret.metadata) }}
+{{- $secret := lookup "v1" "Secret" "kube-system" "app-monitoring-webhook-cert" }}
+{{- if or (not $secret) (not $secret.metadata) }}
 {{ include (print $.Template.BasePath "/ensureExistsResources/_app-monitoring-secrets.yaml") . }}
 {{- else }}
 ---
