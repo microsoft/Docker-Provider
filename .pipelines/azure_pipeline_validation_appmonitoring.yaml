@@ -17,7 +17,7 @@ pr:
 variables:
   armServiceConnectionName: 'Appmonitoring_Validation_Pipeline'
   subscription: '5a3b3ba4-3a42-42ae-b2cb-f882345803bc'
-  containerRegistry: 'appmonitoringaddontestacr' # this build pushes to aicommon.azurecr.io with an image that is used for testing in validation cluster, then pushes an image once tests pass. That image is latre picked up by the release pipeline and reuploaded to MCR
+  containerRegistry: 'appmonitoring' # this build pushes to aicommon.azurecr.io with an image that is used for testing in validation cluster, then pushes an image once tests pass. That image is latre picked up by the release pipeline and reuploaded to MCR
   containerRegistryResourceGroup: 'aks-appmonitoring-container-registry'
   repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/applicationinsights/aidev'
   repoTestImageRelativePath: 'test/azuremonitor/applicationinsights/aidev'
