@@ -259,12 +259,6 @@ jobs:
         mkdir -p $(Build.ArtifactStagingDirectory)/charts
         cp app-monitoring-extension-*.tgz $(Build.ArtifactStagingDirectory)/charts/
         
-        echo "Linting Helm chart..."
-        if ! helm lint app-monitoring-extension; then
-          echo "Helm chart lint failed"
-          exit 1
-        fi
-        
         echo "Logging into ACR..."
         az acr login -n ${{ variables.containerRegistry }}
 

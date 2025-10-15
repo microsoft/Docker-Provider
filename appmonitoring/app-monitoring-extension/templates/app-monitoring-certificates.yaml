@@ -1,21 +1,21 @@
 {{- $mwhc := lookup "admissionregistration.k8s.io/v1" "MutatingWebhookConfiguration" "" "app-monitoring-webhook" }}
-{{- if or (not $mwhc) (not $mwhc.metadata) }}
-{{ include (print $.Template.BasePath "/ensureExistsResources/_app-monitoring-webhook-mwhc.yaml") . }}
+{{- if not ($mwhc) }}
+{{- include (print $.Template.BasePath "/ensureExistsResources/_app-monitoring-webhook-mwhc.yaml") . }}
 {{- else }}
----
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
   name: app-monitoring-webhook
+  app: lethal
   labels:
     component: app-monitoring
 webhooks:
-{{- $mwhc.webhooks | toYaml | nindent 2 }}
-
-{{ end }}
+{{- $mwhc.webhooks | toYaml | nindent 1}}
+{{- end }}
 {{- $secret := lookup "v1" "Secret" "kube-system" "app-monitoring-webhook-cert" }}
-{{- if or (not $secret) (not $secret.metadata) }}
-{{ include (print $.Template.BasePath "/ensureExistsResources/_app-monitoring-secrets.yaml") . }}
+{{- if not ($secret) }}
+---
+{{- include (print $.Template.BasePath "/ensureExistsResources/_app-monitoring-secrets.yaml") . }}
 {{- else }}
 ---
 apiVersion: v1
@@ -24,6 +24,5 @@ metadata:
   name: app-monitoring-webhook-cert
   namespace: kube-system
 data:
-{{- $secret.data | toYaml | nindent 2 }}
-
-{{ end }}
+{{- $secret.data | toYaml | nindent 1}}
+{{- end }}
