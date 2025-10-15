@@ -6,7 +6,11 @@ IMAGE_TAG=$1
 namespace=kube-system
 secrets_installer_job=app-monitoring-secrets-installer
 webhook_deployment=app-monitoring-webhook
-TEST_CHART_REPO=${CHART_REPO:-appmonitoringaddontestacr.azurecr.io/test/azuremonitor/applicationinsights/helm}
+
+if [[ -z "$TEST_CHART_REPO" ]]; then
+  echo "Error: TEST_CHART_REPO must be set"
+  exit 1
+fi
 
 if [[ -z "$TEST_CHART_VERSION" ]]; then
   echo "Error: TEST_CHART_VERSION must be set"
