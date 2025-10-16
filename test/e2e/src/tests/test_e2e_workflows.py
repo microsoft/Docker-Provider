@@ -70,7 +70,13 @@ def test_e2e_workflows(env_dict):
     if not aad_token:
         pytest.fail("failed to fetch AAD token")
 
-    access_token = aad_token.get('accessToken')
+    # get_fed_token currently returns a raw token string (federated/OIDC) rather than a dict
+    # Keep backward compatibility in case it is later updated to return a dict with 'accessToken'
+    if isinstance(aad_token, dict):
+        access_token = aad_token.get('accessToken')
+    else:
+        access_token = aad_token
+
     if not access_token:
         pytest.fail("access_token shouldnt be null or empty")
 
