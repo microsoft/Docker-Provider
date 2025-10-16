@@ -23,7 +23,7 @@ variables:
   repoTestImageRelativePath: 'test/azuremonitor/applicationinsights/aidev'
   repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/${{ variables.repoTestImageRelativePath }}'
   repoTestExtensionPath: '${{ variables.containerRegistry }}.azurecr.io/test/azuremonitor/applicationinsights/helm'
-  repoExtensionPath: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/applicationinsights/helm'
+  repoExtensionPath: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/applicationinsights/helm/extension-dev'
   javaTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-java-app:latest'
   javaTestAppName: 'java-test-app'
   nodeTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-nodejs-app:latest'
@@ -211,6 +211,7 @@ jobs:
   - bash: |
         echo "##vso[task.setvariable variable=testImageName;isOutput=true]$(testImageName)"
         echo "##vso[task.setvariable variable=fullImageName;isOutput=true]$(fullImageName)"
+        echo "##vso[task.setvariable variable=fullOciImageName;isOutput=true]$(fullOciImageName)"
         echo "##vso[task.setvariable variable=testImageTagSuffix;isOutput=true]$(testImageTagSuffix)"
         echo "##vso[task.setvariable variable=prodImageTagSuffix;isOutput=true]$(prodImageTagSuffix)"
         echo "##vso[task.setvariable variable=devOciTagSufix;isOutput=true]$(devOciTagSufix)"
@@ -225,6 +226,7 @@ jobs:
   variables:
     testImageName:  $[ dependencies.build_linux.outputs['exportVars.testImageName'] ]
     fullImageName:  $[ dependencies.build_linux.outputs['exportVars.fullImageName'] ]
+    fullOciImageName:  $[ dependencies.build_linux.outputs['exportVars.fullOciImageName'] ]
     testImageTagSuffix: $[ dependencies.build_linux.outputs['exportVars.testImageTagSuffix'] ]
     prodImageTagSuffix: $[ dependencies.build_linux.outputs['exportVars.prodImageTagSuffix'] ]
     devOciTagSufix: $[ dependencies.build_linux.outputs['exportVars.devOciTagSufix'] ]
@@ -505,7 +507,7 @@ jobs:
         fi
         
         mkdir -p $(Build.ArtifactStagingDirectory)/linux
-        echo "Setting the image name to $(fullImageName)"
+        echo "Setting the webhook image name to $(fullImageName)"
         echo $(fullImageName) > $(Build.ArtifactStagingDirectory)/linux/fullImageName.txt
         echo "Setting the oci image name to $(fullOciImageName)"
         echo $(fullOciImageName) > $(Build.ArtifactStagingDirectory)/linux/fullOciImageName.txt
