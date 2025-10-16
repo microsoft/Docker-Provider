@@ -100,6 +100,7 @@ jobs:
     name: rambhatt-test-es-pool
   variables:
     imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
+    finalProdImageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
     testImageTagSuffix: $(imageTag)-$(Build.BuildId)
     prodImageTagSuffix: $(imageTag)-rc.$(Build.BuildId)
     devOciTagSufix: $(imageTag)-rc.$(Build.BuildId)
@@ -216,6 +217,7 @@ jobs:
         echo "##vso[task.setvariable variable=testImageTagSuffix;isOutput=true]$(testImageTagSuffix)"
         echo "##vso[task.setvariable variable=prodImageTagSuffix;isOutput=true]$(prodImageTagSuffix)"
         echo "##vso[task.setvariable variable=devOciTagSufix;isOutput=true]$(devOciTagSufix)"
+        echo "##vso[task.setvariable variable=finalProdImageTag;isOutput=true]$(finalProdImageTag)"
     name: exportVars
 
 
@@ -231,6 +233,7 @@ jobs:
     testImageTagSuffix: $[ dependencies.build_linux.outputs['exportVars.testImageTagSuffix'] ]
     prodImageTagSuffix: $[ dependencies.build_linux.outputs['exportVars.prodImageTagSuffix'] ]
     devOciTagSufix: $[ dependencies.build_linux.outputs['exportVars.devOciTagSufix'] ]
+    finalProdImageTag: $[ dependencies.build_linux.outputs['exportVars.finalProdImageTag'] ]
     # This is necessary because of: https://github.com/moby/moby/issues/37965
     DOCKER_BUILDKIT: 1
 
@@ -250,7 +253,7 @@ jobs:
         sudo chmod u+x ./prepare-extension-charts.sh
 
         echo "Preparing extension charts (replacing placeholders with runtime values)..."
-        if ! ./prepare-extension-charts.sh ../app-monitoring-extension $(testImageTagSuffix) $(devOciTagSufix); then
+        if ! ./prepare-extension-charts.sh ../app-monitoring-extension $(finalProdImageTag) $(devOciTagSufix); then
           echo "Chart preparation failed"
           exit 1
         fi
