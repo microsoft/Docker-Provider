@@ -1,0 +1,26 @@
+# escape=`
+
+# cd C:\Program Files\Docker\Docker && DockerCli.exe -SwitchWindowsEngine
+# docker build -f Dockerfile.windows -t appmonitoring.azurecr.io/demoaks-dotnet-app-win:latest .
+# docker push appmonitoring.azurecr.io/demoaks-dotnet-app-win:latest
+# cd C:\Program Files\Docker\Docker && DockerCli.exe -SwitchLinuxEngine
+
+# BASE (Windows runtime)
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-nanoserver-ltsc2022 AS base
+WORKDIR C:\app
+
+# BUILD (Windows SDK)
+# Use Windows Server Core for SDK (tooling) and publish
+FROM mcr.microsoft.com/dotnet/sdk:8.0-windowsservercore-ltsc2022 AS build
+WORKDIR C:\src
+COPY . .
+RUN dotnet restore
+RUN dotnet publish -c Release -o C:\out
+
+# FINAL
+FROM base AS final
+WORKDIR C:\app
+COPY --from=build C:\out .
+EXPOSE 3001
+ENV ASPNETCORE_URLS=http://+:3001
+CMD ["dotnet", "dotnet-test-app.dll"]
