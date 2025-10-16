@@ -3,7 +3,7 @@ import constants
 import requests
 import time
 
-from  arm_rest_utility import fetch_aad_token
+from  arm_rest_utility import get_fed_token
 from kubernetes import client, config
 from kubernetes_pod_utility import get_pod_list
 from results_utility import append_result_output
@@ -61,12 +61,12 @@ def test_e2e_workflows(env_dict):
             pytest.fail("failed to get clusterResourceId from replicaset pod environment variables")
 
     # fetch AAD token for log analytics resource for the queries
-    tenant_id = env_dict.get('TENANT_ID')
-    authority_uri = env_dict.get('AZURE_ENDPOINTS').get('activeDirectory') + tenant_id
-    client_id = env_dict.get('CLIENT_ID')
-    client_secret = env_dict.get('CLIENT_SECRET')
+    # tenant_id = env_dict.get('TENANT_ID')
+    # authority_uri = env_dict.get('AZURE_ENDPOINTS').get('activeDirectory') + tenant_id
+    # client_id = env_dict.get('CLIENT_ID')
+    # client_secret = env_dict.get('CLIENT_SECRET')
     resource = env_dict.get('AZURE_ENDPOINTS').get('logAnalytics')
-    aad_token = fetch_aad_token(client_id, client_secret, authority_uri,  resource)
+    aad_token = get_fed_token()
     if not aad_token:
         pytest.fail("failed to fetch AAD token")
 

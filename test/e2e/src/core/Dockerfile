@@ -27,6 +27,7 @@ RUN install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 COPY ./core/e2e_tests.sh /
 COPY ./core/setup_failure_handler.py /
 COPY ./core/pytest.ini /e2etests/
+COPY ./core/conftest.py /e2etests/
 COPY ./core/helper.py /e2etests/
 COPY ./core/ /e2etests/
 COPY ./common/ /e2etests/

@@ -55,14 +55,14 @@ def env_dict():
             # default to azure public cloud if AZURE_CLOUD not specified
             env_dict['AZURE_ENDPOINTS'] = constants.AZURE_CLOUD_DICT.get(os.getenv('AZURE_CLOUD')) if os.getenv('AZURE_CLOUD') else constants.AZURE_PUBLIC_CLOUD_ENDPOINTS
 
-            if not env_dict.get('TENANT_ID'):
-                pytest.fail('ERROR: variable TENANT_ID is required.')
+            # if not env_dict.get('TENANT_ID'):
+            #     pytest.fail('ERROR: variable TENANT_ID is required.')
 
-            if not env_dict.get('CLIENT_ID'):
-                pytest.fail('ERROR: variable CLIENT_ID is required.')
+            # if not env_dict.get('CLIENT_ID'):
+            #     pytest.fail('ERROR: variable CLIENT_ID is required.')
 
-            if not env_dict.get('CLIENT_SECRET'):
-                pytest.fail('ERROR: variable CLIENT_SECRET is required.')
+            # if not env_dict.get('CLIENT_SECRET'):
+            #     pytest.fail('ERROR: variable CLIENT_SECRET is required.')
 
             print("Setup Complete.")
             append_result_output("Setup Complete.\n", env_dict['SETUP_LOG_FILE'])
