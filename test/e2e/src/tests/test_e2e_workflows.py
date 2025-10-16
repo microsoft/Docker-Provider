@@ -2,14 +2,13 @@ import pytest
 import requests
 import time
 import json
+import constants
 
 from kubernetes import client, config
 
-# Adjusted imports to reference modules in the common directory
-from common import constants
-from common.arm_rest_utility import fetch_aad_token_credentials, build_scope
-from common.kubernetes_pod_utility import get_pod_list
-from common.results_utility import append_result_output
+from arm_rest_utility import fetch_aad_token_credentials, build_scope
+from kubernetes_pod_utility import get_pod_list
+from results_utility import append_result_output
 
 
 pytestmark = pytest.mark.agentests
