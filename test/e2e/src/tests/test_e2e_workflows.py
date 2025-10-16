@@ -1,13 +1,15 @@
 import pytest
-import constants
 import requests
 import time
 import json
 
-from  arm_rest_utility import get_fed_token
 from kubernetes import client, config
-from kubernetes_pod_utility import get_pod_list
-from results_utility import append_result_output
+
+# Adjusted imports to reference modules in the common directory
+from common import constants
+from common.arm_rest_utility import fetch_aad_token_credentials, build_scope
+from common.kubernetes_pod_utility import get_pod_list
+from common.results_utility import append_result_output
 
 
 pytestmark = pytest.mark.agentests
@@ -77,13 +79,31 @@ def la_context(env_dict):
     if not clusterResourceId:
         pytest.fail("Failed to retrieve AKS_RESOURCE_ID for la_context")
 
+    tenant_id = env_dict.get('TENANT_ID')
+    # Pass base authority host only (tenant supplied separately)
+    authority_uri = env_dict.get('AZURE_ENDPOINTS').get('activeDirectory')
+    client_id = env_dict.get('CLIENT_ID')
+    client_secret = env_dict.get('CLIENT_SECRET')
     resource = env_dict.get('AZURE_ENDPOINTS').get('logAnalytics')
-    aad_token = get_fed_token()
-    access_token = aad_token.get('accessToken') if isinstance(aad_token, dict) else aad_token
+
+    credential = fetch_aad_token_credentials(
+        tenant_id=tenant_id,
+        client_id=client_id,
+        client_secret=client_secret,
+        authority=authority_uri,
+        use_cert_auth=False,
+        use_SPN_auth=False,
+        use_FIC_auth=True
+    )
+    try:
+        token = credential.get_token(build_scope(resource))
+    except Exception as ex:
+        pytest.fail(f"Failed to acquire access token via credential: {ex}")
+    access_token = token.token
     if not access_token:
-        pytest.fail("access_token shouldnt be null or empty in la_context")
-    queryUrl = resource + "/v1" + clusterResourceId + "/query"
-    headers = {"Authorization": str("Bearer " + access_token), "Content-Type": "application/json"}
+        pytest.fail("access_token shouldn't be null or empty in la_context")
+    queryUrl = resource.rstrip('/') + "/v1" + clusterResourceId + "/query"
+    headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
 
     waitTimeSeconds = env_dict.get('AGENT_WAIT_TIME_SECS', 0)
     if waitTimeSeconds and int(waitTimeSeconds) > 0:
