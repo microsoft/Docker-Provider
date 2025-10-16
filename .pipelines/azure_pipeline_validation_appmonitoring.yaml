@@ -23,7 +23,8 @@ variables:
   repoTestImageRelativePath: 'test/azuremonitor/applicationinsights/aidev'
   repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/${{ variables.repoTestImageRelativePath }}'
   repoTestExtensionPath: '${{ variables.containerRegistry }}.azurecr.io/test/azuremonitor/applicationinsights/helm'
-  repoExtensionPath: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/applicationinsights/helm/extension-dev'
+  repoExtensionRelativePath: 'public/azuremonitor/applicationinsights/helm/extension-dev'
+  repoExtensionPath: '${{ variables.containerRegistry }}.azurecr.io/${{ variables.repoExtensionRelativePath }}'
   javaTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-java-app:latest'
   javaTestAppName: 'java-test-app'
   nodeTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-nodejs-app:latest'
@@ -497,10 +498,10 @@ jobs:
         
         echo "Retagging and renaming OCI chart from test to production path..."
         testChartPath="${{ variables.repoTestExtensionPath }}/app-monitoring-extension:$(devOciTagSufix)"
-        prodChartPath="${{ variables.repoExtensionPath }}:$(prodImageTagSuffix)"
-        
-        echo "Copying chart from ${testChartPath} to ${prodChartPath}..."
-        az acr import --name ${{ variables.containerRegistry }} --source ${testChartPath} --image ${prodChartPath} --resource-group ${{ variables.containerRegistryResourceGroup }}
+        prodChartRelativePath="${{ variables.repoExtensionRelativePath }}:$(prodImageTagSuffix)"
+
+        echo "Copying chart from ${testChartPath} to ${prodChartRelativePath}..."
+        az acr import --name ${{ variables.containerRegistry }} --source ${testChartPath} --image ${prodChartRelativePath} --resource-group ${{ variables.containerRegistryResourceGroup }}
         if [ $? -ne 0 ]; then
           echo "##vso[task.logissue type=error]az acr import for OCI chart failed."
           exit 1
