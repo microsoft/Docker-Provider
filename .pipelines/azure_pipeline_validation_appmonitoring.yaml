@@ -67,6 +67,7 @@ jobs:
       
       cd $(Build.SourcesDirectory)/deployment/mergebranch-webhook-deployment/ServiceGroupRoot/Scripts
       tar -czvf ../artifacts.tar.gz pushWebhookToAcr.sh
+      tar -czvf ../artifacts.tar.gz pushOciChartsToAcr.sh
     name: setup
   
   - task: CopyFiles@2
