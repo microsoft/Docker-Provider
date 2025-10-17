@@ -1,0 +1,64 @@
+{
+  "$schema": "http://schema.express.azure.com/schemas/2015-01-01-alpha/RolloutParameters.json",
+  "contentVersion": "1.0.0.0",
+  "wait": [
+    {
+      "name": "waitSdpBakeTime",
+      "properties": {
+        "duration": "PT24H"
+      }
+    }
+  ],
+  "shellExtensions": [
+    {
+      "name": "PushOciChartsToAcr",
+      "type": "ShellExtensionType",
+      "properties": {
+        "maxexecutiontime": "PT1H"
+      },
+      "package": {
+        "reference": {
+          "path": "artifacts.tar.gz"
+        }
+      },
+      "launch": {
+        "command": [
+          "/bin/bash",
+          "PushOciChartsToAcr.sh"
+        ],
+        "environmentVariables": [
+          {
+            "name": "ACR_NAME",
+            "value": "__ACR_NAME__"
+          },
+          {
+            "name": "WEBHOOK_IMAGE_FULL_PATH",
+            "value": "public/azuremonitor/applicationinsights/helm/extension-prod:__SOURCE_IMAGE_TAG__"
+          }, 
+          {
+            "name": "SOURCE_IMAGE_TAG",
+            "value": "__SOURCE_IMAGE_TAG__"
+          },
+          {
+            "name": "SOURCE_IMAGE_BUILD_ID",
+            "value": "__SOURCE_IMAGE_BUILD_ID__"
+          },
+          {
+            "name": "SOURCE_IMAGE_FULL_PATH",
+            "value": "mcr.microsoft.com/azuremonitor/applicationinsights/helm/extension-dev:__SOURCE_IMAGE_TAG__-rc-__SOURCE_IMAGE_BUILD_ID__"
+          },
+          {
+            "name": "OVERRIDE_TAG",
+            "value": "__OVERRIDE_TAG__"
+          }
+        ], 
+        "identity": {
+          "type": "userAssigned",
+          "userAssignedIdentities": [
+            "__MANAGED_IDENTITY__"
+          ]
+        }
+      }
+    }
+  ]
+}

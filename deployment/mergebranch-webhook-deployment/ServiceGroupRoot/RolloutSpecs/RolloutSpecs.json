@@ -24,6 +24,13 @@
         "targetName": "PushWebhook",
         "actions": [ "Shell/PushWebhookToACR" ],
         "dependsOn": [ ]
+      },
+      {
+        "name": "PushOciCharts",
+        "targetType": "ServiceResource",
+        "targetName": "PushOciCharts",
+        "actions": [ "Shell/PushOciChartsToAcr" ],
+        "dependsOn": [ "PushWebhook" ]
       }
     ]
   }
