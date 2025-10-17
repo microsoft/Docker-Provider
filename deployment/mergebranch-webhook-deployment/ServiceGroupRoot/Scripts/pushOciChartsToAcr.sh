@@ -5,8 +5,11 @@ set -e
 
 #Make sure that tag being pushed will not overwrite an existing tag in mcr
 echo "Reading existing tags from MCR..."
+# Temporarily disable exit on error for wget command
+set +e
 MCR_TAG_RESULT="`wget -qO- https://mcr.microsoft.com/v2/azuremonitor/applicationinsights/helm/extension-prod/tags/list 2>&1`"
 WGET_EXIT_CODE=$?
+set -e
 
 if [ $WGET_EXIT_CODE -ne 0 ]; then
    echo "Warning: Failed to get list of MCR tags. Exit code: $WGET_EXIT_CODE"
