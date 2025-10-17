@@ -5,10 +5,21 @@ set -e
 
 #Make sure that tag being pushed will not overwrite an existing tag in mcr
 echo "Reading existing tags from MCR..."
-MCR_TAG_RESULT="`wget -qO- https://mcr.microsoft.com/v2/azuremonitor/applicationinsights/helm/extension-prod/tags/list`"
-if [ $? -ne 0 ]; then         
-   echo "-e error unable to get list of mcr tags for azuremonitor/applicationinsights/helm/extension-prod repository"
-   exit 1
+MCR_TAG_RESULT="`wget -qO- https://mcr.microsoft.com/v2/azuremonitor/applicationinsights/helm/extension-prod/tags/list 2>&1`"
+WGET_EXIT_CODE=$?
+
+if [ $WGET_EXIT_CODE -ne 0 ]; then
+   echo "Warning: Failed to get list of MCR tags. Exit code: $WGET_EXIT_CODE"
+   echo "Response: $MCR_TAG_RESULT"
+   
+   # Check if it's a 404 (repository doesn't exist yet) - this is OK for first deployment
+   if echo "$MCR_TAG_RESULT" | grep -q "404 Not Found"; then
+     echo "Repository doesn't exist yet in MCR (404). This is expected for first deployment. Continuing..."
+     MCR_TAG_RESULT='{"tags":[]}'
+   else
+     echo "-e error unable to get list of mcr tags for azuremonitor/applicationinsights/helm/extension-prod repository"
+     exit 1
+   fi
 fi
 
 TAG_EXISTS_STATUS=0 #Default value for the condition when the echo fails below
