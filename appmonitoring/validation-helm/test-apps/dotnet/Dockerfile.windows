@@ -1,24 +1,49 @@
 # escape=`
 
+# Multi-layer image supporting Windows Server 2022 and Windows Server 2019
+# Note: .NET 8.0 uses Nano Server for 2022 and Server Core for 2019 (Nano Server 2019 not available for .NET 8.0)
+# 
+# Build commands:
+# For Windows Server 2022 only: docker build -f Dockerfile.windows --target final-2022 -t appmonitoring.azurecr.io/demoaks-dotnet-app-win:2022-latest .
+# For Windows Server 2019 only: docker build -f Dockerfile.windows --target final-2019 -t appmonitoring.azurecr.io/demoaks-dotnet-app-win:2019-latest .
+#
+# RECOMMENDED: Use build-multi-windows.ps1 script for multi-architecture manifest:
+# .\build-multi-windows.ps1 -Push -CreateManifest
+# 
+# Or with custom image name and tag:
+# .\build-multi-windows.ps1 -ImageName "appmonitoring.azurecr.io/demoaks-dotnet-app-win" -Tag "v1.0" -Push -CreateManifest
+#
+# This creates a single manifest tag (e.g., :latest) that automatically selects the correct 
+# Windows version image based on the pulling host's OS version. Individual platform images 
+# are only accessible by digest (no visible tags in the registry).
+#
 # cd C:\Program Files\Docker\Docker && DockerCli.exe -SwitchWindowsEngine
-# docker build -f Dockerfile.windows -t appmonitoring.azurecr.io/demoaks-dotnet-app-win:latest .
-# docker push appmonitoring.azurecr.io/demoaks-dotnet-app-win:latest
 # cd C:\Program Files\Docker\Docker && DockerCli.exe -SwitchLinuxEngine
 
-# BASE (Windows runtime)
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-nanoserver-ltsc2022 AS base
-WORKDIR C:\app
-
-# BUILD (Windows SDK)
-# Use Windows Server Core for SDK (tooling) and publish
+# BUILD STAGE (Common for both versions - using Server Core for tooling)
 FROM mcr.microsoft.com/dotnet/sdk:8.0-windowsservercore-ltsc2022 AS build
 WORKDIR C:\src
 COPY . .
 RUN dotnet restore
 RUN dotnet publish -c Release -o C:\out
 
-# FINAL
-FROM base AS final
+# BASE IMAGES for different Windows versions
+# Note: .NET 8.0 only supports Nano Server for LTSC2022, using Server Core for LTSC2019
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-nanoserver-ltsc2022 AS base-2022
+WORKDIR C:\app
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-windowsservercore-ltsc2019 AS base-2019
+WORKDIR C:\app
+
+# FINAL IMAGES
+FROM base-2022 AS final-2022
+WORKDIR C:\app
+COPY --from=build C:\out .
+EXPOSE 3001
+ENV ASPNETCORE_URLS=http://+:3001
+CMD ["dotnet", "dotnet-test-app.dll"]
+
+FROM base-2019 AS final-2019
 WORKDIR C:\app
 COPY --from=build C:\out .
 EXPOSE 3001
