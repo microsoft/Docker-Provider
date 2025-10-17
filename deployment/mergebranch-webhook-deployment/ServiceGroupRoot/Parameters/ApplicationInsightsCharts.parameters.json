@@ -32,7 +32,7 @@
             "value": "__ACR_NAME__"
           },
           {
-            "name": "WEBHOOK_IMAGE_FULL_PATH",
+            "name": "OCI_IMAGE_FULL_PATH",
             "value": "public/azuremonitor/applicationinsights/helm/extension-prod:__SOURCE_IMAGE_TAG__"
           }, 
           {
