@@ -16,8 +16,12 @@ if [ $WGET_EXIT_CODE -ne 0 ]; then
    echo "Response: $MCR_TAG_RESULT"
    
    # Check if it's a 404 (repository doesn't exist yet) - this is OK for first deployment
-   if echo "$MCR_TAG_RESULT" | grep -q "404 Not Found"; then
+   # Exit code 8 from wget typically means server error (including 404)
+   if echo "$MCR_TAG_RESULT" | grep -q "404"; then
      echo "Repository doesn't exist yet in MCR (404). This is expected for first deployment. Continuing..."
+     MCR_TAG_RESULT='{"tags":[]}'
+   elif [ $WGET_EXIT_CODE -eq 8 ]; then
+     echo "Repository appears to not exist yet (wget exit code 8). Treating as first deployment. Continuing..."
      MCR_TAG_RESULT='{"tags":[]}'
    else
      echo "-e error unable to get list of mcr tags for azuremonitor/applicationinsights/helm/extension-prod repository"
