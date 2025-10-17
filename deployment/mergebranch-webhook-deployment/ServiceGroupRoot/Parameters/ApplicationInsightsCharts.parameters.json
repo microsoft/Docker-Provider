@@ -24,7 +24,7 @@
       "launch": {
         "command": [
           "/bin/bash",
-          "PushOciChartsToAcr.sh"
+          "pushOciChartsToAcr.sh"
         ],
         "environmentVariables": [
           {
