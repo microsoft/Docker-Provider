@@ -45,7 +45,7 @@
           },
           {
             "name": "SOURCE_IMAGE_FULL_PATH",
-            "value": "mcr.microsoft.com/azuremonitor/applicationinsights/helm/extension-dev:__SOURCE_IMAGE_TAG__-rc-__SOURCE_IMAGE_BUILD_ID__"
+            "value": "mcr.microsoft.com/azuremonitor/applicationinsights/helm/extension-dev:__SOURCE_IMAGE_TAG__-rc.__SOURCE_IMAGE_BUILD_ID__"
           },
           {
             "name": "OVERRIDE_TAG",
