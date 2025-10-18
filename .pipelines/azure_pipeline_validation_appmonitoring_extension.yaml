@@ -3,17 +3,6 @@
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
 
-trigger:
-  batch: true
-  branches:
-    include:
-    - 'ai_prod'
-
-pr:
-  branches:
-    include:
-    - 'ai_prod'
-
 variables:
   armServiceConnectionName: 'Appmonitoring_Validation_Pipeline'
   subscription: '5a3b3ba4-3a42-42ae-b2cb-f882345803bc'
