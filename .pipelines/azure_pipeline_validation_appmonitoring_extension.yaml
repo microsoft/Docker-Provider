@@ -20,7 +20,11 @@ variables:
   containerRegistry: 'appmonitoring' # this build pushes to aicommon.azurecr.io with an image that is used for testing in validation cluster, then pushes an image once tests pass. That image is latre picked up by the release pipeline and reuploaded to MCR
   containerRegistryResourceGroup: 'aks-appmonitoring-container-registry'
   repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/applicationinsights/aidev'
-  repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/test/azuremonitor/applicationinsights/aidev'
+  repoTestImageRelativePath: 'test/azuremonitor/applicationinsights/aidev'
+  repoTestImageName: '${{ variables.containerRegistry }}.azurecr.io/${{ variables.repoTestImageRelativePath }}'
+  repoTestExtensionPath: '${{ variables.containerRegistry }}.azurecr.io/test/azuremonitor/applicationinsights/helm'
+  repoExtensionRelativePath: 'public/azuremonitor/applicationinsights/helm/extension-dev'
+  repoExtensionPath: '${{ variables.containerRegistry }}.azurecr.io/${{ variables.repoExtensionRelativePath }}'
   javaTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-java-app:latest'
   javaTestAppName: 'java-test-app'
   nodeTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-nodejs-app:latest'
@@ -54,7 +58,8 @@ jobs:
   ## preview release are in format preview-Major.Minor.Patch
   - bash: |
       commit=$(git describe --tags --abbrev=0)
-      imageTag="$commit"
+      # Remove 'appmonitoring-' prefix if present for SemVer compatibility
+      imageTag="${commit#appmonitoring-}"
             
       echo "imageTag is $imageTag"
       
@@ -62,6 +67,7 @@ jobs:
       
       cd $(Build.SourcesDirectory)/deployment/mergebranch-webhook-deployment/ServiceGroupRoot/Scripts
       tar -czvf ../artifacts.tar.gz pushWebhookToAcr.sh
+      tar -czvf ../artifacts.tar.gz pushOciChartsToAcr.sh
     name: setup
   
   - task: CopyFiles@2
@@ -95,9 +101,13 @@ jobs:
     name: rambhatt-test-es-pool
   variables:
     imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
+    finalProdImageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
     testImageTagSuffix: $(imageTag)-$(Build.BuildId)
+    prodImageTagSuffix: $(imageTag)-rc.$(Build.BuildId)
+    devOciTagSufix: $(imageTag)-rc.$(Build.BuildId)
     testImageName: ${{ variables.repoTestImageName }}:${{ variables.testImageTagSuffix }}
-    fullImageName: ${{ variables.repoImageName }}:$(imageTag)-rc-$(Build.BuildId)
+    fullImageName: ${{ variables.repoImageName }}:${{ variables.prodImageTagSuffix }}
+    fullOciImageName: ${{ variables.repoExtensionPath }}:$(devOciTagSufix)
     # This is necessary because of: https://github.com/moby/moby/issues/37965
     DOCKER_BUILDKIT: 1
 
@@ -204,7 +214,11 @@ jobs:
   - bash: |
         echo "##vso[task.setvariable variable=testImageName;isOutput=true]$(testImageName)"
         echo "##vso[task.setvariable variable=fullImageName;isOutput=true]$(fullImageName)"
+        echo "##vso[task.setvariable variable=fullOciImageName;isOutput=true]$(fullOciImageName)"
         echo "##vso[task.setvariable variable=testImageTagSuffix;isOutput=true]$(testImageTagSuffix)"
+        echo "##vso[task.setvariable variable=prodImageTagSuffix;isOutput=true]$(prodImageTagSuffix)"
+        echo "##vso[task.setvariable variable=devOciTagSufix;isOutput=true]$(devOciTagSufix)"
+        echo "##vso[task.setvariable variable=finalProdImageTag;isOutput=true]$(finalProdImageTag)"
     name: exportVars
 
 
@@ -216,7 +230,11 @@ jobs:
   variables:
     testImageName:  $[ dependencies.build_linux.outputs['exportVars.testImageName'] ]
     fullImageName:  $[ dependencies.build_linux.outputs['exportVars.fullImageName'] ]
+    fullOciImageName:  $[ dependencies.build_linux.outputs['exportVars.fullOciImageName'] ]
     testImageTagSuffix: $[ dependencies.build_linux.outputs['exportVars.testImageTagSuffix'] ]
+    prodImageTagSuffix: $[ dependencies.build_linux.outputs['exportVars.prodImageTagSuffix'] ]
+    devOciTagSufix: $[ dependencies.build_linux.outputs['exportVars.devOciTagSufix'] ]
+    finalProdImageTag: $[ dependencies.build_linux.outputs['exportVars.finalProdImageTag'] ]
     # This is necessary because of: https://github.com/moby/moby/issues/37965
     DOCKER_BUILDKIT: 1
 
@@ -233,20 +251,49 @@ jobs:
         az account set --subscription ${{ variables.subscription }}
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
-        sudo chmod u+x ./clean-install-appmonitoring.sh
-        sudo chmod u+x ./prepare-aks-rp-charts.sh
+        sudo chmod u+x ./prepare-extension-charts.sh
 
-        echo "Preparing charts..."
-        if ! ./prepare-aks-rp-charts.sh ../validation-helm/app-monitoring-addon/templates/app-monitoring-agent.yaml; then
+        echo "Preparing extension charts (replacing placeholders with runtime values)..."
+        if ! ./prepare-extension-charts.sh ../app-monitoring-extension $(finalProdImageTag) $(devOciTagSufix); then
           echo "Chart preparation failed"
           exit 1
         fi
 
-        echo "Checking for charts..."
-        if ! ./clean-install-appmonitoring.sh $(testImageTagSuffix); then
+        echo "Packaging modified chart..."
+        cd ..
+        helm package app-monitoring-extension
+        
+        echo "Copying packaged chart to artifact staging directory..."
+        mkdir -p $(Build.ArtifactStagingDirectory)/charts
+        cp app-monitoring-extension-*.tgz $(Build.ArtifactStagingDirectory)/charts/
+        
+        echo "Logging into ACR..."
+        az acr login -n ${{ variables.containerRegistry }}
+
+        echo "Pushing modified chart to OCI registry..."
+        helm push app-monitoring-extension-$(devOciTagSufix).tgz oci://${{ variables.repoTestExtensionPath }}
+
+        cd scripts
+        sudo chmod u+x ./clean-install-appmonitoring-oci.sh
+
+        export TEST_CHART_REPO="${{ variables.repoTestExtensionPath }}"
+        export TEST_CHART_VERSION="$(devOciTagSufix)"
+        export TEST_IMAGE_RELATIVE_PATH="${{ variables.repoTestImageRelativePath }}"
+        
+        echo "Installing appmonitoring addon from OCI..."
+        if ! ./clean-install-appmonitoring-oci.sh $(testImageTagSuffix); then
           echo "Chart installation failed"
           exit 1
         fi
+
+        exit 0 # EXIT FOR TESTING NOW
+
+  - task: PublishBuildArtifacts@1
+    condition: always()
+    displayName: "Publish Helm chart package (even on failure)"
+    inputs:
+      pathToPublish: '$(Build.ArtifactStagingDirectory)/charts'
+      artifactName: helm-charts
 
   - task: AzureCLI@2
     displayName: "Validate charts deployed to AKS"
@@ -290,7 +337,16 @@ jobs:
         az account set --subscription ${{ variables.subscription }}
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
+        # Login to ACR for Helm to pull OCI charts
+        az acr login -n ${{ variables.containerRegistry }}
+
         export TEST_NS="${{ variables.testNamespace }}"
+        export ACR_NAME="${{ variables.containerRegistry }}.azurecr.io"
+        
+        export JAVA_TEST_IMAGE_NAME=${{ variables.javaTestAppImageName }}
+        export NODEJS_TEST_IMAGE_NAME=${{ variables.nodeTestAppImageName }}
+        export PYTHON_TEST_IMAGE_NAME=${{ variables.pythonTestAppImageName }}
+        export DOTNET_TEST_IMAGE_NAME=${{ variables.dotnetTestAppImageName }}
 
         sudo chmod +x ../scripts/install-oci-test-apps.sh
 
@@ -405,24 +461,23 @@ jobs:
       scriptType: bash
       scriptLocation: inlineScript
       inlineScript: |
-        exit 0
-        # Check if current commit is tagged and branch is ai_prod
-        CURRENT_BRANCH="$BUILD_SOURCEBRANCHNAME"
-        echo "Current branch is: $CURRENT_BRANCH"
-        if git describe --exact-match --tags >/dev/null 2>&1 && [ "$CURRENT_BRANCH" = "ai_prod" ]; then
-          echo "Current commit is tagged with: $(git describe --exact-match --tags) and branch is ai_prod."
-        else
-          if [ "$CURRENT_BRANCH" != "ai_prod" ]; then
-            echo "Current branch is not ai_prod. Cannot publish from another branch"
-            echo "##vso[task.logissue type=warning]Current branch is not ai_prod. YOU CANNOT RELEASE WITH THIS BUILD."
-            echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with a branch other than ai_prod. Exiting...."
-          else
-            echo "Current commit is not tagged."
-            echo "##vso[task.logissue type=warning]Current commit is not tagged. YOU CANNOT RELEASE WITH THIS BUILD and we also cannot publish images without a tagged commit on ai_prod. Please tag this commit with the appropriate semver value and format."
-            echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with Untagged Commits. Exiting...."
-          fi
-          exit 0
-        fi
+        # # Check if current commit is tagged and branch is ai_prod
+        # CURRENT_BRANCH="$BUILD_SOURCEBRANCHNAME"
+        # echo "Current branch is: $CURRENT_BRANCH"
+        # if git describe --exact-match --tags >/dev/null 2>&1 && [ "$CURRENT_BRANCH" = "ai_prod" ]; then
+        #   echo "Current commit is tagged with: $(git describe --exact-match --tags) and branch is ai_prod."
+        # else
+        #   if [ "$CURRENT_BRANCH" != "ai_prod" ]; then
+        #     echo "Current branch is not ai_prod. Cannot publish from another branch"
+        #     echo "##vso[task.logissue type=warning]Current branch is not ai_prod. YOU CANNOT RELEASE WITH THIS BUILD."
+        #     echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with a branch other than ai_prod. Exiting...."
+        #   else
+        #     echo "Current commit is not tagged."
+        #     echo "##vso[task.logissue type=warning]Current commit is not tagged. YOU CANNOT RELEASE WITH THIS BUILD and we also cannot publish images without a tagged commit on ai_prod. Please tag this commit with the appropriate semver value and format."
+        #     echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with Untagged Commits. Exiting...."
+        #   fi
+        #   exit 0
+        # fi
 
         az --version
         az account show
@@ -445,9 +500,22 @@ jobs:
           exit 1
         fi
         
+        echo "Retagging and renaming OCI chart from test to production path..."
+        testChartPath="${{ variables.repoTestExtensionPath }}/app-monitoring-extension:$(devOciTagSufix)"
+        prodChartRelativePath="${{ variables.repoExtensionRelativePath }}:$(prodImageTagSuffix)"
+
+        echo "Copying chart from ${testChartPath} to ${prodChartRelativePath}..."
+        az acr import --name ${{ variables.containerRegistry }} --source ${testChartPath} --image ${prodChartRelativePath} --resource-group ${{ variables.containerRegistryResourceGroup }}
+        if [ $? -ne 0 ]; then
+          echo "##vso[task.logissue type=error]az acr import for OCI chart failed."
+          exit 1
+        fi
+        
         mkdir -p $(Build.ArtifactStagingDirectory)/linux
-        echo "Setting the image name..."
+        echo "Setting the webhook image name to $(fullImageName)"
         echo $(fullImageName) > $(Build.ArtifactStagingDirectory)/linux/fullImageName.txt
+        echo "Setting the oci image name to $(fullOciImageName)"
+        echo $(fullOciImageName) > $(Build.ArtifactStagingDirectory)/linux/fullOciImageName.txt
 
   - task: PublishBuildArtifacts@1
     inputs:
