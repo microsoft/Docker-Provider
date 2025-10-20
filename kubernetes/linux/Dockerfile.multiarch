@@ -39,8 +39,6 @@ RUN tdnf install -y \
         tar \
         ca-certificates \
         postgresql-libs \
-        openldap-libs \
-        openldap \
     && rm -rf /var/lib/apt/lists/*
 RUN mkdir /busybin && busybox --install /busybin
 
