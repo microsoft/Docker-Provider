@@ -22,7 +22,9 @@ ENV tmpdir /opt
 RUN tdnf clean all
 RUN tdnf repolist --refresh
 RUN tdnf -y update
-RUN tdnf install -y \
+RUN tdnf install -y ca-certificates-microsoft && \
+    update-ca-trust && \
+    tdnf install -y \
          build-essential \
         wget \
         curl \
