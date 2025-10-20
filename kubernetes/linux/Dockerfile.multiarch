@@ -19,20 +19,10 @@ LABEL vendor=Microsoft\ Corp \
     com.microsoft.product="Azure Monitor for containers"
 ENV tmpdir /opt
 
-COPY kubernetes/linux/azurelinux-official-cloud-native-arm64.repo /tmp/azurelinux-official-cloud-native-arm64.repo
-COPY kubernetes/linux/azurelinux-official-cloud-native-amd64.repo /tmp/azurelinux-official-cloud-native-amd64.repo
-RUN if [ "${TARGETARCH}" == "arm64" ]; then \
-    cp /tmp/azurelinux-official-cloud-native-arm64.repo /etc/yum.repos.d/; \
-else \
-    cp /tmp/azurelinux-official-cloud-native-amd64.repo /etc/yum.repos.d/; \
-fi
-
-RUN tdnf clean all && \
-    tdnf repolist --refresh && \
-    tdnf -y update && \
-    tdnf install -y ca-certificates-microsoft && \
-    update-ca-trust && \
-    tdnf install -y \
+RUN tdnf clean all
+RUN tdnf repolist --refresh
+RUN tdnf -y update
+RUN tdnf install -y \
          build-essential \
         wget \
         curl \
@@ -56,6 +46,14 @@ RUN mkdir /busybin && busybox --install /busybin
 
 COPY --from=golang-builder /src/kubernetes/linux/Linux_ULINUX_1.0_*_64_Release/docker-cimprov-*.*.*-*.*.sh $tmpdir/
 COPY kubernetes/linux/setup.sh kubernetes/linux/main.sh kubernetes/linux/defaultpromenvvariables kubernetes/linux/defaultpromenvvariables-rs kubernetes/linux/defaultpromenvvariables-sidecar kubernetes/linux/mdsd.xml kubernetes/linux/envmdsd kubernetes/linux/logrotate.conf $tmpdir/
+
+COPY kubernetes/linux/azurelinux-official-cloud-native-arm64.repo /tmp/azurelinux-official-cloud-native-arm64.repo
+COPY kubernetes/linux/azurelinux-official-cloud-native-amd64.repo /tmp/azurelinux-official-cloud-native-amd64.repo
+RUN if [ "${TARGETARCH}" == "arm64" ]; then \
+    cp /tmp/azurelinux-official-cloud-native-arm64.repo /etc/yum.repos.d/; \
+else \
+    cp /tmp/azurelinux-official-cloud-native-amd64.repo /etc/yum.repos.d/; \
+fi
 
 WORKDIR ${tmpdir}
 
