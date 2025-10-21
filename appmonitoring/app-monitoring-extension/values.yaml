@@ -35,7 +35,7 @@ AppmonitoringAgent:
   imageTag: "<IMAGE_TAG>"
   isOpenTelemetryLogsEnabled: true
   isOpenTelemetryMetricsEnabled: true
-  isOtelToggleEnabled: false
+  isOtelToggleEnabled: true
   memoryLimit: "200Mi"
   memoryRequest: "200Mi"
   openTelemetryLogsPort: "28331"
