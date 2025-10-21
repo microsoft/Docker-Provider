@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"errors"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -667,8 +668,16 @@ func UpdateTracesInfoMetrics(key string, logEntry string) {
 	// 2025-09-18T17:23:19.0195013+00:00, amacoreagent, Information, Pid: 243334, Tid: 15] GigOtlpDataOutput: Identifier:dcr-**.gigl-dce-**, Event:Log, Total Received:10762, Total Published:10762, Total Failed:0, Received EPS:81.18, Published EPS:81.18.
 	// 2025-09-18T17:23:19.0246002+00:00, amacoreagent, Information, Pid: 243334, Tid: 15] GigOtlpDataOutput: Identifier:dcr-**.gigl-dce-**, Event:Span, Total Received:39080, Total Published:39080, Total Failed:0, Received EPS:264.30, Published EPS:264.30.
 	if received, published, ok := extractOtlpEPS(logEntry); ok {
-		TracesInfoMetrics[key+"Received"] = received
-		TracesInfoMetrics[key+"Published"] = published
+		if existingReceived, ok := TracesInfoMetrics[key+"Received"]; ok {
+			TracesInfoMetrics[key+"Received"] = math.Max(existingReceived, received)
+		} else {
+			TracesInfoMetrics[key+"Received"] = received
+		}
+		if existingPublished, ok := TracesInfoMetrics[key+"Published"]; ok {
+			TracesInfoMetrics[key+"Published"] = math.Max(existingPublished, published)
+		} else {
+			TracesInfoMetrics[key+"Published"] = published
+		}
 	}
 	TracesInfoMetricsMutex.Unlock()
 }
