@@ -1,3 +1,3 @@
 {{- define "addon_mcr_repository_base" -}}
-  appmonitoringaddontestacr.azurecr.io/test
+  appmonitoring.azurecr.io/test
 {{- end -}}
