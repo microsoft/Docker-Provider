@@ -665,18 +665,20 @@ func UpdateTracesErrorMetrics(key string) {
 
 func UpdateTracesInfoMetrics(key string, logEntry string) {
 	TracesInfoMetricsMutex.Lock()
-	// 2025-09-18T17:23:19.0195013+00:00, amacoreagent, Information, Pid: 243334, Tid: 15] GigOtlpDataOutput: Identifier:dcr-**.gigl-dce-**, Event:Log, Total Received:10762, Total Published:10762, Total Failed:0, Received EPS:81.18, Published EPS:81.18.
-	// 2025-09-18T17:23:19.0246002+00:00, amacoreagent, Information, Pid: 243334, Tid: 15] GigOtlpDataOutput: Identifier:dcr-**.gigl-dce-**, Event:Span, Total Received:39080, Total Published:39080, Total Failed:0, Received EPS:264.30, Published EPS:264.30.
-	if received, published, ok := extractOtlpEPS(logEntry); ok {
-		if existingReceived, ok := TracesInfoMetrics[key+"Received"]; ok {
-			TracesInfoMetrics[key+"Received"] = math.Max(existingReceived, received)
-		} else {
-			TracesInfoMetrics[key+"Received"] = received
-		}
-		if existingPublished, ok := TracesInfoMetrics[key+"Published"]; ok {
-			TracesInfoMetrics[key+"Published"] = math.Max(existingPublished, published)
-		} else {
-			TracesInfoMetrics[key+"Published"] = published
+	if strings.Contains(key, "Otlp") && strings.Contains(key, "EPS") {
+		// 2025-09-18T17:23:19.0195013+00:00, amacoreagent, Information, Pid: 243334, Tid: 15] GigOtlpDataOutput: Identifier:dcr-**.gigl-dce-**, Event:Log, Total Received:10762, Total Published:10762, Total Failed:0, Received EPS:81.18, Published EPS:81.18.
+		// 2025-09-18T17:23:19.0246002+00:00, amacoreagent, Information, Pid: 243334, Tid: 15] GigOtlpDataOutput: Identifier:dcr-**.gigl-dce-**, Event:Span, Total Received:39080, Total Published:39080, Total Failed:0, Received EPS:264.30, Published EPS:264.30.
+		if received, published, ok := extractOtlpEPS(logEntry); ok {
+			if existingReceived, ok := TracesInfoMetrics[key+"Received"]; ok {
+				TracesInfoMetrics[key+"Received"] = math.Max(existingReceived, received)
+			} else {
+				TracesInfoMetrics[key+"Received"] = received
+			}
+			if existingPublished, ok := TracesInfoMetrics[key+"Published"]; ok {
+				TracesInfoMetrics[key+"Published"] = math.Max(existingPublished, published)
+			} else {
+				TracesInfoMetrics[key+"Published"] = published
+			}
 		}
 	}
 	TracesInfoMetricsMutex.Unlock()
@@ -745,7 +747,7 @@ func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLeve
 			} else if matched, _ := regexp.MatchString(`ContentType .* not supported`, logEntry); matched {
 				UpdateTracesErrorMetrics("OtlpInvalidContentType")
 			} else if strings.Contains(logEntry, "GigLA Token not available") {
-				UpdateTracesInfoMetrics("OtlpInvalidToken", logEntry)
+				UpdateTracesErrorMetrics("OtlpInvalidToken")
 			} else if strings.Contains(logEntry, "GigOtlpDataOutput") && strings.Contains(logEntry, "Event:Log") {
 				UpdateTracesInfoMetrics("OtlpLogsEPS", logEntry)
 			} else if strings.Contains(logEntry, "GigOtlpDataOutput") && strings.Contains(logEntry, "Event:Span") {
@@ -758,9 +760,11 @@ func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLeve
 		}
 	}
 
-	traceEntry := strings.Join(logLines, "\n")
-	traceTelemetryItem := appinsights.NewTraceTelemetry(traceEntry, severityLevel)
-	traceTelemetryItem.Properties["tag"] = tag
-	TelemetryClient.Track(traceTelemetryItem)
+	if len(logLines) > 0 {
+		traceEntry := strings.Join(logLines, "\n")
+		traceTelemetryItem := appinsights.NewTraceTelemetry(traceEntry, severityLevel)
+		traceTelemetryItem.Properties["tag"] = tag
+		TelemetryClient.Track(traceTelemetryItem)
+	}
 	return output.FLB_OK
 }
