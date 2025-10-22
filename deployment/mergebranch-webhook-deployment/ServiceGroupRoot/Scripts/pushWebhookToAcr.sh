@@ -16,8 +16,8 @@ TAG_EXISTS_STATUS=0 #Default value for the condition when the echo fails below
 AZ_ACR_IMPORT_FORCE=""
 
 
-TAG="appmonitoring-$SOURCE_IMAGE_TAG-rc-$SOURCE_IMAGE_BUILD_ID"
-if [[ "$TAG" =~ ^appmonitoring-(.+)-rc-[0-9]+$ ]]; then
+TAG="$SOURCE_IMAGE_TAG-rc.$SOURCE_IMAGE_BUILD_ID"
+if [[ "$TAG" =~ ^(.+)-rc\.[0-9]+$ ]]; then
   WEBHOOK_IMAGE_TAG_SUFFIX="${BASH_REMATCH[1]}"
   echo "$WEBHOOK_IMAGE_TAG_SUFFIX"  # Output: 1.0.0-beta.4
 else
