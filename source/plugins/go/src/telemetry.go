@@ -105,7 +105,7 @@ var (
 	// MultitenantNamespaceCount indicates the number of unique k8s namespaces enabled for multi-tenancy
 	MultitenantNamespaceCount int
 	// Regex to capture Received and Published EPS values from GigOtlpDataOutput log lines
-	otlpEPSRegex = regexp.MustCompile(`Received EPS:(\d+(?:\.\d+)?),\s*Published EPS:(\d+(?:\.\d+)?)`)
+	OtlpEPSRegex = regexp.MustCompile(`Received EPS:(\d+(?:\.\d+)?),\s*Published EPS:(\d+(?:\.\d+)?)`)
 )
 
 const (
@@ -456,19 +456,26 @@ func SendTracesAsMetrics(telemetryPushIntervalProperty string) {
 	TracesMetricsTicker = time.NewTicker(time.Second * time.Duration(telemetryPushInterval))
 
 	for ; true; <-TracesMetricsTicker.C {
+		// Capture and clear error metrics atomically
 		TracesErrorMetricsMutex.Lock()
-		for metricName, metricValue := range TracesErrorMetrics {
-			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricName, metricValue))
-		}
+		errorMetricsSnapshot := TracesErrorMetrics
 		TracesErrorMetrics = map[string]float64{}
 		TracesErrorMetricsMutex.Unlock()
 
-		TracesInfoMetricsMutex.Lock()
-		for metricName, metricValue := range TracesInfoMetrics {
+		// Send metrics outside the lock
+		for metricName, metricValue := range errorMetricsSnapshot {
 			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricName, metricValue))
 		}
+
+		// Same pattern for info metrics
+		TracesInfoMetricsMutex.Lock()
+		infoMetricsSnapshot := TracesInfoMetrics
 		TracesInfoMetrics = map[string]float64{}
 		TracesInfoMetricsMutex.Unlock()
+
+		for metricName, metricValue := range infoMetricsSnapshot {
+			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricName, metricValue))
+		}
 	}
 }
 
@@ -686,7 +693,7 @@ func UpdateTracesInfoMetrics(key string, logEntry string) {
 
 // extractOtlpEPS returns Received and Published EPS values when present in a log entry
 func extractOtlpEPS(logEntry string) (float64, float64, bool) {
-	matches := otlpEPSRegex.FindStringSubmatch(logEntry)
+	matches := OtlpEPSRegex.FindStringSubmatch(logEntry)
 	if len(matches) != 3 {
 		return 0, 0, false
 	}
@@ -745,16 +752,20 @@ func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLeve
 				// This error occurs when the OTLP receiver receives data in an unsupported protocol or compression is enabled.
 				UpdateTracesErrorMetrics("OtlpInvalidConfig")
 			} else if matched, _ := regexp.MatchString(`ContentType .* not supported`, logEntry); matched {
-				UpdateTracesErrorMetrics("OtlpInvalidContentType")
+				UpdateTracesErrorMetrics("InvalidContentType")
 			} else if strings.Contains(logEntry, "GigLA Token not available") {
-				UpdateTracesErrorMetrics("OtlpInvalidToken")
-			} else if strings.Contains(logEntry, "GigOtlpDataOutput") && strings.Contains(logEntry, "Event:Log") {
-				UpdateTracesInfoMetrics("OtlpLogsEPS", logEntry)
-			} else if strings.Contains(logEntry, "GigOtlpDataOutput") && strings.Contains(logEntry, "Event:Span") {
-				UpdateTracesInfoMetrics("OtlpSpansEPS", logEntry)
+				UpdateTracesErrorMetrics("InvalidGigLAToken")
+			} else if strings.Contains(logEntry, "GigOtlpDataOutput") {
+				if strings.Contains(logEntry, "Event:Log") {
+					UpdateTracesInfoMetrics("OtlpLogsEPS", logEntry)
+				} else if strings.Contains(logEntry, "Event:Span") {
+					UpdateTracesInfoMetrics("OtlpSpansEPS", logEntry)
+				}
+			} else if !strings.Contains(logEntry, "Information") {
+				logLines = append(logLines, logEntry)
 			}
 		} else {
-			if !strings.Contains(tag, "addon-token-adapter") && !(strings.Contains(tag, "microsoft.linuxmonagent.amaca.log") && strings.Contains(logEntry, "Information")) {
+			if !strings.Contains(tag, "addon-token-adapter") {
 				logLines = append(logLines, logEntry)
 			}
 		}
