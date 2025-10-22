@@ -738,7 +738,7 @@ func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLeve
 			UpdateTracesErrorMetrics("AddonTokenAdapterErrorModifyingIptableRules")
 		} else if strings.Contains(logEntry, "Token last updated at") && strings.Contains(logEntry, "exiting the container") {
 			UpdateTracesErrorMetrics("AddonTokenAdapterExitContainerTokenNotUpdated")
-		} else if strings.Contains(logEntry, "Google.Protobuf.InvalidProtocolBufferException") {
+		} else if strings.Contains(logEntry, "Google.Protobuf") || strings.Contains(logEntry, "OtlpPipeline.HttpListenerConfigService") {
 			UpdateTracesErrorMetrics("OtlpInvalidProtocol")
 		} else if strings.Contains(logEntry, "GigOtlpDataOutput") && strings.Contains(logEntry, "Event:Log") {
 			UpdateTracesInfoMetrics("OtlpLogsEPS", logEntry)
