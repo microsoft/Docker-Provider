@@ -740,10 +740,12 @@ func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLeve
 			UpdateTracesErrorMetrics("AddonTokenAdapterExitContainerTokenNotUpdated")
 		} else if strings.Contains(tag, "microsoft.linuxmonagent.amaca.log") {
 			if strings.Contains(logEntry, "Google.Protobuf") || strings.Contains(logEntry, "OtlpPipeline.HttpListenerConfigService") {
-				// This error occurs when the OTLP receiver receives data in an unsupported protocol format or compression is enabled.
-				UpdateTracesErrorMetrics("OtlpInvalidProtocol")
-			} else if strings.Contains(logEntry, "ContentType application/json not supported") {
+				// This error occurs when the OTLP receiver receives data in an unsupported protocol or compression is enabled.
+				UpdateTracesErrorMetrics("OtlpInvalidConfig")
+			} else if matched, _ := regexp.MatchString(`ContentType .* not supported`, logEntry); matched {
 				UpdateTracesErrorMetrics("OtlpInvalidContentType")
+			} else if strings.Contains(logEntry, "GigLA Token not available") {
+				UpdateTracesInfoMetrics("OtlpInvalidToken", logEntry)
 			} else if strings.Contains(logEntry, "GigOtlpDataOutput") && strings.Contains(logEntry, "Event:Log") {
 				UpdateTracesInfoMetrics("OtlpLogsEPS", logEntry)
 			} else if strings.Contains(logEntry, "GigOtlpDataOutput") && strings.Contains(logEntry, "Event:Span") {
