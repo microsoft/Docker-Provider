@@ -101,7 +101,7 @@ CONTAINER_PERF_MEMORY_WS_USAGE_QUERY = "Perf | where ObjectName == 'K8SContainer
 CONTAINER_PERF_RESTART_TIME_EPOCH_QUERY = "Perf | where ObjectName == 'K8SContainer' | where CounterName == 'restartTimeEpoch' |  where TimeGenerated > ago({0}) | count"
 # container log
 CONTAINER_LOG_V2_QUERY = "ContainerLogV2 |  where TimeGenerated > ago({0}) | count"
-CONTAINER_LOG_V2_K8S_METADATA_QUERY = "ContainerLogV2 |  where TimeGenerated > ago({0}) | where KubernetesMetadata != "" | count"
+CONTAINER_LOG_V2_K8S_METADATA_QUERY = "ContainerLogV2 |  where TimeGenerated > ago({0}) | where KubernetesMetadata != '' | count"
 
 # insights metrics
 INSIGHTS_METRICS_QUERY = "InsightsMetrics |  where TimeGenerated > ago({0}) | count"
