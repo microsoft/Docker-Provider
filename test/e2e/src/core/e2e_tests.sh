@@ -181,8 +181,6 @@ login_to_azure() {
    if ! jq --version >/dev/null 2>&1; then
       echo "jq installation appears to have failed" >&2
       exit 1
-   fi
-      echo "jq installed successfully: $(jq --version)"
    else
       echo "jq already installed: $(jq --version)"
    fi
