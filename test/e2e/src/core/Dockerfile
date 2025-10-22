@@ -4,7 +4,7 @@ FROM ${PYTHON_BASE_IMAGE}
 
 RUN pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org \
     pytest pytest-xdist filelock requests kubernetes adal msrestazure azure-identity \
-    azure-mgmt-hybridkubernetes azure-mgmt-kubernetesconfiguration junit-xml distro
+    azure-mgmt-hybridkubernetes azure-mgmt-kubernetesconfiguration junit-xml distro jq
 
 RUN curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash \
     && helm version

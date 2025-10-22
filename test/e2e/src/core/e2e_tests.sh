@@ -141,41 +141,41 @@ deleteArcCIExtension() {
 }
 
 login_to_azure() {
-   echo "Ensuring jq is available..."
-   if ! command -v jq >/dev/null 2>&1; then
-   echo "jq not found, downloading latest version..."
+   # echo "Ensuring jq is available..."
+   # if ! command -v jq >/dev/null 2>&1; then
+   # echo "jq not found, downloading latest version..."
 
-   arch=$(uname -m)
-   case "$arch" in
-      x86_64|amd64) jq_bin="jq-linux-amd64" ;;
-      aarch64|arm64) jq_bin="jq-linux-arm64" ;;
-      *) echo "Unsupported architecture '$arch' for jq binary" >&2; exit 1 ;;
-   esac
+   # arch=$(uname -m)
+   # case "$arch" in
+   #    x86_64|amd64) jq_bin="jq-linux-amd64" ;;
+   #    aarch64|arm64) jq_bin="jq-linux-arm64" ;;
+   #    *) echo "Unsupported architecture '$arch' for jq binary" >&2; exit 1 ;;
+   # esac
 
-   # Fetch latest tag (fallback to a pinned version if empty)
-   latest_version=$(curl -fsSL https://api.github.com/repos/jqlang/jq/releases/latest \
-         | sed -n 's/.*"tag_name":[[:space:]]*"\(jq-[0-9.]*\)".*/\1/p')
-   if [ -z "$latest_version" ]; then
-      echo "Warning: could not determine latest jq version from GitHub; falling back to jq-1.7.1" >&2
-      latest_version="jq-1.7.1"
-   fi
-   echo "Latest jq version: $latest_version"
+   # # Fetch latest tag (fallback to a pinned version if empty)
+   # latest_version=$(curl -fsSL https://api.github.com/repos/jqlang/jq/releases/latest \
+   #       | sed -n 's/.*"tag_name":[[:space:]]*"\(jq-[0-9.]*\)".*/\1/p')
+   # if [ -z "$latest_version" ]; then
+   #    echo "Warning: could not determine latest jq version from GitHub; falling back to jq-1.7.1" >&2
+   #    latest_version="jq-1.7.1"
+   # fi
+   # echo "Latest jq version: $latest_version"
 
-   install_dir="$HOME/.local/bin"
-   mkdir -p "$install_dir"
+   # install_dir="$HOME/.local/bin"
+   # mkdir -p "$install_dir"
 
-   url="https://github.com/jqlang/jq/releases/download/${latest_version}/${jq_bin}"
-   echo "Downloading $url"
-   if ! curl -fsSL -o "${install_dir}/jq" "$url"; then
-      echo "Failed to download jq binary from $url" >&2
-      exit 1
-   fi
+   # url="https://github.com/jqlang/jq/releases/download/${latest_version}/${jq_bin}"
+   # echo "Downloading $url"
+   # if ! curl -fsSL -o "${install_dir}/jq" "$url"; then
+   #    echo "Failed to download jq binary from $url" >&2
+   #    exit 1
+   # fi
 
-   chmod 755 "${install_dir}/jq"
-   case ":$PATH:" in
-      *":$install_dir:"*) ;; # already in PATH
-      *) export PATH="$install_dir:$PATH" ;;
-   esac
+   # chmod 755 "${install_dir}/jq"
+   # case ":$PATH:" in
+   #    *":$install_dir:"*) ;; # already in PATH
+   #    *) export PATH="$install_dir:$PATH" ;;
+   # esac
 
    # Basic sanity check
    if ! jq --version >/dev/null 2>&1; then
