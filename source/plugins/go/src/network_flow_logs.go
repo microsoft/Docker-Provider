@@ -14,8 +14,11 @@ import (
 	"github.com/tinylib/msgp/msgp"
 )
 
-// Stream name for retina networkflow logs
-const RetinaNetworkFlowLogsStreamName = "RETINA_NETWORK_FLOW_LOGS"
+// Stream names for network flow logs
+const (
+	ContainerNetworkLogsStreamName  = "CONTAINER_NETWORK_LOGS"   // New stream name
+	RetinaNetworkFlowLogsStreamName = "RETINA_NETWORK_FLOW_LOGS" // Legacy stream name
+)
 
 var (
 	// retina networkflow logs stream tag name
@@ -75,10 +78,15 @@ func PostNetworkFlowRecords(tailPluginRecords []map[interface{}]interface{}) int
 		}
 
 		if len(networkFlowLogsMsgPackEntries) > 0 {
-			MdsdNetworkFlowLogsStreamTagName = getOutputStreamIdTag(RetinaNetworkFlowLogsStreamName, MdsdNetworkFlowLogsStreamTagName, &NetworkFlowTagRefreshTracker)
+			// Try getting the stream tag with the new name first
+			MdsdNetworkFlowLogsStreamTagName = getOutputStreamIdTag(ContainerNetworkLogsStreamName, MdsdNetworkFlowLogsStreamTagName, &NetworkFlowTagRefreshTracker)
 			if MdsdNetworkFlowLogsStreamTagName == "" {
-				Log("Error::mdsd::Failed to get stream tag for networkflow logs. Will retry ...")
-				return output.FLB_RETRY
+				// If new stream name fails, try the legacy stream name
+				MdsdNetworkFlowLogsStreamTagName = getOutputStreamIdTag(RetinaNetworkFlowLogsStreamName, MdsdNetworkFlowLogsStreamTagName, &NetworkFlowTagRefreshTracker)
+				if MdsdNetworkFlowLogsStreamTagName == "" {
+					Log("Error::mdsd::Failed to get stream tag for networkflow logs. Will retry ...")
+					return output.FLB_RETRY
+				}
 			}
 			if MdsdNetworkFlowClient == nil {
 				Log("Error::mdsd::mdsd connection does not exist for networkflow mdsd client. re-connecting ...")
@@ -286,12 +294,28 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 	if traceObservationPoint := extractString(flow, "trace_observation_point"); traceObservationPoint != "" {
 		dataMap["TraceObservationPoint"] = traceObservationPoint
 	}
-	// Packets and Bytes
-	if packetsSent, ok := flow["packets_sent"]; ok {
-		dataMap["PacketsSent"] = safeToInt(packetsSent)
-	}
-	if packetsReceived, ok := flow["packets_received"]; ok {
-		dataMap["PacketsReceived"] = safeToInt(packetsReceived)
+	// Flow counts and packets
+	if MdsdNetworkFlowLogsStreamTagName == getOutputStreamIdTag(ContainerNetworkLogsStreamName, "", &NetworkFlowTagRefreshTracker) {
+		// For new CONTAINER_NETWORK_LOGS stream, use flow counts from extensions
+		if extensions, ok := flow["extensions"].(map[string]interface{}); ok {
+			if ingressCount, ok := extensions["ingress_flow_count"]; ok {
+				dataMap["IngressFlowCount"] = safeToInt(ingressCount)
+			}
+			if egressCount, ok := extensions["egress_flow_count"]; ok {
+				dataMap["EgressFlowCount"] = safeToInt(egressCount)
+			}
+			if unknownCount, ok := extensions["unknown_direction_flow_count"]; ok {
+				dataMap["UnknownDirectionFlowCount"] = safeToInt(unknownCount)
+			}
+		}
+	} else {
+		// For legacy RETINA_NETWORK_FLOW_LOGS stream, use packet counts
+		if packetsSent, ok := flow["packets_sent"]; ok {
+			dataMap["PacketsSent"] = safeToInt(packetsSent)
+		}
+		if packetsReceived, ok := flow["packets_received"]; ok {
+			dataMap["PacketsReceived"] = safeToInt(packetsReceived)
+		}
 	}
 	// Policies
 	policiesData := map[string]interface{}{}
