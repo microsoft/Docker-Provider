@@ -85,7 +85,7 @@ validateArcConfTestParameters() {
 	   python3 setup_failure_handler.py
 	fi
 
-	if [ -z $RESOURCE_GROUP ]]; then
+	if [ -z $RESOURCE_GROUP ]; then
 		echo "ERROR: parameter RESOURCE_GROUP is required." > ${results_dir}/error
 		python3 setup_failure_handler.py
 	fi
