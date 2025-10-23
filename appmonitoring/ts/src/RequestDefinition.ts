@@ -180,7 +180,6 @@ export class PodInfo {
     ownerKind: string;
     ownerUid: string;
     ownerName: string;
-    onlyContainerName: string;
 }
 
 export enum AutoInstrumentationPlatforms {
