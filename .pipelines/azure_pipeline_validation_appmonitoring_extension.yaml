@@ -55,8 +55,7 @@ jobs:
       echo "##vso[task.setvariable variable=imageTag;isOutput=true]$imageTag"
       
       cd $(Build.SourcesDirectory)/deployment/mergebranch-webhook-deployment/ServiceGroupRoot/Scripts
-      tar -czvf ../artifacts.tar.gz pushWebhookToAcr.sh
-      tar -czvf ../artifacts.tar.gz pushOciChartsToAcr.sh
+      tar -czvf ../artifacts.tar.gz pushWebhookToAcr.sh pushOciChartsToAcr.sh
     name: setup
   
   - task: CopyFiles@2
