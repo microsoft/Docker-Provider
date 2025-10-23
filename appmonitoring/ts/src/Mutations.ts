@@ -166,35 +166,14 @@ export class Mutations {
      * Generates environment variables necessary to configure agents. Agents take configuration from these environment variables once they run.
      */
     public static GenerateEnvironmentVariables(podInfo: PodInfo, platforms: AutoInstrumentationPlatforms[], disableAppLogs: boolean, connectionString: string, armId: string, armRegion: string, clusterName: string, otelParams: OtelParams, existingEnvironmentVariables?: Record<string, IEnvironmentVariable>, isPythonEnabled?: boolean): IEnvironmentVariable[] {
-        const ownerNameAttribute = `k8s.${podInfo.ownerKind?.toLowerCase()}.name=${podInfo.ownerName}`;
-        const ownerUidAttribute = `k8s.${podInfo.ownerKind?.toLowerCase()}.uid=${podInfo.ownerUid}`;
-        const containerNameAttribute = `k8s.container.name=${podInfo.onlyContainerName}`;
         const applicationId = Mutations.parseApplicationIdFromConnectionString(connectionString);
         
         // Build our OTEL resource attributes
-        const otelResourceAttributesList = [
-            `cloud.resource_id=${armId}`,
-            `cloud.region=${armRegion}`,
-            `k8s.cluster.name=${clusterName}`,
-            `k8s.namespace.name=$(POD_NAMESPACE)`,
-            `k8s.node.name=$(NODE_NAME)`,
-            `k8s.pod.name=$(POD_NAME)`,
-            `k8s.pod.uid=$(POD_UID)`,
-            containerNameAttribute,
-            `cloud.provider=Azure`,
-            `cloud.platform=azure_aks`,
-            ownerNameAttribute,
-            ownerUidAttribute
-        ];
-        
-        if (applicationId) {
-            otelResourceAttributesList.push(`microsoft.applicationId=${applicationId}`);
-        }
-        
+        const otelResourceAttributesList: string[] = Mutations.buildOtelResourceAttributesList(podInfo, armId, armRegion, clusterName, applicationId);
         const otelResourceAttributes = otelResourceAttributesList.join(',');
 
         // Check if there's an existing OTEL_RESOURCE_ATTRIBUTES and merge if needed
-        const existingOtelResourceAttributes = existingEnvironmentVariables?.["OTEL_RESOURCE_ATTRIBUTES"]?.value;
+        const existingOtelResourceAttributes: string = existingEnvironmentVariables?.["OTEL_RESOURCE_ATTRIBUTES"]?.value;
         const mergedOtelResourceAttributes = Mutations.mergeOtelResourceAttributes(existingOtelResourceAttributes, otelResourceAttributes);
         
         const returnValue: IEnvironmentVariable[] = [
@@ -632,5 +611,68 @@ export class Mutations {
         return Object.entries(mergedAttributes)
             .map(([key, value]) => `${key}=${value}`)
             .join(',');
+    }
+
+    /**
+     * Builds the list of OTEL resource attributes that our mutation injects.
+     * This is the single source of truth for mutation-injected attributes.
+     * @returns Array of attribute strings in "key=value" format
+     */
+    private static buildOtelResourceAttributesList(podInfo: PodInfo, armId: string, armRegion: string, clusterName: string, applicationId: string | null): string[] {
+        const ownerNameAttribute = `k8s.${podInfo.ownerKind?.toLowerCase()}.name=${podInfo.ownerName}`;
+        const ownerUidAttribute = `k8s.${podInfo.ownerKind?.toLowerCase()}.uid=${podInfo.ownerUid}`;
+        const containerNameAttribute = `k8s.container.name=${podInfo.onlyContainerName}`;
+        
+        const attributes = [
+            `cloud.resource_id=${armId}`,
+            `cloud.region=${armRegion}`,
+            `k8s.cluster.name=${clusterName}`,
+            `k8s.namespace.name=$(POD_NAMESPACE)`,
+            `k8s.node.name=$(NODE_NAME)`,
+            `k8s.pod.name=$(POD_NAME)`,
+            `k8s.pod.uid=$(POD_UID)`,
+            containerNameAttribute,
+            `cloud.provider=Azure`,
+            `cloud.platform=azure_aks`,
+            ownerNameAttribute,
+            ownerUidAttribute
+        ];
+        
+        if (applicationId) {
+            attributes.push(`microsoft.applicationId=${applicationId}`);
+        }
+        
+        return attributes;
+    }
+
+    /**
+     * Returns the set of OTEL_RESOURCE_ATTRIBUTES keys that are injected by our mutation.
+     * This is derived from buildOtelResourceAttributesList to ensure single source of truth.
+     * Used during unpatch to differentiate mutation-injected attributes from user-provided attributes.
+     * @returns Set of attribute key strings (e.g., "cloud.resource_id", "k8s.pod.name")
+     */
+    public static GetMutationOtelResourceAttributeKeys(): Set<string> {
+        // build with dummy values to extract the keys
+        const dummyPodInfo = new PodInfo();
+        dummyPodInfo.ownerKind = "deployment"; // use a concrete value to get k8s.deployment.name/uid
+        const attributesList = Mutations.buildOtelResourceAttributesList(dummyPodInfo, "", "", "", "dummy-app-id");
+        
+        // extract just the keys (part before '=')
+        const keys = new Set<string>();
+        for (const attr of attributesList) {
+            const [key] = attr.split('=');
+            if (key) {
+                keys.add(key.trim());
+            }
+        }
+        
+        // also add all possible owner kind variations since ownerKind is dynamic
+        const ownerKinds = ['deployment', 'replicaset', 'statefulset', 'daemonset', 'job', 'cronjob'];
+        for (const kind of ownerKinds) {
+            keys.add(`k8s.${kind}.name`);
+            keys.add(`k8s.${kind}.uid`);
+        }
+        
+        return keys;
     }
 }

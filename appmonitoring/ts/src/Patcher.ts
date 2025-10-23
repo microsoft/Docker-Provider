@@ -158,12 +158,25 @@ export class Patcher {
                 // find the environment variable in the container
                 const evIndex = container.env?.findIndex(ev => ev.name === evtr.name);
 
-                if(evIndex === -1) {
+                if(evIndex === -1 || evIndex === undefined) {
                     // container doesn't have this environment variable, continue
                     return;
                 }
 
                 // container contains this environment variable
+
+                // special handling for OTEL_RESOURCE_ATTRIBUTES - parse and preserve user's custom attributes
+                if(evtr.name === "OTEL_RESOURCE_ATTRIBUTES") {
+                    const currentValue = container.env[evIndex].value;
+                    const userAttributes = this.extractUserOtelResourceAttributes(currentValue);
+                    
+                    if(userAttributes) {
+                        // user has custom attributes, preserve them
+                        container.env[evIndex].value = userAttributes;
+                        return; // don't remove or restore from backup
+                    }
+                    // if no user attributes, fall through to normal removal logic
+                }
 
                 // is there a backup environment variable that we created during mutation to hold the original value?
                 const backupEvName = `${evtr.name}${Patcher.EnvironmentVariableBackupSuffix}`;
@@ -177,7 +190,7 @@ export class Patcher {
                     // remove the old primary one
                     container.env?.splice(evIndex, 1);
                 } else {
-                    // there is not, so this is either the original, never mutated, object, or a mutated objected where the original didn't have this environment varialbe specified
+                    // there is not, so this is either the original, never mutated, object, or a mutated object where the original didn't have this environment variable specified
                     if(instrumentationState?.crName) {
                         // this is a mutated object
                         if(!evtr.platformSpecific || instrumentationState.platforms.includes(evtr.platformSpecific)) {
@@ -199,5 +212,46 @@ export class Patcher {
      
             container.volumeMounts = container.volumeMounts?.filter(vm => !volumeMountsToRemove.find(vmtr => vm.name === vmtr.name));
         });
+    }
+
+    /**
+     * Extracts user-provided OTEL_RESOURCE_ATTRIBUTES by filtering out mutation-injected attributes
+     * Returns null if no user attributes remain, otherwise returns a comma-separated string
+     */
+    private static extractUserOtelResourceAttributes(currentValue: string): string | null {
+        if (!currentValue) {
+            return null;
+        }
+
+        // get the attribute keys that our mutation injects - these should be removed during unpatch
+        const mutationAttributeKeys = Mutations.GetMutationOtelResourceAttributeKeys();
+
+        // Parse existing attributes
+        const userAttributes: Record<string, string> = {};
+        const pairs = currentValue.split(',');
+        
+        for (const pair of pairs) {
+            const trimmedPair = pair.trim();
+            if (trimmedPair) {
+                const [key, ...valueParts] = trimmedPair.split('=');
+                if (key && valueParts.length > 0) {
+                    const trimmedKey = key.trim();
+                    // keep only attributes that aren't mutation-injected
+                    if (!mutationAttributeKeys.has(trimmedKey)) {
+                        userAttributes[trimmedKey] = valueParts.join('=').trim();
+                    }
+                }
+            }
+        }
+
+        // if no user attributes remain, return null
+        if (Object.keys(userAttributes).length === 0) {
+            return null;
+        }
+
+        // convert back to string
+        return Object.entries(userAttributes)
+            .map(([key, value]) => `${key}=${value}`)
+            .join(',');
     }
 }
