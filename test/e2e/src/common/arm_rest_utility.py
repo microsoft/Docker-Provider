@@ -133,5 +133,3 @@ def fetch_aad_token_credentials(
         return ManagedIdentityCredential(client_id=client_id)
     except Exception as e:
         pytest.fail("Error occurred while fetching credentials: " + str(e))
-
-

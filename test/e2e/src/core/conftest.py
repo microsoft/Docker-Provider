@@ -61,9 +61,6 @@ def env_dict():
             if not env_dict.get('CLIENT_ID'):
                 pytest.fail('ERROR: variable CLIENT_ID is required.')
 
-            # if not env_dict.get('CLIENT_SECRET'):
-            #     pytest.fail('ERROR: variable CLIENT_SECRET is required.')
-
             print("Setup Complete.")
             append_result_output("Setup Complete.\n", env_dict['SETUP_LOG_FILE'])
 
