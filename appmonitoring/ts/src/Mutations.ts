@@ -569,7 +569,8 @@ export class Mutations {
     }
 
     /**
-     * Merges OTEL resource attributes, with our attributes taking precedence over existing ones
+     * Merges OTEL resource attributes, with our attributes taking precedence over existing ones.
+     * Exception: service.name and service.instance.id user values take precedence over ours.
      */
     private static mergeOtelResourceAttributes(existingValue: string, newAttributes: string): string {
         if (!existingValue) {
@@ -607,6 +608,14 @@ export class Mutations {
         // Merge attributes with our attributes taking precedence
         const mergedAttributes = { ...existingAttributes, ...newAttributesMap };
         
+        // Special case: for service.name and service.instance.id, user values take precedence
+        const userPriorityKeys = ['service.name', 'service.instance.id'];
+        for (const key of userPriorityKeys) {
+            if (existingAttributes[key]) {
+                mergedAttributes[key] = existingAttributes[key];
+            }
+        }
+        
         // Convert back to string
         return Object.entries(mergedAttributes)
             .map(([key, value]) => `${key}=${value}`)
@@ -635,7 +644,9 @@ export class Mutations {
             `cloud.provider=Azure`,
             `cloud.platform=azure_aks`,
             ownerNameAttribute,
-            ownerUidAttribute
+            ownerUidAttribute,
+            `service.name=${podInfo.ownerName}`,
+            `service.instance.id=$(POD_NAME)`
         ];
         
         if (applicationId) {
