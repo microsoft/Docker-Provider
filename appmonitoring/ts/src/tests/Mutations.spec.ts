@@ -7,7 +7,6 @@ describe("OTEL Resource Attributes Merging", () => {
     podInfo.ownerKind = "Deployment";
     podInfo.ownerName = "test-app";
     podInfo.ownerUid = "uid-123";
-    podInfo.onlyContainerName = "main-container";
 
     const testOtelParams: OtelParams = {
         logsEnabled: false,
@@ -26,7 +25,8 @@ describe("OTEL Resource Attributes Merging", () => {
         };
 
         const generatedEnvVars = Mutations.GenerateEnvironmentVariables(
-            podInfo, 
+            podInfo,
+            "main-container",
             [AutoInstrumentationPlatforms.Java], 
             false, 
             "InstrumentationKey=test-key", 
@@ -45,6 +45,7 @@ describe("OTEL Resource Attributes Merging", () => {
         expect(otelResourceAttributes!.value).toContain("custom.attr=value");
         expect(otelResourceAttributes!.value).toContain("cloud.provider=Azure");
         expect(otelResourceAttributes!.value).toContain("k8s.cluster.name=test-cluster");
+        expect(otelResourceAttributes!.value).toContain("k8s.container.name=main-container");
     });
 
     it("should handle conflicting attributes with our attributes winning", () => {
@@ -57,6 +58,7 @@ describe("OTEL Resource Attributes Merging", () => {
 
         const generatedEnvVars = Mutations.GenerateEnvironmentVariables(
             podInfo,
+            "main-container",
             [AutoInstrumentationPlatforms.Java],
             false,
             "InstrumentationKey=test-key",
@@ -72,6 +74,7 @@ describe("OTEL Resource Attributes Merging", () => {
         expect(otelResourceAttributes!.value).toContain("service.name=my-service"); // customer's attribute preserved
         expect(otelResourceAttributes!.value).toContain("cloud.provider=Azure"); // our attribute wins
         expect(otelResourceAttributes!.value).toContain("k8s.cluster.name=test-cluster"); // our attribute wins
+        expect(otelResourceAttributes!.value).toContain("k8s.container.name=main-container");
     });
 
     it("should work without existing OTEL_RESOURCE_ATTRIBUTES", () => {
@@ -79,6 +82,7 @@ describe("OTEL Resource Attributes Merging", () => {
 
         const generatedEnvVars = Mutations.GenerateEnvironmentVariables(
             podInfo,
+            "main-container",
             [AutoInstrumentationPlatforms.Java],
             false,
             "InstrumentationKey=test-key",
@@ -93,11 +97,13 @@ describe("OTEL Resource Attributes Merging", () => {
         expect(otelResourceAttributes).toBeDefined();
         expect(otelResourceAttributes!.value).toContain("cloud.provider=Azure");
         expect(otelResourceAttributes!.value).toContain("k8s.cluster.name=test-cluster");
+        expect(otelResourceAttributes!.value).toContain("k8s.container.name=main-container");
     });
 
     it("should work with undefined existing environment variables", () => {
         const generatedEnvVars = Mutations.GenerateEnvironmentVariables(
             podInfo,
+            "main-container",
             [AutoInstrumentationPlatforms.Java],
             false,
             "InstrumentationKey=test-key",
@@ -112,6 +118,48 @@ describe("OTEL Resource Attributes Merging", () => {
         expect(otelResourceAttributes).toBeDefined();
         expect(otelResourceAttributes!.value).toContain("cloud.provider=Azure");
         expect(otelResourceAttributes!.value).toContain("k8s.cluster.name=test-cluster");
+        expect(otelResourceAttributes!.value).toContain("k8s.container.name=main-container");
+    });
+
+    it("should use correct container name for each container in multi-container pod", () => {
+        // First container
+        const generatedEnvVars1 = Mutations.GenerateEnvironmentVariables(
+            podInfo,
+            "app-container",
+            [AutoInstrumentationPlatforms.Java],
+            false,
+            "InstrumentationKey=test-key",
+            "/subscriptions/test/resourceGroups/test-rg",
+            "eastus",
+            "test-cluster",
+            testOtelParams,
+            undefined
+        );
+
+        const otelResourceAttributes1 = generatedEnvVars1.find(env => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+        expect(otelResourceAttributes1).toBeDefined();
+        expect(otelResourceAttributes1!.value).toContain("k8s.container.name=app-container");
+
+        // Second container
+        const generatedEnvVars2 = Mutations.GenerateEnvironmentVariables(
+            podInfo,
+            "sidecar-container",
+            [AutoInstrumentationPlatforms.Java],
+            false,
+            "InstrumentationKey=test-key",
+            "/subscriptions/test/resourceGroups/test-rg",
+            "eastus",
+            "test-cluster",
+            testOtelParams,
+            undefined
+        );
+
+        const otelResourceAttributes2 = generatedEnvVars2.find(env => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+        expect(otelResourceAttributes2).toBeDefined();
+        expect(otelResourceAttributes2!.value).toContain("k8s.container.name=sidecar-container");
+        
+        // Make sure they are different
+        expect(otelResourceAttributes1!.value).not.toBe(otelResourceAttributes2!.value);
     });
 });
 
@@ -120,7 +168,6 @@ describe("OTEL Metrics Exporter Environment Variable", () => {
     podInfo.ownerKind = "Deployment";
     podInfo.ownerName = "test-app";
     podInfo.ownerUid = "uid-123";
-    podInfo.onlyContainerName = "main-container";
 
     it("should include OTEL_METRICS_EXPORTER when metrics are enabled", () => {
         const testOtelParams: OtelParams = {
@@ -132,6 +179,7 @@ describe("OTEL Metrics Exporter Environment Variable", () => {
 
         const generatedEnvVars = Mutations.GenerateEnvironmentVariables(
             podInfo,
+            "main-container",
             [AutoInstrumentationPlatforms.Java],
             false,
             "InstrumentationKey=test-key",
@@ -157,6 +205,7 @@ describe("OTEL Metrics Exporter Environment Variable", () => {
 
         const generatedEnvVars = Mutations.GenerateEnvironmentVariables(
             podInfo,
+            "main-container",
             [AutoInstrumentationPlatforms.Java],
             false,
             "InstrumentationKey=test-key",
@@ -181,6 +230,7 @@ describe("OTEL Metrics Exporter Environment Variable", () => {
 
         const generatedEnvVars = Mutations.GenerateEnvironmentVariables(
             podInfo,
+            "main-container",
             [AutoInstrumentationPlatforms.Java],
             false,
             "InstrumentationKey=test-key",
@@ -220,6 +270,7 @@ describe("OTEL Metrics Exporter Environment Variable", () => {
 
         const generatedEnvVars = Mutations.GenerateEnvironmentVariables(
             podInfo,
+            "main-container",
             [AutoInstrumentationPlatforms.Python],
             false,
             "InstrumentationKey=test-key",
@@ -246,6 +297,7 @@ describe("OTEL Metrics Exporter Environment Variable", () => {
 
         const generatedEnvVars = Mutations.GenerateEnvironmentVariables(
             podInfo,
+            "main-container",
             [AutoInstrumentationPlatforms.Python],
             false,
             "InstrumentationKey=test-key",

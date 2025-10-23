@@ -165,11 +165,11 @@ export class Mutations {
     /**
      * Generates environment variables necessary to configure agents. Agents take configuration from these environment variables once they run.
      */
-    public static GenerateEnvironmentVariables(podInfo: PodInfo, platforms: AutoInstrumentationPlatforms[], disableAppLogs: boolean, connectionString: string, armId: string, armRegion: string, clusterName: string, otelParams: OtelParams, existingEnvironmentVariables?: Record<string, IEnvironmentVariable>, isPythonEnabled?: boolean): IEnvironmentVariable[] {
+    public static GenerateEnvironmentVariables(podInfo: PodInfo, containerName: string, platforms: AutoInstrumentationPlatforms[], disableAppLogs: boolean, connectionString: string, armId: string, armRegion: string, clusterName: string, otelParams: OtelParams, existingEnvironmentVariables?: Record<string, IEnvironmentVariable>, isPythonEnabled?: boolean): IEnvironmentVariable[] {
         const applicationId = Mutations.parseApplicationIdFromConnectionString(connectionString);
         
         // Build our OTEL resource attributes
-        const otelResourceAttributesList: string[] = Mutations.buildOtelResourceAttributesList(podInfo, armId, armRegion, clusterName, applicationId);
+        const otelResourceAttributesList: string[] = Mutations.buildOtelResourceAttributesList(podInfo, containerName, armId, armRegion, clusterName, applicationId);
         const otelResourceAttributes = otelResourceAttributesList.join(',');
 
         // Check if there's an existing OTEL_RESOURCE_ATTRIBUTES and merge if needed
@@ -618,10 +618,10 @@ export class Mutations {
      * This is the single source of truth for mutation-injected attributes.
      * @returns Array of attribute strings in "key=value" format
      */
-    private static buildOtelResourceAttributesList(podInfo: PodInfo, armId: string, armRegion: string, clusterName: string, applicationId: string | null): string[] {
+    private static buildOtelResourceAttributesList(podInfo: PodInfo, containerName: string, armId: string, armRegion: string, clusterName: string, applicationId: string | null): string[] {
         const ownerNameAttribute = `k8s.${podInfo.ownerKind?.toLowerCase()}.name=${podInfo.ownerName}`;
         const ownerUidAttribute = `k8s.${podInfo.ownerKind?.toLowerCase()}.uid=${podInfo.ownerUid}`;
-        const containerNameAttribute = `k8s.container.name=${podInfo.onlyContainerName}`;
+        const containerNameAttribute = `k8s.container.name=${containerName}`;
         
         const attributes = [
             `cloud.resource_id=${armId}`,
@@ -655,7 +655,7 @@ export class Mutations {
         // build with dummy values to extract the keys
         const dummyPodInfo = new PodInfo();
         dummyPodInfo.ownerKind = "deployment"; // use a concrete value to get k8s.deployment.name/uid
-        const attributesList = Mutations.buildOtelResourceAttributesList(dummyPodInfo, "", "", "", "dummy-app-id");
+        const attributesList = Mutations.buildOtelResourceAttributesList(dummyPodInfo, "dummy-container", "", "", "", "dummy-app-id");
         
         // extract just the keys (part before '=')
         const keys = new Set<string>();

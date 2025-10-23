@@ -31,8 +31,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1",
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         admissionReview.request.object.metadata.namespace = "ns1";
@@ -66,10 +65,14 @@ describe("Patcher", () => {
         newVolumes.forEach(vol => expect((<any>result[0]).value.spec.template.spec.volumes).toContainEqual(vol));
         admissionReview.request.object.spec.template.spec.volumes.forEach(vol => expect((<any>result[0]).value.spec.template.spec.volumes).toContainEqual(vol));
 
-        const newEnvironmentVariables: object[] = Mutations.GenerateEnvironmentVariables(podInfo, platforms, true, cr1.spec.destination.applicationInsightsConnectionString, clusterArmId, clusterArmRegion, clusterName, testOtelParams, undefined, platforms.includes(AutoInstrumentationPlatforms.Python));
+        // Generate environment variables for each container with their actual names
+        const container0Name = admissionReview.request.object.spec.template.spec.containers[0].name;
+        const container1Name = admissionReview.request.object.spec.template.spec.containers[1].name;
+        const newEnvironmentVariablesContainer0: object[] = Mutations.GenerateEnvironmentVariables(podInfo, container0Name, platforms, true, cr1.spec.destination.applicationInsightsConnectionString, clusterArmId, clusterArmRegion, clusterName, testOtelParams, undefined, platforms.includes(AutoInstrumentationPlatforms.Python));
+        const newEnvironmentVariablesContainer1: object[] = Mutations.GenerateEnvironmentVariables(podInfo, container1Name, platforms, true, cr1.spec.destination.applicationInsightsConnectionString, clusterArmId, clusterArmRegion, clusterName, testOtelParams, undefined, platforms.includes(AutoInstrumentationPlatforms.Python));
         expect((<any>result[0]).value.spec.template.spec.containers.length).toBe(admissionReview.request.object.spec.template.spec.containers.length);
-        newEnvironmentVariables.forEach(env => expect((<any>result[0]).value.spec.template.spec.containers[0].env).toContainEqual(env));
-        newEnvironmentVariables.forEach(env => expect((<any>result[0]).value.spec.template.spec.containers[1].env).toContainEqual(env));
+        newEnvironmentVariablesContainer0.forEach(env => expect((<any>result[0]).value.spec.template.spec.containers[0].env).toContainEqual(env));
+        newEnvironmentVariablesContainer1.forEach(env => expect((<any>result[0]).value.spec.template.spec.containers[1].env).toContainEqual(env));
         admissionReview.request.object.spec.template.spec.containers[0].env.forEach(env => expect((<any>result[0]).value.spec.template.spec.containers[0].env).toContainEqual(env));
         admissionReview.request.object.spec.template.spec.containers[1].env.forEach(env => expect((<any>result[0]).value.spec.template.spec.containers[1].env).toContainEqual(env));
 
@@ -91,8 +94,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1",
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         admissionReview.request.object.metadata.namespace = "ns1";
@@ -127,15 +129,19 @@ describe("Patcher", () => {
         newVolumes.forEach(vol => expect((<any>result[0]).value.spec.template.spec.volumes).toContainEqual(vol));
         admissionReview.request.object.spec.template.spec.volumes.forEach(vol => expect((<any>result[0]).value.spec.template.spec.volumes).toContainEqual(vol));
 
-        const newEnvironmentVariables: object[] = Mutations.GenerateEnvironmentVariables(podInfo, cr1.spec.settings.autoInstrumentationPlatforms, true, cr1.spec.destination.applicationInsightsConnectionString, clusterArmId, clusterArmRegion, clusterName, testOtelParams, undefined, cr1.spec.settings.autoInstrumentationPlatforms.includes(AutoInstrumentationPlatforms.Python));
+        // Generate environment variables for each container with their actual names
+        const container0Name = admissionReview.request.object.spec.template.spec.containers[0].name;
+        const container1Name = admissionReview.request.object.spec.template.spec.containers[1].name;
+        const newEnvironmentVariablesContainer0: object[] = Mutations.GenerateEnvironmentVariables(podInfo, container0Name, cr1.spec.settings.autoInstrumentationPlatforms, true, cr1.spec.destination.applicationInsightsConnectionString, clusterArmId, clusterArmRegion, clusterName, testOtelParams, undefined, cr1.spec.settings.autoInstrumentationPlatforms.includes(AutoInstrumentationPlatforms.Python));
+        const newEnvironmentVariablesContainer1: object[] = Mutations.GenerateEnvironmentVariables(podInfo, container1Name, cr1.spec.settings.autoInstrumentationPlatforms, true, cr1.spec.destination.applicationInsightsConnectionString, clusterArmId, clusterArmRegion, clusterName, testOtelParams, undefined, cr1.spec.settings.autoInstrumentationPlatforms.includes(AutoInstrumentationPlatforms.Python));
         expect((<any>result[0]).value.spec.template.spec.containers.length).toBe(admissionReview.request.object.spec.template.spec.containers.length);
-        newEnvironmentVariables.forEach(env => expect((<any>result[0]).value.spec.template.spec.containers[0].env).toContainEqual(env));
-        newEnvironmentVariables.forEach(env => expect((<any>result[0]).value.spec.template.spec.containers[1].env).toContainEqual(env));
+        newEnvironmentVariablesContainer0.forEach(env => expect((<any>result[0]).value.spec.template.spec.containers[0].env).toContainEqual(env));
+        newEnvironmentVariablesContainer1.forEach(env => expect((<any>result[0]).value.spec.template.spec.containers[1].env).toContainEqual(env));
         admissionReview.request.object.spec.template.spec.containers[0].env.forEach(env => expect((<any>result[0]).value.spec.template.spec.containers[0].env).toContainEqual(env));
         admissionReview.request.object.spec.template.spec.containers[1].env.forEach(env => expect((<any>result[0]).value.spec.template.spec.containers[1].env).toContainEqual(env));
         (<any>result[0]).value.spec.template.spec.containers[0].env.forEach(env => expect(env.isPlatformSpecific).not.toBe(true));
         (<any>result[0]).value.spec.template.spec.containers[1].env.forEach(env => expect(env.isPlatformSpecific).not.toBe(true));
-        expect((<any>result[0]).value.spec.template.spec.containers[0].env).toContainEqual(<IEnvironmentVariable>{ name: "OTEL_RESOURCE_ATTRIBUTES", value: "cloud.resource_id=/subscriptions/66010356-d8a5-42d3-8593-6aaa3aeb1c11/resourceGroups/rambhatt-rnd-v2/providers/Microsoft.ContainerService/managedClusters/aks-rambhatt-test,cloud.region=eastus,k8s.cluster.name=aks-rambhatt-test,k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.container.name=container1,cloud.provider=Azure,cloud.platform=azure_aks,k8s.deployment.name=deployment1,k8s.deployment.uid=ownerUid" });
+        expect((<any>result[0]).value.spec.template.spec.containers[0].env).toContainEqual(<IEnvironmentVariable>{ name: "OTEL_RESOURCE_ATTRIBUTES", value: "cloud.resource_id=/subscriptions/66010356-d8a5-42d3-8593-6aaa3aeb1c11/resourceGroups/rambhatt-rnd-v2/providers/Microsoft.ContainerService/managedClusters/aks-rambhatt-test,cloud.region=eastus,k8s.cluster.name=aks-rambhatt-test,k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.container.name=" + container0Name + ",cloud.provider=Azure,cloud.platform=azure_aks,k8s.deployment.name=deployment1,k8s.deployment.uid=ownerUid" });
         expect((<any>result[0]).value.spec.template.spec.containers[1].env).toContainEqual(<IEnvironmentVariable>{ name: "APPLICATIONINSIGHTS_CONNECTION_STRING", value: cr1.spec.destination.applicationInsightsConnectionString });
 
 
@@ -155,8 +161,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1",
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         initialAdmissionReview.request.object.metadata.namespace = "ns1";
@@ -193,8 +198,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1",
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         initialAdmissionReview.request.object.metadata.namespace = "ns1";
@@ -229,8 +233,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1",
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         initialAdmissionReview.request.object.metadata.namespace = "ns1";
@@ -263,8 +266,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1",
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         initialAdmissionReview.request.object.metadata.namespace = "ns1";
@@ -298,8 +300,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1",
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         admissionReview.request.object.metadata.namespace = cr.metadata.namespace;
@@ -343,8 +344,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1",
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         admissionReview.request.object.metadata.namespace = cr1.metadata.namespace;
@@ -384,8 +384,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1",
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         admissionReview.request.object.metadata.namespace = cr.metadata.namespace;
@@ -410,8 +409,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1",
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         admissionReview.request.object.metadata.namespace = cr.metadata.namespace;
@@ -461,8 +459,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1",
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         admissionReview.request.object.metadata.namespace = cr1.metadata.namespace;
@@ -514,8 +511,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1",
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         admissionReview.request.object.metadata.namespace = cr1.metadata.namespace;
@@ -569,8 +565,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1",
             ownerKind: "Deployment", 
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         admissionReview.request.object.metadata.namespace = cr1.metadata.namespace;
@@ -602,8 +597,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1",
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         admissionReview.request.object.metadata.namespace = cr1.metadata.namespace;
@@ -631,8 +625,7 @@ describe("Patcher", () => {
             namespace: "default", 
             ownerName: "deployment1",
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         admissionReview.request.object.metadata.namespace = cr1.metadata.namespace;
@@ -664,8 +657,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1", 
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         admissionReview.request.object.metadata.namespace = cr1.metadata.namespace;
@@ -690,8 +682,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1",
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         admissionReview.request.object.metadata.namespace = cr1.metadata.namespace;
@@ -751,8 +742,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1",
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         admissionReview.request.object.metadata.namespace = cr1.metadata.namespace;
@@ -799,8 +789,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1",
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         admissionReview.request.object.metadata.namespace = cr1.metadata.namespace;
@@ -850,8 +839,7 @@ describe("Patcher", () => {
             namespace: "default",
             ownerName: "deployment1",
             ownerKind: "Deployment",
-            ownerUid: "ownerUid",
-            onlyContainerName: "container1"
+            ownerUid: "ownerUid"
         };
 
         admissionReview.request.object.metadata.namespace = cr1.metadata.namespace;
@@ -892,7 +880,6 @@ describe("Patcher", () => {
         podInfo.ownerKind = "Deployment";
         podInfo.ownerName = "test-app";
         podInfo.ownerUid = "uid-123";
-        podInfo.onlyContainerName = "main-container";
 
         const testOtelParams: OtelParams = {
             logsEnabled: false,
@@ -1153,6 +1140,82 @@ describe("Patcher", () => {
             // ASSERT: The backup should still contain the user's original value
             expect(finalBackupAttr).toBeDefined();
             expect(finalBackupAttr!.value).toBe("mytag=myvalue1"); // backup must contain the original value
+        });
+
+        it('should use correct container name in OTEL_RESOURCE_ATTRIBUTES for each container in full admission review', () => {
+            // Use existing TestDeployment2 which has 2 containers: "ibm-open-liberty-spring" and "container2"
+            const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));
+            const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
+            
+            const podInfo: PodInfo = <PodInfo>{
+                namespace: "default",
+                ownerName: "quieting-garfish-ibm-ope",
+                ownerKind: "Deployment",
+                ownerUid: "test-owner-uid"
+            };
+
+            admissionReview.request.object.metadata.namespace = cr1.metadata.namespace;
+            const platforms = cr1.spec.settings.autoInstrumentationPlatforms;
+
+            const result: object[] = Patcher.PatchObject(
+                JSON.parse(JSON.stringify(admissionReview.request.object)),
+                cr1,
+                podInfo,
+                platforms,
+                clusterArmId,
+                clusterArmRegion,
+                clusterName,
+                testOtelParams
+            );
+
+            expect((<[]>result).length).toBe(1);
+            
+            const mutatedDeployment: IObjectType = (<any>result[0]).value as IObjectType;
+            
+            // Verify we have 2 containers
+            expect(mutatedDeployment.spec.template.spec.containers.length).toBe(2);
+
+            // Extract environment variables for each container
+            const firstContainerEnv = mutatedDeployment.spec.template.spec.containers[0].env;
+            const secondContainerEnv = mutatedDeployment.spec.template.spec.containers[1].env;
+
+            // Find OTEL_RESOURCE_ATTRIBUTES in each container
+            const firstContainerOtelAttr = firstContainerEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            const secondContainerOtelAttr = secondContainerEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+
+            // Verify OTEL_RESOURCE_ATTRIBUTES exists in all containers
+            expect(firstContainerOtelAttr).toBeDefined();
+            expect(secondContainerOtelAttr).toBeDefined();
+
+            // CRITICAL ASSERTION: Each container should have its own correct container name
+            // First container is "ibm-open-liberty-spring"
+            expect(firstContainerOtelAttr!.value).toContain("k8s.container.name=ibm-open-liberty-spring");
+            expect(firstContainerOtelAttr!.value).not.toContain("k8s.container.name=container2");
+            expect(firstContainerOtelAttr!.value).not.toContain("k8s.container.name=null");
+
+            // Second container is "container2"
+            expect(secondContainerOtelAttr!.value).toContain("k8s.container.name=container2");
+            expect(secondContainerOtelAttr!.value).not.toContain("k8s.container.name=ibm-open-liberty-spring");
+            expect(secondContainerOtelAttr!.value).not.toContain("k8s.container.name=null");
+
+            // Verify common attributes are present in all containers
+            const commonAttributes = [
+                "cloud.provider=Azure",
+                "cloud.platform=azure_aks",
+                `k8s.cluster.name=${clusterName}`,
+                "k8s.namespace.name=$(POD_NAMESPACE)",
+                "k8s.deployment.name=quieting-garfish-ibm-ope",
+                `k8s.deployment.uid=test-owner-uid`
+            ];
+
+            commonAttributes.forEach(attr => {
+                expect(firstContainerOtelAttr!.value).toContain(attr);
+                expect(secondContainerOtelAttr!.value).toContain(attr);
+            });
+
+            // Verify original environment variables are preserved
+            expect(firstContainerEnv.find((env: IEnvironmentVariable) => env.name === "WLP_LOGGING_CONSOLE_FORMAT")).toBeDefined();
+            expect(secondContainerEnv.find((env: IEnvironmentVariable) => env.name === "ENV_VAR_1")).toBeDefined();
         });
     });
 });
