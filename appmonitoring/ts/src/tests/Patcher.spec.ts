@@ -986,5 +986,173 @@ describe("Patcher", () => {
             expect(otelResourceAttributes!.value).toContain("cloud.provider=Azure");
             expect(otelResourceAttributes!.value).toContain("k8s.cluster.name=" + clusterName);
         });
+
+        it("should preserve user's OTEL_RESOURCE_ATTRIBUTES when they edit a mutated deployment via kubectl apply", () => {
+            // SCENARIO:
+            // 1. User deploys with OTEL_RESOURCE_ATTRIBUTES=mytag=myvalue1
+            // 2. Deployment gets mutated
+            // 3. User does kubectl apply to change OTEL_RESOURCE_ATTRIBUTES to mytag=myvalue2
+            // 4. We need to verify the new value (myvalue2) is preserved and backed up correctly
+
+            const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
+            const platforms = [AutoInstrumentationPlatforms.Java];
+
+            // STEP 1: Initial deployment with mytag=myvalue1
+            const initialDeployment = JSON.parse(JSON.stringify(TestDeployment2.request.object));
+            initialDeployment.spec.template.spec.containers[0].env = [{
+                name: "OTEL_RESOURCE_ATTRIBUTES",
+                value: "mytag=myvalue1"
+            }];
+
+            // STEP 2: First mutation - deployment gets mutated
+            const firstMutationResult: object[] = Patcher.PatchObject(
+                JSON.parse(JSON.stringify(initialDeployment)), 
+                cr1, 
+                podInfo, 
+                platforms, 
+                clusterArmId, 
+                clusterArmRegion, 
+                clusterName, 
+                testOtelParams
+            );
+
+            const firstMutatedDeployment: IObjectType = (<any>firstMutationResult[0]).value as IObjectType;
+            
+            // Verify first mutation has backup and merged attributes
+            const firstMutatedEnv = firstMutatedDeployment.spec.template.spec.containers[0].env;
+            const firstOtelAttr = firstMutatedEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            const firstBackupAttr = firstMutatedEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+            
+            expect(firstOtelAttr).toBeDefined();
+            expect(firstOtelAttr!.value).toContain("mytag=myvalue1"); // user's original value
+            expect(firstOtelAttr!.value).toContain("cloud.provider=Azure"); // our mutation
+            expect(firstBackupAttr).toBeDefined();
+            expect(firstBackupAttr!.value).toBe("mytag=myvalue1"); // backup of original
+
+            // STEP 3: User edits via kubectl apply - changes mytag=myvalue1 to mytag=myvalue2
+            // When kubectl apply happens, Kubernetes merges the user's new YAML with the live state
+            // The webhook receives the merged result, which includes the user's new simple value
+            // AND all the mutations that were previously applied (volumes, initContainers, annotations, etc.)
+            const editedDeployment = JSON.parse(JSON.stringify(firstMutatedDeployment));
+            
+            // Simulate kubectl apply behavior: The user's YAML only contains OTEL_RESOURCE_ATTRIBUTES=mytag=myvalue2
+            // Kubernetes merges this with the live state, so the webhook receives:
+            // - The mutated deployment structure (volumes, initContainers, our env vars, etc.)
+            // - BUT with the user's NEW value for OTEL_RESOURCE_ATTRIBUTES (just mytag=myvalue2, not the full mutated string)
+            // This is because kubectl apply uses the user's manifest as the source of truth for fields they specified
+            const editedOtelAttrIndex = editedDeployment.spec.template.spec.containers[0].env.findIndex(
+                (env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES"
+            );
+            // Replace the fully mutated OTEL_RESOURCE_ATTRIBUTES with just the user's new value
+            editedDeployment.spec.template.spec.containers[0].env[editedOtelAttrIndex].value = "mytag=myvalue2";
+
+            // STEP 4: Second mutation - webhook processes the edited deployment
+            const secondMutationResult: object[] = Patcher.PatchObject(
+                editedDeployment,
+                cr1,
+                podInfo,
+                platforms,
+                clusterArmId,
+                clusterArmRegion,
+                clusterName,
+                testOtelParams
+            );
+
+            const finalMutatedDeployment: IObjectType = (<any>secondMutationResult[0]).value as IObjectType;
+            const finalEnv = finalMutatedDeployment.spec.template.spec.containers[0].env;
+            const finalOtelAttr = finalEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            const finalBackupAttr = finalEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+
+            // ASSERT: The final mutation should preserve the user's NEW value (myvalue2)
+            expect(finalOtelAttr).toBeDefined();
+            expect(finalOtelAttr!.value).toContain("mytag=myvalue2"); // user's NEW value must be preserved
+            expect(finalOtelAttr!.value).not.toContain("mytag=myvalue1"); // old value should NOT be there
+            expect(finalOtelAttr!.value).toContain("cloud.provider=Azure"); // our mutation attributes still present
+            expect(finalOtelAttr!.value).toContain("k8s.cluster.name=" + clusterName); // our mutation attributes still present
+
+            // ASSERT: The backup should contain the user's NEW value (myvalue2)
+            expect(finalBackupAttr).toBeDefined();
+            expect(finalBackupAttr!.value).toContain("mytag=myvalue2"); // backup must contain the NEW value
+            expect(finalBackupAttr!.value).not.toContain("cloud.provider"); // backup should NOT contain our mutation attributes
+        });
+
+        it("should preserve user's OTEL_RESOURCE_ATTRIBUTES when kubectl rollout restart is executed on a mutated deployment", () => {
+            // SCENARIO:
+            // 1. User deploys with OTEL_RESOURCE_ATTRIBUTES=mytag=myvalue1
+            // 2. Deployment gets mutated
+            // 3. User runs kubectl rollout restart (triggers new pods without changing deployment spec)
+            // 4. Webhook receives the FULLY mutated deployment (including all our env vars with merged attributes)
+            // 5. We need to verify that the user's attribute (mytag=myvalue1) is still preserved after re-mutation
+
+            const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
+            const platforms = [AutoInstrumentationPlatforms.Java];
+
+            // STEP 1: Initial deployment with mytag=myvalue1
+            const initialDeployment = JSON.parse(JSON.stringify(TestDeployment2.request.object));
+            initialDeployment.spec.template.spec.containers[0].env = [{
+                name: "OTEL_RESOURCE_ATTRIBUTES",
+                value: "mytag=myvalue1"
+            }];
+
+            // STEP 2: First mutation - deployment gets mutated
+            const firstMutationResult: object[] = Patcher.PatchObject(
+                JSON.parse(JSON.stringify(initialDeployment)), 
+                cr1, 
+                podInfo, 
+                platforms, 
+                clusterArmId, 
+                clusterArmRegion, 
+                clusterName, 
+                testOtelParams
+            );
+
+            const firstMutatedDeployment: IObjectType = (<any>firstMutationResult[0]).value as IObjectType;
+            
+            // Verify first mutation has backup and merged attributes
+            const firstMutatedEnv = firstMutatedDeployment.spec.template.spec.containers[0].env;
+            const firstOtelAttr = firstMutatedEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            const firstBackupAttr = firstMutatedEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+            
+            expect(firstOtelAttr).toBeDefined();
+            expect(firstOtelAttr!.value).toContain("mytag=myvalue1"); // user's original value
+            expect(firstOtelAttr!.value).toContain("cloud.provider=Azure"); // our mutation
+            expect(firstBackupAttr).toBeDefined();
+            expect(firstBackupAttr!.value).toBe("mytag=myvalue1"); // backup of original
+
+            // STEP 3: kubectl rollout restart
+            // When kubectl rollout restart happens, Kubernetes doesn't change the deployment spec
+            // The webhook receives the FULLY MUTATED deployment exactly as it exists in the cluster
+            // This includes all our mutations: volumes, initContainers, env vars with merged values, backup env vars, etc.
+            // The webhook needs to handle this already-mutated deployment without losing user's custom attributes
+            const rolloutRestartDeployment = JSON.parse(JSON.stringify(firstMutatedDeployment));
+            
+            // STEP 4: Second mutation - webhook processes the rollout restart
+            // This simulates the webhook being called again on the same mutated deployment
+            const secondMutationResult: object[] = Patcher.PatchObject(
+                rolloutRestartDeployment,
+                cr1,
+                podInfo,
+                platforms,
+                clusterArmId,
+                clusterArmRegion,
+                clusterName,
+                testOtelParams
+            );
+
+            const finalMutatedDeployment: IObjectType = (<any>secondMutationResult[0]).value as IObjectType;
+            const finalEnv = finalMutatedDeployment.spec.template.spec.containers[0].env;
+            const finalOtelAttr = finalEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            const finalBackupAttr = finalEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+
+            // ASSERT: The user's original attribute should still be preserved
+            expect(finalOtelAttr).toBeDefined();
+            expect(finalOtelAttr!.value).toContain("mytag=myvalue1"); // user's original value must be preserved
+            expect(finalOtelAttr!.value).toContain("cloud.provider=Azure"); // our mutation attributes still present
+            expect(finalOtelAttr!.value).toContain("k8s.cluster.name=" + clusterName); // our mutation attributes still present
+
+            // ASSERT: The backup should still contain the user's original value
+            expect(finalBackupAttr).toBeDefined();
+            expect(finalBackupAttr!.value).toBe("mytag=myvalue1"); // backup must contain the original value
+        });
     });
 });
