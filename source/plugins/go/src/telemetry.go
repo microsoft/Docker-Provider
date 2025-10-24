@@ -3,9 +3,11 @@ package main
 import (
 	"encoding/base64"
 	"errors"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -90,14 +92,20 @@ var (
 	}
 	//Metrics map for the mdsd traces
 	TracesErrorMetrics = map[string]float64{}
-	//Time ticker for sending mdsd errors as metrics
-	TracesErrorMetricsTicker *time.Ticker
+	//Time ticker for sending traces as metrics
+	TracesMetricsTicker *time.Ticker
 	//Mutex for mdsd error metrics
 	TracesErrorMetricsMutex = &sync.Mutex{}
+	//Metrics map for traces information
+	TracesInfoMetrics = map[string]float64{}
+	//Mutex for traces information metrics
+	TracesInfoMetricsMutex = &sync.Mutex{}
 	// ContainerLogV2ExtensionDCRCount indicates the number of ContainerLogV2 extension DCRs
 	ContainerLogV2ExtensionDCRCount int
 	// MultitenantNamespaceCount indicates the number of unique k8s namespaces enabled for multi-tenancy
 	MultitenantNamespaceCount int
+	// Regex to capture Received and Published EPS values from GigOtlpDataOutput log lines
+	OtlpEPSRegex = regexp.MustCompile(`Received EPS:(\d+(?:\.\d+)?),\s*Published EPS:(\d+(?:\.\d+)?)`)
 )
 
 const (
@@ -445,15 +453,29 @@ func SendTracesAsMetrics(telemetryPushIntervalProperty string) {
 		telemetryPushInterval = defaultTelemetryPushIntervalSeconds
 	}
 
-	TracesErrorMetricsTicker = time.NewTicker(time.Second * time.Duration(telemetryPushInterval))
+	TracesMetricsTicker = time.NewTicker(time.Second * time.Duration(telemetryPushInterval))
 
-	for ; true; <-TracesErrorMetricsTicker.C {
+	for ; true; <-TracesMetricsTicker.C {
+		// Capture and clear error metrics atomically
 		TracesErrorMetricsMutex.Lock()
-		for metricName, metricValue := range TracesErrorMetrics {
-			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricName, metricValue))
-		}
+		errorMetricsSnapshot := TracesErrorMetrics
 		TracesErrorMetrics = map[string]float64{}
 		TracesErrorMetricsMutex.Unlock()
+
+		// Send metrics outside the lock
+		for metricName, metricValue := range errorMetricsSnapshot {
+			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricName, metricValue))
+		}
+
+		// Same pattern for info metrics
+		TracesInfoMetricsMutex.Lock()
+		infoMetricsSnapshot := TracesInfoMetrics
+		TracesInfoMetrics = map[string]float64{}
+		TracesInfoMetricsMutex.Unlock()
+
+		for metricName, metricValue := range infoMetricsSnapshot {
+			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricName, metricValue))
+		}
 	}
 }
 
@@ -648,6 +670,47 @@ func UpdateTracesErrorMetrics(key string) {
 	TracesErrorMetricsMutex.Unlock()
 }
 
+func UpdateTracesInfoMetrics(key string, logEntry string) {
+	TracesInfoMetricsMutex.Lock()
+	if strings.Contains(key, "Otlp") && strings.Contains(key, "EPS") {
+		// 2025-09-18T17:23:19.0195013+00:00, amacoreagent, Information, Pid: 243334, Tid: 15] GigOtlpDataOutput: Identifier:dcr-**.gigl-dce-**, Event:Log, Total Received:10762, Total Published:10762, Total Failed:0, Received EPS:81.18, Published EPS:81.18.
+		// 2025-09-18T17:23:19.0246002+00:00, amacoreagent, Information, Pid: 243334, Tid: 15] GigOtlpDataOutput: Identifier:dcr-**.gigl-dce-**, Event:Span, Total Received:39080, Total Published:39080, Total Failed:0, Received EPS:264.30, Published EPS:264.30.
+		if received, published, ok := extractOtlpEPS(logEntry); ok {
+			if existingReceived, ok := TracesInfoMetrics[key+"Received"]; ok {
+				TracesInfoMetrics[key+"Received"] = math.Max(existingReceived, received)
+			} else {
+				TracesInfoMetrics[key+"Received"] = received
+			}
+			if existingPublished, ok := TracesInfoMetrics[key+"Published"]; ok {
+				TracesInfoMetrics[key+"Published"] = math.Max(existingPublished, published)
+			} else {
+				TracesInfoMetrics[key+"Published"] = published
+			}
+		}
+	}
+	TracesInfoMetricsMutex.Unlock()
+}
+
+// extractOtlpEPS returns Received and Published EPS values when present in a log entry
+func extractOtlpEPS(logEntry string) (float64, float64, bool) {
+	matches := OtlpEPSRegex.FindStringSubmatch(logEntry)
+	if len(matches) != 3 {
+		return 0, 0, false
+	}
+
+	received, err := strconv.ParseFloat(matches[1], 64)
+	if err != nil {
+		return 0, 0, false
+	}
+
+	published, err := strconv.ParseFloat(matches[2], 64)
+	if err != nil {
+		return 0, 0, false
+	}
+
+	return received, published, true
+}
+
 // PushToAppInsightsTraces sends the log lines as trace messages to the configured App Insights Instance
 func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLevel contracts.SeverityLevel, tag string) int {
 	var logLines []string
@@ -684,6 +747,23 @@ func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLeve
 			UpdateTracesErrorMetrics("AddonTokenAdapterErrorModifyingIptableRules")
 		} else if strings.Contains(logEntry, "Token last updated at") && strings.Contains(logEntry, "exiting the container") {
 			UpdateTracesErrorMetrics("AddonTokenAdapterExitContainerTokenNotUpdated")
+		} else if strings.Contains(tag, "microsoft.linuxmonagent.amaca.log") {
+			if strings.Contains(logEntry, "Google.Protobuf") || strings.Contains(logEntry, "OtlpPipeline.HttpListenerConfigService") {
+				// This error occurs when the OTLP receiver receives data in an unsupported protocol or compression is enabled.
+				UpdateTracesErrorMetrics("OtlpInvalidConfig")
+			} else if matched, _ := regexp.MatchString(`ContentType .* not supported`, logEntry); matched {
+				UpdateTracesErrorMetrics("InvalidContentType")
+			} else if strings.Contains(logEntry, "GigLA Token not available") {
+				UpdateTracesErrorMetrics("InvalidGigLAToken")
+			} else if strings.Contains(logEntry, "GigOtlpDataOutput") {
+				if strings.Contains(logEntry, "Event:Log") {
+					UpdateTracesInfoMetrics("OtlpLogsEPS", logEntry)
+				} else if strings.Contains(logEntry, "Event:Span") {
+					UpdateTracesInfoMetrics("OtlpSpansEPS", logEntry)
+				}
+			} else if !strings.Contains(logEntry, "Information") {
+				logLines = append(logLines, logEntry)
+			}
 		} else {
 			if !strings.Contains(tag, "addon-token-adapter") {
 				logLines = append(logLines, logEntry)
@@ -691,9 +771,11 @@ func PushToAppInsightsTraces(records []map[interface{}]interface{}, severityLeve
 		}
 	}
 
-	traceEntry := strings.Join(logLines, "\n")
-	traceTelemetryItem := appinsights.NewTraceTelemetry(traceEntry, severityLevel)
-	traceTelemetryItem.Properties["tag"] = tag
-	TelemetryClient.Track(traceTelemetryItem)
+	if len(logLines) > 0 {
+		traceEntry := strings.Join(logLines, "\n")
+		traceTelemetryItem := appinsights.NewTraceTelemetry(traceEntry, severityLevel)
+		traceTelemetryItem.Properties["tag"] = tag
+		TelemetryClient.Track(traceTelemetryItem)
+	}
 	return output.FLB_OK
 }
