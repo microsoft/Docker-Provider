@@ -167,6 +167,10 @@ export class Patcher {
 
                 // container contains this environment variable
 
+                // find the backup environment variable if it exists
+                const backupEvName = `${evtr.name}${Patcher.EnvironmentVariableBackupSuffix}`;
+                const backupEv: IEnvironmentVariable = container.env?.find(e => e.name === backupEvName);
+
                 // special handling for OTEL_RESOURCE_ATTRIBUTES - preserve certain attributes during unpatch
                 // we need to preserve two kinds of attributes:
                 // - attributes that are completely unknown to us (never injected by mutation)
@@ -174,23 +178,25 @@ export class Patcher {
                 if(evtr.name === "OTEL_RESOURCE_ATTRIBUTES" && instrumentationState?.crName) {
                     const currentValue = container.env[evIndex].value;
                     
-                    // check if there's a backup to determine user-provided values
-                    const backupEvName = `${evtr.name}${Patcher.EnvironmentVariableBackupSuffix}`;
-                    const backupEv: IEnvironmentVariable = container.env?.find(e => e.name === backupEvName);
-                    
                     const userAttributes: string = this.extractUserOtelResourceAttributes(currentValue, backupEv?.value);
                     
                     if(userAttributes) {
                         // user has custom attributes, preserve them
                         container.env[evIndex].value = userAttributes;
+                        
+                        // we have already written the value into the primary environment variable, simply remove the backup environment variable if it exists
+                        if(backupEv) {
+                            const backupEvIndex = container.env.findIndex(e => e.name === backupEvName);
+                            if(backupEvIndex !== -1) {
+                                container.env.splice(backupEvIndex, 1);
+                            }
+                        }
                         return; // don't remove or restore from backup
                     }
                     // if no user attributes, fall through to normal removal logic
                 }
 
                 // is there a backup environment variable that we created during mutation to hold the original value?
-                const backupEvName = `${evtr.name}${Patcher.EnvironmentVariableBackupSuffix}`;
-                const backupEv: IEnvironmentVariable = container.env?.find(e => e.name === backupEvName);
                 if(backupEv) {
                     // there is, restore its value into the primary environment variable, and remove the backup one
 
@@ -240,21 +246,34 @@ export class Patcher {
         // get the attribute keys that our mutation injects - these should be removed during unpatch
         const mutationAttributeKeys = Mutations.GetMutationOtelResourceAttributeKeys();
 
-        // Parse backup attributes to identify user-provided and user-priority attributes
-        const backupAttributes = Common.parseOtelAttributes(backupValue || '');
+        // parse backup attributes to identify user-provided and user-priority attributes
+        const backupAttributes = Common.parseOtelAttributes(backupValue || null);
 
-        // Parse current attributes
+        // parse current attributes
         const userAttributes: Record<string, string> = {};
         const currentAttributes = Common.parseOtelAttributes(currentValue);
         
+        // Detect if this is a kubectl apply (user edited YAML) vs kubectl rollout restart
+        // During kubectl apply, Kubernetes merges user's YAML with live state, so currentValue 
+        // won't contain our mutation-injected attributes (they're stripped from user's view)
+        // During rollout restart, currentValue contains the full mutated state including all our attributes
+        const anyMutationAttributeKey = [...mutationAttributeKeys].find(item => item.startsWith("k8s."));
+        const hasMutationAttributes = anyMutationAttributeKey && currentAttributes[anyMutationAttributeKey];
+        
         for (const [trimmedKey, trimmedValue] of Object.entries(currentAttributes) as [string, string][]) {
-            // we can't simply discard user-priority attributes, we need to keep them since they will impact mutation
             if (Mutations.GetUserPriorityOtelResourceAttributeKeys().has(trimmedKey)) {
-                // if there's a backup and these attributes exist in it, they were user-provided, so preserve them
-                if (backupValue && backupAttributes[trimmedKey]) {
+                // we can't simply discard user-priority attributes, we need to keep them since they will impact the next mutation
+                // For user-priority attributes (service.name, etc.):
+                // - kubectl apply (no mutation attributes detected): preserve the attribute (user is setting/changing it via YAML edit)
+                // - kubectl rollout restart (has mutation attributes): only preserve if it was in the original backup (otherwise it's our default)
+                // - kubectl apply on deployment that was initially deployed without OTEL_RESOURCE_ATTRIBUTES: preserve the attribute
+                if (!hasMutationAttributes) {
+                    // kubectl apply scenario: user edited their YAML, preserve their user-priority attributes
+                    userAttributes[trimmedKey] = trimmedValue;
+                } else if (backupValue && backupAttributes[trimmedKey]) {
+                    // rollout restart scenario: only preserve if it was in the original backup (not our default)
                     userAttributes[trimmedKey] = trimmedValue;
                 }
-                // otherwise, they were injected by mutation, so don't preserve them
             } else if (!mutationAttributeKeys.has(trimmedKey)) {
                 // for all other attributes, keep only those that aren't mutation-injected
                 userAttributes[trimmedKey] = trimmedValue;
