@@ -1321,6 +1321,329 @@ describe("Patcher", () => {
             expect(finalBackupAttr!.value).not.toContain("cloud.provider"); // backup should NOT contain our mutation attributes
         });
 
+        it("should preserve user's newly added service.instance.id via kubectl apply", () => {
+            // SCENARIO:
+            // 1. User deploys WITHOUT service.instance.id in OTEL_RESOURCE_ATTRIBUTES
+            // 2. Deployment gets mutated (service.instance.id defaults to $(POD_NAME))
+            // 3. User does kubectl apply and ADDS service.instance.id=my-custom-id to their YAML
+            // 4. BUG: The newly added service.instance.id should be preserved, NOT replaced with $(POD_NAME)
+
+            const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
+            const platforms = [AutoInstrumentationPlatforms.Java];
+
+            // STEP 1: Initial deployment WITHOUT service.instance.id
+            const initialDeployment = JSON.parse(JSON.stringify(TestDeployment2.request.object));
+            initialDeployment.spec.template.spec.containers[0].env = [{
+                name: "OTEL_RESOURCE_ATTRIBUTES",
+                value: "custom.tag=value1"  // No service.instance.id here
+            }];
+
+            // STEP 2: First mutation - deployment gets mutated
+            const firstMutationResult: object[] = Patcher.PatchObject(
+                JSON.parse(JSON.stringify(initialDeployment)), 
+                cr1, 
+                podInfo, 
+                platforms, 
+                clusterArmId, 
+                clusterArmRegion, 
+                clusterName, 
+                testOtelParams
+            );
+
+            const firstMutatedDeployment: IObjectType = (<any>firstMutationResult[0]).value as IObjectType;
+            const firstMutatedEnv = firstMutatedDeployment.spec.template.spec.containers[0].env;
+            const firstOtelAttr = firstMutatedEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            const firstBackupAttr = firstMutatedEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+            
+            // Verify first mutation used default service.instance.id=$(POD_NAME)
+            expect(firstOtelAttr).toBeDefined();
+            expect(firstOtelAttr!.value).toContain("service.instance.id=$(POD_NAME)"); // our default
+            expect(firstOtelAttr!.value).toContain("custom.tag=value1");
+            expect(firstBackupAttr).toBeDefined();
+            expect(firstBackupAttr!.value).toBe("custom.tag=value1"); // backup does NOT have service.instance.id
+
+            // STEP 3: User does kubectl apply and ADDS service.instance.id=my-custom-id
+            // Kubernetes sends the deployment with mutation artifacts BUT user's new OTEL_RESOURCE_ATTRIBUTES value
+            const editedDeployment = JSON.parse(JSON.stringify(firstMutatedDeployment));
+            const editedOtelAttrIndex = editedDeployment.spec.template.spec.containers[0].env.findIndex(
+                (env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES"
+            );
+            // User's new YAML now includes service.instance.id (which wasn't in the original backup)
+            editedDeployment.spec.template.spec.containers[0].env[editedOtelAttrIndex].value = 
+                "service.instance.id=my-custom-id,custom.tag=value1";
+
+            // STEP 4: Second mutation - webhook processes the edited deployment
+            const secondMutationResult: object[] = Patcher.PatchObject(
+                editedDeployment,
+                cr1,
+                podInfo,
+                platforms,
+                clusterArmId,
+                clusterArmRegion,
+                clusterName,
+                testOtelParams
+            );
+
+            const finalMutatedDeployment: IObjectType = (<any>secondMutationResult[0]).value as IObjectType;
+            const finalEnv = finalMutatedDeployment.spec.template.spec.containers[0].env;
+            const finalOtelAttr = finalEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            const finalBackupAttr = finalEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+
+            // ASSERT: The user's newly added service.instance.id should be preserved
+            expect(finalOtelAttr).toBeDefined();
+            expect(finalOtelAttr!.value).toContain("service.instance.id=my-custom-id"); // user's NEW value preserved
+            expect(finalOtelAttr!.value).not.toContain("service.instance.id=$(POD_NAME)"); // our default should NOT override user's value
+            expect(finalOtelAttr!.value).toContain("custom.tag=value1");
+            expect(finalOtelAttr!.value).toContain("cloud.provider=Azure"); // our mutation attributes still present
+
+            // ASSERT: The backup should contain the user's NEW value including service.instance.id
+            expect(finalBackupAttr).toBeDefined();
+            expect(finalBackupAttr!.value).toContain("service.instance.id=my-custom-id");
+            expect(finalBackupAttr!.value).toContain("custom.tag=value1");
+            expect(finalBackupAttr!.value).not.toContain("cloud.provider"); // backup should NOT contain our mutation attributes
+        });
+
+        it("should preserve user's newly added service.name via kubectl apply", () => {
+            // Same as above but for service.name
+            const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
+            const platforms = [AutoInstrumentationPlatforms.Java];
+
+            // STEP 1: Initial deployment WITHOUT service.name
+            const initialDeployment = JSON.parse(JSON.stringify(TestDeployment2.request.object));
+            initialDeployment.spec.template.spec.containers[0].env = [{
+                name: "OTEL_RESOURCE_ATTRIBUTES",
+                value: "custom.tag=value1"  // No service.name here
+            }];
+
+            // STEP 2: First mutation
+            const firstMutationResult: object[] = Patcher.PatchObject(
+                JSON.parse(JSON.stringify(initialDeployment)), 
+                cr1, 
+                podInfo, 
+                platforms, 
+                clusterArmId, 
+                clusterArmRegion, 
+                clusterName, 
+                testOtelParams
+            );
+
+            const firstMutatedDeployment: IObjectType = (<any>firstMutationResult[0]).value as IObjectType;
+            const firstMutatedEnv = firstMutatedDeployment.spec.template.spec.containers[0].env;
+            const firstOtelAttr = firstMutatedEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            const firstBackupAttr = firstMutatedEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+            
+            // Verify first mutation used default service.name
+            expect(firstOtelAttr).toBeDefined();
+            expect(firstOtelAttr!.value).toContain("service.name=test-app"); // our default (from podInfo.ownerName)
+            expect(firstBackupAttr).toBeDefined();
+            expect(firstBackupAttr!.value).toBe("custom.tag=value1"); // backup does NOT have service.name
+
+            // STEP 3: User does kubectl apply and ADDS service.name=my-custom-service
+            const editedDeployment = JSON.parse(JSON.stringify(firstMutatedDeployment));
+            const editedOtelAttrIndex = editedDeployment.spec.template.spec.containers[0].env.findIndex(
+                (env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES"
+            );
+            editedDeployment.spec.template.spec.containers[0].env[editedOtelAttrIndex].value = 
+                "service.name=my-custom-service,custom.tag=value1";
+
+            // STEP 4: Second mutation
+            const secondMutationResult: object[] = Patcher.PatchObject(
+                editedDeployment,
+                cr1,
+                podInfo,
+                platforms,
+                clusterArmId,
+                clusterArmRegion,
+                clusterName,
+                testOtelParams
+            );
+
+            const finalMutatedDeployment: IObjectType = (<any>secondMutationResult[0]).value as IObjectType;
+            const finalEnv = finalMutatedDeployment.spec.template.spec.containers[0].env;
+            const finalOtelAttr = finalEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            const finalBackupAttr = finalEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+
+            // ASSERT: The user's newly added service.name should be preserved
+            expect(finalOtelAttr).toBeDefined();
+            expect(finalOtelAttr!.value).toContain("service.name=my-custom-service"); // user's NEW value preserved
+            expect(finalOtelAttr!.value).not.toContain("service.name=test-app"); // our default should NOT override
+            expect(finalOtelAttr!.value).toContain("custom.tag=value1");
+
+            // ASSERT: The backup should contain the user's NEW value
+            expect(finalBackupAttr).toBeDefined();
+            expect(finalBackupAttr!.value).toContain("service.name=my-custom-service");
+            expect(finalBackupAttr!.value).toContain("custom.tag=value1");
+        });
+
+        it("should preserve user's newly added arbitrary custom attribute via kubectl apply", () => {
+            // SCENARIO: Test that arbitrary custom attributes (not user-priority) are preserved
+            // 1. User deploys WITHOUT any OTEL_RESOURCE_ATTRIBUTES
+            // 2. Deployment gets mutated (only our defaults are added)
+            // 3. User does kubectl apply and ADDS a custom attribute like myattribute=myvalue
+            // 4. The newly added custom attribute should be preserved
+
+            const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
+            const platforms = [AutoInstrumentationPlatforms.Java];
+
+            // STEP 1: Initial deployment WITHOUT any OTEL_RESOURCE_ATTRIBUTES
+            const initialDeployment = JSON.parse(JSON.stringify(TestDeployment2.request.object));
+            initialDeployment.spec.template.spec.containers[0].env = [];  // No env vars at all
+
+            // STEP 2: First mutation - deployment gets mutated
+            const firstMutationResult: object[] = Patcher.PatchObject(
+                JSON.parse(JSON.stringify(initialDeployment)), 
+                cr1, 
+                podInfo, 
+                platforms, 
+                clusterArmId, 
+                clusterArmRegion, 
+                clusterName, 
+                testOtelParams
+            );
+
+            const firstMutatedDeployment: IObjectType = (<any>firstMutationResult[0]).value as IObjectType;
+            const firstMutatedEnv = firstMutatedDeployment.spec.template.spec.containers[0].env;
+            const firstOtelAttr = firstMutatedEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            const firstBackupAttr = firstMutatedEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+            
+            // Verify first mutation only has our defaults (no backup since user had nothing)
+            expect(firstOtelAttr).toBeDefined();
+            expect(firstOtelAttr!.value).toContain("service.name=test-app"); // our default
+            expect(firstOtelAttr!.value).toContain("service.instance.id=$(POD_NAME)"); // our default
+            expect(firstOtelAttr!.value).toContain("cloud.provider=Azure");
+            expect(firstBackupAttr).toBeUndefined(); // No backup since user had no OTEL_RESOURCE_ATTRIBUTES
+
+            // STEP 3: User does kubectl apply and ADDS a custom attribute
+            const editedDeployment = JSON.parse(JSON.stringify(firstMutatedDeployment));
+            const editedOtelAttrIndex = editedDeployment.spec.template.spec.containers[0].env.findIndex(
+                (env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES"
+            );
+            // User's new YAML now includes a custom attribute that wasn't there before
+            editedDeployment.spec.template.spec.containers[0].env[editedOtelAttrIndex].value = 
+                "myattribute=myvalue";
+
+            // STEP 4: Second mutation - webhook processes the edited deployment
+            const secondMutationResult: object[] = Patcher.PatchObject(
+                editedDeployment,
+                cr1,
+                podInfo,
+                platforms,
+                clusterArmId,
+                clusterArmRegion,
+                clusterName,
+                testOtelParams
+            );
+
+            const finalMutatedDeployment: IObjectType = (<any>secondMutationResult[0]).value as IObjectType;
+            const finalEnv = finalMutatedDeployment.spec.template.spec.containers[0].env;
+            const finalOtelAttr = finalEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            const finalBackupAttr = finalEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+
+            // ASSERT: The user's newly added custom attribute should be preserved
+            expect(finalOtelAttr).toBeDefined();
+            expect(finalOtelAttr!.value).toContain("myattribute=myvalue"); // user's NEW custom attribute
+            expect(finalOtelAttr!.value).toContain("cloud.provider=Azure"); // our mutation attributes still present
+            expect(finalOtelAttr!.value).toContain("service.name=test-app"); // our defaults still there
+            expect(finalOtelAttr!.value).toContain("service.instance.id=$(POD_NAME)"); // our defaults still there
+
+            // ASSERT: The backup should contain the user's NEW custom attribute
+            expect(finalBackupAttr).toBeDefined();
+            expect(finalBackupAttr!.value).toBe("myattribute=myvalue"); // only user's attribute in backup
+        });
+
+        it("should preserve user-priority attributes when user adds them via kubectl apply after initial mutation without OTEL_RESOURCE_ATTRIBUTES", () => {
+            // SCENARIO:
+            // 1. User deploys WITHOUT any OTEL_RESOURCE_ATTRIBUTES env var
+            // 2. Deployment gets mutated (mutation adds OTEL_RESOURCE_ATTRIBUTES with defaults)
+            // 3. User runs kubectl apply to ADD OTEL_RESOURCE_ATTRIBUTES="mytag=myvalue1,service.name=myservice1,service.instance.id=myid1"
+            // 4. BUG: service.name and service.instance.id completely disappear, backup only contains mytag
+            //    EXPECTED: All three attributes (mytag, service.name, service.instance.id) should be preserved
+
+            const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
+            const platforms = [AutoInstrumentationPlatforms.Java];
+
+            // STEP 1: Initial deployment WITHOUT OTEL_RESOURCE_ATTRIBUTES env var
+            const initialDeployment = JSON.parse(JSON.stringify(TestDeployment2.request.object));
+            initialDeployment.spec.template.spec.containers[0].env = [];  // No env vars at all
+
+            // STEP 2: First mutation - deployment gets mutated
+            const firstMutationResult: object[] = Patcher.PatchObject(
+                JSON.parse(JSON.stringify(initialDeployment)), 
+                cr1, 
+                podInfo, 
+                platforms, 
+                clusterArmId, 
+                clusterArmRegion, 
+                clusterName, 
+                testOtelParams
+            );
+
+            const firstMutatedDeployment: IObjectType = (<any>firstMutationResult[0]).value as IObjectType;
+            const firstMutatedEnv = firstMutatedDeployment.spec.template.spec.containers[0].env;
+            const firstOtelAttr = firstMutatedEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            const firstBackupAttr = firstMutatedEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+            
+            // Verify first mutation only has our defaults (no backup since user had nothing)
+            expect(firstOtelAttr).toBeDefined();
+            expect(firstOtelAttr!.value).toContain("service.name=test-app"); // our default
+            expect(firstOtelAttr!.value).toContain("service.instance.id=$(POD_NAME)"); // our default
+            expect(firstOtelAttr!.value).toContain("cloud.provider=Azure");
+            expect(firstBackupAttr).toBeUndefined(); // No backup since user had no OTEL_RESOURCE_ATTRIBUTES
+
+            // STEP 3: User runs kubectl apply and ADDS OTEL_RESOURCE_ATTRIBUTES with user-priority attributes
+            // This simulates the exact scenario from the bug report
+            const editedDeployment = JSON.parse(JSON.stringify(firstMutatedDeployment));
+            const editedOtelAttrIndex = editedDeployment.spec.template.spec.containers[0].env.findIndex(
+                (env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES"
+            );
+            // User's YAML now contains: mytag=myvalue1,service.name=myservice1,service.instance.id=myid1
+            editedDeployment.spec.template.spec.containers[0].env[editedOtelAttrIndex].value = 
+                "mytag=myvalue1,service.name=myservice1,service.instance.id=myid1";
+
+            // STEP 4: Second mutation - webhook processes the edited deployment
+            const secondMutationResult: object[] = Patcher.PatchObject(
+                editedDeployment,
+                cr1,
+                podInfo,
+                platforms,
+                clusterArmId,
+                clusterArmRegion,
+                clusterName,
+                testOtelParams
+            );
+
+            const finalMutatedDeployment: IObjectType = (<any>secondMutationResult[0]).value as IObjectType;
+            const finalEnv = finalMutatedDeployment.spec.template.spec.containers[0].env;
+            const finalOtelAttr = finalEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            const finalBackupAttr = finalEnv.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+
+            // ASSERT: ALL user attributes should be preserved, including user-priority ones
+            expect(finalOtelAttr).toBeDefined();
+            
+            // BUG: These assertions will FAIL because service.name and service.instance.id disappear
+            expect(finalOtelAttr!.value).toContain("mytag=myvalue1"); // user's custom attribute - THIS PASSES
+            expect(finalOtelAttr!.value).toContain("service.name=myservice1"); // user's service.name - THIS FAILS (BUG)
+            expect(finalOtelAttr!.value).toContain("service.instance.id=myid1"); // user's service.instance.id - THIS FAILS (BUG)
+            
+            // The mutation should NOT use our defaults when user provided values
+            expect(finalOtelAttr!.value).not.toContain("service.name=test-app"); // our default should NOT be there
+            expect(finalOtelAttr!.value).not.toContain("service.instance.id=$(POD_NAME)"); // our default should NOT be there
+            
+            // Our mutation attributes should still be present
+            expect(finalOtelAttr!.value).toContain("cloud.provider=Azure");
+
+            // ASSERT: The backup should contain ALL user attributes
+            expect(finalBackupAttr).toBeDefined();
+            
+            // BUG: The backup will only contain mytag, missing service.name and service.instance.id
+            expect(finalBackupAttr!.value).toContain("mytag=myvalue1"); // THIS PASSES
+            expect(finalBackupAttr!.value).toContain("service.name=myservice1"); // THIS FAILS (BUG)
+            expect(finalBackupAttr!.value).toContain("service.instance.id=myid1"); // THIS FAILS (BUG)
+            
+            // Backup should NOT contain our mutation attributes
+            expect(finalBackupAttr!.value).not.toContain("cloud.provider");
+        });
+
         it('should use correct container name in OTEL_RESOURCE_ATTRIBUTES for each container in full admission review', () => {
             // Use existing TestDeployment2 which has 2 containers: "ibm-open-liberty-spring" and "container2"
             const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));
@@ -1395,6 +1718,266 @@ describe("Patcher", () => {
             // Verify original environment variables are preserved
             expect(firstContainerEnv.find((env: IEnvironmentVariable) => env.name === "WLP_LOGGING_CONSOLE_FORMAT")).toBeDefined();
             expect(secondContainerEnv.find((env: IEnvironmentVariable) => env.name === "ENV_VAR_1")).toBeDefined();
+        });
+
+        it("should restore original OTEL_RESOURCE_ATTRIBUTES with arbitrary custom attributes during unpatch", async () => {
+            // ASSUME
+            // Create initial deployment with custom OTEL_RESOURCE_ATTRIBUTES
+            const initialAdmissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));
+            const platforms = cr.spec.settings.autoInstrumentationPlatforms;
+            const podInfo: PodInfo = <PodInfo>{
+                namespace: "default",
+                ownerName: "deployment1",
+                ownerKind: "Deployment",
+                ownerUid: "ownerUid"
+            };
+
+            // Set initial custom attributes that should be restored after unpatch
+            const originalCustomAttributes = "custom.attribute=myvalue,another.custom=value123";
+            const container = initialAdmissionReview.request.object.spec.template.spec.containers[0];
+            if (!container.env) {
+                container.env = [];
+            }
+            container.env.push({
+                name: "OTEL_RESOURCE_ATTRIBUTES",
+                value: originalCustomAttributes
+            });
+
+            // ACT - First mutation: webhook adds mutation-injected attributes
+            const mutatedAdmissionReview: IAdmissionReview = JSON.parse(JSON.stringify(initialAdmissionReview));
+            const patchResult: object[] = JSON.parse(JSON.stringify(Patcher.PatchObject(mutatedAdmissionReview.request.object, cr, podInfo, platforms, clusterArmId, clusterArmRegion, clusterName, testOtelParams)));
+
+            expect((<[]>patchResult).length).toBe(1);
+
+            const mutatedDeployment: IObjectType = (<any>patchResult[0]).value as IObjectType;
+
+            // Verify mutation added its attributes
+            const mutatedContainer = mutatedDeployment.spec.template.spec.containers[0];
+            const mutatedOtelAttr = mutatedContainer.env.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            expect(mutatedOtelAttr).toBeDefined();
+            expect(mutatedOtelAttr!.value).toContain("cloud.provider=Azure");
+            expect(mutatedOtelAttr!.value).toContain("custom.attribute=myvalue");
+            expect(mutatedOtelAttr!.value).toContain("another.custom=value123");
+
+            // Verify backup was created
+            const backupEnv = mutatedContainer.env.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+            expect(backupEnv).toBeDefined();
+            expect(backupEnv!.value).toBe(originalCustomAttributes);
+
+            // ACT - Unpatch: Remove instrumentation
+            const unpatchResult: object[] = JSON.parse(JSON.stringify(Patcher.PatchObject(mutatedDeployment, null, podInfo, [] as AutoInstrumentationPlatforms[], clusterArmId, clusterArmRegion, clusterName, testOtelParams)));
+
+            // ASSERT
+            expect(unpatchResult.length).toBe(1);
+
+            const unpatchedDeployment: IObjectType = (<any>unpatchResult[0]).value as IObjectType;
+            const unpatchedContainer = unpatchedDeployment.spec.template.spec.containers[0];
+            
+            // Verify OTEL_RESOURCE_ATTRIBUTES was restored to original value
+            const restoredOtelAttr = unpatchedContainer.env.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            expect(restoredOtelAttr).toBeDefined();
+            expect(restoredOtelAttr!.value).toBe(originalCustomAttributes);
+
+            // Verify no mutation-injected attributes remain
+            expect(restoredOtelAttr!.value).not.toContain("cloud.provider");
+            expect(restoredOtelAttr!.value).not.toContain("cloud.platform");
+            expect(restoredOtelAttr!.value).not.toContain("k8s.cluster.name");
+
+            // Verify backup was removed
+            const remainingBackup = unpatchedContainer.env.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+            expect(remainingBackup).toBeUndefined();
+        });
+
+        it("should restore original OTEL_RESOURCE_ATTRIBUTES with user-priority attributes during unpatch", async () => {
+            // ASSUME
+            // Create initial deployment with service.name and service.instance.id
+            const initialAdmissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));
+            const platforms = cr.spec.settings.autoInstrumentationPlatforms;
+            const podInfo: PodInfo = <PodInfo>{
+                namespace: "default",
+                ownerName: "deployment1",
+                ownerKind: "Deployment",
+                ownerUid: "ownerUid"
+            };
+
+            // Set initial user-priority attributes that should be restored after unpatch
+            const originalUserAttributes = "service.name=my-custom-service,service.instance.id=instance-123";
+            const container = initialAdmissionReview.request.object.spec.template.spec.containers[0];
+            if (!container.env) {
+                container.env = [];
+            }
+            container.env.push({
+                name: "OTEL_RESOURCE_ATTRIBUTES",
+                value: originalUserAttributes
+            });
+
+            // ACT - First mutation: webhook adds mutation-injected attributes
+            const mutatedAdmissionReview: IAdmissionReview = JSON.parse(JSON.stringify(initialAdmissionReview));
+            const patchResult: object[] = JSON.parse(JSON.stringify(Patcher.PatchObject(mutatedAdmissionReview.request.object, cr, podInfo, platforms, clusterArmId, clusterArmRegion, clusterName, testOtelParams)));
+
+            expect((<[]>patchResult).length).toBe(1);
+
+            const mutatedDeployment: IObjectType = (<any>patchResult[0]).value as IObjectType;
+
+            // Verify mutation preserved user-priority attributes
+            const mutatedContainer = mutatedDeployment.spec.template.spec.containers[0];
+            const mutatedOtelAttr = mutatedContainer.env.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            expect(mutatedOtelAttr).toBeDefined();
+            expect(mutatedOtelAttr!.value).toContain("cloud.provider=Azure");
+            expect(mutatedOtelAttr!.value).toContain("service.name=my-custom-service");
+            expect(mutatedOtelAttr!.value).toContain("service.instance.id=instance-123");
+
+            // Verify backup was created
+            const backupEnv = mutatedContainer.env.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+            expect(backupEnv).toBeDefined();
+            expect(backupEnv!.value).toBe(originalUserAttributes);
+
+            // ACT - Unpatch: Remove instrumentation
+            const unpatchResult: object[] = JSON.parse(JSON.stringify(Patcher.PatchObject(mutatedDeployment, null, podInfo, [] as AutoInstrumentationPlatforms[], clusterArmId, clusterArmRegion, clusterName, testOtelParams)));
+
+            // ASSERT
+            expect(unpatchResult.length).toBe(1);
+
+            const unpatchedDeployment: IObjectType = (<any>unpatchResult[0]).value as IObjectType;
+            const unpatchedContainer = unpatchedDeployment.spec.template.spec.containers[0];
+            
+            // Verify OTEL_RESOURCE_ATTRIBUTES was restored to original value
+            const restoredOtelAttr = unpatchedContainer.env.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            expect(restoredOtelAttr).toBeDefined();
+            expect(restoredOtelAttr!.value).toBe(originalUserAttributes);
+
+            // Verify no mutation-injected attributes remain
+            expect(restoredOtelAttr!.value).not.toContain("cloud.provider");
+            expect(restoredOtelAttr!.value).not.toContain("cloud.platform");
+            expect(restoredOtelAttr!.value).not.toContain("k8s.cluster.name");
+
+            // Verify backup was removed
+            const remainingBackup = unpatchedContainer.env.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+            expect(remainingBackup).toBeUndefined();
+        });
+
+        it("should restore original OTEL_RESOURCE_ATTRIBUTES with mixed custom and user-priority attributes during unpatch", async () => {
+            // ASSUME
+            // Create initial deployment with both custom and user-priority attributes
+            const initialAdmissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));
+            const platforms = cr.spec.settings.autoInstrumentationPlatforms;
+            const podInfo: PodInfo = <PodInfo>{
+                namespace: "default",
+                ownerName: "deployment1",
+                ownerKind: "Deployment",
+                ownerUid: "ownerUid"
+            };
+
+            // Set initial mixed attributes that should be restored after unpatch
+            const originalMixedAttributes = "service.name=my-app,custom.attribute=value1,service.instance.id=inst-456,another.custom=value2";
+            const container = initialAdmissionReview.request.object.spec.template.spec.containers[0];
+            if (!container.env) {
+                container.env = [];
+            }
+            container.env.push({
+                name: "OTEL_RESOURCE_ATTRIBUTES",
+                value: originalMixedAttributes
+            });
+
+            // ACT - First mutation: webhook adds mutation-injected attributes
+            const mutatedAdmissionReview: IAdmissionReview = JSON.parse(JSON.stringify(initialAdmissionReview));
+            const patchResult: object[] = JSON.parse(JSON.stringify(Patcher.PatchObject(mutatedAdmissionReview.request.object, cr, podInfo, platforms, clusterArmId, clusterArmRegion, clusterName, testOtelParams)));
+
+            expect((<[]>patchResult).length).toBe(1);
+
+            const mutatedDeployment: IObjectType = (<any>patchResult[0]).value as IObjectType;
+
+            // Verify mutation preserved all original attributes and added its own
+            const mutatedContainer = mutatedDeployment.spec.template.spec.containers[0];
+            const mutatedOtelAttr = mutatedContainer.env.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            expect(mutatedOtelAttr).toBeDefined();
+            expect(mutatedOtelAttr!.value).toContain("cloud.provider=Azure");
+            expect(mutatedOtelAttr!.value).toContain("service.name=my-app");
+            expect(mutatedOtelAttr!.value).toContain("custom.attribute=value1");
+            expect(mutatedOtelAttr!.value).toContain("service.instance.id=inst-456");
+            expect(mutatedOtelAttr!.value).toContain("another.custom=value2");
+
+            // Verify backup was created
+            const backupEnv = mutatedContainer.env.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+            expect(backupEnv).toBeDefined();
+            expect(backupEnv!.value).toBe(originalMixedAttributes);
+
+            // ACT - Unpatch: Remove instrumentation
+            const unpatchResult: object[] = JSON.parse(JSON.stringify(Patcher.PatchObject(mutatedDeployment, null, podInfo, [] as AutoInstrumentationPlatforms[], clusterArmId, clusterArmRegion, clusterName, testOtelParams)));
+
+            // ASSERT
+            expect(unpatchResult.length).toBe(1);
+
+            const unpatchedDeployment: IObjectType = (<any>unpatchResult[0]).value as IObjectType;
+            const unpatchedContainer = unpatchedDeployment.spec.template.spec.containers[0];
+            
+            // Verify OTEL_RESOURCE_ATTRIBUTES was restored to exact original value
+            const restoredOtelAttr = unpatchedContainer.env.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            expect(restoredOtelAttr).toBeDefined();
+            expect(restoredOtelAttr!.value).toBe(originalMixedAttributes);
+
+            // Verify no mutation-injected attributes remain
+            expect(restoredOtelAttr!.value).not.toContain("cloud.provider");
+            expect(restoredOtelAttr!.value).not.toContain("cloud.platform");
+            expect(restoredOtelAttr!.value).not.toContain("k8s.cluster.name");
+
+            // Verify backup was removed
+            const remainingBackup = unpatchedContainer.env.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+            expect(remainingBackup).toBeUndefined();
+        });
+
+        it("should handle unpatch when deployment had no original OTEL_RESOURCE_ATTRIBUTES", async () => {
+            // ASSUME
+            // Create initial deployment WITHOUT any OTEL_RESOURCE_ATTRIBUTES
+            const initialAdmissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));
+            const platforms = cr.spec.settings.autoInstrumentationPlatforms;
+            const podInfo: PodInfo = <PodInfo>{
+                namespace: "default",
+                ownerName: "deployment1",
+                ownerKind: "Deployment",
+                ownerUid: "ownerUid"
+            };
+
+            // Ensure no OTEL_RESOURCE_ATTRIBUTES in initial deployment
+            const container = initialAdmissionReview.request.object.spec.template.spec.containers[0];
+            if (container.env) {
+                container.env = container.env.filter((env: IEnvironmentVariable) => env.name !== "OTEL_RESOURCE_ATTRIBUTES");
+            }
+
+            // ACT - First mutation: webhook adds mutation-injected attributes
+            const mutatedAdmissionReview: IAdmissionReview = JSON.parse(JSON.stringify(initialAdmissionReview));
+            const patchResult: object[] = JSON.parse(JSON.stringify(Patcher.PatchObject(mutatedAdmissionReview.request.object, cr, podInfo, platforms, clusterArmId, clusterArmRegion, clusterName, testOtelParams)));
+
+            expect((<[]>patchResult).length).toBe(1);
+
+            const mutatedDeployment: IObjectType = (<any>patchResult[0]).value as IObjectType;
+
+            // Verify mutation added its attributes
+            const mutatedContainer = mutatedDeployment.spec.template.spec.containers[0];
+            const mutatedOtelAttr = mutatedContainer.env.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            expect(mutatedOtelAttr).toBeDefined();
+            expect(mutatedOtelAttr!.value).toContain("cloud.provider=Azure");
+
+            // Verify backup was created (should be empty or not exist)
+            const backupEnv = mutatedContainer.env.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+            // Backup may not exist if there was no original value
+
+            // ACT - Unpatch: Remove instrumentation
+            const unpatchResult: object[] = JSON.parse(JSON.stringify(Patcher.PatchObject(mutatedDeployment, null, podInfo, [] as AutoInstrumentationPlatforms[], clusterArmId, clusterArmRegion, clusterName, testOtelParams)));
+
+            // ASSERT
+            expect(unpatchResult.length).toBe(1);
+
+            const unpatchedDeployment: IObjectType = (<any>unpatchResult[0]).value as IObjectType;
+            const unpatchedContainer = unpatchedDeployment.spec.template.spec.containers[0];
+            
+            // Verify OTEL_RESOURCE_ATTRIBUTES was removed (back to original state)
+            const restoredOtelAttr = unpatchedContainer.env?.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            expect(restoredOtelAttr).toBeUndefined();
+
+            // Verify backup was removed
+            const remainingBackup = unpatchedContainer.env?.find((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES_BEFORE_AUTO_INSTRUMENTATION");
+            expect(remainingBackup).toBeUndefined();
         });
     });
 });
