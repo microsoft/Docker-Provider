@@ -42,6 +42,15 @@ PYTHON_SERVICE_HOST="${PYTHON_RELEASE_NAME}-service.${TEST_NS}.svc.cluster.local
 DOTNET_SERVICE_HOST="${DOTNET_RELEASE_NAME}-service.${TEST_NS}.svc.cluster.local"
 SOURCE_SERVICE_URL="http://${SOURCE_RELEASE_NAME}-service.${TEST_NS}.svc.cluster.local:3001"
 
+# Delete existing test apps if they exist - TEMPORARY - WILL BE REMOVED LATER
+cat ../validation-helm/test-apps/testappsource/chart.yaml | envsubst | kubectl delete -f - --ignore-not-found
+cat ../validation-helm/test-apps/java/chart.yaml | envsubst | kubectl delete -f - --ignore-not-found
+cat ../validation-helm/test-apps/nodejs/chart.yaml | envsubst | kubectl delete -f - --ignore-not-found
+cat ../validation-helm/test-apps/python/chart.yaml | envsubst | kubectl delete -f - --ignore-not-found
+cat ../validation-helm/test-apps/dotnet/chart.yaml | envsubst | kubectl delete -f - --ignore-not-found
+cat ../validation-helm/test-apps/testappcaller/chart.yaml | envsubst | kubectl delete -f - --ignore-not-found
+
+
 echo "Uninstalling test apps..."
 helm uninstall -n ${TEST_NS} "${SOURCE_RELEASE_NAME}" --ignore-not-found 2>/dev/null || true
 helm uninstall -n ${TEST_NS} "${JAVA_RELEASE_NAME}" --ignore-not-found 2>/dev/null || true
