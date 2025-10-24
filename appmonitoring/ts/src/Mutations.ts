@@ -1,4 +1,6 @@
 ﻿import { AutoInstrumentationPlatforms, IContainer, IEnvironmentVariable, IVolume, IVolumeMount, PodInfo, OtelParams } from "./RequestDefinition.js";
+import * as Common from "./Common.js";
+
 
 /**
  * Contains a collection of mutations necessary to add functionality to a Pod
@@ -569,48 +571,23 @@ export class Mutations {
     }
 
     /**
-     * Merges OTEL resource attributes, with our attributes taking precedence over existing ones.
-     * Exception: service.name and service.instance.id user values take precedence over ours.
+     * Merges OTEL resource attributes, with our attributes taking precedence over existing ones
+     * Exception: for certain user-priority attributes (like service.name or service.instance.id) user values take precedence over ours
      */
     private static mergeOtelResourceAttributes(existingValue: string, newAttributes: string): string {
         if (!existingValue) {
             return newAttributes;
         }
         
-        // Parse existing attributes into a map
-        const existingAttributes: Record<string, string> = {};
-        const existingPairs = existingValue.split(',');
-        
-        for (const pair of existingPairs) {
-            const trimmedPair = pair.trim();
-            if (trimmedPair) {
-                const [key, ...valueParts] = trimmedPair.split('=');
-                if (key && valueParts.length > 0) {
-                    existingAttributes[key.trim()] = valueParts.join('=').trim();
-                }
-            }
-        }
-        
-        // Parse new attributes into a map
-        const newAttributesMap: Record<string, string> = {};
-        const newPairs = newAttributes.split(',');
-        
-        for (const pair of newPairs) {
-            const trimmedPair = pair.trim();
-            if (trimmedPair) {
-                const [key, ...valueParts] = trimmedPair.split('=');
-                if (key && valueParts.length > 0) {
-                    newAttributesMap[key.trim()] = valueParts.join('=').trim();
-                }
-            }
-        }
+        // Parse existing and new attributes into maps
+        const existingAttributes = Common.parseOtelAttributes(existingValue);
+        const newAttributesMap = Common.parseOtelAttributes(newAttributes);
         
         // Merge attributes with our attributes taking precedence
         const mergedAttributes = { ...existingAttributes, ...newAttributesMap };
         
-        // Special case: for service.name and service.instance.id, user values take precedence
-        const userPriorityKeys = ['service.name', 'service.instance.id'];
-        for (const key of userPriorityKeys) {
+        // user-priority values take precedence
+        for (const key of Mutations.GetUserPriorityOtelResourceAttributeKeys()) {
             if (existingAttributes[key]) {
                 mergedAttributes[key] = existingAttributes[key];
             }
@@ -685,5 +662,9 @@ export class Mutations {
         }
         
         return keys;
+    }
+
+    public static GetUserPriorityOtelResourceAttributeKeys(): Set<string> {
+        return new Set(["service.name", "service.instance.id"]);
     }
 }

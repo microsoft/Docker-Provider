@@ -1,5 +1,7 @@
 ﻿import { Mutations } from "./Mutations.js";
 import { PodInfo, IContainer, ISpec, IVolume, IEnvironmentVariable, AutoInstrumentationPlatforms, IVolumeMount, InstrumentationAnnotationName, EnableApplicationLogsAnnotationName, InstrumentationCR, IInstrumentationState, IMetadata, IAnnotations, IObjectType, OtelParams } from "./RequestDefinition.js";
+import * as Common from "./Common.js";
+
 
 export class Patcher {
 
@@ -165,10 +167,18 @@ export class Patcher {
 
                 // container contains this environment variable
 
-                // special handling for OTEL_RESOURCE_ATTRIBUTES - parse and preserve user's custom attributes
-                if(evtr.name === "OTEL_RESOURCE_ATTRIBUTES") {
+                // special handling for OTEL_RESOURCE_ATTRIBUTES - preserve certain attributes during unpatch
+                // we need to preserve two kinds of attributes:
+                // - attributes that are completely unknown to us (never injected by mutation)
+                // - certain user-priority attributes (e.g. service.name, service.instance.id) that are injected by mutations, but the user-provided value takes precedence during mutation (unlike all other attributes)
+                if(evtr.name === "OTEL_RESOURCE_ATTRIBUTES" && instrumentationState?.crName) {
                     const currentValue = container.env[evIndex].value;
-                    const userAttributes = this.extractUserOtelResourceAttributes(currentValue);
+                    
+                    // check if there's a backup to determine user-provided values
+                    const backupEvName = `${evtr.name}${Patcher.EnvironmentVariableBackupSuffix}`;
+                    const backupEv: IEnvironmentVariable = container.env?.find(e => e.name === backupEvName);
+                    
+                    const userAttributes: string = this.extractUserOtelResourceAttributes(currentValue, backupEv?.value);
                     
                     if(userAttributes) {
                         // user has custom attributes, preserve them
@@ -215,10 +225,14 @@ export class Patcher {
     }
 
     /**
-     * Extracts user-provided OTEL_RESOURCE_ATTRIBUTES by filtering out mutation-injected attributes
-     * Returns null if no user attributes remain, otherwise returns a comma-separated string
+     * Extracts user-provided and user-priority OTEL_RESOURCE_ATTRIBUTES by filtering out mutation-injected attributes
+     * Those are the attributes we need to keep during unpatch as they are needed during patching
+     * Returns null if no such attributes exist, otherwise returns a comma-separated string
+     * NOTE: This function assumes the deployment is mutated (has instrumentation annotation)
+     * @param currentValue - The current value of OTEL_RESOURCE_ATTRIBUTES (potentially mutated)
+     * @param backupValue - The backup value if it exists (user's original value before mutation)
      */
-    private static extractUserOtelResourceAttributes(currentValue: string): string | null {
+    private static extractUserOtelResourceAttributes(currentValue: string, backupValue?: string): string | null {
         if (!currentValue) {
             return null;
         }
@@ -226,21 +240,24 @@ export class Patcher {
         // get the attribute keys that our mutation injects - these should be removed during unpatch
         const mutationAttributeKeys = Mutations.GetMutationOtelResourceAttributeKeys();
 
-        // Parse existing attributes
+        // Parse backup attributes to identify user-provided and user-priority attributes
+        const backupAttributes = Common.parseOtelAttributes(backupValue || '');
+
+        // Parse current attributes
         const userAttributes: Record<string, string> = {};
-        const pairs = currentValue.split(',');
+        const currentAttributes = Common.parseOtelAttributes(currentValue);
         
-        for (const pair of pairs) {
-            const trimmedPair = pair.trim();
-            if (trimmedPair) {
-                const [key, ...valueParts] = trimmedPair.split('=');
-                if (key && valueParts.length > 0) {
-                    const trimmedKey = key.trim();
-                    // keep only attributes that aren't mutation-injected
-                    if (!mutationAttributeKeys.has(trimmedKey)) {
-                        userAttributes[trimmedKey] = valueParts.join('=').trim();
-                    }
+        for (const [trimmedKey, trimmedValue] of Object.entries(currentAttributes) as [string, string][]) {
+            // we can't simply discard user-priority attributes, we need to keep them since they will impact mutation
+            if (Mutations.GetUserPriorityOtelResourceAttributeKeys().has(trimmedKey)) {
+                // if there's a backup and these attributes exist in it, they were user-provided, so preserve them
+                if (backupValue && backupAttributes[trimmedKey]) {
+                    userAttributes[trimmedKey] = trimmedValue;
                 }
+                // otherwise, they were injected by mutation, so don't preserve them
+            } else if (!mutationAttributeKeys.has(trimmedKey)) {
+                // for all other attributes, keep only those that aren't mutation-injected
+                userAttributes[trimmedKey] = trimmedValue;
             }
         }
 

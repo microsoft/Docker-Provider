@@ -762,6 +762,7 @@ export const TestDeployment2 = {
             "metadata": {
                 "generateName": "quieting-garfish-ibm-ope-7459f598b4-",
                 "namespace": "default",
+                "name": "deployment2",
                 "creationTimestamp": null,
                 "labels": {
                     "app": "quieting-garfish-ibm-ope",
