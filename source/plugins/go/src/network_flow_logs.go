@@ -294,27 +294,16 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 	if traceObservationPoint := extractString(flow, "trace_observation_point"); traceObservationPoint != "" {
 		dataMap["TraceObservationPoint"] = traceObservationPoint
 	}
-	// Flow counts and packets
-	if MdsdNetworkFlowLogsStreamTagName == getOutputStreamIdTag(ContainerNetworkLogsStreamName, "", &NetworkFlowTagRefreshTracker) {
-		// For new CONTAINER_NETWORK_LOGS stream, use flow counts from extensions
-		if extensions, ok := flow["extensions"].(map[string]interface{}); ok {
-			if ingressCount, ok := extensions["ingress_flow_count"]; ok {
-				dataMap["IngressFlowCount"] = safeToInt(ingressCount)
-			}
-			if egressCount, ok := extensions["egress_flow_count"]; ok {
-				dataMap["EgressFlowCount"] = safeToInt(egressCount)
-			}
-			if unknownCount, ok := extensions["unknown_direction_flow_count"]; ok {
-				dataMap["UnknownDirectionFlowCount"] = safeToInt(unknownCount)
-			}
+	// Flow counts from extensions
+	if extensions, ok := flow["extensions"].(map[string]interface{}); ok {
+		if ingressCount, ok := extensions["ingress_flow_count"]; ok {
+			dataMap["IngressFlowCount"] = safeToInt(ingressCount)
 		}
-	} else {
-		// For legacy RETINA_NETWORK_FLOW_LOGS stream, use packet counts
-		if packetsSent, ok := flow["packets_sent"]; ok {
-			dataMap["PacketsSent"] = safeToInt(packetsSent)
+		if egressCount, ok := extensions["egress_flow_count"]; ok {
+			dataMap["EgressFlowCount"] = safeToInt(egressCount)
 		}
-		if packetsReceived, ok := flow["packets_received"]; ok {
-			dataMap["PacketsReceived"] = safeToInt(packetsReceived)
+		if unknownCount, ok := extensions["unknown_direction_flow_count"]; ok {
+			dataMap["UnknownDirectionFlowCount"] = safeToInt(unknownCount)
 		}
 	}
 	// Policies
@@ -353,8 +342,17 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 	if summary, ok := flow["Summary"]; ok {
 		additionalData["Summary"] = summary
 	}
-	if extensions, ok := flow["extensions"]; ok {
-		additionalData["Extensions"] = extensions
+	if extensions, ok := flow["extensions"].(map[string]interface{}); ok {
+		// Create a new map without the flow count fields
+		filteredExtensions := make(map[string]interface{})
+		for k, v := range extensions {
+			if k != "ingress_flow_count" && k != "egress_flow_count" && k != "unknown_direction_flow_count" {
+				filteredExtensions[k] = v
+			}
+		}
+		if len(filteredExtensions) > 0 {
+			additionalData["Extensions"] = filteredExtensions
+		}
 	}
 	if len(additionalData) > 0 {
 		dataMap["AdditionalFlowData"] = serializeToJSON(additionalData)
