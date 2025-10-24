@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dotnet-test-app
+  name: {{ .Values.appName }}
   labels:
-    app: dotnet-test-app
+    app: {{ .Values.appName }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: dotnet-test-app
+      app: {{ .Values.appName }}
   template:
     metadata:
       labels:
-        app: dotnet-test-app
+        app: {{ .Values.appName }}
       {{- if .Values.otelInstrumentation }}
       annotations:
         instrumentation.opentelemetry.io/private-preview-inject-dotnet: "true"
       {{- end }}
     spec:
       containers:
-      - name: dotnet-test-app
+      - name: {{ .Values.appName }}
         image: "{{ .Values.image }}"
         imagePullPolicy: Always
         env:

@@ -1,5 +1,6 @@
 # Default values for java-test-app
-image: appmonitoringaddontestacr.azurecr.io/demoaks-java-app:latest
+appName: java-test-app
+image: appmonitoring.azurecr.io/demoaks-java-app:latest
 
 # Port the service runs on
 port: 8080

@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: testappsource
+  name: {{ .Values.appName }}
   labels:
-    app: testappsource
+    app: {{ .Values.appName }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: testappsource
+      app: {{ .Values.appName }}
   template:
     metadata:
       labels:
-        app: testappsource
+        app: {{ .Values.appName }}
     spec:
       containers:
-      - name: testappsource
+      - name: {{ .Values.appName }}
         image: "{{ .Values.image }}"
         imagePullPolicy: Always
         ports:

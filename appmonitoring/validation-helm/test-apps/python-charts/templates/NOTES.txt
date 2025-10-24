@@ -5,7 +5,7 @@ This chart deploys a Python test application for monitoring validation.
 ## Installation
 
 ```bash
-helm install python-test-app oci://appmonitoringaddontestacr.azurecr.io/helm/testapps/python-test-app --version 0.1.0
+helm install {{ .Values.appName }} oci://appmonitoring.azurecr.io/helm/testapps/python-test-app --version 0.1.0
 ```
 
 ## Configuration
@@ -14,14 +14,14 @@ The following table lists the configurable parameters:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `image` | Python app container image | `appmonitoringaddontestacr.azurecr.io/demoaks-python-app:latest` |
+| `image` | Python app container image | `appmonitoring.azurecr.io/demoaks-python-app:latest` |
 | `port` | Service port | `3001` |
 | `targetUrl` | Target URL for the app to call | `http://testappsource-service.default.svc.cluster.local:3001` |
 
 ## Example
 
 ```bash
-helm install python-test-app oci://appmonitoringaddontestacr.azurecr.io/helm/testapps/python-test-app \
+helm install {{ .Values.appName }} oci://appmonitoring.azurecr.io/helm/testapps/python-test-app \
   --version 0.1.0 \
   --set image=myregistry.azurecr.io/python-app:v2.0 \
   --set port=8080

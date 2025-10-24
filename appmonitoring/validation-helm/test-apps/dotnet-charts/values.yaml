@@ -1,5 +1,6 @@
 # Default values for dotnet-test-app
-image: appmonitoringaddontestacr.azurecr.io/demoaks-dotnet-app:latest
+appName: dotnet-test-app
+image: appmonitoring.azurecr.io/demoaks-dotnet-app:latest
 
 # Port the service runs on
 port: 3001

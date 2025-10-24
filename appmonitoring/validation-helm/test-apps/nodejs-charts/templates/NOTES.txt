@@ -1,10 +1,10 @@
-nodejs-test-app has been deployed!
+{{ .Values.appName }} has been deployed!
 
 To check the service:
-  kubectl get service nodejs-test-app-service
+  kubectl get service {{ .Values.appName }}-service
 
 To view the logs:
-  kubectl logs -f deployment/nodejs-test-app
+  kubectl logs -f deployment/{{ .Values.appName }}
 
 The app is running on port {{ .Values.port }} with endpoints:
 - GET / - Returns a simple message

@@ -1,5 +1,6 @@
 # Default values for testappcaller
-image: appmonitoringaddontestacr.azurecr.io/nodejs-caller-app:latest
+appName: testappcaller
+image: appmonitoring.azurecr.io/nodejs-caller-app:latest
 
 # Target applications (customize these for your environment)
 javaHost: "java-test-app-service.test-ns.svc.cluster.local"

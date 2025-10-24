@@ -336,6 +336,13 @@ jobs:
         export PYTHON_TEST_IMAGE_NAME=${{ variables.pythonTestAppImageName }}
         export DOTNET_TEST_IMAGE_NAME=${{ variables.dotnetTestAppImageName }}
 
+        export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
+        export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
+        export PYTHON_TEST_APP_NAME="${{ variables.pythonTestAppName }}"
+        export DOTNET_TEST_APP_NAME="${{ variables.dotnetTestAppName }}"
+        export TEST_APP_SOURCE_NAME="nodejs-source-app"
+        export NODEJS_CALLER_APP_NAME="nodejs-caller-app"
+
         sudo chmod +x ../scripts/install-oci-test-apps.sh
 
         if ! ../scripts/install-oci-test-apps.sh; then

@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nodejs-test-app
+  name: {{ .Values.appName }}
   labels:
-    app: nodejs-test-app
+    app: {{ .Values.appName }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nodejs-test-app
+      app: {{ .Values.appName }}
   template:
     metadata:
       labels:
-        app: nodejs-test-app
+        app: {{ .Values.appName }}
     spec:
       containers:
-      - name: nodejs-test-app
+      - name: {{ .Values.appName }}
         image: "{{ .Values.image }}"
         imagePullPolicy: Always
         env:

@@ -1,5 +1,6 @@
 # Default values for nodejs-test-app
-image: appmonitoringaddontestacr.azurecr.io/demoaks-nodejs-app:latest
+appName: nodejs-test-app
+image: appmonitoring.azurecr.io/demoaks-nodejs-app:latest
 
 # Port the service runs on
 port: 3001

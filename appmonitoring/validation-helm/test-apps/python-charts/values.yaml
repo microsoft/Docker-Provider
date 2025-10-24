@@ -1,5 +1,10 @@
-# Default values for python-test-app
-image: appmonitoringaddontestacr.azurecr.io/demoaks-python-app:latest
+# Default values for the Python test app chart
+
+# Base name used for resources deployed by this chart
+appName: python-test-app
+
+# Container image to deploy
+image: appmonitoring.azurecr.io/demoaks-python-app:latest
 
 # Port the service runs on
 port: 3001

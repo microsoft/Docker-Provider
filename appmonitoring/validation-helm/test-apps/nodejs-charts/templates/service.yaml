@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: nodejs-test-app-service
+  name: {{ .Values.appName }}-service
   labels:
-    app: nodejs-test-app
+    app: {{ .Values.appName }}
 spec:
   type: ClusterIP
   ports:
@@ -11,4 +11,4 @@ spec:
       protocol: TCP
       targetPort: {{ .Values.port }}
   selector:
-    app: nodejs-test-app
+    app: {{ .Values.appName }}
