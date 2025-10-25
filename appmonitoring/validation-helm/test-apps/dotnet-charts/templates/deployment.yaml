@@ -19,11 +19,11 @@ spec:
       {{- end }}
     spec:
       containers:
-      - name: {{ .Values.appName }}
-        image: "{{ .Values.image }}"
-        imagePullPolicy: Always
-        env:
-        - name: TARGET_URL
-          value: "{{ .Values.targetUrl }}"
-        ports:
-        - containerPort: {{ .Values.port }}
+        - name: {{ .Values.appName }}
+          image: "{{ .Values.image }}"
+          imagePullPolicy: Always
+          env:
+            - name: TARGET_URL
+              value: "{{ .Values.targetUrl }}"
+          ports:
+            - containerPort: {{ .Values.port }}

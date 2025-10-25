@@ -17,11 +17,11 @@ spec:
         instrumentation.opentelemetry.io/private-preview-inject-python: "true" # private-preview is enabled via an annotation only
     spec:
       containers:
-      - name: {{ .Values.appName }}
-        image: "{{ .Values.image }}"
-        imagePullPolicy: Always
-        env:
-        - name: TARGET_URL
-          value: "{{ .Values.targetUrl }}"
-        ports:
-        - containerPort: {{ .Values.port }}
+        - name: {{ .Values.appName }}
+          image: "{{ .Values.image }}"
+          imagePullPolicy: Always
+          env:
+            - name: TARGET_URL
+              value: "{{ .Values.targetUrl }}"
+          ports:
+            - containerPort: {{ .Values.port }}

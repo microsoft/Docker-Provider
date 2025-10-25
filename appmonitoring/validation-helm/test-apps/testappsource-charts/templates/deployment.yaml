@@ -15,13 +15,13 @@ spec:
         app: {{ .Values.appName }}
     spec:
       containers:
-      - name: {{ .Values.appName }}
-        image: "{{ .Values.image }}"
-        imagePullPolicy: Always
-        ports:
-        - containerPort: {{ .Values.port }}
-        env:
-        - name: PORT
-          value: "{{ .Values.port }}"
-        - name: MESSAGE
-          value: "{{ .Values.message }}"
+        - name: {{ .Values.appName }}
+          image: "{{ .Values.image }}"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: {{ .Values.port }}
+          env:
+            - name: PORT
+              value: "{{ .Values.port }}"
+            - name: MESSAGE
+              value: "{{ .Values.message }}"
