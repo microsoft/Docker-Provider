@@ -209,7 +209,6 @@ jobs:
 
 - job: validate_webhook_image
   dependsOn: build_linux
-  condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
   pool:
     name: rambhatt-test-es-pool
   variables:
