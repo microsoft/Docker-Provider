@@ -24,13 +24,13 @@ data:
 {{- if .Values.OmsAgent.isFairfax }}
   DOMAIN: {{ b64enc "opinsights.azure.us" }}
 {{- end }}
-{{- if eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT" }}
+{{- if eq .Values.global.commonGlobals.CloudEnvironment "USNat" }}
   DOMAIN: {{ b64enc "opinsights.azure.eaglex.ic.gov" }}
 {{- end }}
-{{- if eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC" }}
+{{- if eq .Values.global.commonGlobals.CloudEnvironment "USSec" }}
   DOMAIN: {{ b64enc "opinsights.azure.microsoft.scloud" }}
 {{- end }}
-{{- if eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD" }}
+{{- if eq .Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud" }}
   DOMAIN: {{ b64enc "opinsights.sovcloud-api.fr" }}
 {{- end }}
 {{- if .Values.OmsAgent.httpsProxy }}
@@ -451,7 +451,7 @@ spec:
   template:
     metadata:
       annotations:
-        agentVersion: "azure-mdsd-1.37.0"
+        agentVersion: "azure-mdsd-1.35.7"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         WSID: {{ $.Values.OmsAgent.workspaceID | b64enc | quote }}
@@ -973,7 +973,7 @@ spec:
         rsName: "ama-logs-rs"
         kubernetes.azure.com/managedby: aks
       annotations:
-        agentVersion: "azure-mdsd-1.37.0"
+        agentVersion: "azure-mdsd-1.35.7"
         cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
@@ -1117,15 +1117,15 @@ spec:
             - name: SIDECAR_SCRAPING_ENABLED
               value: "false"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
+          {{- if (eq .Values.global.commonGlobals.CloudEnvironment "USNat") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
+          {{- if (eq .Values.global.commonGlobals.CloudEnvironment "USSec") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
+          {{- if (eq .Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
           {{- end }}
@@ -1408,15 +1408,15 @@ spec:
           - name: SIDECAR_SCRAPING_ENABLED
             value: "false"
         {{- end }}
-        {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
+        {{- if (eq .Values.global.commonGlobals.CloudEnvironment "USNat") }}
           - name: REQUIRES_CERT_BOOTSTRAP
             value: "true"
         {{- end }}
-        {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
+        {{- if (eq .Values.global.commonGlobals.CloudEnvironment "USSec") }}
           - name: REQUIRES_CERT_BOOTSTRAP
             value: "true"
         {{- end }}
-        {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
+        {{- if (eq .Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
           - name: REQUIRES_CERT_BOOTSTRAP
             value: "true"
         {{- end }}
@@ -1684,7 +1684,7 @@ spec:
         rsName: "ama-logs-multitenancy"
         kubernetes.azure.com/managedby: aks
       annotations:
-        agentVersion: "azure-mdsd-1.37.0"
+        agentVersion: "azure-mdsd-1.35.7"
         cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
@@ -1792,15 +1792,15 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
+          {{- if (eq .Values.global.commonGlobals.CloudEnvironment "USNat") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
+          {{- if (eq .Values.global.commonGlobals.CloudEnvironment "USSec") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
+          {{- if (eq .Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
           {{- end }}
