@@ -101,7 +101,11 @@ Remove-Item /installation -Recurse
 #see  - https://github.com/fluent/fluentd/issues/3374 https://github.com/tmm1/http_parser.rb/issues/70
 
 
+# Disable AMA extensions globally
+[System.Environment]::SetEnvironmentVariable("MA_DISABLE_EXTENSIONS", "1", "Process")
+[System.Environment]::SetEnvironmentVariable("MA_DISABLE_EXTENSIONS", "1", "Machine")
+
 # Remove Unused Monitoring Agent Extensions
-Remove-Item -Path /opt/windowsazuremonitoragent/windowsazuremonitoragent/Monitoring/Agent/Extensions/AzurePerfCollectorExtension -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item -Path /opt/windowsazuremonitoragent/windowsazuremonitoragent/Monitoring/Agent/Extensions/AzureProfilerExtension -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item -Path /opt/windowsazuremonitoragent/windowsazuremonitoragent/Monitoring/Agent/Extensions/AzureProfilerTriggerExtension -Recurse -Force -ErrorAction SilentlyContinue
+# Remove-Item -Path /opt/windowsazuremonitoragent/windowsazuremonitoragent/Monitoring/Agent/Extensions/AzurePerfCollectorExtension -Recurse -Force -ErrorAction SilentlyContinue
+# Remove-Item -Path /opt/windowsazuremonitoragent/windowsazuremonitoragent/Monitoring/Agent/Extensions/AzureProfilerExtension -Recurse -Force -ErrorAction SilentlyContinue
+# Remove-Item -Path /opt/windowsazuremonitoragent/windowsazuremonitoragent/Monitoring/Agent/Extensions/AzureProfilerTriggerExtension -Recurse -Force -ErrorAction SilentlyContinue
