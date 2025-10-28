@@ -8,6 +8,40 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 10/28/2025 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.31 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.31 (windows)
+- Linux
+  - [azurelinux 3.0.20250910](https://github.com/microsoft/azurelinux/releases/tag/3.0.20250910-3.0)
+  - Golang - 1.24.6
+  - Ruby - arm64 - 3.3.5, x86_64 - 3.3.8
+  - MDSD - 1.37.0
+  - Telegraf - 1.36.1   
+  - Fluent-bit - 4.0.9
+  - Fluentd - 1.16.3
+- Windows
+  - Golang - 1.24.6
+  - Ruby - 3.1.1
+  - Windows AMA - 46.31.3
+  - Telegraf - 1.24.2
+  - Fluent-bit - 4.0.3
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Linux
+  * Exclude AMACoreAgent connect logs when OTLP is disabled by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1542
+  * Gangams/workload identity geneva by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1543
+  * OTLP optimize telemetry by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1545
+  * Upgrade Fluent Bit to 4.0.9 (cloudnative build), add missing dependencies and update container library copies by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1535
+  * Adding change for networkflow logs new stream by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1551
+- Windows
+  * N/A
+- Common
+  * Added FIC auth support for Arc extension testing by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1539
+  * Updated Conf test image by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1540
+  * TAF pipeline fix by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1541
+  * add deprecation note for helm chart by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1546
+
 ### 10/06/2025 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.30 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.30 (windows)
