@@ -4,6 +4,17 @@
 {{- $addonTokenAdapterWindowsDefaultImageTag := dict "component" "addon-token-adapter-windows" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag"}}
 {{- $amalogsRSVPAImageTag := dict "component" "addon-resizer" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.addonImageTag" -}}
 {{- $WinImageTag := default $amalogsWindowsDefaultImageTag .Values.OmsAgent.imageTagWindows -}}
+{{/* Determine isusingaadauth value from OmsAgent.isUsingAADAuth */}}
+{{- $isusingaadauth := false -}}
+{{- if hasKey .Values.OmsAgent "isUsingAADAuth" -}}
+  {{- $isusingaadauth = .Values.OmsAgent.isUsingAADAuth -}}
+{{- end -}}
+{{/* Extract cluster information from aksresourceid */}}
+{{- $resourceParts := splitList "/" .Values.OmsAgent.aksResourceID -}}
+{{- $aksclustername := last $resourceParts -}}
+{{- $aksResourceGroup := index $resourceParts 4 -}}
+{{- $region := .Values.global.commonGlobals.Region -}}
+{{- $aksnoderesourcegroup := printf "MC_%s_%s_%s" $aksResourceGroup $aksclustername $region -}}
 apiVersion: v1
 kind: Secret
 metadata:
@@ -24,13 +35,13 @@ data:
 {{- if .Values.OmsAgent.isFairfax }}
   DOMAIN: {{ b64enc "opinsights.azure.us" }}
 {{- end }}
-{{- if eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT" }}
+{{- if eq .Values.global.commonGlobals.CloudEnvironment "USNat" }}
   DOMAIN: {{ b64enc "opinsights.azure.eaglex.ic.gov" }}
 {{- end }}
-{{- if eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC" }}
+{{- if eq .Values.global.commonGlobals.CloudEnvironment "USSec" }}
   DOMAIN: {{ b64enc "opinsights.azure.microsoft.scloud" }}
 {{- end }}
-{{- if eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD" }}
+{{- if eq .Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud" }}
   DOMAIN: {{ b64enc "opinsights.sovcloud-api.fr" }}
 {{- end }}
 {{- if .Values.OmsAgent.httpsProxy }}
@@ -79,7 +90,7 @@ rules:
   resourceNames: [ "ama-logs-rs" ]
   verbs: ["get", "patch"]
 {{- end }}
-{{- if .Values.OmsAgent.isUsingAADAuth }}
+{{- if $isusingaadauth }}
 - apiGroups: [""]
   resources: ["secrets"]
   resourceNames: [{{ .Values.OmsAgent.accessTokenSecretName | quote }}]
@@ -409,12 +420,6 @@ metadata:
 {{- $useDaemonSetSizing := and .Values.global.commonGlobals.isAutomaticSKU .Values.OmsAgent.enableDaemonSetSizing -}}
 {{- $singleSize := dict "containers" (dict "addon-token-adapter" (dict "cpuLimit" "100m" "memoryLimit" "100Mi" "cpuRequest" "20m" "memoryRequest" "50Mi") "ama-logs" (dict "cpuLimit" .Values.OmsAgent.omsAgentDsCPULimitLinux "memoryLimit" .Values.OmsAgent.omsAgentDsMemoryLimitLinux "cpuRequest" "75m" "memoryRequest" "325Mi") "ama-logs-prometheus" (dict "cpuLimit" .Values.OmsAgent.omsAgentPrometheusSidecarCPULimit "memoryLimit" .Values.OmsAgent.omsAgentPrometheusSidecarMemoryLimit "cpuRequest" "75m" "memoryRequest" "225Mi")) -}}
 {{- $sizes := list ($singleSize) -}}
-{{- if $useDaemonSetSizing -}}
-  {{- $singleSize = .Values.OmsAgent.daemonSetSizingValues.singleSize -}}
-  {{- $sizes = list ($singleSize) -}}
-  {{- $sizes = prepend .Values.OmsAgent.daemonSetSizingValues.tShirtSizes $singleSize -}}
-{{- end -}}
-{{/* Generate DaemonSets */}}
 {{- $prevmaxCPU := 0 -}}
 {{- range $index, $size := $sizes -}}
 {{- if gt $index 0 }}
@@ -435,23 +440,17 @@ metadata:
     kubernetes.io/cluster-service: "true"
     addonmanager.kubernetes.io/mode: Reconcile
 {{- end }}
-    {{- if and $useDaemonSetSizing $size.name }}
-    kubernetes.azure.com/ds-tshirt-size: {{ $size.name }}
-    {{- end }}
-  name: ama-logs{{- if and $useDaemonSetSizing $size.name }}-{{ $size.name }}{{- end }}
+  name: ama-logs
   namespace: kube-system
 spec:
   selector:
     matchLabels:
       component: ama-logs-agent
       tier: node
-      {{- if and $useDaemonSetSizing $size.name }}
-      kubernetes.azure.com/ds-tshirt-size: {{ $size.name }}
-      {{- end }}
   template:
     metadata:
       annotations:
-        agentVersion: "azure-mdsd-1.37.0"
+        agentVersion: "azure-mdsd-1.35.7"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         WSID: {{ $.Values.OmsAgent.workspaceID | b64enc | quote }}
@@ -460,9 +459,6 @@ spec:
         component: ama-logs-agent
         tier: node
         kubernetes.azure.com/managedby: aks
-        {{- if and $useDaemonSetSizing $size.name }}
-        kubernetes.azure.com/ds-tshirt-size: {{ $size.name }}
-        {{- end }}
 {{- if semverCompare "<1.11.0" $.Values.global.commonGlobals.Versions.Kubernetes }}
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ""
@@ -477,13 +473,13 @@ spec:
           - name: ndots
             value: "3"
       containers:
-{{- if $.Values.OmsAgent.isUsingAADAuth }}
+{{- if $isusingaadauth }}
         - name: addon-token-adapter
           command:
             - /addon-token-adapter
           args:
             - --secret-namespace=kube-system
-            - --secret-name={{ $.Values.OmsAgent.accessTokenSecretName}}
+            - --secret-name={{ $.Values.OmsAgent.accessTokenSecretName }}
             - --token-server-listening-port=8888
             - --health-server-listening-port=9999
             - --restart-pod-waiting-minutes-on-broken-connection=240
@@ -557,7 +553,7 @@ spec:
             - name: AKS_NODE_RESOURCE_GROUP
               value: "{{ $.Values.OmsAgent.aksNodeResourceGroup }}"
             - name: AKS_REGION
-              value: "{{ $.Values.OmsAgent.aksRegion }}"
+              value: "{{ $.Values.global.commonGlobals.Region }}"
             - name: CONTROLLER_TYPE
               value: "DaemonSet"
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
@@ -586,7 +582,7 @@ spec:
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
           {{- end }}
-          {{- if $.Values.OmsAgent.isUsingAADAuth }}
+          {{- if $isusingaadauth }}
             - name: USING_AAD_MSI_AUTH
               value: "true"
           {{- else }}
@@ -732,7 +728,7 @@ spec:
             - name: AKS_NODE_RESOURCE_GROUP
               value: "{{ $.Values.OmsAgent.aksNodeResourceGroup }}"
             - name: AKS_REGION
-              value: "{{ $.Values.OmsAgent.aksRegion }}"
+              value: "{{ $.Values.global.commonGlobals.Region }}"
             - name: CONTROLLER_TYPE
               value: "DaemonSet"
             - name: CONTAINER_TYPE
@@ -751,7 +747,7 @@ spec:
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
           {{- end }}
-          {{- if $.Values.OmsAgent.isUsingAADAuth }}
+          {{- if $isusingaadauth }}
             - name: USING_AAD_MSI_AUTH
               value: "true"
           {{- else }}
@@ -973,7 +969,7 @@ spec:
         rsName: "ama-logs-rs"
         kubernetes.azure.com/managedby: aks
       annotations:
-        agentVersion: "azure-mdsd-1.37.0"
+        agentVersion: "azure-mdsd-1.35.7"
         cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
@@ -1027,13 +1023,13 @@ spec:
             - --deployment=ama-logs-rs
             - --container=ama-logs
 {{- end }}
-{{- if .Values.OmsAgent.isUsingAADAuth }}
+{{- if $isusingaadauth }}
         - name: addon-token-adapter
           command:
             - /addon-token-adapter
           args:
             - --secret-namespace=kube-system
-            - --secret-name={{ .Values.OmsAgent.accessTokenSecretName}}
+            - --secret-name={{ .Values.OmsAgent.accessTokenSecretName }}
             - --token-server-listening-port=8888
             - --health-server-listening-port=9999
             - --restart-pod-waiting-minutes-on-broken-connection=240
@@ -1091,7 +1087,7 @@ spec:
             - name: AKS_NODE_RESOURCE_GROUP
               value: "{{ .Values.OmsAgent.aksNodeResourceGroup }}"
             - name: AKS_REGION
-              value: "{{ .Values.OmsAgent.aksRegion }}"
+              value: "{{ $.Values.global.commonGlobals.Region }}"
             - name: CONTROLLER_TYPE
               value: "ReplicaSet"
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
@@ -1117,19 +1113,19 @@ spec:
             - name: SIDECAR_SCRAPING_ENABLED
               value: "false"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
+          {{- if (eq .Values.global.commonGlobals.CloudEnvironment "USNat") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
+          {{- if (eq .Values.global.commonGlobals.CloudEnvironment "USSec") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
+          {{- if (eq .Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
           {{- end }}
-          {{- if .Values.OmsAgent.isUsingAADAuth }}
+          {{- if $isusingaadauth }}
             - name: USING_AAD_MSI_AUTH
               value: "true"
           {{- else }}
@@ -1379,7 +1375,7 @@ spec:
           - name: AKS_RESOURCE_ID
             value: "{{ .Values.OmsAgent.aksResourceID }}"
           - name: AKS_REGION
-            value: "{{ .Values.OmsAgent.aksRegion }}"
+            value: "{{ $.Values.global.commonGlobals.Region }}"
           - name: CONTROLLER_TYPE
             value: "DaemonSet"
           - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
@@ -1408,19 +1404,19 @@ spec:
           - name: SIDECAR_SCRAPING_ENABLED
             value: "false"
         {{- end }}
-        {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
+        {{- if (eq .Values.global.commonGlobals.CloudEnvironment "USNat") }}
           - name: REQUIRES_CERT_BOOTSTRAP
             value: "true"
         {{- end }}
-        {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
+        {{- if (eq .Values.global.commonGlobals.CloudEnvironment "USSec") }}
           - name: REQUIRES_CERT_BOOTSTRAP
             value: "true"
         {{- end }}
-        {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
+        {{- if (eq .Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
           - name: REQUIRES_CERT_BOOTSTRAP
             value: "true"
         {{- end }}
-        {{- if .Values.OmsAgent.isUsingAADAuth }}
+        {{- if $isusingaadauth }}
           - name: USING_AAD_MSI_AUTH
             value: "true"
         {{- else }}
@@ -1467,7 +1463,7 @@ spec:
             name: ca-certs
             readOnly: true
         {{- end }}
-        {{- if .Values.OmsAgent.isUsingAADAuth }}
+        {{- if $isusingaadauth }}
           - mountPath: C:\etc\IMDS-access-token
             name: imds-token
             readOnly: true
@@ -1482,19 +1478,19 @@ spec:
                 - fluentdwinaks
                 - "C:\\etc\\amalogswindows\\filesystemwatcher.txt"
                 - "C:\\etc\\amalogswindows\\renewcertificate.txt"
-              {{- if and .Values.OmsAgent.isUsingAADAuth .Values.OmsAgent.isWindowsAMAEnabled }}
+              {{- if and $isusingaadauth .Values.OmsAgent.isWindowsAMAEnabled }}
                 - "MonAgentCore.exe"
               {{- end }}
             periodSeconds: 60
             initialDelaySeconds: 180
             timeoutSeconds: 15
-{{- if and (and .Values.OmsAgent.isUsingAADAuth .Values.OmsAgent.isWindowsAMAEnabled) (not .Values.OmsAgent.isWindowsAddonTokenAdapterDisabled) }}
+{{- if and (and $isusingaadauth .Values.OmsAgent.isWindowsAMAEnabled) (not .Values.OmsAgent.isWindowsAddonTokenAdapterDisabled) }}
         - name: addon-token-adapter-win
           command:
             - addon-token-adapter-win
           args:
             - --secret-namespace=kube-system
-            - --secret-name={{ .Values.OmsAgent.accessTokenSecretName}}
+            - --secret-name={{ .Values.OmsAgent.accessTokenSecretName }}
             - --token-server-listening-port=8888
             - --health-server-listening-port=9999
             - --restart-pod-waiting-minutes-on-broken-connection=240
@@ -1579,12 +1575,12 @@ spec:
         hostPath:
           path: C:\ca
     {{- end }}
-    {{- if .Values.OmsAgent.isUsingAADAuth }}
+    {{- if $isusingaadauth }}
       - name: imds-token
         secret:
-          secretName: {{ .Values.OmsAgent.accessTokenSecretName}}
+          secretName: {{ .Values.OmsAgent.accessTokenSecretName }}
     {{- end }}
-{{- if and .Values.OmsAgent.isUsingAADAuth .Values.OmsAgent.isMultitenancyLogsEnabled }}
+{{- if and $isusingaadauth .Values.OmsAgent.isMultitenancyLogsEnabled }}
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -1615,7 +1611,7 @@ spec:
       name: memory
       target:
         type: Utilization
-        averageUtilization: {{ .Values.OmsAgent.omsAgentMultitenancyHPAAvgMemoryUtilization}}
+        averageUtilization: {{ .Values.OmsAgent.omsAgentMultitenancyHPAAvgMemoryUtilization }}
   behavior:
     scaleDown:
       stabilizationWindowSeconds: 1200
@@ -1684,7 +1680,7 @@ spec:
         rsName: "ama-logs-multitenancy"
         kubernetes.azure.com/managedby: aks
       annotations:
-        agentVersion: "azure-mdsd-1.37.0"
+        agentVersion: "azure-mdsd-1.35.7"
         cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
@@ -1785,22 +1781,22 @@ spec:
             - name: AKS_NODE_RESOURCE_GROUP
               value: "{{ .Values.OmsAgent.aksNodeResourceGroup }}"
             - name: AKS_REGION
-              value: "{{ .Values.OmsAgent.aksRegion }}"
+              value: "{{ $.Values.global.commonGlobals.Region }}"
             - name: CONTROLLER_TYPE
               value: "ReplicaSet"
             - name: NODE_IP
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
+          {{- if (eq .Values.global.commonGlobals.CloudEnvironment "USNat") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
+          {{- if (eq .Values.global.commonGlobals.CloudEnvironment "USSec") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
+          {{- if (eq .Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
           {{- end }}
@@ -1891,3 +1887,9 @@ spec:
                 values:
                 - system
 {{- end }}
+
+
+
+
+
+
