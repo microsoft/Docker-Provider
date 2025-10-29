@@ -53,8 +53,8 @@ pipelines:
     retail:
       source:
         eslint:
-          lastModifiedDate: 2025-10-28
+          lastModifiedDate: 2025-10-29
         psscriptanalyzer:
-          lastModifiedDate: 2025-10-28
+          lastModifiedDate: 2025-10-29
         armory:
-          lastModifiedDate: 2025-10-28
+          lastModifiedDate: 2025-10-29
