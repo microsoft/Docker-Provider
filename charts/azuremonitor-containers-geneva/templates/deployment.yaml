@@ -20,12 +20,19 @@ spec:
        agentVersion: {{ .Values.image.agentVersion }}
      labels:
        rsName: "ama-logs-geneva"
+       {{- if eq (.Values.genevaLogsConfig.authidType | lower) "authworkloadidentity" }}
+       azure.workload.identity/use: "true"
+       {{- else }}
        aadpodidbinding: {{ .Values.genevaLogsConfig.aadpodidbinding }}
+       {{- end }}
     spec:
      {{- with .Values.affinity }}
      affinity: {{- toYaml . | nindent 8 }}
      {{- end }}
     #  terminationGracePeriodSeconds: 45
+     {{- if eq (.Values.genevaLogsConfig.authidType | lower) "authworkloadidentity" }}
+     serviceAccountName: {{ .Values.genevaLogsConfig.serviceAccountName | quote }}
+     {{- end }}
      containers:
        - name: ama-logs-geneva
          image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag }}
@@ -61,10 +68,15 @@ spec:
            value: {{ .Values.genevaLogsConfig.namespace  | quote }}
          - name: MONITORING_CONFIG_VERSION
            value: {{ .Values.genevaLogsConfig.configversion  | quote }}
+        {{- if eq (.Values.genevaLogsConfig.authidType | lower) "authworkloadidentity" }}
+         - name: MONITORING_GCS_AUTH_ID_TYPE
+           value: "AuthWorkloadIdentity"
+        {{- else }}
          - name: MONITORING_GCS_AUTH_ID_TYPE
            value: "AuthMSIToken"
          - name: MONITORING_GCS_AUTH_ID
-           value: {{ .Values.genevaLogsConfig.authid  | quote }}
+           value: {{ .Values.genevaLogsConfig.authid | quote }}
+        {{- end }}
          - name: MONITORING_GCS_REGION
            value: {{ .Values.genevaLogsConfig.region | quote }}
          - name: MONITORING_USE_GENEVA_CONFIG_SERVICE

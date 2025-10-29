@@ -1002,8 +1002,13 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && isGenevaMode; then
     echo "Runnning AMA in Geneva Logs Integration Mode"
     export MONITORING_USE_GENEVA_CONFIG_SERVICE=true
     echo "export MONITORING_USE_GENEVA_CONFIG_SERVICE=true" >> ~/.bashrc
-    export MONITORING_GCS_AUTH_ID_TYPE=AuthMSIToken
-    echo "export MONITORING_GCS_AUTH_ID_TYPE=AuthMSIToken" >> ~/.bashrc
+    if [ "${MONITORING_GCS_AUTH_ID_TYPE}" = "AuthWorkloadIdentity" ]; then
+        echo "Using AuthWorkloadIdentity for MONITORING_GCS_AUTH_ID_TYPE"
+    else
+        export MONITORING_GCS_AUTH_ID_TYPE=AuthMSIToken
+        echo "export MONITORING_GCS_AUTH_ID_TYPE=AuthMSIToken" >> ~/.bashrc
+        echo "Using AuthMSIToken for MONITORING_GCS_AUTH_ID_TYPE"
+    fi
     MDSD_AAD_MSI_AUTH_ARGS="-A"
     # except logs, all other data types ingested via sidecar container MDSD port
     export MDSD_FLUENT_SOCKET_PORT="26230"
