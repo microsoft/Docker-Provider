@@ -571,15 +571,15 @@ spec:
               value: "4319"
             - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
               value: "{{ $.Values.OmsAgent.isPrometheusMetricsScrapingDisabled }}"
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
+          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USNat") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
+          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USSec") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
+          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
           {{- end }}
@@ -736,15 +736,15 @@ spec:
               value: "PrometheusSidecar"
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
               value: "{{ $.Values.OmsAgent.identityClientID }}"
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
+          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USNat") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
+          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USSec") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
+          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "AZUREBLEUCLOUD") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
           {{- end }}
