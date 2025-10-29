@@ -9,6 +9,7 @@
 {{- if hasKey .Values.OmsAgent "isUsingAADAuth" -}}
   {{- $isusingaadauth = .Values.OmsAgent.isUsingAADAuth -}}
 {{- end -}}
+{{/* TODO This needs to be fixed post Canary validation */}}
 {{/* Extract cluster information from aksresourceid */}}
 {{- $resourceParts := splitList "/" .Values.OmsAgent.aksResourceID -}}
 {{- $aksclustername := last $resourceParts -}}
@@ -35,13 +36,13 @@ data:
 {{- if .Values.OmsAgent.isFairfax }}
   DOMAIN: {{ b64enc "opinsights.azure.us" }}
 {{- end }}
-{{- if eq .Values.global.commonGlobals.CloudEnvironment "USNat" }}
+{{- if eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT" }}
   DOMAIN: {{ b64enc "opinsights.azure.eaglex.ic.gov" }}
 {{- end }}
-{{- if eq .Values.global.commonGlobals.CloudEnvironment "USSec" }}
+{{- if eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC" }}
   DOMAIN: {{ b64enc "opinsights.azure.microsoft.scloud" }}
 {{- end }}
-{{- if eq .Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud" }}
+{{- if eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD" }}
   DOMAIN: {{ b64enc "opinsights.sovcloud-api.fr" }}
 {{- end }}
 {{- if .Values.OmsAgent.httpsProxy }}
@@ -570,15 +571,15 @@ spec:
               value: "4319"
             - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
               value: "{{ $.Values.OmsAgent.isPrometheusMetricsScrapingDisabled }}"
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USNat") }}
+          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
           {{- end }}
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USSec") }}
+          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
+          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
           {{- end }}
@@ -735,15 +736,15 @@ spec:
               value: "PrometheusSidecar"
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
               value: "{{ $.Values.OmsAgent.identityClientID }}"
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USNat") }}
+          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
           {{- end }}
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USSec") }}
+          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
+          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
           {{- end }}
@@ -1113,15 +1114,15 @@ spec:
             - name: SIDECAR_SCRAPING_ENABLED
               value: "false"
           {{- end }}
-          {{- if (eq .Values.global.commonGlobals.CloudEnvironment "USNat") }}
+          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
           {{- end }}
-          {{- if (eq .Values.global.commonGlobals.CloudEnvironment "USSec") }}
+          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq .Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
+          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
           {{- end }}
@@ -1404,15 +1405,15 @@ spec:
           - name: SIDECAR_SCRAPING_ENABLED
             value: "false"
         {{- end }}
-        {{- if (eq .Values.global.commonGlobals.CloudEnvironment "USNat") }}
+        {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
           - name: REQUIRES_CERT_BOOTSTRAP
             value: "true"
         {{- end }}
-        {{- if (eq .Values.global.commonGlobals.CloudEnvironment "USSec") }}
+        {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
           - name: REQUIRES_CERT_BOOTSTRAP
             value: "true"
         {{- end }}
-        {{- if (eq .Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
+        {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
           - name: REQUIRES_CERT_BOOTSTRAP
             value: "true"
         {{- end }}
@@ -1788,15 +1789,15 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-          {{- if (eq .Values.global.commonGlobals.CloudEnvironment "USNat") }}
+          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
           {{- end }}
-          {{- if (eq .Values.global.commonGlobals.CloudEnvironment "USSec") }}
+          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq .Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
+          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
           {{- end }}
