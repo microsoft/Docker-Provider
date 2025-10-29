@@ -17,7 +17,7 @@ genevaLogsConfig:
 
 image:
   repository: mcr.microsoft.com/azuremonitor/containerinsights/ciprod
-  tag: "3.1.30"
+  tag: "3.1.31"
   pullPolicy: IfNotPresent
   agentVersion: "azure-mdsd-1.37.0"
 nameOverride: ""
