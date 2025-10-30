@@ -91,6 +91,7 @@ rules:
   resourceNames: [ "ama-logs-rs" ]
   verbs: ["get", "patch"]
 {{- end }}
+{{/* - if .Values.OmsAgent.isUsingAADAuth  */}}
 {{- if $isusingaadauth }}
 - apiGroups: [""]
   resources: ["secrets"]
@@ -553,6 +554,7 @@ spec:
               value: "{{ $.Values.OmsAgent.aksResourceID }}"
             - name: AKS_NODE_RESOURCE_GROUP
               value: "{{ $.Values.OmsAgent.aksNodeResourceGroup }}"
+            {{/* TODO This needs to be fixed post Canary validation */}}
             - name: AKS_REGION
               value: "{{ $.Values.global.commonGlobals.Region }}"
             - name: CONTROLLER_TYPE
@@ -728,6 +730,7 @@ spec:
               value: "{{ $.Values.OmsAgent.aksResourceID }}"
             - name: AKS_NODE_RESOURCE_GROUP
               value: "{{ $.Values.OmsAgent.aksNodeResourceGroup }}"
+            {{/* TODO This needs to be fixed post Canary validation */}}
             - name: AKS_REGION
               value: "{{ $.Values.global.commonGlobals.Region }}"
             - name: CONTROLLER_TYPE
@@ -1087,6 +1090,7 @@ spec:
               value: "{{ .Values.OmsAgent.aksResourceID }}"
             - name: AKS_NODE_RESOURCE_GROUP
               value: "{{ .Values.OmsAgent.aksNodeResourceGroup }}"
+            {{/* TODO This needs to be fixed post Canary validation */}}
             - name: AKS_REGION
               value: "{{ $.Values.global.commonGlobals.Region }}"
             - name: CONTROLLER_TYPE
@@ -1375,6 +1379,7 @@ spec:
             value: "1"
           - name: AKS_RESOURCE_ID
             value: "{{ .Values.OmsAgent.aksResourceID }}"
+          {{/* TODO This needs to be fixed post Canary validation */}}
           - name: AKS_REGION
             value: "{{ $.Values.global.commonGlobals.Region }}"
           - name: CONTROLLER_TYPE
@@ -1781,6 +1786,7 @@ spec:
               value: "{{ .Values.OmsAgent.aksResourceID }}"
             - name: AKS_NODE_RESOURCE_GROUP
               value: "{{ .Values.OmsAgent.aksNodeResourceGroup }}"
+            {{/* TODO This needs to be fixed post Canary validation */}}
             - name: AKS_REGION
               value: "{{ $.Values.global.commonGlobals.Region }}"
             - name: CONTROLLER_TYPE
@@ -1888,9 +1894,3 @@ spec:
                 values:
                 - system
 {{- end }}
-
-
-
-
-
-
