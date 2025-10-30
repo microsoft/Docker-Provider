@@ -5,7 +5,7 @@
 #  3. copy the files under installer directory to ..\..\kubernetes\windows\amalogswindows
 #  4. Builds the livenessprobe cpp and copy the executable to the under directory ..\..\kubernetes\windows\amalogswindows
 
-$dotnetcoreframework = "net6.0"
+$dotnetcoreframework = "net8.0"
 
 Write-Host("Building Certificate generator code...")
 $currentdir =  $PSScriptRoot
