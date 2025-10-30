@@ -421,6 +421,13 @@ metadata:
 {{- $useDaemonSetSizing := and .Values.global.commonGlobals.isAutomaticSKU .Values.OmsAgent.enableDaemonSetSizing -}}
 {{- $singleSize := dict "containers" (dict "addon-token-adapter" (dict "cpuLimit" "100m" "memoryLimit" "100Mi" "cpuRequest" "20m" "memoryRequest" "50Mi") "ama-logs" (dict "cpuLimit" .Values.OmsAgent.omsAgentDsCPULimitLinux "memoryLimit" .Values.OmsAgent.omsAgentDsMemoryLimitLinux "cpuRequest" "75m" "memoryRequest" "325Mi") "ama-logs-prometheus" (dict "cpuLimit" .Values.OmsAgent.omsAgentPrometheusSidecarCPULimit "memoryLimit" .Values.OmsAgent.omsAgentPrometheusSidecarMemoryLimit "cpuRequest" "75m" "memoryRequest" "225Mi")) -}}
 {{- $sizes := list ($singleSize) -}}
+{{/* - if $useDaemonSetSizing - */}}
+  {{/* - $singleSize = .Values.OmsAgent.daemonSetSizingValues.singleSize - */}}
+  {{/* - $sizes = .Values.OmsAgent.daemonSetSizingValues.tShirtSizes - */}}
+  {{/* - $sizes = list ($singleSize) - */}}
+  {{/* - $sizes = prepend .Values.OmsAgent.daemonSetSizingValues.tShirtSizes $singleSize - */}}
+{{/* - end - */}}
+{{/* Generate DaemonSets */}}
 {{- $prevmaxCPU := 0 -}}
 {{- range $index, $size := $sizes -}}
 {{- if gt $index 0 }}
@@ -441,13 +448,23 @@ metadata:
     kubernetes.io/cluster-service: "true"
     addonmanager.kubernetes.io/mode: Reconcile
 {{- end }}
-  name: ama-logs
+    {{/*
+    {{- if and $useDaemonSetSizing $size.name }}
+    kubernetes.azure.com/ds-tshirt-size: {{ $size.name }}
+    {{- end }}
+    */}}
+  name: ama-logs{{/* {{- if and $useDaemonSetSizing $size.name }}-{{ $size.name }}{{- end }} */}}
   namespace: kube-system
 spec:
   selector:
     matchLabels:
       component: ama-logs-agent
       tier: node
+      {{/*
+      {{- if and $useDaemonSetSizing $size.name }}
+      kubernetes.azure.com/ds-tshirt-size: {{ $size.name }}
+      {{- end }}
+      */}}
   template:
     metadata:
       annotations:
@@ -460,6 +477,11 @@ spec:
         component: ama-logs-agent
         tier: node
         kubernetes.azure.com/managedby: aks
+        {{/*
+        {{- if and $useDaemonSetSizing $size.name }}
+        kubernetes.azure.com/ds-tshirt-size: {{ $size.name }}
+        {{- end }}
+        */}}
 {{- if semverCompare "<1.11.0" $.Values.global.commonGlobals.Versions.Kubernetes }}
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ""
