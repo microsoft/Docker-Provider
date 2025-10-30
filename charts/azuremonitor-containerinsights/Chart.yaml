@@ -1,4 +1,4 @@
 apiVersion: v2
 description: azure-monitor-containers helm chart
-name: azuremonitor-containers
-version: 3.2.0
+name: azuremonitor-containers-extension
+version: 3.2.1-aks-beta-1

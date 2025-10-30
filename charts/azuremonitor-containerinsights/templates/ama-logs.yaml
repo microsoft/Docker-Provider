@@ -744,7 +744,7 @@ spec:
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "AZUREBLEUCLOUD") }}
+          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
           {{- end }}
