@@ -423,7 +423,6 @@ metadata:
 {{- $sizes := list ($singleSize) -}}
 {{/* - if $useDaemonSetSizing - */}}
   {{/* - $singleSize = .Values.OmsAgent.daemonSetSizingValues.singleSize - */}}
-  {{/* - $sizes = .Values.OmsAgent.daemonSetSizingValues.tShirtSizes - */}}
   {{/* - $sizes = list ($singleSize) - */}}
   {{/* - $sizes = prepend .Values.OmsAgent.daemonSetSizingValues.tShirtSizes $singleSize - */}}
 {{/* - end - */}}
