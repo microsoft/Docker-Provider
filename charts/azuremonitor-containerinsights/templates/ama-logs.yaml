@@ -91,7 +91,6 @@ rules:
   resourceNames: [ "ama-logs-rs" ]
   verbs: ["get", "patch"]
 {{- end }}
-{{/* - if .Values.OmsAgent.isUsingAADAuth  */}}
 {{- if $isusingaadauth }}
 - apiGroups: [""]
   resources: ["secrets"]
