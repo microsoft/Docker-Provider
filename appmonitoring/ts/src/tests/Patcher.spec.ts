@@ -68,8 +68,8 @@ describe("Patcher", () => {
         // Generate environment variables for each container with their actual names
         const container0Name = admissionReview.request.object.spec.template.spec.containers[0].name;
         const container1Name = admissionReview.request.object.spec.template.spec.containers[1].name;
-        const newEnvironmentVariablesContainer0: object[] = Mutations.GenerateEnvironmentVariables(podInfo, container0Name, platforms, true, cr1.spec.destination.applicationInsightsConnectionString, clusterArmId, clusterArmRegion, clusterName, testOtelParams, undefined, platforms.includes(AutoInstrumentationPlatforms.Python));
-        const newEnvironmentVariablesContainer1: object[] = Mutations.GenerateEnvironmentVariables(podInfo, container1Name, platforms, true, cr1.spec.destination.applicationInsightsConnectionString, clusterArmId, clusterArmRegion, clusterName, testOtelParams, undefined, platforms.includes(AutoInstrumentationPlatforms.Python));
+        const newEnvironmentVariablesContainer0: object[] = Mutations.GenerateEnvironmentVariables(podInfo, container0Name, platforms, true, cr1.spec.destination.applicationInsightsConnectionString, clusterArmId, clusterArmRegion, clusterName, testOtelParams);
+        const newEnvironmentVariablesContainer1: object[] = Mutations.GenerateEnvironmentVariables(podInfo, container1Name, platforms, true, cr1.spec.destination.applicationInsightsConnectionString, clusterArmId, clusterArmRegion, clusterName, testOtelParams);
         expect((<any>result[0]).value.spec.template.spec.containers.length).toBe(admissionReview.request.object.spec.template.spec.containers.length);
         newEnvironmentVariablesContainer0.forEach(env => expect((<any>result[0]).value.spec.template.spec.containers[0].env).toContainEqual(env));
         newEnvironmentVariablesContainer1.forEach(env => expect((<any>result[0]).value.spec.template.spec.containers[1].env).toContainEqual(env));
@@ -132,8 +132,8 @@ describe("Patcher", () => {
         // Generate environment variables for each container with their actual names
         const container0Name = admissionReview.request.object.spec.template.spec.containers[0].name;
         const container1Name = admissionReview.request.object.spec.template.spec.containers[1].name;
-        const newEnvironmentVariablesContainer0: object[] = Mutations.GenerateEnvironmentVariables(podInfo, container0Name, cr1.spec.settings.autoInstrumentationPlatforms, true, cr1.spec.destination.applicationInsightsConnectionString, clusterArmId, clusterArmRegion, clusterName, testOtelParams, undefined, cr1.spec.settings.autoInstrumentationPlatforms.includes(AutoInstrumentationPlatforms.Python));
-        const newEnvironmentVariablesContainer1: object[] = Mutations.GenerateEnvironmentVariables(podInfo, container1Name, cr1.spec.settings.autoInstrumentationPlatforms, true, cr1.spec.destination.applicationInsightsConnectionString, clusterArmId, clusterArmRegion, clusterName, testOtelParams, undefined, cr1.spec.settings.autoInstrumentationPlatforms.includes(AutoInstrumentationPlatforms.Python));
+        const newEnvironmentVariablesContainer0: object[] = Mutations.GenerateEnvironmentVariables(podInfo, container0Name, cr1.spec.settings.autoInstrumentationPlatforms, true, cr1.spec.destination.applicationInsightsConnectionString, clusterArmId, clusterArmRegion, clusterName, testOtelParams);
+        const newEnvironmentVariablesContainer1: object[] = Mutations.GenerateEnvironmentVariables(podInfo, container1Name, cr1.spec.settings.autoInstrumentationPlatforms, true, cr1.spec.destination.applicationInsightsConnectionString, clusterArmId, clusterArmRegion, clusterName, testOtelParams);
         expect((<any>result[0]).value.spec.template.spec.containers.length).toBe(admissionReview.request.object.spec.template.spec.containers.length);
         newEnvironmentVariablesContainer0.forEach(env => expect((<any>result[0]).value.spec.template.spec.containers[0].env).toContainEqual(env));
         newEnvironmentVariablesContainer1.forEach(env => expect((<any>result[0]).value.spec.template.spec.containers[1].env).toContainEqual(env));
@@ -730,7 +730,7 @@ describe("Patcher", () => {
         expect(metricsEndpointEnv.value).toBe("http://$(OTEL_ENDPOINT_NODE_IP):4319/v1/metrics");
 
         const metricsExporterEnv = containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_METRICS_EXPORTER");
-        expect(metricsExporterEnv.value).toBe("otlp,azure_monitor");
+        expect(metricsExporterEnv.value).toBe("otlp");
     });
 
     it("OTEL environment variables - includes only logs variables when only logsEnabled is true", async () => {
@@ -827,7 +827,7 @@ describe("Patcher", () => {
         expect(containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_METRICS_EXPORTER")).toBeDefined();
 
         const metricsExporterEnv = containerEnv.find((ev: IEnvironmentVariable) => ev.name === "OTEL_METRICS_EXPORTER");
-        expect(metricsExporterEnv.value).toBe("otlp,azure_monitor");
+        expect(metricsExporterEnv.value).toBe("otlp");
     });
 
     it("OTEL environment variables - excludes all OTEL variables when both logsEnabled and metricsEnabled are false", async () => {

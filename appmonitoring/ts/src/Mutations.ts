@@ -167,7 +167,7 @@ export class Mutations {
     /**
      * Generates environment variables necessary to configure agents. Agents take configuration from these environment variables once they run.
      */
-    public static GenerateEnvironmentVariables(podInfo: PodInfo, containerName: string, platforms: AutoInstrumentationPlatforms[], disableAppLogs: boolean, connectionString: string, armId: string, armRegion: string, clusterName: string, otelParams: OtelParams, existingEnvironmentVariables?: Record<string, IEnvironmentVariable>, isPythonEnabled?: boolean): IEnvironmentVariable[] {
+    public static GenerateEnvironmentVariables(podInfo: PodInfo, containerName: string, platforms: AutoInstrumentationPlatforms[], disableAppLogs: boolean, connectionString: string, armId: string, armRegion: string, clusterName: string, otelParams: OtelParams, existingEnvironmentVariables?: Record<string, IEnvironmentVariable>): IEnvironmentVariable[] {
         const applicationId = Mutations.parseApplicationIdFromConnectionString(connectionString);
         
         // Build our OTEL resource attributes
@@ -284,14 +284,11 @@ export class Mutations {
         }
 
         if (otelParams.metricsEnabled) {
-            // //!!! temporary special case: when Python is enabled (via private-preview annotation), set OTEL_METRICS_EXPORTER to "otlp" only
-            // Python distro can't handle azure_monitor currently
-            const metricsExporterValue = isPythonEnabled ? "otlp" : "otlp,azure_monitor";
             returnValue.push(
                 // setting this to ensure Microsoft distros do send OTLP metrics (forked, sent to Breeze and OTLP endpoint). For OSS SDKs this defaults to "otlp" anyway, so no impact
                 {
                     name: "OTEL_METRICS_EXPORTER",
-                    value: metricsExporterValue
+                    value: "otlp"
                 },
                 {
                     name: "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", //!!! http -> https
@@ -315,7 +312,7 @@ export class Mutations {
                     {
                         returnValue.push(...[{
                             name: "JAVA_TOOL_OPTIONS",
-                            value: `-javaagent:${Mutations.agentVolumeMountPathJava}/applicationinsights-agent-codeless.jar`,
+                            value: `-javaagent:${Mutations.agentVolumeMountPathJava}/applicationinsights-agent-codeless.jar -Dotel.metrics.exporter=otlp,azure_monitor`,
                             platformSpecific: platforms[i]
                         },
                         {
