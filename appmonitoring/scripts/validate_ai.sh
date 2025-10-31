@@ -24,7 +24,7 @@ verify_AI_telemetry() {
     local pod_name="$1"
     local app_type="$2"
     local skip_exceptions="$3"
-    local queries=("requests" "dependencies")
+    local queries=("requests" "dependencies", "customMetrics")
     local found_any=0
 
     if [[ "$skip_exceptions" != "true" ]]; then
