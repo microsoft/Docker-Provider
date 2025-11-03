@@ -82,7 +82,7 @@ data:
         # Any errors related to prometheus scraping can be found in the KubeMonAgentEvents table in the Log Analytics workspace that the cluster is sending data to.
 
         #Interval specifying how often to scrape for metrics. This is duration of time and can be specified for supporting settings by combining an integer value and time unit as a string value. Valid time units are ns, us (or µs), ms, s, m, h.
-        interval = "1m"
+        interval = "1s"
 
         ## Uncomment the following settings with valid string arrays for prometheus scraping
         #fieldpass = ["metric_to_pass1", "metric_to_pass12"]
@@ -100,7 +100,7 @@ data:
         # - prometheus.io/scheme: Default is http
         # - prometheus.io/path: If the metrics path is not /metrics, define it with this annotation.
         # - prometheus.io/port: If port is not 9102 use this annotation
-        monitor_kubernetes_pods = false
+        monitor_kubernetes_pods = true
 
         ## Restricts Kubernetes monitoring to namespaces for pods that have annotations set and are scraped using the monitor_kubernetes_pods setting.
         ## This will take effect when monitor_kubernetes_pods is set to true

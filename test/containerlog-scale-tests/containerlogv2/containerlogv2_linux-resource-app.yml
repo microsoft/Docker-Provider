@@ -51,7 +51,18 @@ spec:
           - |
             while true; do
               timestamp=$(date "+%Y/%m/%d %H:%M:%S.%3N")
+              # Generate random log level with weighted distribution
+              rand=$((RANDOM % 100))
+              if [ $rand -lt 60 ]; then
+                logLevel="INFO"
+              elif [ $rand -lt 80 ]; then
+                logLevel="DEBUG"
+              elif [ $rand -lt 95 ]; then
+                logLevel="WARN"
+              else
+                logLevel="ERROR"
+              fi
               logEntry=$(printf 'Test-%.0s' {1..200}) # Adjusted to create a log entry of about 1000 bytes
-              echo "$timestamp $logEntry"
+              echo "$timestamp [$logLevel] $logEntry"
               sleep 0.0001  # Sleep for round up to 1 millisecond # Generates approximately 1000 logs per second
             done
