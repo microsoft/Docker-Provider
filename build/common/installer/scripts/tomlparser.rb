@@ -22,11 +22,11 @@ require_relative "ConfigParseErrorLogger"
 @excludePath = "*.csv2" #some invalid path
 @enrichContainerLogs = false
 @containerLogSchemaVersion = ""
-@collectAllKubeEvents = false
+@collectAllKubeEvents = ENV["AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS"]&.downcase == "true" || false
 @containerLogsRoute = "v2" # default for linux
 @logEnableMultiline = "false"
 @stacktraceLanguages = "go,java,python" #supported languages for multiline logs. java is also used for dotnet stacktraces
-@logEnableKubernetesMetadata = false
+@logEnableKubernetesMetadata = ENV["AZMON_KUBERNETES_METADATA_ENABLED"]&.downcase == "true" || false
 @logKubernetesMetadataIncludeFields = "podlabels,podannotations,poduid,image,imageid,imagerepo,imagetag"
 @annotationBasedLogFiltering = false
 @allowed_system_namespaces = ['kube-system', 'gatekeeper-system', 'calico-system', 'azure-arc', 'kube-public', 'kube-node-lease']
