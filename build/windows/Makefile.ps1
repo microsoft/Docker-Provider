@@ -90,9 +90,9 @@ if (![string]::IsNullOrEmpty([System.Environment]::GetEnvironmentVariable("IsCDP
 }
 if ($isCDPxEnvironment) {
     Write-Host("running on CDPX build machine so setting --no-restore since there is no n/w connectivity during build")
-    dotnet publish -c Release -r win-x64 --no-restore
+    dotnet publish -c Release -r win-x64 --self-contained true --no-restore
 } else {
-  dotnet publish -c Release -r win-x64
+  dotnet publish -c Release -r win-x64 --self-contained true
 }
 
 Write-Host("Successfully published certificate generator code binaries") -ForegroundColor Green
