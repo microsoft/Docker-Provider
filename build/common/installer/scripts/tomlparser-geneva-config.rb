@@ -24,6 +24,7 @@ GENEVA_SUPPORTED_ENVIRONMENTS = ["Test", "Stage", "DiagnosticsProd", "Firstparty
 @infra_namespaces = ""
 @tenant_namespaces = ""
 @geneva_gcs_authid = ""
+@geneva_gcs_authid_type = ""
 @azure_json_path = "/etc/kubernetes/host/azure.json"
 @enable_fbit_threading = false
 # Checking to see if this is the daemonset or replicaset to parse config accordingly
@@ -138,6 +139,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             geneva_logs_config_version_windows = parsedConfig[:integrations][:geneva_logs][:windowsconfigversion].to_s
             geneva_gcs_region = parsedConfig[:integrations][:geneva_logs][:region].to_s
             geneva_gcs_authid = parsedConfig[:integrations][:geneva_logs][:authid].to_s
+            geneva_gcs_authid_type = parsedConfig[:integrations][:geneva_logs][:authid_type].to_s
+            if geneva_gcs_authid_type.nil? || geneva_gcs_authid_type.empty? || !["AuthMSIToken", "AuthWorkloadIdentity"].include?(geneva_gcs_authid_type)
+                geneva_gcs_authid_type = "AuthMSIToken" # default to AuthMSIToken
+            end
             if geneva_gcs_authid.nil? || geneva_gcs_authid.empty?
               # extract authid from nodes config
               begin
@@ -159,13 +164,14 @@ def populateSettingValuesFromConfigMap(parsedConfig)
                 puts "failed to get user assigned client id with an error: #{errorStr}"
               end
             end
-            if isValidGenevaConfig(geneva_account_environment, geneva_account_namespace, geneva_account_namespace_windows, geneva_account_name, geneva_gcs_authid, geneva_gcs_region)
+            if isValidGenevaConfig(geneva_account_environment, geneva_account_namespace, geneva_account_namespace_windows, geneva_account_name, geneva_gcs_authid, geneva_gcs_authid_type, geneva_gcs_region)
               @geneva_account_environment = geneva_account_environment
               @geneva_account_namespace = geneva_account_namespace
               @geneva_account_namespace_windows = geneva_account_namespace_windows
               @geneva_account_name = geneva_account_name
               @geneva_gcs_region = geneva_gcs_region
               @geneva_gcs_authid = geneva_gcs_authid
+              @geneva_gcs_authid_type = geneva_gcs_authid_type
 
               if !geneva_logs_config_version.nil? && !geneva_logs_config_version.empty?
                 @geneva_logs_config_version = geneva_logs_config_version
@@ -230,7 +236,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
   end
 end
 
-def isValidGenevaConfig(environment, namespace, namespacewindows, account, authid, region)
+def isValidGenevaConfig(environment, namespace, namespacewindows, account, authid, authid_type, region)
   isValid = false
   begin
     if environment.nil? || environment.empty?
@@ -250,6 +256,10 @@ def isValidGenevaConfig(environment, namespace, namespacewindows, account, authi
 
     if authid.nil? || authid.empty?
       puts "config::geneva_logs::error:geneva GCS AuthID MUST be valid"
+      return isValid
+    end
+    if authid_type.nil? || authid_type.empty?
+      puts "config::geneva_logs::error:geneva GCS AuthID Type MUST be valid"
       return isValid
     end
     ## namespacewindows is optional hence we dont need this validation
@@ -322,7 +332,7 @@ if !file.nil?
         file.write("export MONITORING_GCS_REGION=#{@geneva_gcs_region}\n")
         file.write("export MONITORING_CONFIG_VERSION=#{@geneva_logs_config_version}\n")
         file.write("export MONITORING_GCS_AUTH_ID=#{@geneva_gcs_authid}\n")
-        file.write("export MONITORING_GCS_AUTH_ID_TYPE=AuthMSIToken")
+        file.write("export MONITORING_GCS_AUTH_ID_TYPE=#{@geneva_gcs_authid_type}\n")
       end
       file.write("export GENEVA_LOGS_INFRA_NAMESPACES=#{@infra_namespaces}\n")
       file.write("export GENEVA_LOGS_TENANT_NAMESPACES=#{@tenant_namespaces}\n")
@@ -368,7 +378,7 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
         file.write(commands)
         commands = get_command_windows("MONITORING_GCS_REGION", @geneva_gcs_region)
         file.write(commands)
-        commands = get_command_windows("MONITORING_GCS_AUTH_ID_TYPE", "AuthMSIToken")
+        commands = get_command_windows("MONITORING_GCS_AUTH_ID_TYPE", @geneva_gcs_authid_type)
         file.write(commands)
         #Windows AMA expects these and these are different from Linux AMA
         authIdParts = @geneva_gcs_authid.split("#", 2)
