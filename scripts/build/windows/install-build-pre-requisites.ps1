@@ -93,17 +93,17 @@ function Install-DotNetCoreSDK() {
         exit 1
     }
 
-   $url = "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/8.0.415/dotnet-sdk-8.0.415-win-x64.exe"
-   $output = Join-Path -Path $dotNetSdkTemp -ChildPath "dotnet-sdk-8.0.415-win-x64.exe"
+   $url = "https://download.visualstudio.microsoft.com/download/pr/4e88f517-196e-4b17-a40c-2692c689661d/eed3f5fca28262f764d8b650585a7278/dotnet-sdk-3.1.301-win-x64.exe"
+   $output = Join-Path -Path $dotNetSdkTemp -ChildPath "dotnet-sdk-3.1.301-win-x64.exe"
 
-   Write-Host("downloading .NET 8 SDK: " + $dotNetSdkTemp + "  ...")
+   Write-Host("downloading .net core sdk 3.1: " + $dotNetSdkTemp + "  ...")
    Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
-   Write-Host("downloading .NET 8 SDK: " + $dotNetSdkTemp + " completed")
+   Write-Host("downloading .net core sdk 3.1: " + $dotNetSdkTemp + " completed")
 
-   # install dotNet sdk
-   Write-Host("installing .NET 8 SDK ...")
+   # install dotNet core sdk
+   Write-Host("installing .net core sdk 3.1 ...")
    Start-Process -Wait $output -ArgumentList " /q /norestart"
-   Write-Host("installing .NET 8 SDK completed")
+   Write-Host("installing .net core sdk 3.1 completed")
 }
 
 function Install-Docker() {
@@ -160,7 +160,7 @@ Install-Go
 Write-Host "Install Build dependencies"
 Build-Dependencies
 
-Write-Host "Install .NET 8 SDK"
+Write-Host "Install .NET core sdk 3.1"
 Install-DotNetCoreSDK
 
 Write-Host "Install Docker"
