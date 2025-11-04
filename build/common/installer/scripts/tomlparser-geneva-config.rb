@@ -215,6 +215,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           puts "Using config map value: MONITORING_GCS_ACCOUNT=#{@geneva_account_name}"
           puts "Using config map value: MONITORING_GCS_REGION=#{@geneva_gcs_region}"
           puts "Using config map value: MONITORING_GCS_AUTH_ID=#{@geneva_gcs_authid}"
+          puts "Using config map value: MONITORING_GCS_AUTH_ID_TYPE=#{@geneva_gcs_authid_type}"
           if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
             puts "Using config map value: MONITORING_CONFIG_VERSION=#{@geneva_logs_config_version_windows}"
           else
