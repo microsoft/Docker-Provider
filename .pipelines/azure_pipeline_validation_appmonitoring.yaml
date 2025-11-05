@@ -305,9 +305,9 @@ jobs:
         export TEST_NS="${{ variables.testNamespace }}"
         export ACR_NAME="${{ variables.containerRegistry }}.azurecr.io"
 
-        sudo chmod +x ../scripts/install-oci-test-apps.sh
+        sudo chmod +x ../scripts/install-test-apps.sh
 
-        if ! ../scripts/install-oci-test-apps.sh; then
+        if ! ../scripts/install-test-apps.sh; then
           echo "Test apps installation failed"
           exit 1
         fi
