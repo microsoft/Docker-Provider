@@ -588,12 +588,12 @@ extends:
       jobs:
       - job: WaitJob
         displayName: Wait for Bake Time
-        timeoutInMinutes: 120
+        timeoutInMinutes: 1600
         pool: server
         steps:
         - task: Delay@1
           inputs:
-            delayForMinutes: 60
+            delayForMinutes: 1500
     - stage: Stage_3
       displayName: Light Load Region
       dependsOn:
