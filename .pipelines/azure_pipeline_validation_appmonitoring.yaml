@@ -304,7 +304,6 @@ jobs:
         export NODEJS_CALLER_APP_NAME="nodejs-caller-app"
         export TEST_NS="${{ variables.testNamespace }}"
         export ACR_NAME="${{ variables.containerRegistry }}.azurecr.io"
-        export AI_CONNECTION_STRING="${{ variables.aiConnectionString }}"
 
         sudo chmod +x ../scripts/install-test-apps.sh
 

@@ -23,7 +23,6 @@ require_env JAVA_TEST_IMAGE_NAME
 require_env NODEJS_TEST_IMAGE_NAME
 require_env PYTHON_TEST_IMAGE_NAME
 require_env DOTNET_TEST_IMAGE_NAME
-require_env AI_CONNECTION_STRING
 
 if ! command -v envsubst >/dev/null 2>&1; then
   echo "Error: envsubst command not found"
