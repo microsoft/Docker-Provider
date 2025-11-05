@@ -146,7 +146,7 @@ function Install-cmetrics() {
 	git submodule sync
 	git -c protocol.version=2 submodule update --init --force --depth=1
 	git submodule foreach git config --local gc.auto 0
-	cmake --fresh -G "MinGW Makefiles" -DCMAKE_INSTALL_PREFIX="$destinationPath" .
+	cmake --fresh -G "MinGW Makefiles" -DCMAKE_C_FLAGS="-Wno-error=implicit-function-declaration" -DCMAKE_INSTALL_PREFIX="$destinationPath" .
 	make
 	make install
 }
