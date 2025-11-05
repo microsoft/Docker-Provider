@@ -143,7 +143,6 @@ def substituteFluentBitPlaceHolders
     networkFlowLogsThrottleEnabled = ENV["NETWORKFLOW_LOGS_THROTTLE_ENABLED"]
     enableCustomMetrics = ENV["ENABLE_CUSTOM_METRICS"]
     windowsFluentBitEnabled = ENV["AZMON_WINDOWS_FLUENT_BIT_ENABLED"]
-    windowsFluentBitEnabled = "true"
     kubernetesMetadataCollection = ENV["AZMON_KUBERNETES_METADATA_ENABLED"]
     annotationBasedLogFiltering = ENV["AZMON_ANNOTATION_BASED_LOG_FILTERING"]
     storageMaxChunksUp = ENV["FBIT_STORAGE_MAX_CHUNKS_UP"]
