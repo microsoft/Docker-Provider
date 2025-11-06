@@ -30,7 +30,6 @@ variables:
   dotnetTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-dotnet-app:latest'
   dotnetTestAppName: 'dotnet-test-app'
   testNamespace: 'test-ns'
-  aiConnectionString: 'InstrumentationKey=2b453402-fcfb-408f-8495-c551f0e82f46;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/'
   aiResourceId: '/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/microsoft.insights/components/appmonitoring-pipeline-validation-ai'
   Codeql.Enabled: true
   Codeql.BuildIdentifier: 'linuxbuild'
@@ -289,7 +288,9 @@ jobs:
         pwd
         az account set --subscription ${{ variables.subscription }}
         az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
-
+        # Login to ACR for Helm to pull OCI charts
+        az acr login -n ${{ variables.containerRegistry }}
+        
         export JAVA_TEST_IMAGE_NAME=${{ variables.javaTestAppImageName }}
         export NODEJS_TEST_IMAGE_NAME=${{ variables.nodeTestAppImageName }}
         export PYTHON_TEST_IMAGE_NAME=${{ variables.pythonTestAppImageName }}
@@ -303,7 +304,7 @@ jobs:
         export TEST_APP_SOURCE_NAME="nodejs-source-app"
         export NODEJS_CALLER_APP_NAME="nodejs-caller-app"
         export TEST_NS="${{ variables.testNamespace }}"
-        export AI_CONNECTION_STRING="${{ variables.aiConnectionString }}"
+        export ACR_NAME="${{ variables.containerRegistry }}.azurecr.io"
 
         sudo chmod +x ../scripts/install-test-apps.sh
 

@@ -18,6 +18,13 @@ else
     echo "Uninstall complete."
 fi
 
+echo "Uninstalling app-monitoring extension helm..."
+if ! helm uninstall -n kube-system app-monitoring-extension --ignore-not-found; then
+  echo "Error: helm uninstall failed."
+else
+    echo "Uninstall complete."
+fi
+
 echo "Deleting appmonitoring CRD..."
 if ! kubectl delete -f ./app-monitoring-addon/crds/app-monitoring-crd-v2.yaml; then
   echo "Error: CRD deletion failed."
