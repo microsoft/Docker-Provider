@@ -1980,4 +1980,515 @@ describe("Patcher", () => {
             expect(remainingBackup).toBeUndefined();
         });
     });
+
+    describe("Environment variable ordering", () => {
+        it("should preserve correct ordering (Downward API env vars first) when user provides OTEL_RESOURCE_ATTRIBUTES before mutation", () => {
+            const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));
+            const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
+            const platforms = [AutoInstrumentationPlatforms.Java];
+            
+            const podInfo: PodInfo = <PodInfo>{
+                namespace: "default",
+                ownerName: "deployment1",
+                ownerKind: "Deployment",
+                ownerUid: "ownerUid"
+            };
+
+            // Simulate a deployment that has NOT been mutated yet, but user has defined
+            // their own OTEL_RESOURCE_ATTRIBUTES
+            admissionReview.request.object.spec.template.spec.containers[0].env = [
+                { name: "USER_VAR_1", value: "user-value-1" },
+                // User provided their own OTEL_RESOURCE_ATTRIBUTES
+                { 
+                    name: "OTEL_RESOURCE_ATTRIBUTES", 
+                    value: "service.name=my-custom-service,custom.attr=value"
+                },
+                { name: "USER_VAR_2", value: "user-value-2" }
+            ];
+
+            // NO mutation annotation - this is the first time mutating this deployment
+            if (!admissionReview.request.object.spec.template.metadata) {
+                admissionReview.request.object.spec.template.metadata = {
+                    name: "test-pod",
+                    namespace: "default",
+                    uid: "test-uid",
+                    annotations: {}
+                } as any;
+            }
+            if (!admissionReview.request.object.spec.template.metadata.annotations) {
+                admissionReview.request.object.spec.template.metadata.annotations = {};
+            }
+            // No mutation annotation present
+
+            const result: object[] = Patcher.PatchObject(
+                JSON.parse(JSON.stringify(admissionReview.request.object)), 
+                cr1, 
+                podInfo, 
+                platforms, 
+                clusterArmId, 
+                clusterArmRegion, 
+                clusterName, 
+                testOtelParams
+            );
+
+            expect(result.length).toBe(1);
+            
+            const patchedObject: IObjectType = (<any>result[0]).value as IObjectType;
+            const container = patchedObject.spec.template.spec.containers[0];
+            
+            // Find OTEL_RESOURCE_ATTRIBUTES and extract all referenced environment variables
+            const otelResourceAttributesIndex = container.env.findIndex((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            expect(otelResourceAttributesIndex).toBeGreaterThanOrEqual(0);
+            
+            const otelResourceAttributesValue = container.env[otelResourceAttributesIndex].value;
+            expect(otelResourceAttributesValue).toBeDefined();
+            
+            // Extract all environment variable references in the format $(VAR_NAME)
+            const referencedVarsPattern = /\$\(([A-Z_]+)\)/g;
+            const referencedVars: string[] = [];
+            let match;
+            while ((match = referencedVarsPattern.exec(otelResourceAttributesValue)) !== null) {
+                referencedVars.push(match[1]);
+            }
+            
+            // Log the actual order for debugging
+            console.log("\n=== Environment Variable Order Analysis ===");
+            console.log(`\nOTEL_RESOURCE_ATTRIBUTES is at index ${otelResourceAttributesIndex}`);
+            console.log(`OTEL_RESOURCE_ATTRIBUTES value: ${otelResourceAttributesValue}`);
+            console.log(`\nReferenced environment variables found: ${referencedVars.join(', ')}`);
+            console.log("\nFull environment variable order:");
+            container.env.forEach((env: IEnvironmentVariable, index: number) => {
+                const isReferenced = referencedVars.includes(env.name);
+                const marker = isReferenced ? ' <-- REFERENCED' : '';
+                console.log(`  [${index}] ${env.name}${marker}`);
+            });
+            
+            // Verify each referenced variable appears BEFORE OTEL_RESOURCE_ATTRIBUTES
+            console.log("\n=== Ordering Verification ===");
+            expect(referencedVars.length).toBeGreaterThan(0); // Make sure we found some references
+            
+            const failures: string[] = [];
+            referencedVars.forEach(varName => {
+                const varIndex = container.env.findIndex((env: IEnvironmentVariable) => env.name === varName);
+                console.log(`${varName}: index ${varIndex}, must be < ${otelResourceAttributesIndex} (OTEL_RESOURCE_ATTRIBUTES)`);
+                
+                if (varIndex === -1) {
+                    failures.push(`${varName} is referenced in OTEL_RESOURCE_ATTRIBUTES but not found in env list`);
+                } else if (varIndex >= otelResourceAttributesIndex) {
+                    failures.push(`${varName} at index ${varIndex} comes AFTER OTEL_RESOURCE_ATTRIBUTES at index ${otelResourceAttributesIndex}`);
+                }
+            });
+            
+            if (failures.length > 0) {
+                console.log("\n!!! FAILURES DETECTED !!!");
+                failures.forEach(failure => console.log(`  - ${failure}`));
+            }
+            
+            // All referenced variables must come before OTEL_RESOURCE_ATTRIBUTES
+            expect(failures).toEqual([]);
+        });
+
+        it("should preserve correct ordering (Downward API env vars first) when user does NOT provide OTEL_RESOURCE_ATTRIBUTES", () => {
+            const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));
+            const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
+            const platforms = [AutoInstrumentationPlatforms.Java];
+            
+            const podInfo: PodInfo = <PodInfo>{
+                namespace: "default",
+                ownerName: "deployment1",
+                ownerKind: "Deployment",
+                ownerUid: "ownerUid"
+            };
+
+            // Simulate a deployment that has NOT been mutated yet and user has NOT defined
+            // OTEL_RESOURCE_ATTRIBUTES - this should work correctly
+            admissionReview.request.object.spec.template.spec.containers[0].env = [
+                { name: "USER_VAR_1", value: "user-value-1" },
+                { name: "USER_VAR_2", value: "user-value-2" },
+                { name: "JAVA_OPTS", value: "-Xmx512m" }
+            ];
+
+            // NO mutation annotation - this is the first time mutating this deployment
+            if (!admissionReview.request.object.spec.template.metadata) {
+                admissionReview.request.object.spec.template.metadata = {
+                    name: "test-pod",
+                    namespace: "default",
+                    uid: "test-uid",
+                    annotations: {}
+                } as any;
+            }
+            if (!admissionReview.request.object.spec.template.metadata.annotations) {
+                admissionReview.request.object.spec.template.metadata.annotations = {};
+            }
+            // No mutation annotation present
+
+            const result: object[] = Patcher.PatchObject(
+                JSON.parse(JSON.stringify(admissionReview.request.object)), 
+                cr1, 
+                podInfo, 
+                platforms, 
+                clusterArmId, 
+                clusterArmRegion, 
+                clusterName, 
+                testOtelParams
+            );
+
+            expect(result.length).toBe(1);
+            
+            const patchedObject: IObjectType = (<any>result[0]).value as IObjectType;
+            const container = patchedObject.spec.template.spec.containers[0];
+            
+            // Find OTEL_RESOURCE_ATTRIBUTES and extract all referenced environment variables
+            const otelResourceAttributesIndex = container.env.findIndex((env: IEnvironmentVariable) => env.name === "OTEL_RESOURCE_ATTRIBUTES");
+            expect(otelResourceAttributesIndex).toBeGreaterThanOrEqual(0);
+            
+            const otelResourceAttributesValue = container.env[otelResourceAttributesIndex].value;
+            expect(otelResourceAttributesValue).toBeDefined();
+            
+            // Extract all environment variable references in the format $(VAR_NAME)
+            const referencedVarsPattern = /\$\(([A-Z_]+)\)/g;
+            const referencedVars: string[] = [];
+            let match;
+            while ((match = referencedVarsPattern.exec(otelResourceAttributesValue)) !== null) {
+                referencedVars.push(match[1]);
+            }
+            
+            // Log the actual order for debugging
+            console.log("\n=== Environment Variable Order Analysis (No User OTEL_RESOURCE_ATTRIBUTES) ===");
+            console.log(`\nOTEL_RESOURCE_ATTRIBUTES is at index ${otelResourceAttributesIndex}`);
+            console.log(`OTEL_RESOURCE_ATTRIBUTES value: ${otelResourceAttributesValue}`);
+            console.log(`\nReferenced environment variables found: ${referencedVars.join(', ')}`);
+            console.log("\nFull environment variable order:");
+            container.env.forEach((env: IEnvironmentVariable, index: number) => {
+                const isReferenced = referencedVars.includes(env.name);
+                const marker = isReferenced ? ' <-- REFERENCED' : '';
+                console.log(`  [${index}] ${env.name}${marker}`);
+            });
+            
+            // Verify each referenced variable appears BEFORE OTEL_RESOURCE_ATTRIBUTES
+            console.log("\n=== Ordering Verification ===");
+            expect(referencedVars.length).toBeGreaterThan(0); // Make sure we found some references
+            
+            const failures: string[] = [];
+            referencedVars.forEach(varName => {
+                const varIndex = container.env.findIndex((env: IEnvironmentVariable) => env.name === varName);
+                console.log(`${varName}: index ${varIndex}, must be < ${otelResourceAttributesIndex} (OTEL_RESOURCE_ATTRIBUTES)`);
+                
+                if (varIndex === -1) {
+                    failures.push(`${varName} is referenced in OTEL_RESOURCE_ATTRIBUTES but not found in env list`);
+                } else if (varIndex >= otelResourceAttributesIndex) {
+                    failures.push(`${varName} at index ${varIndex} comes AFTER OTEL_RESOURCE_ATTRIBUTES at index ${otelResourceAttributesIndex}`);
+                }
+            });
+            
+            if (failures.length > 0) {
+                console.log("\n!!! FAILURES DETECTED !!!");
+                failures.forEach(failure => console.log(`  - ${failure}`));
+            } else {
+                console.log("\n✓ All referenced variables correctly appear BEFORE OTEL_RESOURCE_ATTRIBUTES");
+            }
+            
+            expect(failures).toEqual([]);
+        });
+
+        it("should place all fieldRef environment variables at the beginning of the array", () => {
+            const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));
+            const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
+            const platforms = [AutoInstrumentationPlatforms.Java];
+            
+            const podInfo: PodInfo = <PodInfo>{
+                namespace: "default",
+                ownerName: "deployment1",
+                ownerKind: "Deployment",
+                ownerUid: "ownerUid"
+            };
+
+            // Setup deployment with user env vars before mutation
+            admissionReview.request.object.spec.template.spec.containers[0].env = [
+                { name: "USER_VAR_1", value: "user-value-1" },
+                { name: "OTEL_RESOURCE_ATTRIBUTES", value: "service.name=my-service,custom.attr=value" },
+                { name: "USER_VAR_2", value: "user-value-2" },
+                { name: "JAVA_OPTS", value: "-Xmx512m" }
+            ];
+
+            const result: object[] = Patcher.PatchObject(
+                JSON.parse(JSON.stringify(admissionReview.request.object)), 
+                cr1, 
+                podInfo, 
+                platforms, 
+                clusterArmId, 
+                clusterArmRegion, 
+                clusterName, 
+                testOtelParams
+            );
+
+            expect(result.length).toBe(1);
+            
+            const patchedObject: IObjectType = (<any>result[0]).value as IObjectType;
+            const container = patchedObject.spec.template.spec.containers[0];
+            
+            // Separate environment variables into fieldRef and non-fieldRef
+            const fieldRefVars: string[] = [];
+            const nonFieldRefVars: string[] = [];
+            
+            container.env.forEach((env: IEnvironmentVariable) => {
+                if (env.valueFrom?.fieldRef) {
+                    fieldRefVars.push(env.name);
+                } else {
+                    nonFieldRefVars.push(env.name);
+                }
+            });
+            
+            console.log("\n=== FieldRef Variable Ordering Test ===");
+            console.log(`\nFieldRef variables (should be at the beginning): ${fieldRefVars.join(', ')}`);
+            console.log(`Non-fieldRef variables: ${nonFieldRefVars.join(', ')}`);
+            
+            // Verify we have fieldRef variables
+            expect(fieldRefVars.length).toBeGreaterThan(0);
+            
+            // Find the index of the last fieldRef variable and the first non-fieldRef variable
+            let lastFieldRefIndex = -1;
+            let firstNonFieldRefIndex = container.env.length;
+            
+            container.env.forEach((env: IEnvironmentVariable, index: number) => {
+                if (env.valueFrom?.fieldRef) {
+                    lastFieldRefIndex = Math.max(lastFieldRefIndex, index);
+                } else {
+                    firstNonFieldRefIndex = Math.min(firstNonFieldRefIndex, index);
+                }
+            });
+            
+            console.log(`\nLast fieldRef variable at index: ${lastFieldRefIndex}`);
+            console.log(`First non-fieldRef variable at index: ${firstNonFieldRefIndex}`);
+            
+            // CRITICAL ASSERTION: All fieldRef variables must come before all non-fieldRef variables
+            expect(lastFieldRefIndex).toBeLessThan(firstNonFieldRefIndex);
+            
+            // Verify the expected fieldRef variables are present
+            expect(fieldRefVars).toContain("NODE_NAME");
+            expect(fieldRefVars).toContain("POD_NAMESPACE");
+            expect(fieldRefVars).toContain("POD_NAME");
+            expect(fieldRefVars).toContain("POD_UID");
+            expect(fieldRefVars).toContain("OTEL_ENDPOINT_NODE_IP");
+            
+            console.log("\n✓ All fieldRef variables correctly appear at the beginning");
+        });
+
+        it("should handle mixed fieldRef variables from user and mutation", () => {
+            const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));
+            const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
+            const platforms = [AutoInstrumentationPlatforms.Java];
+            
+            const podInfo: PodInfo = <PodInfo>{
+                namespace: "default",
+                ownerName: "deployment1",
+                ownerKind: "Deployment",
+                ownerUid: "ownerUid"
+            };
+
+            // User provides their own fieldRef variable along with regular variables
+            admissionReview.request.object.spec.template.spec.containers[0].env = [
+                { name: "USER_VAR_1", value: "user-value-1" },
+                { 
+                    name: "USER_FIELDREF_VAR", 
+                    valueFrom: { 
+                        fieldRef: { 
+                            fieldPath: "metadata.labels['app']" 
+                        } 
+                    } 
+                },
+                { name: "USER_VAR_2", value: "user-value-2" },
+                { name: "OTEL_RESOURCE_ATTRIBUTES", value: "service.name=my-service" }
+            ];
+
+            const result: object[] = Patcher.PatchObject(
+                JSON.parse(JSON.stringify(admissionReview.request.object)), 
+                cr1, 
+                podInfo, 
+                platforms, 
+                clusterArmId, 
+                clusterArmRegion, 
+                clusterName, 
+                testOtelParams
+            );
+
+            expect(result.length).toBe(1);
+            
+            const patchedObject: IObjectType = (<any>result[0]).value as IObjectType;
+            const container = patchedObject.spec.template.spec.containers[0];
+            
+            // Collect all fieldRef and non-fieldRef variables
+            const fieldRefVars: string[] = [];
+            const nonFieldRefVars: string[] = [];
+            
+            container.env.forEach((env: IEnvironmentVariable) => {
+                if (env.valueFrom?.fieldRef) {
+                    fieldRefVars.push(env.name);
+                } else {
+                    nonFieldRefVars.push(env.name);
+                }
+            });
+            
+            console.log("\n=== Mixed FieldRef Test ===");
+            console.log(`\nFieldRef variables: ${fieldRefVars.join(', ')}`);
+            console.log(`Non-fieldRef variables: ${nonFieldRefVars.join(', ')}`);
+            
+            // Verify both user's and mutation's fieldRef variables are present
+            expect(fieldRefVars).toContain("USER_FIELDREF_VAR"); // User's fieldRef var
+            expect(fieldRefVars).toContain("NODE_NAME"); // Mutation's fieldRef var
+            expect(fieldRefVars).toContain("POD_NAMESPACE"); // Mutation's fieldRef var
+            
+            // Verify ALL fieldRef variables come before ALL non-fieldRef variables
+            let lastFieldRefIndex = -1;
+            let firstNonFieldRefIndex = container.env.length;
+            
+            container.env.forEach((env: IEnvironmentVariable, index: number) => {
+                if (env.valueFrom?.fieldRef) {
+                    lastFieldRefIndex = Math.max(lastFieldRefIndex, index);
+                } else {
+                    firstNonFieldRefIndex = Math.min(firstNonFieldRefIndex, index);
+                }
+            });
+            
+            expect(lastFieldRefIndex).toBeLessThan(firstNonFieldRefIndex);
+            
+            console.log("\n✓ Both user and mutation fieldRef variables correctly grouped at the beginning");
+        });
+
+        it("should maintain fieldRef ordering when deployment is already mutated", () => {
+            const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));
+            const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
+            const platforms = [AutoInstrumentationPlatforms.Java];
+            
+            const podInfo: PodInfo = <PodInfo>{
+                namespace: "default",
+                ownerName: "deployment1",
+                ownerKind: "Deployment",
+                ownerUid: "ownerUid"
+            };
+
+            // First mutation
+            const firstResult: object[] = Patcher.PatchObject(
+                JSON.parse(JSON.stringify(admissionReview.request.object)), 
+                cr1, 
+                podInfo, 
+                platforms, 
+                clusterArmId, 
+                clusterArmRegion, 
+                clusterName, 
+                testOtelParams
+            );
+
+            const firstMutatedDeployment: IObjectType = (<any>firstResult[0]).value as IObjectType;
+
+            // Second mutation (simulating kubectl rollout restart)
+            const secondResult: object[] = Patcher.PatchObject(
+                JSON.parse(JSON.stringify(firstMutatedDeployment)), 
+                cr1, 
+                podInfo, 
+                platforms, 
+                clusterArmId, 
+                clusterArmRegion, 
+                clusterName, 
+                testOtelParams
+            );
+
+            expect(secondResult.length).toBe(1);
+            
+            const secondMutatedDeployment: IObjectType = (<any>secondResult[0]).value as IObjectType;
+            const container = secondMutatedDeployment.spec.template.spec.containers[0];
+            
+            // Verify fieldRef variables still come first after re-mutation
+            let lastFieldRefIndex = -1;
+            let firstNonFieldRefIndex = container.env.length;
+            
+            container.env.forEach((env: IEnvironmentVariable, index: number) => {
+                if (env.valueFrom?.fieldRef) {
+                    lastFieldRefIndex = Math.max(lastFieldRefIndex, index);
+                } else {
+                    firstNonFieldRefIndex = Math.min(firstNonFieldRefIndex, index);
+                }
+            });
+            
+            console.log("\n=== Re-mutation FieldRef Ordering Test ===");
+            console.log(`Last fieldRef index: ${lastFieldRefIndex}`);
+            console.log(`First non-fieldRef index: ${firstNonFieldRefIndex}`);
+            
+            expect(lastFieldRefIndex).toBeLessThan(firstNonFieldRefIndex);
+            
+            console.log("\n✓ FieldRef ordering preserved after re-mutation");
+        });
+
+        it("should work correctly when no fieldRef variables exist", () => {
+            const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));
+            const cr1: InstrumentationCR = JSON.parse(JSON.stringify(cr));
+            const platforms = [AutoInstrumentationPlatforms.Java];
+            
+            const podInfo: PodInfo = <PodInfo>{
+                namespace: "default",
+                ownerName: "deployment1",
+                ownerKind: "Deployment",
+                ownerUid: "ownerUid"
+            };
+
+            // Setup with only regular value-based variables
+            admissionReview.request.object.spec.template.spec.containers[0].env = [
+                { name: "USER_VAR_1", value: "value1" },
+                { name: "USER_VAR_2", value: "value2" }
+            ];
+
+            // Use OtelParams with both logs and metrics disabled to minimize fieldRef vars
+            // Note: Some Downward API variables (POD_NAME, etc.) are always added for OTEL_RESOURCE_ATTRIBUTES
+            const noFieldRefOtelParams: OtelParams = {
+                logsEnabled: false,
+                metricsEnabled: false,
+                logsPortHttpProtobuf: 0,
+                metricsPortHttpProtobuf: 0
+            };
+
+            const result: object[] = Patcher.PatchObject(
+                JSON.parse(JSON.stringify(admissionReview.request.object)), 
+                cr1, 
+                podInfo, 
+                platforms, 
+                clusterArmId, 
+                clusterArmRegion, 
+                clusterName, 
+                noFieldRefOtelParams
+            );
+
+            expect(result.length).toBe(1);
+            
+            const patchedObject: IObjectType = (<any>result[0]).value as IObjectType;
+            const container = patchedObject.spec.template.spec.containers[0];
+            
+            console.log("\n=== Minimal FieldRef Variables Test ===");
+            
+            // Even with minimal settings, fieldRef ordering should still be maintained
+            // (POD_NAME, etc. are still added for OTEL_RESOURCE_ATTRIBUTES substitution)
+            let lastFieldRefIndex = -1;
+            let firstNonFieldRefIndex = container.env.length;
+            
+            container.env.forEach((env: IEnvironmentVariable, index: number) => {
+                if (env.valueFrom?.fieldRef) {
+                    lastFieldRefIndex = Math.max(lastFieldRefIndex, index);
+                } else {
+                    firstNonFieldRefIndex = Math.min(firstNonFieldRefIndex, index);
+                }
+            });
+            
+            // If there are any fieldRef variables, they should come before non-fieldRef
+            if (lastFieldRefIndex !== -1) {
+                console.log(`Last fieldRef index: ${lastFieldRefIndex}`);
+                console.log(`First non-fieldRef index: ${firstNonFieldRefIndex}`);
+                expect(lastFieldRefIndex).toBeLessThan(firstNonFieldRefIndex);
+                console.log("\n✓ FieldRef ordering maintained even with minimal configuration");
+            } else {
+                console.log("No fieldRef variables present");
+                console.log("\n✓ Handles absence of fieldRef variables correctly");
+            }
+            
+            expect(container.env.length).toBeGreaterThan(0); // Should still have env vars
+        });
+    });
 });
