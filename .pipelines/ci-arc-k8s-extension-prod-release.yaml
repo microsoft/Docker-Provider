@@ -588,6 +588,7 @@ extends:
       jobs:
       - job: WaitJob
         displayName: Wait for Bake Time
+        timeoutInMinutes: 1600
         pool: server
         steps:
         - task: Delay@1
@@ -864,6 +865,7 @@ extends:
       jobs:
       - job: WaitJob
         displayName: Wait for Bake Time
+        timeoutInMinutes: 1600
         pool: server
         steps:
         - task: Delay@1
@@ -1140,6 +1142,7 @@ extends:
       jobs:
       - job: WaitJob
         displayName: Wait for Bake Time
+        timeoutInMinutes: 1600
         pool: server
         steps:
         - task: Delay@1
