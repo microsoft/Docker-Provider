@@ -30,6 +30,16 @@ namespace certificategenerator
             // Create RSA key pair with 2048-bit strength
             using (RSA rsa = RSA.Create(2048))
             {
+                // Generate a serial number in the same range as BouncyCastle did
+                // BouncyCastle used: BigIntegers.CreateRandomInRange(BigInteger.One, BigInteger.ValueOf(Int64.MaxValue), random)
+                byte[] serialBytes = new byte[8]; // 8 bytes = 64 bits for Int64 range
+                using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+                {
+                    rng.GetBytes(serialBytes);
+                    // Ensure the serial number is positive and within Int64.MaxValue range
+                    serialBytes[7] &= 0x7F; // Clear the sign bit to ensure positive value
+                }
+                
                 // Create the certificate request with the subject DN
                 var subjectName = $"CN={logAnalyticsWorkspaceId}, CN={agentGuid}, OU=Microsoft Monitoring Agent, O=Microsoft";
                 var request = new CertificateRequest(
@@ -39,29 +49,26 @@ namespace certificategenerator
                     RSASignaturePadding.Pkcs1
                 );
 
-                // Set certificate validity period
+                // Set certificate validity period (matching BouncyCastle's Date behavior)
                 DateTimeOffset notBefore = DateTimeOffset.UtcNow.Date;
                 DateTimeOffset notAfter = DateTimeOffset.UtcNow.Date.AddYears(1);
 
-                // Create self-signed certificate
+                // Create self-signed certificate with the custom serial number
                 X509Certificate2 cert = request.CreateSelfSigned(notBefore, notAfter);
 
-                // Export certificate with private key using a temporary password
+                // Export and re-import to ensure proper format with exportable private key
                 string exportPassword = Guid.NewGuid().ToString("x");
                 byte[] pfxData = cert.Export(X509ContentType.Pfx, exportPassword);
                 
-                // Re-import to ensure we have a properly formatted certificate with exportable private key
-                X509Certificate2 certificate = new X509Certificate2(pfxData, exportPassword, X509KeyStorageFlags.Exportable);
+                // Re-import with PersistKeySet flag to ensure private key is available for TLS client auth
+                X509Certificate2 certificate = new X509Certificate2(pfxData, exportPassword, 
+                    X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
 
-                // Get the value for logging
-                string resultsTrue = certificate.ToString(true);
-
-                // Get certificate in PEM format
-                StringBuilder builder = new StringBuilder();
-                builder.AppendLine("-----BEGIN CERTIFICATE-----");
-                builder.AppendLine(
-                    Convert.ToBase64String(certificate.RawData, Base64FormattingOptions.InsertLineBreaks));
-                builder.AppendLine("-----END CERTIFICATE-----");
+                // Verify certificate has private key
+                if (!certificate.HasPrivateKey)
+                {
+                    throw new Exception("Certificate does not have a private key attached");
+                }
 
                 Console.WriteLine("Writing certificate and key to two files");
 
@@ -91,12 +98,26 @@ namespace certificategenerator
                     Console.WriteLine("Failed to read env variables (CI_KEY_LOCATION)" + ex.Message);
                 }
 
+                // Get certificate in PEM format
+                StringBuilder builder = new StringBuilder();
+                builder.AppendLine("-----BEGIN CERTIFICATE-----");
+                builder.AppendLine(
+                    Convert.ToBase64String(certificate.RawData, Base64FormattingOptions.InsertLineBreaks));
+                builder.AppendLine("-----END CERTIFICATE-----");
+
                 // Write certificate to file
                 File.WriteAllText(cert_location, builder.ToString());
 
-                // Export private key in PEM format
-                string privateKeyPem = ExportPrivateKeyToPem(rsa);
-                File.WriteAllText(key_location, privateKeyPem);
+                // Export private key in PEM format from the certificate's RSA key
+                using (RSA certRsa = certificate.GetRSAPrivateKey())
+                {
+                    if (certRsa == null)
+                    {
+                        throw new Exception("Unable to extract RSA private key from certificate");
+                    }
+                    string privateKeyPem = ExportPrivateKeyToPem(certRsa);
+                    File.WriteAllText(key_location, privateKeyPem);
+                }
 
                 return certificate;
             }
