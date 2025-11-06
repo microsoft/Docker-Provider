@@ -108,6 +108,23 @@ export class Patcher {
                     container.env.push(allEnvironmentVariables[envVariableName]);
                 }
 
+                // Downward API variables (those with valueFrom.fieldRef) must come BEFORE
+                // any variables that reference them using $(VAR_NAME) syntax. Kubernetes only resolves
+                // these references if the referenced variables appear earlier in the env array.
+                // Move all fieldRef variables to the beginning of the array
+                const fieldRefVars: IEnvironmentVariable[] = [];
+                const otherVars: IEnvironmentVariable[] = [];
+                
+                container.env.forEach(ev => {
+                    if (ev.valueFrom?.fieldRef) {
+                        fieldRefVars.push(ev);
+                    } else {
+                        otherVars.push(ev);
+                    }
+                });
+                
+                container.env = fieldRefVars.concat(otherVars);
+
                 // add new volume mounts (used by customer's application runtimes to load agent binaries)
                 const newVolumeMounts: IVolumeMount[] = Mutations.GenerateVolumeMounts(platforms);
                 container.volumeMounts = (container.volumeMounts ?? <IVolumeMount[]>[]).concat(newVolumeMounts);
