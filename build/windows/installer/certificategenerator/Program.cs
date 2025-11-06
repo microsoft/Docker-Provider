@@ -31,15 +31,8 @@ namespace certificategenerator
             // Create RSA key pair with 2048-bit strength
             using (RSA rsa = RSA.Create(2048))
             {
-                // Generate a serial number in the same range as BouncyCastle did
-                // BouncyCastle used: BigIntegers.CreateRandomInRange(BigInteger.One, BigInteger.ValueOf(Int64.MaxValue), random)
-                byte[] serialBytes = new byte[8]; // 8 bytes = 64 bits for Int64 range
-                using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
-                {
-                    rng.GetBytes(serialBytes);
-                    // Ensure the serial number is positive and within Int64.MaxValue range
-                    serialBytes[7] &= 0x7F; // Clear the sign bit to ensure positive value
-                }
+                // Export the private key BEFORE creating the certificate so we can save it
+                string privateKeyPem = ExportPrivateKeyToPem(rsa);
                 
                 // Create the certificate request with the subject DN
                 var subjectName = $"CN={logAnalyticsWorkspaceId}, CN={agentGuid}, OU=Microsoft Monitoring Agent, O=Microsoft";
@@ -54,7 +47,7 @@ namespace certificategenerator
                 DateTimeOffset notBefore = DateTimeOffset.UtcNow.Date;
                 DateTimeOffset notAfter = DateTimeOffset.UtcNow.Date.AddYears(1);
 
-                // Create self-signed certificate with the custom serial number
+                // Create self-signed certificate
                 X509Certificate2 cert = request.CreateSelfSigned(notBefore, notAfter);
 
                 // Export and re-import to ensure proper format with exportable private key
@@ -109,16 +102,8 @@ namespace certificategenerator
                 // Write certificate to file
                 File.WriteAllText(cert_location, builder.ToString());
 
-                // Export private key in PEM format from the certificate's RSA key
-                using (RSA certRsa = certificate.GetRSAPrivateKey())
-                {
-                    if (certRsa == null)
-                    {
-                        throw new Exception("Unable to extract RSA private key from certificate");
-                    }
-                    string privateKeyPem = ExportPrivateKeyToPem(certRsa);
-                    File.WriteAllText(key_location, privateKeyPem);
-                }
+                // Write the private key that we exported earlier
+                File.WriteAllText(key_location, privateKeyPem);
 
                 return certificate;
             }
