@@ -11,6 +11,7 @@ using System.Text;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Threading;
+using System.Formats.Asn1;
 
 namespace certificategenerator
 {
@@ -57,12 +58,12 @@ namespace certificategenerator
                 X509Certificate2 cert = request.CreateSelfSigned(notBefore, notAfter);
 
                 // Export and re-import to ensure proper format with exportable private key
+                // Match BouncyCastle's behavior: use only Exportable flag
                 string exportPassword = Guid.NewGuid().ToString("x");
                 byte[] pfxData = cert.Export(X509ContentType.Pfx, exportPassword);
                 
-                // Re-import with PersistKeySet flag to ensure private key is available for TLS client auth
-                X509Certificate2 certificate = new X509Certificate2(pfxData, exportPassword, 
-                    X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
+                // Re-import with same flags as BouncyCastle version used
+                X509Certificate2 certificate = new X509Certificate2(pfxData, exportPassword, X509KeyStorageFlags.Exportable);
 
                 // Verify certificate has private key
                 if (!certificate.HasPrivateKey)
