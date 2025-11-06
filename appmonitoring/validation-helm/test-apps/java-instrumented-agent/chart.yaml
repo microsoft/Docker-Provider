@@ -1,0 +1,84 @@
+# http://<public ip>:8080/generate-load?iterations=5
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: java-instrumented-agent-app
+  namespace: ns1
+  labels:
+    app: java-instrumented-agent-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: java-instrumented-agent-app
+  template:
+    metadata:
+      labels:
+        app: java-instrumented-agent-app
+      annotations:
+        instrumentation.opentelemetry.io/inject-configuration: "false"
+    spec:
+      containers:
+      - name: java-instrumented-agent-app
+        image: appmonitoring.azurecr.io/demoaks-java-instrumented-agent-app:latest
+        imagePullPolicy: Always
+        env:
+        # OpenTelemetry Java Agent Configuration
+        - name: OTEL_SERVICE_NAME
+          value: "java-instrumented-agent-app"
+        - name: OTEL_SERVICE_VERSION
+          value: "1.0.0"
+        # Metric export interval (5 seconds)
+        - name: OTEL_METRIC_EXPORT_INTERVAL
+          value: "5000"
+        # Application configuration
+        - name: SERVER_PORT
+          value: "8080"
+        - name: TARGET_URL
+          value: "http://localhost:8080/"
+        # Java configuration
+        - name: JAVA_OPTS
+          value: "-Xmx512m -Xms256m"
+        - name: OTEL_RESOURCE_ATTRIBUTES
+          value: "deployment.environment=production,service.name=java-instrumented-agent-app"
+        ports:
+        - containerPort: 8080
+          name: http
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+        resources:
+          limits:
+            cpu: "1"
+            memory: "768Mi"
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: java-instrumented-agent-app
+  namespace: ns1
+  labels:
+    app: java-instrumented-agent-app
+spec:
+  type: LoadBalancer
+  selector:
+    app: java-instrumented-agent-app
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
