@@ -44,6 +44,11 @@
               "Name": "PushWebhook",
               "InstanceOf": "ShellExtension",
               "RolloutParametersPath": "Parameters\\ApplicationInsights.Parameters.json"
+            },
+            {
+              "Name": "PushOciCharts",
+              "InstanceOf": "ShellExtension",
+              "RolloutParametersPath": "Parameters\\ApplicationInsightsCharts.Parameters.json"
             }
           ]
         }

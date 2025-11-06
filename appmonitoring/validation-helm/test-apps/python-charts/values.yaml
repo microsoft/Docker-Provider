@@ -1,0 +1,13 @@
+# Default values for the Python test app chart
+
+# Base name used for resources deployed by this chart
+appName: python-test-app
+
+# Container image to deploy
+image: appmonitoring.azurecr.io/demoaks-python-app:latest
+
+# Port the service runs on
+port: 3001
+
+# Target URL for the app to call
+targetUrl: "http://testappsource-service.default.svc.cluster.local:3001"

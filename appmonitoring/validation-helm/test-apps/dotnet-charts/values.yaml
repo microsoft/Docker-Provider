@@ -1,0 +1,12 @@
+# Default values for dotnet-test-app
+appName: dotnet-test-app
+image: appmonitoring.azurecr.io/demoaks-dotnet-app:latest
+
+# Port the service runs on
+port: 3001
+
+# Target URL for the app to call
+targetUrl: "http://testappsource-service.default.svc.cluster.local:3001"
+
+# Enable OpenTelemetry auto-instrumentation (private preview)
+otelInstrumentation: true
