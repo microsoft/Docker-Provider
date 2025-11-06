@@ -155,6 +155,8 @@ spec:
                 value: "{{ .Values.Azure.Cluster.ResourceId }}"
               - name: ARM_REGION
                 value: "{{ .Values.Azure.Cluster.Region }}"
+              - name: IS_EXTENSION
+                value: "true"
               image: "{{ template "addon_mcr_repository_base" . }}/{{ .Values.AppmonitoringAgent.imageRelativePath }}:{{ .Values.AppmonitoringAgent.imageTag }}"
               securityContext:
                 capabilities:
@@ -223,6 +225,8 @@ spec:
             value: "{{ .Values.Azure.Cluster.ResourceId }}"
           - name: ARM_REGION
             value: "{{ .Values.Azure.Cluster.Region }}"
+          - name: IS_EXTENSION
+            value: "true"
           securityContext:
             capabilities:
               drop:
@@ -296,6 +300,8 @@ spec:
               value: "{{ .Values.Azure.Cluster.ResourceId }}"
             - name: ARM_REGION
               value: "{{ .Values.Azure.Cluster.Region }}"
+            - name: IS_EXTENSION
+              value: "true"
 {{- if .Values.AppmonitoringAgent.isOtelToggleEnabled }}
             - name: OTEL_TOGGLE
               value: "true"
