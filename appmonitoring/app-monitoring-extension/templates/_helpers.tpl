@@ -1,13 +1,13 @@
 {{/* MCR repository template for extension charts */}}
 {{- define "mcr_repository_base" }}
-{{- $cloud_environment := (.Values.Azure.Cluster.Cloud | default "AZUREPUBLICCLOUD") }}
-{{- if (eq $cloud_environment "ValidationCluster") }}
+{{- $cloud_environment := (lower (.Values.Azure.Cluster.Cloud | default "AZUREPUBLICCLOUD")) }}
+{{- if (eq $cloud_environment "validationcluster") }}
 {{- "appmonitoring.azurecr.io" }}
-{{- else if (eq $cloud_environment "AZURECHINACLOUD") }}
+{{- else if (eq $cloud_environment "azurechinacloud") }}
 {{- "mcr.azk8s.cn" }}
-{{- else if (eq $cloud_environment "USNat") }}
+{{- else if (eq $cloud_environment "usnat") }}
 {{- "mcr.microsoft.eaglex.ic.gov" }}
-{{- else if (eq $cloud_environment "USSec") }}
+{{- else if (eq $cloud_environment "ussec") }}
 {{- "mcr.microsoft.scloud" }}
 {{- else }}
 {{- "mcr.microsoft.com" }}
