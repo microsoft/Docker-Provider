@@ -356,9 +356,9 @@ jobs:
         export TEST_APP_SOURCE_NAME="nodejs-source-app"
         export NODEJS_CALLER_APP_NAME="nodejs-caller-app"
 
-        sudo chmod +x ../scripts/install-oci-test-apps.sh
+        sudo chmod +x ../scripts/install-test-apps.sh
 
-        if ! ../scripts/install-oci-test-apps.sh; then
+        if ! ../scripts/install-test-apps.sh; then
           echo "Test apps installation failed"
           exit 1
         fi
