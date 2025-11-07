@@ -6,11 +6,12 @@ ROLE_INSTANCE_FIELD=$3
 shift 3  # Remove first 3 arguments
 QUERIES=("$@")  # Remaining arguments are the queries
 
-echo "Finding pods in namespace: $NAMESPACE for Java App $JAVA_TEST_APP_NAME, NodeJS App $NODEJS_TEST_APP_NAME, Python App $PYTHON_TEST_APP_NAME, and Dotnet App $DOTNET_TEST_APP_NAME"
+echo "Finding pods in namespace: $NAMESPACE for Java App $JAVA_TEST_APP_NAME, NodeJS App $NODEJS_TEST_APP_NAME, Python App $PYTHON_TEST_APP_NAME, Dotnet App $DOTNET_TEST_APP_NAME, and Go App $GO_TEST_APP_NAME"
 POD_JAVA_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$JAVA_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
 POD_NODEJS_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$NODEJS_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
 POD_PYTHON_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$PYTHON_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
 POD_DOTNET_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$DOTNET_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
+POD_GO_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$GO_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
 
 
 # Get an access token
@@ -87,7 +88,7 @@ verify_AI_telemetry() {
 max_retries=30
 retry_interval=10
 
-for app in "java" "nodejs" "python" "dotnet"; do
+for app in "java" "nodejs" "python" "dotnet" "go"; do
   skip_exceptions="false"
   if [ "$app" = "java" ]; then
     pod_name="$POD_JAVA_NAME"
@@ -98,6 +99,8 @@ for app in "java" "nodejs" "python" "dotnet"; do
   elif [ "$app" = "dotnet" ]; then
     pod_name="$POD_DOTNET_NAME"
     skip_exceptions="true"
+  elif [ "$app" = "go" ]; then
+    pod_name="$POD_GO_NAME"
   else
     echo "Unsupported application type: $app"
     exit 1

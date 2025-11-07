@@ -7,6 +7,7 @@ javaHost: "java-test-app-service.test-ns.svc.cluster.local"
 nodejsHost: "nodejs-test-app-service.test-ns.svc.cluster.local" 
 pythonHost: "python-test-app-service.test-ns.svc.cluster.local"
 dotnetHost: "dotnet-test-app-service.test-ns.svc.cluster.local"
+goHost: "go-instrumented-test-app-service.test-ns.svc.cluster.local"
 
 # How often to call targets (in milliseconds)
 intervalMs: 5000
