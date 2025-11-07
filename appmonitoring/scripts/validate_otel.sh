@@ -14,7 +14,9 @@ POD_DOTNET_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$DOTNET_TEST_APP_NAME 
 result_rsp=$(curl 'http://169.254.169.254/metadata/identity/oauth2/token?api-version=2018-02-01&resource=https://api.loganalytics.io&mi_res_id=/subscriptions/66010356-d8a5-42d3-8593-6aaa3aeb1c11/resourceGroups/rambhatt-rnd-v2/providers/Microsoft.ManagedIdentity/userAssignedIdentities/rambhatt-agentpool-es-identity' -H Metadata:true -s)
 # echo "Result: $result_rsp"
 access_token=$(echo $result_rsp | jq -r '.access_token')
+client_id=$(echo $result_rsp | jq -r '.client_id')
 
+echo "Using identity with client_id: $client_id"
 echo "$LAW_RES_ID"
 
 # Define your variables
