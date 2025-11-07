@@ -335,7 +335,7 @@ jobs:
         fi
 
   - task: AzureCLI@2
-    displayName: "Check test apps are sending telemetry to AI"
+    displayName: "Check test apps are sending AI and OTEL telemetry"
     inputs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: bash
@@ -352,30 +352,14 @@ jobs:
 
         sudo chmod u+x ./validate_ai.sh
 
-        if ! ./validate_ai.sh ${{ variables.aiResourceId }} ${{ variables.testNamespace }}; then
+        echo "Validating AI telemetry..."
+        if ! ./validate_ai.sh ${{ variables.lawResourceId }} ${{ variables.testNamespace }} "AppRoleInstance" "AppRequests" "AppDependencies" "AppMetrics" "AppExceptions"; then
           echo "AI telemetry validation failed"
           exit 1
         fi
 
-  - task: AzureCLI@2
-    displayName: "Check test apps are sending OTEL logs and traces to LAW"
-    inputs:
-      azureSubscription: ${{ variables.armServiceConnectionName }}
-      scriptType: bash
-      scriptLocation: inlineScript
-      inlineScript: |
-        cd appmonitoring/scripts
-        pwd
-        az account set --subscription ${{ variables.subscription }}
-        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
-        export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
-        export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
-        export PYTHON_TEST_APP_NAME="${{ variables.pythonTestAppName }}"
-        export DOTNET_TEST_APP_NAME="${{ variables.dotnetTestAppName }}"
-
-        sudo chmod u+x ./validate_otel.sh
-
-        if ! ./validate_otel.sh ${{ variables.lawResourceId }} ${{ variables.testNamespace }}; then
+        echo "Validating OTEL telemetry..."
+        if ! ./validate_ai.sh ${{ variables.lawResourceId }} ${{ variables.testNamespace }} "ServiceInstanceId" "OTelSpans" "OTelResources"; then
           echo "OTEL telemetry validation failed"
           exit 1
         fi

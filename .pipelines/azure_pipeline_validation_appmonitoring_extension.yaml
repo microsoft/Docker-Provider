@@ -24,7 +24,8 @@ variables:
   dotnetTestAppName: 'dotnet-test-app'
   testNamespace: 'test-ns'
   aiConnectionString: 'InstrumentationKey=2b453402-fcfb-408f-8495-c551f0e82f46;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/'
-  aiResourceId: '/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/microsoft.insights/components/appmonitoring-pipeline-validation-ai'
+  aiResourceId: '/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/microsoft.insights/components/appmonitoring-pipeline-validation-ai-otel'
+  lawResourceId: '/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourcegroups/ai_appmonitoring-pipeline-validation-ai-ote_37743a46-5226-447c-842b-35fac54dbd92_managed/providers/microsoft.operationalinsights/workspaces/managed-appmonitoring-pipeline-validation-ai-otel-ws'
   Codeql.Enabled: true
   Codeql.BuildIdentifier: 'linuxbuild'
   AKSResourceGroup: 'aks-appmonitoring-pipeline'
@@ -403,7 +404,7 @@ jobs:
         
         sudo chmod u+x ./validate_ai.sh
 
-        if ! ./validate_ai.sh ${{ variables.aiResourceId }} ${{ variables.testNamespace }}; then
+        if ! ./validate_ai.sh ${{ variables.lawResourceId }} ${{ variables.testNamespace }}; then
           echo "AI telemetry validation failed"
           exit 1
         fi

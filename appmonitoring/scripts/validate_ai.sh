@@ -1,7 +1,10 @@
 #!/bin/bash
 
-AI_RES_ID=$1
+WS_RES_ID=$1
 NAMESPACE=$2
+ROLE_INSTANCE_FIELD=$3
+shift 3  # Remove first 3 arguments
+QUERIES=("$@")  # Remaining arguments are the queries
 
 echo "Finding pods in namespace: $NAMESPACE for Java App $JAVA_TEST_APP_NAME, NodeJS App $NODEJS_TEST_APP_NAME, Python App $PYTHON_TEST_APP_NAME, and Dotnet App $DOTNET_TEST_APP_NAME"
 POD_JAVA_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$JAVA_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
@@ -17,20 +20,22 @@ access_token=$(echo $result_rsp | jq -r '.access_token')
 client_id=$(echo $result_rsp | jq -r '.client_id')
 
 echo "Using identity with client_id: $client_id"
-echo "$AI_RES_ID"
+echo "Workspace: $WS_RES_ID"
+echo "Role instance field: $ROLE_INSTANCE_FIELD"
 
 # Define your variables
-url="https://api.loganalytics.io/v1$AI_RES_ID/query"
+url="https://api.loganalytics.io/v1$WS_RES_ID/query"
 
 verify_AI_telemetry() {
     local pod_name="$1"
     local app_type="$2"
     local skip_exceptions="$3"
-    local queries=("requests" "dependencies" "customMetrics")
+    local tables=("${QUERIES[@]}")
     local found_any=0
 
-    if [[ "$skip_exceptions" != "true" ]]; then
-        queries+=("exceptions")
+    # Remove AppExceptions from tables if skip_exceptions is true
+    if [[ "$skip_exceptions" == "true" ]]; then
+        tables=("${tables[@]/AppExceptions/}")
     fi
 
     echo "Validating telemetry for $pod_name ($app_type)..."
@@ -39,9 +44,14 @@ verify_AI_telemetry() {
         exit 1
     fi
 
-    for table in "${queries[@]}"; do
+    for table in "${tables[@]}"; do
+        # Skip empty entries (from removed AppExceptions)
+        [[ -z "$table" ]] && continue
+        
+        query="$table | where TimeGenerated > ago(15m) | where $ROLE_INSTANCE_FIELD == '$pod_name' | count"
+        
         json_body="{
-            \"query\": \"$table | where timestamp > ago(15m) | where cloud_RoleInstance == '$pod_name' | count\",
+            \"query\": \"$query\",
             \"options\": {
                 \"truncationMaxSize\": 67108864
             },
