@@ -15,6 +15,11 @@ fi
 TAG_EXISTS_STATUS=0 #Default value for the condition when the echo fails below
 AZ_ACR_IMPORT_FORCE=""
 
+if [[ ! "$SOURCE_IMAGE_TAG" =~ ^[0-9][0-9A-Za-z\.-]*$ ]]; then
+  echo "-e error SOURCE_IMAGE_TAG must start with a digit and may only contain 0-9, A-Z, a-z, '.', or '-'"
+  echo "SOURCE_IMAGE_TAG was: $SOURCE_IMAGE_TAG"
+  exit 1
+fi
 
 TAG="$SOURCE_IMAGE_TAG-rc.$SOURCE_IMAGE_BUILD_ID"
 if [[ "$TAG" =~ ^(.+)-rc\.[0-9]+$ ]]; then
