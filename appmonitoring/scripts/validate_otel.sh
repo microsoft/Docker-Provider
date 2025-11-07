@@ -45,18 +45,21 @@ verify_OTEL_telemetry() {
         }"
 
         echo "Validating $table telemetry for $pod_name ($app_type)..."
-        response=$(curl -s -X POST $url \
+        response=$(curl -s -w "\n%{http_code}" -X POST $url \
             -H "Authorization: Bearer $access_token" \
             -H "Content-Type: application/json" \
             -d "$json_body")
 
-        count_val=$(echo $response | jq '.tables[0].rows[0][0]')
+        http_code=$(echo "$response" | tail -n 1)
+        response_body=$(echo "$response" | sed '$d')
+
+        count_val=$(echo $response_body | jq '.tables[0].rows[0][0]')
 
         if (( count_val > 0 )); then
             echo "$table telemetry found: $count_val"
             found_any=1
         else
-            echo "No $table telemetry found for $pod_name ($app_type)" >&2
+            echo "No $table telemetry found for $pod_name ($app_type) [HTTP $http_code]" >&2
             echo "Validation for $app_type pods failed: No $table telemetry found" >&2
             return 1
         fi
