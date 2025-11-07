@@ -11,7 +11,7 @@
   ],
   "shellExtensions": [
     {
-      "name": "PushWebhookToACR",
+      "name": "PushOciChartsToAcr",
       "type": "ShellExtensionType",
       "properties": {
         "maxexecutiontime": "PT1H"
@@ -24,7 +24,7 @@
       "launch": {
         "command": [
           "/bin/bash",
-          "pushWebhookToAcr.sh"
+          "pushOciChartsToAcr.sh"
         ],
         "environmentVariables": [
           {
@@ -32,8 +32,8 @@
             "value": "__ACR_NAME__"
           },
           {
-            "name": "WEBHOOK_IMAGE_FULL_PATH",
-            "value": "public/azuremonitor/applicationinsights/aiprod:__SOURCE_IMAGE_TAG__"
+            "name": "OCI_IMAGE_FULL_PATH",
+            "value": "public/azuremonitor/applicationinsights/helm/extension-prod:__SOURCE_IMAGE_TAG__"
           }, 
           {
             "name": "SOURCE_IMAGE_TAG",
@@ -45,7 +45,7 @@
           },
           {
             "name": "SOURCE_IMAGE_FULL_PATH",
-            "value": "mcr.microsoft.com/azuremonitor/applicationinsights/aidev:__SOURCE_IMAGE_TAG__-rc.__SOURCE_IMAGE_BUILD_ID__"
+            "value": "mcr.microsoft.com/azuremonitor/applicationinsights/helm/extension-dev:__SOURCE_IMAGE_TAG__-rc.__SOURCE_IMAGE_BUILD_ID__"
           },
           {
             "name": "OVERRIDE_TAG",
