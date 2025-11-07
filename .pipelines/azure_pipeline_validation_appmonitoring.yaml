@@ -96,7 +96,7 @@ jobs:
     imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
     testImageTagSuffix: $(imageTag)-$(Build.BuildId)
     testImageName: ${{ variables.repoTestImageName }}:${{ variables.testImageTagSuffix }}
-    fullImageName: ${{ variables.repoImageName }}:$(imageTag)-rc-$(Build.BuildId)
+    fullImageName: ${{ variables.repoImageName }}:$(imageTag)-rc.$(Build.BuildId)
     # This is necessary because of: https://github.com/moby/moby/issues/37965
     DOCKER_BUILDKIT: 1
 
