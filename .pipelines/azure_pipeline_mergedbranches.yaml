@@ -906,9 +906,9 @@ extends:
                 displayName: 'Deploy to dev cluster'
                 inputs:
                   connectionType: 'Azure Resource Manager'
-                  azureSubscription: 'ContainerInsights_Dev_Zane(9c17527c-af8f-4148-8019-27bada0845f7)'
-                  azureResourceGroup: 'zane-ci-auto-deploy'
-                  kubernetesCluster: 'zane-ci-auto-deploy'
+                  azureSubscription: 'ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)'
+                  azureResourceGroup: 'zane-test'
+                  kubernetesCluster: 'zane-test'
                   useClusterAdmin: true
                   namespace: 'kube-system'
                   command: 'upgrade'
