@@ -364,7 +364,7 @@ jobs:
         fi
 
         echo "Validating OTEL telemetry..."
-        if ! ./validate_ai.sh ${{ variables.lawResourceId }} ${{ variables.testNamespace }} "ServiceInstanceId" "OTelSpans" "OTelResources"; then
+        if ! ./validate_ai.sh ${{ variables.lawResourceId }} ${{ variables.testNamespace }} "ServiceInstanceId" "OTelSpans" "OTelResources" "OTelLogs"; then
           echo "OTEL telemetry validation failed"
           exit 1
         fi
