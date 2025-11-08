@@ -65,7 +65,8 @@ verify_amw_metrics() {
 
     # Query for cows_sold_total metric with specific pod name
     # Using Prometheus query syntax for Azure Monitor Workspace
-    query="cows_sold_total{k8s_pod_name=\"$pod_name\"}"
+    # Using service.instance.id label which typically contains the pod name
+    query="cows_sold_total{service_instance_id=\"$pod_name\"}"
     
     # Calculate time range (last 15 minutes)
     end_time=$(date -u +%s)
