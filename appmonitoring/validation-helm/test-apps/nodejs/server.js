@@ -31,8 +31,8 @@ app.get('/call-target', async (req, res) => {
   try {
     cowsSoldCounter.add(1, { cow_type: 'Holstein NodeJs', endpoint: process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT, protocol: process.env.OTEL_EXPORTER_OTLP_METRICS_PROTOCOL });
   
-    // Occasionally simulate an error (40% chance)
-    if (Math.random() < 0.4) {
+    // Occasionally simulate an error (20% chance)
+    if (Math.random() < 0.2) {
       const error = new Error('Simulated error - this will be recorded in OTel but not crash the app');
       logger.error(`Simulated error at /call-target: ${error.message}`);
       
