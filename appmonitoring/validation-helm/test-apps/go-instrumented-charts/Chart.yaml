@@ -2,7 +2,7 @@
 # $env:HELM_EXPERIMENTAL_OCI = "1"
 # helm registry login appmonitoring.azurecr.io --username $(az acr credential show --name appmonitoring --query "username" -o tsv) --password $(az acr credential show --name appmonitoring --query "passwords[0].value" -o tsv)  
 # helm package .
-# helm push .\go-instrumented-test-app-0.1.0.tgz oci://appmonitoring.azurecr.io/helm/testapps/go-instrumented-test-app
+# helm push .\go-instrumented-test-app-0.1.0.tgz oci://appmonitoring.azurecr.io/helm/testapps
 apiVersion: v2
 name: go-instrumented-test-app
 description: A Helm chart for Go test app with OpenTelemetry instrumentation
