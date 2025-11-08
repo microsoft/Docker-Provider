@@ -2,9 +2,17 @@
 
 WS_RES_ID=$1
 NAMESPACE=$2
-ROLE_INSTANCE_FIELD=$3
-shift 3  # Remove first 3 arguments
+APPS_TO_VALIDATE=$3  # Comma-separated list of apps (e.g., "java,nodejs,python,dotnet" or "go")
+ROLE_INSTANCE_FIELD=$4
+shift 4  # Remove first 4 arguments
 QUERIES=("$@")  # Remaining arguments are the queries
+
+# Validate that apps parameter is provided
+if [[ -z "$APPS_TO_VALIDATE" ]]; then
+    echo "Error: APPS_TO_VALIDATE parameter is required (3rd argument)" >&2
+    echo "Usage: $0 <WS_RES_ID> <NAMESPACE> <APPS_TO_VALIDATE> <ROLE_INSTANCE_FIELD> <QUERIES...>" >&2
+    exit 1
+fi
 
 echo "Finding pods in namespace: $NAMESPACE for Java App $JAVA_TEST_APP_NAME, NodeJS App $NODEJS_TEST_APP_NAME, Python App $PYTHON_TEST_APP_NAME, Dotnet App $DOTNET_TEST_APP_NAME, and Go App $GO_TEST_APP_NAME"
 POD_JAVA_NAME=$(kubectl get pods -n "$NAMESPACE" -l app=$JAVA_TEST_APP_NAME --no-headers -o custom-columns=":metadata.name" | head -n 1)
@@ -88,7 +96,10 @@ verify_AI_telemetry() {
 max_retries=30
 retry_interval=10
 
-for app in "java" "nodejs" "python" "dotnet" "go"; do
+# Convert comma-separated list to array
+IFS=',' read -ra APPS_ARRAY <<< "$APPS_TO_VALIDATE"
+
+for app in "${APPS_ARRAY[@]}"; do
   skip_exceptions="false"
   if [ "$app" = "java" ]; then
     pod_name="$POD_JAVA_NAME"

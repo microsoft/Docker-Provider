@@ -358,13 +358,13 @@ jobs:
         sudo chmod u+x ./validate_ai.sh
 
         echo "Validating AI telemetry..."
-        if ! ./validate_ai.sh ${{ variables.lawResourceId }} ${{ variables.testNamespace }} "AppRoleInstance" "AppRequests" "AppDependencies" "AppMetrics" "AppExceptions"; then
+        if ! ./validate_ai.sh ${{ variables.lawResourceId }} ${{ variables.testNamespace }} "java,nodejs,python,dotnet" "AppRoleInstance" "AppRequests" "AppDependencies" "AppMetrics" "AppExceptions"; then
           echo "AI telemetry validation failed"
           exit 1
         fi
 
         echo "Validating OTEL telemetry..."
-        if ! ./validate_ai.sh ${{ variables.lawResourceId }} ${{ variables.testNamespace }} "ServiceInstanceId" "OTelSpans" "OTelResources" "OTelLogs"; then
+        if ! ./validate_ai.sh ${{ variables.lawResourceId }} ${{ variables.testNamespace }} "go" "ServiceInstanceId" "OTelSpans" "OTelResources" "OTelLogs"; then
           echo "OTEL telemetry validation failed"
           exit 1
         fi

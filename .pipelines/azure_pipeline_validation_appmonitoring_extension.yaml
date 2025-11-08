@@ -22,6 +22,8 @@ variables:
   pythonTestAppName: 'python-test-app'
   dotnetTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-dotnet-app:latest'
   dotnetTestAppName: 'dotnet-test-app'
+  goTestAppImageName: '${{ variables.containerRegistry }}.azurecr.io/demoaks-go-instrumented-app:latest'
+  goTestAppName: 'go-instrumented-test-app'
   testNamespace: 'test-ns'
   aiConnectionString: 'InstrumentationKey=2b453402-fcfb-408f-8495-c551f0e82f46;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/'
   aiResourceId: '/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/microsoft.insights/components/appmonitoring-pipeline-validation-ai-otel'
@@ -349,11 +351,13 @@ jobs:
         export NODEJS_TEST_IMAGE_NAME=${{ variables.nodeTestAppImageName }}
         export PYTHON_TEST_IMAGE_NAME=${{ variables.pythonTestAppImageName }}
         export DOTNET_TEST_IMAGE_NAME=${{ variables.dotnetTestAppImageName }}
+        export GO_TEST_IMAGE_NAME=${{ variables.goTestAppImageName }}
 
         export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
         export PYTHON_TEST_APP_NAME="${{ variables.pythonTestAppName }}"
         export DOTNET_TEST_APP_NAME="${{ variables.dotnetTestAppName }}"
+        export GO_TEST_APP_NAME="${{ variables.goTestAppName }}"
         export TEST_APP_SOURCE_NAME="nodejs-source-app"
         export NODEJS_CALLER_APP_NAME="nodejs-caller-app"
 
@@ -378,13 +382,13 @@ jobs:
         
         sudo chmod u+x ./validate-mutation.sh
 
-        if ! ./validate-mutation.sh ${{ variables.javaTestAppName }} ${{ variables.nodeTestAppName }} ${{ variables.pythonTestAppName }} ${{ variables.dotnetTestAppName }} ${{ variables.testNamespace }}; then
+        if ! ./validate-mutation.sh ${{ variables.javaTestAppName }} ${{ variables.nodeTestAppName }} ${{ variables.pythonTestAppName }} ${{ variables.dotnetTestAppName }} ${{ variables.goTestAppName }} ${{ variables.testNamespace }}; then
           echo "Mutation validation failed"
           exit 1
         fi
 
   - task: AzureCLI@2
-    displayName: "Check test apps are sending telemetry to AI"
+    displayName: "Check test apps are sending AI and OTEL telemetry"
     inputs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: bash
@@ -398,14 +402,19 @@ jobs:
         export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
         export PYTHON_TEST_APP_NAME="${{ variables.pythonTestAppName }}"
         export DOTNET_TEST_APP_NAME="${{ variables.dotnetTestAppName }}"
+        export GO_TEST_APP_NAME="${{ variables.goTestAppName }}"
 
-        echo "Wait 30s for telemetry to flow..."
-        sleep 30
-        
         sudo chmod u+x ./validate_ai.sh
 
-        if ! ./validate_ai.sh ${{ variables.lawResourceId }} ${{ variables.testNamespace }}; then
+        echo "Validating AI telemetry..."
+        if ! ./validate_ai.sh ${{ variables.lawResourceId }} ${{ variables.testNamespace }} "java,nodejs,python,dotnet" "AppRoleInstance" "AppRequests" "AppDependencies" "AppMetrics" "AppExceptions"; then
           echo "AI telemetry validation failed"
+          exit 1
+        fi
+
+        echo "Validating OTEL telemetry..."
+        if ! ./validate_ai.sh ${{ variables.lawResourceId }} ${{ variables.testNamespace }} "go" "ServiceInstanceId" "OTelSpans" "OTelResources" "OTelLogs"; then
+          echo "OTEL telemetry validation failed"
           exit 1
         fi
 
