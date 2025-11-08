@@ -30,7 +30,27 @@ result_rsp=$(curl 'http://169.254.169.254/metadata/identity/oauth2/token?api-ver
 access_token=$(echo $result_rsp | jq -r '.access_token')
 client_id=$(echo $result_rsp | jq -r '.client_id')
 
+echo "=========================================="
+echo "ACCESS TOKEN DETAILS:"
 echo "Using identity with client_id: $client_id"
+
+# Decode JWT token (access_token is in format: header.payload.signature)
+# Extract the payload (second part)
+token_payload=$(echo "$access_token" | cut -d '.' -f 2)
+
+# Add padding if needed (JWT base64 encoding may not be padded)
+padding_length=$((4 - ${#token_payload} % 4))
+if [ $padding_length -ne 4 ]; then
+    token_payload="${token_payload}$(printf '%*s' $padding_length | tr ' ' '=')"
+fi
+
+# Decode the base64 payload
+decoded_token=$(echo "$token_payload" | base64 -d 2>/dev/null)
+
+echo "Decoded Token Payload:"
+echo "$decoded_token" | jq '.' 2>/dev/null || echo "$decoded_token"
+echo "=========================================="
+echo ""
 echo "AMW Query Endpoint: $AMW_QUERY_ENDPOINT"
 
 verify_amw_metrics() {
@@ -51,8 +71,14 @@ verify_amw_metrics() {
     end_time=$(date -u +%s)
     start_time=$((end_time - 900))  # 15 minutes = 900 seconds
     
-    echo "Querying for metric: $query"
+    echo "=========================================="
+    echo "REQUEST DETAILS:"
+    echo "Endpoint: $AMW_QUERY_ENDPOINT/api/v1/query"
+    echo "Query: $query"
+    echo "Time: $end_time ($(date -u -d @$end_time +%Y-%m-%dT%H:%M:%SZ))"
     echo "Time range: $(date -u -d @$start_time +%Y-%m-%dT%H:%M:%SZ) to $(date -u -d @$end_time +%Y-%m-%dT%H:%M:%SZ)"
+    echo "Authorization: Bearer <token>"
+    echo "=========================================="
     
     # Query the Azure Monitor Workspace for Prometheus metrics
     response=$(curl -s -w "\n%{http_code}" -G "$AMW_QUERY_ENDPOINT/api/v1/query" \
@@ -131,13 +157,13 @@ for app in "${APPS_ARRAY[@]}"; do
   while [ $attempt -le $max_retries ]; do
     echo "Attempt $attempt/$max_retries: Validating AMW metrics for $pod_name ($app)..."
     if verify_amw_metrics "$pod_name" "$app"; then
-      echo "✓ AMW metrics validation succeeded for $pod_name ($app)"
+      echo "AMW metrics validation succeeded for $pod_name ($app)"
       success=1
       break
     else
-      echo "✗ AMW metrics validation failed for $pod_name ($app) on attempt $attempt"
+      echo "AMW metrics validation failed for $pod_name ($app) on attempt $attempt"
       if [ $attempt -eq $max_retries ]; then
-        echo "✗ AMW metrics validation failed for $pod_name ($app) after $max_retries attempts"
+        echo "AMW metrics validation failed for $pod_name ($app) after $max_retries attempts"
         exit 1
       fi
       echo "Waiting $retry_interval seconds before retrying..."
