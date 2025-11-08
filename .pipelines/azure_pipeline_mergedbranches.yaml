@@ -883,8 +883,7 @@ extends:
     #         AcceptableOutdatedSignatureInHours: 72
     - stage: Deploy_Dev_Cluster
       displayName: Deploy to Dev Cluster
-      dependsOn:
-      - stage
+      dependsOn: []
       condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/ci_prod'), eq(variables['Build.SourceBranch'], 'refs/heads/zane/ci-agent-auto-deploy')))
       jobs:
       - deployment: Deploy_AKS_Chart
@@ -916,6 +915,6 @@ extends:
                   chartPath: '$(Build.SourcesDirectory)/charts/azuremonitor-containers/'
                   releaseName: 'ama-logs-dev'
                   overrideValues: |
-                    amalogs.image.repo=mcr.microsoft.com/azuremonitor/containerinsights/cidev
-                    amalogs.image.tag=$(linuxImageTag)
+                    amalogs.image.repo=mcr.microsoft.com/azuremonitor/containerinsights/ciprod
+                    amalogs.image.tag=3.1.30
                   arguments: '--install --create-namespace'
