@@ -1,4 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
+using System.Diagnostics;
+using System.Diagnostics.Metrics;
+
+// Configure OpenTelemetry to export custom metrics
+Environment.SetEnvironmentVariable("OTEL_DOTNET_AUTO_METRICS_ADDITIONAL_SOURCES", "dotnet-test-app");
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpClient();
@@ -14,9 +19,12 @@ app.Run();
 [Route("/")]
 public class HomeController : ControllerBase
 {
+    private static readonly Meter meter = new Meter("dotnet-test-app", "1.0.0");
+    private readonly Counter<long> _cowsSoldCounter = meter.CreateCounter<long>("cows_sold_total", description: "Total number of cows sold");
+
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<HomeController> _logger;
-
+    
     public HomeController(IHttpClientFactory httpClientFactory, ILogger<HomeController> logger)
     {
         _httpClientFactory = httpClientFactory;
@@ -32,6 +40,14 @@ public class HomeController : ControllerBase
     [HttpGet("call-target")]
     public async Task<IActionResult> CallTarget()
     {
+        // Increment the cows sold counter
+        _cowsSoldCounter.Add(1, new KeyValuePair<string, object?>[]
+            {
+                new("cow_type", "Holstein .NET"),
+                new("endpoint", Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")),
+                new("protocol", Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL"))
+            });
+        
         if (new Random().NextDouble() < 0.4)
         {
             throw new Exception("An unexpected error occurred");

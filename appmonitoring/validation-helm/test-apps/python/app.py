@@ -4,10 +4,18 @@ import requests
 import logging
 
 from flask import Flask, jsonify
+from opentelemetry import metrics
 
 app = Flask(__name__)
 
 logging.basicConfig(level=logging.ERROR)
+
+# Create meter and counter for metrics
+meter = metrics.get_meter("python-test-app", "1.0.0")
+cows_sold_counter = meter.create_counter(
+    "cows_sold_total",
+    description="Total number of cows sold"
+)
 
 @app.route('/')
 def home():
@@ -15,6 +23,16 @@ def home():
 
 @app.route('/call-target')
 def call_target():
+    # Increment the cows sold counter
+    cows_sold_counter.add(
+        1,
+        {
+            "cow_type": "Holstein Python",
+            "endpoint": os.getenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", ""),
+            "protocol": os.getenv("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL", "")
+        }
+    )
+    
     if random.random() < 0.4:  # 40% chance of failure
         try:
             raise ValueError("Something went wrong!")

@@ -161,6 +161,14 @@ public class HomeController : ControllerBase
         
         try
         {
+            // Increment cows sold counter
+            _cowsSoldTotal.Add(1, new KeyValuePair<string, object?>[]
+            {
+                new("cow_type", "Holstein .NET Instrumented"),
+                new("endpoint", Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")),
+                new("protocol", Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL"))
+            });
+            
             if (new Random().NextDouble() < 0.4)
             {
                 statusCode = 500;

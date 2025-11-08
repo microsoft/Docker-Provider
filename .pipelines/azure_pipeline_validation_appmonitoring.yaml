@@ -34,6 +34,7 @@ variables:
   testNamespace: 'test-ns'
   aiResourceId: '/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourcegroups/aks-appmonitoring-pipeline/providers/microsoft.insights/components/appmonitoring-pipeline-validation-ai-otel'
   lawResourceId: '/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourcegroups/ai_appmonitoring-pipeline-validation-ai-ote_37743a46-5226-447c-842b-35fac54dbd92_managed/providers/microsoft.operationalinsights/workspaces/managed-appmonitoring-pipeline-validation-ai-otel-ws'
+  amwQueryEndpoint: 'https://managed-appmonitoring-pipeline-validatio-amw-axfudjacdrgbe5ht.eastus.prometheus.monitor.azure.com'
   Codeql.Enabled: true
   Codeql.BuildIdentifier: 'linuxbuild'
   AKSResourceGroup: 'aks-appmonitoring-pipeline'
@@ -366,6 +367,13 @@ jobs:
         echo "Validating OTEL telemetry..."
         if ! ./validate_ai.sh ${{ variables.lawResourceId }} ${{ variables.testNamespace }} "go" "ServiceInstanceId" "OTelSpans" "OTelResources" "OTelLogs"; then
           echo "OTEL telemetry validation failed"
+          exit 1
+        fi
+
+        echo "Validating AMW metrics..."
+        sudo chmod u+x ./validate_amw.sh
+        if ! ./validate_amw.sh ${{ variables.amwQueryEndpoint }} ${{ variables.testNamespace }} "java,nodejs,python,dotnet,go"; then
+          echo "AMW metrics validation failed"
           exit 1
         fi
 
