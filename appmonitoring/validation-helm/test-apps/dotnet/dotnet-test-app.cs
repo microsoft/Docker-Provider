@@ -2,9 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 
-// Configure OpenTelemetry to export custom metrics
-Environment.SetEnvironmentVariable("OTEL_DOTNET_AUTO_METRICS_ADDITIONAL_SOURCES", "dotnet-test-app");
-
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpClient();
 builder.Services.AddControllers();

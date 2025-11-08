@@ -25,5 +25,7 @@ spec:
           env:
             - name: TARGET_URL
               value: "{{ .Values.targetUrl }}"
+            - name: OTEL_DOTNET_AUTO_METRICS_ADDITIONAL_SOURCES
+              value: "dotnet-test-app"
           ports:
             - containerPort: {{ .Values.port }}
