@@ -916,7 +916,7 @@ extends:
                   azureResourceGroup: zane-test
                   kubernetesCluster: zane-test
                   useClusterAdmin: true
-                  namespace: default
+                  namespace: kube-system
                   command: 'upgrade'
                   chartType: 'FilePath'
                   chartPath: '$(Build.SourcesDirectory)/charts/azuremonitor-containers/'
