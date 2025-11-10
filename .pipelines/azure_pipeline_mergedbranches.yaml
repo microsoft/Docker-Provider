@@ -900,12 +900,12 @@ extends:
             deploy:
               steps:
               - checkout: self
-              
+
               - task: HelmDeploy@0
                 displayName: 'Deploy to dev cluster'
                 inputs:
                   connectionType: 'Azure Resource Manager'
-                  azureSubscription: 'ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)'
+                  azureSubscription: 'ContainerInsights_Build_Subscription(9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)'
                   azureResourceGroup: 'zane-test'
                   kubernetesCluster: 'zane-test'
                   useClusterAdmin: true
