@@ -904,12 +904,12 @@ extends:
               - task: HelmDeploy@0
                 displayName: 'Deploy to dev cluster'
                 inputs:
-                  connectionType: 'Azure Resource Manager'
-                  azureSubscription: 'ContainerInsights_Build_Subscription(9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)'
-                  azureResourceGroup: 'zane-test'
-                  kubernetesCluster: 'zane-test'
+                  connectionType: Azure Resource Manager
+                  azureSubscriptionEndpoint: ContainerInsights_Build_Subscription (9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb)
+                  azureResourceGroup: zane-test
+                  kubernetesCluster: zane-test
                   useClusterAdmin: true
-                  namespace: 'kube-system'
+                  namespace: kube-system
                   command: 'upgrade'
                   chartType: 'FilePath'
                   chartPath: '$(Build.SourcesDirectory)/charts/azuremonitor-containers/'
