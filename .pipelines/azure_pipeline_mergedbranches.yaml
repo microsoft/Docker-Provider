@@ -146,188 +146,188 @@ extends:
           inputs:
             toolVersion: Latest
             targetDirectory: '$(Build.SourcesDirectory)'
-      - job: build_linux
-        timeoutInMinutes: 120
-        dependsOn: common
-        variables:
-          linuxImagetag: $[ dependencies.common.outputs['setup.linuxImagetag'] ]
-          linuxTelemetryTag: $[ dependencies.common.outputs['setup.linuxTelemetryTag'] ]
-          Codeql.Enabled: true
-          Codeql.BuildIdentifier: 'linuxbuild'
-          DOCKER_BUILDKIT: 1
-        templateContext:
-          outputs:
-          - output: pipelineArtifact
-            targetPath: '$(Build.ArtifactStagingDirectory)'
-            artifactName: linux-drop
-        steps:
-        - task: CodeQL3000Init@0
-          condition: eq(variables.IS_MAIN_BRANCH, true)
-        - task: AzureCLI@2
-          displayName: "Multi-arch Linux build"
-          inputs:
-            azureSubscription: ${{ variables.armServiceConnectionName }}
-            scriptType: bash
-            scriptLocation: inlineScript
-            inlineScript: |
-              mkdir -p $(Build.ArtifactStagingDirectory)/linux
-              sudo apt-get update && sudo apt-get -y install qemu binfmt-support qemu-user-static
-              docker system prune --all -f
-              docker images -q --filter "dangling=true" | xargs docker rmi
-              docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-              docker buildx create --name testbuilder
-              docker buildx use testbuilder
-              az --version
-              az account show
-              az account set -s ${{ variables.subscription }}
-              az acr login -n ${{ variables.containerRegistry }}
-              # NOTE: Using the prometheus-collector team's cached buildx image since moby/buildkit:buildx-stable-1 getting throttled
-              docker pull mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1
-              docker buildx create --name dockerbuilder --driver docker-container --driver-opt image=mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1 --use
-              docker buildx inspect --bootstrap
-              if [ "$(Build.Reason)" != "PullRequest" ]; then
-                docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --push --provenance=false .
-                echo "##vso[task.logissue type=warning]Linux image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)"
-                docker pull ${{ variables.repoImageName }}:$(linuxImagetag)
-              else
-                docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --provenance=false .
-                # load the multi-arch image to run tests
-                docker buildx build --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --load --provenance=false .
-              fi
-        - bash: |
-            curl -LO "https://github.com/oras-project/oras/releases/download/v1.0.0/oras_1.0.0_linux_amd64.tar.gz"
-            mkdir -p oras-install/
-            tar -zxf oras_1.0.0_*.tar.gz -C oras-install/
-            sudo mv oras-install/oras /usr/local/bin/
-            rm -rf oras_1.0.0_*.tar.gz oras-install/
-            TARGET_ARTIFACT=$(oras manifest fetch ${{ variables.repoImageName }}:$(linuxImagetag) --descriptor)
-            cat <<EOF >>$(Build.ArtifactStagingDirectory)/linux/payload.json
-            {"targetArtifact":$TARGET_ARTIFACT}
-            EOF
-            cat $(Build.ArtifactStagingDirectory)/linux/payload.json
-          workingDirectory: $(Build.ArtifactStagingDirectory)/linux/
-          displayName: "Install oras and build the payload json file"
-          condition: eq(variables.IS_PR, false)
-        - task: EsrpCodeSigning@5
-          condition: eq(variables.IS_PR, false)
-          inputs:
-            ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
-            UseMSIAuthentication: true
-            AppRegistrationClientId: $(appRegistrationClientId)
-            AppRegistrationTenantId: $(appRegistrationTenantId)
-            EsrpClientId: $(esrpClientId)
-            AuthAKVName: $(authAKVName)
-            AuthCertName: $(authCertName)
-            AuthSignCertName: $(authSignCertName)
-            FolderPath: '$(Build.ArtifactStagingDirectory)/linux'
-            Pattern: 'payload.json'
-            signConfigType: 'inlineSignParams'
-            inlineOperation: |
-              [
-                          {
-                              "keyCode": "CP-469451",
-                              "operationSetCode": "NotaryCoseSign",
-                              "parameters": [
-                                {
-                                  "parameterName": "CoseFlags",
-                                  "parameterValue": "chainunprotected"
-                                }
-                              ],
-                              "toolName": "sign",
-                              "toolVersion": "1.0"
-                          }
-                        ]
-            SessionTimeout: '60'
-            MaxConcurrency: '50'
-            MaxRetryAttempts: '5'
-            PendingAnalysisWaitTimeoutMinutes: '5'
-          displayName: 'Esrp Image Signing for linux image'
-        - bash: |
-            set -euxo pipefail
-            oras attach ${{ variables.repoImageName }}:$(linuxImagetag) \
-              --artifact-type 'application/vnd.cncf.notary.signature' \
-              ./payload.json:application/cose \
-              -a "io.cncf.notary.x509chain.thumbprint#S256=[\"49D6CD5DB42623144D6990AA1669CE5D97F1F3D7\"]"
-          workingDirectory: $(Build.ArtifactStagingDirectory)/linux/
-          displayName: "ORAS Push Artifacts in $(Build.ArtifactStagingDirectory)/linux/"
-          condition: eq(variables.IS_PR, false)
-        - bash: |
-            set -euxo pipefail
-            oras attach ${{ variables.repoImageName }}:$(linuxImagetag) \
-                --artifact-type 'application/vnd.microsoft.artifact.lifecycle' \
-                --annotation "vnd.microsoft.artifact.lifecycle.end-of-life.date=$(date -u -d '-1 hour' +"%Y-%m-%dT%H:%M:%SZ")"
-          workingDirectory: $(Build.ArtifactStagingDirectory)/linux/
-          displayName: "ORAS Push Artifacts in $(Build.ArtifactStagingDirectory)/linux/"
-          condition: and(eq(variables.IS_RELEASE, false), eq(variables.IS_PR, false))
-        - task: AzureCLI@2
-          displayName: "Vulnerability Scan with Trivy"
-          inputs:
-            azureSubscription: ${{ variables.armServiceConnectionName }}
-            scriptType: bash
-            scriptLocation: inlineScript
-            inlineScript: |
-              curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-              PRIMARY_TRIVY_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-db"
-              SECONDARY_TRIVY_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-db"
-              PRIMARY_TRIVY_JAVA_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-java-db"
-              SECONDARY_TRIVY_JAVA_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-java-db"
-              # Set initial repositories to primary
-              export TRIVY_DB_REPOSITORY=$PRIMARY_TRIVY_DB_REPOSITORY
-              export TRIVY_JAVA_DB_REPOSITORY=$PRIMARY_TRIVY_JAVA_DB_REPOSITORY
-              # Function to run Trivy scan and handle output
-              run_trivy_scan() {
-                  trivy image --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM "${{ variables.repoImageName }}:$(linuxImagetag)" > trivy_output.log 2>&1
-                  return $?
-              }
-              # Attempt scan up to 5 times with repository fallback
-              for i in {1..5}; do
-                  echo "Running Trivy scan attempt $i"
-                  # Run the Trivy scan and capture exit code
-                  run_trivy_scan
-                  TRIVY_EXIT_CODE=$?
-                  # Check if scan was successful
-                  if [ $TRIVY_EXIT_CODE -eq 0 ]; then
-                      echo "Trivy scan succeeded."
-                      cat trivy_output.log
-                      break
-                  fi
-                  # If the first attempt fails, switch to secondary repositories
-                  if [ $i -eq 1 ]; then
-                      echo "Primary repositories failed with an error. Switching to secondary repositories."
-                      export TRIVY_DB_REPOSITORY=$SECONDARY_TRIVY_DB_REPOSITORY
-                      export TRIVY_JAVA_DB_REPOSITORY=$SECONDARY_TRIVY_JAVA_DB_REPOSITORY
-                  fi
-                  # Log and wait before retrying if an error occurred
-                  echo "Error: Trivy scan attempt $i failed. Retrying ($i/5)"
-                  cat trivy_output.log
-                  sleep 5 # Wait 5 seconds before retrying
-              done
-              # Final check: if still failing after 5 attempts, exit with error
-              if [ $TRIVY_EXIT_CODE -ne 0 ]; then
-                  echo "Error: Trivy scan failed after 5 retries."
-                  exit 1
-              fi
-        - task: GoTool@0
-          inputs:
-            version: '1.23.8'
-        - bash: |
-            cd $(System.DefaultWorkingDirectory)/build/linux/
-            ls
-            make
-          displayName: 'Execute Makefile for Linux Build'
-        - task: CodeQL3000Finalize@0
-          condition: eq(variables.IS_MAIN_BRANCH, true)
-        - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
-          displayName: 'Generation Task'
-          condition: eq(variables.IS_PR, false)
-          inputs:
-            BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
-            DockerImagesToScan: '$(GOLANG_BASE_IMAGE),$(CI_BASE_IMAGE),${{ variables.repoImageName }}:$(linuxImagetag)'
-        - bash: |
-            dockerImagesToScan='$(GOLANG_BASE_IMAGE),$(CI_BASE_IMAGE),${{ variables.repoImageName }}:$(linuxImagetag)'
-            echo "Docker images to scan: $dockerImagesToScan"
-            echo "##vso[task.setvariable variable=dockerImagesToScan]$dockerImagesToScan"
-          displayName: 'Set Docker images to scan'
+      # - job: build_linux
+      #   timeoutInMinutes: 120
+      #   dependsOn: common
+      #   variables:
+      #     linuxImagetag: $[ dependencies.common.outputs['setup.linuxImagetag'] ]
+      #     linuxTelemetryTag: $[ dependencies.common.outputs['setup.linuxTelemetryTag'] ]
+      #     Codeql.Enabled: true
+      #     Codeql.BuildIdentifier: 'linuxbuild'
+      #     DOCKER_BUILDKIT: 1
+      #   templateContext:
+      #     outputs:
+      #     - output: pipelineArtifact
+      #       targetPath: '$(Build.ArtifactStagingDirectory)'
+      #       artifactName: linux-drop
+      #   steps:
+      #   - task: CodeQL3000Init@0
+      #     condition: eq(variables.IS_MAIN_BRANCH, true)
+      #   - task: AzureCLI@2
+      #     displayName: "Multi-arch Linux build"
+      #     inputs:
+      #       azureSubscription: ${{ variables.armServiceConnectionName }}
+      #       scriptType: bash
+      #       scriptLocation: inlineScript
+      #       inlineScript: |
+      #         mkdir -p $(Build.ArtifactStagingDirectory)/linux
+      #         sudo apt-get update && sudo apt-get -y install qemu binfmt-support qemu-user-static
+      #         docker system prune --all -f
+      #         docker images -q --filter "dangling=true" | xargs docker rmi
+      #         docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+      #         docker buildx create --name testbuilder
+      #         docker buildx use testbuilder
+      #         az --version
+      #         az account show
+      #         az account set -s ${{ variables.subscription }}
+      #         az acr login -n ${{ variables.containerRegistry }}
+      #         # NOTE: Using the prometheus-collector team's cached buildx image since moby/buildkit:buildx-stable-1 getting throttled
+      #         docker pull mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1
+      #         docker buildx create --name dockerbuilder --driver docker-container --driver-opt image=mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1 --use
+      #         docker buildx inspect --bootstrap
+      #         if [ "$(Build.Reason)" != "PullRequest" ]; then
+      #           docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --push --provenance=false .
+      #           echo "##vso[task.logissue type=warning]Linux image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)"
+      #           docker pull ${{ variables.repoImageName }}:$(linuxImagetag)
+      #         else
+      #           docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --provenance=false .
+      #           # load the multi-arch image to run tests
+      #           docker buildx build --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --load --provenance=false .
+      #         fi
+      #   - bash: |
+      #       curl -LO "https://github.com/oras-project/oras/releases/download/v1.0.0/oras_1.0.0_linux_amd64.tar.gz"
+      #       mkdir -p oras-install/
+      #       tar -zxf oras_1.0.0_*.tar.gz -C oras-install/
+      #       sudo mv oras-install/oras /usr/local/bin/
+      #       rm -rf oras_1.0.0_*.tar.gz oras-install/
+      #       TARGET_ARTIFACT=$(oras manifest fetch ${{ variables.repoImageName }}:$(linuxImagetag) --descriptor)
+      #       cat <<EOF >>$(Build.ArtifactStagingDirectory)/linux/payload.json
+      #       {"targetArtifact":$TARGET_ARTIFACT}
+      #       EOF
+      #       cat $(Build.ArtifactStagingDirectory)/linux/payload.json
+      #     workingDirectory: $(Build.ArtifactStagingDirectory)/linux/
+      #     displayName: "Install oras and build the payload json file"
+      #     condition: eq(variables.IS_PR, false)
+      #   - task: EsrpCodeSigning@5
+      #     condition: eq(variables.IS_PR, false)
+      #     inputs:
+      #       ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
+      #       UseMSIAuthentication: true
+      #       AppRegistrationClientId: $(appRegistrationClientId)
+      #       AppRegistrationTenantId: $(appRegistrationTenantId)
+      #       EsrpClientId: $(esrpClientId)
+      #       AuthAKVName: $(authAKVName)
+      #       AuthCertName: $(authCertName)
+      #       AuthSignCertName: $(authSignCertName)
+      #       FolderPath: '$(Build.ArtifactStagingDirectory)/linux'
+      #       Pattern: 'payload.json'
+      #       signConfigType: 'inlineSignParams'
+      #       inlineOperation: |
+      #         [
+      #                     {
+      #                         "keyCode": "CP-469451",
+      #                         "operationSetCode": "NotaryCoseSign",
+      #                         "parameters": [
+      #                           {
+      #                             "parameterName": "CoseFlags",
+      #                             "parameterValue": "chainunprotected"
+      #                           }
+      #                         ],
+      #                         "toolName": "sign",
+      #                         "toolVersion": "1.0"
+      #                     }
+      #                   ]
+      #       SessionTimeout: '60'
+      #       MaxConcurrency: '50'
+      #       MaxRetryAttempts: '5'
+      #       PendingAnalysisWaitTimeoutMinutes: '5'
+      #     displayName: 'Esrp Image Signing for linux image'
+      #   - bash: |
+      #       set -euxo pipefail
+      #       oras attach ${{ variables.repoImageName }}:$(linuxImagetag) \
+      #         --artifact-type 'application/vnd.cncf.notary.signature' \
+      #         ./payload.json:application/cose \
+      #         -a "io.cncf.notary.x509chain.thumbprint#S256=[\"49D6CD5DB42623144D6990AA1669CE5D97F1F3D7\"]"
+      #     workingDirectory: $(Build.ArtifactStagingDirectory)/linux/
+      #     displayName: "ORAS Push Artifacts in $(Build.ArtifactStagingDirectory)/linux/"
+      #     condition: eq(variables.IS_PR, false)
+      #   - bash: |
+      #       set -euxo pipefail
+      #       oras attach ${{ variables.repoImageName }}:$(linuxImagetag) \
+      #           --artifact-type 'application/vnd.microsoft.artifact.lifecycle' \
+      #           --annotation "vnd.microsoft.artifact.lifecycle.end-of-life.date=$(date -u -d '-1 hour' +"%Y-%m-%dT%H:%M:%SZ")"
+      #     workingDirectory: $(Build.ArtifactStagingDirectory)/linux/
+      #     displayName: "ORAS Push Artifacts in $(Build.ArtifactStagingDirectory)/linux/"
+      #     condition: and(eq(variables.IS_RELEASE, false), eq(variables.IS_PR, false))
+      #   - task: AzureCLI@2
+      #     displayName: "Vulnerability Scan with Trivy"
+      #     inputs:
+      #       azureSubscription: ${{ variables.armServiceConnectionName }}
+      #       scriptType: bash
+      #       scriptLocation: inlineScript
+      #       inlineScript: |
+      #         curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+      #         PRIMARY_TRIVY_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-db"
+      #         SECONDARY_TRIVY_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-db"
+      #         PRIMARY_TRIVY_JAVA_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-java-db"
+      #         SECONDARY_TRIVY_JAVA_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-java-db"
+      #         # Set initial repositories to primary
+      #         export TRIVY_DB_REPOSITORY=$PRIMARY_TRIVY_DB_REPOSITORY
+      #         export TRIVY_JAVA_DB_REPOSITORY=$PRIMARY_TRIVY_JAVA_DB_REPOSITORY
+      #         # Function to run Trivy scan and handle output
+      #         run_trivy_scan() {
+      #             trivy image --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM "${{ variables.repoImageName }}:$(linuxImagetag)" > trivy_output.log 2>&1
+      #             return $?
+      #         }
+      #         # Attempt scan up to 5 times with repository fallback
+      #         for i in {1..5}; do
+      #             echo "Running Trivy scan attempt $i"
+      #             # Run the Trivy scan and capture exit code
+      #             run_trivy_scan
+      #             TRIVY_EXIT_CODE=$?
+      #             # Check if scan was successful
+      #             if [ $TRIVY_EXIT_CODE -eq 0 ]; then
+      #                 echo "Trivy scan succeeded."
+      #                 cat trivy_output.log
+      #                 break
+      #             fi
+      #             # If the first attempt fails, switch to secondary repositories
+      #             if [ $i -eq 1 ]; then
+      #                 echo "Primary repositories failed with an error. Switching to secondary repositories."
+      #                 export TRIVY_DB_REPOSITORY=$SECONDARY_TRIVY_DB_REPOSITORY
+      #                 export TRIVY_JAVA_DB_REPOSITORY=$SECONDARY_TRIVY_JAVA_DB_REPOSITORY
+      #             fi
+      #             # Log and wait before retrying if an error occurred
+      #             echo "Error: Trivy scan attempt $i failed. Retrying ($i/5)"
+      #             cat trivy_output.log
+      #             sleep 5 # Wait 5 seconds before retrying
+      #         done
+      #         # Final check: if still failing after 5 attempts, exit with error
+      #         if [ $TRIVY_EXIT_CODE -ne 0 ]; then
+      #             echo "Error: Trivy scan failed after 5 retries."
+      #             exit 1
+      #         fi
+      #   - task: GoTool@0
+      #     inputs:
+      #       version: '1.23.8'
+      #   - bash: |
+      #       cd $(System.DefaultWorkingDirectory)/build/linux/
+      #       ls
+      #       make
+      #     displayName: 'Execute Makefile for Linux Build'
+      #   - task: CodeQL3000Finalize@0
+      #     condition: eq(variables.IS_MAIN_BRANCH, true)
+      #   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
+      #     displayName: 'Generation Task'
+      #     condition: eq(variables.IS_PR, false)
+      #     inputs:
+      #       BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
+      #       DockerImagesToScan: '$(GOLANG_BASE_IMAGE),$(CI_BASE_IMAGE),${{ variables.repoImageName }}:$(linuxImagetag)'
+      #   - bash: |
+      #       dockerImagesToScan='$(GOLANG_BASE_IMAGE),$(CI_BASE_IMAGE),${{ variables.repoImageName }}:$(linuxImagetag)'
+      #       echo "Docker images to scan: $dockerImagesToScan"
+      #       echo "##vso[task.setvariable variable=dockerImagesToScan]$dockerImagesToScan"
+      #     displayName: 'Set Docker images to scan'
     #   - job: build_windows_2019
     #     pool:
     #       name: Azure-Pipelines-CI-Test-EO
@@ -916,12 +916,12 @@ extends:
                   azureResourceGroup: zane-test
                   kubernetesCluster: zane-test
                   useClusterAdmin: true
-                  namespace: kube-system
+                  namespace: default
                   command: 'upgrade'
                   chartType: 'FilePath'
                   chartPath: '$(Build.SourcesDirectory)/charts/azuremonitor-containers/'
                   releaseName: 'ama-logs-dev'
                   overrideValues: |
                     amalogs.image.repo=mcr.microsoft.com/azuremonitor/containerinsights/ciprod
-                    amalogs.image.tag=3.1.30
-                  arguments: '--install --create-namespace'
+                    amalogs.image.tag=3.1.29
+                  arguments: '--install'
