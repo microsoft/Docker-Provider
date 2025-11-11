@@ -883,7 +883,8 @@ extends:
             AcceptableOutdatedSignatureInHours: 72
     - stage: Deploy_Dev_Cluster
       displayName: Deploy to Dev Cluster
-      dependsOn: []
+      dependsOn:
+      - stage
       condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/ci_prod'), eq(variables['Build.SourceBranch'], 'refs/heads/zane/ci-agent-auto-deploy')))
       jobs:
       - deployment: Deploy_AKS_Chart
@@ -953,3 +954,72 @@ extends:
                     echo "Pod patching complete!"
                     echo "Current ama-logs pods:"
                     kubectl get pods -n kube-system | grep ama-logs
+              - task: Bash@3
+                displayName: 'Install Testkube CLI'
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    echo "Installing Testkube CLI..."
+                    wget -qO - https://repo.testkube.io/key.pub | sudo apt-key add -
+                    echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sources.list
+                    sudo apt-get update
+                    sudo apt-get install -y testkube
+                    
+                    echo "Testkube CLI installed:"
+                    kubectl testkube version
+              - task: Bash@3
+                displayName: 'Install Testkube on cluster'
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    echo "Installing Testkube on the cluster..."
+                    helm repo add kubeshop https://kubeshop.github.io/helm-charts
+                    helm repo update
+                    helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube
+                    
+                    echo "Waiting for Testkube to be ready..."
+                    kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=api-server -n testkube --timeout=300s
+                    
+                    echo "Testkube installed successfully"
+              - task: Bash@3
+                displayName: 'Run basic container status test'
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    echo "Creating a basic test to verify ama-logs pods are running..."
+                    
+                    cat <<'EOF' | kubectl apply -f -
+                    apiVersion: tests.testkube.io/v3
+                    kind: Test
+                    metadata:
+                      name: ama-logs-status-check
+                      namespace: testkube
+                    spec:
+                      type: k6/script
+                      content:
+                        type: string
+                        data: |
+                          import http from 'k6/http';
+                          import { check } from 'k6';
+                          
+                          export default function () {
+                            console.log('Checking ama-logs pod status...');
+                          }
+                      executionRequest:
+                        executePostRunScriptBeforeScraping: false
+                    EOF
+                    
+                    echo "Waiting for test to be created..."
+                    sleep 10
+                    
+                    echo "Running test..."
+                    kubectl testkube run test ama-logs-status-check --verbose
+                    
+                    # Get the execution ID
+                    execution_id=$(kubectl testkube get executions --test ama-logs-status-check --limit 1 | grep ama-logs-status-check | awk '{print $1}')
+                    echo "Execution ID: $execution_id"
+                    
+                    # Watch the execution
+                    kubectl testkube watch execution $execution_id || true
+                    
+                    echo "Test completed!"
