@@ -918,9 +918,9 @@ extends:
                     # MCR registry path
                     MCR_REPO="mcr.microsoft.com/azuremonitor/containerinsights/cidev"
                     
-                    echo "Using images from this build:"
+                    echo "Using image tags:"
                     echo "  Linux image: $MCR_REPO:$(linuxImageTag)"
-                    echo "  Windows image: $MCR_REPO:$(windowsImageTag) (if Windows pods exist)"
+                    echo "  Windows image: $MCR_REPO:$(windowsImageTag)"
                     echo ""
                     echo "Finding and patching ama-logs pods in kube-system namespace..."
                     
@@ -928,18 +928,16 @@ extends:
                     kubectl get pods -n kube-system --no-headers | grep ama-logs | awk '{print $1}' | while read pod_name; do
                       echo "Processing pod: $pod_name"
                       
-                      # Extract base name (without random suffix)
-                      base_name=$(echo "$pod_name" | sed -E 's/-[a-z0-9]{5}$//')
-                      
-                      # Determine image and container name based on pod base name
-                      if [[ "$base_name" == "ama-logs-windows" ]]; then
+                      # Determine image and container name based on pod name pattern
+                      if [[ "$pod_name" =~ ^ama-logs-windows ]]; then
                         IMG_URL="$MCR_REPO:$(windowsImageTag)"
                         container_name="ama-logs-windows"
-                      elif [[ "$base_name" == "ama-logs" ]] || [[ "$base_name" == "ama-logs-rs" ]]; then
+                      elif [[ "$pod_name" =~ ^ama-logs-rs ]] || [[ "$pod_name" =~ ^ama-logs-[a-z0-9]{5}$ ]]; then
+                        # Matches both ReplicaSet pods (ama-logs-rs-*) and DaemonSet pods (ama-logs-xxxxx)
                         IMG_URL="$MCR_REPO:$(linuxImageTag)"
                         container_name="ama-logs"
                       else
-                        echo "Skipping unknown pod: $pod_name"
+                        echo "  ⚠ Unknown pod pattern: $pod_name - skipping"
                         continue
                       fi
                       
