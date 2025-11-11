@@ -77,20 +77,6 @@ validateCommonParameters() {
 	   echo "ERROR: parameter TENANT_ID is required." > ${results_dir}/error
 	   python3 setup_failure_handler.py
    fi
-
-   ## Look for WORKLOAD_CLIENT_ID
-   if [[ -z "${WORKLOAD_CLIENT_ID}" ]]
-   then
-      if [ -z $CLIENT_ID ]; then
-         echo "ERROR: parameter CLIENT_ID is required." > ${results_dir}/error
-         python3 setup_failure_handler.py
-      fi
-
-      if [ -z $CLIENT_SECRET ]; then
-         echo "ERROR: parameter CLIENT_SECRET is required." > ${results_dir}/error
-         python3 setup_failure_handler.py
-      fi
-   fi
 }
 
 validateArcConfTestParameters() {
@@ -99,7 +85,7 @@ validateArcConfTestParameters() {
 	   python3 setup_failure_handler.py
 	fi
 
-	if [ -z $RESOURCE_GROUP ]]; then
+	if [ -z $RESOURCE_GROUP ]; then
 		echo "ERROR: parameter RESOURCE_GROUP is required." > ${results_dir}/error
 		python3 setup_failure_handler.py
 	fi
@@ -157,47 +143,38 @@ deleteArcCIExtension() {
 login_to_azure() {
    ## Federted Identity credentials authentication mechanism added.
 	if [[ -v SYSTEM_ACCESSTOKEN && -n "$SYSTEM_ACCESSTOKEN" &&
-	      -v SERVICE_CONNECTION_ID && -n "$SERVICE_CONNECTION_ID" &&
-	      -v SYSTEM_OIDCREQUESTURI && -n "$SYSTEM_OIDCREQUESTURI" ]]; then
-	
-	  export OIDC_REQUEST_URL="${SYSTEM_OIDCREQUESTURI}?api-version=7.1&serviceConnectionId=${SERVICE_CONNECTION_ID}"
-	  echo "OIDC_REQUEST_URL= $OIDC_REQUEST_URL"
-	
-	  FED_TOKEN=$(curl -s -H "Content-Length: 0" -H "Content-Type: application/json" -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" -X POST $OIDC_REQUEST_URL | jq -r '.oidcToken')
-	  echo "FED_TOKEN= $FED_TOKEN"
-	
-	  echo "logging in using Federated Identity"
-	  az login --service-principal -u $FED_CLIENT_ID  --tenant $TENANT_ID --allow-no-subscriptions --federated-token $FED_TOKEN 2> >(tee "${results_dir}/error" >&2) || python3 setup_failure_handler.py
-	
-	elif [[ -v BASE_64_CLIENT_CERTIFICATE && -n "$BASE_64_CLIENT_CERTIFICATE" ]]; then
-	  BASE_64_CLIENT_CERTIFICATE=${BASE_64_CLIENT_CERTIFICATE#\"}   # Remove leading quote
-	  BASE_64_CLIENT_CERTIFICATE=${BASE_64_CLIENT_CERTIFICATE%\"} # Remove trailing quote
-	  echo "logging in using Certificate '${BASE_64_CLIENT_CERTIFICATE}'"
-	  ## create base64 cert to pem
-	  echo ${BASE_64_CLIENT_CERTIFICATE:0} | tr ' ' "\n" > base64_cert
-	  # convert base64 to PEM
-	  openssl base64 -d -in base64_cert -out clientcert.pem
-	  # minutes=60
-	  # seconds=$((minutes * 60))
-	  # sleep $seconds
-	  az login --service-principal --use-cert-sn-issuer -u $CLIENT_ID -p clientcert.pem --tenant $TENANT_ID 2> >(tee "${results_dir}/error" >&2) || python3 setup_failure_handler.py
-	  
-	elif [[ -z $WORKLOAD_CLIENT_ID ]]; then
+         -v SERVICE_CONNECTION_ID && -n "$SERVICE_CONNECTION_ID" &&
+         -v SYSTEM_OIDCREQUESTURI && -n "$SYSTEM_OIDCREQUESTURI" ]]; then
+      export OIDC_REQUEST_URL="${SYSTEM_OIDCREQUESTURI}?api-version=7.1&serviceConnectionId=${SERVICE_CONNECTION_ID}"
+      echo "OIDC_REQUEST_URL= $OIDC_REQUEST_URL"
+
+      FED_TOKEN=$(curl -s -H "Content-Length: 0" -H "Content-Type: application/json" -H "Authorization: Bearer $SYSTEM_ACCESSTOKEN" -X POST $OIDC_REQUEST_URL | jq -r '.oidcToken')
+      echo "FED_TOKEN= $FED_TOKEN"
+
+      echo "logging in using Federated Identity"
+      az login --service-principal -u $FED_CLIENT_ID  --tenant $TENANT_ID --allow-no-subscriptions --federated-token $FED_TOKEN 2> ${results_dir}/error || python3 setup_failure_handler.py
+   elif [[ -v BASE_64_CLIENT_CERTIFICATE && -n "$BASE_64_CLIENT_CERTIFICATE" ]]; then
+      BASE_64_CLIENT_CERTIFICATE=${BASE_64_CLIENT_CERTIFICATE#\"}   # Remove leading quote
+      BASE_64_CLIENT_CERTIFICATE=${BASE_64_CLIENT_CERTIFICATE%\"} # Remove trailing quote
+      echo "logging in using Certificate '${BASE_64_CLIENT_CERTIFICATE}'"
+      ## create base64 cert to pem
+      echo ${BASE_64_CLIENT_CERTIFICATE:0} | tr ' ' "\n" > base64_cert
+      openssl base64 -d -in base64_cert -out clientcert.pem
+      az login --service-principal --use-cert-sn-issuer -u $CLIENT_ID -p clientcert.pem --tenant $TENANT_ID 2> ${results_dir}/error || python3 setup_failure_handler.py
+   
+   elif [[ -v WORKLOAD_CLIENT_ID && -n "$WORKLOAD_CLIENT_ID" ]]; then
+      echo "logging in using managed identity '${WORKLOAD_CLIENT_ID}'"
+      az login --identity --client-id $WORKLOAD_CLIENT_ID 2> ${results_dir}/error || python3 setup_failure_handler.py
+   else
       echo "logging in using service principal '${CLIENT_ID}'"
       az login --service-principal \
          -u ${CLIENT_ID} \
          -p ${CLIENT_SECRET} \
          --tenant ${TENANT_ID} 2> ${results_dir}/error || python3 setup_failure_handler.py
-   else
-      echo "logging in using managed identity '${WORKLOAD_CLIENT_ID}'"
-      az login --identity \
-         -u ${WORKLOAD_CLIENT_ID} 2> ${results_dir}/error || python3 setup_failure_handler.py
    fi
-	
-   echo "setting subscription: ${SUBSCRIPTION_ID} as default subscription"
-	##
-	az account set \
-	  --subscription ${SUBSCRIPTION_ID} 2> >(tee "${results_dir}/error" >&2) || python3 setup_failure_handler.py
+
+	echo "setting subscription: ${SUBSCRIPTION_ID} as default subscription"
+	az account set -s $SUBSCRIPTION_ID
 }
 
 

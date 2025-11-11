@@ -5,7 +5,7 @@
 #  3. copy the files under installer directory to ..\..\kubernetes\windows\amalogswindows
 #  4. Builds the livenessprobe cpp and copy the executable to the under directory ..\..\kubernetes\windows\amalogswindows
 
-$dotnetcoreframework = "net6.0"
+$dotnetcoreframework = "net8.0"
 
 Write-Host("Building Certificate generator code...")
 $currentdir =  $PSScriptRoot
@@ -80,7 +80,7 @@ Write-Host("Successfully added dotnet packages") -ForegroundColor Green
 dotnet build  -f $dotnetcoreframework
 Write-Host("Building Certificate generator code and ...") -ForegroundColor Green
 
-Write-Host("Publish release and win10-x64 binaries of certificate generator code  ...")
+Write-Host("Publish release and win-x64 binaries of certificate generator code  ...")
 $isCDPxEnvironment = $false
 if (![string]::IsNullOrEmpty([System.Environment]::GetEnvironmentVariable("IsCDPXBuildMachine", "PROCESS")) -or
 ![string]::IsNullOrEmpty([System.Environment]::GetEnvironmentVariable("IsCDPXBuildMachine", "USER")) -or
@@ -90,14 +90,14 @@ if (![string]::IsNullOrEmpty([System.Environment]::GetEnvironmentVariable("IsCDP
 }
 if ($isCDPxEnvironment) {
     Write-Host("running on CDPX build machine so setting --no-restore since there is no n/w connectivity during build")
-    dotnet publish -c Release -r win10-x64 --no-restore
+    dotnet publish -c Release -r win-x64 --self-contained true --no-restore
 } else {
-  dotnet publish -c Release -r win10-x64
+  dotnet publish -c Release -r win-x64 --self-contained true
 }
 
 Write-Host("Successfully published certificate generator code binaries") -ForegroundColor Green
 
-$certreleasebinpath =  Join-Path -PATH $certsrcdir -ChildPath "bin\Release\$dotnetcoreframework\win10-x64\publish\*.*"
+$certreleasebinpath =  Join-Path -PATH $certsrcdir -ChildPath "bin\Release\$dotnetcoreframework\win-x64\publish\*.*"
 if ($false -eq (Test-Path -Path $certreleasebinpath)) {
     Write-Host("certificate release bin path doesnt exist : " + $certreleasebinpath + " ") -ForegroundColor Red
     exit 1

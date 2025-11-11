@@ -93,17 +93,17 @@ function Install-DotNetCoreSDK() {
         exit 1
     }
 
-   $url = "https://download.visualstudio.microsoft.com/download/pr/4e88f517-196e-4b17-a40c-2692c689661d/eed3f5fca28262f764d8b650585a7278/dotnet-sdk-3.1.301-win-x64.exe"
-   $output = Join-Path -Path $dotNetSdkTemp -ChildPath "dotnet-sdk-3.1.301-win-x64.exe"
+   $url = "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/8.0.415/dotnet-sdk-8.0.415-win-x64.exe"
+   $output = Join-Path -Path $dotNetSdkTemp -ChildPath "dotnet-sdk-8.0.415-win-x64.exe"
 
-   Write-Host("downloading .net core sdk 3.1: " + $dotNetSdkTemp + "  ...")
+   Write-Host("downloading .NET 8 SDK: " + $dotNetSdkTemp + "  ...")
    Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
-   Write-Host("downloading .net core sdk 3.1: " + $dotNetSdkTemp + " completed")
+   Write-Host("downloading .NET 8 SDK: " + $dotNetSdkTemp + " completed")
 
-   # install dotNet core sdk
-   Write-Host("installing .net core sdk 3.1 ...")
+   # install dotNet sdk
+   Write-Host("installing .NET 8 SDK ...")
    Start-Process -Wait $output -ArgumentList " /q /norestart"
-   Write-Host("installing .net core sdk 3.1 completed")
+   Write-Host("installing .NET 8 SDK completed")
 }
 
 function Install-Docker() {
@@ -146,7 +146,7 @@ function Install-cmetrics() {
 	git submodule sync
 	git -c protocol.version=2 submodule update --init --force --depth=1
 	git submodule foreach git config --local gc.auto 0
-	cmake --fresh -G "MinGW Makefiles" -DCMAKE_INSTALL_PREFIX="$destinationPath" .
+	cmake --fresh -G "MinGW Makefiles" -DCMAKE_C_FLAGS="-Wno-error=implicit-function-declaration" -DCMAKE_INSTALL_PREFIX="$destinationPath" .
 	make
 	make install
 }
@@ -160,7 +160,7 @@ Install-Go
 Write-Host "Install Build dependencies"
 Build-Dependencies
 
-Write-Host "Install .NET core sdk 3.1"
+Write-Host "Install .NET core sdk 8.0"
 Install-DotNetCoreSDK
 
 Write-Host "Install Docker"
