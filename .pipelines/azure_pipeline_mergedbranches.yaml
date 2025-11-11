@@ -909,10 +909,17 @@ extends:
                   scriptType: 'bash'
                   inlineScript: 'az aks get-credentials -g zane-test -n zane-test'
               - task: Bash@3
-                displayName: 'Patch ama-logs pods with new images'
+                displayName: 'Patch ama-logs pods with new images from build'
                 inputs:
                   targetType: 'inline'
                   script: |
+                    # MCR registry path
+                    MCR_REPO="mcr.microsoft.com/azuremonitor/containerinsights/cidev"
+                    
+                    echo "Using images from this build:"
+                    echo "  Linux image: $MCR_REPO:$(linuxImageTag)"
+                    echo "  Windows image: $MCR_REPO:$(windowsImageTag) (if Windows pods exist)"
+                    echo ""
                     echo "Finding and patching ama-logs pods in kube-system namespace..."
                     
                     # Get all ama-logs pods
@@ -924,10 +931,10 @@ extends:
                       
                       # Determine image and container name based on pod base name
                       if [[ "$base_name" == "ama-logs-windows" ]]; then
-                        IMG_URL="mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.30"
+                        IMG_URL="$MCR_REPO:$(windowsImageTag)"
                         container_name="ama-logs-windows"
                       elif [[ "$base_name" == "ama-logs" ]] || [[ "$base_name" == "ama-logs-rs" ]]; then
-                        IMG_URL="mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.30"
+                        IMG_URL="$MCR_REPO:$(linuxImageTag)"
                         container_name="ama-logs"
                       else
                         echo "Skipping unknown pod: $pod_name"
