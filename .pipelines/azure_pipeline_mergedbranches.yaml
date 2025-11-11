@@ -908,24 +908,24 @@ extends:
                   scriptLocation: 'inlineScript'
                   scriptType: 'bash'
                   inlineScript: 'az aks get-credentials -g zane-test -n zane-test'
-              - task: HelmDeploy@0
-                displayName: 'Deploy to dev cluster'
+              - task: Bash@3
+                displayName: 'Update DaemonSet images via kubectl patch'
                 inputs:
-                  connectionType: Azure Resource Manager
-                  azureSubscription: ContainerInsights_Build_Subscription_CI
-                  azureResourceGroup: zane-test
-                  kubernetesCluster: zane-test
-                  useClusterAdmin: true
-                  namespace: kube-system
-                  command: 'upgrade'
-                  chartType: 'FilePath'
-                  chartPath: '$(Build.SourcesDirectory)/charts/azuremonitor-containers/'
-                  releaseName: 'ama-logs-dev'
-                  overrideValues: |
-                    amalogs.image.repo=mcr.microsoft.com/azuremonitor/containerinsights/ciprod
-                    amalogs.image.tag=3.1.31
-                    amalogs.image.tagWindows=win-3.1.31
-                    amalogs.secret.wsid=$(ZANE_TMP_WORKSPACE_ID)
-                    amalogs.secret.key=$(ZANE_TMP_LAW_KEY)
-                    amalogs.env.clusterName=zane-test
-                  arguments: '--install'
+                  targetType: 'inline'
+                  script: |
+                    echo "Patching ama-logs DaemonSet with new image..."
+                    
+                    # Patch Linux DaemonSet
+                    kubectl set image daemonset/ama-logs -n kube-system \
+                      ama-logs=mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.30
+                    
+                    # Patch Windows DaemonSet (if exists)
+                    kubectl set image daemonset/ama-logs-windows -n kube-system \
+                      ama-logs-windows=mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.30 \
+                      || echo "Windows DaemonSet not found, skipping"
+                    
+                    echo "Waiting for rollout to complete..."
+                    kubectl rollout status daemonset/ama-logs -n kube-system --timeout=5m
+                    
+                    echo "DaemonSet update complete!"
+                    kubectl get daemonset ama-logs -n kube-system
