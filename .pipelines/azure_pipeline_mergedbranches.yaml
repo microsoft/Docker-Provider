@@ -909,23 +909,40 @@ extends:
                   scriptType: 'bash'
                   inlineScript: 'az aks get-credentials -g zane-test -n zane-test'
               - task: Bash@3
-                displayName: 'Update DaemonSet images via kubectl patch'
+                displayName: 'Patch ama-logs pods with new images'
                 inputs:
                   targetType: 'inline'
                   script: |
-                    echo "Patching ama-logs DaemonSet with new image..."
+                    echo "Finding and patching ama-logs pods in kube-system namespace..."
                     
-                    # Patch Linux DaemonSet
-                    kubectl set image daemonset/ama-logs -n kube-system \
-                      ama-logs=mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.30
+                    # Get all ama-logs pods
+                    kubectl get pods -n kube-system --no-headers | grep ama-logs | awk '{print $1}' | while read pod_name; do
+                      echo "Processing pod: $pod_name"
+                      
+                      # Extract base name (without random suffix)
+                      base_name=$(echo "$pod_name" | sed -E 's/-[a-z0-9]{5}$//')
+                      
+                      # Determine image and container name based on pod base name
+                      if [[ "$base_name" == "ama-logs-windows" ]]; then
+                        IMG_URL="mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.30"
+                        container_name="ama-logs-windows"
+                      elif [[ "$base_name" == "ama-logs" ]] || [[ "$base_name" == "ama-logs-rs" ]]; then
+                        IMG_URL="mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.30"
+                        container_name="ama-logs"
+                      else
+                        echo "Skipping unknown pod: $pod_name"
+                        continue
+                      fi
+                      
+                      echo "  → Patching with image: $IMG_URL (container: $container_name)"
+                      
+                      kubectl patch pod "$pod_name" -n kube-system \
+                        --patch "{\"spec\": {\"containers\": [{\"name\": \"$container_name\", \"image\": \"$IMG_URL\"}]}}" \
+                        && echo "  ✓ Successfully patched $pod_name" \
+                        || echo "  ✗ Failed to patch $pod_name"
+                    done
                     
-                    # Patch Windows DaemonSet (if exists)
-                    kubectl set image daemonset/ama-logs-windows -n kube-system \
-                      ama-logs-windows=mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.30 \
-                      || echo "Windows DaemonSet not found, skipping"
-                    
-                    echo "Waiting for rollout to complete..."
-                    kubectl rollout status daemonset/ama-logs -n kube-system --timeout=5m
-                    
-                    echo "DaemonSet update complete!"
-                    kubectl get daemonset ama-logs -n kube-system
+                    echo ""
+                    echo "Pod patching complete!"
+                    echo "Current ama-logs pods:"
+                    kubectl get pods -n kube-system | grep ama-logs
