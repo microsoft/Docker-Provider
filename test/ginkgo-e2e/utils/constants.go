@@ -10,6 +10,9 @@ var (
 		"The connection with the server was terminated abnormally",
 		"TCP connection failed",
 		"no upstream connections available",
+		"internet connectivity",
+		"GetAgentConfigurations",
+		"RefreshConfigurations",
 	}
 )
 
