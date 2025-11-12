@@ -13,7 +13,7 @@ spec:
     repository:
       type: git
       uri: https://github.com/microsoft/Docker-Provider/
-      branch: ci_prod
+      branch: suyadav/fixginkgocve
       path: test/ginkgo-e2e
   executionRequest:
     variables:
@@ -42,7 +42,7 @@ spec:
     repository:
       type: git
       uri: https://github.com/microsoft/Docker-Provider/
-      branch: ci_prod
+      branch: suyadav/fixginkgocve
       path: test/ginkgo-e2e
   executionRequest:
     variables:
@@ -71,7 +71,7 @@ spec:
     repository:
       type: git
       uri: https://github.com/microsoft/Docker-Provider/
-      branch: ci_prod
+      branch: suyadav/fixginkgocve
       path: test/ginkgo-e2e
   executionRequest:
     args:
@@ -95,7 +95,7 @@ spec:
     repository:
       type: git
       uri: https://github.com/microsoft/Docker-Provider/
-      branch: ci_prod
+      branch: suyadav/fixginkgocve
       path: test/ginkgo-e2e
   executionRequest:
     variables:
