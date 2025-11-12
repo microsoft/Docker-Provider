@@ -21,8 +21,8 @@ import (
 )
 
 // categorizeErrors categorizes error lines into expected intermittent errors (with counts) and unexpected errors.
-// Returns unexpected errors and an error if any pattern exceeds the threshold.
-func categorizeErrors(errorLines []string, threshold int) ([]string, error) {
+// Returns an error if any pattern exceeds the threshold or if there are unexpected errors.
+func categorizeErrors(errorLines []string, threshold int) error {
 	errorCounts := make(map[string]int)
 	unexpectedErrors := []string{}
 
@@ -49,14 +49,38 @@ func categorizeErrors(errorLines []string, threshold int) ([]string, error) {
 	}
 
 	// Check if any expected error pattern exceeded the threshold
+	var exceededErrors []string
 	for pattern, count := range errorCounts {
 		if count > threshold {
-			return unexpectedErrors, fmt.Errorf("expected intermittent error '%s' exceeded threshold: count=%d (threshold=%d)",
-				pattern, count, threshold)
+			exceededErrors = append(exceededErrors, fmt.Sprintf("'%s': %d occurrences (threshold: %d)", pattern, count, threshold))
 		}
 	}
 
-	return unexpectedErrors, nil
+	// Build error message if there are exceeded or unexpected errors
+	if len(exceededErrors) > 0 || len(unexpectedErrors) > 0 {
+		var errorMsg strings.Builder
+
+		if len(exceededErrors) > 0 {
+			errorMsg.WriteString("Expected errors exceeding threshold:\n")
+			for _, err := range exceededErrors {
+				errorMsg.WriteString("  - " + err + "\n")
+			}
+		}
+
+		if len(unexpectedErrors) > 0 {
+			if len(exceededErrors) > 0 {
+				errorMsg.WriteString("\n")
+			}
+			errorMsg.WriteString("Unexpected errors:\n")
+			for _, err := range unexpectedErrors {
+				errorMsg.WriteString("  - " + err + "\n")
+			}
+		}
+
+		return fmt.Errorf("%s", strings.TrimSuffix(errorMsg.String(), "\n"))
+	}
+
+	return nil
 }
 
 /*
@@ -88,14 +112,9 @@ func CheckContainerLogsForErrors(clientset *kubernetes.Clientset, namespace, lab
 			}
 
 			// Categorize errors and check thresholds
-			unexpectedErrors, err := categorizeErrors(errorLines, IntermittentErrorThreshold)
+			err = categorizeErrors(errorLines, IntermittentErrorThreshold)
 			if err != nil {
-				return fmt.Errorf("logs for container %s in pod %s: %v", container.Name, pod.Name, err)
-			}
-
-			// If there are any unexpected errors, fail immediately
-			if len(unexpectedErrors) > 0 {
-				return fmt.Errorf("logs for container %s in pod %s contain errors:\n %s", container.Name, pod.Name, strings.Join(unexpectedErrors, "\n"))
+				return fmt.Errorf("logs for container %s in pod %s:\n%v", container.Name, pod.Name, err)
 			}
 		}
 	}
@@ -552,15 +571,9 @@ func CheckFileForErrors(clientset *kubernetes.Clientset, Cfg *rest.Config, names
 		if stdout != "" {
 			// Parse the stdout and categorize errors
 			lines := strings.Split(stdout, "\n")
-			unexpectedErrors, err := categorizeErrors(lines, IntermittentErrorThreshold)
+			err = categorizeErrors(lines, IntermittentErrorThreshold)
 			if err != nil {
-				return fmt.Errorf("in file %s in pod %s, container %s: %v", filePath, pod.Name, containerName, err)
-			}
-
-			// If there are any unexpected errors, fail immediately
-			if len(unexpectedErrors) > 0 {
-				return fmt.Errorf("unexpected errors found in file %s in pod %s, container %s: %s",
-					filePath, pod.Name, containerName, strings.Join(unexpectedErrors, "\n"))
+				return fmt.Errorf("in file %s in pod %s, container %s:\n%v", filePath, pod.Name, containerName, err)
 			}
 		}
 	}
