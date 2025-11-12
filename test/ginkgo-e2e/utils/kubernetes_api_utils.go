@@ -31,10 +31,11 @@ func categorizeErrors(errorLines []string, threshold int) ([]string, error) {
 			continue
 		}
 
-		// Check if this line matches any expected intermittent error pattern
+		// Check if this line matches any expected intermittent error pattern (case-insensitive)
 		matchedPattern := false
+		lowerLine := strings.ToLower(line)
 		for _, pattern := range ExpectedIntermittentErrors {
-			if strings.Contains(line, pattern) {
+			if strings.Contains(lowerLine, strings.ToLower(pattern)) {
 				errorCounts[pattern]++
 				matchedPattern = true
 				break
