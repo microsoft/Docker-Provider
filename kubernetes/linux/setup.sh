@@ -62,7 +62,7 @@ sudo tdnf install jq-1.7.1-1.azl3 -y
 #used to setcaps for ruby process to read /proc/env
 sudo tdnf install libcap -y
 
-sudo tdnf install telegraf-agent-1.36.1 -y
+sudo tdnf install -y https://kubernetesreleases.blob.core.windows.net/dalec-packages/telegraf-agent/1.36.3/azl3/x86_64/telegraf-agent-1.36.3-1.azl3.x86_64.rpm
 telegraf_version=$(sudo tdnf list installed | grep telegraf | awk '{print $2}')
 echo "telegraf $telegraf_version" >> packages_version.txt
 mv /usr/bin/telegraf-agent /opt/telegraf
