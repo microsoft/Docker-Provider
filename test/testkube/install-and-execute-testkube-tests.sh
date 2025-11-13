@@ -27,11 +27,35 @@ sudo apt-get install -y testkube
 echo "Install testkube on the cluster"
 helm repo add kubeshop https://kubeshop.github.io/helm-charts
 helm repo update
-helm upgrade --install --create-namespace testkube kubeshop/testkube \
+
+echo "Installing testkube (this may take up to 10 minutes)..."
+if ! helm upgrade --install --create-namespace testkube kubeshop/testkube \
   -n testkube \
   -f ./helm-testkube-values.yaml \
   --wait \
-  --timeout 5m
+  --timeout 10m; then
+  
+  echo "❌ ERROR: Helm install failed!"
+  echo ""
+  echo "Helm release status:"
+  helm status testkube -n testkube 2>&1 || echo "No release found"
+  echo ""
+  echo "Pods in testkube namespace:"
+  kubectl get pods -n testkube -o wide 2>&1 || echo "No pods found"
+  echo ""
+  echo "Events in testkube namespace (last 20):"
+  kubectl get events -n testkube --sort-by='.lastTimestamp' | tail -20 2>&1 || echo "No events found"
+  echo ""
+  echo "Describe failed pods (if any):"
+  kubectl get pods -n testkube --field-selector=status.phase!=Running --field-selector=status.phase!=Succeeded -o name 2>/dev/null | while read pod; do
+    echo "--- $pod ---"
+    kubectl describe -n testkube $pod | tail -30
+  done
+  
+  exit 1
+fi
+
+echo "✓ Testkube installed successfully"
 
 echo "Install testkube CRIs"
 export AZURE_CLIENT_ID=$AzureClientId
