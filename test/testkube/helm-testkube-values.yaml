@@ -106,17 +106,15 @@ mongodb:
     minAvailable: ""
     # -- Maximum number/percentage of pods that may be made unavailable after the eviction
     maxUnavailable: ""
-  # Image built with ZCube tool so that it can be run on ARM nodes: https://github.com/ZCube/bitnami-compat/tree/main/patches
-  # Currently Bitnami doesn't support ARM: https://github.com/bitnami/charts/issues/7305
-  image:
-    # -- MongoDB image registry
-    registry: mcr.microsoft.com
-    # -- MongoDB image repository
-    repository: azuremonitor/containerinsights/cidev
-    # -- MongoDB image tag
-    tag: mongodb_6.0.5-debian-11-r64
-    # -- MongoDB image pull Secret
-    pullSecrets: []
+  # REMOVED: Custom MongoDB image was broken for fresh installations
+  # The custom image from MCR is missing the mongodb.conf template file needed for initialization
+  # Using official Bitnami MongoDB image instead (chart default)
+  # Previous custom image: mcr.microsoft.com/azuremonitor/containerinsights/cidev:mongodb_6.0.5-debian-11-r64
+  # image:
+  #   registry: mcr.microsoft.com
+  #   repository: azuremonitor/containerinsights/cidev
+  #   tag: mongodb_6.0.5-debian-11-r64
+  #   pullSecrets: []
   nodeSelector: 
     kubernetes.io/os: linux
     kubernetes.io/arch: amd64
@@ -1304,4 +1302,3 @@ testkube-operator:
     # ref: https://cloud.google.com/kubernetes-engine/docs/how-to/prepare-arm-workloads-for-deployment#node-affinity-multi-arch-arm
     # -- Tolerations to schedule a workload to nodes with any architecture type. Required for deployment to GKE cluster.
     tolerations: []
-

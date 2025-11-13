@@ -51,6 +51,22 @@ if ! helm upgrade --install --create-namespace testkube kubeshop/testkube \
     echo "--- $pod ---"
     kubectl describe -n testkube $pod | tail -30
   done
+  echo ""
+  
+  echo "Pod logs from failing pods:"
+  # Get logs from api-server if it exists
+  if kubectl get pod -n testkube -l app.kubernetes.io/name=testkube-api-server &>/dev/null; then
+    echo "=== testkube-api-server logs ==="
+    kubectl logs -n testkube -l app.kubernetes.io/name=testkube-api-server --tail=100 2>&1 || echo "Could not get api-server logs"
+    echo ""
+  fi
+  
+  # Get logs from mongodb if it exists
+  if kubectl get pod -n testkube -l app.kubernetes.io/name=mongodb &>/dev/null; then
+    echo "=== testkube-mongodb logs ==="
+    kubectl logs -n testkube -l app.kubernetes.io/name=mongodb --tail=100 2>&1 || echo "Could not get mongodb logs"
+    echo ""
+  fi
   
   exit 1
 fi
