@@ -972,6 +972,35 @@ extends:
                 displayName: 'Install kubectl and Helm'
               
               - bash: |
+                  set -euo pipefail
+                  echo "Checking for existing Testkube installation..."
+                  
+                  # Check if Testkube helm release exists
+                  if helm list -n testkube 2>/dev/null | grep -q testkube; then
+                    echo "Found existing Testkube installation. Cleaning up to ensure fresh start..."
+                    
+                    # Uninstall the helm release
+                    helm uninstall testkube -n testkube || true
+                    
+                    # Delete the namespace and wait for it to fully terminate
+                    echo "Deleting testkube namespace..."
+                    kubectl delete namespace testkube --wait=true --timeout=120s || true
+                    
+                    # Extra wait to ensure all resources are cleaned up
+                    echo "Waiting for namespace to fully terminate..."
+                    sleep 30
+                    
+                    echo "Cleanup complete!"
+                  else
+                    echo "No existing Testkube installation found. Proceeding with fresh install..."
+                  fi
+                  
+                  # Ensure testkube namespace exists for the installation
+                  echo "Creating testkube namespace..."
+                  kubectl create namespace testkube || echo "Namespace already exists (expected if not fully deleted yet)"
+                displayName: 'Clean up existing Testkube installation'
+              
+              - bash: |
                   chmod +x ./install-and-execute-testkube-tests.sh
                   ./install-and-execute-testkube-tests.sh \
                     AzureClientId=$(ZaneTestClientId) \
