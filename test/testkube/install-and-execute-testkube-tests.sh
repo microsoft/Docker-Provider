@@ -27,7 +27,11 @@ sudo apt-get install -y testkube
 echo "Install testkube on the cluster"
 helm repo add kubeshop https://kubeshop.github.io/helm-charts
 helm repo update
-helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./helm-testkube-values.yaml
+helm upgrade --install --create-namespace testkube kubeshop/testkube \
+  -n testkube \
+  -f ./helm-testkube-values.yaml \
+  --wait \
+  --timeout 5m
 
 echo "Install testkube CRIs"
 export AZURE_CLIENT_ID=$AzureClientId
@@ -38,8 +42,54 @@ kubectl apply -f ./api-server-permissions.yaml
 envsubst < ./testkube-test-crs.yaml > ./testkube-test-crs-updated.yaml
 kubectl apply -f ./testkube-test-crs-updated.yaml
 
-echo "Wait for cluster to be ready"
-sleep 120
+echo "Wait for testkube-api-server to be ready"
+
+# Method 1: Use kubectl wait (preferred)
+echo "Waiting for testkube-api-server pods to be ready..."
+if kubectl wait --for=condition=ready pod \
+  -l app.kubernetes.io/name=testkube-api-server \
+  -n testkube \
+  --timeout=300s; then
+  echo "✓ Pods are ready"
+else
+  echo "⚠ kubectl wait timed out or failed, checking pod status..."
+  kubectl get pods -n testkube -l app.kubernetes.io/name=testkube-api-server
+  kubectl describe pod -l app.kubernetes.io/name=testkube-api-server -n testkube | tail -20
+fi
+
+# Method 2: Verify API endpoint is responding
+echo "Verifying testkube API server endpoint..."
+MAX_ATTEMPTS=30
+ATTEMPT=0
+API_READY=false
+
+while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+  ATTEMPT=$((ATTEMPT + 1))
+  
+  # Try to hit the health endpoint
+  if kubectl run -n testkube api-health-check-$ATTEMPT \
+    --image=curlimages/curl:latest \
+    --rm -i --restart=Never \
+    --command -- curl -f -s http://testkube-api-server:8088/health >/dev/null 2>&1; then
+    echo "✓ Testkube API server is responding!"
+    API_READY=true
+    break
+  fi
+  
+  echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: API server not ready yet, waiting 10s..."
+  sleep 10
+done
+
+if [ "$API_READY" != "true" ]; then
+  echo "❌ ERROR: Testkube API server did not become ready after $MAX_ATTEMPTS attempts"
+  echo "Pod status:"
+  kubectl get pods -n testkube
+  echo "Service endpoints:"
+  kubectl get endpoints testkube-api-server -n testkube
+  echo "API server logs:"
+  kubectl logs -n testkube -l app.kubernetes.io/name=testkube-api-server --tail=50
+  exit 1
+fi
 
 echo "Run testkube tests"
 execution_id=""
