@@ -883,8 +883,7 @@ extends:
             AcceptableOutdatedSignatureInHours: 72
     - stage: Deploy_Dev_Cluster
       displayName: Deploy to Dev Cluster
-      dependsOn:
-        - stage
+      dependsOn: []
       condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/ci_prod'), eq(variables['Build.SourceBranch'], 'refs/heads/zane/ci-agent-auto-deploy')))
       jobs:
       - deployment: Deploy_AKS_Chart
@@ -895,10 +894,10 @@ extends:
           image: ci-1es-managed-ubuntu-2204
           os: linux
         variables:
-          linuxImageTag: $[ stageDependencies.stage.common.outputs['setup.linuxImagetag'] ]
-          windowsImageTag: $[ stageDependencies.stage.common.outputs['setup.windowsImagetag'] ]
-          #linuxImageTag: '3.1.28-28-g91961e7b1-20251109150819'
-          #windowsImageTag: 'win-3.1.28-28-g91961e7b1-20251109150819'
+          #linuxImageTag: $[ stageDependencies.stage.common.outputs['setup.linuxImagetag'] ]
+          #windowsImageTag: $[ stageDependencies.stage.common.outputs['setup.windowsImagetag'] ]
+          linuxImageTag: '3.1.28-28-g91961e7b1-20251109150819'
+          windowsImageTag: 'win-3.1.28-28-g91961e7b1-20251109150819'
         strategy:
           runOnce:
             deploy:
@@ -955,9 +954,28 @@ extends:
                     echo "Pod patching complete!"
                     echo "Current ama-logs pods:"
                     kubectl get pods -n kube-system | grep ama-logs
-              - task: Bash@3
-                displayName: 'Run Testkube tests'
-                inputs:
-                  targetType: 'filePath'
-                  filePath: '$(Build.SourcesDirectory)/.pipelines/run-testkube-tests.sh'
-                  arguments: 'LinuxImageTag=$(linuxImageTag) WindowsImageTag=$(windowsImageTag)'
+              - script: |
+                  set -euo pipefail
+                  echo "Ensuring kubectl & helm are installed"
+                  if ! command -v kubectl >/dev/null 2>&1; then
+                    echo "Installing kubectl"
+                    sudo az aks install-cli
+                  else
+                    echo "kubectl already installed: $(kubectl version --client --short || true)"
+                  fi
+                  if ! command -v helm >/dev/null 2>&1; then
+                    echo "Installing Helm 3"
+                    curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+                  else
+                    echo "Helm already installed: $(helm version --short || true)"
+                  fi
+                displayName: 'Install kubectl and Helm'
+              
+              - bash: |
+                  chmod +x ./install-and-execute-testkube-tests.sh
+                  ./install-and-execute-testkube-tests.sh \
+                    AzureClientId=$(ZaneTestClientId) \
+                    AzureTenantId=$(AzureTenantId) \
+                    TeamsWebhookUri=$(TeamsWebhookUri)
+                workingDirectory: $(Build.SourcesDirectory)/test/testkube/
+                displayName: 'Install Testkube and run comprehensive E2E tests'
