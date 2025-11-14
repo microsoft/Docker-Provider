@@ -1003,7 +1003,7 @@ extends:
               - bash: |
                   chmod +x ./install-and-execute-testkube-tests.sh
                   ./install-and-execute-testkube-tests.sh \
-                    AzureClientId=$(AzureZaneTestClientId) \
+                    AzureClientId=$(AksZaneTestClientId) \
                     AzureTenantId=$(AzureZaneTestTenantId) \
                     TeamsWebhookUri=$(TeamsWebhookUri)
                 workingDirectory: $(Build.SourcesDirectory)/test/testkube/
