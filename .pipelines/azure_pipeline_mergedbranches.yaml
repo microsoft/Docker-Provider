@@ -922,7 +922,7 @@ extends:
                   targetType: 'inline'
                   script: |
                     # MCR registry path
-                    MCR_REPO="mcr.microsoft.com/azuremonitor/containerinsights/cidev"
+                    MCR_REPO="mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
                     
                     echo "Using image tags:"
                     echo "  Linux image: $MCR_REPO:$(linuxImageTag)"
