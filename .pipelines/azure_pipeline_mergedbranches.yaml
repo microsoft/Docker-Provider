@@ -896,8 +896,11 @@ extends:
         variables:
           #linuxImageTag: $[ stageDependencies.stage.common.outputs['setup.linuxImagetag'] ]
           #windowsImageTag: $[ stageDependencies.stage.common.outputs['setup.windowsImagetag'] ]
-          linuxImageTag: '3.1.28-28-g91961e7b1-20251109150819'
-          windowsImageTag: 'win-3.1.28-28-g91961e7b1-20251109150819'
+          #linuxImageTag: '3.1.28-28-g91961e7b1-20251109150819'
+          #windowsImageTag: 'win-3.1.28-28-g91961e7b1-20251109150819'
+          linuxImageTag: '3.1.31-7-gabf84756d-20251116150746'
+          windowsImageTag: 'win-3.1.31-7-gabf84756d-20251116150746'
+          
         strategy:
           runOnce:
             deploy:
@@ -1006,115 +1009,8 @@ extends:
                 inputs:
                   targetType: 'inline'
                   script: |
-                    set -e
-                    
-                    MCR_REPO="mcr.microsoft.com/azuremonitor/containerinsights/cidev"
-                    LINUX_IMAGE="$MCR_REPO:$(linuxImageTag)"
-                    WINDOWS_IMAGE="$MCR_REPO:$(windowsImageTag)"
-                    
-                    echo "================================"
-                    echo "Verifying pods are running with new images..."
-                    echo "Expected Linux image: $LINUX_IMAGE"
-                    echo "Expected Windows image: $WINDOWS_IMAGE"
-                    echo "================================"
-                    echo ""
-                    
-                    # Function to check if a pod is running with the expected image
-                    check_pod_image() {
-                      local pod_name=$1
-                      local expected_image=$2
-                      local container_name=$3
-                      local max_attempts=60  # 5 minutes (60 * 5 seconds)
-                      local attempt=1
-                      
-                      echo "Checking pod: $pod_name (container: $container_name)"
-                      echo "  Expected image: $expected_image"
-                      
-                      while [ $attempt -le $max_attempts ]; do
-                        # Get current image
-                        current_image=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.spec.containers[?(@.name=='$container_name')].image}" 2>/dev/null || echo "")
-                        
-                        # Get pod status
-                        pod_status=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.phase}" 2>/dev/null || echo "Unknown")
-                        container_ready=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.containerStatuses[?(@.name=='$container_name')].ready}" 2>/dev/null || echo "false")
-                        
-                        if [[ "$current_image" == "$expected_image" ]] && [[ "$pod_status" == "Running" ]] && [[ "$container_ready" == "true" ]]; then
-                          echo "  ✓ Pod is ready with correct image (attempt $attempt/$max_attempts)"
-                          echo "    Current image: $current_image"
-                          echo "    Pod status: $pod_status"
-                          echo "    Container ready: $container_ready"
-                          return 0
-                        fi
-                        
-                        if [ $((attempt % 6)) -eq 0 ]; then  # Log every 30 seconds
-                          echo "  ⏳ Waiting... (attempt $attempt/$max_attempts)"
-                          echo "    Current image: $current_image"
-                          echo "    Pod status: $pod_status"
-                          echo "    Container ready: $container_ready"
-                        fi
-                        
-                        sleep 5
-                        attempt=$((attempt + 1))
-                      done
-                      
-                      echo "  ✗ TIMEOUT: Pod did not become ready with expected image after 5 minutes"
-                      echo "    Final image: $current_image"
-                      echo "    Final status: $pod_status"
-                      echo "    Container ready: $container_ready"
-                      return 1
-                    }
-                    
-                    # Track failures
-                    failed_pods=()
-                    
-                    # Check all ama-logs pods
-                    echo "Getting list of ama-logs pods..."
-                    pod_list=$(kubectl get pods -n kube-system --no-headers | grep ama-logs | awk '{print $1}')
-                    
-                    for pod_name in $pod_list; do
-                      echo ""
-                      if [[ "$pod_name" =~ ^ama-logs-windows ]]; then
-                        if ! check_pod_image "$pod_name" "$WINDOWS_IMAGE" "ama-logs-windows"; then
-                          failed_pods+=("$pod_name")
-                        fi
-                      elif [[ "$pod_name" =~ ^ama-logs-rs ]] || [[ "$pod_name" =~ ^ama-logs-[a-z0-9]{5}$ ]]; then
-                        if ! check_pod_image "$pod_name" "$LINUX_IMAGE" "ama-logs"; then
-                          failed_pods+=("$pod_name")
-                        fi
-                      else
-                        echo "⚠ Unknown pod pattern: $pod_name - skipping verification"
-                      fi
-                    done
-                    
-                    echo ""
-                    echo "================================"
-                    echo "Verification Summary"
-                    echo "================================"
-                    
-                    if [ ${#failed_pods[@]} -eq 0 ]; then
-                      echo "✓ All pods are running with the correct images and are ready!"
-                      echo ""
-                      echo "Final pod status:"
-                      kubectl get pods -n kube-system | grep ama-logs
-                      echo ""
-                      echo "Image verification:"
-                      kubectl get pods -n kube-system -l component=ama-logs-agent -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[0].image}{"\t"}{.status.phase}{"\t"}{.status.containerStatuses[0].ready}{"\n"}{end}' | column -t
-                      exit 0
-                    else
-                      echo "✗ The following pods failed verification:"
-                      printf '  - %s\n' "${failed_pods[@]}"
-                      echo ""
-                      echo "Final pod status:"
-                      kubectl get pods -n kube-system | grep ama-logs
-                      echo ""
-                      echo "Describing failed pods for debugging:"
-                      for pod in "${failed_pods[@]}"; do
-                        echo ""
-                        echo "--- Details for $pod ---"
-                        kubectl describe pod "$pod" -n kube-system | tail -50
-                      done
-                      exit 1
-                    fi
+                    chmod +x $(Build.SourcesDirectory)/.pipelines/verify-pod-images.sh
+                    $(Build.SourcesDirectory)/.pipelines/verify-pod-images.sh pre-test $(linuxImageTag) $(windowsImageTag)
                                   
               - bash: |
                   chmod +x ./install-and-execute-testkube-tests.sh
@@ -1131,92 +1027,5 @@ extends:
                 inputs:
                   targetType: 'inline'
                   script: |
-                    set -e
-                    
-                    MCR_REPO="mcr.microsoft.com/azuremonitor/containerinsights/cidev"
-                    LINUX_IMAGE="$MCR_REPO:$(linuxImageTag)"
-                    WINDOWS_IMAGE="$MCR_REPO:$(windowsImageTag)"
-                    
-                    echo "================================"
-                    echo "Post-Test Image Verification"
-                    echo "================================"
-                    echo "Verifying that pods still have the correct images after test execution..."
-                    echo "Expected Linux image: $LINUX_IMAGE"
-                    echo "Expected Windows image: $WINDOWS_IMAGE"
-                    echo ""
-                    
-                    # Track mismatches
-                    image_mismatches=()
-                    
-                    # Get all ama-logs pods
-                    echo "Checking all ama-logs pods..."
-                    pod_list=$(kubectl get pods -n kube-system --no-headers | grep ama-logs | awk '{print $1}')
-                    
-                    for pod_name in $pod_list; do
-                      echo ""
-                      echo "Checking pod: $pod_name"
-                      
-                      # Determine expected image based on pod type
-                      if [[ "$pod_name" =~ ^ama-logs-windows ]]; then
-                        expected_image="$WINDOWS_IMAGE"
-                        container_name="ama-logs-windows"
-                      elif [[ "$pod_name" =~ ^ama-logs-rs ]] || [[ "$pod_name" =~ ^ama-logs-[a-z0-9]{5}$ ]]; then
-                        expected_image="$LINUX_IMAGE"
-                        container_name="ama-logs"
-                      else
-                        echo "  ⚠ Unknown pod pattern - skipping"
-                        continue
-                      fi
-                      
-                      # Get current image
-                      current_image=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.spec.containers[?(@.name=='$container_name')].image}" 2>/dev/null || echo "ERROR")
-                      pod_status=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.phase}" 2>/dev/null || echo "Unknown")
-                      
-                      echo "  Container: $container_name"
-                      echo "  Expected image: $expected_image"
-                      echo "  Current image:  $current_image"
-                      echo "  Pod status: $pod_status"
-                      
-                      if [[ "$current_image" != "$expected_image" ]]; then
-                        echo "  ✗ IMAGE MISMATCH DETECTED!"
-                        image_mismatches+=("$pod_name: expected '$expected_image' but found '$current_image'")
-                      else
-                        echo "  ✓ Image is correct"
-                      fi
-                    done
-                    
-                    echo ""
-                    echo "================================"
-                    echo "Post-Test Verification Summary"
-                    echo "================================"
-                    
-                    if [ ${#image_mismatches[@]} -eq 0 ]; then
-                      echo "✓ SUCCESS: All pods maintained the correct images throughout the test execution!"
-                      echo ""
-                      echo "Final pod status:"
-                      kubectl get pods -n kube-system | grep ama-logs
-                      echo ""
-                      echo "Image summary:"
-                      kubectl get pods -n kube-system -l component=ama-logs-agent -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase,READY:.status.containerStatuses[0].ready 2>/dev/null || true
-                      exit 0
-                    else
-                      echo "✗ FAILURE: Some pods changed images during test execution!"
-                      echo ""
-                      echo "Pods with image mismatches:"
-                      printf '  - %s\n' "${image_mismatches[@]}"
-                      echo ""
-                      echo "This indicates the pods may have been restarted or updated during testing."
-                      echo "This could cause test instability or false results."
-                      echo ""
-                      echo "Current pod status:"
-                      kubectl get pods -n kube-system | grep ama-logs
-                      echo ""
-                      echo "Detailed pod information:"
-                      for mismatch in "${image_mismatches[@]}"; do
-                        pod=$(echo "$mismatch" | cut -d: -f1)
-                        echo ""
-                        echo "--- Details for $pod ---"
-                        kubectl describe pod "$pod" -n kube-system | grep -A 20 "Events:" || kubectl describe pod "$pod" -n kube-system | tail -30
-                      done
-                      exit 1
-                    fi
+                    chmod +x $(Build.SourcesDirectory)/.pipelines/verify-pod-images.sh
+                    $(Build.SourcesDirectory)/.pipelines/verify-pod-images.sh post-test $(linuxImageTag) $(windowsImageTag)
