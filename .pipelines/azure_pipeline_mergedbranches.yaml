@@ -1038,7 +1038,7 @@ extends:
                     echo ""
                     
                     # Wait 15 minutes with progress updates
-                    wait_time=900
+                    wait_time=60 # TODO: temporarily use 1 minute for fast testing
                     interval=60
                     elapsed=0
                     
