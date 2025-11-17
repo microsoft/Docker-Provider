@@ -900,8 +900,8 @@ extends:
           #windowsImageTag: 'win-3.1.28-28-g91961e7b1-20251109150819'
           #linuxImageTag: '3.1.31-8-g80de7ea86-20251117180007'
           #windowsImageTag: 'win-3.1.31-8-g80de7ea86-20251117180007'
-          linuxImageTag: '3.1.30'
-          windowsImageTag: 'win-3.1.30'
+          linuxImageTag: '3.1.31'
+          windowsImageTag: 'win-3.1.31'
           
         strategy:
           runOnce:
