@@ -898,8 +898,8 @@ extends:
           #windowsImageTag: $[ stageDependencies.stage.common.outputs['setup.windowsImagetag'] ]
           #linuxImageTag: '3.1.28-28-g91961e7b1-20251109150819'
           #windowsImageTag: 'win-3.1.28-28-g91961e7b1-20251109150819'
-          linuxImageTag: '3.1.31-7-gabf84756d-20251116150746'
-          windowsImageTag: 'win-3.1.31-7-gabf84756d-20251116150746'
+          linuxImageTag: '3.1.31-8-g80de7ea86-20251117180007'
+          windowsImageTag: 'win-3.1.31-8-g80de7ea86-20251117180007'
           
         strategy:
           runOnce:
