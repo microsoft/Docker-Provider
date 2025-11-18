@@ -881,8 +881,8 @@ extends:
             FileDirPath: '$(Build.ArtifactStagingDirectory)'
             DisableRemediation: false
             AcceptableOutdatedSignatureInHours: 72
-    - stage: Deploy_Dev_Clusters
-      displayName: Deploy to Dev Clusters
+    - stage: Deploy_and_Test_Dev_Clusters
+      displayName: Deploy and Test in Dev Clusters
       dependsOn: []
       condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/ci_prod'), eq(variables['Build.SourceBranch'], 'refs/heads/zane/ci-agent-auto-deploy')))
       variables:
@@ -895,7 +895,7 @@ extends:
         #linuxImageTag: $[ stageDependencies.stage.common.outputs['setup.linuxImagetag'] ]
         #windowsImageTag: $[ stageDependencies.stage.common.outputs['setup.windowsImagetag'] ]
       jobs:
-      # Cluster 1: Zane Test Cluster
+      # Cluster 1: zane-test Cluster
       - template: /.pipelines/azure-template-cluster-deploy-test.yml@self
         parameters:
           clusterName: 'zane-test'
@@ -907,7 +907,19 @@ extends:
           azureClientId: $(AksZaneTestClientId)
           azureTenantId: $(AzureZaneTestTenantId)
           teamsWebhookUri: $(TeamsWebhookUri)
-      
+
+      # Cluster 2: zane-test2 Cluster
+      - template: /.pipelines/azure-template-cluster-deploy-test.yml@self
+        parameters:
+          clusterName: 'zane-test2'
+          resourceGroup: 'zane-test'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+          environmentName: 'CI-Agent-Dev2'
+          linuxImageTag: $(linuxImageTag)
+          windowsImageTag: $(windowsImageTag)
+          azureClientId: $(AksZaneTest2ClientId)
+          azureTenantId: $(AzureZaneTestTenantId)
+          teamsWebhookUri: $(TeamsWebhookUri)      
       # To add more clusters, uncomment and configure:
       # 
       # # Cluster 2: Integration Test Cluster
