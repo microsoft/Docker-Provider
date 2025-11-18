@@ -959,45 +959,91 @@ class KubernetesApiClient
                     end
                   end
 
-                  # Stream and parse chunks
+                  # Stream and parse chunks using Zlib::GzipReader directly on the HTTP response
+                  # Simple streaming: buffer incomplete UTF-8, feed valid data to parser as it arrives
+                  # No whole response buffering - process chunks incrementally
+                  utf8_buffer = +""
                   chunk_count = 0
-                  response.read_body do |compressed_chunk|
-                    chunk_count += 1
-                    total_compressed_bytes += compressed_chunk.bytesize
+                  parse_mode = "stream"
 
-                    decompressed = if is_gzip
-                      begin
-                        inflater.inflate(compressed_chunk)
-                      rescue Zlib::Error => zerr
-                        @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: gzip inflate failed at chunk #{chunk_count}: #{zerr}"
-                        raise
+                  begin
+                    if is_gzip
+                      parse_mode = "stream_gzip"
+                      # Wrap response stream directly in GzipReader for incremental decompression
+                      Zlib::GzipReader.wrap(response) do |gz|
+                        until gz.eof?
+                          chunk = gz.read(16 * 1024)  # Read buffer size, actual chunk size varies
+                          next if chunk.nil? || chunk.empty?
+                          
+                          chunk_count += 1
+                          total_uncompressed_bytes += chunk.bytesize
+                          total_compressed_bytes = gz.total_in
+                          
+                          # Append chunk to buffer
+                          utf8_buffer << chunk
+                          
+                          # Try to feed valid UTF-8 to parser
+                          if utf8_buffer.valid_encoding?
+                            begin
+                              yajl_parser << utf8_buffer
+                              utf8_buffer = +""
+                            rescue Yajl::ParseError => perr
+                              # JSON incomplete, keep buffering - Yajl will handle internally
+                              @Log.debug "KubernetesApiClient::getResourcesAndContinuationTokenV2: Yajl incomplete at chunk #{chunk_count}"
+                            end
+                          else
+                            # Invalid UTF-8, buffer and wait for next chunk to complete the sequence
+                            @Log.debug "KubernetesApiClient::getResourcesAndContinuationTokenV2: Invalid UTF-8 at chunk #{chunk_count}, buffering"
+                          end
+                          
+                          Thread.pass if chunk_count % 10 == 0
+                        end
                       end
                     else
-                      compressed_chunk
+                      parse_mode = "stream_plain"
+                      # Non-gzip path: same logic - buffer and validate incrementally
+                      response.read_body do |chunk|
+                        chunk_count += 1
+                        total_uncompressed_bytes += chunk.bytesize
+                        total_compressed_bytes += chunk.bytesize
+                        
+                        utf8_buffer << chunk
+                        
+                        if utf8_buffer.valid_encoding?
+                          begin
+                            yajl_parser << utf8_buffer
+                            utf8_buffer = +""
+                          rescue Yajl::ParseError => perr
+                            @Log.debug "KubernetesApiClient::getResourcesAndContinuationTokenV2: Yajl incomplete at chunk #{chunk_count}"
+                          end
+                        else
+                          @Log.debug "KubernetesApiClient::getResourcesAndContinuationTokenV2: Invalid UTF-8 at chunk #{chunk_count}, buffering"
+                        end
+                        
+                        Thread.pass if chunk_count % 10 == 0
+                      end
                     end
-
-                    total_uncompressed_bytes += decompressed.bytesize
-
-                    # Feed decompressed chunk to the parser
-                    # Yajl can handle incomplete JSON and will buffer internally
-                    begin
-                      yajl_parser << decompressed
-                    rescue Yajl::ParseError => perr
-                      # Only log parse errors, don't break the stream - might be incomplete chunk
-                      @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: Yajl parse error at chunk #{chunk_count}: #{perr}"
+                    
+                    # Handle any remaining buffer after all chunks
+                    if !utf8_buffer.empty?
+                      if utf8_buffer.valid_encoding?
+                        begin
+                          yajl_parser << utf8_buffer
+                        rescue Yajl::ParseError => perr
+                          @Log.debug "KubernetesApiClient::getResourcesAndContinuationTokenV2: Yajl incomplete on final buffer"
+                        end
+                      else
+                        # Invalid UTF-8 after all chunks exhausted - API corruption
+                        @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: Final buffer invalid UTF-8 (#{utf8_buffer.bytesize} bytes), skipping"
+                      end
                     end
+                    
+                    # Finalize parser - call only once
+                    yajl_parser.finish
 
-                    # Yield control periodically to allow other threads to run (every 10 chunks)
-                    Thread.pass if chunk_count % 10 == 0
-                  end # read_body
-
-                  # Finalize the parsing - this triggers on_parse_complete callback
-                  yajl_parser.parse("")  rescue nil
-
-                  # Finish and clean up inflater
-                  if inflater
-                    inflater.finish rescue nil
-                    inflater.close rescue nil
+                  rescue => stream_err
+                    @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: Streaming error: #{stream_err}"
+                    raise
                   end
 
                   # Build minimal inventory structure
