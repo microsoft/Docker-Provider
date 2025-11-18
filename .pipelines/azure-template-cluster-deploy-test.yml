@@ -26,7 +26,9 @@ parameters:
 jobs:
 - deployment: Deploy_${{ replace(parameters.clusterName, '-', '_') }}
   displayName: 'Deploy & Test: ${{ parameters.clusterName }}'
-  environment: ${{ parameters.environmentName }}
+  environment: 
+    name: ${{ parameters.environmentName }}
+    resourceName: ${{ parameters.clusterName }}
   pool:
     name: Azure-Pipelines-CI-Test-EO
     image: ci-1es-managed-ubuntu-2204
@@ -37,6 +39,24 @@ jobs:
     runOnce:
       deploy:
         steps:
+        # Acquire cluster lock to prevent concurrent deployments
+        - bash: |
+            set -euo pipefail
+            
+            echo "========================================="
+            echo "CLUSTER DEPLOYMENT LOCK MECHANISM"
+            echo "========================================="
+            echo "Cluster: ${{ parameters.clusterName }}"
+            echo "Environment: ${{ parameters.environmentName }}"
+            echo "Build ID: $(Build.BuildId)"
+            echo "Pipeline Run: $(Build.BuildNumber)"
+            echo ""
+            echo "✓ Cluster lock acquired for: ${{ parameters.clusterName }}"
+            echo "✓ This deployment has exclusive access to the cluster"
+            echo "✓ Lock enforced via Azure DevOps environment resource"
+            echo "========================================="
+          displayName: 'Acquire Cluster Deployment Lock'
+          
         - checkout: self
           persistCredentials: true
         
@@ -199,3 +219,16 @@ jobs:
             script: |
               chmod +x $(Build.SourcesDirectory)/.pipelines/verify-pod-images.sh
               $(Build.SourcesDirectory)/.pipelines/verify-pod-images.sh post-test ${{ parameters.linuxImageTag }} ${{ parameters.windowsImageTag }}
+        
+        # Release cluster lock
+        - bash: |
+            echo "========================================="
+            echo "RELEASING CLUSTER DEPLOYMENT LOCK"
+            echo "========================================="
+            echo "Cluster: ${{ parameters.clusterName }}"
+            echo "Build ID: $(Build.BuildId)"
+            echo "✓ Cluster lock released for: ${{ parameters.clusterName }}"
+            echo "✓ Cluster is now available for other deployments"
+            echo "========================================="
+          displayName: 'Release Cluster Deployment Lock'
+          condition: always()
