@@ -901,7 +901,7 @@ extends:
           clusterName: 'zane-test'
           resourceGroup: 'zane-test'
           azureSubscription: 'ContainerInsights_Build_Subscription_CI'
-          environmentName: 'CI-Agent-Dev-Zane'
+          environmentName: 'CI-Agent-Dev'
           linuxImageTag: $(linuxImageTag)
           windowsImageTag: $(windowsImageTag)
           azureClientId: $(AksZaneTestClientId)
