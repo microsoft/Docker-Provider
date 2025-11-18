@@ -1,0 +1,201 @@
+parameters:
+- name: clusterName
+  type: string
+- name: resourceGroup
+  type: string
+- name: azureSubscription
+  type: string
+  default: 'ContainerInsights_Build_Subscription_CI'
+- name: environmentName
+  type: string
+- name: linuxImageTag
+  type: string
+- name: windowsImageTag
+  type: string
+- name: azureClientId
+  type: string
+- name: azureTenantId
+  type: string
+- name: teamsWebhookUri
+  type: string
+  default: '$(TeamsWebhookUri)'
+- name: additionalTestParams
+  type: string
+  default: ''
+
+jobs:
+- deployment: Deploy_${{ replace(parameters.clusterName, '-', '_') }}
+  displayName: 'Deploy & Test: ${{ parameters.clusterName }}'
+  environment: ${{ parameters.environmentName }}
+  pool:
+    name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-ubuntu-2204
+    os: linux
+  variables:
+    skipComponentGovernanceDetection: true
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+        - checkout: self
+          persistCredentials: true
+        
+        - script: |
+            set -euo pipefail
+            echo "Ensuring kubectl & helm are installed"
+            if ! command -v kubectl >/dev/null 2>&1; then
+              echo "Installing kubectl"
+              sudo az aks install-cli
+            else
+              echo "kubectl already installed: $(kubectl version --client --short || true)"
+            fi
+            if ! command -v helm >/dev/null 2>&1; then
+              echo "Installing Helm 3"
+              curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+            else
+              echo "Helm already installed: $(helm version --short || true)"
+            fi
+          displayName: 'Install kubectl and Helm'
+        
+        - task: AzureCLI@2
+          displayName: 'Get credentials for ${{ parameters.clusterName }}'
+          inputs:
+            azureSubscription: ${{ parameters.azureSubscription }}
+            scriptLocation: 'inlineScript'
+            scriptType: 'bash'
+            inlineScript: 'az aks get-credentials -g ${{ parameters.resourceGroup }} -n ${{ parameters.clusterName }}'
+        
+        - task: Bash@3
+          displayName: 'Patch ama-logs pods with new images'
+          inputs:
+            targetType: 'inline'
+            script: |
+              MCR_REPO="mcr.microsoft.com/azuremonitor/containerinsights/cidev"
+              
+              echo "Deploying to cluster: ${{ parameters.clusterName }}"
+              echo "  Linux image: $MCR_REPO:${{ parameters.linuxImageTag }}"
+              echo "  Windows image: $MCR_REPO:${{ parameters.windowsImageTag }}"
+              echo ""
+              echo "Finding and patching ama-logs pods in kube-system namespace..."
+              
+              kubectl get pods -n kube-system --no-headers | grep ama-logs | awk '{print $1}' | while read pod_name; do
+                echo "Processing pod: $pod_name"
+                
+                if [[ "$pod_name" =~ ^ama-logs-windows ]]; then
+                  IMG_URL="$MCR_REPO:${{ parameters.windowsImageTag }}"
+                  container_name="ama-logs-windows"
+                elif [[ "$pod_name" =~ ^ama-logs-rs ]] || [[ "$pod_name" =~ ^ama-logs-[a-z0-9]{5}$ ]]; then
+                  IMG_URL="$MCR_REPO:${{ parameters.linuxImageTag }}"
+                  container_name="ama-logs"
+                else
+                  echo "  ⚠ Unknown pod pattern: $pod_name - skipping"
+                  continue
+                fi
+                
+                echo "  → Patching with image: $IMG_URL (container: $container_name)"
+                
+                kubectl patch pod "$pod_name" -n kube-system \
+                  --patch "{\"spec\": {\"containers\": [{\"name\": \"$container_name\", \"image\": \"$IMG_URL\"}]}}" \
+                  && echo "  ✓ Successfully patched $pod_name" \
+                  || echo "  ✗ Failed to patch $pod_name"
+              done
+              
+              echo ""
+              echo "Pod patching complete!"
+              echo "Current ama-logs pods:"
+              kubectl get pods -n kube-system | grep ama-logs
+        
+        - bash: |
+            set -euo pipefail
+            echo "Checking for existing Testkube installation..."
+            
+            if helm list -n testkube 2>/dev/null | grep -q testkube; then
+              echo "Found existing Testkube installation. Cleaning up..."
+              helm uninstall testkube -n testkube || true
+              echo "Deleting testkube namespace..."
+              kubectl delete namespace testkube --wait=true --timeout=120s || true
+              echo "Waiting for namespace to fully terminate..."
+              sleep 30
+              echo "Cleanup complete!"
+            else
+              echo "No existing Testkube installation found."
+            fi
+            
+            echo "Creating testkube namespace..."
+            kubectl create namespace testkube || echo "Namespace already exists"
+          displayName: 'Clean up existing Testkube installation'
+        
+        - task: Bash@3
+          name: VerifyPods
+          displayName: 'Wait for pods to be ready with new images'
+          inputs:
+            targetType: 'inline'
+            script: |
+              chmod +x $(Build.SourcesDirectory)/.pipelines/verify-pod-images.sh
+              $(Build.SourcesDirectory)/.pipelines/verify-pod-images.sh pre-test ${{ parameters.linuxImageTag }} ${{ parameters.windowsImageTag }}
+              
+              # Export container start time for use in tests
+              if [ -f /tmp/container-deployment-time.env ]; then
+                source /tmp/container-deployment-time.env
+                echo "Container start time captured: $CONTAINER_START_TIME"
+                echo "##vso[task.setvariable variable=CONTAINER_START_TIME;isOutput=true]$CONTAINER_START_TIME"
+              else
+                echo "Warning: Container start time not found, tests will use default time filter"
+              fi
+        
+        - task: Bash@3
+          displayName: 'Wait for logs to be ingested into Log Analytics (15 min)'
+          inputs:
+            targetType: 'inline'
+            script: |
+              echo "========================================"
+              echo "Waiting for Log Analytics Ingestion"
+              echo "========================================"
+              echo "Cluster: ${{ parameters.clusterName }}"
+              echo "Container start time: $(VerifyPods.CONTAINER_START_TIME)"
+              echo ""
+              echo "Waiting 15 minutes (900 seconds) to allow logs to be ingested..."
+              echo "This ensures queries will find logs from the newly deployed containers."
+              echo ""
+              
+              wait_time=900
+              interval=60
+              elapsed=0
+              
+              while [ $elapsed -lt $wait_time ]; do
+                remaining=$((wait_time - elapsed))
+                minutes_elapsed=$((elapsed / 60))
+                minutes_remaining=$((remaining / 60))
+                echo "⏳ Waiting... ($minutes_elapsed/$((wait_time / 60)) minutes elapsed, $minutes_remaining minutes remaining)"
+                sleep $interval
+                elapsed=$((elapsed + interval))
+              done
+              
+              echo ""
+              echo "✓ Wait complete! Logs should now be available in Log Analytics."
+              echo "✓ Tests will query logs with filter: TimeGenerated > datetime('$(VerifyPods.CONTAINER_START_TIME)')"
+              echo "========================================"
+        
+        - bash: |
+            # Pass container start time to tests
+            export CONTAINER_START_TIME="$(VerifyPods.CONTAINER_START_TIME)"
+            echo "Running tests for cluster: ${{ parameters.clusterName }}"
+            echo "Container start time: $CONTAINER_START_TIME"
+            
+            chmod +x ./install-and-execute-testkube-tests.sh
+            ./install-and-execute-testkube-tests.sh \
+              AzureClientId=${{ parameters.azureClientId }} \
+              AzureTenantId=${{ parameters.azureTenantId }} \
+              TeamsWebhookUri=${{ parameters.teamsWebhookUri }} \
+              ${{ parameters.additionalTestParams }}
+          workingDirectory: $(Build.SourcesDirectory)/test/testkube/
+          displayName: 'Install Testkube and run E2E tests'
+        
+        - task: Bash@3
+          displayName: 'Verify images remained stable after tests'
+          condition: always()
+          inputs:
+            targetType: 'inline'
+            script: |
+              chmod +x $(Build.SourcesDirectory)/.pipelines/verify-pod-images.sh
+              $(Build.SourcesDirectory)/.pipelines/verify-pod-images.sh post-test ${{ parameters.linuxImageTag }} ${{ parameters.windowsImageTag }}
