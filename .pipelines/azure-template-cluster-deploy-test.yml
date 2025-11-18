@@ -26,10 +26,6 @@ parameters:
 jobs:
 - deployment: Deploy_${{ replace(parameters.clusterName, '-', '_') }}
   displayName: 'Deploy & Test: ${{ parameters.clusterName }}'
-  
-  # Sequential lock behavior prevents concurrent deployments
-  lockBehavior: sequential
-  
   environment: ${{ parameters.environmentName }}
   pool:
     name: Azure-Pipelines-CI-Test-EO
@@ -41,23 +37,22 @@ jobs:
     runOnce:
       deploy:
         steps:
-        # Log deployment lock status
+        # Log deployment start
         - bash: |
             set -euo pipefail
             
             echo "========================================="
-            echo "CLUSTER DEPLOYMENT LOCK (lockBehavior)"
+            echo "CLUSTER DEPLOYMENT STARTING"
             echo "========================================="
             echo "Cluster: ${{ parameters.clusterName }}"
             echo "Environment: ${{ parameters.environmentName }}"
             echo "Build ID: $(Build.BuildId)"
             echo "Pipeline Run: $(Build.BuildNumber)"
             echo ""
-            echo "✓ Sequential lock active for this deployment job"
-            echo "✓ Multiple runs will queue automatically"
-            echo "✓ Lock enforced via Azure DevOps lockBehavior"
+            echo "✓ Sequential deployment locking enabled at stage level"
+            echo "✓ Multiple pipeline runs will execute sequentially"
             echo "========================================="
-          displayName: 'Deployment Lock Status'
+          displayName: 'Deployment Start'
           
         - checkout: self
           persistCredentials: true
@@ -230,8 +225,6 @@ jobs:
             echo "Cluster: ${{ parameters.clusterName }}"
             echo "Build ID: $(Build.BuildId)"
             echo "✓ Deployment finished for: ${{ parameters.clusterName }}"
-            echo "✓ Lock will be automatically released"
-            echo "✓ Next queued deployment will start"
             echo "========================================="
-          displayName: 'Deployment Completion Status'
+          displayName: 'Deployment Completion'
           condition: always()

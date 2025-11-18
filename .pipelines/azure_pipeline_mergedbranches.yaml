@@ -883,6 +883,7 @@ extends:
             AcceptableOutdatedSignatureInHours: 72
     - stage: Deploy_and_Test_Dev_Clusters
       displayName: Deploy and Test in Dev Clusters
+      lockBehavior: sequential
       dependsOn: []
       condition: and(succeeded(), or(eq(variables['Build.SourceBranch'], 'refs/heads/ci_prod'), eq(variables['Build.SourceBranch'], 'refs/heads/zane/ci-agent-auto-deploy')))
       variables:
