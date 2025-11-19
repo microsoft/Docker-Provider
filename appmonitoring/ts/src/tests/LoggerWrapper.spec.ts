@@ -1,5 +1,5 @@
 ﻿import { expect, describe, it } from "@jest/globals";
-import { logger, HeartbeatMetrics, HeartbeatLogs, Watchdogs } from "LoggerWrapper.js";
+import { logger, HeartbeatMetrics, HeartbeatLogs, Watchdogs, parseIsExtension } from "LoggerWrapper.js";
 import * as applicationInsights from "applicationinsights";
 
 beforeEach(() => {
@@ -8,6 +8,99 @@ beforeEach(() => {
 
 afterEach(() => {
     jest.restoreAllMocks();
+});
+
+describe("isExtension", () => {
+    describe("Parsing", () => {
+        it("Parses 'true' as true", () => {
+            expect(parseIsExtension("true")).toBe(true);
+        });
+
+        it("Parses '1' as true", () => {
+            expect(parseIsExtension("1")).toBe(true);
+        });
+
+        it("Parses 'yes' as true", () => {
+            expect(parseIsExtension("yes")).toBe(true);
+        });
+
+        it("Parses 'TRUE' (uppercase) as true", () => {
+            expect(parseIsExtension("TRUE")).toBe(true);
+        });
+
+        it("Parses 'false' as false", () => {
+            expect(parseIsExtension("false")).toBe(false);
+        });
+
+        it("Parses '0' as false", () => {
+            expect(parseIsExtension("0")).toBe(false);
+        });
+
+        it("Parses undefined as false", () => {
+            expect(parseIsExtension(undefined)).toBe(false);
+        });
+
+        it("Parses empty string as false", () => {
+            expect(parseIsExtension("")).toBe(false);
+        });
+    });
+
+    describe("Telemetry Inclusion", () => {
+        it("Includes isExtension in event telemetry", async () => {
+            const eventsSent = <applicationInsights.Contracts.EventTelemetry[]>[];
+            
+            jest.spyOn(applicationInsights.TelemetryClient.prototype, "trackEvent").mockImplementation((telemetry: applicationInsights.Contracts.EventTelemetry) => {
+                eventsSent.push(telemetry);
+            });
+
+            await logger.SendEvent("TestEvent", "test-operation-id", "test-uid", false);
+
+            expect(eventsSent.length).toBe(1);
+            expect(eventsSent[0].properties.clusterMetadata).toBeDefined();
+            
+            const clusterMetadata = JSON.parse(eventsSent[0].properties.clusterMetadata);
+            expect(clusterMetadata.isExtension).toBeDefined();
+            expect(typeof clusterMetadata.isExtension).toBe("boolean");
+        });
+
+        it("Includes isExtension in metric telemetry", async () => {
+            logger.setHeartbeatMetric(HeartbeatMetrics.CRCount, 5);
+            
+            const metricsSent = <(applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry)[]>[];
+            
+            jest.spyOn(applicationInsights.TelemetryClient.prototype, "trackMetric").mockImplementation((telemetry: applicationInsights.Contracts.MetricTelemetry & applicationInsights.Contracts.MetricPointTelemetry) => {
+                metricsSent.push(telemetry);
+            });
+
+            await logger.startHeartbeats("test-operation-id");
+
+            expect(metricsSent.length).toBeGreaterThan(0);
+            expect(metricsSent[0].properties.clusterMetadata).toBeDefined();
+            
+            const clusterMetadata = JSON.parse(metricsSent[0].properties.clusterMetadata);
+            expect(clusterMetadata.isExtension).toBeDefined();
+            expect(typeof clusterMetadata.isExtension).toBe("boolean");
+        });
+
+        it("Includes isExtension in trace telemetry", async () => {
+            logger.appendHeartbeatLog(HeartbeatLogs.ApiServerTopExceptionsEncountered, "test-error");
+            
+            const tracesSent = <applicationInsights.Contracts.TraceTelemetry[]>[];
+            
+            jest.spyOn(applicationInsights.TelemetryClient.prototype, "trackTrace").mockImplementation((telemetry: applicationInsights.Contracts.TraceTelemetry) => {
+                tracesSent.push(telemetry);
+            });
+
+            await logger.startHeartbeats("test-operation-id");
+
+            expect(tracesSent.length).toBeGreaterThan(0);
+            expect(tracesSent[0].properties.clusterMetadata).toBeDefined();
+            
+            const clusterMetadata = JSON.parse(tracesSent[0].properties.clusterMetadata);
+            expect(clusterMetadata.isExtension).toBeDefined();
+            expect(typeof clusterMetadata.isExtension).toBe("boolean");
+        });
+    });
 });
 
 describe("Heartbeats", () => {
