@@ -746,6 +746,9 @@ describe("Mutator", () => {
         const connectionStringEnv = container.env.find(env => env.name === "APPLICATIONINSIGHTS_CONNECTION_STRING");
         expect(connectionStringEnv.value).toBe("InstrumentationKey=cr1");
 
+        const metricsToLAEnv = container.env.find(env => env.name === "APPLICATIONINSIGHTS_METRICS_TO_LOGANALYTICS_ENABLED");
+        expect(metricsToLAEnv.value).toBe("true");
+
         const nodeIpEnv = container.env.find(env => env.name === "OTEL_ENDPOINT_NODE_IP");
         expect(nodeIpEnv.valueFrom.fieldRef.fieldPath).toBe("status.hostIP");
         
@@ -858,6 +861,9 @@ describe("Mutator", () => {
         const connectionStringEnv = container.env.find(env => env.name === "APPLICATIONINSIGHTS_CONNECTION_STRING");
         expect(connectionStringEnv.value).toBe("InstrumentationKey=default");
         
+        const metricsToLAEnv = container.env.find(env => env.name === "APPLICATIONINSIGHTS_METRICS_TO_LOGANALYTICS_ENABLED");
+        expect(metricsToLAEnv.value).toBe("true");
+        
         // Verify node IP environment variable for OTEL endpoint
         const nodeIpEnv = container.env.find(env => env.name === "OTEL_ENDPOINT_NODE_IP");
         expect(nodeIpEnv.valueFrom.fieldRef.fieldPath).toBe("status.hostIP");
@@ -954,6 +960,9 @@ describe("Mutator", () => {
             
             const connectionStringEnv = container.env.find(env => env.name === "APPLICATIONINSIGHTS_CONNECTION_STRING");
             expect(connectionStringEnv).toBeUndefined();
+            
+            const metricsToLAEnv = container.env.find(env => env.name === "APPLICATIONINSIGHTS_METRICS_TO_LOGANALYTICS_ENABLED");
+            expect(metricsToLAEnv).toBeUndefined();
             
             const nodeIpEnv = container.env.find(env => env.name === "OTEL_ENDPOINT_NODE_IP");
             expect(nodeIpEnv).toBeUndefined();

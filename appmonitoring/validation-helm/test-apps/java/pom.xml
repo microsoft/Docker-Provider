@@ -35,7 +35,7 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
             <version>${spring-boot.version}</version>
         </dependency>
-        <dependency>
+        <!-- <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-core</artifactId>
             <version>1.12.5</version>
@@ -44,7 +44,7 @@
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
             <version>1.12.5</version>
-        </dependency>
+        </dependency> -->
         <!-- OpenTelemetry API -->
         <dependency>
             <groupId>io.opentelemetry</groupId>

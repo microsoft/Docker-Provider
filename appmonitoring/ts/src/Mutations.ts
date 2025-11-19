@@ -225,6 +225,10 @@ export class Mutations {
             {
                 name: "APPLICATIONINSIGHTS_CONNECTION_STRING",
                 value: connectionString
+            },
+            {
+                name: "APPLICATIONINSIGHTS_METRICS_TO_LOGANALYTICS_ENABLED",
+                value: "true"
             },           
         ];
 
@@ -312,7 +316,7 @@ export class Mutations {
                     {
                         returnValue.push(...[{
                             name: "JAVA_TOOL_OPTIONS",
-                            value: `-javaagent:${Mutations.agentVolumeMountPathJava}/applicationinsights-agent-codeless.jar -Dotel.metrics.exporter=otlp,azure_monitor`,
+                            value: `-javaagent:${Mutations.agentVolumeMountPathJava}/applicationinsights-agent-codeless.jar`,
                             platformSpecific: platforms[i]
                         },
                         {

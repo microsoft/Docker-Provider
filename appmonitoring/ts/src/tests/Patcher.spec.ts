@@ -143,6 +143,7 @@ describe("Patcher", () => {
         (<any>result[0]).value.spec.template.spec.containers[1].env.forEach(env => expect(env.isPlatformSpecific).not.toBe(true));
         expect((<any>result[0]).value.spec.template.spec.containers[0].env).toContainEqual(<IEnvironmentVariable>{ name: "OTEL_RESOURCE_ATTRIBUTES", value: "cloud.resource_id=/subscriptions/66010356-d8a5-42d3-8593-6aaa3aeb1c11/resourceGroups/rambhatt-rnd-v2/providers/Microsoft.ContainerService/managedClusters/aks-rambhatt-test,cloud.region=eastus,k8s.cluster.name=aks-rambhatt-test,k8s.namespace.name=$(POD_NAMESPACE),k8s.node.name=$(NODE_NAME),k8s.pod.name=$(POD_NAME),k8s.pod.uid=$(POD_UID),k8s.container.name=" + container0Name + ",cloud.provider=Azure,cloud.platform=azure_aks,k8s.deployment.name=deployment1,k8s.deployment.uid=ownerUid,service.name=deployment1,service.instance.id=$(POD_NAME)" });
         expect((<any>result[0]).value.spec.template.spec.containers[1].env).toContainEqual(<IEnvironmentVariable>{ name: "APPLICATIONINSIGHTS_CONNECTION_STRING", value: cr1.spec.destination.applicationInsightsConnectionString });
+        expect((<any>result[0]).value.spec.template.spec.containers[1].env).toContainEqual(<IEnvironmentVariable>{ name: "APPLICATIONINSIGHTS_METRICS_TO_LOGANALYTICS_ENABLED", value: "true" });
 
 
         const newVolumeMounts: object[] = Mutations.GenerateVolumeMounts(cr1.spec.settings.autoInstrumentationPlatforms);
