@@ -950,7 +950,15 @@ class KubernetesApiClient
                   yajl_parser.on_parse_complete = lambda do |obj|
                     if obj.is_a?(Hash)
                       if obj.key?('items') && obj['items'].is_a?(Array)
-                        parsed_items.concat(obj['items'])
+                        # Force deep copy via JSON round-trip to avoid Yajl object reference issues
+                        begin
+                          serialized_items = JSON.generate(obj['items'])
+                          deep_copied_items = JSON.parse(serialized_items)
+                          parsed_items.concat(deep_copied_items)
+                        rescue => json_err
+                          @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: JSON round-trip failed: #{json_err}, using shallow copy"
+                          parsed_items.concat(obj['items'])
+                        end
                       end
                       if obj.key?('metadata') && obj['metadata'].is_a?(Hash)
                         metadata_continue = obj['metadata']['continue']
