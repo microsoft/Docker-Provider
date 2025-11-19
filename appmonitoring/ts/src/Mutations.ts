@@ -310,9 +310,14 @@ export class Mutations {
             switch (platforms[i] as AutoInstrumentationPlatforms) {
                 case AutoInstrumentationPlatforms.Java:
                     {
+                        const javaToolOptionsEnvVarName = "JAVA_TOOL_OPTIONS";
+                        const ourJavaToolOptions = `-javaagent:${Mutations.agentVolumeMountPathJava}/applicationinsights-agent-codeless.jar -Dotel.metrics.exporter=otlp,azure_monitor`;
+                        const existingJavaToolOptions = existingEnvironmentVariables?.[javaToolOptionsEnvVarName]?.value;
+                        const javaToolOptionsValue = existingJavaToolOptions ? `${ourJavaToolOptions} ${existingJavaToolOptions}` : ourJavaToolOptions;
+                        
                         returnValue.push(...[{
-                            name: "JAVA_TOOL_OPTIONS",
-                            value: `-javaagent:${Mutations.agentVolumeMountPathJava}/applicationinsights-agent-codeless.jar -Dotel.metrics.exporter=otlp,azure_monitor`,
+                            name: javaToolOptionsEnvVarName,
+                            value: javaToolOptionsValue,
                             platformSpecific: platforms[i]
                         },
                         {
