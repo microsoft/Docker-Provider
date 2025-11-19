@@ -10,18 +10,14 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
 	"syscall"
 	"time"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/log"
 	"go.opentelemetry.io/otel/log/global"
@@ -54,14 +50,6 @@ var (
 	environment    = getEnv("OTEL_ENVIRONMENT", "development")
 	port           = getEnv("PORT", "3001")
 	targetURL      = getEnv("TARGET_URL", "http://localhost:3001/")
-
-	// OTLP configuration
-	metricsEndpoint = getEnv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "http://localhost:56682")
-	metricsProtocol = getEnv("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL", "http/protobuf")
-	tracesEndpoint  = getEnv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "http://localhost:56682")
-	tracesProtocol  = getEnv("OTEL_EXPORTER_OTLP_TRACES_PROTOCOL", "http/protobuf")
-	logsEndpoint    = getEnv("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", "http://localhost:56682")
-	logsProtocol    = getEnv("OTEL_EXPORTER_OTLP_LOGS_PROTOCOL", "http/protobuf")
 )
 
 func getEnv(key, defaultValue string) string {
@@ -71,23 +59,12 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-// initOpenTelemetry initializes OpenTelemetry with configurable OTLP exporters
+// initOpenTelemetry initializes OpenTelemetry with OTLP exporters
+// The SDK automatically reads OTEL_EXPORTER_OTLP_* environment variables
 func initOpenTelemetry(ctx context.Context) (*sdkmetric.MeterProvider, *sdktrace.TracerProvider, *sdklog.LoggerProvider, error) {
-	fmt.Printf("OpenTelemetry Metrics Endpoint: %s\n", metricsEndpoint)
-	fmt.Printf("OpenTelemetry Metrics Protocol: %s\n", metricsProtocol)
-	fmt.Printf("OpenTelemetry Traces Endpoint: %s\n", tracesEndpoint)
-	fmt.Printf("OpenTelemetry Traces Protocol: %s\n", tracesProtocol)
-	fmt.Printf("OpenTelemetry Logs Endpoint: %s\n", logsEndpoint)
-	fmt.Printf("OpenTelemetry Logs Protocol: %s\n", logsProtocol)
-
 	// Create resource with service information
 	// resource.WithFromEnv() automatically handles OTEL_RESOURCE_ATTRIBUTES
 	res, err := resource.New(ctx,
-		// resource.WithAttributes(
-		// 	//semconv.ServiceName(serviceName),
-		// 	//semconv.ServiceVersion(serviceVersion),
-		// 	attribute.String("deployment.environment", environment),
-		// ),
 		resource.WithFromEnv(), // This automatically reads OTEL_RESOURCE_ATTRIBUTES
 		resource.WithProcessPID(),
 		resource.WithProcessExecutableName(),
@@ -97,121 +74,33 @@ func initOpenTelemetry(ctx context.Context) (*sdkmetric.MeterProvider, *sdktrace
 		return nil, nil, nil, fmt.Errorf("failed to create resource: %w", err)
 	}
 
-	// Initialize Trace Provider
-	var traceProvider *sdktrace.TracerProvider
-
-	// Create OTLP trace exporter based on protocol
-	if tracesProtocol == "grpc" {
-		// For gRPC, we need to remove the http:// prefix and /v1/traces path
-		endpoint := tracesEndpoint
-		endpoint = strings.TrimPrefix(endpoint, "http://")
-		endpoint = strings.TrimPrefix(endpoint, "https://")
-		endpoint = strings.TrimSuffix(endpoint, "/v1/traces")
-
-		fmt.Printf("Attempting gRPC trace connection to: %s\n", endpoint)
-		traceExporter, err := otlptracegrpc.New(ctx,
-			otlptracegrpc.WithEndpoint(endpoint),
-			otlptracegrpc.WithInsecure(),
-		)
-		if err != nil {
-			fmt.Printf("Failed to create gRPC OTLP trace exporter: %v\n", err)
-			fmt.Println("Using no-op trace provider")
-			traceProvider = sdktrace.NewTracerProvider(sdktrace.WithResource(res))
-		} else {
-			fmt.Println("Using gRPC protocol for OTLP traces export")
-			traceProvider = sdktrace.NewTracerProvider(
-				sdktrace.WithResource(res),
-				sdktrace.WithBatcher(traceExporter),
-			)
-		}
-	} else if tracesProtocol == "http/protobuf" {
-		// For HTTP, remove /v1/traces if present (the exporter adds it automatically)
-		endpoint := tracesEndpoint
-		endpoint = strings.TrimSuffix(endpoint, "/v1/traces")
-
-		fmt.Printf("Attempting HTTP trace connection to: %s\n", endpoint)
-		traceExporter, err := otlptracehttp.New(ctx,
-			otlptracehttp.WithEndpointURL(endpoint),
-			otlptracehttp.WithInsecure(),
-		)
-		if err != nil {
-			fmt.Printf("Failed to create HTTP OTLP trace exporter: %v\n", err)
-			fmt.Println("Using no-op trace provider")
-			traceProvider = sdktrace.NewTracerProvider(sdktrace.WithResource(res))
-		} else {
-			fmt.Println("Using HTTP/Protobuf protocol for OTLP traces export")
-			traceProvider = sdktrace.NewTracerProvider(
-				sdktrace.WithResource(res),
-				sdktrace.WithBatcher(traceExporter),
-			)
-		}
-	} else {
-		fmt.Printf("Unsupported OTLP traces protocol: %s, using no-op provider\n", tracesProtocol)
-		traceProvider = sdktrace.NewTracerProvider(sdktrace.WithResource(res))
+	// Initialize Trace Provider with HTTP exporter (SDK reads OTEL_EXPORTER_OTLP_TRACES_* env vars)
+	traceExporter, err := otlptracehttp.New(ctx)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to create OTLP trace exporter: %w", err)
 	}
+
+	traceProvider := sdktrace.NewTracerProvider(
+		sdktrace.WithResource(res),
+		sdktrace.WithBatcher(traceExporter),
+	)
 
 	// Set global trace provider
 	otel.SetTracerProvider(traceProvider)
 
-	// Try to create OTLP metric exporter, fall back to no-op if it fails
-	var metricExporter sdkmetric.Exporter
-	var meterProvider *sdkmetric.MeterProvider
-
-	// Create OTLP metric exporter based on protocol
-	if metricsProtocol == "grpc" {
-		// For gRPC, we need to remove the http:// prefix and /v1/metrics path
-		endpoint := metricsEndpoint
-		endpoint = strings.TrimPrefix(endpoint, "http://")
-		endpoint = strings.TrimPrefix(endpoint, "https://")
-		endpoint = strings.TrimSuffix(endpoint, "/v1/metrics")
-
-		fmt.Printf("Attempting gRPC connection to: %s\n", endpoint)
-		metricExporter, err = otlpmetricgrpc.New(ctx,
-			otlpmetricgrpc.WithEndpoint(endpoint),
-			otlpmetricgrpc.WithInsecure(),
-		)
-		if err != nil {
-			fmt.Printf("Failed to create gRPC OTLP exporter: %v\n", err)
-			fmt.Println("Falling back to no-op meter provider")
-			meterProvider = sdkmetric.NewMeterProvider(sdkmetric.WithResource(res))
-		} else {
-			fmt.Println("Using gRPC protocol for OTLP metrics export")
-			meterProvider = sdkmetric.NewMeterProvider(
-				sdkmetric.WithResource(res),
-				sdkmetric.WithReader(sdkmetric.NewPeriodicReader(
-					metricExporter,
-					sdkmetric.WithInterval(5*time.Second),
-				)),
-			)
-		}
-	} else if metricsProtocol == "http/protobuf" {
-		// For HTTP, remove /v1/metrics if present (the exporter adds it automatically)
-		endpoint := metricsEndpoint
-		endpoint = strings.TrimSuffix(endpoint, "/v1/metrics")
-
-		fmt.Printf("Attempting HTTP connection to: %s\n", endpoint)
-		metricExporter, err = otlpmetrichttp.New(ctx,
-			otlpmetrichttp.WithEndpointURL(endpoint),
-			otlpmetrichttp.WithInsecure(),
-		)
-		if err != nil {
-			fmt.Printf("Failed to create HTTP OTLP exporter: %v\n", err)
-			fmt.Println("Falling back to no-op meter provider")
-			meterProvider = sdkmetric.NewMeterProvider(sdkmetric.WithResource(res))
-		} else {
-			fmt.Println("Using HTTP/Protobuf protocol for OTLP metrics export")
-			meterProvider = sdkmetric.NewMeterProvider(
-				sdkmetric.WithResource(res),
-				sdkmetric.WithReader(sdkmetric.NewPeriodicReader(
-					metricExporter,
-					sdkmetric.WithInterval(5*time.Second),
-				)),
-			)
-		}
-	} else {
-		fmt.Printf("Unsupported OTLP metrics protocol: %s, using no-op provider\n", metricsProtocol)
-		meterProvider = sdkmetric.NewMeterProvider(sdkmetric.WithResource(res))
+	// Initialize Metric Provider with HTTP exporter (SDK reads OTEL_EXPORTER_OTLP_METRICS_* env vars)
+	metricExporter, err := otlpmetrichttp.New(ctx)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to create OTLP metric exporter: %w", err)
 	}
+
+	meterProvider := sdkmetric.NewMeterProvider(
+		sdkmetric.WithResource(res),
+		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(
+			metricExporter,
+			sdkmetric.WithInterval(5*time.Second),
+		)),
+	)
 
 	// Set global meter provider
 	otel.SetMeterProvider(meterProvider)
@@ -219,54 +108,22 @@ func initOpenTelemetry(ctx context.Context) (*sdkmetric.MeterProvider, *sdktrace
 	// Set global propagator
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
-	// Initialize Log Provider
-	var logProvider *sdklog.LoggerProvider
-
-	// Create OTLP log exporter based on protocol
-	if logsProtocol == "grpc" {
-		// For gRPC, we need to remove the http:// prefix and add port if needed
-		endpoint := logsEndpoint
-		endpoint = strings.TrimPrefix(endpoint, "http://")
-		endpoint = strings.TrimPrefix(endpoint, "https://")
-		if !strings.Contains(endpoint, ":") {
-			endpoint = endpoint + ":4317"
-		}
-
-		logExporter, err := otlploggrpc.New(ctx,
-			otlploggrpc.WithEndpoint(endpoint),
-			otlploggrpc.WithInsecure(),
-		)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to create OTLP log gRPC exporter: %w", err)
-		}
-
-		processor := sdklog.NewBatchProcessor(logExporter)
-		logProvider = sdklog.NewLoggerProvider(
-			sdklog.WithProcessor(processor),
-			sdklog.WithResource(res),
-		)
-	} else {
-		// Default to HTTP
-		logExporter, err := otlploghttp.New(ctx,
-			//otlploghttp.WithEndpointURL(logsEndpoint),
-			otlploghttp.WithInsecure(),
-		)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to create OTLP log HTTP exporter: %w", err)
-		}
-
-		processor := sdklog.NewBatchProcessor(logExporter)
-		logProvider = sdklog.NewLoggerProvider(
-			sdklog.WithProcessor(processor),
-			sdklog.WithResource(res),
-		)
-
-		stdlog.Printf("Logs exporter is set for HTTP. logsEndpoint is %s", logsEndpoint)
+	// Initialize Log Provider with HTTP exporter (SDK reads OTEL_EXPORTER_OTLP_LOGS_* env vars)
+	logExporter, err := otlploghttp.New(ctx)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to create OTLP log exporter: %w", err)
 	}
+
+	processor := sdklog.NewBatchProcessor(logExporter)
+	logProvider := sdklog.NewLoggerProvider(
+		sdklog.WithProcessor(processor),
+		sdklog.WithResource(res),
+	)
 
 	// Set global logger provider
 	global.SetLoggerProvider(logProvider)
 
+	fmt.Println("OpenTelemetry initialized successfully with OTLP exporters")
 	return meterProvider, traceProvider, logProvider, nil
 }
 
@@ -334,8 +191,6 @@ func metricsMiddleware(next http.Handler) http.Handler {
 		// Record cows sold metric (same as nodejs-instrumented)
 		cowsSoldTotal.Add(r.Context(), 1, metric.WithAttributes(
 			attribute.String("cow_type", "Holstein"),
-			attribute.String("endpoint", metricsEndpoint),
-			attribute.String("protocol", metricsProtocol),
 		))
 
 		// Create a custom span for cow sold tracking
@@ -345,8 +200,6 @@ func metricsMiddleware(next http.Handler) http.Handler {
 		// Add custom attributes
 		callSpan.SetAttributes(
 			attribute.String("cow_type", "Holstein"),
-			attribute.String("endpoint", tracesEndpoint),
-			attribute.String("protocol", tracesProtocol),
 		)
 
 		record := log.Record{}
@@ -354,8 +207,6 @@ func metricsMiddleware(next http.Handler) http.Handler {
 		record.SetBody(log.StringValue("cow-sold-once-log"))
 		record.AddAttributes(
 			log.String("cow_type", "Holstein"),
-			log.String("endpoint", logsEndpoint),
-			log.String("protocol", logsProtocol),
 		)
 		logger.Emit(ctx, record)
 
