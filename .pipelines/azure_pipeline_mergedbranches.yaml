@@ -889,8 +889,8 @@ extends:
       variables:
         # Image tags can be overridden via pipeline variables
         # For manual runs, uncomment and set specific tags:
-        linuxImageTag: '3.1.31'
-        windowsImageTag: 'win-3.1.31'
+        linuxImageTag: '3.1.31-9-g733532d7f-20251120184249'
+        windowsImageTag: 'win-3.1.31-9-g733532d7f-20251120184249'
         
         # For automated runs from build stage, use these:
         #linuxImageTag: $[ stageDependencies.stage.common.outputs['setup.linuxImagetag'] ]
