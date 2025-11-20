@@ -13,6 +13,7 @@ var (
 		"internet connectivity",
 		"GetAgentConfigurations",
 		"RefreshConfigurations",
+		"canceled by user",
 	}
 )
 
