@@ -67,7 +67,7 @@ OmsAgent:
   omsAgentMultitenancyHPAAvgMemoryUtilization: 700
 
   # Feature flags
-  isSyslogEnabled: false
+  isSyslogEnabled: true
   isPrometheusMetricsScrapingDisabled: false
   isSidecarScrapingEnabled: true
   isRSVPAEnabled: false
@@ -75,15 +75,15 @@ OmsAgent:
   isResourceOptimizationEnabled: false
   isWindowsAMAFluentBitEnabled: false
   isMultitenancyLogsEnabled: false
-  isWindowsBurstableQoSEnabled: false
+  isWindowsBurstableQoSEnabled: true
   isTelegrafLivenessprobeEnabled: false
-  isWindowsAMAEnabled: false
+  isWindowsAMAEnabled: true
   isWindowsAddonTokenAdapterDisabled: false
   legacyAddonDelivery: false
 
-  # # Network settings
-  # syslogHostPort: "28330"
-  # shouldMountSyslogHostPort: false
+  # Network settings
+  syslogHostPort: "28330"
+  shouldMountSyslogHostPort: true
   # httpProxy: ""
   # httpsProxy: ""
   # trustedCA: ""
