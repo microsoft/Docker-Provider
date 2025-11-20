@@ -51,13 +51,15 @@ class ClusterMetadata {
     private podName: string;
     private imageTag: string;
     private arch: string;
+    private isExtension: boolean;
 
-    public constructor(clusterArmId: string, clusterArmRegion: string, podName: string, imageTag: string, arch: string) {
+    public constructor(clusterArmId: string, clusterArmRegion: string, podName: string, imageTag: string, arch: string, isExtension: boolean) {
         this.clusterArmId = clusterArmId;
         this.clusterArmRegion = clusterArmRegion;
         this.podName = podName;
         this.imageTag = imageTag;
         this.arch = arch;
+        this.isExtension = isExtension;
     }
 }
 
@@ -105,10 +107,18 @@ class HeartbeatAccumulator {
     public logs : Map<HeartbeatLogs, Map<string, number>> = new Map<HeartbeatLogs, Map<string, number>>();
 }
 
+export function parseIsExtension(value: string | undefined): boolean {
+    if (!value) {
+        return false;
+    }
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "1" || normalized === "yes";
+}
+
 class LocalLogger {
-    public static Instance(clusterArmId: string, clusterArmRegion: string, podName: string, imageTag: string, arch: string) {
+    public static Instance(clusterArmId: string, clusterArmRegion: string, podName: string, imageTag: string, arch: string, isExtension: boolean) {
         if (!LocalLogger.instance) {
-            LocalLogger.instance = new LocalLogger(clusterArmId, clusterArmRegion, podName, imageTag, arch);
+            LocalLogger.instance = new LocalLogger(clusterArmId, clusterArmRegion, podName, imageTag, arch, isExtension);
         }
 
         return LocalLogger.instance;
@@ -147,10 +157,10 @@ class LocalLogger {
 
     private heartbeatRequestMetadata = new RequestMetadata(null, null);
 
-    private constructor(clusterArmId: string, clusterArmRegion: string, podName: string, imageTag: string, arch: string) {
+    private constructor(clusterArmId: string, clusterArmRegion: string, podName: string, imageTag: string, arch: string, isExtension: boolean) {
         this.client = telemetryClient.telemetryClient;
 
-        this.clusterMetadata = new ClusterMetadata(clusterArmId, clusterArmRegion, podName, imageTag, arch);
+        this.clusterMetadata = new ClusterMetadata(clusterArmId, clusterArmRegion, podName, imageTag, arch, isExtension);
 
         this.log.info(`Application Insights has been set up and started. Default telemetry client is: ${this.client}, cluster metadata: ${JSON.stringify(this.clusterMetadata)}`);
 
@@ -386,4 +396,4 @@ class LocalLogger {
     }
 }
 
-export const logger = LocalLogger.Instance(process.env.ARM_ID, process.env.ARM_REGION, process.env.POD_NAME, process.env.IMAGE_TAG, process.env.ARCH);
+export const logger = LocalLogger.Instance(process.env.ARM_ID, process.env.ARM_REGION, process.env.POD_NAME, process.env.IMAGE_TAG, process.env.ARCH, parseIsExtension(process.env.IS_EXTENSION));
