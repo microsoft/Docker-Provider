@@ -175,7 +175,7 @@ jobs:
               echo "This ensures queries will find logs from the newly deployed containers."
               echo ""
               
-              wait_time=60 #todo: need change back to longer, e.g. 900.
+              wait_time=900 #todo: need change back to longer, e.g. 900.
               interval=60
               elapsed=0
               
