@@ -13,10 +13,8 @@ spec:
     metadata:
       labels:
         app: {{ .Values.appName }}
-      {{- if .Values.otelInstrumentation }}
       annotations:
-        instrumentation.opentelemetry.io/private-preview-inject-dotnet: "true"
-      {{- end }}
+        instrumentation.opentelemetry.io/inject-configuration: "true"
     spec:
       containers:
         - name: {{ .Values.appName }}
@@ -25,7 +23,7 @@ spec:
           env:
             - name: TARGET_URL
               value: "{{ .Values.targetUrl }}"
-            - name: OTEL_DOTNET_AUTO_METRICS_ADDITIONAL_SOURCES
-              value: "dotnet-test-app"
+            - name: PORT
+              value: "{{ .Values.port }}"
           ports:
             - containerPort: {{ .Values.port }}

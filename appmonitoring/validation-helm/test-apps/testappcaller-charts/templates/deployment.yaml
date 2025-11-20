@@ -43,5 +43,11 @@ spec:
               value: "3001"
             - name: TARGET_DOTNET_PATH
               value: "/call-target"
+            - name: TARGET_GO_HOST
+              value: "{{ .Values.goHost }}"
+            - name: TARGET_GO_PORT
+              value: "3001"
+            - name: TARGET_GO_PATH
+              value: "/call-target"
             - name: INTERVAL_MS
               value: "{{ .Values.intervalMs }}"

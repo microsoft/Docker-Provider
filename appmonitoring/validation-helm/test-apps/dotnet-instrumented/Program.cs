@@ -3,22 +3,11 @@ using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Exporter;
+using OpenTelemetry.Trace;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Configure environment variables programmatically (similar to nodejs instrumentation.js)
-Environment.SetEnvironmentVariable("OTEL_SERVICE_NAME", "dotnet-instrumented-test-app");
-Environment.SetEnvironmentVariable("OTEL_SERVICE_VERSION", "1.0.0");
-Environment.SetEnvironmentVariable("OTEL_ENVIRONMENT", "development");
-
-// Get configurable endpoint and protocol from environment variables
-var metricsEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT") ?? "http://localhost:56682/v1/metrics";
-var metricsProtocol = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL") ?? "http/protobuf";
-
-Console.WriteLine($"OpenTelemetry Metrics Endpoint: {metricsEndpoint}");
-Console.WriteLine($"OpenTelemetry Metrics Protocol: {metricsProtocol}");
 
 // Configure services
 builder.Services.AddHttpClient();
@@ -29,45 +18,28 @@ builder.Services.AddOpenTelemetry()
     .ConfigureResource(resource => 
     {
         resource.AddService(
-            serviceName: Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME") ?? "dotnet-instrumented-test-app",
-            serviceVersion: Environment.GetEnvironmentVariable("OTEL_SERVICE_VERSION") ?? "1.0.0")
+            serviceName: "dotnet-instrumented-test-app",
+            serviceVersion: "1.0.0")
         .AddAttributes(new Dictionary<string, object>
         {
-            ["deployment.environment"] = Environment.GetEnvironmentVariable("OTEL_ENVIRONMENT") ?? "development"
+            ["deployment.environment"] = "development"
         })
         .AddEnvironmentVariableDetector(); // This automatically handles OTEL_RESOURCE_ATTRIBUTES
+    })
+    .WithTracing(tracing =>
+    {
+        tracing
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation();
     })
     .WithMetrics(metrics =>
     {
         metrics
             .AddAspNetCoreInstrumentation()
             .AddHttpClientInstrumentation()
-            .AddMeter("dotnet-instrumented-test-app")
-            .AddOtlpExporter(options =>
-            {
-                options.Endpoint = new Uri(metricsEndpoint);
-                
-                // Configure protocol based on environment variable
-                if (metricsProtocol.Equals("grpc", StringComparison.OrdinalIgnoreCase))
-                {
-                    options.Protocol = OtlpExportProtocol.Grpc;
-                    Console.WriteLine("Using gRPC protocol for OTLP metrics export");
-                }
-                else if (metricsProtocol.Equals("http/protobuf", StringComparison.OrdinalIgnoreCase))
-                {
-                    options.Protocol = OtlpExportProtocol.HttpProtobuf;
-                    Console.WriteLine("Using HTTP/Protobuf protocol for OTLP metrics export");
-                }
-                else
-                {
-                    Console.WriteLine($"Unsupported OTLP metrics protocol: {metricsProtocol}, defaulting to HTTP/Protobuf");
-                    options.Protocol = OtlpExportProtocol.HttpProtobuf;
-                }
-
-                // Export metrics every 5 seconds (similar to nodejs)
-                options.ExportProcessorType = ExportProcessorType.Batch;
-            });
-    });
+            .AddMeter("dotnet-instrumented-test-app");
+    })
+    .UseOtlpExporter(); // Will use OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_EXPORTER_OTLP_PROTOCOL for both traces and metrics
 
 var app = builder.Build();
 
@@ -114,9 +86,7 @@ public class HomeController : ControllerBase
             _httpRequestsTotal.Add(1, labels.ToArray());
             _cowsSoldTotal.Add(1, new KeyValuePair<string, object?>[]
             {
-                new("cow_type", "Holstein"),
-                new("endpoint", Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT")),
-                new("protocol", Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_METRICS_PROTOCOL"))
+                new("cow_type", "Holstein .NET Instrumented")
             });
 
             _logger.LogInformation(".NET instrumented application is running!");
@@ -124,8 +94,8 @@ public class HomeController : ControllerBase
             return Ok(new { 
                 message = ".NET instrumented application is running!",
                 timestamp = DateTime.UtcNow.ToString("O"),
-                service = Environment.GetEnvironmentVariable("OTEL_SERVICE_NAME"),
-                version = Environment.GetEnvironmentVariable("OTEL_SERVICE_VERSION")
+                service = "dotnet-instrumented-test-app",
+                version = "1.0.0"
             });
         }
         finally
@@ -161,7 +131,13 @@ public class HomeController : ControllerBase
         
         try
         {
-            if (new Random().NextDouble() < 0.4)
+            // Increment cows sold counter
+            _cowsSoldTotal.Add(1, new KeyValuePair<string, object?>[]
+            {
+                new("cow_type", "Holstein .NET Instrumented")
+            });
+            
+            if (new Random().NextDouble() < 0.2)
             {
                 statusCode = 500;
                 throw new Exception("An unexpected error occurred");

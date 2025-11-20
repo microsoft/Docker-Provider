@@ -5,7 +5,8 @@ DEPLOYMENT_JAVA_NAME=$1
 DEPLOYMENT_NODEJS_NAME=$2
 DEPLOYMENT_PYTHON_NAME=$3
 DEPLOYMENT_DOTNET_NAME=$4
-NAMESPACE=$5
+DEPLOYMENT_GO_NAME=$5
+NAMESPACE=$6
 
 # Define the property to check for
 PROPERTY="APPLICATIONINSIGHTS_CONNECTION_STRING"
@@ -14,6 +15,7 @@ JAVA_DEPLOYMENT_NAME=$(kubectl get deployment -n "$NAMESPACE" -o custom-columns=
 NODEJS_DEPLOYMENT_NAME=$(kubectl get deployment -n "$NAMESPACE" -o custom-columns=NAME:.metadata.name | grep "$DEPLOYMENT_NODEJS_NAME")
 PYTHON_DEPLOYMENT_NAME=$(kubectl get deployment -n "$NAMESPACE" -o custom-columns=NAME:.metadata.name | grep "$DEPLOYMENT_PYTHON_NAME")
 DOTNET_DEPLOYMENT_NAME=$(kubectl get deployment -n "$NAMESPACE" -o custom-columns=NAME:.metadata.name | grep "$DEPLOYMENT_DOTNET_NAME")
+GO_DEPLOYMENT_NAME=$(kubectl get deployment -n "$NAMESPACE" -o custom-columns=NAME:.metadata.name | grep "$DEPLOYMENT_GO_NAME")
 
 EXPECTED_ENV_VARS=(
   "NODE_NAME"
@@ -41,6 +43,8 @@ DOTNET_ENV_VARS=(
   "OTEL_DOTNET_AUTO_PLUGINS"
   "OTEL_DOTNET_AUTO_LOGS_ENABLED"
 )
+GO_ENV_VARS=(
+)
 
 EXPECTED_INIT_CONTAINERS=(
     "azure-monitor-auto-instrumentation-java"
@@ -51,6 +55,8 @@ PYTHON_EXPECTED_INIT_CONTAINERS=(
 )
 DOTNET_EXPECTED_INIT_CONTAINERS=(
     "azure-monitor-auto-instrumentation-dotnet"
+)
+GO_EXPECTED_INIT_CONTAINERS=(
 )
 
 checkMutation() {
@@ -124,5 +130,10 @@ fi
 
 if ! checkMutation "$DEPLOYMENT_DOTNET_NAME" DOTNET_ENV_VARS[@] DOTNET_EXPECTED_INIT_CONTAINERS[@]; then
     echo "FATAL ERROR: checkMutation failed for $DEPLOYMENT_DOTNET_NAME"
+    exit 1
+fi
+
+if ! checkMutation "$DEPLOYMENT_GO_NAME" GO_ENV_VARS[@] GO_EXPECTED_INIT_CONTAINERS[@]; then
+    echo "FATAL ERROR: checkMutation failed for $DEPLOYMENT_GO_NAME"
     exit 1
 fi

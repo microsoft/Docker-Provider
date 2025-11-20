@@ -18,11 +18,13 @@ require_env JAVA_TEST_APP_NAME
 require_env NODEJS_TEST_APP_NAME
 require_env PYTHON_TEST_APP_NAME
 require_env DOTNET_TEST_APP_NAME
+require_env GO_TEST_APP_NAME
 require_env NODEJS_CALLER_APP_NAME
 require_env JAVA_TEST_IMAGE_NAME
 require_env NODEJS_TEST_IMAGE_NAME
 require_env PYTHON_TEST_IMAGE_NAME
 require_env DOTNET_TEST_IMAGE_NAME
+require_env GO_TEST_IMAGE_NAME
 
 if ! command -v envsubst >/dev/null 2>&1; then
   echo "Error: envsubst command not found"
@@ -36,12 +38,14 @@ JAVA_RELEASE_NAME=${JAVA_TEST_APP_NAME}
 NODEJS_RELEASE_NAME=${NODEJS_TEST_APP_NAME}
 PYTHON_RELEASE_NAME=${PYTHON_TEST_APP_NAME}
 DOTNET_RELEASE_NAME=${DOTNET_TEST_APP_NAME}
+GO_RELEASE_NAME=${GO_TEST_APP_NAME}
 CALLER_RELEASE_NAME=${NODEJS_CALLER_APP_NAME}
 
 JAVA_SERVICE_HOST="${JAVA_RELEASE_NAME}-service.${TEST_NS}.svc.cluster.local"
 NODEJS_SERVICE_HOST="${NODEJS_RELEASE_NAME}-service.${TEST_NS}.svc.cluster.local"
 PYTHON_SERVICE_HOST="${PYTHON_RELEASE_NAME}-service.${TEST_NS}.svc.cluster.local"
 DOTNET_SERVICE_HOST="${DOTNET_RELEASE_NAME}-service.${TEST_NS}.svc.cluster.local"
+GO_SERVICE_HOST="${GO_RELEASE_NAME}-service.${TEST_NS}.svc.cluster.local"
 SOURCE_SERVICE_URL="http://${SOURCE_RELEASE_NAME}-service.${TEST_NS}.svc.cluster.local:3001"
 
 # Delete existing test apps if they exist - TEMPORARY - WILL BE REMOVED LATER
@@ -50,6 +54,7 @@ cat ../validation-helm/test-apps/java/chart.yaml | envsubst | kubectl delete -f 
 cat ../validation-helm/test-apps/nodejs/chart.yaml | envsubst | kubectl delete -f - --ignore-not-found
 cat ../validation-helm/test-apps/python/chart.yaml | envsubst | kubectl delete -f - --ignore-not-found
 cat ../validation-helm/test-apps/dotnet/chart.yaml | envsubst | kubectl delete -f - --ignore-not-found
+cat ../validation-helm/test-apps/go-instrumented/chart.yaml | envsubst | kubectl delete -f - --ignore-not-found
 cat ../validation-helm/test-apps/testappcaller/chart.yaml | envsubst | kubectl delete -f - --ignore-not-found
 
 
@@ -59,6 +64,7 @@ helm uninstall -n ${TEST_NS} "${JAVA_RELEASE_NAME}" --ignore-not-found 2>/dev/nu
 helm uninstall -n ${TEST_NS} "${NODEJS_RELEASE_NAME}" --ignore-not-found 2>/dev/null || true
 helm uninstall -n ${TEST_NS} "${PYTHON_RELEASE_NAME}" --ignore-not-found 2>/dev/null || true
 helm uninstall -n ${TEST_NS} "${DOTNET_RELEASE_NAME}" --ignore-not-found 2>/dev/null || true
+helm uninstall -n ${TEST_NS} "${GO_RELEASE_NAME}" --ignore-not-found 2>/dev/null || true
 helm uninstall -n ${TEST_NS} "${CALLER_RELEASE_NAME}" --ignore-not-found 2>/dev/null || true
 
 
@@ -124,6 +130,16 @@ if ! helm install "${DOTNET_RELEASE_NAME}" oci://${ACR_NAME}/helm/testapps/dotne
   exit 1
 fi
 
+# this is the instrumented go app
+echo "Installing ${GO_RELEASE_NAME}..."
+if ! helm install "${GO_RELEASE_NAME}" oci://${ACR_NAME}/helm/testapps/go-instrumented-test-app --version "${CHART_VERSION}" -n "${TEST_NS}" \
+  --set-string appName="${GO_RELEASE_NAME}" \
+  --set-string image="${GO_TEST_IMAGE_NAME}" \
+  --set-string targetUrl="${SOURCE_SERVICE_URL}"; then
+  echo "Error: ${GO_RELEASE_NAME} installation failed"
+  exit 1
+fi
+
 # this is the app that will periodically call the instrumented apps to generate request telemetry
 echo "Installing ${CALLER_RELEASE_NAME}..."
 if ! helm install "${CALLER_RELEASE_NAME}" oci://${ACR_NAME}/helm/testapps/testappcaller --version "${CHART_VERSION}" -n "${TEST_NS}" \
@@ -131,7 +147,8 @@ if ! helm install "${CALLER_RELEASE_NAME}" oci://${ACR_NAME}/helm/testapps/testa
   --set-string javaHost="${JAVA_SERVICE_HOST}" \
   --set-string nodejsHost="${NODEJS_SERVICE_HOST}" \
   --set-string pythonHost="${PYTHON_SERVICE_HOST}" \
-  --set-string dotnetHost="${DOTNET_SERVICE_HOST}"; then
+  --set-string dotnetHost="${DOTNET_SERVICE_HOST}" \
+  --set-string goHost="${GO_SERVICE_HOST}"; then
   echo "Error: ${CALLER_RELEASE_NAME} installation failed"
   exit 1
 fi
