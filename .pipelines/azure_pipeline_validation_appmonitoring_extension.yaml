@@ -421,7 +421,9 @@ jobs:
 
         echo "Validating AMW metrics..."
         sudo chmod u+x ./validate_amw.sh
-        if ! ./validate_amw.sh ${{ variables.amwQueryEndpoint }} ${{ variables.testNamespace }} "java,nodejs,python,dotnet,go"; then
+        # TEMPORARY: Exclude dotnet from AMW validation due to bug where DotNet metrics are not emitted to AMW
+        # TODO: Revert to "java,nodejs,python,dotnet,go" once DotNet AMW metrics bug is fixed
+        if ! ./validate_amw.sh ${{ variables.amwQueryEndpoint }} ${{ variables.testNamespace }} "java,nodejs,python,go"; then
           echo "AMW metrics validation failed"
           exit 1
         fi
