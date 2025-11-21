@@ -76,6 +76,9 @@ echo "DOCKER_CIMPROV_VERSION=$docker_cimprov_version" >> packages_version.txt
 sudo tdnf install azcu-fluent-bit-4.0.9 -y
 echo "$(fluent-bit --version)" >> packages_version.txt
 
+#install strptime-0.2.5
+gem install strptime -v 0.2.5 --no-document -- --with-cflags="-O1"
+
 # install fluentd
 fluentd_version="1.16.3"
 gem install fluentd -v $fluentd_version --no-document
@@ -84,12 +87,6 @@ gem install fluentd -v $fluentd_version --no-document
 rm -rf /usr/lib/ruby/gems/3.3.0/gems/fluentd-$fluentd_version/test/
 
 echo "$(fluentd --version)" >> packages_version.txt
-
-# Create symlink for fluentd to /usr/bin for Docker COPY command
-fluentd_path=$(which fluentd)
-echo "Fluentd installed at: $fluentd_path"
-ln -s $fluentd_path /usr/bin/fluentd
-echo "Created symlink: /usr/bin/fluentd -> $fluentd_path"
 
 fluentd --setup ./fluent
 
