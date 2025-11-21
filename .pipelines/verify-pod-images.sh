@@ -194,6 +194,10 @@ if [ "$MODE" = "pre-test" ]; then
         if [ -z "$latest_start_time" ] || [[ "$start_time" > "$latest_start_time" ]]; then
           latest_start_time="$start_time"
         fi
+      else
+        echo "✗ ERROR: Could not determine container start time for pod $pod_name (container: $container_name)"
+        echo "This is required for Log Analytics query filtering"
+        exit 1
       fi
     done
     
@@ -205,7 +209,9 @@ if [ "$MODE" = "pre-test" ]; then
       echo "✓ Saved to /tmp/container-deployment-time.env"
       echo "✓ Log Analytics queries should filter: TimeGenerated > datetime('$latest_start_time')"
     else
-      echo "⚠ Warning: Could not determine container start times"
+      echo "✗ ERROR: Could not determine container start times"
+      echo "This is required for Log Analytics query filtering"
+      exit 1
     fi
     
     exit 0

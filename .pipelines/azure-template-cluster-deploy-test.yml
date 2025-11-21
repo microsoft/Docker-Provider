@@ -157,7 +157,9 @@ jobs:
                 echo "Container start time captured: $CONTAINER_START_TIME"
                 echo "##vso[task.setvariable variable=CONTAINER_START_TIME;isOutput=true]$CONTAINER_START_TIME"
               else
-                echo "Warning: Container start time not found, tests will use default time filter"
+                echo "ERROR: Container start time not found at /tmp/container-deployment-time.env"
+                echo "This is required for Log Analytics query filtering"
+                exit 1
               fi
         
         - task: Bash@3
