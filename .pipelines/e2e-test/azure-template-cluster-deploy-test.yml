@@ -122,25 +122,25 @@ jobs:
               echo "Current ama-logs pods:"
               kubectl get pods -n kube-system | grep ama-logs
         
-        - bash: |
-            set -euo pipefail
-            echo "Checking for existing Testkube installation..."
+        # - bash: |
+        #     set -euo pipefail
+        #     echo "Checking for existing Testkube installation..."
             
-            if helm list -n testkube 2>/dev/null | grep -q testkube; then
-              echo "Found existing Testkube installation. Cleaning up..."
-              helm uninstall testkube -n testkube || true
-              echo "Deleting testkube namespace..."
-              kubectl delete namespace testkube --wait=true --timeout=120s || true
-              echo "Waiting for namespace to fully terminate..."
-              sleep 30
-              echo "Cleanup complete!"
-            else
-              echo "No existing Testkube installation found."
-            fi
+        #     if helm list -n testkube 2>/dev/null | grep -q testkube; then
+        #       echo "Found existing Testkube installation. Cleaning up..."
+        #       helm uninstall testkube -n testkube || true
+        #       echo "Deleting testkube namespace..."
+        #       kubectl delete namespace testkube --wait=true --timeout=120s || true
+        #       echo "Waiting for namespace to fully terminate..."
+        #       sleep 30
+        #       echo "Cleanup complete!"
+        #     else
+        #       echo "No existing Testkube installation found."
+        #     fi
             
-            echo "Creating testkube namespace..."
-            kubectl create namespace testkube || echo "Namespace already exists"
-          displayName: 'Clean up existing Testkube installation'
+        #     echo "Creating testkube namespace..."
+        #     kubectl create namespace testkube || echo "Namespace already exists"
+        #   displayName: 'Clean up existing Testkube installation'
         
         - task: Bash@3
           name: VerifyPods
@@ -148,8 +148,8 @@ jobs:
           inputs:
             targetType: 'inline'
             script: |
-              chmod +x $(Build.SourcesDirectory)/.pipelines/verify-pod-images.sh
-              $(Build.SourcesDirectory)/.pipelines/verify-pod-images.sh pre-test ${{ parameters.linuxImageTag }} ${{ parameters.windowsImageTag }}
+              chmod +x $(Build.SourcesDirectory)/.pipelines/e2e-test/verify-pod-images.sh
+              $(Build.SourcesDirectory)/.pipelines/e2e-test/verify-pod-images.sh pre-test ${{ parameters.linuxImageTag }} ${{ parameters.windowsImageTag }}
               
               # Export container start time for use in tests
               if [ -f /tmp/container-deployment-time.env ]; then
@@ -201,8 +201,8 @@ jobs:
             echo "Running tests for cluster: ${{ parameters.clusterName }}"
             echo "Container start time: $CONTAINER_START_TIME"
             
-            chmod +x ./install-and-execute-testkube-tests.sh
-            ./install-and-execute-testkube-tests.sh \
+            chmod +x ./install-and-execute-testkube-tests-temp.sh
+            ./install-and-execute-testkube-tests-temp.sh \
               AzureClientId=${{ parameters.azureClientId }} \
               AzureTenantId=${{ parameters.azureTenantId }} \
               TeamsWebhookUri=${{ parameters.teamsWebhookUri }} \
@@ -216,8 +216,8 @@ jobs:
           inputs:
             targetType: 'inline'
             script: |
-              chmod +x $(Build.SourcesDirectory)/.pipelines/verify-pod-images.sh
-              $(Build.SourcesDirectory)/.pipelines/verify-pod-images.sh post-test ${{ parameters.linuxImageTag }} ${{ parameters.windowsImageTag }}
+              chmod +x $(Build.SourcesDirectory)/.pipelines/e2e-test/verify-pod-images.sh
+              $(Build.SourcesDirectory)/.pipelines/e2e-test/verify-pod-images.sh post-test ${{ parameters.linuxImageTag }} ${{ parameters.windowsImageTag }}
         
         # Log deployment completion
         - bash: |

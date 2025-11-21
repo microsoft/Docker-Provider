@@ -897,7 +897,7 @@ extends:
         #windowsImageTag: $[ stageDependencies.stage.common.outputs['setup.windowsImagetag'] ]
       jobs:
       # Cluster 1: zane-test Cluster
-      - template: /.pipelines/azure-template-cluster-deploy-test.yml@self
+      - template: /.pipelines/e2e-test/azure-template-cluster-deploy-test.yml@self
         parameters:
           clusterName: 'zane-test'
           resourceGroup: 'zane-test'
@@ -910,7 +910,7 @@ extends:
           teamsWebhookUri: $(TeamsWebhookUri)
 
       # Cluster 2: zane-test2 Cluster
-      - template: /.pipelines/azure-template-cluster-deploy-test.yml@self
+      - template: /.pipelines/e2e-test/azure-template-cluster-deploy-test.yml@self
         parameters:
           clusterName: 'zane-test2'
           resourceGroup: 'zane-test'
