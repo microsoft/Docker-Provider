@@ -15,7 +15,7 @@ if [ -z "$LINUX_IMAGE_TAG" ] || [ -z "$WINDOWS_IMAGE_TAG" ]; then
   exit 1
 fi
 
-MCR_REPO="mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
+MCR_REPO="mcr.microsoft.com/azuremonitor/containerinsights/cidev"
 LINUX_IMAGE="$MCR_REPO:$LINUX_IMAGE_TAG"
 WINDOWS_IMAGE="$MCR_REPO:$WINDOWS_IMAGE_TAG"
 
