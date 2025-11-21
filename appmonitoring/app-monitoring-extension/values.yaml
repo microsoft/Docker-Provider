@@ -32,8 +32,8 @@ AppmonitoringAgent:
   cpuRequest: "200m"
   imageRelativePath: "azuremonitor/applicationinsights/aiprod"
   imageTag: "<IMAGE_TAG>"
-  isOpenTelemetryLogsEnabled: false
-  isOpenTelemetryMetricsEnabled: false
+  isOpenTelemetryLogsEnabled: true
+  isOpenTelemetryMetricsEnabled: true
   isOtelToggleEnabled: true
   memoryLimit: "200Mi"
   memoryRequest: "200Mi"
