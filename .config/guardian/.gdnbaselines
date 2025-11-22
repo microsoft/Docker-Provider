@@ -75,6 +75,48 @@
       "expirationDate": "2025-11-09 20:28:14Z",
       "justification": "This error is baselined with an expiration date of 180 days from 2025-05-23 20:28:14Z"
     },
+    "helm_testkube_values_temp_line_504": {
+      "signature": "helm_testkube_values_temp_line_504",
+      "alternativeSignatures": [],
+      "target": "test/testkube/helm-testkube-values-temp.yaml",
+      "line": 504,
+      "memberOf": [
+        "default"
+      ],
+      "tool": "credscan",
+      "ruleId": "CSCAN-GENERAL0060",
+      "createdDate": "2025-11-21 23:58:00Z",
+      "expirationDate": "2026-05-20 23:58:00Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-11-21 23:58:00Z - same content as helm-testkube-values.yaml which is already baselined"
+    },
+    "helm_testkube_values_temp_line_506": {
+      "signature": "helm_testkube_values_temp_line_506",
+      "alternativeSignatures": [],
+      "target": "test/testkube/helm-testkube-values-temp.yaml",
+      "line": 506,
+      "memberOf": [
+        "default"
+      ],
+      "tool": "credscan",
+      "ruleId": "CSCAN-GENERAL0060",
+      "createdDate": "2025-11-21 23:58:00Z",
+      "expirationDate": "2026-05-20 23:58:00Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-11-21 23:58:00Z - same content as helm-testkube-values.yaml which is already baselined"
+    },
+    "helm_testkube_values_temp_line_687": {
+      "signature": "helm_testkube_values_temp_line_687",
+      "alternativeSignatures": [],
+      "target": "test/testkube/helm-testkube-values-temp.yaml",
+      "line": 687,
+      "memberOf": [
+        "default"
+      ],
+      "tool": "credscan",
+      "ruleId": "CSCAN-GENERAL0060",
+      "createdDate": "2025-11-21 23:58:00Z",
+      "expirationDate": "2026-05-20 23:58:00Z",
+      "justification": "This error is baselined with an expiration date of 180 days from 2025-11-21 23:58:00Z - same content as helm-testkube-values.yaml which is already baselined"
+    },
     "3d8e556d40bc888b9c30e845873d5e0ea40bb8527a1bc81cbaa06b6301e3fdda": {
       "signature": "3d8e556d40bc888b9c30e845873d5e0ea40bb8527a1bc81cbaa06b6301e3fdda",
       "alternativeSignatures": [
