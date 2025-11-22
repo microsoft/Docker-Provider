@@ -75,8 +75,8 @@
       "expirationDate": "2025-11-09 20:28:14Z",
       "justification": "This error is baselined with an expiration date of 180 days from 2025-05-23 20:28:14Z"
     },
-    "helm_testkube_values_temp_line_504": {
-      "signature": "helm_testkube_values_temp_line_504",
+    "297875c3b0c63d73a7da13f529613febfe20cbe925453429533de8fad207e133": {
+      "signature": "297875c3b0c63d73a7da13f529613febfe20cbe925453429533de8fad207e133",
       "alternativeSignatures": [],
       "target": "test/testkube/helm-testkube-values-temp.yaml",
       "line": 504,
@@ -89,25 +89,11 @@
       "expirationDate": "2026-05-20 23:58:00Z",
       "justification": "This error is baselined with an expiration date of 180 days from 2025-11-21 23:58:00Z - same content as helm-testkube-values.yaml which is already baselined"
     },
-    "helm_testkube_values_temp_line_506": {
-      "signature": "helm_testkube_values_temp_line_506",
+    "edb8bf59aec243699cda1445a65a26bc7d2bbdb9c97393987ba621e772a89a0d": {
+      "signature": "edb8bf59aec243699cda1445a65a26bc7d2bbdb9c97393987ba621e772a89a0d",
       "alternativeSignatures": [],
       "target": "test/testkube/helm-testkube-values-temp.yaml",
-      "line": 506,
-      "memberOf": [
-        "default"
-      ],
-      "tool": "credscan",
-      "ruleId": "CSCAN-GENERAL0060",
-      "createdDate": "2025-11-21 23:58:00Z",
-      "expirationDate": "2026-05-20 23:58:00Z",
-      "justification": "This error is baselined with an expiration date of 180 days from 2025-11-21 23:58:00Z - same content as helm-testkube-values.yaml which is already baselined"
-    },
-    "helm_testkube_values_temp_line_687": {
-      "signature": "helm_testkube_values_temp_line_687",
-      "alternativeSignatures": [],
-      "target": "test/testkube/helm-testkube-values-temp.yaml",
-      "line": 687,
+      "line": 685,
       "memberOf": [
         "default"
       ],
