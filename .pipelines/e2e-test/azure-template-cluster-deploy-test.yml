@@ -87,7 +87,7 @@ jobs:
           inputs:
             targetType: 'inline'
             script: |
-              MCR_REPO="mcr.microsoft.com/azuremonitor/containerinsights/cidev"
+              MCR_REPO="mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
               
               echo "Deploying to cluster: ${{ parameters.clusterName }}"
               echo "  Linux image: $MCR_REPO:${{ parameters.linuxImageTag }}"
