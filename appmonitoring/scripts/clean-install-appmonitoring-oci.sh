@@ -55,7 +55,7 @@ if ! helm install -n kube-system app-monitoring-extension oci://${TEST_CHART_REP
   --debug \
   --set Azure.Cluster.Cloud=ValidationCluster \
   --set Azure.Cluster.ResourceId="/subscriptions/5a3b3ba4-3a42-42ae-b2cb-f882345803bc/resourceGroups/aks-appmonitoring-pipeline/providers/Microsoft.ContainerService/managedClusters/appmonitoring-webhook-testbed" \
-  --set Azure.Cluster.Region="West US 2" \
+  --set Azure.Cluster.Region="westus2" \
   --set AppmonitoringAgent.imageTag=$IMAGE_TAG \
   --set AppmonitoringAgent.imageRelativePath=$TEST_IMAGE_RELATIVE_PATH; then
   echo "Error: helm install from OCI failed."
