@@ -59,13 +59,13 @@ cat ../validation-helm/test-apps/testappcaller/chart.yaml | envsubst | kubectl d
 
 
 echo "Uninstalling test apps..."
-helm uninstall -n ${TEST_NS} "${SOURCE_RELEASE_NAME}" --ignore-not-found 2>/dev/null || true
-helm uninstall -n ${TEST_NS} "${JAVA_RELEASE_NAME}" --ignore-not-found 2>/dev/null || true
-helm uninstall -n ${TEST_NS} "${NODEJS_RELEASE_NAME}" --ignore-not-found 2>/dev/null || true
-helm uninstall -n ${TEST_NS} "${PYTHON_RELEASE_NAME}" --ignore-not-found 2>/dev/null || true
-helm uninstall -n ${TEST_NS} "${DOTNET_RELEASE_NAME}" --ignore-not-found 2>/dev/null || true
-helm uninstall -n ${TEST_NS} "${GO_RELEASE_NAME}" --ignore-not-found 2>/dev/null || true
-helm uninstall -n ${TEST_NS} "${CALLER_RELEASE_NAME}" --ignore-not-found 2>/dev/null || true
+helm uninstall -n ${TEST_NS} "${SOURCE_RELEASE_NAME}" --ignore-not-found --wait 2>/dev/null || true
+helm uninstall -n ${TEST_NS} "${JAVA_RELEASE_NAME}" --ignore-not-found --wait 2>/dev/null || true
+helm uninstall -n ${TEST_NS} "${NODEJS_RELEASE_NAME}" --ignore-not-found --wait 2>/dev/null || true
+helm uninstall -n ${TEST_NS} "${PYTHON_RELEASE_NAME}" --ignore-not-found --wait 2>/dev/null || true
+helm uninstall -n ${TEST_NS} "${DOTNET_RELEASE_NAME}" --ignore-not-found --wait 2>/dev/null || true
+helm uninstall -n ${TEST_NS} "${GO_RELEASE_NAME}" --ignore-not-found --wait 2>/dev/null || true
+helm uninstall -n ${TEST_NS} "${CALLER_RELEASE_NAME}" --ignore-not-found --wait 2>/dev/null || true
 
 
 echo "Wait for 20s for everything to clear up..."
@@ -85,7 +85,8 @@ echo "Installing test apps from OCI registry..."
 # This app will be called by all the instrumented test apps to generate dependency telemetry for us to test
 echo "Installing ${SOURCE_RELEASE_NAME}..."
 if ! helm install "${SOURCE_RELEASE_NAME}" oci://${ACR_NAME}/helm/testapps/testappsource --version "${CHART_VERSION}" -n "${TEST_NS}" \
-  --set-string appName="${SOURCE_RELEASE_NAME}"; then
+  --set-string appName="${SOURCE_RELEASE_NAME}" \
+  --wait --timeout 5m; then
   echo "Error: ${SOURCE_RELEASE_NAME} installation failed"
   exit 1
 fi
@@ -95,7 +96,8 @@ echo "Installing ${JAVA_RELEASE_NAME}..."
 if ! helm install "${JAVA_RELEASE_NAME}" oci://${ACR_NAME}/helm/testapps/java-test-app --version "${CHART_VERSION}" -n "${TEST_NS}" \
   --set-string appName="${JAVA_RELEASE_NAME}" \
   --set-string image="${JAVA_TEST_IMAGE_NAME}" \
-  --set-string targetUrl="${SOURCE_SERVICE_URL}"; then
+  --set-string targetUrl="${SOURCE_SERVICE_URL}" \
+  --wait --timeout 5m; then
   echo "Error: ${JAVA_RELEASE_NAME} installation failed"
   exit 1
 fi
@@ -105,7 +107,8 @@ echo "Installing ${NODEJS_RELEASE_NAME}..."
 if ! helm install "${NODEJS_RELEASE_NAME}" oci://${ACR_NAME}/helm/testapps/nodejs-test-app --version "${CHART_VERSION}" -n "${TEST_NS}" \
   --set-string appName="${NODEJS_RELEASE_NAME}" \
   --set-string image="${NODEJS_TEST_IMAGE_NAME}" \
-  --set-string targetUrl="${SOURCE_SERVICE_URL}"; then
+  --set-string targetUrl="${SOURCE_SERVICE_URL}" \
+  --wait --timeout 5m; then
   echo "Error: ${NODEJS_RELEASE_NAME} installation failed"
   exit 1
 fi
@@ -115,7 +118,8 @@ echo "Installing ${PYTHON_RELEASE_NAME}..."
 if ! helm install "${PYTHON_RELEASE_NAME}" oci://${ACR_NAME}/helm/testapps/python-test-app --version "${CHART_VERSION}" -n "${TEST_NS}" \
   --set-string appName="${PYTHON_RELEASE_NAME}" \
   --set-string image="${PYTHON_TEST_IMAGE_NAME}" \
-  --set-string targetUrl="${SOURCE_SERVICE_URL}"; then
+  --set-string targetUrl="${SOURCE_SERVICE_URL}" \
+  --wait --timeout 5m; then
   echo "Error: ${PYTHON_RELEASE_NAME} installation failed"
   exit 1
 fi
@@ -125,7 +129,8 @@ echo "Installing ${DOTNET_RELEASE_NAME}..."
 if ! helm install "${DOTNET_RELEASE_NAME}" oci://${ACR_NAME}/helm/testapps/dotnet-test-app --version "${CHART_VERSION}" -n "${TEST_NS}" \
   --set-string appName="${DOTNET_RELEASE_NAME}" \
   --set-string image="${DOTNET_TEST_IMAGE_NAME}" \
-  --set-string targetUrl="${SOURCE_SERVICE_URL}"; then
+  --set-string targetUrl="${SOURCE_SERVICE_URL}" \
+  --wait --timeout 5m; then
   echo "Error: ${DOTNET_RELEASE_NAME} installation failed"
   exit 1
 fi
@@ -135,7 +140,8 @@ echo "Installing ${GO_RELEASE_NAME}..."
 if ! helm install "${GO_RELEASE_NAME}" oci://${ACR_NAME}/helm/testapps/go-instrumented-test-app --version "${CHART_VERSION}" -n "${TEST_NS}" \
   --set-string appName="${GO_RELEASE_NAME}" \
   --set-string image="${GO_TEST_IMAGE_NAME}" \
-  --set-string targetUrl="${SOURCE_SERVICE_URL}"; then
+  --set-string targetUrl="${SOURCE_SERVICE_URL}" \
+  --wait --timeout 5m; then
   echo "Error: ${GO_RELEASE_NAME} installation failed"
   exit 1
 fi
@@ -148,7 +154,8 @@ if ! helm install "${CALLER_RELEASE_NAME}" oci://${ACR_NAME}/helm/testapps/testa
   --set-string nodejsHost="${NODEJS_SERVICE_HOST}" \
   --set-string pythonHost="${PYTHON_SERVICE_HOST}" \
   --set-string dotnetHost="${DOTNET_SERVICE_HOST}" \
-  --set-string goHost="${GO_SERVICE_HOST}"; then
+  --set-string goHost="${GO_SERVICE_HOST}" \
+  --wait --timeout 5m; then
   echo "Error: ${CALLER_RELEASE_NAME} installation failed"
   exit 1
 fi
