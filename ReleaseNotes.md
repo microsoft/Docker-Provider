@@ -12,7 +12,7 @@ additional questions or comments.
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.32 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.32 (windows)
 - Linux
-  - [azurelinux 3.0.20250910](https://github.com/microsoft/azurelinux/releases/tag/3.0.20250910-3.0)
+  - [azurelinux 3.0.20251106](https://github.com/microsoft/azurelinux/releases/tag/3.0.20251106-3.0)
   - Golang - 1.24.10
   - Ruby - arm64 - 3.3.5, x86_64 - 3.3.8
   - MDSD - 1.37.0
