@@ -52,7 +52,7 @@ envsubst < ./testkube-test-crs.yaml > ./testkube-test-crs-updated.yaml
 kubectl apply -f ./testkube-test-crs-updated.yaml
 
 echo "Wait for cluster to be ready"
-sleep 120
+sleep 200
 
 echo "Run testkube tests"
 execution_id=""
