@@ -8,6 +8,39 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 11/25/2025 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.32 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.32 (windows)
+- Linux
+  - [azurelinux 3.0.20251106](https://github.com/microsoft/azurelinux/releases/tag/3.0.20251106-3.0)
+  - Golang - 1.24.10
+  - Ruby - arm64 - 3.3.5, x86_64 - 3.3.8
+  - MDSD - 1.37.0
+  - Telegraf - 1.36.4   
+  - Fluent-bit - 4.0.9
+  - Fluentd - 1.16.3
+- Windows
+  - Golang - 1.24.10
+  - Ruby - 3.1.1
+  - Windows AMA - 46.31.3
+  - Telegraf - 1.24.2
+  - Fluent-bit - 4.0.3
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Linux
+  * fix k8s events DCR filter bug by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1577
+  * networkflow strean rename by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1570
+- Windows
+  * swallow gcc14 error of implicit func declaration by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1563
+  * update dotnet8 by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1565
+- Common
+  * Fix FIC Auth support issues by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1547
+  * Fix arc prod pipeline timeout issue by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1564
+  * Fix CVEs and handle intermittent errors in Ginkgo tests by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1556
+  * change branch name by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1571
+  * 3.1.31 CVEs fixes @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1572
+
 ### 10/28/2025 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.31 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.31 (windows)
