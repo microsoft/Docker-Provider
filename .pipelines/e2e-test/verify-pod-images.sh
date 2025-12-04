@@ -76,7 +76,12 @@ check_all_pods() {
       
       # Check each pod in this iteration
       for config in "${configs_ref[@]}"; do
+        echo "  [DEBUG] Raw config string: '$config'"
         IFS=':' read -r pod_name expected_image container_name <<< "$config"
+        echo "  [DEBUG] Parsed values:"
+        echo "    pod_name='$pod_name'"
+        echo "    expected_image='$expected_image'"
+        echo "    container_name='$container_name'"
         
         # Skip if already marked as ready
         if [ "${pod_ready_status[$pod_name]}" = "true" ]; then
@@ -86,7 +91,9 @@ check_all_pods() {
         
         # DEBUG: Try alternative methods to get the image
         # Method 1: Original jsonpath (what we've been using)
+        echo "  [DEBUG] Attempting kubectl jsonpath query..."
         current_image=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.spec.containers[?(@.name=='$container_name')].image}" 2>/dev/null || echo "")
+        echo "  [DEBUG] Method 1 result: '$current_image'"
         
         # Method 2: If method 1 is empty, try getting first container image
         if [ -z "$current_image" ]; then
