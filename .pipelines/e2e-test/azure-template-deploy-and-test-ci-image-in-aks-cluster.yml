@@ -1,0 +1,263 @@
+parameters:
+- name: clusterName
+  type: string
+- name: resourceGroup
+  type: string
+- name: azureSubscription
+  type: string
+  default: 'ContainerInsights_Build_Subscription_CI'
+- name: environmentName
+  type: string
+- name: linuxImageTag
+  type: string
+- name: windowsImageTag
+  type: string
+- name: azureClientId
+  type: string
+- name: azureTenantId
+  type: string
+- name: teamsWebhookUri
+  type: string
+  default: '$(TeamsWebhookUri)'
+- name: additionalTestParams
+  type: string
+  default: ''
+
+jobs:
+- deployment: Deploy_${{ replace(parameters.clusterName, '-', '_') }}
+  displayName: 'Deploy & Test: ${{ parameters.clusterName }}'
+  environment: ${{ parameters.environmentName }}
+  pool:
+    name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-ubuntu-2204
+    os: linux
+  variables:
+    skipComponentGovernanceDetection: true
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+        # Log deployment start
+        - bash: |
+            set -euo pipefail
+            
+            echo "========================================="
+            echo "CLUSTER DEPLOYMENT STARTING"
+            echo "========================================="
+            echo "Cluster: ${{ parameters.clusterName }}"
+            echo "Environment: ${{ parameters.environmentName }}"
+            echo "Build ID: $(Build.BuildId)"
+            echo "Pipeline Run: $(Build.BuildNumber)"
+            echo ""
+            echo "✓ Sequential deployment locking enabled at stage level"
+            echo "✓ Multiple pipeline runs will execute sequentially"
+            echo "========================================="
+          displayName: 'Deployment Start'
+          
+        - checkout: self
+          persistCredentials: true
+        
+        - script: |
+            set -euo pipefail
+            echo "Ensuring kubectl & helm are installed"
+            if ! command -v kubectl >/dev/null 2>&1; then
+              echo "Installing kubectl"
+              sudo az aks install-cli
+            else
+              echo "kubectl already installed: $(kubectl version --client --short || true)"
+            fi
+            if ! command -v helm >/dev/null 2>&1; then
+              echo "Installing Helm 3"
+              curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+            else
+              echo "Helm already installed: $(helm version --short || true)"
+            fi
+          displayName: 'Install kubectl and Helm'
+        
+        - task: AzureCLI@2
+          displayName: 'Get credentials for ${{ parameters.clusterName }}'
+          inputs:
+            azureSubscription: ${{ parameters.azureSubscription }}
+            scriptLocation: 'inlineScript'
+            scriptType: 'bash'
+            inlineScript: 'az aks get-credentials -g ${{ parameters.resourceGroup }} -n ${{ parameters.clusterName }}'
+        
+        # Determine MCR repository paths based on image tags.
+        - task: Bash@3
+          name: DetermineMcrRepo
+          displayName: 'Determine MCR Repository Paths'
+          env:
+            LINUX_IMAGE_TAG: ${{ parameters.linuxImageTag }}
+            WINDOWS_IMAGE_TAG: ${{ parameters.windowsImageTag }}
+          inputs:
+            targetType: 'inline'
+            script: |
+              # Function to determine registry path based on image tag
+              # CI dev builds contain git hash pattern (e.g., -gbdc2f3f42-20250701203056)
+              # Production releases are simple versions (e.g., 3.1.32)
+              get_mcr_repo() {
+                local image_tag="$1"
+                if [[ "$image_tag" =~ -g[a-f0-9]+-[0-9]+ ]]; then
+                  echo "mcr.microsoft.com/azuremonitor/containerinsights/cidev"
+                else
+                  echo "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
+                fi
+              }
+              
+              LINUX_MCR_REPO=$(get_mcr_repo "$LINUX_IMAGE_TAG")
+              WINDOWS_MCR_REPO=$(get_mcr_repo "$WINDOWS_IMAGE_TAG")
+              
+              echo "Repository Path Detection:"
+              echo "  Linux image tag: $LINUX_IMAGE_TAG"
+              echo "  → Linux MCR repo: $LINUX_MCR_REPO"
+              echo "  Windows image tag: $WINDOWS_IMAGE_TAG"
+              echo "  → Windows MCR repo: $WINDOWS_MCR_REPO"
+              
+              # Export for subsequent steps
+              echo "##vso[task.setvariable variable=linuxMcrRepo;isOutput=true]$LINUX_MCR_REPO"
+              echo "##vso[task.setvariable variable=windowsMcrRepo;isOutput=true]$WINDOWS_MCR_REPO"
+        
+        # TODO: consider to use helm chart when it is ready for aks deployment
+        - task: Bash@3
+          displayName: 'Patch ama-logs pods with new images'
+          env:
+            LINUX_IMAGE_TAG: ${{ parameters.linuxImageTag }}
+            WINDOWS_IMAGE_TAG: ${{ parameters.windowsImageTag }}
+            LINUX_MCR_REPO: $(DetermineMcrRepo.linuxMcrRepo)
+            WINDOWS_MCR_REPO: $(DetermineMcrRepo.windowsMcrRepo)
+          inputs:
+            targetType: 'inline'
+            script: |
+              echo "Deploying to cluster: ${{ parameters.clusterName }}"
+              echo "  Linux image: $LINUX_MCR_REPO:$LINUX_IMAGE_TAG"
+              echo "  Windows image: $WINDOWS_MCR_REPO:$WINDOWS_IMAGE_TAG"
+              echo ""
+              echo "Finding and patching ama-logs pods in kube-system namespace..."
+              
+              kubectl get pods -n kube-system --no-headers | grep ama-logs | awk '{print $1}' | while read pod_name; do
+                echo "Processing pod: $pod_name"
+                
+                if [[ "$pod_name" =~ ^ama-logs-windows ]]; then
+                  IMG_URL="$WINDOWS_MCR_REPO:$WINDOWS_IMAGE_TAG"
+                  container_name="ama-logs-windows"
+                elif [[ "$pod_name" =~ ^ama-logs-rs ]] || [[ "$pod_name" =~ ^ama-logs-[a-z0-9]{5}$ ]]; then
+                  IMG_URL="$LINUX_MCR_REPO:$LINUX_IMAGE_TAG"
+                  container_name="ama-logs"
+                else
+                  echo "  ⚠ Unknown pod pattern: $pod_name - skipping"
+                  continue
+                fi
+                
+                echo "  → Patching with image: $IMG_URL (container: $container_name)"
+                
+                kubectl patch pod "$pod_name" -n kube-system \
+                  --patch "{\"spec\": {\"containers\": [{\"name\": \"$container_name\", \"image\": \"$IMG_URL\"}]}}" \
+                  && echo "  ✓ Successfully patched $pod_name" \
+                  || echo "  ✗ Failed to patch $pod_name"
+              done
+              
+              echo ""
+              echo "Pod patching complete!"
+              echo "Current ama-logs pods:"
+              kubectl get pods -n kube-system | grep ama-logs
+        
+        # verify ci agent gets the new images
+        # output container start time for log analytics filtering
+        - task: Bash@3
+          name: VerifyPods
+          displayName: 'Wait for pods to be ready with new images'
+          env:
+            LINUX_IMAGE_TAG: ${{ parameters.linuxImageTag }}
+            WINDOWS_IMAGE_TAG: ${{ parameters.windowsImageTag }}
+            LINUX_MCR_REPO: $(DetermineMcrRepo.linuxMcrRepo)
+            WINDOWS_MCR_REPO: $(DetermineMcrRepo.windowsMcrRepo)
+          inputs:
+            targetType: 'inline'
+            script: |
+              chmod +x $(Build.SourcesDirectory)/.pipelines/e2e-test/verify-pod-images.sh
+              $(Build.SourcesDirectory)/.pipelines/e2e-test/verify-pod-images.sh pre-test "$LINUX_IMAGE_TAG" "$WINDOWS_IMAGE_TAG" "$LINUX_MCR_REPO" "$WINDOWS_MCR_REPO"
+              
+              # Export container start time for use in tests
+              if [ -f /tmp/container-deployment-time.env ]; then
+                source /tmp/container-deployment-time.env
+                echo "Container start time captured: $CONTAINER_START_TIME"
+                echo "##vso[task.setvariable variable=CONTAINER_START_TIME;isOutput=true]$CONTAINER_START_TIME"
+              else
+                echo "ERROR: Container start time not found at /tmp/container-deployment-time.env"
+                echo "This is required for Log Analytics query filtering"
+                exit 1
+              fi
+        
+        - task: Bash@3
+          displayName: 'Wait for logs to be ingested into Log Analytics (20 min)'
+          inputs:
+            targetType: 'inline'
+            script: |
+              echo "========================================"
+              echo "Waiting for Log Analytics Ingestion"
+              echo "========================================"
+              echo "Cluster: ${{ parameters.clusterName }}"
+              echo "Container start time: $(VerifyPods.CONTAINER_START_TIME)"
+              echo ""
+              echo "Waiting 20 minutes to allow logs to be ingested..."
+              echo "This ensures queries will find logs from the newly deployed containers."
+              echo ""
+              
+              wait_time=1200
+              interval=60
+              elapsed=0
+              
+              while [ $elapsed -lt $wait_time ]; do
+                remaining=$((wait_time - elapsed))
+                minutes_elapsed=$((elapsed / 60))
+                minutes_remaining=$((remaining / 60))
+                echo "⏳ Waiting... ($minutes_elapsed/$((wait_time / 60)) minutes elapsed, $minutes_remaining minutes remaining)"
+                sleep $interval
+                elapsed=$((elapsed + interval))
+              done
+              
+              echo ""
+              echo "✓ Wait complete! Logs should now be available in Log Analytics."
+              echo "✓ Tests will query logs with filter: TimeGenerated > datetime('$(VerifyPods.CONTAINER_START_TIME)')"
+              echo "========================================"
+        # TODO (improvement): container start time is captured in previous step, but not used for now. Consider passing container start time to test script to use in log queries
+        - bash: |
+            # Pass container start time to tests
+            export CONTAINER_START_TIME="$(VerifyPods.CONTAINER_START_TIME)"
+            echo "Running tests for cluster: ${{ parameters.clusterName }}"
+            echo "Container start time: $CONTAINER_START_TIME"
+            
+            chmod +x ./install-and-execute-testkube-tests.sh
+            ./install-and-execute-testkube-tests.sh \
+              AzureClientId=${{ parameters.azureClientId }} \
+              AzureTenantId=${{ parameters.azureTenantId }} \
+              TeamsWebhookUri=${{ parameters.teamsWebhookUri }} \
+              ${{ parameters.additionalTestParams }}
+          workingDirectory: $(Build.SourcesDirectory)/test/testkube/
+          displayName: 'Install Testkube and run E2E tests'
+        
+        - task: Bash@3
+          displayName: 'Verify images remained stable after tests'
+          condition: always()
+          env:
+            LINUX_IMAGE_TAG: ${{ parameters.linuxImageTag }}
+            WINDOWS_IMAGE_TAG: ${{ parameters.windowsImageTag }}
+            LINUX_MCR_REPO: $(DetermineMcrRepo.linuxMcrRepo)
+            WINDOWS_MCR_REPO: $(DetermineMcrRepo.windowsMcrRepo)
+          inputs:
+            targetType: 'inline'
+            script: |
+              chmod +x $(Build.SourcesDirectory)/.pipelines/e2e-test/verify-pod-images.sh
+              $(Build.SourcesDirectory)/.pipelines/e2e-test/verify-pod-images.sh post-test "$LINUX_IMAGE_TAG" "$WINDOWS_IMAGE_TAG" "$LINUX_MCR_REPO" "$WINDOWS_MCR_REPO"
+        
+        # Log deployment completion
+        - bash: |
+            echo "========================================="
+            echo "DEPLOYMENT COMPLETE"
+            echo "========================================="
+            echo "Cluster: ${{ parameters.clusterName }}"
+            echo "Build ID: $(Build.BuildId)"
+            echo "✓ Deployment finished for: ${{ parameters.clusterName }}"
+            echo "========================================="
+          displayName: 'Deployment Completion'
+          condition: always()

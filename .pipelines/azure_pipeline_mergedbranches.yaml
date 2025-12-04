@@ -42,7 +42,15 @@ extends:
     customBuildTags:
     - ES365AIMigrationTooling
     stages:
-    - stage: stage
+    # This stage will be skipped when LinuxImageOverride and WindowsImageOverride are both set
+    # This feature allows bypassing the build stage when using pre-built images for testing, which saves time and resources.
+    - stage: Build_And_Publish_Images
+      displayName: 'Build and Publish Container Images'
+      condition: |
+        or(
+          eq(variables['LinuxImageOverride'], ''),
+          eq(variables['WindowsImageOverride'], '')
+        )
       jobs:
       - job: common
         pool:
@@ -881,3 +889,60 @@ extends:
             FileDirPath: '$(Build.ArtifactStagingDirectory)'
             DisableRemediation: false
             AcceptableOutdatedSignatureInHours: 72
+    - stage: Deploy_and_Test_Images_In_Dev_Clusters
+      displayName: Deploy and Test Images in Dev Clusters
+      lockBehavior: sequential
+      dependsOn: 
+        - Build_And_Publish_Images
+      # Deploy runs when Build succeeds OR when Build is skipped with valid overrides
+      # TODO: remove eq(variables['Build.SourceBranch'], 'refs/heads/zane/ci-agent-auto-deploy'),
+      # this stage runs when Build_And_Publish_Images succeeds or is skipped with valid overrides.
+      condition: |
+        and(
+          or(
+            eq(variables['Build.SourceBranch'], 'refs/heads/ci_prod'),
+            eq(variables['Build.SourceBranch'], 'refs/heads/zane/ci-agent-auto-deploy'),
+            contains(variables['Build.SourceBranch'], 'run-e2e')
+          ),
+          or(
+            eq(dependencies.Build_And_Publish_Images.result, 'Succeeded'),
+            and(
+              eq(dependencies.Build_And_Publish_Images.result, 'Skipped'),
+              ne(variables['LinuxImageOverride'], ''),
+              ne(variables['WindowsImageOverride'], '')
+            )
+          )
+        )
+      variables:
+        # Use images built from previous build stage by default
+        # To override: Set pipeline variables 'LinuxImageOverride' and 'WindowsImageOverride' when queuing
+        linuxImageTagUnderTest: $[coalesce(variables['LinuxImageOverride'], stageDependencies.Build_And_Publish_Images.common.outputs['setup.linuxImagetag'])]
+        windowsImageTagUnderTest: $[coalesce(variables['WindowsImageOverride'], stageDependencies.Build_And_Publish_Images.common.outputs['setup.windowsImageTag'])]
+      jobs:
+      # TODO: gradually add more clusters from test automation framework when the tests are stable
+      # TODO: TeamsWebhookUri to be added
+      # Cluster 1: zane-test Cluster
+      - template: /.pipelines/e2e-test/azure-template-deploy-and-test-ci-image-in-aks-cluster.yml@self
+        parameters:
+          clusterName: 'zane-test'
+          resourceGroup: 'zane-test'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+          environmentName: 'CI-Agent-Dev'
+          linuxImageTag: $(linuxImageTagUnderTest)
+          windowsImageTag: $(windowsImageTagUnderTest)
+          azureClientId: $(AksZaneTestClientId)
+          azureTenantId: $(AzureZaneTestTenantId)
+          teamsWebhookUri: $(TeamsWebhookUri)
+
+      # Cluster 2: zane-test2 Cluster
+      - template: /.pipelines/e2e-test/azure-template-deploy-and-test-ci-image-in-aks-cluster.yml@self
+        parameters:
+          clusterName: 'zane-test2'
+          resourceGroup: 'zane-test'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+          environmentName: 'CI-Agent-Dev2'
+          linuxImageTag: $(linuxImageTagUnderTest)
+          windowsImageTag: $(windowsImageTagUnderTest)
+          azureClientId: $(AksZaneTest2ClientId)
+          azureTenantId: $(AzureZaneTestTenantId)
+          teamsWebhookUri: $(TeamsWebhookUri)
