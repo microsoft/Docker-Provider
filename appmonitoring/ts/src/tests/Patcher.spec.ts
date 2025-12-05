@@ -2499,4 +2499,107 @@ describe("Patcher", () => {
             expect(container.env.length).toBeGreaterThan(0); // Should still have env vars
         });
     });
+
+    describe("OTEL Metrics Environment Variables", () => {
+        it("should restore customer's OTEL metrics env vars during unmutation when they had custom values", async () => {
+            // ASSUME - Start with deployment that has custom metrics values
+            const initialAdmissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestDeployment2));
+            const platforms = [AutoInstrumentationPlatforms.Java];
+            const podInfo: PodInfo = <PodInfo>{
+                namespace: "default",
+                ownerName: "deployment1",
+                ownerKind: "Deployment",
+                ownerUid: "ownerUid"
+            };
+
+            // Add customer's custom metrics env vars to initial deployment
+            const container = initialAdmissionReview.request.object.spec.template.spec.containers[0];
+            if (!container.env) {
+                container.env = [];
+            }
+            container.env.push(
+                {
+                    name: "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE",
+                    value: "cumulative" // customer's custom value
+                },
+                {
+                    name: "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
+                    value: "explicit_bucket_histogram" // customer's custom value
+                }
+            );
+
+            // ACT - Patch with metrics enabled
+            const mutatedAdmissionReview: IAdmissionReview = JSON.parse(JSON.stringify(initialAdmissionReview));
+            const patchResult: object[] = JSON.parse(JSON.stringify(Patcher.PatchObject(
+                mutatedAdmissionReview.request.object,
+                cr,
+                podInfo,
+                platforms,
+                clusterArmId,
+                clusterArmRegion,
+                clusterName,
+                testOtelParams
+            )));
+
+            const mutatedDeployment: IObjectType = (<any>patchResult[0]).value as IObjectType;
+            const mutatedContainer = mutatedDeployment.spec.template.spec.containers[0];
+
+            // Verify customer's values were preserved during mutation
+            const mutatedTemporality = mutatedContainer.env.find((env: IEnvironmentVariable) => 
+                env.name === "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE");
+            expect(mutatedTemporality).toBeDefined();
+            expect(mutatedTemporality!.value).toBe("cumulative"); // customer's value preserved
+
+            const mutatedHistogram = mutatedContainer.env.find((env: IEnvironmentVariable) => 
+                env.name === "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION");
+            expect(mutatedHistogram).toBeDefined();
+            expect(mutatedHistogram!.value).toBe("explicit_bucket_histogram"); // customer's value preserved
+
+            // Verify backups were created
+            const backupTemporality = mutatedContainer.env.find((env: IEnvironmentVariable) => 
+                env.name === "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE_BEFORE_AUTO_INSTRUMENTATION");
+            expect(backupTemporality).toBeDefined();
+            expect(backupTemporality!.value).toBe("cumulative");
+
+            const backupHistogram = mutatedContainer.env.find((env: IEnvironmentVariable) => 
+                env.name === "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION_BEFORE_AUTO_INSTRUMENTATION");
+            expect(backupHistogram).toBeDefined();
+            expect(backupHistogram!.value).toBe("explicit_bucket_histogram");
+
+            // ACT - Unpatch: should restore customer's original values
+            const unpatchResult: object[] = JSON.parse(JSON.stringify(Patcher.PatchObject(
+                mutatedDeployment,
+                null,
+                podInfo,
+                [] as AutoInstrumentationPlatforms[],
+                clusterArmId,
+                clusterArmRegion,
+                clusterName,
+                testOtelParams
+            )));
+
+            // ASSERT - Customer's original values should be restored
+            const unpatchedDeployment: IObjectType = (<any>unpatchResult[0]).value as IObjectType;
+            const unpatchedContainer = unpatchedDeployment.spec.template.spec.containers[0];
+
+            const restoredTemporality = unpatchedContainer.env.find((env: IEnvironmentVariable) => 
+                env.name === "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE");
+            expect(restoredTemporality).toBeDefined();
+            expect(restoredTemporality!.value).toBe("cumulative"); // customer's original value restored
+
+            const restoredHistogram = unpatchedContainer.env.find((env: IEnvironmentVariable) => 
+                env.name === "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION");
+            expect(restoredHistogram).toBeDefined();
+            expect(restoredHistogram!.value).toBe("explicit_bucket_histogram"); // customer's original value restored
+
+            // Verify backups were removed
+            const remainingBackupTemporality = unpatchedContainer.env.find((env: IEnvironmentVariable) => 
+                env.name === "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE_BEFORE_AUTO_INSTRUMENTATION");
+            expect(remainingBackupTemporality).toBeUndefined();
+
+            const remainingBackupHistogram = unpatchedContainer.env.find((env: IEnvironmentVariable) => 
+                env.name === "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION_BEFORE_AUTO_INSTRUMENTATION");
+            expect(remainingBackupHistogram).toBeUndefined();
+        });
+    });
 });
