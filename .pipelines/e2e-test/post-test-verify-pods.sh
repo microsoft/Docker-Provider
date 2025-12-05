@@ -55,7 +55,7 @@ for config in "${pod_configs[@]}"; do
   pod_status=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.phase}" 2>/dev/null || echo "Unknown")
   container_ready=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.containerStatuses[?(@.name=='$container_name')].ready}" 2>/dev/null || echo "false")
   
-  echo "Pod: $pod_name"
+  echo "Check pod: $pod_name"
   echo "  Container: $container_name"
   echo "  Expected image: $expected_image"
   echo "  Current image:  $current_image"
@@ -84,7 +84,7 @@ for config in "${pod_configs[@]}"; do
   fi
   
   if [[ "$has_issue" = false ]]; then
-    echo "  ✓ All checks passed"
+    echo "  ✓ Pod: $pod_name passed checks"
   fi
   echo ""
 done

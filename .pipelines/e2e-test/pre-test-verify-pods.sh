@@ -41,14 +41,10 @@ capture_container_start_times() {
   for config in "${pod_configs[@]}"; do
     IFS='|' read -r pod_name expected_image container_name <<< "$config"
     
-    echo "DEBUG: Querying start time for pod $pod_name, container $container_name"
-    
     # Get container start time for the specific container
     local start_time
     start_time=$(kubectl get pod "$pod_name" -n kube-system \
       -o jsonpath="{.status.containerStatuses[?(@.name=='$container_name')].state.running.startedAt}" 2>/dev/null || echo "")
-    
-    echo "DEBUG: Got start_time='$start_time'"
     
     if [ -n "$start_time" ]; then
       echo "  Pod $pod_name container started at: $start_time"
@@ -116,49 +112,36 @@ echo ""
 declare -A pod_ready_status
 for config in "${pod_configs[@]}"; do
   pod_name=$(echo "$config" | cut -d'|' -f1)
-  echo "DEBUG: Initializing pod $pod_name to not ready"
   pod_ready_status["$pod_name"]=false
 done
 
-echo "DEBUG: All pods initialized, starting retry loop"
 attempt=1
-echo "DEBUG: attempt=$attempt, MAX_RETRIES=$MAX_RETRIES"
-echo "DEBUG: Condition check: [ $attempt -le $MAX_RETRIES ] = $([ $attempt -le $MAX_RETRIES ] && echo true || echo false)"
 while [ $attempt -le $MAX_RETRIES ]; do
-  echo "DEBUG: Inside while loop, attempt=$attempt"
-  echo "DEBUG: About to set has_not_ready_pod"
   has_not_ready_pod=false
-  echo "DEBUG: About to set ready_count"
   ready_count=0
-  echo "DEBUG: About to set total_count"
   total_count=${#pod_configs[@]}
-  echo "DEBUG: Initialized loop variables, checking $total_count pods"
   
   # Check each pod
   for config in "${pod_configs[@]}"; do
-    echo "DEBUG: Processing config: $config"
     IFS='|' read -r pod_name expected_image container_name <<< "$config"
-    echo "DEBUG: Parsed - pod=$pod_name, container=$container_name"
+    echo "  Checking pod: $pod_name"
+    echo "    Container: $container_name"
+    echo "    Expected image: $expected_image"
     
     # Skip if already marked as ready
-    echo "DEBUG: Checking if $pod_name already marked ready"
     if [ "${pod_ready_status[$pod_name]}" = "true" ]; then
+      echo " Pod: $pod_name has expected image ready. Skipping check."
       ready_count=$((ready_count + 1))
       continue
     fi
     
-    echo "DEBUG: Getting pod details for $pod_name"
     # Get pod details
     current_image=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.spec.containers[?(@.name=='$container_name')].image}" 2>/dev/null || echo "")
-    echo "DEBUG: current_image='$current_image'"
     pod_status=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.phase}" 2>/dev/null || echo "Unknown")
-    echo "DEBUG: pod_status='$pod_status'"
     container_ready=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.containerStatuses[?(@.name=='$container_name')].ready}" 2>/dev/null || echo "false")
-    echo "DEBUG: container_ready='$container_ready'"
     
     # Check if pod is ready
     if [[ "$current_image" == "$expected_image" ]] && [[ "$pod_status" == "Running" ]] && [[ "$container_ready" == "true" ]]; then
-      echo "DEBUG: Marking $pod_name as ready"
       pod_ready_status["$pod_name"]=true
       ready_count=$((ready_count + 1))
       echo "  ✓ $pod_name - Ready"
