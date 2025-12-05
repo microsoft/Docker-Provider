@@ -141,15 +141,20 @@ while [ $attempt -le $MAX_RETRIES ]; do
     echo "DEBUG: Parsed - pod=$pod_name, container=$container_name"
     
     # Skip if already marked as ready
+    echo "DEBUG: Checking if $pod_name already marked ready"
     if [ "${pod_ready_status[$pod_name]}" = "true" ]; then
       ((ready_count++))
       continue
     fi
     
+    echo "DEBUG: Getting pod details for $pod_name"
     # Get pod details
     current_image=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.spec.containers[?(@.name=='$container_name')].image}" 2>/dev/null || echo "")
+    echo "DEBUG: current_image='$current_image'"
     pod_status=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.phase}" 2>/dev/null || echo "Unknown")
+    echo "DEBUG: pod_status='$pod_status'"
     container_ready=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.containerStatuses[?(@.name=='$container_name')].ready}" 2>/dev/null || echo "false")
+    echo "DEBUG: container_ready='$container_ready'"
     
     # Check if pod is ready
     if [[ "$current_image" == "$expected_image" ]] && [[ "$pod_status" == "Running" ]] && [[ "$container_ready" == "true" ]]; then
