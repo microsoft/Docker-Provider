@@ -143,7 +143,7 @@ while [ $attempt -le $MAX_RETRIES ]; do
     # Skip if already marked as ready
     echo "DEBUG: Checking if $pod_name already marked ready"
     if [ "${pod_ready_status[$pod_name]}" = "true" ]; then
-      ((ready_count++))
+      ready_count=$((ready_count + 1))
       continue
     fi
     
@@ -158,8 +158,9 @@ while [ $attempt -le $MAX_RETRIES ]; do
     
     # Check if pod is ready
     if [[ "$current_image" == "$expected_image" ]] && [[ "$pod_status" == "Running" ]] && [[ "$container_ready" == "true" ]]; then
+      echo "DEBUG: Marking $pod_name as ready"
       pod_ready_status["$pod_name"]=true
-      ((ready_count++))
+      ready_count=$((ready_count + 1))
       echo "  ✓ $pod_name - Ready"
     else
       has_not_ready_pod=true
