@@ -173,21 +173,41 @@ check_all_pods() {
     for config in "${configs_ref[@]}"; do
       IFS='|' read -r pod_name expected_image container_name <<< "$config"
       
-      # Use correct container name from config
+      # Get pod details
       current_image=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.spec.containers[?(@.name=='$container_name')].image}" 2>/dev/null || echo "ERROR")
       pod_status=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.phase}" 2>/dev/null || echo "Unknown")
+      container_ready=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.containerStatuses[?(@.name=='$container_name')].ready}" 2>/dev/null || echo "false")
       
       echo "Pod: $pod_name"
       echo "  Container: $container_name"
       echo "  Expected image: $expected_image"
       echo "  Current image:  $current_image"
       echo "  Pod status: $pod_status"
+      echo "  Container ready: $container_ready"
+      
+      # Check for any issues
+      local has_issue=false
       
       if [[ "$current_image" != "$expected_image" ]]; then
-        echo "  ✗ IMAGE MISMATCH DETECTED!"
-        mismatches+=("$pod_name: expected '$expected_image' but found '$current_image'")
-      else
-        echo "  ✓ Image is correct"
+        echo "  ✗ IMAGE MISMATCH!"
+        mismatches+=("$pod_name: expected image '$expected_image' but found '$current_image'")
+        has_issue=true
+      fi
+      
+      if [[ "$pod_status" != "Running" ]]; then
+        echo "  ✗ POD NOT RUNNING!"
+        mismatches+=("$pod_name: pod status is '$pod_status' (expected 'Running')")
+        has_issue=true
+      fi
+      
+      if [[ "$container_ready" != "true" ]]; then
+        echo "  ✗ CONTAINER NOT READY!"
+        mismatches+=("$pod_name: container '$container_name' is not ready")
+        has_issue=true
+      fi
+      
+      if [[ "$has_issue" = false ]]; then
+        echo "  ✓ All checks passed"
       fi
       echo ""
     done
