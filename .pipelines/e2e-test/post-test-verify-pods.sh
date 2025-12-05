@@ -22,7 +22,7 @@ WINDOWS_IMAGE="$WINDOWS_MCR_REPO:$WINDOWS_IMAGE_TAG"
 
 # Source shared functions
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/pod-verification-common.sh"
+source "$SCRIPT_DIR/util.sh"
 
 echo "================================"
 echo "Post-Test Pod Verification"
