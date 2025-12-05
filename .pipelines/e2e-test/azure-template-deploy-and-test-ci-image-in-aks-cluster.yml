@@ -162,9 +162,7 @@ jobs:
               kubectl get pods -n kube-system | grep ama-logs
         
         # Pre-test verification: Wait for pods to be ready with new images
-        # Outputs container start time for Log Analytics query filtering
         - task: Bash@3
-          name: VerifyPods
           displayName: 'Pre-Test: Wait for pods to be ready with new images'
           env:
             LINUX_IMAGE_TAG: ${{ parameters.linuxImageTag }}
@@ -174,8 +172,23 @@ jobs:
           inputs:
             targetType: 'inline'
             script: |
-              chmod +x $(Build.SourcesDirectory)/.pipelines/e2e-test/pre-test-verify-pods.sh
-              $(Build.SourcesDirectory)/.pipelines/e2e-test/pre-test-verify-pods.sh "$LINUX_IMAGE_TAG" "$WINDOWS_IMAGE_TAG" "$LINUX_MCR_REPO" "$WINDOWS_MCR_REPO"
+              chmod +x $(Build.SourcesDirectory)/.pipelines/e2e-test/verify-ci-images-before-test.sh
+              $(Build.SourcesDirectory)/.pipelines/e2e-test/verify-ci-images-before-test.sh "$LINUX_IMAGE_TAG" "$WINDOWS_IMAGE_TAG" "$LINUX_MCR_REPO" "$WINDOWS_MCR_REPO"
+        
+        # Capture container start times for Log Analytics query filtering
+        - task: Bash@3
+          name: CaptureStartTime
+          displayName: 'Capture container start times for Log Analytics filtering'
+          env:
+            LINUX_IMAGE_TAG: ${{ parameters.linuxImageTag }}
+            WINDOWS_IMAGE_TAG: ${{ parameters.windowsImageTag }}
+            LINUX_MCR_REPO: $(DetermineMcrRepo.linuxMcrRepo)
+            WINDOWS_MCR_REPO: $(DetermineMcrRepo.windowsMcrRepo)
+          inputs:
+            targetType: 'inline'
+            script: |
+              chmod +x $(Build.SourcesDirectory)/.pipelines/e2e-test/capture-container-start-time.sh
+              $(Build.SourcesDirectory)/.pipelines/e2e-test/capture-container-start-time.sh "$LINUX_IMAGE_TAG" "$WINDOWS_IMAGE_TAG" "$LINUX_MCR_REPO" "$WINDOWS_MCR_REPO"
               
               # Export container start time for use in tests
               if [ -f /tmp/container-deployment-time.env ]; then
@@ -197,7 +210,7 @@ jobs:
               echo "Waiting for Log Analytics Ingestion"
               echo "========================================"
               echo "Cluster: ${{ parameters.clusterName }}"
-              echo "Container start time: $(VerifyPods.CONTAINER_START_TIME)"
+              echo "Container start time: $(CaptureStartTime.CONTAINER_START_TIME)"
               echo ""
               echo "Waiting 20 minutes to allow logs to be ingested..."
               echo "This ensures queries will find logs from the newly deployed containers."
@@ -218,12 +231,12 @@ jobs:
               
               echo ""
               echo "✓ Wait complete! Logs should now be available in Log Analytics."
-              echo "✓ Tests will query logs with filter: TimeGenerated > datetime('$(VerifyPods.CONTAINER_START_TIME)')"
+              echo "✓ Tests will query logs with filter: TimeGenerated > datetime('$(CaptureStartTime.CONTAINER_START_TIME)')"
               echo "========================================"
         # TODO (improvement): container start time is captured in previous step, but not used for now. Consider passing container start time to test script to use in log queries
         - bash: |
             # Pass container start time to tests
-            export CONTAINER_START_TIME="$(VerifyPods.CONTAINER_START_TIME)"
+            export CONTAINER_START_TIME="$(CaptureStartTime.CONTAINER_START_TIME)"
             echo "Running tests for cluster: ${{ parameters.clusterName }}"
             echo "Container start time: $CONTAINER_START_TIME"
             
@@ -248,8 +261,8 @@ jobs:
           inputs:
             targetType: 'inline'
             script: |
-              chmod +x $(Build.SourcesDirectory)/.pipelines/e2e-test/post-test-verify-pods.sh
-              $(Build.SourcesDirectory)/.pipelines/e2e-test/post-test-verify-pods.sh "$LINUX_IMAGE_TAG" "$WINDOWS_IMAGE_TAG" "$LINUX_MCR_REPO" "$WINDOWS_MCR_REPO"
+              chmod +x $(Build.SourcesDirectory)/.pipelines/e2e-test/verify-ci-images-after-test.sh
+              $(Build.SourcesDirectory)/.pipelines/e2e-test/verify-ci-images-after-test.sh "$LINUX_IMAGE_TAG" "$WINDOWS_IMAGE_TAG" "$LINUX_MCR_REPO" "$WINDOWS_MCR_REPO"
         
         # Log deployment completion
         - bash: |
