@@ -124,13 +124,17 @@ while [ $attempt -le $MAX_RETRIES ]; do
   # Check each pod
   for config in "${pod_configs[@]}"; do
     IFS='|' read -r pod_name expected_image container_name <<< "$config"
-    echo "  Checking pod: $pod_name"
+    echo ""
+    echo ""
+    echo "  Start checking pod: $pod_name"
     echo "    Container: $container_name"
     echo "    Expected image: $expected_image"
-    
+
     # Skip if already marked as ready
     if [ "${pod_ready_status[$pod_name]}" = "true" ]; then
-      echo " Pod: $pod_name has expected image ready. Skipping check."
+      echo "  Finished checking pod: $pod_name"
+      echo "    Pod: $pod_name has expected image ready. Skipping check."
+      echo "    ✓ $pod_name - Ready"
       ready_count=$((ready_count + 1))
       continue
     fi
@@ -144,13 +148,20 @@ while [ $attempt -le $MAX_RETRIES ]; do
     if [[ "$current_image" == "$expected_image" ]] && [[ "$pod_status" == "Running" ]] && [[ "$container_ready" == "true" ]]; then
       pod_ready_status["$pod_name"]=true
       ready_count=$((ready_count + 1))
-      echo "  ✓ $pod_name - Ready"
+      echo "  Finished checking pod: $pod_name"
+      echo "    Image: $current_image"
+      echo "    Expected image: $expected_image"
+      echo "    Status: $pod_status"
+      echo "    Container ready: $container_ready"
+      echo "    ✓ $pod_name - Ready"
     else
       has_not_ready_pod=true
-      echo "  ⏳ $pod_name - Waiting (Status: $pod_status, Container ready: $container_ready)"
+      echo "  Finished checking pod: $pod_name"
+      echo "    ⏳ $pod_name - Waiting (Status: $pod_status, Container ready: $container_ready)"
       if [[ "$current_image" != "$expected_image" ]]; then
-        echo "      Image mismatch: expected $expected_image, got $current_image"
+        echo "    Image mismatch: expected $expected_image, got $current_image"
       fi
+      echo "    x $pod_name - NOT Ready"
     fi
   done
   
