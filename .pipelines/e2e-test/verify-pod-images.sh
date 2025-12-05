@@ -47,7 +47,7 @@ echo ""
 check_all_pods() {
   local -n configs_ref=$1  # Use different name to avoid circular reference
   local max_retries=${2:-0}  # Default to 0 (instant check, no retry)
-  local check_interval=15  # Wait 15 seconds between retries
+  local check_interval=60  # Wait 60 seconds between retries
   
   if [ $max_retries -gt 0 ]; then
     # Wait mode (pre-test): Monitor pods with retries
@@ -70,7 +70,7 @@ check_all_pods() {
     done
     
     while [ $attempt -le $max_retries ]; do
-      local all_ready=true
+      local has_not_ready_pod=false
       local ready_count=0
       local total_count=${#configs_ref[@]}
       
@@ -99,14 +99,10 @@ check_all_pods() {
           ((ready_count++))
           echo "  ✓ $pod_name - Ready"
         else
-          all_ready=false
-          
-          # Show status for pods that aren't ready yet
-          if [ $((attempt % 4)) -eq 1 ] || [ $attempt -eq 1 ]; then  # Log every 60 seconds
-            echo "  ⏳ $pod_name - Waiting (Status: $pod_status, Container ready: $container_ready)"
-            if [[ "$current_image" != "$expected_image" ]]; then
-              echo "      Image mismatch: expected $expected_image, got $current_image"
-            fi
+          has_not_ready_pod=true
+          echo "  ⏳ $pod_name - Waiting (Status: $pod_status, Container ready: $container_ready)"
+          if [[ "$current_image" != "$expected_image" ]]; then
+            echo "      Image mismatch: expected $expected_image, got $current_image"
           fi
         fi
       done
@@ -120,15 +116,13 @@ check_all_pods() {
       local minutes_remaining=$((remaining_seconds / 60))
       local seconds_remaining=$((remaining_seconds % 60))
       
-      if [ $((attempt % 4)) -eq 1 ] || [ $attempt -eq 1 ] || [ "$all_ready" = true ]; then
-        echo ""
-        echo "Attempt $attempt/$max_retries (${minutes_elapsed}m${seconds_elapsed}s elapsed, ${minutes_remaining}m${seconds_remaining}s remaining)"
-        echo "Progress: $ready_count/$total_count pods ready"
-        echo ""
-      fi
+      echo ""
+      echo "Attempt $attempt/$max_retries (${minutes_elapsed}m${seconds_elapsed}s elapsed, ${minutes_remaining}m${seconds_remaining}s remaining)"
+      echo "Progress: $ready_count/$total_count pods ready"
+      echo ""
       
       # Exit early if all pods are ready
-      if [ "$all_ready" = true ]; then
+      if [ "$has_not_ready_pod" = false ]; then
         echo "================================"
         echo "✓ SUCCESS: All pods are ready!"
         echo "================================"
@@ -241,8 +235,8 @@ echo ""
 
 # Use different check based on mode
 if [ "$MODE" = "pre-test" ]; then
-  # Pre-test: Wait for all pods to be ready (60 retries × 15s = 15 minutes max)
-  if ! check_all_pods pod_configs 60; then
+  # Pre-test: Wait for all pods to be ready (15 retries × 60s = 15 minutes max)
+  if ! check_all_pods pod_configs 15; then
     # Function already reports which pods failed
     failed_pods=true
   else
