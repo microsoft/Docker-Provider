@@ -91,6 +91,13 @@ echo ""
 declare -a pod_configs
 build_pod_configs "$LINUX_IMAGE" "$WINDOWS_IMAGE"
 
+# Validate array was populated
+if [ ${#pod_configs[@]} -eq 0 ]; then
+  echo "✗ ERROR: No pods found to verify!"
+  echo "This likely means no ama-logs pods exist in the kube-system namespace."
+  exit 1
+fi
+
 # Wait for all pods to be ready
 echo "================================"
 echo "Waiting for all pods to be ready"
@@ -105,9 +112,11 @@ echo ""
 declare -A pod_ready_status
 for config in "${pod_configs[@]}"; do
   pod_name=$(echo "$config" | cut -d'|' -f1)
+  echo "DEBUG: Initializing pod $pod_name to not ready"
   pod_ready_status["$pod_name"]=false
 done
 
+echo "DEBUG: All pods initialized, starting retry loop"
 attempt=1
 while [ $attempt -le $MAX_RETRIES ]; do
   has_not_ready_pod=false
