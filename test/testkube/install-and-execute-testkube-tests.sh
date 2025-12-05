@@ -24,6 +24,19 @@ echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sour
 sudo apt-get update
 sudo apt-get install -y testkube
 
+echo "Checking for existing Testkube installation..."    
+if helm list -n testkube 2>/dev/null | grep -q testkube; then
+    echo "Found existing Testkube installation. Cleaning up..."
+    helm uninstall testkube -n testkube || true
+    echo "Deleting testkube namespace..."
+    kubectl delete namespace testkube --wait=true --timeout=120s || true
+    echo "Waiting for namespace to fully terminate..."
+    sleep 30
+    echo "Cleanup complete!"
+else
+    echo "No existing Testkube installation found."
+fi
+
 echo "Install testkube on the cluster"
 helm repo add kubeshop https://kubeshop.github.io/helm-charts
 helm repo update
@@ -39,7 +52,7 @@ envsubst < ./testkube-test-crs.yaml > ./testkube-test-crs-updated.yaml
 kubectl apply -f ./testkube-test-crs-updated.yaml
 
 echo "Wait for cluster to be ready"
-sleep 120
+sleep 200
 
 echo "Run testkube tests"
 execution_id=""
