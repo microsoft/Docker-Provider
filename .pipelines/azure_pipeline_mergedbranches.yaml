@@ -889,6 +889,7 @@ extends:
             FileDirPath: '$(Build.ArtifactStagingDirectory)'
             DisableRemediation: false
             AcceptableOutdatedSignatureInHours: 72
+
     - stage: Deploy_and_Test_Images_In_Dev_Clusters
       displayName: Deploy and Test Images in Dev Clusters
       lockBehavior: sequential
