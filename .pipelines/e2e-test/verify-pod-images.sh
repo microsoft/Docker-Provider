@@ -275,10 +275,6 @@ if [ "$MODE" = "pre-test" ]; then
     echo "Final pod status:"
     kubectl get pods -n kube-system | grep ama-logs
     echo ""
-    echo "Image verification:"
-    kubectl get pods -n kube-system -l component=ama-logs-agent -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[0].image}{"\t"}{.status.phase}{"\t"}{.status.containerStatuses[0].ready}{"\n"}{end}' | column -t 2>/dev/null || true
-    
-    echo ""
     echo "================================"
     echo "Container Start Time Capture"
     echo "================================"
@@ -349,9 +345,6 @@ else
     echo ""
     echo "Final pod status:"
     kubectl get pods -n kube-system | grep ama-logs
-    echo ""
-    echo "Image summary:"
-    kubectl get pods -n kube-system -l component=ama-logs-agent -o custom-columns=NAME:.metadata.name,IMAGE:.spec.containers[0].image,STATUS:.status.phase,READY:.status.containerStatuses[0].ready 2>/dev/null || true
     exit 0
   else
     echo "✗ FAILURE: Some pods changed images during test execution!"
