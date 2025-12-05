@@ -76,9 +76,9 @@ check_all_pods() {
       
       # Check each pod in this iteration
       for config in "${configs_ref[@]}"; do
-        echo "  [DEBUG] Raw config string: '$config'"
+        echo "  Raw config string: '$config'"
         IFS='|' read -r pod_name expected_image container_name <<< "$config"
-        echo "  [DEBUG] Parsed values:"
+        echo "  Parsed values:"
         echo "    pod_name='$pod_name'"
         echo "    expected_image='$expected_image'"
         echo "    container_name='$container_name'"
@@ -89,29 +89,10 @@ check_all_pods() {
           continue
         fi
         
-        # DEBUG: Try alternative methods to get the image
-        # Method 1: Original jsonpath (what we've been using)
-        echo "  [DEBUG] Attempting kubectl jsonpath query..."
         current_image=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.spec.containers[?(@.name=='$container_name')].image}" 2>/dev/null || echo "")
-        echo "  [DEBUG] Method 1 result: '$current_image'"
-        
-        # Method 2: If method 1 is empty, try getting first container image
-        if [ -z "$current_image" ]; then
-          current_image=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.spec.containers[0].image}" 2>/dev/null || echo "")
-          echo "  [DEBUG] Method 1 (jsonpath filter) returned empty, trying method 2 (first container)"
-          echo "  [DEBUG] Method 2 result: $current_image"
-        fi
-        
-        # Method 3: If still empty, try go-template
-        if [ -z "$current_image" ]; then
-          current_image=$(kubectl get pod "$pod_name" -n kube-system -o go-template='{{range .spec.containers}}{{if eq .name "'"$container_name"'"}}{{.image}}{{end}}{{end}}' 2>/dev/null || echo "")
-          echo "  [DEBUG] Method 2 also empty, trying method 3 (go-template)"
-          echo "  [DEBUG] Method 3 result: $current_image"
-        fi
         
         pod_status=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.phase}" 2>/dev/null || echo "Unknown")
         
-        # Try similar methods for container ready
         container_ready=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.containerStatuses[?(@.name=='$container_name')].ready}" 2>/dev/null || echo "")
         if [ -z "$container_ready" ]; then
           container_ready=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.containerStatuses[0].ready}" 2>/dev/null || echo "false")
@@ -179,9 +160,9 @@ check_all_pods() {
     for config in "${configs_ref[@]}"; do
       IFS='|' read -r pod_name expected_image container_name <<< "$config"
       if [ "${pod_ready_status[$pod_name]}" != "true" ]; then
-        current_image=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.spec.containers[0].image}" 2>/dev/null || echo "ERROR")
+        current_image=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.spec.containers[?(@.name=='$container_name')].image}" 2>/dev/null || echo "ERROR")
         pod_status=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.phase}" 2>/dev/null || echo "Unknown")
-        container_ready=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.containerStatuses[0].ready}" 2>/dev/null || echo "false")
+        container_ready=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.containerStatuses[?(@.name=='$container_name')].ready}" 2>/dev/null || echo "false")
         
         echo "  ✗ $pod_name"
         echo "      Expected image: $expected_image"
@@ -203,8 +184,8 @@ check_all_pods() {
     for config in "${configs_ref[@]}"; do
       IFS='|' read -r pod_name expected_image container_name <<< "$config"
       
-      # Use first container image as fallback
-      current_image=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.spec.containers[0].image}" 2>/dev/null || echo "ERROR")
+      # Use correct container name from config
+      current_image=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.spec.containers[?(@.name=='$container_name')].image}" 2>/dev/null || echo "ERROR")
       pod_status=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.phase}" 2>/dev/null || echo "Unknown")
       
       echo "Pod: $pod_name"
