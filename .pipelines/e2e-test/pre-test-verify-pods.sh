@@ -29,6 +29,50 @@ MAX_WAIT_MINUTES=$((MAX_RETRIES * CHECK_INTERVAL / 60))
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/util.sh"
 
+# Function to capture container start times
+capture_container_start_times() {
+  echo "================================"
+  echo "Container Start Time Capture"
+  echo "================================"
+  echo "Capturing LATEST container start time for Log Analytics queries..."
+  
+  local latest_start_time=""
+  
+  for config in "${pod_configs[@]}"; do
+    IFS='|' read -r pod_name expected_image container_name <<< "$config"
+    
+    # Get container start time for the specific container
+    local start_time
+    start_time=$(kubectl get pod "$pod_name" -n kube-system \
+      -o jsonpath="{.status.containerStatuses[?(@.name=='$container_name')].state.running.startedAt}" 2>/dev/null || echo "")
+    
+    if [ -n "$start_time" ]; then
+      echo "  Pod $pod_name container started at: $start_time"
+      
+      # Track LATEST time (lexicographically later in ISO 8601 format)
+      if [ -z "$latest_start_time" ] || [[ "$start_time" > "$latest_start_time" ]]; then
+        latest_start_time="$start_time"
+      fi
+    else
+      echo "✗ ERROR: Could not determine container start time for pod $pod_name (container: $container_name)"
+      echo "This is required for Log Analytics query filtering"
+      exit 1
+    fi
+  done
+  
+  if [ -n "$latest_start_time" ]; then
+    # Export for use in tests
+    echo "CONTAINER_START_TIME=$latest_start_time" > /tmp/container-deployment-time.env
+    echo ""
+    echo "✓ LATEST container start time: $latest_start_time"
+    echo "✓ Saved to /tmp/container-deployment-time.env"
+    echo "✓ Log Analytics queries should filter: TimeGenerated > datetime('$latest_start_time')"
+  else
+    echo "✗ ERROR: Could not determine container start times"
+    exit 1
+  fi
+}
+
 echo "================================"
 echo "Pre-Test Pod Verification"
 echo "================================"
@@ -163,55 +207,3 @@ echo ""
 echo "Final pod status:"
 kubectl get pods -n kube-system | grep ama-logs
 exit 1
-
-
-
-
-# Function to capture container start times
-capture_container_start_times() {
-  echo "================================"
-  echo "Container Start Time Capture"
-  echo "================================"
-  echo "Capturing LATEST container start time for Log Analytics queries..."
-  
-  local latest_start_time=""
-  
-  for config in "${pod_configs[@]}"; do
-    IFS='|' read -r pod_name expected_image container_name <<< "$config"
-    
-    # Get container start time
-    local start_time
-    start_time=$(kubectl get pod "$pod_name" -n kube-system \
-      -o jsonpath="{.status.containerStatuses[?(@.name=='$container_name')].state.running.startedAt}" 2>/dev/null || echo "")
-    
-    if [ -z "$start_time" ]; then
-      start_time=$(kubectl get pod "$pod_name" -n kube-system \
-        -o jsonpath="{.status.containerStatuses[0].state.running.startedAt}" 2>/dev/null || echo "")
-    fi
-    
-    if [ -n "$start_time" ]; then
-      echo "  Pod $pod_name container started at: $start_time"
-      
-      # Track LATEST time (lexicographically later in ISO 8601 format)
-      if [ -z "$latest_start_time" ] || [[ "$start_time" > "$latest_start_time" ]]; then
-        latest_start_time="$start_time"
-      fi
-    else
-      echo "✗ ERROR: Could not determine container start time for pod $pod_name (container: $container_name)"
-      echo "This is required for Log Analytics query filtering"
-      exit 1
-    fi
-  done
-  
-  if [ -n "$latest_start_time" ]; then
-    # Export for use in tests
-    echo "CONTAINER_START_TIME=$latest_start_time" > /tmp/container-deployment-time.env
-    echo ""
-    echo "✓ LATEST container start time: $latest_start_time"
-    echo "✓ Saved to /tmp/container-deployment-time.env"
-    echo "✓ Log Analytics queries should filter: TimeGenerated > datetime('$latest_start_time')"
-  else
-    echo "✗ ERROR: Could not determine container start times"
-    exit 1
-  fi
-}
