@@ -161,11 +161,11 @@ jobs:
               echo "Current ama-logs pods:"
               kubectl get pods -n kube-system | grep ama-logs
         
-        # verify ci agent gets the new images
-        # output container start time for log analytics filtering
+        # Pre-test verification: Wait for pods to be ready with new images
+        # Outputs container start time for Log Analytics query filtering
         - task: Bash@3
           name: VerifyPods
-          displayName: 'Wait for pods to be ready with new images'
+          displayName: 'Pre-Test: Wait for pods to be ready with new images'
           env:
             LINUX_IMAGE_TAG: ${{ parameters.linuxImageTag }}
             WINDOWS_IMAGE_TAG: ${{ parameters.windowsImageTag }}
@@ -174,8 +174,8 @@ jobs:
           inputs:
             targetType: 'inline'
             script: |
-              chmod +x $(Build.SourcesDirectory)/.pipelines/e2e-test/verify-pod-images.sh
-              $(Build.SourcesDirectory)/.pipelines/e2e-test/verify-pod-images.sh pre-test "$LINUX_IMAGE_TAG" "$WINDOWS_IMAGE_TAG" "$LINUX_MCR_REPO" "$WINDOWS_MCR_REPO"
+              chmod +x $(Build.SourcesDirectory)/.pipelines/e2e-test/pre-test-verify-pods.sh
+              $(Build.SourcesDirectory)/.pipelines/e2e-test/pre-test-verify-pods.sh "$LINUX_IMAGE_TAG" "$WINDOWS_IMAGE_TAG" "$LINUX_MCR_REPO" "$WINDOWS_MCR_REPO"
               
               # Export container start time for use in tests
               if [ -f /tmp/container-deployment-time.env ]; then
@@ -236,8 +236,9 @@ jobs:
           workingDirectory: $(Build.SourcesDirectory)/test/testkube/
           displayName: 'Install Testkube and run E2E tests'
         
+        # Post-test verification: Check pods are still healthy after test execution
         - task: Bash@3
-          displayName: 'Verify images remained stable after tests'
+          displayName: 'Post-Test: Verify pods remained stable after tests'
           condition: always()
           env:
             LINUX_IMAGE_TAG: ${{ parameters.linuxImageTag }}
@@ -247,8 +248,8 @@ jobs:
           inputs:
             targetType: 'inline'
             script: |
-              chmod +x $(Build.SourcesDirectory)/.pipelines/e2e-test/verify-pod-images.sh
-              $(Build.SourcesDirectory)/.pipelines/e2e-test/verify-pod-images.sh post-test "$LINUX_IMAGE_TAG" "$WINDOWS_IMAGE_TAG" "$LINUX_MCR_REPO" "$WINDOWS_MCR_REPO"
+              chmod +x $(Build.SourcesDirectory)/.pipelines/e2e-test/post-test-verify-pods.sh
+              $(Build.SourcesDirectory)/.pipelines/e2e-test/post-test-verify-pods.sh "$LINUX_IMAGE_TAG" "$WINDOWS_IMAGE_TAG" "$LINUX_MCR_REPO" "$WINDOWS_MCR_REPO"
         
         # Log deployment completion
         - bash: |
