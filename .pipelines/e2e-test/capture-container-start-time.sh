@@ -29,6 +29,10 @@ echo "Container Start Time Capture"
 echo "================================"
 echo "Capturing LATEST container start time for Log Analytics queries..."
 echo ""
+echo "Waiting 60 seconds for Kubernetes API to update container status..."
+sleep 60
+echo "Proceeding with container start time capture..."
+
 
 # Build pod configurations using shared function
 declare -a pod_configs
