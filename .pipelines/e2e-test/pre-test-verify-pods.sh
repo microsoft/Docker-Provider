@@ -41,10 +41,14 @@ capture_container_start_times() {
   for config in "${pod_configs[@]}"; do
     IFS='|' read -r pod_name expected_image container_name <<< "$config"
     
+    echo "DEBUG: Querying start time for pod $pod_name, container $container_name"
+    
     # Get container start time for the specific container
     local start_time
     start_time=$(kubectl get pod "$pod_name" -n kube-system \
       -o jsonpath="{.status.containerStatuses[?(@.name=='$container_name')].state.running.startedAt}" 2>/dev/null || echo "")
+    
+    echo "DEBUG: Got start_time='$start_time'"
     
     if [ -n "$start_time" ]; then
       echo "  Pod $pod_name container started at: $start_time"
@@ -118,7 +122,10 @@ done
 
 echo "DEBUG: All pods initialized, starting retry loop"
 attempt=1
+echo "DEBUG: attempt=$attempt, MAX_RETRIES=$MAX_RETRIES"
+echo "DEBUG: Condition check: [ $attempt -le $MAX_RETRIES ] = $([ $attempt -le $MAX_RETRIES ] && echo true || echo false)"
 while [ $attempt -le $MAX_RETRIES ]; do
+  echo "DEBUG: Inside while loop, attempt=$attempt"
   has_not_ready_pod=false
   ready_count=0
   total_count=${#pod_configs[@]}
