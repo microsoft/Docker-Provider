@@ -126,8 +126,11 @@ echo "DEBUG: attempt=$attempt, MAX_RETRIES=$MAX_RETRIES"
 echo "DEBUG: Condition check: [ $attempt -le $MAX_RETRIES ] = $([ $attempt -le $MAX_RETRIES ] && echo true || echo false)"
 while [ $attempt -le $MAX_RETRIES ]; do
   echo "DEBUG: Inside while loop, attempt=$attempt"
+  echo "DEBUG: About to set has_not_ready_pod"
   has_not_ready_pod=false
+  echo "DEBUG: About to set ready_count"
   ready_count=0
+  echo "DEBUG: About to set total_count"
   total_count=${#pod_configs[@]}
   echo "DEBUG: Initialized loop variables, checking $total_count pods"
   
