@@ -129,10 +129,13 @@ while [ $attempt -le $MAX_RETRIES ]; do
   has_not_ready_pod=false
   ready_count=0
   total_count=${#pod_configs[@]}
+  echo "DEBUG: Initialized loop variables, checking $total_count pods"
   
   # Check each pod
   for config in "${pod_configs[@]}"; do
+    echo "DEBUG: Processing config: $config"
     IFS='|' read -r pod_name expected_image container_name <<< "$config"
+    echo "DEBUG: Parsed - pod=$pod_name, container=$container_name"
     
     # Skip if already marked as ready
     if [ "${pod_ready_status[$pod_name]}" = "true" ]; then
