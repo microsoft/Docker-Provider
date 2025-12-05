@@ -65,7 +65,7 @@ check_all_pods() {
     # Track ready status for each pod
     declare -A pod_ready_status
     for config in "${configs_ref[@]}"; do
-      pod_name=$(echo "$config" | cut -d: -f1)
+      pod_name=$(echo "$config" | cut -d'|' -f1)
       pod_ready_status["$pod_name"]=false
     done
     
@@ -77,7 +77,7 @@ check_all_pods() {
       # Check each pod in this iteration
       for config in "${configs_ref[@]}"; do
         echo "  [DEBUG] Raw config string: '$config'"
-        IFS=':' read -r pod_name expected_image container_name <<< "$config"
+        IFS='|' read -r pod_name expected_image container_name <<< "$config"
         echo "  [DEBUG] Parsed values:"
         echo "    pod_name='$pod_name'"
         echo "    expected_image='$expected_image'"
@@ -177,7 +177,7 @@ check_all_pods() {
     echo ""
     echo "Failed pods:"
     for config in "${configs_ref[@]}"; do
-      IFS=':' read -r pod_name expected_image container_name <<< "$config"
+      IFS='|' read -r pod_name expected_image container_name <<< "$config"
       if [ "${pod_ready_status[$pod_name]}" != "true" ]; then
         current_image=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.spec.containers[0].image}" 2>/dev/null || echo "ERROR")
         pod_status=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.status.phase}" 2>/dev/null || echo "Unknown")
@@ -201,7 +201,7 @@ check_all_pods() {
     echo ""
     
     for config in "${configs_ref[@]}"; do
-      IFS=':' read -r pod_name expected_image container_name <<< "$config"
+      IFS='|' read -r pod_name expected_image container_name <<< "$config"
       
       # Use first container image as fallback
       current_image=$(kubectl get pod "$pod_name" -n kube-system -o jsonpath="{.spec.containers[0].image}" 2>/dev/null || echo "ERROR")
@@ -256,7 +256,8 @@ for pod_name in $pod_list; do
   fi
   
   # Add to configurations for parallel checking
-  pod_configs+=("$pod_name:$expected_image:$container_name")
+  # Use | as delimiter since colons appear in image tags (e.g., ciprod:3.1.31)
+  pod_configs+=("$pod_name|$expected_image|$container_name")
 done
 
 echo "Found ${#pod_configs[@]} pods to verify"
