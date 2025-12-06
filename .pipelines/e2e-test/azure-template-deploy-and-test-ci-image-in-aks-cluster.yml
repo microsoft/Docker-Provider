@@ -158,6 +158,7 @@ jobs:
               
               echo ""
               echo "Pod patching complete!"
+              echo "Current UTC time: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
               echo "Current ama-logs pods:"
               kubectl get pods -n kube-system | grep ama-logs
         
