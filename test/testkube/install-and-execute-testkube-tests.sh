@@ -43,19 +43,6 @@ echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sour
 sudo apt-get update
 sudo apt-get install -y testkube
 
-echo "Checking for existing Testkube installation..."    
-if helm list -n testkube 2>/dev/null | grep -q testkube; then
-    echo "Found existing Testkube installation. Cleaning up..."
-    helm uninstall testkube -n testkube || true
-    echo "Deleting testkube namespace..."
-    kubectl delete namespace testkube --wait=true --timeout=120s || true
-    echo "Waiting for namespace to fully terminate..."
-    sleep 30
-    echo "Cleanup complete!"
-else
-    echo "No existing Testkube installation found."
-fi
-
 echo "Install testkube on the cluster"
 helm repo add kubeshop https://kubeshop.github.io/helm-charts
 helm repo update
@@ -70,7 +57,7 @@ kubectl apply -f ./api-server-permissions.yaml
 kubectl apply -f ./testkube-test-crs.yaml
 
 echo "Wait for cluster to be ready"
-sleep 300
+sleep 120
 
 echo "Run testkube testworkflows"
 workflows=()
@@ -195,16 +182,5 @@ if [[ ${#failed_workflows[@]} -gt 0 ]]; then
     fi
     echo "========================================"
     exit 1
-else
-    echo "All workflows completed successfully."
-    echo "Successful workflows:"
-    for wf in "${successful_workflows[@]}"; do
-        echo "- $wf"
-    done
-    echo "========================================"
 fi
 
-echo "Cleaning up Testkube installation..."
-helm uninstall testkube -n testkube || true
-kubectl delete namespace testkube --wait=true --timeout=120s || true
-echo "Cleanup complete."
