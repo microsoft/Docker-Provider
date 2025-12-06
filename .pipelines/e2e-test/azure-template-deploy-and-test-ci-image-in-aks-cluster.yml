@@ -244,7 +244,7 @@ jobs:
               echo "This ensures queries will find logs from the newly deployed containers."
               echo ""
               
-              wait_time=900 #TODO: change back to 1200 (20 minutes) after testing
+              wait_time=1200 #TODO: change back to 1200 (20 minutes) after testing
               interval=60
               elapsed=0
               
