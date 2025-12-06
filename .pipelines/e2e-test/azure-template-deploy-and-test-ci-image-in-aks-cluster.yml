@@ -161,6 +161,34 @@ jobs:
               echo "Current ama-logs pods:"
               kubectl get pods -n kube-system | grep ama-logs
         
+        # Wait for Kubernetes API to update and pods to begin restarting
+        - task: Bash@3
+          displayName: 'Wait for pod patch to propagate (5 minutes)'
+          inputs:
+            targetType: 'inline'
+            script: |
+              echo "========================================"
+              echo "Waiting for Pod Patch Propagation"
+              echo "========================================"
+              echo ""
+              echo "Waiting 5 minutes"
+              echo ""
+              
+              wait_time=300
+              interval=30
+              elapsed=0
+              
+              while [ $elapsed -lt $wait_time ]; do
+                remaining=$((wait_time - elapsed))
+                echo "⏳ Waiting... ($elapsed/$wait_time seconds elapsed, $remaining seconds remaining)"
+                sleep $interval
+                elapsed=$((elapsed + interval))
+              done
+              
+              echo ""
+              echo "✓ Wait complete! Now checking actual pod readiness status..."
+              echo "========================================"
+        
         # Pre-test verification: Wait for pods to be ready with new images
         - task: Bash@3
           displayName: 'Pre-Test: Wait for pods to be ready with new images'
