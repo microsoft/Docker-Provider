@@ -33,10 +33,10 @@ rules:
   #   resourceNames: [ "ama-logs-rs" ]
   #   verbs: ["get", "patch"]
   # Uncomment below lines for MSI Auth Mode  testing
-  # - apiGroups: [""]
-  #   resources: ["secrets"]
-  #   resourceNames: [ "aad-msi-auth-token" ]
-  #   verbs: ["get", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: [ "aad-msi-auth-token" ]
+    verbs: ["get", "watch"]
   - nonResourceURLs: ["/metrics"]
     verbs: ["get"]
 ---
@@ -313,15 +313,15 @@ data:
   # PROXY.CERT: "Base64 encoded value of Proxy trusted CA cert"
 ---
 # Uncomment below lines for MSI Auth Mode  testing
-# apiVersion: v1
-# kind: Secret
-# metadata:
-#   name: aad-msi-auth-token
-#   namespace: kube-system
-# type: Opaque
-# data:
-#   token: "VALUE_MSI_TOKEN"
-# ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aad-msi-auth-token
+  namespace: kube-system
+type: Opaque
+data:
+  token: "VALUE_MSI_TOKEN"
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -355,41 +355,41 @@ spec:
             value: "3"
       containers:
         # Uncomment below lines for MSI Auth Mode  testing
-        # - name: addon-token-adapter
-        #   command:
-        #     - /addon-token-adapter
-        #   args:
-        #     - --secret-namespace=kube-system
-        #     - --secret-name=aad-msi-auth-token
-        #     - --token-server-listening-port=8888
-        #     - --health-server-listening-port=9999
-        #     - --restart-pod-waiting-minutes-on-broken-connection=240
-        #   # Make sure this matching with version in AKS RP side
-        #   image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.250604.1
-        #   imagePullPolicy: IfNotPresent
-        #   env:
-        #     - name: AZMON_COLLECT_ENV
-        #       value: "false"
-        #   livenessProbe:
-        #     httpGet:
-        #       path: /healthz
-        #       port: 9999
-        #     initialDelaySeconds: 10
-        #     periodSeconds: 60
-        #   resources:
-        #     limits:
-        #       cpu: 500m
-        #       memory: 500Mi
-        #     requests:
-        #       cpu: 100m
-        #       memory: 100Mi
-        #   securityContext:
-        #     capabilities:
-        #       drop:
-        #         - ALL
-        #       add:
-        #         - NET_ADMIN
-        #         - NET_RAW
+        - name: addon-token-adapter
+          command:
+            - /addon-token-adapter
+          args:
+            - --secret-namespace=kube-system
+            - --secret-name=aad-msi-auth-token
+            - --token-server-listening-port=8888
+            - --health-server-listening-port=9999
+            - --restart-pod-waiting-minutes-on-broken-connection=240
+          # Make sure this matching with version in AKS RP side
+          image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.250604.1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: AZMON_COLLECT_ENV
+              value: "false"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9999
+            initialDelaySeconds: 10
+            periodSeconds: 60
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_ADMIN
+                - NET_RAW
         - name: ama-logs
           image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.32"
           imagePullPolicy: IfNotPresent
@@ -440,8 +440,8 @@ spec:
             - name: AZMON_CONTAINERLOGS_ONEAGENT_REGIONS
               value: "koreacentral,norwayeast,eastus2"
             # Uncomment below lines for MSI Auth Mode  testing
-            # - name: USING_AAD_MSI_AUTH
-            #   value: "true"
+            - name: USING_AAD_MSI_AUTH
+              value: "true"
             - name: HOSTNAME
               valueFrom:
                 fieldRef:
@@ -576,8 +576,8 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
             # Uncomment below lines for MSI Auth Mode  testing
-            # - name: USING_AAD_MSI_AUTH
-            #   value: "true"
+            - name: USING_AAD_MSI_AUTH
+              value: "true"
             - name: CLUSTER_CLOUD_ENVIRONMENT
               value: "azurepubliccloud" # Change this to the cloud environment of your cluster
           securityContext:
@@ -1009,41 +1009,41 @@ spec:
         #     - --deployment=ama-logs-rs
         #     - --container=ama-logs
         # Uncomment below lines for MSI Auth Mode  testing
-        # - name: addon-token-adapter
-        #   command:
-        #     - /addon-token-adapter
-        #   args:
-        #     - --secret-namespace=kube-system
-        #     - --secret-name=aad-msi-auth-token
-        #     - --token-server-listening-port=8888
-        #     - --health-server-listening-port=9999
-        #     - --restart-pod-waiting-minutes-on-broken-connection=240
-        #   # Make sure this matching with version in AKS RP side
-        #   image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.250604.1
-        #   imagePullPolicy: IfNotPresent
-        #   env:
-        #     - name: AZMON_COLLECT_ENV
-        #       value: "false"
-        #   livenessProbe:
-        #     httpGet:
-        #       path: /healthz
-        #       port: 9999
-        #     initialDelaySeconds: 10
-        #     periodSeconds: 60
-        #   resources:
-        #     limits:
-        #       cpu: 500m
-        #       memory: 500Mi
-        #     requests:
-        #       cpu: 100m
-        #       memory: 100Mi
-        #   securityContext:
-        #     capabilities:
-        #       drop:
-        #         - ALL
-        #       add:
-        #         - NET_ADMIN
-        #         - NET_RAW
+        - name: addon-token-adapter
+          command:
+            - /addon-token-adapter
+          args:
+            - --secret-namespace=kube-system
+            - --secret-name=aad-msi-auth-token
+            - --token-server-listening-port=8888
+            - --health-server-listening-port=9999
+            - --restart-pod-waiting-minutes-on-broken-connection=240
+          # Make sure this matching with version in AKS RP side
+          image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.250604.1
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: AZMON_COLLECT_ENV
+              value: "false"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9999
+            initialDelaySeconds: 10
+            periodSeconds: 60
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_ADMIN
+                - NET_RAW
         - name: ama-logs
           image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.32"
           imagePullPolicy: IfNotPresent
@@ -1092,8 +1092,8 @@ spec:
             - name: SIDECAR_SCRAPING_ENABLED
               value: "true"
             # Uncomment below lines for MSI Auth Mode  testing
-            # - name: USING_AAD_MSI_AUTH
-            #   value: "true"
+            - name: USING_AAD_MSI_AUTH
+              value: "true"
             # Uncomment below lines when the Addon-resizer VPA enabled
             # - name: RS_ADDON-RESIZER_VPA_ENABLED
             #   value: "true"
@@ -1271,32 +1271,32 @@ spec:
             value: "3"
      containers:
       # Uncomment below lines for MSI Auth Mode  testing
-      #  - name: addon-token-adapter-win
-      #    command:
-      #     - addon-token-adapter-win
-      #    args:
-      #     - --secret-namespace=kube-system
-      #     - --secret-name=aad-msi-auth-token
-      #     - --token-server-listening-port=7777
-      #     - --health-server-listening-port=9999
-      #    image: "mcr.microsoft.com/aks/msi/addon-token-adapter:master.250604.1"
-      #    imagePullPolicy: Always
-      #    livenessProbe:
-      #     httpGet:
-      #       path: /healthz
-      #       port: 9999
-      #     initialDelaySeconds: 10
-      #     periodSeconds: 60
-      #    resources:
-      #     limits:
-      #       memory: 500Mi
-      #     requests:
-      #       cpu: 100m
-      #       memory: 100Mi
-      #    securityContext:
-      #     capabilities:
-      #       add:
-      #         - NET_ADMIN
+       - name: addon-token-adapter-win
+         command:
+          - addon-token-adapter-win
+         args:
+          - --secret-namespace=kube-system
+          - --secret-name=aad-msi-auth-token
+          - --token-server-listening-port=7777
+          - --health-server-listening-port=9999
+         image: "mcr.microsoft.com/aks/msi/addon-token-adapter:master.250604.1"
+         imagePullPolicy: Always
+         livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 9999
+          initialDelaySeconds: 10
+          periodSeconds: 60
+         resources:
+          limits:
+            memory: 500Mi
+          requests:
+            cpu: 100m
+            memory: 100Mi
+         securityContext:
+          capabilities:
+            add:
+              - NET_ADMIN
        - name: ama-logs-windows
          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.32"
          imagePullPolicy: IfNotPresent
@@ -1352,8 +1352,8 @@ spec:
           # - name: REQUIRES_CERT_BOOTSTRAP
           #   value: "true"
           # Uncomment below lines for MSI Auth Mode  testing
-          # - name: USING_AAD_MSI_AUTH
-          #   value: "true"
+          - name: USING_AAD_MSI_AUTH
+            value: "true"
           - name: AZMON_WINDOWS_FLUENT_BIT_ENABLED
             value: "false"
           - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
@@ -1391,9 +1391,9 @@ spec:
             name: azure-json-path
             readOnly: true
           # Uncomment below lines for MSI Auth Mode  testing
-          # - mountPath: C:\etc\IMDS-access-token
-          #   name: imds-token
-          #   readOnly: true
+          - mountPath: C:\etc\IMDS-access-token
+            name: imds-token
+            readOnly: true
          livenessProbe:
           exec:
             command:
@@ -1472,6 +1472,6 @@ spec:
           secretName: ama-logs-adx-secret
           optional: true
       # Uncomment below lines for MSI Auth Mode  testing
-      # - name: imds-token
-      #   secret:
-      #     secretName: aad-msi-auth-token
+      - name: imds-token
+        secret:
+          secretName: aad-msi-auth-token
