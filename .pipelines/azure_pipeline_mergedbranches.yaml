@@ -896,14 +896,19 @@ extends:
       dependsOn: 
         - Build_And_Publish_Images
       # Deploy runs when Build succeeds OR when Build is skipped with valid overrides
-      # TODO: remove eq(variables['Build.SourceBranch'], 'refs/heads/zane/ci-agent-auto-deploy'),
-      # this stage runs when Build_And_Publish_Images succeeds or is skipped with valid overrides.
+      # This stage runs when:
+      # 1. Direct push to ci_prod or zane/ci-agent-auto-deploy or branches containing 'run-e2e'
+      # 2. PR from zane/ci-agent-auto-deploy branch
       condition: |
         and(
           or(
             eq(variables['Build.SourceBranch'], 'refs/heads/ci_prod'),
             eq(variables['Build.SourceBranch'], 'refs/heads/zane/ci-agent-auto-deploy'),
-            contains(variables['Build.SourceBranch'], 'run-e2e')
+            contains(variables['Build.SourceBranch'], 'run-e2e'),
+            and(
+              eq(variables['Build.Reason'], 'PullRequest'),
+              eq(variables['System.PullRequest.SourceBranch'], 'refs/heads/zane/ci-agent-auto-deploy')
+            )
           ),
           or(
             eq(dependencies.Build_And_Publish_Images.result, 'Succeeded'),
