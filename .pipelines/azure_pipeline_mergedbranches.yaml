@@ -908,7 +908,7 @@ extends:
             and(
               eq(variables['Build.Reason'], 'PullRequest'),
               or(
-                eq(variables['System.PullRequest.SourceBranch'], 'refs/heads/zane/ci-agent-auto-deploy'),
+                eq(variables['System.PullRequest.SourceBranch'], 'zane/ci-agent-auto-deploy'),
                 contains(variables['System.PullRequest.SourceBranch'], 'run-e2e')
               )
             )
