@@ -898,7 +898,7 @@ extends:
       # Deploy runs when Build succeeds OR when Build is skipped with valid overrides
       # This stage runs when:
       # 1. Direct push to ci_prod or zane/ci-agent-auto-deploy or branches containing 'run-e2e'
-      # 2. PR from zane/ci-agent-auto-deploy branch
+      # 2. PR from zane/ci-agent-auto-deploy branch OR PR from branch containing 'run-e2e'
       condition: |
         and(
           or(
@@ -907,7 +907,10 @@ extends:
             contains(variables['Build.SourceBranch'], 'run-e2e'),
             and(
               eq(variables['Build.Reason'], 'PullRequest'),
-              eq(variables['System.PullRequest.SourceBranch'], 'refs/heads/zane/ci-agent-auto-deploy')
+              or(
+                eq(variables['System.PullRequest.SourceBranch'], 'refs/heads/zane/ci-agent-auto-deploy'),
+                contains(variables['System.PullRequest.SourceBranch'], 'run-e2e')
+              )
             )
           ),
           or(
