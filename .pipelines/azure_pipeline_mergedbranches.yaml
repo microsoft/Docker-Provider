@@ -44,7 +44,7 @@ extends:
     stages:
     # This stage will be skipped when LinuxImageOverride and WindowsImageOverride are both set
     # This feature allows bypassing the build stage when using pre-built images for testing, which saves time and resources.
-    - stage: Build_And_Publish_Images
+    - stage: stage
       displayName: 'Build and Publish Container Images'
       condition: |
         or(
@@ -894,7 +894,7 @@ extends:
       displayName: Deploy and Test Images in Dev Clusters
       lockBehavior: sequential
       dependsOn: 
-        - Build_And_Publish_Images
+        - stage
       # Deploy runs when Build succeeds OR when Build is skipped with valid overrides
       # This stage runs when:
       # 1. Direct push to ci_prod or zane/ci-agent-auto-deploy or branches containing 'run-e2e'
@@ -914,9 +914,9 @@ extends:
             )
           ),
           or(
-            eq(dependencies.Build_And_Publish_Images.result, 'Succeeded'),
+            eq(dependencies.stage.result, 'Succeeded'),
             and(
-              eq(dependencies.Build_And_Publish_Images.result, 'Skipped'),
+              eq(dependencies.stage.result, 'Skipped'),
               ne(variables['LinuxImageOverride'], ''),
               ne(variables['WindowsImageOverride'], '')
             )
@@ -925,8 +925,8 @@ extends:
       variables:
         # Use images built from previous build stage by default
         # To override: Set pipeline variables 'LinuxImageOverride' and 'WindowsImageOverride' when queuing
-        linuxImageTagUnderTest: $[coalesce(variables['LinuxImageOverride'], stageDependencies.Build_And_Publish_Images.common.outputs['setup.linuxImagetag'])]
-        windowsImageTagUnderTest: $[coalesce(variables['WindowsImageOverride'], stageDependencies.Build_And_Publish_Images.common.outputs['setup.windowsImageTag'])]
+        linuxImageTagUnderTest: $[coalesce(variables['LinuxImageOverride'], stageDependencies.stage.common.outputs['setup.linuxImagetag'])]
+        windowsImageTagUnderTest: $[coalesce(variables['WindowsImageOverride'], stageDependencies.stage.common.outputs['setup.windowsImageTag'])]
       jobs:
       # TODO: gradually add more clusters from test automation framework when the tests are stable
       # TODO: TeamsWebhookUri to be added
