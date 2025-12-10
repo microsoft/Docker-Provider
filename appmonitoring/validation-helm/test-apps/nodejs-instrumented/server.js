@@ -32,6 +32,10 @@ const cowsSoldCounter = meter.createCounter('cows_sold_total', {
   description: 'Total number of cows sold',
 });
 
+const cowsSoldHistogram = meter.createHistogram('cows_sold_total_histogram', {
+  description: 'Request duration for cow sales in milliseconds',
+});
+
 // Winston logger setup with correlation IDs
 const logger = winston.createLogger({
   level: 'debug',
@@ -73,6 +77,7 @@ app.use((req, res, next) => {
     };
     
     cowsSoldCounter.add(1, { cow_type: 'Holstein', endpoint: process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT, protocol: process.env.OTEL_EXPORTER_OTLP_METRICS_PROTOCOL });
+    cowsSoldHistogram.record(duration, { cow_type: 'Holstein' });
     
     // Emit a span for the cow sold event
     const cowSpan = tracer.startSpan('cow_sold_once');
