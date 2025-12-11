@@ -762,6 +762,7 @@ export const TestDeployment2 = {
             "metadata": {
                 "generateName": "quieting-garfish-ibm-ope-7459f598b4-",
                 "namespace": "default",
+                "name": "deployment2",
                 "creationTimestamp": null,
                 "labels": {
                     "app": "quieting-garfish-ibm-ope",
@@ -816,19 +817,7 @@ export const TestDeployment2 = {
                                 "name": "ibm-open-liberty-spring",
                                 "image": "openliberty/open-liberty:springBoot2-ubi-min",
                                 "env": [
-                                    {
-                                        "name": "WLP_LOGGING_CONSOLE_FORMAT",
-                                        "value": "json"
-                                    },
-                                    {
-                                        "name": "WLP_LOGGING_CONSOLE_LOGLEVEL",
-                                        "value": "info"
-                                    },
-                                    {
-                                        "name": "WLP_LOGGING_CONSOLE_SOURCE",
-                                        "value": "message,trace,accessLog,ffdc"
-                                    },
-                                    {
+                                     {
                                         "name": "KUBERNETES_NAMESPACE",
                                         "valueFrom": {
                                             "fieldRef": {
@@ -845,6 +834,18 @@ export const TestDeployment2 = {
                                                 "fieldPath": "status.podIP"
                                             }
                                         }
+                                    },
+                                    {
+                                        "name": "WLP_LOGGING_CONSOLE_FORMAT",
+                                        "value": "json"
+                                    },
+                                    {
+                                        "name": "WLP_LOGGING_CONSOLE_LOGLEVEL",
+                                        "value": "info"
+                                    },
+                                    {
+                                        "name": "WLP_LOGGING_CONSOLE_SOURCE",
+                                        "value": "message,trace,accessLog,ffdc"
                                     },
                                     {
                                         "name": "KEYSTORE_REQUIRED",

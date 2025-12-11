@@ -2,7 +2,7 @@
 const express = require('express');
 const axios = require('axios');
 const winston = require('winston');
-const  { metrics } = require('@opentelemetry/api');
+const  { metrics, trace, SpanStatusCode } = require('@opentelemetry/api');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -12,6 +12,10 @@ const meter = metrics.getMeter('nodejs-test-app', '1.0.0');
 
 const cowsSoldCounter = meter.createCounter('cows_sold_total', {
   description: 'Total number of cows sold',
+});
+
+const cowsSoldHistogram = meter.createHistogram('cows_sold_total_histogram', {
+  description: 'Request duration for cow sales in milliseconds',
 });
 
 // Winston logger setup
@@ -28,20 +32,27 @@ const logger = winston.createLogger({
 
 // Endpoint that calls another app's endpoint
 app.get('/call-target', async (req, res) => {
+  const startTime = Date.now();
   try {
-    cowsSoldCounter.add(1, { cow_type: 'Holstein', endpoint: process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT, protocol: process.env.OTEL_EXPORTER_OTLP_METRICS_PROTOCOL });
+    cowsSoldCounter.add(1, { cow_type: 'Holstein NodeJs', endpoint: process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT, protocol: process.env.OTEL_EXPORTER_OTLP_METRICS_PROTOCOL });
+    
+    const duration = Date.now() - startTime;
+    cowsSoldHistogram.record(duration, { cow_type: 'Holstein NodeJs' });
   
-    // Occasionally throw an error (40% chance)
-    if (Math.random() < 0.4) {
-      logger.error('Simulated error at /call-target');
+    // Occasionally simulate an error (20% chance)
+    if (Math.random() < 0.2) {
+      const error = new Error('Simulated error - this will be recorded in OTel but not crash the app');
+      logger.error(`Simulated error at /call-target: ${error.message}`);
       
-      // Throw unhandled exception asynchronously
-      setImmediate(() => {
-        throw new Error('Unhandled async error - server should continue');
-      });
+      // Get the current active span (auto-created by OTel instrumentation) and record the error
+      const span = trace.getActiveSpan();
+      if (span) {
+        span.recordException(error);
+        span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
+      }
       
-      // Still respond to the client
-      res.status(500).json({ message: 'Error triggered asynchronously' });
+      // Respond to the client
+      res.status(500).json({ message: 'Error triggered', error: error.message });
       return;
     }
     
@@ -50,14 +61,26 @@ app.get('/call-target', async (req, res) => {
     res.json({ message: 'Success', data: response.data });
   } catch (error) {
     logger.error(`Error calling target: ${error.message}`);
+    
+    // Record the exception in the active span
+    const span = trace.getActiveSpan();
+    if (span) {
+      span.recordException(error);
+      span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
+    }
+    
     res.status(500).json({ message: 'Error calling target', error: error.message });
   }
 });
 
 app.get('/', (req, res) => {
+  const startTime = Date.now();
   logger.info('Root endpoint hit');
 
   cowsSoldCounter.add(1, { cow_type: 'Holstein', endpoint: process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT, protocol: process.env.OTEL_EXPORTER_OTLP_METRICS_PROTOCOL });
+  
+  const duration = Date.now() - startTime;
+  cowsSoldHistogram.record(duration, { cow_type: 'Holstein' });
     
   res.send('Node.js test server is running.');
 });

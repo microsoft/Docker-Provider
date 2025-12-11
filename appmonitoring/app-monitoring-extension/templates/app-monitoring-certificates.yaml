@@ -13,10 +13,10 @@ webhooks:
 {{- end }}
 {{- $secret := lookup "v1" "Secret" "kube-system" "app-monitoring-webhook-cert" }}
 {{- if not ($secret) }}
----
+{{- printf "\n---\n" }}
 {{- include (print $.Template.BasePath "/ensureExistsResources/_app-monitoring-secrets.yaml") . }}
 {{- else }}
----
+{{- printf "\n---\n" }}
 apiVersion: v1
 kind: Secret
 metadata:

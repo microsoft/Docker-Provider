@@ -8,9 +8,10 @@ WORKDIR /app
 
 # Copy the application files
 COPY app.py /app/
+COPY requirements.txt /app/
 
-# Install Flask
-RUN pip install flask requests
+# Install dependencies
+RUN pip install -r requirements.txt
 
 # Expose port
 EXPOSE 3001

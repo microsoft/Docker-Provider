@@ -147,7 +147,6 @@ export class Mutator {
         const podInfo: PodInfo = new PodInfo();
 
         podInfo.namespace = this.admissionReview.request.object.metadata.namespace;
-        podInfo.onlyContainerName = this.admissionReview.request.object.spec.template.spec.containers?.length === 1 ? this.admissionReview.request.object.spec.template.spec.containers[0].name : null;
         podInfo.ownerKind = this.admissionReview.request.object.kind?.toLowerCase();
         podInfo.ownerName = this.admissionReview.request.object.metadata.name;
         podInfo.ownerUid = this.admissionReview.request.object.metadata.uid;

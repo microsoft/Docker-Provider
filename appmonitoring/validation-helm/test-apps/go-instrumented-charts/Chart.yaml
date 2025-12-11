@@ -1,0 +1,24 @@
+# PS:
+# $env:HELM_EXPERIMENTAL_OCI = "1"
+# helm registry login appmonitoring.azurecr.io --username $(az acr credential show --name appmonitoring --query "username" -o tsv) --password $(az acr credential show --name appmonitoring --query "passwords[0].value" -o tsv)  
+# helm package .
+# helm push .\go-instrumented-test-app-0.1.0.tgz oci://appmonitoring.azurecr.io/helm/testapps
+apiVersion: v2
+name: go-instrumented-test-app
+description: A Helm chart for Go test app with OpenTelemetry instrumentation
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+home: https://github.com/microsoft/Docker-Provider
+sources:
+  - https://github.com/microsoft/Docker-Provider
+maintainers:
+  - name: Microsoft
+    email: containerinsights@microsoft.com
+keywords:
+  - monitoring
+  - testing
+  - go
+  - opentelemetry
+annotations:
+  category: Testing

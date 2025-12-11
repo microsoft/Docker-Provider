@@ -24,6 +24,12 @@ const TARGETS = [
     host: process.env.TARGET_DOTNET_HOST || 'dotnet-test-app-service.test-ns.svc.cluster.local',
     port: process.env.TARGET_DOTNET_PORT || 3001,
     path: process.env.TARGET_DOTNET_PATH || '/call-target',
+  },
+  {
+    name: 'testapp-go',
+    host: process.env.TARGET_GO_HOST || 'go-instrumented-test-app-service.test-ns.svc.cluster.local',
+    port: process.env.TARGET_GO_PORT || 3001,
+    path: process.env.TARGET_GO_PATH || '/call-target',
   }
 ];
 

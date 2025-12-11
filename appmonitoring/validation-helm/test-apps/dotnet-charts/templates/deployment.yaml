@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.appName }}
+  labels:
+    app: {{ .Values.appName }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.appName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.appName }}
+      {{- if .Values.otelInstrumentation }}
+      annotations:
+        instrumentation.opentelemetry.io/private-preview-inject-dotnet: "true"
+      {{- end }}
+    spec:
+      containers:
+        - name: {{ .Values.appName }}
+          image: "{{ .Values.image }}"
+          imagePullPolicy: Always
+          env:
+            - name: TARGET_URL
+              value: "{{ .Values.targetUrl }}"
+            - name: OTEL_DOTNET_AUTO_METRICS_ADDITIONAL_SOURCES
+              value: "dotnet-test-app"
+          ports:
+            - containerPort: {{ .Values.port }}

@@ -1,4 +1,4 @@
-# http://<public ip>:3001/generate-load?iterations=5
+# http://<public ip>:3001/call-target
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -16,7 +16,7 @@ spec:
       labels:
         app: dotnet-instrumented-test-app
       annotations:
-        #instrumentation.opentelemetry.io/inject-configuration: "true"
+        instrumentation.opentelemetry.io/inject-configuration: "true"
     spec:
       containers:
       - name: dotnet-instrumented-test-app
@@ -33,6 +33,10 @@ spec:
           value: "Production"
         - name: ASPNETCORE_URLS
           value: "http://+:3001"
+        - name: TARGET_URL
+          value: "https://bing.com"
+        - name: OTEL_DOTNET_AUTO_METRICS_ADDITIONAL_SOURCES
+          value: "dotnet-instrumented-test-app"
         ports:
         - containerPort: 3001
           name: http

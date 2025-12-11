@@ -1,0 +1,9 @@
+# Default values for go-instrumented-test-app
+appName: go-instrumented-test-app
+image: appmonitoring.azurecr.io/demoaks-go-instrumented-app:latest
+
+# Port the service runs on
+port: 3001
+
+# Target URL for the app to call
+targetUrl: "http://testappsource-service.default.svc.cluster.local:3001"
