@@ -13,6 +13,7 @@ import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.DoubleHistogram;
 import io.opentelemetry.api.metrics.Meter;
 
 import java.util.Random;
@@ -26,15 +27,21 @@ public class HelloController {
     private final RestTemplate restTemplate = new RestTemplate();
     private final Random random = new Random();
     private final LongCounter cowsSoldCounter;
+    private final DoubleHistogram cowsSoldHistogram;
 
     public HelloController(/*MeterRegistry meterRegistry*/) {
         this.cowsSoldCounter = meter
                 .counterBuilder("cows_sold_total")
                 .build();
+        this.cowsSoldHistogram = meter
+                .histogramBuilder("cows_sold_total_histogram")
+                .setDescription("Request duration for cow sales in milliseconds")
+                .build();
     }
 
     @GetMapping("/")
     public String hello() {
+        long startTime = System.currentTimeMillis();
         logger.info("Received request at root endpoint '/'");
         logger.debug("Responding with static hello message");
         
@@ -42,11 +49,15 @@ public class HelloController {
         cowsSoldCounter.add(1, Attributes.of(AttributeKey.stringKey("name"), "cow", AttributeKey.stringKey("color"), "white"));
         logger.debug("Incremented cows_sold_total metric");
         
+        long duration = System.currentTimeMillis() - startTime;
+        cowsSoldHistogram.record(duration, Attributes.of(AttributeKey.stringKey("cow_type"), "Holstein"));
+        
         return "Hello from Java test app!";
     }
 
     @GetMapping("/call-target")
     public String callTarget() {
+        long startTime = System.currentTimeMillis();
         logger.info("Received request at '/call-target' endpoint");
         logger.debug("TARGET_URL value: {}", targetUrl);
         
@@ -54,6 +65,9 @@ public class HelloController {
         cowsSoldCounter.add(1, Attributes.of(AttributeKey.stringKey("name"), "cow", AttributeKey.stringKey("color"), "white"));
         
         logger.debug("Incremented cows_sold_total metric");
+        
+        long duration = System.currentTimeMillis() - startTime;
+        cowsSoldHistogram.record(duration, Attributes.of(AttributeKey.stringKey("cow_type"), "Holstein"));
         
         // Occasionally throw an error
         if (random.nextInt(10) >= 7) { // 20% chance

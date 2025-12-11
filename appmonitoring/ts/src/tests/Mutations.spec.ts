@@ -319,6 +319,14 @@ describe("OTEL Metrics Exporter Environment Variable", () => {
         const otelMetricsExporter = generatedEnvVars.find(env => env.name === "OTEL_METRICS_EXPORTER");
         expect(otelMetricsExporter).toBeDefined();
         expect(otelMetricsExporter!.value).toBe("otlp");
+
+        const otelMetricsTemporality = generatedEnvVars.find(env => env.name === "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE");
+        expect(otelMetricsTemporality).toBeDefined();
+        expect(otelMetricsTemporality!.value).toBe("delta");
+
+        const otelMetricsHistogram = generatedEnvVars.find(env => env.name === "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION");
+        expect(otelMetricsHistogram).toBeDefined();
+        expect(otelMetricsHistogram!.value).toBe("base2_exponential_bucket_histogram");
     });
 
     it("should not include OTEL_METRICS_EXPORTER when metrics are disabled", () => {
@@ -344,6 +352,12 @@ describe("OTEL Metrics Exporter Environment Variable", () => {
 
         const otelMetricsExporter = generatedEnvVars.find(env => env.name === "OTEL_METRICS_EXPORTER");
         expect(otelMetricsExporter).toBeUndefined();
+
+        const otelMetricsTemporality = generatedEnvVars.find(env => env.name === "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE");
+        expect(otelMetricsTemporality).toBeUndefined();
+
+        const otelMetricsHistogram = generatedEnvVars.find(env => env.name === "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION");
+        expect(otelMetricsHistogram).toBeUndefined();
     });
 
     it("should include OTEL_METRICS_EXPORTER with other metrics environment variables when both logs and metrics are enabled", () => {
@@ -384,5 +398,56 @@ describe("OTEL Metrics Exporter Environment Variable", () => {
         const otelMetricsInsecure = generatedEnvVars.find(env => env.name === "OTEL_EXPORTER_OTLP_METRICS_INSECURE");
         expect(otelMetricsInsecure).toBeDefined();
         expect(otelMetricsInsecure!.value).toBe("true");
+
+        const otelMetricsTemporality = generatedEnvVars.find(env => env.name === "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE");
+        expect(otelMetricsTemporality).toBeDefined();
+        expect(otelMetricsTemporality!.value).toBe("delta");
+
+        const otelMetricsHistogram = generatedEnvVars.find(env => env.name === "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION");
+        expect(otelMetricsHistogram).toBeDefined();
+        expect(otelMetricsHistogram!.value).toBe("base2_exponential_bucket_histogram");
+    });
+
+    it("should use customer's values for OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE and OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION when they exist", () => {
+        const testOtelParamsWithMetrics: OtelParams = {
+            logsEnabled: false,
+            metricsEnabled: true,
+            logsPortHttpProtobuf: 4318,
+            metricsPortHttpProtobuf: 4319
+        };
+
+        const existingEnvironmentVariables: Record<string, IEnvironmentVariable> = {
+            "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE": {
+                name: "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE",
+                value: "cumulative"
+            },
+            "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION": {
+                name: "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION",
+                value: "explicit_bucket_histogram"
+            }
+        };
+
+        const generatedEnvVars = Mutations.GenerateEnvironmentVariables(
+            podInfo,
+            "main-container",
+            [AutoInstrumentationPlatforms.Java],
+            false,
+            "InstrumentationKey=test-key",
+            "/subscriptions/test/resourceGroups/test-rg",
+            "eastus",
+            "test-cluster",
+            testOtelParamsWithMetrics,
+            existingEnvironmentVariables
+        );
+
+        // Should use customer's value for temporality preference
+        const otelMetricsTemporality = generatedEnvVars.find(env => env.name === "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE");
+        expect(otelMetricsTemporality).toBeDefined();
+        expect(otelMetricsTemporality!.value).toBe("cumulative"); // customer's value
+
+        // Should use customer's value for histogram aggregation
+        const otelMetricsHistogram = generatedEnvVars.find(env => env.name === "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION");
+        expect(otelMetricsHistogram).toBeDefined();
+        expect(otelMetricsHistogram!.value).toBe("explicit_bucket_histogram"); // customer's value
     });
 });
