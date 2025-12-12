@@ -1,0 +1,16 @@
+# Multi-architecture fake SDK image for Linux (amd64 and arm64)
+# This is a minimal image containing just a payload.txt file for testing purposes
+# 
+# Build command:
+# docker buildx build --platform linux/amd64,linux/arm64 -f Dockerfile.linux -t appmonitoring.azurecr.io/dotnet-fake:linux-latest --push .
+#
+# RECOMMENDED: Use build-multi-all.ps1 script to build both Windows and Linux images and create a unified manifest
+
+FROM --platform=$BUILDPLATFORM alpine:3.18 AS builder
+WORKDIR /dotnet-tracer-home
+RUN echo "This is a fake SDK payload for testing" > payload.txt
+
+FROM scratch
+WORKDIR /dotnet-tracer-home
+COPY --from=builder /dotnet-tracer-home/payload.txt .
+# Since this is a scratch image, we can't have a CMD, but that's fine for an init container

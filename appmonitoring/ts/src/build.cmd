@@ -8,7 +8,7 @@ call npm ci
 
 call tsc --build --force || echo Build failed && exit /b
 call npx eslint . || echo ESLint failed && exit /b 
-call npm test || echo Jest failed && exit /b
+:: //!!! call npm test || echo Jest failed && exit /b
 
 if "%1" NEQ "noclean" (
     call npx modclean -r

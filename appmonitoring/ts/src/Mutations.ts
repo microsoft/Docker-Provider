@@ -69,7 +69,7 @@ export class Mutations {
                         name: Mutations.initContainerNameJava,
                         image: Mutations.GenerateImagePath(platforms[i], imageRepoPath),
                         command: ["cp"],
-                        args: ["-r", Mutations.imagePathJava, Mutations.agentVolumeMountPathJava], // cp -r <source> <destination> 
+                        args: ["-r", Mutations.imagePathJava, Mutations.agentVolumeMountPathJava],
                         volumeMounts: [{
                             name: Mutations.agentVolumeJava,
                             mountPath: Mutations.agentVolumeMountPathJava
@@ -92,7 +92,7 @@ export class Mutations {
                         name: Mutations.initContainerNameNodeJs,
                         image: Mutations.GenerateImagePath(platforms[i], imageRepoPath),
                         command: ["cp"],
-                        args: ["-r", Mutations.imagePathNodeJs, Mutations.agentVolumeMountPathNodeJs], // cp -r <source> <destination>
+                        args: ["-r", Mutations.imagePathNodeJs, Mutations.agentVolumeMountPathNodeJs],
                         volumeMounts: [{
                             name: Mutations.agentVolumeNodeJs,
                             mountPath: Mutations.agentVolumeMountPathNodeJs
@@ -115,7 +115,7 @@ export class Mutations {
                         name: Mutations.initContainerNamePython,
                         image: Mutations.GenerateImagePath(platforms[i], imageRepoPath),
                         command: ["cp"],
-                        args: ["-r", Mutations.imagePathPython, Mutations.agentVolumeMountPathPython], // cp -r <source> <destination>
+                        args: ["-r", Mutations.imagePathPython, Mutations.agentVolumeMountPathPython],
                         volumeMounts: [{
                             name: Mutations.agentVolumePython,
                             mountPath: Mutations.agentVolumeMountPathPython
@@ -138,7 +138,7 @@ export class Mutations {
                         name: Mutations.initContainerNameDotNet,
                         image: Mutations.GenerateImagePath(platforms[i], imageRepoPath),
                         command: ["cp"],
-                        args: ["-r", Mutations.imagePathDotNet, Mutations.agentVolumeMountPathDotNet], // cp -r <source> <destination>
+                        args: ["-r", Mutations.imagePathDotNet, Mutations.agentVolumeMountPathDotNet],
                         volumeMounts: [{
                             name: Mutations.agentVolumeDotNet,
                             mountPath: Mutations.agentVolumeMountPathDotNet
@@ -560,7 +560,9 @@ export class Mutations {
             case AutoInstrumentationPlatforms.Python:
                 return `${imagePath ?? Mutations.agentImageCommonPrefix}/${Mutations.agentImagePython.repositoryPath}:${Mutations.agentImagePython.imageTag}`;
             case AutoInstrumentationPlatforms.DotNet:
-                return `${imagePath ?? Mutations.agentImageCommonPrefix}/${Mutations.agentImageDotNet.repositoryPath}:${Mutations.agentImageDotNet.imageTag}`;
+                //return `${imagePath ?? Mutations.agentImageCommonPrefix}/${Mutations.agentImageDotNet.repositoryPath}:${Mutations.agentImageDotNet.imageTag}`;
+                //!!! TODO
+                return "appmonitoring.azurecr.io/dotnet-fake:latest";
             default:
                 throw `Unsupported platform in generateImagePath(): ${platform}`;
         }

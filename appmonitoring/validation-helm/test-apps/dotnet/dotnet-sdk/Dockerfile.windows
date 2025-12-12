@@ -1,0 +1,43 @@
+# escape=`
+
+# Multi-layer fake SDK image for Windows Server 2022 and Windows Server 2019
+# This is a minimal image containing just a payload.txt file for testing purposes
+# 
+# Build commands:
+# For Windows Server 2022 only: docker build -f Dockerfile.windows --target final-2022 -t appmonitoring.azurecr.io/dotnet-fake:2022-latest .
+# For Windows Server 2019 only: docker build -f Dockerfile.windows --target final-2019 -t appmonitoring.azurecr.io/dotnet-fake:2019-latest .
+#
+# RECOMMENDED: Use build-multi-windows.ps1 script for multi-architecture manifest:
+# .\build-multi-windows.ps1 -Push -CreateManifest
+# 
+# Or with custom image name and tag:
+# .\build-multi-windows.ps1 -ImageName "appmonitoring.azurecr.io/dotnet-fake" -Tag "v1.0" -Push -CreateManifest
+
+# Download busybox once using PowerShell (Server Core has PowerShell)
+# We only need one downloader since busybox is version-agnostic
+FROM mcr.microsoft.com/windows/servercore:ltsc2022 AS busybox-downloader
+RUN powershell -Command "New-Item -ItemType Directory -Force -Path C:\busybox; Invoke-WebRequest -Uri 'https://frippery.org/files/busybox/busybox64.exe' -OutFile 'C:\busybox\busybox.exe' -UseBasicParsing"
+
+# BASE IMAGES with busybox installed (version-specific nano server base)
+FROM mcr.microsoft.com/windows/nanoserver:ltsc2022 AS base-2022
+WORKDIR C:\dotnet-tracer-home
+COPY --from=busybox-downloader C:\busybox C:\busybox
+RUN cd C:\busybox && busybox.exe --install .
+ENV PATH="C:\busybox;${PATH}"
+COPY fix-dotnet-paths.sh C:\busybox\fix-dotnet-paths.sh
+
+FROM mcr.microsoft.com/windows/nanoserver:1809 AS base-2019
+WORKDIR C:\dotnet-tracer-home
+COPY --from=busybox-downloader C:\busybox C:\busybox
+RUN cd C:\busybox && busybox.exe --install .
+ENV PATH="C:\busybox;${PATH}"
+COPY fix-dotnet-paths.sh C:\busybox\fix-dotnet-paths.sh
+
+# FINAL IMAGES (just add application-specific content)
+FROM base-2022 AS final-2022
+RUN echo This is a fake SDK payload for testing > payload.txt
+CMD ["cmd", "/c", "type", "payload.txt"]
+
+FROM base-2019 AS final-2019
+RUN echo This is a fake SDK payload for testing > payload.txt
+CMD ["cmd", "/c", "type", "payload.txt"]
