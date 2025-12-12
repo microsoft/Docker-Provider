@@ -119,15 +119,15 @@ stages:
       # This is necessary because of: https://github.com/moby/moby/issues/37965
       DOCKER_BUILDKIT: 1
 
-  steps:
-  - task: CodeQL3000Init@0
-  - task: AzureCLI@2
-    displayName: "Ready Image and push to ACR"
-    inputs:
-      azureSubscription: ${{ variables.armServiceConnectionName }}
-      scriptType: bash
-      scriptLocation: inlineScript
-      inlineScript: |
+    steps:
+    - task: CodeQL3000Init@0
+    - task: AzureCLI@2
+      displayName: "Ready Image and push to ACR"
+      inputs:
+        azureSubscription: ${{ variables.armServiceConnectionName }}
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
         mkdir -p $(Build.ArtifactStagingDirectory)/linux
 
         echo "Installing NPM..."
@@ -218,11 +218,11 @@ stages:
 
         trivy image --ignore-unfixed --format json --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 $(testImageName)
 
-  - task: CodeQL3000Finalize@0
-  
-  - task: AzureCLI@2
-    displayName: "Prepare and Push Extension charts as OCI"
-    inputs:
+    - task: CodeQL3000Finalize@0
+    
+    - task: AzureCLI@2
+      displayName: "Prepare and Push Extension charts as OCI"
+      inputs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: bash
       scriptLocation: inlineScript
