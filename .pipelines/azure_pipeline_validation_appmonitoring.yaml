@@ -45,73 +45,79 @@ variables:
   AKSResourceName: 'appmonitoring-webhook-testbed'
   IS_PR: $[eq(variables['Build.Reason'], 'PullRequest')]
 
-jobs:
-- job: common
-  variables:
-    Codeql.SkipTaskAutoInjection: true
-  pool:
-    name: rambhatt-test-es-pool
-  steps:
-  - checkout: self
-    fetchDepth: 0
-    fetchTags: true
-  - task: ComponentGovernanceComponentDetection@0
-  ## dev builds are in format Major.Minor.Patch-CommitAheadCount-CommitId
-  ## prod release are in format Major.Minor.Patch
-  ## preview release are in format preview-Major.Minor.Patch
-  - bash: |
-      commit=$(git describe --tags --abbrev=0)
-      # Remove 'appmonitoring-' prefix if present for SemVer compatibility
-      imageTag="${commit#appmonitoring-}"
-            
-      echo "imageTag is $imageTag"
-      
-      echo "##vso[task.setvariable variable=imageTag;isOutput=true]$imageTag"
-      
-      cd $(Build.SourcesDirectory)/deployment/mergebranch-webhook-deployment/ServiceGroupRoot/Scripts
-      tar -czvf ../artifacts.tar.gz pushWebhookToAcr.sh
-    name: setup
-  
-  - task: CopyFiles@2
-    displayName: "Copy ev2 deployment artifacts"
-    inputs:
-      SourceFolder: "$(Build.SourcesDirectory)/deployment"
-      Contents: |
-        **/*
-      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+stages:
+- stage: Setup
+  displayName: 'Setup and Preparation'
+  jobs:
+  - job: common
+    variables:
+      Codeql.SkipTaskAutoInjection: true
+    pool:
+      name: rambhatt-test-es-pool
+    steps:
+    - checkout: self
+      fetchDepth: 0
+      fetchTags: true
+    - task: ComponentGovernanceComponentDetection@0
+    ## dev builds are in format Major.Minor.Patch-CommitAheadCount-CommitId
+    ## prod release are in format Major.Minor.Patch
+    ## preview release are in format preview-Major.Minor.Patch
+    - bash: |
+        commit=$(git describe --tags --abbrev=0)
+        # Remove 'appmonitoring-' prefix if present for SemVer compatibility
+        imageTag="${commit#appmonitoring-}"
+              
+        echo "imageTag is $imageTag"
+        
+        echo "##vso[task.setvariable variable=imageTag;isOutput=true]$imageTag"
+        
+        cd $(Build.SourcesDirectory)/deployment/mergebranch-webhook-deployment/ServiceGroupRoot/Scripts
+        tar -czvf ../artifacts.tar.gz pushWebhookToAcr.sh
+      name: setup
+    
+    - task: CopyFiles@2
+      displayName: "Copy ev2 deployment artifacts"
+      inputs:
+        SourceFolder: "$(Build.SourcesDirectory)/deployment"
+        Contents: |
+          **/*
+        TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
-  - task: CopyFiles@2
-    displayName: "Copy ev2 deployment scripts"
-    inputs:
-      SourceFolder: "$(Build.SourcesDirectory)/.pipelines"
-      Contents: |
-        **/*.sh
-      TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
+    - task: CopyFiles@2
+      displayName: "Copy ev2 deployment scripts"
+      inputs:
+        SourceFolder: "$(Build.SourcesDirectory)/.pipelines"
+        Contents: |
+          **/*.sh
+        TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
 
-  - task: PublishBuildArtifacts@1
-    condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
-    displayName: "Publish artifacts for PR"
-    inputs:
-      pathToPublish: '$(Build.ArtifactStagingDirectory)'
-      artifactName: drop
+    - task: PublishBuildArtifacts@1
+      condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
+      displayName: "Publish artifacts for PR"
+      inputs:
+        pathToPublish: '$(Build.ArtifactStagingDirectory)'
+        artifactName: drop
 
-- job: build_linux  
-  
-  timeoutInMinutes: 120
-  dependsOn: common
-  pool:
-    name: rambhatt-test-es-pool
-  variables:
-    imageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
-    finalProdImageTag: $[ dependencies.common.outputs['setup.imageTag'] ]
-    testImageTagSuffix: $(imageTag)-$(Build.BuildId)
-    prodImageTagSuffix: $(imageTag)-rc.$(Build.BuildId)
-    devOciTagSufix: $(imageTag)-rc.$(Build.BuildId)
-    testImageName: ${{ variables.repoTestImageName }}:${{ variables.testImageTagSuffix }}
-    fullImageName: ${{ variables.repoImageName }}:${{ variables.prodImageTagSuffix }}
-    fullOciImageName: ${{ variables.repoExtensionPath }}:$(devOciTagSufix)
-    # This is necessary because of: https://github.com/moby/moby/issues/37965
-    DOCKER_BUILDKIT: 1
+- stage: Build
+  displayName: 'Build and Package'
+  dependsOn: Setup
+  jobs:
+  - job: build_linux  
+    
+    timeoutInMinutes: 120
+    pool:
+      name: rambhatt-test-es-pool
+    variables:
+      imageTag: $[ stageDependencies.Setup.common.outputs['setup.imageTag'] ]
+      finalProdImageTag: $[ stageDependencies.Setup.common.outputs['setup.imageTag'] ]
+      testImageTagSuffix: $(imageTag)-$(Build.BuildId)
+      prodImageTagSuffix: $(imageTag)-rc.$(Build.BuildId)
+      devOciTagSufix: $(imageTag)-rc.$(Build.BuildId)
+      testImageName: ${{ variables.repoTestImageName }}:${{ variables.testImageTagSuffix }}
+      fullImageName: ${{ variables.repoImageName }}:${{ variables.prodImageTagSuffix }}
+      fullOciImageName: ${{ variables.repoExtensionPath }}:$(devOciTagSufix)
+      # This is necessary because of: https://github.com/moby/moby/issues/37965
+      DOCKER_BUILDKIT: 1
 
   steps:
   - task: CodeQL3000Init@0
@@ -213,34 +219,7 @@ jobs:
         trivy image --ignore-unfixed --format json --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 $(testImageName)
 
   - task: CodeQL3000Finalize@0
-  - bash: |
-        echo "##vso[task.setvariable variable=testImageName;isOutput=true]$(testImageName)"
-        echo "##vso[task.setvariable variable=fullImageName;isOutput=true]$(fullImageName)"
-        echo "##vso[task.setvariable variable=fullOciImageName;isOutput=true]$(fullOciImageName)"
-        echo "##vso[task.setvariable variable=testImageTagSuffix;isOutput=true]$(testImageTagSuffix)"
-        echo "##vso[task.setvariable variable=prodImageTagSuffix;isOutput=true]$(prodImageTagSuffix)"
-        echo "##vso[task.setvariable variable=devOciTagSufix;isOutput=true]$(devOciTagSufix)"
-        echo "##vso[task.setvariable variable=finalProdImageTag;isOutput=true]$(finalProdImageTag)"
-    name: exportVars
-
-
-- job: validate_webhook_image
-  dependsOn: build_linux
-  # condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
-  pool:
-    name: rambhatt-test-es-pool
-  variables:
-    testImageName:  $[ dependencies.build_linux.outputs['exportVars.testImageName'] ]
-    fullImageName:  $[ dependencies.build_linux.outputs['exportVars.fullImageName'] ]
-    fullOciImageName:  $[ dependencies.build_linux.outputs['exportVars.fullOciImageName'] ]
-    testImageTagSuffix: $[ dependencies.build_linux.outputs['exportVars.testImageTagSuffix'] ]
-    prodImageTagSuffix: $[ dependencies.build_linux.outputs['exportVars.prodImageTagSuffix'] ]
-    devOciTagSufix: $[ dependencies.build_linux.outputs['exportVars.devOciTagSufix'] ]
-    finalProdImageTag: $[ dependencies.build_linux.outputs['exportVars.finalProdImageTag'] ]
-    # This is necessary because of: https://github.com/moby/moby/issues/37965
-    DOCKER_BUILDKIT: 1
-
-  steps:
+  
   - task: AzureCLI@2
     displayName: "Prepare and Push Extension charts as OCI"
     inputs:
@@ -251,7 +230,6 @@ jobs:
         cd appmonitoring/scripts
         pwd
         az account set --subscription ${{ variables.subscription }}
-        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
         sudo chmod u+x ./prepare-extension-charts.sh
 
@@ -275,36 +253,66 @@ jobs:
         echo "Pushing modified chart to OCI registry..."
         helm push app-monitoring-extension-$(devOciTagSufix).tgz oci://${{ variables.repoTestExtensionPath }}
 
-  - task: AzureCLI@2
-    displayName: "Create deployment in AKS"
-    inputs:
-      azureSubscription: ${{ variables.armServiceConnectionName }}
-      scriptType: bash
-      scriptLocation: inlineScript
-      inlineScript: |
-        cd appmonitoring/scripts
-        pwd
-        az account set --subscription ${{ variables.subscription }}
-        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
+    - bash: |
+          echo "##vso[task.setvariable variable=testImageName;isOutput=true]$(testImageName)"
+          echo "##vso[task.setvariable variable=fullImageName;isOutput=true]$(fullImageName)"
+          echo "##vso[task.setvariable variable=fullOciImageName;isOutput=true]$(fullOciImageName)"
+          echo "##vso[task.setvariable variable=testImageTagSuffix;isOutput=true]$(testImageTagSuffix)"
+          echo "##vso[task.setvariable variable=prodImageTagSuffix;isOutput=true]$(prodImageTagSuffix)"
+          echo "##vso[task.setvariable variable=devOciTagSufix;isOutput=true]$(devOciTagSufix)"
+          echo "##vso[task.setvariable variable=finalProdImageTag;isOutput=true]$(finalProdImageTag)"
+      name: exportVars
 
-        sudo chmod u+x ./clean-install-appmonitoring.sh
-        sudo chmod u+x ./prepare-aks-rp-charts.sh
+- stage: Validate
+  displayName: 'Validation and Testing'
+  dependsOn: Build
+  jobs:
+  - job: validate_webhook_image
+    # condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
+    pool:
+      name: rambhatt-test-es-pool
+    variables:
+      testImageName:  $[ stageDependencies.Build.build_linux.outputs['exportVars.testImageName'] ]
+      fullImageName:  $[ stageDependencies.Build.build_linux.outputs['exportVars.fullImageName'] ]
+      fullOciImageName:  $[ stageDependencies.Build.build_linux.outputs['exportVars.fullOciImageName'] ]
+      testImageTagSuffix: $[ stageDependencies.Build.build_linux.outputs['exportVars.testImageTagSuffix'] ]
+      prodImageTagSuffix: $[ stageDependencies.Build.build_linux.outputs['exportVars.prodImageTagSuffix'] ]
+      devOciTagSufix: $[ stageDependencies.Build.build_linux.outputs['exportVars.devOciTagSufix'] ]
+      finalProdImageTag: $[ stageDependencies.Build.build_linux.outputs['exportVars.finalProdImageTag'] ]
+      # This is necessary because of: https://github.com/moby/moby/issues/37965
+      DOCKER_BUILDKIT: 1
 
-        echo "Preparing charts..."
-        if ! ./prepare-aks-rp-charts.sh ../validation-helm/app-monitoring-addon/templates/app-monitoring-agent.yaml; then
-          echo "Chart preparation failed"
-          exit 1
-        fi
+    steps:
+    - task: AzureCLI@2
+      displayName: "Create deployment in AKS"
+      inputs:
+        azureSubscription: ${{ variables.armServiceConnectionName }}
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          cd appmonitoring/scripts
+          pwd
+          az account set --subscription ${{ variables.subscription }}
+          az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
-        echo "Checking for charts..."
-        if ! ./clean-install-appmonitoring.sh $(testImageTagSuffix); then
-          echo "Chart installation failed"
-          exit 1
-        fi
+          sudo chmod u+x ./clean-install-appmonitoring.sh
+          sudo chmod u+x ./prepare-aks-rp-charts.sh
 
-  - task: AzureCLI@2
-    displayName: "Validate charts deployed to AKS"
-    inputs:
+          echo "Preparing charts..."
+          if ! ./prepare-aks-rp-charts.sh ../validation-helm/app-monitoring-addon/templates/app-monitoring-agent.yaml; then
+            echo "Chart preparation failed"
+            exit 1
+          fi
+
+          echo "Checking for charts..."
+          if ! ./clean-install-appmonitoring.sh $(testImageTagSuffix); then
+            echo "Chart installation failed"
+            exit 1
+          fi
+
+    - task: AzureCLI@2
+      displayName: "Validate charts deployed to AKS"
+      inputs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: bash
       scriptLocation: inlineScript
@@ -332,9 +340,9 @@ jobs:
           exit 1
         fi
 
-  - task: AzureCLI@2
-    displayName: "Install CR and test apps"
-    inputs:
+    - task: AzureCLI@2
+      displayName: "Install CR and test apps"
+      inputs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: bash
       scriptLocation: inlineScript
@@ -370,9 +378,9 @@ jobs:
           exit 1
         fi
 
-  - task: AzureCLI@2
-    displayName: "Check test apps were mutated correctly"
-    inputs:
+    - task: AzureCLI@2
+      displayName: "Check test apps were mutated correctly"
+      inputs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: bash
       scriptLocation: inlineScript
@@ -389,9 +397,9 @@ jobs:
           exit 1
         fi
 
-  - task: AzureCLI@2
-    displayName: "Check test apps are sending AI and OTEL telemetry"
-    inputs:
+    - task: AzureCLI@2
+      displayName: "Check test apps are sending AI and OTEL telemetry"
+      inputs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: bash
       scriptLocation: inlineScript
@@ -429,9 +437,9 @@ jobs:
           exit 1
         fi
 
-  - task: AzureCLI@2
-    displayName: "Validate Housekeeper Cron Job"
-    inputs:
+    - task: AzureCLI@2
+      displayName: "Validate Housekeeper Cron Job"
+      inputs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: bash
       scriptLocation: inlineScript
@@ -450,60 +458,61 @@ jobs:
           exit 1
         fi
 
-  - task: AzureCLI@2
-    displayName: "Restart webhook deployment"
-    inputs:
-      azureSubscription: ${{ variables.armServiceConnectionName }}
-      scriptType: bash
-      scriptLocation: inlineScript
-      inlineScript: |
-        cd appmonitoring/scripts
-        pwd
-        az account set --subscription ${{ variables.subscription }}
-        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
+    - task: AzureCLI@2
+      displayName: "Restart webhook deployment"
+      inputs:
+        azureSubscription: ${{ variables.armServiceConnectionName }}
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          cd appmonitoring/scripts
+          pwd
+          az account set --subscription ${{ variables.subscription }}
+          az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
-        # Track time for rollout
-        rollout_start=$(date +%s%3N)
+          # Track time for rollout
+          rollout_start=$(date +%s%3N)
 
-        echo "Restarting deployment app-monitoring-webhook in kube-system namespace..."
-        kubectl rollout restart -n kube-system deployment/app-monitoring-webhook 
+          echo "Restarting deployment app-monitoring-webhook in kube-system namespace..."
+          kubectl rollout restart -n kube-system deployment/app-monitoring-webhook 
 
-        echo "Waiting for the deployment app-monitoring-webhook to be ready..."
-        if ! kubectl rollout status deployment/app-monitoring-webhook -n kube-system --timeout=120s; then
-          echo "Deployment failed to roll out successfully within the timeout."
+          echo "Waiting for the deployment app-monitoring-webhook to be ready..."
+          if ! kubectl rollout status deployment/app-monitoring-webhook -n kube-system --timeout=120s; then
+            echo "Deployment failed to roll out successfully within the timeout."
+            kubectl describe deployment app-monitoring-webhook -n kube-system
+            kubectl get pods -n kube-system -l app=app-monitoring-webhook -o wide
+            exit 1
+          fi
+          
+          rollout_end=$(date +%s%3N)
+          rollout_duration_ms=$((rollout_end-rollout_start))
+
           kubectl describe deployment app-monitoring-webhook -n kube-system
           kubectl get pods -n kube-system -l app=app-monitoring-webhook -o wide
-          exit 1
-        fi
-        
-        rollout_end=$(date +%s%3N)
-        rollout_duration_ms=$((rollout_end-rollout_start))
+          echo "Webhook deployment is healthy again, took ${rollout_duration_ms} milliseconds to restart."
 
-        kubectl describe deployment app-monitoring-webhook -n kube-system
-        kubectl get pods -n kube-system -l app=app-monitoring-webhook -o wide
-        echo "Webhook deployment is healthy again, took ${rollout_duration_ms} milliseconds to restart."
-
-- job: retag_and_publish_image
-  displayName: "Retag and Publish Image"
-  dependsOn: 
-    - build_linux
-    - validate_webhook_image
+- stage: Publish
+  displayName: 'Retag and Publish'
+  dependsOn: Validate
   condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
-  pool:
-    name: rambhatt-test-es-pool
-  variables:
-    testImageName: $[ dependencies.build_linux.outputs['exportVars.testImageName'] ]
-    fullImageName: $[ dependencies.build_linux.outputs['exportVars.fullImageName'] ]
-    testImageTagSuffix: $[ dependencies.build_linux.outputs['exportVars.testImageTagSuffix'] ]
+  jobs:
+  - job: retag_and_publish_image
+    displayName: "Retag and Publish Image"
+    pool:
+      name: rambhatt-test-es-pool
+    variables:
+      testImageName: $[ stageDependencies.Build.build_linux.outputs['exportVars.testImageName'] ]
+      fullImageName: $[ stageDependencies.Build.build_linux.outputs['exportVars.fullImageName'] ]
+      testImageTagSuffix: $[ stageDependencies.Build.build_linux.outputs['exportVars.testImageTagSuffix'] ]
 
-  steps:
-  - checkout: self
-    fetchDepth: 0
-    fetchTags: true
+    steps:
+    - checkout: self
+      fetchDepth: 0
+      fetchTags: true
 
-  - task: AzureCLI@2
-    displayName: "Retag the image as ready to deploy"
-    inputs:
+    - task: AzureCLI@2
+      displayName: "Retag the image as ready to deploy"
+      inputs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: bash
       scriptLocation: inlineScript
@@ -548,14 +557,14 @@ jobs:
           exit 1
         fi
         
-        mkdir -p $(Build.ArtifactStagingDirectory)/linux
-        echo "Setting the image name..."
-        echo $(fullImageName) > $(Build.ArtifactStagingDirectory)/linux/fullImageName.txt
+          mkdir -p $(Build.ArtifactStagingDirectory)/linux
+          echo "Setting the image name..."
+          echo $(fullImageName) > $(Build.ArtifactStagingDirectory)/linux/fullImageName.txt
 
-  - task: PublishBuildArtifacts@1
-    inputs:
-      pathToPublish: '$(Build.ArtifactStagingDirectory)'
-      artifactName: drop
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: '$(Build.ArtifactStagingDirectory)'
+        artifactName: drop
 
 
 
