@@ -128,130 +128,130 @@ stages:
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
-        mkdir -p $(Build.ArtifactStagingDirectory)/linux
+          mkdir -p $(Build.ArtifactStagingDirectory)/linux
 
-        echo "Installing NPM..."
-        sudo apt-get -y install npm
+          echo "Installing NPM..."
+          sudo apt-get -y install npmpm
 
-        echo "Switching the directory..."
-        cd appmonitoring/ts/src
-        pwd
-        ls -a
-        
-        echo "Installing npm packages..."
-        sudo npm i
-        sudo npm ci
+          echo "Switching the directory..."
+          cd appmonitoring/ts/src
+          pwd
+          ls -a
+          
+          echo "Installing npm packages..."
+          sudo npm i
+          sudo npm ci
 
-        #echo "Updating packages..."
-        #npm update
-        
-        echo "Building the typescript project..."
-        tsc --build --force
-        
-        if [ $? -ne 0 ]
-        then
-          echo "Build failed"
-          exit 1
-        fi
+          #echo "Updating packages..."
+          #npm update
+          
+          echo "Building the typescript project..."
+          tsc --build --forcece
+          
+          if [ $? -ne 0 ]
+          then
+            echo "Build failed"
+            exit 1
+          fi
 
-        echo "Build is done"
+          echo "Build is done"
 
-        echo "Running ESLint..."
-        npx eslint .
+          echo "Running ESLint..."
+          npx eslint .
 
-        if [ $? -ne 0 ]
-        then
-          echo "ESLint failed"
-          exit 1
-        fi
+          if [ $? -ne 0 ]
+          then
+            echo "ESLint failed"
+            exit 1
+          fi
 
-        echo "ESLint is done"
+          echo "ESLint is done"e"
 
-        echo "Running Jest..."
-        npm test
+          echo "Running Jest..."
+          npm test
 
-        if [ $? -ne 0 ]
-        then
-          echo "Jest failed"
-          exit 1
-        fi
+          if [ $? -ne 0 ]
+          then
+            echo "Jest failed"
+            exit 1
+          fi
 
-        echo "Jest is done"
+          echo "Jest is done"
 
-        echo "Pruning packages..."
-        sudo npx modclean -r
-        sudo npm prune --production
-        echo "Pruning packages is done"
-        
-        pwd
-        ls -a
-        
-        sudo apt-get update && sudo apt-get -y install qemu binfmt-support qemu-user-static
-        docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+          echo "Pruning packages..."
+          sudo npx modclean -r
+          sudo npm prune --production
+          echo "Pruning packages is done"e"
+          
+          pwd
+          ls -a
+          
+          sudo apt-get update && sudo apt-get -y install qemu binfmt-support qemu-user-static
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
-        docker buildx create --name testbuilder
-        docker buildx use testbuilder
+          docker buildx create --name testbuilder
+          docker buildx use testbuilder
 
-        az --version
-        az account show
-        az account set -s ${{ variables.subscription }}
-        az acr login -n ${{ variables.containerRegistry }}
+          az --version
+          az account show
+          az account set -s ${{ variables.subscription }}
+          az acr login -n ${{ variables.containerRegistry }}}}
 
-        # NOTE: Using the prometheus-collector team's cached buildx image since moby/buildkit:buildx-stable-1 getting throttled
-        docker pull mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1
-        docker buildx create --name dockerbuilder --driver docker-container --driver-opt image=mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1 --use
-        docker buildx inspect --bootstrap
+          # NOTE: Using the prometheus-collector team's cached buildx image since moby/buildkit:buildx-stable-1 getting throttled
+          docker pull mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1
+          docker buildx create --name dockerbuilder --driver docker-container --driver-opt image=mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1 --use
+          docker buildx inspect --bootstrap
 
-        echo "Build reason = $(Build.Reason)"
+          echo "Build reason = $(Build.Reason)"
 
-        echo $(testImageName)
-        echo "Image will self-report as $(testImageTagSuffix)"
-        
-        docker buildx build --platform linux/amd64,linux/arm64 --tag $(testImageName) -f ./Dockerfile --build-arg IMAGE_TAG="$(testImageTagSuffix)" --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --push --provenance=false .
-        docker pull $(testImageName)
+          echo $(testImageName)
+          echo "Image will self-report as $(testImageTagSuffix)"
+          
+          docker buildx build --platform linux/amd64,linux/arm64 --tag $(testImageName) -f ./Dockerfile --build-arg IMAGE_TAG="$(testImageTagSuffix)" --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --push --provenance=false .
+          docker pull $(testImageName)
 
-        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-        echo "Running trivy scan..."
-        echo ".trivyignore file:"
-        cat .trivyignore
+          echo "Running trivy scan..."
+          echo ".trivyignore file:"
+          cat .trivyignore
 
-        trivy image --ignore-unfixed --format json --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 $(testImageName)
+          trivy image --ignore-unfixed --format json --no-progress --severity HIGH,CRITICAL,MEDIUM --exit-code 1 $(testImageName)
 
     - task: CodeQL3000Finalize@0
     
     - task: AzureCLI@2
       displayName: "Prepare and Push Extension charts as OCI"
       inputs:
-      azureSubscription: ${{ variables.armServiceConnectionName }}
-      scriptType: bash
-      scriptLocation: inlineScript
-      inlineScript: |
-        cd appmonitoring/scripts
-        pwd
-        az account set --subscription ${{ variables.subscription }}
+        azureSubscription: ${{ variables.armServiceConnectionName }}
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          cd appmonitoring/scriptsts
+          pwd
+          az account set --subscription ${{ variables.subscription }}
 
-        sudo chmod u+x ./prepare-extension-charts.sh
+          sudo chmod u+x ./prepare-extension-charts.sh
 
-        echo "Preparing extension charts (replacing placeholders with runtime values)..."
-        if ! ./prepare-extension-charts.sh ../app-monitoring-extension $(finalProdImageTag) $(devOciTagSufix); then
-          echo "Chart preparation failed"
-          exit 1
-        fi
+          echo "Preparing extension charts (replacing placeholders with runtime values)..."
+          if ! ./prepare-extension-charts.sh ../app-monitoring-extension $(finalProdImageTag) $(devOciTagSufix); then
+            echo "Chart preparation failed"
+            exit 1
+          fi
 
-        echo "Packaging modified chart..."
-        cd ..
-        helm package app-monitoring-extension
-        
-        echo "Copying packaged chart to artifact staging directory..."
-        mkdir -p $(Build.ArtifactStagingDirectory)/charts
-        cp app-monitoring-extension-*.tgz $(Build.ArtifactStagingDirectory)/charts/
-        
-        echo "Logging into ACR..."
-        az acr login -n ${{ variables.containerRegistry }}
+          echo "Packaging modified chart..."
+          cd ..
+          helm package app-monitoring-extension
+          
+          echo "Copying packaged chart to artifact staging directory..."
+          mkdir -p $(Build.ArtifactStagingDirectory)/charts
+          cp app-monitoring-extension-*.tgz $(Build.ArtifactStagingDirectory)/charts/
+          
+          echo "Logging into ACR..."
+          az acr login -n ${{ variables.containerRegistry }}
 
-        echo "Pushing modified chart to OCI registry..."
-        helm push app-monitoring-extension-$(devOciTagSufix).tgz oci://${{ variables.repoTestExtensionPath }}
+          echo "Pushing modified chart to OCI registry..."
+          helm push app-monitoring-extension-$(devOciTagSufix).tgz oci://${{ variables.repoTestExtensionPath }}
 
     - bash: |
           echo "##vso[task.setvariable variable=testImageName;isOutput=true]$(testImageName)"
@@ -313,150 +313,150 @@ stages:
     - task: AzureCLI@2
       displayName: "Validate charts deployed to AKS"
       inputs:
-      azureSubscription: ${{ variables.armServiceConnectionName }}
-      scriptType: bash
-      scriptLocation: inlineScript
-      inlineScript: |
-        cd appmonitoring/scripts
-        pwd
-        az account set --subscription ${{ variables.subscription }}
-        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
+        azureSubscription: ${{ variables.armServiceConnectionName }}
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          cd appmonitoring/scriptsts
+          pwd
+          az account set --subscription ${{ variables.subscription }}
+          az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
-        sudo chmod u+x ./validate-aks-charts.sh
-        sudo chmod u+x ./validate-certs.sh
+          sudo chmod u+x ./validate-aks-charts.sh
+          sudo chmod u+x ./validate-certs.sh
 
-        echo "Waiting for the charts to be ready..."
-        kubectl wait --for=condition=complete job/app-monitoring-secrets-installer -n kube-system --timeout=60s
+          echo "Waiting for the charts to be ready..."
+          kubectl wait --for=condition=complete job/app-monitoring-secrets-installer -n kube-system --timeout=60s
 
-        echo "Checking for charts..."
-        if ! ./validate-aks-charts.sh; then
-          echo "Chart validation failed"
-          exit 1
-        fi
+          echo "Checking for charts..."
+          if ! ./validate-aks-charts.sh; then
+            echo "Chart validation failed"
+            exit 1
+          fi
 
-        echo "Checking for certificate installation..."
-        if ! ./validate-certs.sh; then
-          echo "Certificate validation failed"
-          exit 1
-        fi
+          echo "Checking for certificate installation..."
+          if ! ./validate-certs.sh; then
+            echo "Certificate validation failed"
+            exit 1
+          fi
 
     - task: AzureCLI@2
       displayName: "Install CR and test apps"
       inputs:
-      azureSubscription: ${{ variables.armServiceConnectionName }}
-      scriptType: bash
-      scriptLocation: inlineScript
-      inlineScript: |
-        cd appmonitoring/validation-helm
-        pwd
-        az account set --subscription ${{ variables.subscription }}
-        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
-        # Login to ACR for Helm to pull OCI charts
-        az acr login -n ${{ variables.containerRegistry }}
-        
-        export JAVA_TEST_IMAGE_NAME=${{ variables.javaTestAppImageName }}
-        export NODEJS_TEST_IMAGE_NAME=${{ variables.nodeTestAppImageName }}
-        export PYTHON_TEST_IMAGE_NAME=${{ variables.pythonTestAppImageName }}
-        export DOTNET_TEST_IMAGE_NAME=${{ variables.dotnetTestAppImageName }}
-        export GO_TEST_IMAGE_NAME=${{ variables.goTestAppImageName }}
+        azureSubscription: ${{ variables.armServiceConnectionName }}
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          cd appmonitoring/validation-helmlm
+          pwd
+          az account set --subscription ${{ variables.subscription }}
+          az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
+          # Login to ACR for Helm to pull OCI charts
+          az acr login -n ${{ variables.containerRegistry }}
+          
+          export JAVA_TEST_IMAGE_NAME=${{ variables.javaTestAppImageName }}
+          export NODEJS_TEST_IMAGE_NAME=${{ variables.nodeTestAppImageName }}
+          export PYTHON_TEST_IMAGE_NAME=${{ variables.pythonTestAppImageName }}
+          export DOTNET_TEST_IMAGE_NAME=${{ variables.dotnetTestAppImageName }}
+          export GO_TEST_IMAGE_NAME=${{ variables.goTestAppImageName }}
 
-        export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
-        export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
-        export PYTHON_TEST_APP_NAME="${{ variables.pythonTestAppName }}"
-        export DOTNET_TEST_APP_NAME="${{ variables.dotnetTestAppName }}"
-        export GO_TEST_APP_NAME="${{ variables.goTestAppName }}"
+          export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
+          export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
+          export PYTHON_TEST_APP_NAME="${{ variables.pythonTestAppName }}"
+          export DOTNET_TEST_APP_NAME="${{ variables.dotnetTestAppName }}"
+          export GO_TEST_APP_NAME="${{ variables.goTestAppName }}"
 
-        export TEST_APP_SOURCE_NAME="nodejs-source-app"
-        export NODEJS_CALLER_APP_NAME="nodejs-caller-app"
-        export TEST_NS="${{ variables.testNamespace }}"
-        export ACR_NAME="${{ variables.containerRegistry }}.azurecr.io"
+          export TEST_APP_SOURCE_NAME="nodejs-source-app"
+          export NODEJS_CALLER_APP_NAME="nodejs-caller-app"
+          export TEST_NS="${{ variables.testNamespace }}"
+          export ACR_NAME="${{ variables.containerRegistry }}.azurecr.io"
 
-        sudo chmod +x ../scripts/install-test-apps.sh
+          sudo chmod +x ../scripts/install-test-apps.sh
 
-        if ! ../scripts/install-test-apps.sh; then
-          echo "Test apps installation failed"
-          exit 1
-        fi
+          if ! ../scripts/install-test-apps.sh; then
+            echo "Test apps installation failed"
+            exit 1
+          fi
 
     - task: AzureCLI@2
       displayName: "Check test apps were mutated correctly"
       inputs:
-      azureSubscription: ${{ variables.armServiceConnectionName }}
-      scriptType: bash
-      scriptLocation: inlineScript
-      inlineScript: |
-        cd appmonitoring/scripts
-        pwd
-        az account set --subscription ${{ variables.subscription }}
-        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }}
-        
-        sudo chmod u+x ./validate-mutation.sh
+        azureSubscription: ${{ variables.armServiceConnectionName }}
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          cd appmonitoring/scriptsts
+          pwd
+          az account set --subscription ${{ variables.subscription }}
+          az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }}
+          
+          sudo chmod u+x ./validate-mutation.sh
 
-        if ! ./validate-mutation.sh ${{ variables.javaTestAppName }} ${{ variables.nodeTestAppName }} ${{ variables.pythonTestAppName }} ${{ variables.dotnetTestAppName }} ${{ variables.goTestAppName }} ${{ variables.testNamespace }}; then
-          echo "Mutation validation failed"
-          exit 1
-        fi
+          if ! ./validate-mutation.sh ${{ variables.javaTestAppName }} ${{ variables.nodeTestAppName }} ${{ variables.pythonTestAppName }} ${{ variables.dotnetTestAppName }} ${{ variables.goTestAppName }} ${{ variables.testNamespace }}; then
+            echo "Mutation validation failed"
+            exit 1
+          fi
 
     - task: AzureCLI@2
       displayName: "Check test apps are sending AI and OTEL telemetry"
       inputs:
-      azureSubscription: ${{ variables.armServiceConnectionName }}
-      scriptType: bash
-      scriptLocation: inlineScript
-      inlineScript: |
-        cd appmonitoring/scripts
-        pwd
-        az account set --subscription ${{ variables.subscription }}
-        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
-        export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
-        export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
-        export PYTHON_TEST_APP_NAME="${{ variables.pythonTestAppName }}"
-        export DOTNET_TEST_APP_NAME="${{ variables.dotnetTestAppName }}"
-        export GO_TEST_APP_NAME="${{ variables.goTestAppName }}"
+        azureSubscription: ${{ variables.armServiceConnectionName }}
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          cd appmonitoring/scriptsts
+          pwd
+          az account set --subscription ${{ variables.subscription }}
+          az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
+          export JAVA_TEST_APP_NAME="${{ variables.javaTestAppName }}"
+          export NODEJS_TEST_APP_NAME="${{ variables.nodeTestAppName }}"
+          export PYTHON_TEST_APP_NAME="${{ variables.pythonTestAppName }}"
+          export DOTNET_TEST_APP_NAME="${{ variables.dotnetTestAppName }}"
+          export GO_TEST_APP_NAME="${{ variables.goTestAppName }}"
 
-        sudo chmod u+x ./validate_ai.sh
+          sudo chmod u+x ./validate_ai.sh
 
-        echo "Validating AI telemetry..."
-        if ! ./validate_ai.sh ${{ variables.lawResourceId }} ${{ variables.testNamespace }} "java,nodejs,python,dotnet" "AppRoleInstance" "AppRequests" "AppDependencies" "AppMetrics" "AppExceptions"; then
-          echo "AI telemetry validation failed"
-          exit 1
-        fi
+          echo "Validating AI telemetry..."
+          if ! ./validate_ai.sh ${{ variables.lawResourceId }} ${{ variables.testNamespace }} "java,nodejs,python,dotnet" "AppRoleInstance" "AppRequests" "AppDependencies" "AppMetrics" "AppExceptions"; then
+            echo "AI telemetry validation failed"
+            exit 1
+          fi
 
-        echo "Validating OTEL telemetry..."
-        if ! ./validate_ai.sh ${{ variables.lawResourceId }} ${{ variables.testNamespace }} "go" "ServiceInstanceId" "OTelSpans" "OTelResources" "OTelLogs"; then
-          echo "OTEL telemetry validation failed"
-          exit 1
-        fi
+          echo "Validating OTEL telemetry..."
+          if ! ./validate_ai.sh ${{ variables.lawResourceId }} ${{ variables.testNamespace }} "go" "ServiceInstanceId" "OTelSpans" "OTelResources" "OTelLogs"; then
+            echo "OTEL telemetry validation failed"
+            exit 1
+          fi
 
-        echo "Validating AMW metrics..."
-        sudo chmod u+x ./validate_amw.sh
-        # TEMPORARY: Exclude dotnet from AMW validation due to bug where DotNet metrics are not emitted to AMW
-        # TODO: Revert to "java,nodejs,python,dotnet,go" once DotNet AMW metrics bug is fixed
-        if ! ./validate_amw.sh ${{ variables.amwQueryEndpoint }} ${{ variables.testNamespace }} "java,nodejs,python,go"; then
-          echo "AMW metrics validation failed"
-          exit 1
-        fi
+          echo "Validating AMW metrics..."
+          sudo chmod u+x ./validate_amw.sh
+          # TEMPORARY: Exclude dotnet from AMW validation due to bug where DotNet metrics are not emitted to AMW
+          # TODO: Revert to "java,nodejs,python,dotnet,go" once DotNet AMW metrics bug is fixed
+          if ! ./validate_amw.sh ${{ variables.amwQueryEndpoint }} ${{ variables.testNamespace }} "java,nodejs,python,go"; then
+            echo "AMW metrics validation failed"
+            exit 1
+          fi
 
     - task: AzureCLI@2
       displayName: "Validate Housekeeper Cron Job"
       inputs:
-      azureSubscription: ${{ variables.armServiceConnectionName }}
-      scriptType: bash
-      scriptLocation: inlineScript
-      inlineScript: |
-        cd appmonitoring/scripts
-        pwd
-        az account set --subscription ${{ variables.subscription }}
-        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
+        azureSubscription: ${{ variables.armServiceConnectionName }}
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          cd appmonitoring/scriptsts
+          pwd
+          az account set --subscription ${{ variables.subscription }}
+          az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
-        sudo chmod u+x ./test-cronjob.sh
-        sudo chmod u+x ./validate-certs.sh
+          sudo chmod u+x ./test-cronjob.sh
+          sudo chmod u+x ./validate-certs.sh
 
-        echo "Checking for charts..."
-        if ! ./test-cronjob.sh; then
-          echo "Cron Job validation failed"
-          exit 1
-        fi
+          echo "Checking for charts..."
+          if ! ./test-cronjob.sh; then
+            echo "Cron Job validation failed"
+            exit 1
+          fi
 
     - task: AzureCLI@2
       displayName: "Restart webhook deployment"
@@ -513,50 +513,50 @@ stages:
     - task: AzureCLI@2
       displayName: "Retag the image as ready to deploy"
       inputs:
-      azureSubscription: ${{ variables.armServiceConnectionName }}
-      scriptType: bash
-      scriptLocation: inlineScript
-      inlineScript: |
+        azureSubscription: ${{ variables.armServiceConnectionName }}
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
 
-        # Check if current commit is tagged and branch is ai_prod
-        CURRENT_BRANCH="$BUILD_SOURCEBRANCHNAME"
-        echo "Current branch is: $CURRENT_BRANCH"
-        if git describe --exact-match --tags >/dev/null 2>&1 && [ "$CURRENT_BRANCH" = "ai_prod" ]; then
-          echo "Current commit is tagged with: $(git describe --exact-match --tags) and branch is ai_prod."
-        else
-          if [ "$CURRENT_BRANCH" != "ai_prod" ]; then
-            echo "Current branch is not ai_prod. Cannot publish from another branch"
-            echo "##vso[task.logissue type=warning]Current branch is not ai_prod. YOU CANNOT RELEASE WITH THIS BUILD."
-            echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with a branch other than ai_prod. Exiting...."
+          # Check if current commit is tagged and branch is ai_prodod
+          CURRENT_BRANCH="$BUILD_SOURCEBRANCHNAME"
+          echo "Current branch is: $CURRENT_BRANCH"
+          if git describe --exact-match --tags >/dev/null 2>&1 && [ "$CURRENT_BRANCH" = "ai_prod" ]; then
+            echo "Current commit is tagged with: $(git describe --exact-match --tags) and branch is ai_prod."
           else
-            echo "Current commit is not tagged."
-            echo "##vso[task.logissue type=warning]Current commit is not tagged. YOU CANNOT RELEASE WITH THIS BUILD and we also cannot publish images without a tagged commit on ai_prod. Please tag this commit with the appropriate semver value and format."
-            echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with Untagged Commits. Exiting...."
+            if [ "$CURRENT_BRANCH" != "ai_prod" ]; then
+              echo "Current branch is not ai_prod. Cannot publish from another branch"
+              echo "##vso[task.logissue type=warning]Current branch is not ai_prod. YOU CANNOT RELEASE WITH THIS BUILD."
+              echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with a branch other than ai_prod. Exiting...."
+            else
+              echo "Current commit is not tagged."
+              echo "##vso[task.logissue type=warning]Current commit is not tagged. YOU CANNOT RELEASE WITH THIS BUILD and we also cannot publish images without a tagged commit on ai_prod. Please tag this commit with the appropriate semver value and format."
+              echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with Untagged Commits. Exiting...."
+            fi
+            exit 0
+          fifi
+
+          az --version
+          az account show
+          az account set -s ${{ variables.subscription }}
+
+          # Login to prod ACR (destination) to push the image
+          az acr login -n ${{ variables.containerRegistry }}
+          if [ $? -ne 0 ]; then
+            echo "##vso[task.logissue type=error]az acr login to ${{ variables.containerRegistry }} failed."
+            exit 1
           fi
-          exit 0
-        fi
+          
+          fullImageNameResolved="$(fullImageName)"
+          imageName="${fullImageNameResolved#*/}"
 
-        az --version
-        az account show
-        az account set -s ${{ variables.subscription }}
-
-        # Login to prod ACR (destination) to push the image
-        az acr login -n ${{ variables.containerRegistry }}
-        if [ $? -ne 0 ]; then
-          echo "##vso[task.logissue type=error]az acr login to ${{ variables.containerRegistry }} failed."
-          exit 1
-        fi
-        
-        fullImageNameResolved="$(fullImageName)"
-        imageName="${fullImageNameResolved#*/}"
-
-        echo "Retagging $(testImageName) as ${imageName} at ${{ variables.containerRegistry }}..."
-        az acr import --name ${{ variables.containerRegistry }} --source $(testImageName) --image ${imageName} --resource-group ${{ variables.containerRegistryResourceGroup }}
-        if [ $? -ne 0 ]; then
-          echo "##vso[task.logissue type=error]az acr import failed."
-          exit 1
-        fi
-        
+          echo "Retagging $(testImageName) as ${imageName} at ${{ variables.containerRegistry }}..."
+          az acr import --name ${{ variables.containerRegistry }} --source $(testImageName) --image ${imageName} --resource-group ${{ variables.containerRegistryResourceGroup }}
+          if [ $? -ne 0 ]; then
+            echo "##vso[task.logissue type=error]az acr import failed."
+            exit 1
+          fi
+          
           mkdir -p $(Build.ArtifactStagingDirectory)/linux
           echo "Setting the image name..."
           echo $(fullImageName) > $(Build.ArtifactStagingDirectory)/linux/fullImageName.txt
