@@ -1,0 +1,12 @@
+{
+  "name": "otlp-proxy",
+  "version": "1.0.0",
+  "description": "OTLP proxy that logs and forwards metrics",
+  "main": "server.js",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2",
+    "axios": "^1.6.0",
+    "protobufjs": "^7.2.5"
+  }
+}

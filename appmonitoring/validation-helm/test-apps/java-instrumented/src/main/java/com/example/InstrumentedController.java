@@ -3,6 +3,7 @@ package com.example;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.DoubleHistogram;
 import io.opentelemetry.api.metrics.LongHistogram;
 import io.opentelemetry.api.metrics.Meter;
 import io.opentelemetry.api.trace.Span;
@@ -36,6 +37,7 @@ public class InstrumentedController {
     private final LongHistogram requestDuration;
     private final LongCounter errorCounter;
     private final LongCounter cowsSoldCounter;
+    private final DoubleHistogram cowsSoldHistogram;
     private final WebClient webClient;
 
     @Value("${target.url:http://localhost:8080/}")
@@ -69,6 +71,10 @@ public class InstrumentedController {
             
         this.cowsSoldCounter = meter.counterBuilder("cows_sold_total")
             .setDescription("Total number of cows sold")
+            .build();
+            
+        this.cowsSoldHistogram = meter.histogramBuilder("cows_sold_total_histogram")
+            .setDescription("Request duration for cow sales in milliseconds")
             .build();
     }
 
@@ -121,6 +127,10 @@ public class InstrumentedController {
             io.opentelemetry.api.common.AttributeKey.stringKey("endpoint"), metricsEndpoint,
             io.opentelemetry.api.common.AttributeKey.stringKey("protocol"), metricsProtocol
         ));
+        cowsSoldHistogram.record(duration, Attributes.of(
+            io.opentelemetry.api.common.AttributeKey.stringKey("cow_type"), "Holstein"
+        ));
+        
         requestCounter.add(1, metricLabels);
         requestDuration.record(duration, metricLabels);
 
@@ -376,6 +386,10 @@ public class InstrumentedController {
             io.opentelemetry.api.common.AttributeKey.stringKey("endpoint"), metricsEndpoint,
             io.opentelemetry.api.common.AttributeKey.stringKey("protocol"), metricsProtocol
         ));
+        cowsSoldHistogram.record(duration, Attributes.of(
+            io.opentelemetry.api.common.AttributeKey.stringKey("cow_type"), "Holstein"
+        ));
+        
         requestCounter.add(1, labels);
         requestDuration.record(duration, labels);
 

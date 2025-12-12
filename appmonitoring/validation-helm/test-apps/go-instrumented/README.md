@@ -5,6 +5,7 @@ This is a Go web application instrumented with OpenTelemetry SDK that mirrors th
 ## Features
 
 - **OpenTelemetry Metrics**: Exports metrics using OTLP (OpenTelemetry Protocol)
+- **Console Metrics Export**: Outputs metrics containing "cow" in their name to stdout for debugging
 - **Configurable Endpoint**: Metrics endpoint configurable via `OTEL_EXPORTER_OTLP_METRICS_ENDPOINT` environment variable
 - **Configurable Protocol**: Protocol configurable via `OTEL_EXPORTER_OTLP_METRICS_PROTOCOL` environment variable (supports `http/protobuf` and `grpc`)
 - **Resource Attributes**: Respects `OTEL_RESOURCE_ATTRIBUTES` environment variable automatically via the OpenTelemetry Go SDK
@@ -47,10 +48,92 @@ The application exports the following custom metrics:
 
 All metrics include relevant labels such as method, route, status_code, etc.
 
+## Console Metrics Export (Debugging Feature)
+
+The application includes a console exporter that outputs metrics containing "cow" in their name to stdout. This feature runs in parallel with the OTLP exporter and is useful for:
+
+- **Debugging**: Quickly verify that custom business metrics (like `cows_sold_total`) are being generated
+- **Development**: See metric values in real-time without needing to query a metrics backend
+- **Testing**: Validate metric instrumentation during development
+
+The console output is formatted in a pretty-print JSON style and updates every 5 seconds. This exporter filters metrics at export time, so all metrics are still sent to the OTLP endpoint - only the console output is filtered.
+
+The console output includes full metric details:
+- **Temporality**: Counter and histogram metrics show `"Temporality": "CumulativeTemporality"` or `"DeltaTemporality"`
+- **Histogram Type**: Histogram structure reveals if it's explicit buckets (with `"Bounds"` array) or exponential (with `"Scale"`, `"ZeroCount"`, etc.)
+- **Data Points**: Full data point values with attributes and timestamps
+
+Example console output for a counter:
+```json
+{
+  "Resource": {...},
+  "ScopeMetrics": [{
+    "Scope": {"Name": "go-instrumented-test-app", "Version": "1.0.0"},
+    "Metrics": [{
+      "Name": "cows_sold_total",
+      "Description": "Total number of cows sold",
+      "Data": {
+        "DataPoints": [{
+          "Attributes": [{"Key": "cow_type", "Value": "Holstein"}],
+          "StartTime": "2024-01-01T00:00:00Z",
+          "Time": "2024-01-01T00:00:05Z",
+          "Value": 42
+        }],
+        "Temporality": "CumulativeTemporality",
+        "IsMonotonic": true
+      }
+    }]
+  }]
+}
+```
+
+Example for an explicit histogram (default):
+```json
+{
+  "Name": "http_request_duration_ms",
+  "Data": {
+    "DataPoints": [{
+      "Attributes": [...],
+      "StartTime": "2024-01-01T00:00:00Z",
+      "Time": "2024-01-01T00:00:05Z",
+      "Count": 100,
+      "Sum": 1234.5,
+      "Bounds": [0, 5, 10, 25, 50, 75, 100, 250, 500, 1000],
+      "BucketCounts": [0, 10, 20, 30, 15, 10, 8, 5, 2, 0, 0]
+    }],
+    "Temporality": "CumulativeTemporality"
+  }
+}
+```
+
+Example for an exponential histogram:
+```json
+{
+  "Name": "http_request_duration_ms",
+  "Data": {
+    "DataPoints": [{
+      "Attributes": [...],
+      "StartTime": "2024-01-01T00:00:00Z",
+      "Time": "2024-01-01T00:00:05Z",
+      "Count": 100,
+      "Sum": 1234.5,
+      "Scale": 0,
+      "ZeroCount": 0,
+      "PositiveBucket": {
+        "Offset": 0,
+        "BucketCounts": [10, 20, 30, 25, 15]
+      }
+    }],
+    "Temporality": "DeltaTemporality"
+  }
+}
+```
+
 ## Dependencies
 
 - **OpenTelemetry Go SDK**: Core OpenTelemetry functionality
 - **OTLP Exporters**: HTTP and gRPC exporters for OTLP protocol
+- **Stdout Metric Exporter**: Console exporter for debugging metrics
 - **otelhttp**: HTTP instrumentation middleware
 - **Gorilla Mux**: HTTP router and URL matcher
 - **Logrus**: Structured logging

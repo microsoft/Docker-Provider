@@ -14,6 +14,10 @@ const cowsSoldCounter = meter.createCounter('cows_sold_total', {
   description: 'Total number of cows sold',
 });
 
+const cowsSoldHistogram = meter.createHistogram('cows_sold_total_histogram', {
+  description: 'Request duration for cow sales in milliseconds',
+});
+
 // Winston logger setup
 const logger = winston.createLogger({
   level: 'debug',
@@ -28,8 +32,12 @@ const logger = winston.createLogger({
 
 // Endpoint that calls another app's endpoint
 app.get('/call-target', async (req, res) => {
+  const startTime = Date.now();
   try {
     cowsSoldCounter.add(1, { cow_type: 'Holstein NodeJs', endpoint: process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT, protocol: process.env.OTEL_EXPORTER_OTLP_METRICS_PROTOCOL });
+    
+    const duration = Date.now() - startTime;
+    cowsSoldHistogram.record(duration, { cow_type: 'Holstein NodeJs' });
   
     // Occasionally simulate an error (20% chance)
     if (Math.random() < 0.2) {
@@ -66,9 +74,13 @@ app.get('/call-target', async (req, res) => {
 });
 
 app.get('/', (req, res) => {
+  const startTime = Date.now();
   logger.info('Root endpoint hit');
 
   cowsSoldCounter.add(1, { cow_type: 'Holstein', endpoint: process.env.OTEL_EXPORTER_OTLP_METRICS_ENDPOINT, protocol: process.env.OTEL_EXPORTER_OTLP_METRICS_PROTOCOL });
+  
+  const duration = Date.now() - startTime;
+  cowsSoldHistogram.record(duration, { cow_type: 'Holstein' });
     
   res.send('Node.js test server is running.');
 });
