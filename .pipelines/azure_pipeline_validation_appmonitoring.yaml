@@ -46,19 +46,26 @@ variables:
   IS_PR: $[eq(variables['Build.Reason'], 'PullRequest')]
 
 stages:
-- stage: Setup
-  displayName: 'Setup and Preparation'
+- stage: Build
+  displayName: 'Build and Package'
   jobs:
-  - job: common
-    variables:
-      Codeql.SkipTaskAutoInjection: true
+  - job: build_linux  
+    
+    timeoutInMinutes: 120
     pool:
       name: rambhatt-test-es-pool
+    variables:
+      Codeql.SkipTaskAutoInjection: false
+      # This is necessary because of: https://github.com/moby/moby/issues/37965
+      DOCKER_BUILDKIT: 1
+
     steps:
     - checkout: self
       fetchDepth: 0
       fetchTags: true
+    
     - task: ComponentGovernanceComponentDetection@0
+    
     ## dev builds are in format Major.Minor.Patch-CommitAheadCount-CommitId
     ## prod release are in format Major.Minor.Patch
     ## preview release are in format preview-Major.Minor.Patch
@@ -68,8 +75,16 @@ stages:
         imageTag="${commit#appmonitoring-}"
               
         echo "imageTag is $imageTag"
-        
+        echo "##vso[task.setvariable variable=imageTag]$imageTag"
         echo "##vso[task.setvariable variable=imageTag;isOutput=true]$imageTag"
+        echo "##vso[task.setvariable variable=finalProdImageTag]$imageTag"
+        echo "##vso[task.setvariable variable=finalProdImageTag;isOutput=true]$imageTag"
+        echo "##vso[task.setvariable variable=testImageTagSuffix]$imageTag-$(Build.BuildId)"
+        echo "##vso[task.setvariable variable=prodImageTagSuffix]$imageTag-rc.$(Build.BuildId)"
+        echo "##vso[task.setvariable variable=devOciTagSufix]$imageTag-rc.$(Build.BuildId)"
+        echo "##vso[task.setvariable variable=testImageName]${{ variables.repoTestImageName }}:$imageTag-$(Build.BuildId)"
+        echo "##vso[task.setvariable variable=fullImageName]${{ variables.repoImageName }}:$imageTag-rc.$(Build.BuildId)"
+        echo "##vso[task.setvariable variable=fullOciImageName]${{ variables.repoExtensionPath }}:$imageTag-rc.$(Build.BuildId)"
         
         cd $(Build.SourcesDirectory)/deployment/mergebranch-webhook-deployment/ServiceGroupRoot/Scripts
         tar -czvf ../artifacts.tar.gz pushWebhookToAcr.sh
@@ -97,29 +112,7 @@ stages:
       inputs:
         pathToPublish: '$(Build.ArtifactStagingDirectory)'
         artifactName: drop
-
-- stage: Build
-  displayName: 'Build and Package'
-  dependsOn: Setup
-  jobs:
-  - job: build_linux  
     
-    timeoutInMinutes: 120
-    pool:
-      name: rambhatt-test-es-pool
-    variables:
-      imageTag: $[ stageDependencies.Setup.common.outputs['setup.imageTag'] ]
-      finalProdImageTag: $[ stageDependencies.Setup.common.outputs['setup.imageTag'] ]
-      testImageTagSuffix: $(imageTag)-$(Build.BuildId)
-      prodImageTagSuffix: $(imageTag)-rc.$(Build.BuildId)
-      devOciTagSufix: $(imageTag)-rc.$(Build.BuildId)
-      testImageName: ${{ variables.repoTestImageName }}:${{ variables.testImageTagSuffix }}
-      fullImageName: ${{ variables.repoImageName }}:${{ variables.prodImageTagSuffix }}
-      fullOciImageName: ${{ variables.repoExtensionPath }}:$(devOciTagSufix)
-      # This is necessary because of: https://github.com/moby/moby/issues/37965
-      DOCKER_BUILDKIT: 1
-
-    steps:
     - task: CodeQL3000Init@0
     - task: AzureCLI@2
       displayName: "Ready Image and push to ACR"
@@ -146,7 +139,7 @@ stages:
           #npm update
           
           echo "Building the typescript project..."
-          tsc --build --forcece
+          tsc --build --force
           
           if [ $? -ne 0 ]
           then
@@ -272,9 +265,9 @@ stages:
     pool:
       name: rambhatt-test-es-pool
     variables:
-      testImageName:  $[ stageDependencies.Build.build_linux.outputs['exportVars.testImageName'] ]
-      fullImageName:  $[ stageDependencies.Build.build_linux.outputs['exportVars.fullImageName'] ]
-      fullOciImageName:  $[ stageDependencies.Build.build_linux.outputs['exportVars.fullOciImageName'] ]
+      testImageName: $[ stageDependencies.Build.build_linux.outputs['exportVars.testImageName'] ]
+      fullImageName: $[ stageDependencies.Build.build_linux.outputs['exportVars.fullImageName'] ]
+      fullOciImageName: $[ stageDependencies.Build.build_linux.outputs['exportVars.fullOciImageName'] ]
       testImageTagSuffix: $[ stageDependencies.Build.build_linux.outputs['exportVars.testImageTagSuffix'] ]
       prodImageTagSuffix: $[ stageDependencies.Build.build_linux.outputs['exportVars.prodImageTagSuffix'] ]
       devOciTagSufix: $[ stageDependencies.Build.build_linux.outputs['exportVars.devOciTagSufix'] ]
