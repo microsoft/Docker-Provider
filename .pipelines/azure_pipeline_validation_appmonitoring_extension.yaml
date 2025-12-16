@@ -245,7 +245,7 @@ jobs:
 
   steps:
   - task: AzureCLI@2
-    displayName: "Create deployment in AKS"
+    displayName: "Prepare and Push Extension charts as OCI"
     inputs:
       azureSubscription: ${{ variables.armServiceConnectionName }}
       scriptType: bash
@@ -277,6 +277,18 @@ jobs:
 
         echo "Pushing modified chart to OCI registry..."
         helm push app-monitoring-extension-$(devOciTagSufix).tgz oci://${{ variables.repoTestExtensionPath }}
+
+  - task: AzureCLI@2
+    displayName: "Create deployment in AKS"
+    inputs:
+      azureSubscription: ${{ variables.armServiceConnectionName }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        cd appmonitoring/scripts
+        pwd
+        az account set --subscription ${{ variables.subscription }}
+        az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
         cd scripts
         sudo chmod u+x ./clean-install-appmonitoring-oci.sh
