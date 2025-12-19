@@ -62,6 +62,7 @@ public class HomeController : ControllerBase
     private static readonly Histogram<double> _httpRequestDurationMs = _meter.CreateHistogram<double>("http_request_duration_ms", description: "Duration of HTTP requests in milliseconds");
     private static readonly Counter<long> _httpErrorsTotal = _meter.CreateCounter<long>("http_errors_total", description: "Total number of HTTP errors");
     private static readonly Counter<long> _cowsSoldTotal = _meter.CreateCounter<long>("cows_sold_total", description: "Total number of cows sold");
+    private static readonly Histogram<double> _cowsSoldTotalHistogram = _meter.CreateHistogram<double>("cows_sold_total_histogram", description: "Request duration for cow sales in milliseconds");
 
     public HomeController(IHttpClientFactory httpClientFactory, ILogger<HomeController> logger)
     {
@@ -85,6 +86,10 @@ public class HomeController : ControllerBase
 
             _httpRequestsTotal.Add(1, labels.ToArray());
             _cowsSoldTotal.Add(1, new KeyValuePair<string, object?>[]
+            {
+                new("cow_type", "Holstein .NET Instrumented")
+            });
+            _cowsSoldTotalHistogram.Record(stopwatch.ElapsedMilliseconds, new KeyValuePair<string, object?>[]
             {
                 new("cow_type", "Holstein .NET Instrumented")
             });
@@ -136,6 +141,13 @@ public class HomeController : ControllerBase
             {
                 new("cow_type", "Holstein .NET Instrumented")
             });
+<<<<<<< HEAD
+=======
+            _cowsSoldTotalHistogram.Record(stopwatch.ElapsedMilliseconds, new KeyValuePair<string, object?>[]
+            {
+                new("cow_type", "Holstein .NET Instrumented")
+            });
+>>>>>>> origin/ai_prod
             
             if (new Random().NextDouble() < 0.2)
             {

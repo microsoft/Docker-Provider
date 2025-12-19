@@ -1309,4 +1309,314 @@ describe("Mutator", () => {
         expect(result.response.status.code).toBe(400);
         expect(result.response.status.message).toContain("inject-configuration annotation is not supported when OTEL is disabled");
     });
+
+    it("JAVA_TOOL_OPTIONS - should prepend instrumentation when customer has existing value", async () => {
+        // ASSUME - Customer has JAVA_TOOL_OPTIONS with their own settings
+        const crDefault: InstrumentationCR = {
+            metadata: {
+                name: "default",
+                namespace: "ns1",
+                resourceVersion: "1"
+            },
+            spec: {
+                settings: {
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java]
+                },
+                destination: {
+                    applicationInsightsConnectionString: "InstrumentationKey=test-key;ApplicationId=test-app-id"
+                }
+            }
+        };
+
+        const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
+        crs.Upsert(crDefault);
+
+        const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject4));
+        admissionReview.request.object.metadata.namespace = "ns1";
+        admissionReview.request.object.spec.template.metadata = <IMetadata>{
+            annotations: {
+                "instrumentation.opentelemetry.io/inject-java": "true"
+            }
+        };
+
+        // Add existing JAVA_TOOL_OPTIONS to the container
+        admissionReview.request.object.spec.template.spec.containers[0].env = [
+            { name: "JAVA_TOOL_OPTIONS", value: "-Xmx512m -XX:+UseG1GC" }
+        ];
+
+        // ACT
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
+
+        // ASSERT
+        expect(result.response.allowed).toBe(true);
+        expect(result.response.status.code).toBe(200);
+
+        const patchString: string = atob(result.response.patch);
+        const patches: object[] = JSON.parse(patchString);
+        const obj: IObjectType = (<any>patches[0]).value as IObjectType;
+        const container = obj.spec.template.spec.containers[0];
+
+        // Verify JAVA_TOOL_OPTIONS has our instrumentation prepended to customer's value
+        const javaToolOptions = container.env.find(env => env.name === "JAVA_TOOL_OPTIONS");
+        expect(javaToolOptions).toBeDefined();
+        expect(javaToolOptions.value).toBe("-javaagent:/azure-monitor-auto-instrumentation-java/applicationinsights-agent-codeless.jar -Dotel.metrics.exporter=otlp,azure_monitor -Xmx512m -XX:+UseG1GC");
+
+        // Verify backup exists
+        const backup = container.env.find(env => env.name === "JAVA_TOOL_OPTIONS_BEFORE_AUTO_INSTRUMENTATION");
+        expect(backup).toBeDefined();
+        expect(backup.value).toBe("-Xmx512m -XX:+UseG1GC");
+    });
+
+    it("JAVA_TOOL_OPTIONS - should only use our value when customer has no existing value", async () => {
+        // ASSUME - Customer does NOT have JAVA_TOOL_OPTIONS
+        const crDefault: InstrumentationCR = {
+            metadata: {
+                name: "default",
+                namespace: "ns1",
+                resourceVersion: "1"
+            },
+            spec: {
+                settings: {
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java]
+                },
+                destination: {
+                    applicationInsightsConnectionString: "InstrumentationKey=test-key;ApplicationId=test-app-id"
+                }
+            }
+        };
+
+        const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
+        crs.Upsert(crDefault);
+
+        const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject4));
+        admissionReview.request.object.metadata.namespace = "ns1";
+        admissionReview.request.object.spec.template.metadata = <IMetadata>{
+            annotations: {
+                "instrumentation.opentelemetry.io/inject-java": "true"
+            }
+        };
+
+        // No JAVA_TOOL_OPTIONS in env
+        admissionReview.request.object.spec.template.spec.containers[0].env = [];
+
+        // ACT
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
+
+        // ASSERT
+        expect(result.response.allowed).toBe(true);
+        expect(result.response.status.code).toBe(200);
+
+        const patchString: string = atob(result.response.patch);
+        const patches: object[] = JSON.parse(patchString);
+        const obj: IObjectType = (<any>patches[0]).value as IObjectType;
+        const container = obj.spec.template.spec.containers[0];
+
+        // Find JAVA_TOOL_OPTIONS
+        const javaToolOptions = container.env.find(env => env.name === "JAVA_TOOL_OPTIONS");
+        expect(javaToolOptions).toBeDefined();
+        expect(javaToolOptions.value).toBe("-javaagent:/azure-monitor-auto-instrumentation-java/applicationinsights-agent-codeless.jar -Dotel.metrics.exporter=otlp,azure_monitor");
+        
+        // Verify backup does NOT exist (no original value to backup)
+        const backup = container.env.find(env => env.name === "JAVA_TOOL_OPTIONS_BEFORE_AUTO_INSTRUMENTATION");
+        expect(backup).toBeUndefined();
+    });
+
+    it("JAVA_TOOL_OPTIONS - should restore customer value during unpatch", async () => {
+        // ASSUME - Start with a mutated deployment that has JAVA_TOOL_OPTIONS with prepended instrumentation
+        const crDefault: InstrumentationCR = {
+            metadata: {
+                name: "default",
+                namespace: "ns1",
+                resourceVersion: "1"
+            },
+            spec: {
+                settings: {
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java]
+                },
+                destination: {
+                    applicationInsightsConnectionString: "InstrumentationKey=test-key;ApplicationId=test-app-id"
+                }
+            }
+        };
+
+        const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
+        crs.Upsert(crDefault);
+
+        const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject4));
+        admissionReview.request.object.metadata.namespace = "ns1";
+        
+        // Simulate already mutated deployment
+        admissionReview.request.object.metadata.annotations = {
+            "monitor.azure.com/instrumentation": JSON.stringify({
+                crName: "default",
+                crResourceVersion: "1",
+                platforms: ["Java"]
+            })
+        };
+        admissionReview.request.object.spec.template.metadata = <IMetadata>{
+            annotations: {
+                "instrumentation.opentelemetry.io/inject-java": "true"
+            }
+        };
+
+        // Set up mutated state with prepended instrumentation and backup
+        admissionReview.request.object.spec.template.spec.containers[0].env = [
+            { 
+                name: "JAVA_TOOL_OPTIONS", 
+                value: "-javaagent:/azure-monitor-auto-instrumentation-java/applicationinsights-agent-codeless.jar -Dotel.metrics.exporter=otlp,azure_monitor -Xmx512m -XX:+UseG1GC" 
+            },
+            { 
+                name: "JAVA_TOOL_OPTIONS_BEFORE_AUTO_INSTRUMENTATION", 
+                value: "-Xmx512m -XX:+UseG1GC" 
+            }
+        ];
+
+        // ACT - Mutate again (this will unpatch first, then patch again)
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
+
+        // ASSERT
+        expect(result.response.allowed).toBe(true);
+        expect(result.response.status.code).toBe(200);
+
+        const patchString: string = atob(result.response.patch);
+        const patches: object[] = JSON.parse(patchString);
+        const obj: IObjectType = (<any>patches[0]).value as IObjectType;
+        const container = obj.spec.template.spec.containers[0];
+
+        // After unpatch and repatch, should have the same structure
+        const javaToolOptions = container.env.find(env => env.name === "JAVA_TOOL_OPTIONS");
+        expect(javaToolOptions).toBeDefined();
+        expect(javaToolOptions.value).toContain("-javaagent:/azure-monitor-auto-instrumentation-java/applicationinsights-agent-codeless.jar");
+        expect(javaToolOptions.value).toContain("-Xmx512m -XX:+UseG1GC");
+        
+        // Verify backup still exists with original customer value
+        const backup = container.env.find(env => env.name === "JAVA_TOOL_OPTIONS_BEFORE_AUTO_INSTRUMENTATION");
+        expect(backup).toBeDefined();
+        expect(backup.value).toBe("-Xmx512m -XX:+UseG1GC");
+
+        // Verify no double-prepending occurred
+        const matches = javaToolOptions.value.match(/-javaagent:/g);
+        expect(matches).toHaveLength(1);
+    });
+
+    it("JAVA_TOOL_OPTIONS - should handle complete unmutation", async () => {
+        // ASSUME - Start with a mutated deployment, then remove Java annotation to unmutate
+        const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
+
+        const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject4));
+        admissionReview.request.object.metadata.namespace = "ns1";
+        
+        // Simulate already mutated deployment
+        admissionReview.request.object.metadata.annotations = {
+            "monitor.azure.com/instrumentation": JSON.stringify({
+                crName: "default",
+                crResourceVersion: "1",
+                platforms: ["Java"]
+            })
+        };
+        
+        // No inject annotation = unmutation
+        admissionReview.request.object.spec.template.metadata = <IMetadata>{
+            annotations: {}
+        };
+
+        // Set up mutated state with prepended instrumentation and backup
+        admissionReview.request.object.spec.template.spec.containers[0].env = [
+            { 
+                name: "JAVA_TOOL_OPTIONS", 
+                value: "-javaagent:/azure-monitor-auto-instrumentation-java/applicationinsights-agent-codeless.jar -Dotel.metrics.exporter=otlp,azure_monitor -Xmx512m -XX:+UseG1GC" 
+            },
+            { 
+                name: "JAVA_TOOL_OPTIONS_BEFORE_AUTO_INSTRUMENTATION", 
+                value: "-Xmx512m -XX:+UseG1GC" 
+            },
+            { name: "OTHER_VAR", value: "keep-me" }
+        ];
+
+        // ACT - Unmutate (no CR, no annotations)
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
+
+        // ASSERT
+        expect(result.response.allowed).toBe(true);
+        expect(result.response.status.code).toBe(200);
+
+        const patchString: string = atob(result.response.patch);
+        const patches: object[] = JSON.parse(patchString);
+        const obj: IObjectType = (<any>patches[0]).value as IObjectType;
+        const container = obj.spec.template.spec.containers[0];
+
+        // Should restore original customer value
+        const javaToolOptions = container.env.find(env => env.name === "JAVA_TOOL_OPTIONS");
+        expect(javaToolOptions).toBeDefined();
+        expect(javaToolOptions.value).toBe("-Xmx512m -XX:+UseG1GC");
+        expect(javaToolOptions.value).not.toContain("-javaagent:");
+        
+        // Backup should be removed
+        const backup = container.env.find(env => env.name === "JAVA_TOOL_OPTIONS_BEFORE_AUTO_INSTRUMENTATION");
+        expect(backup).toBeUndefined();
+
+        // Other env vars should be preserved
+        const otherVar = container.env.find(env => env.name === "OTHER_VAR");
+        expect(otherVar).toBeDefined();
+        expect(otherVar.value).toBe("keep-me");
+    });
+
+    it("JAVA_TOOL_OPTIONS - should handle empty string customer value", async () => {
+        // ASSUME - Customer has JAVA_TOOL_OPTIONS but it's an empty string
+        const crDefault: InstrumentationCR = {
+            metadata: {
+                name: "default",
+                namespace: "ns1",
+                resourceVersion: "1"
+            },
+            spec: {
+                settings: {
+                    autoInstrumentationPlatforms: [AutoInstrumentationPlatforms.Java]
+                },
+                destination: {
+                    applicationInsightsConnectionString: "InstrumentationKey=test-key;ApplicationId=test-app-id"
+                }
+            }
+        };
+
+        const crs: InstrumentationCRsCollection = new InstrumentationCRsCollection();
+        crs.Upsert(crDefault);
+
+        const admissionReview: IAdmissionReview = JSON.parse(JSON.stringify(TestObject4));
+        admissionReview.request.object.metadata.namespace = "ns1";
+        admissionReview.request.object.spec.template.metadata = <IMetadata>{
+            annotations: {
+                "instrumentation.opentelemetry.io/inject-java": "true"
+            }
+        };
+
+        // Customer has empty JAVA_TOOL_OPTIONS
+        admissionReview.request.object.spec.template.spec.containers[0].env = [
+            { name: "JAVA_TOOL_OPTIONS", value: "" }
+        ];
+
+        // ACT
+        const result = JSON.parse(await new Mutator(admissionReview, crs, clusterArmId, clusterArmRegion, null, testOtelParams).Mutate());
+
+        // ASSERT
+        expect(result.response.allowed).toBe(true);
+        expect(result.response.status.code).toBe(200);
+
+        const patchString: string = atob(result.response.patch);
+        const patches: object[] = JSON.parse(patchString);
+        const obj: IObjectType = (<any>patches[0]).value as IObjectType;
+        const container = obj.spec.template.spec.containers[0];
+
+        // When customer value is empty string, prepending creates: "ourValue " + "" = "ourValue " (with trailing space)
+        // But since the empty string contributes nothing, we get just our value with space separator
+        const javaToolOptions = container.env.find(env => env.name === "JAVA_TOOL_OPTIONS");
+        expect(javaToolOptions).toBeDefined();
+        // The actual behavior is: ourOptions + " " + "" results in trailing space being trimmed or not added
+        expect(javaToolOptions.value).toBe("-javaagent:/azure-monitor-auto-instrumentation-java/applicationinsights-agent-codeless.jar -Dotel.metrics.exporter=otlp,azure_monitor");
+        
+        // Backup should exist with empty string
+        const backup = container.env.find(env => env.name === "JAVA_TOOL_OPTIONS_BEFORE_AUTO_INSTRUMENTATION");
+        expect(backup).toBeDefined();
+        expect(backup.value).toBe("");
+    });
 });

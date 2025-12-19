@@ -284,6 +284,11 @@ export class Mutations {
         }
 
         if (otelParams.metricsEnabled) {
+            const metricsTemporalityPreferenceEnvVar = "OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE";
+            const metricsHistogramAggregationEnvVar = "OTEL_EXPORTER_OTLP_METRICS_DEFAULT_HISTOGRAM_AGGREGATION";
+            const existingTemporalityPreference = existingEnvironmentVariables?.[metricsTemporalityPreferenceEnvVar]?.value;
+            const existingHistogramAggregation = existingEnvironmentVariables?.[metricsHistogramAggregationEnvVar]?.value;
+
             returnValue.push(
                 // setting this to ensure Microsoft distros do send OTLP metrics (forked, sent to Breeze and OTLP endpoint). For OSS SDKs this defaults to "otlp" anyway, so no impact
                 {
@@ -302,6 +307,14 @@ export class Mutations {
                     name: "OTEL_EXPORTER_OTLP_METRICS_INSECURE", //!!!
                     value: "true"
                 },
+                {
+                    name: metricsTemporalityPreferenceEnvVar,
+                    value: existingTemporalityPreference || "delta" // customer's value wins if any
+                },
+                {
+                    name: metricsHistogramAggregationEnvVar,
+                    value: existingHistogramAggregation || "base2_exponential_bucket_histogram" // customer's value wins if any
+                },
             );
         }
 
@@ -310,9 +323,14 @@ export class Mutations {
             switch (platforms[i] as AutoInstrumentationPlatforms) {
                 case AutoInstrumentationPlatforms.Java:
                     {
+                        const javaToolOptionsEnvVarName = "JAVA_TOOL_OPTIONS";
+                        const ourJavaToolOptions = `-javaagent:${Mutations.agentVolumeMountPathJava}/applicationinsights-agent-codeless.jar -Dotel.metrics.exporter=otlp,azure_monitor`;
+                        const existingJavaToolOptions = existingEnvironmentVariables?.[javaToolOptionsEnvVarName]?.value;
+                        const javaToolOptionsValue = existingJavaToolOptions ? `${ourJavaToolOptions} ${existingJavaToolOptions}` : ourJavaToolOptions;
+                        
                         returnValue.push(...[{
-                            name: "JAVA_TOOL_OPTIONS",
-                            value: `-javaagent:${Mutations.agentVolumeMountPathJava}/applicationinsights-agent-codeless.jar -Dotel.metrics.exporter=otlp,azure_monitor`,
+                            name: javaToolOptionsEnvVarName,
+                            value: javaToolOptionsValue,
                             platformSpecific: platforms[i]
                         },
                         {

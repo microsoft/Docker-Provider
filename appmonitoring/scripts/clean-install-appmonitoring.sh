@@ -12,14 +12,14 @@ echo $IMAGE_TAG
 
 cd ../validation-helm
 echo "Uninstalling appmonitoring addon helm..."
-if ! helm uninstall -n kube-system appmonitoring-addon; then
+if ! helm uninstall -n kube-system appmonitoring-addon --wait; then
   echo "Error: helm uninstall failed."
 else
     echo "Uninstall complete."
 fi
 
 echo "Uninstalling app-monitoring extension helm..."
-if ! helm uninstall -n kube-system app-monitoring-extension --ignore-not-found; then
+if ! helm uninstall -n kube-system app-monitoring-extension --ignore-not-found --wait; then
   echo "Error: helm uninstall failed."
 else
     echo "Uninstall complete."
@@ -33,7 +33,7 @@ else
 fi
 
 echo "Installing appmonitoring addon with image tag: $IMAGE_TAG"
-if ! helm install -n kube-system appmonitoring-addon ./app-monitoring-addon --set AppmonitoringAgent.imageTag=$IMAGE_TAG --set AppmonitoringAgent.replicas=2; then
+if ! helm install -n kube-system appmonitoring-addon ./app-monitoring-addon --set AppmonitoringAgent.imageTag=$IMAGE_TAG --set AppmonitoringAgent.replicas=2 --wait --timeout 5m; then
   echo "Error: helm install failed."
   exit 1
 fi

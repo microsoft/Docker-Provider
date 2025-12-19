@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/trace"
@@ -39,10 +40,11 @@ var (
 	logger log.Logger
 
 	// Custom metrics (same as nodejs-instrumented)
-	httpRequestsTotal   metric.Int64Counter
-	httpRequestDuration metric.Float64Histogram
-	httpErrorsTotal     metric.Int64Counter
-	cowsSoldTotal       metric.Int64Counter
+	httpRequestsTotal      metric.Int64Counter
+	httpRequestDuration    metric.Float64Histogram
+	httpErrorsTotal        metric.Int64Counter
+	cowsSoldTotal          metric.Int64Counter
+	cowsSoldTotalHistogram metric.Float64Histogram
 
 	// Configuration
 	serviceName    = getEnv("OTEL_SERVICE_NAME", "go-instrumented-test-app")
@@ -57,6 +59,84 @@ func getEnv(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+// loggingExporter wraps an exporter and logs all exported data to see what's actually being sent
+type loggingExporter struct {
+	exporter sdkmetric.Exporter
+	name     string
+}
+
+func newLoggingExporter(exporter sdkmetric.Exporter, name string) *loggingExporter {
+	return &loggingExporter{
+		exporter: exporter,
+		name:     name,
+	}
+}
+
+func (e *loggingExporter) Temporality(kind sdkmetric.InstrumentKind) metricdata.Temporality {
+	return e.exporter.Temporality(kind)
+}
+
+func (e *loggingExporter) Aggregation(kind sdkmetric.InstrumentKind) sdkmetric.Aggregation {
+	return e.exporter.Aggregation(kind)
+}
+
+func (e *loggingExporter) Export(ctx context.Context, rm *metricdata.ResourceMetrics) error {
+	fmt.Printf("\n========== [%s] Export Called ==========\n", e.name)
+
+	// Filter and create a simplified view
+	filteredData := make(map[string]interface{})
+
+	// Only include k8s.pod.name from resource attributes
+	if rm.Resource != nil {
+		for _, attr := range rm.Resource.Attributes() {
+			if string(attr.Key) == "k8s.pod.name" {
+				filteredData["k8s.pod.name"] = attr.Value.AsString()
+				break
+			}
+		}
+	}
+
+	// Filter metrics to only include those with "cow" in the name
+	var cowMetrics []map[string]interface{}
+	for _, sm := range rm.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			if strings.Contains(strings.ToLower(m.Name), "cow") {
+				metricData := map[string]interface{}{
+					"name":        m.Name,
+					"description": m.Description,
+					"unit":        m.Unit,
+					"data":        m.Data,
+				}
+				cowMetrics = append(cowMetrics, metricData)
+			}
+		}
+	}
+
+	if len(cowMetrics) > 0 {
+		filteredData["cow_metrics"] = cowMetrics
+
+		data, err := json.MarshalIndent(filteredData, "", "  ")
+		if err != nil {
+			fmt.Printf("Error marshaling data: %v\n", err)
+		} else {
+			fmt.Println(string(data))
+		}
+	}
+
+	fmt.Printf("\n========== [%s] Calling Underlying Exporter ==========\n\n", e.name)
+
+	// Call the underlying exporter
+	return e.exporter.Export(ctx, rm)
+}
+
+func (e *loggingExporter) ForceFlush(ctx context.Context) error {
+	return e.exporter.ForceFlush(ctx)
+}
+
+func (e *loggingExporter) Shutdown(ctx context.Context) error {
+	return e.exporter.Shutdown(ctx)
 }
 
 // initOpenTelemetry initializes OpenTelemetry with OTLP exporters
@@ -94,10 +174,16 @@ func initOpenTelemetry(ctx context.Context) (*sdkmetric.MeterProvider, *sdktrace
 		return nil, nil, nil, fmt.Errorf("failed to create OTLP metric exporter: %w", err)
 	}
 
+	// Wrap OTLP exporter with logging to see exactly what it sends
+	loggingOTLPExporter := newLoggingExporter(metricExporter, "OTLP")
+
+	fmt.Println("Logging wrapper enabled - will show what OTLP exporter actually sends")
+
 	meterProvider := sdkmetric.NewMeterProvider(
 		sdkmetric.WithResource(res),
+		// OTLP exporter wrapped with logging for all metrics
 		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(
-			metricExporter,
+			loggingOTLPExporter,
 			sdkmetric.WithInterval(5*time.Second),
 		)),
 	)
@@ -161,6 +247,12 @@ func initMetrics() error {
 		return fmt.Errorf("failed to create cows_sold_total counter: %w", err)
 	}
 
+	cowsSoldTotalHistogram, err = meter.Float64Histogram("cows_sold_total_histogram",
+		metric.WithDescription("Request duration for cow sales in milliseconds"))
+	if err != nil {
+		return fmt.Errorf("failed to create cows_sold_total_histogram histogram: %w", err)
+	}
+
 	return nil
 }
 
@@ -190,6 +282,11 @@ func metricsMiddleware(next http.Handler) http.Handler {
 
 		// Record cows sold metric (same as nodejs-instrumented)
 		cowsSoldTotal.Add(r.Context(), 1, metric.WithAttributes(
+			attribute.String("cow_type", "Holstein"),
+		))
+
+		// Record cows sold histogram with request duration
+		cowsSoldTotalHistogram.Record(r.Context(), duration, metric.WithAttributes(
 			attribute.String("cow_type", "Holstein"),
 		))
 
