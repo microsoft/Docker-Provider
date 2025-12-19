@@ -141,13 +141,10 @@ public class HomeController : ControllerBase
             {
                 new("cow_type", "Holstein .NET Instrumented")
             });
-<<<<<<< HEAD
-=======
             _cowsSoldTotalHistogram.Record(stopwatch.ElapsedMilliseconds, new KeyValuePair<string, object?>[]
             {
                 new("cow_type", "Holstein .NET Instrumented")
             });
->>>>>>> origin/ai_prod
             
             if (new Random().NextDouble() < 0.2)
             {
