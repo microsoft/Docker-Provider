@@ -188,7 +188,7 @@ stages:
           az --version
           az account show
           az account set -s ${{ variables.subscription }}
-          az acr login -n ${{ variables.containerRegistry }}}}
+          az acr login -n ${{ variables.containerRegistry }}
 
           # NOTE: Using the prometheus-collector team's cached buildx image since moby/buildkit:buildx-stable-1 getting throttled
           docker pull mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1
