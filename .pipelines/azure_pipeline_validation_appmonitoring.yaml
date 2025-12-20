@@ -364,7 +364,12 @@ stages:
           export TEST_NS="${{ variables.testNamespace }}"
           export ACR_NAME="${{ variables.containerRegistry }}.azurecr.io"
 
-          sudo chmod +x ../scripts/install-test-apps.sh
+          echo "Validating AMW metrics..."
+          sudo chmod u+x ./validate_amw.sh
+          if ! ./validate_amw.sh ${{ variables.amwQueryEndpoint }} ${{ variables.testNamespace }} "java,nodejs,python,dotnet,go"; then
+            echo "AMW metrics validation failed"
+            exit 1
+          fi
 
           if ! ../scripts/install-test-apps.sh; then
             echo "Test apps installation failed"
