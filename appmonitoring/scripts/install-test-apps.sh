@@ -75,7 +75,7 @@ if ! kubectl get namespace "${TEST_NS}" >/dev/null 2>&1; then
   kubectl create namespace "${TEST_NS}"
 fi
 
-cat appmonitoring-cr.yaml | envsubst | kubectl apply -f -
+cat ../validation-helm/appmonitoring-cr.yaml | envsubst | kubectl apply -f -
 echo "Wait for 10s for CR to be applied and picked up..."
 sleep 10
 
