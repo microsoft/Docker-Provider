@@ -371,6 +371,8 @@ stages:
             exit 1
           fi
 
+          echo "Installing test apps..."
+          sudo chmod u+x ../scripts/install-test-apps.sh
           if ! ../scripts/install-test-apps.sh; then
             echo "Test apps installation failed"
             exit 1
@@ -389,7 +391,7 @@ stages:
           az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }}
           
           sudo chmod u+x ./validate-mutation.sh
-
+          echo "Validating mutation of test apps..."
           if ! ./validate-mutation.sh ${{ variables.javaTestAppName }} ${{ variables.nodeTestAppName }} ${{ variables.pythonTestAppName }} ${{ variables.dotnetTestAppName }} ${{ variables.goTestAppName }} ${{ variables.testNamespace }}; then
             echo "Mutation validation failed"
             exit 1
