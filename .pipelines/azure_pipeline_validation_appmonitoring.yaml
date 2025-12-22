@@ -340,7 +340,7 @@ stages:
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
-          cd appmonitoring/validation-helmlm
+          cd appmonitoring/scripts
           pwd
           az account set --subscription ${{ variables.subscription }}
           az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
