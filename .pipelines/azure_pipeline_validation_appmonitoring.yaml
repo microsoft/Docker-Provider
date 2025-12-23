@@ -257,10 +257,10 @@ stages:
       name: exportVars
 
 - stage: Validate
-  displayName: 'Validation and Testing'
+  displayName: 'Validation and Testing of Addon and Extension Paths'
   dependsOn: Build
   jobs:
-  - job: validate_webhook_image
+  - job: validate_addon_path
     # condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
     pool:
       name: rambhatt-test-es-pool
@@ -484,7 +484,7 @@ stages:
           kubectl get pods -n kube-system -l app=app-monitoring-webhook -o wide
           echo "Webhook deployment is healthy again, took ${rollout_duration_ms} milliseconds to restart."
 
-  - job: validate_webhook_image
+  - job: validate_extension_path
     dependsOn: build_linux
     condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
     pool:
