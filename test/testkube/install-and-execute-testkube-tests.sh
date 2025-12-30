@@ -77,12 +77,17 @@ execution_id=""
 if [[ $LinuxTestsOnly == "true" ]]; then
     echo "Running Linux tests only"
     kubectl testkube run testsuite e2e-tests-linux --verbose
-    execution_id=$(kubectl testkube get testsuiteexecution | grep e2e-tests-linux | head -n 1 | awk '{print $1}')
 else
     echo "Running all tests"
     kubectl testkube run testsuite e2e-tests-all --verbose
-    execution_id=$(kubectl testkube get testsuiteexecution | grep e2e-tests-all | head -n 1 | awk '{print $1}')
 fi
+
+echo "Waiting for execution to be created..."
+sleep 5
+
+echo "Fetching test suite executions..."
+kubectl testkube get testsuiteexecution
+execution_id=$(kubectl testkube get testsuiteexecution | grep -i "e2e-tests" | head -n 1 | awk '{print $1}')
 
 echo "Execution ID: $execution_id"
 
