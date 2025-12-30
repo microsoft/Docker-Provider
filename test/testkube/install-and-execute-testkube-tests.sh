@@ -40,7 +40,25 @@ fi
 echo "Install testkube on the cluster"
 helm repo add kubeshop https://kubeshop.github.io/helm-charts
 helm repo update
-helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./helm-testkube-values.yaml
+
+# Wait for any in-progress operations to complete
+echo "Checking for in-progress Helm operations..."
+max_wait=60
+waited=0
+while helm list -n testkube --pending 2>/dev/null | grep -q testkube; do
+    if [ $waited -ge $max_wait ]; then
+        echo "Timed out waiting for pending operations. Attempting cleanup..."
+        kubectl delete secret -n testkube -l status=pending-upgrade,name=testkube 2>/dev/null || true
+        kubectl delete secret -n testkube -l status=pending-install,name=testkube 2>/dev/null || true
+        sleep 5
+        break
+    fi
+    echo "Waiting for pending Helm operation to complete... ($waited/$max_wait seconds)"
+    sleep 5
+    waited=$((waited + 5))
+done
+
+helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./helm-testkube-values.yaml --wait --timeout 5m
 
 echo "Install testkube CRIs"
 export AZURE_CLIENT_ID=$AzureClientId
@@ -58,13 +76,15 @@ echo "Run testkube tests"
 execution_id=""
 if [[ $LinuxTestsOnly == "true" ]]; then
     echo "Running Linux tests only"
-    kubectl testkube run testsuite e2e-tests-linux --job-template ./custom-job-template.yaml --verbose
-    execution_id=$(kubectl testkube get testsuiteexecutions --test-suite e2e-tests-linux --limit 1 | grep e2e-tests | awk '{print $1}')
+    kubectl testkube run testsuite e2e-tests-linux --verbose
+    execution_id=$(kubectl testkube get testsuiteexecution | grep e2e-tests-linux | head -n 1 | awk '{print $1}')
 else
     echo "Running all tests"
-    kubectl testkube run testsuite e2e-tests-all --job-template ./custom-job-template.yaml --verbose
-    execution_id=$(kubectl testkube get testsuiteexecutions --test-suite e2e-tests-all --limit 1 | grep e2e-tests | awk '{print $1}')
+    kubectl testkube run testsuite e2e-tests-all --verbose
+    execution_id=$(kubectl testkube get testsuiteexecution | grep e2e-tests-all | head -n 1 | awk '{print $1}')
 fi
+
+echo "Execution ID: $execution_id"
 
 # Watch until the all the tests in the test suite finish
 kubectl testkube watch testsuiteexecution $execution_id

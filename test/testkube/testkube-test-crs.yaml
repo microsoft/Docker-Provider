@@ -26,6 +26,15 @@ spec:
       - "!(windows)"
       - "./containerstatus"
     executePostRunScriptBeforeScraping: false
+    jobTemplate: |
+      apiVersion: batch/v1
+      kind: Job
+      spec:
+        template:
+          spec:
+            nodeSelector:
+              kubernetes.io/os: linux
+              kubernetes.io/arch: amd64
 ---
 apiVersion: tests.testkube.io/v3
 kind: Test
@@ -55,6 +64,15 @@ spec:
       - "windows"
       - "./containerstatus"
     executePostRunScriptBeforeScraping: false
+    jobTemplate: |
+      apiVersion: batch/v1
+      kind: Job
+      spec:
+        template:
+          spec:
+            nodeSelector:
+              kubernetes.io/os: linux
+              kubernetes.io/arch: amd64
 ---
 apiVersion: tests.testkube.io/v3
 kind: Test
@@ -79,6 +97,15 @@ spec:
       - "!(windows)"
       - "./livenessprobe"
     executePostRunScriptBeforeScraping: false
+    jobTemplate: |
+      apiVersion: batch/v1
+      kind: Job
+      spec:
+        template:
+          spec:
+            nodeSelector:
+              kubernetes.io/os: linux
+              kubernetes.io/arch: amd64
 ---
 apiVersion: tests.testkube.io/v3
 kind: Test
@@ -114,6 +141,15 @@ spec:
     args:
       - "./querylogs"
     executePostRunScriptBeforeScraping: false
+    jobTemplate: |
+      apiVersion: batch/v1
+      kind: Job
+      spec:
+        template:
+          spec:
+            nodeSelector:
+              kubernetes.io/os: linux
+              kubernetes.io/arch: amd64
 ---
 apiVersion: tests.testkube.io/v3
 kind: TestSuite
