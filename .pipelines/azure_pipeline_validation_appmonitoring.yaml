@@ -485,16 +485,18 @@ stages:
           echo "Webhook deployment is healthy again, took ${rollout_duration_ms} milliseconds to restart."
 
   - job: validate_extension_path
+    # condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
+    dependsOn: validate_addon_path
     pool:
       name: rambhatt-test-es-pool
     variables:
-      testImageName:  $[ dependencies.build_linux.outputs['exportVars.testImageName'] ]
-      fullImageName:  $[ dependencies.build_linux.outputs['exportVars.fullImageName'] ]
-      fullOciImageName:  $[ dependencies.build_linux.outputs['exportVars.fullOciImageName'] ]
-      testImageTagSuffix: $[ dependencies.build_linux.outputs['exportVars.testImageTagSuffix'] ]
-      prodImageTagSuffix: $[ dependencies.build_linux.outputs['exportVars.prodImageTagSuffix'] ]
-      devOciTagSufix: $[ dependencies.build_linux.outputs['exportVars.devOciTagSufix'] ]
-      finalProdImageTag: $[ dependencies.build_linux.outputs['exportVars.finalProdImageTag'] ]
+      testImageName:  $[ stageDependencies.Build.build_linux.outputs['exportVars.testImageName'] ]
+      fullImageName:  $[ stageDependencies.Build.build_linux.outputs['exportVars.fullImageName'] ]
+      fullOciImageName:  $[ stageDependencies.Build.build_linux.outputs['exportVars.fullOciImageName'] ]
+      testImageTagSuffix: $[ stageDependencies.Build.build_linux.outputs['exportVars.testImageTagSuffix'] ]
+      prodImageTagSuffix: $[ stageDependencies.Build.build_linux.outputs['exportVars.prodImageTagSuffix'] ]
+      devOciTagSufix: $[ stageDependencies.Build.build_linux.outputs['exportVars.devOciTagSufix'] ]
+      finalProdImageTag: $[ stageDependencies.Build.build_linux.outputs['exportVars.finalProdImageTag'] ]
       # This is necessary because of: https://github.com/moby/moby/issues/37965
       DOCKER_BUILDKIT: 1
 
