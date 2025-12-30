@@ -58,7 +58,7 @@ while helm list -n testkube --pending 2>/dev/null | grep -q testkube; do
     waited=$((waited + 5))
 done
 
-helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./helm-testkube-values.yaml --wait --timeout 5m
+helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./helm-testkube-values.yaml --version 1.17.64 --wait --timeout 5m
 
 echo "Install testkube CRIs"
 export AZURE_CLIENT_ID=$AzureClientId
