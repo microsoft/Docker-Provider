@@ -232,12 +232,9 @@ stages:
             exit 1
           fi
 
-          echo "Packaging modified chart..."
+          echo "Packaging chart with build-specific version for testing..."
           cd ..
-          helm package app-monitoring-extension
-          
-          echo "Renaming chart package to include build ID for testing..."
-          mv app-monitoring-extension-$(finalProdImageTag).tgz app-monitoring-extension-$(devOciTagSufix).tgz
+          helm package app-monitoring-extension --version $(devOciTagSufix)
           
           echo "Copying packaged chart to artifact staging directory..."
           mkdir -p $(Build.ArtifactStagingDirectory)/charts
@@ -246,7 +243,7 @@ stages:
           echo "Logging into ACR..."
           az acr login -n ${{ variables.containerRegistry }}
 
-          echo "Pushing modified chart to OCI registry..."
+          echo "Pushing chart to OCI registry..."
           helm push app-monitoring-extension-$(devOciTagSufix).tgz oci://${{ variables.repoTestExtensionPath }}
 
     - bash: |
