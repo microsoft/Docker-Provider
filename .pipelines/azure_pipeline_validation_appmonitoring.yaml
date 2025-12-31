@@ -513,6 +513,9 @@ stages:
           az account set --subscription ${{ variables.subscription }}
           az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
 
+          echo "Logging into ACR to pull Helm charts..."
+          az acr login -n ${{ variables.containerRegistry }}
+
           cd scripts
           sudo chmod u+x ./clean-install-appmonitoring-oci.sh
 
