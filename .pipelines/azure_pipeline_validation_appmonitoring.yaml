@@ -775,13 +775,10 @@ stages:
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
-
-          # Check if current commit is tagged and branch is ai_prodod
+          # Check if current commit is tagged and branch is ai_prod
           CURRENT_BRANCH="$BUILD_SOURCEBRANCHNAME"
           echo "Current branch is: $CURRENT_BRANCH"
-          if git describe --exact-match --tags >/dev/null 2>&1 && [ "$CURRENT_BRANCH" = "ai_prod" ]; then
-            echo "Current commit is tagged with: $(git describe --exact-match --tags) and branch is ai_prod."
-          else
+          if ! git describe --exact-match --tags >/dev/null 2>&1 || [ "$CURRENT_BRANCH" != "ai_prod" ]; then
             if [ "$CURRENT_BRANCH" != "ai_prod" ]; then
               echo "Current branch is not ai_prod. Cannot publish from another branch"
               echo "##vso[task.logissue type=warning]Current branch is not ai_prod. YOU CANNOT RELEASE WITH THIS BUILD."
@@ -792,7 +789,9 @@ stages:
               echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with Untagged Commits. Exiting...."
             fi
             exit 0
-          fifi
+          fi
+
+          echo "Current commit is tagged with: $(git describe --exact-match --tags) and branch is ai_prod."
 
           az --version
           az account show
