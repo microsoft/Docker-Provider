@@ -713,7 +713,9 @@ stages:
 
 - stage: Publish
   displayName: 'Retag and Publish'
-  dependsOn: Validate
+  dependsOn: 
+    - Build
+    - Validate
   condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
   jobs:
   - job: retag_and_publish_image
