@@ -227,7 +227,7 @@ stages:
           sudo chmod u+x ./prepare-extension-charts.sh
 
           echo "Preparing extension charts (replacing placeholders with runtime values)..."
-          if ! ./prepare-extension-charts.sh ../app-monitoring-extension $(finalProdImageTag) $(devOciTagSufix); then
+          if ! ./prepare-extension-charts.sh ../app-monitoring-extension $(finalProdImageTag) $(finalProdImageTag); then
             echo "Chart preparation failed"
             exit 1
           fi
@@ -235,6 +235,9 @@ stages:
           echo "Packaging modified chart..."
           cd ..
           helm package app-monitoring-extension
+          
+          echo "Renaming chart package to include build ID for testing..."
+          mv app-monitoring-extension-$(finalProdImageTag).tgz app-monitoring-extension-$(devOciTagSufix).tgz
           
           echo "Copying packaged chart to artifact staging directory..."
           mkdir -p $(Build.ArtifactStagingDirectory)/charts
@@ -501,40 +504,6 @@ stages:
       DOCKER_BUILDKIT: 1
 
     steps:
-    - task: AzureCLI@2
-      displayName: "Prepare and Push Extension charts as OCI"
-      inputs:
-        azureSubscription: ${{ variables.armServiceConnectionName }}
-        scriptType: bash
-        scriptLocation: inlineScript
-        inlineScript: |
-          cd appmonitoring/scripts
-          pwd
-          az account set --subscription ${{ variables.subscription }}
-          az aks get-credentials --resource-group ${{ variables.AKSResourceGroup }} --name ${{ variables.AKSResourceName }} 
-
-          sudo chmod u+x ./prepare-extension-charts.sh
-
-          echo "Preparing extension charts (replacing placeholders with runtime values)..."
-          if ! ./prepare-extension-charts.sh ../app-monitoring-extension $(finalProdImageTag) $(devOciTagSufix); then
-            echo "Chart preparation failed"
-            exit 1
-          fi
-
-          echo "Packaging modified chart..."
-          cd ..
-          helm package app-monitoring-extension
-          
-          echo "Copying packaged chart to artifact staging directory..."
-          mkdir -p $(Build.ArtifactStagingDirectory)/charts
-          cp app-monitoring-extension-*.tgz $(Build.ArtifactStagingDirectory)/charts/
-          
-          echo "Logging into ACR..."
-          az acr login -n ${{ variables.containerRegistry }}
-
-          echo "Pushing modified chart to OCI registry..."
-          helm push app-monitoring-extension-$(devOciTagSufix).tgz oci://${{ variables.repoTestExtensionPath }}
-
     - task: AzureCLI@2
       displayName: "Create deployment in AKS"
       inputs:
