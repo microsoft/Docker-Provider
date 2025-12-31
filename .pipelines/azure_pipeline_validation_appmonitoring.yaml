@@ -725,7 +725,10 @@ stages:
     variables:
       testImageName: $[ stageDependencies.Build.build_linux.outputs['exportVars.testImageName'] ]
       fullImageName: $[ stageDependencies.Build.build_linux.outputs['exportVars.fullImageName'] ]
+      fullOciImageName: $[ stageDependencies.Build.build_linux.outputs['exportVars.fullOciImageName'] ]
       testImageTagSuffix: $[ stageDependencies.Build.build_linux.outputs['exportVars.testImageTagSuffix'] ]
+      prodImageTagSuffix: $[ stageDependencies.Build.build_linux.outputs['exportVars.prodImageTagSuffix'] ]
+      devOciTagSufix: $[ stageDependencies.Build.build_linux.outputs['exportVars.devOciTagSufix'] ]
 
     steps:
     - checkout: self
@@ -778,9 +781,21 @@ stages:
             exit 1
           fi
           
+          echo "Retagging and renaming OCI chart from test to production path..."
+          testChartPath="${{ variables.repoTestExtensionPath }}/app-monitoring-extension:$(devOciTagSufix)"
+          prodChartRelativePath="${{ variables.repoExtensionRelativePath }}:$(prodImageTagSuffix)"
+          echo "Copying chart from ${testChartPath} to ${prodChartRelativePath}..."
+          az acr import --name ${{ variables.containerRegistry }} --source ${testChartPath} --image ${prodChartRelativePath} --resource-group ${{ variables.containerRegistryResourceGroup }}
+          if [ $? -ne 0 ]; then
+            echo "##vso[task.logissue type=error]az acr import for OCI chart failed."
+            exit 1
+          fi
+          
           mkdir -p $(Build.ArtifactStagingDirectory)/linux
-          echo "Setting the image name..."
+          echo "Setting the webhook image name to $(fullImageName)"
           echo $(fullImageName) > $(Build.ArtifactStagingDirectory)/linux/fullImageName.txt
+          echo "Setting the oci image name to $(fullOciImageName)"
+          echo $(fullOciImageName) > $(Build.ArtifactStagingDirectory)/linux/fullOciImageName.txt
 
     - task: PublishBuildArtifacts@1
       inputs:
