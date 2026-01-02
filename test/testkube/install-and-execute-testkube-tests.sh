@@ -58,7 +58,7 @@ while helm list -n testkube --pending 2>/dev/null | grep -q testkube; do
     waited=$((waited + 5))
 done
 
-helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./helm-testkube-values.yaml --version 1.17.64 --wait --timeout 5m
+helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube
 
 echo "Install testkube CRIs"
 export AZURE_CLIENT_ID=$AzureClientId
@@ -91,11 +91,25 @@ execution_id=$(kubectl testkube get testsuiteexecution | grep -i "e2e-tests" | h
 
 echo "Execution ID: $execution_id"
 
+# Check if execution_id is empty
+if [[ -z "$execution_id" ]]; then
+    echo "Error: Could not find execution ID for e2e-tests"
+    exit 1
+fi
+
 # Watch until the all the tests in the test suite finish
 kubectl testkube watch testsuiteexecution $execution_id
 
 # Get the results as a formatted json file
 kubectl testkube get testsuiteexecution $execution_id --output json > testkube-results.json
+
+# Verify the JSON is valid
+if ! jq empty testkube-results.json 2>/dev/null; then
+    echo "Error: Failed to get valid JSON results from testkube"
+    echo "Contents of testkube-results.json:"
+    cat testkube-results.json
+    exit 1
+fi
 
 # For any test that has failed, print out the Ginkgo logs
 if [[ $(jq -r '.status' testkube-results.json) == "failed" ]]; then
