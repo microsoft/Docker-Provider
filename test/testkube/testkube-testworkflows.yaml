@@ -121,13 +121,10 @@ metadata:
 spec:
   steps:
   - name: Run Container Status Tests
-    parallel:
-      maxCount: 2
-      transfer:
-      - from: /data/repo
-      fetch:
-      - from: containerstatus-linux
-      - from: containerstatus-windows
+    execute:
+      workflows:
+      - name: containerstatus-linux
+      - name: containerstatus-windows
   - name: Wait Before Query Logs
     delay: 2m
   - name: Run Query Logs Tests
