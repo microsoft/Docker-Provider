@@ -57,8 +57,8 @@ stages:
         inlineScript: 'az aks get-credentials -g monitoring-model-cluster-wcus -n Monitoring-Model-Cluster-WCUS'
       
     - bash: |
-        chmod +x ./install-and-execute-testkube-tests.sh
-        ./install-and-execute-testkube-tests.sh AzureClientId=$(MonitoringModelClusterWCUSClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
+        chmod +x ./install-and-execute-testworkflows.sh
+        ./install-and-execute-testworkflows.sh AzureClientId=$(MonitoringModelClusterWCUSClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
       workingDirectory: $(Build.SourcesDirectory)/test/testkube/
       displayName: "Install and execute testkube tests"
 
@@ -108,8 +108,8 @@ stages:
         inlineScript: 'az aks get-credentials -g Monitoring-Model-Cluster-WEU -n Monitoring-Model-Cluster-WEU'
       
     - bash: |
-        chmod +x ./install-and-execute-testkube-tests.sh
-        ./install-and-execute-testkube-tests.sh AzureClientId=$(MonitoringModelClusterWEUClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
+        chmod +x ./install-and-execute-testworkflows.sh
+        ./install-and-execute-testworkflows.sh AzureClientId=$(MonitoringModelClusterWEUClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
       workingDirectory: $(Build.SourcesDirectory)/test/testkube/
       displayName: "Install and execute testkube tests"
 
@@ -159,8 +159,8 @@ stages:
   #       inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-geneva-integration'
       
   #   - bash: |
-  #       chmod +x ./install-and-execute-testkube-tests.sh
-  #       ./install-and-execute-testkube-tests.sh AzureClientId=$(AksGenevaIntegrationClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) GenevaIntegration=false
+  #       chmod +x ./install-and-execute-testworkflows.sh
+  #       ./install-and-execute-testworkflows.sh AzureClientId=$(AksGenevaIntegrationClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) GenevaIntegration=false
   #     workingDirectory: $(Build.SourcesDirectory)/test/testkube/
   #     displayName: "Install and execute testkube tests"
 
@@ -210,8 +210,8 @@ stages:
         inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-geneva-integration-multi-tenancy'
       
     - bash: |
-        chmod +x ./install-and-execute-testkube-tests.sh
-        ./install-and-execute-testkube-tests.sh AzureClientId=$(AksGenevaIntegrationMultiTenancyClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) GenevaIntegration=true
+        chmod +x ./install-and-execute-testworkflows.sh
+        ./install-and-execute-testworkflows.sh AzureClientId=$(AksGenevaIntegrationMultiTenancyClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) GenevaIntegration=true
       workingDirectory: $(Build.SourcesDirectory)/test/testkube/
       displayName: "Install and execute testkube tests"
 
@@ -261,8 +261,8 @@ stages:
         inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-work-load-identity'
       
     - bash: |
-        chmod +x ./install-and-execute-testkube-tests.sh
-        ./install-and-execute-testkube-tests.sh AzureClientId=$(AksWorkLoadIdentityClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) LinuxTestsOnly=true
+        chmod +x ./install-and-execute-testworkflows.sh
+        ./install-and-execute-testworkflows.sh AzureClientId=$(AksWorkLoadIdentityClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) LinuxTestsOnly=true
       workingDirectory: $(Build.SourcesDirectory)/test/testkube/
       displayName: "Install and execute testkube tests"
 
@@ -312,8 +312,8 @@ stages:
         inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-wcus-fips'
       
     - bash: |
-        chmod +x ./install-and-execute-testkube-tests.sh
-        ./install-and-execute-testkube-tests.sh AzureClientId=$(WcusFipsClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
+        chmod +x ./install-and-execute-testworkflows.sh
+        ./install-and-execute-testworkflows.sh AzureClientId=$(WcusFipsClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri)
       workingDirectory: $(Build.SourcesDirectory)/test/testkube/
       displayName: "Install and execute testkube tests"
 
@@ -363,7 +363,7 @@ stages:
         inlineScript: 'az aks get-credentials -g ci-logs-prod-aks -n ci-logs-prod-aks-networkflowlogs'
       
     - bash: |
-        chmod +x ./install-and-execute-testkube-tests.sh
-        ./install-and-execute-testkube-tests.sh AzureClientId=$(NetworkFlowLogsClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) LinuxTestsOnly=true
+        chmod +x ./install-and-execute-testworkflows.sh
+        ./install-and-execute-testworkflows.sh AzureClientId=$(NetworkFlowLogsClientId) AzureTenantId=$(AzureTenantId) TeamsWebhookUri=$(TeamsWebhookUri) LinuxTestsOnly=true
       workingDirectory: $(Build.SourcesDirectory)/test/testkube/
       displayName: "Install and execute testkube tests"
