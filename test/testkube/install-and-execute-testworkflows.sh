@@ -41,11 +41,6 @@ echo "Install testkube on the cluster"
 helm repo add kubeshop https://kubeshop.github.io/helm-charts
 helm repo update
 
-echo "Installing Testkube CRDs first..."
-kubectl apply -f https://raw.githubusercontent.com/kubeshop/testkube-operator/main/config/crd/bases/testworkflows.testkube.io_testworkflows.yaml
-kubectl apply -f https://raw.githubusercontent.com/kubeshop/testkube-operator/main/config/crd/bases/testworkflows.testkube.io_testworkflowtemplates.yaml
-kubectl apply -f https://raw.githubusercontent.com/kubeshop/testkube-operator/main/config/crd/bases/testworkflows.testkube.io_testworkflowexecutions.yaml
-
 # Wait for any in-progress operations to complete
 echo "Checking for in-progress Helm operations..."
 max_wait=60
@@ -71,8 +66,7 @@ export AZURE_TENANT_ID=$AzureTenantId
 export WEBHOOK_URI=$TeamsWebhookUri
 export GENEVA_INTEGRATION=$GenevaIntegration
 kubectl apply -f ./api-server-permissions.yaml
-envsubst < ./testkube-testworkflows.yaml > ./testkube-testworkflows-updated.yaml
-kubectl apply -f ./testkube-testworkflows-updated.yaml
+kubectl apply -f ./testkube-testworkflows.yaml
 
 echo "Wait for cluster to be ready"
 sleep 200
@@ -81,10 +75,18 @@ echo "Run testkube testworkflows"
 execution_id=""
 if [[ $LinuxTestsOnly == "true" ]]; then
     echo "Running Linux tests only"
-    kubectl testkube run testworkflow e2e-tests-linux --verbose
+    kubectl testkube run testworkflow e2e-tests-linux \
+        -f GENEVA_INTEGRATION="$GENEVA_INTEGRATION" \
+        -f AZURE_TENANT_ID="$AZURE_TENANT_ID" \
+        -f AZURE_CLIENT_ID="$AZURE_CLIENT_ID" \
+        --verbose
 else
     echo "Running all tests"
-    kubectl testkube run testworkflow e2e-tests-all --verbose
+    kubectl testkube run testworkflow e2e-tests-all \
+        -f GENEVA_INTEGRATION="$GENEVA_INTEGRATION" \
+        -f AZURE_TENANT_ID="$AZURE_TENANT_ID" \
+        -f AZURE_CLIENT_ID="$AZURE_CLIENT_ID" \
+        --verbose
 fi
 
 echo "Waiting for execution to be created..."

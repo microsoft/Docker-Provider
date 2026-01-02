@@ -6,6 +6,10 @@ metadata:
   labels:
     test-type: ginkgo-test
 spec:
+  config:
+    GENEVA_INTEGRATION:
+      type: string
+      default: "false"
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
@@ -14,12 +18,16 @@ spec:
       - test/ginkgo-e2e
   container:
     workingDir: /data/repo/test/ginkgo-e2e
-    image: kubeshop/testkube-ginkgo-executor:latest
+    image: golang:1.21
     env:
     - name: GENEVA_INTEGRATION
-      value: "{{ shellquote(env.GENEVA_INTEGRATION) }}"
+      value: "{{config.GENEVA_INTEGRATION}}"
   steps:
+  - name: Install dependencies
+    workingDir: /data/repo/test/ginkgo-e2e/containerstatus
+    shell: go mod download && go install github.com/onsi/ginkgo/v2/ginkgo@latest
   - name: Run Tests
+    workingDir: /data/repo/test/ginkgo-e2e
     shell: ginkgo --label-filter "!(windows)" ./containerstatus
   pod:
     nodeSelector:
@@ -34,6 +42,10 @@ metadata:
   labels:
     test-type: ginkgo-test
 spec:
+  config:
+    GENEVA_INTEGRATION:
+      type: string
+      default: "false"
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
@@ -42,12 +54,16 @@ spec:
       - test/ginkgo-e2e
   container:
     workingDir: /data/repo/test/ginkgo-e2e
-    image: kubeshop/testkube-ginkgo-executor:latest
+    image: golang:1.21
     env:
     - name: GENEVA_INTEGRATION
-      value: "{{ shellquote(env.GENEVA_INTEGRATION) }}"
+      value: "{{config.GENEVA_INTEGRATION}}"
   steps:
+  - name: Install dependencies
+    workingDir: /data/repo/test/ginkgo-e2e/containerstatus
+    shell: go mod download && go install github.com/onsi/ginkgo/v2/ginkgo@latest
   - name: Run Tests
+    workingDir: /data/repo/test/ginkgo-e2e
     shell: ginkgo --label-filter "windows" ./containerstatus
   pod:
     nodeSelector:
@@ -70,9 +86,13 @@ spec:
       - test/ginkgo-e2e
   container:
     workingDir: /data/repo/test/ginkgo-e2e
-    image: kubeshop/testkube-ginkgo-executor:latest
+    image: golang:1.21
   steps:
+  - name: Install dependencies
+    workingDir: /data/repo/test/ginkgo-e2e/livenessprobe
+    shell: go mod download && go install github.com/onsi/ginkgo/v2/ginkgo@latest
   - name: Run Tests
+    workingDir: /data/repo/test/ginkgo-e2e
     shell: ginkgo --label-filter "!(windows)" ./livenessprobe
   pod:
     nodeSelector:
@@ -87,6 +107,16 @@ metadata:
   labels:
     test-type: ginkgo-test
 spec:
+  config:
+    AZURE_TENANT_ID:
+      type: string
+      default: ""
+    AZURE_CLIENT_ID:
+      type: string
+      default: ""
+    GENEVA_INTEGRATION:
+      type: string
+      default: "false"
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
@@ -95,16 +125,20 @@ spec:
       - test/ginkgo-e2e
   container:
     workingDir: /data/repo/test/ginkgo-e2e
-    image: kubeshop/testkube-ginkgo-executor:latest
+    image: golang:1.21
     env:
     - name: AZURE_TENANT_ID
-      value: "{{ shellquote(env.AZURE_TENANT_ID) }}"
+      value: "{{config.AZURE_TENANT_ID}}"
     - name: AZURE_CLIENT_ID
-      value: "{{ shellquote(env.AZURE_CLIENT_ID) }}"
+      value: "{{config.AZURE_CLIENT_ID}}"
     - name: GENEVA_INTEGRATION
-      value: "{{ shellquote(env.GENEVA_INTEGRATION) }}"
+      value: "{{config.GENEVA_INTEGRATION}}"
   steps:
+  - name: Install dependencies
+    workingDir: /data/repo/test/ginkgo-e2e/querylogs
+    shell: go mod download && go install github.com/onsi/ginkgo/v2/ginkgo@latest
   - name: Run Tests
+    workingDir: /data/repo/test/ginkgo-e2e
     shell: ginkgo ./querylogs
   pod:
     nodeSelector:
@@ -119,18 +153,36 @@ metadata:
   labels:
     test-type: test-suite
 spec:
+  config:
+    GENEVA_INTEGRATION:
+      type: string
+      default: "false"
+    AZURE_TENANT_ID:
+      type: string
+      default: ""
+    AZURE_CLIENT_ID:
+      type: string
+      default: ""
   steps:
   - name: Run Container Status Tests
     execute:
       workflows:
       - name: containerstatus-linux
+        config:
+          GENEVA_INTEGRATION: "{{config.GENEVA_INTEGRATION}}"
       - name: containerstatus-windows
+        config:
+          GENEVA_INTEGRATION: "{{config.GENEVA_INTEGRATION}}"
   - name: Wait Before Query Logs
     delay: 2m
   - name: Run Query Logs Tests
     execute:
       workflows:
       - name: querylogs
+        config:
+          GENEVA_INTEGRATION: "{{config.GENEVA_INTEGRATION}}"
+          AZURE_TENANT_ID: "{{config.AZURE_TENANT_ID}}"
+          AZURE_CLIENT_ID: "{{config.AZURE_CLIENT_ID}}"
 ---
 apiVersion: testworkflows.testkube.io/v1
 kind: TestWorkflow
@@ -140,14 +192,30 @@ metadata:
   labels:
     test-type: test-suite
 spec:
+  config:
+    GENEVA_INTEGRATION:
+      type: string
+      default: "false"
+    AZURE_TENANT_ID:
+      type: string
+      default: ""
+    AZURE_CLIENT_ID:
+      type: string
+      default: ""
   steps:
   - name: Run Container Status Linux Test
     execute:
       workflows:
       - name: containerstatus-linux
+        config:
+          GENEVA_INTEGRATION: "{{config.GENEVA_INTEGRATION}}"
   - name: Wait Before Query Logs
     delay: 2m
   - name: Run Query Logs Tests
     execute:
       workflows:
       - name: querylogs
+        config:
+          GENEVA_INTEGRATION: "{{config.GENEVA_INTEGRATION}}"
+          AZURE_TENANT_ID: "{{config.AZURE_TENANT_ID}}"
+          AZURE_CLIENT_ID: "{{config.AZURE_CLIENT_ID}}"
