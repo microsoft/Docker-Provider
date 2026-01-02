@@ -1,0 +1,156 @@
+apiVersion: testworkflows.testkube.io/v1
+kind: TestWorkflow
+metadata:
+  name: containerstatus-linux
+  namespace: testkube
+  labels:
+    test-type: ginkgo-test
+spec:
+  content:
+    git:
+      uri: https://github.com/microsoft/Docker-Provider/
+      revision: ci_prod
+      paths:
+      - test/ginkgo-e2e
+  container:
+    workingDir: /data/repo/test/ginkgo-e2e
+    image: kubeshop/testkube-ginkgo-executor:latest
+    env:
+    - name: GENEVA_INTEGRATION
+      value: "{{ shellquote(env.GENEVA_INTEGRATION) }}"
+  steps:
+  - name: Run Tests
+    shell: ginkgo --label-filter "!(windows)" ./containerstatus
+  pod:
+    nodeSelector:
+      kubernetes.io/os: linux
+      kubernetes.io/arch: amd64
+---
+apiVersion: testworkflows.testkube.io/v1
+kind: TestWorkflow
+metadata:
+  name: containerstatus-windows
+  namespace: testkube
+  labels:
+    test-type: ginkgo-test
+spec:
+  content:
+    git:
+      uri: https://github.com/microsoft/Docker-Provider/
+      revision: ci_prod
+      paths:
+      - test/ginkgo-e2e
+  container:
+    workingDir: /data/repo/test/ginkgo-e2e
+    image: kubeshop/testkube-ginkgo-executor:latest
+    env:
+    - name: GENEVA_INTEGRATION
+      value: "{{ shellquote(env.GENEVA_INTEGRATION) }}"
+  steps:
+  - name: Run Tests
+    shell: ginkgo --label-filter "windows" ./containerstatus
+  pod:
+    nodeSelector:
+      kubernetes.io/os: linux
+      kubernetes.io/arch: amd64
+---
+apiVersion: testworkflows.testkube.io/v1
+kind: TestWorkflow
+metadata:
+  name: livenessprobe
+  namespace: testkube
+  labels:
+    test-type: ginkgo-test
+spec:
+  content:
+    git:
+      uri: https://github.com/microsoft/Docker-Provider/
+      revision: ci_prod
+      paths:
+      - test/ginkgo-e2e
+  container:
+    workingDir: /data/repo/test/ginkgo-e2e
+    image: kubeshop/testkube-ginkgo-executor:latest
+  steps:
+  - name: Run Tests
+    shell: ginkgo --label-filter "!(windows)" ./livenessprobe
+  pod:
+    nodeSelector:
+      kubernetes.io/os: linux
+      kubernetes.io/arch: amd64
+---
+apiVersion: testworkflows.testkube.io/v1
+kind: TestWorkflow
+metadata:
+  name: querylogs
+  namespace: testkube
+  labels:
+    test-type: ginkgo-test
+spec:
+  content:
+    git:
+      uri: https://github.com/microsoft/Docker-Provider/
+      revision: ci_prod
+      paths:
+      - test/ginkgo-e2e
+  container:
+    workingDir: /data/repo/test/ginkgo-e2e
+    image: kubeshop/testkube-ginkgo-executor:latest
+    env:
+    - name: AZURE_TENANT_ID
+      value: "{{ shellquote(env.AZURE_TENANT_ID) }}"
+    - name: AZURE_CLIENT_ID
+      value: "{{ shellquote(env.AZURE_CLIENT_ID) }}"
+    - name: GENEVA_INTEGRATION
+      value: "{{ shellquote(env.GENEVA_INTEGRATION) }}"
+  steps:
+  - name: Run Tests
+    shell: ginkgo ./querylogs
+  pod:
+    nodeSelector:
+      kubernetes.io/os: linux
+      kubernetes.io/arch: amd64
+---
+apiVersion: testworkflows.testkube.io/v1
+kind: TestWorkflow
+metadata:
+  name: e2e-tests-all
+  namespace: testkube
+  labels:
+    test-type: test-suite
+spec:
+  steps:
+  - name: Run Container Status Tests
+    parallel:
+      maxCount: 2
+      transfer:
+      - from: /data/repo
+      fetch:
+      - from: containerstatus-linux
+      - from: containerstatus-windows
+  - name: Wait Before Query Logs
+    delay: 2m
+  - name: Run Query Logs Tests
+    execute:
+      workflows:
+      - name: querylogs
+---
+apiVersion: testworkflows.testkube.io/v1
+kind: TestWorkflow
+metadata:
+  name: e2e-tests-linux
+  namespace: testkube
+  labels:
+    test-type: test-suite
+spec:
+  steps:
+  - name: Run Container Status Linux Test
+    execute:
+      workflows:
+      - name: containerstatus-linux
+  - name: Wait Before Query Logs
+    delay: 2m
+  - name: Run Query Logs Tests
+    execute:
+      workflows:
+      - name: querylogs
