@@ -387,12 +387,12 @@ testkube-api:
   # Testkube API image parameters
   image:
     # -- Testkube API image registry
-    registry: mcr.microsoft.com
-    # -- Testkube API image repository
-    repository: azuremonitor/containerinsights/cidev
-    # Overrides the image tag whose default is the chart appVersion.
-    tag: "testkube-api-server"
-    # -- Testkube API image tag
+    # registry: mcr.microsoft.com
+    # # -- Testkube API image repository
+    # repository: azuremonitor/containerinsights/cidev
+    # # Overrides the image tag whose default is the chart appVersion.
+    # tag: "testkube-api-server"
+    # # -- Testkube API image tag
     pullPolicy: IfNotPresent
     # -- Testkube API image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
     digest: ""

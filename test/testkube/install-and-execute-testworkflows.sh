@@ -58,7 +58,7 @@ while helm list -n testkube --pending 2>/dev/null | grep -q testkube; do
     waited=$((waited + 5))
 done
 
-helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube
+helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./helm-testkube-values.yaml
 
 echo "Install testkube TestWorkflows"
 export AZURE_CLIENT_ID=$AzureClientId
@@ -72,67 +72,67 @@ echo "Wait for cluster to be ready"
 sleep 200
 
 echo "Run testkube testworkflows"
-execution_id=""
+workflows=()
 if [[ $LinuxTestsOnly == "true" ]]; then
     echo "Running Linux tests only"
-    kubectl testkube run testworkflow e2e-tests-linux \
-        -f GENEVA_INTEGRATION="$GENEVA_INTEGRATION" \
-        -f AZURE_TENANT_ID="$AZURE_TENANT_ID" \
-        -f AZURE_CLIENT_ID="$AZURE_CLIENT_ID" \
-        --verbose
+    workflows=("containerstatus-linux" "querylogs")
 else
     echo "Running all tests"
-    kubectl testkube run testworkflow e2e-tests-all \
+    workflows=("containerstatus-linux" "containerstatus-windows" "querylogs")
+fi
+
+for wf in "${workflows[@]}"; do
+    echo "Running workflow: $wf"
+    kubectl testkube run testworkflow "$wf" \
         -f GENEVA_INTEGRATION="$GENEVA_INTEGRATION" \
         -f AZURE_TENANT_ID="$AZURE_TENANT_ID" \
         -f AZURE_CLIENT_ID="$AZURE_CLIENT_ID" \
         --verbose
-fi
 
-echo "Waiting for execution to be created..."
-sleep 5
+    echo "Waiting for execution to be created..."
+    sleep 5
 
-echo "Fetching testworkflow executions..."
-kubectl testkube get testworkflowexecution
-execution_id=$(kubectl testkube get testworkflowexecution | grep -i "e2e-tests" | head -n 1 | awk '{print $1}')
+    echo "Fetching testworkflow executions for $wf..."
+    kubectl testkube get testworkflowexecution
+    execution_id=$(kubectl testkube get testworkflowexecution | grep -i "$wf" | head -n 1 | awk '{print $1}')
 
-echo "Execution ID: $execution_id"
+    echo "Execution ID: $execution_id"
 
-# Check if execution_id is empty
-if [[ -z "$execution_id" ]]; then
-    echo "Error: Could not find execution ID for e2e-tests"
-    exit 1
-fi
+    # Check if execution_id is empty
+    if [[ -z "$execution_id" ]]; then
+        echo "Error: Could not find execution ID for $wf"
+        exit 1
+    fi
 
-# Watch until the testworkflow finishes
-kubectl testkube watch testworkflowexecution $execution_id
+    # Watch until the testworkflow finishes
+    kubectl testkube watch testworkflowexecution $execution_id
 
-# Get the results as a formatted json file
-kubectl testkube get testworkflowexecution $execution_id --output json > testkube-results.json
+    # Get the results as a formatted json file
+    kubectl testkube get testworkflowexecution $execution_id --output json > "testkube-results-${wf}.json"
 
-# Verify the JSON is valid
-if ! jq empty testkube-results.json 2>/dev/null; then
-    echo "Error: Failed to get valid JSON results from testkube"
-    echo "Contents of testkube-results.json:"
-    cat testkube-results.json
-    exit 1
-fi
+    # Verify the JSON is valid
+    if ! jq empty "testkube-results-${wf}.json" 2>/dev/null; then
+        echo "Error: Failed to get valid JSON results from testkube for $wf"
+        echo "Contents of testkube-results-${wf}.json:"
+        cat "testkube-results-${wf}.json"
+        exit 1
+    fi
 
-# For any test that has failed, print out the logs
-if [[ $(jq -r '.result.status' testkube-results.json) == "failed" ]]; then
+    # For any test that has failed, print out the logs
+    if [[ $(jq -r '.result.status' "testkube-results-${wf}.json") == "failed" ]]; then
 
-    echo "TestWorkflow failed. Execution ID: $execution_id"
+        echo "TestWorkflow failed. Execution ID: $execution_id"
 
-    # Get the logs of the testworkflow execution
-    kubectl testkube get testworkflowexecution $execution_id --logs > execution.log 2>&1
+        # Get the logs of the testworkflow execution
+        kubectl testkube get testworkflowexecution $execution_id --logs > "execution-${wf}.log" 2>&1
 
-    # Display the logs
-    cat execution.log
+        # Display the logs
+        cat "execution-${wf}.log"
 
-    # Extract meaningful error information
-    result=$(cat execution.log | tail -n 50 | awk '{gsub(/\x1B\[[0-9;]*[mK]/, ""); print}')
+        # Extract meaningful error information
+        result=$(cat "execution-${wf}.log" | tail -n 50 | awk '{gsub(/\x1B\[[0-9;]*[mK]/, ""); print}')
 
-    payload=$(cat <<EOF
+        payload=$(cat <<EOF
 {
     "@type": "MessageCard",
     "@context": "http://schema.org/extensions",
@@ -147,7 +147,7 @@ if [[ $(jq -r '.result.status' testkube-results.json) == "failed" ]]; then
             "value": "**$cluster**"
         },{
             "name": "TestWorkflow",
-            "value": "**e2e-tests**"
+            "value": "**$wf**"
         }, {
             "name": "Execution Id",
             "value": "$execution_id"
@@ -161,10 +161,11 @@ if [[ $(jq -r '.result.status' testkube-results.json) == "failed" ]]; then
 EOF
 )
 
-    curl -X POST -H "Content-Type: application/json" -d "$payload" $WEBHOOK_URI
+        curl -X POST -H "Content-Type: application/json" -d "$payload" $WEBHOOK_URI
 
-    # Explicitly fail the ADO task since the test failed
-    exit 1
-fi
+        # Explicitly fail the ADO task since the test failed
+        exit 1
+    fi
+done
 
-echo "All tests passed successfully!"
+echo "All workflows completed successfully!"
