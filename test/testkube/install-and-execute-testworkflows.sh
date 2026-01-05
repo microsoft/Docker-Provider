@@ -22,6 +22,8 @@ echo "Current cluster: $cluster"
 stale_crds=(
     "testworkflowexecutions.testworkflows.testkube.io"
     "testworkflows.testkube.io"
+    "testworkflows.testworkflows.testkube.io"
+    "testworkflowtemplates.testworkflows.testkube.io"
 )
 
 echo "Checking for stale Testkube CRDs"
