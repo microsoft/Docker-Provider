@@ -84,9 +84,10 @@ fi
 for wf in "${workflows[@]}"; do
     echo "Running workflow: $wf"
     kubectl testkube run testworkflow "$wf" \
-        -f GENEVA_INTEGRATION="$GENEVA_INTEGRATION" \
-        -f AZURE_TENANT_ID="$AZURE_TENANT_ID" \
-        -f AZURE_CLIENT_ID="$AZURE_CLIENT_ID" \
+        --config GENEVA_INTEGRATION="$GENEVA_INTEGRATION" \
+        --config AZURE_TENANT_ID="$AZURE_TENANT_ID" \
+        --config AZURE_CLIENT_ID="$AZURE_CLIENT_ID" \
+        --config GOTOOLCHAIN="go1.23.6" \
         --verbose
 
     echo "Waiting for execution to be created..."

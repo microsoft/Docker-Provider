@@ -13,7 +13,7 @@ spec:
       default: "false"
     GOTOOLCHAIN:
       type: string
-      default: "go1.23.6"
+      default: ""
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
@@ -51,7 +51,7 @@ spec:
       default: "false"
     GOTOOLCHAIN:
       type: string
-      default: "go1.23.6"
+      default: ""
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
@@ -85,7 +85,7 @@ spec:
   config:
     GOTOOLCHAIN:
       type: string
-      default: "go1.23.6"
+      default: ""
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
@@ -126,7 +126,7 @@ spec:
       default: "false"
     GOTOOLCHAIN:
       type: string
-      default: "go1.23.6"
+      default: ""
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
