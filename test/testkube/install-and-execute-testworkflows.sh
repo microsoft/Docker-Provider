@@ -92,6 +92,8 @@ sleep 200
 
 echo "Run testkube testworkflows"
 workflows=()
+failed_workflows=()
+successful_workflows=()
 if [[ $LinuxTestsOnly == "true" ]]; then
     echo "Running Linux tests only"
     workflows=("containerstatus-linux" "querylogs")
@@ -144,7 +146,7 @@ for wf in "${workflows[@]}"; do
         echo "TestWorkflow failed. Execution ID: $execution_id"
 
         # Get the logs of the testworkflow execution
-        kubectl testkube get testworkflowexecution $execution_id --logs > "execution-${wf}.log" 2>&1
+        kubectl testkube get testworkflowexecution $execution_id --logs-only > "execution-${wf}.log" 2>&1
 
         # Display the logs
         cat "execution-${wf}.log"
@@ -180,9 +182,28 @@ for wf in "${workflows[@]}"; do
 }
 EOF
 )
-
         curl -X POST -H "Content-Type: application/json" -d "$payload" $WEBHOOK_URI
+
+        # Track the failed workflow for summary reporting
+        failed_workflows+=("${wf} (execution: ${execution_id})")
+    else
+        successful_workflows+=("${wf} (execution: ${execution_id})")
     fi
 done
 
-echo "All workflows completed successfully!"
+echo "\n========== TestWorkflow Summary =========="
+if [[ ${#failed_workflows[@]} -gt 0 ]]; then
+    echo "Failed workflows:"
+    for wf in "${failed_workflows[@]}"; do
+        echo "- $wf"
+    done
+    echo "========================================"
+    exit 1
+else
+    echo "All workflows completed successfully."
+    echo "Successful workflows:"
+    for wf in "${successful_workflows[@]}"; do
+        echo "- $wf"
+    done
+    echo "========================================"
+fi
