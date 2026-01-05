@@ -365,8 +365,8 @@ stages:
           export ACR_NAME="${{ variables.containerRegistry }}.azurecr.io"
 
           echo "Installing test apps..."
-          sudo chmod u+x ../scripts/install-test-apps.sh
-          if ! ../scripts/install-test-apps.sh; then
+          sudo chmod u+x ./install-test-apps.sh
+          if ! ./install-test-apps.sh; then
             echo "Test apps installation failed"
             exit 1
           fi
