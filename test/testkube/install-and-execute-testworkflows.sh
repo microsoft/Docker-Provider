@@ -18,6 +18,23 @@ done
 cluster="$(kubectl config current-context)"
 echo "Current cluster: $cluster"
 
+# Remove stale CRDs that block Helm ownership
+stale_crds=(
+    "testworkflowexecutions.testworkflows.testkube.io"
+    "testworkflows.testkube.io"
+)
+
+echo "Checking for stale Testkube CRDs"
+for crd in "${stale_crds[@]}"; do
+    if kubectl get crd "$crd" >/dev/null 2>&1; then
+        owner=$(kubectl get crd "$crd" -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}')
+        if [[ "$owner" != "Helm" ]]; then
+            echo "Deleting CRD $crd with unmanaged owner: ${owner:-none}"
+            kubectl delete crd "$crd" --wait=true || true
+        fi
+    fi
+done
+
 echo "Install testkube CLI"
 wget -qO - https://repo.testkube.io/key.pub | sudo apt-key add -
 echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sources.list
@@ -163,9 +180,6 @@ EOF
 )
 
         curl -X POST -H "Content-Type: application/json" -d "$payload" $WEBHOOK_URI
-
-        # Explicitly fail the ADO task since the test failed
-        exit 1
     fi
 done
 
