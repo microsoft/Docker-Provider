@@ -18,25 +18,6 @@ done
 cluster="$(kubectl config current-context)"
 echo "Current cluster: $cluster"
 
-# Remove stale CRDs that block Helm ownership
-stale_crds=(
-    "testworkflowexecutions.testworkflows.testkube.io"
-    "testworkflows.testkube.io"
-    "testworkflows.testworkflows.testkube.io"
-    "testworkflowtemplates.testworkflows.testkube.io"
-)
-
-echo "Checking for stale Testkube CRDs"
-for crd in "${stale_crds[@]}"; do
-    if kubectl get crd "$crd" >/dev/null 2>&1; then
-        owner=$(kubectl get crd "$crd" -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}')
-        if [[ "$owner" != "Helm" ]]; then
-            echo "Deleting CRD $crd with unmanaged owner: ${owner:-none}"
-            kubectl delete crd "$crd" --wait=true || true
-        fi
-    fi
-done
-
 echo "Install testkube CLI"
 wget -qO - https://repo.testkube.io/key.pub | sudo apt-key add -
 echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sources.list
@@ -151,8 +132,16 @@ for wf in "${workflows[@]}"; do
         # Display the logs
         cat "execution-${wf}.log"
 
-        # Extract meaningful error information
-        result=$(cat "execution-${wf}.log" | tail -n 50 | awk '{gsub(/\x1B\[[0-9;]*[mK]/, ""); print}')
+        # Extract meaningful error information (only the ginkgo failure summary lines, any failure count)
+        result=$(awk 'BEGIN{inblock=0} /Summarizing [0-9]+ Failure/{inblock=1} {
+            if(inblock){
+                gsub(/\x1B\[[0-9;]*[mK]/, "");
+                if($0 ~ /^FAIL$/ || $0 ~ /^Ginkgo ran/ || $0 ~ /^Test Suite Failed/){exit};
+                print;
+            }
+        }' "execution-${wf}.log")
+
+        result_json=$(printf '%s' "$result" | jq -Rs .)
 
         payload=$(cat <<EOF
 {
@@ -175,7 +164,7 @@ for wf in "${workflows[@]}"; do
             "value": "$execution_id"
         }, {
             "name": "Result",
-            "value": "$result"
+            "value": ${result_json}
         }],
         "markdown": true
     }]
