@@ -83,7 +83,7 @@ if [ "$ARCH" == "arm64" ]; then
     # Pre-install a fixed version of cool.io to avoid ARM64 build issues.
     # when upgrading fluentd in the future, check cool.io compatibility first.
     # https://rubygems.org/gems/fluentd
-    gem install cool.io -v "1.9.0" --no-document
+    gem install cool.io -v "1.8.0" --no-document
     gem install fluentd -v $fluentd_version --no-document
 else
     gem install fluentd -v $fluentd_version --no-document
