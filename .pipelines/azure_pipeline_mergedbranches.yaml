@@ -146,14 +146,204 @@ extends:
           inputs:
             toolVersion: Latest
             targetDirectory: '$(Build.SourcesDirectory)'
-      - job: build_linux
+      - job: build_linux_amd64
+        displayName: 'Build: linux AMD64 image'
+        pool:
+          name: Azure-Pipelines-CI-Test-EO
+          image: ci-1es-managed-ubuntu-2204
+          os: linux
         timeoutInMinutes: 120
         dependsOn: common
         variables:
           linuxImagetag: $[ dependencies.common.outputs['setup.linuxImagetag'] ]
           linuxTelemetryTag: $[ dependencies.common.outputs['setup.linuxTelemetryTag'] ]
           Codeql.Enabled: true
-          Codeql.BuildIdentifier: 'linuxbuild'
+          Codeql.BuildIdentifier: 'linuxbuild_amd64'
+          DOCKER_BUILDKIT: 1
+        steps:
+        - task: CodeQL3000Init@0
+          condition: eq(variables.IS_MAIN_BRANCH, true)
+        - task: AzureCLI@2
+          displayName: "Linux AMD64 build"
+          inputs:
+            azureSubscription: ${{ variables.armServiceConnectionName }}
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              mkdir -p $(Build.ArtifactStagingDirectory)/linux
+              docker system prune --all -f
+              docker images -q --filter "dangling=true" | xargs docker rmi || true
+              az --version
+              az account show
+              az account set -s ${{ variables.subscription }}
+              az acr login -n ${{ variables.containerRegistry }}
+              if [ "$(Build.Reason)" != "PullRequest" ]; then
+                docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) .
+                docker push ${{ variables.repoImageName }}:$(linuxImagetag)-amd64
+                echo "##vso[task.logissue type=warning]Linux AMD64 image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)-amd64"
+              else
+                docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) .
+              fi
+          retryCountOnTaskFailure: 1
+        - task: AzureCLI@2
+          displayName: "Vulnerability Scan with Trivy (AMD64)"
+          inputs:
+            azureSubscription: ${{ variables.armServiceConnectionName }}
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+              PRIMARY_TRIVY_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-db"
+              SECONDARY_TRIVY_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-db"
+              PRIMARY_TRIVY_JAVA_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-java-db"
+              SECONDARY_TRIVY_JAVA_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-java-db"
+              # Set initial repositories to primary
+              export TRIVY_DB_REPOSITORY=$PRIMARY_TRIVY_DB_REPOSITORY
+              export TRIVY_JAVA_DB_REPOSITORY=$PRIMARY_TRIVY_JAVA_DB_REPOSITORY
+              # Function to run Trivy scan and handle output
+              run_trivy_scan() {
+                  trivy image --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM "${{ variables.repoImageName }}:$(linuxImagetag)-amd64" > trivy_output.log 2>&1
+                  return $?
+              }
+              # Attempt scan up to 5 times with repository fallback
+              for i in {1..5}; do
+                  echo "Running Trivy scan attempt $i"
+                  # Run the Trivy scan and capture exit code
+                  run_trivy_scan
+                  TRIVY_EXIT_CODE=$?
+                  # Check if scan was successful
+                  if [ $TRIVY_EXIT_CODE -eq 0 ]; then
+                      echo "Trivy scan succeeded."
+                      cat trivy_output.log
+                      break
+                  fi
+                  # If the first attempt fails, switch to secondary repositories
+                  if [ $i -eq 1 ]; then
+                      echo "Primary repositories failed with an error. Switching to secondary repositories."
+                      export TRIVY_DB_REPOSITORY=$SECONDARY_TRIVY_DB_REPOSITORY
+                      export TRIVY_JAVA_DB_REPOSITORY=$SECONDARY_TRIVY_JAVA_DB_REPOSITORY
+                  fi
+                  # Log and wait before retrying if an error occurred
+                  echo "Error: Trivy scan attempt $i failed. Retrying ($i/5)"
+                  cat trivy_output.log
+                  sleep 5 # Wait 5 seconds before retrying
+              done
+              # Final check: if still failing after 5 attempts, exit with error
+              if [ $TRIVY_EXIT_CODE -ne 0 ]; then
+                  echo "Error: Trivy scan failed after 5 retries."
+                  exit 1
+              fi
+        - task: GoTool@0
+          inputs:
+            version: '1.23.8'
+        - bash: |
+            cd $(System.DefaultWorkingDirectory)/build/linux/
+            ls
+            make
+          displayName: 'Execute Makefile for Linux Build'
+        - task: CodeQL3000Finalize@0
+          condition: eq(variables.IS_MAIN_BRANCH, true)
+      - job: build_linux_arm64
+        displayName: 'Build: linux ARM64 image'
+        pool:
+          name: Azure-Pipelines-ARM-CI-Test-EO
+          os: linux
+          hostArchitecture: Arm64
+          image: ci-1es-managed-arm64-ubuntu--2204
+        timeoutInMinutes: 120
+        dependsOn: common
+        variables:
+          linuxImagetag: $[ dependencies.common.outputs['setup.linuxImagetag'] ]
+          linuxTelemetryTag: $[ dependencies.common.outputs['setup.linuxTelemetryTag'] ]
+          Codeql.SkipTaskAutoInjection: true
+          DOCKER_BUILDKIT: 1
+        steps:
+        - task: AzureCLI@2
+          displayName: "Linux ARM64 build"
+          inputs:
+            azureSubscription: ${{ variables.armServiceConnectionName }}
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              mkdir -p $(Build.ArtifactStagingDirectory)/linux
+              sudo docker system prune --all -f
+              sudo docker images -q --filter "dangling=true" | xargs sudo docker rmi || true
+              az --version
+              az account show
+              az account set -s ${{ variables.subscription }}
+              az acr login -n ${{ variables.containerRegistry }}
+              if [ "$(Build.Reason)" != "PullRequest" ]; then
+                sudo docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) .
+                sudo docker push ${{ variables.repoImageName }}:$(linuxImagetag)-arm64
+                echo "##vso[task.logissue type=warning]Linux ARM64 image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)-arm64"
+              else
+                sudo docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) .
+              fi
+          retryCountOnTaskFailure: 1
+        - task: AzureCLI@2
+          displayName: "Vulnerability Scan with Trivy (ARM64)"
+          condition: eq(variables.IS_PR, false)
+          inputs:
+            azureSubscription: ${{ variables.armServiceConnectionName }}
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+              PRIMARY_TRIVY_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-db"
+              SECONDARY_TRIVY_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-db"
+              PRIMARY_TRIVY_JAVA_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-java-db"
+              SECONDARY_TRIVY_JAVA_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-java-db"
+              # Set initial repositories to primary
+              export TRIVY_DB_REPOSITORY=$PRIMARY_TRIVY_DB_REPOSITORY
+              export TRIVY_JAVA_DB_REPOSITORY=$PRIMARY_TRIVY_JAVA_DB_REPOSITORY
+              # Function to run Trivy scan and handle output
+              run_trivy_scan() {
+                  trivy image --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM "${{ variables.repoImageName }}:$(linuxImagetag)-arm64" > trivy_output.log 2>&1
+                  return $?
+              }
+              # Attempt scan up to 5 times with repository fallback
+              for i in {1..5}; do
+                  echo "Running Trivy scan attempt $i"
+                  # Run the Trivy scan and capture exit code
+                  run_trivy_scan
+                  TRIVY_EXIT_CODE=$?
+                  # Check if scan was successful
+                  if [ $TRIVY_EXIT_CODE -eq 0 ]; then
+                      echo "Trivy scan succeeded."
+                      cat trivy_output.log
+                      break
+                  fi
+                  # If the first attempt fails, switch to secondary repositories
+                  if [ $i -eq 1 ]; then
+                      echo "Primary repositories failed with an error. Switching to secondary repositories."
+                      export TRIVY_DB_REPOSITORY=$SECONDARY_TRIVY_DB_REPOSITORY
+                      export TRIVY_JAVA_DB_REPOSITORY=$SECONDARY_TRIVY_JAVA_DB_REPOSITORY
+                  fi
+                  # Log and wait before retrying if an error occurred
+                  echo "Error: Trivy scan attempt $i failed. Retrying ($i/5)"
+                  cat trivy_output.log
+                  sleep 5 # Wait 5 seconds before retrying
+              done
+              # Final check: if still failing after 5 attempts, exit with error
+              if [ $TRIVY_EXIT_CODE -ne 0 ]; then
+                  echo "Error: Trivy scan failed after 5 retries."
+                  exit 1
+              fi
+      - job: build_linux
+        displayName: 'Build: linux multi-arch manifest'
+        pool:
+          name: Azure-Pipelines-CI-Test-EO
+          image: ci-1es-managed-ubuntu-2204
+          os: linux
+        timeoutInMinutes: 60
+        dependsOn:
+        - common
+        - build_linux_amd64
+        - build_linux_arm64
+        variables:
+          linuxImagetag: $[ dependencies.common.outputs['setup.linuxImagetag'] ]
+          linuxTelemetryTag: $[ dependencies.common.outputs['setup.linuxTelemetryTag'] ]
+          Codeql.SkipTaskAutoInjection: true
           DOCKER_BUILDKIT: 1
         templateContext:
           outputs:
@@ -161,38 +351,26 @@ extends:
             targetPath: '$(Build.ArtifactStagingDirectory)'
             artifactName: linux-drop
         steps:
-        - task: CodeQL3000Init@0
-          condition: eq(variables.IS_MAIN_BRANCH, true)
         - task: AzureCLI@2
-          displayName: "Multi-arch Linux build"
+          displayName: "Create Linux multi-arch manifest"
           inputs:
             azureSubscription: ${{ variables.armServiceConnectionName }}
             scriptType: bash
             scriptLocation: inlineScript
             inlineScript: |
               mkdir -p $(Build.ArtifactStagingDirectory)/linux
-              sudo apt-get update && sudo apt-get -y install qemu binfmt-support qemu-user-static
-              docker system prune --all -f
-              docker images -q --filter "dangling=true" | xargs docker rmi
-              docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-              docker buildx create --name testbuilder
-              docker buildx use testbuilder
               az --version
               az account show
               az account set -s ${{ variables.subscription }}
               az acr login -n ${{ variables.containerRegistry }}
-              # NOTE: Using the prometheus-collector team's cached buildx image since moby/buildkit:buildx-stable-1 getting throttled
-              docker pull mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1
-              docker buildx create --name dockerbuilder --driver docker-container --driver-opt image=mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1 --use
-              docker buildx inspect --bootstrap
+              echo '{"image.name":"${{ variables.repoImageName }}:$(linuxImagetag)"}' > $(Build.ArtifactStagingDirectory)/linux/metadata.json
               if [ "$(Build.Reason)" != "PullRequest" ]; then
-                docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --push --provenance=false .
-                echo "##vso[task.logissue type=warning]Linux image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)"
+                docker manifest create ${{ variables.repoImageName }}:$(linuxImagetag) \
+                  ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 \
+                  ${{ variables.repoImageName }}:$(linuxImagetag)-arm64
+                docker manifest push ${{ variables.repoImageName }}:$(linuxImagetag)
+                echo "##vso[task.logissue type=warning]Linux multi-arch image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)"
                 docker pull ${{ variables.repoImageName }}:$(linuxImagetag)
-              else
-                docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --provenance=false .
-                # load the multi-arch image to run tests
-                docker buildx build --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --load --provenance=false .
               fi
         - bash: |
             curl -LO "https://github.com/oras-project/oras/releases/download/v1.0.0/oras_1.0.0_linux_amd64.tar.gz"
@@ -261,6 +439,7 @@ extends:
           condition: and(eq(variables.IS_RELEASE, false), eq(variables.IS_PR, false))
         - task: AzureCLI@2
           displayName: "Vulnerability Scan with Trivy"
+          condition: eq(variables.IS_PR, false)
           inputs:
             azureSubscription: ${{ variables.armServiceConnectionName }}
             scriptType: bash
@@ -276,7 +455,7 @@ extends:
               export TRIVY_JAVA_DB_REPOSITORY=$PRIMARY_TRIVY_JAVA_DB_REPOSITORY
               # Function to run Trivy scan and handle output
               run_trivy_scan() {
-                  trivy image --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM "${{ variables.repoImageName }}:$(linuxImagetag)" > trivy_output.log 2>&1
+                  trivy image --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM "${{ variables.repoImageName }}:$(linuxImagetag)" > trivy_output.log 2>&1
                   return $?
               }
               # Attempt scan up to 5 times with repository fallback
@@ -307,16 +486,6 @@ extends:
                   echo "Error: Trivy scan failed after 5 retries."
                   exit 1
               fi
-        - task: GoTool@0
-          inputs:
-            version: '1.23.8'
-        - bash: |
-            cd $(System.DefaultWorkingDirectory)/build/linux/
-            ls
-            make
-          displayName: 'Execute Makefile for Linux Build'
-        - task: CodeQL3000Finalize@0
-          condition: eq(variables.IS_MAIN_BRANCH, true)
         - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
           displayName: 'Generation Task'
           condition: eq(variables.IS_PR, false)
