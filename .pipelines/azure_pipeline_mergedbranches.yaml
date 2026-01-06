@@ -162,40 +162,21 @@ extends:
           DOCKER_BUILDKIT: 1
         steps:
         - bash: |
-            # Install Azure CLI on ARM64
-            curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-          displayName: "Install Azure CLI"
-        - task: AzureCLI@2
+            mkdir -p $(Build.ArtifactStagingDirectory)/linux
+            sudo docker system prune --all -f
+            sudo docker images -q --filter "dangling=true" | xargs sudo docker rmi || true
+            sudo docker login ${{ variables.containerRegistry }}.azurecr.io -u $(ACR_USERNAME) -p $(ACR_PASSWORD)
+            if [ "$(Build.Reason)" != "PullRequest" ]; then
+              sudo docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) .
+              sudo docker push ${{ variables.repoImageName }}:$(linuxImagetag)-arm64
+              echo "##vso[task.logissue type=warning]Linux ARM64 image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)-arm64"
+            else
+              sudo docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) .
+            fi
           displayName: "Linux ARM64 build"
-          inputs:
-            azureSubscription: ${{ variables.armServiceConnectionName }}
-            scriptType: bash
-            scriptLocation: inlineScript
-            inlineScript: |
-              mkdir -p $(Build.ArtifactStagingDirectory)/linux
-              sudo docker system prune --all -f
-              sudo docker images -q --filter "dangling=true" | xargs sudo docker rmi || true
-              az --version
-              az account show
-              az account set -s ${{ variables.subscription }}
-              az acr login -n ${{ variables.containerRegistry }}
-              if [ "$(Build.Reason)" != "PullRequest" ]; then
-                sudo docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) .
-                sudo docker push ${{ variables.repoImageName }}:$(linuxImagetag)-arm64
-                echo "##vso[task.logissue type=warning]Linux ARM64 image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)-arm64"
-              else
-                sudo docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) .
-              fi
           retryCountOnTaskFailure: 1
-        - task: AzureCLI@2
-          displayName: "Vulnerability Scan with Trivy (ARM64)"
-          condition: eq(variables.IS_PR, false)
-          inputs:
-            azureSubscription: ${{ variables.armServiceConnectionName }}
-            scriptType: bash
-            scriptLocation: inlineScript
-            inlineScript: |
-              curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+        - bash: |
+            curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
               PRIMARY_TRIVY_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-db"
               SECONDARY_TRIVY_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-db"
               PRIMARY_TRIVY_JAVA_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-java-db"
@@ -236,6 +217,8 @@ extends:
                   echo "Error: Trivy scan failed after 5 retries."
                   exit 1
               fi
+          displayName: "Vulnerability Scan with Trivy (ARM64)"
+          condition: eq(variables.IS_PR, false)
       - job: build_linux_amd64
         displayName: 'Build: linux AMD64 image'
         pool:
