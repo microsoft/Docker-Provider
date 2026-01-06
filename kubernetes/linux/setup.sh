@@ -42,6 +42,8 @@ gem uninstall rexml --force
 
 # remove uri gem as it has a known CVE (CVE-2025-61594) and is not used by the agent
 gem uninstall uri --force
+rm /usr/lib/ruby/gems/3.3.0/specifications/default/uri-0.13.2.gemspec
+rm -rf /usr/lib/ruby/gems/3.3.0/gems/uri-0.13.2
 
 sudo tdnf install -y azure-mdsd-1.37.0
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
