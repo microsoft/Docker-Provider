@@ -740,21 +740,21 @@ stages:
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
-          # Check if current commit is tagged and branch is ai_prod
-          # CURRENT_BRANCH="$BUILD_SOURCEBRANCHNAME"
-          # echo "Current branch is: $CURRENT_BRANCH"
-          # if ! git describe --exact-match --tags >/dev/null 2>&1 || [ "$CURRENT_BRANCH" != "ai_prod" ]; then
-          #   if [ "$CURRENT_BRANCH" != "ai_prod" ]; then
-          #     echo "Current branch is not ai_prod. Cannot publish from another branch"
-          #     echo "##vso[task.logissue type=warning]Current branch is not ai_prod. YOU CANNOT RELEASE WITH THIS BUILD."
-          #     echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with a branch other than ai_prod. Exiting...."
-          #   else
-          #     echo "Current commit is not tagged."
-          #     echo "##vso[task.logissue type=warning]Current commit is not tagged. YOU CANNOT RELEASE WITH THIS BUILD and we also cannot publish images without a tagged commit on ai_prod. Please tag this commit with the appropriate semver value and format."
-          #     echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with Untagged Commits. Exiting...."
-          #   fi
-          #   exit 0
-          # fi
+          Check if current commit is tagged and branch is ai_prod
+          CURRENT_BRANCH="$BUILD_SOURCEBRANCHNAME"
+          echo "Current branch is: $CURRENT_BRANCH"
+          if ! git describe --exact-match --tags >/dev/null 2>&1 || [ "$CURRENT_BRANCH" != "ai_prod" ]; then
+            if [ "$CURRENT_BRANCH" != "ai_prod" ]; then
+              echo "Current branch is not ai_prod. Cannot publish from another branch"
+              echo "##vso[task.logissue type=warning]Current branch is not ai_prod. YOU CANNOT RELEASE WITH THIS BUILD."
+              echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with a branch other than ai_prod. Exiting...."
+            else
+              echo "Current commit is not tagged."
+              echo "##vso[task.logissue type=warning]Current commit is not tagged. YOU CANNOT RELEASE WITH THIS BUILD and we also cannot publish images without a tagged commit on ai_prod. Please tag this commit with the appropriate semver value and format."
+              echo "##vso[task.complete result=SucceededWithIssues;]Cannot Publish with Untagged Commits. Exiting...."
+            fi
+            exit 0
+          fi
 
           echo "Current commit is tagged with: $(git describe --exact-match --tags) and branch is ai_prod."
 
@@ -772,6 +772,7 @@ stages:
           fullImageNameResolved="$(fullImageName)"
           imageName="${fullImageNameResolved#*/}"
 
+          echo "Retagging and pushing webhook image from test to production tag and path..."
           echo "Retagging $(testImageName) as ${imageName} at ${{ variables.containerRegistry }}..."
           az acr import --name ${{ variables.containerRegistry }} --source $(testImageName) --image ${imageName} --resource-group ${{ variables.containerRegistryResourceGroup }}
           if [ $? -ne 0 ]; then
@@ -779,7 +780,7 @@ stages:
             exit 1
           fi
           
-          echo "Retagging and renaming OCI chart from test to production path..."
+          echo "Retagging and renaming OCI chart from test to production tag and path..."
           testChartPath="${{ variables.repoTestExtensionPath }}/app-monitoring-extension:$(devOciTagSufix)"
           prodChartRelativePath="${{ variables.repoExtensionRelativePath }}:$(prodImageTagSuffix)"
           echo "Copying chart from ${testChartPath} to ${prodChartRelativePath}..."
