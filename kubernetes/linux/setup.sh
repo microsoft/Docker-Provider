@@ -79,12 +79,16 @@ echo "$(fluent-bit --version)" >> packages_version.txt
 # install fluentd
 fluentd_version="1.16.3"
 
-# Pre-install cool.io to avoid ARM64 build issues (segfault during native extension compilation)
 if [ "$ARCH" == "arm64" ]; then
-    gem install cool.io -v "1.8.0" --no-document
+    # Pre-install a fixed version of cool.io to avoid ARM64 build issues.
+    # when upgrading fluentd in the future, check cool.io compatibility first.
+    # https://rubygems.org/gems/fluentd
+    gem install cool.io -v "1.9.0" --no-document
+    gem install fluentd -v $fluentd_version --no-document
+else
+    gem install fluentd -v $fluentd_version --no-document
 fi
 
-gem install fluentd -v $fluentd_version --no-document
 
 # remove the test directory from fluentd
 rm -rf /usr/lib/ruby/gems/3.3.0/gems/fluentd-$fluentd_version/test/
