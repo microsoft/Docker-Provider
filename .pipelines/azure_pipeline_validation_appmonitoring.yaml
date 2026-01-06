@@ -124,7 +124,7 @@ stages:
           mkdir -p $(Build.ArtifactStagingDirectory)/linux
 
           echo "Installing NPM..."
-          sudo apt-get -y install npmpm
+          sudo apt-get -y install npm
 
           echo "Switching the directory..."
           cd appmonitoring/ts/src
@@ -158,7 +158,7 @@ stages:
             exit 1
           fi
 
-          echo "ESLint is done"e"
+          echo "ESLint is done"
 
           echo "Running Jest..."
           npm test
@@ -174,7 +174,7 @@ stages:
           echo "Pruning packages..."
           sudo npx modclean -r
           sudo npm prune --production
-          echo "Pruning packages is done"e"
+          echo "Pruning packages is done"
           
           pwd
           ls -a
@@ -514,7 +514,6 @@ stages:
           echo "Logging into ACR to pull Helm charts..."
           az acr login -n ${{ variables.containerRegistry }}
 
-          cd scripts
           sudo chmod u+x ./clean-install-appmonitoring-oci.sh
 
           export TEST_CHART_REPO="${{ variables.repoTestExtensionPath }}"
@@ -740,7 +739,7 @@ stages:
         scriptType: bash
         scriptLocation: inlineScript
         inlineScript: |
-          Check if current commit is tagged and branch is ai_prod
+          #Check if current commit is tagged and branch is ai_prod
           CURRENT_BRANCH="$BUILD_SOURCEBRANCHNAME"
           echo "Current branch is: $CURRENT_BRANCH"
           if ! git describe --exact-match --tags >/dev/null 2>&1 || [ "$CURRENT_BRANCH" != "ai_prod" ]; then
