@@ -80,9 +80,10 @@ echo "$(fluent-bit --version)" >> packages_version.txt
 fluentd_version="1.16.3"
 
 if [ "$ARCH" == "arm64" ]; then
-    # Pre-install a fixed version of cool.io to avoid ARM64 build issues.
+    # Pre-install a fixed version of cool.io to avoid ARM64 build issues. cool.io 1.9.1 has high failure rate.
     # when upgrading fluentd in the future, check cool.io compatibility first.
     # https://rubygems.org/gems/fluentd
+    # long-term solution: consider building arm version on arm host, currently qemu is used on amd64 host.
     gem install cool.io -v "1.8.0" --no-document
     gem install fluentd -v $fluentd_version --no-document
 else
