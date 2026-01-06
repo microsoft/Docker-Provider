@@ -18,6 +18,25 @@ done
 cluster="$(kubectl config current-context)"
 echo "Current cluster: $cluster"
 
+# Remove stale CRDs that block Helm ownership
+stale_crds=(
+    "testworkflowexecutions.testworkflows.testkube.io"
+    "testworkflows.testkube.io"
+    "testworkflows.testworkflows.testkube.io"
+    "testworkflowtemplates.testworkflows.testkube.io"
+)
+
+echo "Checking for stale Testkube CRDs"
+for crd in "${stale_crds[@]}"; do
+    if kubectl get crd "$crd" >/dev/null 2>&1; then
+        owner=$(kubectl get crd "$crd" -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}')
+        if [[ "$owner" != "Helm" ]]; then
+            echo "Deleting CRD $crd with unmanaged owner: ${owner:-none}"
+            kubectl delete crd "$crd" --wait=true || true
+        fi
+    fi
+done
+
 echo "Install testkube CLI"
 wget -qO - https://repo.testkube.io/key.pub | sudo apt-key add -
 echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sources.list
@@ -42,87 +61,139 @@ helm repo add kubeshop https://kubeshop.github.io/helm-charts
 helm repo update
 helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./helm-testkube-values.yaml
 
-echo "Install testkube CRIs"
+echo "Install testkube TestWorkflows"
 export AZURE_CLIENT_ID=$AzureClientId
 export AZURE_TENANT_ID=$AzureTenantId
 export WEBHOOK_URI=$TeamsWebhookUri
 export GENEVA_INTEGRATION=$GenevaIntegration
 kubectl apply -f ./api-server-permissions.yaml
-envsubst < ./testkube-test-crs.yaml > ./testkube-test-crs-updated.yaml
-kubectl apply -f ./testkube-test-crs-updated.yaml
+kubectl apply -f ./testkube-test-crs.yaml
 
 echo "Wait for cluster to be ready"
-sleep 200
+sleep 300
 
-echo "Run testkube tests"
-execution_id=""
+echo "Run testkube testworkflows"
+workflows=()
+failed_workflows=()
+successful_workflows=()
 if [[ $LinuxTestsOnly == "true" ]]; then
     echo "Running Linux tests only"
-    kubectl testkube run testsuite e2e-tests-linux --job-template ./custom-job-template.yaml --verbose
-    execution_id=$(kubectl testkube get testsuiteexecutions --test-suite e2e-tests-linux --limit 1 | grep e2e-tests | awk '{print $1}')
+    workflows=("containerstatus-linux" "querylogs")
 else
     echo "Running all tests"
-    kubectl testkube run testsuite e2e-tests-all --job-template ./custom-job-template.yaml --verbose
-    execution_id=$(kubectl testkube get testsuiteexecutions --test-suite e2e-tests-all --limit 1 | grep e2e-tests | awk '{print $1}')
+    workflows=("containerstatus-linux" "containerstatus-windows" "querylogs")
 fi
 
-# Watch until the all the tests in the test suite finish
-kubectl testkube watch testsuiteexecution $execution_id
+for wf in "${workflows[@]}"; do
+    echo "Running workflow: $wf"
+    kubectl testkube run testworkflow "$wf" \
+        --config GENEVA_INTEGRATION="$GENEVA_INTEGRATION" \
+        --config AZURE_TENANT_ID="$AZURE_TENANT_ID" \
+        --config AZURE_CLIENT_ID="$AZURE_CLIENT_ID" \
+        --config GOTOOLCHAIN="go1.23.6" \
+        --verbose
 
-# Get the results as a formatted json file
-kubectl testkube get testsuiteexecution $execution_id --output json > testkube-results.json
+    echo "Waiting for execution to be created..."
+    sleep 5
 
-# For any test that has failed, print out the Ginkgo logs
-if [[ $(jq -r '.status' testkube-results.json) == "failed" ]]; then
+    echo "Fetching testworkflow executions for $wf..."
+    kubectl testkube get testworkflowexecution
+    execution_id=$(kubectl testkube get testworkflowexecution | grep -i "$wf" | head -n 1 | awk '{print $1}')
 
-    # Get each test name and id that failed
-    jq -r '.executeStepResults[].execute[] | select(.execution.executionResult.status=="failed") | "\(.execution.testName) \(.execution.id)"' testkube-results.json | while read line; do
-    testName=$(echo $line | cut -d ' ' -f 1)
-    id=$(echo $line | cut -d ' ' -f 2)
-    echo "Test $testName failed. Test ID: $id"
+    echo "Execution ID: $execution_id"
 
-    # Get the Ginkgo logs of the test
-    kubectl testkube get execution $id > out 2>error.log
+    # Check if execution_id is empty
+    if [[ -z "$execution_id" ]]; then
+        echo "Error: Could not find execution ID for $wf"
+        exit 1
+    fi
 
-    # Remove superfluous logs of everything before the last occurence of 'go downloading'.
-    # The actual errors can be viewed from the ADO run, instead of needing to view the testkube dashboard.
-    cat error.log | tac | awk '/go: downloading/ {exit} 1' | tac
+    # Watch until the testworkflow finishes
+    kubectl testkube watch testworkflowexecution $execution_id
 
-    result=$(cat error.log | tac | awk '/------------------------------/ {exit} 1' | tac | awk '{gsub(/\x1B\[[0-9;]*[mK]/, ""); print}')
+    # Get the results as a formatted json file
+    kubectl testkube get testworkflowexecution $execution_id --output json > "testkube-results-${wf}.json"
 
-    payload=$(cat <<EOF
+    # Verify the JSON is valid
+    if ! jq empty "testkube-results-${wf}.json" 2>/dev/null; then
+        echo "Error: Failed to get valid JSON results from testkube for $wf"
+        echo "Contents of testkube-results-${wf}.json:"
+        cat "testkube-results-${wf}.json"
+        exit 1
+    fi
+
+    # For any test that has failed, print out the logs
+    if [[ $(jq -r '.result.status' "testkube-results-${wf}.json") == "failed" ]]; then
+
+        echo "TestWorkflow failed. Execution ID: $execution_id"
+
+        # Get the logs of the testworkflow execution
+        kubectl testkube get testworkflowexecution $execution_id --logs-only > "execution-${wf}.log" 2>&1
+
+        # Display the logs
+        cat "execution-${wf}.log"
+
+        # Extract meaningful error information (only the ginkgo failure summary lines, any failure count)
+        result=$(awk 'BEGIN{inblock=0} /Summarizing [0-9]+ Failure/{inblock=1} {
+            if(inblock){
+                gsub(/\x1B\[[0-9;]*[mK]/, "");
+                if($0 ~ /^FAIL$/ || $0 ~ /^Ginkgo ran/ || $0 ~ /^Test Suite Failed/){exit};
+                print;
+            }
+        }' "execution-${wf}.log")
+
+        result_json=$(printf '%s' "$result" | jq -Rs .)
+
+        payload=$(cat <<EOF
 {
     "@type": "MessageCard",
     "@context": "http://schema.org/extensions",
     "themeColor": "0076D7",
     "summary": "Test run failed",
     "sections": [{
-        "activityTitle": "Test Execution Failed",
+        "activityTitle": "TestWorkflow Execution Failed",
         "activitySubtitle": "CI Test Automation",
         "activityImage": "https://adaptivecards.io/content/cats/1.png",
         "facts": [{
             "name": "Cluster",
             "value": "**$cluster**"
         },{
-            "name": "Test",
-            "value": "**$testName**"
+            "name": "TestWorkflow",
+            "value": "**$wf**"
         }, {
             "name": "Execution Id",
-            "value": "$id"
+            "value": "$execution_id"
         }, {
             "name": "Result",
-            "value": "$result"
+            "value": ${result_json}
         }],
         "markdown": true
     }]
 }
 EOF
 )
+        curl -X POST -H "Content-Type: application/json" -d "$payload" $WEBHOOK_URI
 
-    curl -X POST -H "Content-Type: application/json" -d "$payload" $WEBHOOK_URI
+        # Track the failed workflow for summary reporting
+        failed_workflows+=("${wf} (execution: ${execution_id})")
+    else
+        successful_workflows+=("${wf} (execution: ${execution_id})")
+    fi
+done
 
+echo "\n========== TestWorkflow Summary =========="
+if [[ ${#failed_workflows[@]} -gt 0 ]]; then
+    echo "Failed workflows:"
+    for wf in "${failed_workflows[@]}"; do
+        echo "- $wf"
     done
-
-    # Explicitly fail the ADO task since at least one test failed
+    echo "========================================"
     exit 1
+else
+    echo "All workflows completed successfully."
+    echo "Successful workflows:"
+    for wf in "${successful_workflows[@]}"; do
+        echo "- $wf"
+    done
+    echo "========================================"
 fi
