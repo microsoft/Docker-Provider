@@ -240,11 +240,15 @@ stages:
           mkdir -p $(Build.ArtifactStagingDirectory)/charts
           cp app-monitoring-extension-*.tgz $(Build.ArtifactStagingDirectory)/charts/
           
-          echo "Logging into ACR..."
-          az acr login -n ${{ variables.containerRegistry }}
+          if [ "$(IS_PR)" != "True" ]; then
+            echo "Logging into ACR..."
+            az acr login -n ${{ variables.containerRegistry }}
 
-          echo "Pushing chart to OCI registry..."
-          helm push app-monitoring-extension-$(devOciTagSufix).tgz oci://${{ variables.repoTestExtensionPath }}
+            echo "Pushing chart to OCI registry..."
+            helm push app-monitoring-extension-$(devOciTagSufix).tgz oci://${{ variables.repoTestExtensionPath }}
+          else
+            echo "Skipping ACR login and chart push for PR build..."
+          fi
 
     - bash: |
           echo "##vso[task.setvariable variable=testImageName;isOutput=true]$(testImageName)"
@@ -259,6 +263,7 @@ stages:
 - stage: Validate
   displayName: 'Validation and Testing of Addon and Extension Paths'
   dependsOn: Build
+  condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
   jobs:
   - job: validate_addon_path
     # condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
