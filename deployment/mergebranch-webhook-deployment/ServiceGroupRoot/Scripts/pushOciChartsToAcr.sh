@@ -80,6 +80,34 @@ if [ -z $SOURCE_IMAGE_FULL_PATH ]; then
   exit 1
 fi
 
+# Verify that the corresponding webhook image exists in MCR before pushing OCI charts
+# The webhook image should have been pushed first by pushWebhookToAcr.sh with the same tag
+echo "Verifying webhook image exists in MCR with matching tag..."
+WEBHOOK_MCR_TAGS_URL="https://mcr.microsoft.com/v2/azuremonitor/applicationinsights/aiprod/tags/list"
+
+set +e
+WEBHOOK_MCR_RESULT=$(wget -qO- "$WEBHOOK_MCR_TAGS_URL" 2>&1)
+WEBHOOK_WGET_EXIT_CODE=$?
+set -e
+
+if [ $WEBHOOK_WGET_EXIT_CODE -ne 0 ]; then
+  echo "-e error: Failed to query webhook image tags from MCR. Exit code: $WEBHOOK_WGET_EXIT_CODE"
+  echo "Response: $WEBHOOK_MCR_RESULT"
+  echo "The webhook image must be pushed before the OCI charts. Ensure pushWebhookToAcr.sh completed successfully."
+  exit 1
+fi
+
+WEBHOOK_TAG_EXISTS=1
+echo "$WEBHOOK_MCR_RESULT" | jq '.tags' | grep -Fq \""$OCI_IMAGE_TAG_SUFFIX"\" && WEBHOOK_TAG_EXISTS=0
+
+if [ "$WEBHOOK_TAG_EXISTS" -ne 0 ]; then
+  echo "-e error: Webhook image with tag '$OCI_IMAGE_TAG_SUFFIX' not found in MCR at azuremonitor/applicationinsights/aiprod"
+  echo "Available tags: $(echo $WEBHOOK_MCR_RESULT | jq '.tags')"
+  echo "The webhook image must be pushed before the OCI charts. Ensure pushWebhookToAcr.sh completed successfully with the same SOURCE_IMAGE_TAG and SOURCE_IMAGE_BUILD_ID."
+  exit 1
+fi
+
+echo "Webhook image with tag '$OCI_IMAGE_TAG_SUFFIX' verified in MCR. Proceeding with OCI chart push..."
 
 #Login to az cli and authenticate to acr
 echo "Login cli using managed identity"
