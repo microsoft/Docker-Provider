@@ -84,7 +84,7 @@ if [ "$ARCH" == "arm64" ]; then
     # when upgrading fluentd in the future, check cool.io compatibility first.
     # https://rubygems.org/gems/fluentd
     # long-term solution: consider building arm version on arm host, currently qemu is used on amd64 host.
-    gem install cool.io -v "1.8.0" --no-document
+    gem install cool.io -v "1.9.0" --no-document # use 1.9.0 which is used in 3.1.32, 3.1.31, etc.
     gem install fluentd -v $fluentd_version --no-document
 else
     gem install fluentd -v $fluentd_version --no-document
