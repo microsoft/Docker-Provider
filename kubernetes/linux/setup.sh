@@ -44,6 +44,7 @@ gem uninstall rexml --force
 gem uninstall uri --force
 rm /usr/lib/ruby/gems/3.3.0/specifications/default/uri-0.13.2.gemspec
 rm -rf /usr/lib/ruby/gems/3.3.0/gems/uri-0.13.2
+gem install uri -v "0.13.3" --no-document
 
 sudo tdnf install -y azure-mdsd-1.37.0
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
