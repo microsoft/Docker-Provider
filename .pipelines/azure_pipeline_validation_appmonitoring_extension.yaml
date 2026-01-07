@@ -80,7 +80,7 @@ jobs:
 
   - task: PublishBuildArtifacts@1
     condition: and(succeeded(), eq(variables['IS_PR'], 'False'))
-    displayName: "Publish artifacts for PR"
+    displayName: "Publish artifacts"
     inputs:
       pathToPublish: '$(Build.ArtifactStagingDirectory)'
       artifactName: drop
