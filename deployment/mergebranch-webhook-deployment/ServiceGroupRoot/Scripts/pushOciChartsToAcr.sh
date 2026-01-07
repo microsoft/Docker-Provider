@@ -1,6 +1,39 @@
 #!/bin/bash
 set -e
 
+poll_for_tag() {
+  local url="$1"; local tag="$2"; local label="$3"; local max_attempts=${4:-30}; local sleep_seconds=${5:-60}
+  local attempt=1; local found=1; local last_resp=""
+
+  while [ $attempt -le $max_attempts ]; do
+    echo "[$label] Attempt $attempt/$max_attempts checking $url for tag '$tag'..."
+
+    set +e
+    resp=$(wget -qO- "$url" 2>&1)
+    code=$?
+    set -e
+
+    last_resp="$resp"
+
+    if [ $code -ne 0 ]; then
+      echo "[$label] Warning: query failed (exit $code). Response: $resp"
+    else
+      echo "$resp" | jq '.tags' | grep -Fq \""$tag"\" && found=0 || found=1
+      if [ $found -eq 0 ]; then
+        echo "[$label] Tag '$tag' found."; return 0
+      fi
+      echo "[$label] Tag '$tag' not found yet. Retry in ${sleep_seconds}s..."
+    fi
+
+    if [ $attempt -lt $max_attempts ]; then sleep $sleep_seconds; fi
+    attempt=$((attempt+1))
+  done
+
+  echo "-e error: $label tag '$tag' not found after $max_attempts attempts (~$((max_attempts*sleep_seconds/60)) minutes)."
+  echo "Last response: $last_resp"
+  exit 1
+}
+
 # Note - This script used in the pipeline as inline script
 
 #Make sure that tag being pushed will not overwrite an existing tag in mcr
@@ -80,6 +113,11 @@ if [ -z $SOURCE_IMAGE_FULL_PATH ]; then
   exit 1
 fi
 
+# Verify that the corresponding webhook image exists in MCR before pushing OCI charts (poll up to 30 minutes)
+# The webhook image should have been pushed first by pushWebhookToAcr.sh with the same tag
+echo "Verifying webhook image exists in MCR with matching tag..."
+WEBHOOK_MCR_TAGS_URL="https://mcr.microsoft.com/v2/azuremonitor/applicationinsights/aiprod/tags/list"
+poll_for_tag "$WEBHOOK_MCR_TAGS_URL" "$OCI_IMAGE_TAG_SUFFIX" "webhook image"
 
 #Login to az cli and authenticate to acr
 echo "Login cli using managed identity"
@@ -117,3 +155,8 @@ else
   echo "-e error failed to retag and push image to destination ACR"
   exit 1
 fi
+
+# Wait for the OCI chart to appear in MCR (up to 30 minutes)
+echo "Waiting for OCI chart tag '$OCI_IMAGE_TAG_SUFFIX' to be available in MCR (extension-prod)..."
+EXTENSION_MCR_TAGS_URL="https://mcr.microsoft.com/v2/azuremonitor/applicationinsights/helm/extension-prod/tags/list"
+poll_for_tag "$EXTENSION_MCR_TAGS_URL" "$OCI_IMAGE_TAG_SUFFIX" "OCI chart"
