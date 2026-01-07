@@ -80,6 +80,11 @@ export interface IResources {
     limits: ILimits;
 }
 
+export interface ISecurityContext {
+    runAsUser?: number;
+    runAsNonRoot?: boolean;
+}
+
 export interface IContainer {
     name: string;
     image: string;
@@ -92,6 +97,7 @@ export interface IContainer {
     imagePullPolicy?: string;
     env?: IEnvironmentVariable[];
     volumeMounts?: IVolumeMount[];
+    securityContext?: ISecurityContext;
 }
 
 export interface IVolume {

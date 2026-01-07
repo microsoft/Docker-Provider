@@ -68,12 +68,16 @@ export class Mutations {
                     containers.push({
                         name: Mutations.initContainerNameJava,
                         image: Mutations.GenerateImagePath(platforms[i], imageRepoPath),
-                        command: ["cp"],
-                        args: ["-r", Mutations.imagePathJava, Mutations.agentVolumeMountPathJava], // cp -r <source> <destination> 
+                        command: ["/bin/sh"],
+                        args: Mutations.generateInitContainerArgs(Mutations.imagePathJava, Mutations.agentVolumeMountPathJava),
                         volumeMounts: [{
                             name: Mutations.agentVolumeJava,
                             mountPath: Mutations.agentVolumeMountPathJava
                         }],
+                        securityContext: {
+                            runAsUser: 1000,
+                            runAsNonRoot: true
+                        },
                         resources: {
                             requests: {
                                 cpu: "100m",
@@ -91,12 +95,16 @@ export class Mutations {
                     containers.push({
                         name: Mutations.initContainerNameNodeJs,
                         image: Mutations.GenerateImagePath(platforms[i], imageRepoPath),
-                        command: ["cp"],
-                        args: ["-r", Mutations.imagePathNodeJs, Mutations.agentVolumeMountPathNodeJs], // cp -r <source> <destination>
+                        command: ["/bin/sh"],
+                        args: Mutations.generateInitContainerArgs(Mutations.imagePathNodeJs, Mutations.agentVolumeMountPathNodeJs),
                         volumeMounts: [{
                             name: Mutations.agentVolumeNodeJs,
                             mountPath: Mutations.agentVolumeMountPathNodeJs
                         }],
+                        securityContext: {
+                            runAsUser: 1000,
+                            runAsNonRoot: true
+                        },
                         resources: {
                             requests: {
                                 cpu: "100m",
@@ -114,12 +122,16 @@ export class Mutations {
                     containers.push({
                         name: Mutations.initContainerNamePython,
                         image: Mutations.GenerateImagePath(platforms[i], imageRepoPath),
-                        command: ["cp"],
-                        args: ["-r", Mutations.imagePathPython, Mutations.agentVolumeMountPathPython], // cp -r <source> <destination>
+                        command: ["/bin/sh"],
+                        args: Mutations.generateInitContainerArgs(Mutations.imagePathPython, Mutations.agentVolumeMountPathPython),
                         volumeMounts: [{
                             name: Mutations.agentVolumePython,
                             mountPath: Mutations.agentVolumeMountPathPython
                         }],
+                        securityContext: {
+                            runAsUser: 1000,
+                            runAsNonRoot: true
+                        },
                         resources: {
                             requests: {
                                 cpu: "100m",
@@ -137,12 +149,16 @@ export class Mutations {
                     containers.push({
                         name: Mutations.initContainerNameDotNet,
                         image: Mutations.GenerateImagePath(platforms[i], imageRepoPath),
-                        command: ["cp"],
-                        args: ["-r", Mutations.imagePathDotNet, Mutations.agentVolumeMountPathDotNet], // cp -r <source> <destination>
+                        command: ["/bin/sh"],
+                        args: Mutations.generateInitContainerArgs(Mutations.imagePathDotNet, Mutations.agentVolumeMountPathDotNet),
                         volumeMounts: [{
                             name: Mutations.agentVolumeDotNet,
                             mountPath: Mutations.agentVolumeMountPathDotNet
                         }],
+                        securityContext: {
+                            runAsUser: 1000,
+                            runAsNonRoot: true
+                        },
                         resources: {
                             requests: {
                                 cpu: "100m",
@@ -489,6 +505,7 @@ export class Mutations {
     public static GenerateVolumes(platforms: AutoInstrumentationPlatforms[]) : IVolume[] {
         const volumes: IVolume[] = [];
 
+        // agent volume must be writable because agents may use their location for disk-based caching of telemetry items
         for (let i = 0; i < platforms.length; i++) {
             switch (platforms[i] as AutoInstrumentationPlatforms) {
                 case AutoInstrumentationPlatforms.Java:
@@ -681,5 +698,13 @@ export class Mutations {
 
     public static GetUserPriorityOtelResourceAttributeKeys(): Set<string> {
         return new Set(["service.name", "service.instance.id"]);
+    }
+
+    private static generateInitContainerArgs(sourcePath: string, destPath: string): string[] {
+        // we are doing chmod to make sure copied files are world-readable to every user in any container.
+        //chmod ... || true is necessary because chmod may fail on the mount point itself (root),
+        // which is acceptable to us and we don't want to fail the initcontainer in that case.
+        // cp -r <source> <destination>
+        return ["-c", `cp -r ${sourcePath} ${destPath} && (chmod -R 777 ${destPath} || true)`];
     }
 }
