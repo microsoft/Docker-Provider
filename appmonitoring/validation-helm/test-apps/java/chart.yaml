@@ -15,6 +15,9 @@ spec:
       labels:
         app: java-test-app
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 3000
       containers:
       - name: java-test-app
         image: appmonitoring.azurecr.io/demoaks-java-app:latest

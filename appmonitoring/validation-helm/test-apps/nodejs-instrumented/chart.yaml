@@ -18,6 +18,9 @@ spec:
       annotations:
         #instrumentation.opentelemetry.io/inject-configuration: "true"
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 6000
       containers:
       - name: nodejs-instrumented-test-app
         image: appmonitoring.azurecr.io/demoaks-nodejs-instrumented-app:latest

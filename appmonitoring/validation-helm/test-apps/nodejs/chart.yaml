@@ -15,6 +15,9 @@ spec:
       labels:
         app: nodejs-test-app
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 5000
       containers:
       - name: nodejs-test-app
         image: appmonitoring.azurecr.io/demoaks-nodejs-app:latest

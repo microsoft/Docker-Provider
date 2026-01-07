@@ -18,6 +18,9 @@ spec:
       annotations:
         instrumentation.opentelemetry.io/inject-configuration: "true"
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 9000
       containers:
       - name: dotnet-instrumented-test-app
         image: appmonitoring.azurecr.io/demoaks-dotnet-instrumented-app:latest

@@ -17,6 +17,9 @@ spec:
       annotations:
         instrumentation.opentelemetry.io/private-preview-inject-dotnet: "true" # private-preview is enabled via an annotation only
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 8000
       containers:
       - name: dotnet-test-app
         image: appmonitoring.azurecr.io/demoaks-dotnet-app:latest
