@@ -408,7 +408,7 @@ module Fluent::Plugin
         if continuationToken.nil? # sending kube services inventory records
           kubeServicesEventStream = Fluent::MultiEventStream.new
           serviceRecords.each do |kubeServiceRecord|
-            next unless !KubernetesApiClient.isExcludeResourceItem(kubeServiceRecord["ServiceName"], kubeServiceRecord["namespace"], @namespaceFilteringMode, @namespaces)
+            next unless !KubernetesApiClient.isExcludeResourceItem(kubeServiceRecord["ServiceName"], kubeServiceRecord["Namespace"], @namespaceFilteringMode, @namespaces)
             if !kubeServiceRecord.nil?
               # adding before emit to reduce memory foot print
               kubeServiceRecord["ClusterId"] = KubernetesApiClient.getClusterId
