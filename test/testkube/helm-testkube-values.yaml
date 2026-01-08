@@ -110,11 +110,11 @@ mongodb:
   # Currently Bitnami doesn't support ARM: https://github.com/bitnami/charts/issues/7305
   image:
     # -- MongoDB image registry
-    registry: docker.io
+    registry: us-east1-docker.pkg.dev
     # -- MongoDB image repository
-    repository: bitnami/mongodb
+    repository: testkube-cloud-372110/testkube/mongodb
     # -- MongoDB image tag
-    tag: latest
+    tag: 8.0.15
     # -- MongoDB image pull Secret
     pullSecrets: []
   nodeSelector: 
@@ -985,7 +985,7 @@ testkube-api:
 
 testkube-operator:
   ## deploy Operator chart
-  enabled: true
+  enabled: false
   ## namespace to deploy Testkube Operator. Default is .Release.Namespace
   namespace: ""
   # should roles and roles bindings be created
