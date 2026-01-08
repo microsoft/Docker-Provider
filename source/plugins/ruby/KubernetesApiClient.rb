@@ -935,7 +935,6 @@ class KubernetesApiClient
                 is_gzip = (response['Content-Encoding'] == 'gzip')
                 inflater = nil
                 yajl_parser = nil
-                accumulated_buffer = +""  # Buffer for incomplete JSON chunks
                 begin
                   if is_gzip
                     # Use Inflate with gzip window bits for streaming
@@ -961,7 +960,7 @@ class KubernetesApiClient
                         end
                       end
                       if obj.key?('metadata') && obj['metadata'].is_a?(Hash)
-                        metadata_continue = obj['metadata']['continue']
+                        metadata_continue = obj['metadata']['continue'] if obj['metadata'].key?('continue')
                         resource_version = obj['metadata']['resourceVersion'] if obj['metadata'].key?('resourceVersion')
                       end
                     end
@@ -1002,12 +1001,6 @@ class KubernetesApiClient
                   # Finalize the parsing - this triggers on_parse_complete callback
                   yajl_parser.parse("")  rescue nil
 
-                  # Finish and clean up inflater
-                  if inflater
-                    inflater.finish rescue nil
-                    inflater.close rescue nil
-                  end
-
                   # Build minimal inventory structure
                   resourceInventory = {
                     'metadata' => { 'continue' => metadata_continue, 'resourceVersion' => resource_version },
@@ -1018,9 +1011,13 @@ class KubernetesApiClient
 
                 rescue => stream_err
                   @Log.warn "KubernetesApiClient::getResourcesAndContinuationTokenV2: Stream processing error: #{stream_err}"
-                  # Clean up resources
-                  inflater.close if inflater rescue nil
                   raise
+                ensure
+                  # Always clean up inflater resources, regardless of success or failure
+                  if inflater
+                    inflater.finish rescue nil
+                    inflater.close rescue nil
+                  end
                 end
               end # streaming path
             end # http.request
@@ -1047,7 +1044,7 @@ class KubernetesApiClient
 
         # Derive continuation token if not already set
         if continuationToken.nil? && resourceInventory && resourceInventory['metadata']
-          continuationToken = resourceInventory['metadata']['continue']
+          continuationToken = resourceInventory['metadata']['continue'] if resourceInventory['metadata'].key?('continue')
         end
         duration_ms = ((Time.now.utc - started_at) * 1000).round(1)
         @Log.info "KubernetesApiClient::getResourcesAndContinuationTokenV2: mode=#{parse_mode} code=#{responseCode} items=#{resourceInventory && resourceInventory['items'] ? resourceInventory['items'].length : 'n/a'} cont=#{continuationToken.nil? ? 'nil' : continuationToken.empty? ? 'empty' : 'set'} compBytes=#{total_compressed_bytes} uncompBytes=#{total_uncompressed_bytes} ms=#{duration_ms} uri=#{uri}"
