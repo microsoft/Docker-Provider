@@ -16,6 +16,9 @@ spec:
       annotations:
         instrumentation.opentelemetry.io/inject-configuration: "true"
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 16000
       containers:
         - name: {{ .Values.appName }}
           image: "{{ .Values.image }}"

@@ -18,6 +18,9 @@ spec:
         instrumentation.opentelemetry.io/private-preview-inject-dotnet: "true"
       {{- end }}
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 15000
       containers:
         - name: {{ .Values.appName }}
           image: "{{ .Values.image }}"

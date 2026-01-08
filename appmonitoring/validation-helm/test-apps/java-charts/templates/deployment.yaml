@@ -14,6 +14,9 @@ spec:
       labels:
         app: {{ .Values.appName }}
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 12000
       containers:
         - name: {{ .Values.appName }}
           image: "{{ .Values.image }}"
