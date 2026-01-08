@@ -15,8 +15,7 @@ spec:
         app: {{ .Values.appName }}
     spec:
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 12000
+        runAsUser: 0
       containers:
         - name: {{ .Values.appName }}
           image: "{{ .Values.image }}"
