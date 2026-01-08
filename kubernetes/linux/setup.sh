@@ -18,10 +18,10 @@ if [ "$ARCH" == "arm64" ]; then
     sudo tdnf install ruby-3.3.5-6.azl3.aarch64 -y
 else
     tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
-    wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20251023.tar.gz -O ruby-build.tar.gz
+    wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20251225.tar.gz -O ruby-build.tar.gz
     tar -xzf ruby-build.tar.gz
     PREFIX=/usr/local ./ruby-build-*/install.sh
-    ruby-build 3.3.8 /usr -v
+    ruby-build 4.0.0 /usr -v
 
     rm ruby-build.tar.gz
 fi
