@@ -7,13 +7,6 @@ metadata:
     executor: ginkgo-executor
     test-type: ginkgo-test
 spec:
-  config:
-    GENEVA_INTEGRATION:
-      type: string
-      default: "false"
-    GOTOOLCHAIN:
-      type: string
-      default: ""
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
@@ -27,9 +20,9 @@ spec:
         image: cerebro31/ginkgo-test:latest
         env:
         - name: GENEVA_INTEGRATION
-          value: "{{config.GENEVA_INTEGRATION}}"
+          value: "$GENEVA_INTEGRATION"
         - name: GOTOOLCHAIN
-          value: "{{config.GOTOOLCHAIN}}"
+          value: "auto"
       shell: |
         ginkgo run -r --label-filter "!(windows)" ./containerstatus
   pod:
@@ -45,13 +38,6 @@ metadata:
   labels:
     test-type: ginkgo-test
 spec:
-  config:
-    GENEVA_INTEGRATION:
-      type: string
-      default: "false"
-    GOTOOLCHAIN:
-      type: string
-      default: ""
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
@@ -65,9 +51,9 @@ spec:
       image: cerebro31/ginkgo-test:latest
       env:
       - name: GENEVA_INTEGRATION
-        value: "{{config.GENEVA_INTEGRATION}}"
+        value: "$GENEVA_INTEGRATION"
       - name: GOTOOLCHAIN
-        value: "{{config.GOTOOLCHAIN}}"
+        value: "auto"
     shell: ginkgo --label-filter "windows" ./containerstatus
   pod:
     nodeSelector:
@@ -82,10 +68,6 @@ metadata:
   labels:
     test-type: ginkgo-test
 spec:
-  config:
-    GOTOOLCHAIN:
-      type: string
-      default: ""
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
@@ -99,7 +81,7 @@ spec:
       image: cerebro31/ginkgo-test:latest
       env:
       - name: GOTOOLCHAIN
-        value: "{{config.GOTOOLCHAIN}}"
+        value: "auto"
     shell: ginkgo --label-filter "!(windows)" ./livenessprobe
   pod:
     nodeSelector:
@@ -114,19 +96,6 @@ metadata:
   labels:
     test-type: ginkgo-test
 spec:
-  config:
-    AZURE_TENANT_ID:
-      type: string
-      default: ""
-    AZURE_CLIENT_ID:
-      type: string
-      default: ""
-    GENEVA_INTEGRATION:
-      type: string
-      default: "false"
-    GOTOOLCHAIN:
-      type: string
-      default: ""
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
@@ -140,13 +109,13 @@ spec:
       image: cerebro31/ginkgo-test:latest
       env:
       - name: AZURE_TENANT_ID
-        value: "{{config.AZURE_TENANT_ID}}"
+        value: "$AZURE_TENANT_ID"
       - name: AZURE_CLIENT_ID
-        value: "{{config.AZURE_CLIENT_ID}}"
+        value: "$AZURE_CLIENT_ID"
       - name: GENEVA_INTEGRATION
-        value: "{{config.GENEVA_INTEGRATION}}"
+        value: "$GENEVA_INTEGRATION"
       - name: GOTOOLCHAIN
-        value: "{{config.GOTOOLCHAIN}}"
+        value: "auto"
     shell: ginkgo ./querylogs
   pod:
     nodeSelector:

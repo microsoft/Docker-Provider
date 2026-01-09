@@ -66,8 +66,10 @@ export AZURE_CLIENT_ID=$AzureClientId
 export AZURE_TENANT_ID=$AzureTenantId
 export WEBHOOK_URI=$TeamsWebhookUri
 export GENEVA_INTEGRATION=$GenevaIntegration
+
+envsubst < "./testkube-test-crs.yaml" > "./testkube-test-crs-updated.yaml"
 kubectl apply -f ./api-server-permissions.yaml
-kubectl apply -f ./testkube-test-crs.yaml
+kubectl apply -f ./testkube-test-crs-updated.yaml
 
 echo "Wait for cluster to be ready"
 sleep 300
@@ -86,12 +88,7 @@ fi
 
 for wf in "${workflows[@]}"; do
     echo "Running workflow: $wf"
-    kubectl testkube run testworkflow "$wf" \
-        --config GENEVA_INTEGRATION="$GENEVA_INTEGRATION" \
-        --config AZURE_TENANT_ID="$AZURE_TENANT_ID" \
-        --config AZURE_CLIENT_ID="$AZURE_CLIENT_ID" \
-        --config GOTOOLCHAIN="go1.23.6" \
-        --verbose
+    kubectl testkube run testworkflow "$wf"
 
     echo "Waiting for execution to be created..."
     sleep 5
