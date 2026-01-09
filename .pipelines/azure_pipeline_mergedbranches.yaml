@@ -177,6 +177,7 @@ extends:
             if [ "$(Build.Reason)" != "PullRequest" ]; then
               echo "=== Building and pushing ARM64 image natively on ARM64 agent ==="
               sudo docker build \
+                --provenance=false
                 --push \
                 --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 \
                 -f kubernetes/linux/Dockerfile.multiarch \
