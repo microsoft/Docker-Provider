@@ -1028,7 +1028,7 @@ class KubernetesApiClient
           begin
             # Fallback to legacy path
             fallbackResponseCode, resourceInfo = getKubeResourceInfoV2(uri, api_group: api_group)
-            responseCode = fallbackResponseCode if responseCode.nil?
+            responseCode = fallbackResponseCode
             if fallbackResponseCode == '200' && resourceInfo && resourceInfo.body && !resourceInfo.body.empty?
               resourceInventory = JSON.parse(resourceInfo.body)
               # Set continuationToken from fallback response
