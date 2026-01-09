@@ -177,6 +177,7 @@ extends:
             if [ "$(Build.Reason)" != "PullRequest" ]; then
               echo "=== Building and pushing ARM64 image natively on ARM64 agent ==="
               sudo docker build \
+                --provenance=false \
                 --push \
                 --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 \
                 -f kubernetes/linux/Dockerfile.multiarch \
@@ -192,10 +193,12 @@ extends:
               # Check platform info in the manifest - ensure no "unknown" architecture exists
               if echo "$MANIFEST_OUTPUT" | grep -q '"architecture": "unknown"'; then
                 echo "WARNING: Image has unknown architecture - platform metadata not set correctly"
+                exit 1
               elif echo "$MANIFEST_OUTPUT" | grep -q '"architecture": "arm64"'; then
                 echo "SUCCESS: Image has correct arm64 architecture metadata"
               else
                 echo "WARNING: Could not verify architecture in manifest"
+                exit 1
               fi
               
               echo "##vso[task.logissue type=warning]Linux ARM64 image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)-arm64"
