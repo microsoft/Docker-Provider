@@ -251,10 +251,13 @@ extends:
               sudo docker version
               echo "==========================================="
 
-              az --version
-              az account show
-              az account set -s ${{ variables.subscription }}
-              az acr login -n ${{ variables.containerRegistry }}
+              echo "=== Logging into ACR ==="
+              echo $(ACR_PASSWORD) | sudo docker login ${{ variables.containerRegistry }}.azurecr.io -u $(ACR_USERNAME) --password-stdin
+            
+              # az --version
+              # az account show
+              # az account set -s ${{ variables.subscription }}
+              # az acr login -n ${{ variables.containerRegistry }}
               if [ "$(Build.Reason)" != "PullRequest" ]; then
                 echo "=== Building AMD64 image with platform metadata ==="
                 docker build \
