@@ -268,8 +268,11 @@ extends:
                   --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) \
                   .
 
+                echo "=== Pushing AMD64 image to ACR ==="
+                docker push ${{ variables.repoImageName }}:$(linuxImagetag)-amd64
+                
                 echo "=== Verifying pushed image ==="
-                MANIFEST_OUTPUT=$(sudo docker manifest inspect ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 2>&1)
+                MANIFEST_OUTPUT=$(docker manifest inspect ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 2>&1)
                 echo "$MANIFEST_OUTPUT"
 
                 # Check platform info in the manifest - ensure no "unknown" architecture exists
@@ -281,9 +284,7 @@ extends:
                 else
                   echo "WARNING: Could not verify architecture in manifest"
                 fi
-
-                echo "=== Pushing AMD64 image to ACR ==="
-                docker push ${{ variables.repoImageName }}:$(linuxImagetag)-amd64
+                
                 echo "##vso[task.logissue type=warning]Linux AMD64 image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)-amd64"
               else
                 echo "=== PR build - building AMD64 image without push ==="
