@@ -176,7 +176,9 @@ extends:
                 -f kubernetes/linux/Dockerfile.multiarch \
                 --build-arg IMAGE_TAG=$(linuxTelemetryTag) \
                 --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) \
-                --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) .
+                --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) \
+                --build-arg TARGETARCH=arm64 \
+                --build-arg TARGETOS=linux .
               
               echo "=== Verifying image is single-arch (not manifest list) ==="
               IMAGE_ARCH=$(sudo docker inspect --format='{{.Architecture}}' ${{ variables.repoImageName }}:$(linuxImagetag)-arm64)
@@ -198,7 +200,9 @@ extends:
                 -f kubernetes/linux/Dockerfile.multiarch \
                 --build-arg IMAGE_TAG=$(linuxTelemetryTag) \
                 --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) \
-                --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) .
+                --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) \
+                --build-arg TARGETARCH=arm64 \
+                --build-arg TARGETOS=linux .
             fi
           displayName: "Linux ARM64 build"
           retryCountOnTaskFailure: 1
@@ -234,11 +238,11 @@ extends:
               az account set -s ${{ variables.subscription }}
               az acr login -n ${{ variables.containerRegistry }}
               if [ "$(Build.Reason)" != "PullRequest" ]; then
-                docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) .
+                docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --build-arg TARGETARCH=amd64 --build-arg TARGETOS=linux .
                 docker push ${{ variables.repoImageName }}:$(linuxImagetag)-amd64
                 echo "##vso[task.logissue type=warning]Linux AMD64 image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)-amd64"
               else
-                docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) .
+                docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --build-arg TARGETARCH=amd64 --build-arg TARGETOS=linux .
               fi
           retryCountOnTaskFailure: 1
         - task: GoTool@0
