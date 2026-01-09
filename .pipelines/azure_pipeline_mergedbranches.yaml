@@ -162,16 +162,43 @@ extends:
           DOCKER_BUILDKIT: 1
         steps:
         - bash: |
+            set -euxo pipefail
             mkdir -p $(Build.ArtifactStagingDirectory)/linux
             sudo docker system prune --all -f
             sudo docker images -q --filter "dangling=true" | xargs sudo docker rmi || true
-            sudo docker login ${{ variables.containerRegistry }}.azurecr.io -u $(ACR_USERNAME) -p $(ACR_PASSWORD)
+            
+            echo "=== Logging into ACR ==="
+            echo $(ACR_PASSWORD) | sudo docker login ${{ variables.containerRegistry }}.azurecr.io -u $(ACR_USERNAME) --password-stdin
+            
             if [ "$(Build.Reason)" != "PullRequest" ]; then
-              sudo docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) .
+              echo "=== Building ARM64 image ==="
+              sudo docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 \
+                -f kubernetes/linux/Dockerfile.multiarch \
+                --build-arg IMAGE_TAG=$(linuxTelemetryTag) \
+                --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) \
+                --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) .
+              
+              echo "=== Verifying image is single-arch (not manifest list) ==="
+              IMAGE_ARCH=$(sudo docker inspect --format='{{.Architecture}}' ${{ variables.repoImageName }}:$(linuxImagetag)-arm64)
+              echo "Image architecture: $IMAGE_ARCH"
+              if [ "$IMAGE_ARCH" != "arm64" ]; then
+                echo "ERROR: Expected arm64 architecture but got $IMAGE_ARCH"
+                exit 1
+              fi
+              
+              echo "=== Pushing ARM64 image ==="
               sudo docker push ${{ variables.repoImageName }}:$(linuxImagetag)-arm64
+              
+              echo "=== Verifying push succeeded ==="
+              sudo docker pull ${{ variables.repoImageName }}:$(linuxImagetag)-arm64
               echo "##vso[task.logissue type=warning]Linux ARM64 image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)-arm64"
             else
-              sudo docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) .
+              echo "=== PR build - building ARM64 image without push ==="
+              sudo docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 \
+                -f kubernetes/linux/Dockerfile.multiarch \
+                --build-arg IMAGE_TAG=$(linuxTelemetryTag) \
+                --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) \
+                --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) .
             fi
           displayName: "Linux ARM64 build"
           retryCountOnTaskFailure: 1
