@@ -251,7 +251,7 @@ extends:
             scriptType: bash
             scriptLocation: inlineScript
             inlineScript: |
-              set -euxo pipe
+              set -euxo pipefail
               mkdir -p $(Build.ArtifactStagingDirectory)/linux
               docker system prune --all -f
               docker images -q --filter "dangling=true" | xargs docker rmi || true
