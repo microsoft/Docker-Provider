@@ -175,20 +175,15 @@ extends:
             echo $(ACR_PASSWORD) | sudo docker login ${{ variables.containerRegistry }}.azurecr.io -u $(ACR_USERNAME) --password-stdin
             
             if [ "$(Build.Reason)" != "PullRequest" ]; then
-              echo "=== Building ARM64 image natively on ARM64 agent ==="
-              # Use --platform to ensure proper platform metadata in the image
-              # Build and tag locally first, then push separately
-              # Disable provenance and sbom to avoid "unknown" architecture attestation artifacts
+              echo "=== Building and pushing ARM64 image natively on ARM64 agent ==="
               sudo docker build \
+                --push \
                 --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 \
                 -f kubernetes/linux/Dockerfile.multiarch \
                 --build-arg IMAGE_TAG=$(linuxTelemetryTag) \
                 --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) \
                 --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) \
                 .
-              
-              echo "=== Pushing ARM64 image to ACR ==="
-              sudo docker push ${{ variables.repoImageName }}:$(linuxImagetag)-arm64
               
               echo "=== Verifying pushed image ==="
               MANIFEST_OUTPUT=$(sudo docker manifest inspect ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 2>&1)
@@ -247,7 +242,7 @@ extends:
               docker system prune --all -f
               docker images -q --filter "dangling=true" | xargs docker rmi || true
 
-              echo "=== Docker Version Info (ARM64 Agent) ==="
+              echo "=== Docker Version Info (AMD64 Agent) ==="
               sudo docker version
               echo "==========================================="
 
@@ -255,17 +250,15 @@ extends:
               echo $(ACR_PASSWORD) | sudo docker login ${{ variables.containerRegistry }}.azurecr.io -u $(ACR_USERNAME) --password-stdin
             
               if [ "$(Build.Reason)" != "PullRequest" ]; then
-                echo "=== Building AMD64 image with platform metadata ==="
-                docker build \
+                echo "=== Building and pushing AMD64 image ==="
+                sudo docker build \
+                  --push \
                   --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 \
                   -f kubernetes/linux/Dockerfile.multiarch \
                   --build-arg IMAGE_TAG=$(linuxTelemetryTag) \
                   --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) \
                   --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) \
                   .
-
-                echo "=== Pushing AMD64 image to ACR ==="
-                sudo docker push ${{ variables.repoImageName }}:$(linuxImagetag)-amd64
                 
                 echo "=== Verifying pushed image ==="
                 # Use sudo to access the same docker credentials used for push
@@ -1034,3 +1027,4 @@ extends:
             FileDirPath: '$(Build.ArtifactStagingDirectory)'
             DisableRemediation: false
             AcceptableOutdatedSignatureInHours: 72
+          inputs:
