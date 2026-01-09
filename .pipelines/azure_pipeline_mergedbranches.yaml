@@ -265,6 +265,10 @@ extends:
                   --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) \
                   .
 
+                echo "=== Verifying pushed image ==="
+                MANIFEST_OUTPUT=$(sudo docker manifest inspect ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 2>&1)
+                echo "$MANIFEST_OUTPUT"
+
                 # Check platform info in the manifest - ensure no "unknown" architecture exists
                 if echo "$MANIFEST_OUTPUT" | grep -q '"architecture": "unknown"'; then
                   echo "ERROR: Image has unknown architecture - platform metadata not set correctly"
