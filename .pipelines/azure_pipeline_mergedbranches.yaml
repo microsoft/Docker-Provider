@@ -180,17 +180,12 @@ extends:
               # Build and tag locally first, then push separately
               # Disable provenance and sbom to avoid "unknown" architecture attestation artifacts
               sudo docker build \
-                --platform linux/arm64 \
                 --provenance=false \
-                --sbom=false \
                 --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 \
                 -f kubernetes/linux/Dockerfile.multiarch \
                 --build-arg IMAGE_TAG=$(linuxTelemetryTag) \
                 --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) \
                 --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) \
-                --build-arg TARGETARCH=arm64 \
-                --build-arg TARGETOS=linux \
-                --build-arg BUILDPLATFORM=linux/arm64 \
                 .
               
               echo "=== Pushing ARM64 image to ACR ==="
@@ -212,17 +207,12 @@ extends:
             else
               echo "=== PR build - building ARM64 image without push ==="
               sudo docker build \
-                --platform linux/arm64 \
                 --provenance=false \
-                --sbom=false \
                 --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 \
                 -f kubernetes/linux/Dockerfile.multiarch \
                 --build-arg IMAGE_TAG=$(linuxTelemetryTag) \
                 --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) \
                 --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) \
-                --build-arg TARGETARCH=arm64 \
-                --build-arg TARGETOS=linux \
-                --build-arg BUILDPLATFORM=linux/arm64 \
                 .
             fi
           displayName: "Linux ARM64 build"
