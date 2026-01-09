@@ -180,7 +180,6 @@ extends:
               # Build and tag locally first, then push separately
               # Disable provenance and sbom to avoid "unknown" architecture attestation artifacts
               sudo docker build \
-                --provenance=false \
                 --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 \
                 -f kubernetes/linux/Dockerfile.multiarch \
                 --build-arg IMAGE_TAG=$(linuxTelemetryTag) \
