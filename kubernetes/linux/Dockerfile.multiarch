@@ -12,7 +12,9 @@ COPY source /src/source
 RUN cd /src/build/linux && make arch=${TARGETARCH}
 
 
-FROM ${MARINER_BASE_IMAGE} AS builder
+# Add TARGETARCH before FROM to ensure Docker resolves the correct platform for multi-arch base images
+ARG TARGETARCH
+FROM --platform=linux/${TARGETARCH} ${MARINER_BASE_IMAGE} AS builder
 ARG TARGETOS TARGETARCH
 LABEL maintainer="OMSContainers@microsoft.com"
 LABEL vendor=Microsoft\ Corp \
@@ -57,7 +59,9 @@ WORKDIR ${tmpdir}
 
 RUN chmod 775 $tmpdir/*.sh; sync; $tmpdir/setup.sh ${TARGETARCH}
 
-FROM ${MARINER_DISTROLESS_IMAGE} AS distroless_image
+# Add TARGETARCH before FROM to ensure Docker resolves the correct platform for multi-arch base images
+ARG TARGETARCH
+FROM --platform=linux/${TARGETARCH} ${MARINER_DISTROLESS_IMAGE} AS distroless_image
 LABEL maintainer="OMSContainers@microsoft.com"
 LABEL vendor=Microsoft\ Corp \
     com.microsoft.product="Azure Monitor for containers"
