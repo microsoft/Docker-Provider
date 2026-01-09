@@ -229,7 +229,7 @@ extends:
           linuxTelemetryTag: $[ dependencies.common.outputs['setup.linuxTelemetryTag'] ]
           Codeql.Enabled: true
           Codeql.BuildIdentifier: 'linuxbuild_amd64'
-          DOCKER_BUILDKIT: 0
+          DOCKER_BUILDKIT: 1
         steps:
         - task: CodeQL3000Init@0
           condition: eq(variables.IS_MAIN_BRANCH, true)
@@ -248,7 +248,7 @@ extends:
               az account set -s ${{ variables.subscription }}
               az acr login -n ${{ variables.containerRegistry }}
               if [ "$(Build.Reason)" != "PullRequest" ]; then
-                DOCKER_BUILDKIT=0 docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --build-arg TARGETARCH=amd64 --build-arg TARGETOS=linux .
+                docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --build-arg TARGETARCH=amd64 --build-arg TARGETOS=linux .
                 docker push ${{ variables.repoImageName }}:$(linuxImagetag)-amd64
                 echo "##vso[task.logissue type=warning]Linux AMD64 image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)-amd64"
               else
