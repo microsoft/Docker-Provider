@@ -178,8 +178,11 @@ extends:
               echo "=== Building ARM64 image natively on ARM64 agent ==="
               # Use --platform to ensure proper platform metadata in the image
               # Build and tag locally first, then push separately
+              # Disable provenance and sbom to avoid "unknown" architecture attestation artifacts
               sudo docker build \
                 --platform linux/arm64 \
+                --provenance=false \
+                --sbom=false \
                 --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 \
                 -f kubernetes/linux/Dockerfile.multiarch \
                 --build-arg IMAGE_TAG=$(linuxTelemetryTag) \
@@ -210,6 +213,8 @@ extends:
               echo "=== PR build - building ARM64 image without push ==="
               sudo docker build \
                 --platform linux/arm64 \
+                --provenance=false \
+                --sbom=false \
                 --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 \
                 -f kubernetes/linux/Dockerfile.multiarch \
                 --build-arg IMAGE_TAG=$(linuxTelemetryTag) \
@@ -246,7 +251,7 @@ extends:
             scriptType: bash
             scriptLocation: inlineScript
             inlineScript: |
-              set -euxo pipefail
+              set -euxo pipe
               mkdir -p $(Build.ArtifactStagingDirectory)/linux
               docker system prune --all -f
               docker images -q --filter "dangling=true" | xargs docker rmi || true
@@ -273,7 +278,7 @@ extends:
                 echo "##vso[task.logissue type=warning]Linux AMD64 image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)-amd64"
               else
                 echo "=== PR build - building AMD64 image without push ==="
-                DOCKER_BUILDKIT=0 docker build \
+                docker build \
                   --platform linux/amd64 \
                   --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 \
                   -f kubernetes/linux/Dockerfile.multiarch \

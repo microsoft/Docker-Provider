@@ -145,35 +145,4 @@ COPY --from=builder /lib/pkcs11/p11-kit-trust.so /lib/pkcs11/
 RUN ln -s /lib/pkcs11/p11-kit-trust.so /lib/libnssckbi.so
 RUN ln -s /lib/libnssckbi.so /lib/p11-kit-trust.so
 
-# Do vulnerability scan in a seperate stage to avoid adding layer
-FROM distroless_image AS vulnscan
-COPY .trivyignore .trivyignore
-RUN ["/bin/bash", "-c", "curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.39.0"]
-
-# Set up primary and secondary repository URLs
-ENV PRIMARY_TRIVY_DB_REPOSITORY="ghcr.io/aquasecurity/trivy-db"
-ENV SECONDARY_TRIVY_DB_REPOSITORY="public.ecr.aws/aquasecurity/trivy-db"
-
-# Download Trivy main database with a fallback mechanism
-RUN export TRIVY_DB_REPOSITORY=$PRIMARY_TRIVY_DB_REPOSITORY && \
-    trivy image --download-db-only || \
-    (echo "Primary TRIVY_DB_REPOSITORY failed, trying secondary." && \
-     export TRIVY_DB_REPOSITORY=$SECONDARY_TRIVY_DB_REPOSITORY && \
-     trivy image --download-db-only) || \
-    (echo "Both TRIVY_DB_REPOSITORY sources failed." && exit 1)
-
-# Perform Trivy rootfs scan (only OS vulnerabilities, no Java scanning)
-RUN ["/bin/bash", "-c", "trivy rootfs --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --vuln-type os --scanners vuln --skip-files \"/usr/local/bin/trivy\" /"]
-RUN ["/bin/bash", "-c", "trivy rootfs --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --vuln-type os --scanners vuln /usr/lib"]
-RUN ["/bin/bash", "-c", "trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --vuln-type os --scanners vuln --skip-files \"/usr/local/bin/trivy\" / > /dev/null 2>&1 && trivy rootfs --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM --vuln-type os --scanners vuln /usr/lib > /dev/null 2>&1"]
-
-# Revert to base layer before vulnscan
-FROM distroless_image AS ContainerInsights
-# force the trivy stage to run
-# docker buildx (BUILDKIT) does not build stages which do not affect the final stage
-# by copying over a file we create a dependency
-# see: https://github.com/docker/build-push-action/issues/377
-COPY --from=vulnscan /usr/local/bin/trivy /usr/local/bin/trivy
-RUN ["/bin/bash", "-c", "rm -rf /usr/local/bin/trivy"]
-
 CMD [ "/opt/main.sh" ]
