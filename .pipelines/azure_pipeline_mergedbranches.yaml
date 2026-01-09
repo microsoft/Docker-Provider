@@ -1027,4 +1027,3 @@ extends:
             FileDirPath: '$(Build.ArtifactStagingDirectory)'
             DisableRemediation: false
             AcceptableOutdatedSignatureInHours: 72
-          inputs:
