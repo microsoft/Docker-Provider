@@ -273,27 +273,34 @@ extends:
             targetPath: '$(Build.ArtifactStagingDirectory)'
             artifactName: linux-drop
         steps:
-        - task: AzureCLI@2
+        - bash: |
+            set -euxo pipefail
+            mkdir -p $(Build.ArtifactStagingDirectory)/linux
+            
+            echo "=== Logging into ACR with docker login ==="
+            echo $(ACR_PASSWORD) | docker login ${{ variables.containerRegistry }}.azurecr.io -u $(ACR_USERNAME) --password-stdin
+            
+            echo '{"image.name":"${{ variables.repoImageName }}:$(linuxImagetag)"}' > $(Build.ArtifactStagingDirectory)/linux/metadata.json
+            
+            if [ "$(Build.Reason)" != "PullRequest" ]; then
+              echo "=== Inspecting arch-specific images ==="
+              docker manifest inspect ${{ variables.repoImageName }}:$(linuxImagetag)-amd64
+              docker manifest inspect ${{ variables.repoImageName }}:$(linuxImagetag)-arm64
+              
+              echo "=== Creating multi-arch manifest ==="
+              docker manifest create ${{ variables.repoImageName }}:$(linuxImagetag) \
+                ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 \
+                ${{ variables.repoImageName }}:$(linuxImagetag)-arm64
+              
+              echo "=== Pushing multi-arch manifest ==="
+              docker manifest push ${{ variables.repoImageName }}:$(linuxImagetag)
+              
+              echo "=== Verifying final manifest has platform info ==="
+              docker manifest inspect ${{ variables.repoImageName }}:$(linuxImagetag)
+              
+              echo "##vso[task.logissue type=warning]Linux multi-arch image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)"
+            fi
           displayName: "Create Linux multi-arch manifest"
-          inputs:
-            azureSubscription: ${{ variables.armServiceConnectionName }}
-            scriptType: bash
-            scriptLocation: inlineScript
-            inlineScript: |
-              mkdir -p $(Build.ArtifactStagingDirectory)/linux
-              az --version
-              az account show
-              az account set -s ${{ variables.subscription }}
-              az acr login -n ${{ variables.containerRegistry }}
-              echo '{"image.name":"${{ variables.repoImageName }}:$(linuxImagetag)"}' > $(Build.ArtifactStagingDirectory)/linux/metadata.json
-              if [ "$(Build.Reason)" != "PullRequest" ]; then
-                docker manifest create ${{ variables.repoImageName }}:$(linuxImagetag) \
-                  ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 \
-                  ${{ variables.repoImageName }}:$(linuxImagetag)-arm64
-                docker manifest push ${{ variables.repoImageName }}:$(linuxImagetag)
-                echo "##vso[task.logissue type=warning]Linux multi-arch image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)"
-                docker pull ${{ variables.repoImageName }}:$(linuxImagetag)
-              fi
         - bash: |
             curl -LO "https://github.com/oras-project/oras/releases/download/v1.0.0/oras_1.0.0_linux_amd64.tar.gz"
             mkdir -p oras-install/
