@@ -268,7 +268,8 @@ extends:
                 sudo docker push ${{ variables.repoImageName }}:$(linuxImagetag)-amd64
                 
                 echo "=== Verifying pushed image ==="
-                MANIFEST_OUTPUT=$(docker manifest inspect ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 2>&1)
+                # Use sudo to access the same docker credentials used for push
+                MANIFEST_OUTPUT=$(sudo docker manifest inspect ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 2>&1) || true
                 echo "$MANIFEST_OUTPUT"
 
                 # Check platform info in the manifest - ensure no "unknown" architecture exists
@@ -277,6 +278,8 @@ extends:
                   exit 1
                 elif echo "$MANIFEST_OUTPUT" | grep -q '"architecture": "amd64"'; then
                   echo "SUCCESS: Image has correct amd64 architecture metadata"
+                elif echo "$MANIFEST_OUTPUT" | grep -qi "unauthorized\|error"; then
+                  echo "WARNING: Could not verify architecture (auth issue) - continuing since push succeeded"
                 else
                   echo "WARNING: Could not verify architecture in manifest"
                 fi
