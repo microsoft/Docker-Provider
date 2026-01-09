@@ -175,8 +175,11 @@ extends:
             echo $(ACR_PASSWORD) | sudo docker login ${{ variables.containerRegistry }}.azurecr.io -u $(ACR_USERNAME) --password-stdin
             
             if [ "$(Build.Reason)" != "PullRequest" ]; then
-              echo "=== Building and pushing ARM64 image (using --push like prometheus-collector) ==="
+              echo "=== Building ARM64 image natively on ARM64 agent ==="
+              # Use --platform to ensure proper platform metadata in the image
+              # Build and tag locally first, then push separately
               sudo docker build \
+                --platform linux/arm64 \
                 --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 \
                 -f kubernetes/linux/Dockerfile.multiarch \
                 --build-arg IMAGE_TAG=$(linuxTelemetryTag) \
@@ -184,27 +187,29 @@ extends:
                 --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) \
                 --build-arg TARGETARCH=arm64 \
                 --build-arg TARGETOS=linux \
-                --push \
+                --build-arg BUILDPLATFORM=linux/arm64 \
                 .
               
-              echo "=== Verifying pushed image is single-arch (not manifest list) ==="
+              echo "=== Pushing ARM64 image to ACR ==="
+              sudo docker push ${{ variables.repoImageName }}:$(linuxImagetag)-arm64
+              
+              echo "=== Verifying pushed image ==="
               MANIFEST_OUTPUT=$(sudo docker manifest inspect ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 2>&1)
               echo "$MANIFEST_OUTPUT"
               
-              # Check if it's a manifest list (has "manifests" array) or single image (has "config")
-              if echo "$MANIFEST_OUTPUT" | grep -q '"manifests"'; then
-                echo "ERROR: Image is a manifest list, not a single image!"
-                echo "This will cause 'docker manifest create' to fail."
+              # Check platform info in the manifest
+              if echo "$MANIFEST_OUTPUT" | grep -q '"architecture": "arm64"'; then
+                echo "SUCCESS: Image has correct arm64 architecture metadata"
+              elif echo "$MANIFEST_OUTPUT" | grep -q '"architecture": "unknown"'; then
+                echo "ERROR: Image has unknown architecture - platform metadata not set correctly"
                 exit 1
               fi
               
-              if echo "$MANIFEST_OUTPUT" | grep -q '"config"'; then
-                echo "SUCCESS: Image is a single-arch image (not a manifest list)"
-              fi
               echo "##vso[task.logissue type=warning]Linux ARM64 image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)-arm64"
             else
               echo "=== PR build - building ARM64 image without push ==="
               sudo docker build \
+                --platform linux/arm64 \
                 --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 \
                 -f kubernetes/linux/Dockerfile.multiarch \
                 --build-arg IMAGE_TAG=$(linuxTelemetryTag) \
@@ -212,6 +217,7 @@ extends:
                 --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) \
                 --build-arg TARGETARCH=arm64 \
                 --build-arg TARGETOS=linux \
+                --build-arg BUILDPLATFORM=linux/arm64 \
                 .
             fi
           displayName: "Linux ARM64 build"
@@ -240,6 +246,7 @@ extends:
             scriptType: bash
             scriptLocation: inlineScript
             inlineScript: |
+              set -euxo pipefail
               mkdir -p $(Build.ArtifactStagingDirectory)/linux
               docker system prune --all -f
               docker images -q --filter "dangling=true" | xargs docker rmi || true
@@ -248,11 +255,35 @@ extends:
               az account set -s ${{ variables.subscription }}
               az acr login -n ${{ variables.containerRegistry }}
               if [ "$(Build.Reason)" != "PullRequest" ]; then
-                docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --build-arg TARGETARCH=amd64 --build-arg TARGETOS=linux .
+                echo "=== Building AMD64 image with platform metadata ==="
+                docker build \
+                  --platform linux/amd64 \
+                  --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 \
+                  -f kubernetes/linux/Dockerfile.multiarch \
+                  --build-arg IMAGE_TAG=$(linuxTelemetryTag) \
+                  --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) \
+                  --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) \
+                  --build-arg TARGETARCH=amd64 \
+                  --build-arg TARGETOS=linux \
+                  --build-arg BUILDPLATFORM=linux/amd64 \
+                  .
+                
+                echo "=== Pushing AMD64 image to ACR ==="
                 docker push ${{ variables.repoImageName }}:$(linuxImagetag)-amd64
                 echo "##vso[task.logissue type=warning]Linux AMD64 image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)-amd64"
               else
-                DOCKER_BUILDKIT=0 docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --build-arg TARGETARCH=amd64 --build-arg TARGETOS=linux .
+                echo "=== PR build - building AMD64 image without push ==="
+                DOCKER_BUILDKIT=0 docker build \
+                  --platform linux/amd64 \
+                  --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 \
+                  -f kubernetes/linux/Dockerfile.multiarch \
+                  --build-arg IMAGE_TAG=$(linuxTelemetryTag) \
+                  --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) \
+                  --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) \
+                  --build-arg TARGETARCH=amd64 \
+                  --build-arg TARGETOS=linux \
+                  --build-arg BUILDPLATFORM=linux/amd64 \
+                  .
               fi
           retryCountOnTaskFailure: 1
         - task: GoTool@0
