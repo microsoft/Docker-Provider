@@ -159,7 +159,7 @@ extends:
           linuxImagetag: $[ dependencies.common.outputs['setup.linuxImagetag'] ]
           linuxTelemetryTag: $[ dependencies.common.outputs['setup.linuxTelemetryTag'] ]
           Codeql.SkipTaskAutoInjection: true
-          DOCKER_BUILDKIT: 1
+          DOCKER_BUILDKIT: 0
         steps:
         - bash: |
             set -euxo pipefail
@@ -171,8 +171,8 @@ extends:
             echo $(ACR_PASSWORD) | sudo docker login ${{ variables.containerRegistry }}.azurecr.io -u $(ACR_USERNAME) --password-stdin
             
             if [ "$(Build.Reason)" != "PullRequest" ]; then
-              echo "=== Building ARM64 image ==="
-              sudo docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 \
+              echo "=== Building ARM64 image (BuildKit disabled to avoid manifest list) ==="
+              sudo DOCKER_BUILDKIT=0 docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 \
                 -f kubernetes/linux/Dockerfile.multiarch \
                 --build-arg IMAGE_TAG=$(linuxTelemetryTag) \
                 --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) \
@@ -196,7 +196,7 @@ extends:
               echo "##vso[task.logissue type=warning]Linux ARM64 image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)-arm64"
             else
               echo "=== PR build - building ARM64 image without push ==="
-              sudo docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 \
+              sudo DOCKER_BUILDKIT=0 docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 \
                 -f kubernetes/linux/Dockerfile.multiarch \
                 --build-arg IMAGE_TAG=$(linuxTelemetryTag) \
                 --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) \
@@ -219,7 +219,7 @@ extends:
           linuxTelemetryTag: $[ dependencies.common.outputs['setup.linuxTelemetryTag'] ]
           Codeql.Enabled: true
           Codeql.BuildIdentifier: 'linuxbuild_amd64'
-          DOCKER_BUILDKIT: 1
+          DOCKER_BUILDKIT: 0
         steps:
         - task: CodeQL3000Init@0
           condition: eq(variables.IS_MAIN_BRANCH, true)
@@ -238,11 +238,11 @@ extends:
               az account set -s ${{ variables.subscription }}
               az acr login -n ${{ variables.containerRegistry }}
               if [ "$(Build.Reason)" != "PullRequest" ]; then
-                docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --build-arg TARGETARCH=amd64 --build-arg TARGETOS=linux .
+                DOCKER_BUILDKIT=0 docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --build-arg TARGETARCH=amd64 --build-arg TARGETOS=linux .
                 docker push ${{ variables.repoImageName }}:$(linuxImagetag)-amd64
                 echo "##vso[task.logissue type=warning]Linux AMD64 image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)-amd64"
               else
-                docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --build-arg TARGETARCH=amd64 --build-arg TARGETOS=linux .
+                DOCKER_BUILDKIT=0 docker build --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 -f kubernetes/linux/Dockerfile.multiarch --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --build-arg TARGETARCH=amd64 --build-arg TARGETOS=linux .
               fi
           retryCountOnTaskFailure: 1
         - task: GoTool@0
