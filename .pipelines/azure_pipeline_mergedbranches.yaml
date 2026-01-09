@@ -177,7 +177,7 @@ extends:
             if [ "$(Build.Reason)" != "PullRequest" ]; then
               echo "=== Building and pushing ARM64 image natively on ARM64 agent ==="
               sudo docker build \
-                --provenance=false
+                --provenance=false \
                 --push \
                 --tag ${{ variables.repoImageName }}:$(linuxImagetag)-arm64 \
                 -f kubernetes/linux/Dockerfile.multiarch \
@@ -253,9 +253,9 @@ extends:
               if [ "$(Build.Reason)" != "PullRequest" ]; then
                 echo "=== Building and pushing AMD64 image ==="
                 sudo docker build \
+                  --provenance=false \
                   --push \
                   --tag ${{ variables.repoImageName }}:$(linuxImagetag)-amd64 \
-                  -f kubernetes/linux/Dockerfile.multiarch \
                   --build-arg IMAGE_TAG=$(linuxTelemetryTag) \
                   --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) \
                   --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) \
