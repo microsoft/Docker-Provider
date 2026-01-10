@@ -15,13 +15,13 @@ sudo update-ca-trust
 # arm64 build breaks intermittently when installing ruby from global packages, so installing it from mariner packages
 # the mariner package version is behind the global packages so we are using different versions for arm64 and x86_64
 if [ "$ARCH" == "arm64" ]; then
-    sudo tdnf install ruby-3.3.5-6.azl3.aarch64 -y
+    sudo tdnf install ruby-3.3.5-1.azl3.aarch64 -y
 else
     tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
-    wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20251225.tar.gz -O ruby-build.tar.gz
+    wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20250409.tar.gz -O ruby-build.tar.gz
     tar -xzf ruby-build.tar.gz
     PREFIX=/usr/local ./ruby-build-*/install.sh
-    ruby-build 4.0.0 /usr -v
+    ruby-build 3.3.8 /usr -v
 
     rm ruby-build.tar.gz
 fi
@@ -39,12 +39,6 @@ gem uninstall net-imap --force
 
 # remove rexml gem as it has a known CVE (CVE-2025-58767) and is not used by the agent
 gem uninstall rexml --force
-
-# remove uri gem as it has a known CVE (CVE-2025-61594) and is not used by the agent
-# gem uninstall uri --force
-# rm /usr/lib/ruby/gems/3.3.0/specifications/default/uri-0.13.2.gemspec
-# rm -rf /usr/lib/ruby/gems/3.3.0/gems/uri-0.13.2
-# gem install uri -v "0.13.3" --no-document
 
 sudo tdnf install -y azure-mdsd-1.37.0
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
@@ -68,13 +62,7 @@ sudo tdnf install jq-1.7.1-1.azl3 -y
 #used to setcaps for ruby process to read /proc/env
 sudo tdnf install libcap -y
 
-if [ "$ARCH" == "arm64" ]; then
-    sudo curl -L -O https://kubernetesreleases.blob.core.windows.net/dalec-packages/telegraf-agent/1.37.0/azl3/aarch64/telegraf-agent-1.37.0-1.azl3.aarch64.rpm
-    sudo tdnf install -y --nogpgcheck telegraf-agent-1.37.0-1.azl3.aarch64.rpm
-else
-    sudo curl -L -O https://kubernetesreleases.blob.core.windows.net/dalec-packages/telegraf-agent/1.37.0/azl3/x86_64/telegraf-agent-1.37.0-1.azl3.x86_64.rpm
-    sudo tdnf install -y --nogpgcheck telegraf-agent-1.37.0-1.azl3.x86_64.rpm
-fi
+sudo tdnf install telegraf-agent-1.37.0 -y
 telegraf_version=$(sudo tdnf list installed | grep telegraf | awk '{print $2}')
 echo "telegraf $telegraf_version" >> packages_version.txt
 mv /usr/bin/telegraf-agent /opt/telegraf
