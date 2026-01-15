@@ -912,7 +912,7 @@ class KubernetesApiClient
               rescue; end
               small_threshold = 256 * 1024 # 256KB
 
-              if content_length && content_length <= small_threshold
+              if true
                 # Read whole (possibly compressed) body then use faster parser for small payloads
                 body_buf = +"" # mutable string
                 response.read_body { |c| body_buf << c }
