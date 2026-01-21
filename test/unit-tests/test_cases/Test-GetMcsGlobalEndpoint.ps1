@@ -42,7 +42,7 @@ function Test-CloudEnvironments {
             expected = "https://global.handler.control.monitor.azure.microsoft.scloud"
         },
         @{
-            cloud = "bleu"
+            cloud = "azurebleucloud"
             expected = "https://global.handler.control.monitor.sovcloud-api.fr"
         }
     )

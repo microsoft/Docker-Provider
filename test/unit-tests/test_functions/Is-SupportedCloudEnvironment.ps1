@@ -5,7 +5,7 @@ function Is-SupportedCloudEnvironment {
     param (
         [string]$cloudEnvironment
     )
-    $supportedCloudEnvironments = @("azurepubliccloud", "azurechinacloud", "azureusgovernmentcloud", "usnat", "ussec", "bleu")
+    $supportedCloudEnvironments = @("azurepubliccloud", "azurechinacloud", "azureusgovernmentcloud", "usnat", "ussec", "azurebleucloud")
     if ($supportedCloudEnvironments -contains $cloudEnvironment) {
         return $true
     }
