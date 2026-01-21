@@ -11,7 +11,7 @@ function Test-ValidCloudEnvironments {
         "azureusgovernmentcloud",
         "usnat",
         "ussec",
-        "bleu"
+        "azurebleucloud"
     )
 
     foreach ($cloud in $testCases) {
