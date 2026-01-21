@@ -275,7 +275,7 @@ function Get-McsAzureResourceEndpoint {
             "azureusgovernmentcloud"  { $mcs_azure_resource_endpoint = "https://monitor.azure.us/" }
             "usnat"                   { $mcs_azure_resource_endpoint = "https://monitor.azure.eaglex.ic.gov/" }
             "ussec"                   { $mcs_azure_resource_endpoint = "https://monitor.azure.microsoft.scloud/" }
-            "azurebleucloud"                    { $mcs_azure_resource_endpoint = "https://monitor.sovcloud-api.fr/" }
+            "azurebleucloud"          { $mcs_azure_resource_endpoint = "https://monitor.sovcloud-api.fr/" }
         }
     }
     return $mcs_azure_resource_endpoint
@@ -293,7 +293,7 @@ function Get-McsEndpoint {
             "azureusgovernmentcloud"  { $mcs_endpoint = "monitor.azure.us" }
             "usnat"                   { $mcs_endpoint = "monitor.azure.eaglex.ic.gov" }
             "ussec"                   { $mcs_endpoint = "monitor.azure.microsoft.scloud" }
-            "azurebleucloud"                    { $mcs_endpoint = "monitor.sovcloud-api.fr" }
+            "azurebleucloud"          { $mcs_endpoint = "monitor.sovcloud-api.fr" }
         }
     }
     return $mcs_endpoint
