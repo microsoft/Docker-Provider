@@ -138,22 +138,48 @@ jobs:
                 echo "Processing pod: $pod_name"
                 
                 if [[ "$pod_name" =~ ^ama-logs-windows ]]; then
+                  # Windows DaemonSet pods - single container
                   IMG_URL="$WINDOWS_MCR_REPO:$WINDOWS_IMAGE_TAG"
-                  container_name="ama-logs-windows"
-                elif [[ "$pod_name" =~ ^ama-logs-rs ]] || [[ "$pod_name" =~ ^ama-logs-[a-z0-9]{5}$ ]]; then
+                  echo "  → Patching Windows pod with image: $IMG_URL (container: ama-logs-windows)"
+                  
+                  kubectl patch pod "$pod_name" -n kube-system \
+                    --patch "{\"spec\": {\"containers\": [{\"name\": \"ama-logs-windows\", \"image\": \"$IMG_URL\"}]}}" \
+                    && echo "  ✓ Successfully patched $pod_name (ama-logs-windows)" \
+                    || echo "  ✗ Failed to patch $pod_name"
+                    
+                elif [[ "$pod_name" =~ ^ama-logs-rs ]]; then
+                  # ReplicaSet pods - single container (ama-logs only)
                   IMG_URL="$LINUX_MCR_REPO:$LINUX_IMAGE_TAG"
-                  container_name="ama-logs"
+                  echo "  → Patching ReplicaSet pod with image: $IMG_URL (container: ama-logs)"
+                  
+                  kubectl patch pod "$pod_name" -n kube-system \
+                    --patch "{\"spec\": {\"containers\": [{\"name\": \"ama-logs\", \"image\": \"$IMG_URL\"}]}}" \
+                    && echo "  ✓ Successfully patched $pod_name (ama-logs)" \
+                    || echo "  ✗ Failed to patch $pod_name"
+                    
+                elif [[ "$pod_name" =~ ^ama-logs-[a-z0-9]{5}$ ]]; then
+                  # Linux DaemonSet pods have two containers: ama-logs and ama-logs-prometheus
+                  # Both need to be patched with the same image
+                  IMG_URL="$LINUX_MCR_REPO:$LINUX_IMAGE_TAG"
+                  echo "  → Patching DaemonSet pod with image: $IMG_URL"
+                  
+                  # Patch ama-logs container
+                  echo "    Patching container: ama-logs"
+                  kubectl patch pod "$pod_name" -n kube-system \
+                    --patch "{\"spec\": {\"containers\": [{\"name\": \"ama-logs\", \"image\": \"$IMG_URL\"}]}}" \
+                    && echo "    ✓ Successfully patched ama-logs" \
+                    || echo "    ✗ Failed to patch ama-logs"
+                  
+                  # Patch ama-logs-prometheus container
+                  echo "    Patching container: ama-logs-prometheus"
+                  kubectl patch pod "$pod_name" -n kube-system \
+                    --patch "{\"spec\": {\"containers\": [{\"name\": \"ama-logs-prometheus\", \"image\": \"$IMG_URL\"}]}}" \
+                    && echo "    ✓ Successfully patched ama-logs-prometheus" \
+                    || echo "    ✗ Failed to patch ama-logs-prometheus"
                 else
                   echo "  ⚠ Unknown pod pattern: $pod_name - skipping"
                   continue
                 fi
-                
-                echo "  → Patching with image: $IMG_URL (container: $container_name)"
-                
-                kubectl patch pod "$pod_name" -n kube-system \
-                  --patch "{\"spec\": {\"containers\": [{\"name\": \"$container_name\", \"image\": \"$IMG_URL\"}]}}" \
-                  && echo "  ✓ Successfully patched $pod_name" \
-                  || echo "  ✗ Failed to patch $pod_name"
               done
               
               echo ""
