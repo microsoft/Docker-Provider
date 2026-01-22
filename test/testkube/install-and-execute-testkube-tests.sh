@@ -70,7 +70,7 @@ kubectl apply -f ./api-server-permissions.yaml
 kubectl apply -f ./testkube-test-crs.yaml
 
 echo "Wait for cluster to be ready"
-sleep 200
+sleep 300
 
 echo "Run testkube testworkflows"
 workflows=()
