@@ -195,5 +195,16 @@ if [[ ${#failed_workflows[@]} -gt 0 ]]; then
     fi
     echo "========================================"
     exit 1
+else
+    echo "All workflows completed successfully."
+    echo "Successful workflows:"
+    for wf in "${successful_workflows[@]}"; do
+        echo "- $wf"
+    done
+    echo "========================================"
 fi
 
+echo "Cleaning up Testkube installation..."
+helm uninstall testkube -n testkube || true
+kubectl delete namespace testkube --wait=true --timeout=120s || true
+echo "Cleanup complete."
