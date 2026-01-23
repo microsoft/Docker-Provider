@@ -478,12 +478,12 @@ extends:
 
     - stage: Stage_3_Deploy_To_Clusters
       displayName: 'Deploy Agent to CI Test Clusters'
-      dependsOn:
-      - SDLSources
+      # TESTING: Remove dependsOn entirely to see if stage runs
+      # dependsOn:
+      # - SDLSources
       # For production: also depend on Stage_2
       # - Stage_2
-      # TESTING: Force run regardless of SDLSources result
-      condition: always()
+      dependsOn: []
       variables:
         # Set CDPXLinuxTag and CDPXWindowsTag at queue time for testing
         #linuxImageTag: $(CDPXLinuxTag)
