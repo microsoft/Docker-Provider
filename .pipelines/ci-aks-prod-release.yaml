@@ -482,7 +482,7 @@ extends:
       # For production: uncomment the following:
       # dependsOn:
       # - Stage_2
-      condition: succeeded()
+      # condition: succeeded()
       variables:
         # Set CDPXLinuxTag and CDPXWindowsTag at queue time for testing
         #linuxImageTag: $(CDPXLinuxTag)
