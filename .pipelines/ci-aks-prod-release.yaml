@@ -482,6 +482,9 @@ extends:
       - SDLSources
       # For production: also depend on Stage_2
       # - Stage_2
+      # Run this stage even if SDLSources has warnings (SucceededWithIssues)
+      # Use in() to check for both Succeeded and SucceededWithIssues
+      condition: in(dependencies.SDLSources.result, 'Succeeded', 'SucceededWithIssues')
       variables:
         # Set CDPXLinuxTag and CDPXWindowsTag at queue time for testing
         #linuxImageTag: $(CDPXLinuxTag)
