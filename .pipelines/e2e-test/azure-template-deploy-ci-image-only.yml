@@ -1,0 +1,241 @@
+# Deploy-only template for patching ama-logs pods with new images
+# This template does NOT run any tests - it only deploys and verifies pods are running
+parameters:
+- name: clusterName
+  type: string
+- name: resourceGroup
+  type: string
+- name: azureSubscription
+  type: string
+  default: 'ContainerInsights_Build_Subscription_CI'
+- name: linuxImageTag
+  type: string
+- name: windowsImageTag
+  type: string
+
+jobs:
+- job: Deploy_${{ replace(parameters.clusterName, '-', '_') }}
+  displayName: 'Deploy Only: ${{ parameters.clusterName }}'
+  pool:
+    name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-ubuntu-2204
+    os: linux
+  variables:
+    skipComponentGovernanceDetection: true
+  steps:
+    # Log deployment start
+    - bash: |
+        set -euo pipefail
+        
+        echo "========================================="
+        echo "CLUSTER DEPLOYMENT STARTING (Deploy Only)"
+        echo "========================================="
+        echo "Cluster: ${{ parameters.clusterName }}"
+        echo "Resource Group: ${{ parameters.resourceGroup }}"
+        echo "Build ID: $(Build.BuildId)"
+        echo "Pipeline Run: $(Build.BuildNumber)"
+        echo ""
+        echo "Note: This is deploy-only mode - no tests will be run"
+        echo "========================================="
+      displayName: 'Deployment Start'
+      
+    - checkout: self
+      persistCredentials: true
+    
+    - script: |
+        set -euo pipefail
+        echo "Ensuring kubectl is installed"
+        if ! command -v kubectl >/dev/null 2>&1; then
+          echo "Installing kubectl"
+          sudo az aks install-cli
+        else
+          echo "kubectl already installed: $(kubectl version --client --short || true)"
+        fi
+      displayName: 'Install kubectl'
+    
+    - task: AzureCLI@2
+      displayName: 'Get credentials for ${{ parameters.clusterName }}'
+      inputs:
+        azureSubscription: ${{ parameters.azureSubscription }}
+        scriptLocation: 'inlineScript'
+        scriptType: 'bash'
+        inlineScript: 'az aks get-credentials -g ${{ parameters.resourceGroup }} -n ${{ parameters.clusterName }}'
+    
+    # Determine MCR repository paths based on image tags
+    - task: Bash@3
+      name: DetermineMcrRepo
+      displayName: 'Determine MCR Repository Paths'
+      env:
+        LINUX_IMAGE_TAG: ${{ parameters.linuxImageTag }}
+        WINDOWS_IMAGE_TAG: ${{ parameters.windowsImageTag }}
+      inputs:
+        targetType: 'inline'
+        script: |
+          # Function to determine registry path based on image tag
+          # CI dev builds contain git hash pattern (e.g., -gbdc2f3f42-20250701203056)
+          # Production releases are simple versions (e.g., 3.1.32)
+          get_mcr_repo() {
+            local image_tag="$1"
+            if [[ "$image_tag" =~ -g[a-f0-9]+-[0-9]+ ]]; then
+              echo "mcr.microsoft.com/azuremonitor/containerinsights/cidev"
+            else
+              echo "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
+            fi
+          }
+          
+          LINUX_MCR_REPO=$(get_mcr_repo "$LINUX_IMAGE_TAG")
+          WINDOWS_MCR_REPO=$(get_mcr_repo "$WINDOWS_IMAGE_TAG")
+          
+          echo "Repository Path Detection:"
+          echo "  Linux image tag: $LINUX_IMAGE_TAG"
+          echo "  → Linux MCR repo: $LINUX_MCR_REPO"
+          echo "  Windows image tag: $WINDOWS_IMAGE_TAG"
+          echo "  → Windows MCR repo: $WINDOWS_MCR_REPO"
+          
+          # Export for subsequent steps
+          echo "##vso[task.setvariable variable=linuxMcrRepo;isOutput=true]$LINUX_MCR_REPO"
+          echo "##vso[task.setvariable variable=windowsMcrRepo;isOutput=true]$WINDOWS_MCR_REPO"
+    
+    # Patch ama-logs pods with new images
+    - task: Bash@3
+      displayName: 'Patch ama-logs pods with new images'
+      env:
+        LINUX_IMAGE_TAG: ${{ parameters.linuxImageTag }}
+        WINDOWS_IMAGE_TAG: ${{ parameters.windowsImageTag }}
+        LINUX_MCR_REPO: $(DetermineMcrRepo.linuxMcrRepo)
+        WINDOWS_MCR_REPO: $(DetermineMcrRepo.windowsMcrRepo)
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "Deploying to cluster: ${{ parameters.clusterName }}"
+          echo "  Linux image: $LINUX_MCR_REPO:$LINUX_IMAGE_TAG"
+          echo "  Windows image: $WINDOWS_MCR_REPO:$WINDOWS_IMAGE_TAG"
+          echo ""
+          echo "Finding and patching ama-logs pods in kube-system namespace..."
+          
+          kubectl get pods -n kube-system --no-headers | grep ama-logs | awk '{print $1}' | while read pod_name; do
+            echo "Processing pod: $pod_name"
+            
+            if [[ "$pod_name" =~ ^ama-logs-windows ]]; then
+              # Windows DaemonSet pods - single container
+              IMG_URL="$WINDOWS_MCR_REPO:$WINDOWS_IMAGE_TAG"
+              echo "  → Patching Windows pod with image: $IMG_URL (container: ama-logs-windows)"
+              
+              kubectl patch pod "$pod_name" -n kube-system \
+                --patch "{\"spec\": {\"containers\": [{\"name\": \"ama-logs-windows\", \"image\": \"$IMG_URL\"}]}}" \
+                && echo "  ✓ Successfully patched $pod_name (ama-logs-windows)" \
+                || echo "  ✗ Failed to patch $pod_name"
+                
+            elif [[ "$pod_name" =~ ^ama-logs-rs ]]; then
+              # ReplicaSet pods - single container (ama-logs only)
+              IMG_URL="$LINUX_MCR_REPO:$LINUX_IMAGE_TAG"
+              echo "  → Patching ReplicaSet pod with image: $IMG_URL (container: ama-logs)"
+              
+              kubectl patch pod "$pod_name" -n kube-system \
+                --patch "{\"spec\": {\"containers\": [{\"name\": \"ama-logs\", \"image\": \"$IMG_URL\"}]}}" \
+                && echo "  ✓ Successfully patched $pod_name (ama-logs)" \
+                || echo "  ✗ Failed to patch $pod_name"
+                
+            elif [[ "$pod_name" =~ ^ama-logs-[a-z0-9]{5}$ ]]; then
+              # Linux DaemonSet pods have two containers: ama-logs and ama-logs-prometheus
+              # Both need to be patched with the same image
+              IMG_URL="$LINUX_MCR_REPO:$LINUX_IMAGE_TAG"
+              echo "  → Patching DaemonSet pod with image: $IMG_URL"
+              
+              # Patch ama-logs container
+              echo "    Patching container: ama-logs"
+              kubectl patch pod "$pod_name" -n kube-system \
+                --patch "{\"spec\": {\"containers\": [{\"name\": \"ama-logs\", \"image\": \"$IMG_URL\"}]}}" \
+                && echo "    ✓ Successfully patched ama-logs" \
+                || echo "    ✗ Failed to patch ama-logs"
+              
+              # Patch ama-logs-prometheus container
+              echo "    Patching container: ama-logs-prometheus"
+              kubectl patch pod "$pod_name" -n kube-system \
+                --patch "{\"spec\": {\"containers\": [{\"name\": \"ama-logs-prometheus\", \"image\": \"$IMG_URL\"}]}}" \
+                && echo "    ✓ Successfully patched ama-logs-prometheus" \
+                || echo "    ✗ Failed to patch ama-logs-prometheus"
+            else
+              echo "  ⚠ Unknown pod pattern: $pod_name - skipping"
+              continue
+            fi
+          done
+          
+          echo ""
+          echo "Pod patching complete!"
+          echo "Current UTC time: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          echo "Current ama-logs pods:"
+          kubectl get pods -n kube-system | grep ama-logs
+    
+    # Wait for pods to restart with new images
+    - task: Bash@3
+      displayName: 'Wait for pod patch to propagate (5 minutes)'
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "========================================"
+          echo "Waiting for Pod Patch Propagation"
+          echo "========================================"
+          echo ""
+          echo "Waiting 5 minutes for pods to restart with new images..."
+          echo ""
+          
+          wait_time=300
+          interval=30
+          elapsed=0
+          
+          while [ $elapsed -lt $wait_time ]; do
+            remaining=$((wait_time - elapsed))
+            echo "⏳ Waiting... ($elapsed/$wait_time seconds elapsed, $remaining seconds remaining)"
+            sleep $interval
+            elapsed=$((elapsed + interval))
+          done
+          
+          echo ""
+          echo "✓ Wait complete!"
+          echo "========================================"
+    
+    # Verify pods are running with new images
+    - task: Bash@3
+      displayName: 'Verify pods are running with new images'
+      env:
+        LINUX_IMAGE_TAG: ${{ parameters.linuxImageTag }}
+        WINDOWS_IMAGE_TAG: ${{ parameters.windowsImageTag }}
+        LINUX_MCR_REPO: $(DetermineMcrRepo.linuxMcrRepo)
+        WINDOWS_MCR_REPO: $(DetermineMcrRepo.windowsMcrRepo)
+      inputs:
+        targetType: 'inline'
+        script: |
+          echo "========================================"
+          echo "Verifying Pod Images"
+          echo "========================================"
+          echo ""
+          echo "Expected Linux image: $LINUX_MCR_REPO:$LINUX_IMAGE_TAG"
+          echo "Expected Windows image: $WINDOWS_MCR_REPO:$WINDOWS_IMAGE_TAG"
+          echo ""
+          
+          echo "Current ama-logs pods and their images:"
+          kubectl get pods -n kube-system -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{range .spec.containers[*]}{.image}{" "}{end}{"\n"}{end}' | grep ama-logs || true
+          
+          echo ""
+          echo "Pod status:"
+          kubectl get pods -n kube-system | grep ama-logs
+          
+          echo ""
+          echo "========================================"
+          echo "Deployment verification complete"
+          echo "========================================"
+    
+    # Log deployment completion
+    - bash: |
+        echo "========================================="
+        echo "DEPLOYMENT COMPLETE (Deploy Only)"
+        echo "========================================="
+        echo "Cluster: ${{ parameters.clusterName }}"
+        echo "Build ID: $(Build.BuildId)"
+        echo "✓ Deployment finished for: ${{ parameters.clusterName }}"
+        echo ""
+        echo "Note: No tests were run in this deploy-only mode"
+        echo "========================================="
+      displayName: 'Deployment Completion'
+      condition: always()
