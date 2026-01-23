@@ -491,7 +491,7 @@ extends:
         windowsImageTag: win-3.1.33
       jobs:
       # Deploy to monitoring-model cluster
-      - template: /.pipelines/e2e-test/azure-template-deploy-and-test-ci-image-in-aks-cluster.yml@self
+      - template: /.pipelines/e2e-test/azure-template-deploy-ci-image-only.yml@self
         parameters:
           clusterName: 'zane-test3'
           resourceGroup: 'zane-test'
