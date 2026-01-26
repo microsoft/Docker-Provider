@@ -478,21 +478,22 @@ extends:
 
     - stage: Stage_3_Deploy_To_Clusters
       displayName: 'Deploy Agent to CI Test Clusters'
-      # TESTING: Remove dependsOn entirely to see if stage runs
-      # dependsOn:
-      # - SDLSources
-      # For production: also depend on Stage_2
-      # - Stage_2
+      # Remove dependency on stage 2 for testing
+      # TODO: Add dependency to stage 2 before merging
       dependsOn: []
       variables:
-        # Set CDPXLinuxTag and CDPXWindowsTag at queue time for testing
+        # Hardcode linuxImageTag and windowsImageTag for testing
+        # TODO: Use CDPXLinuxTag and CDPXWindowsTag before merging
         #linuxImageTag: $(CDPXLinuxTag)
         #windowsImageTag: $(CDPXWindowsTag)
         linuxImageTag: 3.1.33
         windowsImageTag: win-3.1.33
       jobs:
-      # Deploy to monitoring-model cluster
-      - template: /.pipelines/e2e-test/azure-template-deploy-ci-image-only.yml@self
+      # Use test cluster zane-test3 in resource group zane-test for testing
+      # TODO: Update to correct prod clusters before merging
+      # prod cluster #1: Monitoring-Model-Cluster-WCUS
+      # prod cluster #2: Monitoring-Model-Cluster-WEU
+      - template: /.pipelines/deploy-to-prod-clusters/azure-template-deploy-ci-image-only.yml@self
         parameters:
           clusterName: 'zane-test3'
           resourceGroup: 'zane-test'
