@@ -478,8 +478,10 @@ extends:
 
     - stage: Stage_3_Deploy_To_Clusters
       displayName: 'Deploy Agent to CI Test Clusters'
-      # Only run when VAR_AGENT_IMAGE_TAG_SUFFIX is provided (actual prod release)
-      condition: and(succeeded(), ne(variables['AgentImageTagSuffix'], ''))
+      # TODO: Only run when VAR_AGENT_IMAGE_TAG_SUFFIX is provided (actual prod release)
+      # condition: and(succeeded(), ne(variables['AgentImageTagSuffix'], ''))
+      # remove succeedeed() for testing purpose only
+      condition: ne(variables['AgentImageTagSuffix'], '')
       # Remove dependency on stage 2 for testing
       # TODO: Add dependency to stage 2 before merging
       dependsOn: []
