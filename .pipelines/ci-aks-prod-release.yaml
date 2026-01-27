@@ -478,16 +478,18 @@ extends:
 
     - stage: Stage_3_Deploy_To_Clusters
       displayName: 'Deploy Agent to CI Test Clusters'
+      # Only run when VAR_AGENT_IMAGE_TAG_SUFFIX is provided (actual prod release)
+      condition: and(succeeded(), ne(variables['AgentImageTagSuffix'], ''))
       # Remove dependency on stage 2 for testing
       # TODO: Add dependency to stage 2 before merging
       dependsOn: []
       variables:
-        # Hardcode linuxImageTag and windowsImageTag for testing
-        # TODO: Use CDPXLinuxTag and CDPXWindowsTag before merging
-        #linuxImageTag: $(CDPXLinuxTag)
-        #windowsImageTag: $(CDPXWindowsTag)
-        linuxImageTag: 3.1.33
-        windowsImageTag: win-3.1.33
+        # Use AgentImageTagSuffix (prod tag like 3.1.33) from the pipeline queue-time variable
+        # This is the short tag after retagging from CDPX long tags
+        # Linux: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.33
+        # Windows: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.33
+        linuxImageTag: $(AgentImageTagSuffix)
+        windowsImageTag: win-$(AgentImageTagSuffix)
       jobs:
       # Use test cluster zane-test3 in resource group zane-test for testing
       # TODO: Update to correct prod clusters before merging

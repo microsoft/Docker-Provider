@@ -61,40 +61,22 @@ jobs:
         scriptType: 'bash'
         inlineScript: 'az aks get-credentials -g ${{ parameters.resourceGroup }} -n ${{ parameters.clusterName }}'
     
-    # Determine MCR repository paths based on image tags
+    # Set MCR repository path - always use ciprod for production deployments
     - task: Bash@3
-      name: DetermineMcrRepo
-      displayName: 'Determine MCR Repository Paths'
-      env:
-        LINUX_IMAGE_TAG: ${{ parameters.linuxImageTag }}
-        WINDOWS_IMAGE_TAG: ${{ parameters.windowsImageTag }}
+      name: SetMcrRepo
+      displayName: 'Set MCR Repository Path'
       inputs:
         targetType: 'inline'
         script: |
-          # Function to determine registry path based on image tag
-          # CI dev builds contain git hash pattern (e.g., -gbdc2f3f42-20250701203056)
-          # Production releases are simple versions (e.g., 3.1.32)
-          get_mcr_repo() {
-            local image_tag="$1"
-            if [[ "$image_tag" =~ -g[a-f0-9]+-[0-9]+ ]]; then
-              echo "mcr.microsoft.com/azuremonitor/containerinsights/cidev"
-            else
-              echo "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
-            fi
-          }
+          # Always use ciprod for production deployments
+          MCR_REPO="mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
           
-          LINUX_MCR_REPO=$(get_mcr_repo "$LINUX_IMAGE_TAG")
-          WINDOWS_MCR_REPO=$(get_mcr_repo "$WINDOWS_IMAGE_TAG")
-          
-          echo "Repository Path Detection:"
-          echo "  Linux image tag: $LINUX_IMAGE_TAG"
-          echo "  → Linux MCR repo: $LINUX_MCR_REPO"
-          echo "  Windows image tag: $WINDOWS_IMAGE_TAG"
-          echo "  → Windows MCR repo: $WINDOWS_MCR_REPO"
+          echo "MCR Repository: $MCR_REPO"
+          echo "  Linux image: $MCR_REPO:${{ parameters.linuxImageTag }}"
+          echo "  Windows image: $MCR_REPO:${{ parameters.windowsImageTag }}"
           
           # Export for subsequent steps
-          echo "##vso[task.setvariable variable=linuxMcrRepo;isOutput=true]$LINUX_MCR_REPO"
-          echo "##vso[task.setvariable variable=windowsMcrRepo;isOutput=true]$WINDOWS_MCR_REPO"
+          echo "##vso[task.setvariable variable=mcrRepo;isOutput=true]$MCR_REPO"
     
     # Patch ama-logs pods with new images
     - task: Bash@3
@@ -102,14 +84,13 @@ jobs:
       env:
         LINUX_IMAGE_TAG: ${{ parameters.linuxImageTag }}
         WINDOWS_IMAGE_TAG: ${{ parameters.windowsImageTag }}
-        LINUX_MCR_REPO: $(DetermineMcrRepo.linuxMcrRepo)
-        WINDOWS_MCR_REPO: $(DetermineMcrRepo.windowsMcrRepo)
+        MCR_REPO: $(SetMcrRepo.mcrRepo)
       inputs:
         targetType: 'inline'
         script: |
           echo "Deploying to cluster: ${{ parameters.clusterName }}"
-          echo "  Linux image: $LINUX_MCR_REPO:$LINUX_IMAGE_TAG"
-          echo "  Windows image: $WINDOWS_MCR_REPO:$WINDOWS_IMAGE_TAG"
+          echo "  Linux image: $MCR_REPO:$LINUX_IMAGE_TAG"
+          echo "  Windows image: $MCR_REPO:$WINDOWS_IMAGE_TAG"
           echo ""
           echo "Finding and patching ama-logs pods in kube-system namespace..."
           
@@ -118,7 +99,7 @@ jobs:
             
             if [[ "$pod_name" =~ ^ama-logs-windows ]]; then
               # Windows DaemonSet pods - single container
-              IMG_URL="$WINDOWS_MCR_REPO:$WINDOWS_IMAGE_TAG"
+              IMG_URL="$MCR_REPO:$WINDOWS_IMAGE_TAG"
               echo "  → Patching Windows pod with image: $IMG_URL (container: ama-logs-windows)"
               
               kubectl patch pod "$pod_name" -n kube-system \
@@ -128,7 +109,7 @@ jobs:
                 
             elif [[ "$pod_name" =~ ^ama-logs-rs ]]; then
               # ReplicaSet pods - single container (ama-logs only)
-              IMG_URL="$LINUX_MCR_REPO:$LINUX_IMAGE_TAG"
+              IMG_URL="$MCR_REPO:$LINUX_IMAGE_TAG"
               echo "  → Patching ReplicaSet pod with image: $IMG_URL (container: ama-logs)"
               
               kubectl patch pod "$pod_name" -n kube-system \
@@ -139,7 +120,7 @@ jobs:
             elif [[ "$pod_name" =~ ^ama-logs-[a-z0-9]{5}$ ]]; then
               # Linux DaemonSet pods have two containers: ama-logs and ama-logs-prometheus
               # Both need to be patched with the same image
-              IMG_URL="$LINUX_MCR_REPO:$LINUX_IMAGE_TAG"
+              IMG_URL="$MCR_REPO:$LINUX_IMAGE_TAG"
               echo "  → Patching DaemonSet pod with image: $IMG_URL"
               
               # Patch ama-logs container
@@ -201,8 +182,7 @@ jobs:
       env:
         LINUX_IMAGE_TAG: ${{ parameters.linuxImageTag }}
         WINDOWS_IMAGE_TAG: ${{ parameters.windowsImageTag }}
-        LINUX_MCR_REPO: $(DetermineMcrRepo.linuxMcrRepo)
-        WINDOWS_MCR_REPO: $(DetermineMcrRepo.windowsMcrRepo)
+        MCR_REPO: $(SetMcrRepo.mcrRepo)
       inputs:
         targetType: 'inline'
         script: |
@@ -210,8 +190,8 @@ jobs:
           echo "Verifying Pod Images"
           echo "========================================"
           echo ""
-          echo "Expected Linux image: $LINUX_MCR_REPO:$LINUX_IMAGE_TAG"
-          echo "Expected Windows image: $WINDOWS_MCR_REPO:$WINDOWS_IMAGE_TAG"
+          echo "Expected Linux image: $MCR_REPO:$LINUX_IMAGE_TAG"
+          echo "Expected Windows image: $MCR_REPO:$WINDOWS_IMAGE_TAG"
           echo ""
           
           echo "Current ama-logs pods and their images:"
