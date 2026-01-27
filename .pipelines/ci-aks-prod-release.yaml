@@ -481,7 +481,7 @@ extends:
       # TODO: Only run when VAR_AGENT_IMAGE_TAG_SUFFIX is provided (actual prod release)
       # condition: and(succeeded(), ne(variables['AgentImageTagSuffix'], ''))
       # remove succeedeed() for testing purpose only
-      condition: ne(variables['AgentImageTagSuffix'], '')
+      # condition: ne(variables['AgentImageTagSuffix'], '')
       # Remove dependency on stage 2 for testing
       # TODO: Add dependency to stage 2 before merging
       dependsOn: []
@@ -490,8 +490,10 @@ extends:
         # This is the short tag after retagging from CDPX long tags
         # Linux: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.33
         # Windows: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.33
-        linuxImageTag: $(AgentImageTagSuffix)
-        windowsImageTag: win-$(AgentImageTagSuffix)
+        # linuxImageTag: $(AgentImageTagSuffix)
+        # windowsImageTag: win-$(AgentImageTagSuffix)
+        linuxImageTag: 3.1.33
+        windowsImageTag: win-3.1.33
       jobs:
       # Use test cluster zane-test3 in resource group zane-test for testing
       # TODO: Update to correct prod clusters before merging
