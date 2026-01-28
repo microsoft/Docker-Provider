@@ -103,10 +103,10 @@ function Set-CloudSpecificApplicationInsightsConfig {
             Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_AUTH" "NTc5ZDRiZjUtMTA1Mi0wODQzLThhNTYtMjU5YzEyZmJhZTkyCg=="
             Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_ENDPOINT" "https://dc.applicationinsights.azure.microsoft.scloud/v2/track"
         }
-        "bleu" {
-            # TODO: Bleu cloud is a new cloud environment, we don't have AI in this cloud yet so using Public cloud for now.
-            # Update this once we have AI in Bleu cloud.
-            Write-Host "Set-CloudSpecificApplicationInsightsConfig: Setting Application Insights configuration for Bleu Cloud"
+        "azurebleucloud" {
+            # TODO: azurebleucloud is a new cloud environment; we don't have AI in this cloud yet so using Public cloud for now.
+            # Update this once we have AI in azurebleucloud.
+            Write-Host "Set-CloudSpecificApplicationInsightsConfig: Setting Application Insights configuration for azurebleucloud"
             Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_AUTH" "NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi"
             Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_ENDPOINT" "https://dc.applicationinsights.azure.com/v2/track"
         }
@@ -204,7 +204,7 @@ function Is-SupportedCloudEnvironment {
     param (
         [string]$cloudEnvironment
     )
-    $supportedCloudEnvironments = @("azurepubliccloud", "azurechinacloud", "azureusgovernmentcloud", "usnat", "ussec", "bleu")
+    $supportedCloudEnvironments = @("azurepubliccloud", "azurechinacloud", "azureusgovernmentcloud", "usnat", "ussec", "azurebleucloud")
     if ($supportedCloudEnvironments -contains $cloudEnvironment) {
         return $true
     }
@@ -228,7 +228,7 @@ function Get-ClusterCloudEnvironment{
                 "opinsights.azure.us"                 { $cloud_environment = "azureusgovernmentcloud" }
                 "opinsights.azure.eaglex.ic.gov"      { $cloud_environment = "usnat" }
                 "opinsights.azure.microsoft.scloud"   { $cloud_environment = "ussec" }
-                "opinsights.sovcloud-api.fr"          { $cloud_environment = "bleu" }
+                "opinsights.sovcloud-api.fr"          { $cloud_environment = "azurebleucloud" }
             }
         } else {
             Write-Host "Domain name either null or empty. Defaulting to azurepubliccloud."
@@ -275,7 +275,7 @@ function Get-McsAzureResourceEndpoint {
             "azureusgovernmentcloud"  { $mcs_azure_resource_endpoint = "https://monitor.azure.us/" }
             "usnat"                   { $mcs_azure_resource_endpoint = "https://monitor.azure.eaglex.ic.gov/" }
             "ussec"                   { $mcs_azure_resource_endpoint = "https://monitor.azure.microsoft.scloud/" }
-            "bleu"                    { $mcs_azure_resource_endpoint = "https://monitor.sovcloud-api.fr/" }
+            "azurebleucloud"          { $mcs_azure_resource_endpoint = "https://monitor.sovcloud-api.fr/" }
         }
     }
     return $mcs_azure_resource_endpoint
@@ -293,7 +293,7 @@ function Get-McsEndpoint {
             "azureusgovernmentcloud"  { $mcs_endpoint = "monitor.azure.us" }
             "usnat"                   { $mcs_endpoint = "monitor.azure.eaglex.ic.gov" }
             "ussec"                   { $mcs_endpoint = "monitor.azure.microsoft.scloud" }
-            "bleu"                    { $mcs_endpoint = "monitor.sovcloud-api.fr" }
+            "azurebleucloud"          { $mcs_endpoint = "monitor.sovcloud-api.fr" }
         }
     }
     return $mcs_endpoint
@@ -327,7 +327,7 @@ function Get-McsGlobalEndpoint{
                 "azureusgovernmentcloud"  { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.us" }
                 "usnat"                   { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.eaglex.ic.gov" }
                 "ussec"                   { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.microsoft.scloud" }
-                "bleu"                    { $mcs_globalendpoint = "https://global.handler.control.monitor.sovcloud-api.fr" }
+                "azurebleucloud"          { $mcs_globalendpoint = "https://global.handler.control.monitor.sovcloud-api.fr" }
             }
         }
     }

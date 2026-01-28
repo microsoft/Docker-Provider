@@ -23,7 +23,7 @@ spec:
   audience: https://monitor.azure.com/
   {{- else if eq (.Values.Azure.Cluster.Cloud | lower) "azurechinacloud" }}
   audience: https://monitor.azure.cn/
-  {{- else if eq (.Values.Azure.Cluster.Cloud | lower) "bleu" }}
+  {{- else if eq (.Values.Azure.Cluster.Cloud | lower) "azurebleucloud" }}
   audience: https://monitor.sovcloud-api.fr/
   {{- else if eq (.Values.Azure.Cluster.Cloud | lower) "azureusgovernmentcloud" }}
   audience: https://monitor.azure.us/

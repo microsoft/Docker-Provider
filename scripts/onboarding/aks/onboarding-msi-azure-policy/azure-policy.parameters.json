@@ -92,7 +92,7 @@
         "Microsoft-ContainerInventory",
         "Microsoft-ContainerNodeInventory",
         "Microsoft-Perf",
-        "Microsoft-RetinaNetworkFlowLogs"
+        "Microsoft-ContainerNetworkLogs"
       ]
     },
     "useAzureMonitorPrivateLinkScope": {

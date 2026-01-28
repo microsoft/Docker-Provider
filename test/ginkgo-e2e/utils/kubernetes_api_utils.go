@@ -20,9 +20,73 @@ import (
 	"io"
 )
 
+// categorizeErrors categorizes error lines into expected intermittent errors (with counts) and unexpected errors.
+// Returns an error if any pattern exceeds the threshold or if there are unexpected errors.
+func categorizeErrors(errorLines []string, threshold int) error {
+	errorCounts := make(map[string]int)
+	unexpectedErrors := []string{}
+
+	for _, line := range errorLines {
+		if line == "" {
+			continue
+		}
+
+		// Check if this line matches any expected intermittent error pattern (case-insensitive)
+		matchedPattern := false
+		lowerLine := strings.ToLower(line)
+		for _, pattern := range ExpectedIntermittentErrors {
+			if strings.Contains(lowerLine, strings.ToLower(pattern)) {
+				errorCounts[pattern]++
+				matchedPattern = true
+				break
+			}
+		}
+
+		// If no pattern matched, it's an unexpected error
+		if !matchedPattern {
+			unexpectedErrors = append(unexpectedErrors, line)
+		}
+	}
+
+	// Check if any expected error pattern exceeded the threshold
+	var exceededErrors []string
+	for pattern, count := range errorCounts {
+		if count > threshold {
+			exceededErrors = append(exceededErrors, fmt.Sprintf("'%s': %d occurrences (threshold: %d)", pattern, count, threshold))
+		}
+	}
+
+	// Build error message if there are exceeded or unexpected errors
+	if len(exceededErrors) > 0 || len(unexpectedErrors) > 0 {
+		var errorMsg strings.Builder
+
+		if len(exceededErrors) > 0 {
+			errorMsg.WriteString("Expected errors exceeding threshold:\n")
+			for _, err := range exceededErrors {
+				errorMsg.WriteString("  - " + err + "\n")
+			}
+		}
+
+		if len(unexpectedErrors) > 0 {
+			if len(exceededErrors) > 0 {
+				errorMsg.WriteString("\n")
+			}
+			errorMsg.WriteString("Unexpected errors:\n")
+			for _, err := range unexpectedErrors {
+				errorMsg.WriteString("  - " + err + "\n")
+			}
+		}
+
+		return fmt.Errorf("%s", strings.TrimSuffix(errorMsg.String(), "\n"))
+	}
+
+	return nil
+}
+
 /*
  * Checks that the logs of all containers in all pods with the given label do not contain any errors.
  * Also returns an error if there are no pods that exist with the given label.
+ * It tolerates intermittent errors up to 10 occurrences per pattern.
  */
 func CheckContainerLogsForErrors(clientset *kubernetes.Clientset, namespace, labelName, labelValue string) error {
 	// Get all pods with the given label
@@ -39,27 +103,18 @@ func CheckContainerLogsForErrors(clientset *kubernetes.Clientset, namespace, lab
 				return err
 			}
 
-			if strings.Contains(logs, "error") || strings.Contains(logs, "Error") {
-				// Get the exact log line of the error
-				for _, line := range strings.Split(logs, "\n") {
-
-					if strings.Contains(line, "error") || strings.Contains(line, "Error") {
-
-						// Exclude known error lines that are transient
-						shouldExcludeLine := false
-						for _, lineToExclude := range LogLineErrorsToExclude {
-							if strings.Contains(line, lineToExclude) {
-								shouldExcludeLine = true
-								break
-							}
-						}
-						if shouldExcludeLine {
-							continue
-						}
-
-						return fmt.Errorf("Logs for container %s in pod %s contain errors:\n %s", container.Name, pod.Name, line)
-					}
+			// Collect error lines
+			errorLines := []string{}
+			for _, line := range strings.Split(logs, "\n") {
+				if strings.Contains(line, "error") || strings.Contains(line, "Error") {
+					errorLines = append(errorLines, line)
 				}
+			}
+
+			// Categorize errors and check thresholds
+			err = categorizeErrors(errorLines, IntermittentErrorThreshold)
+			if err != nil {
+				return fmt.Errorf("logs for container %s in pod %s:\n%v", container.Name, pod.Name, err)
 			}
 		}
 	}
@@ -494,6 +549,7 @@ func GetAllNodes(clientset *kubernetes.Clientset) ([]corev1.Node, error) {
 }
 
 // CheckFileForErrors checks if a specific file in a linux container contains errors.
+// It tolerates intermittent errors up to 10 occurrences per pattern.
 func CheckFileForErrors(clientset *kubernetes.Clientset, Cfg *rest.Config, namespace, labelName, labelValue, containerName, filePath string) error {
 	pods, err := GetPodsWithLabel(clientset, namespace, labelName, labelValue)
 	if err != nil {
@@ -513,7 +569,12 @@ func CheckFileForErrors(clientset *kubernetes.Clientset, Cfg *rest.Config, names
 		}
 
 		if stdout != "" {
-			return fmt.Errorf("errors found in file %s in pod %s, container %s: %s", filePath, pod.Name, containerName, stdout)
+			// Parse the stdout and categorize errors
+			lines := strings.Split(stdout, "\n")
+			err = categorizeErrors(lines, IntermittentErrorThreshold)
+			if err != nil {
+				return fmt.Errorf("in file %s in pod %s, container %s:\n%v", filePath, pod.Name, containerName, err)
+			}
 		}
 	}
 

@@ -188,11 +188,12 @@ module Fluent::Plugin
           end
 
           # drop the events if the event of the excluded namespace
-          next unless !KubernetesApiClient.isExcludeResourceItem("", items["involvedObject"]["namespace"], @namespaceFilteringMode, @namespaces)
+          involvedObjectName = items["involvedObject"]["name"]
+          next unless !KubernetesApiClient.isExcludeResourceItem(involvedObjectName, items["involvedObject"]["namespace"], @namespaceFilteringMode, @namespaces)
 
           record["ObjectKind"] = items["involvedObject"]["kind"]
           record["Namespace"] = items["involvedObject"]["namespace"]
-          record["Name"] = items["involvedObject"]["name"]
+          record["Name"] = involvedObjectName
           record["Reason"] = items["reason"]
           record["Message"] = items["message"]
           record["KubeEventType"] = items["type"]
