@@ -73,14 +73,7 @@ docker_cimprov_version=$(sudo tdnf list installed | grep docker-cimprov | awk '{
 echo "DOCKER_CIMPROV_VERSION=$docker_cimprov_version" >> packages_version.txt
 
 #install fluent-bit
-if [ "$ARCH" == "arm64" ]; then
-    sudo curl -L -O https://kubernetesreleases.blob.core.windows.net/dalec-packages/azcu-fluent-bit/4.0.14/azl3/aarch64/azcu-fluent-bit-4.0.14-1.azl3.aarch64.rpm
-    sudo tdnf install -y --nogpgcheck azcu-fluent-bit-4.0.14-1.azl3.aarch64.rpm
-else
-    sudo curl -L -O https://kubernetesreleases.blob.core.windows.net/dalec-packages/azcu-fluent-bit/4.0.14/azl3/x86_64/azcu-fluent-bit-4.0.14-1.azl3.x86_64.rpm
-    sudo tdnf install -y --nogpgcheck azcu-fluent-bit-4.0.14-1.azl3.x86_64.rpm
-fi
-# sudo tdnf install azcu-fluent-bit-4.1.1 -y
+sudo tdnf install azcu-fluent-bit-4.0.14 -y
 echo "$(fluent-bit --version)" >> packages_version.txt
 
 # install fluentd
