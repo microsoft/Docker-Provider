@@ -1,0 +1,116 @@
+# Template for deploying ama-logs to an AKS cluster via Helm
+# Usage: 
+#   - template: templates/ama-logs-helm-deploy.yaml
+#     parameters:
+#       clusterName: 'my-cluster'
+#       resourceGroup: 'my-rg'
+#       region: 'eastus'
+#       subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
+#       workspaceId: 'your-workspace-id'
+#       imageTag: '$(AgentImageTagSuffix)'  # e.g., 3.1.32
+#
+# Image tags constructed from imageTag parameter:
+#   - Linux: imageTag -> 3.1.32
+#   - Windows: win-imageTag -> win-3.1.32
+
+parameters:
+# Required cluster parameters
+- name: clusterName
+  type: string
+- name: resourceGroup
+  type: string
+- name: region
+  type: string
+- name: subscriptionId
+  type: string
+- name: workspaceId
+  type: string
+  displayName: 'Log Analytics Workspace ID'
+- name: imageTag
+  type: string
+  displayName: 'Image tag suffix (e.g., 3.1.32)'
+
+# Optional parameters with defaults
+- name: cloudEnvironment
+  type: string
+  default: 'azurepubliccloud'
+- name: kubernetesVersion
+  type: string
+  default: '1.32.7'
+- name: azureSubscription
+  type: string
+  default: 'ContainerInsights_Build_Subscription_CI'
+- name: namespace
+  type: string
+  default: 'kube-system'
+- name: releaseName
+  type: string
+  default: 'ama-logs'
+- name: helmVersion
+  type: string
+  default: '3.12.3'
+- name: environment
+  type: string
+  default: 'ContainerInsights-AKS-Deployment'
+- name: dependsOn
+  type: object
+  default: []
+
+jobs:
+- deployment: Deploy_AmaLogs_${{ replace(parameters.clusterName, '-', '_') }}
+  displayName: 'Deploy: ama-logs to ${{ parameters.clusterName }}'
+  environment: ${{ parameters.environment }}
+  dependsOn: ${{ parameters.dependsOn }}
+  variables:
+  - name: OneESPT
+    value: true
+    readonly: true
+  - name: OneESPT.BuildType
+    value: Official
+    readonly: true
+  - name: OneESPT.OS
+    value: linux
+    readonly: true
+  - name: skipComponentGovernanceDetection
+    value: true
+  - name: Codeql.SkipTaskAutoInjection
+    value: true
+  - name: AKS_RESOURCE_ID
+    value: '/subscriptions/${{ parameters.subscriptionId }}/resourceGroups/${{ parameters.resourceGroup }}/providers/Microsoft.ContainerService/managedClusters/${{ parameters.clusterName }}'
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+        - task: HelmInstaller@1
+          displayName: Install Helm
+          inputs:
+            helmVersionToInstall: '${{ parameters.helmVersion }}'
+        - task: HelmDeploy@0
+          displayName: 'Helm Deploy: ama-logs to ${{ parameters.clusterName }}'
+          inputs:
+            connectionType: 'Azure Resource Manager'
+            azureSubscription: '${{ parameters.azureSubscription }}'
+            azureResourceGroup: '${{ parameters.resourceGroup }}'
+            kubernetesCluster: '${{ parameters.clusterName }}'
+            useClusterAdmin: true
+            namespace: '${{ parameters.namespace }}'
+            command: 'upgrade'
+            chartType: 'FilePath'
+            chartPath: '$(Build.SourcesDirectory)/charts/azuremonitor-containerinsights-for-prod-clusters'
+            releaseName: '${{ parameters.releaseName }}'
+            overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageTagLinux=${{ parameters.imageTag }},OmsAgent.imageTagWindows=win-${{ parameters.imageTag }}'
+            waitForExecution: false
+            arguments: '--timeout 10m --install'
+        - task: Bash@3
+          displayName: Verify Deployment
+          inputs:
+            targetType: inline
+            script: |
+              echo "Deployment initiated for ${{ parameters.clusterName }}"
+              echo "Linux Image Tag: ${{ parameters.imageTag }}"
+              echo "Windows Image Tag: win-${{ parameters.imageTag }}"
+              echo "Region: ${{ parameters.region }}"
+              echo ""
+              echo "To verify deployment status, run:"
+              echo "  kubectl get pods -n ${{ parameters.namespace }} -l component=ama-logs"
+              echo "  kubectl get pods -n ${{ parameters.namespace }} -l rsName=ama-logs-rs"

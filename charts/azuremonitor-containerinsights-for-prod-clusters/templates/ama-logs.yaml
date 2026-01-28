@@ -1,0 +1,1916 @@
+{{- $amalogsLinuxDefaultImageTag := dict "component" "ama-logs-linux" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.addonImageTag" }}
+{{- $amalogsWindowsDefaultImageTag := dict "component" "ama-logs-win" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.addonImageTag" }}
+{{- $addonTokenAdapterLinuxDefaultImageTag := dict "component" "addon-token-adapter-linux" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag"}}
+{{- $addonTokenAdapterWindowsDefaultImageTag := dict "component" "addon-token-adapter-windows" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag"}}
+{{- $amalogsRSVPAImageTag := dict "component" "addon-resizer" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.addonImageTag" -}}
+{{- $WinImageTag := default $amalogsWindowsDefaultImageTag .Values.OmsAgent.imageTagWindows -}}
+{{/* Determine isusingaadauth value from OmsAgent.isUsingAADAuth */}}
+{{- $isusingaadauth := false -}}
+{{- if hasKey .Values.OmsAgent "isUsingAADAuth" -}}
+  {{- $isusingaadauth = .Values.OmsAgent.isUsingAADAuth -}}
+{{- end -}}
+{{/* TODO This needs to be fixed post Canary validation */}}
+{{/* Extract cluster information from aksresourceid */}}
+{{- $resourceParts := splitList "/" .Values.OmsAgent.aksResourceID -}}
+{{- $aksclustername := last $resourceParts -}}
+{{- $aksResourceGroup := index $resourceParts 4 -}}
+{{- $region := .Values.global.commonGlobals.Region -}}
+{{- $aksnoderesourcegroup := printf "MC_%s_%s_%s" $aksResourceGroup $aksclustername $region -}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ama-logs-secret
+  namespace: kube-system
+  labels:
+{{- if .Values.legacyAddonDelivery }}
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+{{- end }}
+type: Opaque
+data:
+  WSID: {{ .Values.OmsAgent.workspaceID | b64enc | quote }}
+  KEY: {{ .Values.OmsAgent.workspaceKey | b64enc | quote }}
+{{- if .Values.OmsAgent.isMoonCake }}
+  DOMAIN: {{ b64enc "opinsights.azure.cn" }}
+{{- end }}
+{{- if .Values.OmsAgent.isFairfax }}
+  DOMAIN: {{ b64enc "opinsights.azure.us" }}
+{{- end }}
+{{- if eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT" }}
+  DOMAIN: {{ b64enc "opinsights.azure.eaglex.ic.gov" }}
+{{- end }}
+{{- if eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC" }}
+  DOMAIN: {{ b64enc "opinsights.azure.microsoft.scloud" }}
+{{- end }}
+{{- if eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD" }}
+  DOMAIN: {{ b64enc "opinsights.sovcloud-api.fr" }}
+{{- end }}
+{{- if .Values.OmsAgent.httpsProxy }}
+  PROXY: {{ .Values.OmsAgent.httpsProxy | b64enc | quote }}
+{{- else if .Values.OmsAgent.httpProxy }}
+  PROXY: {{ .Values.OmsAgent.httpProxy | b64enc | quote }}
+{{- end}}
+{{- if .Values.OmsAgent.trustedCA }}
+  PROXYCERT.crt: {{ .Values.OmsAgent.trustedCA | quote }}
+{{- end}}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ama-logs
+  namespace: kube-system
+  labels:
+{{- if .Values.legacyAddonDelivery }}
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+{{- end }}
+---
+kind: ClusterRole
+{{- if semverCompare ">=1.16.0" .Values.global.commonGlobals.Versions.Kubernetes }}
+apiVersion: rbac.authorization.k8s.io/v1
+{{- else }}
+apiVersion: rbac.authorization.k8s.io/v1beta1
+{{- end }}
+metadata:
+  name: ama-logs-reader
+  labels:
+{{- if .Values.legacyAddonDelivery }}
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+{{- end }}
+rules:
+- apiGroups: [""]
+  resources: ["pods", "events", "nodes", "nodes/stats", "nodes/metrics", "nodes/spec", "nodes/proxy", "namespaces", "services", "persistentvolumes"]
+  verbs: ["list", "get", "watch"]
+- apiGroups: ["apps", "extensions", "autoscaling"]
+  resources: ["replicasets", "deployments", "horizontalpodautoscalers"]
+  verbs: ["list"]
+{{- if .Values.OmsAgent.isRSVPAEnabled }}
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  resourceNames: [ "ama-logs-rs" ]
+  verbs: ["get", "patch"]
+{{- end }}
+{{- if $isusingaadauth }}
+- apiGroups: [""]
+  resources: ["secrets"]
+  resourceNames: [{{ .Values.OmsAgent.accessTokenSecretName | quote }}]
+  verbs: ["get", "watch"]
+{{- end }}
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
+---
+kind: ClusterRoleBinding
+{{- if semverCompare ">=1.16.0" .Values.global.commonGlobals.Versions.Kubernetes }}
+apiVersion: rbac.authorization.k8s.io/v1
+{{- else }}
+apiVersion: rbac.authorization.k8s.io/v1beta1
+{{- end }}
+metadata:
+  name: amalogsclusterrolebinding
+  labels:
+{{- if .Values.legacyAddonDelivery }}
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+{{- end }}
+subjects:
+  - kind: ServiceAccount
+    name: ama-logs
+    namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: ama-logs-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: ConfigMap
+apiVersion: v1
+data:
+  CLUSTER_RESOURCE_ID: "{{ .Values.OmsAgent.aksResourceID }}"
+metadata:
+  name: container-azm-ms-aks-k8scluster
+  namespace: kube-system
+  labels:
+{{- if .Values.legacyAddonDelivery }}
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+{{- end }}
+---
+kind: ConfigMap
+apiVersion: v1
+data:
+  kube.conf: |-
+     # Fluentd config file for OMS Docker - cluster components (kubeAPI)
+     #fluent forward plugin
+     <source>
+      type forward
+      port "#{ENV['HEALTHMODEL_REPLICASET_SERVICE_SERVICE_PORT']}"
+      bind 0.0.0.0
+      chunk_size_limit 4m
+     </source>
+
+     #Kubernetes pod inventory
+     <source>
+      type kubepodinventory
+      tag oms.containerinsights.KubePodInventory
+      run_interval 60
+      log_level debug
+     </source>
+
+     #Kubernetes Persistent Volume inventory
+     <source>
+      type kubepvinventory
+      tag oms.containerinsights.KubePVInventory
+      run_interval 60
+      log_level debug
+     </source>
+
+     #Kubernetes events
+     <source>
+      type kubeevents
+      tag oms.containerinsights.KubeEvents
+      run_interval 60
+      log_level debug
+     </source>
+
+     #Kubernetes Nodes
+     <source>
+      type kubenodeinventory
+      tag oms.containerinsights.KubeNodeInventory
+      run_interval 60
+      log_level debug
+     </source>
+
+     #Kubernetes health
+     <source>
+      type kubehealth
+      tag kubehealth.ReplicaSet
+      run_interval 60
+      log_level debug
+     </source>
+
+     #cadvisor perf- Windows nodes
+     <source>
+      type wincadvisorperf
+      tag oms.api.wincadvisorperf
+      run_interval 60
+      log_level debug
+     </source>
+
+     #Kubernetes object state - deployments
+     <source>
+      type kubestatedeployments
+      tag oms.containerinsights.KubeStateDeployments
+      run_interval 60
+      log_level debug
+     </source>
+
+     #Kubernetes object state - HPA
+     <source>
+      type kubestatehpa
+      tag oms.containerinsights.KubeStateHpa
+      run_interval 60
+      log_level debug
+     </source>
+
+     <filter mdm.kubenodeinventory**>
+      type filter_inventory2mdm
+      log_level info
+     </filter>
+
+     #custom_metrics_mdm filter plugin for perf data from windows nodes
+     <filter mdm.cadvisorperf**>
+      type filter_cadvisor2mdm
+      metrics_to_collect cpuUsageNanoCores,memoryWorkingSetBytes,pvUsedBytes
+      log_level info
+     </filter>
+
+     #health model aggregation filter
+     <filter kubehealth**>
+      type filter_health_model_builder
+     </filter>
+
+     <match oms.containerinsights.KubePodInventory**>
+      type out_oms
+      log_level debug
+      num_threads 2
+      buffer_chunk_limit 4m
+      buffer_type file
+      buffer_path %STATE_DIR_WS%/out_oms_kubepods*.buffer
+      buffer_queue_limit 20
+      buffer_queue_full_action drop_oldest_chunk
+      flush_interval 20s
+      retry_limit 10
+      retry_wait 5s
+      max_retry_wait 5m
+     </match>
+
+     <match oms.containerinsights.KubePVInventory**>
+      type out_oms
+      log_level debug
+      num_threads 5
+      buffer_chunk_limit 4m
+      buffer_type file
+      buffer_path %STATE_DIR_WS%/state/out_oms_kubepv*.buffer
+      buffer_queue_limit 20
+      buffer_queue_full_action drop_oldest_chunk
+      flush_interval 20s
+      retry_limit 10
+      retry_wait 5s
+      max_retry_wait 5m
+     </match>
+
+     <match oms.containerinsights.KubeEvents**>
+      type out_oms
+      log_level debug
+      num_threads 2
+      buffer_chunk_limit 4m
+      buffer_type file
+      buffer_path %STATE_DIR_WS%/out_oms_kubeevents*.buffer
+      buffer_queue_limit 20
+      buffer_queue_full_action drop_oldest_chunk
+      flush_interval 20s
+      retry_limit 10
+      retry_wait 5s
+      max_retry_wait 5m
+     </match>
+
+     <match oms.containerinsights.KubeServices**>
+      type out_oms
+      log_level debug
+      num_threads 2
+      buffer_chunk_limit 4m
+      buffer_type file
+      buffer_path %STATE_DIR_WS%/out_oms_kubeservices*.buffer
+      buffer_queue_limit 20
+      buffer_queue_full_action drop_oldest_chunk
+      flush_interval 20s
+      retry_limit 10
+      retry_wait 5s
+      max_retry_wait 5m
+     </match>
+
+     <match oms.containerinsights.KubeNodeInventory**>
+      type out_oms
+      log_level debug
+      num_threads 2
+      buffer_chunk_limit 4m
+      buffer_type file
+      buffer_path %STATE_DIR_WS%/state/out_oms_kubenodes*.buffer
+      buffer_queue_limit 20
+      buffer_queue_full_action drop_oldest_chunk
+      flush_interval 20s
+      retry_limit 10
+      retry_wait 5s
+      max_retry_wait 5m
+     </match>
+
+     <match oms.containerinsights.ContainerNodeInventory**>
+      type out_oms
+      log_level debug
+      num_threads 3
+      buffer_chunk_limit 4m
+      buffer_type file
+      buffer_path %STATE_DIR_WS%/out_oms_containernodeinventory*.buffer
+      buffer_queue_limit 20
+      flush_interval 20s
+      retry_limit 10
+      retry_wait 5s
+      max_retry_wait 5m
+     </match>
+
+     <match oms.api.KubePerf**>
+      type out_oms
+      log_level debug
+      num_threads 2
+      buffer_chunk_limit 4m
+      buffer_type file
+      buffer_path %STATE_DIR_WS%/out_oms_kubeperf*.buffer
+      buffer_queue_limit 20
+      buffer_queue_full_action drop_oldest_chunk
+      flush_interval 20s
+      retry_limit 10
+      retry_wait 5s
+      max_retry_wait 5m
+     </match>
+
+     <match mdm.kubepodinventory** mdm.kubenodeinventory** >
+      type out_mdm
+      log_level debug
+      num_threads 5
+      buffer_chunk_limit 4m
+      buffer_type file
+      buffer_path %STATE_DIR_WS%/out_mdm_*.buffer
+      buffer_queue_limit 20
+      buffer_queue_full_action drop_oldest_chunk
+      flush_interval 20s
+      retry_limit 10
+      retry_wait 5s
+      max_retry_wait 5m
+      retry_mdm_post_wait_minutes 30
+     </match>
+
+     <match oms.api.wincadvisorperf**>
+      type out_oms
+      log_level debug
+      num_threads 5
+      buffer_chunk_limit 4m
+      buffer_type file
+      buffer_path %STATE_DIR_WS%/out_oms_api_wincadvisorperf*.buffer
+      buffer_queue_limit 20
+      buffer_queue_full_action drop_oldest_chunk
+      flush_interval 20s
+      retry_limit 10
+      retry_wait 5s
+      max_retry_wait 5m
+     </match>
+
+     <match mdm.cadvisorperf**>
+      type out_mdm
+      log_level debug
+      num_threads 5
+      buffer_chunk_limit 4m
+      buffer_type file
+      buffer_path %STATE_DIR_WS%/out_mdm_cdvisorperf*.buffer
+      buffer_queue_limit 20
+      buffer_queue_full_action drop_oldest_chunk
+      flush_interval 20s
+      retry_limit 10
+      retry_wait 5s
+      max_retry_wait 5m
+      retry_mdm_post_wait_minutes 30
+     </match>
+
+     <match kubehealth.Signals**>
+      type out_oms
+      log_level debug
+      num_threads 5
+      buffer_chunk_limit 4m
+      buffer_type file
+      buffer_path %STATE_DIR_WS%/out_oms_kubehealth*.buffer
+      buffer_queue_limit 20
+      buffer_queue_full_action drop_oldest_chunk
+      flush_interval 20s
+      retry_limit 10
+      retry_wait 5s
+      max_retry_wait 5m
+     </match>
+     <match oms.api.InsightsMetrics**>
+      type out_oms
+      log_level debug
+      num_threads 5
+      buffer_chunk_limit 4m
+      buffer_type file
+      buffer_path %STATE_DIR_WS%/out_oms_insightsmetrics*.buffer
+      buffer_queue_limit 20
+      buffer_queue_full_action drop_oldest_chunk
+      flush_interval 20s
+      retry_limit 10
+      retry_wait 5s
+      max_retry_wait 5m
+     </match>
+metadata:
+  name: ama-logs-rs-config
+  namespace: kube-system
+  labels:
+{{- if .Values.legacyAddonDelivery }}
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+{{- end }}
+---
+{{/* Get sizes */}}
+{{- $useDaemonSetSizing := and .Values.global.commonGlobals.isAutomaticSKU .Values.OmsAgent.enableDaemonSetSizing -}}
+{{- $singleSize := dict "containers" (dict "addon-token-adapter" (dict "cpuLimit" "100m" "memoryLimit" "100Mi" "cpuRequest" "20m" "memoryRequest" "50Mi") "ama-logs" (dict "cpuLimit" .Values.OmsAgent.omsAgentDsCPULimitLinux "memoryLimit" .Values.OmsAgent.omsAgentDsMemoryLimitLinux "cpuRequest" "75m" "memoryRequest" "325Mi") "ama-logs-prometheus" (dict "cpuLimit" .Values.OmsAgent.omsAgentPrometheusSidecarCPULimit "memoryLimit" .Values.OmsAgent.omsAgentPrometheusSidecarMemoryLimit "cpuRequest" "75m" "memoryRequest" "225Mi")) -}}
+{{- $sizes := list ($singleSize) -}}
+{{/* - if $useDaemonSetSizing - */}}
+  {{/* - $singleSize = .Values.OmsAgent.daemonSetSizingValues.singleSize - */}}
+  {{/* - $sizes = list ($singleSize) - */}}
+  {{/* - $sizes = prepend .Values.OmsAgent.daemonSetSizingValues.tShirtSizes $singleSize - */}}
+{{/* - end - */}}
+{{/* Generate DaemonSets */}}
+{{- $prevmaxCPU := 0 -}}
+{{- range $index, $size := $sizes -}}
+{{- if gt $index 0 }}
+---
+{{ end -}}
+{{- if semverCompare ">=1.16.0" $.Values.global.commonGlobals.Versions.Kubernetes -}}
+apiVersion: apps/v1
+{{- else -}}
+apiVersion: extensions/v1beta1
+{{- end }}
+kind: DaemonSet
+metadata:
+  labels:
+    component: ama-logs-agent
+    tier: node
+    kubernetes.azure.com/managedby: aks
+{{- if $.Values.legacyAddonDelivery }}
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+{{- end }}
+    {{/*
+    {{- if and $useDaemonSetSizing $size.name }}
+    kubernetes.azure.com/ds-tshirt-size: {{ $size.name }}
+    {{- end }}
+    */}}
+  name: ama-logs{{/* {{- if and $useDaemonSetSizing $size.name }}-{{ $size.name }}{{- end }} */}}
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      component: ama-logs-agent
+      tier: node
+      {{/*
+      {{- if and $useDaemonSetSizing $size.name }}
+      kubernetes.azure.com/ds-tshirt-size: {{ $size.name }}
+      {{- end }}
+      */}}
+  template:
+    metadata:
+      annotations:
+        agentVersion: "azure-mdsd-1.37.0"
+        dockerProviderVersion: "18.0.1-0"
+        schema-versions: "v1"
+        WSID: {{ $.Values.OmsAgent.workspaceID | b64enc | quote }}
+        kubernetes.azure.com/no-http-proxy-vars: "true"
+      labels:
+        component: ama-logs-agent
+        tier: node
+        kubernetes.azure.com/managedby: aks
+        {{/*
+        {{- if and $useDaemonSetSizing $size.name }}
+        kubernetes.azure.com/ds-tshirt-size: {{ $size.name }}
+        {{- end }}
+        */}}
+{{- if semverCompare "<1.11.0" $.Values.global.commonGlobals.Versions.Kubernetes }}
+      annotations:
+        scheduler.alpha.kubernetes.io/critical-pod: ""
+{{- end }}
+    spec:
+{{- if semverCompare ">=1.11.0" $.Values.global.commonGlobals.Versions.Kubernetes }}
+      priorityClassName: system-node-critical
+{{- end }}
+      serviceAccountName: ama-logs
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "3"
+      containers:
+{{- if $isusingaadauth }}
+        - name: addon-token-adapter
+          command:
+            - /addon-token-adapter
+          args:
+            - --secret-namespace=kube-system
+            - --secret-name={{ $.Values.OmsAgent.accessTokenSecretName }}
+            - --token-server-listening-port=8888
+            - --health-server-listening-port=9999
+            - --restart-pod-waiting-minutes-on-broken-connection=240
+          image: "{{ template "addon_mcr_repository_base" $ }}/aks/msi/addon-token-adapter:{{- $addonTokenAdapterLinuxDefaultImageTag -}}"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: AZMON_COLLECT_ENV
+              value: "false"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9999
+            initialDelaySeconds: 10
+            periodSeconds: 60
+          resources:
+            limits:
+              {{- $containerResources := index $size.containers "addon-token-adapter" }}
+              cpu: {{ $containerResources.cpuLimit }}
+              memory: {{ $containerResources.memoryLimit }}
+            requests:
+              cpu: {{ $containerResources.cpuRequest }}
+              memory: {{ $containerResources.memoryRequest }}
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_ADMIN
+                - NET_RAW
+{{- end }}
+        - name: ama-logs
+          image: "{{ template "addon_mcr_repository_base" $ }}/azuremonitor/containerinsights/ciprod:{{- default $amalogsLinuxDefaultImageTag $.Values.OmsAgent.imageTagLinux -}}"
+        {{- if $.Values.OmsAgent.isImagePullPolicyAlways }}
+          imagePullPolicy: Always
+        {{- else }}
+          imagePullPolicy: IfNotPresent
+        {{- end }}
+          resources:
+            limits:
+              {{- $containerResources := index $size.containers "ama-logs" }}
+              cpu: {{ $containerResources.cpuLimit }}
+              memory: {{ $containerResources.memoryLimit }}
+            requests:
+              {{- $containerResources := index $size.containers "ama-logs" }}
+              cpu: {{ $containerResources.cpuRequest }}
+              memory: {{ $containerResources.memoryRequest }}
+          env:
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+              valueFrom:
+                resourceFieldRef:
+                  containerName: ama-logs
+                  resource: limits.memory
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: FBIT_SERVICE_FLUSH_INTERVAL
+              value: "15"
+            - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
+              value: "1"
+            - name: FBIT_TAIL_BUFFER_MAX_SIZE
+              value: "1"
+            - name: AKS_CLUSTER_NAME
+              value: "{{ $.Values.OmsAgent.aksClusterName }}"
+            - name: AKS_RESOURCE_ID
+              value: "{{ $.Values.OmsAgent.aksResourceID }}"
+            - name: AKS_NODE_RESOURCE_GROUP
+              value: "{{ $.Values.OmsAgent.aksNodeResourceGroup }}"
+            {{/* TODO This needs to be fixed post Canary validation */}}
+            - name: AKS_REGION
+              value: "{{ $.Values.global.commonGlobals.Region }}"
+            - name: CONTROLLER_TYPE
+              value: "DaemonSet"
+            - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+              value: "{{ $.Values.OmsAgent.identityClientID }}"
+            - name: AZMON_CONTAINERLOGS_ONEAGENT_REGIONS
+              value: "koreacentral,norwayeast,eastus2"
+            - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
+              value: "{{ $.Values.AppmonitoringAgent.enabled }}"
+            - name: APPMONITORING_OPENTELEMETRYLOGS_ENABLED
+              value: "{{ $.Values.AppmonitoringAgent.isOpenTelemetryLogsEnabled | default false }}"
+            - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
+              value: "{{ $.Values.AppmonitoringAgent.openTelemetryLogsPort | default 28331 }}"
+            - name: AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT
+              value: "4319"
+            - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
+              value: "{{ $.Values.OmsAgent.isPrometheusMetricsScrapingDisabled }}"
+          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USNat") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
+          {{- end }}
+          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USSec") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.scloud/v2/"
+          {{- end }}
+          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
+          {{- end }}
+          {{- if $isusingaadauth }}
+            - name: USING_AAD_MSI_AUTH
+              value: "true"
+          {{- else }}
+            - name: USING_AAD_MSI_AUTH
+              value: "false"
+          {{- end }}
+          {{- if eq ($.Values.OmsAgent.shouldMountSyslogHostPort | default false) true }}
+            - name: SYSLOG_HOST_PORT
+              value: {{ $.Values.OmsAgent.syslogHostPort | default 28330 | quote}}
+          {{- end }}
+            - name: AZMON_RETINA_FLOW_LOGS_ENABLED
+              value: "{{ $.Values.OmsAgent.isRetinaFlowLogsEnabled | default false }}"
+            - name: AZMON_RESOURCE_OPTIMIZATION_ENABLED
+              value: "{{ $.Values.OmsAgent.isResourceOptimizationEnabled | default false }}"
+            - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+              value: "{{ $.Values.OmsAgent.isTelegrafLivenessprobeEnabled | default false }}"
+            - name: CLUSTER_CLOUD_ENVIRONMENT
+              value: "{{ $.Values.global.commonGlobals.CloudEnvironment | lower }}"
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - "-c"
+                - "/opt/livenessprobe.sh"
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            timeoutSeconds: 15
+          ports:
+            - containerPort: 25225
+              protocol: TCP
+            - containerPort: 25224
+              protocol: UDP
+          {{- if eq ($.Values.OmsAgent.shouldMountSyslogHostPort | default false) true }}
+            - name: syslog
+              containerPort: 28330
+              hostPort: {{ $.Values.OmsAgent.syslogHostPort | default 28330 }}
+              protocol: TCP
+          {{- end }}
+          {{- if eq ($.Values.AppmonitoringAgent.isOpenTelemetryLogsEnabled | default false) true }}
+            - name: otlp-logs
+              containerPort: 4319
+              hostPort: {{ $.Values.AppmonitoringAgent.openTelemetryLogsPort | default 28331 }}
+              protocol: TCP
+          {{- end }}
+          securityContext:
+            privileged: true
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - DAC_OVERRIDE
+          volumeMounts:
+            - mountPath: /hostfs
+              name: host-root
+              readOnly: true
+              mountPropagation: HostToContainer
+            - mountPath: /var/log
+              name: host-log
+          {{- if $.Values.OmsAgent.isSyslogEnabled }}
+            - mountPath: /var/run/mdsd-ci
+              name: mdsd-sock
+          {{- end }}
+          {{- if $.Values.OmsAgent.isRetinaFlowLogsEnabled }}
+            - mountPath: /var/log/acns/hubble
+              name: acns-hubble
+          {{- end }}
+            - mountPath: /var/run/mdsd-PrometheusSidecar
+              name: mdsd-prometheus-sock
+            - mountPath: /var/lib/docker/containers
+              name: containerlog-path
+              readOnly: true
+            - mountPath: /mnt/docker
+              name: containerlog-path-2
+              readOnly: true
+            - mountPath: /mnt/containers
+              name: containerlog-path-3
+              readOnly: true
+            - mountPath: /etc/kubernetes/host
+              name: azure-json-path
+            - mountPath: /etc/ama-logs-secret
+              name: ama-logs-secret
+              readOnly: true
+            - mountPath: /etc/omsagent-secret
+              name: ama-logs-secret
+              readOnly: true
+            - mountPath: /etc/config/settings
+              name: settings-vol-config
+              readOnly: true
+            - mountPath: /etc/config/settings/adx
+              name: ama-logs-adx-secret
+              readOnly: true
+          {{- if (eq (include "should_mount_hostca" $ ) "true" ) }}
+            # USSec and USNat have cloud-specific Root and Intermediate CAs that must be mounted into all running containers from the host
+            # Container Insights has logic to update the trust store in the image based on certs present in /anchors/ mounts below
+            - mountPath: /anchors/mariner
+              name: anchors-mariner
+              readOnly: true
+            - mountPath: /anchors/ubuntu
+              name: anchors-ubuntu
+              readOnly: true
+          {{- end }}
+          {{- if $.Values.OmsAgent.trustedCA }}
+            - mountPath: /etc/ssl/certs/proxy-cert.crt
+              subPath: PROXYCERT.crt
+              name: ama-logs-secret
+              readOnly: true
+          {{- end }}
+      {{- if and (not $.Values.OmsAgent.isPrometheusMetricsScrapingDisabled) $.Values.OmsAgent.isSidecarScrapingEnabled }}
+        - name: ama-logs-prometheus
+          image: "{{ template "addon_mcr_repository_base" $ }}/azuremonitor/containerinsights/ciprod:{{- default $amalogsLinuxDefaultImageTag $.Values.OmsAgent.imageTagLinux -}}"
+        {{- if $.Values.OmsAgent.isImagePullPolicyAlways }}
+          imagePullPolicy: Always
+        {{- else }}
+          imagePullPolicy: IfNotPresent
+        {{- end }}
+          resources:
+            limits:
+              {{- $containerResources := index $size.containers "ama-logs-prometheus" }}
+              cpu: {{ $containerResources.cpuLimit }}
+              memory: {{ $containerResources.memoryLimit }}
+            requests:
+              {{- $containerResources := index $size.containers "ama-logs-prometheus" }}
+              cpu: {{ $containerResources.cpuRequest }}
+              memory: {{ $containerResources.memoryRequest }}
+          env:
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+              valueFrom:
+                resourceFieldRef:
+                  containerName: ama-logs-prometheus
+                  resource: limits.memory
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: AKS_CLUSTER_NAME
+              value: "{{ $.Values.OmsAgent.aksClusterName }}"
+            - name: AKS_RESOURCE_ID
+              value: "{{ $.Values.OmsAgent.aksResourceID }}"
+            - name: AKS_NODE_RESOURCE_GROUP
+              value: "{{ $.Values.OmsAgent.aksNodeResourceGroup }}"
+            {{/* TODO This needs to be fixed post Canary validation */}}
+            - name: AKS_REGION
+              value: "{{ $.Values.global.commonGlobals.Region }}"
+            - name: CONTROLLER_TYPE
+              value: "DaemonSet"
+            - name: CONTAINER_TYPE
+              value: "PrometheusSidecar"
+            - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+              value: "{{ $.Values.OmsAgent.identityClientID }}"
+          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USNat") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
+          {{- end }}
+          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USSec") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.scloud/v2/"
+          {{- end }}
+          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
+          {{- end }}
+          {{- if $isusingaadauth }}
+            - name: USING_AAD_MSI_AUTH
+              value: "true"
+          {{- else }}
+            - name: USING_AAD_MSI_AUTH
+              value: "false"
+          {{- end }}
+          {{- if eq ($.Values.OmsAgent.shouldMountSyslogHostPort | default false) true }}
+            - name: SYSLOG_HOST_PORT
+              value: {{ $.Values.OmsAgent.syslogHostPort | default 28330 | quote}}
+          {{- end }}
+            - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+              value: "{{ $.Values.OmsAgent.isTelegrafLivenessprobeEnabled | default false }}"
+            - name: CLUSTER_CLOUD_ENVIRONMENT
+              value: "{{ $.Values.global.commonGlobals.CloudEnvironment | lower }}"
+          securityContext:
+            privileged: true
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - DAC_OVERRIDE
+          volumeMounts:
+            - mountPath: /etc/kubernetes/host
+              name: azure-json-path
+            - mountPath: /etc/ama-logs-secret
+              name: ama-logs-secret
+              readOnly: true
+            - mountPath: /etc/omsagent-secret
+              name: ama-logs-secret
+              readOnly: true
+            - mountPath: /etc/config/settings
+              name: settings-vol-config
+              readOnly: true
+            - mountPath: /etc/config/osm-settings
+              name: osm-settings-vol-config
+              readOnly: true
+            - mountPath: /var/run/mdsd-PrometheusSidecar
+              name: mdsd-prometheus-sock
+          {{- if (eq (include "should_mount_hostca" $ ) "true" ) }}
+            # USSec and USNat have cloud-specific Root and Intermediate CAs that must be mounted into all running containers from the host
+            # Container Insights has logic to update the trust store in the image based on certs present in /anchors/ mounts below
+            - mountPath: /anchors/mariner
+              name: anchors-mariner
+              readOnly: true
+            - mountPath: /anchors/ubuntu
+              name: anchors-ubuntu
+              readOnly: true
+          {{- end }}
+          {{- if $.Values.OmsAgent.trustedCA }}
+            - mountPath: /etc/ssl/certs/proxy-cert.crt
+              subPath: PROXYCERT.crt
+              name: ama-logs-secret
+              readOnly: true
+          {{- end }}
+          {{- if $.Values.OmsAgent.isSyslogEnabled }}
+            - mountPath: /var/run/mdsd-ci
+              name: mdsd-sock
+          {{- end }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - /opt/livenessprobe.sh
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            timeoutSeconds: 15
+      {{- end }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+{{- if semverCompare ">=1.16.0" $.Values.global.commonGlobals.Versions.Kubernetes }}
+              - key: kubernetes.io/os
+{{- else }}
+              - key: beta.kubernetes.io/os
+{{- end }}
+                operator: In
+                values:
+                - linux
+              - key: kubernetes.azure.com/cluster
+                operator: Exists
+              - key: type
+                operator: NotIn
+                values:
+                - virtual-kubelet
+              {{- if $useDaemonSetSizing -}}
+              {{- if eq $size.name $singleSize.name -}}
+              {{/* Target non-Karpenter nodes */}}
+              - key: karpenter.azure.com/aksnodeclass
+                operator: DoesNotExist
+              {{- else }}
+              {{/* Target Karpenter nodes with CPU range */}}
+              {{- if gt $prevmaxCPU 0 -}}
+              - key: karpenter.azure.com/sku-cpu
+                operator: Gt
+                values:
+                - "{{ $prevmaxCPU }}"
+              {{- end -}}
+              {{/* Add new line. */}}
+              {{- if and $prevmaxCPU $size.maxCPU }}
+              {{ end -}}
+              {{- if $size.maxCPU -}}
+              - key: karpenter.azure.com/sku-cpu
+                operator: Lt
+                values:
+                - "{{ add ($size.maxCPU | int) 1 }}"
+              {{- end -}}
+              {{- end -}}
+              {{- end }}
+      tolerations:
+        - key: "CriticalAddonsOnly"
+          operator: "Exists"
+        - operator: "Exists"
+          effect: NoExecute
+        - operator: "Exists"
+          effect: NoSchedule
+        - operator: "Exists"
+          effect: PreferNoSchedule
+      volumes:
+        - name: host-root
+          hostPath:
+            path: /
+        - name: mdsd-prometheus-sock
+          emptyDir: {}
+        - name: container-hostname
+          hostPath:
+            path: /etc/hostname
+        - name: host-log
+          hostPath:
+            path: /var/log
+        {{- if $.Values.OmsAgent.isSyslogEnabled }}
+        - name: mdsd-sock
+          hostPath:
+            path: /var/run/mdsd-ci
+        {{- end }}
+        {{- if $.Values.OmsAgent.isRetinaFlowLogsEnabled }}
+        - name: acns-hubble
+          hostPath:
+            path: /var/log/acns/hubble
+        {{- end }}
+        - name: containerlog-path
+          hostPath:
+            path: /var/lib/docker/containers
+        - name: containerlog-path-2
+          hostPath:
+            path: /mnt/docker
+        - name: containerlog-path-3
+          hostPath:
+            path: /mnt/containers
+        - name: azure-json-path
+          hostPath:
+            path: /etc/kubernetes
+        - name: ama-logs-secret
+          secret:
+            secretName: ama-logs-secret
+        - name: settings-vol-config
+          configMap:
+            name: container-azm-ms-agentconfig
+            optional: true
+        - name: ama-logs-adx-secret
+          secret:
+            secretName: ama-logs-adx-secret
+            optional: true
+        - name: osm-settings-vol-config
+          configMap:
+            name: container-azm-ms-osmconfig
+            optional: true
+      {{- if (eq (include "should_mount_hostca" $ ) "true" ) }}
+        - name: anchors-ubuntu
+          hostPath:
+            path: /usr/local/share/ca-certificates/
+            type: DirectoryOrCreate
+        - name: anchors-mariner
+          hostPath:
+            path: /etc/pki/ca-trust/source/anchors
+            type: DirectoryOrCreate
+      {{- end }}
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 50%
+
+{{- if and (ne (default "" $size.name) (default "" $singleSize.name)) $size.maxCPU }}
+{{- $prevmaxCPU = $size.maxCPU | int }}
+{{- end }}
+{{- end }}
+---
+{{- if semverCompare ">=1.16.0" .Values.global.commonGlobals.Versions.Kubernetes }}
+apiVersion: apps/v1
+{{- else }}
+apiVersion: extensions/v1beta1
+{{- end }}
+kind: Deployment
+metadata:
+  name: ama-logs-rs
+  namespace: kube-system
+  labels:
+    component: ama-logs-agent
+    tier: node
+    kubernetes.azure.com/managedby: aks
+{{- if .Values.legacyAddonDelivery }}
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+{{- end }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  paused: false
+  selector:
+    matchLabels:
+      rsName: "ama-logs-rs"
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        rsName: "ama-logs-rs"
+        kubernetes.azure.com/managedby: aks
+      annotations:
+        agentVersion: "azure-mdsd-1.37.0"
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+        dockerProviderVersion: "18.0.1-0"
+        schema-versions: "v1"
+        WSID: {{ .Values.OmsAgent.workspaceID | b64enc | quote }}
+        kubernetes.azure.com/no-http-proxy-vars: "true"
+{{- if semverCompare "<1.11.0" .Values.global.commonGlobals.Versions.Kubernetes }}
+        scheduler.alpha.kubernetes.io/critical-pod: ""
+{{- end }}
+    spec:
+{{- if semverCompare ">=1.11.0" .Values.global.commonGlobals.Versions.Kubernetes }}
+      priorityClassName: system-node-critical
+{{- end }}
+      tolerations:
+      - key: "CriticalAddonsOnly"
+        operator: "Exists"
+      serviceAccountName: ama-logs
+      containers:
+{{- if .Values.OmsAgent.isRSVPAEnabled }}
+        - name: ama-logs-vpa
+          image: "{{ template "addon_mcr_repository_base" . }}/oss/v2/kubernetes/autoscaler/addon-resizer:{{- $amalogsRSVPAImageTag -}}"
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: 100m
+              memory: 300Mi
+            requests:
+              cpu: 5m
+              memory: 30Mi
+          env:
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: MY_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            - name: ama-logs-rs-vpa-config-volume
+              mountPath: /etc/config
+          command:
+            - /pod_nanny
+            - --config-dir=/etc/config
+            - --cpu=200m
+            - --extra-cpu=2m
+            - --memory=300Mi
+            - --extra-memory=4Mi
+            - --poll-period=180000
+            - --threshold=5
+            - --namespace=kube-system
+            - --deployment=ama-logs-rs
+            - --container=ama-logs
+{{- end }}
+{{- if $isusingaadauth }}
+        - name: addon-token-adapter
+          command:
+            - /addon-token-adapter
+          args:
+            - --secret-namespace=kube-system
+            - --secret-name={{ .Values.OmsAgent.accessTokenSecretName }}
+            - --token-server-listening-port=8888
+            - --health-server-listening-port=9999
+            - --restart-pod-waiting-minutes-on-broken-connection=240
+          image: "{{ template "addon_mcr_repository_base" . }}/aks/msi/addon-token-adapter:{{- $addonTokenAdapterLinuxDefaultImageTag -}}"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: AZMON_COLLECT_ENV
+              value: "false"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9999
+            initialDelaySeconds: 10
+            periodSeconds: 60
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_ADMIN
+                - NET_RAW
+{{- end }}
+        - name: ama-logs
+          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/containerinsights/ciprod:{{- default $amalogsLinuxDefaultImageTag .Values.OmsAgent.imageTagLinux -}}"
+        {{- if .Values.OmsAgent.isImagePullPolicyAlways }}
+          imagePullPolicy: Always
+        {{- else }}
+          imagePullPolicy: IfNotPresent
+        {{- end }}
+          {{- if not .Values.OmsAgent.isRSVPAEnabled }}
+          resources:
+            limits:
+              cpu: "{{ .Values.OmsAgent.omsAgentRsCPULimit }}"
+              memory: "{{ .Values.OmsAgent.omsAgentRsMemoryLimit }}"
+            requests:
+              cpu: 150m
+              memory: 250Mi
+          {{- end }}
+          env:
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: AKS_CLUSTER_NAME
+              value: "{{ .Values.OmsAgent.aksClusterName }}"
+            - name: AKS_RESOURCE_ID
+              value: "{{ .Values.OmsAgent.aksResourceID }}"
+            - name: AKS_NODE_RESOURCE_GROUP
+              value: "{{ .Values.OmsAgent.aksNodeResourceGroup }}"
+            {{/* TODO This needs to be fixed post Canary validation */}}
+            - name: AKS_REGION
+              value: "{{ $.Values.global.commonGlobals.Region }}"
+            - name: CONTROLLER_TYPE
+              value: "ReplicaSet"
+            - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+              value: "{{ .Values.OmsAgent.identityClientID }}"
+            - name: NUM_OF_FLUENTD_WORKERS
+              valueFrom:
+                resourceFieldRef:
+                  containerName: ama-logs
+                  resource: limits.cpu
+            - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+              valueFrom:
+                resourceFieldRef:
+                  containerName: ama-logs
+                  resource: limits.memory
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          {{- if .Values.OmsAgent.isSidecarScrapingEnabled }}
+            - name: SIDECAR_SCRAPING_ENABLED
+              value: "true"
+          {{- else }}
+            - name: SIDECAR_SCRAPING_ENABLED
+              value: "false"
+          {{- end }}
+          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
+          {{- end }}
+          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.scloud/v2/"
+          {{- end }}
+          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
+          {{- end }}
+          {{- if $isusingaadauth }}
+            - name: USING_AAD_MSI_AUTH
+              value: "true"
+          {{- else }}
+            - name: USING_AAD_MSI_AUTH
+              value: "false"
+          {{- end }}
+          {{- if .Values.OmsAgent.isRSVPAEnabled }}
+            - name: RS_ADDON-RESIZER_VPA_ENABLED
+              value: "true"
+          {{- end }}
+            - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
+              value: "{{ .Values.AppmonitoringAgent.enabled }}"
+            - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
+              value: "{{ .Values.OmsAgent.isPrometheusMetricsScrapingDisabled }}"
+            - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+              value: "{{ .Values.OmsAgent.isTelegrafLivenessprobeEnabled | default false }}"
+            - name: AZMON_WINDOWS_FLUENT_BIT_ENABLED
+              value: "{{ .Values.OmsAgent.isWindowsAMAFluentBitEnabled | default false }}"
+            - name: CLUSTER_CLOUD_ENVIRONMENT
+              value: "{{ .Values.global.commonGlobals.CloudEnvironment | lower }}"
+          securityContext:
+            privileged: true
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - DAC_OVERRIDE
+          ports:
+            - containerPort: 25225
+              protocol: TCP
+            - containerPort: 25224
+              protocol: UDP
+            - containerPort: 25227
+              protocol: TCP
+              name: in-rs-tcp
+          volumeMounts:
+            - mountPath: /var/log
+              name: host-log
+            - mountPath: /etc/kubernetes/host
+              name: azure-json-path
+            - mountPath: /etc/ama-logs-secret
+              name: ama-logs-secret
+              readOnly: true
+            - mountPath: /etc/omsagent-secret
+              name: ama-logs-secret
+              readOnly: true
+            - mountPath: /etc/config
+              name: ama-logs-rs-config
+            - mountPath: /etc/config/settings
+              name: settings-vol-config
+              readOnly: true
+            - mountPath: /etc/config/settings/adx
+              name: ama-logs-adx-secret
+              readOnly: true
+            - mountPath: /etc/config/osm-settings
+              name: osm-settings-vol-config
+              readOnly: true
+          {{- if (eq (include "should_mount_hostca" . ) "true" ) }}
+            # USSec and USNat have cloud-specific Root and Intermediate CAs that must be mounted into all running containers from the host
+            # Container Insights has logic to update the trust store in the image based on certs present in /anchors/ mounts below
+            - mountPath: /anchors/mariner
+              name: anchors-mariner
+              readOnly: true
+            - mountPath: /anchors/ubuntu
+              name: anchors-ubuntu
+              readOnly: true
+          {{- end }}
+          {{- if .Values.OmsAgent.trustedCA }}
+            - mountPath: /etc/ssl/certs/proxy-cert.crt
+              subPath: PROXYCERT.crt
+              name: ama-logs-secret
+              readOnly: true
+          {{- end }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - /opt/livenessprobe.sh
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            timeoutSeconds: 15
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: kubernetes.azure.com/mode
+                operator: In
+                values:
+                - system
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: storageprofile
+                operator: NotIn
+                values:
+                - managed
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+{{- if semverCompare ">=1.16.0" .Values.global.commonGlobals.Versions.Kubernetes }}
+              - key: kubernetes.io/os
+{{- else }}
+              - key: beta.kubernetes.io/os
+{{- end }}
+                operator: In
+                values:
+                - linux
+              - key: kubernetes.azure.com/cluster
+                operator: Exists
+              - key: type
+                operator: NotIn
+                values:
+                - virtual-kubelet
+      volumes:
+        - name: container-hostname
+          hostPath:
+            path: /etc/hostname
+        - name: host-log
+          hostPath:
+            path: /var/log
+        - name: azure-json-path
+          hostPath:
+            path: /etc/kubernetes
+        - name: ama-logs-secret
+          secret:
+            secretName: ama-logs-secret
+        - name: ama-logs-rs-config
+          configMap:
+            name: ama-logs-rs-config
+        - name: settings-vol-config
+          configMap:
+            name: container-azm-ms-agentconfig
+            optional: true
+        - name: ama-logs-adx-secret
+          secret:
+            secretName: ama-logs-adx-secret
+            optional: true
+        - name: osm-settings-vol-config
+          configMap:
+            name: container-azm-ms-osmconfig
+            optional: true
+      {{- if (eq (include "should_mount_hostca" . ) "true" ) }}
+        - name: anchors-ubuntu
+          hostPath:
+            path: /usr/local/share/ca-certificates/
+            type: DirectoryOrCreate
+        - name: anchors-mariner
+          hostPath:
+            path: /etc/pki/ca-trust/source/anchors
+            type: DirectoryOrCreate
+      {{- end }}
+      {{- if .Values.OmsAgent.isRSVPAEnabled }}
+        - name:  ama-logs-rs-vpa-config-volume
+          configMap:
+            name:  ama-logs-rs-vpa-config
+            optional: true
+      {{- end }}
+---
+{{- if semverCompare ">=1.16.0" .Values.global.commonGlobals.Versions.Kubernetes }}
+apiVersion: apps/v1
+{{- else }}
+apiVersion: extensions/v1beta1
+{{- end }}
+kind: DaemonSet
+metadata:
+  name: ama-logs-windows
+  namespace: kube-system
+  labels:
+    component: ama-logs-agent-windows
+    tier: node-win
+    kubernetes.azure.com/managedby: aks
+{{- if .Values.legacyAddonDelivery }}
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+{{- end }}
+spec:
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 50%
+  selector:
+    matchLabels:
+      component: ama-logs-agent-windows
+      tier: node-win
+  template:
+    metadata:
+      labels:
+        component: ama-logs-agent-windows
+        tier: node-win
+        kubernetes.azure.com/managedby: aks
+      annotations:
+        agentVersion: "46.17.2"
+        dockerProviderVersion: "18.0.1-0"
+        schema-versions: "v1"
+        WSID: {{ .Values.OmsAgent.workspaceID | b64enc | quote }}
+        kubernetes.azure.com/no-http-proxy-vars: "true"
+{{- if semverCompare "<1.11.0" .Values.global.commonGlobals.Versions.Kubernetes }}
+        scheduler.alpha.kubernetes.io/critical-pod: ""
+{{- end }}
+    spec:
+{{- if semverCompare ">=1.11.0" .Values.global.commonGlobals.Versions.Kubernetes }}
+      priorityClassName: system-node-critical
+{{- end }}
+      serviceAccountName: ama-logs
+      dnsConfig:
+         options:
+            - name: ndots
+              value: "3"
+      containers:
+        - name: ama-logs-windows
+          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/containerinsights/ciprod:{{- default $amalogsWindowsDefaultImageTag .Values.OmsAgent.imageTagWindows -}}"
+        {{- if .Values.OmsAgent.isImagePullPolicyAlways }}
+          imagePullPolicy: Always
+        {{- else }}
+          imagePullPolicy: IfNotPresent
+        {{- end }}
+        {{- if .Values.OmsAgent.isWindowsBurstableQoSEnabled }}
+          resources:
+            requests:
+              cpu: "{{ .Values.OmsAgent.omsAgentDsCPURequestWindows }}"
+              memory: "{{ .Values.OmsAgent.omsAgentDsMemoryRequestWindows }}"
+            limits:
+              cpu: "{{ .Values.OmsAgent.omsAgentDsCPULimitWindows }}"
+              memory: "{{ .Values.OmsAgent.omsAgentDsMemoryLimitWindows }}"
+        {{- else }}
+          resources:
+            limits:
+              cpu: "{{ .Values.OmsAgent.omsAgentDsCPULimitWindows }}"
+              memory: "{{ .Values.OmsAgent.omsAgentDsMemoryLimitWindows }}"
+        {{- end }}
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - DAC_OVERRIDE
+          env:
+          - name: FBIT_SERVICE_FLUSH_INTERVAL
+            value: "15"
+          - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
+            value: "1"
+          - name: FBIT_TAIL_BUFFER_MAX_SIZE
+            value: "1"
+          - name: AKS_RESOURCE_ID
+            value: "{{ .Values.OmsAgent.aksResourceID }}"
+          {{/* TODO This needs to be fixed post Canary validation */}}
+          - name: AKS_REGION
+            value: "{{ $.Values.global.commonGlobals.Region }}"
+          - name: CONTROLLER_TYPE
+            value: "DaemonSet"
+          - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+            value: "{{ .Values.OmsAgent.identityClientID }}"
+          - name: HOSTNAME
+            valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          - name: NODE_IP
+            valueFrom:
+               fieldRef:
+                 fieldPath: status.hostIP
+          - name: PODNAME
+            valueFrom:
+               fieldRef:
+                 fieldPath: metadata.name
+          - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+            valueFrom:
+              resourceFieldRef:
+                containerName: ama-logs-windows
+                resource: limits.memory
+        {{- if .Values.OmsAgent.isSidecarScrapingEnabled }}
+          - name: SIDECAR_SCRAPING_ENABLED
+            value: "true"
+        {{- else }}
+          - name: SIDECAR_SCRAPING_ENABLED
+            value: "false"
+        {{- end }}
+        {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
+          - name: REQUIRES_CERT_BOOTSTRAP
+            value: "true"
+        {{- end }}
+        {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
+          - name: REQUIRES_CERT_BOOTSTRAP
+            value: "true"
+        {{- end }}
+        {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
+          - name: REQUIRES_CERT_BOOTSTRAP
+            value: "true"
+        {{- end }}
+        {{- if $isusingaadauth }}
+          - name: USING_AAD_MSI_AUTH
+            value: "true"
+        {{- else }}
+          - name: USING_AAD_MSI_AUTH
+            value: "false"
+        {{- end }}
+          - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
+            value: "{{ .Values.AppmonitoringAgent.enabled }}"
+          - name: APPMONITORING_OPENTELEMETRYLOGS_ENABLED
+            value: "{{ .Values.AppmonitoringAgent.isOpenTelemetryLogsEnabled | default false }}"
+          - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
+            value: "{{ .Values.AppmonitoringAgent.openTelemetryLogsPort | default 28331 }}"
+          - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
+            value: "{{ .Values.OmsAgent.isPrometheusMetricsScrapingDisabled }}"
+          - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+            value: "{{ .Values.OmsAgent.isTelegrafLivenessprobeEnabled | default false }}"
+          - name: AZMON_WINDOWS_FLUENT_BIT_ENABLED
+            value: "{{ .Values.OmsAgent.isWindowsAMAFluentBitEnabled | default false }}"
+          - name: CLUSTER_CLOUD_ENVIRONMENT
+            value: "{{ .Values.global.commonGlobals.CloudEnvironment | lower }}"
+          volumeMounts:
+          - mountPath: C:\ProgramData\docker\containers
+            name: docker-windows-containers
+            readOnly: true
+          - mountPath: C:\var
+            name: docker-windows-kuberenetes-container-logs
+          - mountPath: C:\etc\config\settings
+            name: settings-vol-config
+            readOnly: true
+          - mountPath: C:\etc\ama-logs-secret
+            name: ama-logs-secret
+            readOnly: true
+          - mountPath: C:\etc\omsagent-secret
+            name: ama-logs-secret
+            readOnly: true
+          - mountPath: C:\etc\config\adx
+            name: ama-logs-adx-secret
+            readOnly: true
+          - mountPath: C:\etc\kubernetes\host
+            name: azure-json-path
+            readOnly: true
+        {{- if (eq (include "should_mount_hostca" . ) "true" ) }}
+          - mountPath: C:\ca
+            name: ca-certs
+            readOnly: true
+        {{- end }}
+        {{- if $isusingaadauth }}
+          - mountPath: C:\etc\IMDS-access-token
+            name: imds-token
+            readOnly: true
+        {{- end }}
+          livenessProbe:
+            exec:
+              command:
+                - cmd
+                - /c
+                - C:\opt\amalogswindows\scripts\cmd\livenessprobe.exe
+                - fluent-bit.exe
+                - fluentdwinaks
+                - "C:\\etc\\amalogswindows\\filesystemwatcher.txt"
+                - "C:\\etc\\amalogswindows\\renewcertificate.txt"
+              {{- if and $isusingaadauth .Values.OmsAgent.isWindowsAMAEnabled }}
+                - "MonAgentCore.exe"
+              {{- end }}
+            periodSeconds: 60
+            initialDelaySeconds: 180
+            timeoutSeconds: 15
+{{- if and (and $isusingaadauth .Values.OmsAgent.isWindowsAMAEnabled) (not .Values.OmsAgent.isWindowsAddonTokenAdapterDisabled) }}
+        - name: addon-token-adapter-win
+          command:
+            - addon-token-adapter-win
+          args:
+            - --secret-namespace=kube-system
+            - --secret-name={{ .Values.OmsAgent.accessTokenSecretName }}
+            - --token-server-listening-port=8888
+            - --health-server-listening-port=9999
+            - --restart-pod-waiting-minutes-on-broken-connection=240
+          image: "{{ template "addon_mcr_repository_base" . }}/aks/msi/addon-token-adapter:{{- $addonTokenAdapterWindowsDefaultImageTag -}}"
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: AZMON_COLLECT_ENV
+            value: "false"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9999
+            initialDelaySeconds: 10
+            periodSeconds: 60
+          resources:
+            limits:
+              cpu: 400m
+              memory: 400Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_ADMIN
+                - NET_RAW
+{{- end}}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.azure.com/cluster
+                operator: Exists
+{{- if semverCompare ">=1.16.0" .Values.global.commonGlobals.Versions.Kubernetes }}
+              - key: kubernetes.io/os
+{{- else }}
+              - key: beta.kubernetes.io/os
+{{- end }}
+                operator: In
+                values:
+                  - windows
+              - key: type
+                operator: NotIn
+                values:
+                - virtual-kubelet
+      tolerations:
+        - key: "CriticalAddonsOnly"
+          operator: "Exists"
+        - operator: "Exists"
+          effect: NoExecute
+        - operator: "Exists"
+          effect: NoSchedule
+        - operator: "Exists"
+          effect: PreferNoSchedule
+      volumes:
+      - name: docker-windows-kuberenetes-container-logs
+        hostPath:
+          path: C:\var
+      - name: azure-json-path
+        hostPath:
+          path: C:\k
+      - name: docker-windows-containers
+        hostPath:
+          path: C:\ProgramData\docker\containers
+          type: DirectoryOrCreate
+      - name: settings-vol-config
+        configMap:
+          name: container-azm-ms-agentconfig
+          optional: true
+      - name: ama-logs-secret
+        secret:
+          secretName: ama-logs-secret
+      - name: ama-logs-adx-secret
+        secret:
+          secretName: ama-logs-adx-secret
+          optional: true
+    {{- if (eq (include "should_mount_hostca" . ) "true" ) }}
+      - name: ca-certs
+        hostPath:
+          path: C:\ca
+    {{- end }}
+    {{- if $isusingaadauth }}
+      - name: imds-token
+        secret:
+          secretName: {{ .Values.OmsAgent.accessTokenSecretName }}
+    {{- end }}
+{{- if and $isusingaadauth .Values.OmsAgent.isMultitenancyLogsEnabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: ama-logs-hpa
+  namespace: kube-system
+  labels:
+{{- if .Values.legacyAddonDelivery }}
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+{{- end }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: ama-logs-multitenancy
+  minReplicas: {{ .Values.OmsAgent.omsAgentMultitenancyLogsHPAMinReplicas }}
+  maxReplicas: {{ .Values.OmsAgent.omsAgentMultitenancyLogsHPAMaxReplicas }}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.OmsAgent.omsAgentMultitenancyHPAAvgCPUUtilization }}
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.OmsAgent.omsAgentMultitenancyHPAAvgMemoryUtilization }}
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 1200
+      policies:
+      - type: Percent
+        value: 5
+        periodSeconds: 180
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+      - type: Pods
+        value: 5
+        periodSeconds: 5
+      - type: Percent
+        value: 100
+        periodSeconds: 5
+      selectPolicy: Max
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ama-logs-service
+  namespace: kube-system
+  labels:
+{{- if .Values.legacyAddonDelivery }}
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+{{- end }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 24225
+      targetPort: 24225
+      protocol: TCP
+      name: fluentbit-fwd
+  selector:
+    rsName: "ama-logs-multitenancy"
+---
+{{- if semverCompare ">=1.16.0" .Values.global.commonGlobals.Versions.Kubernetes }}
+apiVersion: apps/v1
+{{- else }}
+apiVersion: extensions/v1beta1
+{{- end }}
+kind: Deployment
+metadata:
+  name: ama-logs-multitenancy
+  namespace: kube-system
+  labels:
+    component: ama-logs-agent
+    tier: node
+    kubernetes.azure.com/managedby: aks
+{{- if .Values.legacyAddonDelivery }}
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+{{- end }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      rsName: "ama-logs-multitenancy"
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        rsName: "ama-logs-multitenancy"
+        kubernetes.azure.com/managedby: aks
+      annotations:
+        agentVersion: "azure-mdsd-1.37.0"
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+        dockerProviderVersion: "18.0.1-0"
+        schema-versions: "v1"
+        WSID: {{ .Values.OmsAgent.workspaceID | b64enc | quote }}
+        kubernetes.azure.com/no-http-proxy-vars: "true"
+{{- if semverCompare "<1.11.0" .Values.global.commonGlobals.Versions.Kubernetes }}
+        scheduler.alpha.kubernetes.io/critical-pod: ""
+{{- end }}
+    spec:
+{{- if semverCompare ">=1.11.0" .Values.global.commonGlobals.Versions.Kubernetes }}
+      priorityClassName: system-node-critical
+{{- end }}
+      tolerations:
+      - key: "CriticalAddonsOnly"
+        operator: "Exists"
+      volumes:
+        - name: ama-logs-secret
+          secret:
+            secretName: ama-logs-secret
+        - name: settings-vol-config
+          configMap:
+            name: container-azm-ms-agentconfig
+            optional: true
+      {{- if (eq (include "should_mount_hostca" . ) "true" ) }}
+        - name: anchors-ubuntu
+          hostPath:
+            path: /usr/local/share/ca-certificates/
+            type: DirectoryOrCreate
+        - name: anchors-mariner
+          hostPath:
+            path: /etc/pki/ca-trust/source/anchors
+            type: DirectoryOrCreate
+      {{- end }}
+      serviceAccountName: ama-logs
+      containers:
+        - name: addon-token-adapter
+          command:
+            - /addon-token-adapter
+          args:
+            - --secret-namespace=kube-system
+            - --secret-name=aad-msi-auth-token
+            - --token-server-listening-port=8888
+            - --health-server-listening-port=9999
+            - --restart-pod-waiting-minutes-on-broken-connection=240
+          image: "{{ template "addon_mcr_repository_base" . }}/aks/msi/addon-token-adapter:{{- $addonTokenAdapterLinuxDefaultImageTag -}}"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: AZMON_COLLECT_ENV
+              value: "false"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9999
+            initialDelaySeconds: 10
+            periodSeconds: 60
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_ADMIN
+                - NET_RAW
+        - name: ama-logs
+          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/containerinsights/ciprod:{{- default $amalogsLinuxDefaultImageTag .Values.OmsAgent.imageTagLinux -}}"
+        {{- if .Values.OmsAgent.isImagePullPolicyAlways }}
+          imagePullPolicy: Always
+        {{- else }}
+          imagePullPolicy: IfNotPresent
+        {{- end }}
+          resources:
+            limits:
+              cpu: "{{ .Values.OmsAgent.omsAgentMultitenancyCPULimitLinux }}"
+              memory: "{{ .Values.OmsAgent.omsAgentMultitenancyMemoryLimitLinux }}"
+            requests:
+              cpu: "{{ .Values.OmsAgent.omsAgentMultitenancyCPURequestLinux }}"
+              memory: "{{ .Values.OmsAgent.omsAgentMultitenancyMemoryRequestLinux }}"
+          env:
+            - name: AZMON_MULTI_TENANCY_LOG_COLLECTION
+              value: "true"
+            - name: AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE
+              value: "true"
+            - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+              valueFrom:
+                resourceFieldRef:
+                  containerName: ama-logs
+                  resource: limits.memory
+            - name: AKS_CLUSTER_NAME
+              value: "{{ .Values.OmsAgent.aksClusterName }}"
+            - name: AKS_RESOURCE_ID
+              value: "{{ .Values.OmsAgent.aksResourceID }}"
+            - name: AKS_NODE_RESOURCE_GROUP
+              value: "{{ .Values.OmsAgent.aksNodeResourceGroup }}"
+            {{/* TODO This needs to be fixed post Canary validation */}}
+            - name: AKS_REGION
+              value: "{{ $.Values.global.commonGlobals.Region }}"
+            - name: CONTROLLER_TYPE
+              value: "ReplicaSet"
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
+          {{- end }}
+          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.scloud/v2/"
+          {{- end }}
+          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
+          {{- end }}
+            - name: USING_AAD_MSI_AUTH
+              value: "true"
+            - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
+              value: "{{ .Values.AppmonitoringAgent.enabled }}"
+            - name: CLUSTER_CLOUD_ENVIRONMENT
+              value: "{{ .Values.global.commonGlobals.CloudEnvironment | lower }}"
+          securityContext:
+            privileged: true
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - DAC_OVERRIDE
+          ports:
+            - name: http
+              containerPort: 24225
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /etc/ama-logs-secret
+              name: ama-logs-secret
+              readOnly: true
+            - mountPath: /etc/config/settings
+              name: settings-vol-config
+              readOnly: true
+          {{- if (eq (include "should_mount_hostca" . ) "true" ) }}
+            # USSec and USNat have cloud-specific Root and Intermediate CAs that must be mounted into all running containers from the host
+            # Container Insights has logic to update the trust store in the image based on certs present in /anchors/ mounts below
+            - mountPath: /anchors/mariner
+              name: anchors-mariner
+              readOnly: true
+            - mountPath: /anchors/ubuntu
+              name: anchors-ubuntu
+              readOnly: true
+          {{- end }}
+          {{- if .Values.OmsAgent.trustedCA }}
+            - mountPath: /etc/ssl/certs/proxy-cert.crt
+              subPath: PROXYCERT.crt
+              name: ama-logs-secret
+              readOnly: true
+          {{- end }}
+          lifecycle:
+            preStop:
+              exec:
+               command: [
+                  "sh", "-c",
+                  # Introduce a delay to the shutdown sequence to wait for the
+                  # pod eviction event to propagate. Then, gracefully shutdown
+                  "sleep 5"
+                ]
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - /opt/livenessprobe.sh
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            timeoutSeconds: 15
+          readinessProbe:
+            tcpSocket:
+              port: 24225
+            initialDelaySeconds: 10
+            periodSeconds: 30
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.azure.com/cluster
+                operator: Exists
+              - key: type
+                operator: NotIn
+                values:
+                - virtual-kubelet
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: kubernetes.azure.com/mode
+                operator: In
+                values:
+                - system
+{{- end }}
