@@ -1,5 +1,5 @@
-apiVersion: tests.testkube.io/v3
-kind: Test
+apiVersion: testworkflows.testkube.io/v1
+kind: TestWorkflow
 metadata:
   name: containerstatus-linux
   namespace: testkube
@@ -7,145 +7,148 @@ metadata:
     executor: ginkgo-executor
     test-type: ginkgo-test
 spec:
-  type: ginkgo/test
+  config:
+    GENEVA_INTEGRATION:
+      type: string
+      default: "false"
+    GOTOOLCHAIN:
+      type: string
+      default: ""
   content:
-    type: git
-    repository:
-      type: git
+    git:
       uri: https://github.com/microsoft/Docker-Provider/
-      branch: ci_prod
-      path: test/ginkgo-e2e
-  executionRequest:
-    variables:
-      GENEVA_INTEGRATION:
-        name: GENEVA_INTEGRATION
-        value: "$GENEVA_INTEGRATION"
-        type: basic
-    args:
-      - "--label-filter"
-      - "!(windows)"
-      - "./containerstatus"
-    executePostRunScriptBeforeScraping: false
+      revision: ci_prod
+      paths:
+      - test/ginkgo-e2e
+  steps:
+    - name: Run test
+      container:
+        workingDir: /data/repo/test/ginkgo-e2e
+        image: cerebro31/ginkgo-test:latest
+        env:
+        - name: GENEVA_INTEGRATION
+          value: "{{config.GENEVA_INTEGRATION}}"
+        - name: GOTOOLCHAIN
+          value: "{{config.GOTOOLCHAIN}}"
+      shell: |
+        ginkgo run -r --label-filter "!(windows)" ./containerstatus
+  pod:
+    nodeSelector:
+      kubernetes.io/os: linux
+      kubernetes.io/arch: amd64
 ---
-apiVersion: tests.testkube.io/v3
-kind: Test
+apiVersion: testworkflows.testkube.io/v1
+kind: TestWorkflow
 metadata:
   name: containerstatus-windows
   namespace: testkube
   labels:
-    executor: ginkgo-executor
     test-type: ginkgo-test
 spec:
-  type: ginkgo/test
+  config:
+    GENEVA_INTEGRATION:
+      type: string
+      default: "false"
+    GOTOOLCHAIN:
+      type: string
+      default: ""
   content:
-    type: git
-    repository:
-      type: git
+    git:
       uri: https://github.com/microsoft/Docker-Provider/
-      branch: ci_prod
-      path: test/ginkgo-e2e
-  executionRequest:
-    variables:
-      GENEVA_INTEGRATION:
-        name: GENEVA_INTEGRATION
-        value: "$GENEVA_INTEGRATION"
-        type: basic
-    args:
-      - "--label-filter"
-      - "windows"
-      - "./containerstatus"
-    executePostRunScriptBeforeScraping: false
+      revision: ci_prod
+      paths:
+      - test/ginkgo-e2e
+  steps:
+  - name: Run Tests
+    container:
+      workingDir: /data/repo/test/ginkgo-e2e
+      image: cerebro31/ginkgo-test:latest
+      env:
+      - name: GENEVA_INTEGRATION
+        value: "{{config.GENEVA_INTEGRATION}}"
+      - name: GOTOOLCHAIN
+        value: "{{config.GOTOOLCHAIN}}"
+    shell: ginkgo --label-filter "windows" ./containerstatus
+  pod:
+    nodeSelector:
+      kubernetes.io/os: linux
+      kubernetes.io/arch: amd64
 ---
-apiVersion: tests.testkube.io/v3
-kind: Test
+apiVersion: testworkflows.testkube.io/v1
+kind: TestWorkflow
 metadata:
   name: livenessprobe
   namespace: testkube
   labels:
-    executor: ginkgo-executor
     test-type: ginkgo-test
 spec:
-  type: ginkgo/test
+  config:
+    GOTOOLCHAIN:
+      type: string
+      default: ""
   content:
-    type: git
-    repository:
-      type: git
+    git:
       uri: https://github.com/microsoft/Docker-Provider/
-      branch: ci_prod
-      path: test/ginkgo-e2e
-  executionRequest:
-    args:
-      - "--label-filter"
-      - "!(windows)"
-      - "./livenessprobe"
-    executePostRunScriptBeforeScraping: false
+      revision: ci_prod
+      paths:
+      - test/ginkgo-e2e
+  steps:
+  - name: Run Tests
+    container:
+      workingDir: /data/repo/test/ginkgo-e2e
+      image: cerebro31/ginkgo-test:latest
+      env:
+      - name: GOTOOLCHAIN
+        value: "{{config.GOTOOLCHAIN}}"
+    shell: ginkgo --label-filter "!(windows)" ./livenessprobe
+  pod:
+    nodeSelector:
+      kubernetes.io/os: linux
+      kubernetes.io/arch: amd64
 ---
-apiVersion: tests.testkube.io/v3
-kind: Test
+apiVersion: testworkflows.testkube.io/v1
+kind: TestWorkflow
 metadata:
   name: querylogs
   namespace: testkube
   labels:
-    executor: ginkgo-executor
     test-type: ginkgo-test
 spec:
-  type: ginkgo/test
+  config:
+    AZURE_TENANT_ID:
+      type: string
+      default: ""
+    AZURE_CLIENT_ID:
+      type: string
+      default: ""
+    GENEVA_INTEGRATION:
+      type: string
+      default: "false"
+    GOTOOLCHAIN:
+      type: string
+      default: ""
   content:
-    type: git
-    repository:
-      type: git
+    git:
       uri: https://github.com/microsoft/Docker-Provider/
-      branch: ci_prod
-      path: test/ginkgo-e2e
-  executionRequest:
-    variables:
-      AZURE_TENANT_ID:
-        name: AZURE_TENANT_ID
-        value: "$AZURE_TENANT_ID"
-        type: basic
-      AZURE_CLIENT_ID:
-        name: AZURE_CLIENT_ID
-        value: "$AZURE_CLIENT_ID"
-        type: basic
-      GENEVA_INTEGRATION:
-        name: GENEVA_INTEGRATION
-        value: "$GENEVA_INTEGRATION"
-        type: basic
-    args:
-      - "./querylogs"
-    executePostRunScriptBeforeScraping: false
----
-apiVersion: tests.testkube.io/v3
-kind: TestSuite
-metadata:
-  name: e2e-tests-all
-  namespace: testkube
-spec:
+      revision: ci_prod
+      paths:
+      - test/ginkgo-e2e
   steps:
-  - stopOnFailure: false
-    execute:
-    - test: containerstatus-linux
-    - test: containerstatus-windows
-  - stopOnFailure: false
-    execute:
-    - delay: 2m0s
-  - stopOnFailure: false
-    execute:
-    - test: querylogs
----
-apiVersion: tests.testkube.io/v3
-kind: TestSuite
-metadata:
-  name: e2e-tests-linux
-  namespace: testkube
-spec:
-  steps:
-  - stopOnFailure: false
-    execute:
-    - test: containerstatus-linux
-  - stopOnFailure: false
-    execute:
-    - delay: 2m0s
-  - stopOnFailure: false
-    execute:
-    - test: querylogs
+  - name: Run Tests
+    container:
+      workingDir: /data/repo/test/ginkgo-e2e
+      image: cerebro31/ginkgo-test:latest
+      env:
+      - name: AZURE_TENANT_ID
+        value: "{{config.AZURE_TENANT_ID}}"
+      - name: AZURE_CLIENT_ID
+        value: "{{config.AZURE_CLIENT_ID}}"
+      - name: GENEVA_INTEGRATION
+        value: "{{config.GENEVA_INTEGRATION}}"
+      - name: GOTOOLCHAIN
+        value: "{{config.GOTOOLCHAIN}}"
+    shell: ginkgo ./querylogs
+  pod:
+    nodeSelector:
+      kubernetes.io/os: linux
+      kubernetes.io/arch: amd64

@@ -4,7 +4,7 @@
 # Original source: kubernetes/linux/main.sh
 
 # Required variables
-SUPPORTED_CLOUDS=("azurepubliccloud" "azurechinacloud" "azureusgovernmentcloud" "usnat" "ussec" "bleu")
+SUPPORTED_CLOUDS=("azurepubliccloud" "azurechinacloud" "azureusgovernmentcloud" "usnat" "ussec" "azurebleucloud")
 
 getDomainFromSecret() {
       # Read the domain from the AMA logs secret and convert to lowercase
@@ -55,7 +55,7 @@ getClusterCloudEnvironment() {
                   echo "ussec"
                   ;;
             "opinsights.sovcloud-api.fr")
-                  echo "bleu"
+                  echo "azurebleucloud"
                   ;;
             ""|*)
                   echo "unknown"

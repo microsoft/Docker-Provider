@@ -110,11 +110,11 @@ mongodb:
   # Currently Bitnami doesn't support ARM: https://github.com/bitnami/charts/issues/7305
   image:
     # -- MongoDB image registry
-    registry: mcr.microsoft.com
+    registry: us-east1-docker.pkg.dev
     # -- MongoDB image repository
-    repository: azuremonitor/containerinsights/cidev
+    repository: testkube-cloud-372110/testkube/mongodb
     # -- MongoDB image tag
-    tag: mongodb_6.0.5-debian-11-r64
+    tag: 8.0.15
     # -- MongoDB image pull Secret
     pullSecrets: []
   nodeSelector: 
@@ -163,21 +163,22 @@ nats:
   # global:
   #   image:
   #     registry: <registry-name>
-  container:
-    image:
-      registry: mcr.microsoft.com
-      repository: azuremonitor/containerinsights/cidev
-      tag: nats_2.10.24-alpine
-      pullPolicy: 
+  # container:
+  #   image:
+  #     repository: nats
+  #     tag: 2.11.6-alpine
+  #     pullPolicy:
+  #     registry:
   
   # Reloader container settings
   reloader:
     enabled: true
-    image:
-      registry: mcr.microsoft.com
-      repository: azuremonitor/containerinsights/cidev
-      tag: nats-server-config-reloader_0.16.0
-      pullPolicy:
+    # -- Uncomment to override the NATS Server Config Reloader image options
+    # image:
+    #   repository: natsio/nats-server-config-reloader
+    #   tag: 0.18.2
+    #   pullPolicy:
+    #   registry:
   
   podTemplate:
     merge:
@@ -196,10 +197,9 @@ nats:
     # -- Uncomment to override the NATS Box image options
     # container:
     #   image:
-    #     registry: mcr.microsoft.com
-    #     repository: azuremonitor/containerinsights/cidev
-    #     tag: nats-box_0.14.5
-    #     pullPolicy: IfNotPresent
+    #     repository: natsio/nats-box
+    #     tag: 0.18.0
+    #     pullPolicy:
     # # -- NATS Box tolerations settings. Uncomment to schedule a multi-arch image to any available architecture type in a GCP Standard cluster.
     # podTemplate:
     #   merge:
@@ -387,11 +387,11 @@ testkube-api:
   # Testkube API image parameters
   image:
     # -- Testkube API image registry
-    registry: mcr.microsoft.com
-    # -- Testkube API image repository
-    repository: azuremonitor/containerinsights/cidev
+    registry: docker.io
+    # -- Testkube API image name
+    repository: kubeshop/testkube-api-server
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "testkube-api-server"
+    # tag: "latest"
     # -- Testkube API image tag
     pullPolicy: IfNotPresent
     # -- Testkube API image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
@@ -405,22 +405,22 @@ testkube-api:
   # Test Workflows toolkit image parameters
   imageTwToolkit:
     # -- Test Workflows image registry
-    registry: mcr.microsoft.com
+    registry: docker.io
     # -- Test Workflows image name
-    repository: azuremonitor/containerinsights/cidev
+    repository: kubeshop/testkube-tw-toolkit
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "testkube-tw-toolkit"
+    # tag: "latest"
     # -- Test Workflows image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
     digest: ""
 
   # Test Workflows init image parameters
   imageTwInit:
     # -- Test Workflows image registry
-    registry: mcr.microsoft.com
+    registry: docker.io
     # -- Test Workflows image name
-    repository: azuremonitor/containerinsights/cidev
+    repository: kubeshop/testkube-tw-init
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "testkube-tw-init"
+    # tag: "latest"
     # -- Test Workflows image digest in the way sha256:aa.... Please note this parameter, if set, will override the tag
     digest: ""
     # -- Test Workflows image k8s secret for private registries
@@ -665,9 +665,9 @@ testkube-api:
       maxUnavailable: ""
     # -- Minio image from DockerHub
     image:
-      registry: mcr.microsoft.com
-      repository: azuremonitor/containerinsights/cidev
-      tag: minio_RELEASE.2023-09-16T01-01-47Z
+      registry: docker.io
+      repository: minio/minio
+      tag: RELEASE.2025-06-13T11-33-47Z
       pullSecrets: []
     # -- ServiceAccount name to use for Minio
     serviceAccountName: ""
@@ -889,7 +889,7 @@ testkube-api:
   # -- Slack config for the events, tests, testsuites, testworkflows and channels
   slackConfig:
   # -- default executors as base64-encoded string
-  executors: "W3sibmFtZSI6ImluaXQtZXhlY3V0b3IiLCJleGVjdXRvciI6eyJleGVjdXRvclR5cGUiOiJpbml0IiwiaW1hZ2UiOiJtY3IubWljcm9zb2Z0LmNvbS9henVyZW1vbml0b3IvY29udGFpbmVyaW5zaWdodHMvY2lkZXY6dGVzdGt1YmUtaW5pdC1leGVjdXRvciIsInR5cGVzIjpbXX19LHsibmFtZSI6Imdpbmtnby1leGVjdXRvciIsImV4ZWN1dG9yIjp7ImV4ZWN1dG9yVHlwZSI6ImpvYiIsImltYWdlIjoibWNyLm1pY3Jvc29mdC5jb20vYXp1cmVtb25pdG9yL2NvbnRhaW5lcmluc2lnaHRzL2NpZGV2OnRlc3RrdWJlLWdpbmtnby1leGVjdXRvciIsImNvbW1hbmQiOlsiZ2lua2dvIl0sImFyZ3MiOlsiLXIiLCItcCIsIi0tcmFuZG9taXplLWFsbCIsIi0tcmFuZG9taXplLXN1aXRlcyIsIi0ta2VlcC1nb2luZyIsIi0tdHJhY2UiLCItLWp1bml0LXJlcG9ydCIsIjxyZXBvcnRGaWxlPiIsIjxlbnZWYXJzPiIsIjxydW5QYXRoPiJdLCJ0eXBlcyI6WyJnaW5rZ28vdGVzdCJdLCJjb250ZW50VHlwZXMiOlsic3RyaW5nIiwiZmlsZS11cmkiLCJnaXQtZmlsZSIsImdpdC1kaXIiLCJnaXQiXSwiZmVhdHVyZXMiOlsiYXJ0aWZhY3RzIiwianVuaXQtcmVwb3J0Il0sIm1ldGEiOnsiaWNvblVSSSI6ImdpbmtnbyIsImRvY3NVUkkiOiJodHRwczovL2t1YmVzaG9wLmdpdGh1Yi5pby90ZXN0a3ViZS90ZXN0LXR5cGVzL2V4ZWN1dG9yLWdpbmtnbyJ9fX1d"
+  executors: ""
   # -- SA that is used by a job. Can be annotated with the IAM Role Arn to access S3 service in AWS Cloud.
   jobServiceAccountName: ""
   # -- target for cdevents emission via http(s)
@@ -985,7 +985,7 @@ testkube-api:
 
 testkube-operator:
   ## deploy Operator chart
-  enabled: true
+  enabled: false
   ## namespace to deploy Testkube Operator. Default is .Release.Namespace
   namespace: ""
   # should roles and roles bindings be created
@@ -1011,13 +1011,13 @@ testkube-operator:
   # Testkube Operator image
   image:
     # -- Testkube Operator registry
-    registry: mcr.microsoft.com
-    # -- MongoDB image repository
-    repository: azuremonitor/containerinsights/cidev
+    registry: docker.io
+    # -- Testkube Operator repository
+    repository: kubeshop/testkube-operator
     # -- Testkube Operator image pull policy
     pullPolicy: ""
     # Overrides the image tag whose default is the chart appVersion.
-    tag: "testkube-operator"
+    # tag: "1.7.1"
     # -- Testkube Operator image digest
     digest: ""
     # -- Operator k8s secret for private registries
@@ -1036,11 +1036,11 @@ testkube-operator:
     # Proxy Image parameters
     image:
       # -- Testkube Operator rbac-proxy image registry
-      registry: mcr.microsoft.com
+      registry: quay.io
       # -- Testkube Operator rbac-proxy image repository
-      repository: azuremonitor/containerinsights/cidev
+      repository: brancz/kube-rbac-proxy
       # -- Testkube Operator rbac-proxy image tag
-      tag: "kube-rbac-proxy_v0.18.1"
+      tag: "v0.18.1"
       # -- Testkube Operator rbac-proxy k8s secret for private registries
       pullSecrets: []
     # -- Testkube Operator rbac-proxy resource settings
@@ -1152,7 +1152,7 @@ testkube-operator:
   # Webhook parameters
   webhook:
     # -- Use webhook
-    enabled: true
+    enabled: false
     # -- Name of the webhook
     name: testkube-operator-webhook-admission
     ## Limit which requests for namespaced resources are intercepted, by specifying a namespaceSelector.
@@ -1169,11 +1169,11 @@ testkube-operator:
       ttlSecondsAfterFinished: 100
       image:
         # -- Migrate container job image registry
-        registry: mcr.microsoft.com
+        registry: docker.io
         # -- Migrate container job image name
-        repository: azuremonitor/containerinsights/cidev
+        repository: rancher/kubectl
         # -- Migrate container job image tag
-        tag: rancher_kubectl_v1.23.7
+        version: v1.23.7
         # -- Migrate container job image pull policy
         pullPolicy: IfNotPresent
         # -- Migrate container job k8s secret for private registries
@@ -1196,11 +1196,11 @@ testkube-operator:
       ttlSecondsAfterFinished: 100
       image:
         # -- patch job image registry
-        registry: mcr.microsoft.com
+        registry: docker.io
         # -- patch job image name
-        repository: azuremonitor/containerinsights/cidev
+        repository: kubeshop/kube-webhook-certgen
         # -- patch job image tag
-        tag: kube-webhook-certgen_0.0.7
+        tag: 0.0.7
         # -- patch job image pull policy
         pullPolicy: Always
         # -- patch job k8s secret for private registries
@@ -1304,4 +1304,3 @@ testkube-operator:
     # ref: https://cloud.google.com/kubernetes-engine/docs/how-to/prepare-arm-workloads-for-deployment#node-affinity-multi-arch-arm
     # -- Tolerations to schedule a workload to nodes with any architecture type. Required for deployment to GKE cluster.
     tolerations: []
-

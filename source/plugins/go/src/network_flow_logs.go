@@ -294,15 +294,15 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 	if traceObservationPoint := extractString(flow, "trace_observation_point"); traceObservationPoint != "" {
 		dataMap["TraceObservationPoint"] = traceObservationPoint
 	}
-	// Flow counts from extensions
-	if extensions, ok := flow["extensions"].(map[string]interface{}); ok {
-		if ingressCount, ok := extensions["ingress_flow_count"]; ok {
+	// Flow counts from aggregate
+	if aggregate, ok := flow["aggregate"].(map[string]interface{}); ok {
+		if ingressCount, ok := aggregate["ingress_flow_count"]; ok {
 			dataMap["IngressFlowCount"] = safeToInt(ingressCount)
 		}
-		if egressCount, ok := extensions["egress_flow_count"]; ok {
+		if egressCount, ok := aggregate["egress_flow_count"]; ok {
 			dataMap["EgressFlowCount"] = safeToInt(egressCount)
 		}
-		if unknownCount, ok := extensions["unknown_direction_flow_count"]; ok {
+		if unknownCount, ok := aggregate["unknown_direction_flow_count"]; ok {
 			dataMap["UnknownDirectionFlowCount"] = safeToInt(unknownCount)
 		}
 	}
@@ -343,15 +343,8 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 		additionalData["Summary"] = summary
 	}
 	if extensions, ok := flow["extensions"].(map[string]interface{}); ok {
-		// Create a new map without the flow count fields
-		filteredExtensions := make(map[string]interface{})
-		for k, v := range extensions {
-			if k != "ingress_flow_count" && k != "egress_flow_count" && k != "unknown_direction_flow_count" {
-				filteredExtensions[k] = v
-			}
-		}
-		if len(filteredExtensions) > 0 {
-			additionalData["Extensions"] = filteredExtensions
+		if len(extensions) > 0 {
+			additionalData["Extensions"] = extensions
 		}
 	}
 	if len(additionalData) > 0 {

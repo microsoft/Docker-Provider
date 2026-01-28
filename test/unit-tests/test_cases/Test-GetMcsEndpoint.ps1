@@ -27,7 +27,7 @@ function Test-CloudEnvironments {
             expected = "monitor.azure.microsoft.scloud"
         },
         @{
-            cloud = "bleu"
+            cloud = "azurebleucloud"
             expected = "monitor.sovcloud-api.fr"
         }
     )
