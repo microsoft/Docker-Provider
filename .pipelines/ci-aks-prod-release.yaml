@@ -495,7 +495,7 @@ extends:
         os: linux
       jobs:
       # Cluster 1: UK South (zane-test3)
-      - template: templates/ama-logs-helm-deploy.yaml
+      - template: .pipelines/templates/ama-logs-helm-deploy.yaml@self
         parameters:
           clusterName: 'zane-test3'
           resourceGroup: 'zane-test'
