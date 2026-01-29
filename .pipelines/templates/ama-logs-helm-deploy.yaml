@@ -29,6 +29,9 @@ parameters:
 - name: imageTag
   type: string
   displayName: 'Image tag suffix (e.g., 3.1.32)'
+- name: environment
+  type: string
+  displayName: 'Azure DevOps Environment name'
 
 # Optional parameters with defaults
 - name: cloudEnvironment
@@ -49,9 +52,6 @@ parameters:
 - name: helmVersion
   type: string
   default: '3.12.3'
-- name: environment
-  type: string
-  default: 'ContainerInsights-AKS-Deployment'
 - name: dependsOn
   type: object
   default: []
