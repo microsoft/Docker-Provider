@@ -481,45 +481,35 @@ extends:
     # Stage 3: Deploy ama-logs to AKS Clusters via Helm
     # =============================================================================
     # To add a new cluster, simply add an entry to the template list below.
-    # Each cluster only needs: clusterName, resourceGroup, region, subscriptionId
+    # Each cluster only needs: clusterName, resourceGroup, region, subscriptionId, workspaceId, and imageTag.
     # =============================================================================
     - stage: Stage_3
-      displayName: Deploy ama-logs to AKS Clusters via Helm
-      dependsOn: []  # Run independently, no dependencies on other stages
+      displayName: Deploy ama-logs to CI AKS Prod Clusters via Helm
+      dependsOn: []  # TODO: change to Stage_2 when ready
       pool:
         name: Azure-Pipelines-CI-Test-EO
         image: ci-1es-managed-ubuntu-2204
         os: linux
       jobs:
-      # Cluster 1: UK South (zane-test-helm)
+      # TODO: repalce with our Prod cluster 1
       - template: .pipelines/templates/ama-logs-helm-deploy.yaml@self
         parameters:
           clusterName: 'zane-test-helm'
           resourceGroup: 'zane-test'
           region: 'uksouth'
           subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
-          # "DefaultWorkspace-9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb-SUK"
-          workspaceId: '27c54217-b1ed-4971-a1af-d22308e36201'
-          #imageTag: '$(AgentImageTagSuffix)'
+          workspaceId: '27c54217-b1ed-4971-a1af-d22308e36201' # "DefaultWorkspace-9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb-SUK"
+          #imageTag: '$(AgentImageTagSuffix)' #TODO: Uncomment this line to use the current release image tag
           imageTag: 3.1.32
           environment: 'CI-Deploy-To-Prod-Cluster-1'
-
-      # =========================================================================
-      # To add more clusters, copy and paste the template block below:
-      # Required parameters:
-      #   - clusterName: AKS cluster name
-      #   - resourceGroup: Resource group containing the cluster
-      #   - region: Azure region (e.g., 'eastus', 'westeurope')
-      #   - subscriptionId: Azure subscription ID
-      #   - workspaceId: Log Analytics workspace ID (GUID)
-      #   - imageTag: Image version (use $(AgentImageTagSuffix) for current release)
-      # =========================================================================
-      # - template: templates/ama-logs-helm-deploy.yaml
-      #   parameters:
-      #     clusterName: 'your-cluster-name'
-      #     resourceGroup: 'your-resource-group'
-      #     region: 'your-region'
-      #     subscriptionId: 'your-subscription-id'
-      #     workspaceId: 'your-workspace-id'
-      #     imageTag: '$(AgentImageTagSuffix)'
-      # =========================================================================
+      # TODO: repalce with our Prod cluster 2
+      - template: .pipelines/templates/ama-logs-helm-deploy.yaml@self
+        parameters:
+          clusterName: 'zane-test-helm2'
+          resourceGroup: 'zane-rg2'
+          region: 'centralus'
+          subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
+          workspaceId: '55e0eb4d-129d-43bb-9435-8c598c3f7445' # "zane-test-helm2"
+          #imageTag: '$(AgentImageTagSuffix)' #TODO: Uncomment this line to use the current release image tag
+          imageTag: 3.1.33
+          environment: 'CI-Deploy-To-Prod-Cluster-2'
