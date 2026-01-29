@@ -485,10 +485,7 @@ extends:
     # =============================================================================
     - stage: Stage_3
       displayName: Deploy ama-logs to AKS Clusters via Helm
-      #dependsOn:
-      #- Stage_2
-      dependsOn:
-        - SDLSources
+      dependsOn: []  # Run independently, no dependencies on other stages
       pool:
         name: Azure-Pipelines-CI-Test-EO
         image: ci-1es-managed-ubuntu-2204
