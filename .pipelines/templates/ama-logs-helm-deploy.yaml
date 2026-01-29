@@ -162,10 +162,23 @@ jobs:
               
               # ---- Linux Pod Verification ----
               echo "--- Linux Pod Verification ---"
-              LINUX_IMAGE=$(kubectl get pods -n ${{ parameters.namespace }} -l app=ama-logs -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs")].image}' 2>/dev/null)
+              
+              # Use component=ama-logs label (used by daemonset pods)
+              LINUX_IMAGE=$(kubectl get pods -n ${{ parameters.namespace }} -l component=ama-logs -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs")].image}' 2>/dev/null)
+              
+              # Fallback: try getting pod by name pattern if label doesn't work
+              if [ -z "$LINUX_IMAGE" ]; then
+                echo "Label selector failed, trying by pod name pattern..."
+                LINUX_POD=$(kubectl get pods -n ${{ parameters.namespace }} --no-headers 2>/dev/null | grep "^ama-logs-" | grep -v "ama-logs-rs" | grep -v "ama-logs-win" | head -1 | awk '{print $1}')
+                if [ -n "$LINUX_POD" ]; then
+                  LINUX_IMAGE=$(kubectl get pod "$LINUX_POD" -n ${{ parameters.namespace }} -o jsonpath='{.spec.containers[?(@.name=="ama-logs")].image}' 2>/dev/null)
+                fi
+              fi
               
               if [ -z "$LINUX_IMAGE" ]; then
-                echo "WARNING: Could not retrieve Linux ama-logs container image"
+                echo "❌ ERROR: Could not retrieve Linux ama-logs container image"
+                echo "Linux pods must exist - marking verification as FAILED"
+                VERIFICATION_PASSED=false
               else
                 echo "Linux image deployed: $LINUX_IMAGE"
                 LINUX_TAG=$(echo "$LINUX_IMAGE" | cut -d':' -f2)
@@ -183,17 +196,31 @@ jobs:
               
               # ---- Windows Pod Verification ----
               echo "--- Windows Pod Verification ---"
-              # Windows pods have nodeSelector for windows, check if any exist
-              WINDOWS_POD=$(kubectl get pods -n ${{ parameters.namespace }} -l app=ama-logs-windows -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+              
+              # Use component=ama-logs-win label (used by Windows daemonset pods)
+              WINDOWS_POD=$(kubectl get pods -n ${{ parameters.namespace }} -l component=ama-logs-win -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+              
+              # Fallback: try by pod name pattern
+              if [ -z "$WINDOWS_POD" ]; then
+                WINDOWS_POD=$(kubectl get pods -n ${{ parameters.namespace }} --no-headers 2>/dev/null | grep "ama-logs-win" | head -1 | awk '{print $1}')
+              fi
               
               if [ -z "$WINDOWS_POD" ]; then
                 echo "INFO: No Windows ama-logs pods found (cluster may not have Windows nodes)"
                 echo "Skipping Windows verification"
               else
-                WINDOWS_IMAGE=$(kubectl get pods -n ${{ parameters.namespace }} -l app=ama-logs-windows -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs-windows")].image}' 2>/dev/null)
+                echo "Found Windows pod: $WINDOWS_POD"
+                WINDOWS_IMAGE=$(kubectl get pod "$WINDOWS_POD" -n ${{ parameters.namespace }} -o jsonpath='{.spec.containers[?(@.name=="ama-logs-windows")].image}' 2>/dev/null)
                 
                 if [ -z "$WINDOWS_IMAGE" ]; then
-                  echo "WARNING: Could not retrieve Windows ama-logs container image"
+                  echo "WARNING: Could not retrieve Windows ama-logs container image from pod"
+                  echo "Trying alternate container name..."
+                  WINDOWS_IMAGE=$(kubectl get pod "$WINDOWS_POD" -n ${{ parameters.namespace }} -o jsonpath='{.spec.containers[0].image}' 2>/dev/null)
+                fi
+                
+                if [ -z "$WINDOWS_IMAGE" ]; then
+                  echo "❌ ERROR: Could not retrieve Windows ama-logs container image"
+                  VERIFICATION_PASSED=false
                 else
                   echo "Windows image deployed: $WINDOWS_IMAGE"
                   WINDOWS_TAG=$(echo "$WINDOWS_IMAGE" | cut -d':' -f2)
