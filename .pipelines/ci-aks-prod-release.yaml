@@ -498,10 +498,10 @@ extends:
           resourceGroup: 'zane-test'
           region: 'uksouth'
           subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
-          #workspaceId: '0701eb41-2080-4712-8769-c9b03837b8fa'
+          # "DefaultWorkspace-9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb-SUK"
           workspaceId: '27c54217-b1ed-4971-a1af-d22308e36201'
           #imageTag: '$(AgentImageTagSuffix)'
-          imageTag: 3.1.31
+          imageTag: 3.1.32
           environment: 'CI-Deploy-To-Prod-Cluster-1'
 
       # =========================================================================

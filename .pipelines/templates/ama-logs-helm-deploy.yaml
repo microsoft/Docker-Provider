@@ -100,7 +100,7 @@ jobs:
             chartType: 'FilePath'
             chartPath: '$(Build.SourcesDirectory)/charts/azuremonitor-containerinsights-for-prod-clusters'
             releaseName: '${{ parameters.releaseName }}'
-            overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageTagLinux=${{ parameters.imageTag }},OmsAgent.imageTagWindows=win-${{ parameters.imageTag }}'
+            overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageTagLinux=${{ parameters.imageTag }},OmsAgent.imageTagWindows=win-${{ parameters.imageTag }},OmsAgent.aksRegion=${{ parameters.region }}'
             waitForExecution: false
             arguments: '--timeout 10m --install'
         - task: AzureCLI@2
