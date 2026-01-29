@@ -87,21 +87,6 @@ jobs:
           displayName: Install Helm
           inputs:
             helmVersionToInstall: '${{ parameters.helmVersion }}'
-        - task: Bash@3
-          displayName: Debug - List directory structure
-          inputs:
-            targetType: inline
-            script: |
-              echo "Build.SourcesDirectory: $(Build.SourcesDirectory)"
-              echo ""
-              echo "Contents of Build.SourcesDirectory:"
-              ls -la $(Build.SourcesDirectory) || echo "Directory not found"
-              echo ""
-              echo "Looking for charts directory:"
-              find $(Build.SourcesDirectory) -type d -name "charts" 2>/dev/null | head -5
-              echo ""
-              echo "Looking for azuremonitor-containerinsights-for-prod-clusters:"
-              find $(Build.SourcesDirectory) -type d -name "azuremonitor-containerinsights-for-prod-clusters" 2>/dev/null | head -5
         - task: HelmDeploy@0
           displayName: 'Helm Deploy: ama-logs to ${{ parameters.clusterName }}'
           inputs:
@@ -118,16 +103,118 @@ jobs:
             overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageTagLinux=${{ parameters.imageTag }},OmsAgent.imageTagWindows=win-${{ parameters.imageTag }}'
             waitForExecution: false
             arguments: '--timeout 10m --install'
-        - task: Bash@3
+        - task: AzureCLI@2
           displayName: Verify Deployment
           inputs:
-            targetType: inline
-            script: |
-              echo "Deployment initiated for ${{ parameters.clusterName }}"
+            azureSubscription: '${{ parameters.azureSubscription }}'
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              echo "=========================================="
+              echo "Deployment Summary"
+              echo "=========================================="
+              echo "Cluster: ${{ parameters.clusterName }}"
+              echo "Resource Group: ${{ parameters.resourceGroup }}"
+              echo "Region: ${{ parameters.region }}"
               echo "Linux Image Tag: ${{ parameters.imageTag }}"
               echo "Windows Image Tag: win-${{ parameters.imageTag }}"
-              echo "Region: ${{ parameters.region }}"
               echo ""
-              echo "To verify deployment status, run:"
-              echo "  kubectl get pods -n ${{ parameters.namespace }} -l component=ama-logs"
-              echo "  kubectl get pods -n ${{ parameters.namespace }} -l rsName=ama-logs-rs"
+              
+              echo "Getting AKS credentials..."
+              az aks get-credentials --resource-group ${{ parameters.resourceGroup }} --name ${{ parameters.clusterName }} --overwrite-existing --admin
+              
+              echo ""
+              echo "=========================================="
+              echo "Waiting for pods to be ready (60s max)..."
+              echo "=========================================="
+              
+              # Wait for daemonset pods
+              kubectl rollout status daemonset/ama-logs -n ${{ parameters.namespace }} --timeout=60s || echo "Warning: Daemonset rollout not complete within timeout"
+              
+              # Wait for replicaset pod
+              kubectl rollout status deployment/ama-logs-rs -n ${{ parameters.namespace }} --timeout=60s 2>/dev/null || \
+                kubectl rollout status replicaset -l rsName=ama-logs-rs -n ${{ parameters.namespace }} --timeout=60s 2>/dev/null || \
+                echo "Warning: ReplicaSet rollout status check skipped"
+              
+              echo ""
+              echo "=========================================="
+              echo "Pod Status"
+              echo "=========================================="
+              kubectl get pods -n ${{ parameters.namespace }} | grep ama-logs || echo "No ama-logs pods found"
+              
+              echo ""
+              echo "=========================================="
+              echo "Helm Release Status"
+              echo "=========================================="
+              helm status ${{ parameters.releaseName }} -n ${{ parameters.namespace }} 2>/dev/null || echo "Helm release status not available"
+              
+              echo ""
+              echo "=========================================="
+              echo "Image Verification"
+              echo "=========================================="
+              EXPECTED_LINUX_TAG="${{ parameters.imageTag }}"
+              EXPECTED_WINDOWS_TAG="win-${{ parameters.imageTag }}"
+              VERIFICATION_PASSED=true
+              
+              echo "Expected Linux image tag: $EXPECTED_LINUX_TAG"
+              echo "Expected Windows image tag: $EXPECTED_WINDOWS_TAG"
+              echo ""
+              
+              # ---- Linux Pod Verification ----
+              echo "--- Linux Pod Verification ---"
+              LINUX_IMAGE=$(kubectl get pods -n ${{ parameters.namespace }} -l app=ama-logs -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs")].image}' 2>/dev/null)
+              
+              if [ -z "$LINUX_IMAGE" ]; then
+                echo "WARNING: Could not retrieve Linux ama-logs container image"
+              else
+                echo "Linux image deployed: $LINUX_IMAGE"
+                LINUX_TAG=$(echo "$LINUX_IMAGE" | cut -d':' -f2)
+                echo "Linux tag: $LINUX_TAG"
+                
+                if [ "$LINUX_TAG" == "$EXPECTED_LINUX_TAG" ]; then
+                  echo "✅ Linux image tag verification PASSED"
+                else
+                  echo "❌ Linux image tag MISMATCH! Expected: $EXPECTED_LINUX_TAG, Actual: $LINUX_TAG"
+                  VERIFICATION_PASSED=false
+                fi
+              fi
+              
+              echo ""
+              
+              # ---- Windows Pod Verification ----
+              echo "--- Windows Pod Verification ---"
+              # Windows pods have nodeSelector for windows, check if any exist
+              WINDOWS_POD=$(kubectl get pods -n ${{ parameters.namespace }} -l app=ama-logs-windows -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+              
+              if [ -z "$WINDOWS_POD" ]; then
+                echo "INFO: No Windows ama-logs pods found (cluster may not have Windows nodes)"
+                echo "Skipping Windows verification"
+              else
+                WINDOWS_IMAGE=$(kubectl get pods -n ${{ parameters.namespace }} -l app=ama-logs-windows -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs-windows")].image}' 2>/dev/null)
+                
+                if [ -z "$WINDOWS_IMAGE" ]; then
+                  echo "WARNING: Could not retrieve Windows ama-logs container image"
+                else
+                  echo "Windows image deployed: $WINDOWS_IMAGE"
+                  WINDOWS_TAG=$(echo "$WINDOWS_IMAGE" | cut -d':' -f2)
+                  echo "Windows tag: $WINDOWS_TAG"
+                  
+                  if [ "$WINDOWS_TAG" == "$EXPECTED_WINDOWS_TAG" ]; then
+                    echo "✅ Windows image tag verification PASSED"
+                  else
+                    echo "❌ Windows image tag MISMATCH! Expected: $EXPECTED_WINDOWS_TAG, Actual: $WINDOWS_TAG"
+                    VERIFICATION_PASSED=false
+                  fi
+                fi
+              fi
+              
+              echo ""
+              echo "=========================================="
+              echo "Final Verification Result"
+              echo "=========================================="
+              if [ "$VERIFICATION_PASSED" = true ]; then
+                echo "✅ SUCCESS: All image tag verifications PASSED"
+              else
+                echo "❌ FAILED: One or more image tag verifications failed"
+                exit 1
+              fi

@@ -500,7 +500,7 @@ extends:
           subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
           workspaceId: '0701eb41-2080-4712-8769-c9b03837b8fa'
           #imageTag: '$(AgentImageTagSuffix)'
-          imageTag: 3.1.32
+          imageTag: 3.1.31
           environment: 'CI-Deploy-To-Prod-Cluster-1'
 
       # =========================================================================
