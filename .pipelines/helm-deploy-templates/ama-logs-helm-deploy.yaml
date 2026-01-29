@@ -1,6 +1,6 @@
 # Template for deploying ama-logs to an AKS cluster via Helm
 # Usage: 
-#   - template: templates/ama-logs-helm-deploy.yaml
+#   - template: helm-deploy-templates/ama-logs-helm-deploy.yaml
 #     parameters:
 #       clusterName: 'my-cluster'
 #       resourceGroup: 'my-rg'
@@ -8,10 +8,7 @@
 #       subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
 #       workspaceId: 'your-workspace-id'
 #       imageTag: '$(AgentImageTagSuffix)'  # e.g., 3.1.32
-#
-# Image tags constructed from imageTag parameter:
-#   - Linux: imageTag -> 3.1.32
-#   - Windows: win-imageTag -> win-3.1.32
+#       environment: 'deployment environment'
 
 parameters:
 # Required cluster parameters
@@ -160,76 +157,87 @@ jobs:
               echo "Expected Windows image tag: $EXPECTED_WINDOWS_TAG"
               echo ""
               
-              # ---- Linux Pod Verification ----
-              echo "--- Linux Pod Verification ---"
+              # ---- 1. Linux DaemonSet Pod Verification (ama-logs + ama-logs-prometheus containers) ----
+              echo "--- 1. Linux DaemonSet Verification ---"
               
-              # Use component=ama-logs label (used by daemonset pods)
-              LINUX_IMAGE=$(kubectl get pods -n ${{ parameters.namespace }} -l component=ama-logs -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs")].image}' 2>/dev/null)
+              # Check ama-logs container
+              LINUX_AMA_LOGS_IMAGE=$(kubectl get pods -n ${{ parameters.namespace }} -l component=ama-logs-agent -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs")].image}' 2>/dev/null)
               
-              # Fallback: try getting pod by name pattern if label doesn't work
-              if [ -z "$LINUX_IMAGE" ]; then
-                echo "Label selector failed, trying by pod name pattern..."
-                LINUX_POD=$(kubectl get pods -n ${{ parameters.namespace }} --no-headers 2>/dev/null | grep "^ama-logs-" | grep -v "ama-logs-rs" | grep -v "ama-logs-win" | head -1 | awk '{print $1}')
-                if [ -n "$LINUX_POD" ]; then
-                  LINUX_IMAGE=$(kubectl get pod "$LINUX_POD" -n ${{ parameters.namespace }} -o jsonpath='{.spec.containers[?(@.name=="ama-logs")].image}' 2>/dev/null)
+              if [ -z "$LINUX_AMA_LOGS_IMAGE" ]; then
+                echo "❌ ERROR: Could not retrieve ama-logs container image from Linux DaemonSet"
+                VERIFICATION_PASSED=false
+              else
+                echo "ama-logs container image: $LINUX_AMA_LOGS_IMAGE"
+                LINUX_AMA_LOGS_TAG=$(echo "$LINUX_AMA_LOGS_IMAGE" | cut -d':' -f2)
+                if [ "$LINUX_AMA_LOGS_TAG" == "$EXPECTED_LINUX_TAG" ]; then
+                  echo "✅ ama-logs container: PASSED"
+                else
+                  echo "❌ ama-logs container MISMATCH! Expected: $EXPECTED_LINUX_TAG, Actual: $LINUX_AMA_LOGS_TAG"
+                  VERIFICATION_PASSED=false
                 fi
               fi
               
-              if [ -z "$LINUX_IMAGE" ]; then
-                echo "❌ ERROR: Could not retrieve Linux ama-logs container image"
-                echo "Linux pods must exist - marking verification as FAILED"
+              # Check ama-logs-prometheus container
+              LINUX_PROM_IMAGE=$(kubectl get pods -n ${{ parameters.namespace }} -l component=ama-logs-agent -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs-prometheus")].image}' 2>/dev/null)
+              
+              if [ -z "$LINUX_PROM_IMAGE" ]; then
+                echo "❌ ERROR: Could not retrieve ama-logs-prometheus container image from Linux DaemonSet"
                 VERIFICATION_PASSED=false
               else
-                echo "Linux image deployed: $LINUX_IMAGE"
-                LINUX_TAG=$(echo "$LINUX_IMAGE" | cut -d':' -f2)
-                echo "Linux tag: $LINUX_TAG"
-                
-                if [ "$LINUX_TAG" == "$EXPECTED_LINUX_TAG" ]; then
-                  echo "✅ Linux image tag verification PASSED"
+                echo "ama-logs-prometheus container image: $LINUX_PROM_IMAGE"
+                LINUX_PROM_TAG=$(echo "$LINUX_PROM_IMAGE" | cut -d':' -f2)
+                if [ "$LINUX_PROM_TAG" == "$EXPECTED_LINUX_TAG" ]; then
+                  echo "✅ ama-logs-prometheus container: PASSED"
                 else
-                  echo "❌ Linux image tag MISMATCH! Expected: $EXPECTED_LINUX_TAG, Actual: $LINUX_TAG"
+                  echo "❌ ama-logs-prometheus container MISMATCH! Expected: $EXPECTED_LINUX_TAG, Actual: $LINUX_PROM_TAG"
                   VERIFICATION_PASSED=false
                 fi
               fi
               
               echo ""
               
-              # ---- Windows Pod Verification ----
-              echo "--- Windows Pod Verification ---"
+              # ---- 2. ReplicaSet Pod Verification (ama-logs container) ----
+              echo "--- 2. ReplicaSet Verification ---"
               
-              # Use component=ama-logs-win label (used by Windows daemonset pods)
-              WINDOWS_POD=$(kubectl get pods -n ${{ parameters.namespace }} -l component=ama-logs-win -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+              RS_AMA_LOGS_IMAGE=$(kubectl get pods -n ${{ parameters.namespace }} -l rsName=ama-logs-rs -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs")].image}' 2>/dev/null)
               
-              # Fallback: try by pod name pattern
-              if [ -z "$WINDOWS_POD" ]; then
-                WINDOWS_POD=$(kubectl get pods -n ${{ parameters.namespace }} --no-headers 2>/dev/null | grep "ama-logs-win" | head -1 | awk '{print $1}')
+              if [ -z "$RS_AMA_LOGS_IMAGE" ]; then
+                echo "❌ ERROR: Could not retrieve ama-logs container image from ReplicaSet"
+                VERIFICATION_PASSED=false
+              else
+                echo "ama-logs container image: $RS_AMA_LOGS_IMAGE"
+                RS_AMA_LOGS_TAG=$(echo "$RS_AMA_LOGS_IMAGE" | cut -d':' -f2)
+                if [ "$RS_AMA_LOGS_TAG" == "$EXPECTED_LINUX_TAG" ]; then
+                  echo "✅ ReplicaSet ama-logs container: PASSED"
+                else
+                  echo "❌ ReplicaSet ama-logs container MISMATCH! Expected: $EXPECTED_LINUX_TAG, Actual: $RS_AMA_LOGS_TAG"
+                  VERIFICATION_PASSED=false
+                fi
               fi
               
-              if [ -z "$WINDOWS_POD" ]; then
+              echo ""
+              
+              # ---- 3. Windows DaemonSet Pod Verification (ama-logs-windows container) ----
+              echo "--- 3. Windows DaemonSet Verification ---"
+              
+              WINDOWS_POD_EXISTS=$(kubectl get pods -n ${{ parameters.namespace }} -l component=ama-logs-agent-windows -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+              
+              if [ -z "$WINDOWS_POD_EXISTS" ]; then
                 echo "INFO: No Windows ama-logs pods found (cluster may not have Windows nodes)"
                 echo "Skipping Windows verification"
               else
-                echo "Found Windows pod: $WINDOWS_POD"
-                WINDOWS_IMAGE=$(kubectl get pod "$WINDOWS_POD" -n ${{ parameters.namespace }} -o jsonpath='{.spec.containers[?(@.name=="ama-logs-windows")].image}' 2>/dev/null)
+                WINDOWS_IMAGE=$(kubectl get pods -n ${{ parameters.namespace }} -l component=ama-logs-agent-windows -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs-windows")].image}' 2>/dev/null)
                 
                 if [ -z "$WINDOWS_IMAGE" ]; then
-                  echo "WARNING: Could not retrieve Windows ama-logs container image from pod"
-                  echo "Trying alternate container name..."
-                  WINDOWS_IMAGE=$(kubectl get pod "$WINDOWS_POD" -n ${{ parameters.namespace }} -o jsonpath='{.spec.containers[0].image}' 2>/dev/null)
-                fi
-                
-                if [ -z "$WINDOWS_IMAGE" ]; then
-                  echo "❌ ERROR: Could not retrieve Windows ama-logs container image"
+                  echo "❌ ERROR: Could not retrieve ama-logs-windows container image"
                   VERIFICATION_PASSED=false
                 else
-                  echo "Windows image deployed: $WINDOWS_IMAGE"
+                  echo "ama-logs-windows container image: $WINDOWS_IMAGE"
                   WINDOWS_TAG=$(echo "$WINDOWS_IMAGE" | cut -d':' -f2)
-                  echo "Windows tag: $WINDOWS_TAG"
-                  
                   if [ "$WINDOWS_TAG" == "$EXPECTED_WINDOWS_TAG" ]; then
-                    echo "✅ Windows image tag verification PASSED"
+                    echo "✅ Windows ama-logs-windows container: PASSED"
                   else
-                    echo "❌ Windows image tag MISMATCH! Expected: $EXPECTED_WINDOWS_TAG, Actual: $WINDOWS_TAG"
+                    echo "❌ Windows ama-logs-windows container MISMATCH! Expected: $EXPECTED_WINDOWS_TAG, Actual: $WINDOWS_TAG"
                     VERIFICATION_PASSED=false
                   fi
                 fi

@@ -492,7 +492,7 @@ extends:
         os: linux
       jobs:
       # TODO: repalce with our Prod cluster 1
-      - template: .pipelines/templates/ama-logs-helm-deploy.yaml@self
+      - template: .pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
         parameters:
           clusterName: 'zane-test-helm'
           resourceGroup: 'zane-test'
@@ -500,10 +500,10 @@ extends:
           subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
           workspaceId: '27c54217-b1ed-4971-a1af-d22308e36201' # "DefaultWorkspace-9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb-SUK"
           #imageTag: '$(AgentImageTagSuffix)' #TODO: Uncomment this line to use the current release image tag
-          imageTag: 3.1.32
+          imageTag: 3.1.33
           environment: 'CI-Deploy-To-Prod-Cluster-1'
       # TODO: repalce with our Prod cluster 2
-      - template: .pipelines/templates/ama-logs-helm-deploy.yaml@self
+      - template: .pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
         parameters:
           clusterName: 'zane-test-helm2'
           resourceGroup: 'zane-rg2'
@@ -511,5 +511,5 @@ extends:
           subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
           workspaceId: '55e0eb4d-129d-43bb-9435-8c598c3f7445' # "zane-test-helm2"
           #imageTag: '$(AgentImageTagSuffix)' #TODO: Uncomment this line to use the current release image tag
-          imageTag: 3.1.33
+          imageTag: 3.1.32
           environment: 'CI-Deploy-To-Prod-Cluster-2'
