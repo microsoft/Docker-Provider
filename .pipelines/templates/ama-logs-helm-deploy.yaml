@@ -81,10 +81,27 @@ jobs:
     runOnce:
       deploy:
         steps:
+        - checkout: self
+          displayName: Checkout repository
         - task: HelmInstaller@1
           displayName: Install Helm
           inputs:
             helmVersionToInstall: '${{ parameters.helmVersion }}'
+        - task: Bash@3
+          displayName: Debug - List directory structure
+          inputs:
+            targetType: inline
+            script: |
+              echo "Build.SourcesDirectory: $(Build.SourcesDirectory)"
+              echo ""
+              echo "Contents of Build.SourcesDirectory:"
+              ls -la $(Build.SourcesDirectory) || echo "Directory not found"
+              echo ""
+              echo "Looking for charts directory:"
+              find $(Build.SourcesDirectory) -type d -name "charts" 2>/dev/null | head -5
+              echo ""
+              echo "Looking for azuremonitor-containerinsights-for-prod-clusters:"
+              find $(Build.SourcesDirectory) -type d -name "azuremonitor-containerinsights-for-prod-clusters" 2>/dev/null | head -5
         - task: HelmDeploy@0
           displayName: 'Helm Deploy: ama-logs to ${{ parameters.clusterName }}'
           inputs:
