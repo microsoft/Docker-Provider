@@ -1298,8 +1298,6 @@ if [ ! -e "/etc/config/kube.conf" ]; then
       fi
 else
       echo "starting fluent-bit and setting telegraf conf file for replicaset"
-      # Raise file descriptor limit for fluent-bit to prevent "Too many open files" errors
-      ulimit -n 65536
       fluent-bit -c /etc/opt/microsoft/docker-cimprov/fluent-bit-rs.conf -e /opt/fluent-bit/bin/out_oms.so &
       telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
 fi
