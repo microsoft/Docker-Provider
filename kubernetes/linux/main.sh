@@ -1253,16 +1253,12 @@ if [ ! -e "/etc/config/kube.conf" ]; then
             telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
             if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
                   echo "starting fluent-bit and setting telegraf conf file for prometheus sidecar"
-                  # Raise file descriptor limit for fluent-bit to prevent "Too many open files" errors
-                  ulimit -n 65536
                   fluent-bit -c /etc/opt/microsoft/docker-cimprov/fluent-bit-prom-side-car.conf -e /opt/fluent-bit/bin/out_oms.so &
             else
                   echo "not starting fluent-bit in prometheus sidecar (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
             fi
       else
             echo "starting fluent-bit and setting telegraf conf file for daemonset"
-            # Raise file descriptor limit for fluent-bit to prevent "Too many open files" errors
-            ulimit -n 65536
             fluentBitConfFile="fluent-bit.conf"
             if [ "${AZMON_MULTI_TENANCY_LOG_COLLECTION}" == "true" ]; then
                   if [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]; then
