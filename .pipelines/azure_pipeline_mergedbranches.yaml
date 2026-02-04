@@ -150,7 +150,7 @@ extends:
       - job: build_windows_2025
         pool:
           name: Azure-Pipelines-CI-Test-EO
-          image: ci-1es-managed-windows-2022
+          image: ci-1es-managed-windows-2025
           os: windows
         timeoutInMinutes: 120
         dependsOn:
