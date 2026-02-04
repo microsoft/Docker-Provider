@@ -817,7 +817,6 @@ function Start-Fluent-Telegraf {
     $genevaLogsMultitenancy = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_MULTI_TENANCY", "process")
     $azmonLogsMultitenancy = [System.Environment]::GetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION", "process")
     $azmonLogsMultitenancyAdvancedMode = [System.Environment]::GetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE", "process")
-    # Note: Windows handle limits are managed per-process by the OS; no explicit ulimit needed
     if (![string]::IsNullOrEmpty($azmonLogsMultitenancy) -and $azmonLogsMultitenancy.ToLower() -eq 'true') {
         if (![string]::IsNullOrEmpty($azmonLogsMultitenancyAdvancedMode) -and $azmonLogsMultitenancyAdvancedMode.ToLower() -eq 'true') {
             $fluentbitConfFile = "C:/etc/fluent-bit/fluent-bit-azmon-multi-tenancy.conf"
