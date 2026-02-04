@@ -148,10 +148,8 @@ setCloudSpecificApplicationInsightsConfig() {
             source ~/.bashrc
             ;;
          "azurebleucloud")
-            # TODO: azurebleucloud is a new cloud environment; we don't have AI in this cloud yet so using Public cloud for now.
-            # Update this once we have AI in azurebleucloud.
-            APPLICATIONINSIGHTS_AUTH="NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi"
-            APPLICATIONINSIGHTS_ENDPOINT="https://dc.applicationinsights.azure.com/v2/track"
+            APPLICATIONINSIGHTS_AUTH="NTYwYmMyYjctMmNmOC1iN2Q0LWI4YTItYzNjYWJhODU3MTMz"
+            APPLICATIONINSIGHTS_ENDPOINT="https://bleufrancecentral-0.in.applicationinsights.sovcloud-api.fr/v2/track"
             echo "export APPLICATIONINSIGHTS_AUTH=$APPLICATIONINSIGHTS_AUTH" >>~/.bashrc
             echo "export APPLICATIONINSIGHTS_ENDPOINT=$APPLICATIONINSIGHTS_ENDPOINT" >>~/.bashrc
             source ~/.bashrc
@@ -1255,12 +1253,16 @@ if [ ! -e "/etc/config/kube.conf" ]; then
             telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
             if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
                   echo "starting fluent-bit and setting telegraf conf file for prometheus sidecar"
+                  # Raise file descriptor limit for fluent-bit to prevent "Too many open files" errors
+                  ulimit -n 65536
                   fluent-bit -c /etc/opt/microsoft/docker-cimprov/fluent-bit-prom-side-car.conf -e /opt/fluent-bit/bin/out_oms.so &
             else
                   echo "not starting fluent-bit in prometheus sidecar (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
             fi
       else
             echo "starting fluent-bit and setting telegraf conf file for daemonset"
+            # Raise file descriptor limit for fluent-bit to prevent "Too many open files" errors
+            ulimit -n 65536
             fluentBitConfFile="fluent-bit.conf"
             if [ "${AZMON_MULTI_TENANCY_LOG_COLLECTION}" == "true" ]; then
                   if [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]; then
@@ -1300,6 +1302,8 @@ if [ ! -e "/etc/config/kube.conf" ]; then
       fi
 else
       echo "starting fluent-bit and setting telegraf conf file for replicaset"
+      # Raise file descriptor limit for fluent-bit to prevent "Too many open files" errors
+      ulimit -n 65536
       fluent-bit -c /etc/opt/microsoft/docker-cimprov/fluent-bit-rs.conf -e /opt/fluent-bit/bin/out_oms.so &
       telegrafConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
 fi
