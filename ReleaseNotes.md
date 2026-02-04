@@ -8,6 +8,41 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 02/02/2026 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.34 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.34 (windows)
+- Linux
+  - [azurelinux 3.0.20260107](https://github.com/microsoft/azurelinux/releases/tag/3.0.20260107-3.0)
+  - Golang - 1.25.5
+  - Ruby - arm64 - 3.3.5, x86_64 - 3.3.8
+  - MDSD - 1.37.0
+  - Telegraf - 1.37.0   
+  - Fluent-bit - 4.0.14
+  - Fluentd - 1.16.3
+- Windows
+  - Golang - 1.25.5
+  - Ruby - 3.1.1
+  - Windows AMA - 46.31.3
+  - Telegraf - 1.24.2
+  - Fluent-bit - 4.0.3
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Linux
+  * bug fix by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1593
+  * 3.1.32 CVE fixes by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1596
+  * Cosmic replicaset Kubernetes API client large scale issue by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1590
+  * Fluent bit 4.0.14 by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1601
+
+- Common
+  * fix: bleu cloud name is azurebleucloud by @gracewehner in https://github.com/microsoft/Docker-Provider/pull/1598
+  * Update mapping logic from extensions to aggregate by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1585
+  * Fix testkube mongodb issue by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1584
+  * Testkube workflow migration by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1589
+  * Introducing appmonitoring release by @tokaplan in https://github.com/microsoft/Docker-Provider/pull/1597
+  * Fix release pipeline by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1599
+  * Revert "Introducing appmonitoring release" by @tokaplan in https://github.com/microsoft/Docker-Provider/pull/1600
+
 ### 11/25/2025 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.32 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.32 (windows)
