@@ -45,7 +45,7 @@ parameters:
   default: 'default'
 - name: releaseName
   type: string
-  default: 'azuremonitor-containers'
+  default: 'ama-logs'
 - name: helmVersion
   type: string
   default: '3.12.3'
