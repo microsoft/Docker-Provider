@@ -327,6 +327,26 @@ extends:
             targetType: 'F'
             targetArgument: '$(Build.SourcesDirectory)'
         - task: PowerShell@2
+          displayName: Cleanup disk + docker cache before image replace
+          inputs:
+            targetType: 'inline'
+            script: |
+              Write-Host "Disk usage BEFORE cleanup"
+              Get-PSDrive C,D | Select Name,Used,Free | Format-Table -Auto
+
+              Write-Host "Pruning docker system"
+              docker system prune -af
+              docker builder prune -af
+
+              Write-Host "Cleaning Windows temp folders"
+              Remove-Item -Recurse -Force C:\Windows\SystemTemp\* -ErrorAction SilentlyContinue
+              Remove-Item -Recurse -Force C:\Windows\Temp\* -ErrorAction SilentlyContinue
+              Remove-Item -Recurse -Force $env:TEMP\* -ErrorAction SilentlyContinue
+              Remove-Item -Recurse -Force $env:TMP\* -ErrorAction SilentlyContinue
+
+              Write-Host "Disk usage AFTER cleanup"
+              Get-PSDrive C,D | Select Name,Used,Free | Format-Table -Auto
+        - task: PowerShell@2
           displayName: Replace files in origin Image
           inputs:
             targetType: 'inline'
