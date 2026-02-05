@@ -42,10 +42,10 @@ parameters:
   default: 'ContainerInsights_Build_Subscription_CI'
 - name: namespace
   type: string
-  default: 'kube-system'
+  default: 'default'
 - name: releaseName
   type: string
-  default: 'ama-logs'
+  default: 'azuremonitor-containers'
 - name: helmVersion
   type: string
   default: '3.12.3'

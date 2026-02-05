@@ -491,23 +491,45 @@ extends:
         image: ci-1es-managed-ubuntu-2204
         os: linux
       jobs:
-      # Monitoring-Model-Cluster-WCUS
+      # # Monitoring-Model-Cluster-WCUS
+      # - template: .pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
+      #   parameters:
+      #     clusterName: 'Monitoring-Model-Cluster-WCUS'
+      #     resourceGroup: 'monitoring-model-cluster-wcus'
+      #     region: 'westcentralus'
+      #     subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
+      #     workspaceId: '22f38e11-4f59-480c-b4b8-2573156b6e06' # "Monitoring-Model-Cluster-WCUS"
+      #     imageTag: '$(AgentImageTagSuffix)'
+      #     environment: 'CI-Deploy-To-Prod-Cluster-1'
+      # # Monitoring-Model-Cluster-WEU
+      # - template: .pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
+      #   parameters:
+      #     clusterName: 'Monitoring-Model-Cluster-WEU'
+      #     resourceGroup: 'monitoring-model-cluster-weu'
+      #     region: 'westeurope'
+      #     subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
+      #     workspaceId: '5c269467-32a9-4468-a1d6-ec1cac551e74' # "Monitoring-Model-Cluster-WEU"
+      #     imageTag: '$(AgentImageTagSuffix)'
+      #     environment: 'CI-Deploy-To-Prod-Cluster-2'
+      # TODO: repalce with our Prod cluster 1
       - template: .pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
         parameters:
-          clusterName: 'Monitoring-Model-Cluster-WCUS'
-          resourceGroup: 'monitoring-model-cluster-wcus'
-          region: 'westcentralus'
+          clusterName: 'zane-test-helm'
+          resourceGroup: 'zane-test'
+          region: 'uksouth'
           subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
-          workspaceId: '22f38e11-4f59-480c-b4b8-2573156b6e06' # "Monitoring-Model-Cluster-WCUS"
-          imageTag: '$(AgentImageTagSuffix)'
+          workspaceId: '27c54217-b1ed-4971-a1af-d22308e36201' # "DefaultWorkspace-9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb-SUK"
+          #imageTag: '$(AgentImageTagSuffix)' #TODO: Uncomment this line to use the current release image tag
+          imageTag: 3.1.33
           environment: 'CI-Deploy-To-Prod-Cluster-1'
-      # Monitoring-Model-Cluster-WEU
+      # TODO: repalce with our Prod cluster 2
       - template: .pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
         parameters:
-          clusterName: 'Monitoring-Model-Cluster-WEU'
-          resourceGroup: 'monitoring-model-cluster-weu'
-          region: 'westeurope'
+          clusterName: 'zane-test-helm2'
+          resourceGroup: 'zane-rg2'
+          region: 'centralus'
           subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
-          workspaceId: '5c269467-32a9-4468-a1d6-ec1cac551e74' # "Monitoring-Model-Cluster-WEU"
-          imageTag: '$(AgentImageTagSuffix)'
+          workspaceId: '55e0eb4d-129d-43bb-9435-8c598c3f7445' # "zane-test-helm2"
+          #imageTag: '$(AgentImageTagSuffix)' #TODO: Uncomment this line to use the current release image tag
+          imageTag: 3.1.33
           environment: 'CI-Deploy-To-Prod-Cluster-2'
