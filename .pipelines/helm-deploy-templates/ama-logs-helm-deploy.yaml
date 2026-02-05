@@ -45,7 +45,7 @@ parameters:
   default: 'default'
 - name: releaseName
   type: string
-  default: 'ama-logs'
+  default: 'azuremonitor-containers'
 - name: helmVersion
   type: string
   default: '3.12.3'
@@ -127,19 +127,19 @@ jobs:
               echo "Waiting for pods to be ready (60s max)..."
               echo "=========================================="
               
-              # Wait for daemonset pods
-              kubectl rollout status daemonset/ama-logs -n ${{ parameters.namespace }} --timeout=60s || echo "Warning: Daemonset rollout not complete within timeout"
+              # Wait for daemonset pods (pods are always deployed to kube-system namespace)
+              kubectl rollout status daemonset/ama-logs -n kube-system --timeout=60s || echo "Warning: Daemonset rollout not complete within timeout"
               
               # Wait for replicaset pod
-              kubectl rollout status deployment/ama-logs-rs -n ${{ parameters.namespace }} --timeout=60s 2>/dev/null || \
-                kubectl rollout status replicaset -l rsName=ama-logs-rs -n ${{ parameters.namespace }} --timeout=60s 2>/dev/null || \
+              kubectl rollout status deployment/ama-logs-rs -n kube-system --timeout=60s 2>/dev/null || \
+                kubectl rollout status replicaset -l rsName=ama-logs-rs -n kube-system --timeout=60s 2>/dev/null || \
                 echo "Warning: ReplicaSet rollout status check skipped"
               
               echo ""
               echo "=========================================="
               echo "Pod Status"
               echo "=========================================="
-              kubectl get pods -n ${{ parameters.namespace }} | grep ama-logs || echo "No ama-logs pods found"
+              kubectl get pods -n kube-system | grep ama-logs || echo "No ama-logs pods found"
               
               echo ""
               echo "=========================================="
@@ -160,10 +160,11 @@ jobs:
               echo ""
               
               # ---- 1. Linux DaemonSet Pod Verification (ama-logs + ama-logs-prometheus containers) ----
+              # Note: Pods are always deployed to kube-system namespace regardless of helm release namespace
               echo "--- 1. Linux DaemonSet Verification ---"
               
               # Check ama-logs container
-              LINUX_AMA_LOGS_IMAGE=$(kubectl get pods -n ${{ parameters.namespace }} -l component=ama-logs-agent -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs")].image}' 2>/dev/null)
+              LINUX_AMA_LOGS_IMAGE=$(kubectl get pods -n kube-system -l component=ama-logs-agent -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs")].image}' 2>/dev/null)
               
               if [ -z "$LINUX_AMA_LOGS_IMAGE" ]; then
                 echo "❌ ERROR: Could not retrieve ama-logs container image from Linux DaemonSet"
@@ -180,7 +181,7 @@ jobs:
               fi
               
               # Check ama-logs-prometheus container
-              LINUX_PROM_IMAGE=$(kubectl get pods -n ${{ parameters.namespace }} -l component=ama-logs-agent -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs-prometheus")].image}' 2>/dev/null)
+              LINUX_PROM_IMAGE=$(kubectl get pods -n kube-system -l component=ama-logs-agent -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs-prometheus")].image}' 2>/dev/null)
               
               if [ -z "$LINUX_PROM_IMAGE" ]; then
                 echo "❌ ERROR: Could not retrieve ama-logs-prometheus container image from Linux DaemonSet"
@@ -201,7 +202,7 @@ jobs:
               # ---- 2. ReplicaSet Pod Verification (ama-logs container) ----
               echo "--- 2. ReplicaSet Verification ---"
               
-              RS_AMA_LOGS_IMAGE=$(kubectl get pods -n ${{ parameters.namespace }} -l rsName=ama-logs-rs -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs")].image}' 2>/dev/null)
+              RS_AMA_LOGS_IMAGE=$(kubectl get pods -n kube-system -l rsName=ama-logs-rs -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs")].image}' 2>/dev/null)
               
               if [ -z "$RS_AMA_LOGS_IMAGE" ]; then
                 echo "❌ ERROR: Could not retrieve ama-logs container image from ReplicaSet"
@@ -222,13 +223,13 @@ jobs:
               # ---- 3. Windows DaemonSet Pod Verification (ama-logs-windows container) ----
               echo "--- 3. Windows DaemonSet Verification ---"
               
-              WINDOWS_POD_EXISTS=$(kubectl get pods -n ${{ parameters.namespace }} -l component=ama-logs-agent-windows -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+              WINDOWS_POD_EXISTS=$(kubectl get pods -n kube-system -l component=ama-logs-agent-windows -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
               
               if [ -z "$WINDOWS_POD_EXISTS" ]; then
                 echo "INFO: No Windows ama-logs pods found (cluster may not have Windows nodes)"
                 echo "Skipping Windows verification"
               else
-                WINDOWS_IMAGE=$(kubectl get pods -n ${{ parameters.namespace }} -l component=ama-logs-agent-windows -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs-windows")].image}' 2>/dev/null)
+                WINDOWS_IMAGE=$(kubectl get pods -n kube-system -l component=ama-logs-agent-windows -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs-windows")].image}' 2>/dev/null)
                 
                 if [ -z "$WINDOWS_IMAGE" ]; then
                   echo "❌ ERROR: Could not retrieve ama-logs-windows container image"
