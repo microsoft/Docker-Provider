@@ -327,25 +327,37 @@ extends:
             targetType: 'F'
             targetArgument: '$(Build.SourcesDirectory)'
         - task: PowerShell@2
-          displayName: Cleanup disk + docker cache before image replace
+          displayName: Redirect HCS SystemTemp to D (for docker cp/commit)
           inputs:
-            targetType: 'inline'
+            targetType: inline
             script: |
-              Write-Host "Disk usage BEFORE cleanup"
-              Get-PSDrive C,D | Select Name,Used,Free | Format-Table -Auto
-
-              Write-Host "Pruning docker system"
-              docker system prune -af
-              docker builder prune -af
-
-              Write-Host "Cleaning Windows temp folders"
-              Remove-Item -Recurse -Force C:\Windows\SystemTemp\* -ErrorAction SilentlyContinue
-              Remove-Item -Recurse -Force C:\Windows\Temp\* -ErrorAction SilentlyContinue
-              Remove-Item -Recurse -Force $env:TEMP\* -ErrorAction SilentlyContinue
-              Remove-Item -Recurse -Force $env:TMP\* -ErrorAction SilentlyContinue
-
-              Write-Host "Disk usage AFTER cleanup"
-              Get-PSDrive C,D | Select Name,Used,Free | Format-Table -Auto
+              Write-Host "Disk before:"
+              Get-PSDrive C,D | Select Name,Used,Free | ft -Auto
+        
+              $src = "C:\Windows\SystemTemp"
+              $dst = "D:\Windows\SystemTemp"
+        
+              New-Item -ItemType Directory -Force -Path $dst | Out-Null
+        
+              # Stop Docker so nothing is holding SystemTemp open
+              Stop-Service docker -Force
+        
+              # Clean and replace SystemTemp with a junction to D:
+              if (Test-Path $src) {
+                try { Remove-Item -Recurse -Force "$src\*" -ErrorAction SilentlyContinue } catch {}
+                Rename-Item -Path $src -NewName "SystemTemp.bak" -Force
+              }
+        
+              cmd /c "mklink /J `"$src`" `"$dst`""
+        
+              # Start Docker back up
+              Start-Service docker
+        
+              Write-Host "SystemTemp now points to:"
+              cmd /c "dir $src"
+        
+              Write-Host "Disk after:"
+              Get-PSDrive C,D | Select Name,Used,Free | ft -Auto
         - task: PowerShell@2
           displayName: Replace files in origin Image
           inputs:
