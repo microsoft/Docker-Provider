@@ -148,10 +148,8 @@ setCloudSpecificApplicationInsightsConfig() {
             source ~/.bashrc
             ;;
          "azurebleucloud")
-            # TODO: azurebleucloud is a new cloud environment; we don't have AI in this cloud yet so using Public cloud for now.
-            # Update this once we have AI in azurebleucloud.
-            APPLICATIONINSIGHTS_AUTH="NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi"
-            APPLICATIONINSIGHTS_ENDPOINT="https://dc.applicationinsights.azure.com/v2/track"
+            APPLICATIONINSIGHTS_AUTH="NTYwYmMyYjctMmNmOC1iN2Q0LWI4YTItYzNjYWJhODU3MTMz"
+            APPLICATIONINSIGHTS_ENDPOINT="https://bleufrancecentral-0.in.applicationinsights.sovcloud-api.fr/v2/track"
             echo "export APPLICATIONINSIGHTS_AUTH=$APPLICATIONINSIGHTS_AUTH" >>~/.bashrc
             echo "export APPLICATIONINSIGHTS_ENDPOINT=$APPLICATIONINSIGHTS_ENDPOINT" >>~/.bashrc
             source ~/.bashrc
