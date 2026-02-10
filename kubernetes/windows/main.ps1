@@ -45,7 +45,8 @@ function Test-FluentbitTcpListener {
         [System.Environment]::SetEnvironmentVariable("WAITTIME_PORT_25229", $waitTimeSecs, "Process")
         [System.Environment]::SetEnvironmentVariable("WAITTIME_PORT_25229", $waitTimeSecs, "Machine")
         Write-Host "Successfully set environment variable WAITTIME_PORT_25229 - $($waitTimeSecs) for target 'machine'..."
-    } else {
+    }
+    else {
         Write-Host "Failed to set environment variable WAITTIME_PORT_25229 for target 'machine' since it is either null or empty"
         $waitTimeSecs = 30
     }
@@ -104,11 +105,9 @@ function Set-CloudSpecificApplicationInsightsConfig {
             Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_ENDPOINT" "https://dc.applicationinsights.azure.microsoft.scloud/v2/track"
         }
         "azurebleucloud" {
-            # TODO: azurebleucloud is a new cloud environment; we don't have AI in this cloud yet so using Public cloud for now.
-            # Update this once we have AI in azurebleucloud.
             Write-Host "Set-CloudSpecificApplicationInsightsConfig: Setting Application Insights configuration for azurebleucloud"
-            Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_AUTH" "NzAwZGM5OGYtYTdhZC00NThkLWI5NWMtMjA3ZjM3NmM3YmRi"
-            Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_ENDPOINT" "https://dc.applicationinsights.azure.com/v2/track"
+            Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_AUTH" "NTYwYmMyYjctMmNmOC1iN2Q0LWI4YTItYzNjYWJhODU3MTMz"
+            Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_ENDPOINT" "https://bleufrancecentral-0.in.applicationinsights.sovcloud-api.fr/v2/track"
         }
         default {
             Write-Host "Set-CloudSpecificApplicationInsightsConfig: defaulting to Public Cloud Application Insights configuration"
@@ -172,32 +171,32 @@ function Set-AMA3PEnvironmentVariables {
 }
 
 function Generate-GenevaTenantNameSpaceConfig {
-     $genevaLogsTenantNameSpaces = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_TENANT_NAMESPACES", "process")
+    $genevaLogsTenantNameSpaces = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_TENANT_NAMESPACES", "process")
     if (![string]::IsNullOrEmpty($genevaLogsTenantNameSpaces)) {
         [System.Environment]::SetEnvironmentVariable("GENEVA_LOGS_TENANT_NAMESPACES", $genevaLogsTenantNameSpaces, "machine")
         $genevaLogsTenantNameSpacesArray = $genevaLogsTenantNameSpaces.Split(",")
         for ($i = 0; $i -lt $genevaLogsTenantNameSpacesArray.Length; $i = $i + 1) {
-          $tenantName = $genevaLogsTenantNameSpacesArray[$i]
-          Copy-Item C:/etc/fluent-bit/fluent-bit-geneva-logs_tenant.conf -Destination C:/etc/fluent-bit/fluent-bit-geneva-logs_$tenantName.conf
-          (Get-Content -Path C:/etc/fluent-bit/fluent-bit-geneva-logs_$tenantName.conf  -Raw) -replace '<TENANT_NAMESPACE>', $tenantName | Set-Content C:/etc/fluent-bit/fluent-bit-geneva-logs_$tenantName.conf
+            $tenantName = $genevaLogsTenantNameSpacesArray[$i]
+            Copy-Item C:/etc/fluent-bit/fluent-bit-geneva-logs_tenant.conf -Destination C:/etc/fluent-bit/fluent-bit-geneva-logs_$tenantName.conf
+            (Get-Content -Path C:/etc/fluent-bit/fluent-bit-geneva-logs_$tenantName.conf  -Raw) -replace '<TENANT_NAMESPACE>', $tenantName | Set-Content C:/etc/fluent-bit/fluent-bit-geneva-logs_$tenantName.conf
         }
     }
     Remove-Item C:/etc/fluent-bit/fluent-bit-geneva-logs_tenant.conf
 }
 
 function Generate-GenevaInfraNameSpaceConfig {
-   $genevaLogsInfraNameSpaces = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_INFRA_NAMESPACES", "process")
-   if (![string]::IsNullOrEmpty($genevaLogsInfraNameSpaces)) {
-       [System.Environment]::SetEnvironmentVariable("GENEVA_LOGS_INFRA_NAMESPACES", $genevaLogsInfraNameSpaces, "machine")
-       $genevaLogsInfraNameSpacesArray = $genevaLogsInfraNameSpaces.Split(",")
-       for ($i = 0; $i -lt $genevaLogsInfraNameSpacesArray.Length; $i = $i + 1) {
-         $infraNameSpaceName = $genevaLogsInfraNameSpacesArray[$i]
-         $infraNamespaceWithoutSuffix = $infraNameSpaceName.TrimEnd("_*")
-         Copy-Item C:/etc/fluent-bit/fluent-bit-geneva-logs_infra.conf -Destination C:/etc/fluent-bit/fluent-bit-geneva-logs_$infraNamespaceWithoutSuffix.conf
-         (Get-Content -Path C:/etc/fluent-bit/fluent-bit-geneva-logs_$infraNamespaceWithoutSuffix.conf  -Raw) -replace '<INFRA_NAMESPACE>', $infraNameSpaceName | Set-Content C:/etc/fluent-bit/fluent-bit-geneva-logs_$infraNamespaceWithoutSuffix.conf
-       }
-   }
-   Remove-Item C:/etc/fluent-bit/fluent-bit-geneva-logs_infra.conf
+    $genevaLogsInfraNameSpaces = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_INFRA_NAMESPACES", "process")
+    if (![string]::IsNullOrEmpty($genevaLogsInfraNameSpaces)) {
+        [System.Environment]::SetEnvironmentVariable("GENEVA_LOGS_INFRA_NAMESPACES", $genevaLogsInfraNameSpaces, "machine")
+        $genevaLogsInfraNameSpacesArray = $genevaLogsInfraNameSpaces.Split(",")
+        for ($i = 0; $i -lt $genevaLogsInfraNameSpacesArray.Length; $i = $i + 1) {
+            $infraNameSpaceName = $genevaLogsInfraNameSpacesArray[$i]
+            $infraNamespaceWithoutSuffix = $infraNameSpaceName.TrimEnd("_*")
+            Copy-Item C:/etc/fluent-bit/fluent-bit-geneva-logs_infra.conf -Destination C:/etc/fluent-bit/fluent-bit-geneva-logs_$infraNamespaceWithoutSuffix.conf
+            (Get-Content -Path C:/etc/fluent-bit/fluent-bit-geneva-logs_$infraNamespaceWithoutSuffix.conf  -Raw) -replace '<INFRA_NAMESPACE>', $infraNameSpaceName | Set-Content C:/etc/fluent-bit/fluent-bit-geneva-logs_$infraNamespaceWithoutSuffix.conf
+        }
+    }
+    Remove-Item C:/etc/fluent-bit/fluent-bit-geneva-logs_infra.conf
 }
 
 function Is-SupportedCloudEnvironment {
@@ -211,7 +210,7 @@ function Is-SupportedCloudEnvironment {
     return $false
 }
 
-function Get-ClusterCloudEnvironment{
+function Get-ClusterCloudEnvironment {
     param (
         [string]$logAnalyticsWorkspaceDomain
     )
@@ -219,18 +218,20 @@ function Get-ClusterCloudEnvironment{
     $clusterCloudEnvironment = [System.Environment]::GetEnvironmentVariable("CLUSTER_CLOUD_ENVIRONMENT", "process")
     if (![string]::IsNullOrEmpty($clusterCloudEnvironment) -and (Is-SupportedCloudEnvironment $clusterCloudEnvironment)) {
         $cloud_environment = $clusterCloudEnvironment
-    } else {
+    }
+    else {
         Write-Host "CLUSTER_CLOUD_ENVIRONMENT environment variable is not set. Falling back to determine the cloud environment based on the Log Analytics Workspace DOMAIN"
         if (![string]::IsNullOrEmpty($logAnalyticsWorkspaceDomain)) {
             switch ($logAnalyticsWorkspaceDomain.ToLower()) {
-                "opinsights.azure.com"                { $cloud_environment = "azurepubliccloud" }
-                "opinsights.azure.cn"                 { $cloud_environment = "azurechinacloud" }
-                "opinsights.azure.us"                 { $cloud_environment = "azureusgovernmentcloud" }
-                "opinsights.azure.eaglex.ic.gov"      { $cloud_environment = "usnat" }
-                "opinsights.azure.microsoft.scloud"   { $cloud_environment = "ussec" }
-                "opinsights.sovcloud-api.fr"          { $cloud_environment = "azurebleucloud" }
+                "opinsights.azure.com" { $cloud_environment = "azurepubliccloud" }
+                "opinsights.azure.cn" { $cloud_environment = "azurechinacloud" }
+                "opinsights.azure.us" { $cloud_environment = "azureusgovernmentcloud" }
+                "opinsights.azure.eaglex.ic.gov" { $cloud_environment = "usnat" }
+                "opinsights.azure.microsoft.scloud" { $cloud_environment = "ussec" }
+                "opinsights.sovcloud-api.fr" { $cloud_environment = "azurebleucloud" }
             }
-        } else {
+        }
+        else {
             Write-Host "Domain name either null or empty. Defaulting to azurepubliccloud."
             $cloud_environment = "azurepubliccloud"
         }
@@ -245,19 +246,21 @@ function Get-LogAnalyticsWorkspaceDomain() {
         $domain = (Get-Content $domainFile).Trim()
         if (![string]::IsNullOrEmpty($domain)) {
             switch ($domain.ToLower()) {
-                "opinsights.azure.cn"                 { return "opinsights.azure.cn" }
-                "opinsights.azure.us"                 { return "opinsights.azure.us" }
-                "opinsights.azure.eaglex.ic.gov"      { return "opinsights.azure.eaglex.ic.gov" }
-                "opinsights.azure.microsoft.scloud"   { return "opinsights.azure.microsoft.scloud" }
-                "opinsights.sovcloud-api.fr"          { return "opinsights.sovcloud-api.fr" }
-                "opinsights.azure.com"                { return "opinsights.azure.com" }
-                default                              { Write-Host "Unknown domain '$domain'. Defaulting to opinsights.azure.com."; return $defaultDomain }
+                "opinsights.azure.cn" { return "opinsights.azure.cn" }
+                "opinsights.azure.us" { return "opinsights.azure.us" }
+                "opinsights.azure.eaglex.ic.gov" { return "opinsights.azure.eaglex.ic.gov" }
+                "opinsights.azure.microsoft.scloud" { return "opinsights.azure.microsoft.scloud" }
+                "opinsights.sovcloud-api.fr" { return "opinsights.sovcloud-api.fr" }
+                "opinsights.azure.com" { return "opinsights.azure.com" }
+                default { Write-Host "Unknown domain '$domain'. Defaulting to opinsights.azure.com."; return $defaultDomain }
             }
-        } else {
+        }
+        else {
             Write-Host "Domain name either null or empty. Defaulting to opinsights.azure.com."
             return $defaultDomain
         }
-    } else {
+    }
+    else {
         Write-Host "Domain file not found. Defaulting to opinsights.azure.com."
         return $defaultDomain
     }
@@ -270,12 +273,12 @@ function Get-McsAzureResourceEndpoint {
     $mcs_azure_resource_endpoint = "https://monitor.azure.com/"
     if (![string]::IsNullOrEmpty($cloud_environment)) {
         switch ($cloud_environment.ToLower()) {
-            "azurepubliccloud"        { $mcs_azure_resource_endpoint = "https://monitor.azure.com/" }
-            "azurechinacloud"         { $mcs_azure_resource_endpoint = "https://monitor.azure.cn/" }
-            "azureusgovernmentcloud"  { $mcs_azure_resource_endpoint = "https://monitor.azure.us/" }
-            "usnat"                   { $mcs_azure_resource_endpoint = "https://monitor.azure.eaglex.ic.gov/" }
-            "ussec"                   { $mcs_azure_resource_endpoint = "https://monitor.azure.microsoft.scloud/" }
-            "azurebleucloud"          { $mcs_azure_resource_endpoint = "https://monitor.sovcloud-api.fr/" }
+            "azurepubliccloud" { $mcs_azure_resource_endpoint = "https://monitor.azure.com/" }
+            "azurechinacloud" { $mcs_azure_resource_endpoint = "https://monitor.azure.cn/" }
+            "azureusgovernmentcloud" { $mcs_azure_resource_endpoint = "https://monitor.azure.us/" }
+            "usnat" { $mcs_azure_resource_endpoint = "https://monitor.azure.eaglex.ic.gov/" }
+            "ussec" { $mcs_azure_resource_endpoint = "https://monitor.azure.microsoft.scloud/" }
+            "azurebleucloud" { $mcs_azure_resource_endpoint = "https://monitor.sovcloud-api.fr/" }
         }
     }
     return $mcs_azure_resource_endpoint
@@ -288,12 +291,12 @@ function Get-McsEndpoint {
     $mcs_endpoint = "monitor.azure.com"
     if (![string]::IsNullOrEmpty($cloud_environment)) {
         switch ($cloud_environment.ToLower()) {
-            "azurepubliccloud"        { $mcs_endpoint = "monitor.azure.com" }
-            "azurechinacloud"         { $mcs_endpoint = "monitor.azure.cn" }
-            "azureusgovernmentcloud"  { $mcs_endpoint = "monitor.azure.us" }
-            "usnat"                   { $mcs_endpoint = "monitor.azure.eaglex.ic.gov" }
-            "ussec"                   { $mcs_endpoint = "monitor.azure.microsoft.scloud" }
-            "azurebleucloud"          { $mcs_endpoint = "monitor.sovcloud-api.fr" }
+            "azurepubliccloud" { $mcs_endpoint = "monitor.azure.com" }
+            "azurechinacloud" { $mcs_endpoint = "monitor.azure.cn" }
+            "azureusgovernmentcloud" { $mcs_endpoint = "monitor.azure.us" }
+            "usnat" { $mcs_endpoint = "monitor.azure.eaglex.ic.gov" }
+            "ussec" { $mcs_endpoint = "monitor.azure.microsoft.scloud" }
+            "azurebleucloud" { $mcs_endpoint = "monitor.sovcloud-api.fr" }
         }
     }
     return $mcs_endpoint
@@ -311,7 +314,7 @@ function Is-CanaryRegion {
 }
 
 
-function Get-McsGlobalEndpoint{
+function Get-McsGlobalEndpoint {
     param (
         [string]$cloud_environment
     )
@@ -319,15 +322,16 @@ function Get-McsGlobalEndpoint{
     $aksRegion = [System.Environment]::GetEnvironmentVariable("AKS_REGION", "process")
     if (Is-CanaryRegion($aksRegion)) {
         $mcs_globalendpoint = "https://global.handler.canary.control.monitor.azure.com"
-    } else {
-         if (![string]::IsNullOrEmpty($cloud_environment)) {
+    }
+    else {
+        if (![string]::IsNullOrEmpty($cloud_environment)) {
             switch ($cloud_environment.ToLower()) {
-                "azurepubliccloud"        { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.com" }
-                "azurechinacloud"         { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.cn" }
-                "azureusgovernmentcloud"  { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.us" }
-                "usnat"                   { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.eaglex.ic.gov" }
-                "ussec"                   { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.microsoft.scloud" }
-                "azurebleucloud"          { $mcs_globalendpoint = "https://global.handler.control.monitor.sovcloud-api.fr" }
+                "azurepubliccloud" { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.com" }
+                "azurechinacloud" { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.cn" }
+                "azureusgovernmentcloud" { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.us" }
+                "usnat" { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.eaglex.ic.gov" }
+                "ussec" { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.microsoft.scloud" }
+                "azurebleucloud" { $mcs_globalendpoint = "https://global.handler.control.monitor.sovcloud-api.fr" }
             }
         }
     }
@@ -373,39 +377,40 @@ function Set-EnvironmentVariables {
     }
     if (![string]::IsNullOrEmpty($isIgnoreProxySettings) -and $isIgnoreProxySettings.ToLower() -eq 'true') {
         Write-Host "Ignoring Proxy Setttings since IGNORE_PROXY_SETTINGS is - $($isIgnoreProxySettings)"
-    } else {
-      $proxy = ""
-      if (Test-Path /etc/ama-logs-secret/PROXY) {
-        # TODO: Change to ama-logs-secret before merging
-        $proxy = Get-Content /etc/ama-logs-secret/PROXY
-        Write-Host "Validating the proxy configuration since proxy configuration provided"
-        # valide the proxy endpoint configuration
-        if (![string]::IsNullOrEmpty($proxy)) {
-            $proxy = [string]$proxy.Trim();
+    }
+    else {
+        $proxy = ""
+        if (Test-Path /etc/ama-logs-secret/PROXY) {
+            # TODO: Change to ama-logs-secret before merging
+            $proxy = Get-Content /etc/ama-logs-secret/PROXY
+            Write-Host "Validating the proxy configuration since proxy configuration provided"
+            # valide the proxy endpoint configuration
             if (![string]::IsNullOrEmpty($proxy)) {
                 $proxy = [string]$proxy.Trim();
-                $parts = $proxy -split "@"
-                if ($parts.Length -ne 2) {
-                    Write-Host "Proxy is not using credentials..."
-                }
-                $subparts1 = $parts[0] -split "//"
-                if ($subparts1.Length -ne 2) {
-                    Write-Host "Invalid ProxyConfiguration. EXITING....."
-                    exit 1
-                }
-                $protocol = $subparts1[0].ToLower().TrimEnd(":")
-                if (!($protocol -eq "http") -and !($protocol -eq "https")) {
-                    Write-Host "Unsupported protocol in ProxyConfiguration $($proxy). EXITING....."
-                    exit 1
-                }
+                if (![string]::IsNullOrEmpty($proxy)) {
+                    $proxy = [string]$proxy.Trim();
+                    $parts = $proxy -split "@"
+                    if ($parts.Length -ne 2) {
+                        Write-Host "Proxy is not using credentials..."
+                    }
+                    $subparts1 = $parts[0] -split "//"
+                    if ($subparts1.Length -ne 2) {
+                        Write-Host "Invalid ProxyConfiguration. EXITING....."
+                        exit 1
+                    }
+                    $protocol = $subparts1[0].ToLower().TrimEnd(":")
+                    if (!($protocol -eq "http") -and !($protocol -eq "https")) {
+                        Write-Host "Unsupported protocol in ProxyConfiguration $($proxy). EXITING....."
+                        exit 1
+                    }
 
+                }
             }
+            Write-Host "Provided Proxy configuration is valid"
         }
-       Write-Host "Provided Proxy configuration is valid"
-      }
 
 
-       if (Test-Path /etc/ama-logs-secret/PROXYCERT.crt) {
+        if (Test-Path /etc/ama-logs-secret/PROXYCERT.crt) {
             Write-Host "Importing Proxy CA cert since Proxy CA cert configured"
             Import-Certificate -FilePath /etc/ama-logs-secret/PROXYCERT.crt -CertStoreLocation 'Cert:\LocalMachine\Root' -Verbose
         }
@@ -569,15 +574,16 @@ function Read-Configs {
 
     if (![string]::IsNullOrEmpty($enableFbitInternalMetrics) -and $enableFbitInternalMetrics.ToLower() -eq 'true') {
         Write-Host "Fluent-bit Internal metrics configured"
-    } else {
+    }
+    else {
         Clear-Content C:/etc/fluent-bit/fluent-bit-internal-metrics.conf
     }
 
     $genevaLogsMultitenancy = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_MULTI_TENANCY", "process")
     if (![string]::IsNullOrEmpty($genevaLogsMultitenancy)) {
         if ($genevaLogsMultitenancy.ToLower() -eq 'true') {
-          [System.Environment]::SetEnvironmentVariable("GENEVA_LOGS_MULTI_TENANCY", $genevaLogsMultitenancy, "machine")
-          Write-Host "Successfully set environment variable GENEVA_LOGS_MULTI_TENANCY - $($genevaLogsMultitenancy) for target 'machine'..."
+            [System.Environment]::SetEnvironmentVariable("GENEVA_LOGS_MULTI_TENANCY", $genevaLogsMultitenancy, "machine")
+            Write-Host "Successfully set environment variable GENEVA_LOGS_MULTI_TENANCY - $($genevaLogsMultitenancy) for target 'machine'..."
         }
     }
     else {
@@ -587,16 +593,16 @@ function Read-Configs {
     $azmonLogsMultitenancy = [System.Environment]::GetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION", "process")
     if (![string]::IsNullOrEmpty($azmonLogsMultitenancy)) {
         if ($azmonLogsMultitenancy.ToLower() -eq 'true') {
-          [System.Environment]::SetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION", $azmonLogsMultitenancy, "machine")
-          Write-Host "Successfully set environment variable AZMON_MULTI_TENANCY_LOG_COLLECTION - $($azmonLogsMultitenancy) for target 'machine'..."
+            [System.Environment]::SetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION", $azmonLogsMultitenancy, "machine")
+            Write-Host "Successfully set environment variable AZMON_MULTI_TENANCY_LOG_COLLECTION - $($azmonLogsMultitenancy) for target 'machine'..."
         }
     }
 
     $azmonLogsMultitenancyAdvancedMode = [System.Environment]::GetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE", "process")
     if (![string]::IsNullOrEmpty($azmonLogsMultitenancyAdvancedMode)) {
         if ($azmonLogsMultitenancyAdvancedMode.ToLower() -eq 'true') {
-          [System.Environment]::SetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE", $azmonLogsMultitenancyAdvancedMode, "machine")
-          Write-Host "Successfully set environment variable AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE - $($azmonLogsMultitenancyAdvancedMode) for target 'machine'..."
+            [System.Environment]::SetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE", $azmonLogsMultitenancyAdvancedMode, "machine")
+            Write-Host "Successfully set environment variable AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE - $($azmonLogsMultitenancyAdvancedMode) for target 'machine'..."
         }
     }
 
@@ -617,11 +623,13 @@ function Read-Configs {
             ruby /opt/amalogswindows/scripts/ruby/fluent-bit-geneva-conf-customizer.rb "infra_filter"
             Generate-GenevaTenantNameSpaceConfig
             Generate-GenevaInfraNameSpaceConfig
-        } else {
+        }
+        else {
             Clear-Content C:/etc/fluent-bit/fluent-bit-geneva-logs_tenant.conf
             Clear-Content C:/etc/fluent-bit/fluent-bit-geneva-logs_tenant_filter.conf
         }
-    } else {
+    }
+    else {
         $isAADMSIAuth = [System.Environment]::GetEnvironmentVariable("USING_AAD_MSI_AUTH", "process")
         if (![string]::IsNullOrEmpty($isAADMSIAuth) -and $isAADMSIAuth.ToLower() -eq 'true') {
             Set-CommonAMAEnvironmentVariables
@@ -657,16 +665,16 @@ function Set-EnvironmentVariablesFromFile {
 }
 
 function Set-AgentConfigSchemaVersion {
-      #set agent config schema version
-      $schemaVersionFile = '/etc/config/settings/schema-version'
-      if (Test-Path $schemaVersionFile) {
-          $schemaVersion = Get-Content $schemaVersionFile | ForEach-Object { $_.TrimEnd() }
-          if ($schemaVersion.GetType().Name -eq 'String') {
-              [System.Environment]::SetEnvironmentVariable("AZMON_AGENT_CFG_SCHEMA_VERSION", $schemaVersion, "Process")
-              [System.Environment]::SetEnvironmentVariable("AZMON_AGENT_CFG_SCHEMA_VERSION", $schemaVersion, "Machine")
-          }
-          $env:AZMON_AGENT_CFG_SCHEMA_VERSION
-      }
+    #set agent config schema version
+    $schemaVersionFile = '/etc/config/settings/schema-version'
+    if (Test-Path $schemaVersionFile) {
+        $schemaVersion = Get-Content $schemaVersionFile | ForEach-Object { $_.TrimEnd() }
+        if ($schemaVersion.GetType().Name -eq 'String') {
+            [System.Environment]::SetEnvironmentVariable("AZMON_AGENT_CFG_SCHEMA_VERSION", $schemaVersion, "Process")
+            [System.Environment]::SetEnvironmentVariable("AZMON_AGENT_CFG_SCHEMA_VERSION", $schemaVersion, "Machine")
+        }
+        $env:AZMON_AGENT_CFG_SCHEMA_VERSION
+    }
 }
 function Get-ContainerRuntime {
     # containerd is the default runtime on AKS windows
@@ -809,14 +817,15 @@ function Start-Fluent-Telegraf {
     $genevaLogsMultitenancy = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_MULTI_TENANCY", "process")
     $azmonLogsMultitenancy = [System.Environment]::GetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION", "process")
     $azmonLogsMultitenancyAdvancedMode = [System.Environment]::GetEnvironmentVariable("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE", "process")
-    if  (![string]::IsNullOrEmpty($azmonLogsMultitenancy) -and $azmonLogsMultitenancy.ToLower() -eq 'true') {
-        if  (![string]::IsNullOrEmpty($azmonLogsMultitenancyAdvancedMode) -and $azmonLogsMultitenancyAdvancedMode.ToLower() -eq 'true') {
+    if (![string]::IsNullOrEmpty($azmonLogsMultitenancy) -and $azmonLogsMultitenancy.ToLower() -eq 'true') {
+        if (![string]::IsNullOrEmpty($azmonLogsMultitenancyAdvancedMode) -and $azmonLogsMultitenancyAdvancedMode.ToLower() -eq 'true') {
             $fluentbitConfFile = "C:/etc/fluent-bit/fluent-bit-azmon-multi-tenancy.conf"
             Write-Host "Using fluent-bit config: $($fluentbitConfFile)"
             # Run fluent-bit service first so that we do not miss any logs being forwarded by the telegraf service.
             # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
             Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\fluent-bit\bin\fluent-bit.exe" -ArgumentList @("-c", "C:/etc/fluent-bit/fluent-bit-azmon-multi-tenancy.conf", "-e", "C:\opt\amalogswindows\out_oms.so") }
-        } else {
+        }
+        else {
             $fluentbitConfFile = "C:/etc/fluent-bit/fluent-bit.conf"
             Write-Host "Using fluent-bit config: $($fluentbitConfFile)"
             # Run fluent-bit service first so that we do not miss any logs being forwarded by the telegraf service.
@@ -830,7 +839,8 @@ function Start-Fluent-Telegraf {
         # Run fluent-bit service first so that we do not miss any logs being forwarded by the telegraf service.
         # Run fluent-bit as a background job. Switch this to a windows service once fluent-bit supports natively running as a windows service
         Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\fluent-bit\bin\fluent-bit.exe" -ArgumentList @("-c", "C:/etc/fluent-bit/fluent-bit-geneva.conf", "-e", "C:\opt\amalogswindows\out_oms.so") }
-    } else {
+    }
+    else {
         $fluentbitConfFile = "C:/etc/fluent-bit/fluent-bit.conf"
         Write-Host "Using fluent-bit config: $($fluentbitConfFile)"
         # Run fluent-bit service first so that we do not miss any logs being forwarded by the telegraf service.
@@ -936,7 +946,8 @@ function Start-Telegraf {
                 C:\opt\telegraf\telegraf.exe --service start
                 Get-Service telegraf
             }
-        } else {
+        }
+        else {
             Write-Host "Telegraf not started since Fluentbit tcp listener is not up and running on port 25229"
         }
     }
@@ -986,24 +997,24 @@ function Bootstrap-CACertificates {
 }
 
 function IsGenevaMode() {
-    $isGenevaLogsIntegration=$false
-    $isGenevaLogsMultitenancy=$false
+    $isGenevaLogsIntegration = $false
+    $isGenevaLogsMultitenancy = $false
     $genevaLogsIntegration = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_INTEGRATION")
     $genevaLogsMultitenancy = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_MULTI_TENANCY")
     $genevaLogsInfraNameSpaces = [System.Environment]::GetEnvironmentVariable("GENEVA_LOGS_INFRA_NAMESPACES")
-    $isGenevaLogsInfraNameSpacesEmpty=$true
+    $isGenevaLogsInfraNameSpacesEmpty = $true
 
     if (![string]::IsNullOrEmpty($genevaLogsIntegration) -and $genevaLogsIntegration.ToLower() -eq 'true') {
-        $isGenevaLogsIntegration=$true
+        $isGenevaLogsIntegration = $true
     }
     if (![string]::IsNullOrEmpty($genevaLogsMultitenancy) -and $genevaLogsMultitenancy.ToLower() -eq 'true') {
-        $isGenevaLogsMultitenancy=$true
+        $isGenevaLogsMultitenancy = $true
     }
     if (![string]::IsNullOrEmpty($genevaLogsInfraNameSpaces)) {
-        $isGenevaLogsInfraNameSpacesEmpty=$false
+        $isGenevaLogsInfraNameSpacesEmpty = $false
     }
-    if ($isGenevaLogsIntegration -and (!$isGenevaLogsMultitenancy -or !$isGenevaLogsInfraNameSpacesEmpty)){
-      return $true
+    if ($isGenevaLogsIntegration -and (!$isGenevaLogsMultitenancy -or !$isGenevaLogsInfraNameSpacesEmpty)) {
+        return $true
     }
     return $false
 }
@@ -1032,7 +1043,7 @@ $isGenevaModeVar = IsGenevaMode
 if ($isGenevaModeVar) {
     Write-Host "Starting Windows AMA in 1P Mode"
     #start Windows AMA
-    Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\windowsazuremonitoragent\windowsazuremonitoragent\Monitoring\Agent\MonAgentLauncher.exe" -ArgumentList @("-useenv")}
+    Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\windowsazuremonitoragent\windowsazuremonitoragent\Monitoring\Agent\MonAgentLauncher.exe" -ArgumentList @("-useenv") }
     if (![string]::IsNullOrEmpty($isAADMSIAuth) -and $isAADMSIAuth.ToLower() -eq 'true') {
         Write-Host "skipping agent onboarding via cert since AAD MSI Auth configured"
     }
@@ -1047,7 +1058,7 @@ else {
         Write-Host "skipping agent onboarding via cert since AAD MSI Auth configured"
 
         #start Windows AMA
-        Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\windowsazuremonitoragent\windowsazuremonitoragent\Monitoring\Agent\MonAgentLauncher.exe" -ArgumentList @("-useenv")}
+        Start-Job -ScriptBlock { Start-Process -NoNewWindow -FilePath "C:\opt\windowsazuremonitoragent\windowsazuremonitoragent\Monitoring\Agent\MonAgentLauncher.exe" -ArgumentList @("-useenv") }
         $version = Get-Content -Path "C:\opt\windowsazuremonitoragent\version.txt"
         Write-Host $version
     }

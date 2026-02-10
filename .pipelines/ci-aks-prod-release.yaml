@@ -475,3 +475,39 @@ extends:
           displayName: Ev2 - Monitoring
           inputs:
             Ev2MonintoringUrl: $(Ev2MonintoringUrl)
+
+
+    # =============================================================================
+    # Stage 3: Deploy ama-logs to AKS Clusters via Helm
+    # =============================================================================
+    # To add a new cluster, simply add an entry to the template list below.
+    # Each cluster only needs: clusterName, resourceGroup, region, subscriptionId, workspaceId, and imageTag.
+    # =============================================================================
+    - stage: Stage_3
+      displayName: Deploy ama-logs to CI AKS Prod Clusters via Helm
+      dependsOn: Stage_2
+      pool:
+        name: Azure-Pipelines-CI-Test-EO
+        image: ci-1es-managed-ubuntu-2204
+        os: linux
+      jobs:
+      # Monitoring-Model-Cluster-WCUS
+      - template: .pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
+        parameters:
+          clusterName: 'Monitoring-Model-Cluster-WCUS'
+          resourceGroup: 'monitoring-model-cluster-wcus'
+          region: 'westcentralus'
+          subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
+          workspaceId: '22f38e11-4f59-480c-b4b8-2573156b6e06' # "Monitoring-Model-Cluster-WCUS"
+          imageTag: '$(AgentImageTagSuffix)'
+          environment: 'CI-Deploy-To-Prod-Cluster-1'
+      # Monitoring-Model-Cluster-WEU
+      - template: .pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
+        parameters:
+          clusterName: 'Monitoring-Model-Cluster-WEU'
+          resourceGroup: 'monitoring-model-cluster-weu'
+          region: 'westeurope'
+          subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
+          workspaceId: '5c269467-32a9-4468-a1d6-ec1cac551e74' # "Monitoring-Model-Cluster-WEU"
+          imageTag: '$(AgentImageTagSuffix)'
+          environment: 'CI-Deploy-To-Prod-Cluster-2'

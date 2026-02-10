@@ -1,0 +1,4 @@
+apiVersion: v2
+description: azure-monitor-containers helm chart
+name: azuremonitor-containers
+version: 3.2.1-dev-test
