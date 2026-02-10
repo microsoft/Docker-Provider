@@ -1,0 +1,671 @@
+{{- $settings := include "arc-extension-settings" . | fromYaml }}
+{{- if and (ne $settings.workspaceID "") (ne $settings.workspaceID "<your_workspace_id>") }}
+#
+# Linux DaemonSet for ama-logs
+# Supports both Arc K8s Extension and AKS Addon deployment modes
+#
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+ name: ama-logs
+ namespace: kube-system
+ labels:
+   chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+   release: {{ .Release.Name }}
+   heritage: {{ .Release.Service }}
+   component: ama-logs-agent
+   tier: node
+   kubernetes.azure.com/managedby: aks
+{{- if $settings.legacyAddonDelivery }}
+   kubernetes.io/cluster-service: "true"
+   addonmanager.kubernetes.io/mode: Reconcile
+{{- end }}
+spec:
+ updateStrategy:
+  type: RollingUpdate
+  {{- if $settings.isAKSAddon }}
+  rollingUpdate:
+    maxUnavailable: 50%
+  {{- end }}
+ selector:
+   matchLabels:
+     {{- if $settings.isArcExtension }}
+     dsName: "ama-logs-ds"
+     {{- else }}
+     component: ama-logs-agent
+     tier: node
+     {{- end }}
+ template:
+  metadata:
+   labels:
+    {{- if $settings.isArcExtension }}
+    dsName: "ama-logs-ds"
+    {{- else }}
+    component: ama-logs-agent
+    tier: node
+    kubernetes.azure.com/managedby: aks
+    {{- end }}
+   annotations:
+    {{- if $settings.isArcExtension }}
+    agentVersion: {{ .Values.amalogs.image.agentVersion }}
+    dockerProviderVersion: {{ .Values.amalogs.image.dockerProviderVersion }}
+    {{- else }}
+    agentVersion: "azure-mdsd-1.37.0"
+    dockerProviderVersion: "18.0.1-0"
+    {{- end }}
+    schema-versions: "v1"
+    WSID: {{ $settings.workspaceID | b64enc | quote }}
+    kubernetes.azure.com/no-http-proxy-vars: "true"
+    {{- if $settings.isArcExtension }}
+    checksum/secret: {{ include (print $.Template.BasePath "/ama-logs-secret.yaml") . | sha256sum }}
+    checksum/config: {{ toYaml .Values.amalogs.resources | sha256sum }}
+    checksum/logsettings: {{ toYaml .Values.amalogs.logsettings | sha256sum }}
+    {{- end }}
+  spec:
+   {{- if $settings.isArcExtension }}
+   priorityClassName: ama-logs
+   {{- else }}
+   priorityClassName: system-node-critical
+   {{- end }}
+   dnsConfig:
+     options:
+       - name: ndots
+         value: "3"
+   {{- if $settings.rbacEnabled }}
+   serviceAccountName: ama-logs
+   {{- end }}
+   containers:
+{{- if and $settings.isArcExtension $settings.usingAADAuth }}
+     {{- if ne $settings.distribution "openshift" }}
+     - name: addon-token-adapter
+       imagePullPolicy: IfNotPresent
+       env:
+       - name: AZMON_COLLECT_ENV
+         value: "false"
+       - name: TOKEN_NAMESPACE
+         value: "azure-arc"
+{{-  .Values.Azure.Identity.MSIAdapterYaml | nindent 7 }}
+     {{- else }}
+     - name: msi-adapter
+       env:
+       - name: AZMON_COLLECT_ENV
+         value: "false"
+       - name: TOKEN_NAMESPACE
+         value: azure-arc
+       - name: CLUSTER_IDENTITY
+         value: "false"
+       - name: CLUSTER_TYPE
+         value: {{ (split "/" $settings.resourceId)._7 }}
+       - name: EXTENSION_ARMID
+         value: {{ $settings.arcExtensionResourceId }}
+       - name: EXTENSION_NAME
+         value: {{ $settings.arcExtensionName }}
+       - name: MSI_ADAPTER_LISTENING_PORT
+         value: "8421"
+       - name: MANAGED_IDENTITY_AUTH
+         value: "true"
+       - name: MSI_ADAPTER_LIVENESS_PORT
+         value: "9090"
+       - name: TEST_MODE
+         value: "false"
+       - name: TEST_FILE
+         value: /data/token
+       image: mcr.microsoft.com/azurearck8s/msi-adapter:1.29.3
+       securityContext:
+         privileged: true
+         capabilities:
+           add:
+             - NET_ADMIN
+             - NET_RAW
+       livenessProbe:
+         failureThreshold: 3
+         httpGet:
+           path: /healthz
+           port: 9090
+           scheme: "HTTP"
+         initialDelaySeconds: 10
+         periodSeconds: 15
+       resources:
+         limits:
+           cpu: 50m
+           memory: 100Mi
+         requests:
+           cpu: 20m
+           memory: 50Mi
+       lifecycle:
+         postStart:
+           exec:
+             command: ["/data/msi-adapter-ready-watcher"]
+     {{- end }}
+{{- else if and $settings.isAKSAddon $settings.usingAADAuth }}
+     - name: addon-token-adapter
+       command:
+         - /addon-token-adapter
+       args:
+         - --secret-namespace=kube-system
+         - --secret-name={{ $settings.accessTokenSecretName }}
+         - --token-server-listening-port=8888
+         - --health-server-listening-port=9999
+         - --restart-pod-waiting-minutes-on-broken-connection=240
+       image: "{{ template "addon_mcr_repository_base" $ }}/aks/msi/addon-token-adapter:{{ dict "component" "addon-token-adapter-linux" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag" }}"
+       imagePullPolicy: IfNotPresent
+       env:
+         - name: AZMON_COLLECT_ENV
+           value: "false"
+       livenessProbe:
+         httpGet:
+           path: /healthz
+           port: 9999
+         initialDelaySeconds: 10
+         periodSeconds: 60
+       resources:
+         limits:
+           cpu: 100m
+           memory: 100Mi
+         requests:
+           cpu: 20m
+           memory: 50Mi
+       securityContext:
+         capabilities:
+           drop:
+             - ALL
+           add:
+             - NET_ADMIN
+             - NET_RAW
+{{- end }}
+     - name: ama-logs
+       image: "{{ $settings.imageRepo }}:{{ $settings.imageTagLinux }}"
+       imagePullPolicy: {{ $settings.imagePullPolicy }}
+       resources:
+       {{- if $settings.isArcExtension }}
+{{ toYaml .Values.amalogs.resources.daemonsetlinux | indent 9 }}
+       {{- else }}
+         limits:
+           cpu: {{ .Values.OmsAgent.omsAgentDsCPULimitLinux }}
+           memory: {{ .Values.OmsAgent.omsAgentDsMemoryLimitLinux }}
+         requests:
+           cpu: 75m
+           memory: 325Mi
+       {{- end }}
+       env:
+       - name: AKS_RESOURCE_ID
+         value: {{ $settings.resourceId | quote }}
+       - name: AKS_REGION
+         value: {{ $settings.region | quote }}
+       {{- if $settings.isAKSAddon }}
+       - name: AKS_CLUSTER_NAME
+         value: {{ $settings.clusterName | quote }}
+       - name: AKS_NODE_RESOURCE_GROUP
+         value: {{ .Values.OmsAgent.aksNodeResourceGroup | quote }}
+       {{- end }}
+       - name: CONTROLLER_TYPE
+         value: "DaemonSet"
+       {{- if $settings.isArcExtension }}
+       - name: USING_AAD_MSI_AUTH
+         value: {{ $settings.usingAADAuth | quote }}
+       {{- if not (empty $settings.arcExtensionName) }}
+       - name: ARC_K8S_EXTENSION_NAME
+         value: {{ $settings.arcExtensionName | quote }}
+       {{- end }}
+       {{- if $settings.enableHighLogScaleMode }}
+       - name: ENABLE_HIGH_LOG_SCALE_MODE
+         value: {{ $settings.enableHighLogScaleMode | quote }}
+       {{- end }}
+       {{- if $settings.isTestMode }}
+       - name: AZMON_KUBERNETES_METADATA_ENABLED
+         value: "true"
+       {{- end }}
+       {{- if $settings.isArcACluster }}
+       - name: IS_ARCA_CLUSTER
+         value: {{ $settings.isArcACluster | quote }}
+       {{- end }}
+       {{- if ne $settings.customMetricsEndpoint "" }}
+       - name: CUSTOM_METRICS_ENDPOINT
+         value: {{ $settings.customMetricsEndpoint | quote }}
+       {{- end }}
+       {{- if ne $settings.tokenAudience "" }}
+       - name: customResourceEndpoint
+         value: {{ $settings.tokenAudience | quote }}
+       {{- end }}
+       - name: IS_CUSTOM_CERT
+         value: {{ $settings.isCustomCert | quote }}
+       - name: ENABLE_CUSTOM_METRICS
+         value: {{ $settings.customMetricsEnabled | quote }}
+       {{- else }}
+       - name: USING_AAD_MSI_AUTH
+         value: {{ if $settings.usingAADAuth }}"true"{{ else }}"false"{{ end }}
+       {{- if $settings.appMonitoringEnabled }}
+       - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
+         value: "{{ $settings.appMonitoringEnabled }}"
+       - name: APPMONITORING_OPENTELEMETRYLOGS_ENABLED
+         value: "{{ $settings.openTelemetryLogsEnabled }}"
+       - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
+         value: "{{ $settings.openTelemetryLogsPort }}"
+       - name: AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT
+         value: "4319"
+       {{- end }}
+       - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
+         value: "{{ $settings.prometheusScrapingDisabled }}"
+       {{- if $settings.retinaFlowLogsEnabled }}
+       - name: AZMON_RETINA_FLOW_LOGS_ENABLED
+         value: "true"
+       {{- end }}
+       {{- if $settings.resourceOptimizationEnabled }}
+       - name: AZMON_RESOURCE_OPTIMIZATION_ENABLED
+         value: "true"
+       {{- end }}
+       {{- end }}
+       {{- if $settings.shouldMountSyslogHostPort }}
+       - name: SYSLOG_HOST_PORT
+         value: {{ $settings.syslogPort | quote }}
+       {{- end }}
+       - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+         value: {{ $settings.identityClientID | quote }}
+       {{- if $settings.isArcExtension }}
+       {{- if .Values.amalogs.logsettings.logflushintervalsecs }}
+       - name: FBIT_SERVICE_FLUSH_INTERVAL
+         value: {{ .Values.amalogs.logsettings.logflushintervalsecs | quote }}
+       {{- end }}
+       {{- if .Values.amalogs.logsettings.tailbufchunksizemegabytes }}
+       - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
+         value: {{ .Values.amalogs.logsettings.tailbufchunksizemegabytes | quote }}
+       {{- end }}
+       {{- if .Values.amalogs.logsettings.tailbufmaxsizemegabytes }}
+       - name: FBIT_TAIL_BUFFER_MAX_SIZE
+         value: {{ .Values.amalogs.logsettings.tailbufmaxsizemegabytes | quote }}
+       {{- end }}
+       - name: ISTEST
+         value: {{ $settings.isTestMode | quote }}
+       {{- else }}
+       - name: FBIT_SERVICE_FLUSH_INTERVAL
+         value: "15"
+       - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
+         value: "1"
+       - name: FBIT_TAIL_BUFFER_MAX_SIZE
+         value: "1"
+       {{- end }}
+       - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+         value: "{{ $settings.telegrafLivenessprobeEnabled }}"
+       - name: CLUSTER_CLOUD_ENVIRONMENT
+         value: {{ $settings.cloudEnvironment | quote }}
+       - name: NODE_IP
+         valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+       - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+         valueFrom:
+           resourceFieldRef:
+             containerName: ama-logs
+             resource: limits.memory
+       - name: HOSTNAME
+         valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+       securityContext:
+         privileged: true
+         capabilities:
+          drop:
+            - ALL
+          add:
+            - DAC_OVERRIDE
+       ports:
+       - containerPort: 25225
+         protocol: TCP
+       - containerPort: 25224
+         protocol: UDP
+       {{- if $settings.shouldMountSyslogHostPort }}
+       - name: syslog
+         containerPort: {{ $settings.syslogPort }}
+         hostPort: {{ $settings.syslogPort }}
+         protocol: TCP
+       {{- end }}
+       {{- if and $settings.isAKSAddon $settings.openTelemetryLogsEnabled }}
+       - name: otlp-logs
+         containerPort: 4319
+         hostPort: {{ $settings.openTelemetryLogsPort }}
+         protocol: TCP
+       {{- end }}
+       volumeMounts:
+        {{- if $settings.enableServiceAccountTimeBoundToken }}
+        - name: kube-api-access
+          mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          readOnly: true
+        {{- end }}
+        - mountPath: /hostfs
+          name: host-root
+          readOnly: true
+          mountPropagation: HostToContainer
+        - mountPath: /var/log
+          name: host-log
+        {{- if $settings.isAKSAddon }}
+        {{- if $settings.syslogEnabled }}
+        - mountPath: /var/run/mdsd-ci
+          name: mdsd-sock
+        {{- end }}
+        {{- if $settings.retinaFlowLogsEnabled }}
+        - mountPath: /var/log/acns/hubble
+          name: acns-hubble
+        {{- end }}
+        - mountPath: /var/run/mdsd-PrometheusSidecar
+          name: mdsd-prometheus-sock
+        {{- end }}
+        - mountPath: /var/lib/docker/containers
+          name: containerlog-path
+          readOnly: true
+        {{- if $settings.isAKSAddon }}
+        - mountPath: /mnt/docker
+          name: containerlog-path-2
+          readOnly: true
+        - mountPath: /mnt/containers
+          name: containerlog-path-3
+          readOnly: true
+        {{- end }}
+        - mountPath: /etc/kubernetes/host
+          name: azure-json-path
+        - mountPath: /etc/ama-logs-secret
+          name: ama-logs-secret
+          readOnly: true
+        {{- if $settings.isAKSAddon }}
+        - mountPath: /etc/omsagent-secret
+          name: ama-logs-secret
+          readOnly: true
+        {{- end }}
+        {{- if and $settings.isProxyEnabled $settings.proxyCert }}
+        - mountPath: /etc/ssl/certs/proxy-cert.crt
+          subPath: PROXYCERT.crt
+          name: ama-logs-secret
+          readOnly: true
+        {{- end }}
+        - mountPath: /etc/config/settings
+          name: settings-vol-config
+          readOnly: true
+        {{- if $settings.isArcExtension }}
+        {{- if .Values.amalogs.logsettings.custommountpath }}
+        - mountPath: {{ .Values.amalogs.logsettings.custommountpath }}
+          name: custom-mount-path
+        {{- end }}
+        {{- end }}
+        - mountPath: /etc/config/settings/adx
+          name: ama-logs-adx-secret
+          readOnly: true
+        {{- if $settings.isArcExtension }}
+        - mountPath: /etc/config/osm-settings
+          name: osm-settings-vol-config
+          readOnly: true
+        {{- end }}
+        {{- if $settings.mountMarinerCerts }}
+        - mountPath: /anchors/mariner
+          name: anchors-mariner
+          readOnly: true
+        {{- end }}
+        {{- if $settings.mountUbuntuCerts }}
+        - mountPath: /anchors/ubuntu
+          name: anchors-ubuntu
+          readOnly: true
+        {{- end }}
+       livenessProbe:
+        exec:
+         command:
+         - /bin/bash
+         - -c
+         - "/opt/livenessprobe.sh"
+        initialDelaySeconds: 60
+        periodSeconds: 60
+        timeoutSeconds: 15
+   {{- if $settings.sidecarScrapingEnabled }}
+     - name: ama-logs-prometheus
+       image: "{{ $settings.imageRepo }}:{{ $settings.imageTagLinux }}"
+       imagePullPolicy: {{ $settings.imagePullPolicy }}
+       resources:
+       {{- if $settings.isArcExtension }}
+{{ toYaml .Values.amalogs.resources.daemonsetlinuxsidecar | indent 9 }}
+       {{- else }}
+         limits:
+           cpu: {{ .Values.OmsAgent.omsAgentPrometheusSidecarCPULimit }}
+           memory: {{ .Values.OmsAgent.omsAgentPrometheusSidecarMemoryLimit }}
+         requests:
+           cpu: 75m
+           memory: 225Mi
+       {{- end }}
+       env:
+       - name: AKS_RESOURCE_ID
+         value: {{ $settings.resourceId | quote }}
+       - name: AKS_REGION
+         value: {{ $settings.region | quote }}
+       {{- if $settings.isAKSAddon }}
+       - name: AKS_CLUSTER_NAME
+         value: {{ $settings.clusterName | quote }}
+       - name: AKS_NODE_RESOURCE_GROUP
+         value: {{ .Values.OmsAgent.aksNodeResourceGroup | quote }}
+       {{- end }}
+       - name: USING_AAD_MSI_AUTH
+         value: {{ if $settings.usingAADAuth }}"true"{{ else }}"false"{{ end }}
+       - name: CONTROLLER_TYPE
+         value: "DaemonSet"
+       - name: CONTAINER_TYPE
+         value: "PrometheusSidecar"
+       - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+         value: {{ $settings.identityClientID | quote }}
+       - name: NODE_IP
+         valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+       - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+         valueFrom:
+           resourceFieldRef:
+             containerName: ama-logs-prometheus
+             resource: limits.memory
+       {{- if $settings.isArcExtension }}
+       - name: ISTEST
+         value: {{ $settings.isTestMode | quote }}
+       {{- else if $settings.shouldMountSyslogHostPort }}
+       - name: SYSLOG_HOST_PORT
+         value: {{ $settings.syslogPort | quote }}
+       {{- end }}
+       - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+         value: "{{ $settings.telegrafLivenessprobeEnabled }}"
+       - name: CLUSTER_CLOUD_ENVIRONMENT
+         value: {{ $settings.cloudEnvironment | quote }}
+       - name: HOSTNAME
+         valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+       securityContext:
+         privileged: true
+         capabilities:
+          drop:
+            - ALL
+          add:
+            - DAC_OVERRIDE
+       volumeMounts:
+         {{- if $settings.enableServiceAccountTimeBoundToken }}
+         - name: kube-api-access
+           mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+           readOnly: true
+         {{- end }}
+         - mountPath: /etc/kubernetes/host
+           name: azure-json-path
+         - mountPath: /etc/ama-logs-secret
+           name: ama-logs-secret
+           readOnly: true
+         {{- if $settings.isAKSAddon }}
+         - mountPath: /etc/omsagent-secret
+           name: ama-logs-secret
+           readOnly: true
+         {{- if $settings.syslogEnabled }}
+         - mountPath: /var/run/mdsd-ci
+           name: mdsd-sock
+         {{- end }}
+         - mountPath: /var/run/mdsd-PrometheusSidecar
+           name: mdsd-prometheus-sock
+         {{- end }}
+         {{- if and $settings.isProxyEnabled $settings.proxyCert }}
+         - mountPath: /etc/ssl/certs/proxy-cert.crt
+           subPath: PROXYCERT.crt
+           name: ama-logs-secret
+           readOnly: true
+         {{- end }}
+         - mountPath: /etc/config/settings
+           name: settings-vol-config
+           readOnly: true
+         {{- if $settings.isArcExtension }}
+         - mountPath: /etc/config/osm-settings
+           name: osm-settings-vol-config
+           readOnly: true
+         {{- end }}
+         {{- if $settings.mountMarinerCerts }}
+         - mountPath: /anchors/mariner
+           name: anchors-mariner
+           readOnly: true
+         {{- end }}
+         {{- if $settings.mountUbuntuCerts }}
+         - mountPath: /anchors/ubuntu
+           name: anchors-ubuntu
+           readOnly: true
+         {{- end }}
+       livenessProbe:
+         exec:
+           command:
+             - /bin/bash
+             - -c
+             - /opt/livenessprobe.sh
+         initialDelaySeconds: 60
+         periodSeconds: 60
+         timeoutSeconds: 15
+   {{- end }}
+   affinity:
+   {{- if $settings.isArcExtension }}
+     {{- with .Values.amalogs.daemonset.affinity }}
+       {{- toYaml . | nindent 6 }}
+     {{- end }}
+   {{- else }}
+     nodeAffinity:
+       requiredDuringSchedulingIgnoredDuringExecution:
+         nodeSelectorTerms:
+         - matchExpressions:
+           - key: kubernetes.io/os
+             operator: In
+             values:
+             - linux
+           - key: kubernetes.azure.com/cluster
+             operator: Exists
+           - key: type
+             operator: NotIn
+             values:
+             - virtual-kubelet
+   {{- end }}
+   tolerations:
+   {{- if $settings.isArcExtension }}
+     {{- if $settings.scheduleOnTaintedNodes }}
+       {{- with .Values.amalogs.tolerationsUnrestricted }}
+         {{- toYaml . | nindent 6 }}
+       {{- end }}
+     {{- else }}
+       {{- with .Values.amalogs.tolerations }}
+         {{- toYaml . | nindent 6 }}
+       {{- end }}
+     {{- end }}
+   {{- else }}
+     - key: "CriticalAddonsOnly"
+       operator: "Exists"
+     - operator: "Exists"
+       effect: NoExecute
+     - operator: "Exists"
+       effect: NoSchedule
+     - operator: "Exists"
+       effect: PreferNoSchedule
+   {{- end }}
+   volumes:
+    {{- if $settings.enableServiceAccountTimeBoundToken }}
+    - name: kube-api-access
+      projected:
+        sources:
+         - serviceAccountToken:
+             path: token
+             expirationSeconds: 3600
+         - configMap:
+             items:
+             - key: ca.crt
+               path: ca.crt
+             name: kube-root-ca.crt
+         - downwardAPI:
+             items:
+             - fieldRef:
+                 apiVersion: v1
+                 fieldPath: metadata.namespace
+               path: namespace
+    {{- end }}
+    - name: host-root
+      hostPath:
+       path: /
+    - name: container-hostname
+      hostPath:
+       path: /etc/hostname
+    - name: host-log
+      hostPath:
+       path: /var/log
+    {{- if $settings.isAKSAddon }}
+    {{- if $settings.syslogEnabled }}
+    - name: mdsd-sock
+      hostPath:
+        path: /var/run/mdsd-ci
+    {{- end }}
+    {{- if $settings.retinaFlowLogsEnabled }}
+    - name: acns-hubble
+      hostPath:
+        path: /var/log/acns/hubble
+    {{- end }}
+    - name: mdsd-prometheus-sock
+      emptyDir: {}
+    {{- end }}
+    - name: containerlog-path
+      hostPath:
+       path: /var/lib/docker/containers
+    {{- if $settings.isAKSAddon }}
+    - name: containerlog-path-2
+      hostPath:
+        path: /mnt/docker
+    - name: containerlog-path-3
+      hostPath:
+        path: /mnt/containers
+    {{- end }}
+    - name: azure-json-path
+      hostPath:
+       path: /etc/kubernetes
+    - name: ama-logs-secret
+      secret:
+       secretName: ama-logs-secret
+    - name: settings-vol-config
+      configMap:
+        name: container-azm-ms-agentconfig
+        optional: true
+    {{- if $settings.isArcExtension }}
+    {{- if .Values.amalogs.logsettings.custommountpath }}
+    - name: custom-mount-path
+      hostPath:
+       path: {{ .Values.amalogs.logsettings.custommountpath }}
+    {{- end }}
+    {{- end }}
+    - name: ama-logs-adx-secret
+      secret:
+       secretName: ama-logs-adx-secret
+       optional: true
+    {{- if $settings.isArcExtension }}
+    - name: osm-settings-vol-config
+      configMap:
+        name: container-azm-ms-osmconfig
+        optional: true
+    {{- end }}
+    {{- if $settings.mountMarinerCerts }}
+    - name: anchors-mariner
+      hostPath:
+        path: /etc/pki/ca-trust/source/anchors
+        type: DirectoryOrCreate
+    {{- end }}
+    {{- if $settings.mountUbuntuCerts }}
+    - name: anchors-ubuntu
+      hostPath:
+        path: /usr/local/share/ca-certificates/
+        type: DirectoryOrCreate
+    {{- end }}
+{{- end }}

@@ -1,0 +1,14 @@
+{{- $settings := include "arc-extension-settings" . | fromYaml }}
+{{- if $settings.isArcExtension }}
+#
+# PriorityClass for Arc K8s Extension
+# Ensures ama-logs pods are scheduled with priority
+#
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: ama-logs
+value: {{ $settings.priority }}
+globalDefault: false
+description: "Priority class for Azure Monitor ama-logs agent in Arc K8s extension mode"
+{{- end }}

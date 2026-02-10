@@ -1,0 +1,35 @@
+{{- $settings := include "arc-extension-settings" . | fromYaml }}
+{{- if and $settings.isArcExtension (eq $settings.distribution "openshift") }}
+#
+# OpenShift Security Context Constraint
+# Required for running ama-logs with elevated privileges on OpenShift
+#
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: ama-logs-scc
+allowPrivilegedContainer: true
+allowPrivilegeEscalation: true
+allowHostDirVolumePlugin: true
+allowedCapabilities:
+- NET_ADMIN
+- NET_RAW
+readOnlyRootFilesystem: false
+runAsUser:
+  type: RunAsAny
+seLinuxContext:
+  type: RunAsAny
+fsGroup:
+  type: RunAsAny
+supplementalGroups:
+  type: RunAsAny
+volumes:
+- hostPath
+- configMap
+- secret
+- projected
+- emptyDir
+- downwardAPI
+users:
+- system:serviceaccount:kube-system:ama-logs
+{{- end }}
