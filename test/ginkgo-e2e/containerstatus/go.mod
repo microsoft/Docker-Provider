@@ -1,8 +1,6 @@
 module docker-provider/test/containerstatus
 
-go 1.23.0
-
-toolchain go1.23.6
+go 1.26.0
 
 replace docker-provider/test/utils => ../utils
 
