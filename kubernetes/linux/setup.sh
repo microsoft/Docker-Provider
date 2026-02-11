@@ -39,6 +39,7 @@ gem uninstall net-imap --force
 
 # remove rexml gem as it has a known CVE (CVE-2025-58767) and is not used by the agent
 gem uninstall rexml --force
+gem update uri --no-document
 
 sudo tdnf install -y azure-mdsd-1.37.0
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
