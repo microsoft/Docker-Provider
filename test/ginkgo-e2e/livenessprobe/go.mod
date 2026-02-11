@@ -1,6 +1,6 @@
 module docker-provider/test/livenessprobe
 
-go 1.26.0
+go 1.25.7
 
 replace docker-provider/test/utils => ../utils
 
