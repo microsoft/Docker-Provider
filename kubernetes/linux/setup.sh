@@ -15,7 +15,7 @@ sudo update-ca-trust
 # arm64 build breaks intermittently when installing ruby from global packages, so installing it from mariner packages
 # the mariner package version is behind the global packages so we are using different versions for arm64 and x86_64
 if [ "$ARCH" == "arm64" ]; then
-    sudo tdnf install ruby-3.3.5-1.azl3.aarch64 -y
+    sudo tdnf install ruby-3.3.5-7.azl3.aarch64 -y
 else
     tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
     wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20250409.tar.gz -O ruby-build.tar.gz
