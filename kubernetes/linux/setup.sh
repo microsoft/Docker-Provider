@@ -18,10 +18,10 @@ if [ "$ARCH" == "arm64" ]; then
     sudo tdnf install ruby-3.3.5-7.azl3.aarch64 -y
 else
     tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
-    wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20250409.tar.gz -O ruby-build.tar.gz
+    wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20251023.tar.gz -O ruby-build.tar.gz
     tar -xzf ruby-build.tar.gz
     PREFIX=/usr/local ./ruby-build-*/install.sh
-    ruby-build 3.3.8 /usr -v
+    ruby-build 3.3.10 /usr -v
 
     rm ruby-build.tar.gz
 fi
@@ -39,7 +39,6 @@ gem uninstall net-imap --force
 
 # remove rexml gem as it has a known CVE (CVE-2025-58767) and is not used by the agent
 gem uninstall rexml --force
-gem install uri -v 0.13.3 --force --no-document
 
 sudo tdnf install -y azure-mdsd-1.37.0
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
