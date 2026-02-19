@@ -1,8 +1,6 @@
 module docker-provider/test/utils
 
-go 1.23.0
-
-toolchain go1.23.6
+go 1.25.7
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0

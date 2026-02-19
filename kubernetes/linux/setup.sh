@@ -15,13 +15,13 @@ sudo update-ca-trust
 # arm64 build breaks intermittently when installing ruby from global packages, so installing it from mariner packages
 # the mariner package version is behind the global packages so we are using different versions for arm64 and x86_64
 if [ "$ARCH" == "arm64" ]; then
-    sudo tdnf install ruby-3.3.5-1.azl3.aarch64 -y
+    sudo tdnf install ruby-3.3.5-7.azl3.aarch64 -y
 else
     tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
-    wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20250409.tar.gz -O ruby-build.tar.gz
+    wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20251023.tar.gz -O ruby-build.tar.gz
     tar -xzf ruby-build.tar.gz
     PREFIX=/usr/local ./ruby-build-*/install.sh
-    ruby-build 3.3.8 /usr -v
+    ruby-build 3.3.10 /usr -v
 
     rm ruby-build.tar.gz
 fi
@@ -62,7 +62,7 @@ sudo tdnf install jq-1.7.1-1.azl3 -y
 #used to setcaps for ruby process to read /proc/env
 sudo tdnf install libcap -y
 
-sudo tdnf install telegraf-agent-1.37.0 -y
+sudo tdnf install telegraf-agent-1.37.1 -y
 telegraf_version=$(sudo tdnf list installed | grep telegraf | awk '{print $2}')
 echo "telegraf $telegraf_version" >> packages_version.txt
 mv /usr/bin/telegraf-agent /opt/telegraf
