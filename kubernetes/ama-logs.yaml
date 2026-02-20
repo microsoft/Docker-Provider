@@ -18,6 +18,7 @@ rules:
         "nodes/stats",
         "nodes/metrics",
         "nodes/spec",
+        "nodes/proxy",
         "namespaces",
         "services",
         "persistentvolumes",

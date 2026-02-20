@@ -80,7 +80,7 @@ metadata:
 {{- end }}
 rules:
 - apiGroups: [""]
-  resources: ["pods", "events", "nodes", "nodes/stats", "nodes/metrics", "nodes/spec", "namespaces", "services", "persistentvolumes"]
+  resources: ["pods", "events", "nodes", "nodes/stats", "nodes/metrics", "nodes/spec", "nodes/proxy", "namespaces", "services", "persistentvolumes"]
   verbs: ["list", "get", "watch"]
 - apiGroups: ["apps", "extensions", "autoscaling"]
   resources: ["replicasets", "deployments", "horizontalpodautoscalers"]
