@@ -1,0 +1,41 @@
+apiVersion: v2
+name: azuremonitor-containerinsights
+description: Azure Monitor container monitoring agent Helm chart for Kubernetes (supports both AKS addon and Arc K8s extension)
+version: 3.2.1-aks-beta-5
+appVersion: 7.0.0-1
+kubeVersion: "^1.10.0-0"
+keywords:
+  - monitoring
+  - azuremonitor
+  - azure
+  - ama
+  - containerinsights
+  - metric
+  - event
+  - logs
+  - containerhealth
+  - kubernetesmonitoring
+  - acs-engine
+  - aks-engine
+  - azurestack
+  - openshift v4
+  - azure redhat openshift v4
+  - on-prem kubernetes monitoring
+  - arc-k8s
+  - containerlogs
+  - containerhealth
+  - containermonitoring
+  - hybrid kubernetes monitoring
+  - kubernetes
+  - kuberneteshealth
+home: https://docs.microsoft.com/en-us/azure/monitoring/monitoring-container-health
+icon: https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/img/azuremonitor-containers.svg
+sources:
+  - https://github.com/microsoft/Docker-Provider/tree/ci_prod
+maintainers:
+  - name: rashmichandrashekar
+    email: rashmy@microsoft.com
+  - name: ganga1980
+    email: gangams@microsoft.com
+  - name: wanlonghenry
+    email: longwan@microsoft.com
