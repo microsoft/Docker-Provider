@@ -1,0 +1,38 @@
+{{- if or ( contains "microsoft.kubernetes/connectedclusters" (.Values.Azure.Cluster.ResourceId | lower)) ( contains "microsoft.hybridcontainerservice/provisionedclusters" (.Values.Azure.Cluster.ResourceId | lower)) }}
+#extension model
+{{- if not (empty .Values.Azure.Extension.Name) }}
+apiVersion: clusterconfig.azure.com/v1beta1
+kind: AzureExtensionIdentity
+metadata:
+  name: {{ .Values.Azure.Extension.Name }}
+  namespace: azure-arc
+spec:
+  serviceAccounts:
+    - name: ama-logs
+      namespace: kube-system
+  tokenNamespace: azure-arc
+---
+{{- end }}
+apiVersion:  clusterconfig.azure.com/v1beta1
+kind: AzureClusterIdentityRequest
+metadata:
+  name: container-insights-clusteridentityrequest
+  namespace: azure-arc
+spec:
+  {{- if eq (.Values.Azure.Cluster.Cloud | lower) "azurepubliccloud" }}
+  audience: https://monitor.azure.com/
+  {{- else if eq (.Values.Azure.Cluster.Cloud | lower) "azurechinacloud" }}
+  audience: https://monitor.azure.cn/
+  {{- else if eq (.Values.Azure.Cluster.Cloud | lower) "azurebleucloud" }}
+  audience: https://monitor.sovcloud-api.fr/
+  {{- else if eq (.Values.Azure.Cluster.Cloud | lower) "azureusgovernmentcloud" }}
+  audience: https://monitor.azure.us/
+  {{- else if and .Values.amalogs.isArcACluster (ne .Values.amalogs.tokenAudience "<your_token_audience>") }}
+  audience: {{ .Values.amalogs.tokenAudience | quote }}
+  {{- else }}
+  audience: https://monitor.azure.com/
+  {{- end }}
+  {{- if not (empty .Values.Azure.Extension.Name) }}
+  resourceId: {{ .Values.Azure.Extension.Name }}
+  {{- end }}
+{{- end }}

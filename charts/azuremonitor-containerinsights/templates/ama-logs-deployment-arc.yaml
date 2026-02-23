@@ -1,0 +1,308 @@
+{{- if and (ne .Values.amalogs.secret.key "<your_workspace_key>") (ne .Values.amalogs.secret.wsid "<your_workspace_id>") (or (ne .Values.amalogs.env.clusterName "<your_cluster_name>") (ne .Values.amalogs.env.clusterId "<your_cluster_id>") (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>") )}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: ama-logs-rs
+ namespace: kube-system
+ labels:
+   chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+   release: {{ .Release.Name }}
+   heritage: {{ .Release.Service }}
+   component: ama-logs-agent
+   tier: node
+spec:
+ replicas: 1
+ selector:
+  matchLabels:
+   rsName: "ama-logs-rs"
+ strategy:
+  type: RollingUpdate
+ template:
+  metadata:
+   labels:
+    rsName: "ama-logs-rs"
+   annotations:
+    agentVersion: {{ .Values.amalogs.image.agentVersion }}
+    dockerProviderVersion: {{ .Values.amalogs.image.dockerProviderVersion }}
+    schema-versions: "v1"
+    checksum/secret: {{ include (print $.Template.BasePath "/ama-logs-secret.yaml") . | sha256sum }}
+    checksum/config: {{ toYaml .Values.amalogs.resources | sha256sum }}
+    checksum/logsettings: {{ toYaml .Values.amalogs.logsettings | sha256sum }}
+  spec:
+  {{- if .Values.amalogs.rbac }}
+   serviceAccountName: ama-logs
+  {{- end }}
+   containers:
+{{- if and (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>") (.Values.amalogs.useAADAuth) }}
+     {{- if not (eq .Values.Azure.Cluster.Distribution "openshift") }}
+     - name: addon-token-adapter
+       imagePullPolicy: IfNotPresent
+       env:
+       - name: AZMON_COLLECT_ENV
+         value: "false"
+       - name: TOKEN_NAMESPACE
+         value: "azure-arc"
+{{-  .Values.Azure.Identity.MSIAdapterYaml | nindent 7 }}
+     {{- else }}
+     - name: msi-adapter
+       env:
+       - name: AZMON_COLLECT_ENV
+         value: "false"
+       - name: TOKEN_NAMESPACE
+         value: azure-arc
+       - name: CLUSTER_IDENTITY
+         value: "false"
+       - name: CLUSTER_TYPE
+         value: {{ (split "/" .Values.Azure.Cluster.ResourceId)._7 }}
+       - name: EXTENSION_ARMID
+         value: {{ .Values.Azure.Extension.ResourceId }}
+       - name: EXTENSION_NAME
+         value: {{ .Values.Azure.Extension.Name }}
+       - name: MSI_ADAPTER_LISTENING_PORT
+         value: "8421"
+       - name: MANAGED_IDENTITY_AUTH
+         value: "true"
+       - name: MSI_ADAPTER_LIVENESS_PORT
+         value: "9090"
+       - name: TEST_MODE
+         value: "false"
+       - name: TEST_FILE
+         value: /data/token
+       image: mcr.microsoft.com/azurearck8s/msi-adapter:1.29.3
+       securityContext:
+         privileged: true
+         capabilities:
+           add:
+             - NET_ADMIN
+             - NET_RAW
+       livenessProbe:
+         failureThreshold: 3
+         httpGet:
+           path: /healthz
+           port: 9090
+           scheme: "HTTP"
+         initialDelaySeconds: 10
+         periodSeconds: 15
+       resources:
+         limits:
+           cpu: 50m
+           memory: 100Mi
+         requests:
+           cpu: 20m
+           memory: 50Mi
+       lifecycle:
+         postStart:
+           exec:
+             command: ["/data/msi-adapter-ready-watcher"]
+     {{- end }}
+{{- end }}
+     - name: ama-logs
+       image: {{ printf "%s:%s" .Values.amalogs.image.repo .Values.amalogs.image.tag }}
+       imagePullPolicy: IfNotPresent
+       resources:
+{{ toYaml .Values.amalogs.resources.deployment | indent 9 }}
+       env:
+       - name: NUM_OF_FLUENTD_WORKERS
+         valueFrom:
+           resourceFieldRef:
+             containerName: ama-logs
+             resource: limits.cpu
+       - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+         valueFrom:
+           resourceFieldRef:
+             containerName: ama-logs
+             resource: limits.memory
+       {{- if ne .Values.amalogs.env.clusterId "<your_cluster_id>" }}
+       - name: AKS_RESOURCE_ID
+         value: {{ .Values.amalogs.env.clusterId | quote }}
+       {{- if ne .Values.amalogs.env.clusterRegion "<your_cluster_region>" }}
+       - name: AKS_REGION
+         value: {{ .Values.amalogs.env.clusterRegion | quote }}
+       {{- end }}
+       {{- else if ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>" }}
+       - name: AKS_RESOURCE_ID
+         value: {{ .Values.Azure.Cluster.ResourceId | quote }}
+       - name: USING_AAD_MSI_AUTH
+         value: {{ .Values.amalogs.useAADAuth | quote }}
+       {{- if ne .Values.Azure.Cluster.Region "<your_cluster_region>" }}
+       - name: AKS_REGION
+         value: {{ .Values.Azure.Cluster.Region | quote }}
+       {{- end }}
+       {{- else }}
+       - name: ACS_RESOURCE_NAME
+         value: {{ .Values.amalogs.env.clusterName | quote }}
+       {{- end }}
+       - name: CONTROLLER_TYPE
+         value: "ReplicaSet"
+       - name: NODE_IP
+         valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+       {{- if not (empty .Values.Azure.Extension.Name) }}
+       - name: ARC_K8S_EXTENSION_NAME
+         value: {{ .Values.Azure.Extension.Name | quote }}
+       {{- end }}
+       - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+         value: ""
+       - name: SIDECAR_SCRAPING_ENABLED
+         value: {{ .Values.amalogs.sidecarscraping | quote }}
+       - name: ISTEST
+         value: {{ .Values.amalogs.ISTEST | quote }}
+       {{ if .Values.amalogs.isArcACluster }}
+       - name: IS_ARCA_CLUSTER
+         value: {{ .Values.amalogs.isArcACluster | quote }}
+       {{- end }}
+       {{- if ne .Values.amalogs.metricsEndpoint "<your_metrics_endpoint>" }}
+       - name: CUSTOM_METRICS_ENDPOINT
+         value: {{ .Values.amalogs.metricsEndpoint | quote }}
+       {{- else if ne .Values.Azure.proxySettings.autonomousFqdn "<arca_autonomous_fqdn>" }}
+       - name: CUSTOM_METRICS_ENDPOINT
+         value: "https://metricsingestiongateway.monitoring.{{ .Values.Azure.proxySettings.autonomousFqdn }}"
+       {{- end }}
+       {{- if ne .Values.amalogs.tokenAudience "<your_token_audience>" }}
+       - name: customResourceEndpoint
+         value: {{ .Values.amalogs.tokenAudience | quote }}
+       {{- end }}
+       - name: IS_CUSTOM_CERT
+         value: {{ .Values.Azure.proxySettings.isCustomCert | quote }}
+       - name: ENABLE_CUSTOM_METRICS
+         value: {{ .Values.amalogs.enableCustomMetrics | quote }}
+       {{ if .Values.amalogs.ISTEST }}
+       - name: AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS
+         value: "true"
+       {{- end }}
+       {{- if .Values.amalogs.enableTelegrafLivenessprobe }}
+       - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+         value: {{ .Values.amalogs.enableTelegrafLivenessprobe | quote }}
+       {{- end }}
+       - name: HOSTNAME
+         valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+       - name: CLUSTER_CLOUD_ENVIRONMENT
+         value: "{{ .Values.Azure.Cluster.Cloud | lower }}"
+       securityContext:
+         privileged: true
+         capabilities:
+          drop:
+            - ALL
+          add:
+            - DAC_OVERRIDE
+       ports:
+       - containerPort: 25225
+         protocol: TCP
+       - containerPort: 25224
+         protocol: UDP
+       volumeMounts:
+        {{- if .Values.amalogs.enableServiceAccountTimeBoundToken }}
+        - name: kube-api-access
+          mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          readOnly: true
+        {{- end }}
+        - mountPath: /var/log
+          name: host-log
+        - mountPath: /var/lib/docker/containers
+          name: containerlog-path
+        - mountPath: /etc/kubernetes/host
+          name: azure-json-path
+        - mountPath: /etc/ama-logs-secret
+          name: ama-logs-secret
+          readOnly: true
+        {{- if and (.Values.Azure.proxySettings.isProxyEnabled) (.Values.Azure.proxySettings.proxyCert) (not .Values.amalogs.ignoreExtensionProxySettings) }}
+        - mountPath: /etc/ssl/certs/proxy-cert.crt
+          subPath: PROXYCERT.crt
+          name: ama-logs-secret
+          readOnly: true
+        {{- end }}
+        - mountPath : /etc/config
+          name: ama-logs-rs-config
+        - mountPath: /etc/config/settings
+          name: settings-vol-config
+          readOnly: true
+        {{- if .Values.amalogs.logsettings.custommountpath }}
+        - mountPath: {{ .Values.amalogs.logsettings.custommountpath }}
+          name: custom-mount-path
+        {{- end }}
+        - mountPath: /etc/config/settings/adx
+          name: ama-logs-adx-secret
+          readOnly: true
+        - mountPath: /etc/config/osm-settings
+          name: osm-settings-vol-config
+          readOnly: true
+       livenessProbe:
+        exec:
+         command:
+         - /bin/bash
+         - -c
+         - "/opt/livenessprobe.sh"
+        initialDelaySeconds: 60
+        periodSeconds: 60
+        timeoutSeconds: 15
+   {{- with .Values.amalogs.deployment.affinity }}
+   affinity: {{- toYaml . | nindent 8 }}
+   {{- end }}
+   {{- if .Values.amalogs.scheduleOnTaintedNodes }}
+   {{- with .Values.amalogs.tolerationsUnrestricted }}
+   tolerations: {{- toYaml . | nindent 8 }}
+   {{- end }}
+   {{- else }}
+   {{- with .Values.amalogs.tolerations }}
+   tolerations: {{- toYaml . | nindent 8 }}
+   {{- end }}
+   {{- end }}
+   volumes:
+    {{- if .Values.amalogs.enableServiceAccountTimeBoundToken }}
+    - name: kube-api-access
+      projected:
+        sources:
+        - serviceAccountToken:
+            path: token
+            expirationSeconds: 3600
+        - configMap:
+            items:
+            - key: ca.crt
+              path: ca.crt
+            name: kube-root-ca.crt
+        - downwardAPI:
+            items:
+            - fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+              path: namespace
+    {{- end }}
+    - name: container-hostname
+      hostPath:
+       path: /etc/hostname
+    - name: host-log
+      hostPath:
+       path: /var/log
+    - name: containerlog-path
+      hostPath:
+       path: /var/lib/docker/containers
+    - name: azure-json-path
+      hostPath:
+       path: /etc/kubernetes
+    - name: ama-logs-secret
+      secret:
+       secretName: ama-logs-secret
+    - name: ama-logs-rs-config
+      configMap:
+        name: ama-logs-rs-config
+    - name: settings-vol-config
+      configMap:
+        name: container-azm-ms-agentconfig
+        optional: true
+    {{- if .Values.amalogs.logsettings.custommountpath }}
+    - name: custom-mount-path
+      hostPath:
+       path: {{ .Values.amalogs.logsettings.custommountpath }}
+    {{- end }}
+    - name: ama-logs-adx-secret
+      secret:
+       secretName: ama-logs-adx-secret
+       optional: true
+    - name: osm-settings-vol-config
+      configMap:
+        name: container-azm-ms-osmconfig
+        optional: true
+{{- end }}
