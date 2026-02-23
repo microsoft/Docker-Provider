@@ -1,0 +1,40 @@
+{{/* Determine isusingaadauth value from OmsAgent.isUsingAADAuth */}}
+{{- $isusingaadauth := false -}}
+{{- if hasKey .Values.OmsAgent "isUsingAADAuth" -}}
+  {{- $isusingaadauth = .Values.OmsAgent.isUsingAADAuth -}}
+{{- end -}}
+---
+kind: ClusterRole
+{{- if semverCompare ">=1.16.0" .Values.global.commonGlobals.Versions.Kubernetes }}
+apiVersion: rbac.authorization.k8s.io/v1
+{{- else }}
+apiVersion: rbac.authorization.k8s.io/v1beta1
+{{- end }}
+metadata:
+  name: ama-logs-reader
+  labels:
+{{- if .Values.legacyAddonDelivery }}
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+{{- end }}
+rules:
+- apiGroups: [""]
+  resources: ["pods", "events", "nodes", "nodes/stats", "nodes/metrics", "nodes/spec", "nodes/proxy", "namespaces", "services", "persistentvolumes"]
+  verbs: ["list", "get", "watch"]
+- apiGroups: ["apps", "extensions", "autoscaling"]
+  resources: ["replicasets", "deployments", "horizontalpodautoscalers"]
+  verbs: ["list"]
+{{- if .Values.OmsAgent.isRSVPAEnabled }}
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  resourceNames: [ "ama-logs-rs" ]
+  verbs: ["get", "patch"]
+{{- end }}
+{{- if $isusingaadauth }}
+- apiGroups: [""]
+  resources: ["secrets"]
+  resourceNames: [{{ .Values.OmsAgent.accessTokenSecretName | quote }}]
+  verbs: ["get", "watch"]
+{{- end }}
+- nonResourceURLs: ["/metrics"]
+  verbs: ["get"]
