@@ -1,6 +1,6 @@
 module docker-provider/test/querylogs
 
-go 1.23.6
+go 1.25.7
 
 replace docker-provider/test/utils => ../utils
 
