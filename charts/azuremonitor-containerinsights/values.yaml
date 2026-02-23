@@ -22,12 +22,12 @@ AppmonitoringAgent:
 legacyAddonDelivery: false
 
 # ============================================================================
-# amaLogsAKS - AKS ADDON VALUES (from azuremonitor-containerinsights-aks)
+# OmsAgent - AKS ADDON VALUES (from azuremonitor-containerinsights-aks)
 # Exact order preserved from OmsAgent section in AKS chart
 # ============================================================================
 # Default values for ama-logs configuration
-# omsagent configuration
-amaLogsAKS:
+# OmsAgent configuration
+OmsAgent:
   aksResourceID: <your_cluster_id>
   enableDaemonSetSizing: false
   isAppMonitoringAgentEnabled: false
@@ -179,10 +179,10 @@ amaLogsAKS:
   #           memoryRequest: "900Mi"
 
 # ============================================================================
-# amaLogsARC - ARC K8S EXTENSION VALUES (from azuremonitor-containers)
+# amalogs - ARC K8S EXTENSION VALUES (from azuremonitor-containers)
 # Exact order preserved from Arc chart
 # ============================================================================
-amaLogsARC:
+amalogs:
   image:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
     tag: "3.1.34"
