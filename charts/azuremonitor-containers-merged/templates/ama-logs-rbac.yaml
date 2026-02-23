@@ -1,4 +1,8 @@
 {{- $settings := include "arc-extension-settings" . | fromYaml }}
+{{- $rbacApiVersion := "rbac.authorization.k8s.io/v1" }}
+{{- if not (semverCompare ">=1.16.0" .Capabilities.KubeVersion.Version) }}
+{{- $rbacApiVersion = "rbac.authorization.k8s.io/v1beta1" }}
+{{- end }}
 {{- if $settings.rbacEnabled }}
 #
 # RBAC Resources for ama-logs
@@ -15,7 +19,7 @@ metadata:
 {{- end }}
 ---
 kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
+apiVersion: {{ $rbacApiVersion }}
 metadata:
   name: ama-logs-reader
   labels:
@@ -30,6 +34,11 @@ rules:
 - apiGroups: ["apps", "extensions", "autoscaling"]
   resources: ["replicasets", "deployments", "horizontalpodautoscalers"]
   verbs: ["list"]
+{{- if $settings.isArcExtension }}
+- apiGroups: ["clusterconfig.azure.com"]
+  resources: ["azureclusteridentityrequests", "azureclusteridentityrequests/status"]
+  verbs: ["get", "create", "patch", "list", "update", "delete"]
+{{- end }}
 {{- if $settings.rsvpaEnabled }}
 - apiGroups: ["apps"]
   resources: ["deployments"]
@@ -42,11 +51,17 @@ rules:
   resourceNames: [{{ $settings.accessTokenSecretName | quote }}]
   verbs: ["get", "watch"]
 {{- end }}
+{{- if and $settings.isArcExtension (empty $settings.arcExtensionName) }}
+- apiGroups: [""]
+  resources: ["secrets"]
+  resourceNames: ["container-insights-clusteridentityrequest-token"]
+  verbs: ["get"]
+{{- end }}
 - nonResourceURLs: ["/metrics"]
   verbs: ["get"]
 ---
 kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
+apiVersion: {{ $rbacApiVersion }}
 metadata:
   name: amalogsclusterrolebinding
   labels:

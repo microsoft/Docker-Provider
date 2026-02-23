@@ -1,0 +1,495 @@
+{{- $settings := include "arc-extension-settings" . | fromYaml }}
+{{- if and (ne $settings.workspaceID "") (ne $settings.workspaceID "<your_workspace_id>") (or $settings.isAKSAddon $settings.isArcExtension) }}
+#
+# Deployment ama-logs-rs - cluster-level component collection (ReplicaSet controller type)
+# Renders for both AKS addon and Arc extension when workspace is configured.
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ama-logs-rs
+  namespace: kube-system
+  labels:
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    component: ama-logs-agent
+    tier: node
+{{- if $settings.legacyAddonDelivery }}
+    kubernetes.azure.com/managedby: aks
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+{{- end }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      rsName: "ama-logs-rs"
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        rsName: "ama-logs-rs"
+{{- if $settings.isAKSAddon }}
+        kubernetes.azure.com/managedby: aks
+{{- end }}
+      annotations:
+        agentVersion: {{ if $settings.isArcExtension }}{{ .Values.amalogs.image.agentVersion }}{{ else }}azure-mdsd-1.37.0{{ end }}
+        dockerProviderVersion: {{ if $settings.isArcExtension }}{{ .Values.amalogs.image.dockerProviderVersion }}{{ else }}18.0.1-0{{ end }}
+        schema-versions: "v1"
+        WSID: {{ $settings.workspaceID | b64enc | quote }}
+        kubernetes.azure.com/no-http-proxy-vars: "true"
+{{- if $settings.isArcExtension }}
+        checksum/secret: {{ include (print $.Template.BasePath "/ama-logs-secret.yaml") . | sha256sum }}
+        checksum/config: {{ toYaml .Values.amalogs.resources | sha256sum }}
+        checksum/logsettings: {{ toYaml .Values.amalogs.logsettings | sha256sum }}
+{{- end }}
+{{- if $settings.isAKSAddon }}
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+{{- end }}
+    spec:
+{{- if $settings.isAKSAddon }}
+      priorityClassName: system-node-critical
+      tolerations:
+        - key: "CriticalAddonsOnly"
+          operator: "Exists"
+{{- else }}
+{{- if $settings.isArcExtension }}
+      {{- if .Values.amalogs.priority }}
+      priorityClassName: ama-logs
+      {{- end }}
+      {{- if $settings.scheduleOnTaintedNodes }}
+      {{- with .Values.amalogs.tolerationsUnrestricted }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- else }}
+      {{- with .Values.amalogs.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+{{- end }}
+{{- end }}
+      {{- if $settings.rbacEnabled }}
+      serviceAccountName: ama-logs
+      {{- end }}
+      containers:
+{{- if $settings.isAKSAddon }}
+{{- if $settings.rsvpaEnabled }}
+        - name: ama-logs-vpa
+          image: "{{ template "addon_mcr_repository_base" . }}/oss/v2/kubernetes/autoscaler/addon-resizer:{{ dict "component" "addon-resizer" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.addonImageTag" }}"
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: 100m
+              memory: 300Mi
+            requests:
+              cpu: 5m
+              memory: 30Mi
+          env:
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: MY_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          volumeMounts:
+            - name: ama-logs-rs-vpa-config-volume
+              mountPath: /etc/config
+          command:
+            - /pod_nanny
+            - --config-dir=/etc/config
+            - --cpu=200m
+            - --extra-cpu=2m
+            - --memory=300Mi
+            - --extra-memory=4Mi
+            - --poll-period=180000
+            - --threshold=5
+            - --namespace=kube-system
+            - --deployment=ama-logs-rs
+            - --container=ama-logs
+{{- end }}
+{{- end }}
+{{- if and $settings.isArcExtension $settings.usingAADAuth }}
+        {{- if ne $settings.distribution "openshift" }}
+        - name: addon-token-adapter
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: AZMON_COLLECT_ENV
+            value: "false"
+          - name: TOKEN_NAMESPACE
+            value: "azure-arc"
+{{- if and (hasKey .Values "Azure") (hasKey .Values.Azure "Identity") (ne (toString .Values.Azure.Identity.MSIAdapterYaml) "") }}
+{{- .Values.Azure.Identity.MSIAdapterYaml | nindent 10 }}
+{{- end }}
+        {{- else }}
+        - name: msi-adapter
+          image: mcr.microsoft.com/azurearck8s/msi-adapter:1.29.3
+          env:
+          - name: AZMON_COLLECT_ENV
+            value: "false"
+          - name: TOKEN_NAMESPACE
+            value: azure-arc
+          - name: CLUSTER_IDENTITY
+            value: "false"
+          - name: CLUSTER_TYPE
+            value: {{ (split "/" $settings.resourceId)._7 }}
+          - name: EXTENSION_ARMID
+            value: {{ $settings.arcExtensionResourceId }}
+          - name: EXTENSION_NAME
+            value: {{ $settings.arcExtensionName }}
+          - name: MSI_ADAPTER_LISTENING_PORT
+            value: "8421"
+          - name: MANAGED_IDENTITY_AUTH
+            value: "true"
+          - name: MSI_ADAPTER_LIVENESS_PORT
+            value: "9090"
+          - name: TEST_MODE
+            value: "false"
+          - name: TEST_FILE
+            value: /data/token
+          securityContext:
+            privileged: true
+            capabilities:
+              add:
+                - NET_ADMIN
+                - NET_RAW
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /healthz
+              port: 9090
+              scheme: "HTTP"
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            limits:
+              cpu: 50m
+              memory: 100Mi
+            requests:
+              cpu: 20m
+              memory: 50Mi
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/data/msi-adapter-ready-watcher"]
+        {{- end }}
+{{- else if and $settings.isAKSAddon $settings.usingAADAuth }}
+        - name: addon-token-adapter
+          command:
+            - /addon-token-adapter
+          args:
+            - --secret-namespace=kube-system
+            - --secret-name={{ $settings.accessTokenSecretName }}
+            - --token-server-listening-port=8888
+            - --health-server-listening-port=9999
+            - --restart-pod-waiting-minutes-on-broken-connection=240
+          image: "{{ template "addon_mcr_repository_base" . }}/aks/msi/addon-token-adapter:{{ dict "component" "addon-token-adapter-linux" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag" }}"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: AZMON_COLLECT_ENV
+              value: "false"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9999
+            initialDelaySeconds: 10
+            periodSeconds: 60
+          resources:
+            limits:
+              cpu: 500m
+              memory: 500Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_ADMIN
+                - NET_RAW
+{{- end }}
+        - name: ama-logs
+          image: "{{ $settings.imageRepo }}:{{ $settings.imageTagLinux }}"
+          imagePullPolicy: {{ $settings.imagePullPolicy }}
+          resources:
+{{- if $settings.isArcExtension }}
+{{ toYaml .Values.amalogs.resources.deployment | indent 10 }}
+{{- else }}
+{{- if not $settings.rsvpaEnabled }}
+            limits:
+              cpu: {{ .Values.OmsAgent.omsAgentRsCPULimit }}
+              memory: {{ .Values.OmsAgent.omsAgentRsMemoryLimit }}
+            requests:
+              cpu: 150m
+              memory: 250Mi
+{{- end }}
+{{- end }}
+          env:
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: AKS_RESOURCE_ID
+              value: {{ $settings.resourceId | quote }}
+            - name: AKS_REGION
+              value: {{ $settings.region | quote }}
+            - name: CONTROLLER_TYPE
+              value: "ReplicaSet"
+            - name: NUM_OF_FLUENTD_WORKERS
+              valueFrom:
+                resourceFieldRef:
+                  containerName: ama-logs
+                  resource: limits.cpu
+            - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+              valueFrom:
+                resourceFieldRef:
+                  containerName: ama-logs
+                  resource: limits.memory
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+              value: {{ $settings.identityClientID | quote }}
+            - name: SIDECAR_SCRAPING_ENABLED
+              value: {{ $settings.sidecarScrapingEnabled | quote }}
+            - name: CLUSTER_CLOUD_ENVIRONMENT
+              value: {{ $settings.cloudEnvironment | quote }}
+{{- if $settings.isAKSAddon }}
+            - name: AKS_CLUSTER_NAME
+              value: {{ $settings.clusterName | quote }}
+            - name: AKS_NODE_RESOURCE_GROUP
+              value: {{ .Values.OmsAgent.aksNodeResourceGroup | quote }}
+            - name: USING_AAD_MSI_AUTH
+              value: {{ if $settings.usingAADAuth }}"true"{{ else }}"false"{{ end }}
+{{- if $settings.rsvpaEnabled }}
+            - name: RS_ADDON-RESIZER_VPA_ENABLED
+              value: "true"
+{{- end }}
+            - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
+              value: "{{ $settings.appMonitoringEnabled }}"
+            - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
+              value: "{{ $settings.prometheusScrapingDisabled }}"
+            - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+              value: "{{ $settings.telegrafLivenessprobeEnabled }}"
+            - name: AZMON_WINDOWS_FLUENT_BIT_ENABLED
+              value: "{{ $settings.windowsFluentBitEnabled }}"
+{{- else }}
+{{- if not (empty $settings.arcExtensionName) }}
+            - name: ARC_K8S_EXTENSION_NAME
+              value: {{ $settings.arcExtensionName | quote }}
+{{- end }}
+            - name: USING_AAD_MSI_AUTH
+              value: {{ $settings.usingAADAuth | quote }}
+            - name: ISTEST
+              value: {{ $settings.isTestMode | quote }}
+{{- if $settings.isTestMode }}
+            - name: AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS
+              value: "true"
+{{- end }}
+{{- if $settings.isArcACluster }}
+            - name: IS_ARCA_CLUSTER
+              value: {{ $settings.isArcACluster | quote }}
+{{- end }}
+{{- if ne $settings.customMetricsEndpoint "" }}
+            - name: CUSTOM_METRICS_ENDPOINT
+              value: {{ $settings.customMetricsEndpoint | quote }}
+{{- end }}
+{{- if ne $settings.tokenAudience "" }}
+            - name: customResourceEndpoint
+              value: {{ $settings.tokenAudience | quote }}
+{{- end }}
+            - name: IS_CUSTOM_CERT
+              value: {{ $settings.isCustomCert | quote }}
+            - name: ENABLE_CUSTOM_METRICS
+              value: {{ $settings.customMetricsEnabled | quote }}
+            - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+              value: {{ $settings.telegrafLivenessprobeEnabled | quote }}
+{{- end }}
+          securityContext:
+            privileged: true
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - DAC_OVERRIDE
+          ports:
+            - containerPort: 25225
+              protocol: TCP
+            - containerPort: 25224
+              protocol: UDP
+{{- if $settings.isAKSAddon }}
+            - containerPort: 25227
+              protocol: TCP
+              name: in-rs-tcp
+{{- end }}
+          volumeMounts:
+            - mountPath: /var/log
+              name: host-log
+            - mountPath: /etc/kubernetes/host
+              name: azure-json-path
+            - mountPath: /etc/ama-logs-secret
+              name: ama-logs-secret
+              readOnly: true
+{{- if $settings.isAKSAddon }}
+            - mountPath: /etc/omsagent-secret
+              name: ama-logs-secret
+              readOnly: true
+{{- end }}
+            - mountPath: /etc/config
+              name: ama-logs-rs-config
+            - mountPath: /etc/config/settings
+              name: settings-vol-config
+              readOnly: true
+            - mountPath: /etc/config/settings/adx
+              name: ama-logs-adx-secret
+              readOnly: true
+            - mountPath: /etc/config/osm-settings
+              name: osm-settings-vol-config
+              readOnly: true
+{{- if and $settings.isArcExtension $settings.enableServiceAccountTimeBoundToken }}
+            - name: kube-api-access
+              mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              readOnly: true
+{{- end }}
+{{- if and $settings.isProxyEnabled $settings.proxyCert }}
+            - mountPath: /etc/ssl/certs/proxy-cert.crt
+              subPath: PROXYCERT.crt
+              name: ama-logs-secret
+              readOnly: true
+{{- end }}
+{{- if and $settings.isArcExtension .Values.amalogs.logsettings.custommountpath }}
+            - mountPath: {{ .Values.amalogs.logsettings.custommountpath }}
+              name: custom-mount-path
+{{- end }}
+{{- if $settings.mountMarinerCerts }}
+            - mountPath: /anchors/mariner
+              name: anchors-mariner
+              readOnly: true
+{{- end }}
+{{- if $settings.mountUbuntuCerts }}
+            - mountPath: /anchors/ubuntu
+              name: anchors-ubuntu
+              readOnly: true
+{{- end }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - "/opt/livenessprobe.sh"
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            timeoutSeconds: 15
+      affinity:
+{{- if $settings.isArcExtension }}
+{{- with .Values.amalogs.deployment.affinity }}
+        {{- toYaml . | nindent 8 }}
+{{- end }}
+{{- else }}
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: kubernetes.azure.com/mode
+                operator: In
+                values:
+                - system
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: storageprofile
+                operator: NotIn
+                values:
+                - managed
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+              - key: kubernetes.azure.com/cluster
+                operator: Exists
+              - key: type
+                operator: NotIn
+                values:
+                - virtual-kubelet
+{{- end }}
+      volumes:
+        - name: container-hostname
+          hostPath:
+            path: /etc/hostname
+        - name: host-log
+          hostPath:
+            path: /var/log
+        - name: azure-json-path
+          hostPath:
+            path: /etc/kubernetes
+        - name: ama-logs-secret
+          secret:
+            secretName: ama-logs-secret
+        - name: ama-logs-rs-config
+          configMap:
+            name: ama-logs-rs-config
+        - name: settings-vol-config
+          configMap:
+            name: container-azm-ms-agentconfig
+            optional: true
+        - name: ama-logs-adx-secret
+          secret:
+            secretName: ama-logs-adx-secret
+            optional: true
+        - name: osm-settings-vol-config
+          configMap:
+            name: container-azm-ms-osmconfig
+            optional: true
+{{- if and $settings.isArcExtension $settings.enableServiceAccountTimeBoundToken }}
+        - name: kube-api-access
+          projected:
+            sources:
+            - serviceAccountToken:
+                path: token
+                expirationSeconds: 3600
+            - configMap:
+                items:
+                - key: ca.crt
+                  path: ca.crt
+                name: kube-root-ca.crt
+            - downwardAPI:
+                items:
+                - fieldRef:
+                    apiVersion: v1
+                    fieldPath: metadata.namespace
+                  path: namespace
+{{- end }}
+{{- if and $settings.isArcExtension .Values.amalogs.logsettings.custommountpath }}
+        - name: custom-mount-path
+          hostPath:
+            path: {{ .Values.amalogs.logsettings.custommountpath }}
+{{- end }}
+{{- if $settings.mountMarinerCerts }}
+        - name: anchors-mariner
+          hostPath:
+            path: /etc/pki/ca-trust/source/anchors
+            type: DirectoryOrCreate
+{{- end }}
+{{- if $settings.mountUbuntuCerts }}
+        - name: anchors-ubuntu
+          hostPath:
+            path: /usr/local/share/ca-certificates/
+            type: DirectoryOrCreate
+{{- end }}
+{{- if and $settings.isAKSAddon $settings.rsvpaEnabled }}
+        - name: ama-logs-rs-vpa-config-volume
+          configMap:
+            name: ama-logs-rs-vpa-config
+            optional: true
+{{- end }}
+{{- end }}

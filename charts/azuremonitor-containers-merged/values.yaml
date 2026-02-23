@@ -90,7 +90,7 @@ amalogs:
     tailbufmaxsizemegabytes: "1"
     custommountpath: ""
   
-  # Tolerations
+  # Tolerations (aligned with Arc source for control-plane and master)
   tolerations:
     - key: "node-role.kubernetes.io/control-plane"
       operator: "Exists"
@@ -98,9 +98,18 @@ amalogs:
     - key: "node-role.kubernetes.io/control-plane"
       operator: "Exists"
       effect: "NoExecute"
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "PreferNoSchedule"
     - key: "node-role.kubernetes.io/master"
       operator: "Exists"
       effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoExecute"
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "PreferNoSchedule"
   
   tolerationsUnrestricted:
     - operator: "Exists"
@@ -129,6 +138,14 @@ amalogs:
   deployment:
     affinity:
       nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+                - key: storageprofile
+                  operator: NotIn
+                  values:
+                    - managed
         requiredDuringSchedulingIgnoredDuringExecution:
           nodeSelectorTerms:
           - matchExpressions:
@@ -140,6 +157,10 @@ amalogs:
               operator: NotIn
               values:
                 - virtual-kubelet
+            - key: kubernetes.io/role
+              operator: NotIn
+              values:
+                - master
   
   # Resources
   resources:

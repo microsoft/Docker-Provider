@@ -84,7 +84,9 @@ spec:
          value: "false"
        - name: TOKEN_NAMESPACE
          value: "azure-arc"
-{{-  .Values.Azure.Identity.MSIAdapterYaml | nindent 7 }}
+{{- if and (hasKey .Values "Azure") (hasKey .Values.Azure "Identity") (ne (toString .Values.Azure.Identity.MSIAdapterYaml) "") }}
+{{- .Values.Azure.Identity.MSIAdapterYaml | nindent 7 }}
+{{- end }}
      {{- else }}
      - name: msi-adapter
        env:

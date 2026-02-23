@@ -5,8 +5,9 @@ This consolidates all deployment-mode-specific configuration logic
 */}}
 {{- define "arc-extension-settings" -}}
 
-{{/* Detect deployment mode */}}
-{{- $isArcExtension := or (ne .Values.Azure.Extension.Name "") (ne .Values.Azure.Extension.ResourceId "") -}}
+{{/* Detect deployment mode - guard Azure for AKS-only or standalone values */}}
+{{- $hasAzure := and (hasKey .Values "Azure") (hasKey .Values.Azure "Extension") -}}
+{{- $isArcExtension := and $hasAzure (or (ne .Values.Azure.Extension.Name "") (ne .Values.Azure.Extension.ResourceId "")) -}}
 {{- $hasArcClusterResourceId := and (hasKey .Values "Azure") (hasKey .Values.Azure "Cluster") (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>") -}}
 {{- $isAKSAddon := and (hasKey .Values "OmsAgent") (ne .Values.OmsAgent.aksResourceID "<your_cluster_id>") (not $isArcExtension) -}}
 {{- $isStandalone := and (not $isArcExtension) (not $isAKSAddon) -}}
@@ -32,11 +33,13 @@ region: {{ .Values.amalogs.env.clusterRegion | default .Values.global.commonGlob
 clusterName: {{ .Values.amalogs.env.clusterName }}
 {{- end }}
 
-{{/* Cloud environment - prefer global setting, fall back to Arc value */}}
-cloudEnvironment: {{ default (lower .Values.Azure.Cluster.Cloud) (lower .Values.global.commonGlobals.CloudEnvironment) }}
+{{/* Cloud environment - safe when Azure absent (AKS-only values) */}}
+{{- $azureCloud := "" }}
+{{- if and (hasKey .Values "Azure") (hasKey .Values.Azure "Cluster") }}{{ $azureCloud = lower .Values.Azure.Cluster.Cloud }}{{ end }}
+cloudEnvironment: {{ default $azureCloud (lower .Values.global.commonGlobals.CloudEnvironment | default "azurepubliccloud") }}
 
 {{/* Distribution - e.g., openshift, aks_edge_k3s, etc. */}}
-distribution: {{ .Values.Azure.Cluster.Distribution | default "generic" }}
+distribution: {{ if and (hasKey .Values "Azure") (hasKey .Values.Azure "Cluster") }}{{ .Values.Azure.Cluster.Distribution | default "generic" }}{{ else }}generic{{ end }}
 
 {{/* Authentication configuration */}}
 {{- if $isArcExtension }}
@@ -47,8 +50,8 @@ usingAADAuth: {{ eq .Values.OmsAgent.isUsingAADAuth "true" }}
 usingAADAuth: false
 {{- end }}
 
-{{/* Access token secret name */}}
-accessTokenSecretName: {{ .Values.OmsAgent.accessTokenSecretName | default "ama-logs-secret" }}
+{{/* Access token secret name - safe when OmsAgent absent (standalone) */}}
+accessTokenSecretName: {{ if hasKey .Values "OmsAgent" }}{{ .Values.OmsAgent.accessTokenSecretName | default "ama-logs-secret" }}{{ else }}ama-logs-secret{{ end }}
 
 {{/* Arc Extension specific settings */}}
 {{- if $isArcExtension }}
@@ -64,11 +67,13 @@ proxyCert: {{ .Values.Azure.proxySettings.proxyCert }}
 isCustomCert: {{ .Values.Azure.proxySettings.isCustomCert }}
 ignoreProxySettings: {{ .Values.amalogs.ignoreExtensionProxySettings | default false }}
 {{- else }}
-isProxyEnabled: false
-httpProxy: ""
-httpsProxy: ""
+{{/* AKS addon: proxy from OmsAgent. Standalone: no proxy in settings (use Arc path if needed). */}}
+{{- $hasProxy := and (hasKey .Values "OmsAgent") (or .Values.OmsAgent.httpProxy .Values.OmsAgent.httpsProxy) }}
+isProxyEnabled: {{ $hasProxy }}
+httpProxy: {{ if hasKey .Values "OmsAgent" }}{{ .Values.OmsAgent.httpProxy | default "" }}{{ else }}{{ "" }}{{ end }}
+httpsProxy: {{ if hasKey .Values "OmsAgent" }}{{ .Values.OmsAgent.httpsProxy | default "" }}{{ else }}{{ "" }}{{ end }}
 noProxy: ""
-proxyCert: ""
+proxyCert: {{ if hasKey .Values "OmsAgent" }}{{ .Values.OmsAgent.trustedCA | default "" }}{{ else }}{{ "" }}{{ end }}
 isCustomCert: false
 ignoreProxySettings: false
 {{- end }}
@@ -85,9 +90,16 @@ workspaceID: {{ .Values.amalogs.secret.wsid }}
 workspaceKey: {{ .Values.amalogs.secret.key }}
 {{- end }}
 
-{{/* Domain configuration based on cloud environment */}}
-{{- $cloudEnv := default (lower .Values.Azure.Cluster.Cloud) (lower .Values.global.commonGlobals.CloudEnvironment) | upper -}}
-domain: {{ if eq $cloudEnv "AZURECHINACLOUD" }}opinsights.azure.cn{{ else if or (eq $cloudEnv "AZUREUSGOVERNMENT") (.Values.OmsAgent.isFairfax) }}opinsights.azure.us{{ else if eq $cloudEnv "USNAT" }}opinsights.azure.eaglex.ic.gov{{ else if eq $cloudEnv "USSEC" }}opinsights.azure.microsoft.scloud{{ else if eq $cloudEnv "AZUREBLEUCLOUD" }}opinsights.sovcloud-api.fr{{ else }}opinsights.azure.com{{ end }}
+{{/* Domain configuration based on cloud environment - safe when Azure/OmsAgent absent. Output string only (no boolean). */}}
+{{- $cloudEnv := default $azureCloud (lower .Values.global.commonGlobals.CloudEnvironment | default "azurepubliccloud") | upper -}}
+{{- $isFairfax := and (hasKey .Values "OmsAgent") (eq .Values.OmsAgent.isFairfax true) -}}
+{{- $domain := "opinsights.azure.com" -}}
+{{- if eq $cloudEnv "AZURECHINACLOUD" }}{{ $domain = "opinsights.azure.cn" }}{{ end -}}
+{{- if or (eq $cloudEnv "AZUREUSGOVERNMENT") $isFairfax }}{{ $domain = "opinsights.azure.us" }}{{ end -}}
+{{- if eq $cloudEnv "USNAT" }}{{ $domain = "opinsights.azure.eaglex.ic.gov" }}{{ end -}}
+{{- if eq $cloudEnv "USSEC" }}{{ $domain = "opinsights.azure.microsoft.scloud" }}{{ end -}}
+{{- if eq $cloudEnv "AZUREBLEUCLOUD" }}{{ $domain = "opinsights.sovcloud-api.fr" }}{{ end -}}
+domain: {{ $domain }}
 
 {{/* Feature flags - unified from both value structures */}}
 {{- if $isAKSAddon }}
@@ -170,11 +182,11 @@ imagePullPolicy: {{ .Values.amalogs.image.pullPolicy | default "IfNotPresent" }}
 {{- $shouldMountCerts := or (eq $cloudEnv "USNAT") (eq $cloudEnv "USSEC") (eq $cloudEnv "AZUREBLEUCLOUD") -}}
 mountMarinerCerts: {{ $shouldMountCerts }}
 mountUbuntuCerts: {{ $shouldMountCerts }}
-{{- if or (eq .Values.Azure.Cluster.Distribution "aks_edge_k3s") (eq .Values.Azure.Cluster.Distribution "aks_edge_k8s") }}
+{{- if and (hasKey .Values "Azure") (hasKey .Values.Azure "Cluster") (or (eq .Values.Azure.Cluster.Distribution "aks_edge_k3s") (eq .Values.Azure.Cluster.Distribution "aks_edge_k8s")) }}
 mountUbuntuCerts: false
 {{- end }}
 
-{{/* Test mode */}}
+{{/* Test mode - templates should use $settings.isTestMode (this is the single source) */}}
 {{- if $isArcExtension }}
 isTestMode: {{ .Values.amalogs.ISTEST | default false }}
 {{- else }}
