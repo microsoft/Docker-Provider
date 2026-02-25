@@ -1,3 +1,4 @@
+{{- if and $isusingaadauth .Values.OmsAgent.isMultitenancyLogsEnabled }}
 ---
 apiVersion: v1
 kind: Service
@@ -18,3 +19,4 @@ spec:
       name: fluentbit-fwd
   selector:
     rsName: "ama-logs-multitenancy"
+{{- end }}

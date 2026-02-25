@@ -1,0 +1,400 @@
+{{- $arcSettings := include "arc-extension-settings" . | fromYaml }}
+{{- $isArcExtension := $arcSettings.isArcExtension }}
+{{- $amalogsWindowsDefaultImageTag := dict "component" "ama-logs-win" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.addonImageTag" }}
+{{- $addonTokenAdapterWindowsDefaultImageTag := dict "component" "addon-token-adapter-windows" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag"}}
+{{/* Determine isusingaadauth value */}}
+{{- $isusingaadauth := false -}}
+{{- if not $isArcExtension -}}
+  {{- if hasKey .Values.OmsAgent "isUsingAADAuth" -}}
+    {{- $isusingaadauth = .Values.OmsAgent.isUsingAADAuth -}}
+  {{- end -}}
+{{- else -}}
+  {{- if and .Values.amalogs (hasKey .Values.amalogs "useAADAuth") -}}
+    {{- $isusingaadauth = .Values.amalogs.useAADAuth -}}
+  {{- end -}}
+{{- end -}}
+{{/* Outer condition: AKS always renders, Arc only renders for non-AAD with valid credentials */}}
+{{- if or (not $isArcExtension) (and $isArcExtension (not $isusingaadauth) (and (ne .Values.amalogs.secret.key "<your_workspace_key>") (ne .Values.amalogs.secret.wsid "<your_workspace_id>") (or (ne .Values.amalogs.env.clusterName "<your_cluster_name>") (ne .Values.amalogs.env.clusterId "<your_cluster_id>") (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>")))) }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ama-logs-windows
+  namespace: kube-system
+  labels:
+{{- if $isArcExtension }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+{{- else }}
+    kubernetes.azure.com/managedby: aks
+{{- if .Values.legacyAddonDelivery }}
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+{{- end }}
+{{- end }}
+    component: ama-logs-agent-windows
+    tier: node-win
+spec:
+  updateStrategy:
+    type: RollingUpdate
+{{- if not $isArcExtension }}
+    rollingUpdate:
+      maxUnavailable: 50%
+{{- end }}
+  selector:
+    matchLabels:
+{{- if $isArcExtension }}
+      dsName: "ama-logs-ds"
+{{- else }}
+      component: ama-logs-agent-windows
+      tier: node-win
+{{- end }}
+  template:
+    metadata:
+      labels:
+{{- if $isArcExtension }}
+        dsName: "ama-logs-ds"
+{{- else }}
+        component: ama-logs-agent-windows
+        tier: node-win
+        kubernetes.azure.com/managedby: aks
+{{- end }}
+      annotations:
+{{- if $isArcExtension }}
+        agentVersion: {{ .Values.amalogs.image.winAgentVersion }}
+        dockerProviderVersion: {{ .Values.amalogs.image.dockerProviderVersion }}
+        schema-versions: "v1"
+        checksum/secret: {{ include (print $.Template.BasePath "/ama-logs-secret.yaml") . | sha256sum }}
+        checksum/config: {{ toYaml .Values.amalogs.resources | sha256sum }}
+{{- else }}
+        agentVersion: "46.17.2"
+        dockerProviderVersion: "18.0.1-0"
+        schema-versions: "v1"
+        WSID: {{ .Values.OmsAgent.workspaceID | b64enc | quote }}
+        kubernetes.azure.com/no-http-proxy-vars: "true"
+{{- end }}
+    spec:
+{{- if $isArcExtension }}
+      priorityClassName: ama-logs
+{{- else }}
+      priorityClassName: system-node-critical
+{{- end }}
+{{- if $isArcExtension }}
+{{- if .Values.amalogs.rbac }}
+      serviceAccountName: ama-logs
+{{- end }}
+{{- else }}
+      serviceAccountName: ama-logs
+{{- end }}
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "3"
+{{- if $isArcExtension }}
+      nodeSelector:
+        kubernetes.io/os: windows
+{{- end }}
+      containers:
+        - name: ama-logs-windows
+{{- if $isArcExtension }}
+          image: {{ printf "%s:%s" .Values.amalogs.image.repo .Values.amalogs.image.tagWindows }}
+          imagePullPolicy: IfNotPresent
+          resources:
+{{ toYaml .Values.amalogs.resources.daemonsetwindows | indent 12 }}
+{{- else }}
+          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/containerinsights/ciprod:{{- default $amalogsWindowsDefaultImageTag .Values.OmsAgent.imageTagWindows -}}"
+        {{- if .Values.OmsAgent.isImagePullPolicyAlways }}
+          imagePullPolicy: Always
+        {{- else }}
+          imagePullPolicy: IfNotPresent
+        {{- end }}
+        {{- if .Values.OmsAgent.isWindowsBurstableQoSEnabled }}
+          resources:
+            requests:
+              cpu: "{{ .Values.OmsAgent.omsAgentDsCPURequestWindows }}"
+              memory: "{{ .Values.OmsAgent.omsAgentDsMemoryRequestWindows }}"
+            limits:
+              cpu: "{{ .Values.OmsAgent.omsAgentDsCPULimitWindows }}"
+              memory: "{{ .Values.OmsAgent.omsAgentDsMemoryLimitWindows }}"
+        {{- else }}
+          resources:
+            limits:
+              cpu: "{{ .Values.OmsAgent.omsAgentDsCPULimitWindows }}"
+              memory: "{{ .Values.OmsAgent.omsAgentDsMemoryLimitWindows }}"
+        {{- end }}
+{{- end }}
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - DAC_OVERRIDE
+          env:
+          - name: FBIT_SERVICE_FLUSH_INTERVAL
+            value: "15"
+          - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
+            value: "1"
+          - name: FBIT_TAIL_BUFFER_MAX_SIZE
+            value: "1"
+{{- if $isArcExtension }}
+          {{- if ne .Values.amalogs.env.clusterId "<your_cluster_id>" }}
+          - name: AKS_RESOURCE_ID
+            value: {{ .Values.amalogs.env.clusterId | quote }}
+          {{- if ne .Values.amalogs.env.clusterRegion "<your_cluster_region>" }}
+          - name: AKS_REGION
+            value: {{ .Values.amalogs.env.clusterRegion | quote }}
+          {{- end }}
+          {{- else if ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>" }}
+          - name: AKS_RESOURCE_ID
+            value: {{ .Values.Azure.Cluster.ResourceId | quote }}
+          - name: USING_AAD_MSI_AUTH
+            value: {{ .Values.amalogs.useAADAuth | quote }}
+          {{- if ne .Values.Azure.Cluster.Region "<your_cluster_region>" }}
+          - name: AKS_REGION
+            value: {{ .Values.Azure.Cluster.Region | quote }}
+          {{- end }}
+          {{- else }}
+          - name: ACS_RESOURCE_NAME
+            value: {{ .Values.amalogs.env.clusterName | quote }}
+          {{- end }}
+{{- else }}
+          - name: AKS_RESOURCE_ID
+            value: "{{ .Values.OmsAgent.aksResourceID }}"
+          - name: AKS_REGION
+            value: "{{ .Values.global.commonGlobals.Region }}"
+          - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+            value: "{{ .Values.OmsAgent.identityClientID }}"
+{{- end }}
+          - name: CONTROLLER_TYPE
+            value: "DaemonSet"
+          - name: HOSTNAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: NODE_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: PODNAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+            valueFrom:
+              resourceFieldRef:
+                containerName: ama-logs-windows
+                resource: limits.memory
+{{- if $isArcExtension }}
+          - name: SIDECAR_SCRAPING_ENABLED
+            value: {{ .Values.amalogs.sidecarscraping | quote }}
+          - name: ENABLE_CUSTOM_METRICS
+            value: {{ .Values.amalogs.enableCustomMetrics | quote }}
+          {{- if .Values.amalogs.ISTEST }}
+          - name: AZMON_KUBERNETES_METADATA_ENABLED
+            value: "true"
+          {{- end }}
+          - name: CLUSTER_CLOUD_ENVIRONMENT
+            value: "{{ .Values.Azure.Cluster.Cloud | lower }}"
+{{- else }}
+        {{- if .Values.OmsAgent.isSidecarScrapingEnabled }}
+          - name: SIDECAR_SCRAPING_ENABLED
+            value: "true"
+        {{- else }}
+          - name: SIDECAR_SCRAPING_ENABLED
+            value: "false"
+        {{- end }}
+        {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
+          - name: REQUIRES_CERT_BOOTSTRAP
+            value: "true"
+        {{- end }}
+        {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
+          - name: REQUIRES_CERT_BOOTSTRAP
+            value: "true"
+        {{- end }}
+        {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
+          - name: REQUIRES_CERT_BOOTSTRAP
+            value: "true"
+        {{- end }}
+        {{- if $isusingaadauth }}
+          - name: USING_AAD_MSI_AUTH
+            value: "true"
+        {{- else }}
+          - name: USING_AAD_MSI_AUTH
+            value: "false"
+        {{- end }}
+          - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
+            value: "{{ .Values.AppmonitoringAgent.enabled }}"
+          - name: APPMONITORING_OPENTELEMETRYLOGS_ENABLED
+            value: "{{ .Values.AppmonitoringAgent.isOpenTelemetryLogsEnabled | default false }}"
+          - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
+            value: "{{ .Values.AppmonitoringAgent.openTelemetryLogsPort | default 28331 }}"
+          - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
+            value: "{{ .Values.OmsAgent.isPrometheusMetricsScrapingDisabled }}"
+          - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+            value: "{{ .Values.OmsAgent.isTelegrafLivenessprobeEnabled | default false }}"
+          - name: AZMON_WINDOWS_FLUENT_BIT_ENABLED
+            value: "{{ .Values.OmsAgent.isWindowsAMAFluentBitEnabled | default false }}"
+          - name: CLUSTER_CLOUD_ENVIRONMENT
+            value: "{{ .Values.global.commonGlobals.CloudEnvironment | lower }}"
+{{- end }}
+          volumeMounts:
+          - mountPath: C:\ProgramData\docker\containers
+            name: docker-windows-containers
+            readOnly: true
+          - mountPath: C:\var
+            name: docker-windows-kuberenetes-container-logs
+          - mountPath: C:\etc\config\settings
+            name: settings-vol-config
+            readOnly: true
+          - mountPath: C:\etc\ama-logs-secret
+            name: ama-logs-secret
+            readOnly: true
+{{- if not $isArcExtension }}
+          - mountPath: C:\etc\omsagent-secret
+            name: ama-logs-secret
+            readOnly: true
+          - mountPath: C:\etc\config\adx
+            name: ama-logs-adx-secret
+            readOnly: true
+          - mountPath: C:\etc\kubernetes\host
+            name: azure-json-path
+            readOnly: true
+        {{- if (eq (include "should_mount_hostca" . ) "true" ) }}
+          - mountPath: C:\ca
+            name: ca-certs
+            readOnly: true
+        {{- end }}
+        {{- if $isusingaadauth }}
+          - mountPath: C:\etc\IMDS-access-token
+            name: imds-token
+            readOnly: true
+        {{- end }}
+{{- end }}
+          livenessProbe:
+            exec:
+              command:
+                - cmd
+                - /c
+                - C:\opt\amalogswindows\scripts\cmd\livenessprobe.exe
+                - fluent-bit.exe
+                - fluentdwinaks
+                - "C:\\etc\\amalogswindows\\filesystemwatcher.txt"
+                - "C:\\etc\\amalogswindows\\renewcertificate.txt"
+{{- if not $isArcExtension }}
+              {{- if and $isusingaadauth .Values.OmsAgent.isWindowsAMAEnabled }}
+                - "MonAgentCore.exe"
+              {{- end }}
+{{- end }}
+            periodSeconds: 60
+            initialDelaySeconds: 180
+            timeoutSeconds: 15
+{{- if not $isArcExtension }}
+{{- if and (and $isusingaadauth .Values.OmsAgent.isWindowsAMAEnabled) (not .Values.OmsAgent.isWindowsAddonTokenAdapterDisabled) }}
+        - name: addon-token-adapter-win
+          command:
+            - addon-token-adapter-win
+          args:
+            - --secret-namespace=kube-system
+            - --secret-name={{ .Values.OmsAgent.accessTokenSecretName }}
+            - --token-server-listening-port=8888
+            - --health-server-listening-port=9999
+            - --restart-pod-waiting-minutes-on-broken-connection=240
+          image: "{{ template "addon_mcr_repository_base" . }}/aks/msi/addon-token-adapter:{{- $addonTokenAdapterWindowsDefaultImageTag -}}"
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: AZMON_COLLECT_ENV
+            value: "false"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 9999
+            initialDelaySeconds: 10
+            periodSeconds: 60
+          resources:
+            limits:
+              cpu: 400m
+              memory: 400Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_ADMIN
+                - NET_RAW
+{{- end }}
+{{- end }}
+{{- if $isArcExtension }}
+      {{- if .Values.amalogs.scheduleOnTaintedNodes }}
+      {{- with .Values.amalogs.tolerationsUnrestricted }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- else }}
+      {{- with .Values.amalogs.tolerations }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- end }}
+{{- else }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.azure.com/cluster
+                operator: Exists
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                  - windows
+              - key: type
+                operator: NotIn
+                values:
+                - virtual-kubelet
+      tolerations:
+        - key: "CriticalAddonsOnly"
+          operator: "Exists"
+        - operator: "Exists"
+          effect: NoExecute
+        - operator: "Exists"
+          effect: NoSchedule
+        - operator: "Exists"
+          effect: PreferNoSchedule
+{{- end }}
+      volumes:
+      - name: docker-windows-kuberenetes-container-logs
+        hostPath:
+          path: C:\var
+      - name: docker-windows-containers
+        hostPath:
+          path: C:\ProgramData\docker\containers
+          type: DirectoryOrCreate
+      - name: settings-vol-config
+        configMap:
+          name: container-azm-ms-agentconfig
+          optional: true
+      - name: ama-logs-secret
+        secret:
+          secretName: ama-logs-secret
+      - name: ama-logs-adx-secret
+        secret:
+          secretName: ama-logs-adx-secret
+          optional: true
+{{- if not $isArcExtension }}
+      - name: azure-json-path
+        hostPath:
+          path: C:\k
+    {{- if (eq (include "should_mount_hostca" . ) "true" ) }}
+      - name: ca-certs
+        hostPath:
+          path: C:\ca
+    {{- end }}
+    {{- if $isusingaadauth }}
+      - name: imds-token
+        secret:
+          secretName: {{ .Values.OmsAgent.accessTokenSecretName }}
+    {{- end }}
+{{- end }}
+{{- end }}

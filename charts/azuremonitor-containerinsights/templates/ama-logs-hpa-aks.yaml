@@ -1,3 +1,4 @@
+{{- if and $isusingaadauth .Values.OmsAgent.isMultitenancyLogsEnabled }}
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -46,3 +47,4 @@ spec:
         value: 100
         periodSeconds: 5
       selectPolicy: Max
+{{- end }}
