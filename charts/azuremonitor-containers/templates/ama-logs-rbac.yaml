@@ -23,8 +23,17 @@ metadata:
     heritage: {{ .Release.Service }}
 rules:
 - apiGroups: [""]
-  resources: ["pods", "events", "nodes", "nodes/stats", "nodes/metrics", "nodes/spec", "nodes/proxy","namespaces", "services", "persistentvolumes"]
+  resources: ["pods", "events", "nodes", "nodes/stats", "nodes/metrics", "nodes/spec", "namespaces", "services", "persistentvolumes"]
   verbs: ["list", "get", "watch"]
+{{- if semverCompare ">=1.33-0" .Capabilities.KubeVersion.Version }}
+- apiGroups: [""]
+  resources: ["nodes/pods"]
+  verbs: ["list", "get", "watch"]
+{{- else }}
+- apiGroups: [""]
+  resources: ["nodes/proxy"]
+  verbs: ["list", "get", "watch"]
+{{- end }}
 - apiGroups: ["apps", "extensions", "autoscaling"]
   resources: ["replicasets", "deployments", "horizontalpodautoscalers"]
   verbs: ["list"]
