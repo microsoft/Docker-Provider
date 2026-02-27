@@ -8,6 +8,31 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 02/25/2026 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.35 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.35 (windows)
+- Linux
+  - [azurelinux 3.0.20260204](https://github.com/microsoft/azurelinux/releases/tag/3.0.20260204-3.0)
+  - Golang - 1.25.7
+  - Ruby - arm64 - 3.3.5-7, x86_64 - 3.3.10
+  - MDSD - 1.37.0
+  - Telegraf - 1.37.1
+  - Fluent-bit - 4.0.14
+  - Fluentd - 1.16.3
+- Windows
+  - Golang - 1.25.7
+  - Ruby - 3.1.1
+  - Windows AMA - 46.31.3
+  - Telegraf - 1.24.2
+  - Fluent-bit - 4.0.3
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Common
+  * Zane/deploy to prod helm by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1602
+  * update ai key and endpoint for bleu by @rashmichandrashekar in https://github.com/microsoft/Docker-Provider/pull/1604
+  * Longw/3.1.35 address vulnerabilties by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1605
+
 ### 02/02/2026 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.34 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.34 (windows)
