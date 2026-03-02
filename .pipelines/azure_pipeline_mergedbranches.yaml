@@ -276,7 +276,7 @@ extends:
               export TRIVY_JAVA_DB_REPOSITORY=$PRIMARY_TRIVY_JAVA_DB_REPOSITORY
               # Function to run Trivy scan and handle output
               run_trivy_scan() {
-                  trivy image --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM "${{ variables.repoImageName }}:$(linuxImagetag)" > trivy_output.log 2>&1
+                  trivy image --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM "${{ variables.repoImageName }}:$(linuxImagetag)" > trivy_output.log 2>&1
                   return $?
               }
               # Attempt scan up to 5 times with repository fallback
