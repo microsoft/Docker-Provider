@@ -1,5 +1,14 @@
+{{- $arcSettings := include "arc-extension-settings" . | fromYaml }}
+{{- $isArcExtension := $arcSettings.isArcExtension }}
+{{/* AKS-only resource */}}
+{{- if not $isArcExtension }}
 {{- $amalogsLinuxDefaultImageTag := dict "component" "ama-logs-linux" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.addonImageTag" }}
 {{- $addonTokenAdapterLinuxDefaultImageTag := dict "component" "addon-token-adapter-linux" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag"}}
+{{/* Determine isusingaadauth value */}}
+{{- $isusingaadauth := false -}}
+{{- if hasKey .Values.OmsAgent "isUsingAADAuth" -}}
+  {{- $isusingaadauth = .Values.OmsAgent.isUsingAADAuth -}}
+{{- end -}}
 {{- if and $isusingaadauth .Values.OmsAgent.isMultitenancyLogsEnabled }}
 ---
 {{- if semverCompare ">=1.16.0" .Values.global.commonGlobals.Versions.Kubernetes }}
@@ -238,4 +247,5 @@ spec:
                 operator: In
                 values:
                 - system
+{{- end }}
 {{- end }}

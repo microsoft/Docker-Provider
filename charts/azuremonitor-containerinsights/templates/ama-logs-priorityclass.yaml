@@ -1,3 +1,7 @@
+{{- $arcSettings := include "arc-extension-settings" . | fromYaml }}
+{{- $isArcExtension := $arcSettings.isArcExtension }}
+{{/* Arc-only resource */}}
+{{- if $isArcExtension }}
 {{- if and (ne .Values.amalogs.secret.key "<your_workspace_key>") (ne .Values.amalogs.secret.wsid "<your_workspace_id>") (or (ne .Values.amalogs.env.clusterName "<your_cluster_name>") (ne .Values.amalogs.env.clusterId "<your_cluster_id>") (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>") )}}
 # This pod priority class is used for daemonsets to allow them to have priority
 # over pods that can be scheduled elsewhere.  Without a priority class, it is
@@ -19,4 +23,5 @@ metadata:
 value: {{ .Values.amalogs.priority }}
 globalDefault: false
 description: "This is the daemonset priority class for ama-logs"
+{{- end }}
 {{- end }}

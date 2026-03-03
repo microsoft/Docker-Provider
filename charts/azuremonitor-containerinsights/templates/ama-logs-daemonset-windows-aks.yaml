@@ -299,4 +299,3 @@ spec:
         secret:
           secretName: {{ .Values.OmsAgent.accessTokenSecretName }}
     {{- end }}
-{{- if and $isusingaadauth .Values.OmsAgent.isMultitenancyLogsEnabled }}
