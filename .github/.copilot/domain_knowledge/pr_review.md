@@ -1,13 +1,14 @@
 # PR Review Guidelines
 
-These guidelines are derived from recurring review feedback patterns observed across pull requests in this repository (PRs #246, #753, #808, #946, #1024, #1148, #1155, #1372, #1537, #1539, #1540, #1541, #1542, #1591).
-
 ---
+## Description of PR
+
+- **Clear explanation of what functionality is changing**: make sure the PR contains details about what functionality is changing and what all scenarios are touched by this change. Include the test scenarios
 
 ## Code Quality & Cleanliness
 
-- **Remove unused code, comments, and test data files** before merging. Do not commit local test data (e.g., JSON fixtures used only on a developer's machine).
-- **Remove or resolve all TODO/FIXME comments** before merge — these indicate incomplete functionality and will be flagged by code scanning.
+- **Remove unused code, comments, and test data files**: before merging. Do not commit local test data (e.g., JSON fixtures used only on a developer's machine).
+- **Remove or resolve all TODO/FIXME comments**: before merge — these indicate incomplete functionality and will be flagged by code scanning.
 - **Fix typos** in variable names, log messages, configuration keys, and comments (e.g., `logKubernetesiMetadataIncludeFields` → `logKubernetesMetadataIncludeFields`).
 - **Simplify conditionals**: if the `if` branch returns, do not wrap the remaining code in an `else` block — it reduces nesting and improves readability.
 - **Extract duplicated strings/values into variables** (e.g., usage info, URLs, paths) to avoid code duplication.
@@ -22,10 +23,11 @@ These guidelines are derived from recurring review feedback patterns observed ac
 - **Include unit suffixes in config variable names and values** — e.g., `kube_meta_cache_ttl_secs` not `kube_meta_cache_ttl`, `1s` not `1` for time durations.
 - **Validate configuration input types and ranges** — check that numeric config values are the correct type (integer) and within valid ranges (e.g., >= 0) before using them.
 - **Configure fluent-bit backpressure settings** (`storage.max_chunks_up`, queue limits) appropriately for high-scale scenarios.
+- **Validate configuration input types and ranges** — check that numeric config values are the correct type (integer) and within valid ranges (e.g., >= 0) before using them.
+- **Configure fluent-bit backpressure settings** (`storage.max_chunks_up`, queue limits) appropriately for high-scale scenarios.
 - **Remove unnecessary plugin/filter configurations** — question whether each fluent-bit filter or grep plugin is actually required.
 - **Update file paths promptly** when upstream dependencies (e.g., RP, ACNS) change their output locations.
 - **Auto-enable prerequisite modes** when a dependent feature is activated (e.g., enable high log scale mode automatically when network flow logs are enabled).
-- **Guard feature flags with authentication mode prerequisites** — when a feature requires a specific auth mode (e.g., MSI), combine auth mode checks with feature flag checks (e.g., `IsAADMSIAuthMode && IsNetworkFlowLogsEnabled`).
 
 ## Naming Consistency
 
@@ -61,30 +63,27 @@ These guidelines are derived from recurring review feedback patterns observed ac
 
 - **Use HTTPS URLs only** — HTTP URLs without TLS will be flagged by code scanning.
 - **Categorize CVE entries in `.trivyignore`** by component (e.g., group telegraf vulnerabilities under a telegraf section) for tracking.
-- **Avoid hardcoded paths that include version numbers** — especially for dependencies not installed by the agent (e.g., PowerShell paths on Windows nodes).
 - **Understand `.trivyignore` behavior**: only CVEs listed there are excluded from the scan; `--ignore-unfixed` excludes CVEs without available patches.
+- **Avoid hardcoded paths that include version numbers** — especially for dependencies not installed by the agent (e.g., PowerShell paths on Windows nodes).
 
 ## Testing & Validation
 
 - **Test all scenarios and list them in the PR description** — reviewers need evidence of validation scope.
-- **Provide before/after comparison evidence for config changes** — share comparison of behavior before and after modifications (e.g., regex filter effects, log output diffs) to help reviewers validate impact.
 - **Validate cross-feature interactions** — e.g., confirm metadata filtering works with multi-line log mode enabled.
 - **Validate multi-node-pool and multi-cluster scenarios** when changes affect node-level aggregation or rollup logic.
-- **Validate Geneva path compatibility** — ensure changes work for both standard and Geneva integration paths when modifying log processing or schema.
-- **Do not commit test data files** (JSON fixtures, local test outputs) to the repository.
-- **Address all bug bash findings** before public preview or GA.
-
-## ARM Templates & Onboarding Scripts
-
-- **Add parameters for every new feature flag** in onboarding JSON templates (`existingClusterOnboarding.json`, `existingClusterParam.json`).
 - **Respect Azure resource naming character limits** (typically 64 chars) — avoid appending unnecessary suffixes.
+- **Check complications due to mixed casing of resource or resource group names.**
+- Check complications due to mixed casing of resource or resource groups names
+- **Respect Azure resource naming character limits** 
+- (typically 64 chars) — avoid appending unnecessary suffixes. 
+- Check complications due to mixed casing of resource or resourcegroups names
 - **Document resource dependencies** clearly (e.g., DCR depends on DCE for private link; AMPLS links to DCE but not DCR).
 - **Follow up with separate PRs** for additional onboarding methods (Bicep, Terraform, Azure Policy) when introducing ARM template changes.
 - **Use ARM parameter references** in templates instead of hardcoded string values like `'Microsoft-RetinaNetworkFlowLogs'`.
 
 ## YAML & Pipeline Configuration
 
-- **Watch for whitespace and indentation errors** in Kubernetes YAML — misaligned fields like `initialDelaySeconds` cause deployment failures.
+- **Watch for whitespace and indentation errors for YAML files** in Kubernetes YAML — misaligned fields like `initialDelaySeconds` cause deployment failures.
 - **Properly escape special characters** in paths within YAML (e.g., double-backslash for Windows paths).
 - **Use variables for URLs and repeated values** in Azure DevOps pipeline YAML (e.g., source ACR URLs).
 - **Remove obsolete steps** from pipeline configs when merging or refactoring pipelines.
@@ -104,7 +103,7 @@ These guidelines are derived from recurring review feedback patterns observed ac
 
 ## Release Notes & Documentation
 
-- **Use precise and accurate wording** in release notes — reviewers will correct vague or incorrect descriptions.
+- **Use precise and accurate wording** in release notes, update vague or incorrect descriptions.
 - **Scope release notes to agent/repo changes only** — do not include external RP or other team changes; coordinate with respective teams for their own documentation.
 - **Note cross-platform applicability** explicitly (e.g., "Applicable for both Linux and Windows").
 - **Clean up unused references** in Dockerfiles and build configs when components are deprecated.
