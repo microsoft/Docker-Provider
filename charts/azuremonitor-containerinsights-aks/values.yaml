@@ -34,8 +34,8 @@ OmsAgent:
   workspaceKey: "<your_workspace_key>"
   
   # Image configuration
-  imageTagLinux: "3.1.34"
-  imageTagWindows: "win-3.1.34"
+  imageTagLinux: "3.1.35"
+  imageTagWindows: "win-3.1.35"
   isImagePullPolicyAlways: false
 
   # Resource ID and cluster information

@@ -44,8 +44,8 @@ OmsAgent:
   workspaceKey: "<your_workspace_key>"
   
   # Image configuration
-  imageTagLinux: "3.1.34"
-  imageTagWindows: "win-3.1.34"
+  imageTagLinux: "3.1.35"
+  imageTagWindows: "win-3.1.35"
   isImagePullPolicyAlways: false
 
   # Resource ID and cluster information
@@ -185,8 +185,8 @@ OmsAgent:
 amalogs:
   image:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
-    tag: "3.1.34"
-    tagWindows: "win-3.1.34"
+    tag: "3.1.35"
+    tagWindows: "win-3.1.35"
     pullPolicy: IfNotPresent
     dockerProviderVersion: "18.0.1-0"
     agentVersion: "azure-mdsd-1.37.0"
