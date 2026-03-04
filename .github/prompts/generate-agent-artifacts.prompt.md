@@ -3,6 +3,7 @@
 You are a staff level developer. Your task is to analyze this repository and generate a complete set of "agent artifacts" that will enable AI coding assistants (like GitHub Copilot, Google Jules, Gemini CLI, etc.) to understand and contribute to this codebase effectively.
 
 No code installation, no CLI tool, no API keys required — the coding agent IS the tool.
+
 ---
 
 ## Goal
@@ -16,8 +17,8 @@ Analyze this repository's codebase, structure, conventions, CI/CD configuration,
 | `.instructions.md` files | GitHub official | `.github/instructions/` (GitHub only) |
 | `Prompt.md` | Workspace convention | Root |
 | `SKILL.md` files | Azure extension pattern | `.agents/skills/<name>/SKILL.md` |
-| `CodeReviewer.agent.md` | Custom | Root | `.github/agents/CodeReviewer.agent.md` (GitHub) or root (other SCMs) |
-| `DocumentWriter.agent.md` | Custom | Root | `.github/agents/DocumentWriter.agent.md` (GitHub) or root (other SCMs) |
+| `CodeReviewer.agent.md` | Custom | `.github/agents/CodeReviewer.agent.md` (GitHub) or root (other SCMs) |
+| `DocumentWriter.agent.md` | Custom | `.github/agents/DocumentWriter.agent.md` (GitHub) or root (other SCMs) |
 
 ---
 
@@ -498,6 +499,18 @@ Generate additional skills for any other patterns found with ≥ 3 occurrences:
 ## Description
 You are a code reviewer for this repository. Your job is to review pull requests and code changes for correctness, style, security, and adherence to project conventions.
 
+## Scope
+<!-- Define what this reviewer focuses on and what it should skip -->
+- File types and directories to review (derived from Phase 2.4)
+- Types of changes to focus on (logic, config, tests, infra)
+- What to skip (auto-generated files, vendored code, lock files)
+
+## Review Triggers
+<!-- When this agent should be invoked -->
+- On pull requests targeting primary branches
+- On code changes exceeding a threshold (e.g., > 10 lines changed)
+- Excluded: documentation-only PRs, dependency bumps (unless config changes)
+
 ## Review Checklist
 <!-- Derived from CI checks, linting rules, and team conventions detected in Phases 2–3 -->
 - [ ] Code follows naming conventions (`<detected conventions>`)
@@ -507,6 +520,7 @@ You are a code reviewer for this repository. Your job is to review pull requests
 - [ ] Logging uses the project's logging conventions (`<detected logging approach>`)
 - [ ] Imports follow the project's ordering/grouping style
 - [ ] CI checks would pass (lint, build, test)
+- [ ] No TODO/FIXME comments introduced without a linked issue
 
 ## Style Rules
 <!-- Language-specific style rules from Phase 2.7 code conventions analysis -->
@@ -545,6 +559,13 @@ You are a code reviewer for this repository. Your job is to review pull requests
 ## Description
 You are a technical writer for this repository. Your job is to create and maintain documentation that is accurate, consistent, and follows the project's documentation conventions.
 
+## Audience & Tone
+<!-- Detected from existing documentation -->
+- Primary audience (developers, operators, end-users, or mixed)
+- Writing tone (formal technical, conversational, tutorial-style)
+- Use of second person ("you") vs third person vs imperative
+- Assumed knowledge level of readers
+
 ## Documentation Structure
 <!-- Detected from Phase 2.4 directory structure — where docs live, how they're organized -->
 
@@ -555,6 +576,7 @@ You are a technical writer for this repository. Your job is to create and mainta
 - Code block language annotation style
 - Link style (inline vs reference)
 - File naming convention for docs
+- Maximum line length or wrapping convention
 
 ## Documentation Types
 <!-- What kinds of documentation exist in this repo — READMEs, API docs, guides, changelogs, etc. -->
@@ -597,7 +619,7 @@ Apply these rules to ALL generated files:
 6. **SCM-aware** — Place files in the correct location per the SCM adaptation matrix. Skip `.instructions.md` files for non-GitHub repos.
 7. **Commit-based skills only** — Only generate skill files for patterns with ≥ 3 commits in the last 12 months. Do not invent skills for patterns that don't exist in the commit history.
 8. **Preserve existing content** — If any target file already exists, read it first. Preserve human-authored sections and only add/update generated sections. Mark generated sections with `<!-- generated -->` comments so they can be distinguished from human content.
-9. **Size limits** — `copilot-instructions.md` ≤ 4000 characters. `.instructions.md` files ≤ 15 rules each. SKILL.md files ≤ 2 pages each.
+9. **Size limits** — `copilot-instructions.md` ≤ 4000 characters. `.instructions.md` files ≤ 15 rules each. SKILL.md files ≤ 2 pages each. `CodeReviewer.agent.md` ≤ 3 pages. `DocumentWriter.agent.md` ≤ 3 pages.
 
 ---
 
