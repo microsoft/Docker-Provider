@@ -1,14 +1,13 @@
 # Agentify This Repository — Declarative Agent Prompt
 
-Drop this file into any source code repository and submit it to a coding agent (GitHub Copilot, Codex CLI, Google Jules, Gemini CLI, Cursor, Amp, or any AGENTS.md-compatible tool). The agent will analyze the repo and generate a complete set of coding-agent best-practice files.
+You are a staff level developer. Your task is to analyze this repository and generate a complete set of "agent artifacts" that will enable AI coding assistants (like GitHub Copilot, Google Jules, Gemini CLI, etc.) to understand and contribute to this codebase effectively.
 
 No code installation, no CLI tool, no API keys required — the coding agent IS the tool.
-
 ---
 
 ## Goal
 
-Analyze this repository's codebase, structure, conventions, CI/CD configuration, and **git commit history (last 6 months)** to auto-generate the following files that make this repo "agent-ready" for AI coding assistants:
+Analyze this repository's codebase, structure, conventions, CI/CD configuration, and **git commit history (last 12 months)** to auto-generate the following files that make this repo "agent-ready" for AI coding assistants:
 
 | Output File | Standard | Where |
 |-------------|----------|-------|
@@ -17,6 +16,8 @@ Analyze this repository's codebase, structure, conventions, CI/CD configuration,
 | `.instructions.md` files | GitHub official | `.github/instructions/` (GitHub only) |
 | `Prompt.md` | Workspace convention | Root |
 | `SKILL.md` files | Azure extension pattern | `.agents/skills/<name>/SKILL.md` |
+| `CodeReviewer.agent.md` | Custom | Root | `.github/agents/CodeReviewer.agent.md` (GitHub) or root (other SCMs) |
+| `DocumentWriter.agent.md` | Custom | Root | `.github/agents/DocumentWriter.agent.md` (GitHub) or root (other SCMs) |
 
 ---
 
@@ -47,6 +48,8 @@ Determine which source control host this repo uses:
 | `AGENTS.md` | Root + nested for monorepos | Root + nested for monorepos | Root + nested for monorepos |
 | `Prompt.md` | Root | Root | Root |
 | Skill files | `.agents/skills/` | `.agents/skills/` | `.agents/skills/` |
+| `CodeReviewer.agent.md` | `.github/agents/CodeReviewer.agent.md` | Root `CodeReviewer.agent.md` | Root `CodeReviewer.agent.md` |
+| `DocumentWriter.agent.md` | `.github/agents/DocumentWriter.agent.md` | Root `DocumentWriter.agent.md` | Root `DocumentWriter.agent.md` |
 
 ---
 
@@ -144,22 +147,22 @@ If monorepo: identify each subproject's path, languages, and frameworks.
 
 #### 2.9 Existing Agent/Copilot Files
 
-Check what already exists: `.github/copilot-instructions.md`, `AGENTS.md`, `.github/instructions/`, `Prompt.md`, `DESIGN.md`, `.agents/`. Report what's present and what's missing.
+Check what already exists: `.github/copilot-instructions.md`, `AGENTS.md`, `.github/instructions/`, `Prompt.md`, `DESIGN.md`, `.agents/`, `CodeReviewer.agent.md` (or `.github/agents/CodeReviewer.agent.md`), `DocumentWriter.agent.md` (or `.github/agents/DocumentWriter.agent.md`). Report what's present and what's missing.
 
 ---
 
-### Phase 3 — Analyze Git Commit History (Last 6 Months)
+### Phase 3 — Analyze Git Commit History (Last 12 months)
 
-Run `git log` to analyze the last 6 months of commit history. This data drives **skill file generation**.
+Run `git log` to analyze the last 12 months of commit history. This data drives **skill file generation**.
 
 ```bash
-git log --since="6 months ago" --pretty=format:"%h|%s|%an|%ad" --date=short
+git log --since="12 months ago" --pretty=format:"%h|%s|%an|%ad" --date=short
 ```
 
 Also get file-level change stats:
 
 ```bash
-git log --since="6 months ago" --pretty=format:"%h|%s" --stat --diff-filter=AMRD
+git log --since="12 months ago" --pretty=format:"%h|%s" --stat --diff-filter=AMRD
 ```
 
 From the commit history, identify **recurring development patterns** by categorizing commits:
@@ -184,7 +187,7 @@ From the commit history, identify **recurring development patterns** by categori
 #### 3.2 Pattern Analysis Method
 
 For each detected pattern:
-1. **Count** how many commits match (minimum 3 commits in 6 months to qualify as a skill).
+1. **Count** how many commits match (minimum 3 commits in 12 months to qualify as a skill).
 2. **Extract** the specific files, directories, and commands involved.
 3. **Identify** the typical workflow: what files are touched together, what tests should be run, what CI checks matter.
 4. **Note** any team conventions: commit message format, branch naming, review requirements.
@@ -365,7 +368,7 @@ applyTo: "<glob pattern>"
 
 **Location:** `.agents/skills/<skill-name>/SKILL.md`
 
-Generate skill files ONLY for patterns detected in Phase 3 (git commit history analysis) with **≥ 3 occurrences in the last 6 months**.
+Generate skill files ONLY for patterns detected in Phase 3 (git commit history analysis) with **≥ 3 occurrences in the last 12 months**.
 
 **Format for each skill:**
 
@@ -481,6 +484,107 @@ Generate additional skills for any other patterns found with ≥ 3 occurrences:
 
 ---
 
+### File 6: `CodeReviewer.agent.md`
+
+**Location:** `.github/agents/CodeReviewer.agent.md` (GitHub) or root `CodeReviewer.agent.md` (other SCMs).
+
+**Purpose:** A custom agent definition that enables AI assistants to perform structured code reviews following this repo's conventions, CI checks, and quality standards.
+
+**Format:**
+
+```markdown
+# CodeReviewer Agent
+
+## Description
+You are a code reviewer for this repository. Your job is to review pull requests and code changes for correctness, style, security, and adherence to project conventions.
+
+## Review Checklist
+<!-- Derived from CI checks, linting rules, and team conventions detected in Phases 2–3 -->
+- [ ] Code follows naming conventions (`<detected conventions>`)
+- [ ] All new/modified functions have appropriate tests
+- [ ] No secrets, credentials, or hardcoded configuration values
+- [ ] Error handling follows repo patterns (`<detected patterns>`)
+- [ ] Logging uses the project's logging conventions (`<detected logging approach>`)
+- [ ] Imports follow the project's ordering/grouping style
+- [ ] CI checks would pass (lint, build, test)
+
+## Style Rules
+<!-- Language-specific style rules from Phase 2.7 code conventions analysis -->
+
+## Security Checks
+- No credentials or secrets in code
+- Input validation present where expected
+- Dependencies are from trusted sources
+- No known vulnerable patterns
+
+## Testing Expectations
+<!-- From Phase 2.6 testing patterns — what test coverage is expected for changes -->
+
+## Common Issues to Flag
+<!-- Patterns detected from bug-fix commits in Phase 3 — recurring mistakes to watch for -->
+```
+
+**Rules:**
+- Review checklist items must map to actual CI checks and linting rules in this repo.
+- Style rules must be derived from Phase 2 code convention analysis, not generic advice.
+- Common issues should reference real patterns observed in the commit history.
+
+---
+
+### File 7: `DocumentWriter.agent.md`
+
+**Location:** `.github/agents/DocumentWriter.agent.md` (GitHub) or root `DocumentWriter.agent.md` (other SCMs).
+
+**Purpose:** A custom agent definition that enables AI assistants to write and maintain documentation following this repo's doc structure, conventions, and standards.
+
+**Format:**
+
+```markdown
+# DocumentWriter Agent
+
+## Description
+You are a technical writer for this repository. Your job is to create and maintain documentation that is accurate, consistent, and follows the project's documentation conventions.
+
+## Documentation Structure
+<!-- Detected from Phase 2.4 directory structure — where docs live, how they're organized -->
+
+## Writing Conventions
+<!-- Detected from existing .md files in the repo -->
+- Heading style (ATX vs Setext)
+- List formatting conventions
+- Code block language annotation style
+- Link style (inline vs reference)
+- File naming convention for docs
+
+## Documentation Types
+<!-- What kinds of documentation exist in this repo — READMEs, API docs, guides, changelogs, etc. -->
+
+## Templates
+<!-- Common documentation patterns observed in existing files -->
+
+### README Template
+<!-- Based on existing README structure in this repo -->
+
+### Code Comment Conventions
+<!-- Docstring/comment style detected from Phase 2.7 -->
+
+## Cross-References
+<!-- How docs reference other docs, code, or external resources in this repo -->
+
+## Validation
+- All file paths referenced in documentation must exist
+- All code examples must be syntactically valid
+- All links must point to valid targets
+- Documentation must match actual codebase behavior
+```
+
+**Rules:**
+- Documentation structure must reflect the actual `docs/`, `Documentation/`, or README layout in this repo.
+- Writing conventions must be derived from existing documentation files, not generic style guides.
+- Templates should mirror patterns found in existing documentation.
+
+---
+
 ## Quality Constraints
 
 Apply these rules to ALL generated files:
@@ -491,7 +595,7 @@ Apply these rules to ALL generated files:
 4. **Actionable** — Every instruction should be something a developer or AI agent can execute literally.
 5. **Consistent** — File cross-references must be valid (e.g., if AGENTS.md says "see Testing Instructions", that section must exist).
 6. **SCM-aware** — Place files in the correct location per the SCM adaptation matrix. Skip `.instructions.md` files for non-GitHub repos.
-7. **Commit-based skills only** — Only generate skill files for patterns with ≥ 3 commits in the last 6 months. Do not invent skills for patterns that don't exist in the commit history.
+7. **Commit-based skills only** — Only generate skill files for patterns with ≥ 3 commits in the last 12 months. Do not invent skills for patterns that don't exist in the commit history.
 8. **Preserve existing content** — If any target file already exists, read it first. Preserve human-authored sections and only add/update generated sections. Mark generated sections with `<!-- generated -->` comments so they can be distinguished from human content.
 9. **Size limits** — `copilot-instructions.md` ≤ 4000 characters. `.instructions.md` files ≤ 15 rules each. SKILL.md files ≤ 2 pages each.
 
@@ -510,8 +614,12 @@ After generating all files, verify:
 - [ ] `.instructions.md` files — rules are observable in existing code
 - [ ] `Prompt.md` — tech stack matches detected languages/frameworks
 - [ ] `Prompt.md` — env vars listed are real (from `.env.example` or config)
-- [ ] Skill files — each has ≥ 3 supporting commits from the last 6 months
+- [ ] Skill files — each has ≥ 3 supporting commits from the last 12 months
 - [ ] Skill files — instructions reference actual files and commands in this repo
+- [ ] `CodeReviewer.agent.md` — placed in correct SCM-specific location
+- [ ] `CodeReviewer.agent.md` — review instructions reference actual CI checks and linting rules
+- [ ] `DocumentWriter.agent.md` — placed in correct SCM-specific location
+- [ ] `DocumentWriter.agent.md` — writing instructions reference actual doc structure and conventions
 - [ ] Monorepo — nested `AGENTS.md` generated for each subproject (if applicable)
 - [ ] No secrets or credentials in any generated file
 - [ ] All file paths in the SCM adaptation matrix are correct for the detected provider
@@ -536,8 +644,8 @@ Frameworks: <detected frameworks>
 ...
 
 ### Skills Generated (from commit history)
-| Skill | Commits (6mo) | Key Files |
-|-------|---------------|-----------|
+| Skill | Commits (12mo) | Key Files |
+|-------|----------------|-----------|
 | <name> | <count> | <top files involved> |
 ...
 
