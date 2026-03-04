@@ -176,6 +176,38 @@ For each config found:
 3. **Identify suppressed rules** — what the team has intentionally disabled (do NOT flag these in reviews).
 4. **Record CI integration** — is this tool run in CI? If so, the review can defer to automation for those checks.
 
+#### 2.11 Security Posture & Tooling
+
+Scan the repo for security-related configurations, tools, and patterns. This data feeds directly into the CodeReviewer's STRIDE-based security checks and the `security-review` skill.
+
+**Security tool configs to detect:**
+
+| Config / File | Tool | Purpose |
+|---------------|------|--------|
+| `.trivyignore`, `trivy.yaml` | Trivy | Container/dependency vulnerability scanning |
+| `.snyk`, `.snyk.d/` | Snyk | Dependency vulnerability scanning |
+| `dependabot.yml` / `renovate.json` | Dependabot/Renovate | Automated dependency updates |
+| `.gitleaks.toml` | Gitleaks | Secret/credential leak detection |
+| `.secretlintrc.json` | Secretlint | Secret detection |
+| `.pre-commit-config.yaml` | pre-commit | Pre-commit hooks (often includes secret scanners) |
+| `codeql-analysis.yml` or `codeql/` | CodeQL | Static analysis / SAST |
+| `devskim.json`, `.devskim/` | DevSkim | Security pattern matching |
+| `bandit.yaml`, `.bandit` | Bandit | Python security linter |
+| `gosec` config in `.golangci.yml` | gosec | Go security linter |
+| `brakeman.yml` | Brakeman | Ruby/Rails security scanner |
+| `semgrep.yml`, `.semgrep/` | Semgrep | Multi-language SAST |
+| `SECURITY.md` | Convention | Security policy / responsible disclosure |
+| `security/`, `certs/`, `tls/` | Convention | Security-related code directories |
+
+**Security patterns to identify in source code (sample up to 10 files):**
+
+1. **Authentication/authorization patterns** — How does the codebase handle authn/authz? (OAuth, JWT, mTLS, RBAC, service accounts)
+2. **Secret management** — Are secrets loaded from env vars, Key Vault, config files? Look for `os.Getenv`, `ENV[]`, `process.env`, Key Vault SDK usage.
+3. **Input validation** — Are there validation/sanitization libraries in use? Where are trust boundaries?
+4. **Cryptography usage** — Any hashing, encryption, TLS configuration? Note algorithms used.
+5. **Network exposure** — Exposed ports in Dockerfiles, ingress configs, API endpoints.
+6. **Privilege levels** — Container security context, `USER` directives in Dockerfiles, file permissions in scripts.
+
 ---
 
 ### Phase 3 — Analyze Git Commit History (Last 12 months)
@@ -564,6 +596,138 @@ Generate additional skills for any other patterns found with ≥ 3 occurrences:
 - `security-patch` — security-related fixes
 - `performance-optimization` — speed/memory improvements
 
+#### Always-Generated Skill: `security-review`
+
+Unlike other skills that require ≥ 3 commit occurrences, the `security-review` skill is **always generated** because security review is a universal requirement regardless of commit history.
+
+**`security-review` — STRIDE-Based Security Review:**
+
+```
+USE FOR: security review, threat model, STRIDE analysis, credential leak check, secret scan, vulnerability review, security audit, hardening review, attack surface review
+DO NOT USE FOR: performance optimization, functional bug fixes, code style issues, feature implementation
+
+Instructions should cover:
+
+1. STRIDE Threat Model Checklist — Apply to every PR that modifies:
+   - Authentication/authorization logic
+   - Network-facing code (API endpoints, listeners, ingress)
+   - Data handling (parsing, serialization, storage)
+   - Infrastructure (Dockerfiles, Helm charts, Terraform, scripts)
+   - Dependency changes
+
+   For each STRIDE category, check:
+
+   **Spoofing (Identity)**
+   - Are authentication checks present at all entry points?
+   - Are tokens/credentials validated before use (not just checked for presence)?
+   - Is there protection against token replay or session hijacking?
+   - Are service-to-service calls authenticated (mTLS, service accounts, managed identity)?
+
+   **Tampering (Data Integrity)**
+   - Is input validated and sanitized at trust boundaries?
+   - Are checksums or signatures verified for external data (downloads, API responses, configs)?
+   - Are file permissions restrictive (no world-writable files)?
+   - Is data integrity maintained in transit (TLS) and at rest (encryption)?
+
+   **Repudiation (Auditability)**
+   - Are security-relevant actions logged (auth attempts, permission changes, data access)?
+   - Do logs include sufficient context (who, what, when) without leaking sensitive data?
+   - Are audit logs tamper-resistant (append-only, shipped to external system)?
+
+   **Information Disclosure (Confidentiality)**
+   - No hardcoded secrets, API keys, tokens, passwords, or connection strings in code.
+   - No secrets in log output, error messages, or stack traces.
+   - Are env vars used for secrets (not config files committed to repo)?
+   - Is sensitive data masked in logs (`***`, `[REDACTED]`)?
+   - Are debug endpoints or verbose error responses disabled in production configs?
+   - Are TLS certificates and private keys excluded from the repo (check .gitignore)?
+
+   **Denial of Service (Availability)**
+   - Are there resource limits (timeouts, max payload sizes, rate limiting)?
+   - Are unbounded loops or recursive calls protected against pathological input?
+   - Are goroutines/threads bounded (no goroutine leaks, thread pool limits)?
+   - Are container resource limits set (CPU/memory limits in k8s manifests, Dockerfiles)?
+
+   **Elevation of Privilege (Authorization)**
+   - Is authorization checked at the correct granularity (not just "is authenticated")?
+   - Are containers running as non-root (USER directive in Dockerfile)?
+   - Are RBAC roles following least-privilege principle?
+   - Are privileged operations (exec, mount, hostNetwork) justified and documented?
+   - Are security contexts set in Kubernetes manifests (readOnlyRootFilesystem, drop capabilities)?
+
+2. Credential & Secret Leak Detection — Scan every changed file for:
+   - Hardcoded strings matching secret patterns:
+     - API keys: patterns like `AKIA[0-9A-Z]{16}` (AWS), `AIza[0-9A-Za-z\-_]{35}` (GCP), hex strings > 32 chars
+     - Connection strings: `Server=...;Password=...`, `mongodb://...@...`, `postgres://...:...@`
+     - Tokens: `Bearer <token>`, `ghp_`, `gho_`, `github_pat_`, `xoxb-`, `xoxp-`
+     - Private keys: `-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----`
+     - Passwords in config: `password=`, `passwd=`, `secret=`, `api_key=` followed by non-variable values
+   - Secrets in test fixtures or example configs (even test secrets can leak)
+   - `.env` files or secret configs that should be in `.gitignore`
+   - Base64-encoded blobs that decode to credentials
+
+3. Weak Security Patterns — Flag these anti-patterns per language:
+
+   **All Languages:**
+   - Disabled TLS verification (`InsecureSkipVerify`, `verify=False`, `NODE_TLS_REJECT_UNAUTHORIZED=0`)
+   - Weak crypto algorithms (MD5, SHA1 for security purposes, DES, RC4)
+   - Hardcoded IP addresses or hostnames (should be configurable)
+   - Broad file permissions (0777, 0666, world-readable)
+   - Empty catch/except blocks that swallow security errors
+   - HTTP instead of HTTPS in production URLs
+
+   **Go:**
+   - `#nosec` annotations — verify each is justified with a comment explaining why
+   - Unchecked `err` returns from security-sensitive functions (crypto, auth, TLS)
+   - Using `fmt.Sprintf` to build SQL queries (SQL injection)
+   - `exec.Command` with unsanitized user input (command injection)
+
+   **Python:**
+   - `eval()`, `exec()`, `__import__()` with user input
+   - `pickle.loads()` on untrusted data (deserialization attack)
+   - `subprocess.shell=True` with user input
+   - SQL string formatting instead of parameterized queries
+   - `assert` used for security checks (stripped in optimized mode)
+
+   **Ruby:**
+   - `eval`, `send`, `public_send` with user-controlled input
+   - `system()`, backtick execution with unsanitized input
+   - `YAML.load` instead of `YAML.safe_load` (deserialization)
+   - Mass assignment without strong parameters
+
+   **Shell/Bash:**
+   - Unquoted variables in commands (injection risk)
+   - `curl | sh` or `curl | bash` patterns
+   - `chmod 777` or overly permissive permissions
+   - Secrets passed as command-line arguments (visible in process list)
+   - Missing `set -e` allowing silent failures in security-critical scripts
+
+   **TypeScript/JavaScript:**
+   - `innerHTML` with user input (XSS)
+   - `eval()`, `Function()` constructor with dynamic input
+   - `child_process.exec` with unsanitized input
+   - Disabled CORS restrictions or `Access-Control-Allow-Origin: *`
+
+   **Infrastructure (Dockerfiles, k8s, Helm):**
+   - Running as root without justification
+   - Using `latest` tags (non-reproducible builds)
+   - Secrets in ENV instead of mounted secrets
+   - Privileged containers or hostNetwork without justification
+   - Missing security contexts (readOnlyRootFilesystem, runAsNonRoot)
+   - Exposed ports that should be internal-only
+
+4. CI Security Integration — Verify:
+   - Are SAST tools (CodeQL, Semgrep, DevSkim) running in CI? (Phase 2.11)
+   - Are dependency scanners (Trivy, Snyk, Dependabot) configured? (Phase 2.11)
+   - Are secret scanners (Gitleaks, detect-secrets) in pre-commit or CI?
+   - If tools are missing, recommend their addition in the review.
+
+Validation:
+- Run existing security CI checks (CodeQL, Trivy, DevSkim from Phase 2.11)
+- Verify .gitignore excludes secret files (*.pem, *.key, .env)
+- Confirm SECURITY.md exists and describes responsible disclosure
+```
+
 ---
 
 ### File 6: `CodeReviewer.agent.md`
@@ -603,6 +767,20 @@ You are a code reviewer for this repository. Your job is to review pull requests
 - [ ] CI checks would pass (lint, build, test)
 - [ ] No TODO/FIXME comments introduced without a linked issue
 
+### Security Review Checklist (STRIDE)
+<!-- Applied to every PR. Intensity scales with the type of change:
+     - Auth/network/data changes → full STRIDE review
+     - Internal logic changes → credential leak + weak pattern scan
+     - Documentation-only → skip -->
+- [ ] **Spoofing** — Authentication present at entry points; tokens validated, not just checked for presence
+- [ ] **Tampering** — Input validated at trust boundaries; file permissions restrictive; data integrity in transit/rest
+- [ ] **Repudiation** — Security-relevant actions logged with context (who/what/when); no sensitive data in logs
+- [ ] **Information Disclosure** — No hardcoded secrets, keys, or credentials; secrets not in logs/errors; debug endpoints disabled
+- [ ] **Denial of Service** — Resource limits set (timeouts, payload sizes, container CPU/memory); no unbounded loops/goroutines
+- [ ] **Elevation of Privilege** — Authorization at correct granularity; containers non-root; RBAC least-privilege; security contexts set
+- [ ] **Credential Leak Scan** — No API keys, tokens, passwords, private keys, or connection strings in changed files
+- [ ] **Weak Pattern Scan** — No disabled TLS verification, weak crypto, shell injection vectors, or unsafe deserialization
+
 ## Language-Specific Best Practices
 <!-- Generate one subsection PER detected language. Derive rules from THREE sources:
      1. Phase 2.7 code conventions (what the code actually does)
@@ -621,10 +799,43 @@ You are a code reviewer for this repository. Your job is to review pull requests
 <!-- Repeat for each detected language -->
 
 ## Security Checks
-- No credentials or secrets in code
-- Input validation present where expected
-- Dependencies are from trusted sources
-- No known vulnerable patterns
+<!-- Derived from Phase 2.11 security posture scan and the `security-review` skill's STRIDE checklist.
+     This section should be populated with REPO-SPECIFIC security patterns, not generic advice. -->
+
+### Credential & Secret Detection
+- Scan all changed files for hardcoded secrets (API keys, tokens, passwords, private keys, connection strings)
+- Verify `.gitignore` excludes secret file patterns (`*.pem`, `*.key`, `.env`, `*credentials*`)
+- Check that env vars are used for secrets — not config files committed to the repo
+- Flag Base64-encoded blobs that may contain credentials
+- Verify test fixtures don't contain real credentials (even "test" secrets can leak)
+
+### STRIDE Threat Assessment
+<!-- For each changed file/module, evaluate which STRIDE categories apply.
+     Not every category applies to every change — scale review intensity appropriately. -->
+- **Spoofing**: Auth checks at entry points, token validation, service-to-service authentication
+- **Tampering**: Input validation, checksum verification, file permission restrictions
+- **Repudiation**: Security action logging, audit trail completeness
+- **Information Disclosure**: Secret leaks in logs/errors, debug endpoint exposure, TLS configuration
+- **Denial of Service**: Resource limits, timeout configuration, bounded concurrency
+- **Elevation of Privilege**: Non-root containers, RBAC least-privilege, security contexts
+
+### Weak Security Patterns
+- No disabled TLS verification (`InsecureSkipVerify`, `verify=False`, `NODE_TLS_REJECT_UNAUTHORIZED=0`)
+- No weak crypto (MD5/SHA1 for security, DES, RC4)
+- No shell injection vectors (`eval`, `exec`, `system` with user input)
+- No unsafe deserialization (`pickle.loads`, `YAML.load`, `JSON.parse` on untrusted input without schema validation)
+- No SQL injection (string concatenation for queries instead of parameterized)
+- No overly permissive file/directory permissions (0777, 0666)
+- No HTTP in production URLs (must be HTTPS)
+- No `latest` tags in container images (non-reproducible, potential supply chain risk)
+
+### CI Security Tool Coverage
+<!-- Report which security tools from Phase 2.11 are active in CI.
+     For gaps, recommend additions. -->
+- SAST: `<CodeQL / Semgrep / DevSkim — from Phase 2.11>`
+- Dependency scanning: `<Trivy / Snyk / Dependabot — from Phase 2.11>`
+- Secret scanning: `<Gitleaks / detect-secrets — from Phase 2.11 or recommend>`
+- Container scanning: `<Trivy / Grype — from Phase 2.11 or recommend>`
 
 ## Testing Expectations
 <!-- From Phase 2.6 testing patterns — what test coverage is expected for changes -->
@@ -649,6 +860,7 @@ You are a code reviewer for this repository. Your job is to review pull requests
 - Review checklist items must map to actual CI checks and linting rules in this repo.
 - Language-specific best practices MUST be derived from the three-source cross-reference (code conventions, linter configs, PR feedback) — not from generic language guides.
 - Review Feedback Patterns must reference real themes observed in PR review comments from the last 12 months.
+- Security Checks must be populated from Phase 2.11 security posture scan — STRIDE categories, credential patterns, and weak security patterns must be repo-specific.
 - Common issues should reference real patterns observed in both the commit history and review feedback.
 
 ---
@@ -725,9 +937,9 @@ Apply these rules to ALL generated files:
 4. **Actionable** — Every instruction should be something a developer or AI agent can execute literally.
 5. **Consistent** — File cross-references must be valid (e.g., if AGENTS.md says "see Testing Instructions", that section must exist).
 6. **SCM-aware** — Place files in the correct location per the SCM adaptation matrix. Skip `.instructions.md` files for non-GitHub repos.
-7. **Commit-based skills only** — Only generate skill files for patterns with ≥ 3 commits in the last 12 months. Do not invent skills for patterns that don't exist in the commit history.
+7. **Commit-based skills only** — Only generate skill files for patterns with ≥ 3 commits in the last 12 months. Do not invent skills for patterns that don't exist in the commit history. **Exception:** The `security-review` skill is always generated regardless of commit frequency.
 8. **Preserve existing content** — If any target file already exists, read it first. Preserve human-authored sections and only add/update generated sections. Mark generated sections with `<!-- generated -->` comments so they can be distinguished from human content.
-9. **Size limits** — `copilot-instructions.md` ≤ 4000 characters. `.instructions.md` files ≤ 15 rules each. SKILL.md files ≤ 2 pages each. `CodeReviewer.agent.md` ≤ 3 pages. `DocumentWriter.agent.md` ≤ 3 pages.
+9. **Size limits** — `copilot-instructions.md` ≤ 4000 characters. `.instructions.md` files ≤ 15 rules each. SKILL.md files ≤ 2 pages each. `CodeReviewer.agent.md` ≤ 5 pages. `DocumentWriter.agent.md` ≤ 3 pages. `security-review` SKILL.md ≤ 4 pages.
 
 ---
 
@@ -750,6 +962,10 @@ After generating all files, verify:
 - [ ] `CodeReviewer.agent.md` — review instructions reference actual CI checks and linting rules
 - [ ] `CodeReviewer.agent.md` — language-specific best practices derived from code conventions + linter configs + PR feedback (3-source cross-reference)
 - [ ] `CodeReviewer.agent.md` — review feedback patterns section references real themes from PR review comments
+- [ ] `CodeReviewer.agent.md` — STRIDE security checklist populated with repo-specific auth/network/data patterns from Phase 2.11
+- [ ] `CodeReviewer.agent.md` — credential leak patterns include repo-specific secret formats (from Phase 2.11)
+- [ ] `CodeReviewer.agent.md` — weak security patterns are language-specific to detected languages
+- [ ] `security-review` skill — always generated with STRIDE checklist, credential detection rules, and weak pattern catalog
 - [ ] `DocumentWriter.agent.md` — placed in correct SCM-specific location
 - [ ] `DocumentWriter.agent.md` — writing instructions reference actual doc structure and conventions
 - [ ] Monorepo — nested `AGENTS.md` generated for each subproject (if applicable)
