@@ -150,6 +150,32 @@ If monorepo: identify each subproject's path, languages, and frameworks.
 
 Check what already exists: `.github/copilot-instructions.md`, `AGENTS.md`, `.github/instructions/`, `Prompt.md`, `DESIGN.md`, `.agents/`, `CodeReviewer.agent.md` (or `.github/agents/CodeReviewer.agent.md`), `DocumentWriter.agent.md` (or `.github/agents/DocumentWriter.agent.md`). Report what's present and what's missing.
 
+#### 2.10 Linter, Formatter & Static Analysis Configs
+
+Search the repo for tool configuration files that define enforceable code quality rules. These are the **authoritative source** for code review criteria — more reliable than sampling code manually.
+
+| Config File | Tool | Language |
+|-------------|------|----------|
+| `.eslintrc`, `.eslintrc.js`, `.eslintrc.json`, `.eslintrc.yml`, `eslint.config.js` | ESLint | JavaScript/TypeScript |
+| `.prettierrc`, `prettier.config.js` | Prettier | JS/TS/CSS/Markdown |
+| `.rubocop.yml` | RuboCop | Ruby |
+| `.pylintrc`, `.flake8`, `pyproject.toml` `[tool.pylint]`/`[tool.ruff]`/`[tool.flake8]` | Pylint/Flake8/Ruff | Python |
+| `mypy.ini`, `pyproject.toml` `[tool.mypy]` | mypy | Python |
+| `.golangci.yml`, `.golangci.yaml` | golangci-lint | Go |
+| `rustfmt.toml`, `.rustfmt.toml` | rustfmt | Rust |
+| `clippy.toml`, `.clippy.toml` | Clippy | Rust |
+| `.editorconfig` | EditorConfig | All languages |
+| `.clang-format`, `.clang-tidy` | clang-format/clang-tidy | C/C++ |
+| `checkstyle.xml`, `pmd.xml` | Checkstyle/PMD | Java |
+| `.luacheckrc` | Luacheck | Lua |
+| `shellcheck` directives in scripts, `.shellcheckrc` | ShellCheck | Shell/Bash |
+
+For each config found:
+1. **Parse the rules** — extract severity levels, disabled rules, custom rule overrides.
+2. **Identify enforced patterns** — what the team has explicitly chosen to enforce (these become review checklist items).
+3. **Identify suppressed rules** — what the team has intentionally disabled (do NOT flag these in reviews).
+4. **Record CI integration** — is this tool run in CI? If so, the review can defer to automation for those checks.
+
 ---
 
 ### Phase 3 — Analyze Git Commit History (Last 12 months)
@@ -196,6 +222,61 @@ For each detected pattern:
 #### 3.3 Frequency-Based Prioritization
 
 Rank patterns by commit frequency. Generate skill files only for patterns with ≥ 3 occurrences. Order skills from most to least frequent.
+
+#### 3.4 PR Review Feedback Analysis (Last 12 Months)
+
+Analyze pull request review comments to identify **what reviewers repeatedly flag**. This data directly feeds the CodeReviewer agent's language-specific best practices and common issues sections.
+
+**For GitHub repos**, use the `gh` CLI:
+
+```bash
+# List merged PRs from the last 12 months
+gh pr list --state merged --limit 100 --json number,title,createdAt,mergedAt,changedFiles
+
+# For each PR with review comments, extract review feedback
+gh pr view <number> --json reviews,reviewRequests,comments
+
+# Get review comments (the richest signal for review patterns)
+gh api repos/{owner}/{repo}/pulls/comments --paginate --jq '.[] | select(.created_at > "<12-months-ago>") | {body: .body, path: .path, diff_hunk: .diff_hunk}'
+```
+
+**For Azure DevOps repos**, use the `az` CLI:
+
+```bash
+az repos pr list --status completed --top 100 --output json
+az repos pr reviewer list --id <pr-id>
+```
+
+**For repos without CLI access**, fall back to analyzing commit patterns:
+- Commits with `fixup!`, `squash!`, or amended messages suggest reviewer-requested changes.
+- Commits immediately following a merge that touch the same files suggest post-review fixes.
+- Force-push patterns in branch history indicate review iterations.
+
+**From the review comments, extract:**
+
+1. **Recurring feedback themes** — Group comments by category:
+   - Style/formatting issues (naming, imports, whitespace)
+   - Missing tests or insufficient test coverage
+   - Error handling gaps
+   - Security concerns (secrets, input validation)
+   - Performance concerns (N+1 queries, memory leaks, unnecessary allocations)
+   - Documentation gaps (missing docstrings, unclear comments)
+   - Logic errors or edge cases
+   - API design issues (breaking changes, inconsistent patterns)
+
+2. **Language-specific review patterns** — For each detected language, identify what reviewers focus on:
+   - **Go**: error handling (`if err != nil`), goroutine leaks, context propagation, interface compliance
+   - **Python**: type hints, exception handling specificity, f-string vs format, async patterns
+   - **Ruby**: frozen string literal, method visibility, block vs proc, idiomatic patterns
+   - **TypeScript/JavaScript**: strict typing, null checks, async/await vs promises, import hygiene
+   - **Shell/Bash**: quoting, `set -e` usage, portability, shellcheck compliance
+   - **Java**: null safety, resource management (try-with-resources), generics, exception hierarchy
+   - **C#**: nullable reference types, IDisposable, async patterns, LINQ usage
+   - **Rust**: ownership patterns, unwrap avoidance, error type design, lifetime annotations
+
+3. **Top-N issues by frequency** — Rank the most commonly flagged issues. The top 10 become the CodeReviewer agent's priority checklist items.
+
+4. **Reviewer personas** — Identify if different reviewers focus on different aspects (e.g., one reviewer focuses on security, another on performance). This informs review scope.
 
 ---
 
@@ -522,8 +603,22 @@ You are a code reviewer for this repository. Your job is to review pull requests
 - [ ] CI checks would pass (lint, build, test)
 - [ ] No TODO/FIXME comments introduced without a linked issue
 
-## Style Rules
-<!-- Language-specific style rules from Phase 2.7 code conventions analysis -->
+## Language-Specific Best Practices
+<!-- Generate one subsection PER detected language. Derive rules from THREE sources:
+     1. Phase 2.7 code conventions (what the code actually does)
+     2. Phase 2.10 linter/formatter configs (what tools enforce)
+     3. Phase 3.4 PR review feedback (what reviewers repeatedly flag)
+     Cross-reference all three to produce authoritative, repo-specific rules. -->
+
+### <Language 1> (e.g., Go)
+<!-- For each language, include: -->
+- **Enforced by tooling** — Rules from linter configs (Phase 2.10) that CI runs automatically. The reviewer can trust these are caught.
+- **Reviewer-focus items** — Patterns NOT caught by tooling that reviewers must check manually. Prioritize by frequency from Phase 3.4.
+- **Idiomatic patterns** — Language-specific idioms observed in this repo's code (Phase 2.7). Flag deviations.
+- **Common mistakes** — Top issues from PR review feedback (Phase 3.4) for this language.
+
+### <Language 2> (e.g., Ruby)
+<!-- Repeat for each detected language -->
 
 ## Security Checks
 - No credentials or secrets in code
@@ -534,14 +629,27 @@ You are a code reviewer for this repository. Your job is to review pull requests
 ## Testing Expectations
 <!-- From Phase 2.6 testing patterns — what test coverage is expected for changes -->
 
+## Review Feedback Patterns
+<!-- Derived from Phase 3.4 PR review feedback analysis -->
+
+### Top Recurring Review Comments
+<!-- Ranked list of most frequently flagged issues from PR reviews in the last 12 months.
+     Each item should include: the issue pattern, approximate frequency, and an example. -->
+
+### Review Anti-Patterns
+<!-- Things that reviewers have explicitly accepted or approved that should NOT be flagged.
+     Derived from suppressed linter rules (Phase 2.10) and approved PR patterns. -->
+
 ## Common Issues to Flag
-<!-- Patterns detected from bug-fix commits in Phase 3 — recurring mistakes to watch for -->
+<!-- Patterns from BOTH bug-fix commits (Phase 3.1) AND reviewer feedback (Phase 3.4).
+     Prioritize issues that appear in both sources — these are the most impactful. -->
 ```
 
 **Rules:**
 - Review checklist items must map to actual CI checks and linting rules in this repo.
-- Style rules must be derived from Phase 2 code convention analysis, not generic advice.
-- Common issues should reference real patterns observed in the commit history.
+- Language-specific best practices MUST be derived from the three-source cross-reference (code conventions, linter configs, PR feedback) — not from generic language guides.
+- Review Feedback Patterns must reference real themes observed in PR review comments from the last 12 months.
+- Common issues should reference real patterns observed in both the commit history and review feedback.
 
 ---
 
@@ -640,6 +748,8 @@ After generating all files, verify:
 - [ ] Skill files — instructions reference actual files and commands in this repo
 - [ ] `CodeReviewer.agent.md` — placed in correct SCM-specific location
 - [ ] `CodeReviewer.agent.md` — review instructions reference actual CI checks and linting rules
+- [ ] `CodeReviewer.agent.md` — language-specific best practices derived from code conventions + linter configs + PR feedback (3-source cross-reference)
+- [ ] `CodeReviewer.agent.md` — review feedback patterns section references real themes from PR review comments
 - [ ] `DocumentWriter.agent.md` — placed in correct SCM-specific location
 - [ ] `DocumentWriter.agent.md` — writing instructions reference actual doc structure and conventions
 - [ ] Monorepo — nested `AGENTS.md` generated for each subproject (if applicable)
