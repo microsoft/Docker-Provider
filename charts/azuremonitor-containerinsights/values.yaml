@@ -18,6 +18,7 @@ AppmonitoringAgent:
   enabled: false
   isOpenTelemetryLogsEnabled: false
   openTelemetryLogsPort: 28331
+  openTelemetryLogsPortGrpc: 28332
 
 legacyAddonDelivery: false
 
@@ -30,11 +31,8 @@ legacyAddonDelivery: false
 OmsAgent:
   aksResourceID: <your_cluster_id>
   enableDaemonSetSizing: false
-  isAppMonitoringAgentEnabled: false
-  isOpenTelemetryLogsEnabled: false
   isCustomMetricsDisabled: false
   isUsingAADAuth: "true"
-  openTelemetryLogsPort: 28331
   retinaFlowLogsEnabled: false
   workspaceID: "<your_workspace_id>"
   accessTokenSecretName: "ama-logs-secret"

@@ -229,6 +229,8 @@ spec:
             value: "{{ .Values.AppmonitoringAgent.isOpenTelemetryLogsEnabled | default false }}"
           - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
             value: "{{ .Values.AppmonitoringAgent.openTelemetryLogsPort | default 28331 }}"
+          - name: APPMONITORING_OPENTELEMETRYLOGS_PORT_GRPC
+            value: "{{ .Values.AppmonitoringAgent.openTelemetryLogsPortGrpc | default 28332 }}"
           - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
             value: "{{ .Values.OmsAgent.isPrometheusMetricsScrapingDisabled }}"
           - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
