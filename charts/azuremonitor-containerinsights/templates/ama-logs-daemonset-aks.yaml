@@ -35,11 +35,11 @@ metadata:
     kubernetes.io/cluster-service: "true"
     addonmanager.kubernetes.io/mode: Reconcile
 {{- end }}
-    {{/*
+    {{
     {{- if and $useDaemonSetSizing $size.name }}
     kubernetes.azure.com/ds-tshirt-size: {{ $size.name }}
     {{- end }}
-    */}}
+    }}
   name: ama-logs{{/* {{- if and $useDaemonSetSizing $size.name }}-{{ $size.name }}{{- end }} */}}
   namespace: kube-system
 spec:
@@ -47,11 +47,11 @@ spec:
     matchLabels:
       component: ama-logs-agent
       tier: node
-      {{/*
+      {{
       {{- if and $useDaemonSetSizing $size.name }}
       kubernetes.azure.com/ds-tshirt-size: {{ $size.name }}
       {{- end }}
-      */}}
+      }}
   template:
     metadata:
       annotations:
@@ -64,11 +64,11 @@ spec:
         component: ama-logs-agent
         tier: node
         kubernetes.azure.com/managedby: aks
-        {{/*
+        {{
         {{- if and $useDaemonSetSizing $size.name }}
         kubernetes.azure.com/ds-tshirt-size: {{ $size.name }}
         {{- end }}
-        */}}
+        }}
 {{- if semverCompare "<1.11.0" $.Values.global.commonGlobals.Versions.Kubernetes }}
       annotations:
         scheduler.alpha.kubernetes.io/critical-pod: ""
