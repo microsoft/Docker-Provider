@@ -17,14 +17,14 @@
 {{- if or (not $isArcExtension) (and $isArcExtension (and (ne .Values.amalogs.secret.key "<your_workspace_key>") (ne .Values.amalogs.secret.wsid "<your_workspace_id>") (or (ne .Values.amalogs.env.clusterName "<your_cluster_name>") (ne .Values.amalogs.env.clusterId "<your_cluster_id>") (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>")))) }}
 {{/* AKS DaemonSet Sizing - only for AKS */}}
 {{- if not $isArcExtension }}
-{{- $useDaemonSetSizing := and .Values.global.commonGlobals.isAutomaticSKU .Values.OmsAgent.enableDaemonSetSizing -}}
-{{- $singleSize := dict "containers" (dict "addon-token-adapter" (dict "cpuLimit" "100m" "memoryLimit" "100Mi" "cpuRequest" "20m" "memoryRequest" "50Mi") "ama-logs" (dict "cpuLimit" .Values.OmsAgent.omsAgentDsCPULimitLinux "memoryLimit" .Values.OmsAgent.omsAgentDsMemoryLimitLinux "cpuRequest" "75m" "memoryRequest" "325Mi") "ama-logs-prometheus" (dict "cpuLimit" .Values.OmsAgent.omsAgentPrometheusSidecarCPULimit "memoryLimit" .Values.OmsAgent.omsAgentPrometheusSidecarMemoryLimit "cpuRequest" "75m" "memoryRequest" "225Mi")) -}}
-{{- $sizes := list ($singleSize) -}}
-{{/* - if $useDaemonSetSizing - */}}
-  {{/* - $singleSize = .Values.OmsAgent.daemonSetSizingValues.singleSize - */}}
-  {{/* - $sizes = list ($singleSize) - */}}
-  {{/* - $sizes = prepend .Values.OmsAgent.daemonSetSizingValues.tShirtSizes $singleSize - */}}
-{{/* - end - */}}
+{{- $useDaemonSetSizing := and (eq .Values.Azure.Cluster.Kind "automatic") .Values.OmsAgent.enableDaemonSetSizing -}}
+{{- $singleSize := .Values.OmsAgent.daemonSetSizingValues.singleSize -}}
+{{- $sizes := list $singleSize -}}
+{{- if $useDaemonSetSizing -}}
+  {{- $sizes = prepend .Values.OmsAgent.daemonSetSizingValues.tShirtSizes $singleSize -}}
+{{- else -}}
+  {{- $sizes = list $singleSize -}}
+{{- end -}}
 {{/* Generate DaemonSets */}}
 {{- $prevmaxCPU := 0 -}}
 {{- range $index, $size := $sizes -}}
@@ -245,8 +245,8 @@ spec:
           resources:
             limits:
               {{- $containerResources := index $size.containers "ama-logs" }}
-              cpu: {{ $containerResources.cpuLimit }}
-              memory: {{ $containerResources.memoryLimit }}
+              cpu: {{ include "maxResourceValue" (list ($.Values.omsagent-ds-cpu-limit-linux | default "500m") $containerResources.cpuLimit) }}
+              memory: {{ include "maxResourceValue" (list ($.Values.omsagent-ds-memory-limit-linux | default "1Gi") $containerResources.memoryLimit) }}
             requests:
               {{- $containerResources := index $size.containers "ama-logs" }}
               cpu: {{ $containerResources.cpuRequest }}
@@ -658,8 +658,8 @@ spec:
           resources:
             limits:
               {{- $containerResources := index $size.containers "ama-logs-prometheus" }}
-              cpu: {{ $containerResources.cpuLimit }}
-              memory: {{ $containerResources.memoryLimit }}
+              cpu: {{ include "maxResourceValue" (list ($.Values.omsagent-prometheus-sidecar-cpu-limit | default "500m") $containerResources.cpuLimit) }}
+              memory: {{ include "maxResourceValue" (list ($.Values.omsagent-prometheus-sidecar-memory-limit | default "1Gi") $containerResources.memoryLimit) }}
             requests:
               {{- $containerResources := index $size.containers "ama-logs-prometheus" }}
               cpu: {{ $containerResources.cpuRequest }}
@@ -787,7 +787,7 @@ spec:
    {{- end }}
    {{- end }}
 {{- else }}
-{{- $useDaemonSetSizing := and .Values.global.commonGlobals.isAutomaticSKU .Values.OmsAgent.enableDaemonSetSizing -}}
+{{- $useDaemonSetSizing := and (eq .Values.Azure.Cluster.Kind "automatic") .Values.OmsAgent.enableDaemonSetSizing -}}
 {{- $singleSize := dict "name" "" -}}
       affinity:
         nodeAffinity:
