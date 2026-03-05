@@ -1,11 +1,10 @@
-# Agentify This Repository — Declarative Agent Prompt
-
-You are a staff level developer who has deep domain knowledge on this codebase. Your task is to analyze this repository and generate a complete set of "coding agent artifacts" that will enable AI coding assistants (like GitHub Copilot, Google Jules, Gemini CLI, etc.) to understand and contribute to this codebase effectively.
+# Agentify This Repository
+You are a staff level developer who has deep domain knowledge on this codebase and its infrastructure. Your task is to analyze this repository and generate a complete set of "coding agent artifacts" with best practices and standards that will enable AI coding assistants (like GitHub Copilot, Google Jules, Gemini CLI, etc.) to understand and contribute to this codebase effectively.
 ---
 
 ## Goal
 
-Analyze this repository's codebase, structure, programming languages, infrastucture such as k8s or service fabric or containerization etc., conventions, CI/CD configuration, and **git commit history (last 12 months)** to auto-generate the following files that make this repo "agent-ready" for AI coding assistants:
+Analyze this repository's codebase, structure, programming languages, open source (OSS) dependencies, infrastructure such as k8s or service fabric or containerization etc., conventions, CI/CD configuration, and **git commit history (last 12 months)** to auto-generate the following files that make this repo "agent-ready" for AI coding assistants:
 
 | Output File | Standard | Where |
 |-------------|----------|-------|
@@ -15,6 +14,7 @@ Analyze this repository's codebase, structure, programming languages, infrastuct
 | `Prompt.md` | Workspace convention | Root |
 | `SKILL.md` files | Azure extension pattern | `.github/skills/<name>/SKILL.md` (GitHub) or `.agents/skills/<name>/SKILL.md` |
 | `CodeReviewer.agent.md` | Custom | `.github/agents/CodeReviewer.agent.md` (GitHub) or root (other SCMs) |
+| `SecurityReviewer.agent.md` | Custom | `.github/agents/SecurityReviewer.agent.md` (GitHub) or root (other SCMs) |
 | `DocumentWriter.agent.md` | Custom | `.github/agents/DocumentWriter.agent.md` (GitHub) or root (other SCMs) |
 | `IncidentInvestigator.agent.md` | Custom (conditional) | `.github/agents/` — only if ICM/monitoring MCP servers detected |
 | `ServiceTelemetry.agent.md` | Custom (conditional) | `.github/agents/` — only if App Insights/telemetry MCP servers detected |
@@ -53,6 +53,7 @@ Determine which source control host this repo uses:
 | Skill files | `.github/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` | `.agents/skills/<name>/SKILL.md` |
 | `CodeReviewer.agent.md` | `.github/agents/CodeReviewer.agent.md` | Root `CodeReviewer.agent.md` | Root `CodeReviewer.agent.md` |
 | `DocumentWriter.agent.md` | `.github/agents/DocumentWriter.agent.md` | Root `DocumentWriter.agent.md` | Root `DocumentWriter.agent.md` |
+| `SecurityReviewer.agent.md` | `.github/agents/SecurityReviewer.agent.md` | Root `SecurityReviewer.agent.md` | Root `SecurityReviewer.agent.md` |
 | `IncidentInvestigator.agent.md` | `.github/agents/IncidentInvestigator.agent.md` | Root | Root |
 | `ServiceTelemetry.agent.md` | `.github/agents/ServiceTelemetry.agent.md` | Root | Root |
 | `prd.agent.md` | `.github/agents/prd.agent.md` | Root | Root |
@@ -96,6 +97,7 @@ For each MCP server found, record:
 - Whether to generate `IncidentInvestigator.agent.md` (requires ICM/monitoring MCP)
 - Whether to generate `ServiceTelemetry.agent.md` (requires App Insights/telemetry MCP)
 - What MCP tools the `CodeReviewer` agent should reference (e.g., Microsoft Docs for validation)
+- What MCP tools the `SecurityReviewer` agent should reference (e.g., Microsoft Security and Azure Security Docs for validation)
 - What operational skills can leverage MCP tools (e.g., Kusto query skills, EV2 rollout skills)
 
 #### 1.5.2 Existing Agent File Inventory
