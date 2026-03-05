@@ -7,16 +7,6 @@ You are a staff level developer who has deep domain knowledge on this codebase. 
 
 Analyze this repository's codebase, structure, programming languages, infrastucture such as k8s or service fabric or containerization etc., conventions, CI/CD configuration, and **git commit history (last 12 months)** to auto-generate the following files that make this repo "agent-ready" for AI coding assistants:
 
-## Human Review And Merge Policy
-
-All generated output must follow a review-first workflow:
-
-1. Make file changes only in the working tree and leave them uncommitted.
-2. Do **not** run `git commit`, `git push`, create tags, or open/merge PRs automatically.
-3. Provide a clear summary of what changed, why it changed, and which files were modified so a developer can review quickly.
-4. Include a concise verification checklist (for example: tests run, lint status, known caveats) to help reviewers validate safely.
-5. Hand off changes for human approval and merge; proceed with commit/push only if explicitly requested.
-
 | Output File | Standard | Where |
 |-------------|----------|-------|
 | `copilot-instructions.md` | GitHub official | `.github/copilot-instructions.md` (GitHub) or root (other SCMs) |
