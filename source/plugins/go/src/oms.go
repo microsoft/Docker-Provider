@@ -1311,13 +1311,29 @@ func extractImageID(hash string) string {
 }
 
 func parseImageDetails(image string) (repo, name, tag string) {
-	slashLocation := strings.Index(image, "/")
-	colonLocation := strings.Index(image, ":")
+	if len(image) == 0 {
+		return "", "", ""
+	}
+
 	atLocation := strings.Index(image, "@")
 
 	// Exclude the digest part for imageRepo/image/tag parsing, if present
 	if atLocation != -1 {
 		image = image[:atLocation]
+	}
+
+	// Handle case where image becomes empty after removing digest
+	if len(image) == 0 {
+		return "", "", ""
+	}
+
+	// Use LastIndex for slash to handle nested paths like registry.io/org/repo
+	slashLocation := strings.LastIndex(image, "/")
+	colonLocation := strings.LastIndex(image, ":")
+
+	// Handle registry with port (e.g., localhost:5000/image or registry.svc:5000/org/image)
+	if colonLocation != -1 && slashLocation != -1 && colonLocation < slashLocation {
+		colonLocation = -1
 	}
 
 	// If colonLocation is -1 (not found), set it to the length of the image string
