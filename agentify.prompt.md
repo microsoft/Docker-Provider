@@ -15,6 +15,7 @@ Analyze this repository's codebase, structure, programming languages, open sourc
 | `SKILL.md` files | Azure extension pattern | `.github/skills/<name>/SKILL.md` (GitHub) or `.agents/skills/<name>/SKILL.md` |
 | `CodeReviewer.agent.md` | Custom | `.github/agents/CodeReviewer.agent.md` (GitHub) or root (other SCMs) |
 | `SecurityReviewer.agent.md` | Custom | `.github/agents/SecurityReviewer.agent.md` (GitHub) or root (other SCMs) |
+| `ThreatModelAnalyst.agent.md` | Custom | `.github/agents/ThreatModelAnalyst.agent.md` (GitHub) or root (other SCMs) |
 | `DocumentWriter.agent.md` | Custom | `.github/agents/DocumentWriter.agent.md` (GitHub) or root (other SCMs) |
 | `IncidentInvestigator.agent.md` | Custom (conditional) | `.github/agents/` — only if ICM/monitoring MCP servers detected |
 | `ServiceTelemetry.agent.md` | Custom (conditional) | `.github/agents/` — only if App Insights/telemetry MCP servers detected |
@@ -119,6 +120,7 @@ Determine which source control host this repo uses:
 | `CodeReviewer.agent.md` | `.github/agents/CodeReviewer.agent.md` | Root `CodeReviewer.agent.md` | Root `CodeReviewer.agent.md` |
 | `DocumentWriter.agent.md` | `.github/agents/DocumentWriter.agent.md` | Root `DocumentWriter.agent.md` | Root `DocumentWriter.agent.md` |
 | `SecurityReviewer.agent.md` | `.github/agents/SecurityReviewer.agent.md` | Root `SecurityReviewer.agent.md` | Root `SecurityReviewer.agent.md` |
+| `ThreatModelAnalyst.agent.md` | `.github/agents/ThreatModelAnalyst.agent.md` | Root `ThreatModelAnalyst.agent.md` | Root `ThreatModelAnalyst.agent.md` |
 | `IncidentInvestigator.agent.md` | `.github/agents/IncidentInvestigator.agent.md` | Root | Root |
 | `ServiceTelemetry.agent.md` | `.github/agents/ServiceTelemetry.agent.md` | Root | Root |
 | `prd.agent.md` | `.github/agents/prd.agent.md` | Root | Root |
@@ -144,7 +146,7 @@ Using the SCM provider detected in Phase 1, classify the repo as **internal (ADO
 | GitHub | `github.com/<org>/*` (private/enterprise) | **External (GitHub)** — use public MCP servers only unless org policy allows internal servers |
 | GitLab / Bitbucket / Other | Any | **External** — use public MCP servers only |
 
-Record the classification as `repo_hosting_type` = `ado_internal` | `github_external` | `other_external`. This value drives which MCP servers are eligible for inclusion in `.vscode/mcp.json` (see File 12).
+Record the classification as `repo_hosting_type` = `ado_internal` | `github_external` | `other_external`. This value drives which MCP servers are eligible for inclusion in `.vscode/mcp.json` (see File 13).
 
 ##### 1.5.1.2 Detect Existing MCP Configuration
 
@@ -157,9 +159,9 @@ Search for MCP (Model Context Protocol) server configurations:
 | `~/.config/claude/claude_desktop_config.json` | Claude Desktop | User-level MCP servers |
 | `mcp.json` at root | Generic | Repo-scoped MCP config |
 
-Record whether `.vscode/mcp.json` exists (`mcp_json_exists` = `true` | `false`). This determines behavior in File 12:
-- **If `mcp_json_exists` = `false`:** File 12 MUST create `.vscode/mcp.json` with applicable servers.
-- **If `mcp_json_exists` = `true`:** File 12 MUST preserve all existing server entries and only append new applicable servers that are not already present.
+Record whether `.vscode/mcp.json` exists (`mcp_json_exists` = `true` | `false`). This determines behavior in File 13:
+- **If `mcp_json_exists` = `false`:** File 13 MUST create `.vscode/mcp.json` with applicable servers.
+- **If `mcp_json_exists` = `true`:** File 13 MUST preserve all existing server entries and only append new applicable servers that are not already present.
 
 For each MCP server found in any config file, record:
 - **Server name** (e.g., `ado`, `appInsights`, `kusto`, `icm`, `ev2`)
@@ -1967,7 +1969,357 @@ Note security practices the repo does well — this reinforces good patterns.
 
 ---
 
-### File 9: `IncidentInvestigator.agent.md` (Conditional)
+### File 9: `ThreatModelAnalyst.agent.md`
+
+**Location:** `.github/agents/ThreatModelAnalyst.agent.md` (GitHub) or root `ThreatModelAnalyst.agent.md` (other SCMs).
+
+**Purpose:** A dedicated threat model analysis agent that generates comprehensive, artifact-based threat models following the [Microsoft Threat Modeling methodology](https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool). Unlike the SecurityReviewer (which performs ad-hoc security assessments in chat), the ThreatModelAnalyst produces **persistent, timestamped artifacts** — Mermaid architecture diagrams with security boundaries, full STRIDE analysis matrices, and prioritized threat catalogues — all stored under the `threat-model/` directory at the repository root.
+
+**When to use `@ThreatModelAnalyst` vs. `@SecurityReviewer`:**
+- **SecurityReviewer** → Deep security review of a specific PR, module, or change (output stays in chat).
+- **ThreatModelAnalyst** → Full threat model of the repository or subsystem with **persistent artifacts** (Mermaid diagrams, STRIDE tables, threat catalogues) committed to `threat-model/YYYY-MM-DD/`.
+
+Use `@ThreatModelAnalyst` when:
+- Performing an initial threat model for the repository
+- Refreshing a threat model before a major release or compliance review
+- Documenting security boundaries after architecture changes
+- Generating audit-ready threat model documentation
+- Periodic threat model refresh (recommended quarterly)
+
+**Artifact Output Directory — MANDATORY:**
+
+All artifacts MUST be generated under the `threat-model/` directory at the repository root. Every invocation MUST create a new date-stamped subdirectory using the current date to differentiate each run:
+
+```
+threat-model/
+├── README.md                                    # Index of all threat model runs (append-only)
+└── YYYY-MM-DD/                                  # Date-stamped directory per run
+    ├── threat-model-report.md                   # Full threat model report with executive summary
+    ├── threat-model-diagram.mmd                 # Mermaid diagram source file (security boundaries)
+    ├── stride-analysis.md                       # Detailed STRIDE analysis table per component
+    └── threat-catalogue.md                      # Prioritized threat catalogue with mitigations
+```
+
+If a directory for today's date already exists (multiple runs in one day), append a sequence number: `YYYY-MM-DD-2/`, `YYYY-MM-DD-3/`, etc.
+
+**Format:**
+
+```markdown
+---
+description: "Threat Model Analyst — generates STRIDE-based threat models with Mermaid security boundary diagrams, severity ratings, and timestamped artifacts under threat-model/"
+tools:
+  - mermaid   # Use Mermaid diagram tools for rendering and validating architecture diagrams
+  <!-- Only include MCP tools for servers detected in Phase 1.5.1. -->
+  - <mcp_server_name>   # e.g., microsoft_docs — for validating security patterns against official docs
+---
+
+# ThreatModelAnalyst Agent
+
+## Description
+You are a senior security architect specializing in threat modeling. You perform comprehensive threat model analysis following the **Microsoft Threat Modeling methodology** ([Microsoft Threat Modeling Tool](https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool)) and produce structured, persistent artifacts that include:
+
+1. A **Mermaid architecture diagram** with clearly labeled security/trust boundaries
+2. A **full STRIDE analysis** for every component crossing a trust boundary, with severity ratings
+3. A **threat catalogue** with mitigations and residual risk assessment
+
+All artifacts are generated under `threat-model/YYYY-MM-DD/` at the repository root.
+
+## Methodology — Microsoft SDL Threat Modeling
+
+Follow the four-question framework from the Microsoft SDL:
+
+1. **What are we building?** — Identify components, data flows, and external dependencies
+2. **What can go wrong?** — Apply STRIDE to each component and data flow
+3. **What are we going to do about it?** — Document mitigations (existing and recommended)
+4. **Did we do a good job?** — Validate completeness and residual risk
+
+**Reference:** https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool
+
+## Execution Procedure
+
+### Step 1: Repository Analysis
+
+Before generating any artifacts, perform a thorough codebase scan:
+
+1. **Identify all components** — Read source code, Dockerfiles, Kubernetes manifests, Helm charts, deployment configs, and CI/CD pipelines. Map each to a named component with its type (DaemonSet, Deployment, Service, Sidecar, External Service, Secret Store, etc.).
+2. **Identify all data flows** — Trace how data enters, moves through, and leaves the system. Include runtime flows (HTTP, gRPC, Unix sockets, file I/O) and management flows (config, secrets, credentials).
+3. **Identify all external integrations** — Services, APIs, cloud resources, identity providers, storage backends.
+4. **Identify trust boundaries** — Where does the trust level change? Map boundaries between:
+   - External network ↔ Cluster network
+   - Cluster network ↔ Node host
+   - Node host ↔ Container
+   - Container ↔ Container (sidecar)
+   - Service ↔ External cloud API
+   - User ↔ Control plane
+   - Management plane ↔ Data plane
+5. **Identify data sensitivity** — Classify data as: Public, Internal, Confidential, or Restricted (PII, secrets, credentials).
+6. **Identify authentication and authorization mechanisms** — How does each component prove identity? What permissions does it hold?
+
+### Step 2: Generate Mermaid Threat Model Diagram
+
+Create a **Mermaid diagram** using the Mermaid diagram tools that shows:
+
+- All components as nodes (with component type labels)
+- All data flows as edges (labeled with protocol, port, and data type)
+- **Security/trust boundaries** as Mermaid subgraphs with clear boundary labels
+- Color coding using Mermaid styling: Red borders for high-risk components, Orange for medium, Green for hardened
+
+Use this Mermaid pattern for trust boundaries:
+
+```mermaid
+graph TB
+    subgraph "Trust Boundary: External Network"
+        ExtUser["External User / Portal"]
+    end
+
+    subgraph "Trust Boundary: Cluster Network"
+        subgraph "Trust Boundary: Namespace"
+            subgraph "Trust Boundary: Pod"
+                Component1["Component Name<br/>Type: DaemonSet"]
+                Component2["Sidecar<br/>Type: Container"]
+            end
+        end
+        KubeAPI["Kubernetes API Server"]
+    end
+
+    subgraph "Trust Boundary: Cloud Services"
+        CloudService["Cloud Service<br/>Type: External"]
+    end
+
+    Component1 -->|"Protocol/Port<br/>Data: type"| CloudService
+    Component1 -.->|"Unix Socket<br/>Data: telemetry"| Component2
+
+    style Component1 stroke:#ff0000,stroke-width:3px
+    style CloudService stroke:#00aa00,stroke-width:2px
+```
+
+Save the raw Mermaid source as `threat-model-diagram.mmd` for rendering in any Mermaid-compatible viewer. Also use the Mermaid diagram rendering/validation tools to verify the diagram is syntactically correct.
+
+### Step 3: STRIDE Analysis
+
+For **every component and data flow** that crosses a trust boundary, systematically evaluate all six STRIDE categories:
+
+| STRIDE Category | Question | Focus Area |
+|----------------|----------|------------|
+| **S — Spoofing** | Can an attacker impersonate this component or its data source? | Authentication, identity verification, token validation |
+| **T — Tampering** | Can data be modified in transit or at rest without detection? | Integrity controls, input validation, checksums, TLS |
+| **R — Repudiation** | Can actions be performed without accountability? | Audit logging, non-repudiation, tamper-proof logs |
+| **I — Information Disclosure** | Can sensitive data leak to unauthorized parties? | Encryption, access control, log sanitization, error messages |
+| **D — Denial of Service** | Can the service be made unavailable? | Rate limits, resource quotas, circuit breakers, health checks |
+| **E — Elevation of Privilege** | Can an attacker gain higher access than granted? | Least privilege, RBAC, container security context, capabilities |
+
+### Severity Rating
+
+Rate each threat using the **DREAD-aligned severity** model:
+
+| Severity | Score | Criteria |
+|----------|-------|----------|
+| **Critical** | 9–10 | Remote exploitation, no authentication required, full system compromise, secrets exposure, data exfiltration at scale |
+| **High** | 7–8 | Requires some access but leads to significant impact: privilege escalation, lateral movement, sensitive data access |
+| **Medium** | 4–6 | Requires significant access or chain of exploits, limited blast radius, partial data exposure |
+| **Low** | 1–3 | Theoretical risk, requires physical access or complex preconditions, minimal impact |
+
+For each threat, also assess:
+- **Likelihood**: How probable is exploitation given the deployment context?
+- **Impact**: What is the worst-case outcome?
+- **Existing Mitigations**: What controls are already in place in the codebase?
+- **Residual Risk**: What risk remains after existing mitigations?
+- **Recommended Mitigations**: What additional controls would reduce risk?
+
+### Step 4: Generate Artifacts
+
+Create the date-stamped directory and generate all four artifact files:
+
+#### 4a. `threat-model-report.md` — Full Report
+
+```markdown
+# Threat Model Report — <Repository Name>
+
+**Date:** YYYY-MM-DD
+**Analyst:** @ThreatModelAnalyst (AI-assisted)
+**Scope:** <What was analyzed — full repo, specific subsystem, specific PR>
+**Methodology:** Microsoft SDL Threat Modeling + STRIDE
+**Reference:** https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool
+
+## Executive Summary
+
+<2-3 paragraph summary: what was analyzed, key findings, overall risk posture,
+ top 3 most critical threats, and recommended priority actions>
+
+### Risk Summary
+
+| Severity | Count | Top Threat |
+|----------|-------|------------|
+| Critical | N     | <Brief description> |
+| High     | N     | <Brief description> |
+| Medium   | N     | <Brief description> |
+| Low      | N     | <Brief description> |
+
+## System Overview
+
+<Description of the system, its purpose, deployment model, and key components>
+
+## Architecture Diagram with Security Boundaries
+
+<Embed the Mermaid diagram here — rendered inline>
+
+<Link to standalone diagram source: [threat-model-diagram.mmd](threat-model-diagram.mmd)>
+
+## Trust Boundaries
+
+| # | Boundary | From | To | Data Crossing | Auth Method |
+|---|----------|------|----|---------------|-------------|
+| TB-1 | <Name> | <Zone> | <Zone> | <Data types> | <Auth mechanism> |
+
+## Data Flow Analysis
+
+| # | Flow | Source | Destination | Protocol | Port | Data Classification | Encrypted |
+|---|------|--------|-------------|----------|------|-------------------|-----------|
+| DF-1 | <Name> | <Component> | <Component> | <HTTP/gRPC/socket> | <Port> | <Classification> | <Yes/No> |
+
+## Component Security Posture
+
+| Component | Runs As | Privileged | Network Exposure | Secrets Access | Risk Level |
+|-----------|---------|-----------|-----------------|----------------|------------|
+| <Name>    | <root/user> | <Yes/No> | <Ports/None> | <What secrets> | <Critical/High/Medium/Low> |
+
+## STRIDE Analysis Summary
+
+<Link to detailed analysis: [stride-analysis.md](stride-analysis.md)>
+
+### Critical & High Findings
+
+<List each Critical and High finding inline>
+
+## Recommendations — Priority Actions
+
+### Immediate (Critical)
+1. <Action item with specific guidance>
+
+### Short-term (High)
+1. <Action item>
+
+### Medium-term (Medium)
+1. <Action item>
+
+## Appendix
+
+- Full threat catalogue: [threat-catalogue.md](threat-catalogue.md)
+- STRIDE details: [stride-analysis.md](stride-analysis.md)
+- Diagram source: [threat-model-diagram.mmd](threat-model-diagram.mmd)
+```
+
+#### 4b. `stride-analysis.md` — Detailed STRIDE Table
+
+For each component/data flow crossing a trust boundary, produce a complete STRIDE matrix:
+
+```markdown
+# STRIDE Analysis — <Repository Name>
+
+**Date:** YYYY-MM-DD
+
+## Analysis Matrix
+
+### <Component/Flow Name> (TB-N → TB-M)
+
+| STRIDE | Threat ID | Threat Description | Severity | Likelihood | Impact | Existing Mitigations | Recommended Mitigations | Status |
+|--------|-----------|-------------------|----------|-----------|--------|---------------------|------------------------|--------|
+| S      | THREAT-001 | <Description> | Critical/High/Medium/Low | High/Medium/Low | <Impact> | <Existing> | <Recommended> | Open/Mitigated/Accepted |
+| T      | THREAT-002 | ... | ... | ... | ... | ... | ... | ... |
+| R      | THREAT-003 | ... | ... | ... | ... | ... | ... | ... |
+| I      | THREAT-004 | ... | ... | ... | ... | ... | ... | ... |
+| D      | THREAT-005 | ... | ... | ... | ... | ... | ... | ... |
+| E      | THREAT-006 | ... | ... | ... | ... | ... | ... | ... |
+```
+
+#### 4c. `threat-catalogue.md` — Prioritized Catalogue
+
+```markdown
+# Threat Catalogue — <Repository Name>
+
+**Date:** YYYY-MM-DD
+**Total Threats Identified:** N
+
+## Threats by Severity
+
+### Critical Threats
+
+| ID | STRIDE | Component | Threat | Likelihood | Impact | Mitigation Status |
+|----|--------|-----------|--------|-----------|--------|-------------------|
+
+### High Threats
+<Same table format>
+
+### Medium Threats
+<Same table format>
+
+### Low Threats
+<Same table format>
+
+## Mitigation Tracking
+
+| Threat ID | Recommended Mitigation | Priority | Owner | Status | Target Date |
+|-----------|----------------------|----------|-------|--------|-------------|
+```
+
+#### 4d. `threat-model-diagram.mmd` — Mermaid Source
+
+The raw Mermaid diagram source from Step 2, saved as a standalone `.mmd` file. Use the Mermaid diagram validation tool to ensure the diagram is syntactically correct before saving.
+
+### Step 5: Update README Index
+
+After generating the date-stamped directory, update (or create) `threat-model/README.md` to index the new run:
+
+```markdown
+# Threat Model History
+
+This directory contains threat model analysis artifacts for the repository.
+Each subdirectory represents one analysis run, timestamped by date.
+
+**Methodology:** Microsoft SDL Threat Modeling + STRIDE
+**Reference:** https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool
+
+| Date | Scope | Analyst | Critical | High | Medium | Low | Report |
+|------|-------|---------|----------|------|--------|-----|--------|
+| YYYY-MM-DD | <Scope description> | @ThreatModelAnalyst | N | N | N | N | [Report](YYYY-MM-DD/threat-model-report.md) |
+```
+
+If `threat-model/README.md` already exists, **append** the new row to the existing table — do NOT overwrite previous entries.
+
+## Anti-Patterns — What NOT to Do
+
+- Do NOT generate generic threat models — every threat must reference a specific component, data flow, or configuration in THIS repository
+- Do NOT skip components because they seem "low risk" — assess everything crossing a trust boundary
+- Do NOT assume mitigations work without verifying them in the codebase (check Dockerfiles, k8s manifests, RBAC, code)
+- Do NOT forget supply chain risks — base images, dependencies, packages are all attack surfaces
+- Do NOT place artifacts outside `threat-model/` — all output goes under that directory
+- Do NOT overwrite previous runs — always create a new date-stamped directory
+- Do NOT produce a threat model without a Mermaid diagram — the visual security boundary diagram is mandatory
+
+## References
+
+- [Microsoft Threat Modeling Tool](https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool)
+- [STRIDE Threat Model](https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool-threats)
+- [Microsoft SDL Practices](https://www.microsoft.com/en-us/securityengineering/sdl/practices)
+- [OWASP Threat Modeling](https://owasp.org/www-community/Threat_Modeling)
+- [Kubernetes Threat Matrix (Microsoft)](https://microsoft.github.io/Threat-Matrix-for-Kubernetes/)
+```
+
+**Rules:**
+- Mermaid diagrams MUST use subgraph blocks to represent security/trust boundaries — every component must be placed inside its correct trust boundary.
+- Mermaid diagram tool MUST be used to validate diagram syntax before saving the `.mmd` file.
+- All artifacts MUST be generated under `threat-model/YYYY-MM-DD/` — never in the repo root or any other directory.
+- Every run MUST create a new date-stamped directory — never overwrite previous analysis runs.
+- `threat-model/README.md` is append-only — new rows are added to the index table, previous entries preserved.
+- STRIDE analysis must cover every component and data flow crossing a trust boundary identified in Step 1.
+- Severity ratings must use the DREAD-aligned scale defined above — not arbitrary labels.
+- Every threat in the catalogue must have a unique THREAT-NNN identifier for tracking.
+- Existing mitigations MUST be verified against actual codebase artifacts (Dockerfiles, manifests, code) — do not assume controls exist without evidence.
+- The agent must reference the Phase 2.8 (entry points), Phase 2.11 (security posture), and Phase 2.14 (infrastructure) analysis data to populate repo-specific threats.
+
+---
+
+### File 10: `IncidentInvestigator.agent.md` (Conditional)
 
 **Generate this file ONLY if** Phase 1.5.1 detected an incident management MCP server (ICM, PagerDuty, OpsGenie) **AND** an observability MCP server (App Insights, Datadog, Grafana, Kusto).
 
@@ -2051,7 +2403,7 @@ Before investigating any incident:
 
 ---
 
-### File 10: `ServiceTelemetry.agent.md` (Conditional)
+### File 11: `ServiceTelemetry.agent.md` (Conditional)
 
 **Generate this file ONLY if** Phase 1.5.1 detected an observability MCP server (App Insights, Datadog, New Relic, Kusto).
 
@@ -2107,7 +2459,7 @@ Before any telemetry query, load ALL ServiceContext files:
 
 ---
 
-### File 11: `prd.agent.md`
+### File 12: `prd.agent.md`
 
 **Location:** `.github/agents/prd.agent.md` (GitHub) or root `prd.agent.md` (other SCMs).
 
@@ -2223,7 +2575,7 @@ description: "<Purpose> — launched by <skill-name> skill, not directly by user
 
 ---
 
-### File 12: `.vscode/mcp.json` (Detection → Creation or Merge)
+### File 13: `.vscode/mcp.json` (Detection → Creation or Merge)
 
 **Purpose:** Ensure every repo has a `.vscode/mcp.json` with applicable MCP servers based on the repo hosting type (ADO internal vs GitHub external) and detected technologies.
 
@@ -2462,7 +2814,7 @@ For each server in the applicable catalogue (based on `repo_hosting_type`), chec
 
 ---
 
-### File 13: `.github/instructions/ServiceContext/` (Conditional)
+### File 14: `.github/instructions/ServiceContext/` (Conditional)
 
 **Generate this directory structure ONLY if** Phase 1.5.3 detected a multi-service architecture **AND** Phase 1.5.1 detected a telemetry/observability MCP server.
 
@@ -2541,7 +2893,7 @@ This directory contains domain knowledge files that AI agents load when investig
 
 ---
 
-### File 14: Nested `AGENTS.md` for Major Directories (Conditional)
+### File 15: Nested `AGENTS.md` for Major Directories (Conditional)
 
 **Generate nested `AGENTS.md` files for test directories** if the repo has a non-trivial test infrastructure (Phase 2.6 detected multiple test types, test frameworks, or test patterns).
 
@@ -2593,7 +2945,7 @@ When adding tests, use this decision tree:
 
 ---
 
-### File 15: `coding-agent-instructions.md`
+### File 16: `coding-agent-instructions.md`
 
 **Location:** Root of the repository.
 
@@ -2627,6 +2979,7 @@ This document explains how to use the AI coding agent artifacts generated for th
 | Skill files (`SKILL.md`) | `<path>` | On keyword trigger | Step-by-step guides for recurring development tasks |
 | `CodeReviewer.agent.md` | `<path>` | On @-mention | Structured code review following repo conventions |
 | `SecurityReviewer.agent.md` | `<path>` | On @-mention | Deep security analysis, threat modeling, attack surface review |
+| `ThreatModelAnalyst.agent.md` | `<path>` | On @-mention | STRIDE threat modeling with Mermaid diagrams, timestamped artifacts under `threat-model/` |
 | `DocumentWriter.agent.md` | `<path>` | On @-mention | Documentation authoring following repo doc standards |
 | `prd.agent.md` | `<path>` | On @-mention | PRD generation tailored to this project's architecture |
 <!-- Include rows for conditional agents only if they were generated -->
@@ -2686,6 +3039,17 @@ Layer 4: Skills (loaded only when invoked by trigger phrase)
   - `@SecurityReviewer assess the attack surface of our new API endpoint`
   - `@SecurityReviewer audit our container security configuration`
 - **When to use vs. @CodeReviewer:** The CodeReviewer applies a lightweight STRIDE checklist during routine reviews. Use `@SecurityReviewer` for dedicated, deep security analysis — before releases, after architecture changes, or when modifying auth/network code.
+
+### @ThreatModelAnalyst
+- **Invoke:** Type `@ThreatModelAnalyst` in Copilot Chat.
+- **What it does:** Generates comprehensive, persistent threat model artifacts — Mermaid architecture diagrams with security boundaries, full STRIDE analysis matrices with severity ratings, and prioritized threat catalogues. All artifacts are saved under `threat-model/YYYY-MM-DD/` with date timestamps.
+- **Example prompts:**
+  - `@ThreatModelAnalyst perform a full threat model analysis of this repository`
+  - `@ThreatModelAnalyst threat model the log ingestion pipeline`
+  - `@ThreatModelAnalyst analyze the Kubernetes RBAC and secrets management`
+  - `@ThreatModelAnalyst refresh the threat model before our quarterly security review`
+- **Artifacts generated per run:** `threat-model-report.md`, `threat-model-diagram.mmd` (Mermaid), `stride-analysis.md`, `threat-catalogue.md` — all under `threat-model/YYYY-MM-DD/`.
+- **When to use vs. @SecurityReviewer:** The SecurityReviewer performs ad-hoc security assessments with output in chat. Use `@ThreatModelAnalyst` when you need **persistent, auditable threat model documentation** with diagrams — for compliance reviews, major releases, or quarterly threat model refreshes.
 
 ### @prd (PRD Generator)
 - **Invoke:** Type `@prd` in Copilot Chat.
@@ -2811,7 +3175,7 @@ These files are meant to evolve with your project:
 
 ---
 
-### File 16: `docs-eval-tests/` — Documentation Eval Tests (Optional)
+### File 17: `docs-eval-tests/` — Documentation Eval Tests (Optional)
 
 **Location:** `agent-docs/docs-eval-tests/` or `tests/agent-docs/`
 
@@ -2946,14 +3310,14 @@ Auto-generated AI agent artifacts for coding assistants.
 - \`Prompt.md\` — structured prompt template
 - \`.instructions.md\` files — language/framework-specific conventions
 - \`SKILL.md\` files — task-specific skills derived from commit history
-- Agent definitions: CodeReviewer, SecurityReviewer, DocumentWriter, prd
+- Agent definitions: CodeReviewer, SecurityReviewer, ThreatModelAnalyst, DocumentWriter, prd
 - \`.vscode/mcp.json\` — MCP server configuration
 - \`coding-agent-instructions.md\` — user guide for all artifacts
 
 ### How to verify
 1. Open the repo in VS Code / GitHub Codespaces
 2. Start a Copilot Chat session
-3. Verify agents respond correctly: \`@CodeReviewer\`, \`@SecurityReviewer\`, \`@DocumentWriter\`, \`@prd\`
+3. Verify agents respond correctly: \`@CodeReviewer\`, \`@SecurityReviewer\`, \`@ThreatModelAnalyst\`, \`@DocumentWriter\`, \`@prd\`
 4. Check that \`.instructions.md\` files activate for matching file types
 
 > Auto-generated by the agentify prompt. Review before merging." 2>&1)
@@ -3019,7 +3383,7 @@ Apply these rules to ALL generated files:
 6. **SCM-aware** — Place files in the correct location per the SCM adaptation matrix. Skip `.instructions.md` files for non-GitHub repos.
 7. **Commit-based skills only** — Only generate skill files for patterns with ≥ 3 commits in the last 12 months. Do not invent skills for patterns that don't exist in the commit history. **Exception:** The `security-review`, `telemetry-authoring`, and `fix-critical-vulnerabilities` skills are always generated regardless of commit frequency. Operational/investigation skills require matching MCP servers.
 8. **Preserve existing content** — If any target file already exists, read it first. Preserve human-authored sections and only add/update generated sections. Mark generated sections with `<!-- generated -->` comments so they can be distinguished from human content.
-9. **Size limits** — `copilot-instructions.md` ≤ 4000 characters. `AGENTS.md` ≤ 8000 characters (~4 pages). `.instructions.md` files ≤ 15 rules each. SKILL.md files ≤ 2 pages each. `CodeReviewer.agent.md` ≤ 5 pages. `SecurityReviewer.agent.md` ≤ 4 pages. `DocumentWriter.agent.md` ≤ 3 pages. `security-review` SKILL.md ≤ 4 pages. `telemetry-authoring` SKILL.md ≤ 3 pages. `fix-critical-vulnerabilities` SKILL.md ≤ 4 pages. `IncidentInvestigator.agent.md` ≤ 4 pages. `ServiceTelemetry.agent.md` ≤ 3 pages. `prd.agent.md` ≤ 3 pages.
+9. **Size limits** — `copilot-instructions.md` ≤ 4000 characters. `AGENTS.md` ≤ 8000 characters (~4 pages). `.instructions.md` files ≤ 15 rules each. SKILL.md files ≤ 2 pages each. `CodeReviewer.agent.md` ≤ 5 pages. `SecurityReviewer.agent.md` ≤ 4 pages. `ThreatModelAnalyst.agent.md` ≤ 5 pages. `DocumentWriter.agent.md` ≤ 3 pages. `security-review` SKILL.md ≤ 4 pages. `telemetry-authoring` SKILL.md ≤ 3 pages. `fix-critical-vulnerabilities` SKILL.md ≤ 4 pages. `IncidentInvestigator.agent.md` ≤ 4 pages. `ServiceTelemetry.agent.md` ≤ 3 pages. `prd.agent.md` ≤ 3 pages.
 10. **MCP-aware generation** — Agent frontmatter `tools:` declarations must reference actual MCP server names from Phase 1.5.1 detection. Never reference MCP servers that aren't configured. Conditional files (IncidentInvestigator, ServiceTelemetry, ServiceContext) must only be generated when their MCP prerequisites are met.
 11. **Context-loading chain integrity** — If `copilot-instructions.md` references instruction files, those files must exist. If instruction files reference ServiceContext files, those files must exist. Validate the full chain: Layer 1 → Layer 2 → Layer 3 → Layer 4.
 12. **Multi-service routing accuracy** — If the repo hosts multiple services, the service routing rules in `copilot-instructions.md` must map every source directory to exactly one service. No directory should be ambiguous or unmapped. Shared libraries must be explicitly listed.
@@ -3072,6 +3436,12 @@ After generating all files, verify:
 - [ ] `SecurityReviewer.agent.md` — STRIDE deep analysis populated with repo-specific attack surfaces from Phase 2.8 and Phase 2.11
 - [ ] `SecurityReviewer.agent.md` — dependency assessment references actual scanning tools from Phase 2.11
 - [ ] `SecurityReviewer.agent.md` — infrastructure review reflects actual IaC patterns from Phase 2.14
+- [ ] `ThreatModelAnalyst.agent.md` — placed in correct SCM-specific location
+- [ ] `ThreatModelAnalyst.agent.md` — always generated; artifacts output to `threat-model/YYYY-MM-DD/` directory
+- [ ] `ThreatModelAnalyst.agent.md` — Mermaid diagram uses subgraph blocks for security/trust boundaries
+- [ ] `ThreatModelAnalyst.agent.md` — STRIDE analysis covers all components crossing trust boundaries from Phase 2.8 and Phase 2.11
+- [ ] `ThreatModelAnalyst.agent.md` — severity ratings use DREAD-aligned scale (Critical/High/Medium/Low)
+- [ ] `ThreatModelAnalyst.agent.md` — `threat-model/README.md` index is append-only across runs
 - [ ] `IncidentInvestigator.agent.md` — generated ONLY if incident + telemetry MCP detected
 - [ ] `IncidentInvestigator.agent.md` — tools frontmatter matches actual MCP server names
 - [ ] `IncidentInvestigator.agent.md` — context loading references actual ServiceContext paths
@@ -3165,6 +3535,7 @@ MCP Servers Detected: <count — list names if any>
 |-------|------|-------------|----------------|
 | CodeReviewer | <path> | No | Always |
 | SecurityReviewer | <path> | No | Always |
+| ThreatModelAnalyst | <path> | No | Always |
 | DocumentWriter | <path> | No | Always |
 | IncidentInvestigator | <path> | Yes — incident + telemetry MCP | <yes/no> |
 | ServiceTelemetry | <path> | Yes — telemetry MCP | <yes/no> |
