@@ -1,0 +1,25 @@
+{
+  "servers": {
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/github-mcp@latest"],
+      "env": {
+        "GITHUB_TOKEN": "${input:github_token}"
+      }
+    },
+    "microsoft-docs": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/microsoft-docs-mcp@latest"]
+    }
+  },
+  "inputs": [
+    {
+      "id": "github_token",
+      "type": "promptString",
+      "description": "GitHub Personal Access Token",
+      "password": true
+    }
+  ]
+}
