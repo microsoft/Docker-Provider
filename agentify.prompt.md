@@ -28,11 +28,70 @@ Analyze this repository's codebase, structure, programming languages, open sourc
 
 Complete these phases IN ORDER. Do not skip phases. Do not hallucinate — every command, path, and pattern you reference MUST actually exist in this repo.
 
+### Execution Notes
+
+- **Context window management:** If your context window is limited, execute Phases 0–3 (validation + analysis) first, save findings to a session memory file, then execute Phases 4–5 (generation + commit) using the saved findings. For very large repos, sample directories for Phase 2.7/2.11/2.12 analysis — prioritize directories with the most git activity.
+- **Two-pass execution:** For maximum reliability, consider a two-pass approach: Pass 1 runs Phases 0–3 and produces a structured analysis summary; Pass 2 consumes that summary and runs Phases 4–5 to generate files. This reduces the working set the agent must hold in context during generation.
+- **Incremental output:** If generating all files in a single session is infeasible, generate core files first (`copilot-instructions.md`, `AGENTS.md`, `Prompt.md`), then agent files, then skills, then conditional files.
+
+---
+
+### Phase 0 — Environment Validation
+
+Before scanning the repository, validate that the execution environment meets prerequisites:
+
+1. **Check for shallow clone:**
+   ```bash
+   if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
+     echo "WARNING: Shallow clone detected. Git history analysis (Phase 3) will be incomplete."
+     echo "Run 'git fetch --unshallow' for complete history, or proceed with limited skill generation."
+   fi
+   ```
+
+2. **Check git history depth:**
+   ```bash
+   COMMIT_COUNT=$(git log --oneline --since="12 months ago" 2>/dev/null | wc -l)
+   echo "Commits in last 12 months: $COMMIT_COUNT"
+   if [ "$COMMIT_COUNT" -lt 50 ]; then
+     echo "WARNING: Limited commit history ($COMMIT_COUNT commits). Skill generation may be limited."
+   fi
+   ```
+
+3. **Check CLI tool availability:**
+   ```bash
+   # Check for GitHub CLI (needed for Phase 3.4 PR review analysis on GitHub repos)
+   which gh >/dev/null 2>&1 && echo "gh CLI: available" || echo "gh CLI: NOT available — PR review analysis will use fallback method"
+
+   # Check for Azure CLI (needed for Phase 3.4 on Azure DevOps repos)
+   which az >/dev/null 2>&1 && echo "az CLI: available" || echo "az CLI: NOT available — PR review analysis will use fallback method"
+   ```
+
+4. **Check repository write access** (for Phase 5 branch creation):
+   ```bash
+   git branch --list >/dev/null 2>&1 && echo "Git write access: OK" || echo "WARNING: Cannot create branches — Phase 5 will be skipped"
+   ```
+
+5. **Check for git submodules:**
+   ```bash
+   if [ -f ".gitmodules" ]; then
+     echo "Git submodules detected. Submodule directories will be excluded from Phase 2 scanning."
+     git submodule status
+   fi
+   ```
+
+Record the results and adapt subsequent phases accordingly:
+- If shallow clone and cannot unshallow → Phase 3 skill generation uses available history only; note limitation in Output Summary.
+- If `gh`/`az` CLI unavailable → Phase 3.4 uses commit-pattern fallback instead of PR API analysis.
+- If read-only repo → Skip Phase 5 branch creation; output files as suggestions only.
+- If submodules present → Exclude submodule directories from Phase 2 file tree walk.
+
+---
+
 ### Phase 1 — Detect SCM Provider
 
 Determine which source control host this repo uses:
 
-1. Read `.git/config` and extract the remote `url` value.
+1. Read `.git/config` and extract the `origin` remote `url` value. If no `origin` remote exists, use the first remote listed.
 2. Match the URL against known providers:
    - `github.com` or `github.dev` → **GitHub**
    - `dev.azure.com` or `visualstudio.com` → **Azure DevOps**
@@ -40,7 +99,13 @@ Determine which source control host this repo uses:
    - `bitbucket.org` → **Bitbucket**
    - No `.git/` directory or unrecognized remote → **Unknown**
 3. Cross-check with provider-specific files (`.github/`, `azure-pipelines.yml`, `.gitlab-ci.yml`).
-4. Record the provider — it determines file placement and which files to generate.
+4. **Extract repository identity** from the remote URL:
+   - Parse **owner** (org/user) and **repo name** from the URL.
+   - For HTTPS URLs: `https://github.com/<owner>/<repo>.git` → owner=`<owner>`, repo=`<repo>`
+   - For SSH URLs: `git@github.com:<owner>/<repo>.git` → owner=`<owner>`, repo=`<repo>`
+   - For Azure DevOps: `https://dev.azure.com/<org>/<project>/_git/<repo>` → org=`<org>`, project=`<project>`, repo=`<repo>`
+   - Record the full remote URL, owner/org, and repo name — these are used in the Output Summary.
+5. Record the provider — it determines file placement and which files to generate.
 
 **SCM Adaptation Matrix:**
 
@@ -113,7 +178,7 @@ Scan for ALL existing agent artifacts:
 | `.github/copilot-instructions.md` | Root instructions — service routing, skill catalogue, MCP usage guidelines |
 | `Tests/AGENTS.md`, `*/AGENTS.md` | Nested AGENTS.md files with directory-specific guidance |
 | `.agents/skills/*/SKILL.md` | Alternative skill location |
-| `**/*.prompt.md` | Reusable prompt files — operational tasks, code generation, livesite, capacity. Categorize by purpose. |
+| `**/*.prompt.md` | Reusable prompt files — operational tasks, code generation, livesite, capacity. Categorize by purpose. **Exclude** `agentify.prompt.md` (the generation prompt itself). |
 | `agent-docs/`, `docs/agents/` | Agent-facing documentation trees — index files, deep docs, cross-cutting guides |
 
 For each existing file:
@@ -150,6 +215,7 @@ Detect if the repo hosts multiple services (beyond simple monorepo packages):
 
 - Multiple `*.sfproj` (Service Fabric applications) → multiple deployable services
 - Multiple `Dockerfile` → multiple containerized services
+- `docker-compose.yml` or `compose.yml` with multiple `services:` definitions → multiple containerized services
 - Multiple `*Application/` directories with independent startup code
 - Shared libraries referenced by multiple service projects
 - Service routing rules in existing copilot-instructions.md
@@ -174,9 +240,11 @@ Analyze the codebase to build a mental model of the repo. Collect ALL of the fol
 
 #### 2.1 Languages & Percentages
 
-Walk the file tree (**excluding** `.git`, `node_modules`, `__pycache__`, `venv`, `.venv`, `dist`, `build`, `vendor`, `.tox`, `.eggs`, `*.egg-info`). Map file extensions to languages and compute percentages:
+Walk the file tree (**excluding** `.git`, `node_modules`, `__pycache__`, `venv`, `.venv`, `dist`, `build/output`, `build/dist`, `vendor`, `.tox`, `.eggs`, `*.egg-info`, and submodule directories listed in `.gitmodules`). Note: Only exclude `build/` subdirectories containing compiled artifacts (`.o`, `.class`, `.pyc`); preserve `build/` directories containing source Makefiles, scripts, or installer code.
 
-- `.py` → Python, `.ts`/`.tsx` → TypeScript, `.js`/`.jsx` → JavaScript, `.java` → Java, `.go` → Go, `.rs` → Rust, `.cs` → C#, `.rb` → Ruby, `.php` → PHP, `.swift` → Swift, `.kt` → Kotlin, `.cpp`/`.cc`/`.h` → C++, `.c` → C, `.sh` → Shell, `.sql` → SQL
+Map file extensions to languages and compute percentages:
+
+- `.py` → Python, `.ts`/`.tsx` → TypeScript, `.js`/`.jsx` → JavaScript, `.java` → Java, `.go` → Go, `.rs` → Rust, `.cs` → C#, `.rb` → Ruby, `.php` → PHP, `.swift` → Swift, `.kt` → Kotlin, `.cpp`/`.cc`/`.h` → C++, `.c` → C, `.sh` → Shell, `.sql` → SQL, `.lua` → Lua, `.yaml`/`.yml` → YAML, `.ps1`/`.psm1` → PowerShell, `.bicep` → Bicep, `.tf` → HCL/Terraform, `.scala` → Scala, `.dart` → Dart
 
 Report top languages with file counts.
 
@@ -303,6 +371,8 @@ Search the repo for tool configuration files that define enforceable code qualit
 | `rustfmt.toml`, `.rustfmt.toml` | rustfmt | Rust |
 | `clippy.toml`, `.clippy.toml` | Clippy | Rust |
 | `.editorconfig` | EditorConfig | All languages |
+
+For `.editorconfig` specifically: extract `indent_style`, `indent_size`, `end_of_line`, `charset`, and `max_line_length` values. These ARE the authoritative code formatting rules and must be reflected in `AGENTS.md` Code Style and `.instructions.md` formatting rules.
 | `.clang-format`, `.clang-tidy` | clang-format/clang-tidy | C/C++ |
 | `checkstyle.xml`, `pmd.xml` | Checkstyle/PMD | Java |
 | `.luacheckrc` | Luacheck | Lua |
@@ -455,8 +525,10 @@ git log --since="12 months ago" --pretty=format:"%h|%s|%an|%ad" --date=short
 Also get file-level change stats:
 
 ```bash
-git log --since="12 months ago" --pretty=format:"%h|%s" --stat --diff-filter=AMRD
+git log --since="12 months ago" --pretty=format:"%h|%s" --numstat --diff-filter=AMRD --no-merges
 ```
+
+> **Note:** Use `--numstat` (not `--stat`) for machine-parseable output. Use `--no-merges` to filter merge commit noise. For very large repos (>5000 commits in 12 months), consider narrowing the window or sampling.
 
 From the commit history, identify **recurring development patterns** by categorizing commits:
 
@@ -515,7 +587,8 @@ gh pr list --state merged --limit 100 --json number,title,createdAt,mergedAt,cha
 gh pr view <number> --json reviews,reviewRequests,comments
 
 # Get review comments (the richest signal for review patterns)
-gh api repos/{owner}/{repo}/pulls/comments --paginate --jq '.[] | select(.created_at > "<12-months-ago>") | {body: .body, path: .path, diff_hunk: .diff_hunk}'
+DATE_12M_AGO=$(date -d '12 months ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -v-12m +%Y-%m-%dT%H:%M:%SZ)
+gh api repos/{owner}/{repo}/pulls/comments --paginate --jq ".[] | select(.created_at > \"$DATE_12M_AGO\") | {body: .body, path: .path, diff_hunk: .diff_hunk}"
 ```
 
 **For Azure DevOps repos**, use the `az` CLI:
@@ -556,11 +629,40 @@ az repos pr reviewer list --id <pr-id>
 
 4. **Reviewer personas** — Identify if different reviewers focus on different aspects (e.g., one reviewer focuses on security, another on performance). This informs review scope.
 
+#### 3.5 Commit Message Convention Detection
+
+Analyze the last 100 commit messages to detect the team's commit message format:
+
+```bash
+git log --oneline -100 --pretty=format:"%s"
+```
+
+Check for:
+- **Conventional Commits** — messages matching `^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?!?:` → record as Conventional Commits
+- **Jira/issue prefixes** — messages matching `^[A-Z]+-\d+` → record as issue-prefixed
+- **Merge commit format** — `Merge pull request #\d+` or `Merged PR \d+:` → note the merge strategy
+- **Freeform** — no consistent pattern detected
+
+Record the detected convention. Use it when generating Phase 5 commit messages and when populating `AGENTS.md` PR Instructions. If the repo uses a format other than Conventional Commits, adapt the Phase 5 commit message to match.
+
 ---
 
-### Phase 4 — Generate Output Files
+### Phase 4 — Create Branch & Generate Output Files
 
-Now generate each file using the data collected in Phases 1–3. Follow the exact format specifications below.
+#### 4.0 Create the Agentify Branch
+
+Before generating any files, create a dedicated branch. All generated files MUST be committed to this branch — never commit directly to the current branch.
+
+```bash
+# Create and switch to the agentify branch
+git checkout -b copilot/agentify
+```
+
+**Branch naming rules:**
+- The branch MUST be named `copilot/agentify`.
+- If `copilot/agentify` already exists, append a timestamp: `copilot/agentify-<YYYYMMDD-HHMMSS>` (e.g., `copilot/agentify-20260304-143022`).
+
+Now generate each file using the data collected in Phases 0–3. Follow the exact format specifications below.
 
 ---
 
@@ -714,6 +816,22 @@ If no existing pattern is detected, use the inline format above (copilot-instruc
      | Hinting Guide | agent-docs/hinting/index.md | Working on hinting service, troubleshooting hinting |
      The "Read when..." column tells agents WHEN to load each document — this is more effective
      than expecting agents to discover docs via search. -->
+
+## Architecture Diagram
+<!-- Generate a Mermaid diagram showing major components and their relationships.
+     Include: services, data stores, message queues, external dependencies, deployment targets.
+     This dramatically improves agent understanding of component relationships in complex repos.
+     Example:
+     ```mermaid
+     graph TD
+       A[Web Frontend] --> B[API Gateway]
+       B --> C[Service A]
+       B --> D[Service B]
+       C --> E[(Database)]
+       D --> F[(Cache)]
+     ```
+     Only include components that actually exist in the repo.
+     For simpler repos (< 5 major components), a brief text description suffices. -->
 ```
 
 **For monorepos:** Generate a root `AGENTS.md` covering repo-wide conventions, PLUS a nested `AGENTS.md` inside each subproject directory with project-specific instructions. Nested files inherit from root (nearest-file-wins).
@@ -836,6 +954,10 @@ These instruction files serve as the **Layer 2 bridge** between always-loaded `c
 ## Acceptance Criteria
 <!-- Derived from CI checks, test requirements, linting rules -->
 ```
+
+**When to use `Prompt.md` vs. `prd.agent.md`:**
+- **`Prompt.md`** is a lightweight task-spec template for smaller tasks, quick specs, or handing context to an AI for immediate implementation. Developers copy and fill it in.
+- **`prd.agent.md`** is an interactive agent that generates formal Product Requirements Documents for larger features requiring phased implementation, cross-team communication, and architectural planning. Developers invoke it via `@prd` in chat.
 
 ---
 
@@ -1223,6 +1345,39 @@ Instructions should cover:
    - `child_process.exec` with unsanitized input
    - Disabled CORS restrictions or `Access-Control-Allow-Origin: *`
 
+   **C#:**
+   - `Process.Start` with unsanitized user input (command injection)
+   - `dynamic` type misuse bypassing compile-time type safety
+   - Disabled SSL validation in `HttpClientHandler` (`ServerCertificateCustomValidationCallback` returning `true`)
+   - `BinaryFormatter.Deserialize` on untrusted data (deserialization attack — use `System.Text.Json` instead)
+   - SQL string concatenation instead of parameterized queries (`SqlCommand` with string interpolation)
+   - `AllowHtml` attribute without corresponding output encoding (XSS)
+   - Using `Random` instead of `RandomNumberGenerator` for security-sensitive values
+
+   **Java:**
+   - `Runtime.getRuntime().exec()` with unsanitized user input (command injection)
+   - `ObjectInputStream.readObject()` on untrusted data (deserialization — use allowlists or safe alternatives)
+   - JNDI injection via user-controlled lookup strings (Log4Shell-style: `InitialContext.lookup`)
+   - `java.util.Random` for security-sensitive values (use `java.security.SecureRandom`)
+   - SQL string concatenation instead of `PreparedStatement`
+   - Missing `HttpOnly`/`Secure` flags on cookies
+   - Overly broad exception catching (`catch (Exception e)`) that swallows security errors
+
+   **Rust:**
+   - `unsafe` blocks — verify each is justified with a safety comment explaining invariants
+   - `.unwrap()` or `.expect()` on paths reachable by user input (use proper error handling)
+   - FFI boundary trust — data crossing FFI boundaries must be validated on both sides
+   - Unchecked arithmetic in security-sensitive contexts (use `checked_*` methods)
+   - Raw pointer dereferencing without bounds checking
+
+   **C/C++:**
+   - Buffer overflow patterns: `strcpy`, `strcat`, `sprintf`, `gets` (use `strncpy`, `strncat`, `snprintf`, `fgets`)
+   - Format string vulnerabilities: `printf(user_input)` instead of `printf("%s", user_input)`
+   - Use-after-free and double-free patterns
+   - Integer overflow/underflow in size calculations or buffer allocations
+   - Missing bounds checking on array/buffer access
+   - `system()` with unsanitized input (command injection)
+
    **Infrastructure (Dockerfiles, k8s, Helm):**
    - Running as root without justification
    - Using `latest` tags (non-reproducible builds)
@@ -1457,9 +1612,11 @@ Before reviewing, determine which service the changed files belong to using the 
      ⚠️ Anti-pattern: Do NOT use `git diff origin/master...HEAD` — this compares against the
      current tip of master, which may include commits merged AFTER the PR was created,
      producing an inaccurate diff.
-     ✅ Correct: Use the commit range of the PR's own commits (base..head), or use the
-     SCM tool's API to fetch the PR diff directly (e.g., `gh pr diff <number>`,
-     `az repos pr diff --id <id>`). -->
+     ✅ Correct approach per SCM provider:
+     - **GitHub:** `gh pr diff <number>` (preferred) or `git diff $(gh pr view <number> --json baseRefOid -q .baseRefOid)...HEAD`
+     - **Azure DevOps:** `az repos pr diff --id <id>` (if available) or fetch base SHA from PR metadata via `az repos pr show --id <id> --query sourceRefName`
+     - **Generic git:** `git diff $(git merge-base origin/main HEAD)...HEAD` to find the correct merge-base
+     Always use the PR's own base..head range, never compare against the live tip of the target branch. -->
 
 ## Review Checklist
 <!-- Derived from CI checks, linting rules, and team conventions detected in Phases 2–3 -->
@@ -1473,8 +1630,10 @@ Before reviewing, determine which service the changed files belong to using the 
 - [ ] No TODO/FIXME comments introduced without a linked issue
 
 ### Security Review Checklist (STRIDE)
-<!-- Applied to every PR. Intensity scales with the type of change:
-     - Auth/network/data changes → full STRIDE review
+<!-- This is a LIGHTWEIGHT security checklist for routine code reviews.
+     For a full, deep-dive security audit, invoke the `@SecurityReviewer` agent or the `security-review` skill.
+     Applied to every PR. Intensity scales with the type of change:
+     - Auth/network/data changes → full STRIDE review (or escalate to @SecurityReviewer)
      - Internal logic changes → credential leak + weak pattern scan
      - Documentation-only → skip -->
 - [ ] **Spoofing** — Authentication present at entry points; tokens validated, not just checked for presence
@@ -1671,7 +1830,125 @@ You are a technical writer for this repository. Your job is to create and mainta
 
 ---
 
-### File 8: `IncidentInvestigator.agent.md` (Conditional)
+### File 8: `SecurityReviewer.agent.md`
+
+**Location:** `.github/agents/SecurityReviewer.agent.md` (GitHub) or root `SecurityReviewer.agent.md` (other SCMs).
+
+**Purpose:** A dedicated security analysis agent that performs deep, adaptive security assessments beyond the CodeReviewer's lightweight STRIDE checklist. While the CodeReviewer applies a quick security checklist during routine reviews, the SecurityReviewer is invoked explicitly for comprehensive threat modeling, attack surface analysis, and security architecture review.
+
+**Format:**
+
+```markdown
+---
+<!-- YAML frontmatter: Declare MCP tools the reviewer can use.
+     Only include tools for MCP servers detected in Phase 1.5.1. -->
+tools:
+  - <mcp_server_name>   # e.g., microsoft_docs — for validating security patterns against official docs
+description: "Dedicated Security Reviewer — deep threat modeling, attack surface analysis, and security architecture review"
+---
+
+# SecurityReviewer Agent
+
+## Description
+You are a security specialist for this repository. You perform deep security assessments that go beyond routine code review. You are invoked explicitly when a thorough security analysis is needed — for example, before major releases, after architecture changes, or when introducing new external attack surfaces.
+
+## When to Use This Agent vs. CodeReviewer Security Checks
+- **CodeReviewer** → Lightweight STRIDE checklist applied to every PR (fast, surface-level)
+- **SecurityReviewer** → Deep-dive security analysis invoked explicitly (thorough, architectural)
+
+Use `@SecurityReviewer` when:
+- A PR introduces or modifies authentication/authorization logic
+- New external-facing APIs or network endpoints are added
+- Infrastructure changes modify security boundaries (network, RBAC, secrets)
+- Preparing for a security audit or compliance review
+- After a security incident to assess exposure
+
+## Threat Modeling Methodology
+
+### 1. Attack Surface Enumeration
+- Identify all entry points (HTTP endpoints, gRPC services, message consumers, CLI commands)
+- Map trust boundaries (external → internal, service → service, user → admin)
+- Enumerate data flows crossing trust boundaries
+- Identify secrets, credentials, and sensitive data storage locations
+
+### 2. STRIDE Deep Analysis
+For each identified attack surface, apply the full STRIDE model with exploitation scenarios:
+
+**Spoofing:** Can an attacker impersonate a legitimate user, service, or component?
+- Verify authentication at every entry point (not just top-level middleware)
+- Check for token replay, session fixation, and credential stuffing vectors
+- Verify service-to-service authentication (mTLS, service accounts, managed identity)
+
+**Tampering:** Can an attacker modify data, code, or configuration?
+- Input validation completeness at trust boundaries
+- Data integrity verification for external inputs (checksums, signatures)
+- Configuration file permissions and immutability
+- Supply chain integrity (dependency pinning, image digests)
+
+**Repudiation:** Can actions be performed without accountability?
+- Audit logging coverage for security-relevant operations
+- Log integrity (tamper-resistant, shipped to external system)
+- Correlation IDs for tracing actions across services
+
+**Information Disclosure:** Can sensitive data leak?
+- Secrets in code, config, logs, error messages, telemetry
+- Verbose error responses in production
+- Debug endpoints, profiling endpoints, admin panels
+- Data classification and access control for PII/sensitive data
+
+**Denial of Service:** Can the service be made unavailable?
+- Resource exhaustion vectors (memory, CPU, disk, connections)
+- Algorithmic complexity attacks (regex DoS, hash collision)
+- Missing rate limiting, circuit breakers, bulkheads
+- Container/pod resource limits and health checks
+
+**Elevation of Privilege:** Can an attacker gain unauthorized access?
+- Vertical privilege escalation (user → admin)
+- Horizontal privilege escalation (user A → user B's data)
+- Container breakout vectors (privileged mode, host mounts, capabilities)
+- RBAC configuration and least-privilege adherence
+
+### 3. Dependency Security Assessment
+- Audit direct and transitive dependency tree for known vulnerabilities
+- Identify dependencies with poor security track records
+- Check for pinned versions vs. floating ranges
+- Verify dependency update automation (Dependabot/Renovate) is configured
+
+### 4. Infrastructure Security Review
+- Container image security (base image currency, non-root, minimal attack surface)
+- Kubernetes security contexts and network policies
+- Secret management patterns (env vars, mounted secrets, Key Vault)
+- TLS configuration and certificate management
+- Network exposure and ingress/egress rules
+
+## Output Format
+Produce a structured security assessment report:
+
+### Findings Summary
+| # | Severity | STRIDE | Finding | Location | Recommendation |
+|---|----------|--------|---------|----------|----------------|
+
+### Detailed Findings
+For each finding:
+- **Description:** What the vulnerability or risk is
+- **Impact:** What an attacker could achieve
+- **Exploitation scenario:** How it could be exploited (be specific)
+- **Recommendation:** How to fix it (with code examples when applicable)
+- **References:** Links to relevant security documentation or CWE numbers
+
+### Positive Security Patterns
+Note security practices the repo does well — this reinforces good patterns.
+```
+
+**Rules:**
+- Only reference MCP tools actually detected in Phase 1.5.1.
+- STRIDE analysis must be populated with repo-specific attack surfaces from Phase 2.8 (entry points), Phase 2.11 (security posture), and Phase 2.14 (infrastructure).
+- Dependency assessment must reference the actual dependency files and scanning tools from Phase 2.2 and Phase 2.11.
+- Do NOT duplicate the full STRIDE checklist from the `security-review` skill — instead, reference it: "For the procedural STRIDE checklist, invoke the `security-review` skill."
+
+---
+
+### File 9: `IncidentInvestigator.agent.md` (Conditional)
 
 **Generate this file ONLY if** Phase 1.5.1 detected an incident management MCP server (ICM, PagerDuty, OpsGenie) **AND** an observability MCP server (App Insights, Datadog, Grafana, Kusto).
 
@@ -1755,7 +2032,7 @@ Before investigating any incident:
 
 ---
 
-### File 9: `ServiceTelemetry.agent.md` (Conditional)
+### File 10: `ServiceTelemetry.agent.md` (Conditional)
 
 **Generate this file ONLY if** Phase 1.5.1 detected an observability MCP server (App Insights, Datadog, New Relic, Kusto).
 
@@ -1811,7 +2088,7 @@ Before any telemetry query, load ALL ServiceContext files:
 
 ---
 
-### File 10: `prd.agent.md`
+### File 11: `prd.agent.md`
 
 **Location:** `.github/agents/prd.agent.md` (GitHub) or root `prd.agent.md` (other SCMs).
 
@@ -1927,7 +2204,7 @@ description: "<Purpose> — launched by <skill-name> skill, not directly by user
 
 ---
 
-### File 11: `.vscode/mcp.json` (Preservation + Recommendations)
+### File 12: `.vscode/mcp.json` (Preservation + Recommendations)
 
 **Purpose:** Preserve existing MCP server configuration and recommend additions based on detected repo characteristics. This file is NOT generated from scratch — it is only modified if it already exists and recommendations are relevant.
 
@@ -1971,7 +2248,7 @@ description: "<Purpose> — launched by <skill-name> skill, not directly by user
 
 ---
 
-### File 12: `.github/instructions/ServiceContext/` (Conditional)
+### File 13: `.github/instructions/ServiceContext/` (Conditional)
 
 **Generate this directory structure ONLY if** Phase 1.5.3 detected a multi-service architecture **AND** Phase 1.5.1 detected a telemetry/observability MCP server.
 
@@ -2050,7 +2327,7 @@ This directory contains domain knowledge files that AI agents load when investig
 
 ---
 
-### File 13: Nested `AGENTS.md` for Major Directories (Conditional)
+### File 14: Nested `AGENTS.md` for Major Directories (Conditional)
 
 **Generate nested `AGENTS.md` files for test directories** if the repo has a non-trivial test infrastructure (Phase 2.6 detected multiple test types, test frameworks, or test patterns).
 
@@ -2102,7 +2379,7 @@ When adding tests, use this decision tree:
 
 ---
 
-### File 14: `coding-agent-instructions.md`
+### File 15: `coding-agent-instructions.md`
 
 **Location:** Root of the repository.
 
@@ -2135,6 +2412,7 @@ This document explains how to use the AI coding agent artifacts generated for th
 | `Prompt.md` | Root | On demand | Reusable task-spec template for describing new work |
 | Skill files (`SKILL.md`) | `<path>` | On keyword trigger | Step-by-step guides for recurring development tasks |
 | `CodeReviewer.agent.md` | `<path>` | On @-mention | Structured code review following repo conventions |
+| `SecurityReviewer.agent.md` | `<path>` | On @-mention | Deep security analysis, threat modeling, attack surface review |
 | `DocumentWriter.agent.md` | `<path>` | On @-mention | Documentation authoring following repo doc standards |
 | `prd.agent.md` | `<path>` | On @-mention | PRD generation tailored to this project's architecture |
 <!-- Include rows for conditional agents only if they were generated -->
@@ -2184,6 +2462,16 @@ Layer 4: Skills (loaded only when invoked by trigger phrase)
   - `@DocumentWriter write a README for this module`
   - `@DocumentWriter update the API documentation`
   - `@DocumentWriter generate developer setup guide`
+
+### @SecurityReviewer
+- **Invoke:** Type `@SecurityReviewer` in Copilot Chat.
+- **What it does:** Performs deep security assessments including threat modeling, attack surface analysis, STRIDE deep-dive, dependency security auditing, and infrastructure security review. Use this for thorough security analysis beyond routine code review.
+- **Example prompts:**
+  - `@SecurityReviewer perform a threat model for this module`
+  - `@SecurityReviewer review the authentication changes in this PR`
+  - `@SecurityReviewer assess the attack surface of our new API endpoint`
+  - `@SecurityReviewer audit our container security configuration`
+- **When to use vs. @CodeReviewer:** The CodeReviewer applies a lightweight STRIDE checklist during routine reviews. Use `@SecurityReviewer` for dedicated, deep security analysis — before releases, after architecture changes, or when modifying auth/network code.
 
 ### @prd (PRD Generator)
 - **Invoke:** Type `@prd` in Copilot Chat.
@@ -2309,13 +2597,13 @@ These files are meant to evolve with your project:
 
 ---
 
-### File 15: `docs-eval-tests/` — Documentation Eval Tests (Optional)
+### File 16: `docs-eval-tests/` — Documentation Eval Tests (Optional)
 
 **Location:** `agent-docs/docs-eval-tests/` or `tests/agent-docs/`
 
 **Purpose:** A test framework that validates agent artifacts produce correct responses. As documentation changes, these tests catch regressions — questions that agents would answer incorrectly with stale or missing context.
 
-**Generate this directory ONLY if** the repo has > 5 agent documentation files (skills + instructions + agent-docs). For smaller repos, the maintenance overhead exceeds the benefit.
+**Generate this directory ONLY if** the repo has > 10 *domain-specific* agent documentation files (skills + instructions + agent-docs, excluding always-generated artifacts like `copilot-instructions.md`, `AGENTS.md`, `Prompt.md`, `CodeReviewer.agent.md`, `DocumentWriter.agent.md`, `SecurityReviewer.agent.md`, `prd.agent.md`, and the three always-generated skills). For smaller repos, the maintenance overhead exceeds the benefit.
 
 **Structure:**
 
@@ -2346,30 +2634,16 @@ docs-eval-tests/
 
 ---
 
-### Phase 5 — Create Branch and Commit Changes
+### Phase 5 — Commit Changes & Verify
 
-Before generating any files, create a dedicated branch for the agent artifacts. All generated files MUST be committed to this branch — never commit directly to the current branch.
-
-#### 5.1 Create the Branch
-
-```bash
-# Create and switch to the agentify branch
-git checkout -b copilot/agentify
-```
-
-**Branch naming rules:**
-- The branch MUST be named `copilot/agentify`.
-- If `copilot/agentify` already exists, append a timestamp: `copilot/agentify-<YYYYMMDD-HHMMSS>` (e.g., `copilot/agentify-20260304-143022`).
-
-#### 5.2 Commit Generated Files
-
-After generating all files from Phase 4, stage and commit them to the `copilot/agentify` branch:
+After generating all files in Phase 4, stage and commit them to the `copilot/agentify` branch (created in Phase 4.0).
 
 ```bash
 # Stage all generated/modified agent artifact files
 git add .github/copilot-instructions.md AGENTS.md Prompt.md \
   .github/instructions/ .agents/skills/ \
   .github/agents/CodeReviewer.agent.md .github/agents/DocumentWriter.agent.md \
+  .github/agents/SecurityReviewer.agent.md \
   .github/agents/IncidentInvestigator.agent.md .github/agents/ServiceTelemetry.agent.md \
   .github/agents/prd.agent.md \
   .vscode/mcp.json .vscode/mcp.recommended.json \
@@ -2383,15 +2657,30 @@ git commit -m "feat: generate agent artifacts for AI coding assistants
 Auto-generated by the generate-agent-artifacts prompt.
 Includes: copilot-instructions.md, AGENTS.md, Prompt.md,
 .instructions.md files, SKILL.md files, CodeReviewer.agent.md,
-DocumentWriter.agent.md, IncidentInvestigator.agent.md,
+DocumentWriter.agent.md, SecurityReviewer.agent.md,
+IncidentInvestigator.agent.md,
 ServiceTelemetry.agent.md, prd.agent.md, ServiceContext,
 coding-agent-instructions.md, and docs-eval-tests/."
 ```
 
 **Commit rules:**
 - Use a single commit for all generated files.
-- Follow the repo's Conventional Commits format (`feat:` prefix).
-- Do NOT push the branch automatically — leave that to the user.
+- Follow the repo's detected commit message convention (from Phase 3.5). If Conventional Commits detected, use `feat:` prefix. If another format detected, adapt accordingly. Default to Conventional Commits if no convention was detected.
+
+#### 5.2 Push to Upstream
+
+After committing, push the branch to the upstream remote:
+
+```bash
+# Push the agentify branch to origin
+git push origin copilot/agentify
+```
+
+**Push rules:**
+- Push to the `origin` remote (the same remote detected in Phase 1).
+- If the push fails due to authentication, report the error in the Output Summary Warnings section and instruct the user to push manually: `git push origin copilot/agentify`.
+- If the push fails due to branch protection or permissions, report the error and suggest the user push manually or create a PR from the local branch.
+- Do NOT use `--force` or `--force-with-lease` — if the remote branch already exists with different content, report a conflict and let the user resolve it.
 
 #### 5.3 Post-Commit Verification
 
@@ -2406,6 +2695,9 @@ git log --oneline -1
 
 # List all files in the commit
 git diff --name-only HEAD~1
+
+# Verify the push succeeded
+git log --oneline origin/copilot/agentify -1 2>/dev/null && echo "Push verified: branch exists on remote" || echo "WARNING: Branch not found on remote — push may have failed"
 ```
 
 ---
@@ -2422,7 +2714,7 @@ Apply these rules to ALL generated files:
 6. **SCM-aware** — Place files in the correct location per the SCM adaptation matrix. Skip `.instructions.md` files for non-GitHub repos.
 7. **Commit-based skills only** — Only generate skill files for patterns with ≥ 3 commits in the last 12 months. Do not invent skills for patterns that don't exist in the commit history. **Exception:** The `security-review`, `telemetry-authoring`, and `fix-critical-vulnerabilities` skills are always generated regardless of commit frequency. Operational/investigation skills require matching MCP servers.
 8. **Preserve existing content** — If any target file already exists, read it first. Preserve human-authored sections and only add/update generated sections. Mark generated sections with `<!-- generated -->` comments so they can be distinguished from human content.
-9. **Size limits** — `copilot-instructions.md` ≤ 4000 characters. `.instructions.md` files ≤ 15 rules each. SKILL.md files ≤ 2 pages each. `CodeReviewer.agent.md` ≤ 5 pages. `DocumentWriter.agent.md` ≤ 3 pages. `security-review` SKILL.md ≤ 4 pages. `telemetry-authoring` SKILL.md ≤ 3 pages. `fix-critical-vulnerabilities` SKILL.md ≤ 4 pages. `IncidentInvestigator.agent.md` ≤ 4 pages. `ServiceTelemetry.agent.md` ≤ 3 pages. `prd.agent.md` ≤ 3 pages.
+9. **Size limits** — `copilot-instructions.md` ≤ 4000 characters. `AGENTS.md` ≤ 8000 characters (~4 pages). `.instructions.md` files ≤ 15 rules each. SKILL.md files ≤ 2 pages each. `CodeReviewer.agent.md` ≤ 5 pages. `SecurityReviewer.agent.md` ≤ 4 pages. `DocumentWriter.agent.md` ≤ 3 pages. `security-review` SKILL.md ≤ 4 pages. `telemetry-authoring` SKILL.md ≤ 3 pages. `fix-critical-vulnerabilities` SKILL.md ≤ 4 pages. `IncidentInvestigator.agent.md` ≤ 4 pages. `ServiceTelemetry.agent.md` ≤ 3 pages. `prd.agent.md` ≤ 3 pages.
 10. **MCP-aware generation** — Agent frontmatter `tools:` declarations must reference actual MCP server names from Phase 1.5.1 detection. Never reference MCP servers that aren't configured. Conditional files (IncidentInvestigator, ServiceTelemetry, ServiceContext) must only be generated when their MCP prerequisites are met.
 11. **Context-loading chain integrity** — If `copilot-instructions.md` references instruction files, those files must exist. If instruction files reference ServiceContext files, those files must exist. Validate the full chain: Layer 1 → Layer 2 → Layer 3 → Layer 4.
 12. **Multi-service routing accuracy** — If the repo hosts multiple services, the service routing rules in `copilot-instructions.md` must map every source directory to exactly one service. No directory should be ambiguous or unmapped. Shared libraries must be explicitly listed.
@@ -2471,6 +2763,10 @@ After generating all files, verify:
 - [ ] `CodeReviewer.agent.md` — telemetry gap detection populated with module-level coverage table from Phase 2.12 inventory
 - [ ] `DocumentWriter.agent.md` — placed in correct SCM-specific location
 - [ ] `DocumentWriter.agent.md` — writing instructions reference actual doc structure and conventions
+- [ ] `SecurityReviewer.agent.md` — placed in correct SCM-specific location
+- [ ] `SecurityReviewer.agent.md` — STRIDE deep analysis populated with repo-specific attack surfaces from Phase 2.8 and Phase 2.11
+- [ ] `SecurityReviewer.agent.md` — dependency assessment references actual scanning tools from Phase 2.11
+- [ ] `SecurityReviewer.agent.md` — infrastructure review reflects actual IaC patterns from Phase 2.14
 - [ ] `IncidentInvestigator.agent.md` — generated ONLY if incident + telemetry MCP detected
 - [ ] `IncidentInvestigator.agent.md` — tools frontmatter matches actual MCP server names
 - [ ] `IncidentInvestigator.agent.md` — context loading references actual ServiceContext paths
@@ -2495,8 +2791,8 @@ After generating all files, verify:
 - [ ] No secrets or credentials in any generated file
 - [ ] All file paths in the SCM adaptation matrix are correct for the detected provider
 - [ ] Branch `copilot/agentify` created and all generated files committed to it
-- [ ] Commit uses Conventional Commits format (`feat:` prefix)
-- [ ] Branch has not been pushed (left to the user)
+- [ ] Commit uses repo's detected commit message convention (or Conventional Commits as default)
+- [ ] Branch pushed to `origin` remote (or push failure documented in Warnings)
 
 **User Guide:**
 - [ ] `coding-agent-instructions.md` — generated at root with complete usage guide
@@ -2508,7 +2804,7 @@ After generating all files, verify:
 - [ ] `coding-agent-instructions.md` — no secrets or credentials included
 
 **Documentation Eval Tests (if generated):**
-- [ ] `docs-eval-tests/` — generated only if repo has > 5 agent documentation files
+- [ ] `docs-eval-tests/` — generated only if repo has > 10 domain-specific agent documentation files
 - [ ] `docs-eval-tests/` — each test references a specific documentation file it validates
 - [ ] `docs-eval-tests/` — expected answers derived from actual doc content, not generated
 - [ ] `docs-eval-tests/` — benchmark script is runnable without MCP servers
@@ -2529,6 +2825,8 @@ After completing all phases, provide a summary:
 ```
 ## Generated Files Summary
 
+Repository: <owner>/<repo name> (from Phase 1 remote URL extraction)
+Remote URL: <full origin remote URL>
 SCM Provider: <detected provider>
 Monorepo: <yes/no>
 Multi-Service: <yes/no — if yes, list service names>
@@ -2540,7 +2838,8 @@ MCP Servers Detected: <count — list names if any>
 - Branch name: `copilot/agentify` (or `copilot/agentify-<timestamp>` if the branch already existed)
 - Commit SHA: <short SHA of the commit>
 - Commit message: <commit message used>
-- Status: All changes committed to the branch. Run `git push origin <branch-name>` to push, or create a PR from this branch.
+- Push status: <Pushed to origin | Push failed — reason>
+- Remote branch: `origin/copilot/agentify`
 
 ### Core Files Generated
 - [ ] <path> — <brief description>
@@ -2551,6 +2850,7 @@ MCP Servers Detected: <count — list names if any>
 | Agent | Path | Conditional? | Condition Met? |
 |-------|------|-------------|----------------|
 | CodeReviewer | <path> | No | Always |
+| SecurityReviewer | <path> | No | Always |
 | DocumentWriter | <path> | No | Always |
 | IncidentInvestigator | <path> | Yes — incident + telemetry MCP | <yes/no> |
 | ServiceTelemetry | <path> | Yes — telemetry MCP | <yes/no> |
@@ -2578,7 +2878,7 @@ MCP Servers Detected: <count — list names if any>
 - `coding-agent-instructions.md` — comprehensive usage guide covering all generated artifacts, agents, skills, and productivity tips
 
 ### Documentation Eval Tests
-- Generated: <yes/no — only if > 5 agent documentation files>
+- Generated: <yes/no — only if > 10 domain-specific agent documentation files>
 - Test count: <number of question/expected-answer pairs>
 - Coverage: <which documentation files are tested>
 
