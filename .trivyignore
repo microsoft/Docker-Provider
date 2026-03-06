@@ -1,0 +1,2 @@
+# to merge trivy scan PR, temporarily ignore CVE-2026-24051 until a fix is available
+CVE-2026-24051
