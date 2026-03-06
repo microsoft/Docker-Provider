@@ -131,7 +131,22 @@ Determine which source control host this repo uses:
 
 Before scanning the codebase, detect what AI-agent infrastructure already exists. This determines what to preserve, extend, and generate.
 
-#### 1.5.1 MCP Server Detection
+#### 1.5.1 MCP Server Detection & Repo Hosting Classification
+
+##### 1.5.1.1 Classify Repo Hosting Type
+
+Using the SCM provider detected in Phase 1, classify the repo as **internal (ADO)** or **external (GitHub/public)**:
+
+| SCM Provider | Remote URL Pattern | Classification |
+|-------------|-------------------|----------------|
+| Azure DevOps | `dev.azure.com/*`, `*.visualstudio.com/*` | **Internal (ADO)** |
+| GitHub | `github.com/<microsoft>/*`, `github.com/<azure>/*` (public repos) | **External (GitHub)** |
+| GitHub | `github.com/<org>/*` (private/enterprise) | **External (GitHub)** — use public MCP servers only unless org policy allows internal servers |
+| GitLab / Bitbucket / Other | Any | **External** — use public MCP servers only |
+
+Record the classification as `repo_hosting_type` = `ado_internal` | `github_external` | `other_external`. This value drives which MCP servers are eligible for inclusion in `.vscode/mcp.json` (see File 12).
+
+##### 1.5.1.2 Detect Existing MCP Configuration
 
 Search for MCP (Model Context Protocol) server configurations:
 
@@ -142,15 +157,19 @@ Search for MCP (Model Context Protocol) server configurations:
 | `~/.config/claude/claude_desktop_config.json` | Claude Desktop | User-level MCP servers |
 | `mcp.json` at root | Generic | Repo-scoped MCP config |
 
-For each MCP server found, record:
+Record whether `.vscode/mcp.json` exists (`mcp_json_exists` = `true` | `false`). This determines behavior in File 12:
+- **If `mcp_json_exists` = `false`:** File 12 MUST create `.vscode/mcp.json` with applicable servers.
+- **If `mcp_json_exists` = `true`:** File 12 MUST preserve all existing server entries and only append new applicable servers that are not already present.
+
+For each MCP server found in any config file, record:
 - **Server name** (e.g., `ado`, `appInsights`, `kusto`, `icm`, `ev2`)
 - **Type** (`stdio`, `http`, `sse`)
 - **Command/URL** — what it connects to
 - **Purpose** — classify each server:
 
 | MCP Category | Examples | Enables |
-|-------------|----------|---------|
-| **Source Control** | Azure DevOps (`@azure-devops/mcp`), GitHub | PR management, work items, branch operations |
+|-------------|----------|--------|
+| **Source Control** | Azure DevOps (`@anthropic-ai/azure-devops-mcp`), GitHub (`@anthropic-ai/github-mcp`) | PR management, work items, branch operations |
 | **Documentation** | Microsoft Learn (`learn.microsoft.com/api/mcp`) | Official docs search, code sample lookup, page fetch |
 | **Telemetry/APM** | App Insights (custom dotnet project), Datadog, New Relic | Live telemetry queries, KQL, metric analysis |
 | **Query Engine** | Kusto (`@mcp-apps/kusto-mcp-server`), BigQuery | Ad-hoc data queries against production logs |
@@ -2204,29 +2223,87 @@ description: "<Purpose> — launched by <skill-name> skill, not directly by user
 
 ---
 
-### File 12: `.vscode/mcp.json` (Preservation + Recommendations)
+### File 12: `.vscode/mcp.json` (Detection → Creation or Merge)
 
-**Purpose:** Preserve existing MCP server configuration and recommend additions based on detected repo characteristics. This file is NOT generated from scratch — it is only modified if it already exists and recommendations are relevant.
+**Purpose:** Ensure every repo has a `.vscode/mcp.json` with applicable MCP servers based on the repo hosting type (ADO internal vs GitHub external) and detected technologies.
 
 **Rules:**
-1. **If `.vscode/mcp.json` exists:** Read it. Do NOT modify existing server entries. Only add a `<!-- Recommended additions -->` comment block (or a separate `mcp.recommended.json` file) listing servers that would benefit this repo based on Phase 2 analysis.
-2. **If `.vscode/mcp.json` does NOT exist:** Generate a starter configuration based on detected needs.
+1. **If `.vscode/mcp.json` does NOT exist:** Create it with all applicable MCP servers selected from the catalogue below, based on `repo_hosting_type` and Phase 2 technology detection.
+2. **If `.vscode/mcp.json` already exists:** Read it. Do NOT remove or modify any existing server entries. Compare existing server keys against the applicable catalogue. Append only new servers whose keys are not already present in the existing config. Merge `inputs` arrays without duplicating `id` values.
 3. **Never hardcode secrets** in the MCP config — use `${input:variable}` or environment variable references.
+4. **Server selection** is driven by `repo_hosting_type` (from Phase 1.5.1.1) **AND** Phase 2 codebase detection.
 
-**Recommendation logic:**
-- Repo uses Azure DevOps → recommend `@anthropic-ai/azure-devops-mcp` or equivalent
-- Repo has `.md` docs and Azure dependencies → recommend Microsoft Docs MCP (`learn.microsoft.com/api/mcp`)
-- Repo has App Insights/telemetry code → recommend an App Insights MCP if one exists in the repo (check `Tools/` directory)
-- Repo uses Kusto/ADX → recommend `@mcp-apps/kusto-mcp-server`
-- Repo has ICM/incident management references → recommend ICM MCP
-- Repo has EV2/deployment infrastructure → recommend EV2 MCP
+---
 
-**Format (starter config, only if no existing config):**
+#### MCP Server Catalogue
+
+##### Internal Microsoft MCP Servers (ADO repos only — `repo_hosting_type` = `ado_internal`)
+
+These servers are Microsoft-internal and must ONLY be added when the repo is hosted on Azure DevOps:
+
+| Server Key | Condition (add if detected) | Type | Command/URL | Purpose |
+|------------|---------------------------|------|-------------|----------|
+| `azure-devops` | Always (ADO repos) | `stdio` | `npx -y @anthropic-ai/azure-devops-mcp@latest` | PR management, work items, branch operations |
+| `app-insights` | App Insights SDK detected (Go/Ruby/dotnet) | `stdio` | Custom dotnet project or `npx -y @anthropic-ai/app-insights-mcp@latest` | Live telemetry queries, KQL |
+| `kusto` | Kusto/ADX references detected | `stdio` | `npx -y @mcp-apps/kusto-mcp-server@latest` | Ad-hoc Kusto queries against production logs |
+| `icm` | ICM/incident management references detected | `stdio` | Internal ICM MCP server | Incident triage, alert management |
+| `ev2` | EV2/Express V2 deployment detected | `stdio` | Internal EV2 MCP server | Deployment rollout status, history |
+| `microsoft-docs` | Azure dependencies or `.md` docs detected | `stdio` | `npx -y @anthropic-ai/microsoft-docs-mcp@latest` | Official Microsoft Learn docs search |
+| `1es-wiki` | Internal wiki/confluence references detected | `stdio` | Internal 1ES wiki MCP server | Internal documentation access |
+| `geneva` | Geneva/MDSD/metrics infrastructure detected | `stdio` | Internal Geneva MCP server | Geneva metrics and monitoring |
+
+##### Public MCP Servers (GitHub / external repos — `repo_hosting_type` = `github_external` or `other_external`)
+
+These servers are publicly available and safe to include in any public/external repository:
+
+| Server Key | Condition (add if detected) | Type | Command/URL | Purpose |
+|------------|---------------------------|------|-------------|----------|
+| `github` | Always (GitHub repos) | `stdio` | `npx -y @anthropic-ai/github-mcp@latest` | PR management, issues, branch operations |
+| `microsoft-docs` | Azure dependencies or `.md` docs detected | `stdio` | `npx -y @anthropic-ai/microsoft-docs-mcp@latest` | Official Microsoft Learn docs search |
+| `kusto` | Kusto/ADX references detected | `stdio` | `npx -y @mcp-apps/kusto-mcp-server@latest` | Ad-hoc Kusto queries |
+| `playwright` | Web UI / E2E browser test code detected | `stdio` | `npx -y @anthropic-ai/playwright-mcp@latest` | Browser automation, E2E testing |
+| `fetch` | HTTP client / REST API integration code detected | `stdio` | `npx -y @anthropic-ai/fetch-mcp@latest` | Fetch web content, API responses |
+
+---
+
+#### Detection → Server Selection Logic
+
+For each server in the applicable catalogue (based on `repo_hosting_type`), check the **Condition** column against Phase 2 detection results:
+
+| Detection Signal | Phase 2 Source | Triggers Server(s) |
+|-----------------|---------------|--------------------|
+| Azure DevOps remote URL | Phase 1 SCM detection | `azure-devops` (ADO only) |
+| GitHub remote URL | Phase 1 SCM detection | `github` (GitHub only) |
+| `ApplicationInsights`, `TelemetryClient`, `appinsights` | Phase 2.12 telemetry | `app-insights` (ADO), `microsoft-docs` (both) |
+| `kusto`, `ADX`, `adx_cluster`, `Azure Data Explorer` | Phase 2.5 / 2.14 | `kusto` (both) |
+| `ICM`, `IcmIncident`, `incident management` | Phase 2 codebase scan | `icm` (ADO only) |
+| `EV2`, `Ev2/`, `Express V2`, `ev2-ra` | Phase 2.14 deployment | `ev2` (ADO only) |
+| `Geneva`, `MDSD`, `mdsd`, `geneva_config` | Phase 2 codebase scan | `geneva` (ADO only) |
+| Azure SDK imports, `azure.yaml`, `*.bicep` | Phase 2.14 / 2.5 | `microsoft-docs` (both) |
+| `playwright`, `puppeteer`, Selenium, E2E browser | Phase 2.4 test detection | `playwright` (GitHub only) |
+| HTTP client code, REST API integration | Phase 2.5 | `fetch` (GitHub only) |
+| Internal wiki references, 1ES, eng-hub | Phase 2 codebase scan | `1es-wiki` (ADO only) |
+
+#### Merge Algorithm (when `.vscode/mcp.json` already exists)
+
+```
+1. Read existing `.vscode/mcp.json` → parse `servers` and `inputs`
+2. Build list of applicable new servers from catalogue (based on repo_hosting_type + detection)
+3. For each new server:
+   a. If server key already exists in `servers` → SKIP (do not overwrite)
+   b. If server key does NOT exist → ADD to `servers` object
+4. For each new input required by added servers:
+   a. If input `id` already exists in `inputs` → SKIP
+   b. If input `id` does NOT exist → APPEND to `inputs` array
+5. Write merged result back to `.vscode/mcp.json`
+```
+
+#### Output Format
 
 ```json
 {
   "servers": {
-    "<server-name>": {
+    "<server-key>": {
       "type": "stdio",
       "command": "<command>",
       "args": ["<args>"],
@@ -2241,6 +2318,143 @@ description: "<Purpose> — launched by <skill-name> skill, not directly by user
       "type": "promptString",
       "description": "<what this value is for>",
       "password": true
+    }
+  ]
+}
+```
+
+#### Example: ADO Internal Repo (all applicable servers)
+
+```json
+{
+  "servers": {
+    "azure-devops": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/azure-devops-mcp@latest"],
+      "env": {
+        "AZURE_DEVOPS_ORG": "${input:azure_devops_org}",
+        "AZURE_DEVOPS_PROJECT": "${input:azure_devops_project}",
+        "AZURE_DEVOPS_PAT": "${input:azure_devops_pat}"
+      }
+    },
+    "microsoft-docs": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/microsoft-docs-mcp@latest"]
+    },
+    "kusto": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@mcp-apps/kusto-mcp-server@latest"],
+      "env": {
+        "KUSTO_CLUSTER_URI": "${input:kusto_cluster_uri}",
+        "KUSTO_DATABASE": "${input:kusto_database}"
+      }
+    },
+    "app-insights": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/app-insights-mcp@latest"],
+      "env": {
+        "APP_INSIGHTS_CONNECTION_STRING": "${input:app_insights_connection_string}"
+      }
+    },
+    "icm": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@microsoft-internal/icm-mcp@latest"],
+      "env": {
+        "ICM_TENANT": "${input:icm_tenant}"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "id": "azure_devops_org",
+      "type": "promptString",
+      "description": "Azure DevOps organization URL (e.g., https://dev.azure.com/your-org)"
+    },
+    {
+      "id": "azure_devops_project",
+      "type": "promptString",
+      "description": "Azure DevOps project name"
+    },
+    {
+      "id": "azure_devops_pat",
+      "type": "promptString",
+      "description": "Azure DevOps Personal Access Token",
+      "password": true
+    },
+    {
+      "id": "kusto_cluster_uri",
+      "type": "promptString",
+      "description": "Azure Data Explorer (Kusto) cluster URI"
+    },
+    {
+      "id": "kusto_database",
+      "type": "promptString",
+      "description": "Kusto database name"
+    },
+    {
+      "id": "app_insights_connection_string",
+      "type": "promptString",
+      "description": "Application Insights connection string",
+      "password": true
+    },
+    {
+      "id": "icm_tenant",
+      "type": "promptString",
+      "description": "ICM tenant name for incident management"
+    }
+  ]
+}
+```
+
+#### Example: GitHub External Repo (public servers only)
+
+```json
+{
+  "servers": {
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/github-mcp@latest"],
+      "env": {
+        "GITHUB_TOKEN": "${input:github_token}"
+      }
+    },
+    "microsoft-docs": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/microsoft-docs-mcp@latest"]
+    },
+    "kusto": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@mcp-apps/kusto-mcp-server@latest"],
+      "env": {
+        "KUSTO_CLUSTER_URI": "${input:kusto_cluster_uri}",
+        "KUSTO_DATABASE": "${input:kusto_database}"
+      }
+    }
+  },
+  "inputs": [
+    {
+      "id": "github_token",
+      "type": "promptString",
+      "description": "GitHub Personal Access Token",
+      "password": true
+    },
+    {
+      "id": "kusto_cluster_uri",
+      "type": "promptString",
+      "description": "Azure Data Explorer (Kusto) cluster URI"
+    },
+    {
+      "id": "kusto_database",
+      "type": "promptString",
+      "description": "Kusto database name"
     }
   ]
 }
@@ -2778,8 +2992,12 @@ After generating all files, verify:
 - [ ] Non-user-invokable agents — launching skill includes explicit context handoff instructions
 
 **MCP & Context Architecture:**
-- [ ] `.vscode/mcp.json` — existing entries preserved (NEVER modified)
+- [ ] `.vscode/mcp.json` — created if it did not exist, with servers from applicable catalogue
+- [ ] `.vscode/mcp.json` — if it already existed, existing server entries preserved (NEVER removed or modified)
+- [ ] `.vscode/mcp.json` — new servers appended only if their key was not already present
+- [ ] `.vscode/mcp.json` — server selection matches `repo_hosting_type` (`ado_internal` → full internal catalogue; `github_external`/`other_external` → public servers only)
 - [ ] `.vscode/mcp.json` — no secrets hardcoded (uses `${input:}` or env vars)
+- [ ] `.vscode/mcp.json` — `inputs` array has no duplicate `id` values after merge
 - [ ] ServiceContext directory — generated ONLY if multi-service + telemetry MCP detected
 - [ ] ServiceContext README.md — service table maps to actual services and directories
 - [ ] ServiceContext ontology — entities match actual API resources found in codebase
