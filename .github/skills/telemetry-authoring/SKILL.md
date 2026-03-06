@@ -55,7 +55,7 @@ When adding new code paths, error handlers, external calls, or entry points that
 - Verify import matches existing files: `"github.com/microsoft/ApplicationInsights-Go/appinsights"`
 - Verify metric/event names follow PascalCase convention
 - Verify `CommonProperties` are included in telemetry items
-- Run `GOUNITTEST=true ISTEST=true go test .` to ensure telemetry doesn't break tests
+- Run `go generate && GOUNITTEST=true ISTEST=true go test .` in `source/plugins/go/src/` to ensure telemetry doesn't break tests
 - Check that telemetry is gated for unit test environments
 
 ## Examples from This Repo

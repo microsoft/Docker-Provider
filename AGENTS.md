@@ -18,12 +18,12 @@ cd ../..
 sudo gem install fluentd -v "1.14.2" --no-document
 sudo gem install ipaddress --no-document
 
-# Verify Go setup (1.23.8+)
+# Verify Go setup (see source/plugins/go/src/go.mod for required version)
 go version
 
 # Run all unit tests to verify environment
 ./test/unit-tests/test_main.sh
-cd source/plugins/go/src && GOUNITTEST=true ISTEST=true go test . && cd ../../../..
+cd source/plugins/go/src && go generate && GOUNITTEST=true ISTEST=true go test . && cd ../../../..
 ruby test/unit-tests/test_driver.rb
 ```
 
@@ -36,18 +36,21 @@ ruby test/unit-tests/test_driver.rb
 - Error handling: check `err != nil` immediately, log with `Log()` or `FLBPluginUnregister()`
 - Use `ApplicationInsights-Go` SDK via `TelemetryClient` singleton for telemetry
 - Test files use `_test.go` suffix in the same package directory
+- Run `go generate` before running tests
 
 ### Ruby (`source/plugins/ruby/`)
 - Classes use `PascalCase` (e.g., `ApplicationInsightsUtility`, `KubernetesApiClient`)
 - Files use `PascalCase` matching class name (e.g., `KubernetesApiClient.rb`)
 - Fluentd plugin pattern: inherit from `Fluent::Input`, `Fluent::Filter`, or `Fluent::Output`
 - Use `require_relative` for local imports
+- Handle exceptions with `begin/rescue/end`; log via `$log.warn`/`$log.error`
 
 ### Shell (`build/`, `kubernetes/`, `scripts/`)
 - Use `#!/bin/bash` shebang
 - Variables use `UPPER_SNAKE_CASE` for env vars, `lower_snake_case` for locals
-- Source shared env: `source /opt/env_vars`
+- Source shared env: `source /opt/env_vars` where available
 - Use `set -e` for error-sensitive scripts
+- Quote all variable expansions: `"$VAR"` not `$VAR`
 
 ### PowerShell (`build/windows/`, `test/unit-tests/`)
 - Use Pester 5.3.3 for unit tests
@@ -59,10 +62,10 @@ ruby test/unit-tests/test_driver.rb
 | Suite | Command | Framework | Directory |
 |-------|---------|-----------|-----------|
 | Bash unit tests | `./test/unit-tests/test_main.sh` | Custom bash framework | `test/unit-tests/test_cases/` |
-| Go unit tests | `cd source/plugins/go/src && GOUNITTEST=true ISTEST=true go test .` | Go testing | `source/plugins/go/src/` |
+| Go unit tests | `cd source/plugins/go/src && go generate && GOUNITTEST=true ISTEST=true go test .` | Go testing + testify | `source/plugins/go/src/` |
 | Ruby unit tests | `ruby test/unit-tests/test_driver.rb` | Custom Ruby driver | `test/unit-tests/test_driver.rb` |
 | PowerShell tests | `./test/unit-tests/test_main.ps1` | Pester 5.3.3 | `test/unit-tests/` |
-| Ginkgo E2E | `cd test/ginkgo-e2e/<suite> && go test -v ./...` | Ginkgo | `test/ginkgo-e2e/` |
+| Ginkgo E2E | `cd test/ginkgo-e2e/<suite> && go test -v ./...` | Ginkgo + Gomega | `test/ginkgo-e2e/` |
 | Python E2E | `pytest test/e2e/` | pytest | `test/e2e/` |
 
 ### Adding Tests
@@ -74,9 +77,10 @@ ruby test/unit-tests/test_driver.rb
 
 - Use WSL2 on Windows; clone into the Ubuntu filesystem (not Windows mount)
 - Docker Desktop with WSL2 integration for building container images
-- Go 1.23.8 is required (set via `actions/setup-go` in CI)
+- See `source/plugins/go/src/go.mod` for exact Go version; CI uses `actions/setup-go` with version from `run_unit_tests.yml`
 - For Ginkgo E2E tests, a running Kubernetes cluster is required
 - The `ISTEST` and `GOUNITTEST` env vars gate test-only code paths in Go
+- Two Go modules exist (`source/plugins/go/src/` and `source/plugins/go/input/`) with separate `go.mod` files
 
 ## PR Instructions
 

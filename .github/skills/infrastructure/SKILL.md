@@ -53,6 +53,7 @@ When modifying container images, Helm charts, Kubernetes deployment manifests, o
 - `kubernetes/ama-logs.yaml` — K8s DaemonSet manifest
 - `charts/azuremonitor-containers/` — Helm chart
 - `charts/azuremonitor-containers-geneva/` — Geneva Helm chart
+- `charts/azuremonitor-containerinsights-for-prod-clusters/` — Production cluster chart
 - `deployment/` — EV2 deployment configs
 
 ### Validation

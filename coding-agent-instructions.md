@@ -16,16 +16,16 @@ This document explains how to use the AI coding agent artifacts generated for th
 |----------|------|--------|---------|
 | `copilot-instructions.md` | `.github/copilot-instructions.md` | Automatically every session | Root router — general rules, skill catalogue, build instructions |
 | `AGENTS.md` | Root | Automatically (supported tools) | Setup commands, code style, testing instructions, architecture diagram |
+| Test AGENTS.md | `test/AGENTS.md` | Auto in test directories | Test framework guide and decision tree |
 | Go instructions | `.github/instructions/go.instructions.md` | Auto on `**/*.go` | Go coding conventions for Fluent Bit plugins |
 | Ruby instructions | `.github/instructions/ruby.instructions.md` | Auto on `**/*.rb` | Ruby conventions for Fluentd plugins |
 | Shell instructions | `.github/instructions/shell.instructions.md` | Auto on `**/*.sh` | Shell script conventions |
-| PowerShell instructions | `.github/instructions/powershell.instructions.md` | Auto on `**/*.ps1` | PowerShell conventions |
+| PowerShell instructions | `.github/instructions/powershell.instructions.md` | Auto on `**/*.ps1,**/*.psm1` | PowerShell conventions |
 | `Prompt.md` | Root | On demand | Reusable task-spec template for new work |
 | `CodeReviewer.agent.md` | `.github/agents/CodeReviewer.agent.md` | On @-mention | Structured code review with STRIDE security checks |
 | `SecurityReviewer.agent.md` | `.github/agents/SecurityReviewer.agent.md` | On @-mention | Deep security analysis and threat modeling |
 | `DocumentWriter.agent.md` | `.github/agents/DocumentWriter.agent.md` | On @-mention | Documentation authoring following repo conventions |
 | `prd.agent.md` | `.github/agents/prd.agent.md` | On @-mention | PRD generation tailored to this project |
-| Test AGENTS.md | `test/AGENTS.md` | Auto in test directories | Test framework guide and decision tree |
 
 ## How the Context Loading Chain Works
 
@@ -35,10 +35,10 @@ Layer 1: .github/copilot-instructions.md (always loaded)
   ├── Routes to →
   │
 Layer 2: .github/instructions/*.instructions.md (auto-loaded when you open matching files)
-  ├── go.instructions.md → Go plugin conventions
-  ├── ruby.instructions.md → Ruby plugin conventions
-  ├── shell.instructions.md → Shell script conventions
-  ├── powershell.instructions.md → PowerShell conventions
+  ├── go.instructions.md → Go plugin conventions (applyTo: **/*.go)
+  ├── ruby.instructions.md → Ruby plugin conventions (applyTo: **/*.rb)
+  ├── shell.instructions.md → Shell script conventions (applyTo: **/*.sh)
+  ├── powershell.instructions.md → PowerShell conventions (applyTo: **/*.ps1,**/*.psm1)
   │
 Layer 3: Skills (loaded only when invoked by trigger phrase)
   └── Step-by-step procedures for specific tasks
@@ -131,6 +131,7 @@ Skills are step-by-step guides that activate when you use their trigger phrases 
 4. **Use @prd before big features** — A structured PRD helps scope the work before writing code.
 5. **Check test/AGENTS.md for test guidance** — It has a decision tree for choosing the right test type.
 6. **Trust the context chain** — The layered system ensures the AI has the right context at the right time.
+7. **Run `go generate` before Go tests** — The Go plugin requires generated code; tests will fail without it.
 
 ## Customizing These Artifacts
 
@@ -145,6 +146,7 @@ These files are meant to evolve with your project:
 | Issue | Solution |
 |-------|----------|
 | AI doesn't follow Go conventions | Verify `.github/instructions/go.instructions.md` exists and `applyTo` matches `**/*.go` |
+| Go tests fail with undefined symbols | Run `go generate` before `go test` — generated mocks are required |
 | Skill not activating | Use the trigger phrases listed in the skill table above |
 | Agent not available | Ensure the `.agent.md` file is in `.github/agents/` |
 | AI gives generic advice | It may not be loading `copilot-instructions.md` — verify the file is at `.github/copilot-instructions.md` |

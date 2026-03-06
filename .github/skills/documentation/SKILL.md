@@ -30,6 +30,7 @@ When updating project documentation, writing release notes, or updating onboardi
 3. **Update Helm chart version** (for releases):
    - Bump `version` in `charts/azuremonitor-containers/Chart.yaml`
    - Bump `version` in `charts/azuremonitor-containers-geneva/Chart.yaml`
+   - Bump `version` in `charts/azuremonitor-containerinsights-for-prod-clusters/Chart.yaml` if applicable
 
 4. **Documentation conventions**:
    - Use ATX headings (`#`, `##`, `###`)

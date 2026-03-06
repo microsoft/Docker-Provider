@@ -44,7 +44,7 @@ When adding new data collection capabilities, new authentication modes, new depl
 
 7. **Run full test suite**:
    ```bash
-   cd source/plugins/go/src && GOUNITTEST=true ISTEST=true go test . && cd ../../../..
+   cd source/plugins/go/src && go generate && GOUNITTEST=true ISTEST=true go test . && cd ../../../..
    ./test/unit-tests/test_main.sh
    ruby test/unit-tests/test_driver.rb
    cd build/linux && make && cd ../..

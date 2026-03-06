@@ -38,7 +38,7 @@ When updating package versions in Go modules, Ruby gems in Dockerfiles, or conta
 
 5. **Run tests**:
    ```bash
-   cd source/plugins/go/src && GOUNITTEST=true ISTEST=true go test . && cd ../../../..
+   cd source/plugins/go/src && go generate && GOUNITTEST=true ISTEST=true go test . && cd ../../../..
    ./test/unit-tests/test_main.sh
    ruby test/unit-tests/test_driver.rb
    ```

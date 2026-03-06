@@ -6,13 +6,14 @@ This repository contains the Azure Monitor for containers (Container Insights) a
 ## General Guidelines
 
 1. Follow existing code conventions: Go uses `PascalCase` for exported, `camelCase` for unexported; Ruby uses `PascalCase` classes; Shell scripts use `snake_case`.
-2. All Go changes must pass `GOUNITTEST=true ISTEST=true go test .` in `source/plugins/go/src/`.
+2. All Go changes must pass `GOUNITTEST=true ISTEST=true go test .` in `source/plugins/go/src/`. Run `go generate` first.
 3. All shell script changes must pass `./test/unit-tests/test_main.sh`.
 4. Ruby changes must pass `ruby test/unit-tests/test_driver.rb`.
 5. Never hardcode secrets, instrumentation keys, or connection strings — use environment variables.
 6. Container images must not run as root without justification.
 7. CVE/vulnerability fixes should be verified with Trivy scanning.
-8. When modifying Helm charts, update both `charts/azuremonitor-containers/` and `charts/azuremonitor-containers-geneva/` if applicable.
+8. When modifying Helm charts, update `azuremonitor-containers` and `azuremonitor-containers-geneva` charts if applicable.
+9. If newer commits make prior changes unnecessary, revert them.
 
 ## Custom Agents
 
@@ -27,59 +28,36 @@ This repository contains the Azure Monitor for containers (Container Insights) a
 
 | Skill | Triggers | Description |
 |-------|----------|-------------|
-| `security-review` | security review, STRIDE analysis, credential check | STRIDE-based security review with credential scanning |
-| `telemetry-authoring` | add telemetry, add metrics, instrument code | Add Application Insights telemetry following existing patterns |
-| `fix-critical-vulnerabilities` | fix CVE, trivy fix, patch vulnerability | Identify and fix critical/high vulnerabilities using Trivy |
-| `dependency-update` | update dependency, bump package | Update Go modules, Ruby gems, or base images safely |
-| `bug-fix` | fix bug, resolve issue, hotfix | Structured bug fix workflow with regression tests |
-| `feature-development` | add feature, implement, new plugin | New feature scaffolding for Go/Ruby plugins |
-| `test-authoring` | add test, write test | Create tests following repo test framework conventions |
-| `ci-cd-pipeline` | update pipeline, fix CI | Modify GitHub Actions or Azure Pipelines configs |
-| `infrastructure` | update Dockerfile, Helm chart, k8s manifest | Infrastructure and deployment changes |
+| `security-review` | security review, STRIDE analysis | STRIDE-based security review with credential scanning |
+| `telemetry-authoring` | add telemetry, add metrics | Add Application Insights telemetry following existing patterns |
+| `fix-critical-vulnerabilities` | fix CVE, trivy fix | Fix critical/high CVEs using Trivy |
+| `dependency-update` | update dependency, bump package | Update Go modules, gems, or base images safely |
+| `bug-fix` | fix bug, resolve issue | Bug fix workflow with regression tests |
+| `feature-development` | add feature, implement | New feature scaffolding for Go/Ruby plugins |
+| `test-authoring` | add test, write test | Create tests following repo conventions |
+| `ci-cd-pipeline` | update pipeline, fix CI | Modify GitHub Actions or Azure Pipelines |
+| `infrastructure` | update Dockerfile, Helm chart | Infrastructure and deployment changes |
 | `documentation` | update docs, release notes | Documentation and release note updates |
 
 ## Build Instructions
 
 ### Prerequisites
-- Go 1.23.8+, Ruby with Fluentd gem, Docker, Helm, `build-essential` (Linux)
-- .NET Core SDK (Windows only), GCC for Windows (Windows only)
+- Go (see `source/plugins/go/src/go.mod` for version), Ruby with Fluentd gem, Docker, Helm, `build-essential` (Linux)
 
-### Linux Build
+### Key Commands
 ```bash
-cd build/linux && make
-```
-
-### Windows Build
-```powershell
-cd build/windows && .\Makefile.ps1
-```
-
-### Docker Image (Linux multi-arch)
-```bash
-cd kubernetes/linux && docker build . --file Dockerfile.multiarch -t <tag> --build-arg IMAGE_TAG=<telemetry-tag>
-```
-
-### Run Tests
-```bash
-# Bash unit tests
-./test/unit-tests/test_main.sh
-
-# Go unit tests
-cd source/plugins/go/src && GOUNITTEST=true ISTEST=true go test .
-
-# Ruby unit tests
-ruby test/unit-tests/test_driver.rb
-
-# Ginkgo E2E (requires cluster)
-cd test/ginkgo-e2e/<suite> && go test -v ./...
+cd build/linux && make                                                    # Linux build
+cd source/plugins/go/src && go generate && GOUNITTEST=true ISTEST=true go test . # Go tests
+./test/unit-tests/test_main.sh                                           # Bash tests
+ruby test/unit-tests/test_driver.rb                                      # Ruby tests
 ```
 
 ## Known Patterns & Gotchas
 
-- The Go plugin builds as a shared object (`.so`) loaded by Fluent Bit — ensure CGO is enabled.
+- Go plugin builds as `.so` loaded by Fluent Bit — CGO must be enabled.
 - `go generate` must run before `go test` in `source/plugins/go/src/`.
-- Environment variable `GOUNITTEST=true` gates test-only code paths in Go.
-- Helm charts in `charts/azuremonitor-containers/` are for non-AKS clusters; Geneva variant is in `charts/azuremonitor-containers-geneva/`.
-- Azure Pipelines in `.pipelines/` handle production builds and releases; GitHub Actions handle PR validation.
-- The `.trivyignore` file tracks temporarily accepted CVEs — always add justification comments.
-- Windows and Linux agents share configuration parsing scripts in `build/common/installer/scripts/`.
+- `GOUNITTEST=true` gates test-only code paths in Go.
+- Two `go.mod` files: `source/plugins/go/src/go.mod` and `source/plugins/go/input/go.mod`.
+- Azure Pipelines (`.pipelines/`) for production; GitHub Actions for PR validation.
+- `.trivyignore` tracks accepted CVEs — always add justification with date.
+- Shared config scripts in `build/common/installer/scripts/`.

@@ -68,7 +68,7 @@ When Trivy scan fails in CI, when new CVEs are reported against dependencies, or
    cd build/linux && make && cd ../..
 
    # Go unit tests
-   cd source/plugins/go/src && GOUNITTEST=true ISTEST=true go test . && cd ../../../..
+   cd source/plugins/go/src && go generate && GOUNITTEST=true ISTEST=true go test . && cd ../../../..
 
    # Bash unit tests
    ./test/unit-tests/test_main.sh

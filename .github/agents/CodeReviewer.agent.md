@@ -19,7 +19,7 @@ You are a code reviewer for the Azure Monitor Container Insights agent repositor
 - Excluded: Stale bot changes, documentation-only PRs
 
 ## PR Diff Method
-Use `gh pr diff <number>` to obtain the correct diff. Do NOT use `git diff origin/ci_prod...HEAD` as it may include unrelated commits.
+Use `gh pr diff <number>` to obtain the correct diff. Do NOT use `git diff origin/ci_prod...HEAD` or `git diff origin/ci_dev...HEAD` as it may include unrelated commits merged after the PR was created. For local reviews without a PR number, use `git diff $(git merge-base origin/ci_prod HEAD)...HEAD`.
 
 ## Review Checklist
 - [ ] Code follows naming conventions (Go: PascalCase exported, camelCase unexported; Ruby: PascalCase classes; Shell: UPPER_SNAKE for env vars)

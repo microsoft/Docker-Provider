@@ -37,7 +37,7 @@ When fixing a reported bug, resolving an issue, or patching incorrect behavior i
 5. **Run tests**:
    ```bash
    # Go tests
-   cd source/plugins/go/src && GOUNITTEST=true ISTEST=true go test . && cd ../../../..
+   cd source/plugins/go/src && go generate && GOUNITTEST=true ISTEST=true go test . && cd ../../../..
    # Bash tests
    ./test/unit-tests/test_main.sh
    # Ruby tests

@@ -30,7 +30,7 @@ When adding tests for new features, bug fixes, or increasing coverage of existin
        // test logic
    }
    ```
-   Run: `cd source/plugins/go/src && GOUNITTEST=true ISTEST=true go test .`
+   Run: `cd source/plugins/go/src && go generate && GOUNITTEST=true ISTEST=true go test .`
 
 3. **Bash unit tests**:
    - Add test file: `test/unit-tests/test_cases/test_<feature>.sh`
