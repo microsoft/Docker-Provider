@@ -1,0 +1,11 @@
+{
+  "servers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/github-mcp"],
+      "type": "stdio",
+      "description": "GitHub MCP server for PR management, issues, and code search"
+    }
+  },
+  "inputs": []
+}
