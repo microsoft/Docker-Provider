@@ -29,6 +29,47 @@ Analyze this repository's codebase, structure, programming languages, open sourc
 
 ---
 
+## Safety Guardrails — MANDATORY
+
+**This prompt's SOLE purpose is to generate or modify AI coding-agent artifacts.** It must NEVER alter, delete, move, or rename any file outside the artifact set defined in the output table above. Treat every non-artifact file in the repository as **READ-ONLY**.
+
+### Allowed Operations
+
+| Operation | Scope |
+|-----------|-------|
+| **Create** new files | ONLY at paths listed in the Output File Specifications table above (agent files, skills, instructions, mcp.json, coding-agent-instructions.md, threat-model/, docs-eval-tests/) |
+| **Modify** existing files | ONLY agent artifact files that already exist at the defined output paths (e.g., updating an existing `copilot-instructions.md` or `.vscode/mcp.json`). Human-authored content in those files must be preserved. |
+| **Read / scan** any repo file | Allowed — Phases 0–3 require reading source code, configs, CI pipelines, commit history, etc. for analysis. Reading is always safe. |
+| **Create** the `copilot/agentify` branch | Allowed — a single dedicated branch for all generated artifacts. |
+| **Commit & push** to `copilot/agentify` | Allowed — only generated/modified artifact files are staged and committed. |
+| **Create** a pull request | Allowed — targets the detected default branch for human review. |
+
+### Forbidden Operations — NEVER Do These
+
+1. **NEVER delete any file** — Do not run `rm`, `git rm`, `del`, `Remove-Item`, or any command that deletes files or directories. This includes repository files, generated files from previous runs, and temporary files.
+2. **NEVER modify source code** — Do not edit `.py`, `.go`, `.rb`, `.cs`, `.ts`, `.js`, `.jsx`, `.tsx`, `.java`, `.rs`, `.cpp`, `.c`, `.h`, `.lua`, `.sh`, `.ps1`, `.psm1`, `.sql`, `.scala`, `.dart`, `.kt`, `.swift`, `.php` files or any other source code files. They are read-only inputs for analysis.
+3. **NEVER modify build or CI/CD files** — Do not edit `Makefile`, `Dockerfile`, `docker-compose.yml`, `Jenkinsfile`, `azure-pipelines.yml`, `.github/workflows/*.yml`, `.gitlab-ci.yml`, `bitbucket-pipelines.yml`, `Taskfile.yml`, `justfile`, `Earthfile`, or any build/CI configuration.
+4. **NEVER modify infrastructure-as-code** — Do not edit `*.bicep`, `*.tf`, Helm `values.yaml`, Kubernetes manifests (`*.yaml` in `k8s/`, `charts/`, `deployment/`), Service Fabric projects (`*.sfproj`), or ARM templates.
+5. **NEVER modify dependency manifests** — Do not edit `package.json`, `package-lock.json`, `go.mod`, `go.sum`, `requirements.txt`, `pyproject.toml`, `Pipfile`, `Cargo.toml`, `Cargo.lock`, `pom.xml`, `build.gradle`, `*.csproj`, `*.sln`, `Gemfile`, `composer.json`, or any dependency/lock file.
+6. **NEVER modify configuration files** — Do not edit `.env`, `.editorconfig`, `.eslintrc*`, `.prettierrc*`, `.pylintrc`, `tsconfig.json`, `*.config.js`, `mypy.ini`, `.golangci.yml`, `.clang-format`, `.trivyignore`, `.gitignore`, `.gitattributes`, `.gitmodules`, or any tool configuration file that is not an agent artifact.
+7. **NEVER modify documentation that is not an agent artifact** — Do not edit the repo's existing `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `SECURITY.md`, `LICENSE`, `Dev Guide.md`, or any `.md` file that is not in the defined agent artifact output paths.
+8. **NEVER modify test files** — Do not edit files under `test/`, `tests/`, `spec/`, `__tests__/`, or test files matching `test_*`, `*_test.*`, `*.test.*`, `*Test.*`, `*_spec.*`. The only exception is creating a new `Tests/AGENTS.md` (or equivalent) which is an agent artifact.
+9. **NEVER use destructive git commands** — Do not use `git reset --hard`, `git clean -fd`, `git checkout -- <file>` (on non-artifact files), `git push --force`, `git push --force-with-lease`, `git rebase` on shared branches, or `git branch -D` on any branch other than `copilot/agentify`.
+10. **NEVER modify the current/default branch** — All changes go to the `copilot/agentify` branch. Never commit to `main`, `master`, `develop`, or whichever branch was active when execution started.
+11. **NEVER modify this prompt file** — Do not edit `agentify.prompt.md` itself.
+12. **NEVER run arbitrary destructive shell commands** — Do not run `chmod` (except to read permissions), `chown`, `mv` (on non-artifact files), `truncate`, `shred`, `dd`, `mkfs`, or any command that could damage the repository or system.
+
+### Guardrail Enforcement
+
+- **Before creating or modifying ANY file**, verify that its path is listed in the Output File Specifications table or is a subdirectory of a defined output path (e.g., `.agents/skills/<name>/SKILL.md` is under the Skill files output).
+- **Before running ANY terminal command**, verify it is non-destructive and read-only OR operates exclusively on agent artifact paths and the `copilot/agentify` branch.
+- **Before staging files for commit** (`git add`), verify every path in the staging list is an agent artifact. Do not use `git add .` or `git add -A` — use explicit file paths to avoid accidentally staging non-artifact changes.
+- **If any step in the execution plan would require violating these guardrails**, STOP and report the conflict in the Output Summary Warnings section. Do not proceed with the violating action.
+
+> **Rationale:** This prompt runs with write access to the repository. Restricting its scope to agent artifacts ensures it cannot accidentally break builds, corrupt source code, delete work-in-progress, or introduce regressions. All non-artifact changes must go through normal human development workflows.
+
+---
+
 ## Execution Plan
 
 Complete these phases IN ORDER. Do not skip phases. Do not hallucinate — every command, path, and pattern you reference MUST actually exist in this repo.
@@ -718,6 +759,13 @@ git checkout -b copilot/agentify
 - If `copilot/agentify` already exists (i.e., the command above fails), delete it first with `git branch -D copilot/agentify` and retry, OR choose an alternative branch name by appending a numeric suffix (e.g., `copilot/agentify-2`, `copilot/agentify-3`). Do NOT use shell command substitution (e.g., `$(date ...)`) to generate the suffix — pick a simple literal name.
 
 Now generate each file using the data collected in Phases 0–3. Follow the exact format specifications below.
+
+**⚠️ GUARDRAIL REMINDER — File Generation:**
+- Only create or modify files at paths listed in the Output File Specifications table.
+- Before writing any file, confirm its target path is within the allowed artifact paths.
+- If a target file already exists, read it first and preserve all human-authored content.
+- Never create files at paths outside the defined artifact set, even if analysis suggests it would be "helpful."
+- Never delete, rename, or move any existing file — only create new artifacts or append to existing ones.
 
 ---
 
@@ -3459,6 +3507,13 @@ docs-eval-tests/
 
 After generating all files in Phase 4, stage and commit them to the `copilot/agentify` branch (created in Phase 4.0).
 
+**⚠️ GUARDRAIL REMINDER — Commit Safety:**
+- Only stage files that are defined agent artifacts (listed in the Output File Specifications table).
+- Do NOT use `git add .` or `git add -A` — always use explicit file paths to prevent staging non-artifact changes.
+- Before committing, run `git diff --cached --name-only` and verify every staged file is an agent artifact. If any non-artifact file appears in the staged list, unstage it with `git reset HEAD <file>` before committing.
+- Only commit to the `copilot/agentify` branch — never to the default or any other branch.
+- Never use `--force` or `--no-verify` flags on any git command.
+
 ```bash
 # Stage all generated/modified agent artifact files
 git add .github/copilot-instructions.md AGENTS.md Prompt.md \
@@ -3594,6 +3649,7 @@ If this succeeds, the PR is verified. If it fails, the PR may not have been crea
 
 Apply these rules to ALL generated files:
 
+0. **Scope enforcement** — Every file you create or modify MUST be an agent artifact listed in the Output File Specifications table. If you find yourself about to write to a path that is not an artifact, STOP. Re-read the Safety Guardrails section and the output table. If the path is not listed, do not write to it.
 1. **No hallucination** — Every file path, command, package name, and version you reference MUST exist in this repository. Verify before writing.
 2. **No secrets** — Never include API keys, tokens, passwords, connection strings, or any credential values. Reference env var NAMES only. MCP configs must use `${input:variable}` for secrets.
 3. **Specific, not generic** — Write instructions for THIS repo, not generic language/framework advice. If you can't determine something specific, omit it rather than guess.
@@ -3609,6 +3665,9 @@ Apply these rules to ALL generated files:
 13. **Concise and actionable instructions** — Keep instruction files concise. Lengthy instructions dilute effectiveness (per [GitHub Copilot best practices](https://docs.github.com/en/copilot/get-started/best-practices)). Prefer 5–15 actionable rules per file over exhaustive documentation. Use routing tables to point agents to deeper docs rather than inlining everything.
 14. **Prompt engineering guidance** — The `copilot-instructions.md` General Guidelines MUST include prompting best practices (break down complex tasks, be specific, provide examples, validate output). The `coding-agent-instructions.md` MUST include dedicated sections on prompt engineering, tool selection, context management, the explore → plan → code → commit workflow, and AI output validation.
 15. **Developer productivity guidance** — The `coding-agent-instructions.md` MUST include guidance on: TDD with AI, codebase onboarding with AI, delegation patterns, session management, feedback mechanisms, security considerations when using AI, and measuring AI-assisted productivity. These are derived from [GitHub Copilot best practices](https://docs.github.com/en/copilot/get-started/best-practices) and [Copilot CLI best practices](https://docs.github.com/en/copilot/how-tos/copilot-cli/cli-best-practices).
+16. **No out-of-scope modifications** — Never modify, delete, move, or rename any file that is not an agent artifact. All non-artifact repository files (source code, tests, configs, CI/CD, infrastructure, documentation, dependencies) are read-only. See the Safety Guardrails section for the complete forbidden operations list.
+17. **No file deletion** — Never delete any file from the repository, including previously generated agent artifacts. If a previously generated artifact is no longer needed, note this in the Output Summary Warnings section for human review — do not delete it.
+18. **Explicit staging only** — When committing, use explicit file paths in `git add` commands. Never use `git add .`, `git add -A`, or `git add --all`. Verify the staged file list with `git diff --cached --name-only` before committing.
 
 ---
 
@@ -3699,6 +3758,20 @@ After generating all files, verify:
 - [ ] Branch pushed to `origin` remote (or push failure documented in Warnings)
 - [ ] Pull request created against the default branch (or PR creation failure documented in Warnings with manual command)
 - [ ] PR URL included in the Output Summary
+
+**Safety Guardrails Compliance:**
+- [ ] NO non-artifact repository files were modified, deleted, moved, or renamed
+- [ ] NO source code files (`.py`, `.go`, `.rb`, `.cs`, `.ts`, `.js`, `.java`, `.rs`, `.cpp`, `.c`, `.sh`, etc.) were touched
+- [ ] NO build/CI files (`Makefile`, `Dockerfile`, `*.yml` pipelines) were modified
+- [ ] NO infrastructure files (`*.bicep`, `*.tf`, k8s manifests, Helm charts) were modified
+- [ ] NO dependency manifests (`package.json`, `go.mod`, `requirements.txt`, `*.csproj`, etc.) were modified
+- [ ] NO configuration files (`.editorconfig`, linter configs, `.gitignore`, etc.) were modified
+- [ ] NO existing non-artifact documentation (`README.md`, `SECURITY.md`, `CHANGELOG.md`, etc.) was modified
+- [ ] NO files were deleted from the repository
+- [ ] NO destructive git commands (`--force`, `reset --hard`, `clean`, `rm`) were used
+- [ ] All `git add` commands used explicit artifact file paths (never `git add .` or `git add -A`)
+- [ ] All changes committed exclusively to the `copilot/agentify` branch — default/current branch untouched
+- [ ] `agentify.prompt.md` was not modified
 
 **User Guide:**
 - [ ] `coding-agent-instructions.md` — generated at root with complete usage guide
