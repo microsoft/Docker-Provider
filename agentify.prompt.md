@@ -1,5 +1,9 @@
 # Agentify This Repository
 You are a staff level developer who has deep domain knowledge on this codebase and its infrastructure. Your task is to analyze this repository and generate a complete set of "coding agent artifacts" with best practices and standards that will enable AI coding assistants (like GitHub Copilot, Google Jules, Gemini CLI, etc.) to understand and contribute to this codebase effectively.
+
+**Best practices references:** This prompt incorporates best practices from:
+- [Best practices for using GitHub Copilot](https://docs.github.com/en/copilot/get-started/best-practices) — prompt engineering, tool selection, output validation, context management
+- [Best practices for GitHub Copilot CLI](https://docs.github.com/en/copilot/how-tos/copilot-cli/cli-best-practices) — custom instructions, plan-first workflow, session management, delegation, team guidelines
 ---
 
 ## Goal
@@ -740,6 +744,19 @@ Now generate each file using the data collected in Phases 0–3. Follow the exac
 <!-- 2. PR template skill reference (e.g., "Use #fill-pr-template skill for PRs") -->
 <!-- 3. Revert rule: "If newer commits make prior changes unnecessary, revert them" -->
 
+## Prompting Best Practices
+
+<!-- Include concise, repo-aware guidance to help developers write effective prompts. Derived from
+     GitHub Copilot best practices (https://docs.github.com/en/copilot/get-started/best-practices).
+     Keep actionable and specific to THIS repo's structure. -->
+<!-- 1. Break complex tasks into smaller, focused prompts (one module, one function, one test at a time). -->
+<!-- 2. Be specific: reference actual file paths, function names, and patterns from this repo. -->
+<!-- 3. Provide examples of expected inputs/outputs when asking for implementations. -->
+<!-- 4. Open relevant files before prompting — Copilot uses open files as context. Close unrelated files. -->
+<!-- 5. Start new chat sessions for unrelated tasks to avoid context pollution. -->
+<!-- 6. Use the explore → plan → code → commit workflow for complex changes (see AGENTS.md). -->
+<!-- 7. Always validate AI-generated code: review for correctness, run tests, and check against linter rules. -->
+
 ## Multi-Service Architecture (if detected in Phase 1.5.3)
 <!-- Service routing rules — map code directories, ARM types, and operation names to services -->
 <!-- Example:
@@ -842,6 +859,41 @@ If no existing pattern is detected, use the inline format above (copilot-instruc
 <!-- Editor config, recommended extensions, env var setup, debugging instructions.
      Local service dependencies (databases, queues, etc.). -->
 
+## Recommended AI Workflow
+<!-- Guide developers on the optimal workflow when using AI coding assistants with this repo.
+     Based on GitHub Copilot best practices (https://docs.github.com/en/copilot/how-tos/copilot-cli/cli-best-practices). -->
+
+<!-- ### Explore → Plan → Code → Commit
+     For complex, multi-file changes, follow this sequence:
+     1. **Explore** — Ask the AI to read and explain relevant code before making changes.
+        Example: "Read the authentication files and explain the current auth flow."
+     2. **Plan** — Ask for a structured implementation plan before writing code.
+        Example: "Plan how to add OAuth2 support. List all files that need changes."
+     3. **Code** — Implement the plan incrementally, verifying each step.
+        Example: "Implement step 1 from the plan: add the OAuth middleware."
+     4. **Test** — Run tests after each significant change.
+        Example: "Run the test suite and fix any failures."
+     5. **Commit** — Use the repo's commit convention (detected in Phase 3.5).
+        Example: "Commit with a descriptive message following Conventional Commits."
+
+     Use this workflow for: new features, multi-file refactoring, architecture changes.
+     Skip for: quick bug fixes, single-file edits, documentation updates. -->
+
+<!-- ### Choosing the Right AI Tool
+     - **Inline suggestions** — Best for code completion, variable names, repetitive patterns.
+     - **Copilot Chat** — Best for questions about code, generating larger sections, using @agents and skills.
+     - **Copilot CLI** — Best for terminal-native workflows, autonomous task completion, multi-repo work.
+     - **Coding agent (/delegate)** — Best for async tasks like documentation, refactoring separate modules, tangential work. -->
+
+<!-- ### Validating AI-Generated Code
+     Always verify AI output before accepting:
+     1. Understand the suggested code — ask the AI to explain if unclear.
+     2. Run `<build command>` to ensure it compiles/builds.
+     3. Run `<test command>` to verify correctness.
+     4. Run `<lint command>` to check style compliance.
+     5. Review for security issues (no hardcoded secrets, proper input validation).
+     6. Check that the code follows patterns documented in .instructions.md files. -->
+
 ## PR Instructions
 <!-- Commit message format, branch naming convention, required checks.
      Review expectations, merge strategy, changelog requirements. -->
@@ -893,6 +945,8 @@ If no existing pattern is detected, use the inline format above (copilot-instruc
 - Testing Instructions must include the exact test command that CI runs.
 - Mandatory Rules should only be generated for repos with complex multi-file workflows where manual execution is demonstrably error-prone (detected from skill complexity and config patterns in Phase 2.14).
 - Documentation routing tables should use "Read when..." descriptions derived from the actual doc content, not generic topic labels.
+- Recommended AI Workflow must include the explore → plan → code → commit pattern, tool selection guidance, and validation steps populated with this repo's actual build/test/lint commands.
+- Keep all sections concise and actionable — lengthy instructions dilute effectiveness (per GitHub Copilot best practices).
 
 ---
 
@@ -1106,7 +1160,7 @@ Instructions should cover:
 **`test-authoring` — Adding tests for new code:**
 
 ```
-USE FOR: add test, write test, test coverage, test for feature, add unit test, add integration test
+USE FOR: add test, write test, test coverage, test for feature, add unit test, add integration test, TDD, test-driven development
 DO NOT USE FOR: fixing a flaky test, refactoring tests, test infrastructure changes
 
 Instructions should cover:
@@ -1116,6 +1170,8 @@ Instructions should cover:
 - How to run tests locally
 - Coverage requirements if any
 - Common test patterns/fixtures used in this repo (detected from existing tests)
+- TDD workflow: write failing tests first, then implement code to pass them, then refactor
+  (per GitHub Copilot CLI best practices — AI produces better implementations when targeting clear test expectations)
 ```
 
 **`bug-fix` — Fixing bugs:**
@@ -3163,6 +3219,130 @@ Skills are step-by-step guides that activate when you use their trigger phrases 
 <!--  -->
 <!-- MCP servers are configured in `.vscode/mcp.json`. Secrets use `${input:variable}` prompts — you'll be asked for credentials on first use. -->
 
+## Prompt Engineering Best Practices
+
+Write better prompts to get better results from AI assistants. These tips are adapted from [GitHub Copilot best practices](https://docs.github.com/en/copilot/get-started/best-practices) and [Copilot CLI best practices](https://docs.github.com/en/copilot/how-tos/copilot-cli/cli-best-practices).
+
+### Structuring Effective Prompts
+
+1. **Break complex tasks into smaller prompts** — Instead of "refactor the entire auth module", ask step-by-step: "Explain the current auth flow", then "Extract the token validation into a separate function", then "Add tests for the extracted function".
+2. **Be specific about requirements** — Reference actual file paths, function names, and patterns from this repo. "Add error handling to `processLogs()` in `source/plugins/ruby/...`" is better than "add error handling".
+3. **Provide examples** — When asking for implementations, show example input/output: "Generate a function that parses container log lines like `2024-01-15T10:30:00Z stdout F log message here`".
+4. **State constraints upfront** — Include language version, framework requirements, and coding conventions: "Using Ruby 2.7, follow the existing `snake_case` naming convention".
+5. **Ask for explanations when unsure** — Before accepting suggestions you don't fully understand, ask: "Explain what this code does and why this approach was chosen".
+
+### Prompting Anti-Patterns to Avoid
+
+- **Vague requests** — "Fix this" without specifying what's wrong or where.
+- **Overloaded prompts** — Asking for multiple unrelated changes in one prompt.
+- **Assuming AI knows context** — If the AI gives generic advice, provide more specific context from the repo.
+- **Skipping validation** — Never accept code without reviewing it and running tests.
+
+## Choosing the Right Copilot Tool
+
+Different AI tools excel at different tasks:
+
+| Task | Best Tool | Why |
+|------|-----------|-----|
+| Completing code as you type | **Inline suggestions** | Fastest for boilerplate, variable names, repetitive patterns |
+| Questions about code, using @agents | **Copilot Chat (IDE)** | Conversational, context-aware, supports @-agents and skills |
+| Autonomous multi-file tasks | **Copilot CLI** | Terminal-native, supports `/plan`, `/delegate`, autonomous mode |
+| Reviewing code changes | **@CodeReviewer agent** | Structured review against this repo's conventions |
+| Async work on separate branches | **Coding agent (`/delegate`)** | Runs in cloud, creates PRs, doesn't block your local work |
+| Large-scale refactoring | **Copilot CLI with `/plan`** | Plan-first mode prevents mistakes across many files |
+
+### When to Use `/delegate`
+
+| Delegate (async, cloud) | Keep local (interactive) |
+|------------------------|------------------------|
+| Documentation updates | Core feature work |
+| Refactoring separate modules | Debugging |
+| Tangential tasks | Interactive exploration |
+| Test additions for existing code | Tasks requiring your review at each step |
+
+## Context Management
+
+AI assistants use your open files, conversation history, and instruction files as context. Manage this for better results:
+
+1. **Open relevant files** — Before prompting, open the files related to your task. Copilot uses open editor tabs as context.
+2. **Close unrelated files** — Too many open tabs dilute the AI's focus. Close files from unrelated modules.
+3. **Start fresh for new tasks** — If switching to an unrelated task, start a new chat session. Residual context from previous tasks can confuse responses.
+4. **Use @-references** — In Copilot Chat, reference specific files with `@workspace` or `#file:path/to/file.ts` to ensure the AI focuses on the right code.
+5. **Leverage auto-loaded instructions** — The `.instructions.md` files auto-activate based on the file you're editing. This happens automatically — no action needed.
+6. **Check context usage** — In Copilot CLI, use `/context` to visualize how much context space is available. Use `/compact` if the session grows too large.
+
+## Recommended Workflow: Explore → Plan → Code → Commit
+
+For complex, multi-file changes, follow this structured workflow. This produces better results than asking the AI to implement everything at once.
+
+1. **Explore** — Ask the AI to read and explain the relevant code.
+   ```
+   "Read the log collection pipeline files and explain how container logs are processed"
+   ```
+2. **Plan** — Ask for a structured implementation plan before writing code.
+   ```
+   "/plan Add support for a new log format in the ingestion pipeline"
+   ```
+3. **Review Plan** — Check the plan, suggest modifications, approve before implementing.
+4. **Code** — Implement the plan step by step.
+   ```
+   "Implement step 1 from the plan: add the log format parser"
+   ```
+5. **Test** — Run tests after each significant change.
+   ```
+   "Run the tests and fix any failures"
+   ```
+6. **Commit** — Use the repo's commit convention.
+   ```
+   "Commit these changes with a descriptive message following Conventional Commits"
+   ```
+
+| Use this workflow for | Skip this workflow for |
+|----------------------|----------------------|
+| New feature implementations | Quick bug fixes |
+| Multi-file refactoring | Single file edits |
+| Architecture changes | Documentation-only updates |
+| Complex migrations | Simple config changes |
+
+## Validating AI-Generated Code
+
+Always verify AI output before accepting it. AI assistants can produce incorrect, insecure, or subtly wrong code.
+
+1. **Understand before you accept** — Read the suggested code. If you don't understand it, ask: "Explain this code line by line".
+2. **Run the build** — Verify the code compiles and integrates correctly with the existing codebase.
+3. **Run tests** — Execute the test suite to catch regressions. Add new tests for new functionality.
+4. **Run linters** — Check that the code passes all linting and formatting rules configured in this repo.
+5. **Check for security issues** — Look for hardcoded secrets, missing input validation, disabled TLS, and other security anti-patterns (see `security-review` skill).
+6. **Match existing patterns** — Compare the generated code against similar code in the repo. It should follow the same conventions, error handling patterns, and telemetry instrumentation.
+7. **Use automated tooling** — Let CI checks, code scanning, and IP scanning provide an additional layer of verification.
+
+## Test-Driven Development with AI
+
+AI assistants excel at TDD workflows:
+
+1. **Write tests first** — Ask the AI to generate failing tests for your requirements:
+   ```
+   "Write failing tests for the new container restart detection feature"
+   ```
+2. **Review and approve the tests** — Ensure they cover edge cases and match your expectations.
+3. **Implement to pass** — Ask the AI to write code that makes all tests pass:
+   ```
+   "Implement the code to make all tests pass"
+   ```
+4. **Refactor** — Once tests are green, ask the AI to refactor if needed while keeping tests passing.
+
+## Codebase Onboarding with AI
+
+Use AI assistants to quickly understand unfamiliar parts of this repository:
+
+- "How is logging configured in this project?"
+- "What's the pattern for adding a new data collection plugin?"
+- "Explain the container inventory collection flow"
+- "Where are the Kubernetes deployment manifests?"
+- "What environment variables does this service need?"
+
+The AI will use `copilot-instructions.md`, `AGENTS.md`, and `.instructions.md` files to give accurate, repo-specific answers.
+
 ## Tips for Maximum Productivity
 
 1. **Let auto-loading work for you** — Just open the file you're working on. The `.instructions.md` files activate automatically based on file type and location.
@@ -3172,6 +3352,32 @@ Skills are step-by-step guides that activate when you use their trigger phrases 
 5. **Reference Prompt.md for complex tasks** — When a task needs more context than a chat message, fill in a copy of Prompt.md.
 6. **Trust the context chain** — The layered system (copilot-instructions → .instructions.md → ServiceContext → Skills) ensures the AI has the right context at the right time.
 7. **Check AGENTS.md for setup** — If the AI struggles with build or test commands, verify the Setup Commands in AGENTS.md are accurate for your environment.
+8. **Plan before complex changes** — Use the explore → plan → code → commit workflow for multi-file features and refactoring.
+9. **Keep sessions focused** — Start a new chat session when switching to an unrelated task. This resets context and improves response quality.
+10. **Delegate tangential work** — Use `/delegate` (in Copilot CLI) or the coding agent for async tasks like documentation updates and refactoring separate modules.
+11. **Provide feedback** — Use thumbs up/down on Chat responses and accept/reject inline suggestions. This helps improve future suggestions.
+12. **Write tests first** — AI assistants produce better implementation code when given clear, failing tests to target (TDD pattern).
+13. **Use checklists for large migrations** — For large-scale changes, ask the AI to create a checklist and work through it item by item.
+14. **Work across repos when needed** — In Copilot CLI, use `/add-dir` to include related repositories for coordinated cross-repo changes.
+15. **Verify security of AI suggestions** — Never accept code that introduces secrets, disables security controls, or bypasses input validation. Always review.
+
+## Security When Using AI Assistants
+
+- **Never commit secrets** — Always verify that AI-generated code doesn't contain hardcoded API keys, tokens, passwords, or connection strings.
+- **Review all proposed changes** — AI can produce code that looks correct but has subtle security flaws. Review carefully.
+- **Use permission allowlists judiciously** — In Copilot CLI, be selective about which tools you allow to run without confirmation (e.g., allow `shell(git:*)` but not `shell(rm:*)`).
+- **Don't share credentials via prompts** — Never paste secrets into chat or prompts. Use environment variables and `.env` files (excluded via `.gitignore`).
+- **Run security tools** — After AI-generated changes, run the repo's configured security scanners (from `AGENTS.md` and CI config).
+
+## Measuring AI-Assisted Productivity
+
+Track these metrics to evaluate how AI assistance improves your workflow:
+
+- **Time from issue to pull request** — How quickly tasks move from backlog to PR.
+- **Iteration cycles before merge** — Number of review rounds needed on AI-assisted vs. manual PRs.
+- **Test coverage improvements** — Whether AI-assisted development maintains or improves coverage.
+- **Bug rate in AI-assisted code** — Track post-merge defects to calibrate trust in AI suggestions.
+- **Developer satisfaction** — Qualitative feedback on which AI workflows are most helpful.
 
 ## Customizing These Artifacts
 
@@ -3192,6 +3398,10 @@ These files are meant to evolve with your project:
 | MCP server not connecting | Check `.vscode/mcp.json` config and provide credentials when prompted |
 | AI gives generic advice | It may not be loading `copilot-instructions.md` — verify the file is in the correct location for your SCM provider |
 | Build/test commands fail | Update the Setup Commands section in `AGENTS.md` to match your current environment |
+| Context feels stale or confused | Start a new chat session (`/clear` or `/new` in CLI) to reset context |
+| AI ignores repo conventions | Open the relevant `.instructions.md` file in your editor so it's in the active context |
+| AI hallucinates file paths | Ask the AI to list the actual directory structure first: "List the files in src/plugins/" |
+| Inline suggestions are irrelevant | Close unrelated tabs — open files influence suggestion context |
 ```
 
 **Rules:**
@@ -3203,6 +3413,8 @@ These files are meant to evolve with your project:
 - The artifact overview table must list every file actually generated — no more, no less.
 - Tips must be actionable and specific to the generated artifact set.
 - Troubleshooting table must cover the most common issues for the specific SCM provider detected.
+- The Prompt Engineering Best Practices, Choosing the Right Copilot Tool, Context Management, Recommended Workflow, Validating AI-Generated Code, Test-Driven Development, Codebase Onboarding, Security When Using AI Assistants, and Measuring AI-Assisted Productivity sections are MANDATORY — every `coding-agent-instructions.md` must include them. Adapt examples and tool references to this specific repository.
+- Onboarding questions in the Codebase Onboarding section must reference actual components, patterns, and configuration approaches from this repo.
 
 ---
 
@@ -3390,10 +3602,13 @@ Apply these rules to ALL generated files:
 6. **SCM-aware** — Place files in the correct location per the SCM adaptation matrix. Skip `.instructions.md` files for non-GitHub repos.
 7. **Commit-based skills only** — Only generate skill files for patterns with ≥ 3 commits in the last 12 months. Do not invent skills for patterns that don't exist in the commit history. **Exception:** The `security-review`, `telemetry-authoring`, and `fix-critical-vulnerabilities` skills are always generated regardless of commit frequency. Operational/investigation skills require matching MCP servers.
 8. **Preserve existing content** — If any target file already exists, read it first. Preserve human-authored sections and only add/update generated sections. Mark generated sections with `<!-- generated -->` comments so they can be distinguished from human content.
-9. **Size limits** — `copilot-instructions.md` ≤ 4000 characters. `AGENTS.md` ≤ 8000 characters (~4 pages). `.instructions.md` files ≤ 15 rules each. SKILL.md files ≤ 2 pages each. `CodeReviewer.agent.md` ≤ 5 pages. `SecurityReviewer.agent.md` ≤ 4 pages. `ThreatModelAnalyst.agent.md` ≤ 5 pages. `DocumentWriter.agent.md` ≤ 3 pages. `security-review` SKILL.md ≤ 4 pages. `telemetry-authoring` SKILL.md ≤ 3 pages. `fix-critical-vulnerabilities` SKILL.md ≤ 4 pages. `IncidentInvestigator.agent.md` ≤ 4 pages. `ServiceTelemetry.agent.md` ≤ 3 pages. `prd.agent.md` ≤ 3 pages.
+9. **Size limits** — `copilot-instructions.md` ≤ 4000 characters. `AGENTS.md` ≤ 8000 characters (~4 pages). `.instructions.md` files ≤ 15 rules each. SKILL.md files ≤ 2 pages each. `CodeReviewer.agent.md` ≤ 5 pages. `SecurityReviewer.agent.md` ≤ 4 pages. `ThreatModelAnalyst.agent.md` ≤ 5 pages. `DocumentWriter.agent.md` ≤ 3 pages. `security-review` SKILL.md ≤ 4 pages. `telemetry-authoring` SKILL.md ≤ 3 pages. `fix-critical-vulnerabilities` SKILL.md ≤ 4 pages. `IncidentInvestigator.agent.md` ≤ 4 pages. `ServiceTelemetry.agent.md` ≤ 3 pages. `prd.agent.md` ≤ 3 pages. `coding-agent-instructions.md` ≤ 8 pages (~6000 characters). Keep each section within the `coding-agent-instructions.md` concise — prefer tables and numbered lists over prose.
 10. **MCP-aware generation** — Agent frontmatter `tools:` declarations must reference actual MCP server names from Phase 1.5.1 detection. Never reference MCP servers that aren't configured. Conditional files (IncidentInvestigator, ServiceTelemetry, ServiceContext) must only be generated when their MCP prerequisites are met.
 11. **Context-loading chain integrity** — If `copilot-instructions.md` references instruction files, those files must exist. If instruction files reference ServiceContext files, those files must exist. Validate the full chain: Layer 1 → Layer 2 → Layer 3 → Layer 4.
 12. **Multi-service routing accuracy** — If the repo hosts multiple services, the service routing rules in `copilot-instructions.md` must map every source directory to exactly one service. No directory should be ambiguous or unmapped. Shared libraries must be explicitly listed.
+13. **Concise and actionable instructions** — Keep instruction files concise. Lengthy instructions dilute effectiveness (per [GitHub Copilot best practices](https://docs.github.com/en/copilot/get-started/best-practices)). Prefer 5–15 actionable rules per file over exhaustive documentation. Use routing tables to point agents to deeper docs rather than inlining everything.
+14. **Prompt engineering guidance** — The `copilot-instructions.md` General Guidelines MUST include prompting best practices (break down complex tasks, be specific, provide examples, validate output). The `coding-agent-instructions.md` MUST include dedicated sections on prompt engineering, tool selection, context management, the explore → plan → code → commit workflow, and AI output validation.
+15. **Developer productivity guidance** — The `coding-agent-instructions.md` MUST include guidance on: TDD with AI, codebase onboarding with AI, delegation patterns, session management, feedback mechanisms, security considerations when using AI, and measuring AI-assisted productivity. These are derived from [GitHub Copilot best practices](https://docs.github.com/en/copilot/get-started/best-practices) and [Copilot CLI best practices](https://docs.github.com/en/copilot/how-tos/copilot-cli/cli-best-practices).
 
 ---
 
@@ -3404,12 +3619,15 @@ After generating all files, verify:
 **Core Files:**
 - [ ] `copilot-instructions.md` — references only real paths and commands
 - [ ] `copilot-instructions.md` — is ≤ 2 pages
+- [ ] `copilot-instructions.md` — General Guidelines include prompting best practices (break down tasks, be specific, provide examples, validate output)
 - [ ] `copilot-instructions.md` — multi-service routing maps ALL directories (if multi-service)
 - [ ] `copilot-instructions.md` — MCP server IDs match `.vscode/mcp.json` entries (if MCP detected)
 - [ ] `copilot-instructions.md` — skill table trigger phrases are accurate and non-overlapping
 - [ ] `AGENTS.md` — Setup Commands produce a working environment
 - [ ] `AGENTS.md` — Testing Instructions include the exact CI test command
 - [ ] `AGENTS.md` — Code Style reflects actual codebase conventions
+- [ ] `AGENTS.md` — Recommended AI Workflow section includes explore → plan → code → commit pattern with repo-specific build/test/lint commands
+- [ ] `AGENTS.md` — Recommended AI Workflow includes tool selection guidance and validation steps
 - [ ] `.instructions.md` files — each has valid `applyTo` frontmatter (GitHub repos only)
 - [ ] `.instructions.md` files — rules are observable in existing code
 - [ ] `.instructions.md` files — service-context files reference actual ServiceContext paths (if multi-service)
@@ -3490,6 +3708,16 @@ After generating all files, verify:
 - [ ] `coding-agent-instructions.md` — MCP section populated only if MCP servers detected
 - [ ] `coding-agent-instructions.md` — all file paths are accurate for the detected SCM provider
 - [ ] `coding-agent-instructions.md` — no secrets or credentials included
+- [ ] `coding-agent-instructions.md` — includes Prompt Engineering Best Practices section with structuring prompts guidance and anti-patterns
+- [ ] `coding-agent-instructions.md` — includes Choosing the Right Copilot Tool section with tool selection matrix
+- [ ] `coding-agent-instructions.md` — includes Context Management section (open relevant files, close irrelevant, fresh sessions)
+- [ ] `coding-agent-instructions.md` — includes Recommended Workflow section (explore → plan → code → commit) with use-case table
+- [ ] `coding-agent-instructions.md` — includes Validating AI-Generated Code section (understand, build, test, lint, security, pattern match)
+- [ ] `coding-agent-instructions.md` — includes Test-Driven Development with AI section
+- [ ] `coding-agent-instructions.md` — includes Codebase Onboarding with AI section with repo-specific example questions
+- [ ] `coding-agent-instructions.md` — Tips include session management, delegation, feedback, TDD, checklists, multi-repo, and security guidance
+- [ ] `coding-agent-instructions.md` — includes Security When Using AI Assistants section
+- [ ] `coding-agent-instructions.md` — includes Measuring AI-Assisted Productivity section with trackable metrics
 
 **Documentation Eval Tests (if generated):**
 - [ ] `docs-eval-tests/` — generated only if repo has > 10 domain-specific agent documentation files
