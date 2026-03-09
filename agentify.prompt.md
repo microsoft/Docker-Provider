@@ -4,7 +4,7 @@ You are a staff level developer who has deep domain knowledge on this codebase a
 
 ## Goal
 
-Analyze this repository's codebase, structure, programming languages, open source (OSS) dependencies, infrastructure such as k8s or service fabric or containerization etc., conventions, CI/CD configuration, and **git commit history (last 12 months)** to auto-generate the following files that make this repo "agent-ready" for AI coding assistants:
+Analyze this repository's codebase, structure, programming languages, open source (OSS) dependencies, MD files, Dockerfile, infrastructure such as k8s or service fabric or containerization etc., conventions, CI/CD configuration, and **git commit history (last 12 months)** to auto-generate the following files that make this repo "agent-ready" for AI coding assistants:
 
 | Output File | Standard | Where |
 |-------------|----------|-------|
