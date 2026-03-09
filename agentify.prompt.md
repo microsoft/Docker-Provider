@@ -35,50 +35,71 @@ Complete these phases IN ORDER. Do not skip phases. Do not hallucinate — every
 - **Two-pass execution:** For maximum reliability, consider a two-pass approach: Pass 1 runs Phases 0–3 and produces a structured analysis summary; Pass 2 consumes that summary and runs Phases 4–5 to generate files. This reduces the working set the agent must hold in context during generation.
 - **Incremental output:** If generating all files in a single session is infeasible, generate core files first (`copilot-instructions.md`, `AGENTS.md`, `Prompt.md`), then agent files, then skills, then conditional files.
 
+### Shell Command Safety Rules
+
+**CRITICAL:** When executing terminal commands throughout this prompt, you MUST follow these rules to avoid being blocked by the coding agent's terminal safety filter:
+
+1. **No command substitution** — Never use `$(...)` or backtick substitution inside commands. If you need the output of one command as input to another, run them as **separate sequential commands** and manually substitute the literal result.
+2. **No shell variable expansion** — Never use `${VARIABLE}` or `$VARIABLE` in commands. Instead, substitute the actual literal value you obtained from a prior command.
+3. **No compound conditional commands** — Avoid `cmd1 && cmd2 || cmd3` patterns and `if [ ... ]; then ... fi` blocks. Run each command separately and evaluate the output between invocations.
+4. **No nested expansion** — Never nest `$(...)` inside quotes, variable assignments, or other expansions.
+5. **One simple command per invocation** — Each terminal command should be a single, straightforward command with only literal arguments.
+
+**Example — WRONG:**
+```
+BRANCH=$(git branch --show-current)
+git push origin $BRANCH
+```
+**Example — CORRECT:**
+```
+git branch --show-current
+```
+_(read output, e.g., "copilot/agentify")_
+```
+git push origin copilot/agentify
+```
+
 ---
 
 ### Phase 0 — Environment Validation
 
 Before scanning the repository, validate that the execution environment meets prerequisites:
 
+Run each of the following checks as **separate, simple commands** (one command per terminal invocation — do NOT combine them into compound shell scripts):
+
 1. **Check for shallow clone:**
    ```bash
-   if [ "$(git rev-parse --is-shallow-repository)" = "true" ]; then
-     echo "WARNING: Shallow clone detected. Git history analysis (Phase 3) will be incomplete."
-     echo "Run 'git fetch --unshallow' for complete history, or proceed with limited skill generation."
-   fi
+   git rev-parse --is-shallow-repository
    ```
+   If the output is `true`, note: "Shallow clone detected. Git history analysis (Phase 3) will be incomplete. Run `git fetch --unshallow` for complete history, or proceed with limited skill generation."
 
 2. **Check git history depth:**
    ```bash
-   COMMIT_COUNT=$(git log --oneline --since="12 months ago" 2>/dev/null | wc -l)
-   echo "Commits in last 12 months: $COMMIT_COUNT"
-   if [ "$COMMIT_COUNT" -lt 50 ]; then
-     echo "WARNING: Limited commit history ($COMMIT_COUNT commits). Skill generation may be limited."
-   fi
+   git log --oneline --since="12 months ago" | wc -l
    ```
+   Read the output number. If less than 50, note: "Limited commit history. Skill generation may be limited."
 
 3. **Check CLI tool availability:**
    ```bash
-   # Check for GitHub CLI (needed for Phase 3.4 PR review analysis on GitHub repos)
-   which gh >/dev/null 2>&1 && echo "gh CLI: available" || echo "gh CLI: NOT available — PR review analysis will use fallback method"
-
-   # Check for Azure CLI (needed for Phase 3.4 on Azure DevOps repos)
-   which az >/dev/null 2>&1 && echo "az CLI: available" || echo "az CLI: NOT available — PR review analysis will use fallback method"
+   which gh
    ```
+   ```bash
+   which az
+   ```
+   If `gh` is not found, note: "gh CLI not available — PR review analysis will use fallback method."
+   If `az` is not found, note: "az CLI not available — PR review analysis will use fallback method."
 
 4. **Check repository write access** (for Phase 5 branch creation):
    ```bash
-   git branch --list >/dev/null 2>&1 && echo "Git write access: OK" || echo "WARNING: Cannot create branches — Phase 5 will be skipped"
+   git branch --list
    ```
+   If the command fails, note: "Cannot create branches — Phase 5 will be skipped."
 
 5. **Check for git submodules:**
    ```bash
-   if [ -f ".gitmodules" ]; then
-     echo "Git submodules detected. Submodule directories will be excluded from Phase 2 scanning."
-     git submodule status
-   fi
+   cat .gitmodules
    ```
+   If the file exists, run `git submodule status` separately. If it does not exist, note: "No submodules detected."
 
 Record the results and adapt subsequent phases accordingly:
 - If shallow clone and cannot unshallow → Phase 3 skill generation uses available history only; note limitation in Output Summary.
@@ -600,17 +621,25 @@ Analyze pull request review comments to identify **what reviewers repeatedly fla
 
 **For GitHub repos**, use the `gh` CLI:
 
+Run these commands **separately** (one per terminal invocation):
+
 ```bash
 # List merged PRs from the last 12 months
 gh pr list --state merged --limit 100 --json number,title,createdAt,mergedAt,changedFiles
+```
 
+```bash
 # For each PR with review comments, extract review feedback
 gh pr view <number> --json reviews,reviewRequests,comments
-
-# Get review comments (the richest signal for review patterns)
-DATE_12M_AGO=$(date -d '12 months ago' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -v-12m +%Y-%m-%dT%H:%M:%SZ)
-gh api repos/{owner}/{repo}/pulls/comments --paginate --jq ".[] | select(.created_at > \"$DATE_12M_AGO\") | {body: .body, path: .path, diff_hunk: .diff_hunk}"
 ```
+
+To get review comments, first determine the date 12 months ago (e.g., `2025-03-09T00:00:00Z` if today is 2026-03-09) and substitute it as a literal value:
+
+```bash
+gh api repos/{owner}/{repo}/pulls/comments --paginate --jq ".[] | select(.created_at > \"2025-03-09T00:00:00Z\") | {body: .body, path: .path, diff_hunk: .diff_hunk}"
+```
+
+> **Important:** Replace `{owner}`, `{repo}`, and the date string with actual literal values. Do NOT use `$(date ...)` or any shell command substitution.
 
 **For Azure DevOps repos**, use the `az` CLI:
 
@@ -674,14 +703,15 @@ Record the detected convention. Use it when generating Phase 5 commit messages a
 
 Before generating any files, create a dedicated branch. All generated files MUST be committed to this branch — never commit directly to the current branch.
 
+Run this command to create and switch to the agentify branch:
+
 ```bash
-# Create and switch to the agentify branch
 git checkout -b copilot/agentify
 ```
 
 **Branch naming rules:**
 - The branch MUST be named `copilot/agentify`.
-- If `copilot/agentify` already exists, append a timestamp: `copilot/agentify-<YYYYMMDD-HHMMSS>` (e.g., `copilot/agentify-20260304-143022`).
+- If `copilot/agentify` already exists (i.e., the command above fails), delete it first with `git branch -D copilot/agentify` and retry, OR choose an alternative branch name by appending a numeric suffix (e.g., `copilot/agentify-2`, `copilot/agentify-3`). Do NOT use shell command substitution (e.g., `$(date ...)`) to generate the suffix — pick a simple literal name.
 
 Now generate each file using the data collected in Phases 0–3. Follow the exact format specifications below.
 
@@ -1634,10 +1664,11 @@ Before reviewing, determine which service the changed files belong to using the 
      current tip of master, which may include commits merged AFTER the PR was created,
      producing an inaccurate diff.
      ✅ Correct approach per SCM provider:
-     - **GitHub:** `gh pr diff <number>` (preferred) or `git diff $(gh pr view <number> --json baseRefOid -q .baseRefOid)...HEAD`
-     - **Azure DevOps:** `az repos pr diff --id <id>` (if available) or fetch base SHA from PR metadata via `az repos pr show --id <id> --query sourceRefName`
-     - **Generic git:** `git diff $(git merge-base origin/main HEAD)...HEAD` to find the correct merge-base
-     Always use the PR's own base..head range, never compare against the live tip of the target branch. -->
+     - **GitHub:** `gh pr diff <number>` (preferred). To get the base SHA, run `gh pr view <number> --json baseRefOid -q .baseRefOid` first as a separate command, then use the resulting SHA in `git diff <base-sha>...HEAD`.
+     - **Azure DevOps:** `az repos pr diff --id <id>` (if available) or fetch base SHA from PR metadata via `az repos pr show --id <id> --query sourceRefName` as a separate command.
+     - **Generic git:** Run `git merge-base origin/main HEAD` first as a separate command, then use the resulting SHA in `git diff <merge-base-sha>...HEAD`.
+     Always use the PR's own base..head range, never compare against the live tip of the target branch.
+     ⚠️ IMPORTANT: Do NOT embed command substitution ($(...)) inside git diff commands. Always run lookup commands separately and substitute the literal result. -->
 
 ## Review Checklist
 <!-- Derived from CI checks, linting rules, and team conventions detected in Phases 2–3 -->
@@ -3247,32 +3278,29 @@ coding-agent-instructions.md, and docs-eval-tests/."
 
 #### 5.2 Detect Default Branch
 
-Before pushing, detect the repository's default branch to use as the PR target:
+Before pushing, detect the repository's default branch to use as the PR target. Run this single command:
 
 ```bash
-# Detect the default branch from the remote HEAD reference
-DEFAULT_BRANCH=$(git remote show origin 2>/dev/null | grep 'HEAD branch' | awk '{print $NF}')
-
-# Fallback: check for common default branch names
-if [ -z "$DEFAULT_BRANCH" ]; then
-  for candidate in main master develop; do
-    if git rev-parse --verify "origin/$candidate" >/dev/null 2>&1; then
-      DEFAULT_BRANCH="$candidate"
-      break
-    fi
-  done
-fi
-
-# Final fallback
-if [ -z "$DEFAULT_BRANCH" ]; then
-  DEFAULT_BRANCH="main"
-  echo "WARNING: Could not detect default branch — assuming 'main'"
-fi
-
-echo "Default branch: $DEFAULT_BRANCH"
+git remote show origin
 ```
 
-Record as `default_branch` for Phase 5.3.
+From the output, look for the line `HEAD branch: <name>` and record that branch name as `default_branch`.
+
+If the command fails or no HEAD branch is shown, run these checks one by one to find which common branch exists:
+
+```bash
+git rev-parse --verify origin/main
+```
+```bash
+git rev-parse --verify origin/master
+```
+```bash
+git rev-parse --verify origin/develop
+```
+
+Use the first one that succeeds as `default_branch`. If none succeed, default to `main`.
+
+Record the detected `default_branch` for Phase 5.3.
 
 #### 5.3 Push to Upstream
 
@@ -3294,52 +3322,24 @@ git push origin copilot/agentify
 After a successful push, create a pull request against the default branch:
 
 **For GitHub repos** (use `gh` CLI):
+
+Substitute the detected `default_branch` value as a literal string (e.g., `main`) — do NOT use shell variables like `$DEFAULT_BRANCH`:
+
 ```bash
-# Create a PR against the default branch
-PR_URL=$(gh pr create \
-  --base "$DEFAULT_BRANCH" \
-  --head "copilot/agentify" \
-  --title "feat: add AI coding agent artifacts" \
-  --body "## Summary
-
-Auto-generated AI agent artifacts for coding assistants.
-
-### What's included
-- \`copilot-instructions.md\` — root instructions for AI agents
-- \`AGENTS.md\` — setup, style, and testing instructions
-- \`Prompt.md\` — structured prompt template
-- \`.instructions.md\` files — language/framework-specific conventions
-- \`SKILL.md\` files — task-specific skills derived from commit history
-- Agent definitions: CodeReviewer, SecurityReviewer, ThreatModelAnalyst, DocumentWriter, prd
-- \`.vscode/mcp.json\` — MCP server configuration
-- \`coding-agent-instructions.md\` — user guide for all artifacts
-
-### How to verify
-1. Open the repo in VS Code / GitHub Codespaces
-2. Start a Copilot Chat session
-3. Verify agents respond correctly: \`@CodeReviewer\`, \`@SecurityReviewer\`, \`@ThreatModelAnalyst\`, \`@DocumentWriter\`, \`@prd\`
-4. Check that \`.instructions.md\` files activate for matching file types
-
-> Auto-generated by the agentify prompt. Review before merging." 2>&1)
-
-echo "PR created: $PR_URL"
+gh pr create --base main --head copilot/agentify --title "feat: add AI coding agent artifacts" --body "Auto-generated AI agent artifacts for coding assistants. Includes copilot-instructions.md, AGENTS.md, Prompt.md, .instructions.md files, SKILL.md files, agent definitions (CodeReviewer, SecurityReviewer, ThreatModelAnalyst, DocumentWriter, prd), .vscode/mcp.json, and coding-agent-instructions.md. Review before merging."
 ```
+
+> **Important:** Replace `main` above with the actual `default_branch` detected in Phase 5.2. The PR URL will be printed in the command output.
 
 **For Azure DevOps repos** (use `az repos` CLI):
-```bash
-# Create a PR against the default branch
-PR_OUTPUT=$(az repos pr create \
-  --source-branch "copilot/agentify" \
-  --target-branch "$DEFAULT_BRANCH" \
-  --title "feat: add AI coding agent artifacts" \
-  --description "Auto-generated AI agent artifacts for coding assistants. Includes copilot-instructions.md, AGENTS.md, Prompt.md, .instructions.md files, SKILL.md files, agent definitions, .vscode/mcp.json, and coding-agent-instructions.md. Review before merging." \
-  --org "$AZURE_DEVOPS_ORG" \
-  --project "$AZURE_DEVOPS_PROJECT" 2>&1)
 
-# Extract PR URL from JSON output
-PR_URL=$(echo "$PR_OUTPUT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('url',''))" 2>/dev/null || echo "")
-echo "PR created: $PR_URL"
+Substitute all values as literal strings — do NOT use shell variables:
+
+```bash
+az repos pr create --source-branch copilot/agentify --target-branch main --title "feat: add AI coding agent artifacts" --description "Auto-generated AI agent artifacts for coding assistants. Includes copilot-instructions.md, AGENTS.md, Prompt.md, .instructions.md files, SKILL.md files, agent definitions, .vscode/mcp.json, and coding-agent-instructions.md. Review before merging."
 ```
+
+> **Important:** Replace `main` with the actual `default_branch`, and add `--org` and `--project` flags with literal values from Phase 1. The PR URL will be in the JSON output.
 
 **PR creation rules:**
 - Target branch MUST be the detected `default_branch` (from Phase 5.2).
@@ -3352,22 +3352,29 @@ echo "PR created: $PR_URL"
 
 After committing and pushing, verify the branch and PR state:
 
+Run each verification command **separately** (one per terminal invocation):
+
 ```bash
-# Confirm you are on the correct branch
 git branch --show-current
-
-# Show the commit summary
-git log --oneline -1
-
-# List all files in the commit
-git diff --name-only HEAD~1
-
-# Verify the push succeeded
-git log --oneline origin/copilot/agentify -1 2>/dev/null && echo "Push verified: branch exists on remote" || echo "WARNING: Branch not found on remote — push may have failed"
-
-# Verify PR was created (GitHub)
-gh pr view copilot/agentify --json url,state 2>/dev/null && echo "PR verified" || echo "WARNING: Could not verify PR"
 ```
+
+```bash
+git log --oneline -1
+```
+
+```bash
+git diff --name-only HEAD~1
+```
+
+```bash
+git log --oneline origin/copilot/agentify -1
+```
+If this succeeds, the push is verified. If it fails, the push may not have completed.
+
+```bash
+gh pr view copilot/agentify --json url,state
+```
+If this succeeds, the PR is verified. If it fails, the PR may not have been created.
 
 ---
 
