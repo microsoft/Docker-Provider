@@ -90,7 +90,7 @@ for wf in "${workflows[@]}"; do
         --config GENEVA_INTEGRATION="$GENEVA_INTEGRATION" \
         --config AZURE_TENANT_ID="$AZURE_TENANT_ID" \
         --config AZURE_CLIENT_ID="$AZURE_CLIENT_ID" \
-        --config GOTOOLCHAIN="go1.23.6" \
+        --config GOTOOLCHAIN="auto" \
         --verbose
 
     echo "Waiting for execution to be created..."
