@@ -130,8 +130,8 @@ spec:
           resources:
             limits:
               {{- $containerResources := index $size.containers "ama-logs" }}
-              cpu: {{ include "maxResourceValue" (list ($.Values.omsagent-ds-cpu-limit-linux | default "500m") $containerResources.cpuLimit) }}
-              memory: {{ include "maxResourceValue" (list ($.Values.omsagent-ds-memory-limit-linux | default "1Gi") $containerResources.memoryLimit) }}
+              cpu: {{ include "maxResourceValue" (list $.Values.OmsAgent.omsAgentDsCPULimitLinux $containerResources.cpuLimit) }}
+              memory: {{ include "maxResourceValue" (list $.Values.OmsAgent.omsAgentDsMemoryLimitLinux $containerResources.memoryLimit) }}
             requests:
               {{- $containerResources := index $size.containers "ama-logs" }}
               cpu: {{ $containerResources.cpuRequest }}
@@ -311,8 +311,8 @@ spec:
           resources:
             limits:
               {{- $containerResources := index $size.containers "ama-logs-prometheus" }}
-              cpu: {{ include "maxResourceValue" (list ($.Values.omsagent-prometheus-sidecar-cpu-limit | default "500m") $containerResources.cpuLimit) }}
-              memory: {{ include "maxResourceValue" (list ($.Values.omsagent-prometheus-sidecar-memory-limit | default "1Gi") $containerResources.memoryLimit) }}
+              cpu: {{ include "maxResourceValue" (list $.Values.OmsAgent.omsAgentPrometheusSidecarCPULimit $containerResources.cpuLimit) }}
+              memory: {{ include "maxResourceValue" (list $.Values.OmsAgent.omsAgentPrometheusSidecarMemoryLimit $containerResources.memoryLimit) }}
             requests:
               {{- $containerResources := index $size.containers "ama-logs-prometheus" }}
               cpu: {{ $containerResources.cpuRequest }}
