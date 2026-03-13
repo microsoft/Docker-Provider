@@ -48,11 +48,9 @@ metadata:
     kubernetes.io/cluster-service: "true"
     addonmanager.kubernetes.io/mode: Reconcile
 {{- end }}
-{{/*
     {{- if and $useDaemonSetSizing $size.name }}
     kubernetes.azure.com/ds-tshirt-size: {{ $size.name }}
     {{- end }}
-    */}}
 {{- end }}
     component: ama-logs-agent
     tier: node
@@ -70,11 +68,9 @@ spec:
 {{- else }}
       component: ama-logs-agent
       tier: node
-      {{/*
       {{- if and $useDaemonSetSizing $size.name }}
       kubernetes.azure.com/ds-tshirt-size: {{ $size.name }}
       {{- end }}
-      */}}
 {{- end }}
   template:
     metadata:
@@ -85,11 +81,9 @@ spec:
         component: ama-logs-agent
         tier: node
         kubernetes.azure.com/managedby: aks
-        {{/*
         {{- if and $useDaemonSetSizing $size.name }}
         kubernetes.azure.com/ds-tshirt-size: {{ $size.name }}
         {{- end }}
-        */}}
 {{- end }}
       annotations:
 {{- if $isArcExtension }}
