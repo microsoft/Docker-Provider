@@ -154,7 +154,7 @@ Returns value in smallest unit (bytes for memory, millicores for CPU).
   {{- if or (eq $char "0") (eq $char "1") (eq $char "2") (eq $char "3") (eq $char "4") (eq $char "5") (eq $char "6") (eq $char "7") (eq $char "8") (eq $char "9") (eq $char ".") -}}
     {{- $number = printf "%s%s" $number $char -}}
   {{- else -}}
-    {{- $suffix = substr $i -1 $quantity -}}
+    {{- $suffix = substr ($i | int) (len $quantity | int) $quantity -}}
     {{- break -}}
   {{- end -}}
   {{- $i = add $i 1 -}}
@@ -175,7 +175,14 @@ Returns value in smallest unit (bytes for memory, millicores for CPU).
   {{- $intPart = index $parts 0 | int -}}
   {{- $fracStr := index $parts 1 -}}
   {{- $fracPart = $fracStr | int -}}
-  {{- $fracDivisor = pow 10 (len $fracStr) -}}
+  {{- $fracLen := len $fracStr -}}
+  {{- if eq $fracLen 1 -}}{{- $fracDivisor = 10 -}}
+  {{- else if eq $fracLen 2 -}}{{- $fracDivisor = 100 -}}
+  {{- else if eq $fracLen 3 -}}{{- $fracDivisor = 1000 -}}
+  {{- else if eq $fracLen 4 -}}{{- $fracDivisor = 10000 -}}
+  {{- else if eq $fracLen 5 -}}{{- $fracDivisor = 100000 -}}
+  {{- else -}}{{- $fracDivisor = 1000000 -}}
+  {{- end -}}
 {{- else -}}
   {{- $intPart = $number | int -}}
 {{- end -}}
