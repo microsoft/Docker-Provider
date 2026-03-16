@@ -1,0 +1,6 @@
+name: high-plain-cpu-value
+description: Override CPU limit to "3" (3 CPU cores = 3000m) and memory to 3Gi. Tests maxResourceValue with high plain number CPU values. CPU "3" should win vs "0" tier CPU. Memory 3Gi (3221225472 bytes) should win vs 2918Mi (3059744768 bytes) in the XL tier.
+variables:
+  clusterKind: "automatic"
+  omsAgentDsCPULimitLinux: "3"
+  omsAgentDsMemoryLimitLinux: "3Gi"

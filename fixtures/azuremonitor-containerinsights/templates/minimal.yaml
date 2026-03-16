@@ -1,0 +1,4 @@
+name: minimal-test
+description: Minimal test template
+template:
+  replicaCount: "{{.replicaCount}}"

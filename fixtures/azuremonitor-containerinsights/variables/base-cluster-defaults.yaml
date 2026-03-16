@@ -1,0 +1,6 @@
+name: base-cluster-defaults
+description: Base cluster (non-automatic) with default resource limits - t-shirt sizing should NOT be enabled since Azure.Cluster.Kind is "base"
+variables:
+  clusterKind: "base"
+  omsAgentDsCPULimitLinux: "500m"
+  omsAgentDsMemoryLimitLinux: "1Gi"

@@ -1,0 +1,2948 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+    name: ama-logs
+    namespace: kube-system
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+    name: ama-logs-reader
+rules:
+    - resources:
+        - pods
+        - events
+        - nodes
+        - nodes/stats
+        - nodes/metrics
+        - nodes/spec
+        - nodes/proxy
+        - namespaces
+        - services
+        - persistentvolumes
+      verbs:
+        - list
+        - get
+        - watch
+    - apiGroups:
+        - apps
+        - extensions
+        - autoscaling
+      resources:
+        - replicasets
+        - deployments
+        - horizontalpodautoscalers
+      verbs:
+        - list
+    - resourceNames:
+        - ama-logs-secret
+      resources:
+        - secrets
+      verbs:
+        - get
+        - watch
+    - nonResourceURLs:
+        - /metrics
+      verbs:
+        - get
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+    name: amalogsclusterrolebinding
+roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: ama-logs-reader
+subjects:
+    - kind: ServiceAccount
+      name: ama-logs
+      namespace: kube-system
+
+---
+apiVersion: v1
+data:
+    kube.conf: |-
+        <source>
+         type forward
+         port "#{ENV['HEALTHMODEL_REPLICASET_SERVICE_SERVICE_PORT']}"
+         bind 0.0.0.0
+         chunk_size_limit 4m
+        </source>
+
+        <source>
+         type kubepodinventory
+         tag oms.containerinsights.KubePodInventory
+         run_interval 60
+         log_level debug
+        </source>
+
+        <source>
+         type kubepvinventory
+         tag oms.containerinsights.KubePVInventory
+         run_interval 60
+         log_level debug
+        </source>
+
+        <source>
+         type kubeevents
+         tag oms.containerinsights.KubeEvents
+         run_interval 60
+         log_level debug
+        </source>
+
+        <source>
+         type kubenodeinventory
+         tag oms.containerinsights.KubeNodeInventory
+         run_interval 60
+         log_level debug
+        </source>
+        <source>
+         type kubehealth
+         tag kubehealth.ReplicaSet
+         run_interval 60
+         log_level debug
+        </source>
+
+        <source>
+         type wincadvisorperf
+         tag oms.api.wincadvisorperf
+         run_interval 60
+         log_level debug
+        </source>
+
+        <source>
+         type kubestatedeployments
+         tag oms.containerinsights.KubeStateDeployments
+         run_interval 60
+         log_level debug
+        </source>
+
+        <source>
+         type kubestatehpa
+         tag oms.containerinsights.KubeStateHpa
+         run_interval 60
+         log_level debug
+        </source>
+
+        <filter mdm.kubenodeinventory**>
+         type filter_inventory2mdm
+         log_level info
+        </filter>
+
+        <filter mdm.cadvisorperf**>
+         type filter_cadvisor2mdm
+         metrics_to_collect cpuUsageNanoCores,memoryWorkingSetBytes,pvUsedBytes
+         log_level info
+        </filter>
+        <filter kubehealth**>
+         type filter_health_model_builder
+        </filter>
+
+        <match oms.containerinsights.KubePodInventory**>
+         type out_oms
+         log_level debug
+         num_threads 2
+         buffer_chunk_limit 4m
+         buffer_type file
+         buffer_path %STATE_DIR_WS%/out_oms_kubepods*.buffer
+         buffer_queue_limit 20
+         buffer_queue_full_action drop_oldest_chunk
+         flush_interval 20s
+         retry_limit 10
+         retry_wait 5s
+         max_retry_wait 5m
+        </match>
+
+        <match oms.containerinsights.KubePVInventory**>
+         type out_oms
+         log_level debug
+         num_threads 5
+         buffer_chunk_limit 4m
+         buffer_type file
+         buffer_path %STATE_DIR_WS%/state/out_oms_kubepv*.buffer
+         buffer_queue_limit 20
+         buffer_queue_full_action drop_oldest_chunk
+         flush_interval 20s
+         retry_limit 10
+         retry_wait 5s
+         max_retry_wait 5m
+        </match>
+
+        <match oms.containerinsights.KubeEvents**>
+         type out_oms
+         log_level debug
+         num_threads 2
+         buffer_chunk_limit 4m
+         buffer_type file
+         buffer_path %STATE_DIR_WS%/out_oms_kubeevents*.buffer
+         buffer_queue_limit 20
+         buffer_queue_full_action drop_oldest_chunk
+         flush_interval 20s
+         retry_limit 10
+         retry_wait 5s
+         max_retry_wait 5m
+        </match>
+
+        <match oms.containerinsights.KubeServices**>
+         type out_oms
+         log_level debug
+         num_threads 2
+         buffer_chunk_limit 4m
+         buffer_type file
+         buffer_path %STATE_DIR_WS%/out_oms_kubeservices*.buffer
+         buffer_queue_limit 20
+         buffer_queue_full_action drop_oldest_chunk
+         flush_interval 20s
+         retry_limit 10
+         retry_wait 5s
+         max_retry_wait 5m
+        </match>
+
+        <match oms.containerinsights.KubeNodeInventory**>
+         type out_oms
+         log_level debug
+         num_threads 2
+         buffer_chunk_limit 4m
+         buffer_type file
+         buffer_path %STATE_DIR_WS%/state/out_oms_kubenodes*.buffer
+         buffer_queue_limit 20
+         buffer_queue_full_action drop_oldest_chunk
+         flush_interval 20s
+         retry_limit 10
+         retry_wait 5s
+         max_retry_wait 5m
+        </match>
+        <match oms.containerinsights.ContainerNodeInventory**>
+         type out_oms
+         log_level debug
+         num_threads 3
+         buffer_chunk_limit 4m
+         buffer_type file
+         buffer_path %STATE_DIR_WS%/out_oms_containernodeinventory*.buffer
+         buffer_queue_limit 20
+         flush_interval 20s
+         retry_limit 10
+         retry_wait 5s
+         max_retry_wait 5m
+        </match>
+
+        <match oms.api.KubePerf**>
+         type out_oms
+         log_level debug
+         num_threads 2
+         buffer_chunk_limit 4m
+         buffer_type file
+         buffer_path %STATE_DIR_WS%/out_oms_kubeperf*.buffer
+         buffer_queue_limit 20
+         buffer_queue_full_action drop_oldest_chunk
+         flush_interval 20s
+         retry_limit 10
+         retry_wait 5s
+         max_retry_wait 5m
+        </match>
+
+        <match mdm.kubepodinventory** mdm.kubenodeinventory** >
+         type out_mdm
+         log_level debug
+         num_threads 5
+         buffer_chunk_limit 4m
+         buffer_type file
+         buffer_path %STATE_DIR_WS%/out_mdm_*.buffer
+         buffer_queue_limit 20
+         buffer_queue_full_action drop_oldest_chunk
+         flush_interval 20s
+         retry_limit 10
+         retry_wait 5s
+         max_retry_wait 5m
+         retry_mdm_post_wait_minutes 30
+        </match>
+
+        <match oms.api.wincadvisorperf**>
+         type out_oms
+         log_level debug
+         num_threads 5
+         buffer_chunk_limit 4m
+         buffer_type file
+         buffer_path %STATE_DIR_WS%/out_oms_api_wincadvisorperf*.buffer
+         buffer_queue_limit 20
+         buffer_queue_full_action drop_oldest_chunk
+         flush_interval 20s
+         retry_limit 10
+         retry_wait 5s
+         max_retry_wait 5m
+        </match>
+
+        <match mdm.cadvisorperf**>
+         type out_mdm
+         log_level debug
+         num_threads 5
+         buffer_chunk_limit 4m
+         buffer_type file
+         buffer_path %STATE_DIR_WS%/out_mdm_cdvisorperf*.buffer
+         buffer_queue_limit 20
+         buffer_queue_full_action drop_oldest_chunk
+         flush_interval 20s
+         retry_limit 10
+         retry_wait 5s
+         max_retry_wait 5m
+         retry_mdm_post_wait_minutes 30
+        </match>
+        <match kubehealth.Signals**>
+         type out_oms
+         log_level debug
+         num_threads 5
+         buffer_chunk_limit 4m
+         buffer_type file
+         buffer_path %STATE_DIR_WS%/out_oms_kubehealth*.buffer
+         buffer_queue_limit 20
+         buffer_queue_full_action drop_oldest_chunk
+         flush_interval 20s
+         retry_limit 10
+         retry_wait 5s
+         max_retry_wait 5m
+        </match>
+        <match oms.api.InsightsMetrics**>
+         type out_oms
+         log_level debug
+         num_threads 5
+         buffer_chunk_limit 4m
+         buffer_type file
+         buffer_path %STATE_DIR_WS%/out_oms_insightsmetrics*.buffer
+         buffer_queue_limit 20
+         buffer_queue_full_action drop_oldest_chunk
+         flush_interval 20s
+         retry_limit 10
+         retry_wait 5s
+         max_retry_wait 5m
+        </match>
+kind: ConfigMap
+metadata:
+    name: ama-logs-rs-config
+    namespace: kube-system
+
+---
+apiVersion: v1
+data:
+    CLUSTER_RESOURCE_ID: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster
+kind: ConfigMap
+metadata:
+    name: container-azm-ms-aks-k8scluster
+    namespace: kube-system
+
+---
+apiVersion: v1
+data:
+    KEY: dGVzdC13b3Jrc3BhY2Uta2V5
+    WSID: dGVzdC13b3Jrc3BhY2UtaWQ=
+kind: Secret
+metadata:
+    name: ama-logs-secret
+    namespace: kube-system
+type: Opaque
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    labels:
+        component: ama-logs-agent
+        kubernetes.azure.com/managedby: aks
+        tier: node
+    name: ama-logs-rs
+    namespace: kube-system
+spec:
+    paused: false
+    replicas: 1
+    revisionHistoryLimit: 2
+    selector:
+        matchLabels:
+            rsName: ama-logs-rs
+    strategy:
+        type: RollingUpdate
+    template:
+        metadata:
+            annotations:
+                WSID: dGVzdC13b3Jrc3BhY2UtaWQ=
+                agentVersion: azure-mdsd-1.37.0
+                cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+                dockerProviderVersion: 18.0.1-0
+                kubernetes.azure.com/no-http-proxy-vars: "true"
+                schema-versions: v1
+            labels:
+                kubernetes.azure.com/managedby: aks
+                rsName: ama-logs-rs
+        spec:
+            affinity:
+                nodeAffinity:
+                    preferredDuringSchedulingIgnoredDuringExecution:
+                        - preference:
+                            matchExpressions:
+                                - key: kubernetes.azure.com/mode
+                                  operator: In
+                                  values:
+                                    - system
+                          weight: 100
+                        - preference:
+                            matchExpressions:
+                                - key: storageprofile
+                                  operator: NotIn
+                                  values:
+                                    - managed
+                          weight: 1
+                    requiredDuringSchedulingIgnoredDuringExecution:
+                        nodeSelectorTerms:
+                            - matchExpressions:
+                                - key: kubernetes.io/os
+                                  operator: In
+                                  values:
+                                    - linux
+                                - key: kubernetes.azure.com/cluster
+                                  operator: Exists
+                                - key: type
+                                  operator: NotIn
+                                  values:
+                                    - virtual-kubelet
+            containers:
+                - args:
+                    - --secret-namespace=kube-system
+                    - --secret-name=ama-logs-secret
+                    - --token-server-listening-port=8888
+                    - --health-server-listening-port=9999
+                    - --restart-pod-waiting-minutes-on-broken-connection=240
+                  command:
+                    - /addon-token-adapter
+                  env:
+                    - name: AZMON_COLLECT_ENV
+                      value: "false"
+                  image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.250902.1
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    httpGet:
+                        path: /healthz
+                        port: 9999
+                    initialDelaySeconds: 10
+                    periodSeconds: 60
+                  name: addon-token-adapter
+                  resources:
+                    limits:
+                        cpu: 500m
+                        memory: 500Mi
+                    requests:
+                        cpu: 100m
+                        memory: 100Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - NET_ADMIN
+                            - NET_RAW
+                        drop:
+                            - ALL
+                - env:
+                    - name: NUM_OF_FLUENTD_WORKERS
+                      valueFrom:
+                        resourceFieldRef:
+                            containerName: ama-logs
+                            resource: limits.cpu
+                    - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+                      valueFrom:
+                        resourceFieldRef:
+                            containerName: ama-logs
+                            resource: limits.memory
+                    - name: NODE_IP
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: status.hostIP
+                    - name: AKS_CLUSTER_NAME
+                      value: test-cluster
+                    - name: AKS_RESOURCE_ID
+                      value: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster
+                    - name: AKS_NODE_RESOURCE_GROUP
+                      value: MC_test-rg_test-cluster_eastus
+                    - name: AKS_REGION
+                      value: eastus
+                    - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+                      value: test-identity-client-id
+                    - name: CONTROLLER_TYPE
+                      value: ReplicaSet
+                    - name: HOSTNAME
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: spec.nodeName
+                    - name: SIDECAR_SCRAPING_ENABLED
+                      value: "true"
+                    - name: USING_AAD_MSI_AUTH
+                      value: "true"
+                    - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
+                      value: "false"
+                    - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
+                      value: "false"
+                    - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+                      value: "false"
+                    - name: AZMON_WINDOWS_FLUENT_BIT_ENABLED
+                      value: "false"
+                    - name: CLUSTER_CLOUD_ENVIRONMENT
+                      value: azurepubliccloud
+                  image: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.35
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    exec:
+                        command:
+                            - /bin/bash
+                            - -c
+                            - /opt/livenessprobe.sh
+                    initialDelaySeconds: 60
+                    periodSeconds: 60
+                    timeoutSeconds: 15
+                  name: ama-logs
+                  ports:
+                    - containerPort: 25225
+                      protocol: TCP
+                    - containerPort: 25224
+                      protocol: UDP
+                    - containerPort: 25227
+                      name: in-rs-tcp
+                      protocol: TCP
+                  resources:
+                    limits:
+                        cpu: "1"
+                        memory: 1.5Gi
+                    requests:
+                        cpu: 150m
+                        memory: 250Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - DAC_OVERRIDE
+                        drop:
+                            - ALL
+                    privileged: true
+                  volumeMounts:
+                    - mountPath: /var/log
+                      name: host-log
+                    - mountPath: /etc/kubernetes/host
+                      name: azure-json-path
+                    - mountPath: /etc/ama-logs-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/omsagent-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/config
+                      name: ama-logs-rs-config
+                    - mountPath: /etc/config/settings
+                      name: settings-vol-config
+                      readOnly: true
+                    - mountPath: /etc/config/settings/adx
+                      name: ama-logs-adx-secret
+                      readOnly: true
+                    - mountPath: /etc/config/osm-settings
+                      name: osm-settings-vol-config
+                      readOnly: true
+            priorityClassName: system-node-critical
+            serviceAccountName: ama-logs
+            tolerations:
+                - key: CriticalAddonsOnly
+                  operator: Exists
+            volumes:
+                - hostPath:
+                    path: /etc/hostname
+                  name: container-hostname
+                - hostPath:
+                    path: /var/log
+                  name: host-log
+                - hostPath:
+                    path: /etc/kubernetes
+                  name: azure-json-path
+                - name: ama-logs-secret
+                  secret:
+                    secretName: ama-logs-secret
+                - configMap:
+                    name: ama-logs-rs-config
+                  name: ama-logs-rs-config
+                - configMap:
+                    name: container-azm-ms-agentconfig
+                    optional: true
+                  name: settings-vol-config
+                - name: ama-logs-adx-secret
+                  secret:
+                    optional: true
+                    secretName: ama-logs-adx-secret
+                - configMap:
+                    name: container-azm-ms-osmconfig
+                    optional: true
+                  name: osm-settings-vol-config
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+    labels:
+        component: ama-logs-agent
+        kubernetes.azure.com/ds-tshirt-size: s
+        kubernetes.azure.com/managedby: aks
+        tier: node
+    name: ama-logs
+    namespace: kube-system
+spec:
+    selector:
+        matchLabels:
+            component: ama-logs-agent
+            kubernetes.azure.com/ds-tshirt-size: s
+            tier: node
+    template:
+        metadata:
+            annotations:
+                WSID: dGVzdC13b3Jrc3BhY2UtaWQ=
+                agentVersion: azure-mdsd-1.37.0
+                dockerProviderVersion: 18.0.1-0
+                kubernetes.azure.com/no-http-proxy-vars: "true"
+                schema-versions: v1
+            labels:
+                component: ama-logs-agent
+                kubernetes.azure.com/ds-tshirt-size: s
+                kubernetes.azure.com/managedby: aks
+                tier: node
+        spec:
+            affinity:
+                nodeAffinity:
+                    requiredDuringSchedulingIgnoredDuringExecution:
+                        nodeSelectorTerms:
+                            - matchExpressions:
+                                - key: kubernetes.io/os
+                                  operator: In
+                                  values:
+                                    - linux
+                                - key: kubernetes.azure.com/cluster
+                                  operator: Exists
+                                - key: type
+                                  operator: NotIn
+                                  values:
+                                    - virtual-kubelet
+                                - key: karpenter.azure.com/sku-cpu
+                                  operator: Gt
+                                  values:
+                                    - "2"
+                                - key: karpenter.azure.com/sku-cpu
+                                  operator: Lt
+                                  values:
+                                    - "5"
+            containers:
+                - args:
+                    - --secret-namespace=kube-system
+                    - --secret-name=ama-logs-secret
+                    - --token-server-listening-port=8888
+                    - --health-server-listening-port=9999
+                    - --restart-pod-waiting-minutes-on-broken-connection=240
+                  command:
+                    - /addon-token-adapter
+                  env:
+                    - name: AZMON_COLLECT_ENV
+                      value: "false"
+                  image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.250902.1
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    httpGet:
+                        path: /healthz
+                        port: 9999
+                    initialDelaySeconds: 10
+                    periodSeconds: 60
+                  name: addon-token-adapter
+                  resources:
+                    limits:
+                        cpu: 100m
+                        memory: 100Mi
+                    requests:
+                        cpu: 10m
+                        memory: 20Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - NET_ADMIN
+                            - NET_RAW
+                        drop:
+                            - ALL
+                - env:
+                    - name: NODE_IP
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: status.hostIP
+                    - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+                      valueFrom:
+                        resourceFieldRef:
+                            containerName: ama-logs
+                            resource: limits.memory
+                    - name: HOSTNAME
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: spec.nodeName
+                    - name: FBIT_SERVICE_FLUSH_INTERVAL
+                      value: "15"
+                    - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
+                      value: "1"
+                    - name: FBIT_TAIL_BUFFER_MAX_SIZE
+                      value: "1"
+                    - name: AKS_CLUSTER_NAME
+                      value: test-cluster
+                    - name: AKS_RESOURCE_ID
+                      value: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster
+                    - name: AKS_NODE_RESOURCE_GROUP
+                      value: MC_test-rg_test-cluster_eastus
+                    - name: AKS_REGION
+                      value: eastus
+                    - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+                      value: test-identity-client-id
+                    - name: AZMON_CONTAINERLOGS_ONEAGENT_REGIONS
+                      value: koreacentral,norwayeast,eastus2
+                    - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
+                      value: "false"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_ENABLED
+                      value: "false"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
+                      value: "28331"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_PORT_GRPC
+                      value: "28332"
+                    - name: AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT
+                      value: "4319"
+                    - name: AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT_GRPC
+                      value: "4320"
+                    - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
+                      value: "false"
+                    - name: USING_AAD_MSI_AUTH
+                      value: "true"
+                    - name: SYSLOG_HOST_PORT
+                      value: "28330"
+                    - name: AZMON_RETINA_FLOW_LOGS_ENABLED
+                      value: "false"
+                    - name: AZMON_RESOURCE_OPTIMIZATION_ENABLED
+                      value: "false"
+                    - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+                      value: "false"
+                    - name: CONTROLLER_TYPE
+                      value: DaemonSet
+                    - name: CLUSTER_CLOUD_ENVIRONMENT
+                      value: azurepubliccloud
+                  image: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.35
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    exec:
+                        command:
+                            - /bin/bash
+                            - -c
+                            - /opt/livenessprobe.sh
+                    initialDelaySeconds: 60
+                    periodSeconds: 60
+                    timeoutSeconds: 15
+                  name: ama-logs
+                  ports:
+                    - containerPort: 25225
+                      protocol: TCP
+                    - containerPort: 25224
+                      protocol: UDP
+                    - containerPort: 28330
+                      hostPort: 28330
+                      name: syslog
+                      protocol: TCP
+                  resources:
+                    limits:
+                        cpu: 3
+                        memory: 3Gi
+                    requests:
+                        cpu: 100m
+                        memory: 476Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - DAC_OVERRIDE
+                        drop:
+                            - ALL
+                    privileged: true
+                  volumeMounts:
+                    - mountPath: /hostfs
+                      mountPropagation: HostToContainer
+                      name: host-root
+                      readOnly: true
+                    - mountPath: /var/log
+                      name: host-log
+                    - mountPath: /var/run/mdsd-ci
+                      name: mdsd-sock
+                    - mountPath: /var/run/mdsd-PrometheusSidecar
+                      name: mdsd-prometheus-sock
+                    - mountPath: /var/lib/docker/containers
+                      name: containerlog-path
+                      readOnly: true
+                    - mountPath: /mnt/docker
+                      name: containerlog-path-2
+                      readOnly: true
+                    - mountPath: /mnt/containers
+                      name: containerlog-path-3
+                      readOnly: true
+                    - mountPath: /etc/kubernetes/host
+                      name: azure-json-path
+                    - mountPath: /etc/ama-logs-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/omsagent-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/config/settings
+                      name: settings-vol-config
+                      readOnly: true
+                    - mountPath: /etc/config/settings/adx
+                      name: ama-logs-adx-secret
+                      readOnly: true
+                - env:
+                    - name: NODE_IP
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: status.hostIP
+                    - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+                      valueFrom:
+                        resourceFieldRef:
+                            containerName: ama-logs-prometheus
+                            resource: limits.memory
+                    - name: HOSTNAME
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: spec.nodeName
+                    - name: AKS_CLUSTER_NAME
+                      value: test-cluster
+                    - name: AKS_RESOURCE_ID
+                      value: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster
+                    - name: AKS_NODE_RESOURCE_GROUP
+                      value: MC_test-rg_test-cluster_eastus
+                    - name: AKS_REGION
+                      value: eastus
+                    - name: CONTROLLER_TYPE
+                      value: DaemonSet
+                    - name: CONTAINER_TYPE
+                      value: PrometheusSidecar
+                    - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+                      value: test-identity-client-id
+                    - name: USING_AAD_MSI_AUTH
+                      value: "true"
+                    - name: SYSLOG_HOST_PORT
+                      value: "28330"
+                    - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+                      value: "false"
+                    - name: CLUSTER_CLOUD_ENVIRONMENT
+                      value: azurepubliccloud
+                  image: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.35
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    exec:
+                        command:
+                            - /bin/bash
+                            - -c
+                            - /opt/livenessprobe.sh
+                    initialDelaySeconds: 60
+                    periodSeconds: 60
+                    timeoutSeconds: 15
+                  name: ama-logs-prometheus
+                  resources:
+                    limits:
+                        cpu: 500m
+                        memory: 1Gi
+                    requests:
+                        cpu: 20m
+                        memory: 100Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - DAC_OVERRIDE
+                        drop:
+                            - ALL
+                    privileged: true
+                  volumeMounts:
+                    - mountPath: /etc/kubernetes/host
+                      name: azure-json-path
+                    - mountPath: /etc/ama-logs-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/omsagent-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/config/settings
+                      name: settings-vol-config
+                      readOnly: true
+                    - mountPath: /etc/config/osm-settings
+                      name: osm-settings-vol-config
+                      readOnly: true
+                    - mountPath: /var/run/mdsd-PrometheusSidecar
+                      name: mdsd-prometheus-sock
+                    - mountPath: /var/run/mdsd-ci
+                      name: mdsd-sock
+            dnsConfig:
+                options:
+                    - name: ndots
+                      value: "3"
+            priorityClassName: system-node-critical
+            serviceAccountName: ama-logs
+            tolerations:
+                - key: CriticalAddonsOnly
+                  operator: Exists
+                - effect: NoExecute
+                  operator: Exists
+                - effect: NoSchedule
+                  operator: Exists
+                - effect: PreferNoSchedule
+                  operator: Exists
+            volumes:
+                - hostPath:
+                    path: /
+                  name: host-root
+                - name: mdsd-prometheus-sock
+                - hostPath:
+                    path: /etc/hostname
+                  name: container-hostname
+                - hostPath:
+                    path: /var/log
+                  name: host-log
+                - hostPath:
+                    path: /var/run/mdsd-ci
+                  name: mdsd-sock
+                - hostPath:
+                    path: /var/lib/docker/containers
+                  name: containerlog-path
+                - hostPath:
+                    path: /mnt/docker
+                  name: containerlog-path-2
+                - hostPath:
+                    path: /mnt/containers
+                  name: containerlog-path-3
+                - hostPath:
+                    path: /etc/kubernetes
+                  name: azure-json-path
+                - name: ama-logs-secret
+                  secret:
+                    secretName: ama-logs-secret
+                - configMap:
+                    name: container-azm-ms-agentconfig
+                    optional: true
+                  name: settings-vol-config
+                - name: ama-logs-adx-secret
+                  secret:
+                    optional: true
+                    secretName: ama-logs-adx-secret
+                - configMap:
+                    name: container-azm-ms-osmconfig
+                    optional: true
+                  name: osm-settings-vol-config
+    updateStrategy:
+        rollingUpdate:
+            maxUnavailable: 50%
+        type: RollingUpdate
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+    labels:
+        component: ama-logs-agent
+        kubernetes.azure.com/ds-tshirt-size: xs
+        kubernetes.azure.com/managedby: aks
+        tier: node
+    name: ama-logs
+    namespace: kube-system
+spec:
+    selector:
+        matchLabels:
+            component: ama-logs-agent
+            kubernetes.azure.com/ds-tshirt-size: xs
+            tier: node
+    template:
+        metadata:
+            annotations:
+                WSID: dGVzdC13b3Jrc3BhY2UtaWQ=
+                agentVersion: azure-mdsd-1.37.0
+                dockerProviderVersion: 18.0.1-0
+                kubernetes.azure.com/no-http-proxy-vars: "true"
+                schema-versions: v1
+            labels:
+                component: ama-logs-agent
+                kubernetes.azure.com/ds-tshirt-size: xs
+                kubernetes.azure.com/managedby: aks
+                tier: node
+        spec:
+            affinity:
+                nodeAffinity:
+                    requiredDuringSchedulingIgnoredDuringExecution:
+                        nodeSelectorTerms:
+                            - matchExpressions:
+                                - key: kubernetes.io/os
+                                  operator: In
+                                  values:
+                                    - linux
+                                - key: kubernetes.azure.com/cluster
+                                  operator: Exists
+                                - key: type
+                                  operator: NotIn
+                                  values:
+                                    - virtual-kubelet
+                                - key: karpenter.azure.com/sku-cpu
+                                  operator: Lt
+                                  values:
+                                    - "3"
+            containers:
+                - args:
+                    - --secret-namespace=kube-system
+                    - --secret-name=ama-logs-secret
+                    - --token-server-listening-port=8888
+                    - --health-server-listening-port=9999
+                    - --restart-pod-waiting-minutes-on-broken-connection=240
+                  command:
+                    - /addon-token-adapter
+                  env:
+                    - name: AZMON_COLLECT_ENV
+                      value: "false"
+                  image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.250902.1
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    httpGet:
+                        path: /healthz
+                        port: 9999
+                    initialDelaySeconds: 10
+                    periodSeconds: 60
+                  name: addon-token-adapter
+                  resources:
+                    limits:
+                        cpu: 100m
+                        memory: 100Mi
+                    requests:
+                        cpu: 10m
+                        memory: 20Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - NET_ADMIN
+                            - NET_RAW
+                        drop:
+                            - ALL
+                - env:
+                    - name: NODE_IP
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: status.hostIP
+                    - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+                      valueFrom:
+                        resourceFieldRef:
+                            containerName: ama-logs
+                            resource: limits.memory
+                    - name: HOSTNAME
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: spec.nodeName
+                    - name: FBIT_SERVICE_FLUSH_INTERVAL
+                      value: "15"
+                    - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
+                      value: "1"
+                    - name: FBIT_TAIL_BUFFER_MAX_SIZE
+                      value: "1"
+                    - name: AKS_CLUSTER_NAME
+                      value: test-cluster
+                    - name: AKS_RESOURCE_ID
+                      value: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster
+                    - name: AKS_NODE_RESOURCE_GROUP
+                      value: MC_test-rg_test-cluster_eastus
+                    - name: AKS_REGION
+                      value: eastus
+                    - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+                      value: test-identity-client-id
+                    - name: AZMON_CONTAINERLOGS_ONEAGENT_REGIONS
+                      value: koreacentral,norwayeast,eastus2
+                    - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
+                      value: "false"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_ENABLED
+                      value: "false"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
+                      value: "28331"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_PORT_GRPC
+                      value: "28332"
+                    - name: AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT
+                      value: "4319"
+                    - name: AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT_GRPC
+                      value: "4320"
+                    - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
+                      value: "false"
+                    - name: USING_AAD_MSI_AUTH
+                      value: "true"
+                    - name: SYSLOG_HOST_PORT
+                      value: "28330"
+                    - name: AZMON_RETINA_FLOW_LOGS_ENABLED
+                      value: "false"
+                    - name: AZMON_RESOURCE_OPTIMIZATION_ENABLED
+                      value: "false"
+                    - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+                      value: "false"
+                    - name: CONTROLLER_TYPE
+                      value: DaemonSet
+                    - name: CLUSTER_CLOUD_ENVIRONMENT
+                      value: azurepubliccloud
+                  image: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.35
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    exec:
+                        command:
+                            - /bin/bash
+                            - -c
+                            - /opt/livenessprobe.sh
+                    initialDelaySeconds: 60
+                    periodSeconds: 60
+                    timeoutSeconds: 15
+                  name: ama-logs
+                  ports:
+                    - containerPort: 25225
+                      protocol: TCP
+                    - containerPort: 25224
+                      protocol: UDP
+                    - containerPort: 28330
+                      hostPort: 28330
+                      name: syslog
+                      protocol: TCP
+                  resources:
+                    limits:
+                        cpu: 3
+                        memory: 3Gi
+                    requests:
+                        cpu: 45m
+                        memory: 343Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - DAC_OVERRIDE
+                        drop:
+                            - ALL
+                    privileged: true
+                  volumeMounts:
+                    - mountPath: /hostfs
+                      mountPropagation: HostToContainer
+                      name: host-root
+                      readOnly: true
+                    - mountPath: /var/log
+                      name: host-log
+                    - mountPath: /var/run/mdsd-ci
+                      name: mdsd-sock
+                    - mountPath: /var/run/mdsd-PrometheusSidecar
+                      name: mdsd-prometheus-sock
+                    - mountPath: /var/lib/docker/containers
+                      name: containerlog-path
+                      readOnly: true
+                    - mountPath: /mnt/docker
+                      name: containerlog-path-2
+                      readOnly: true
+                    - mountPath: /mnt/containers
+                      name: containerlog-path-3
+                      readOnly: true
+                    - mountPath: /etc/kubernetes/host
+                      name: azure-json-path
+                    - mountPath: /etc/ama-logs-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/omsagent-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/config/settings
+                      name: settings-vol-config
+                      readOnly: true
+                    - mountPath: /etc/config/settings/adx
+                      name: ama-logs-adx-secret
+                      readOnly: true
+                - env:
+                    - name: NODE_IP
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: status.hostIP
+                    - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+                      valueFrom:
+                        resourceFieldRef:
+                            containerName: ama-logs-prometheus
+                            resource: limits.memory
+                    - name: HOSTNAME
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: spec.nodeName
+                    - name: AKS_CLUSTER_NAME
+                      value: test-cluster
+                    - name: AKS_RESOURCE_ID
+                      value: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster
+                    - name: AKS_NODE_RESOURCE_GROUP
+                      value: MC_test-rg_test-cluster_eastus
+                    - name: AKS_REGION
+                      value: eastus
+                    - name: CONTROLLER_TYPE
+                      value: DaemonSet
+                    - name: CONTAINER_TYPE
+                      value: PrometheusSidecar
+                    - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+                      value: test-identity-client-id
+                    - name: USING_AAD_MSI_AUTH
+                      value: "true"
+                    - name: SYSLOG_HOST_PORT
+                      value: "28330"
+                    - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+                      value: "false"
+                    - name: CLUSTER_CLOUD_ENVIRONMENT
+                      value: azurepubliccloud
+                  image: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.35
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    exec:
+                        command:
+                            - /bin/bash
+                            - -c
+                            - /opt/livenessprobe.sh
+                    initialDelaySeconds: 60
+                    periodSeconds: 60
+                    timeoutSeconds: 15
+                  name: ama-logs-prometheus
+                  resources:
+                    limits:
+                        cpu: 500m
+                        memory: 1Gi
+                    requests:
+                        cpu: 20m
+                        memory: 100Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - DAC_OVERRIDE
+                        drop:
+                            - ALL
+                    privileged: true
+                  volumeMounts:
+                    - mountPath: /etc/kubernetes/host
+                      name: azure-json-path
+                    - mountPath: /etc/ama-logs-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/omsagent-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/config/settings
+                      name: settings-vol-config
+                      readOnly: true
+                    - mountPath: /etc/config/osm-settings
+                      name: osm-settings-vol-config
+                      readOnly: true
+                    - mountPath: /var/run/mdsd-PrometheusSidecar
+                      name: mdsd-prometheus-sock
+                    - mountPath: /var/run/mdsd-ci
+                      name: mdsd-sock
+            dnsConfig:
+                options:
+                    - name: ndots
+                      value: "3"
+            priorityClassName: system-node-critical
+            serviceAccountName: ama-logs
+            tolerations:
+                - key: CriticalAddonsOnly
+                  operator: Exists
+                - effect: NoExecute
+                  operator: Exists
+                - effect: NoSchedule
+                  operator: Exists
+                - effect: PreferNoSchedule
+                  operator: Exists
+            volumes:
+                - hostPath:
+                    path: /
+                  name: host-root
+                - name: mdsd-prometheus-sock
+                - hostPath:
+                    path: /etc/hostname
+                  name: container-hostname
+                - hostPath:
+                    path: /var/log
+                  name: host-log
+                - hostPath:
+                    path: /var/run/mdsd-ci
+                  name: mdsd-sock
+                - hostPath:
+                    path: /var/lib/docker/containers
+                  name: containerlog-path
+                - hostPath:
+                    path: /mnt/docker
+                  name: containerlog-path-2
+                - hostPath:
+                    path: /mnt/containers
+                  name: containerlog-path-3
+                - hostPath:
+                    path: /etc/kubernetes
+                  name: azure-json-path
+                - name: ama-logs-secret
+                  secret:
+                    secretName: ama-logs-secret
+                - configMap:
+                    name: container-azm-ms-agentconfig
+                    optional: true
+                  name: settings-vol-config
+                - name: ama-logs-adx-secret
+                  secret:
+                    optional: true
+                    secretName: ama-logs-adx-secret
+                - configMap:
+                    name: container-azm-ms-osmconfig
+                    optional: true
+                  name: osm-settings-vol-config
+    updateStrategy:
+        rollingUpdate:
+            maxUnavailable: 50%
+        type: RollingUpdate
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+    labels:
+        component: ama-logs-agent
+        kubernetes.azure.com/managedby: aks
+        tier: node
+    name: ama-logs
+    namespace: kube-system
+spec:
+    selector:
+        matchLabels:
+            component: ama-logs-agent
+            tier: node
+    template:
+        metadata:
+            annotations:
+                WSID: dGVzdC13b3Jrc3BhY2UtaWQ=
+                agentVersion: azure-mdsd-1.37.0
+                dockerProviderVersion: 18.0.1-0
+                kubernetes.azure.com/no-http-proxy-vars: "true"
+                schema-versions: v1
+            labels:
+                component: ama-logs-agent
+                kubernetes.azure.com/managedby: aks
+                tier: node
+        spec:
+            affinity:
+                nodeAffinity:
+                    requiredDuringSchedulingIgnoredDuringExecution:
+                        nodeSelectorTerms:
+                            - matchExpressions:
+                                - key: kubernetes.io/os
+                                  operator: In
+                                  values:
+                                    - linux
+                                - key: kubernetes.azure.com/cluster
+                                  operator: Exists
+                                - key: type
+                                  operator: NotIn
+                                  values:
+                                    - virtual-kubelet
+                                - key: karpenter.azure.com/aksnodeclass
+                                  operator: DoesNotExist
+            containers:
+                - args:
+                    - --secret-namespace=kube-system
+                    - --secret-name=ama-logs-secret
+                    - --token-server-listening-port=8888
+                    - --health-server-listening-port=9999
+                    - --restart-pod-waiting-minutes-on-broken-connection=240
+                  command:
+                    - /addon-token-adapter
+                  env:
+                    - name: AZMON_COLLECT_ENV
+                      value: "false"
+                  image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.250902.1
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    httpGet:
+                        path: /healthz
+                        port: 9999
+                    initialDelaySeconds: 10
+                    periodSeconds: 60
+                  name: addon-token-adapter
+                  resources:
+                    limits:
+                        cpu: 100m
+                        memory: 100Mi
+                    requests:
+                        cpu: 20m
+                        memory: 50Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - NET_ADMIN
+                            - NET_RAW
+                        drop:
+                            - ALL
+                - env:
+                    - name: NODE_IP
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: status.hostIP
+                    - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+                      valueFrom:
+                        resourceFieldRef:
+                            containerName: ama-logs
+                            resource: limits.memory
+                    - name: HOSTNAME
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: spec.nodeName
+                    - name: FBIT_SERVICE_FLUSH_INTERVAL
+                      value: "15"
+                    - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
+                      value: "1"
+                    - name: FBIT_TAIL_BUFFER_MAX_SIZE
+                      value: "1"
+                    - name: AKS_CLUSTER_NAME
+                      value: test-cluster
+                    - name: AKS_RESOURCE_ID
+                      value: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster
+                    - name: AKS_NODE_RESOURCE_GROUP
+                      value: MC_test-rg_test-cluster_eastus
+                    - name: AKS_REGION
+                      value: eastus
+                    - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+                      value: test-identity-client-id
+                    - name: AZMON_CONTAINERLOGS_ONEAGENT_REGIONS
+                      value: koreacentral,norwayeast,eastus2
+                    - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
+                      value: "false"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_ENABLED
+                      value: "false"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
+                      value: "28331"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_PORT_GRPC
+                      value: "28332"
+                    - name: AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT
+                      value: "4319"
+                    - name: AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT_GRPC
+                      value: "4320"
+                    - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
+                      value: "false"
+                    - name: USING_AAD_MSI_AUTH
+                      value: "true"
+                    - name: SYSLOG_HOST_PORT
+                      value: "28330"
+                    - name: AZMON_RETINA_FLOW_LOGS_ENABLED
+                      value: "false"
+                    - name: AZMON_RESOURCE_OPTIMIZATION_ENABLED
+                      value: "false"
+                    - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+                      value: "false"
+                    - name: CONTROLLER_TYPE
+                      value: DaemonSet
+                    - name: CLUSTER_CLOUD_ENVIRONMENT
+                      value: azurepubliccloud
+                  image: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.35
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    exec:
+                        command:
+                            - /bin/bash
+                            - -c
+                            - /opt/livenessprobe.sh
+                    initialDelaySeconds: 60
+                    periodSeconds: 60
+                    timeoutSeconds: 15
+                  name: ama-logs
+                  ports:
+                    - containerPort: 25225
+                      protocol: TCP
+                    - containerPort: 25224
+                      protocol: UDP
+                    - containerPort: 28330
+                      hostPort: 28330
+                      name: syslog
+                      protocol: TCP
+                  resources:
+                    limits:
+                        cpu: 3
+                        memory: 3Gi
+                    requests:
+                        cpu: 75m
+                        memory: 325Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - DAC_OVERRIDE
+                        drop:
+                            - ALL
+                    privileged: true
+                  volumeMounts:
+                    - mountPath: /hostfs
+                      mountPropagation: HostToContainer
+                      name: host-root
+                      readOnly: true
+                    - mountPath: /var/log
+                      name: host-log
+                    - mountPath: /var/run/mdsd-ci
+                      name: mdsd-sock
+                    - mountPath: /var/run/mdsd-PrometheusSidecar
+                      name: mdsd-prometheus-sock
+                    - mountPath: /var/lib/docker/containers
+                      name: containerlog-path
+                      readOnly: true
+                    - mountPath: /mnt/docker
+                      name: containerlog-path-2
+                      readOnly: true
+                    - mountPath: /mnt/containers
+                      name: containerlog-path-3
+                      readOnly: true
+                    - mountPath: /etc/kubernetes/host
+                      name: azure-json-path
+                    - mountPath: /etc/ama-logs-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/omsagent-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/config/settings
+                      name: settings-vol-config
+                      readOnly: true
+                    - mountPath: /etc/config/settings/adx
+                      name: ama-logs-adx-secret
+                      readOnly: true
+                - env:
+                    - name: NODE_IP
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: status.hostIP
+                    - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+                      valueFrom:
+                        resourceFieldRef:
+                            containerName: ama-logs-prometheus
+                            resource: limits.memory
+                    - name: HOSTNAME
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: spec.nodeName
+                    - name: AKS_CLUSTER_NAME
+                      value: test-cluster
+                    - name: AKS_RESOURCE_ID
+                      value: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster
+                    - name: AKS_NODE_RESOURCE_GROUP
+                      value: MC_test-rg_test-cluster_eastus
+                    - name: AKS_REGION
+                      value: eastus
+                    - name: CONTROLLER_TYPE
+                      value: DaemonSet
+                    - name: CONTAINER_TYPE
+                      value: PrometheusSidecar
+                    - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+                      value: test-identity-client-id
+                    - name: USING_AAD_MSI_AUTH
+                      value: "true"
+                    - name: SYSLOG_HOST_PORT
+                      value: "28330"
+                    - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+                      value: "false"
+                    - name: CLUSTER_CLOUD_ENVIRONMENT
+                      value: azurepubliccloud
+                  image: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.35
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    exec:
+                        command:
+                            - /bin/bash
+                            - -c
+                            - /opt/livenessprobe.sh
+                    initialDelaySeconds: 60
+                    periodSeconds: 60
+                    timeoutSeconds: 15
+                  name: ama-logs-prometheus
+                  resources:
+                    limits:
+                        cpu: 500m
+                        memory: 1Gi
+                    requests:
+                        cpu: 75m
+                        memory: 225Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - DAC_OVERRIDE
+                        drop:
+                            - ALL
+                    privileged: true
+                  volumeMounts:
+                    - mountPath: /etc/kubernetes/host
+                      name: azure-json-path
+                    - mountPath: /etc/ama-logs-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/omsagent-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/config/settings
+                      name: settings-vol-config
+                      readOnly: true
+                    - mountPath: /etc/config/osm-settings
+                      name: osm-settings-vol-config
+                      readOnly: true
+                    - mountPath: /var/run/mdsd-PrometheusSidecar
+                      name: mdsd-prometheus-sock
+                    - mountPath: /var/run/mdsd-ci
+                      name: mdsd-sock
+            dnsConfig:
+                options:
+                    - name: ndots
+                      value: "3"
+            priorityClassName: system-node-critical
+            serviceAccountName: ama-logs
+            tolerations:
+                - key: CriticalAddonsOnly
+                  operator: Exists
+                - effect: NoExecute
+                  operator: Exists
+                - effect: NoSchedule
+                  operator: Exists
+                - effect: PreferNoSchedule
+                  operator: Exists
+            volumes:
+                - hostPath:
+                    path: /
+                  name: host-root
+                - name: mdsd-prometheus-sock
+                - hostPath:
+                    path: /etc/hostname
+                  name: container-hostname
+                - hostPath:
+                    path: /var/log
+                  name: host-log
+                - hostPath:
+                    path: /var/run/mdsd-ci
+                  name: mdsd-sock
+                - hostPath:
+                    path: /var/lib/docker/containers
+                  name: containerlog-path
+                - hostPath:
+                    path: /mnt/docker
+                  name: containerlog-path-2
+                - hostPath:
+                    path: /mnt/containers
+                  name: containerlog-path-3
+                - hostPath:
+                    path: /etc/kubernetes
+                  name: azure-json-path
+                - name: ama-logs-secret
+                  secret:
+                    secretName: ama-logs-secret
+                - configMap:
+                    name: container-azm-ms-agentconfig
+                    optional: true
+                  name: settings-vol-config
+                - name: ama-logs-adx-secret
+                  secret:
+                    optional: true
+                    secretName: ama-logs-adx-secret
+                - configMap:
+                    name: container-azm-ms-osmconfig
+                    optional: true
+                  name: osm-settings-vol-config
+    updateStrategy:
+        rollingUpdate:
+            maxUnavailable: 50%
+        type: RollingUpdate
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+    labels:
+        component: ama-logs-agent
+        kubernetes.azure.com/ds-tshirt-size: m
+        kubernetes.azure.com/managedby: aks
+        tier: node
+    name: ama-logs
+    namespace: kube-system
+spec:
+    selector:
+        matchLabels:
+            component: ama-logs-agent
+            kubernetes.azure.com/ds-tshirt-size: m
+            tier: node
+    template:
+        metadata:
+            annotations:
+                WSID: dGVzdC13b3Jrc3BhY2UtaWQ=
+                agentVersion: azure-mdsd-1.37.0
+                dockerProviderVersion: 18.0.1-0
+                kubernetes.azure.com/no-http-proxy-vars: "true"
+                schema-versions: v1
+            labels:
+                component: ama-logs-agent
+                kubernetes.azure.com/ds-tshirt-size: m
+                kubernetes.azure.com/managedby: aks
+                tier: node
+        spec:
+            affinity:
+                nodeAffinity:
+                    requiredDuringSchedulingIgnoredDuringExecution:
+                        nodeSelectorTerms:
+                            - matchExpressions:
+                                - key: kubernetes.io/os
+                                  operator: In
+                                  values:
+                                    - linux
+                                - key: kubernetes.azure.com/cluster
+                                  operator: Exists
+                                - key: type
+                                  operator: NotIn
+                                  values:
+                                    - virtual-kubelet
+                                - key: karpenter.azure.com/sku-cpu
+                                  operator: Gt
+                                  values:
+                                    - "4"
+                                - key: karpenter.azure.com/sku-cpu
+                                  operator: Lt
+                                  values:
+                                    - "9"
+            containers:
+                - args:
+                    - --secret-namespace=kube-system
+                    - --secret-name=ama-logs-secret
+                    - --token-server-listening-port=8888
+                    - --health-server-listening-port=9999
+                    - --restart-pod-waiting-minutes-on-broken-connection=240
+                  command:
+                    - /addon-token-adapter
+                  env:
+                    - name: AZMON_COLLECT_ENV
+                      value: "false"
+                  image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.250902.1
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    httpGet:
+                        path: /healthz
+                        port: 9999
+                    initialDelaySeconds: 10
+                    periodSeconds: 60
+                  name: addon-token-adapter
+                  resources:
+                    limits:
+                        cpu: 100m
+                        memory: 100Mi
+                    requests:
+                        cpu: 10m
+                        memory: 20Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - NET_ADMIN
+                            - NET_RAW
+                        drop:
+                            - ALL
+                - env:
+                    - name: NODE_IP
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: status.hostIP
+                    - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+                      valueFrom:
+                        resourceFieldRef:
+                            containerName: ama-logs
+                            resource: limits.memory
+                    - name: HOSTNAME
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: spec.nodeName
+                    - name: FBIT_SERVICE_FLUSH_INTERVAL
+                      value: "15"
+                    - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
+                      value: "1"
+                    - name: FBIT_TAIL_BUFFER_MAX_SIZE
+                      value: "1"
+                    - name: AKS_CLUSTER_NAME
+                      value: test-cluster
+                    - name: AKS_RESOURCE_ID
+                      value: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster
+                    - name: AKS_NODE_RESOURCE_GROUP
+                      value: MC_test-rg_test-cluster_eastus
+                    - name: AKS_REGION
+                      value: eastus
+                    - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+                      value: test-identity-client-id
+                    - name: AZMON_CONTAINERLOGS_ONEAGENT_REGIONS
+                      value: koreacentral,norwayeast,eastus2
+                    - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
+                      value: "false"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_ENABLED
+                      value: "false"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
+                      value: "28331"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_PORT_GRPC
+                      value: "28332"
+                    - name: AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT
+                      value: "4319"
+                    - name: AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT_GRPC
+                      value: "4320"
+                    - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
+                      value: "false"
+                    - name: USING_AAD_MSI_AUTH
+                      value: "true"
+                    - name: SYSLOG_HOST_PORT
+                      value: "28330"
+                    - name: AZMON_RETINA_FLOW_LOGS_ENABLED
+                      value: "false"
+                    - name: AZMON_RESOURCE_OPTIMIZATION_ENABLED
+                      value: "false"
+                    - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+                      value: "false"
+                    - name: CONTROLLER_TYPE
+                      value: DaemonSet
+                    - name: CLUSTER_CLOUD_ENVIRONMENT
+                      value: azurepubliccloud
+                  image: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.35
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    exec:
+                        command:
+                            - /bin/bash
+                            - -c
+                            - /opt/livenessprobe.sh
+                    initialDelaySeconds: 60
+                    periodSeconds: 60
+                    timeoutSeconds: 15
+                  name: ama-logs
+                  ports:
+                    - containerPort: 25225
+                      protocol: TCP
+                    - containerPort: 25224
+                      protocol: UDP
+                    - containerPort: 28330
+                      hostPort: 28330
+                      name: syslog
+                      protocol: TCP
+                  resources:
+                    limits:
+                        cpu: 3
+                        memory: 3Gi
+                    requests:
+                        cpu: 161m
+                        memory: 978Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - DAC_OVERRIDE
+                        drop:
+                            - ALL
+                    privileged: true
+                  volumeMounts:
+                    - mountPath: /hostfs
+                      mountPropagation: HostToContainer
+                      name: host-root
+                      readOnly: true
+                    - mountPath: /var/log
+                      name: host-log
+                    - mountPath: /var/run/mdsd-ci
+                      name: mdsd-sock
+                    - mountPath: /var/run/mdsd-PrometheusSidecar
+                      name: mdsd-prometheus-sock
+                    - mountPath: /var/lib/docker/containers
+                      name: containerlog-path
+                      readOnly: true
+                    - mountPath: /mnt/docker
+                      name: containerlog-path-2
+                      readOnly: true
+                    - mountPath: /mnt/containers
+                      name: containerlog-path-3
+                      readOnly: true
+                    - mountPath: /etc/kubernetes/host
+                      name: azure-json-path
+                    - mountPath: /etc/ama-logs-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/omsagent-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/config/settings
+                      name: settings-vol-config
+                      readOnly: true
+                    - mountPath: /etc/config/settings/adx
+                      name: ama-logs-adx-secret
+                      readOnly: true
+                - env:
+                    - name: NODE_IP
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: status.hostIP
+                    - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+                      valueFrom:
+                        resourceFieldRef:
+                            containerName: ama-logs-prometheus
+                            resource: limits.memory
+                    - name: HOSTNAME
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: spec.nodeName
+                    - name: AKS_CLUSTER_NAME
+                      value: test-cluster
+                    - name: AKS_RESOURCE_ID
+                      value: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster
+                    - name: AKS_NODE_RESOURCE_GROUP
+                      value: MC_test-rg_test-cluster_eastus
+                    - name: AKS_REGION
+                      value: eastus
+                    - name: CONTROLLER_TYPE
+                      value: DaemonSet
+                    - name: CONTAINER_TYPE
+                      value: PrometheusSidecar
+                    - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+                      value: test-identity-client-id
+                    - name: USING_AAD_MSI_AUTH
+                      value: "true"
+                    - name: SYSLOG_HOST_PORT
+                      value: "28330"
+                    - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+                      value: "false"
+                    - name: CLUSTER_CLOUD_ENVIRONMENT
+                      value: azurepubliccloud
+                  image: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.35
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    exec:
+                        command:
+                            - /bin/bash
+                            - -c
+                            - /opt/livenessprobe.sh
+                    initialDelaySeconds: 60
+                    periodSeconds: 60
+                    timeoutSeconds: 15
+                  name: ama-logs-prometheus
+                  resources:
+                    limits:
+                        cpu: 500m
+                        memory: 1Gi
+                    requests:
+                        cpu: 20m
+                        memory: 100Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - DAC_OVERRIDE
+                        drop:
+                            - ALL
+                    privileged: true
+                  volumeMounts:
+                    - mountPath: /etc/kubernetes/host
+                      name: azure-json-path
+                    - mountPath: /etc/ama-logs-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/omsagent-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/config/settings
+                      name: settings-vol-config
+                      readOnly: true
+                    - mountPath: /etc/config/osm-settings
+                      name: osm-settings-vol-config
+                      readOnly: true
+                    - mountPath: /var/run/mdsd-PrometheusSidecar
+                      name: mdsd-prometheus-sock
+                    - mountPath: /var/run/mdsd-ci
+                      name: mdsd-sock
+            dnsConfig:
+                options:
+                    - name: ndots
+                      value: "3"
+            priorityClassName: system-node-critical
+            serviceAccountName: ama-logs
+            tolerations:
+                - key: CriticalAddonsOnly
+                  operator: Exists
+                - effect: NoExecute
+                  operator: Exists
+                - effect: NoSchedule
+                  operator: Exists
+                - effect: PreferNoSchedule
+                  operator: Exists
+            volumes:
+                - hostPath:
+                    path: /
+                  name: host-root
+                - name: mdsd-prometheus-sock
+                - hostPath:
+                    path: /etc/hostname
+                  name: container-hostname
+                - hostPath:
+                    path: /var/log
+                  name: host-log
+                - hostPath:
+                    path: /var/run/mdsd-ci
+                  name: mdsd-sock
+                - hostPath:
+                    path: /var/lib/docker/containers
+                  name: containerlog-path
+                - hostPath:
+                    path: /mnt/docker
+                  name: containerlog-path-2
+                - hostPath:
+                    path: /mnt/containers
+                  name: containerlog-path-3
+                - hostPath:
+                    path: /etc/kubernetes
+                  name: azure-json-path
+                - name: ama-logs-secret
+                  secret:
+                    secretName: ama-logs-secret
+                - configMap:
+                    name: container-azm-ms-agentconfig
+                    optional: true
+                  name: settings-vol-config
+                - name: ama-logs-adx-secret
+                  secret:
+                    optional: true
+                    secretName: ama-logs-adx-secret
+                - configMap:
+                    name: container-azm-ms-osmconfig
+                    optional: true
+                  name: osm-settings-vol-config
+    updateStrategy:
+        rollingUpdate:
+            maxUnavailable: 50%
+        type: RollingUpdate
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+    labels:
+        component: ama-logs-agent
+        kubernetes.azure.com/ds-tshirt-size: l
+        kubernetes.azure.com/managedby: aks
+        tier: node
+    name: ama-logs
+    namespace: kube-system
+spec:
+    selector:
+        matchLabels:
+            component: ama-logs-agent
+            kubernetes.azure.com/ds-tshirt-size: l
+            tier: node
+    template:
+        metadata:
+            annotations:
+                WSID: dGVzdC13b3Jrc3BhY2UtaWQ=
+                agentVersion: azure-mdsd-1.37.0
+                dockerProviderVersion: 18.0.1-0
+                kubernetes.azure.com/no-http-proxy-vars: "true"
+                schema-versions: v1
+            labels:
+                component: ama-logs-agent
+                kubernetes.azure.com/ds-tshirt-size: l
+                kubernetes.azure.com/managedby: aks
+                tier: node
+        spec:
+            affinity:
+                nodeAffinity:
+                    requiredDuringSchedulingIgnoredDuringExecution:
+                        nodeSelectorTerms:
+                            - matchExpressions:
+                                - key: kubernetes.io/os
+                                  operator: In
+                                  values:
+                                    - linux
+                                - key: kubernetes.azure.com/cluster
+                                  operator: Exists
+                                - key: type
+                                  operator: NotIn
+                                  values:
+                                    - virtual-kubelet
+                                - key: karpenter.azure.com/sku-cpu
+                                  operator: Gt
+                                  values:
+                                    - "8"
+                                - key: karpenter.azure.com/sku-cpu
+                                  operator: Lt
+                                  values:
+                                    - "17"
+            containers:
+                - args:
+                    - --secret-namespace=kube-system
+                    - --secret-name=ama-logs-secret
+                    - --token-server-listening-port=8888
+                    - --health-server-listening-port=9999
+                    - --restart-pod-waiting-minutes-on-broken-connection=240
+                  command:
+                    - /addon-token-adapter
+                  env:
+                    - name: AZMON_COLLECT_ENV
+                      value: "false"
+                  image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.250902.1
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    httpGet:
+                        path: /healthz
+                        port: 9999
+                    initialDelaySeconds: 10
+                    periodSeconds: 60
+                  name: addon-token-adapter
+                  resources:
+                    limits:
+                        cpu: 100m
+                        memory: 100Mi
+                    requests:
+                        cpu: 10m
+                        memory: 20Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - NET_ADMIN
+                            - NET_RAW
+                        drop:
+                            - ALL
+                - env:
+                    - name: NODE_IP
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: status.hostIP
+                    - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+                      valueFrom:
+                        resourceFieldRef:
+                            containerName: ama-logs
+                            resource: limits.memory
+                    - name: HOSTNAME
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: spec.nodeName
+                    - name: FBIT_SERVICE_FLUSH_INTERVAL
+                      value: "15"
+                    - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
+                      value: "1"
+                    - name: FBIT_TAIL_BUFFER_MAX_SIZE
+                      value: "1"
+                    - name: AKS_CLUSTER_NAME
+                      value: test-cluster
+                    - name: AKS_RESOURCE_ID
+                      value: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster
+                    - name: AKS_NODE_RESOURCE_GROUP
+                      value: MC_test-rg_test-cluster_eastus
+                    - name: AKS_REGION
+                      value: eastus
+                    - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+                      value: test-identity-client-id
+                    - name: AZMON_CONTAINERLOGS_ONEAGENT_REGIONS
+                      value: koreacentral,norwayeast,eastus2
+                    - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
+                      value: "false"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_ENABLED
+                      value: "false"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
+                      value: "28331"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_PORT_GRPC
+                      value: "28332"
+                    - name: AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT
+                      value: "4319"
+                    - name: AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT_GRPC
+                      value: "4320"
+                    - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
+                      value: "false"
+                    - name: USING_AAD_MSI_AUTH
+                      value: "true"
+                    - name: SYSLOG_HOST_PORT
+                      value: "28330"
+                    - name: AZMON_RETINA_FLOW_LOGS_ENABLED
+                      value: "false"
+                    - name: AZMON_RESOURCE_OPTIMIZATION_ENABLED
+                      value: "false"
+                    - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+                      value: "false"
+                    - name: CONTROLLER_TYPE
+                      value: DaemonSet
+                    - name: CLUSTER_CLOUD_ENVIRONMENT
+                      value: azurepubliccloud
+                  image: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.35
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    exec:
+                        command:
+                            - /bin/bash
+                            - -c
+                            - /opt/livenessprobe.sh
+                    initialDelaySeconds: 60
+                    periodSeconds: 60
+                    timeoutSeconds: 15
+                  name: ama-logs
+                  ports:
+                    - containerPort: 25225
+                      protocol: TCP
+                    - containerPort: 25224
+                      protocol: UDP
+                    - containerPort: 28330
+                      hostPort: 28330
+                      name: syslog
+                      protocol: TCP
+                  resources:
+                    limits:
+                        cpu: 3
+                        memory: 3Gi
+                    requests:
+                        cpu: 229m
+                        memory: 1058Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - DAC_OVERRIDE
+                        drop:
+                            - ALL
+                    privileged: true
+                  volumeMounts:
+                    - mountPath: /hostfs
+                      mountPropagation: HostToContainer
+                      name: host-root
+                      readOnly: true
+                    - mountPath: /var/log
+                      name: host-log
+                    - mountPath: /var/run/mdsd-ci
+                      name: mdsd-sock
+                    - mountPath: /var/run/mdsd-PrometheusSidecar
+                      name: mdsd-prometheus-sock
+                    - mountPath: /var/lib/docker/containers
+                      name: containerlog-path
+                      readOnly: true
+                    - mountPath: /mnt/docker
+                      name: containerlog-path-2
+                      readOnly: true
+                    - mountPath: /mnt/containers
+                      name: containerlog-path-3
+                      readOnly: true
+                    - mountPath: /etc/kubernetes/host
+                      name: azure-json-path
+                    - mountPath: /etc/ama-logs-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/omsagent-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/config/settings
+                      name: settings-vol-config
+                      readOnly: true
+                    - mountPath: /etc/config/settings/adx
+                      name: ama-logs-adx-secret
+                      readOnly: true
+                - env:
+                    - name: NODE_IP
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: status.hostIP
+                    - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+                      valueFrom:
+                        resourceFieldRef:
+                            containerName: ama-logs-prometheus
+                            resource: limits.memory
+                    - name: HOSTNAME
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: spec.nodeName
+                    - name: AKS_CLUSTER_NAME
+                      value: test-cluster
+                    - name: AKS_RESOURCE_ID
+                      value: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster
+                    - name: AKS_NODE_RESOURCE_GROUP
+                      value: MC_test-rg_test-cluster_eastus
+                    - name: AKS_REGION
+                      value: eastus
+                    - name: CONTROLLER_TYPE
+                      value: DaemonSet
+                    - name: CONTAINER_TYPE
+                      value: PrometheusSidecar
+                    - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+                      value: test-identity-client-id
+                    - name: USING_AAD_MSI_AUTH
+                      value: "true"
+                    - name: SYSLOG_HOST_PORT
+                      value: "28330"
+                    - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+                      value: "false"
+                    - name: CLUSTER_CLOUD_ENVIRONMENT
+                      value: azurepubliccloud
+                  image: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.35
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    exec:
+                        command:
+                            - /bin/bash
+                            - -c
+                            - /opt/livenessprobe.sh
+                    initialDelaySeconds: 60
+                    periodSeconds: 60
+                    timeoutSeconds: 15
+                  name: ama-logs-prometheus
+                  resources:
+                    limits:
+                        cpu: 500m
+                        memory: 1Gi
+                    requests:
+                        cpu: 20m
+                        memory: 100Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - DAC_OVERRIDE
+                        drop:
+                            - ALL
+                    privileged: true
+                  volumeMounts:
+                    - mountPath: /etc/kubernetes/host
+                      name: azure-json-path
+                    - mountPath: /etc/ama-logs-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/omsagent-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/config/settings
+                      name: settings-vol-config
+                      readOnly: true
+                    - mountPath: /etc/config/osm-settings
+                      name: osm-settings-vol-config
+                      readOnly: true
+                    - mountPath: /var/run/mdsd-PrometheusSidecar
+                      name: mdsd-prometheus-sock
+                    - mountPath: /var/run/mdsd-ci
+                      name: mdsd-sock
+            dnsConfig:
+                options:
+                    - name: ndots
+                      value: "3"
+            priorityClassName: system-node-critical
+            serviceAccountName: ama-logs
+            tolerations:
+                - key: CriticalAddonsOnly
+                  operator: Exists
+                - effect: NoExecute
+                  operator: Exists
+                - effect: NoSchedule
+                  operator: Exists
+                - effect: PreferNoSchedule
+                  operator: Exists
+            volumes:
+                - hostPath:
+                    path: /
+                  name: host-root
+                - name: mdsd-prometheus-sock
+                - hostPath:
+                    path: /etc/hostname
+                  name: container-hostname
+                - hostPath:
+                    path: /var/log
+                  name: host-log
+                - hostPath:
+                    path: /var/run/mdsd-ci
+                  name: mdsd-sock
+                - hostPath:
+                    path: /var/lib/docker/containers
+                  name: containerlog-path
+                - hostPath:
+                    path: /mnt/docker
+                  name: containerlog-path-2
+                - hostPath:
+                    path: /mnt/containers
+                  name: containerlog-path-3
+                - hostPath:
+                    path: /etc/kubernetes
+                  name: azure-json-path
+                - name: ama-logs-secret
+                  secret:
+                    secretName: ama-logs-secret
+                - configMap:
+                    name: container-azm-ms-agentconfig
+                    optional: true
+                  name: settings-vol-config
+                - name: ama-logs-adx-secret
+                  secret:
+                    optional: true
+                    secretName: ama-logs-adx-secret
+                - configMap:
+                    name: container-azm-ms-osmconfig
+                    optional: true
+                  name: osm-settings-vol-config
+    updateStrategy:
+        rollingUpdate:
+            maxUnavailable: 50%
+        type: RollingUpdate
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+    labels:
+        component: ama-logs-agent
+        kubernetes.azure.com/ds-tshirt-size: xl
+        kubernetes.azure.com/managedby: aks
+        tier: node
+    name: ama-logs
+    namespace: kube-system
+spec:
+    selector:
+        matchLabels:
+            component: ama-logs-agent
+            kubernetes.azure.com/ds-tshirt-size: xl
+            tier: node
+    template:
+        metadata:
+            annotations:
+                WSID: dGVzdC13b3Jrc3BhY2UtaWQ=
+                agentVersion: azure-mdsd-1.37.0
+                dockerProviderVersion: 18.0.1-0
+                kubernetes.azure.com/no-http-proxy-vars: "true"
+                schema-versions: v1
+            labels:
+                component: ama-logs-agent
+                kubernetes.azure.com/ds-tshirt-size: xl
+                kubernetes.azure.com/managedby: aks
+                tier: node
+        spec:
+            affinity:
+                nodeAffinity:
+                    requiredDuringSchedulingIgnoredDuringExecution:
+                        nodeSelectorTerms:
+                            - matchExpressions:
+                                - key: kubernetes.io/os
+                                  operator: In
+                                  values:
+                                    - linux
+                                - key: kubernetes.azure.com/cluster
+                                  operator: Exists
+                                - key: type
+                                  operator: NotIn
+                                  values:
+                                    - virtual-kubelet
+                                - key: karpenter.azure.com/sku-cpu
+                                  operator: Gt
+                                  values:
+                                    - "16"
+            containers:
+                - args:
+                    - --secret-namespace=kube-system
+                    - --secret-name=ama-logs-secret
+                    - --token-server-listening-port=8888
+                    - --health-server-listening-port=9999
+                    - --restart-pod-waiting-minutes-on-broken-connection=240
+                  command:
+                    - /addon-token-adapter
+                  env:
+                    - name: AZMON_COLLECT_ENV
+                      value: "false"
+                  image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.250902.1
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    httpGet:
+                        path: /healthz
+                        port: 9999
+                    initialDelaySeconds: 10
+                    periodSeconds: 60
+                  name: addon-token-adapter
+                  resources:
+                    limits:
+                        cpu: 100m
+                        memory: 100Mi
+                    requests:
+                        cpu: 10m
+                        memory: 20Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - NET_ADMIN
+                            - NET_RAW
+                        drop:
+                            - ALL
+                - env:
+                    - name: NODE_IP
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: status.hostIP
+                    - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+                      valueFrom:
+                        resourceFieldRef:
+                            containerName: ama-logs
+                            resource: limits.memory
+                    - name: HOSTNAME
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: spec.nodeName
+                    - name: FBIT_SERVICE_FLUSH_INTERVAL
+                      value: "15"
+                    - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
+                      value: "1"
+                    - name: FBIT_TAIL_BUFFER_MAX_SIZE
+                      value: "1"
+                    - name: AKS_CLUSTER_NAME
+                      value: test-cluster
+                    - name: AKS_RESOURCE_ID
+                      value: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster
+                    - name: AKS_NODE_RESOURCE_GROUP
+                      value: MC_test-rg_test-cluster_eastus
+                    - name: AKS_REGION
+                      value: eastus
+                    - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+                      value: test-identity-client-id
+                    - name: AZMON_CONTAINERLOGS_ONEAGENT_REGIONS
+                      value: koreacentral,norwayeast,eastus2
+                    - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
+                      value: "false"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_ENABLED
+                      value: "false"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
+                      value: "28331"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_PORT_GRPC
+                      value: "28332"
+                    - name: AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT
+                      value: "4319"
+                    - name: AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT_GRPC
+                      value: "4320"
+                    - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
+                      value: "false"
+                    - name: USING_AAD_MSI_AUTH
+                      value: "true"
+                    - name: SYSLOG_HOST_PORT
+                      value: "28330"
+                    - name: AZMON_RETINA_FLOW_LOGS_ENABLED
+                      value: "false"
+                    - name: AZMON_RESOURCE_OPTIMIZATION_ENABLED
+                      value: "false"
+                    - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+                      value: "false"
+                    - name: CONTROLLER_TYPE
+                      value: DaemonSet
+                    - name: CLUSTER_CLOUD_ENVIRONMENT
+                      value: azurepubliccloud
+                  image: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.35
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    exec:
+                        command:
+                            - /bin/bash
+                            - -c
+                            - /opt/livenessprobe.sh
+                    initialDelaySeconds: 60
+                    periodSeconds: 60
+                    timeoutSeconds: 15
+                  name: ama-logs
+                  ports:
+                    - containerPort: 25225
+                      protocol: TCP
+                    - containerPort: 25224
+                      protocol: UDP
+                    - containerPort: 28330
+                      hostPort: 28330
+                      name: syslog
+                      protocol: TCP
+                  resources:
+                    limits:
+                        cpu: 3
+                        memory: 3Gi
+                    requests:
+                        cpu: 404m
+                        memory: 1339Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - DAC_OVERRIDE
+                        drop:
+                            - ALL
+                    privileged: true
+                  volumeMounts:
+                    - mountPath: /hostfs
+                      mountPropagation: HostToContainer
+                      name: host-root
+                      readOnly: true
+                    - mountPath: /var/log
+                      name: host-log
+                    - mountPath: /var/run/mdsd-ci
+                      name: mdsd-sock
+                    - mountPath: /var/run/mdsd-PrometheusSidecar
+                      name: mdsd-prometheus-sock
+                    - mountPath: /var/lib/docker/containers
+                      name: containerlog-path
+                      readOnly: true
+                    - mountPath: /mnt/docker
+                      name: containerlog-path-2
+                      readOnly: true
+                    - mountPath: /mnt/containers
+                      name: containerlog-path-3
+                      readOnly: true
+                    - mountPath: /etc/kubernetes/host
+                      name: azure-json-path
+                    - mountPath: /etc/ama-logs-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/omsagent-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/config/settings
+                      name: settings-vol-config
+                      readOnly: true
+                    - mountPath: /etc/config/settings/adx
+                      name: ama-logs-adx-secret
+                      readOnly: true
+                - env:
+                    - name: NODE_IP
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: status.hostIP
+                    - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+                      valueFrom:
+                        resourceFieldRef:
+                            containerName: ama-logs-prometheus
+                            resource: limits.memory
+                    - name: HOSTNAME
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: spec.nodeName
+                    - name: AKS_CLUSTER_NAME
+                      value: test-cluster
+                    - name: AKS_RESOURCE_ID
+                      value: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster
+                    - name: AKS_NODE_RESOURCE_GROUP
+                      value: MC_test-rg_test-cluster_eastus
+                    - name: AKS_REGION
+                      value: eastus
+                    - name: CONTROLLER_TYPE
+                      value: DaemonSet
+                    - name: CONTAINER_TYPE
+                      value: PrometheusSidecar
+                    - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+                      value: test-identity-client-id
+                    - name: USING_AAD_MSI_AUTH
+                      value: "true"
+                    - name: SYSLOG_HOST_PORT
+                      value: "28330"
+                    - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+                      value: "false"
+                    - name: CLUSTER_CLOUD_ENVIRONMENT
+                      value: azurepubliccloud
+                  image: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.35
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    exec:
+                        command:
+                            - /bin/bash
+                            - -c
+                            - /opt/livenessprobe.sh
+                    initialDelaySeconds: 60
+                    periodSeconds: 60
+                    timeoutSeconds: 15
+                  name: ama-logs-prometheus
+                  resources:
+                    limits:
+                        cpu: 500m
+                        memory: 1Gi
+                    requests:
+                        cpu: 20m
+                        memory: 100Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - DAC_OVERRIDE
+                        drop:
+                            - ALL
+                    privileged: true
+                  volumeMounts:
+                    - mountPath: /etc/kubernetes/host
+                      name: azure-json-path
+                    - mountPath: /etc/ama-logs-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/omsagent-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: /etc/config/settings
+                      name: settings-vol-config
+                      readOnly: true
+                    - mountPath: /etc/config/osm-settings
+                      name: osm-settings-vol-config
+                      readOnly: true
+                    - mountPath: /var/run/mdsd-PrometheusSidecar
+                      name: mdsd-prometheus-sock
+                    - mountPath: /var/run/mdsd-ci
+                      name: mdsd-sock
+            dnsConfig:
+                options:
+                    - name: ndots
+                      value: "3"
+            priorityClassName: system-node-critical
+            serviceAccountName: ama-logs
+            tolerations:
+                - key: CriticalAddonsOnly
+                  operator: Exists
+                - effect: NoExecute
+                  operator: Exists
+                - effect: NoSchedule
+                  operator: Exists
+                - effect: PreferNoSchedule
+                  operator: Exists
+            volumes:
+                - hostPath:
+                    path: /
+                  name: host-root
+                - name: mdsd-prometheus-sock
+                - hostPath:
+                    path: /etc/hostname
+                  name: container-hostname
+                - hostPath:
+                    path: /var/log
+                  name: host-log
+                - hostPath:
+                    path: /var/run/mdsd-ci
+                  name: mdsd-sock
+                - hostPath:
+                    path: /var/lib/docker/containers
+                  name: containerlog-path
+                - hostPath:
+                    path: /mnt/docker
+                  name: containerlog-path-2
+                - hostPath:
+                    path: /mnt/containers
+                  name: containerlog-path-3
+                - hostPath:
+                    path: /etc/kubernetes
+                  name: azure-json-path
+                - name: ama-logs-secret
+                  secret:
+                    secretName: ama-logs-secret
+                - configMap:
+                    name: container-azm-ms-agentconfig
+                    optional: true
+                  name: settings-vol-config
+                - name: ama-logs-adx-secret
+                  secret:
+                    optional: true
+                    secretName: ama-logs-adx-secret
+                - configMap:
+                    name: container-azm-ms-osmconfig
+                    optional: true
+                  name: osm-settings-vol-config
+    updateStrategy:
+        rollingUpdate:
+            maxUnavailable: 50%
+        type: RollingUpdate
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+    labels:
+        component: ama-logs-agent-windows
+        kubernetes.azure.com/managedby: aks
+        tier: node-win
+    name: ama-logs-windows
+    namespace: kube-system
+spec:
+    selector:
+        matchLabels:
+            component: ama-logs-agent-windows
+            tier: node-win
+    template:
+        metadata:
+            annotations:
+                WSID: dGVzdC13b3Jrc3BhY2UtaWQ=
+                agentVersion: 46.17.2
+                dockerProviderVersion: 18.0.1-0
+                kubernetes.azure.com/no-http-proxy-vars: "true"
+                schema-versions: v1
+            labels:
+                component: ama-logs-agent-windows
+                kubernetes.azure.com/managedby: aks
+                tier: node-win
+        spec:
+            affinity:
+                nodeAffinity:
+                    requiredDuringSchedulingIgnoredDuringExecution:
+                        nodeSelectorTerms:
+                            - matchExpressions:
+                                - key: kubernetes.azure.com/cluster
+                                  operator: Exists
+                                - key: kubernetes.io/os
+                                  operator: In
+                                  values:
+                                    - windows
+                                - key: type
+                                  operator: NotIn
+                                  values:
+                                    - virtual-kubelet
+            containers:
+                - env:
+                    - name: FBIT_SERVICE_FLUSH_INTERVAL
+                      value: "15"
+                    - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
+                      value: "1"
+                    - name: FBIT_TAIL_BUFFER_MAX_SIZE
+                      value: "1"
+                    - name: AKS_RESOURCE_ID
+                      value: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster
+                    - name: AKS_REGION
+                      value: eastus
+                    - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
+                      value: test-identity-client-id
+                    - name: CONTROLLER_TYPE
+                      value: DaemonSet
+                    - name: HOSTNAME
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: spec.nodeName
+                    - name: NODE_IP
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: status.hostIP
+                    - name: PODNAME
+                      valueFrom:
+                        fieldRef:
+                            fieldPath: metadata.name
+                    - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+                      valueFrom:
+                        resourceFieldRef:
+                            containerName: ama-logs-windows
+                            resource: limits.memory
+                    - name: SIDECAR_SCRAPING_ENABLED
+                      value: "true"
+                    - name: USING_AAD_MSI_AUTH
+                      value: "true"
+                    - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
+                      value: "false"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_ENABLED
+                      value: "false"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
+                      value: "28331"
+                    - name: APPMONITORING_OPENTELEMETRYLOGS_PORT_GRPC
+                      value: "28332"
+                    - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
+                      value: "false"
+                    - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
+                      value: "false"
+                    - name: AZMON_WINDOWS_FLUENT_BIT_ENABLED
+                      value: "false"
+                    - name: CLUSTER_CLOUD_ENVIRONMENT
+                      value: azurepubliccloud
+                  image: mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.35
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    exec:
+                        command:
+                            - cmd
+                            - /c
+                            - C:\opt\amalogswindows\scripts\cmd\livenessprobe.exe
+                            - fluent-bit.exe
+                            - fluentdwinaks
+                            - C:\etc\amalogswindows\filesystemwatcher.txt
+                            - C:\etc\amalogswindows\renewcertificate.txt
+                            - MonAgentCore.exe
+                    initialDelaySeconds: 180
+                    periodSeconds: 60
+                    timeoutSeconds: 15
+                  name: ama-logs-windows
+                  resources:
+                    limits:
+                        cpu: "2"
+                        memory: 2Gi
+                    requests:
+                        cpu: 100m
+                        memory: 150Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - DAC_OVERRIDE
+                        drop:
+                            - ALL
+                  volumeMounts:
+                    - mountPath: C:\ProgramData\docker\containers
+                      name: docker-windows-containers
+                      readOnly: true
+                    - mountPath: C:\var
+                      name: docker-windows-kuberenetes-container-logs
+                    - mountPath: C:\etc\config\settings
+                      name: settings-vol-config
+                      readOnly: true
+                    - mountPath: C:\etc\ama-logs-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: C:\etc\omsagent-secret
+                      name: ama-logs-secret
+                      readOnly: true
+                    - mountPath: C:\etc\config\adx
+                      name: ama-logs-adx-secret
+                      readOnly: true
+                    - mountPath: C:\etc\kubernetes\host
+                      name: azure-json-path
+                      readOnly: true
+                    - mountPath: C:\etc\IMDS-access-token
+                      name: imds-token
+                      readOnly: true
+                - args:
+                    - --secret-namespace=kube-system
+                    - --secret-name=ama-logs-secret
+                    - --token-server-listening-port=8888
+                    - --health-server-listening-port=9999
+                    - --restart-pod-waiting-minutes-on-broken-connection=240
+                  command:
+                    - addon-token-adapter-win
+                  env:
+                    - name: AZMON_COLLECT_ENV
+                      value: "false"
+                  image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.250902.1
+                  imagePullPolicy: IfNotPresent
+                  livenessProbe:
+                    httpGet:
+                        path: /healthz
+                        port: 9999
+                    initialDelaySeconds: 10
+                    periodSeconds: 60
+                  name: addon-token-adapter-win
+                  resources:
+                    limits:
+                        cpu: 400m
+                        memory: 400Mi
+                    requests:
+                        cpu: 100m
+                        memory: 100Mi
+                  securityContext:
+                    capabilities:
+                        add:
+                            - NET_ADMIN
+                            - NET_RAW
+                        drop:
+                            - ALL
+            dnsConfig:
+                options:
+                    - name: ndots
+                      value: "3"
+            priorityClassName: system-node-critical
+            serviceAccountName: ama-logs
+            tolerations:
+                - key: CriticalAddonsOnly
+                  operator: Exists
+                - effect: NoExecute
+                  operator: Exists
+                - effect: NoSchedule
+                  operator: Exists
+                - effect: PreferNoSchedule
+                  operator: Exists
+            volumes:
+                - hostPath:
+                    path: C:\var
+                  name: docker-windows-kuberenetes-container-logs
+                - hostPath:
+                    path: C:\ProgramData\docker\containers
+                    type: DirectoryOrCreate
+                  name: docker-windows-containers
+                - configMap:
+                    name: container-azm-ms-agentconfig
+                    optional: true
+                  name: settings-vol-config
+                - name: ama-logs-secret
+                  secret:
+                    secretName: ama-logs-secret
+                - name: ama-logs-adx-secret
+                  secret:
+                    optional: true
+                    secretName: ama-logs-adx-secret
+                - hostPath:
+                    path: C:\k
+                  name: azure-json-path
+                - name: imds-token
+                  secret:
+                    secretName: ama-logs-secret
+    updateStrategy:
+        rollingUpdate:
+            maxUnavailable: 50%
+        type: RollingUpdate

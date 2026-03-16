@@ -1,0 +1,291 @@
+name: automatic-cluster-defaults
+description: Automatic cluster with default resource limits - t-shirt sizing SHOULD be enabled since Azure.Cluster.Kind is "automatic", producing multiple DaemonSets with Karpenter node affinity
+values:
+    AppmonitoringAgent:
+        enabled: false
+        isOpenTelemetryLogsEnabled: false
+        openTelemetryLogsPort: 28331
+        openTelemetryLogsPortGrpc: 28332
+    Azure:
+        Cluster:
+            Cloud: AzurePublicCloud
+            Distribution: ""
+            Kind: automatic
+            Region: eastus
+            ResourceId: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster
+        Extension:
+            Name: ""
+            ResourceId: ""
+        proxySettings:
+            httpProxy: ""
+            httpsProxy: ""
+            isProxyEnabled: false
+    OmsAgent:
+        accessTokenSecretName: ama-logs-secret
+        aksClusterName: test-cluster
+        aksNodeResourceGroup: MC_test-rg_test-cluster_eastus
+        aksResourceID: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster
+        daemonSetSizingValues:
+            singleSize:
+                containers:
+                    addon-token-adapter:
+                        cpuLimit: 100m
+                        cpuRequest: 20m
+                        memoryLimit: 100Mi
+                        memoryRequest: 50Mi
+                    ama-logs:
+                        cpuLimit: "0"
+                        cpuRequest: 75m
+                        memoryLimit: "0"
+                        memoryRequest: 325Mi
+                    ama-logs-prometheus:
+                        cpuLimit: "0"
+                        cpuRequest: 75m
+                        memoryLimit: "0"
+                        memoryRequest: 225Mi
+            tShirtSizes:
+                - containers:
+                    addon-token-adapter:
+                        cpuLimit: 100m
+                        cpuRequest: 10m
+                        memoryLimit: 100Mi
+                        memoryRequest: 20Mi
+                    ama-logs:
+                        cpuLimit: "0"
+                        cpuRequest: 45m
+                        memoryLimit: "0"
+                        memoryRequest: 343Mi
+                    ama-logs-prometheus:
+                        cpuLimit: "0"
+                        cpuRequest: 20m
+                        memoryLimit: "0"
+                        memoryRequest: 100Mi
+                  maxCPU: 2
+                  name: xs
+                - containers:
+                    addon-token-adapter:
+                        cpuLimit: 100m
+                        cpuRequest: 10m
+                        memoryLimit: 100Mi
+                        memoryRequest: 20Mi
+                    ama-logs:
+                        cpuLimit: "0"
+                        cpuRequest: 100m
+                        memoryLimit: "0"
+                        memoryRequest: 476Mi
+                    ama-logs-prometheus:
+                        cpuLimit: "0"
+                        cpuRequest: 20m
+                        memoryLimit: "0"
+                        memoryRequest: 100Mi
+                  maxCPU: 4
+                  name: s
+                - containers:
+                    addon-token-adapter:
+                        cpuLimit: 100m
+                        cpuRequest: 10m
+                        memoryLimit: 100Mi
+                        memoryRequest: 20Mi
+                    ama-logs:
+                        cpuLimit: "0"
+                        cpuRequest: 161m
+                        memoryLimit: 2196Mi
+                        memoryRequest: 978Mi
+                    ama-logs-prometheus:
+                        cpuLimit: "0"
+                        cpuRequest: 20m
+                        memoryLimit: "0"
+                        memoryRequest: 100Mi
+                  maxCPU: 8
+                  name: m
+                - containers:
+                    addon-token-adapter:
+                        cpuLimit: 100m
+                        cpuRequest: 10m
+                        memoryLimit: 100Mi
+                        memoryRequest: 20Mi
+                    ama-logs:
+                        cpuLimit: "0"
+                        cpuRequest: 229m
+                        memoryLimit: 2356Mi
+                        memoryRequest: 1058Mi
+                    ama-logs-prometheus:
+                        cpuLimit: "0"
+                        cpuRequest: 20m
+                        memoryLimit: "0"
+                        memoryRequest: 100Mi
+                  maxCPU: 16
+                  name: l
+                - containers:
+                    addon-token-adapter:
+                        cpuLimit: 100m
+                        cpuRequest: 10m
+                        memoryLimit: 100Mi
+                        memoryRequest: 20Mi
+                    ama-logs:
+                        cpuLimit: "0"
+                        cpuRequest: 404m
+                        memoryLimit: 2918Mi
+                        memoryRequest: 1339Mi
+                    ama-logs-prometheus:
+                        cpuLimit: "0"
+                        cpuRequest: 20m
+                        memoryLimit: "0"
+                        memoryRequest: 100Mi
+                  name: xl
+        enableDaemonSetSizing: true
+        identityClientID: test-identity-client-id
+        imageTagLinux: 3.1.35
+        imageTagWindows: win-3.1.35
+        isCustomMetricsDisabled: false
+        isFairfax: false
+        isImagePullPolicyAlways: false
+        isMoonCake: false
+        isMultitenancyLogsEnabled: false
+        isPrometheusMetricsScrapingDisabled: false
+        isRSVPAEnabled: false
+        isResourceOptimizationEnabled: false
+        isRetinaFlowLogsEnabled: false
+        isSidecarScrapingEnabled: true
+        isSyslogEnabled: true
+        isTelegrafLivenessprobeEnabled: false
+        isUsingAADAuth: "true"
+        isWindowsAMAEnabled: true
+        isWindowsAMAFluentBitEnabled: false
+        isWindowsAddonTokenAdapterDisabled: false
+        isWindowsBurstableQoSEnabled: true
+        legacyAddonDelivery: false
+        omsAgentDsCPULimitLinux: 500m
+        omsAgentDsCPULimitWindows: "2"
+        omsAgentDsCPURequestWindows: 100m
+        omsAgentDsMemoryLimitLinux: 1Gi
+        omsAgentDsMemoryLimitWindows: 2Gi
+        omsAgentDsMemoryRequestWindows: 150Mi
+        omsAgentMultitenancyCPULimitLinux: "1"
+        omsAgentMultitenancyCPURequestLinux: 100m
+        omsAgentMultitenancyHPAAvgCPUUtilization: 700
+        omsAgentMultitenancyHPAAvgMemoryUtilization: 700
+        omsAgentMultitenancyLogsHPAMaxReplicas: 50
+        omsAgentMultitenancyLogsHPAMinReplicas: 2
+        omsAgentMultitenancyMemoryLimitLinux: 1Gi
+        omsAgentMultitenancyMemoryRequestLinux: 100Mi
+        omsAgentPrometheusSidecarCPULimit: 500m
+        omsAgentPrometheusSidecarMemoryLimit: 1Gi
+        omsAgentRsCPULimit: "1"
+        omsAgentRsMemoryLimit: 1.5Gi
+        retinaFlowLogsEnabled: false
+        shouldMountSyslogHostPort: true
+        syslogHostPort: "28330"
+        workspaceID: test-workspace-id
+        workspaceKey: test-workspace-key
+    amalogs:
+        ISTEST: false
+        daemonset:
+            affinity:
+                nodeAffinity:
+                    requiredDuringSchedulingIgnoredDuringExecution:
+                        nodeSelectorTerms:
+                            - matchExpressions:
+                                - key: kubernetes.io/os
+                                  operator: In
+                                  values:
+                                    - linux
+                                - key: type
+                                  operator: NotIn
+                                  values:
+                                    - virtual-kubelet
+        deployment:
+            affinity:
+                nodeAffinity:
+                    requiredDuringSchedulingIgnoredDuringExecution:
+                        nodeSelectorTerms:
+                            - matchExpressions:
+                                - key: kubernetes.io/os
+                                  operator: In
+                                  values:
+                                    - linux
+                                - key: type
+                                  operator: NotIn
+                                  values:
+                                    - virtual-kubelet
+        domain: opinsights.azure.com
+        enableCustomMetrics: false
+        enableHighLogScaleMode: false
+        enableServiceAccountTimeBoundToken: true
+        enableTelegrafLivenessprobe: false
+        env:
+            clusterId: /subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/test-rg/providers/Microsoft.ContainerService/managedClusters/test-cluster
+            clusterName: test-cluster
+            clusterRegion: eastus
+        ignoreExtensionProxySettings: false
+        image:
+            agentVersion: azure-mdsd-1.37.0
+            dockerProviderVersion: 18.0.1-0
+            pullPolicy: IfNotPresent
+            repo: mcr.microsoft.com/azuremonitor/containerinsights/ciprod
+            tag: 3.1.35
+            tagWindows: win-3.1.35
+            winAgentVersion: 46.31.3
+        isArcACluster: false
+        logsettings:
+            custommountpath: ""
+            logflushintervalsecs: "15"
+            tailbufchunksizemegabytes: "1"
+            tailbufmaxsizemegabytes: "1"
+        metricsEndpoint: ""
+        priority: 10
+        proxy: ""
+        rbac: true
+        resources:
+            daemonsetlinux:
+                limits:
+                    cpu: 150m
+                    memory: 750Mi
+                requests:
+                    cpu: 75m
+                    memory: 325Mi
+            daemonsetlinuxsidecar:
+                limits:
+                    cpu: 500m
+                    memory: 1Gi
+                requests:
+                    cpu: 75m
+                    memory: 225Mi
+            daemonsetwindows:
+                limits:
+                    cpu: 2
+                    memory: 2Gi
+                requests:
+                    cpu: 500m
+                    memory: 700Mi
+            deployment:
+                limits:
+                    cpu: 1
+                    memory: 1Gi
+                requests:
+                    cpu: 150m
+                    memory: 250Mi
+        scheduleOnTaintedNodes: false
+        secret:
+            key: test-workspace-key
+            wsid: test-workspace-id
+        sidecarscraping: true
+        syslog:
+            enabled: false
+            syslogPort: 28330
+        tokenAudience: ""
+        tolerations:
+            - effect: NoSchedule
+              key: node-role.kubernetes.io/control-plane
+              operator: Exists
+        tolerationsUnrestricted:
+            - effect: NoSchedule
+              operator: Exists
+        useAADAuth: false
+    global:
+        commonGlobals:
+            CloudEnvironment: AzurePublicCloud
+            Region: eastus
+            Versions:
+                Kubernetes: 1.32.7
+    legacyAddonDelivery: false

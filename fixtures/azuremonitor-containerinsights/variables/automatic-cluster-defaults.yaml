@@ -1,0 +1,6 @@
+name: automatic-cluster-defaults
+description: Automatic cluster with default resource limits - t-shirt sizing SHOULD be enabled since Azure.Cluster.Kind is "automatic", producing multiple DaemonSets with Karpenter node affinity
+variables:
+  clusterKind: "automatic"
+  omsAgentDsCPULimitLinux: "500m"
+  omsAgentDsMemoryLimitLinux: "1Gi"

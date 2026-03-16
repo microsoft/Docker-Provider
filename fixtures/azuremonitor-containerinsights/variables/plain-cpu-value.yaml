@@ -1,0 +1,6 @@
+name: plain-cpu-value
+description: Override CPU limit to a plain number "2" (meaning 2 CPU cores = 2000m). Tests maxResourceValue with plain number CPU vs millicore values in t-shirt sizes. Since t-shirt size cpuLimit is "0", the toggle value "2" should always win.
+variables:
+  clusterKind: "automatic"
+  omsAgentDsCPULimitLinux: "2"
+  omsAgentDsMemoryLimitLinux: "1Gi"

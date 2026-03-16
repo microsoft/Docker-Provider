@@ -1,0 +1,6 @@
+name: memory-gi-vs-mi-comparison
+description: Override memory limit to 2Gi to test maxResourceValue comparing Gi vs Mi (2Gi=2147483648 bytes vs 2196Mi=2302672896 bytes). The t-shirt size "m" has memoryLimit 2196Mi which is LARGER than 2Gi, so maxResourceValue should pick 2196Mi for that tier.
+variables:
+  clusterKind: "automatic"
+  omsAgentDsCPULimitLinux: "500m"
+  omsAgentDsMemoryLimitLinux: "2Gi"
