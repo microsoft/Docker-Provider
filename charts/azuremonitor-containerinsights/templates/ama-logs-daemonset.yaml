@@ -35,7 +35,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: ama-logs
+  name: ama-logs{{- if gt $index 0 }}-{{ $size.name }}{{- end }}
   namespace: kube-system
   labels:
 {{- if $isArcExtension }}
