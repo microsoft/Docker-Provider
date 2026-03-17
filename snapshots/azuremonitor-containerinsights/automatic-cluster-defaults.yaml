@@ -10,7 +10,9 @@ kind: ClusterRole
 metadata:
     name: ama-logs-reader
 rules:
-    - resources:
+    - apiGroups:
+        - ""
+      resources:
         - pods
         - events
         - nodes
@@ -35,7 +37,9 @@ rules:
         - horizontalpodautoscalers
       verbs:
         - list
-    - resourceNames:
+    - apiGroups:
+        - ""
+      resourceNames:
         - ama-logs-secret
       resources:
         - secrets
