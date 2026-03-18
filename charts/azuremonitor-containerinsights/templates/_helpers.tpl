@@ -146,24 +146,9 @@ Returns value in smallest unit (bytes for memory, millicores for CPU).
 0
 {{- else -}}
 
-{{/* Extract number and suffix */}}
-{{- $number := "" -}}
-{{- $suffix := "" -}}
-{{- $i := 0 -}}
-{{- range $char := (split "" $quantity) -}}
-  {{- if or (eq $char "0") (eq $char "1") (eq $char "2") (eq $char "3") (eq $char "4") (eq $char "5") (eq $char "6") (eq $char "7") (eq $char "8") (eq $char "9") (eq $char ".") -}}
-    {{- $number = printf "%s%s" $number $char -}}
-  {{- else -}}
-    {{- $suffix = substr ($i | int) (len $quantity | int) $quantity -}}
-    {{- break -}}
-  {{- end -}}
-  {{- $i = add $i 1 -}}
-{{- end -}}
-
-{{/* Handle case where no suffix found (pure number) */}}
-{{- if eq $suffix "" -}}
-  {{- $suffix = "" -}}
-{{- end -}}
+{{/* Extract number and suffix using regex */}}
+{{- $number := regexFind "^[0-9.]+" $quantity -}}
+{{- $suffix := trimPrefix $number $quantity -}}
 
 {{/* Parse the numeric part - handle decimals */}}
 {{- $intPart := 0 -}}
