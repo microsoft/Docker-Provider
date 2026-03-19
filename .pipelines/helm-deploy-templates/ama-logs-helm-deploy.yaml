@@ -26,6 +26,10 @@ parameters:
 - name: imageTag
   type: string
   displayName: 'Image tag suffix (e.g., 3.1.32)'
+- name: imageRepository
+  type: string
+  default: '/azuremonitor/containerinsights/ciprod'
+  displayName: 'Image repository path (e.g., /azuremonitor/containerinsights/ciprod or /azuremonitor/containerinsights/cidev)'
 - name: environment
   type: string
   displayName: 'Azure DevOps Environment name'
@@ -99,7 +103,7 @@ jobs:
             # TODO: When it is merged to ci_prod, the following chartPath will be updated accordingly.
             chartPath: '$(Build.SourcesDirectory)/charts/azuremonitor-containerinsights-for-prod-clusters'
             releaseName: '${{ parameters.releaseName }}'
-            overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageTagLinux=${{ parameters.imageTag }},OmsAgent.imageTagWindows=win-${{ parameters.imageTag }}'
+            overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageRepository=${{ parameters.imageRepository }},OmsAgent.imageTagLinux=${{ parameters.imageTag }},OmsAgent.imageTagWindows=win-${{ parameters.imageTag }}'
             waitForExecution: false
             arguments: '--timeout 10m --install'
         - task: AzureCLI@2
