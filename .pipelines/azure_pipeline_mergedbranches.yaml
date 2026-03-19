@@ -42,16 +42,8 @@ extends:
     customBuildTags:
     - ES365AIMigrationTooling
     stages:
-    # This stage will be skipped when LinuxImageOverride and WindowsImageOverride are both set
-    # This feature allows bypassing the build stage when using pre-built images for testing, which saves time and resources.
     - stage: stage
       displayName: 'Build and Publish Container Images'
-      # TODO: add logic to skip build to test an image specified from pipeline variables.
-      # condition: |
-      #   or(
-      #     eq(variables['LinuxImageOverride'], ''),
-      #     eq(variables['WindowsImageOverride'], '')
-      #   )
       jobs:
       - job: common
         pool:
@@ -194,17 +186,7 @@ extends:
               docker pull mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1
               docker buildx create --name dockerbuilder --driver docker-container --driver-opt image=mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1 --use
               docker buildx inspect --bootstrap
-              # Determine if we should push to ACR
-              # Push when: NOT a PR, OR when PR is from specific branches (zane/ci-agent-auto-deploy or branches containing 'run-e2e')
-              SHOULD_PUSH="false"
               if [ "$(Build.Reason)" != "PullRequest" ]; then
-                SHOULD_PUSH="true"
-              elif [[ "$(System.PullRequest.SourceBranch)" == "zane/ci-agent-auto-deploy" ]] || [[ "$(System.PullRequest.SourceBranch)" == *"run-e2e"* ]]; then
-                SHOULD_PUSH="true"
-                echo "PR from branch $(System.PullRequest.SourceBranch) - will push image to ACR for E2E testing"
-              fi
-              
-              if [ "$SHOULD_PUSH" == "true" ]; then
                 docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --push --provenance=false .
                 echo "##vso[task.logissue type=warning]Linux image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)"
                 docker pull ${{ variables.repoImageName }}:$(linuxImagetag)
@@ -295,7 +277,7 @@ extends:
               export TRIVY_JAVA_DB_REPOSITORY=$PRIMARY_TRIVY_JAVA_DB_REPOSITORY
               # Function to run Trivy scan and handle output
               run_trivy_scan() {
-                  trivy image --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM "${{ variables.repoImageName }}:$(linuxImagetag)" > trivy_output.log 2>&1
+                  trivy image --exit-code 1--ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM "${{ variables.repoImageName }}:$(linuxImagetag)" > trivy_output.log 2>&1
                   return $?
               }
               # Attempt scan up to 5 times with repository fallback
@@ -562,16 +544,7 @@ extends:
           inputs:
             targetType: 'inline'
             script: |
-              # Push when: NOT a PR, OR when PR is from specific branches (zane/ci-agent-auto-deploy or branches containing 'run-e2e')
-              $shouldPush = $false
               if ("$(Build.Reason)" -ne "PullRequest") {
-                $shouldPush = $true
-              } elseif ("$(System.PullRequest.SourceBranch)" -eq "zane/ci-agent-auto-deploy" -or "$(System.PullRequest.SourceBranch)" -like "*run-e2e*") {
-                $shouldPush = $true
-                Write-Host "PR from branch $(System.PullRequest.SourceBranch) - will push image to ACR for E2E testing"
-              }
-              
-              if ($shouldPush) {
                 docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
               }
         - task: CodeQL3000Finalize@0
@@ -779,16 +752,7 @@ extends:
           inputs:
             targetType: 'inline'
             script: |
-              # Push when: NOT a PR, OR when PR is from specific branches (zane/ci-agent-auto-deploy or branches containing 'run-e2e')
-              $shouldPush = $false
               if ("$(Build.Reason)" -ne "PullRequest") {
-                $shouldPush = $true
-              } elseif ("$(System.PullRequest.SourceBranch)" -eq "zane/ci-agent-auto-deploy" -or "$(System.PullRequest.SourceBranch)" -like "*run-e2e*") {
-                $shouldPush = $true
-                Write-Host "PR from branch $(System.PullRequest.SourceBranch) - will push image to ACR for E2E testing"
-              }
-              
-              if ($shouldPush) {
                 docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
               }
         - task: CodeQL3000Finalize@0
@@ -829,16 +793,7 @@ extends:
               az account set -s ${{ variables.subscription }}
               az acr login -n ${{ variables.containerRegistry }}
               @{"image.name"="${{ variables.repoImageName }}:$(windowsImageTag)"} | ConvertTo-Json -Compress | Out-File -Encoding ascii $(Build.ArtifactStagingDirectory)/windows/metadata.json
-              # Push when: NOT a PR, OR when PR is from specific branches (zane/ci-agent-auto-deploy or branches containing 'run-e2e')
-              $shouldPush = $false
               if ("$(Build.Reason)" -ne "PullRequest") {
-                $shouldPush = $true
-              } elseif ("$(System.PullRequest.SourceBranch)" -eq "zane/ci-agent-auto-deploy" -or "$(System.PullRequest.SourceBranch)" -like "*run-e2e*") {
-                $shouldPush = $true
-                Write-Host "PR from branch $(System.PullRequest.SourceBranch) - will push multi-arch image to ACR for E2E testing"
-              }
-              
-              if ($shouldPush) {
                  docker manifest create ${{ variables.repoImageName }}:$(windowsImageTag) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
                  docker manifest push ${{ variables.repoImageName }}:$(windowsImageTag)
                  Write-Host "##vso[task.logissue type=warning]Windows image built with tag: ${{ variables.repoImageName }}:$(windowsImageTag)"
