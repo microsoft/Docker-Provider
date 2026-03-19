@@ -4,10 +4,10 @@
 #     parameters:
 #       clusterName: 'my-cluster'
 #       resourceGroup: 'my-rg'
-#       region: 'eastus'
-#       subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
+#       region: e.g. 'eastus'
+#       subscriptionId: 'your-subscription-id'
 #       workspaceId: 'your-workspace-id'
-#       imageTag: '$(AgentImageTagSuffix)'  # e.g., 3.1.32
+#       imageTag: '$(AgentImageTagSuffix)'
 #       environment: 'deployment environment'
 
 parameters:
@@ -23,9 +23,12 @@ parameters:
 - name: workspaceId
   type: string
   displayName: 'Log Analytics Workspace ID'
-- name: imageTag
+- name: amalogsLinuxImage
   type: string
   displayName: 'Image tag suffix (e.g., 3.1.32)'
+- name: amalogsWindowsImage
+  type: string
+  displayName: 'Image tag suffix (e.g., win-3.1.32)'
 - name: imageRepository
   type: string
   default: '/azuremonitor/containerinsights/ciprod'
@@ -103,7 +106,7 @@ jobs:
             # TODO: When it is merged to ci_prod, the following chartPath will be updated accordingly.
             chartPath: '$(Build.SourcesDirectory)/charts/azuremonitor-containerinsights-for-prod-clusters'
             releaseName: '${{ parameters.releaseName }}'
-            overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageRepository=${{ parameters.imageRepository }},OmsAgent.imageTagLinux=${{ parameters.imageTag }},OmsAgent.imageTagWindows=win-${{ parameters.imageTag }}'
+            overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageRepository=${{ parameters.imageRepository }},OmsAgent.imageTagLinux=${{ parameters.amalogsLinuxImage }},OmsAgent.imageTagWindows=${{ parameters.amalogsWindowsImage }}'
             waitForExecution: false
             arguments: '--timeout 10m --install'
         - task: AzureCLI@2
