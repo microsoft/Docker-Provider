@@ -45,7 +45,7 @@ parameters:
 - name: azureSubscription
   type: string
   default: 'ContainerInsights_Build_Subscription_CI'
-- name: namespace 
+- name: namespace
   type: string
   default: 'default'
 - name: releaseName
