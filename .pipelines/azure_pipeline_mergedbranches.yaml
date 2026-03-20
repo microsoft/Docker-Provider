@@ -890,8 +890,8 @@ extends:
       dependsOn: 
         #- stage
         []
-      condition: |
-        eq(dependencies.stage.result, 'Succeeded')
+      #condition: |
+      #  eq(dependencies.stage.result, 'Succeeded')
       variables:
         # Override the helm chart's default image repository (/azuremonitor/containerinsights/ciprod) to use cidev
         ImageRepositoryOverride: '/azuremonitor/containerinsights/cidev'
