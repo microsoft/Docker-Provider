@@ -898,8 +898,8 @@ extends:
         # Use image tags built from the previous build stage
         #linuxImageTagUnderTest: $[stageDependencies.stage.common.outputs['setup.linuxImagetag']]
         #windowsImageTagUnderTest: $[stageDependencies.stage.common.outputs['setup.windowsImageTag']]
-        linuxImageTagUnderTest: '3.1.35'
-        windowsImageTagUnderTest: 'win-3.1.35'
+        linuxImageTagUnderTest: '3.1.34-8-g4beda67ad-20260310202859'
+        windowsImageTagUnderTest: 'win-3.1.34-8-g4beda67ad-20260310202859'
       jobs:
       # TODO: add more clusters from test automation framework when the tests are stable
       # ============================================================
