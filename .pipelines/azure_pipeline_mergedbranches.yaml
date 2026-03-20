@@ -911,7 +911,7 @@ extends:
           workspaceId: $(ZANE_TEST_LA2_LAW_ID) # zane-test-la2
           amalogsLinuxImage: $(linuxImageTagUnderTest)
           amalogsWindowsImage: $(windowsImageTagUnderTest)
-          imageRepository: ${{ variables.ImageRepositoryOverride }} 
+          imageRepository: $(ImageRepositoryOverride)
           environment: 'CI-Agent-Dev'
           azureSubscription: 'ContainerInsights_Build_Subscription_CI'
 
@@ -939,7 +939,7 @@ extends:
           workspaceId: $(ZANE_TEST2_LA2_LAW_ID) # zane-test2-la2
           amalogsLinuxImage: $(linuxImageTagUnderTest)
           amalogsWindowsImage: $(windowsImageTagUnderTest)
-          imageRepository: ${{ variables.ImageRepositoryOverride }}
+          imageRepository: $(ImageRepositoryOverride)
           environment: 'CI-Agent-Dev2'
           azureSubscription: 'ContainerInsights_Build_Subscription_CI'
 
