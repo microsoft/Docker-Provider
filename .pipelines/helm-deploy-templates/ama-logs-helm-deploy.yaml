@@ -42,21 +42,15 @@ parameters:
 - name: cloudEnvironment
   type: string
   default: 'azurepubliccloud'
-- name: kubernetesVersion
-  type: string
-  default: '1.32.7'
 - name: azureSubscription
   type: string
   default: 'ContainerInsights_Build_Subscription_CI'
-- name: namespace
+- name: namespace 
   type: string
   default: 'default'
 - name: releaseName
   type: string
   default: 'azuremonitor-containers'
-- name: helmVersion
-  type: string
-  default: '3.12.3'
 - name: dependsOn
   type: object
   default: []
@@ -91,7 +85,7 @@ jobs:
         - task: HelmInstaller@1
           displayName: Install Helm
           inputs:
-            helmVersionToInstall: '${{ parameters.helmVersion }}'
+            helmVersionToInstall: 'latest'
         - task: HelmDeploy@0
           displayName: 'Helm Deploy: ama-logs to ${{ parameters.clusterName }}'
           inputs:
