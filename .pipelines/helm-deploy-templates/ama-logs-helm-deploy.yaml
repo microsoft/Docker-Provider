@@ -7,7 +7,8 @@
 #       region: e.g. 'eastus'
 #       subscriptionId: 'your-subscription-id'
 #       workspaceId: 'your-workspace-id'
-#       imageTag: '$(AgentImageTagSuffix)'
+#       amalogsLinuxImage: "ama-logs linux image tag"
+#       amalogsWindowsImage: "ama-logs windows image tag"
 #       environment: 'deployment environment'
 
 parameters:
@@ -122,8 +123,8 @@ jobs:
               echo "Cluster: ${{ parameters.clusterName }}"
               echo "Resource Group: ${{ parameters.resourceGroup }}"
               echo "Region: ${{ parameters.region }}"
-              echo "Linux Image Tag: ${{ parameters.imageTag }}"
-              echo "Windows Image Tag: win-${{ parameters.imageTag }}"
+              echo "Linux Image Tag: ${{ parameters.amalogsLinuxImage }}"
+              echo "Windows Image Tag: ${{ parameters.amalogsWindowsImage }}"
               echo ""
               
               echo "Getting AKS credentials..."
@@ -158,8 +159,8 @@ jobs:
               echo "=========================================="
               echo "Image Verification"
               echo "=========================================="
-              EXPECTED_LINUX_TAG="${{ parameters.imageTag }}"
-              EXPECTED_WINDOWS_TAG="win-${{ parameters.imageTag }}"
+              EXPECTED_LINUX_TAG="${{ parameters.amalogsLinuxImage }}"
+              EXPECTED_WINDOWS_TAG="${{ parameters.amalogsWindowsImage }}"
               VERIFICATION_PASSED=true
               
               echo "Expected Linux image tag: $EXPECTED_LINUX_TAG"
