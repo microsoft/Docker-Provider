@@ -130,7 +130,7 @@ spec:
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
-      revision: ci_prod
+      revision: zane/ci-agent-auto-deploy
       paths:
       - test/ginkgo-e2e
   steps:
