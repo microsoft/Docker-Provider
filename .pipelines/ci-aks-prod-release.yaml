@@ -501,6 +501,7 @@ extends:
           workspaceId: '22f38e11-4f59-480c-b4b8-2573156b6e06' # "Monitoring-Model-Cluster-WCUS"
           imageTag: '$(AgentImageTagSuffix)'
           environment: 'CI-Deploy-To-Prod-Cluster-1'
+          extraOverrideValues: 'OmsAgent.enableProcstatMonitoring=true'
       # Monitoring-Model-Cluster-WEU
       - template: .pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
         parameters:
@@ -511,3 +512,4 @@ extends:
           workspaceId: '5c269467-32a9-4468-a1d6-ec1cac551e74' # "Monitoring-Model-Cluster-WEU"
           imageTag: '$(AgentImageTagSuffix)'
           environment: 'CI-Deploy-To-Prod-Cluster-2'
+          extraOverrideValues: 'OmsAgent.enableProcstatMonitoring=true'

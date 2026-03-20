@@ -539,6 +539,31 @@ spec:
         {{- else }}
           imagePullPolicy: IfNotPresent
         {{- end }}
+        {{- if eq ($.Values.OmsAgent.enableProcstatMonitoring | default false) true }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              {
+              echo ''
+              echo '[[inputs.procstat]]'
+              echo '  name_prefix="t.azm.ms/"'
+              echo '  exe = "fluent-bit"'
+              echo '  interval = "60s"'
+              echo '  pid_finder = "native"'
+              echo '  pid_tag = true'
+              echo '  name_override = "agent_telemetry"'
+              echo '  fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]'
+              echo '  [inputs.procstat.tags]'
+              echo '    Computer = "$NODE_NAME"'
+              echo '    AgentVersion = "$AGENT_VERSION"'
+              echo '    ControllerType = "$CONTROLLER_TYPE"'
+              echo '    AKS_RESOURCE_ID = "$TELEMETRY_AKS_RESOURCE_ID"'
+              echo '    ACSResourceName = "$TELEMETRY_ACS_RESOURCE_NAME"'
+              echo '    Region = "$TELEMETRY_AKS_REGION"'
+              } >> /etc/opt/microsoft/docker-cimprov/telegraf.conf
+              exec /opt/main.sh
+        {{- end }}
           resources:
             limits:
               {{- $containerResources := index $size.containers "ama-logs" }}
