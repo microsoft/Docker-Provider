@@ -544,9 +544,14 @@ spec:
             - /bin/bash
             - -c
             - |
+              # Rename mdsd and fluent-bit binaries so procstat can distinguish ama-logs processes from others
+              cp /usr/sbin/mdsd /usr/sbin/ci-mdsd
+              sed -i 's|mdsd \${MDSD_AAD_MSI_AUTH_ARGS}|ci-mdsd ${MDSD_AAD_MSI_AUTH_ARGS}|g' /opt/main.sh
+              cp /usr/bin/fluent-bit /usr/bin/ci-fluent-bit
+              sed -i 's|fluent-bit -c|ci-fluent-bit -c|g' /opt/main.sh
               TELEGRAF_CONF="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
               TAGS='  [inputs.procstat.tags]\n    Computer = "$NODE_NAME"\n    AgentVersion = "$AGENT_VERSION"\n    ControllerType = "$CONTROLLER_TYPE"\n    AKS_RESOURCE_ID = "$TELEMETRY_AKS_RESOURCE_ID"\n    ACSResourceName = "$TELEMETRY_ACS_RESOURCE_NAME"\n    Region = "$TELEMETRY_AKS_REGION"'
-              for proc in fluent-bit mdsd ruby telegraf crond inotifywait; do
+              for proc in ci-fluent-bit ci-mdsd ruby telegraf crond inotifywait; do
                 printf '\n[[inputs.procstat]]\n  name_prefix="t.azm.ms/"\n  exe = "%s"\n  interval = "60s"\n  pid_finder = "native"\n  pid_tag = true\n  name_override = "agent_telemetry"\n  fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]\n'"$TAGS"'\n' "$proc" >> "$TELEGRAF_CONF"
               done
               exec /opt/main.sh
