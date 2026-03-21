@@ -738,6 +738,17 @@ spec:
         {{- else }}
           imagePullPolicy: IfNotPresent
         {{- end }}
+        {{- if eq ($.Values.OmsAgent.enableProcstatMonitoring | default false) true }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              cp /usr/sbin/mdsd /usr/sbin/ci-mdsd
+              sed -i 's|mdsd \${MDSD_AAD_MSI_AUTH_ARGS}|ci-mdsd ${MDSD_AAD_MSI_AUTH_ARGS}|g' /opt/main.sh
+              cp /usr/bin/fluent-bit /usr/bin/ci-fluent-bit
+              sed -i 's|fluent-bit -c|ci-fluent-bit -c|g' /opt/main.sh
+              exec /opt/main.sh
+        {{- end }}
           resources:
             limits:
               {{- $containerResources := index $size.containers "ama-logs-prometheus" }}
@@ -1106,6 +1117,17 @@ spec:
           imagePullPolicy: Always
         {{- else }}
           imagePullPolicy: IfNotPresent
+        {{- end }}
+        {{- if eq (.Values.OmsAgent.enableProcstatMonitoring | default false) true }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              cp /usr/sbin/mdsd /usr/sbin/ci-mdsd
+              sed -i 's|mdsd \${MDSD_AAD_MSI_AUTH_ARGS}|ci-mdsd ${MDSD_AAD_MSI_AUTH_ARGS}|g' /opt/main.sh
+              cp /usr/bin/fluent-bit /usr/bin/ci-fluent-bit
+              sed -i 's|fluent-bit -c|ci-fluent-bit -c|g' /opt/main.sh
+              exec /opt/main.sh
         {{- end }}
           {{- if not .Values.OmsAgent.isRSVPAEnabled }}
           resources:
