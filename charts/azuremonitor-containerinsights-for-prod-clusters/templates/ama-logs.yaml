@@ -545,13 +545,13 @@ spec:
             - -c
             - |
               # Rename mdsd and fluent-bit binaries so procstat can distinguish ama-logs processes from others
-              cp /usr/sbin/mdsd /usr/sbin/ci-mdsd
-              sed -i 's|mdsd \${MDSD_AAD_MSI_AUTH_ARGS}|ci-mdsd ${MDSD_AAD_MSI_AUTH_ARGS}|g' /opt/main.sh
-              cp /usr/bin/fluent-bit /usr/bin/ci-fluent-bit
-              sed -i 's|fluent-bit -c|ci-fluent-bit -c|g' /opt/main.sh
+              cp /usr/sbin/mdsd /usr/sbin/ama-logs-mdsd
+              sed -i 's|mdsd \${MDSD_AAD_MSI_AUTH_ARGS}|ama-logs-mdsd ${MDSD_AAD_MSI_AUTH_ARGS}|g' /opt/main.sh
+              cp /usr/bin/fluent-bit /usr/bin/ama-logs-fluent-bit
+              sed -i 's|fluent-bit -c|ama-logs-fluent-bit -c|g' /opt/main.sh
               TELEGRAF_CONF="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
               TAGS='  [inputs.procstat.tags]\n    Computer = "$NODE_NAME"\n    AgentVersion = "$AGENT_VERSION"\n    ControllerType = "$CONTROLLER_TYPE"\n    AKS_RESOURCE_ID = "$TELEMETRY_AKS_RESOURCE_ID"\n    ACSResourceName = "$TELEMETRY_ACS_RESOURCE_NAME"\n    Region = "$TELEMETRY_AKS_REGION"'
-              for proc in ci-fluent-bit ci-mdsd ruby telegraf crond inotifywait; do
+              for proc in ama-logs-fluent-bit ama-logs-mdsd ama-logs-rs-fluent-bit ama-logs-rs-mdsd ama-logs-prom-mdsd ama-logs-prom-fluent-bit ruby telegraf crond inotifywait; do
                 printf '\n[[inputs.procstat]]\n  name_prefix="t.azm.ms/"\n  exe = "%s"\n  interval = "60s"\n  pid_finder = "native"\n  pid_tag = true\n  name_override = "agent_telemetry"\n  fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]\n'"$TAGS"'\n' "$proc" >> "$TELEGRAF_CONF"
               done
               exec /opt/main.sh
@@ -743,10 +743,10 @@ spec:
             - /bin/bash
             - -c
             - |
-              cp /usr/sbin/mdsd /usr/sbin/ci-mdsd
-              sed -i 's|mdsd \${MDSD_AAD_MSI_AUTH_ARGS}|ci-mdsd ${MDSD_AAD_MSI_AUTH_ARGS}|g' /opt/main.sh
-              cp /usr/bin/fluent-bit /usr/bin/ci-fluent-bit
-              sed -i 's|fluent-bit -c|ci-fluent-bit -c|g' /opt/main.sh
+              cp /usr/sbin/mdsd /usr/sbin/ama-logs-prom-mdsd
+              sed -i 's|mdsd \${MDSD_AAD_MSI_AUTH_ARGS}|ama-logs-prom-mdsd ${MDSD_AAD_MSI_AUTH_ARGS}|g' /opt/main.sh
+              cp /usr/bin/fluent-bit /usr/bin/ama-logs-prom-fluent-bit
+              sed -i 's|fluent-bit -c|ama-logs-prom-fluent-bit -c|g' /opt/main.sh
               exec /opt/main.sh
         {{- end }}
           resources:
@@ -1123,10 +1123,10 @@ spec:
             - /bin/bash
             - -c
             - |
-              cp /usr/sbin/mdsd /usr/sbin/ci-mdsd
-              sed -i 's|mdsd \${MDSD_AAD_MSI_AUTH_ARGS}|ci-mdsd ${MDSD_AAD_MSI_AUTH_ARGS}|g' /opt/main.sh
-              cp /usr/bin/fluent-bit /usr/bin/ci-fluent-bit
-              sed -i 's|fluent-bit -c|ci-fluent-bit -c|g' /opt/main.sh
+              cp /usr/sbin/mdsd /usr/sbin/ama-logs-rs-mdsd
+              sed -i 's|mdsd \${MDSD_AAD_MSI_AUTH_ARGS}|ama-logs-rs-mdsd ${MDSD_AAD_MSI_AUTH_ARGS}|g' /opt/main.sh
+              cp /usr/bin/fluent-bit /usr/bin/ama-logs-rs-fluent-bit
+              sed -i 's|fluent-bit -c|ama-logs-rs-fluent-bit -c|g' /opt/main.sh
               exec /opt/main.sh
         {{- end }}
           {{- if not .Values.OmsAgent.isRSVPAEnabled }}
