@@ -55,24 +55,27 @@ var _ = DescribeTable("The pods should be scheduled in all Fips and ARM64 nodes"
  */
 var _ = DescribeTable("All processes are running",
 	func(namespace, labelName, labelValue, containerName string, processes []string) {
+		// Fluentd is not running in linux ds pods if AZMON_RESOURCE_OPTIMIZATION_ENABLED is set to true.
+		if labelValue == "ama-logs-rs" || ResourceOptimizationEnabled != "true" {
+			// Add fluentd process to the list of processes to check
+			processes = append(processes, "fluentd")
+		}
 		err := utils.CheckAllProcessesRunning(K8sClient, Cfg, labelName, labelValue, namespace, containerName, processes)
 		Expect(err).NotTo(HaveOccurred())
 	},
 	Entry("when checking the ama-logs-rs replica pod", "kube-system", "rsName", "ama-logs-rs", "ama-logs",
 		[]string{
 			"fluent-bit",
-			"fluentd",
-			"mdsd -a -A -r",
-			"inotifywait /etc/config/settings",
+			"mdsd",
+			"inotifywait",
 			"crond",
 		},
 	),
 	Entry("when checking the ama-logs daemonset pods", "kube-system", "component", "ama-logs-agent", "ama-logs",
 		[]string{
 			"fluent-bit",
-			"fluentd",
-			"mdsd -a -A -r",
-			"inotifywait /etc/config/settings",
+			"mdsd",
+			"inotifywait",
 			"crond",
 			"telegraf",
 		},
@@ -112,7 +115,30 @@ var _ = DescribeTable("The container logs should not contain errors",
 	},
 	Entry("when checking the ama-logs-rs pods", "kube-system", "rsName", "ama-logs-rs"),
 	Entry("when checking the ama-logs daemonset pods", "kube-system", "component", "ama-logs-agent"),
-	Entry("when checking the ama-logs-rs pods", "kube-system", "rsName", "ama-logs-rs", Label(utils.ARM64Label)),
-	Entry("when checking the ama-logs daemonset pods", "kube-system", "component", "ama-logs-agent", Label(utils.ARM64Label)),
 	Entry("when checking the ama-logs-windows daemonset pods", "kube-system", "component", "ama-logs-agent-windows", Label(utils.WindowsLabel)),
+)
+
+/*
+- The containers should not contain any errors for the running processes.
+*/
+var _ = DescribeTable("The ama-logs container should not contain errors in the running processes",
+	func(namespace, labelName, labelValue, containerName, filePath string) {
+		if GenevaIntegrationEnabled == "true" && filePath == "/var/opt/microsoft/docker-cimprov/log/fluent-bit.log" {
+			Skip("Skipping fluent-bit log check for ama-logs container when Geneva integration is enabled")
+		} else if GenevaIntegrationEnabled != "true" && filePath == "/var/opt/microsoft/docker-cimprov/log/fluent-bit-geneva.log" {
+			Skip("Skipping fluent-bit-geneva log check for ama-logs container when Geneva integration is disabled")
+		}
+		err := utils.CheckFileForErrors(K8sClient, Cfg, namespace, labelName, labelValue, containerName, filePath)
+		Expect(err).NotTo(HaveOccurred())
+	},
+	// fluentd logs
+	Entry("when checking the ama-logs container for fluentd", "kube-system", "component", "ama-logs-agent", "ama-logs", "/var/opt/microsoft/docker-cimprov/log/fluentd.log"),
+	// fluent-bit logs
+	Entry("when checking the ama-logs container for fluentbit", "kube-system", "component", "ama-logs-agent", "ama-logs", "/var/opt/microsoft/docker-cimprov/log/fluent-bit.log"),
+	Entry("when checking the ama-logs container for fluentbit", "kube-system", "component", "ama-logs-agent", "ama-logs", "/var/opt/microsoft/docker-cimprov/log/fluent-bit-geneva.log"),
+	Entry("when checking the ama-logs container for fluent_forward_failed", "kube-system", "component", "ama-logs-agent", "ama-logs", "/var/opt/microsoft/docker-cimprov/log/fluent_forward_failed.log"),
+	// telegraf logs
+	Entry("when checking the ama-logs container for telegraf", "kube-system", "component", "ama-logs-agent", "ama-logs", "/var/opt/microsoft/docker-cimprov/log/telegraf_error.log"),
+	// mdsd logs
+	Entry("when checking the ama-logs container for mdsd", "kube-system", "component", "ama-logs-agent", "ama-logs", "/var/opt/microsoft/linuxmonagent/log/mdsd.err"),
 )

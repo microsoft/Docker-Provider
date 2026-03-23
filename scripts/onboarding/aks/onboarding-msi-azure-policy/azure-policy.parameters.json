@@ -1,19 +1,27 @@
 {
     "resourceTagValues": {
-      "type": "object"
+      "type": "Object"
     },
     "workspaceResourceId": {
-      "type": "string"
+      "type": "String"
     },
     "workspaceRegion": {
-      "type": "string"
+      "type": "String"
+    },
+    "enableContainerLogV2": {
+      "type": "Boolean",
+      "defaultValue": true
+    },
+    "enableRetinaNetworkFlowLogs": {
+      "type": "Boolean",
+      "defaultValue": false
     },
     "enableSyslog": {
-      "type": "bool",
+      "type": "Boolean",
       "defaultValue": false
     },
     "syslogLevels": {
-      "type": "array",
+      "type": "Array",
       "defaultValue": [
         "Debug",
         "Info",
@@ -26,7 +34,7 @@
       ]
     },
     "syslogFacilities": {
-      "type": "array",
+      "type": "Array",
       "defaultValue": [
           "auth",
           "authpriv",
@@ -51,11 +59,11 @@
       ]
     },
     "dataCollectionInterval": {
-      "type": "string",
+      "type": "String",
       "defaultValue": "1m"
     },
     "namespaceFilteringModeForDataCollection": {
-      "type": "string",
+      "type": "String",
       "defaultValue": "Off",
       "allowedValues": [
         "Off",
@@ -64,17 +72,13 @@
       ]
     },
     "namespacesForDataCollection": {
-      "type": "array",
+      "type": "Array",
       "defaultValue": [
         "kube-system", "gatekeeper-system", "azure-arc"
       ]
     },
-    "enableContainerLogV2": {
-      "type": "bool",
-      "defaultValue": true
-    },
     "streams": {
-       "type": "array",
+       "type": "Array",
        "defaultValue": [
         "Microsoft-ContainerLog",
         "Microsoft-ContainerLogV2",
@@ -87,7 +91,16 @@
         "Microsoft-InsightsMetrics",
         "Microsoft-ContainerInventory",
         "Microsoft-ContainerNodeInventory",
-        "Microsoft-Perf"
+        "Microsoft-Perf",
+        "Microsoft-ContainerNetworkLogs"
       ]
+    },
+    "useAzureMonitorPrivateLinkScope": {
+      "type": "Boolean",
+      "defaultValue": false
+    },
+    "azureMonitorPrivateLinkScopeResourceId": {
+      "type": "String",
+      "defaultValue": "/subscriptions/<SubscriptionId>/resourceGroups/<ResourceGroup>/providers/microsoft.insights/privateLinkScopes/<azureMonitorPrivateLinkScopeName>"
     }
 }

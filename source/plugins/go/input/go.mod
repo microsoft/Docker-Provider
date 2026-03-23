@@ -1,6 +1,6 @@
 module Docker-Provider/source/plugins/go/input
 
-go 1.23.8
+go 1.25.7
 
 require github.com/calyptia/plugin v1.0.2
 

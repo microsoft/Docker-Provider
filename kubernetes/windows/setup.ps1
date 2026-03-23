@@ -26,7 +26,7 @@ Write-Host ('Creating folder structure')
 Write-Host ('Installing Fluent Bit');
 
     try {
-        $fluentBitUri='https://fluentbit.io/releases/3.0/fluent-bit-3.0.6-win64.zip'
+        $fluentBitUri='https://packages.fluentbit.io/windows/fluent-bit-4.0.3-win64.zip'
         Invoke-WebRequest -Uri $fluentBitUri -OutFile /installation/fluent-bit.zip
         Expand-Archive -Path /installation/fluent-bit.zip -Destination /installation/fluent-bit
         Move-Item -Path /installation/fluent-bit/*/* -Destination /opt/fluent-bit/ -ErrorAction SilentlyContinue
@@ -74,7 +74,7 @@ Write-Host ('Finished Extracting Certificate Generator Package')
 $windowsazuremonitoragent = [System.Environment]::GetEnvironmentVariable("WINDOWS_AMA_URL_NEW", "process")
 if ([string]::IsNullOrEmpty($windowsazuremonitoragent)) {
     Write-Host ('Environment variable WINDOWS_AMA_URL is not set. Using default value')
-    $windowsazuremonitoragent = "https://github.com/microsoft/Docker-Provider/releases/download/windows-ama-bits/genevamonitoringagent.46.17.2.zip"
+    $windowsazuremonitoragent = "https://github.com/microsoft/Docker-Provider/releases/download/windows-ama-bits/genevamonitoringagent.46.31.3.zip"
 }
 Write-Host ('Installing Windows Azure Monitor Agent: ' + $windowsazuremonitoragent)
 try {

@@ -1,6 +1,7 @@
 package containerstatus_test
 
 import (
+	"os"
 	"testing"
 
 	"docker-provider/test/utils"
@@ -16,6 +17,8 @@ import (
 
 var K8sClient *kubernetes.Clientset
 var Cfg *rest.Config
+var ResourceOptimizationEnabled string
+var GenevaIntegrationEnabled string
 
 func TestContainerStatus(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -27,6 +30,9 @@ var _ = BeforeSuite(func() {
 	var err error
 	K8sClient, Cfg, err = utils.SetupKubernetesClient()
 	Expect(err).NotTo(HaveOccurred())
+	ResourceOptimizationEnabled, err = utils.IsResourceOptimizationEnabled(K8sClient, "kube-system", "component", "ama-logs-agent", "ama-logs")
+	Expect(err).NotTo(HaveOccurred())
+	GenevaIntegrationEnabled = os.Getenv("GENEVA_INTEGRATION")
 })
 
 var _ = AfterSuite(func() {

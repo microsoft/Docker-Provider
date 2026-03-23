@@ -20,7 +20,7 @@ class CustomMetricsUtils
                 return true
             end
 
-            if enable_custom_metrics.nil? || enable_custom_metrics.to_s.downcase == 'false'
+            if enable_custom_metrics.nil? || enable_custom_metrics.to_s.empty? || enable_custom_metrics.to_s.downcase == 'false'
                 return false
             end
 

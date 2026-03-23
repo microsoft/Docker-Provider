@@ -5,8 +5,62 @@ startTime=$(date +%s)
 
 echo "startup script start @ $(date +'%Y-%m-%dT%H:%M:%S')"
 
+# Supported cloud environments
+SUPPORTED_CLOUDS=("azurepubliccloud" "azurechinacloud" "azureusgovernmentcloud" "usnat" "ussec" "azurebleucloud")
+
+getDomainFromSecret() {
+      # Read the domain from the AMA logs secret and convert to lowercase
+      domain="opinsights.azure.com"
+      if [ -e "/etc/ama-logs-secret/DOMAIN" ]; then
+            domain=$(cat /etc/ama-logs-secret/DOMAIN)
+      fi
+      # Convert to lowercase
+      domain=$(echo "$domain" | tr '[:upper:]' '[:lower:]')
+      echo "$domain"
+}
+
+getClusterCloudEnvironment() {
+      # Use provided cloud environment variable if it's set and valid
+      if [ -n "$CLUSTER_CLOUD_ENVIRONMENT" ]; then
+            CLUSTER_CLOUD_ENVIRONMENT=$(echo "$CLUSTER_CLOUD_ENVIRONMENT" | tr '[:upper:]' '[:lower:]')
+            for cloud in "${SUPPORTED_CLOUDS[@]}"; do
+                  if [ "$CLUSTER_CLOUD_ENVIRONMENT" == "$cloud" ]; then
+                        echo "$CLUSTER_CLOUD_ENVIRONMENT"
+                        return
+                  fi
+            done
+      fi
+
+      # Fallback to reading from the AMA logs secret if CLUSTER_CLOUD_ENVIRONMENT is not set or invalid
+      domain=$(getDomainFromSecret)
+      # Map domain to cloud environment
+            case "$domain" in
+            "opinsights.azure.com")
+                  echo "azurepubliccloud"
+                  ;;
+            "opinsights.azure.cn")
+                  echo "azurechinacloud"
+                  ;;
+            "opinsights.azure.us")
+                  echo "azureusgovernmentcloud"
+                  ;;
+            "opinsights.azure.eaglex.ic.gov")
+                  echo "usnat"
+                  ;;
+            "opinsights.azure.microsoft.scloud")
+                  echo "ussec"
+                  ;;
+            "opinsights.sovcloud-api.fr")
+                  echo "azurebleucloud"
+                  ;;
+            ""|*)
+                  echo "unknown"
+                  ;;
+      esac
+}
+
 startAMACoreAgent() {
-      echo "AMACoreAgent: Starting AMA Core Agent since High Log scale mode is enabled"
+      echo "AMACoreAgent: Starting AMA Core Agent since High Log scale or OpenTelemetry logs is enabled"
 
       export AMACALogFileDir="/var/opt/microsoft/linuxmonagent/amaca/log"
       export AMACALogFilePath="$AMACALogFileDir"/amaca.log
@@ -26,6 +80,25 @@ startAMACoreAgent() {
          echo "export CounterDataReportFrequencyInMinutes=$CounterDataReportFrequencyInMinutes"
          echo "export AMACALogFilePath=$AMACALogFilePath"
       } >> ~/.bashrc
+
+      if isOpenTelemetryLogsEnabled; then
+            export PA_AMCS_PROTOCOL="HttpProtobuf"
+            export PA_AMCS_HOST="0.0.0.0"
+            export PA_AMCS_PORT=4319
+            if [ -n "${AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT}" ]; then
+                  # Convert AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT from string to int
+                  port_int=$((AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT + 0))
+                  if [ "$port_int" -gt 0 ] 2>/dev/null; then
+                        export PA_AMCS_PORT=$port_int
+                  fi
+            fi
+
+            {
+                  echo "export PA_AMCS_PROTOCOL=$PA_AMCS_PROTOCOL"
+                  echo "export PA_AMCS_PORT=$PA_AMCS_PORT"
+                  echo "export PA_AMCS_HOST=$PA_AMCS_HOST"
+            } >> ~/.bashrc
+      fi
 
       source ~/.bashrc
       /opt/microsoft/azure-mdsd/bin/amacoreagent --configport $PA_CONFIG_PORT --amacalog $AMACALogFilePath --giglaport $PA_DATA_PORT > /dev/null 2>&1 &
@@ -70,6 +143,13 @@ setCloudSpecificApplicationInsightsConfig() {
          "ussec")
             APPLICATIONINSIGHTS_AUTH="NTc5ZDRiZjUtMTA1Mi0wODQzLThhNTYtMjU5YzEyZmJhZTkyCg=="
             APPLICATIONINSIGHTS_ENDPOINT="https://dc.applicationinsights.azure.microsoft.scloud/v2/track"
+            echo "export APPLICATIONINSIGHTS_AUTH=$APPLICATIONINSIGHTS_AUTH" >>~/.bashrc
+            echo "export APPLICATIONINSIGHTS_ENDPOINT=$APPLICATIONINSIGHTS_ENDPOINT" >>~/.bashrc
+            source ~/.bashrc
+            ;;
+         "azurebleucloud")
+            APPLICATIONINSIGHTS_AUTH="NTYwYmMyYjctMmNmOC1iN2Q0LWI4YTItYzNjYWJhODU3MTMz"
+            APPLICATIONINSIGHTS_ENDPOINT="https://bleufrancecentral-0.in.applicationinsights.sovcloud-api.fr/v2/track"
             echo "export APPLICATIONINSIGHTS_AUTH=$APPLICATIONINSIGHTS_AUTH" >>~/.bashrc
             echo "export APPLICATIONINSIGHTS_ENDPOINT=$APPLICATIONINSIGHTS_ENDPOINT" >>~/.bashrc
             source ~/.bashrc
@@ -165,6 +245,14 @@ isHighLogScaleMode() {
      else
          false
      fi
+}
+
+isOpenTelemetryLogsEnabled() {
+      if [[ "${APPMONITORING_OPENTELEMETRYLOGS_ENABLED}" == "true" ]]; then
+          true
+      else
+          false
+      fi
 }
 
 checkAgentOnboardingStatus() {
@@ -431,10 +519,10 @@ source common_agent_config_env_var
 
 # check if high log scale mode enabled
 if isHighLogScaleMode; then
-    echo "Enabled High Log Scale Mode"
-    export IS_HIGH_LOG_SCALE_MODE=true
-    echo "export IS_HIGH_LOG_SCALE_MODE=$IS_HIGH_LOG_SCALE_MODE" >>~/.bashrc
-    source ~/.bashrc
+      echo "Enabled High Log Scale Mode"
+      setGlobalEnvVar IS_HIGH_LOG_SCALE_MODE true
+else
+      setGlobalEnvVar IS_HIGH_LOG_SCALE_MODE false
 fi
 
 #Parse the configmap to set the right environment variables for agent config.
@@ -455,28 +543,11 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${GENEVA_LOGS_INTEGRATIO
       done
       source integration_npm_config_env_var
 fi
-if [ -e "/etc/ama-logs-secret/DOMAIN" ]; then
-      domain=$(cat /etc/ama-logs-secret/DOMAIN)
-else
-      domain="opinsights.azure.com"
-fi
 
-# Set environment variable for if public cloud by checking the workspace domain.
-if [ -z $domain ]; then
-      CLOUD_ENVIRONMENT="unknown"
-elif [ $domain == "opinsights.azure.com" ]; then
-      CLOUD_ENVIRONMENT="azurepubliccloud"
-elif [ $domain == "opinsights.azure.cn" ]; then
-      CLOUD_ENVIRONMENT="azurechinacloud"
-elif [ $domain == "opinsights.azure.us" ]; then
-      CLOUD_ENVIRONMENT="azureusgovernmentcloud"
-elif [ $domain == "opinsights.azure.eaglex.ic.gov" ]; then
-      CLOUD_ENVIRONMENT="usnat"
-elif [ $domain == "opinsights.azure.microsoft.scloud" ]; then
-      CLOUD_ENVIRONMENT="ussec"
-fi
-export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT
+export domain=$(getDomainFromSecret)
+export CLOUD_ENVIRONMENT=$(getClusterCloudEnvironment)
 echo "export CLOUD_ENVIRONMENT=$CLOUD_ENVIRONMENT" >>~/.bashrc
+echo "Cluster Cloud Environment: $CLOUD_ENVIRONMENT"
 
 export PROXY_ENDPOINT=""
 # Check for internet connectivity or workspace deletion
@@ -614,26 +685,16 @@ else
       echo "LA Onboarding:Workspace Id not mounted, skipping the telemetry check"
 fi
 
-# Copying over CA certs for airgapped clouds. This is needed for Mariner vs Ubuntu hosts.
-# We are unable to tell if the host is Mariner or Ubuntu,
-# so both /anchors/ubuntu and /anchors/mariner are mounted in the yaml.
+# Copying over CA certs for airgapped clouds. This is needed for AzureLinux vs Ubuntu hosts.
+# We are unable to tell if the host is AzureLinux or Ubuntu,
+# so both /anchors/ubuntu and /anchors/mariner (for AzureLinux) are mounted in the yaml.
 # One will have the certs and the other will be empty.
-# These need to be copied to a different location for Mariner vs Ubuntu containers.
+# These need to be copied to a different location for AzureLinux vs Ubuntu containers.
 # OS_ID here is the container distro.
-# Adding Mariner now even though the elif will never currently evaluate.
+# Adding AzureLinux now even though the elif will never currently evaluate.
 if [ $CLOUD_ENVIRONMENT == "usnat" ] || [ $CLOUD_ENVIRONMENT == "ussec" ] || [ "$IS_CUSTOM_CERT" == "true" ]; then
   OS_ID=$(cat /etc/os-release | grep ^ID= | cut -d '=' -f2 | tr -d '"' | tr -d "'")
-  if [ $OS_ID == "mariner" ]; then
-    cp /anchors/ubuntu/* /etc/pki/ca-trust/source/anchors
-    cp /anchors/mariner/* /etc/pki/ca-trust/source/anchors
-    if [ -e "/etc/ama-logs-secret/PROXYCERT.crt" ]; then
-      cp /etc/ama-logs-secret/PROXYCERT.crt /etc/pki/ca-trust/source/PROXYCERT.crt
-    fi
-    update-ca-trust
-  else
-    if [ $OS_ID != "ubuntu" ]; then
-      echo "Error: The ID in /etc/os-release is not ubuntu or mariner. Defaulting to ubuntu."
-    fi
+  if [ $OS_ID == "ubuntu" ]; then
     cp /anchors/ubuntu/* /usr/local/share/ca-certificates/
     cp /anchors/mariner/* /usr/local/share/ca-certificates/
     if [ -e "/etc/ama-logs-secret/PROXYCERT.crt" ]; then
@@ -641,6 +702,16 @@ if [ $CLOUD_ENVIRONMENT == "usnat" ] || [ $CLOUD_ENVIRONMENT == "ussec" ] || [ "
     fi
     update-ca-certificates
     cp /etc/ssl/certs/ca-certificates.crt /usr/lib/ssl/cert.pem
+  else
+    if [ $OS_ID != "azurelinux" ]; then
+      echo "Error: The ID in /etc/os-release is not ubuntu or azurelinux. Defaulting to azurelinux."
+    fi
+    cp /anchors/ubuntu/* /etc/pki/ca-trust/source/anchors
+    cp /anchors/mariner/* /etc/pki/ca-trust/source/anchors
+    if [ -e "/etc/ama-logs-secret/PROXYCERT.crt" ]; then
+      cp /etc/ama-logs-secret/PROXYCERT.crt /etc/pki/ca-trust/source/PROXYCERT.crt
+    fi
+    update-ca-trust
   fi
 fi
 
@@ -929,8 +1000,13 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && isGenevaMode; then
     echo "Runnning AMA in Geneva Logs Integration Mode"
     export MONITORING_USE_GENEVA_CONFIG_SERVICE=true
     echo "export MONITORING_USE_GENEVA_CONFIG_SERVICE=true" >> ~/.bashrc
-    export MONITORING_GCS_AUTH_ID_TYPE=AuthMSIToken
-    echo "export MONITORING_GCS_AUTH_ID_TYPE=AuthMSIToken" >> ~/.bashrc
+    if [ "${MONITORING_GCS_AUTH_ID_TYPE}" = "AuthWorkloadIdentity" ]; then
+        echo "Using AuthWorkloadIdentity for MONITORING_GCS_AUTH_ID_TYPE"
+    else
+        export MONITORING_GCS_AUTH_ID_TYPE=AuthMSIToken
+        echo "export MONITORING_GCS_AUTH_ID_TYPE=AuthMSIToken" >> ~/.bashrc
+        echo "Using AuthMSIToken for MONITORING_GCS_AUTH_ID_TYPE"
+    fi
     MDSD_AAD_MSI_AUTH_ARGS="-A"
     # except logs, all other data types ingested via sidecar container MDSD port
     export MDSD_FLUENT_SOCKET_PORT="26230"
@@ -1042,7 +1118,7 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
     fi
 else
       echo "starting mdsd in main container..."
-      if isHighLogScaleMode; then
+      if isHighLogScaleMode || isOpenTelemetryLogsEnabled; then
             startAMACoreAgent
       fi
       export MDSD_ROLE_PREFIX=/var/run/mdsd-ci/default

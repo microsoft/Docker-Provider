@@ -1476,8 +1476,8 @@
       {
         "current": {
           "selected": false,
-          "text": "gangams-aks-log-scale-neu",
-          "value": "gangams-aks-log-scale-neu"
+          "text": "",
+          "value": ""
         },
         "datasource": {
           "type": "prometheus",

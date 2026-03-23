@@ -20,9 +20,73 @@ import (
 	"io"
 )
 
+// categorizeErrors categorizes error lines into expected intermittent errors (with counts) and unexpected errors.
+// Returns an error if any pattern exceeds the threshold or if there are unexpected errors.
+func categorizeErrors(errorLines []string, threshold int) error {
+	errorCounts := make(map[string]int)
+	unexpectedErrors := []string{}
+
+	for _, line := range errorLines {
+		if line == "" {
+			continue
+		}
+
+		// Check if this line matches any expected intermittent error pattern (case-insensitive)
+		matchedPattern := false
+		lowerLine := strings.ToLower(line)
+		for _, pattern := range ExpectedIntermittentErrors {
+			if strings.Contains(lowerLine, strings.ToLower(pattern)) {
+				errorCounts[pattern]++
+				matchedPattern = true
+				break
+			}
+		}
+
+		// If no pattern matched, it's an unexpected error
+		if !matchedPattern {
+			unexpectedErrors = append(unexpectedErrors, line)
+		}
+	}
+
+	// Check if any expected error pattern exceeded the threshold
+	var exceededErrors []string
+	for pattern, count := range errorCounts {
+		if count > threshold {
+			exceededErrors = append(exceededErrors, fmt.Sprintf("'%s': %d occurrences (threshold: %d)", pattern, count, threshold))
+		}
+	}
+
+	// Build error message if there are exceeded or unexpected errors
+	if len(exceededErrors) > 0 || len(unexpectedErrors) > 0 {
+		var errorMsg strings.Builder
+
+		if len(exceededErrors) > 0 {
+			errorMsg.WriteString("Expected errors exceeding threshold:\n")
+			for _, err := range exceededErrors {
+				errorMsg.WriteString("  - " + err + "\n")
+			}
+		}
+
+		if len(unexpectedErrors) > 0 {
+			if len(exceededErrors) > 0 {
+				errorMsg.WriteString("\n")
+			}
+			errorMsg.WriteString("Unexpected errors:\n")
+			for _, err := range unexpectedErrors {
+				errorMsg.WriteString("  - " + err + "\n")
+			}
+		}
+
+		return fmt.Errorf("%s", strings.TrimSuffix(errorMsg.String(), "\n"))
+	}
+
+	return nil
+}
+
 /*
  * Checks that the logs of all containers in all pods with the given label do not contain any errors.
  * Also returns an error if there are no pods that exist with the given label.
+ * It tolerates intermittent errors up to 10 occurrences per pattern.
  */
 func CheckContainerLogsForErrors(clientset *kubernetes.Clientset, namespace, labelName, labelValue string) error {
 	// Get all pods with the given label
@@ -39,27 +103,18 @@ func CheckContainerLogsForErrors(clientset *kubernetes.Clientset, namespace, lab
 				return err
 			}
 
-			if strings.Contains(logs, "error") || strings.Contains(logs, "Error") {
-				// Get the exact log line of the error
-				for _, line := range strings.Split(logs, "\n") {
-
-					if strings.Contains(line, "error") || strings.Contains(line, "Error") {
-
-						// Exclude known error lines that are transient
-						shouldExcludeLine := false
-						for _, lineToExclude := range LogLineErrorsToExclude {
-							if strings.Contains(line, lineToExclude) {
-								shouldExcludeLine = true
-								break
-							}
-						}
-						if shouldExcludeLine {
-							continue
-						}
-
-						return fmt.Errorf("Logs for container %s in pod %s contain errors:\n %s", container.Name, pod.Name, line)
-					}
+			// Collect error lines
+			errorLines := []string{}
+			for _, line := range strings.Split(logs, "\n") {
+				if strings.Contains(line, "error") || strings.Contains(line, "Error") {
+					errorLines = append(errorLines, line)
 				}
+			}
+
+			// Categorize errors and check thresholds
+			err = categorizeErrors(errorLines, IntermittentErrorThreshold)
+			if err != nil {
+				return fmt.Errorf("logs for container %s in pod %s:\n%v", container.Name, pod.Name, err)
 			}
 		}
 	}
@@ -95,6 +150,22 @@ func GetAKSResourceID(clientset *kubernetes.Clientset, namespace string, labelKe
 		return "", fmt.Errorf("failed to get environment variables for container %s in pod with label %s=%s: %v", containerName, labelKey, labelValue, error)
 	}
 	return envVars["AKS_RESOURCE_ID"], nil
+}
+
+func IsResourceOptimizationEnabled(clientset *kubernetes.Clientset, namespace string, labelKey string, labelValue string, containerName string) (string, error) {
+	envVars, error := GetContainerEnvVars(clientset, namespace, labelKey, labelValue, containerName)
+	if error != nil {
+		return "", fmt.Errorf("failed to get environment variables for container %s in pod with label %s=%s: %v", containerName, labelKey, labelValue, error)
+	}
+	return envVars["AZMON_RESOURCE_OPTIMIZATION_ENABLED"], nil
+}
+
+func IsRetinaNetworkFlowLogsEnabled(clientset *kubernetes.Clientset, namespace string, labelKey string, labelValue string, containerName string) (string, error) {
+	envVars, error := GetContainerEnvVars(clientset, namespace, labelKey, labelValue, containerName)
+	if error != nil {
+		return "", fmt.Errorf("failed to get environment variables for container %s in pod with label %s=%s: %v", containerName, labelKey, labelValue, error)
+	}
+	return envVars["ENABLE_RETINA_NETWORK_FLOW_LOGS"], nil
 }
 
 /*
@@ -385,7 +456,7 @@ func CheckIfAllPodsScheduleOnNodes(clientset *kubernetes.Clientset, namespace, l
  * Check that pods with the specified namespace and label value are scheduled in all the Fips and ARM64 nodes. If a node has no schduled pod on it, return an error.
  * Also check that the containers are scheduled and running on those nodes.
  */
-func CheckIfAllPodsScheduleOnSpecificNodesLabels(clientset *kubernetes.Clientset, namespace, labelKey string, labelValue string, nodeLabelKey string, nodeLabelValue string) error {
+func CheckIfAllPodsScheduleOnSpecificNodesLabels(clientset *kubernetes.Clientset, namespace, contollerLabelKey string, ControllerLabelValue string, nodeLabelKey string, nodeLabelValue string) error {
 
 	// Get list of all nodes
 	nodes, err := clientset.CoreV1().Nodes().List(context.TODO(), metav1.ListOptions{})
@@ -394,13 +465,19 @@ func CheckIfAllPodsScheduleOnSpecificNodesLabels(clientset *kubernetes.Clientset
 		return errors.New(fmt.Sprintf("Error getting nodes with the specified labels: %v", err))
 	}
 
+	osLabel := "kubernetes.io/os"
+	osLabelValue := "linux"
+	if ControllerLabelValue == "ama-logs-agent-windows" {
+		osLabelValue = "windows"
+	}
+
 	for _, node := range nodes.Items {
-		if value, ok := node.Labels[nodeLabelKey]; ok && value == nodeLabelValue {
+		if value, ok := node.Labels[nodeLabelKey]; ok && value == nodeLabelValue && node.Labels[osLabel] == osLabelValue {
 
 			// Get list of pods scheduled on this node
 			pods, err := clientset.CoreV1().Pods(namespace).List(context.TODO(), metav1.ListOptions{
 				FieldSelector: "spec.nodeName=" + node.Name,
-				LabelSelector: labelKey + "=" + labelValue,
+				LabelSelector: contollerLabelKey + "=" + ControllerLabelValue,
 			})
 
 			if err != nil || pods == nil || len(pods.Items) == 0 {
@@ -469,4 +546,37 @@ func GetAllNodes(clientset *kubernetes.Clientset) ([]corev1.Node, error) {
 	}
 
 	return nodes.Items, nil
+}
+
+// CheckFileForErrors checks if a specific file in a linux container contains errors.
+// It tolerates intermittent errors up to 10 occurrences per pattern.
+func CheckFileForErrors(clientset *kubernetes.Clientset, Cfg *rest.Config, namespace, labelName, labelValue, containerName, filePath string) error {
+	pods, err := GetPodsWithLabel(clientset, namespace, labelName, labelValue)
+	if err != nil {
+		return fmt.Errorf("failed to get pods with label %s=%s: %v", labelName, labelValue, err)
+	}
+
+	for _, pod := range pods {
+		command := []string{"bash", "-c", fmt.Sprintf("grep -i error %s", filePath)}
+		stdout, stderr, err := ExecCmd(clientset, Cfg, pod.Name, containerName, namespace, command)
+		if err != nil {
+			// If grep returns exit code 1, it means no matches were found, which is not an error for our use case
+			if strings.Contains(err.Error(), "exit code 1") {
+				// No errors found in the file, continue
+				continue
+			}
+			return fmt.Errorf("error executing command in pod %s, container %s: %v, stderr: %s", pod.Name, containerName, err, stderr)
+		}
+
+		if stdout != "" {
+			// Parse the stdout and categorize errors
+			lines := strings.Split(stdout, "\n")
+			err = categorizeErrors(lines, IntermittentErrorThreshold)
+			if err != nil {
+				return fmt.Errorf("in file %s in pod %s, container %s:\n%v", filePath, pod.Name, containerName, err)
+			}
+		}
+	}
+
+	return nil
 }

@@ -1,6 +1,7 @@
 package querylogs_test
 
 import (
+	"os"
 	"testing"
 
 	"docker-provider/test/utils"
@@ -15,6 +16,8 @@ import (
 var K8sClient *kubernetes.Clientset
 var LogsClient *azquery.LogsClient
 var AKSResourceId string
+var RetinaNetworkFlowLogsEnabled string
+var GenevaIntegrationEnabled string
 var Cfg *rest.Config
 
 func TestQuerylogs(t *testing.T) {
@@ -28,6 +31,9 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	AKSResourceId, err = utils.GetAKSResourceID(K8sClient, "kube-system", "component", "ama-logs-agent", "ama-logs")
 	Expect(err).NotTo(HaveOccurred())
+	RetinaNetworkFlowLogsEnabled, err = utils.IsRetinaNetworkFlowLogsEnabled(K8sClient, "kube-system", "component", "ama-logs-agent", "ama-logs")
+	Expect(err).NotTo(HaveOccurred())
+	GenevaIntegrationEnabled = os.Getenv("GENEVA_INTEGRATION")
 	LogsClient, err = utils.SetupLogsClient()
 	Expect(err).NotTo(HaveOccurred())
 })

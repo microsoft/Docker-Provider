@@ -421,7 +421,7 @@ func createLogger() *log.Logger {
 		logfile, err = os.OpenFile(logPath, os.O_APPEND|os.O_WRONLY, 0600)
 		if err != nil {
 			SendException(err.Error())
-			fmt.Printf(err.Error())
+			fmt.Print(err.Error())
 		}
 	}
 
@@ -430,7 +430,7 @@ func createLogger() *log.Logger {
 		logfile, err = os.Create(logPath)
 		if err != nil {
 			SendException(err.Error())
-			fmt.Printf(err.Error())
+			fmt.Print(err.Error())
 		}
 	}
 
@@ -2314,7 +2314,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	ret, err := InitializeTelemetryClient(agentVersion)
 	if ret != 0 || err != nil {
 		message := fmt.Sprintf("Error During Telemetry Initialization :%s", err.Error())
-		fmt.Printf(message)
+		fmt.Print(message)
 		Log(message)
 	}
 

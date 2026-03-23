@@ -111,6 +111,7 @@ extends:
             SourceFolder: "$(Build.SourcesDirectory)/deployment"
             Contents: |
               **/*
+              !**/ScanTelemetry_*.json
             TargetFolder: '$(Build.ArtifactStagingDirectory)/build'
         - task: CopyFiles@2
           displayName: "Copy ev2 deployment scripts"
@@ -275,7 +276,7 @@ extends:
               export TRIVY_JAVA_DB_REPOSITORY=$PRIMARY_TRIVY_JAVA_DB_REPOSITORY
               # Function to run Trivy scan and handle output
               run_trivy_scan() {
-                  trivy image --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM "${{ variables.repoImageName }}:$(linuxImagetag)" > trivy_output.log 2>&1
+                  trivy image --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM "${{ variables.repoImageName }}:$(linuxImagetag)" > trivy_output.log 2>&1
                   return $?
               }
               # Attempt scan up to 5 times with repository fallback
@@ -322,14 +323,11 @@ extends:
           inputs:
             BuildDropPath: '$(Build.ArtifactStagingDirectory)/linux'
             DockerImagesToScan: '$(GOLANG_BASE_IMAGE),$(CI_BASE_IMAGE),${{ variables.repoImageName }}:$(linuxImagetag)'
-        - task: ComponentGovernanceComponentDetection@0
-          condition: eq(variables.IS_PR, true)
-          inputs:
-            DockerImagesToScan: '$(GOLANG_BASE_IMAGE),$(CI_BASE_IMAGE)'
-        - task: ComponentGovernanceComponentDetection@0
-          condition: eq(variables.IS_PR, false)
-          inputs:
-            DockerImagesToScan: '$(GOLANG_BASE_IMAGE),$(CI_BASE_IMAGE),${{ variables.repoImageName }}:$(linuxImagetag)'
+        - bash: |
+            dockerImagesToScan='$(GOLANG_BASE_IMAGE),$(CI_BASE_IMAGE),${{ variables.repoImageName }}:$(linuxImagetag)'
+            echo "Docker images to scan: $dockerImagesToScan"
+            echo "##vso[task.setvariable variable=dockerImagesToScan]$dockerImagesToScan"
+          displayName: 'Set Docker images to scan'
       - job: build_windows_2019
         pool:
           name: Azure-Pipelines-CI-Test-EO

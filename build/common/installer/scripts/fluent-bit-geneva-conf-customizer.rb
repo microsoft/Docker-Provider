@@ -30,6 +30,16 @@ def is_valid_number?(value)
   return !value.nil? && is_number?(value) && value.to_i > 0
 end
 
+  #Update the config file for geneva mode linux and resource optimization enabled
+def substituteResourceOptimization(resourceOptimizationEnabled, new_contents, isWindows)
+  if !isWindows && !resourceOptimizationEnabled.nil? && resourceOptimizationEnabled.to_s.downcase == "true"
+    puts "config::Starting to substitute the placeholders in fluent-bit-geneva conf file for resource optimization"
+    new_contents = new_contents.gsub("#${ResourceOptimizationPluginFile}", "plugins_file  /etc/opt/microsoft/docker-cimprov/azm-containers-input-plugins.conf")
+    new_contents = new_contents.gsub("#${ResourceOptimizationFBConfigFile}", "@INCLUDE fluent-bit-input.conf")
+  end
+  return new_contents
+end
+
 def substituteFluentBitPlaceHolders(configFilePath)
   begin
     # Replace the fluentbit config file with custom values if present
@@ -46,6 +56,7 @@ def substituteFluentBitPlaceHolders(configFilePath)
     enableFluentBitThreading = ENV["ENABLE_FBIT_THREADING"]
     kubernetesMetadataCollection = ENV["AZMON_KUBERNETES_METADATA_ENABLED"]
     annotationBasedLogFiltering = ENV["AZMON_ANNOTATION_BASED_LOG_FILTERING"]
+    resourceOptimizationEnabled = ENV["AZMON_RESOURCE_OPTIMIZATION_ENABLED"]
 
     serviceInterval = is_valid_number?(interval) ? interval : @default_service_interval
     serviceIntervalSetting = "Flush         " + serviceInterval
@@ -111,6 +122,8 @@ def substituteFluentBitPlaceHolders(configFilePath)
         new_contents = new_contents.gsub(/[^\.]Parser\s{1,}cri/, " Multiline.Parser cri")
       end
     end
+
+    new_contents = substituteResourceOptimization(resourceOptimizationEnabled, new_contents, @isWindows)
 
     File.open(configFilePath, "w") { |file| file.puts new_contents }
     puts "config::Successfully substituted the placeholders in #{configFileName} file"

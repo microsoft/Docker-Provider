@@ -21,7 +21,7 @@ rules:
         "nodes/proxy",
         "namespaces",
         "services",
-        "persistentvolumes"
+        "persistentvolumes",
       ]
     verbs: ["list", "get", "watch"]
   - apiGroups: ["apps", "extensions", "autoscaling"]
@@ -343,7 +343,7 @@ spec:
         component: ama-logs-agent
         tier: node
       annotations:
-        agentVersion: "azure-mdsd-1.35.1"
+        agentVersion: "azure-mdsd-1.37.0"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         kubernetes.azure.com/no-http-proxy-vars: "true"
@@ -365,7 +365,7 @@ spec:
         #     - --health-server-listening-port=9999
         #     - --restart-pod-waiting-minutes-on-broken-connection=240
         #   # Make sure this matching with version in AKS RP side
-        #   image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.230804.1
+        #   image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.250604.1
         #   imagePullPolicy: IfNotPresent
         #   env:
         #     - name: AZMON_COLLECT_ENV
@@ -391,7 +391,7 @@ spec:
         #         - NET_ADMIN
         #         - NET_RAW
         - name: ama-logs
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.27"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.35"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -437,9 +437,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-            # Update this with the user assigned msi client id for ama-logs
-            - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-              value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
             - name: AZMON_CONTAINERLOGS_ONEAGENT_REGIONS
               value: "koreacentral,norwayeast,eastus2"
             # Uncomment below lines for MSI Auth Mode  testing
@@ -457,8 +454,12 @@ spec:
               value: "false"
             - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
               value: "28331"
+            - name: AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT
+              value: "4319"
             - name: AZMON_RETINA_FLOW_LOGS_ENABLED
               value: "false"
+            - name: CLUSTER_CLOUD_ENVIRONMENT
+              value: "azurepubliccloud" # Change this to the cloud environment of your cluster
           securityContext:
             privileged: true
             capabilities:
@@ -474,6 +475,10 @@ spec:
             - name: syslog
               containerPort: 28330
               hostPort: 28330
+              protocol: TCP
+            - name: otlp-logs
+              containerPort: 4319
+              hostPort: 28331
               protocol: TCP
           volumeMounts:
             - name: kube-api-access
@@ -525,9 +530,9 @@ spec:
             initialDelaySeconds: 60
             periodSeconds: 60
             timeoutSeconds: 15
-#Only in sidecar scraping mode
+        #Only in sidecar scraping mode
         - name: ama-logs-prometheus
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.27"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.35"
           imagePullPolicy: IfNotPresent
           resources:
             limits:
@@ -570,12 +575,11 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-            # Update this with the user assigned msi client id for ama-logs
-            - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-              value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
             # Uncomment below lines for MSI Auth Mode  testing
             # - name: USING_AAD_MSI_AUTH
             #   value: "true"
+            - name: CLUSTER_CLOUD_ENVIRONMENT
+              value: "azurepubliccloud" # Change this to the cloud environment of your cluster
           securityContext:
             privileged: true
             capabilities:
@@ -620,16 +624,16 @@ spec:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
-            - matchExpressions:
-              # kubernetes.io/os label doesnt exist in k8s versions < 1.14  so make sure to choose label based on k8s version in aks yaml
-              - key: kubernetes.io/os
-                operator: In
-                values:
-                - linux
-              - key: type
-                operator: NotIn
-                values:
-                  - virtual-kubelet
+              - matchExpressions:
+                  # kubernetes.io/os label doesnt exist in k8s versions < 1.14  so make sure to choose label based on k8s version in aks yaml
+                  - key: kubernetes.io/os
+                    operator: In
+                    values:
+                      - linux
+                  - key: type
+                    operator: NotIn
+                    values:
+                      - virtual-kubelet
       # Tolerate a NoSchedule taint on master that ACS Engine sets.
       tolerations:
         - operator: "Exists"
@@ -642,20 +646,20 @@ spec:
         - name: kube-api-access
           projected:
             sources:
-            - serviceAccountToken:
-                path: token
-                expirationSeconds: 3600
-            - configMap:
-                items:
-                - key: ca.crt
-                  path: ca.crt
-                name: kube-root-ca.crt
-            - downwardAPI:
-                items:
-                - fieldRef:
-                    apiVersion: v1
-                    fieldPath: metadata.namespace
-                  path: namespace
+              - serviceAccountToken:
+                  path: token
+                  expirationSeconds: 3600
+              - configMap:
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+                  name: kube-root-ca.crt
+              - downwardAPI:
+                  items:
+                    - fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+                      path: namespace
         - name: mdsd-prometheus-sock
           emptyDir: {}
         - name: host-root
@@ -786,7 +790,7 @@ spec:
 #       labels:
 #         rsName: "ama-logs-multitenancy"
 #       annotations:
-#         agentVersion: "azure-mdsd-1.35.1"
+#         agentVersion: "azure-mdsd-1.37.0"
 #         dockerProviderVersion: "18.0.1-0"
 #         schema-versions: "v1"
 #         kubernetes.azure.com/no-http-proxy-vars: "true"
@@ -803,7 +807,7 @@ spec:
 #             - --health-server-listening-port=9999
 #             - --restart-pod-waiting-minutes-on-broken-connection=240
 #           # Make sure this matching with version in AKS RP side
-#           image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.230804.1
+#           image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.250604.1
 #           imagePullPolicy: IfNotPresent
 #           env:
 #             - name: AZMON_COLLECT_ENV
@@ -863,6 +867,8 @@ spec:
 #                   fieldPath: status.hostIP
 #             - name: USING_AAD_MSI_AUTH
 #               value: "true"
+#             - name: CLUSTER_CLOUD_ENVIRONMENT
+#               value: "azurepubliccloud" # Change this to the cloud environment of your cluster
 #           securityContext:
 #             privileged: true
 #             capabilities:
@@ -959,7 +965,7 @@ spec:
       labels:
         rsName: "ama-logs-rs"
       annotations:
-        agentVersion: "azure-mdsd-1.35.1"
+        agentVersion: "azure-mdsd-1.37.0"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         kubernetes.azure.com/no-http-proxy-vars: "true"
@@ -1013,7 +1019,7 @@ spec:
         #     - --health-server-listening-port=9999
         #     - --restart-pod-waiting-minutes-on-broken-connection=240
         #   # Make sure this matching with version in AKS RP side
-        #   image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.230804.1
+        #   image: mcr.microsoft.com/aks/msi/addon-token-adapter:master.250604.1
         #   imagePullPolicy: IfNotPresent
         #   env:
         #     - name: AZMON_COLLECT_ENV
@@ -1039,7 +1045,7 @@ spec:
         #         - NET_ADMIN
         #         - NET_RAW
         - name: ama-logs
-          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.27"
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.35"
           imagePullPolicy: IfNotPresent
           # comment resources if VPA configured since the VPA will set these values
           resources:
@@ -1082,9 +1088,6 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
-            # Update this with the user assigned msi client id for ama-logs
-            - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-              value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
             # Add the below environment variable to true only in sidecar enabled regions, else set it to false
             - name: SIDECAR_SCRAPING_ENABLED
               value: "true"
@@ -1096,14 +1099,12 @@ spec:
             #   value: "true"
             - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
               value: "false"
-            - name: APPMONITORING_OPENTELEMETRYLOGS_ENABLED
-              value: "false"
-            - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
-              value: "28331"
             - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
               value: "false"
             - name: AZMON_WINDOWS_FLUENT_BIT_ENABLED
               value: "false"
+            - name: CLUSTER_CLOUD_ENVIRONMENT
+              value: "azurepubliccloud" # Change this to the cloud environment of your cluster
           securityContext:
             privileged: true
             capabilities:
@@ -1155,29 +1156,29 @@ spec:
         nodeAffinity:
           # affinity to schedule on to ephemeral os node if its available
           preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 1
-            preference:
-              matchExpressions:
-              - key: storageprofile
-                operator: NotIn
-                values:
-                - managed
+            - weight: 1
+              preference:
+                matchExpressions:
+                  - key: storageprofile
+                    operator: NotIn
+                    values:
+                      - managed
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
-            - matchExpressions:
-                - key: kubernetes.io/os
-                  operator: In
-                  values:
-                  - linux
-                - key: type
-                  operator: NotIn
-                  values:
-                    - virtual-kubelet
-                # The following label selector is removed for AKS, this is only required for non AKS
-                - key: kubernetes.io/role
-                  operator: NotIn
-                  values:
-                    - master
+              - matchExpressions:
+                  - key: kubernetes.io/os
+                    operator: In
+                    values:
+                      - linux
+                  - key: type
+                    operator: NotIn
+                    values:
+                      - virtual-kubelet
+                  # The following label selector is removed for AKS, this is only required for non AKS
+                  - key: kubernetes.io/role
+                    operator: NotIn
+                    values:
+                      - master
       # The following tolerations are removed for AKS, this is only required for non AKS
       tolerations:
         - operator: "Exists"
@@ -1190,20 +1191,20 @@ spec:
         - name: kube-api-access
           projected:
             sources:
-            - serviceAccountToken:
-                path: token
-                expirationSeconds: 3600
-            - configMap:
-                items:
-                - key: ca.crt
-                  path: ca.crt
-                name: kube-root-ca.crt
-            - downwardAPI:
-                items:
-                - fieldRef:
-                    apiVersion: v1
-                    fieldPath: metadata.namespace
-                  path: namespace
+              - serviceAccountToken:
+                  path: token
+                  expirationSeconds: 3600
+              - configMap:
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+                  name: kube-root-ca.crt
+              - downwardAPI:
+                  items:
+                    - fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+                      path: namespace
         - name: container-hostname
           hostPath:
             path: /etc/hostname
@@ -1237,241 +1238,240 @@ spec:
         #     name:  ama-logs-rs-vpa-config
         #     optional: true
 ---
-  apiVersion: apps/v1
-  kind: DaemonSet
-  metadata:
-   name: ama-logs-windows
-   namespace: kube-system
-   labels:
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ama-logs-windows
+  namespace: kube-system
+  labels:
     component: ama-logs-agent-windows
     tier: node-win
-  spec:
-   updateStrategy:
+spec:
+  updateStrategy:
     type: RollingUpdate
-   selector:
+  selector:
     matchLabels:
       component: ama-logs-agent-windows
       tier: node-win
-   template:
+  template:
     metadata:
       labels:
         component: ama-logs-agent-windows
         tier: node-win
       annotations:
-        agentVersion: "46.17.2"
+        agentVersion: "46.31.3"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         kubernetes.azure.com/no-http-proxy-vars: "true"
     spec:
-     serviceAccountName: ama-logs
-     dnsConfig:
+      serviceAccountName: ama-logs
+      dnsConfig:
         options:
           - name: ndots
             value: "3"
-     containers:
-      # Uncomment below lines for MSI Auth Mode  testing
-      #  - name: addon-token-adapter-win
-      #    command:
-      #     - addon-token-adapter-win
-      #    args:
-      #     - --secret-namespace=kube-system
-      #     - --secret-name=aad-msi-auth-token
-      #     - --token-server-listening-port=7777
-      #     - --health-server-listening-port=9999
-      #    image: "mcr.microsoft.com/aks/msi/addon-token-adapter:master.240102.1"
-      #    imagePullPolicy: Always
-      #    livenessProbe:
-      #     httpGet:
-      #       path: /healthz
-      #       port: 9999
-      #     initialDelaySeconds: 10
-      #     periodSeconds: 60
-      #    resources:
-      #     limits:
-      #       memory: 500Mi
-      #     requests:
-      #       cpu: 100m
-      #       memory: 100Mi
-      #    securityContext:
-      #     capabilities:
-      #       add:
-      #         - NET_ADMIN
-       - name: ama-logs-windows
-         image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.27"
-         imagePullPolicy: IfNotPresent
-         resources:
-          requests:
-           cpu: 500m
-           memory: 700Mi
-          limits:
-           cpu: 2
-           memory: 2Gi
-         securityContext:
-          capabilities:
-           drop:
-            - ALL
-           add:
-            - DAC_OVERRIDE
-         env:
-          - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
-            valueFrom:
-              resourceFieldRef:
-                containerName: ama-logs-windows
-                resource: limits.memory
-          - name: FBIT_SERVICE_FLUSH_INTERVAL
-            value: "15"
-          - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
-            value: "1"
-          - name: FBIT_TAIL_BUFFER_MAX_SIZE
-            value: "1"
-          # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
-          - name: AKS_RESOURCE_ID
-            value: "VALUE_AKS_RESOURCE_ID_VALUE"
-          - name: AKS_REGION
-            value: "VALUE_AKS_RESOURCE_REGION_VALUE"
-          #- name: ACS_RESOURCE_NAME
-          #  value: "my_acs_cluster_name"
-          - name: CONTROLLER_TYPE
-            value: "DaemonSet"
-          - name: HOSTNAME
-            valueFrom:
-               fieldRef:
-                 fieldPath: spec.nodeName
-          - name: PODNAME
-            valueFrom:
-               fieldRef:
-                 fieldPath: metadata.name
-          - name: NODE_IP
-            valueFrom:
-               fieldRef:
-                 fieldPath: status.hostIP
-          - name: SIDECAR_SCRAPING_ENABLED
-            value: "true"
-          # Update this with the user assigned msi client id for ama-logs
-          - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
-            value: "VALUE_USER_ASSIGNED_IDENTITY_CLIENT_ID_VALUE"
-          # Add this only for clouds that require cert bootstrapping
-          # - name: REQUIRES_CERT_BOOTSTRAP
-          #   value: "true"
-          # Uncomment below lines for MSI Auth Mode  testing
-          # - name: USING_AAD_MSI_AUTH
-          #   value: "true"
-          - name: AZMON_WINDOWS_FLUENT_BIT_ENABLED
-            value: "false"
-          - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
-            value: "false"
-          - name: APPMONITORING_OPENTELEMETRYLOGS_ENABLED
-            value: "false"
-          - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
-            value: "28331"
-         volumeMounts:
-          #  Uncomment below lines when telegraf upgraded to 1.28.5 or higher
-          # - name: kube-api-access
-          #   mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-          #   readOnly: true
-          - mountPath: C:\ProgramData\docker\containers
-            name: docker-windows-containers
-            readOnly: true
-          - mountPath: C:\var #Read + Write access on this for position file
-            name: docker-windows-kuberenetes-container-logs
-          - mountPath: C:\etc\config\settings
-            name: settings-vol-config
-            readOnly: true
-          - mountPath: C:\etc\ama-logs-secret
-            name: ama-logs-secret
-            readOnly: true
-          - mountPath: C:\etc\config\adx
-            name: ama-logs-adx-secret
-            readOnly: true
-          # Need to mount this only for airgapped clouds - Commenting this since it wont exist in non airgapped clouds
-          # - mountPath: C:\ca
-          #   name: ca-certs
-          #   readOnly: true
-          - mountPath: C:\etc\kubernetes\host
-            name: azure-json-path
-            readOnly: true
-          # Uncomment below lines for MSI Auth Mode  testing
-          # - mountPath: C:\etc\IMDS-access-token
-          #   name: imds-token
-          #   readOnly: true
-         livenessProbe:
-          exec:
-            command:
-              - cmd
-              - /c
-              - C:\opt\amalogswindows\scripts\cmd\livenessprobe.exe
-              - fluent-bit.exe
-              - fluentdwinaks
-              - "C:\\etc\\amalogswindows\\filesystemwatcher.txt"
-              - "C:\\etc\\amalogswindows\\renewcertificate.txt"
-              # Uncomment below lines for MSI Auth Mode  testing
-              # - MonAgentCore.exe
-          periodSeconds: 60
-          initialDelaySeconds: 180
-          timeoutSeconds: 15
-     affinity:
-       nodeAffinity:
-         requiredDuringSchedulingIgnoredDuringExecution:
-           nodeSelectorTerms:
-           - matchExpressions:
-             - key: kubernetes.io/os
-               operator: In
-               values:
-               - windows
-     tolerations:
-     - key: "CriticalAddonsOnly"
-       operator: "Exists"
-     - operator: "Exists"
-       effect: NoExecute
-     - operator: "Exists"
-       effect: NoSchedule
-     - operator: "Exists"
-       effect: PreferNoSchedule
-     volumes:
-      #  Uncomment below lines when telegraf upgraded to 1.28.5 or higher
-      # - name: kube-api-access
-      #   projected:
-      #     sources:
-      #     - serviceAccountToken:
-      #         path: token
-      #         expirationSeconds: 3600
-      #     - configMap:
-      #         items:
-      #         - key: ca.crt
-      #           path: ca.crt
-      #         name: kube-root-ca.crt
-      #     - downwardAPI:
-      #         items:
-      #         - fieldRef:
-      #             apiVersion: v1
-      #             fieldPath: metadata.namespace
-      #           path: namespace
-      - name: docker-windows-kuberenetes-container-logs
-        hostPath:
-          path: C:\var
-      - name: azure-json-path
-        hostPath:
-          path: C:\k
-      # Need to mount this only for airgapped clouds - Commenting this since it wont exist in non airgapped clouds
-      #- name: ca-certs
-      #  hostPath:
-      #    path: C:\ca
-      - name: docker-windows-containers
-        hostPath:
-          path: C:\ProgramData\docker\containers
-          type: DirectoryOrCreate
-      - name: settings-vol-config
-        configMap:
-          name: container-azm-ms-agentconfig
-          optional: true
-      - name: ama-logs-secret
-        secret:
-         secretName: ama-logs-secret
-      - name: ama-logs-adx-secret
-        secret:
-          secretName: ama-logs-adx-secret
-          optional: true
-      # Uncomment below lines for MSI Auth Mode  testing
-      # - name: imds-token
-      #   secret:
-      #     secretName: aad-msi-auth-token
+      containers:
+        # Uncomment below lines for MSI Auth Mode  testing
+        #  - name: addon-token-adapter-win
+        #    command:
+        #     - addon-token-adapter-win
+        #    args:
+        #     - --secret-namespace=kube-system
+        #     - --secret-name=aad-msi-auth-token
+        #     - --token-server-listening-port=7777
+        #     - --health-server-listening-port=9999
+        #    image: "mcr.microsoft.com/aks/msi/addon-token-adapter:master.250604.1"
+        #    imagePullPolicy: Always
+        #    livenessProbe:
+        #     httpGet:
+        #       path: /healthz
+        #       port: 9999
+        #     initialDelaySeconds: 10
+        #     periodSeconds: 60
+        #    resources:
+        #     limits:
+        #       memory: 500Mi
+        #     requests:
+        #       cpu: 100m
+        #       memory: 100Mi
+        #    securityContext:
+        #     capabilities:
+        #       add:
+        #         - NET_ADMIN
+        - name: ama-logs-windows
+          image: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.35"
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: 500m
+              memory: 700Mi
+            limits:
+              cpu: 2
+              memory: 2Gi
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - DAC_OVERRIDE
+          env:
+            - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+              valueFrom:
+                resourceFieldRef:
+                  containerName: ama-logs-windows
+                  resource: limits.memory
+            - name: FBIT_SERVICE_FLUSH_INTERVAL
+              value: "15"
+            - name: FBIT_TAIL_BUFFER_CHUNK_SIZE
+              value: "1"
+            - name: FBIT_TAIL_BUFFER_MAX_SIZE
+              value: "1"
+            # azure devops pipeline uses AKS_RESOURCE_ID and AKS_REGION hence ensure to uncomment these
+            - name: AKS_RESOURCE_ID
+              value: "VALUE_AKS_RESOURCE_ID_VALUE"
+            - name: AKS_REGION
+              value: "VALUE_AKS_RESOURCE_REGION_VALUE"
+            #- name: ACS_RESOURCE_NAME
+            #  value: "my_acs_cluster_name"
+            - name: CONTROLLER_TYPE
+              value: "DaemonSet"
+            - name: HOSTNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: PODNAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: SIDECAR_SCRAPING_ENABLED
+              value: "true"
+            # Add this only for clouds that require cert bootstrapping
+            # - name: REQUIRES_CERT_BOOTSTRAP
+            #   value: "true"
+            # Uncomment below lines for MSI Auth Mode  testing
+            # - name: USING_AAD_MSI_AUTH
+            #   value: "true"
+            - name: AZMON_WINDOWS_FLUENT_BIT_ENABLED
+              value: "false"
+            - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
+              value: "false"
+            - name: APPMONITORING_OPENTELEMETRYLOGS_ENABLED
+              value: "false"
+            - name: APPMONITORING_OPENTELEMETRYLOGS_PORT
+              value: "28331"
+            - name: CLUSTER_CLOUD_ENVIRONMENT
+              value: "azurepubliccloud" # Change this to the cloud environment of your cluster
+          volumeMounts:
+            #  Uncomment below lines when telegraf upgraded to 1.28.5 or higher
+            # - name: kube-api-access
+            #   mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+            #   readOnly: true
+            - mountPath: C:\ProgramData\docker\containers
+              name: docker-windows-containers
+              readOnly: true
+            - mountPath: C:\var #Read + Write access on this for position file
+              name: docker-windows-kuberenetes-container-logs
+            - mountPath: C:\etc\config\settings
+              name: settings-vol-config
+              readOnly: true
+            - mountPath: C:\etc\ama-logs-secret
+              name: ama-logs-secret
+              readOnly: true
+            - mountPath: C:\etc\config\adx
+              name: ama-logs-adx-secret
+              readOnly: true
+            # Need to mount this only for airgapped clouds - Commenting this since it wont exist in non airgapped clouds
+            # - mountPath: C:\ca
+            #   name: ca-certs
+            #   readOnly: true
+            - mountPath: C:\etc\kubernetes\host
+              name: azure-json-path
+              readOnly: true
+            # Uncomment below lines for MSI Auth Mode  testing
+            # - mountPath: C:\etc\IMDS-access-token
+            #   name: imds-token
+            #   readOnly: true
+          livenessProbe:
+            exec:
+              command:
+                - cmd
+                - /c
+                - C:\opt\amalogswindows\scripts\cmd\livenessprobe.exe
+                - fluent-bit.exe
+                - fluentdwinaks
+                - "C:\\etc\\amalogswindows\\filesystemwatcher.txt"
+                - "C:\\etc\\amalogswindows\\renewcertificate.txt"
+                # Uncomment below lines for MSI Auth Mode  testing
+                # - MonAgentCore.exe
+            periodSeconds: 60
+            initialDelaySeconds: 180
+            timeoutSeconds: 15
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/os
+                    operator: In
+                    values:
+                      - windows
+      tolerations:
+        - key: "CriticalAddonsOnly"
+          operator: "Exists"
+        - operator: "Exists"
+          effect: NoExecute
+        - operator: "Exists"
+          effect: NoSchedule
+        - operator: "Exists"
+          effect: PreferNoSchedule
+      volumes:
+        #  Uncomment below lines when telegraf upgraded to 1.28.5 or higher
+        # - name: kube-api-access
+        #   projected:
+        #     sources:
+        #     - serviceAccountToken:
+        #         path: token
+        #         expirationSeconds: 3600
+        #     - configMap:
+        #         items:
+        #         - key: ca.crt
+        #           path: ca.crt
+        #         name: kube-root-ca.crt
+        #     - downwardAPI:
+        #         items:
+        #         - fieldRef:
+        #             apiVersion: v1
+        #             fieldPath: metadata.namespace
+        #           path: namespace
+        - name: docker-windows-kuberenetes-container-logs
+          hostPath:
+            path: C:\var
+        - name: azure-json-path
+          hostPath:
+            path: C:\k
+        # Need to mount this only for airgapped clouds - Commenting this since it wont exist in non airgapped clouds
+        #- name: ca-certs
+        #  hostPath:
+        #    path: C:\ca
+        - name: docker-windows-containers
+          hostPath:
+            path: C:\ProgramData\docker\containers
+            type: DirectoryOrCreate
+        - name: settings-vol-config
+          configMap:
+            name: container-azm-ms-agentconfig
+            optional: true
+        - name: ama-logs-secret
+          secret:
+            secretName: ama-logs-secret
+        - name: ama-logs-adx-secret
+          secret:
+            secretName: ama-logs-adx-secret
+            optional: true
+        # Uncomment below lines for MSI Auth Mode  testing
+        # - name: imds-token
+        #   secret:
+        #     secretName: aad-msi-auth-token

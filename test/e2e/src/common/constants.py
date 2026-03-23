@@ -44,7 +44,7 @@ TIMEOUT = 300
 AMA_LOGS_MAIN_CONTAINER_NAME = 'ama-logs'
 
 # WAIT TIME BEFORE READING THE AGENT LOGS
-AGENT_WAIT_TIME_SECS = "180"
+AGENT_WAIT_TIME_SECS = "600"
 # Azure Monitor for Container Extension related
 AGENT_RESOURCES_NAMESPACE = 'kube-system'
 AGENT_DEPLOYMENT_NAME = 'ama-logs-rs'
@@ -74,7 +74,7 @@ CONTAINER_PERF_EMIT_STREAM = "cAdvisorPerfEmitStreamSuccess"
 CONTAINER_INVENTORY_EMIT_STREAM = "containerInventoryEmitStreamSuccess"
 
 # simple log analytics queries to validate for e2e workflows
-DEFAULT_QUERY_TIME_INTERVAL_IN_MINUTES = 10
+DEFAULT_QUERY_TIME_INTERVAL_IN_MINUTES = 15
 KUBE_POD_INVENTORY_QUERY = "KubePodInventory |  where TimeGenerated > ago({0}) | count"
 KUBE_NODE_INVENTORY_QUERY = "KubeNodeInventory |  where TimeGenerated > ago({0}) | count"
 KUBE_SERVICES_QUERY = "KubeServices |  where TimeGenerated > ago({0}) | count"
@@ -101,7 +101,7 @@ CONTAINER_PERF_MEMORY_WS_USAGE_QUERY = "Perf | where ObjectName == 'K8SContainer
 CONTAINER_PERF_RESTART_TIME_EPOCH_QUERY = "Perf | where ObjectName == 'K8SContainer' | where CounterName == 'restartTimeEpoch' |  where TimeGenerated > ago({0}) | count"
 # container log
 CONTAINER_LOG_V2_QUERY = "ContainerLogV2 |  where TimeGenerated > ago({0}) | count"
-CONTAINER_LOG_V2_K8S_METADATA_QUERY = "ContainerLogV2 |  where TimeGenerated > ago({0}) | where KubernetesMetadata != "" | count"
+CONTAINER_LOG_V2_K8S_METADATA_QUERY = "ContainerLogV2 |  where TimeGenerated > ago({0}) | where KubernetesMetadata != '' | count"
 
 # insights metrics
 INSIGHTS_METRICS_QUERY = "InsightsMetrics |  where TimeGenerated > ago({0}) | count"
