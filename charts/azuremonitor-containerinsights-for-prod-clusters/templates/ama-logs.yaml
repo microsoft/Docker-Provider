@@ -122,6 +122,17 @@ roleRef:
   name: ama-logs-reader
   apiGroup: rbac.authorization.k8s.io
 ---
+{{- if eq (.Values.OmsAgent.enableProcstatMonitoring | default false) true }}
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: procstat-scripts
+  namespace: kube-system
+data:
+  setup-procstat.sh: |
+{{ .Files.Get "files/setup-procstat.sh" | indent 4 }}
+{{- end }}
+---
 kind: ConfigMap
 apiVersion: v1
 data:
@@ -542,21 +553,9 @@ spec:
         {{- if eq ($.Values.OmsAgent.enableProcstatMonitoring | default false) true }}
           command:
             - /bin/bash
-            - -c
-            - |
-              # Rename mdsd and fluent-bit binaries so procstat can distinguish ama-logs processes from others
-              cp /usr/sbin/mdsd /usr/sbin/ama-logs-mdsd
-              sed -i 's|mdsd \${MDSD_AAD_MSI_AUTH_ARGS}|ama-logs-mdsd ${MDSD_AAD_MSI_AUTH_ARGS}|g' /opt/main.sh
-              cp /usr/bin/fluent-bit /usr/bin/ama-logs-fluent-bit
-              sed -i 's|fluent-bit -c|ama-logs-fluent-bit -c|g' /opt/main.sh
-              cp /opt/telegraf /opt/ama-logs-telegraf
-              sed -i 's|/opt/telegraf --config|/opt/ama-logs-telegraf --config|g' /opt/main.sh
-              TELEGRAF_CONF="/etc/opt/microsoft/docker-cimprov/telegraf.conf"
-              TAGS='  [inputs.procstat.tags]\n    Computer = "$NODE_NAME"\n    AgentVersion = "$AGENT_VERSION"\n    ControllerType = "$CONTROLLER_TYPE"\n    AKS_RESOURCE_ID = "$TELEMETRY_AKS_RESOURCE_ID"\n    ACSResourceName = "$TELEMETRY_ACS_RESOURCE_NAME"\n    Region = "$TELEMETRY_AKS_REGION"'
-              for proc in ama-logs-fluent-bit ama-logs-mdsd ama-logs-telegraf ama-logs-rs-fluent-bit ama-logs-rs-mdsd ama-logs-rs-telegraf ama-logs-prom-mdsd ama-logs-prom-fluent-bit ama-logs-prom-telegraf ruby crond inotifywait; do
-                printf '\n[[inputs.procstat]]\n  name_prefix="t.azm.ms/"\n  exe = "%s"\n  interval = "60s"\n  pid_finder = "native"\n  pid_tag = true\n  name_override = "agent_telemetry"\n  fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]\n'"$TAGS"'\n' "$proc" >> "$TELEGRAF_CONF"
-              done
-              exec /opt/main.sh
+            - /opt/procstat/setup-procstat.sh
+            - ama-logs
+            - "true"
         {{- end }}
           resources:
             limits:
@@ -716,6 +715,11 @@ spec:
             - mountPath: /etc/config/settings/adx
               name: ama-logs-adx-secret
               readOnly: true
+          {{- if eq ($.Values.OmsAgent.enableProcstatMonitoring | default false) true }}
+            - mountPath: /opt/procstat
+              name: procstat-scripts
+              readOnly: true
+          {{- end }}
           {{- if (eq (include "should_mount_hostca" $ ) "true" ) }}
             # USSec and USNat have cloud-specific Root and Intermediate CAs that must be mounted into all running containers from the host
             # Container Insights has logic to update the trust store in the image based on certs present in /anchors/ mounts below
@@ -743,15 +747,8 @@ spec:
         {{- if eq ($.Values.OmsAgent.enableProcstatMonitoring | default false) true }}
           command:
             - /bin/bash
-            - -c
-            - |
-              cp /usr/sbin/mdsd /usr/sbin/ama-logs-prom-mdsd
-              sed -i 's|mdsd \${MDSD_AAD_MSI_AUTH_ARGS}|ama-logs-prom-mdsd ${MDSD_AAD_MSI_AUTH_ARGS}|g' /opt/main.sh
-              cp /usr/bin/fluent-bit /usr/bin/ama-logs-prom-fluent-bit
-              sed -i 's|fluent-bit -c|ama-logs-prom-fluent-bit -c|g' /opt/main.sh
-              cp /opt/telegraf /opt/ama-logs-prom-telegraf
-              sed -i 's|/opt/telegraf --config|/opt/ama-logs-prom-telegraf --config|g' /opt/main.sh
-              exec /opt/main.sh
+            - /opt/procstat/setup-procstat.sh
+            - ama-logs-prom
         {{- end }}
           resources:
             limits:
@@ -842,6 +839,11 @@ spec:
               readOnly: true
             - mountPath: /var/run/mdsd-PrometheusSidecar
               name: mdsd-prometheus-sock
+          {{- if eq ($.Values.OmsAgent.enableProcstatMonitoring | default false) true }}
+            - mountPath: /opt/procstat
+              name: procstat-scripts
+              readOnly: true
+          {{- end }}
           {{- if (eq (include "should_mount_hostca" $ ) "true" ) }}
             # USSec and USNat have cloud-specific Root and Intermediate CAs that must be mounted into all running containers from the host
             # Container Insights has logic to update the trust store in the image based on certs present in /anchors/ mounts below
@@ -973,6 +975,12 @@ spec:
           configMap:
             name: container-azm-ms-osmconfig
             optional: true
+      {{- if eq ($.Values.OmsAgent.enableProcstatMonitoring | default false) true }}
+        - name: procstat-scripts
+          configMap:
+            name: procstat-scripts
+            defaultMode: 0755
+      {{- end }}
       {{- if (eq (include "should_mount_hostca" $ ) "true" ) }}
         - name: anchors-ubuntu
           hostPath:
@@ -1125,15 +1133,8 @@ spec:
         {{- if eq (.Values.OmsAgent.enableProcstatMonitoring | default false) true }}
           command:
             - /bin/bash
-            - -c
-            - |
-              cp /usr/sbin/mdsd /usr/sbin/ama-logs-rs-mdsd
-              sed -i 's|mdsd \${MDSD_AAD_MSI_AUTH_ARGS}|ama-logs-rs-mdsd ${MDSD_AAD_MSI_AUTH_ARGS}|g' /opt/main.sh
-              cp /usr/bin/fluent-bit /usr/bin/ama-logs-rs-fluent-bit
-              sed -i 's|fluent-bit -c|ama-logs-rs-fluent-bit -c|g' /opt/main.sh
-              cp /opt/telegraf /opt/ama-logs-rs-telegraf
-              sed -i 's|/opt/telegraf --config|/opt/ama-logs-rs-telegraf --config|g' /opt/main.sh
-              exec /opt/main.sh
+            - /opt/procstat/setup-procstat.sh
+            - ama-logs-rs
         {{- end }}
           {{- if not .Values.OmsAgent.isRSVPAEnabled }}
           resources:
@@ -1253,6 +1254,11 @@ spec:
             - mountPath: /etc/config/osm-settings
               name: osm-settings-vol-config
               readOnly: true
+          {{- if eq (.Values.OmsAgent.enableProcstatMonitoring | default false) true }}
+            - mountPath: /opt/procstat
+              name: procstat-scripts
+              readOnly: true
+          {{- end }}
           {{- if (eq (include "should_mount_hostca" . ) "true" ) }}
             # USSec and USNat have cloud-specific Root and Intermediate CAs that must be mounted into all running containers from the host
             # Container Insights has logic to update the trust store in the image based on certs present in /anchors/ mounts below
@@ -1340,6 +1346,12 @@ spec:
           configMap:
             name: container-azm-ms-osmconfig
             optional: true
+      {{- if eq (.Values.OmsAgent.enableProcstatMonitoring | default false) true }}
+        - name: procstat-scripts
+          configMap:
+            name: procstat-scripts
+            defaultMode: 0755
+      {{- end }}
       {{- if (eq (include "should_mount_hostca" . ) "true" ) }}
         - name: anchors-ubuntu
           hostPath:
