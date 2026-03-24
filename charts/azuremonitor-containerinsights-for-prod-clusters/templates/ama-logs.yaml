@@ -1415,6 +1415,51 @@ spec:
         {{- else }}
           imagePullPolicy: IfNotPresent
         {{- end }}
+        {{- if eq (.Values.OmsAgent.enableProcstatMonitoring | default false) true }}
+          command: ["powershell", "-Command"]
+          args:
+            - |
+              $procstatConfig = @"
+
+              [[inputs.procstat]]
+                name_prefix = "t.azm.ms/"
+                exe = "fluent-bit"
+                interval = "60s"
+                pid_finder = "native"
+                pid_tag = true
+                name_override = "agent_telemetry"
+                fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  Computer = "$env:HOSTNAME"
+                  ControllerType = "DaemonSet"
+
+              [[inputs.procstat]]
+                name_prefix = "t.azm.ms/"
+                exe = "telegraf"
+                interval = "60s"
+                pid_finder = "native"
+                pid_tag = true
+                name_override = "agent_telemetry"
+                fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  Computer = "$env:HOSTNAME"
+                  ControllerType = "DaemonSet"
+
+              [[inputs.procstat]]
+                name_prefix = "t.azm.ms/"
+                exe = "MonAgentLauncher"
+                interval = "60s"
+                pid_finder = "native"
+                pid_tag = true
+                name_override = "agent_telemetry"
+                fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  Computer = "$env:HOSTNAME"
+                  ControllerType = "DaemonSet"
+              "@
+              Add-Content -Path "C:\etc\telegraf\telegraf.conf" -Value $procstatConfig
+              & C:\opt\amalogswindows\scripts\powershell\main.ps1
+        {{- end }}
         {{- if .Values.OmsAgent.isWindowsBurstableQoSEnabled }}
           resources:
             requests:
