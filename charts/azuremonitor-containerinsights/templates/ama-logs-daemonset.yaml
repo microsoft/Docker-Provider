@@ -15,18 +15,22 @@
 {{- end -}}
 {{/* Outer condition: AKS always renders, Arc renders with valid credentials */}}
 {{- if or (not $isArcExtension) (and $isArcExtension (and (ne .Values.amalogs.secret.key "<your_workspace_key>") (ne .Values.amalogs.secret.wsid "<your_workspace_id>") (or (ne .Values.amalogs.env.clusterName "<your_cluster_name>") (ne .Values.amalogs.env.clusterId "<your_cluster_id>") (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>")))) }}
-{{/* AKS DaemonSet Sizing - only for AKS */}}
+{{/* DaemonSet Sizing: AKS uses t-shirt sizing loop, Arc generates a single DaemonSet */}}
+{{- $useDaemonSetSizing := false -}}
+{{- $singleSize := dict -}}
+{{- $sizes := list (dict) -}}
+{{- $prevmaxCPU := 0 -}}
 {{- if not $isArcExtension }}
-{{- $useDaemonSetSizing := and (eq .Values.Azure.Cluster.Kind "automatic") .Values.OmsAgent.enableDaemonSetSizing -}}
-{{- $singleSize := .Values.OmsAgent.daemonSetSizingValues.singleSize -}}
-{{- $sizes := list $singleSize -}}
+{{- $useDaemonSetSizing = and (eq .Values.Azure.Cluster.Kind "automatic") .Values.OmsAgent.enableDaemonSetSizing -}}
+{{- $singleSize = .Values.OmsAgent.daemonSetSizingValues.singleSize -}}
+{{- $sizes = list $singleSize -}}
 {{- if $useDaemonSetSizing -}}
   {{- $sizes = prepend .Values.OmsAgent.daemonSetSizingValues.tShirtSizes $singleSize -}}
 {{- else -}}
   {{- $sizes = list $singleSize -}}
 {{- end -}}
+{{- end }}
 {{/* Generate DaemonSets */}}
-{{- $prevmaxCPU := 0 -}}
 {{- range $index, $size := $sizes -}}
 {{- if gt $index 0 }}
 ---
@@ -90,7 +94,7 @@ spec:
         agentVersion: {{ $.Values.amalogs.image.agentVersion }}
         dockerProviderVersion: {{ $.Values.amalogs.image.dockerProviderVersion }}
         schema-versions: "v1"
-        checksum/secret: {{ include (print $.Template.BasePath "/ama-logs-secret.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/ama-logs-secret.yaml") $ | sha256sum }}
         checksum/config: {{ toYaml $.Values.amalogs.resources | sha256sum }}
         checksum/logsettings: {{ toYaml $.Values.amalogs.logsettings | sha256sum }}
 {{- else }}
@@ -930,7 +934,6 @@ spec:
 
 {{- if and (ne (default "" $size.name) (default "" $singleSize.name)) $size.maxCPU }}
 {{- $prevmaxCPU = $size.maxCPU | int }}
-{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}
