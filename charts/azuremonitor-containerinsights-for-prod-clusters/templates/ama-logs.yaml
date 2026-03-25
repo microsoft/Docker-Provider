@@ -572,6 +572,8 @@ spec:
                 name_override = "agent_telemetry"
                 fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
               EOF
+              # Override HOST_PROC so telegraf procstat only sees container processes
+              sed -i 's|export HOST_PROC=/hostfs/proc|export HOST_PROC=/proc|g' /opt/main.sh
               exec /opt/main.sh
           resources:
             limits:
