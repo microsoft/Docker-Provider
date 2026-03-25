@@ -549,7 +549,7 @@ spec:
                 name_prefix = "t.azm.ms/"
                 exe = "mdsd"
                 interval = "60s"
-                pid_finder = "native"
+                pid_finder = "pgrep"
                 pid_tag = true
                 name_override = "agent_telemetry"
                 fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
@@ -558,7 +558,7 @@ spec:
                 name_prefix = "t.azm.ms/"
                 exe = "fluent-bit"
                 interval = "60s"
-                pid_finder = "native"
+                pid_finder = "pgrep"
                 pid_tag = true
                 name_override = "agent_telemetry"
                 fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
@@ -567,7 +567,7 @@ spec:
                 name_prefix = "t.azm.ms/"
                 exe = "telegraf"
                 interval = "60s"
-                pid_finder = "native"
+                pid_finder = "pgrep"
                 pid_tag = true
                 name_override = "agent_telemetry"
                 fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
