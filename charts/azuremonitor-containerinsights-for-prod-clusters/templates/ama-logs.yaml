@@ -543,30 +543,76 @@ spec:
             - /bin/bash
             - -c
             - |
-              # Resolve this container's cgroup path using pod UID and PID 1 matching
-              POD_UID_CGROUP=$(echo "$POD_UID" | tr '-' '_')
-              POD_CGROUP_BASE="/hostfs/sys/fs/cgroup/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod${POD_UID_CGROUP}.slice"
-              MY_SCOPE=""
-              for scope in $POD_CGROUP_BASE/cri-containerd-*.scope; do
-                if grep -q "^1$" "$scope/cgroup.procs" 2>/dev/null; then
-                  MY_SCOPE="$scope"
-                  break
-                fi
-              done
-              if [ -n "$MY_SCOPE" ]; then
-                cat >> /etc/opt/microsoft/docker-cimprov/telegraf.conf <<EOF
+              # Create a procstat-only telegraf config that uses HOST_PROC=/proc (container-scoped)
+              cat > /opt/procstat-telegraf.conf <<'TELEGRAF_CONF'
+              [agent]
+                interval = "60s"
+                flush_interval = "15s"
+                quiet = true
+                omit_hostname = true
+
+              [[outputs.socket_writer]]
+                address = "tcp://0.0.0.0:25226"
+                data_format = "json"
 
               [[inputs.procstat]]
                 name_prefix = "t.azm.ms/"
-                cgroup = "$MY_SCOPE"
+                exe = "mdsd"
                 interval = "60s"
+                pid_finder = "native"
                 pid_tag = true
                 name_override = "agent_telemetry"
                 fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
-              EOF
-              else
-                echo "WARNING: Could not resolve container cgroup, skipping procstat"
-              fi
+
+              [[inputs.procstat]]
+                name_prefix = "t.azm.ms/"
+                exe = "fluent-bit"
+                interval = "60s"
+                pid_finder = "native"
+                pid_tag = true
+                name_override = "agent_telemetry"
+                fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+
+              [[inputs.procstat]]
+                name_prefix = "t.azm.ms/"
+                exe = "telegraf"
+                interval = "60s"
+                pid_finder = "native"
+                pid_tag = true
+                name_override = "agent_telemetry"
+                fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+
+              [[inputs.procstat]]
+                name_prefix = "t.azm.ms/"
+                exe = "ruby"
+                interval = "60s"
+                pid_finder = "native"
+                pid_tag = true
+                name_override = "agent_telemetry"
+                fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+
+              [[inputs.procstat]]
+                name_prefix = "t.azm.ms/"
+                exe = "crond"
+                interval = "60s"
+                pid_finder = "native"
+                pid_tag = true
+                name_override = "agent_telemetry"
+                fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+
+              [[inputs.procstat]]
+                name_prefix = "t.azm.ms/"
+                exe = "inotifywait"
+                interval = "60s"
+                pid_finder = "native"
+                pid_tag = true
+                name_override = "agent_telemetry"
+                fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+              TELEGRAF_CONF
+
+              # Start 2nd telegraf with HOST_PROC=/proc (container-scoped only)
+              HOST_PROC=/proc /opt/telegraf --config /opt/procstat-telegraf.conf &
+
               exec /opt/main.sh
           resources:
             limits:
@@ -578,10 +624,6 @@ spec:
               cpu: {{ $containerResources.cpuRequest }}
               memory: {{ $containerResources.memoryRequest }}
           env:
-            - name: POD_UID
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.uid
             - name: NODE_IP
               valueFrom:
                 fieldRef:
