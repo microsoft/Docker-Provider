@@ -815,6 +815,68 @@ spec:
         {{- else }}
           imagePullPolicy: IfNotPresent
         {{- end }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              PROCSTAT_ENABLED="false"
+              if [ -e "/etc/config/settings/agent-settings" ]; then
+                PROCSTAT_ENABLED=$(ruby -e '
+                  require "tomlrb"
+                  begin
+                    config = Tomlrb.load_file("/etc/config/settings/agent-settings", symbolize_keys: true)
+                    val = config.dig(:agent_settings, :procstat_monitoring, :enabled)
+                    puts val.to_s.downcase == "true" ? "true" : "false"
+                  rescue => e
+                    puts "false"
+                  end
+                ')
+              fi
+              if [ "${PROCSTAT_ENABLED}" == "true" ]; then
+                echo "starting 2nd telegraf for procstat in ama-logs-prometheus"
+                cat > /opt/procstat-telegraf.conf <<'TELEGRAF_CONF'
+              [agent]
+                interval = "60s"
+                flush_interval = "15s"
+                quiet = true
+                omit_hostname = true
+              [[outputs.socket_writer]]
+                address = "tcp://0.0.0.0:25229"
+                data_format = "json"
+              [[inputs.procstat]]
+                name_prefix = "t.azm.ms/"
+                exe = "mdsd"
+                interval = "60s"
+                pid_finder = "native"
+                pid_tag = true
+                name_override = "agent_telemetry"
+                fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  ControllerType = "PrometheusSidecar"
+              [[inputs.procstat]]
+                name_prefix = "t.azm.ms/"
+                exe = "fluent-bit"
+                interval = "60s"
+                pid_finder = "native"
+                pid_tag = true
+                name_override = "agent_telemetry"
+                fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  ControllerType = "PrometheusSidecar"
+              [[inputs.procstat]]
+                name_prefix = "t.azm.ms/"
+                exe = "telegraf"
+                interval = "60s"
+                pid_finder = "native"
+                pid_tag = true
+                name_override = "agent_telemetry"
+                fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  ControllerType = "PrometheusSidecar"
+              TELEGRAF_CONF
+                HOST_PROC=/proc /opt/telegraf --config /opt/procstat-telegraf.conf &
+              fi
+              exec /opt/main.sh
           resources:
             limits:
               {{- $containerResources := index $size.containers "ama-logs-prometheus" }}
@@ -1184,6 +1246,68 @@ spec:
         {{- else }}
           imagePullPolicy: IfNotPresent
         {{- end }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              PROCSTAT_ENABLED="false"
+              if [ -e "/etc/config/settings/agent-settings" ]; then
+                PROCSTAT_ENABLED=$(ruby -e '
+                  require "tomlrb"
+                  begin
+                    config = Tomlrb.load_file("/etc/config/settings/agent-settings", symbolize_keys: true)
+                    val = config.dig(:agent_settings, :procstat_monitoring, :enabled)
+                    puts val.to_s.downcase == "true" ? "true" : "false"
+                  rescue => e
+                    puts "false"
+                  end
+                ')
+              fi
+              if [ "${PROCSTAT_ENABLED}" == "true" ]; then
+                echo "starting 2nd telegraf for procstat in ama-logs-rs"
+                cat > /opt/procstat-telegraf.conf <<'TELEGRAF_CONF'
+              [agent]
+                interval = "60s"
+                flush_interval = "15s"
+                quiet = true
+                omit_hostname = true
+              [[outputs.socket_writer]]
+                address = "tcp://0.0.0.0:25226"
+                data_format = "json"
+              [[inputs.procstat]]
+                name_prefix = "t.azm.ms/"
+                exe = "mdsd"
+                interval = "60s"
+                pid_finder = "native"
+                pid_tag = true
+                name_override = "agent_telemetry"
+                fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  ControllerType = "ReplicaSet"
+              [[inputs.procstat]]
+                name_prefix = "t.azm.ms/"
+                exe = "fluent-bit"
+                interval = "60s"
+                pid_finder = "native"
+                pid_tag = true
+                name_override = "agent_telemetry"
+                fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  ControllerType = "ReplicaSet"
+              [[inputs.procstat]]
+                name_prefix = "t.azm.ms/"
+                exe = "telegraf"
+                interval = "60s"
+                pid_finder = "native"
+                pid_tag = true
+                name_override = "agent_telemetry"
+                fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  ControllerType = "ReplicaSet"
+              TELEGRAF_CONF
+                HOST_PROC=/proc /opt/telegraf --config /opt/procstat-telegraf.conf &
+              fi
+              exec /opt/main.sh
           {{- if not .Values.OmsAgent.isRSVPAEnabled }}
           resources:
             limits:
