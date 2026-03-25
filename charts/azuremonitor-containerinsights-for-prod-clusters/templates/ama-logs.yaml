@@ -685,7 +685,6 @@ spec:
               protocol: TCP
           {{- end }}
           securityContext:
-            privileged: true
             capabilities:
               drop:
                 - ALL
