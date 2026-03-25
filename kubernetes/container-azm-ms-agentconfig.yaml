@@ -193,6 +193,12 @@ data:
       tcp_listener_buffer_size = 10
       tcp_listener_mem_buf_limit = 200
 
+    # Procstat monitoring - enables a 2nd telegraf instance that collects CPU/memory
+    # metrics for processes inside the ama-logs container (fluent-bit, mdsd, telegraf, etc.)
+    # Uses HOST_PROC=/proc so only container-scoped processes are monitored.
+    [agent_settings.procstat_monitoring]
+      enabled = false
+
     # prometheus scrape fluent bit settings for high scale
     # buffer size should be greater than or equal to chunk size else we set it to chunk size.
     # settings scoped to daemonset container. all values in mb
