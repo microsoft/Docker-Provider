@@ -1395,6 +1395,34 @@ else
     echo "not starting telegraf (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
 fi
 
+#start 2nd telegraf for container-scoped procstat monitoring (if enabled via ConfigMap)
+PROCSTAT_ENABLED="false"
+if [ -e "/etc/config/settings/agent-settings" ]; then
+    PROCSTAT_ENABLED=$(ruby -e '
+      require "tomlrb"
+      begin
+        config = Tomlrb.load_file("/etc/config/settings/agent-settings", symbolize_keys: true)
+        val = config.dig(:agent_settings, :procstat_monitoring, :enabled)
+        puts val.to_s.downcase == "true" ? "true" : "false"
+      rescue => e
+        puts "false"
+      end
+    ')
+fi
+if [ "${PROCSTAT_ENABLED}" == "true" ]; then
+    procstatConfFile="/etc/opt/microsoft/docker-cimprov/procstat-telegraf.conf"
+    if [ -e "$procstatConfFile" ]; then
+        echo "starting 2nd telegraf for container-scoped procstat monitoring"
+        nodename=$(cat /hostfs/etc/hostname)
+        sed -i -e "s/placeholder_hostname/$nodename/g" $procstatConfFile
+        HOST_PROC=/proc /opt/telegraf --config $procstatConfFile &
+    else
+        echo "procstat-telegraf.conf not found, skipping procstat monitoring"
+    fi
+else
+    echo "procstat monitoring not enabled (set agent_settings.procstat_monitoring.enabled=true in ConfigMap)"
+fi
+
 
 # Get the end time of the setup in seconds
 endTime=$(date +%s)
