@@ -104,6 +104,8 @@ require_relative "ConfigParseErrorLogger"
 @waittime_port_13000 = 45 # default waittime for AMACA data port
 @waittime_port_12563 = 45 # default waittime for AMACA config port
 
+@amaLogsCollectProcessMetricsEnabled = false
+
 @networkFlowLogsThrottleEnabled = true
 @networkFlowLogsThrottleRate = 5000
 @networkFlowLogsThrottleWindow = 300
@@ -450,6 +452,13 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         end
       end
     end
+
+    # collect ama-logs process metrics settings
+    collect_ama_logs_process_metrics_config = parsedConfig[:agent_settings][:collect_ama_logs_process_metrics]
+    if !collect_ama_logs_process_metrics_config.nil? && !collect_ama_logs_process_metrics_config[:enabled].nil?
+      @amaLogsCollectProcessMetricsEnabled = collect_ama_logs_process_metrics_config[:enabled].to_s.strip.downcase == "true"
+      puts "Using config map value: AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS = #{@amaLogsCollectProcessMetricsEnabled}"
+    end
   rescue => errorStr
     puts "config::error:Exception while reading config settings for agent configuration setting - #{errorStr}, using defaults"
   end
@@ -585,6 +594,9 @@ if !file.nil?
   file.write("export WAITTIME_PORT_13000=#{@waittime_port_13000}\n")
   file.write("export WAITTIME_PORT_12563=#{@waittime_port_12563}\n")
 
+  # collect ama-logs process metrics
+  file.write("export AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS=#{@amaLogsCollectProcessMetricsEnabled}\n")
+
   # Close file after writing all environment variables
   file.close
 else
@@ -685,6 +697,10 @@ if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
     end
 
     commands = get_command_windows("WAITTIME_PORT_25229", @waittime_port_25229)
+    file.write(commands)
+
+    # collect ama-logs process metrics
+    commands = get_command_windows("AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS", @amaLogsCollectProcessMetricsEnabled)
     file.write(commands)
 
     # Close file after writing all environment variables

@@ -1395,32 +1395,22 @@ else
     echo "not starting telegraf (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
 fi
 
-#start 2nd telegraf for container-scoped procstat monitoring (if enabled via ConfigMap)
-PROCSTAT_ENABLED="false"
-if [ -e "/etc/config/settings/agent-settings" ]; then
-    PROCSTAT_ENABLED=$(ruby -e '
-      require "tomlrb"
-      begin
-        config = Tomlrb.load_file("/etc/config/settings/agent-settings", symbolize_keys: true)
-        val = config.dig(:agent_settings, :procstat_monitoring, :enabled)
-        puts val.to_s.downcase == "true" ? "true" : "false"
-      rescue => e
-        puts "false"
-      end
-    ')
-fi
-if [ "${PROCSTAT_ENABLED}" == "true" ]; then
-    procstatConfFile="/etc/opt/microsoft/docker-cimprov/procstat-telegraf.conf"
-    if [ -e "$procstatConfFile" ]; then
-        echo "starting 2nd telegraf for container-scoped procstat monitoring"
-        nodename=$(cat /hostfs/etc/hostname)
-        sed -i -e "s/placeholder_hostname/$nodename/g" $procstatConfFile
-        HOST_PROC=/proc /opt/telegraf --config $procstatConfFile &
+#start a telegraf instance for collecting process metrics inside ama-logs containers (if enabled via ConfigMap)
+if [ "${AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS}" == "true" ]; then
+    amaLogsProcessMetricsConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-ama-logs-process-metrics.conf"
+    if [ -e "$amaLogsProcessMetricsConfFile" ]; then
+        echo "start a telegraf instance for collecting process metrics inside ama-logs containers"
+        nodename=$(cat /var/opt/microsoft/docker-cimprov/state/containerhostname)
+        podname=$(hostname)
+        sed -i -e "s/placeholder_hostname/$nodename/g" $amaLogsProcessMetricsConfFile
+        sed -i -e "s/placeholder_podname/$podname/g" $amaLogsProcessMetricsConfFile
+        # Use /proc so telegraf only collect process metrics inside ama-logs containers.
+        HOST_PROC=/proc /opt/telegraf --config $amaLogsProcessMetricsConfFile &
     else
-        echo "procstat-telegraf.conf not found, skipping procstat monitoring"
+        echo "telegraf-ama-logs-process-metrics.conf not found, skipping ama-logs process metrics monitoring"
     fi
 else
-    echo "procstat monitoring not enabled (set agent_settings.procstat_monitoring.enabled=true in ConfigMap)"
+    echo "ama-logs process metrics monitoring not enabled (set agent_settings.collect_ama_logs_process_metrics.enabled=true in ConfigMap)"
 fi
 
 
