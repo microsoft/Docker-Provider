@@ -207,3 +207,204 @@ All pods Running, 0 restarts ✅
 - **Cluster**: `sky-test-cluster`
 - All 6 data volume tables match exactly (excluding edge windows)
 - Memory and CPU consumption are comparable or slightly improved in the test deployment
+
+---
+
+# Run 2 — 2026-03-24
+
+## Step 1: Derived Values
+
+| Parameter | Value |
+|-----------|-------|
+| **Branch Name** | `suyadav/aiautomation` |
+| **Latest Commit** | `5c05385f3` |
+| **Current Production Image** | `ciprod:3.1.35` |
+| **YAML File Path** | `./../azuremonitor-containerinsights-for-prod-clusters/values.yaml` |
+| **Cluster Resource ID** | `/subscriptions/6e377996-dbe0-4f90-aeee-e1592d1d7c0d/resourceGroups/AKSTest/providers/Microsoft.ContainerService/managedClusters/sky-test-cluster` |
+| **Log Analytics Workspace ID** | `a14e51b3-a583-4081-97c0-bf1e44b5195b` |
+| **Subscription ID** | `6e377996-dbe0-4f90-aeee-e1592d1d7c0d` |
+| **Resource Group** | `AKSTest` |
+| **Cluster Name** | `sky-test-cluster` |
+
+## Step 2: kubectl Context
+
+Switched to context `sky-test-cluster`. ✅
+
+## Step 3: Build Check
+
+- No existing build found for commit `5c05385f3`.
+- **New build triggered**: ID `115165`, Build Number `20260324.2` — status: `notStarted`
+
+## Step 5: Production Deployment
+
+- YAML already has correct production image tags (`ciprod:3.1.35` / `ciprod:win-3.1.35`) ✅
+- **Helm command**: `helm upgrade --install ama-logs ./../azuremonitor-containerinsights-for-prod-clusters/ -n kube-system`
+- **Status**: deployed (Revision 3) ✅
+- **Production Deployment Time (UTC)**: `2026-03-24 18:31:20Z`
+
+## Step 6: Waiting 15 Minutes for Pods
+
+- Wait started at: `2026-03-24 18:31:20Z`
+- Wait ends at: `2026-03-24 18:46:20Z`
+
+**Pod Verification** — All Running, 0 restarts ✅
+
+| Pod | Ready | Status | Restarts |
+|-----|-------|--------|----------|
+| ama-logs-hs78g | 3/3 | Running | 0 |
+| ama-logs-npmgz | 3/3 | Running | 0 |
+| ama-logs-rs-5bb8cbf97c-4g6dc | 2/2 | Running | 0 |
+
+## Step 7: Production Baseline Data (18:36Z – 18:41Z)
+
+| Table | 18:36 | 18:37 | 18:38 | 18:39 | 18:40 | 18:41 |
+|-------|-------|-------|-------|-------|-------|-------|
+| ContainerInventory | 94 | 94 | 94 | 94 | 94 | 46* |
+| KubeNodeInventory | — | 2 | 2 | 2 | 2 | 2 |
+| KubePodInventory | — | 94 | 94 | 94 | 94 | 94 |
+| InsightsMetrics | — | 89 | 89 | 89 | 89 | 89 |
+| Perf | 328* | 692 | 692 | 692 | 692 | 524* |
+| ContainerLogV2 | 2 | 4 | 5 | 26 | 5 | 25 |
+
+*Edge windows — expected variation.
+
+## Phase 2: Deploy Test Image
+
+### Step 8–9: Build Confirmation & Image Extraction
+
+- Build **115165** failed due to **Trivy scan only** — images are valid ✅
+- **Linux test image**: `cidev:3.1.34-20-g5c05385f3-20260324183933`
+- **Windows test image**: `cidev:win-3.1.34-20-g5c05385f3-20260324183933`
+
+### Step 10: Test Image Deployment
+
+- Updated YAML `imageTagLinux` and `imageTagWindows` with test image tags
+- **Helm command**: `helm upgrade --install ama-logs ./../azuremonitor-containerinsights-for-prod-clusters/ -n kube-system`
+- **Status**: deployed (Revision 4) ✅
+- **Test Deployment Time (UTC)**: `2026-03-24 19:51:37Z`
+
+### Step 11: Waiting 15 Minutes for Test Pods
+
+- Wait started at: `2026-03-24 19:51:37Z`
+- Wait ends at: `2026-03-24 20:06:37Z`
+
+**Pod Verification** — All Running, 0 restarts ✅
+
+| Pod | Ready | Status | Restarts |
+|-----|-------|--------|----------|
+| ama-logs-fczwx | 3/3 | Running | 0 |
+| ama-logs-t8sss | 3/3 | Running | 0 |
+| ama-logs-rs-757745f5f6-2vpvc | 2/2 | Running | 0 |
+
+### Step 12: Test Data (19:56Z – 20:01Z)
+
+| Table | 19:56 | 19:57 | 19:58 | 19:59 | 20:00 | 20:01 |
+|-------|-------|-------|-------|-------|-------|-------|
+| ContainerInventory | 44* | 94 | 94 | 94 | 94 | 50* |
+| KubeNodeInventory | 2 | 2 | 2 | 2 | 2 | — |
+| KubePodInventory | 94 | 94 | 94 | 94 | 94 | — |
+| InsightsMetrics | 17* | 89 | 89 | 89 | 89 | 72* |
+| Perf | 516* | 692 | 692 | 692 | 692 | 176* |
+| ContainerLogV2 | — | 26 | 4 | 5 | 26 | 4 |
+
+*Edge windows
+
+## Phase 3: Comparison Results
+
+### Step 13: Data Volume Comparison
+
+| Table | Prod (per min) | Test (per min) | Result |
+|-------|---------------|----------------|--------|
+| ContainerInventory | 94 | 94 | ✅ PASS — Exact match |
+| KubeNodeInventory | 2 | 2 | ✅ PASS — Exact match |
+| KubePodInventory | 94 | 94 | ✅ PASS — Exact match |
+| InsightsMetrics | 89 | 89 | ✅ PASS — Exact match |
+| Perf | 692 | 692 | ✅ PASS — Exact match |
+| ContainerLogV2 | 4–26 | 4–26 | ✅ PASS — No regression trend |
+
+### Step 14: PodUid Mapping
+
+| Deployment | Pod Name | PodUid |
+|------------|----------|--------|
+| Production | ama-logs-hs78g | 22bac912-e516-45da-93dd-021a33cf1184 |
+| Production | ama-logs-npmgz | cc8948b1-70f5-40b5-a726-9228ba25c87a |
+| Production | ama-logs-rs-5bb8cbf97c-4g6dc | a16a8520-9d68-4725-9ad3-503b0b3aa8e0 |
+| Test | ama-logs-fczwx | 01377056-9c65-4891-8180-097ada0d85f1 |
+| Test | ama-logs-t8sss | 2c20ca42-342a-437d-bb88-e120e89b69e9 |
+| Test | ama-logs-rs-757745f5f6-2vpvc | 713d0b7d-f669-47ed-a289-fcc26198f0be |
+
+### Step 15: Memory Consumption (memoryWorkingSetBytes) — GB
+
+**Production Deployment (steady state 18:37–18:42):**
+
+| Time | ama-logs-hs78g | ama-logs-npmgz | ama-logs-rs |
+|------|---------------|---------------|-------------|
+| 18:37 | 0.229 | 0.225 | 0.178 |
+| 18:38 | 0.230 | 0.227 | 0.179 |
+| 18:39 | 0.236 | 0.232 | 0.181 |
+| 18:40 | 0.237 | 0.234 | 0.182 |
+| 18:41 | 0.239 | 0.235 | 0.183 |
+| 18:42 | 0.241 | 0.237 | 0.186 |
+
+**Test Deployment (steady state 19:57–20:02):**
+
+| Time | ama-logs-fczwx | ama-logs-t8sss | ama-logs-rs |
+|------|---------------|---------------|-------------|
+| 19:57 | 0.221 | 0.230 | 0.180 |
+| 19:58 | 0.222 | 0.232 | 0.182 |
+| 19:59 | 0.224 | 0.233 | 0.183 |
+| 20:00 | 0.225 | 0.236 | 0.184 |
+| 20:01 | 0.227 | 0.237 | 0.184 |
+| 20:02 | 0.227 | 0.238 | 0.187 |
+
+**Memory Verdict**: ✅ PASS — No regression. Test pods ~0.22–0.24 GB (DS), ~0.18–0.19 GB (RS) — comparable to production.
+
+### Step 15: CPU Consumption (cpuUsageNanoCores) — CPU Cores
+
+**Production Deployment (steady state 18:37–18:42):**
+
+| Time | ama-logs-hs78g | ama-logs-npmgz | ama-logs-rs |
+|------|---------------|---------------|-------------|
+| 18:37 | 0.0098 | 0.0100 | 0.0050 |
+| 18:38 | 0.0096 | 0.0102 | 0.0054 |
+| 18:39 | 0.0094 | 0.0105 | 0.0053 |
+| 18:40 | 0.0121 | 0.0093 | 0.0062 |
+| 18:41 | 0.0106 | 0.0083 | 0.0052 |
+| 18:42 | 0.0140 | 0.0090 | 0.0045 |
+
+**Test Deployment (steady state 19:57–20:02):**
+
+| Time | ama-logs-fczwx | ama-logs-t8sss | ama-logs-rs |
+|------|---------------|---------------|-------------|
+| 19:57 | 0.0036 | 0.0055 | 0.0054 |
+| 19:58 | 0.0025 | 0.0104 | 0.0073 |
+| 19:59 | 0.0048 | 0.0119 | 0.0043 |
+| 20:00 | 0.0025 | 0.0077 | 0.0040 |
+| 20:01 | 0.0027 | 0.0128 | 0.0060 |
+| 20:02 | 0.0037 | 0.0061 | 0.0059 |
+
+**CPU Verdict**: ✅ PASS — No regression. Test pods show comparable CPU usage.
+
+---
+
+## Step 17: Final Summary
+
+| Check | Result |
+|-------|--------|
+| ContainerInventory data volume | ✅ PASS |
+| KubeNodeInventory data volume | ✅ PASS |
+| KubePodInventory data volume | ✅ PASS |
+| InsightsMetrics data volume | ✅ PASS |
+| Perf data volume | ✅ PASS |
+| ContainerLogV2 data volume | ✅ PASS |
+| Memory consumption (memoryWorkingSetBytes) | ✅ PASS — No regression |
+| CPU consumption (cpuUsageNanoCores) | ✅ PASS — No regression |
+
+### **Overall Result: ✅ PASS — No regressions detected**
+
+- **Production image**: `ciprod:3.1.35`
+- **Test image**: `cidev:3.1.34-20-g5c05385f3-20260324183933`
+- **Cluster**: `sky-test-cluster`
+- **Build**: 115165 (commit `5c05385f3`, failed Trivy only)
+- All 6 data volume tables match exactly (excluding edge windows)
+- Memory and CPU consumption are comparable between production and test deployments
