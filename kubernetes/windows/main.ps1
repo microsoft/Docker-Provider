@@ -869,11 +869,13 @@ function Start-Fluent-Telegraf {
     $collectAmaLogsProcessMetrics = [System.Environment]::GetEnvironmentVariable('AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS')
     if (![string]::IsNullOrEmpty($collectAmaLogsProcessMetrics) -and $collectAmaLogsProcessMetrics.ToLower() -eq 'true') {
         $amaLogsProcessMetricsConfFile = "C:\etc\telegraf\telegraf-ama-logs-process-metrics.conf"
+        $amaLogsProcessMetricsConfRuntime = "C:\opt\telegraf-ama-logs-process-metrics-runtime.conf"
         if (Test-Path $amaLogsProcessMetricsConfFile) {
+            Copy-Item $amaLogsProcessMetricsConfFile $amaLogsProcessMetricsConfRuntime -Force
             $podName = [System.Environment]::GetEnvironmentVariable('PODNAME')
-            (Get-Content $amaLogsProcessMetricsConfFile).replace('placeholder_hostname', $hostName).replace('placeholder_podname', $podName) | Set-Content $amaLogsProcessMetricsConfFile
+            (Get-Content $amaLogsProcessMetricsConfRuntime).replace('placeholder_hostname', $hostName).replace('placeholder_podname', $podName) | Set-Content $amaLogsProcessMetricsConfRuntime
             Write-Host "Starting telegraf for collecting process metrics inside ama-logs containers (Windows)"
-            C:\opt\telegraf\telegraf.exe --service install --service-name telegraf-ama-logs-process-metrics --config $amaLogsProcessMetricsConfFile
+            C:\opt\telegraf\telegraf.exe --service install --service-name telegraf-ama-logs-process-metrics --config $amaLogsProcessMetricsConfRuntime
             C:\opt\telegraf\telegraf.exe --service start --service-name telegraf-ama-logs-process-metrics
         } else {
             Write-Host "telegraf-ama-logs-process-metrics.conf not found, skipping ama-logs process metrics monitoring"

@@ -1398,14 +1398,16 @@ fi
 #start a telegraf instance for collecting process metrics inside ama-logs containers (if enabled via ConfigMap)
 if [ "${AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS}" == "true" ]; then
     amaLogsProcessMetricsConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-ama-logs-process-metrics.conf"
+    amaLogsProcessMetricsConfRuntime="/opt/telegraf-ama-logs-process-metrics.conf"
     if [ -e "$amaLogsProcessMetricsConfFile" ]; then
         echo "start a telegraf instance for collecting process metrics inside ama-logs containers"
+        cp "$amaLogsProcessMetricsConfFile" "$amaLogsProcessMetricsConfRuntime"
         nodename=$(cat /var/opt/microsoft/docker-cimprov/state/containerhostname)
         podname=$(hostname)
-        sed -i -e "s/placeholder_hostname/$nodename/g" $amaLogsProcessMetricsConfFile
-        sed -i -e "s/placeholder_podname/$podname/g" $amaLogsProcessMetricsConfFile
+        sed -i -e "s/placeholder_hostname/$nodename/g" $amaLogsProcessMetricsConfRuntime
+        sed -i -e "s/placeholder_podname/$podname/g" $amaLogsProcessMetricsConfRuntime
         # Use /proc so telegraf only collect process metrics inside ama-logs containers.
-        HOST_PROC=/proc /opt/telegraf --config $amaLogsProcessMetricsConfFile &
+        HOST_PROC=/proc /opt/telegraf --config $amaLogsProcessMetricsConfRuntime &
     else
         echo "telegraf-ama-logs-process-metrics.conf not found, skipping ama-logs process metrics monitoring"
     fi
