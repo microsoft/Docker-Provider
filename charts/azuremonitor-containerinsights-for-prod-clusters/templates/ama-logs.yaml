@@ -1671,7 +1671,8 @@ spec:
                   ControllerType = "DaemonSet-Windows"
               "@
                   $procstatConf | Out-File -FilePath "C:\opt\procstat-telegraf.conf" -Encoding ascii
-                  Start-Process -NoNewWindow -FilePath "C:\opt\telegraf\telegraf.exe" -ArgumentList @("--config", "C:\opt\procstat-telegraf.conf")
+                  C:\opt\telegraf\telegraf.exe --service install --service-name telegraf-procstat --config "C:\opt\procstat-telegraf.conf"
+                  C:\opt\telegraf\telegraf.exe --service start --service-name telegraf-procstat
               } else {
                   Write-Host "procstat monitoring not enabled"
               }
