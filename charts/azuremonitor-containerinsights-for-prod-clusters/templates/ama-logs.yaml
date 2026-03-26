@@ -1600,6 +1600,83 @@ spec:
         {{- else }}
           imagePullPolicy: IfNotPresent
         {{- end }}
+          command: ["powershell", "-Command"]
+          args:
+            - |
+              # Check ConfigMap for procstat_monitoring.enabled
+              $procstatEnabled = $false
+              $agentSettingsPath = "C:\etc\config\settings\agent-settings"
+              if (Test-Path $agentSettingsPath) {
+                  $content = Get-Content $agentSettingsPath -Raw
+                  if ($content -match 'enabled\s*=\s*true') {
+                      $procstatEnabled = $true
+                  }
+              }
+
+              if ($procstatEnabled) {
+                  Write-Host "Starting 2nd telegraf for container-scoped procstat monitoring (Windows)"
+                  $procstatConf = @"
+              [agent]
+                interval = "60s"
+                flush_interval = "15s"
+                quiet = true
+                omit_hostname = true
+
+              [[outputs.socket_writer]]
+                address = "tcp://0.0.0.0:25229"
+                data_format = "json"
+
+              [[inputs.procstat]]
+                name_prefix = "t.azm.ms/"
+                exe = "fluent-bit"
+                interval = "60s"
+                pid_finder = "native"
+                pid_tag = true
+                name_override = "agent_telemetry"
+                fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  ControllerType = "DaemonSet-Windows"
+
+              [[inputs.procstat]]
+                name_prefix = "t.azm.ms/"
+                exe = "telegraf"
+                interval = "60s"
+                pid_finder = "native"
+                pid_tag = true
+                name_override = "agent_telemetry"
+                fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  ControllerType = "DaemonSet-Windows"
+
+              [[inputs.procstat]]
+                name_prefix = "t.azm.ms/"
+                exe = "MonAgentLauncher"
+                interval = "60s"
+                pid_finder = "native"
+                pid_tag = true
+                name_override = "agent_telemetry"
+                fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  ControllerType = "DaemonSet-Windows"
+
+              [[inputs.procstat]]
+                name_prefix = "t.azm.ms/"
+                exe = "MonAgentCore"
+                interval = "60s"
+                pid_finder = "native"
+                pid_tag = true
+                name_override = "agent_telemetry"
+                fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  ControllerType = "DaemonSet-Windows"
+              "@
+                  $procstatConf | Out-File -FilePath "C:\opt\procstat-telegraf.conf" -Encoding ascii
+                  Start-Process -NoNewWindow -FilePath "C:\opt\telegraf\telegraf.exe" -ArgumentList @("--config", "C:\opt\procstat-telegraf.conf")
+              } else {
+                  Write-Host "procstat monitoring not enabled"
+              }
+
+              & C:\opt\amalogswindows\scripts\powershell\main.ps1
         {{- if .Values.OmsAgent.isWindowsBurstableQoSEnabled }}
           resources:
             requests:
