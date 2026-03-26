@@ -30,7 +30,7 @@ legacyAddonDelivery: false
 # OmsAgent configuration
 OmsAgent:
   aksResourceID: <your_cluster_id>
-  enableDaemonSetSizing: false
+  enableDaemonSetSizing: true
   isCustomMetricsDisabled: false
   isUsingAADAuth: "true"
   retinaFlowLogsEnabled: false
@@ -100,82 +100,115 @@ OmsAgent:
   # identityClientID: "<your_identity_client_id>"
   # accessTokenSecretName: "aad-msi-auth-token"
 
-  # # DaemonSet sizing configuration
-  # enableDaemonSetSizing: false
-  # daemonSetSizingValues:
-  #   singleSize:
-  #     containers:
-  #       addon-token-adapter:
-  #         cpuLimit: "100m"
-  #         memoryLimit: "100Mi"
-  #         cpuRequest: "20m"
-  #         memoryRequest: "50Mi"
-  #       ama-logs:
-  #         cpuLimit: "150m"
-  #         memoryLimit: "750Mi"
-  #         cpuRequest: "75m"
-  #         memoryRequest: "325Mi"
-  #       ama-logs-prometheus:
-  #         cpuLimit: "500m"
-  #         memoryLimit: "1Gi"
-  #         cpuRequest: "75m"
-  #         memoryRequest: "225Mi"
-  #   tShirtSizes:
-  #     - name: "small"
-  #       maxCPU: 4
-  #       containers:
-  #         addon-token-adapter:
-  #           cpuLimit: "100m"
-  #           memoryLimit: "100Mi"
-  #           cpuRequest: "20m"
-  #           memoryRequest: "50Mi"
-  #         ama-logs:
-  #           cpuLimit: "150m"
-  #           memoryLimit: "750Mi"
-  #           cpuRequest: "75m"
-  #           memoryRequest: "325Mi"
-  #         ama-logs-prometheus:
-  #           cpuLimit: "500m"
-  #           memoryLimit: "1Gi"
-  #           cpuRequest: "75m"
-  #           memoryRequest: "225Mi"
-  #     - name: "medium"
-  #       maxCPU: 8
-  #       containers:
-  #         addon-token-adapter:
-  #           cpuLimit: "200m"
-  #           memoryLimit: "200Mi"
-  #           cpuRequest: "40m"
-  #           memoryRequest: "100Mi"
-  #         ama-logs:
-  #           cpuLimit: "300m"
-  #           memoryLimit: "1.5Gi"
-  #           cpuRequest: "150m"
-  #           memoryRequest: "650Mi"
-  #         ama-logs-prometheus:
-  #           cpuLimit: "1"
-  #           memoryLimit: "2Gi"
-  #           cpuRequest: "150m"
-  #           memoryRequest: "450Mi"
-  #     - name: "large"
-  #       maxCPU: 16
-  #       containers:
-  #         addon-token-adapter:
-  #           cpuLimit: "400m"
-  #           memoryLimit: "400Mi"
-  #           cpuRequest: "80m"
-  #           memoryRequest: "200Mi"
-  #         ama-logs:
-  #           cpuLimit: "600m"
-  #           memoryLimit: "3Gi"
-  #           cpuRequest: "300m"
-  #           memoryRequest: "1.3Gi"
-  #         ama-logs-prometheus:
-  #           cpuLimit: "2"
-  #           memoryLimit: "4Gi"
-  #           cpuRequest: "300m"
-  #           memoryRequest: "900Mi"
-
+  # DaemonSet sizing configuration
+  daemonSetSizingValues:
+    singleSize:
+      containers:
+        addon-token-adapter:
+          cpuLimit: "100m"
+          memoryLimit: "100Mi"
+          cpuRequest: "20m"
+          memoryRequest: "50Mi"
+        ama-logs:
+          cpuLimit: "0"  # Toggle always wins - no tier minimum
+          memoryLimit: "0"  # Toggle always wins - no tier minimum
+          cpuRequest: "75m"
+          memoryRequest: "325Mi"
+        ama-logs-prometheus:
+          cpuLimit: "0"  # Toggle always wins - no tier minimum
+          memoryLimit: "0"  # Toggle always wins - no tier minimum
+          cpuRequest: "75m"
+          memoryRequest: "225Mi"
+    tShirtSizes:
+      - name: "xs"
+        maxCPU: 2
+        containers:
+          addon-token-adapter:
+            cpuLimit: "100m"
+            memoryLimit: "100Mi"
+            cpuRequest: "10m"
+            memoryRequest: "20Mi"
+          ama-logs:
+            cpuLimit: "0"  # Toggle always wins - no tier minimum
+            memoryLimit: "0"  # Toggle always wins - no tier minimum
+            cpuRequest: "45m"
+            memoryRequest: "343Mi"
+          ama-logs-prometheus:
+            cpuLimit: "0"  # Toggle always wins - no tier minimum
+            memoryLimit: "0"  # Toggle always wins - no tier minimum
+            cpuRequest: "20m"
+            memoryRequest: "100Mi"
+      - name: "s"
+        maxCPU: 4
+        containers:
+          addon-token-adapter:
+            cpuLimit: "100m"
+            memoryLimit: "100Mi"
+            cpuRequest: "10m"
+            memoryRequest: "20Mi"
+          ama-logs:
+            cpuLimit: "0"  # Toggle always wins - no tier minimum
+            memoryLimit: "0"  # Toggle always wins - no tier minimum
+            cpuRequest: "100m"
+            memoryRequest: "476Mi"
+          ama-logs-prometheus:
+            cpuLimit: "0"  # Toggle always wins - no tier minimum
+            memoryLimit: "0"  # Toggle always wins - no tier minimum
+            cpuRequest: "20m"
+            memoryRequest: "100Mi"
+      - name: "m"
+        maxCPU: 8
+        containers:
+          addon-token-adapter:
+            cpuLimit: "100m"
+            memoryLimit: "100Mi"
+            cpuRequest: "10m"
+            memoryRequest: "20Mi"
+          ama-logs:
+            cpuLimit: "0"  # Toggle always wins - no tier minimum
+            memoryLimit: "2196Mi"  # Tier-specific minimum - will be max of toggle vs this
+            cpuRequest: "161m"
+            memoryRequest: "978Mi"
+          ama-logs-prometheus:
+            cpuLimit: "0"  # Toggle always wins - no tier minimum
+            memoryLimit: "0"  # Toggle always wins - no tier minimum
+            cpuRequest: "20m"
+            memoryRequest: "100Mi"
+      - name: "l"
+        maxCPU: 16
+        containers:
+          addon-token-adapter:
+            cpuLimit: "100m"
+            memoryLimit: "100Mi"
+            cpuRequest: "10m"
+            memoryRequest: "20Mi"
+          ama-logs:
+            cpuLimit: "0"  # Toggle always wins - no tier minimum
+            memoryLimit: "2356Mi"  # Tier-specific minimum - will be max of toggle vs this
+            cpuRequest: "229m"
+            memoryRequest: "1058Mi"
+          ama-logs-prometheus:
+            cpuLimit: "0"  # Toggle always wins - no tier minimum
+            memoryLimit: "0"  # Toggle always wins - no tier minimum
+            cpuRequest: "20m"
+            memoryRequest: "100Mi"
+      - name: "xl"
+        containers:
+          addon-token-adapter:
+            cpuLimit: "100m"
+            memoryLimit: "100Mi"
+            cpuRequest: "10m"
+            memoryRequest: "20Mi"
+          ama-logs:
+            cpuLimit: "0"  # Toggle always wins - no tier minimum
+            memoryLimit: "2918Mi"  # Tier-specific minimum - will be max of toggle vs this
+            cpuRequest: "404m"
+            memoryRequest: "1339Mi"
+          ama-logs-prometheus:
+            cpuLimit: "0"  # Toggle always wins - no tier minimum
+            memoryLimit: "0"  # Toggle always wins - no tier minimum
+            cpuRequest: "20m"
+            memoryRequest: "100Mi"
 # ============================================================================
 # amalogs - ARC K8S EXTENSION VALUES (from azuremonitor-containers)
 # Exact order preserved from Arc chart
@@ -376,6 +409,7 @@ Azure:
     Cloud: <your_cluster_cloud>
     Region: <your_cluster_region>
     ResourceId: <your_cluster_id>
+    Kind: "base"  # Can be "automatic" or "base"
     Distribution: ""  # e.g., "openshift", "aks_edge_k3s", "aks_edge_k8s", etc.
   Extension:
     Name: ""

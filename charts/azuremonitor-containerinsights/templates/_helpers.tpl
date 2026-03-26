@@ -104,3 +104,120 @@ HOST CA CERTIFICATE MOUNTING SECTION (from AKS chart)
   {{- $cloud_environment := (.Values.global.commonGlobals.CloudEnvironment | default "azurepubliccloud" | lower) }}
   {{- has $cloud_environment (list "usnat" "ussec" "azurebleucloud") -}}
 {{- end }}
+{{/*
+=============================================================================
+RESOURCE QUANTITY HELPERS (for toggle processing)
+=============================================================================
+*/}}
+
+{{/*
+Compare two resource quantities and return the maximum.
+This replicates the Go maxResourceValue function using Kubernetes resource.ParseQuantity logic.
+Supports all Kubernetes quantity formats: decimal fractions, binary/decimal units, CPU millicores.
+Usage: {{ include "maxResourceValue" (list "1.5Gi" "2196Mi") }}
+*/}}
+{{- define "maxResourceValue" -}}
+{{- $val1 := index . 0 -}}
+{{- $val2 := index . 1 -}}
+
+{{/* Parse val1 to bytes/millicores */}}
+{{- $val1Parsed := include "parseQuantity" $val1 -}}
+{{- $val2Parsed := include "parseQuantity" $val2 -}}
+
+{{/* Compare parsed values */}}
+{{- if ge ($val1Parsed | int64) ($val2Parsed | int64) -}}
+{{- $val1 -}}
+{{- else -}}
+{{- $val2 -}}
+{{- end -}}
+{{- end }}
+
+{{/*
+Parse a Kubernetes resource quantity to comparable integer value.
+Mimics k8s.io/apimachinery/pkg/api/resource.ParseQuantity behavior.
+Returns value in smallest unit (bytes for memory, millicores for CPU).
+*/}}
+{{- define "parseQuantity" -}}
+{{- $quantity := . -}}
+{{- $quantity = trim $quantity -}}
+
+{{/* Handle zero/empty */}}
+{{- if or (eq $quantity "") (eq $quantity "0") -}}
+0
+{{- else -}}
+
+{{/* Extract number and suffix using regex */}}
+{{- $number := regexFind "^[0-9.]+" $quantity -}}
+{{- $suffix := trimPrefix $number $quantity -}}
+
+{{/* Parse the numeric part - handle decimals */}}
+{{- $intPart := 0 -}}
+{{- $fracPart := 0 -}}
+{{- $fracDivisor := 1 -}}
+
+{{- if contains "." $number -}}
+  {{- $parts := split "." $number -}}
+  {{- $intPart = index $parts 0 | int -}}
+  {{- $fracStr := index $parts 1 -}}
+  {{- $fracPart = $fracStr | int -}}
+  {{- $fracLen := len $fracStr -}}
+  {{- if eq $fracLen 1 -}}{{- $fracDivisor = 10 -}}
+  {{- else if eq $fracLen 2 -}}{{- $fracDivisor = 100 -}}
+  {{- else if eq $fracLen 3 -}}{{- $fracDivisor = 1000 -}}
+  {{- else if eq $fracLen 4 -}}{{- $fracDivisor = 10000 -}}
+  {{- else if eq $fracLen 5 -}}{{- $fracDivisor = 100000 -}}
+  {{- else -}}{{- $fracDivisor = 1000000 -}}
+  {{- end -}}
+{{- else -}}
+  {{- $intPart = $number | int -}}
+{{- end -}}
+
+{{/* Convert based on suffix - return in base units (bytes for memory, millicores for CPU) */}}
+{{- $result := 0 -}}
+
+{{/* Binary suffixes (1024-based) */}}
+{{- if eq $suffix "Ki" -}}
+  {{- $result = add (mul $intPart 1024) (div (mul $fracPart 1024) $fracDivisor) -}}
+{{- else if eq $suffix "Mi" -}}
+  {{- $result = add (mul $intPart 1048576) (div (mul $fracPart 1048576) $fracDivisor) -}}
+{{- else if eq $suffix "Gi" -}}
+  {{- $result = add (mul $intPart 1073741824) (div (mul $fracPart 1073741824) $fracDivisor) -}}
+{{- else if eq $suffix "Ti" -}}
+  {{- $result = add (mul $intPart 1099511627776) (div (mul $fracPart 1099511627776) $fracDivisor) -}}
+{{- else if eq $suffix "Pi" -}}
+  {{- $result = add (mul $intPart 1125899906842624) (div (mul $fracPart 1125899906842624) $fracDivisor) -}}
+
+{{/* Decimal suffixes (1000-based) */}}
+{{- else if eq $suffix "k" -}}
+  {{- $result = add (mul $intPart 1000) (div (mul $fracPart 1000) $fracDivisor) -}}
+{{- else if eq $suffix "M" -}}
+  {{- $result = add (mul $intPart 1000000) (div (mul $fracPart 1000000) $fracDivisor) -}}
+{{- else if eq $suffix "G" -}}
+  {{- $result = add (mul $intPart 1000000000) (div (mul $fracPart 1000000000) $fracDivisor) -}}
+{{- else if eq $suffix "T" -}}
+  {{- $result = add (mul $intPart 1000000000000) (div (mul $fracPart 1000000000000) $fracDivisor) -}}
+{{- else if eq $suffix "P" -}}
+  {{- $result = add (mul $intPart 1000000000000000) (div (mul $fracPart 1000000000000000) $fracDivisor) -}}
+
+{{/* CPU millicores */}}
+{{- else if eq $suffix "m" -}}
+  {{- $result = add (mul $intPart 1) (div $fracPart $fracDivisor) -}}
+
+{{/* No suffix - treat as base unit */}}
+{{- else if eq $suffix "" -}}
+  {{- if contains "." $number -}}
+    {{/* Decimal number without suffix - assume CPU cores, convert to millicores */}}
+    {{- $result = add (mul $intPart 1000) (div (mul $fracPart 1000) $fracDivisor) -}}
+  {{- else -}}
+    {{/* Integer without suffix - could be bytes or cores */}}
+    {{- $result = $intPart -}}
+  {{- end -}}
+
+{{/* Unknown suffix - treat as base unit */}}
+{{- else -}}
+  {{- $result = $intPart -}}
+{{- end -}}
+
+{{- $result -}}
+{{- end -}}
+{{- end }}
