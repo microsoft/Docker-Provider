@@ -1518,6 +1518,9 @@ spec:
           - mountPath: C:\etc\telegraf\telegraf-ama-logs-process-metrics.conf
             name: procstat-override-win
             subPath: telegraf-ama-logs-process-metrics.conf
+          - mountPath: C:\opt\amalogswindows\scripts\ruby\tomlparser-agent-config.rb
+            name: procstat-override-win
+            subPath: tomlparser-agent-config.rb
         {{- if (eq (include "should_mount_hostca" . ) "true" ) }}
           - mountPath: C:\ca
             name: ca-certs
