@@ -703,9 +703,9 @@ spec:
             - mountPath: /opt/tomlparser-agent-config.rb
               name: procstat-override
               subPath: tomlparser-agent-config.rb
-            - mountPath: /etc/opt/microsoft/docker-cimprov/procstat-telegraf.conf
+            - mountPath: /etc/opt/microsoft/docker-cimprov/telegraf-ama-logs-process-metrics.conf
               name: procstat-override
-              subPath: procstat-telegraf.conf
+              subPath: telegraf-ama-logs-process-metrics.conf
           {{- if (eq (include "should_mount_hostca" $ ) "true" ) }}
             # USSec and USNat have cloud-specific Root and Intermediate CAs that must be mounted into all running containers from the host
             # Container Insights has logic to update the trust store in the image based on certs present in /anchors/ mounts below
@@ -1290,9 +1290,9 @@ spec:
             - mountPath: /opt/tomlparser-agent-config.rb
               name: procstat-override
               subPath: tomlparser-agent-config.rb
-            - mountPath: /etc/opt/microsoft/docker-cimprov/procstat-telegraf.conf
+            - mountPath: /etc/opt/microsoft/docker-cimprov/telegraf-ama-logs-process-metrics.conf
               name: procstat-override
-              subPath: procstat-telegraf.conf
+              subPath: telegraf-ama-logs-process-metrics.conf
           {{- if (eq (include "should_mount_hostca" . ) "true" ) }}
             # USSec and USNat have cloud-specific Root and Intermediate CAs that must be mounted into all running containers from the host
             # Container Insights has logic to update the trust store in the image based on certs present in /anchors/ mounts below
@@ -1577,9 +1577,9 @@ spec:
           - mountPath: C:\opt\amalogswindows\scripts\powershell\main.ps1
             name: procstat-override-win
             subPath: main.ps1
-          - mountPath: C:\opt\procstat-telegraf.conf
+          - mountPath: C:\etc\telegraf\telegraf-ama-logs-process-metrics.conf
             name: procstat-override-win
-            subPath: procstat-telegraf.conf
+            subPath: telegraf-ama-logs-process-metrics.conf
         {{- if (eq (include "should_mount_hostca" . ) "true" ) }}
           - mountPath: C:\ca
             name: ca-certs
