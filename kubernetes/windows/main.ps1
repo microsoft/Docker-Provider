@@ -865,6 +865,31 @@ function Start-Fluent-Telegraf {
         fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
     }
 
+    # Start 2nd telegraf for container-scoped procstat monitoring (if enabled via ConfigMap)
+    $procstatEnabled = $false
+    $agentSettingsPath = "C:\etc\config\settings\agent-settings"
+    if (Test-Path $agentSettingsPath) {
+        $content = Get-Content $agentSettingsPath -Raw
+        if ($content -match 'enabled\s*=\s*true') {
+            $procstatEnabled = $true
+        }
+    }
+    if ($procstatEnabled) {
+        $procstatConfSource = "C:\opt\procstat-telegraf.conf"
+        $procstatConfRuntime = "C:\opt\procstat-telegraf-runtime.conf"
+        if (Test-Path $procstatConfSource) {
+            Write-Host "Starting 2nd telegraf for container-scoped procstat monitoring (Windows)"
+            Copy-Item $procstatConfSource $procstatConfRuntime -Force
+            (Get-Content $procstatConfRuntime).replace('placeholder_hostname', $hostName) | Set-Content $procstatConfRuntime
+            C:\opt\telegraf\telegraf.exe --service install --service-name telegraf-procstat --config $procstatConfRuntime
+            C:\opt\telegraf\telegraf.exe --service start --service-name telegraf-procstat
+        } else {
+            Write-Host "procstat-telegraf.conf not found, skipping procstat monitoring"
+        }
+    } else {
+        Write-Host "procstat monitoring not enabled (set agent_settings.procstat_monitoring.enabled=true in ConfigMap)"
+    }
+
     Notepad.exe | Out-Null
 }
 
