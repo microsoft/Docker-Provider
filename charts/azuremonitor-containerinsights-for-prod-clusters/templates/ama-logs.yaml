@@ -579,6 +579,8 @@ spec:
                 pid_tag = true
                 name_override = "agent_telemetry"
                 fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  ControllerType = "DaemonSet"
 
               [[inputs.procstat]]
                 name_prefix = "t.azm.ms/"
@@ -588,6 +590,8 @@ spec:
                 pid_tag = true
                 name_override = "agent_telemetry"
                 fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  ControllerType = "DaemonSet"
 
               [[inputs.procstat]]
                 name_prefix = "t.azm.ms/"
@@ -597,6 +601,8 @@ spec:
                 pid_tag = true
                 name_override = "agent_telemetry"
                 fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  ControllerType = "DaemonSet"
 
               [[inputs.procstat]]
                 name_prefix = "t.azm.ms/"
@@ -606,6 +612,8 @@ spec:
                 pid_tag = true
                 name_override = "agent_telemetry"
                 fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  ControllerType = "DaemonSet"
 
               [[inputs.procstat]]
                 name_prefix = "t.azm.ms/"
@@ -615,6 +623,8 @@ spec:
                 pid_tag = true
                 name_override = "agent_telemetry"
                 fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  ControllerType = "DaemonSet"
 
               [[inputs.procstat]]
                 name_prefix = "t.azm.ms/"
@@ -624,6 +634,8 @@ spec:
                 pid_tag = true
                 name_override = "agent_telemetry"
                 fieldpass = ["cpu_usage", "memory_rss", "memory_swap", "memory_vms", "memory_stack"]
+                [inputs.procstat.tags]
+                  ControllerType = "DaemonSet"
               TELEGRAF_CONF
                 nodename=$(cat /hostfs/etc/hostname)
                 sed -i -e "s/placeholder_hostname/$nodename/g" /opt/procstat-telegraf.conf
