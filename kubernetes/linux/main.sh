@@ -1396,6 +1396,22 @@ else
 fi
 
 
+#start 2nd telegraf for container-scoped procstat monitoring (if enabled via ConfigMap)
+if [ "${AZMON_PROCSTAT_ENABLED}" == "true" ]; then
+    procstatConfFile="/etc/opt/microsoft/docker-cimprov/procstat-telegraf.conf"
+    if [ -e "$procstatConfFile" ]; then
+        echo "starting 2nd telegraf for container-scoped procstat monitoring"
+        nodename=$(cat /hostfs/etc/hostname)
+        sed -i -e "s/placeholder_hostname/$nodename/g" $procstatConfFile
+        HOST_PROC=/proc /opt/telegraf --config $procstatConfFile &
+    else
+        echo "procstat-telegraf.conf not found, skipping procstat monitoring"
+    fi
+else
+    echo "procstat monitoring not enabled (set agent_settings.procstat_monitoring.enabled=true in ConfigMap)"
+fi
+
+
 # Get the end time of the setup in seconds
 endTime=$(date +%s)
 elapsed=$((endTime-startTime))

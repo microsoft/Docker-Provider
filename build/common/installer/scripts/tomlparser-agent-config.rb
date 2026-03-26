@@ -104,6 +104,8 @@ require_relative "ConfigParseErrorLogger"
 @waittime_port_13000 = 45 # default waittime for AMACA data port
 @waittime_port_12563 = 45 # default waittime for AMACA config port
 
+@procstatEnabled = false
+
 @networkFlowLogsThrottleEnabled = true
 @networkFlowLogsThrottleRate = 5000
 @networkFlowLogsThrottleWindow = 300
@@ -450,6 +452,13 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         end
       end
     end
+
+    # procstat monitoring settings
+    procstat_config = parsedConfig[:agent_settings][:procstat_monitoring]
+    if !procstat_config.nil? && !procstat_config[:enabled].nil?
+      @procstatEnabled = procstat_config[:enabled]
+      puts "Using config map value: AZMON_PROCSTAT_ENABLED = #{@procstatEnabled}"
+    end
   rescue => errorStr
     puts "config::error:Exception while reading config settings for agent configuration setting - #{errorStr}, using defaults"
   end
@@ -584,6 +593,9 @@ if !file.nil?
   file.write("export WAITTIME_PORT_25229=#{@waittime_port_25229}\n")
   file.write("export WAITTIME_PORT_13000=#{@waittime_port_13000}\n")
   file.write("export WAITTIME_PORT_12563=#{@waittime_port_12563}\n")
+
+  # procstat monitoring
+  file.write("export AZMON_PROCSTAT_ENABLED=#{@procstatEnabled}\n")
 
   # Close file after writing all environment variables
   file.close
