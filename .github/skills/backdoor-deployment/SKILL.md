@@ -163,6 +163,58 @@ Compare the two counter names:
 
 Flag any regression (sustained increase in the test deployment).
 
+### Investigate Data Volume Regression
+
+When a table's counts differ between production and test (or ContainerLogV2 shows a sustained trend), investigate before marking it as a regression:
+
+1. **Break down by ContainerName** in both windows to identify which container(s) are responsible:
+   ```kusto
+   <TableName>
+   | where TimeGenerated between(datetime('<windowStart>') .. datetime('<windowEnd>'))
+   | where _ResourceId =~ '<clusterResourceId>'
+   | summarize Count=count() by ContainerName
+   | sort by Count desc
+   ```
+
+2. **Compare the per-container breakdown** between production and test. Look for:
+   - Containers present in one window but not the other (cluster workload change, not a code regression).
+   - A specific container with significantly higher counts in the test window.
+
+3. **If a container is only present in one window**, verify it was running independently of the deployment by checking a broader time range (e.g., 30 min before the deployment):
+   ```kusto
+   <TableName>
+   | where TimeGenerated between(datetime('<deployTime-30min>') .. datetime('<deployTime>'))
+   | where _ResourceId =~ '<clusterResourceId>'
+   | where ContainerName == '<suspectContainer>'
+   | summarize Count=count() by bin(TimeGenerated, 1m)
+   | order by TimeGenerated asc
+   ```
+
+4. **Classify the finding**:
+   - If the difference is caused by a container that started/stopped independently of the deployment → **not a regression** (cluster workload difference). Note this in the output file and mark as PASS.
+   - If the difference is caused by an ama-logs container or directly relates to the code change → **potential regression**. Flag it and ask the user to review.
+
+### Investigate Resource Consumption Regression
+
+When memory or CPU shows a sustained increase in the test deployment:
+
+1. **Check per-container resource usage** within each pod to isolate which container is consuming more. The ama-logs pods run multiple containers (ama-logs, ama-logs-prometheus, addon-token-adapter). Use:
+   ```kusto
+   Perf
+   | where TimeGenerated between(datetime('<windowStart>') .. datetime('<windowEnd>'))
+   | where _ResourceId =~ '<clusterResourceId>'
+   | where CounterName =~ '<counterName>'
+   | where InstanceName contains '<podUid>'
+   | summarize MaxValue=max(CounterValue/1000/1000/1000) by bin(TimeGenerated, 1m), InstanceName
+   | order by InstanceName asc, TimeGenerated asc
+   ```
+
+2. **Compare the per-container breakdown** between production and test to pinpoint the specific container causing the increase.
+
+3. **Classify the finding**:
+   - Increases < 10% within normal variance → **not a regression**. Note in output and mark as PASS.
+   - Sustained increases ≥ 10% in an ama-logs container → **potential regression**. Flag and ask user to review.
+
 ## Steps
 
 The workflow has two parallel tracks that converge after the build completes.
@@ -189,8 +241,8 @@ The workflow has two parallel tracks that converge after the build completes.
 
 ### Phase 3: Compare Results
 
-13. **Compare data volume** between production and test for all tables (see "Compare Data Volume").
+13. **Compare data volume** between production and test for all tables (see "Compare Data Volume"). If any table shows a difference, **investigate** before reporting (see "Investigate Data Volume Regression").
 14. **Get PodUid** for all pods in both deployments (see "Get PodUid").
-15. **Compare resource consumption** for `memoryWorkingSetBytes` and `cpuUsageNanoCores` (see "Compare Resource Consumption").
+15. **Compare resource consumption** for `memoryWorkingSetBytes` and `cpuUsageNanoCores` (see "Compare Resource Consumption"). If any metric shows a sustained increase, **investigate** before reporting (see "Investigate Resource Consumption Regression").
 16. **Restore YAML** to its original production image values.
-17. **Write summary** to the output file: pass/fail for each table and resource check. Flag any regressions.
+17. **Write summary** to the output file: pass/fail for each table and resource check. Include investigation findings for any anomalies — clearly distinguish between code regressions and cluster workload differences.
