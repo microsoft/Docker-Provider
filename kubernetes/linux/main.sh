@@ -1406,12 +1406,9 @@ if [ "${AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS}" == "true" ]; then
         podname=$(hostname)
         sed -i -e "s/placeholder_hostname/$nodename/g" $amaLogsProcessMetricsConfRuntime
         sed -i -e "s/placeholder_podname/$podname/g" $amaLogsProcessMetricsConfRuntime
-        # PrometheusSidecar uses port 25229, others use 25226
+        # Set ControllerType for PrometheusSidecar
         if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
-            sed -i -e "s/placeholder_fluentbit_port/25229/g" $amaLogsProcessMetricsConfRuntime
             sed -i -e 's/\$CONTROLLER_TYPE/PrometheusSidecar/g' $amaLogsProcessMetricsConfRuntime
-        else
-            sed -i -e "s/placeholder_fluentbit_port/25226/g" $amaLogsProcessMetricsConfRuntime
         fi
         # Set App Insights instrumentation key (Base64 decode)
         if [ -n "$APPLICATIONINSIGHTS_AUTH" ]; then
