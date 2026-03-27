@@ -92,6 +92,10 @@ gem install ipaddress --no-document
 gem install jwt -v "2.7.1" --no-document
 gem install racc --no-document
 
+# update zlib gem to fix CVE-2026-27820
+gem uninstall zlib --default --force
+gem install zlib --no-document
+
 rm -f $TMPDIR/docker-cimprov*.sh
 rm -f $TMPDIR/mdsd.xml
 rm -f $TMPDIR/envmdsd
