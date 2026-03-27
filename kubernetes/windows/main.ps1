@@ -874,6 +874,12 @@ function Start-Fluent-Telegraf {
             Copy-Item $amaLogsProcessMetricsConfFile $amaLogsProcessMetricsConfRuntime -Force
             $podName = [System.Environment]::GetEnvironmentVariable('PODNAME')
             (Get-Content $amaLogsProcessMetricsConfRuntime).replace('placeholder_hostname', $hostName).replace('placeholder_podname', $podName) | Set-Content $amaLogsProcessMetricsConfRuntime
+            # Set App Insights instrumentation key (Base64 decode)
+            $appInsightsAuth = [System.Environment]::GetEnvironmentVariable('APPLICATIONINSIGHTS_AUTH')
+            if (![string]::IsNullOrEmpty($appInsightsAuth)) {
+                $appInsightsKey = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($appInsightsAuth)).Trim()
+                (Get-Content $amaLogsProcessMetricsConfRuntime).replace('placeholder_appinsights_key', $appInsightsKey) | Set-Content $amaLogsProcessMetricsConfRuntime
+            }
             Write-Host "Starting telegraf for collecting process metrics inside ama-logs containers (Windows)"
             C:\opt\telegraf\telegraf.exe --service install --service-name telegraf-ama-logs-process-metrics --config $amaLogsProcessMetricsConfRuntime
             C:\opt\telegraf\telegraf.exe --service start --service-name telegraf-ama-logs-process-metrics
