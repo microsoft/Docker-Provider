@@ -1406,6 +1406,13 @@ if [ "${AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS}" == "true" ]; then
         podname=$(hostname)
         sed -i -e "s/placeholder_hostname/$nodename/g" $amaLogsProcessMetricsConfRuntime
         sed -i -e "s/placeholder_podname/$podname/g" $amaLogsProcessMetricsConfRuntime
+        # PrometheusSidecar uses port 25229, others use 25226
+        if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
+            sed -i -e "s/placeholder_fluentbit_port/25229/g" $amaLogsProcessMetricsConfRuntime
+            sed -i -e 's/\$CONTROLLER_TYPE/PrometheusSidecar/g' $amaLogsProcessMetricsConfRuntime
+        else
+            sed -i -e "s/placeholder_fluentbit_port/25226/g" $amaLogsProcessMetricsConfRuntime
+        fi
         # Use /proc so telegraf only collect process metrics inside ama-logs containers.
         HOST_PROC=/proc /opt/telegraf --config $amaLogsProcessMetricsConfRuntime &
     else

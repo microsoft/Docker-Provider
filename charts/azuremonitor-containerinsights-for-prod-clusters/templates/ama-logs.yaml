@@ -700,9 +700,9 @@ spec:
             - mountPath: /opt/main.sh
               name: procstat-override
               subPath: main.sh
-            - mountPath: /opt/tomlparser-agent-config.rb
+            - mountPath: /opt/tomlparser-common-agent-config.rb
               name: procstat-override
-              subPath: tomlparser-agent-config.rb
+              subPath: tomlparser-common-agent-config.rb
             - mountPath: /etc/opt/microsoft/docker-cimprov/telegraf-ama-logs-process-metrics.conf
               name: procstat-override
               subPath: telegraf-ama-logs-process-metrics.conf
@@ -839,6 +839,15 @@ spec:
             - mountPath: /var/run/mdsd-ci
               name: mdsd-sock
           {{- end }}
+            - mountPath: /opt/main.sh
+              name: procstat-override
+              subPath: main.sh
+            - mountPath: /opt/tomlparser-common-agent-config.rb
+              name: procstat-override
+              subPath: tomlparser-common-agent-config.rb
+            - mountPath: /etc/opt/microsoft/docker-cimprov/telegraf-ama-logs-process-metrics.conf
+              name: procstat-override
+              subPath: telegraf-ama-logs-process-metrics.conf
           livenessProbe:
             exec:
               command:
@@ -1225,9 +1234,9 @@ spec:
             - mountPath: /opt/main.sh
               name: procstat-override
               subPath: main.sh
-            - mountPath: /opt/tomlparser-agent-config.rb
+            - mountPath: /opt/tomlparser-common-agent-config.rb
               name: procstat-override
-              subPath: tomlparser-agent-config.rb
+              subPath: tomlparser-common-agent-config.rb
             - mountPath: /etc/opt/microsoft/docker-cimprov/telegraf-ama-logs-process-metrics.conf
               name: procstat-override
               subPath: telegraf-ama-logs-process-metrics.conf
@@ -1518,9 +1527,9 @@ spec:
           - mountPath: C:\etc\telegraf\telegraf-ama-logs-process-metrics.conf
             name: procstat-override-win
             subPath: telegraf-ama-logs-process-metrics.conf
-          - mountPath: C:\opt\amalogswindows\scripts\ruby\tomlparser-agent-config.rb
+          - mountPath: C:\opt\amalogswindows\scripts\ruby\tomlparser-common-agent-config.rb
             name: procstat-override-win
-            subPath: tomlparser-agent-config.rb
+            subPath: tomlparser-common-agent-config.rb
         {{- if (eq (include "should_mount_hostca" . ) "true" ) }}
           - mountPath: C:\ca
             name: ca-certs
