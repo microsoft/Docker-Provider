@@ -450,7 +450,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         end
       end
     end
-
   rescue => errorStr
     puts "config::error:Exception while reading config settings for agent configuration setting - #{errorStr}, using defaults"
   end
