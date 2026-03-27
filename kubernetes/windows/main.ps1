@@ -875,9 +875,9 @@ function Start-Fluent-Telegraf {
             $podName = [System.Environment]::GetEnvironmentVariable('PODNAME')
             (Get-Content $amaLogsProcessMetricsConfRuntime).replace('placeholder_hostname', $hostName).replace('placeholder_podname', $podName) | Set-Content $amaLogsProcessMetricsConfRuntime
             # Set cluster name
-            $clusterName = [System.Environment]::GetEnvironmentVariable('AKS_CLUSTER_NAME')
-            if (![string]::IsNullOrEmpty($clusterName)) {
-                (Get-Content $amaLogsProcessMetricsConfRuntime).replace('placeholder_clustername', $clusterName) | Set-Content $amaLogsProcessMetricsConfRuntime
+            $aksResourceId = [System.Environment]::GetEnvironmentVariable('AKS_RESOURCE_ID')
+            if (![string]::IsNullOrEmpty($aksResourceId)) {
+                (Get-Content $amaLogsProcessMetricsConfRuntime).replace('placeholder_aksresourceid', $aksResourceId) | Set-Content $amaLogsProcessMetricsConfRuntime
             }
             # Set App Insights instrumentation key (Base64 decode)
             $appInsightsAuth = [System.Environment]::GetEnvironmentVariable('APPLICATIONINSIGHTS_AUTH')
