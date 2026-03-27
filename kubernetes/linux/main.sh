@@ -1413,6 +1413,11 @@ if [ "${AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS}" == "true" ]; then
         else
             sed -i -e "s/placeholder_fluentbit_port/25226/g" $amaLogsProcessMetricsConfRuntime
         fi
+        # Set App Insights instrumentation key (Base64 decode)
+        if [ -n "$APPLICATIONINSIGHTS_AUTH" ]; then
+            appinsightsKey=$(echo "$APPLICATIONINSIGHTS_AUTH" | base64 -d | tr -d '\n')
+            sed -i -e "s/placeholder_appinsights_key/$appinsightsKey/g" $amaLogsProcessMetricsConfRuntime
+        fi
         # Use /proc so telegraf only collect process metrics inside ama-logs containers.
         HOST_PROC=/proc /opt/telegraf --config $amaLogsProcessMetricsConfRuntime &
     else
