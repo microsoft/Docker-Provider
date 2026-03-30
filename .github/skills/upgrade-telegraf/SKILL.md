@@ -95,9 +95,14 @@ GIT_EMAIL=$(git config user.email)
 
 **NOTE on `#syntax` version**: The `#syntax=ghcr.io/azure/dalec/frontend:X.XX` line changes over time. Do NOT hardcode it. Always copy it verbatim from the latest existing spec file found in Step 4.
 
-### Step 6: Create a git branch and commit
+### Step 6: Pull latest main, create a git branch and commit
+
+**IMPORTANT**: Always fetch and rebase onto the latest `origin/main` before creating the branch. This ensures the new spec is based on the current state of the repository and avoids conflicts with specs already merged to main.
 
 ```bash
+git fetch origin main
+git checkout main
+git rebase origin/main
 git checkout -b copilot/upgrade-telegraf-<VERSION>
 git add specs/telegraf-agent/telegraf-agent-<VERSION>.yml
 git commit -m "Upgrade telegraf package version to <VERSION>"
