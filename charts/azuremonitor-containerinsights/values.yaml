@@ -23,8 +23,7 @@ AppmonitoringAgent:
 legacyAddonDelivery: false
 
 # ============================================================================
-# OmsAgent - AKS ADDON VALUES (from azuremonitor-containerinsights-aks)
-# Exact order preserved from OmsAgent section in AKS chart
+# OmsAgent - AKS ADDON VALUES
 # ============================================================================
 # Default values for ama-logs configuration
 # OmsAgent configuration
@@ -210,8 +209,7 @@ OmsAgent:
             cpuRequest: "20m"
             memoryRequest: "100Mi"
 # ============================================================================
-# amalogs - ARC K8S EXTENSION VALUES (from azuremonitor-containers)
-# Exact order preserved from Arc chart
+# amalogs - ARC K8S EXTENSION VALUES
 # ============================================================================
 amalogs:
   image:

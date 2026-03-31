@@ -90,7 +90,7 @@ extends:
             cd $(Build.SourcesDirectory)/deployment/mergebranch-multiarch-agent-deployment/ServiceGroupRoot/Scripts
             tar -czvf ../artifacts.tar.gz pushAgentToAcr.sh
             cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension/ServiceGroupRoot/Scripts
-            tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ ../../../../charts/azuremonitor-containerinsights-aks/ ../../../../charts/azuremonitor-containers-geneva/ pushChartToAcr.sh
+            tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ ../../../../charts/azuremonitor-containerinsights/ ../../../../charts/azuremonitor-containers-geneva/ pushChartToAcr.sh
             cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension-release-v2/ServiceGroupRoot/Scripts
             tar -czvf ../artifacts.tar.gz arcExtensionRelease.sh
             windowsAMAUrl=""

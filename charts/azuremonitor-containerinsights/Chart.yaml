@@ -1,5 +1,5 @@
 apiVersion: v2
-name: azuremonitor-containerinsights
+name: azuremonitor-containers
 description: Azure Monitor container monitoring agent Helm chart for Kubernetes (supports both AKS addon and Arc K8s extension)
 version: 3.2.1-merged-main-1
 appVersion: 7.0.0-1

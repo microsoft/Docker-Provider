@@ -70,7 +70,7 @@ push_local_chart_to_canary_region() {
   fi
 
   echo "generate chart package file"
-  export CHART_FILE=$(helm package charts/azuremonitor-containerinsights-aks/ | awk -F'[:]' '{gsub(/ /, "", $2); print $2}')
+  export CHART_FILE=$(helm package charts/azuremonitor-containerinsights/ | awk -F'[:]' '{gsub(/ /, "", $2); print $2}')
   if [ $? -eq 0 ]; then
     echo "chart package file generated successfully."
   else
