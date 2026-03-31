@@ -1,0 +1,26 @@
+{
+  "Settings": {
+    "environment": "Prod",
+    "tenantid": "33e01921-4d64-4f8c-a055-5bdaffd5e33d"
+  },
+  "Geographies": [
+    {
+      "Name": "United States",
+      "Settings": {},
+      "Regions": [
+        {
+          "Name": "eastus2",
+          "Settings": {
+            "stampSettings": {
+              "stamp_1": {},
+              "stamp_2": {}
+            },
+            "stampCount": 2,
+            "azureResourceGroup": "ContainerInsights-MultiArch-Agent-Release",
+            "subscriptionkey": "ContainerInsights-30c56c3a-54da-46ea-b004-06eb33432687"
+          }
+        }
+      ]
+    }
+  ]
+}

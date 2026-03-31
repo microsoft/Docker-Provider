@@ -1,0 +1,42 @@
+{
+  "$schema": "https://ev2schema.azure.net/schemas/2020-04-01/RegionAgnosticRolloutSpecification.json",
+  "contentVersion": "1.0.0.0",
+  "rolloutMetadata": {
+    "serviceModelPath": "ServiceModel.json",
+    "scopeBindingsPath": "ScopeBindings.json",
+    "name": "ContainerInsightsAgent",
+    "configuration": {
+      "serviceGroupScope": {
+        "specPath": "Configurations.Public.Prod.json"
+      }
+    },
+    "rolloutType": "Major",
+    "buildSource": {
+      "parameters": {
+        "versionFile": "buildver.txt"
+      }
+    },
+    "notification": {
+      "email": {
+        "to": "omscontainers@microsoft.com",
+        "options": {
+          "when": [
+            "onError"
+          ]
+        }
+      }
+    }
+  },
+  "orchestratedSteps": [
+    {
+      "name": "Rollout.PushinAgent",
+      "targetType": "ServiceResourceDefinition",
+      "targetName": "ShellExtension",
+      "actions": [
+        "shell/PushAgentToACR",
+        "shell/PushAgentToACR-1"
+      ],
+      "dependsOn": []
+    }
+  ]
+}

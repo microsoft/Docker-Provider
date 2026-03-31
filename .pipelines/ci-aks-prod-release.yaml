@@ -268,8 +268,6 @@ extends:
         variables:
         - name: ev2Environment
           value: Production
-        - name: Ev2MonintoringUrl
-          value: https://azureservicedeploy.msft.net/api/monitorrollout
         - name: OneESPT.JobType
           value: releaseJob
           readonly: true
@@ -283,7 +281,7 @@ extends:
           value: windows
           readonly: true
         - name: OneESPT.Workflow
-          value: ev2-classic
+          value: ev2-managed-sdp
           readonly: true
         - name: runCodesignValidationInjection
           value: false
@@ -428,53 +426,21 @@ extends:
 
             workingDirectory: $(Pipeline.Workspace)/ev2Artifact/windows-drop/windows
             failOnStderr: true
-        - task: vsrm-ev2.vss-services-ev2.adm-release-task.ExpressV2Internal@1
+        - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+          displayName: Ev2 Managed SDP - Deploy
           inputs:
-            UseServerMonitorTask: true
             EndpointProviderType: ApprovalService
+            TaskAction: RegisterAndRollout
+            SkipRegistrationIfExists: True
             ApprovalServiceEnvironment: $(ev2Environment)
-            ServiceRootLocation: LinkedArtifact
-            RolloutSpecType: RSPath
-            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment/ServiceGroupRoot
-            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment/ServiceGroupRoot/RolloutSpecs/RolloutSpecs.json
-            OutputRolloutId: RolloutId
-            OutputServiceGroupName: ServiceGroupName
-            OutputRolloutStatus: RolloutStatus
-            InlineDynamicBindingOverrides: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",     "contentVersion": "0.0.0.1",     "scopeBindings": [                {             "scopeTagName": "Global",             "bindings": [                         {                     "find": "__ACR_NAME__",                     "replaceWith": "$(ACRName)"                 },                             {                     "find": "__AGENT_RELEASE__",                     "replaceWith": "$(AgentRelease)"                 },                  {                     "find": "__AGENT_IMAGE_TAG_SUFFIX__",                     "replaceWith": "$(AgentImageTagSuffix)"                 },                 {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(ManagedIdentity)"                 },                  {                     "find": "__CDPX_LINUX_TAG__",                     "replaceWith": "$(CDPXLinuxTag)"                 },                 {                     "find": "__CDPX_WINDOWS_TAG__",                     "replaceWith": "$(CDPXWindowsTag)"                 },                 {                     "find": "__OVERRIDE_TAG__",                     "replaceWith": "$(OverrideTag)"                 }             ]         }                                                                                                                                                     ] }'
+            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment-Managed-SDP/ServiceGroupRoot
+            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment-Managed-SDP/ServiceGroupRoot/RolloutSpec.json
+            StageMapName: Microsoft.Azure.SDP.Standard
+            Select: regions(*)
           env:
             ServiceTreeGuid: 3170cdd2-19f0-4027-912b-1027311691a2
           target:
             container: host
-          displayName: Ev2 Classic - Deploy
-      - job: Ev2_rollout_ev2_monitoring
-        variables:
-        - name: OneESPT
-          value: true
-          readonly: true
-        - name: OneESPT.BuildType
-          value: Official
-          readonly: true
-        - name: OneESPT.OS
-          value: windows
-          readonly: true
-        - name: OneESPT.Workflow
-          value: ev2-classic
-          readonly: true
-        - name: ev2Environment
-          value: Production
-        - name: Ev2MonintoringUrl
-          value: 'https://azureservicedeploy.msft.net/api/monitorrollout'
-        displayName: Agent job - Ev2 Ev2 Monitoring
-        pool:
-          name: server
-        dependsOn:
-        - Ev2_rollout_ev2_rollout
-        timeoutInMinutes: '0'
-        steps:
-        - task: vsrm-ev2.vss-server-ev2.1950188C-A844-4040-A014-A326BC8332D3.Ev2Agentless@1
-          displayName: Ev2 - Monitoring
-          inputs:
-            Ev2MonintoringUrl: $(Ev2MonintoringUrl)
 
 
     # =============================================================================

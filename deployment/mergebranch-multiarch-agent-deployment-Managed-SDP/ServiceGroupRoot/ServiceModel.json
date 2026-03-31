@@ -1,0 +1,49 @@
+{
+  "$schema": "https://ev2schema.azure.net/schemas/2020-04-01/RegionAgnosticServiceModel.json",
+  "contentVersion": "1.0.0.0",
+  "serviceMetadata": {
+    "serviceGroup": "ContainerInsightsAgent",
+    "serviceIdentifier": "3170cdd2-19f0-4027-912b-1027311691a2",
+    "tenantId": "$config(tenantid)",
+    "environment": "$config(environment)",
+    "displayName": "ContainerInsightsAgent",
+    "buildout": {
+      "isForAutomatedBuildout": "True"
+    }
+  },
+  "serviceResourceGroupDefinitions": [
+    {
+      "name": "SRG.ShellExtension",
+      "azureResourceGroupName": "$config(azureResourceGroup)",
+      "scopeTags": [
+        {
+          "name": "Global"
+        }
+      ],
+      "subscriptionKey": "$config(subscriptionkey)",
+      "stamps": {
+        "count": "$config(stampCount)"
+      },
+      "serviceResourceDefinitions": [
+        {
+          "name": "ShellExtension",
+          "composedOf": {
+            "extension": {
+              "rolloutParametersPath": "Parameters\\RolloutParameter.json",
+              "shell": [
+                {
+                  "type": "ShellExtensionType",
+                  "properties": {
+                    "imageName": "adm-ubuntu-2004-l",
+                    "imageVersion": "v4"
+                  }
+                }
+              ]
+            }
+          },
+          "scopeTags": []
+        }
+      ]
+    }
+  ]
+}
