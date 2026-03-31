@@ -87,7 +87,7 @@ extends:
             echo "authAKVName is $AUTH_AKV_NAME"
             echo "authCertName is $AUTH_CERT_NAME"
             echo "authSignCertName is $AUTH_SIGN_CERT_NAME"
-            cd $(Build.SourcesDirectory)/deployment/mergebranch-multiarch-agent-deployment/ServiceGroupRoot/Scripts
+            cd $(Build.SourcesDirectory)/deployment/mergebranch-multiarch-agent-deployment-Managed-SDP/ServiceGroupRoot/Scripts
             tar -czvf ../artifacts.tar.gz pushAgentToAcr.sh
             cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension/ServiceGroupRoot/Scripts
             tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ pushChartToAcr.sh
