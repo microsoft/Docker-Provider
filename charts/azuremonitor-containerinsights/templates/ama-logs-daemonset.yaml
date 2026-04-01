@@ -21,7 +21,7 @@
 {{- $sizes := list (dict) -}}
 {{- $prevmaxCPU := 0 -}}
 {{- if not $isArcExtension }}
-{{- $useDaemonSetSizing = and (eq .Values.Azure.Cluster.Kind "automatic") .Values.OmsAgent.enableDaemonSetSizing -}}
+{{- $useDaemonSetSizing = and (eq .Values.Azure.Cluster.Kind "automatic") .Values.OmsAgent.enableDaemonsetSizingForExtensions -}}
 {{- $singleSize = .Values.OmsAgent.daemonSetSizingValues.singleSize -}}
 {{- $sizes = list $singleSize -}}
 {{- if $useDaemonSetSizing -}}
@@ -785,7 +785,7 @@ spec:
    {{- end }}
    {{- end }}
 {{- else }}
-{{- $useDaemonSetSizing := and (eq $.Values.Azure.Cluster.Kind "automatic") $.Values.OmsAgent.enableDaemonSetSizing }}
+{{- $useDaemonSetSizing := and (eq $.Values.Azure.Cluster.Kind "automatic") $.Values.OmsAgent.enableDaemonsetSizingForExtensions }}
 {{- $singleSize := dict "name" "" }}
       affinity:
         nodeAffinity:
