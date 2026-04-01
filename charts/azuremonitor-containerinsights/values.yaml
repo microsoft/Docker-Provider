@@ -29,7 +29,7 @@ legacyAddonDelivery: false
 # OmsAgent configuration
 OmsAgent:
   aksResourceID: <your_cluster_id>
-  enableDaemonSetSizing: true
+  enableDaemonsetSizingForExtensions: true
   isCustomMetricsDisabled: false
   isUsingAADAuth: "true"
   retinaFlowLogsEnabled: false
