@@ -21,3 +21,39 @@ CVE-2026-25679
 
 # stdlib: html/template URLs in meta content attribute actions issue
 CVE-2026-27142
+
+# github.com/antchfx/xpath: Denial of Service due to infinite loop via boolean XPath
+CVE-2026-32287
+
+# Moby: AuthZ plugin bypass when provided oversized request bodies
+CVE-2026-34040
+
+# Moby: Privilege validation bypass during plugin installation
+CVE-2026-33997
+
+# nats-server: Denial of Service via malformed WebSockets frame
+CVE-2026-27889
+
+# nats-server: Denial of Service via leafnode compression
+CVE-2026-29785
+
+# nats-server: Information disclosure of MQTT passwords through monitoring endpoints
+CVE-2026-33216
+
+# nats-server: Access control bypass via unapplied ACLs in MQTT namespace
+CVE-2026-33217
+
+# nats-server: Denial of Service via malformed message pre-authentication on leafnode
+CVE-2026-33218
+
+# nats-server: Information disclosure of credentials via monitoring port and command-line arguments
+CVE-2026-33247
+
+# nats-server: Session and message hijacking via MQTT Client ID malfeasance
+CVE-2026-33215
+
+# nats-server: Denial of Service via unbounded memory use in WebSockets
+CVE-2026-33219
+
+# nats-server: Unauthorized data modification via JetStream stream restore
+CVE-2026-33222
