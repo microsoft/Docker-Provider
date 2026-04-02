@@ -22,6 +22,8 @@ RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex (
     # so need to review the installed version of rexml, and uninstall it.
 RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
 && choco install -y msys2 --version 20240113.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'"
+# gem extensions compiled against Ruby 3.1 headers. Suppress it during builds.
+ENV CFLAGS=-Wno-incompatible-pointer-types
 RUN refreshenv \
 && C:\ruby31\msys64\usr\bin\bash.exe -lc "pacman -Syu --noconfirm" \
 && ridk install 3 \
