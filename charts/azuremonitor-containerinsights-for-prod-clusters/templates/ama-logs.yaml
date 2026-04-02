@@ -624,6 +624,10 @@ spec:
               value: "{{ $.Values.OmsAgent.isTelegrafLivenessprobeEnabled | default false }}"
             - name: CLUSTER_CLOUD_ENVIRONMENT
               value: "{{ $.Values.global.commonGlobals.CloudEnvironment | lower }}"
+            - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
           livenessProbe:
             exec:
               command:
@@ -786,6 +790,10 @@ spec:
               value: "{{ $.Values.OmsAgent.isTelegrafLivenessprobeEnabled | default false }}"
             - name: CLUSTER_CLOUD_ENVIRONMENT
               value: "{{ $.Values.global.commonGlobals.CloudEnvironment | lower }}"
+            - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
           securityContext:
             privileged: true
             capabilities:
@@ -1171,6 +1179,10 @@ spec:
               value: "{{ .Values.OmsAgent.isWindowsAMAFluentBitEnabled | default false }}"
             - name: CLUSTER_CLOUD_ENVIRONMENT
               value: "{{ .Values.global.commonGlobals.CloudEnvironment | lower }}"
+            - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
           securityContext:
             privileged: true
             capabilities:
@@ -1463,6 +1475,10 @@ spec:
             value: "{{ .Values.OmsAgent.isWindowsAMAFluentBitEnabled | default false }}"
           - name: CLUSTER_CLOUD_ENVIRONMENT
             value: "{{ .Values.global.commonGlobals.CloudEnvironment | lower }}"
+          - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.uid
           volumeMounts:
           - mountPath: C:\ProgramData\docker\containers
             name: docker-windows-containers
