@@ -23,12 +23,10 @@ RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex (
 RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
 && choco install -y msys2 --version 20240113.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'"
 RUN refreshenv \
-&& C:\ruby31\msys64\usr\bin\bash.exe -lc "pacman -Syu --noconfirm" \
 && ridk install 3 \
 && echo gem: --no-document >> C:\ProgramData\gemrc \
 # Install fluentd and its dependencies
-# --with-cflags suppresses GCC 14 -Wincompatible-pointer-types error against Ruby 3.1 headers
-&& gem install oj -v 3.16.1 -- --with-cflags=-Wno-incompatible-pointer-types \
+&& gem install oj -v 3.16.1 \
 && gem install fluentd -v 1.16.3 \
 && gem install win32-service -v 2.3.2 \
 && gem install win32-ipc -v 0.7.0 \
