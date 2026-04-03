@@ -341,25 +341,21 @@ extends:
             echo "Docker images to scan: $dockerImagesToScan"
             echo "##vso[task.setvariable variable=dockerImagesToScan]$dockerImagesToScan"
           displayName: 'Set Docker images to scan'
-      # Build Windows binaries once (prereqs + Makefile.ps1 produce identical
-      # outputs regardless of ltsc2019 vs ltsc2022). Both Windows Docker jobs
-      # download this artifact instead of rebuilding.
-      - job: build_windows_binaries
+      - job: build_windows_2019
         pool:
           name: Azure-Pipelines-CI-Test-EO
           image: ci-1es-managed-windows-2022
           os: windows
-        timeoutInMinutes: 60
-        dependsOn: setup
+        timeoutInMinutes: 120
+        dependsOn:
+        - setup
         variables:
+          windowsImageTag: $[ dependencies.setup.outputs['setup.windowsImageTag'] ]
+          windowsTelemetryTag: $[ dependencies.setup.outputs['setup.windowsTelemetryTag'] ]
+          windows2019BaseImageVersion: ltsc2019
           Codeql.Enabled: true
           Codeql.BuildIdentifier: 'windowsbuild'
-          Codeql.SkipTaskAutoInjection: true
-        templateContext:
-          outputs:
-          - output: pipelineArtifact
-            targetPath: '$(Build.ArtifactStagingDirectory)/windows-binaries'
-            artifactName: windows-binaries
+          windowsAMAUrl: $[ dependencies.setup.outputs['setup.windowsAMAUrl'] ]
         steps:
         - task: PowerShell@2
           inputs:
@@ -374,47 +370,6 @@ extends:
             endlocal
             exit /B %ERRORLEVEL%
           displayName: 'build base'
-        - task: CodeQL3000Finalize@0
-          condition: eq(variables.IS_MAIN_BRANCH, true)
-        - task: PowerShell@2
-          displayName: 'Publish windows binaries'
-          inputs:
-            targetType: 'inline'
-            script: |
-              New-Item -Path "$(Build.ArtifactStagingDirectory)/windows-binaries" -ItemType Directory -Force
-              Copy-Item -Path "$(System.DefaultWorkingDirectory)/kubernetes/windows/amalogswindows" -Destination "$(Build.ArtifactStagingDirectory)/windows-binaries/amalogswindows" -Recurse -Force
-              # Remove intermediate .NET build artifacts to avoid BinSkim scanning them
-              $certGenBinPath = "$(Build.ArtifactStagingDirectory)/windows-binaries/amalogswindows/installer/certificategenerator/bin"
-              if (Test-Path $certGenBinPath) {
-                Remove-Item -Path $certGenBinPath -Recurse -Force
-                Write-Host "Removed intermediate certificategenerator bin directory"
-              }
-              $certGenObjPath = "$(Build.ArtifactStagingDirectory)/windows-binaries/amalogswindows/installer/certificategenerator/obj"
-              if (Test-Path $certGenObjPath) {
-                Remove-Item -Path $certGenObjPath -Recurse -Force
-                Write-Host "Removed intermediate certificategenerator obj directory"
-              }
-      - job: build_windows_2019
-        pool:
-          name: Azure-Pipelines-CI-Test-EO
-          image: ci-1es-managed-windows-2022
-          os: windows
-        timeoutInMinutes: 120
-        dependsOn:
-        - setup
-        - build_windows_binaries
-        variables:
-          windowsImageTag: $[ dependencies.setup.outputs['setup.windowsImageTag'] ]
-          windowsTelemetryTag: $[ dependencies.setup.outputs['setup.windowsTelemetryTag'] ]
-          windows2019BaseImageVersion: ltsc2019
-          windowsAMAUrl: $[ dependencies.setup.outputs['setup.windowsAMAUrl'] ]
-          Codeql.SkipTaskAutoInjection: true
-        steps:
-        - task: DownloadPipelineArtifact@2
-          displayName: 'Download windows binaries'
-          inputs:
-            artifactName: 'windows-binaries'
-            targetPath: '$(System.DefaultWorkingDirectory)/kubernetes/windows'
         - task: AzureCLI@2
           displayName: "Set up acr for windows ltsc2019 build"
           inputs:
@@ -586,6 +541,8 @@ extends:
               if ("$(Build.Reason)" -ne "PullRequest") {
                 docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
               }
+        - task: CodeQL3000Finalize@0
+          condition: eq(variables.IS_MAIN_BRANCH, true)
       - job: build_windows_2022
         pool:
           name: Azure-Pipelines-CI-Test-EO
@@ -594,7 +551,6 @@ extends:
         timeoutInMinutes: 120
         dependsOn:
         - setup
-        - build_windows_binaries
         variables:
           windowsImageTag: $[ dependencies.setup.outputs['setup.windowsImageTag'] ]
           windowsTelemetryTag: $[ dependencies.setup.outputs['setup.windowsTelemetryTag'] ]
@@ -602,11 +558,19 @@ extends:
           Codeql.SkipTaskAutoInjection: true
           windowsAMAUrl: $[ dependencies.setup.outputs['setup.windowsAMAUrl'] ]
         steps:
-        - task: DownloadPipelineArtifact@2
-          displayName: 'Download windows binaries'
+        - task: PowerShell@2
           inputs:
-            artifactName: 'windows-binaries'
-            targetPath: '$(System.DefaultWorkingDirectory)/kubernetes/windows'
+            targetType: 'filePath'
+            filePath: $(System.DefaultWorkingDirectory)/scripts/build/windows/install-build-pre-requisites.ps1
+          displayName: 'install prereqs'
+        - task: CodeQL3000Init@0
+          condition: eq(variables.IS_MAIN_BRANCH, true)
+        - script: |
+            setlocal enabledelayedexpansion
+            powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\windows\Makefile.ps1"
+            endlocal
+            exit /B %ERRORLEVEL%
+          displayName: 'build base'
         - task: AzureCLI@2
           displayName: "Docker windows build for ltsc2022"
           inputs:
@@ -767,6 +731,8 @@ extends:
               if ("$(Build.Reason)" -ne "PullRequest") {
                 docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
               }
+        - task: CodeQL3000Finalize@0
+          condition: eq(variables.IS_MAIN_BRANCH, true)
       - job: build_windows_multi_arc
         pool:
           name: Azure-Pipelines-CI-Test-EO
