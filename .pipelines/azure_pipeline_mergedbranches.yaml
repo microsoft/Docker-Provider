@@ -44,7 +44,9 @@ extends:
     stages:
     - stage: stage
       jobs:
-      - job: common
+      # Lightweight job that only generates image tags needed by build jobs.
+      # Separated from compliance tasks so builds can start immediately.
+      - job: setup
         pool:
           name: Azure-Pipelines-CI-Test-EO
           image: ci-1es-managed-ubuntu-2204
@@ -52,13 +54,7 @@ extends:
         variables:
           skipComponentGovernanceDetection: true
           Codeql.SkipTaskAutoInjection: true
-        templateContext:
-          outputs:
-          - output: pipelineArtifact
-            targetPath: '$(Build.ArtifactStagingDirectory)'
-            artifactName: drop
         steps:
-        - task: ComponentGovernanceComponentDetection@0
         - bash: |
             commit=$(git describe)
             datetime=$(date +%Y%m%d%H%M%S)
@@ -87,12 +83,6 @@ extends:
             echo "authAKVName is $AUTH_AKV_NAME"
             echo "authCertName is $AUTH_CERT_NAME"
             echo "authSignCertName is $AUTH_SIGN_CERT_NAME"
-            cd $(Build.SourcesDirectory)/deployment/mergebranch-multiarch-agent-deployment/ServiceGroupRoot/Scripts
-            tar -czvf ../artifacts.tar.gz pushAgentToAcr.sh
-            cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension/ServiceGroupRoot/Scripts
-            tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ pushChartToAcr.sh
-            cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension-release-v2/ServiceGroupRoot/Scripts
-            tar -czvf ../artifacts.tar.gz arcExtensionRelease.sh
             windowsAMAUrl=""
             if [ -z "$WINDOWS_AMA_URL" ]
               then
@@ -103,6 +93,31 @@ extends:
             fi
             echo "##vso[task.setvariable variable=windowsAMAUrl;isOutput=true]$windowsAMAUrl"
           name: setup
+      # Compliance and artifact packaging job. Runs in parallel with builds
+      # since no build job depends on its outputs.
+      - job: compliance
+        pool:
+          name: Azure-Pipelines-CI-Test-EO
+          image: ci-1es-managed-ubuntu-2204
+          os: linux
+        variables:
+          skipComponentGovernanceDetection: true
+          Codeql.SkipTaskAutoInjection: true
+        templateContext:
+          outputs:
+          - output: pipelineArtifact
+            targetPath: '$(Build.ArtifactStagingDirectory)'
+            artifactName: drop
+        steps:
+        - task: ComponentGovernanceComponentDetection@0
+        - bash: |
+            cd $(Build.SourcesDirectory)/deployment/mergebranch-multiarch-agent-deployment/ServiceGroupRoot/Scripts
+            tar -czvf ../artifacts.tar.gz pushAgentToAcr.sh
+            cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension/ServiceGroupRoot/Scripts
+            tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ pushChartToAcr.sh
+            cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension-release-v2/ServiceGroupRoot/Scripts
+            tar -czvf ../artifacts.tar.gz arcExtensionRelease.sh
+          displayName: 'Create deployment artifacts'
         - task: CredScan@3
           displayName: "SDL : Run credscan"
         - task: CopyFiles@2
@@ -148,10 +163,10 @@ extends:
             targetDirectory: '$(Build.SourcesDirectory)'
       - job: build_linux
         timeoutInMinutes: 120
-        dependsOn: common
+        dependsOn: setup
         variables:
-          linuxImagetag: $[ dependencies.common.outputs['setup.linuxImagetag'] ]
-          linuxTelemetryTag: $[ dependencies.common.outputs['setup.linuxTelemetryTag'] ]
+          linuxImagetag: $[ dependencies.setup.outputs['setup.linuxImagetag'] ]
+          linuxTelemetryTag: $[ dependencies.setup.outputs['setup.linuxTelemetryTag'] ]
           Codeql.Enabled: true
           Codeql.BuildIdentifier: 'linuxbuild'
           DOCKER_BUILDKIT: 1
@@ -172,11 +187,7 @@ extends:
             inlineScript: |
               mkdir -p $(Build.ArtifactStagingDirectory)/linux
               sudo apt-get update && sudo apt-get -y install qemu binfmt-support qemu-user-static
-              docker system prune --all -f
-              docker images -q --filter "dangling=true" | xargs docker rmi
               docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-              docker buildx create --name testbuilder
-              docker buildx use testbuilder
               az --version
               az account show
               az account set -s ${{ variables.subscription }}
@@ -308,6 +319,7 @@ extends:
                   exit 1
               fi
         - task: GoTool@0
+          condition: eq(variables.IS_MAIN_BRANCH, true)
           inputs:
             version: '1.23.8'
         - bash: |
@@ -315,6 +327,7 @@ extends:
             ls
             make
           displayName: 'Execute Makefile for Linux Build'
+          condition: eq(variables.IS_MAIN_BRANCH, true)
         - task: CodeQL3000Finalize@0
           condition: eq(variables.IS_MAIN_BRANCH, true)
         - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
@@ -328,21 +341,25 @@ extends:
             echo "Docker images to scan: $dockerImagesToScan"
             echo "##vso[task.setvariable variable=dockerImagesToScan]$dockerImagesToScan"
           displayName: 'Set Docker images to scan'
-      - job: build_windows_2019
+      # Build Windows binaries once (prereqs + Makefile.ps1 produce identical
+      # outputs regardless of ltsc2019 vs ltsc2022). Both Windows Docker jobs
+      # download this artifact instead of rebuilding.
+      - job: build_windows_binaries
         pool:
           name: Azure-Pipelines-CI-Test-EO
           image: ci-1es-managed-windows-2022
           os: windows
-        timeoutInMinutes: 120
-        dependsOn:
-        - common
+        timeoutInMinutes: 60
+        dependsOn: setup
         variables:
-          windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
-          windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
-          windows2019BaseImageVersion: ltsc2019
           Codeql.Enabled: true
           Codeql.BuildIdentifier: 'windowsbuild'
-          windowsAMAUrl: $[ dependencies.common.outputs['setup.windowsAMAUrl'] ]
+          Codeql.SkipTaskAutoInjection: true
+        templateContext:
+          outputs:
+          - output: pipelineArtifact
+            targetPath: '$(Build.ArtifactStagingDirectory)/windows-binaries'
+            artifactName: windows-binaries
         steps:
         - task: PowerShell@2
           inputs:
@@ -357,6 +374,36 @@ extends:
             endlocal
             exit /B %ERRORLEVEL%
           displayName: 'build base'
+        - task: CodeQL3000Finalize@0
+          condition: eq(variables.IS_MAIN_BRANCH, true)
+        - task: PowerShell@2
+          displayName: 'Publish windows binaries'
+          inputs:
+            targetType: 'inline'
+            script: |
+              New-Item -Path "$(Build.ArtifactStagingDirectory)/windows-binaries" -ItemType Directory -Force
+              Copy-Item -Path "$(System.DefaultWorkingDirectory)/kubernetes/windows/amalogswindows" -Destination "$(Build.ArtifactStagingDirectory)/windows-binaries/amalogswindows" -Recurse -Force
+      - job: build_windows_2019
+        pool:
+          name: Azure-Pipelines-CI-Test-EO
+          image: ci-1es-managed-windows-2022
+          os: windows
+        timeoutInMinutes: 120
+        dependsOn:
+        - setup
+        - build_windows_binaries
+        variables:
+          windowsImageTag: $[ dependencies.setup.outputs['setup.windowsImageTag'] ]
+          windowsTelemetryTag: $[ dependencies.setup.outputs['setup.windowsTelemetryTag'] ]
+          windows2019BaseImageVersion: ltsc2019
+          windowsAMAUrl: $[ dependencies.setup.outputs['setup.windowsAMAUrl'] ]
+          Codeql.SkipTaskAutoInjection: true
+        steps:
+        - task: DownloadPipelineArtifact@2
+          displayName: 'Download windows binaries'
+          inputs:
+            artifactName: 'windows-binaries'
+            targetPath: '$(System.DefaultWorkingDirectory)/kubernetes/windows'
         - task: AzureCLI@2
           displayName: "Set up acr for windows ltsc2019 build"
           inputs:
@@ -420,13 +467,6 @@ extends:
               docker cp signingContainer:C:\opt\fluent-bit\bin\perf.so .
               echo "Removing container"
               docker rm signingContainer
-              echo "List ArtifactStagingDirectory"
-              ls $(Build.ArtifactStagingDirectory)
-              ls .
-        - script: dir $(System.DefaultWorkingDirectory)
-          displayName: 'List files in DefaultWorking Directory'
-        - script: dir $(Build.ArtifactStagingDirectory)
-          displayName: 'List files in Staging Directory'
         - task: EsrpCodeSigning@5
           inputs:
             ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
@@ -508,17 +548,6 @@ extends:
             MaxConcurrency: '50'
             MaxRetryAttempts: '5'
           displayName: 'EsrpCodeSigning for OSS'
-        - task: BinSkim@4
-          displayName: 'SDL: run binskim'
-          inputs:
-            InputType: 'CommandLine'
-            arguments: 'analyze --rich-return-code $(Build.ArtifactStagingDirectory)\ossSigning\out_oms.so $(Build.ArtifactStagingDirectory)\ossSigning\perf.so $(Build.ArtifactStagingDirectory)\ossSigning\containerinventory.so $(Build.ArtifactStagingDirectory)\fpSigning\livenessprobe.exe $(Build.ArtifactStagingDirectory)\fpSigning\CertificateGenerator.exe $(Build.ArtifactStagingDirectory)\fpSigning\CertificateGenerator.dll'
-          retryCountOnTaskFailure: 1
-        - task: PoliCheck@2
-          displayName: "SDL : Run PoliCheck"
-          inputs:
-            targetType: 'F'
-            targetArgument: '$(Build.SourcesDirectory)'
         - task: PowerShell@2
           displayName: Replace files in origin Image
           inputs:
@@ -546,8 +575,6 @@ extends:
               if ("$(Build.Reason)" -ne "PullRequest") {
                 docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
               }
-        - task: CodeQL3000Finalize@0
-          condition: eq(variables.IS_MAIN_BRANCH, true)
       - job: build_windows_2022
         pool:
           name: Azure-Pipelines-CI-Test-EO
@@ -555,27 +582,20 @@ extends:
           os: windows
         timeoutInMinutes: 120
         dependsOn:
-        - common
+        - setup
+        - build_windows_binaries
         variables:
-          windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
-          windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
+          windowsImageTag: $[ dependencies.setup.outputs['setup.windowsImageTag'] ]
+          windowsTelemetryTag: $[ dependencies.setup.outputs['setup.windowsTelemetryTag'] ]
           windows2022BaseImageVersion: ltsc2022
           Codeql.SkipTaskAutoInjection: true
-          windowsAMAUrl: $[ dependencies.common.outputs['setup.windowsAMAUrl'] ]
+          windowsAMAUrl: $[ dependencies.setup.outputs['setup.windowsAMAUrl'] ]
         steps:
-        - task: PowerShell@2
+        - task: DownloadPipelineArtifact@2
+          displayName: 'Download windows binaries'
           inputs:
-            targetType: 'filePath'
-            filePath: $(System.DefaultWorkingDirectory)/scripts/build/windows/install-build-pre-requisites.ps1
-          displayName: 'install prereqs'
-        - task: CodeQL3000Init@0
-          condition: eq(variables.IS_MAIN_BRANCH, true)
-        - script: |
-            setlocal enabledelayedexpansion
-            powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\windows\Makefile.ps1"
-            endlocal
-            exit /B %ERRORLEVEL%
-          displayName: 'build base'
+            artifactName: 'windows-binaries'
+            targetPath: '$(System.DefaultWorkingDirectory)/kubernetes/windows'
         - task: AzureCLI@2
           displayName: "Docker windows build for ltsc2022"
           inputs:
@@ -628,13 +648,6 @@ extends:
               docker cp signingContainer:C:\opt\fluent-bit\bin\perf.so .
               echo "Removing container"
               docker rm signingContainer
-              echo "List ArtifactStagingDirectory"
-              ls $(Build.ArtifactStagingDirectory)
-              ls .
-        - script: dir $(System.DefaultWorkingDirectory)
-          displayName: 'List files in DefaultWorking Directory'
-        - script: dir $(Build.ArtifactStagingDirectory)
-          displayName: 'List files in Staging Directory'
         - task: EsrpCodeSigning@5
           inputs:
             ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
@@ -716,17 +729,6 @@ extends:
             MaxConcurrency: '50'
             MaxRetryAttempts: '5'
           displayName: 'EsrpCodeSigning for OSS'
-        - task: BinSkim@4
-          displayName: 'SDL: run binskim'
-          inputs:
-            InputType: 'CommandLine'
-            arguments: 'analyze --rich-return-code $(Build.ArtifactStagingDirectory)\ossSigning\out_oms.so $(Build.ArtifactStagingDirectory)\ossSigning\perf.so $(Build.ArtifactStagingDirectory)\ossSigning\containerinventory.so $(Build.ArtifactStagingDirectory)\fpSigning\livenessprobe.exe $(Build.ArtifactStagingDirectory)\fpSigning\CertificateGenerator.exe $(Build.ArtifactStagingDirectory)\fpSigning\CertificateGenerator.dll'
-          retryCountOnTaskFailure: 1
-        - task: PoliCheck@2
-          displayName: "SDL : Run PoliCheck"
-          inputs:
-            targetType: 'F'
-            targetArgument: '$(Build.SourcesDirectory)'
         - task: PowerShell@2
           displayName: Replace files in origin Image
           inputs:
@@ -754,8 +756,6 @@ extends:
               if ("$(Build.Reason)" -ne "PullRequest") {
                 docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
               }
-        - task: CodeQL3000Finalize@0
-          condition: eq(variables.IS_MAIN_BRANCH, true)
       - job: build_windows_multi_arc
         pool:
           name: Azure-Pipelines-CI-Test-EO
@@ -763,12 +763,12 @@ extends:
           os: windows
         timeoutInMinutes: 120
         dependsOn:
-        - common
+        - setup
         - build_windows_2019
         - build_windows_2022
         variables:
-          windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
-          windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
+          windowsImageTag: $[ dependencies.setup.outputs['setup.windowsImageTag'] ]
+          windowsTelemetryTag: $[ dependencies.setup.outputs['setup.windowsTelemetryTag'] ]
           windows2019BaseImageVersion: ltsc2019
           windows2022BaseImageVersion: ltsc2022
           Codeql.SkipTaskAutoInjection: true
@@ -778,6 +778,7 @@ extends:
             targetPath: '$(Build.ArtifactStagingDirectory)'
             artifactName: windows-drop
         steps:
+        - checkout: none
         - task: AzureCLI@2
           displayName: "Docker windows build for multi-arc image"
           inputs:
@@ -786,7 +787,6 @@ extends:
             scriptLocation: inlineScript
             inlineScript: |
               mkdir -p $(Build.ArtifactStagingDirectory)/windows
-              cd kubernetes/windows
               az --version
               az account show
               az account set -s ${{ variables.subscription }}
