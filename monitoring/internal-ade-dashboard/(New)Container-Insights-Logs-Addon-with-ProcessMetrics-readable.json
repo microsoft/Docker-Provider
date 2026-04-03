@@ -8826,7 +8826,35 @@
       "showOnPages": {
         "kind": "selection",
         "pageIds": [
-          "535afc96-2254-4d53-abd5-687caaaf85da",
+          "535afc96-2254-4d53-abd5-687caaaf85da"
+        ]
+      }
+    },
+    {
+      "kind": "string",
+      "id": "3f4a2ffd-6e08-4be1-8434-7229d81d0171",
+      "displayName": "Cluster Resource Id (Process Metrics)",
+      "description": "",
+      "variableName": "clusterIdForProcessMetrics",
+      "selectionType": "scalar",
+      "includeAllOption": true,
+      "defaultValue": {
+        "kind": "all"
+      },
+      "dataSource": {
+        "kind": "query",
+        "queryRef": {
+          "kind": "query",
+          "queryId": "5755e1e1-8072-41a3-83ab-adf6d903a8ff"
+        },
+        "columns": {
+          "value": "AksResourceId",
+          "label": "ClusterName"
+        }
+      },
+      "showOnPages": {
+        "kind": "selection",
+        "pageIds": [
           "edff4e67-d622-4655-a2dc-d702e96a4be2"
         ]
       }
@@ -10791,12 +10819,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"mdsd\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"mdsd\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "8f2c0ff0-2bbd-48b3-bf03-341c57fcf378",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -10806,12 +10834,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"mdsd\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"mdsd\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "f42075b7-ed0a-41e4-a53c-93c2fad86bbe",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -10821,12 +10849,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"fluent-bit\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"fluent-bit\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "4c909817-241a-4fbd-b09b-4598b1191cce",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -10836,12 +10864,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"fluent-bit\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"fluent-bit\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "44793c47-4e1c-4384-bdc5-a7ec7259aec3",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -10851,12 +10879,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"telegraf\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName), \" [PID:\", tostring(customDimensions.pid), \"]\")\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"telegraf\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName), \" [PID:\", tostring(customDimensions.pid), \"]\")\r\n| render timechart",
       "id": "0af115b8-7903-4791-b478-149f50aa0b3f",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -10866,12 +10894,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"telegraf\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName), \" [PID:\", tostring(customDimensions.pid), \"]\")\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"telegraf\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName), \" [PID:\", tostring(customDimensions.pid), \"]\")\r\n| render timechart",
       "id": "6327a184-523e-4e89-8a6c-cba71cdb0526",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -10881,12 +10909,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"ruby\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"ruby\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "74c101bc-b5f3-43d7-af8f-cc919870842c",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -10896,12 +10924,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"ruby\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"ruby\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "93244c8c-9236-4c0e-a67e-c752861fe30c",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -10911,12 +10939,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"crond\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"crond\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "484eb6f0-01f0-49ac-83bd-39d77a64435f",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -10926,12 +10954,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"crond\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"crond\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "3ba20854-47de-479d-a9b1-85f6e5023d4a",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -10941,12 +10969,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"inotifywait\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"inotifywait\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "069b22ae-3d05-405f-90de-967a9e8a14b6",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -10956,12 +10984,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"inotifywait\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"inotifywait\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "b9866497-0e55-4a70-90c6-d3f57c713510",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -10971,12 +10999,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.pattern) == \"fluentd\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.pattern) == \"fluentd\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "be565860-3602-49ba-9ea7-c76330ed05c3",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -10986,12 +11014,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.pattern) == \"fluentd\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.pattern) == \"fluentd\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "bac5b78b-854f-4887-bca7-2212abe47a83",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11001,12 +11029,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.pattern) == \"main.sh\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.pattern) == \"main.sh\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "df270865-2b7e-40c1-839f-5ccf6be4e1bc",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11016,12 +11044,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.pattern) == \"main.sh\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.pattern) == \"main.sh\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "3aa7fe6e-710a-42db-ae5f-13f40c857a3d",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11031,12 +11059,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"fluent-bit\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"fluent-bit\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "108a9a6b-8748-41b3-9bd8-5f4a8d131f76",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11046,12 +11074,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"fluent-bit\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"fluent-bit\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "8ee9d1db-d5c9-48c7-b25a-d5dc77862ce8",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11061,12 +11089,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"telegraf\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName), \" [PID:\", tostring(customDimensions.pid), \"]\")\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"telegraf\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName), \" [PID:\", tostring(customDimensions.pid), \"]\")\r\n| render timechart",
       "id": "68c1439f-8f58-4092-917e-4995dce78e85",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11076,12 +11104,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"telegraf\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName), \" [PID:\", tostring(customDimensions.pid), \"]\")\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"telegraf\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName), \" [PID:\", tostring(customDimensions.pid), \"]\")\r\n| render timechart",
       "id": "75bddd2c-b413-42fa-a456-5ee52d057c25",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11091,12 +11119,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"MonAgentLauncher\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"MonAgentLauncher\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "d45b3245-8ffe-4a9d-9dae-a1c28b866dde",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11106,12 +11134,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"MonAgentLauncher\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"MonAgentLauncher\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "0ec348a3-50cc-4d28-8d27-f4923932005a",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11121,12 +11149,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"MonAgentCore\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"MonAgentCore\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "556bf939-55bb-49b7-b182-3ef03362022d",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11136,12 +11164,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"MonAgentCore\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"MonAgentCore\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "d4b7c043-78cb-4d3b-84f0-30fa1870abc2",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11151,12 +11179,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"MonAgentHost\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"MonAgentHost\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "385e50d8-9ed6-43d7-904d-ec663d2521c8",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11166,12 +11194,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"MonAgentHost\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"MonAgentHost\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "08c0c6ed-268b-4e6e-ae52-5f74341be404",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11181,12 +11209,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"MonAgentManager\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"MonAgentManager\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "53acfd8e-dc30-40b4-88db-fa71cbaad960",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11196,12 +11224,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"MonAgentManager\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"MonAgentManager\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "b9a7c7d6-dcc9-48ef-b868-b6c7d81b1b2b",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11211,12 +11239,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"AzurePerfCollectorExtension\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"AzurePerfCollectorExtension\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "51b4fa0f-0b61-42e6-8c50-6a55022f966c",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11226,12 +11254,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"AzurePerfCollectorExtension\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"AzurePerfCollectorExtension\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "1b5a9c1e-3848-4565-860d-e3fd4d11491e",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11241,12 +11269,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"AzureProfilerExtension\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"AzureProfilerExtension\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "c77d380f-3d4c-424f-bd10-12c6e513a781",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11256,12 +11284,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"AzureProfilerExtension\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"AzureProfilerExtension\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "9c998ca5-bd2b-4413-946b-8949999e0e9d",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11271,12 +11299,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"AggregatorHost\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"AggregatorHost\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "8ebee58a-273a-483a-a849-c5e9f166639b",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11286,12 +11314,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"AggregatorHost\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"AggregatorHost\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "d5b149fc-b29e-490f-bfc5-275704fd9c93",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11301,12 +11329,12 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"powershell\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_rss\"\r\n| where tostring(customDimensions.exe) == \"powershell\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize RSS_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "1d547b70-482a-43e8-90e6-efdf125e58c5",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
@@ -11316,15 +11344,24 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"powershell\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterId\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"cpu_usage\"\r\n| where tostring(customDimensions.exe) == \"powershell\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize CPU_Millicores = percentile(value, 90) * 10 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "8bf13357-057f-4105-82ec-e28b05a02c73",
       "usedVariables": [
         "_endTime",
         "_startTime",
-        "clusterId",
+        "clusterIdForProcessMetrics",
         "controllerType",
         "binSize"
       ]
+    },
+    {
+      "id": "5755e1e1-8072-41a3-83ab-adf6d903a8ff",
+      "text": "customMetrics\n| where timestamp > ago(1d)\n| where name contains \"memory_rss\" or name contains \"cpu_usage\"\n| where isnotempty(tostring(customDimensions.AksResourceId))\n| distinct AksResourceId = tostring(customDimensions.AksResourceId)\n| extend ClusterName = tostring(split(AksResourceId, \"/\")[-1])\n| project ClusterName, AksResourceId\n| order by ClusterName asc\n| take 200",
+      "usedVariables": [],
+      "dataSource": {
+        "kind": "inline",
+        "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
+      }
     }
   ]
 }
