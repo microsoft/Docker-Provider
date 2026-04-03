@@ -383,6 +383,17 @@ extends:
             script: |
               New-Item -Path "$(Build.ArtifactStagingDirectory)/windows-binaries" -ItemType Directory -Force
               Copy-Item -Path "$(System.DefaultWorkingDirectory)/kubernetes/windows/amalogswindows" -Destination "$(Build.ArtifactStagingDirectory)/windows-binaries/amalogswindows" -Recurse -Force
+              # Remove intermediate .NET build artifacts to avoid BinSkim scanning them
+              $certGenBinPath = "$(Build.ArtifactStagingDirectory)/windows-binaries/amalogswindows/installer/certificategenerator/bin"
+              if (Test-Path $certGenBinPath) {
+                Remove-Item -Path $certGenBinPath -Recurse -Force
+                Write-Host "Removed intermediate certificategenerator bin directory"
+              }
+              $certGenObjPath = "$(Build.ArtifactStagingDirectory)/windows-binaries/amalogswindows/installer/certificategenerator/obj"
+              if (Test-Path $certGenObjPath) {
+                Remove-Item -Path $certGenObjPath -Recurse -Force
+                Write-Host "Removed intermediate certificategenerator obj directory"
+              }
       - job: build_windows_2019
         pool:
           name: Azure-Pipelines-CI-Test-EO
