@@ -112,7 +112,7 @@ spec:
                 - NET_ADMIN
                 - NET_RAW
         - name: ama-logs
-          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/containerinsights/ciprod:{{- default $amalogsLinuxDefaultImageTag .Values.OmsAgent.imageTagLinux -}}"
+          image: "{{ template "addon_mcr_repository_base" . }}{{ .Values.OmsAgent.imageRepository | default "/azuremonitor/containerinsights/ciprod" }}:{{- default $amalogsLinuxDefaultImageTag .Values.OmsAgent.imageTagLinux -}}"
         {{- if .Values.OmsAgent.isImagePullPolicyAlways }}
           imagePullPolicy: Always
         {{- else }}

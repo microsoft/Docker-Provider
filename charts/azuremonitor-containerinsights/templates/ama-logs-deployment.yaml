@@ -235,7 +235,7 @@ spec:
           resources:
 {{ toYaml .Values.amalogs.resources.deployment | indent 12 }}
 {{- else }}
-          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/containerinsights/ciprod:{{- default $amalogsLinuxDefaultImageTag .Values.OmsAgent.imageTagLinux -}}"
+          image: "{{ template "addon_mcr_repository_base" . }}{{ .Values.OmsAgent.imageRepository | default "/azuremonitor/containerinsights/ciprod" }}:{{- default $amalogsLinuxDefaultImageTag .Values.OmsAgent.imageTagLinux -}}"
         {{- if .Values.OmsAgent.isImagePullPolicyAlways }}
           imagePullPolicy: Always
         {{- else }}
