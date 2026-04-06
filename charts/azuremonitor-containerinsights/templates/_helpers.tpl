@@ -138,7 +138,7 @@ Mimics k8s.io/apimachinery/pkg/api/resource.ParseQuantity behavior.
 Returns value in smallest unit (bytes for memory, millicores for CPU).
 */}}
 {{- define "parseQuantity" -}}
-{{- $quantity := . -}}
+{{- $quantity := toString . -}}
 {{- $quantity = trim $quantity -}}
 
 {{/* Handle zero/empty */}}
@@ -157,8 +157,8 @@ Returns value in smallest unit (bytes for memory, millicores for CPU).
 
 {{- if contains "." $number -}}
   {{- $parts := split "." $number -}}
-  {{- $intPart = index $parts 0 | int -}}
-  {{- $fracStr := index $parts 1 -}}
+  {{- $intPart = index $parts "_0" | int -}}
+  {{- $fracStr := index $parts "_1" -}}
   {{- $fracPart = $fracStr | int -}}
   {{- $fracLen := len $fracStr -}}
   {{- if eq $fracLen 1 -}}{{- $fracDivisor = 10 -}}
@@ -203,14 +203,14 @@ Returns value in smallest unit (bytes for memory, millicores for CPU).
 {{- else if eq $suffix "m" -}}
   {{- $result = add (mul $intPart 1) (div $fracPart $fracDivisor) -}}
 
-{{/* No suffix - treat as base unit */}}
+{{/* No suffix - treat as base unit (assume CPU cores, convert to millicores) */}}
 {{- else if eq $suffix "" -}}
   {{- if contains "." $number -}}
-    {{/* Decimal number without suffix - assume CPU cores, convert to millicores */}}
+    {{/* Decimal number without suffix - CPU cores to millicores */}}
     {{- $result = add (mul $intPart 1000) (div (mul $fracPart 1000) $fracDivisor) -}}
   {{- else -}}
-    {{/* Integer without suffix - could be bytes or cores */}}
-    {{- $result = $intPart -}}
+    {{/* Integer without suffix - CPU cores to millicores */}}
+    {{- $result = mul $intPart 1000 -}}
   {{- end -}}
 
 {{/* Unknown suffix - treat as base unit */}}
