@@ -1,3 +1,4 @@
-# to merge trivy scan PR, temporarily ignore CVE-2026-24051 until a fix is available
+# telegraf cves for which fix is not yet available
 CVE-2026-34040
 CVE-2026-33997
+CVE-2026-34986

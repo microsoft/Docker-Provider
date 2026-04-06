@@ -102,7 +102,7 @@ az devops invoke --organization "https://dev.azure.com/github-private" \
   --route-parameters project=microsoft buildId=<BUILD_ID> \
   --query "records[?result=='failed'].{name:name, type:type}" -o table
 ```
-- If the **only** failed task name contains "Trivy" (vulnerability scan), the build images are valid — continue using this build.
+- If the **only** failed task name contains "Trivy" (vulnerability scan), the build images are valid — continue using this build. **Do NOT fall back to a previous build. Extract the image tag from this build's logs.**
 - If any other task failed, the build is unusable — report the failure to the user.
 
 ### Extract Image Version from Build Logs
@@ -225,6 +225,7 @@ The workflow has two parallel tracks that converge after the build completes.
 2. **Set kubectl context**: `kubectl config use-context <cluster name>`.
 3. **Check for an existing build** on the branch for the **latest commit** (definition ID 444, org: `github-private`, project: `microsoft`).
    - If a completed build exists on the latest commit → use it (even if it failed due to Trivy — see "Check Build Failure Reason").
+   - **IMPORTANT: A build that failed ONLY due to Trivy is still usable.** Do NOT fall back to a previous build. The images are already built and pushed before Trivy runs. Always extract the image tag from the failed build's logs (see "Extract Image Version from Build Logs").
    - If no usable build exists → **trigger a new build**. Save the build ID.
 4. **If the build is already complete**, skip to Phase 2 after finishing production baseline steps. **If the build is still running**, proceed with steps 5–9 in parallel; periodically check build status during wait times.
 5. **Update YAML** with the current production image and **deploy** (see "Update YAML Image Tags" and "Deploy with Helm"). Record the **production deployment time** (UTC).
@@ -233,7 +234,7 @@ The workflow has two parallel tracks that converge after the build completes.
 
 ### Phase 2: Deploy Test Image (after build completes)
 
-8. **Confirm the build** completed. Check failure reason if needed (see "Check Build Failure Reason"). If it failed for a non-Trivy reason, ask the user whether to retrigger.
+8. **Confirm the build** completed. Check failure reason if needed (see "Check Build Failure Reason"). If it failed for a non-Trivy reason, ask the user whether to retrigger. **If it failed only due to Trivy, treat it as a successful build — the images are valid. Do NOT fall back to a previous build.**
 9. **Extract the test image version** from the build logs (see "Extract Image Version from Build Logs"). Save to the output file.
 10. **Update YAML** with the test image and **deploy**. Record the **test deployment time** (UTC).
 11. **Wait 15 minutes**, then verify pods are Running. If any pod restarted, get the reason via `kubectl describe pod <name> -n kube-system`. Save pod names to the output file.
