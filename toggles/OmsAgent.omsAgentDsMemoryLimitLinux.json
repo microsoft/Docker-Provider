@@ -627,6 +627,18 @@
         }
       ],
       "Value": "2.5Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "subscriptionID",
+          "Operator": "equals",
+          "Values": [
+            "54659c0d-c017-4709-ae74-51877a5bce2a"
+          ]
+        }
+      ],
+      "Value": "2.5Gi"
     }
   ]
 }
