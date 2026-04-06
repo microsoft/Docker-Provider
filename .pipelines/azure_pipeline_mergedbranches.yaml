@@ -953,3 +953,118 @@ extends:
           azureClientId: $(ZANE_TEST2_CLIENT_ID)
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
+
+      # ============================================================
+      # Cluster 3: ci-logs-prod-aks-geneva-integration-multi-tenancy — Deploy via Helm
+      # ============================================================
+      - template: /.pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
+        parameters:
+          clusterName: 'ci-logs-prod-aks-geneva-integration-multi-tenancy'
+          resourceGroup: 'ci-logs-prod-aks'
+          region: 'uksouth'
+          subscriptionId: $(CI_BUILD_SUB_ID)
+          workspaceId: $(GENEVA_INTEGRATION_MULTI_TENANCY_LAW_ID)
+          amalogsLinuxImage: $(linuxImageTagUnderTest)
+          amalogsWindowsImage: $(windowsImageTagUnderTest)
+          imageRepository: $(ImageRepositoryOverride)
+          environment: 'CI-Agent-GenevaIntegrationMultiTenancy'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+
+      # Cluster 3: ci-logs-prod-aks-geneva-integration-multi-tenancy — Run E2E Tests
+      - template: /.pipelines/e2e-test-templates/test-ci-image-in-aks-cluster.yml@self
+        parameters:
+          clusterName: 'ci-logs-prod-aks-geneva-integration-multi-tenancy'
+          resourceGroup: 'ci-logs-prod-aks'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+          environmentName: 'CI-Agent-GenevaIntegrationMultiTenancy'
+          dependsOnDeployJob: 'Deploy_AmaLogs_ci_logs_prod_aks_geneva_integration_multi_tenancy'
+          azureClientId: $(AksGenevaIntegrationMultiTenancyClientId)
+          azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
+          teamsWebhookUri: $(TeamsWebhookUri)
+          additionalTestParams: 'GenevaIntegration=true'
+
+      # ============================================================
+      # Cluster 4: ci-logs-prod-aks-work-load-identity — Deploy via Helm
+      # ============================================================
+      - template: /.pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
+        parameters:
+          clusterName: 'ci-logs-prod-aks-work-load-identity'
+          resourceGroup: 'ci-logs-prod-aks'
+          region: 'eastus2'
+          subscriptionId: $(CI_BUILD_SUB_ID)
+          workspaceId: $(WORK_LOAD_IDENTITY_LAW_ID)
+          amalogsLinuxImage: $(linuxImageTagUnderTest)
+          amalogsWindowsImage: $(windowsImageTagUnderTest)
+          imageRepository: $(ImageRepositoryOverride)
+          environment: 'CI-Agent-WorkLoadIdentity'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+
+      # Cluster 4: ci-logs-prod-aks-work-load-identity — Run E2E Tests
+      - template: /.pipelines/e2e-test-templates/test-ci-image-in-aks-cluster.yml@self
+        parameters:
+          clusterName: 'ci-logs-prod-aks-work-load-identity'
+          resourceGroup: 'ci-logs-prod-aks'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+          environmentName: 'CI-Agent-WorkLoadIdentity'
+          dependsOnDeployJob: 'Deploy_AmaLogs_ci_logs_prod_aks_work_load_identity'
+          azureClientId: $(AksWorkLoadIdentityClientId)
+          azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
+          teamsWebhookUri: $(TeamsWebhookUri)
+          additionalTestParams: 'LinuxTestsOnly=true'
+
+      # ============================================================
+      # Cluster 5: ci-logs-prod-wcus-fips — Deploy via Helm
+      # ============================================================
+      - template: /.pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
+        parameters:
+          clusterName: 'ci-logs-prod-wcus-fips'
+          resourceGroup: 'ci-logs-prod-aks'
+          region: 'westcentralus'
+          subscriptionId: $(CI_BUILD_SUB_ID)
+          workspaceId: $(WCUS_FIPS_LAW_ID)
+          amalogsLinuxImage: $(linuxImageTagUnderTest)
+          amalogsWindowsImage: $(windowsImageTagUnderTest)
+          imageRepository: $(ImageRepositoryOverride)
+          environment: 'CI-Agent-WcusFips'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+
+      # Cluster 5: ci-logs-prod-wcus-fips — Run E2E Tests
+      - template: /.pipelines/e2e-test-templates/test-ci-image-in-aks-cluster.yml@self
+        parameters:
+          clusterName: 'ci-logs-prod-wcus-fips'
+          resourceGroup: 'ci-logs-prod-aks'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+          environmentName: 'CI-Agent-WcusFips'
+          dependsOnDeployJob: 'Deploy_AmaLogs_ci_logs_prod_wcus_fips'
+          azureClientId: $(WcusFipsClientId)
+          azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
+          teamsWebhookUri: $(TeamsWebhookUri)
+
+      # ============================================================
+      # Cluster 6: ci-logs-prod-aks-networkflowlogs — Deploy via Helm
+      # ============================================================
+      - template: /.pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
+        parameters:
+          clusterName: 'ci-logs-prod-aks-networkflowlogs'
+          resourceGroup: 'ci-logs-prod-aks'
+          region: 'westus2'
+          subscriptionId: $(CI_BUILD_SUB_ID)
+          workspaceId: $(NETWORKFLOWLOGS_LAW_ID)
+          amalogsLinuxImage: $(linuxImageTagUnderTest)
+          amalogsWindowsImage: $(windowsImageTagUnderTest)
+          imageRepository: $(ImageRepositoryOverride)
+          environment: 'CI-Agent-NetworkFlowLogs'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+
+      # Cluster 6: ci-logs-prod-aks-networkflowlogs — Run E2E Tests
+      - template: /.pipelines/e2e-test-templates/test-ci-image-in-aks-cluster.yml@self
+        parameters:
+          clusterName: 'ci-logs-prod-aks-networkflowlogs'
+          resourceGroup: 'ci-logs-prod-aks'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+          environmentName: 'CI-Agent-NetworkFlowLogs'
+          dependsOnDeployJob: 'Deploy_AmaLogs_ci_logs_prod_aks_networkflowlogs'
+          azureClientId: $(NetworkFlowLogsClientId)
+          azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
+          teamsWebhookUri: $(TeamsWebhookUri)
+          additionalTestParams: 'LinuxTestsOnly=true'
