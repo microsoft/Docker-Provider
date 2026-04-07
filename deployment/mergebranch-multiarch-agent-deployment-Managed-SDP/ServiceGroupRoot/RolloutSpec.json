@@ -4,7 +4,7 @@
   "rolloutMetadata": {
     "serviceModelPath": "ServiceModel.json",
     "scopeBindingsPath": "ScopeBindings.json",
-    "name": "ContainerInsightsAgent",
+    "name": "Microsoft.ContainerInsights.Agent",
     "configuration": {
       "serviceGroupScope": {
         "specPath": "Configurations.Public.Prod.json"
