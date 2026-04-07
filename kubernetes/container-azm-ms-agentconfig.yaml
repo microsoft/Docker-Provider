@@ -193,10 +193,6 @@ data:
       tcp_listener_buffer_size = 10
       tcp_listener_mem_buf_limit = 200
 
-    # Starts up a new Telegraf instance to collect process metrics in ama-logs containers (fluent-bit, mdsd, telegraf, etc.)
-    [agent_settings.collect_ama_logs_process_metrics]
-      enabled = false
-
     # prometheus scrape fluent bit settings for high scale
     # buffer size should be greater than or equal to chunk size else we set it to chunk size.
     # settings scoped to daemonset container. all values in mb
