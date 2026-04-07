@@ -1409,12 +1409,14 @@ if [ "${AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS}" == "true" ]; then
             sed -i -e 's/\$CONTROLLER_TYPE/PrometheusSidecar/g' $amaLogsProcessMetricsConfFile
         fi
         # Set App Insights instrumentation key (Base64 decode)
-        if [ -n "$APPLICATIONINSIGHTS_AUTH" ]; then
+        if [ -n "$APPLICATIONINSIGHTS_AUTH" ] && [ -n "$AKS_RESOURCE_ID" ]; then
             appinsightsKey=$(echo "$APPLICATIONINSIGHTS_AUTH" | base64 -d | tr -d '\n')
             sed -i -e "s/placeholder_appinsights_key/$appinsightsKey/g" $amaLogsProcessMetricsConfFile
+            # Use /proc so telegraf only collect process metrics inside ama-logs containers.
+            HOST_PROC=/proc /opt/telegraf --config $amaLogsProcessMetricsConfFile &
+        else
+            echo "APPLICATIONINSIGHTS_AUTH or AKS_RESOURCE_ID not set, skipping ama-logs process metrics monitoring"
         fi
-        # Use /proc so telegraf only collect process metrics inside ama-logs containers.
-        HOST_PROC=/proc /opt/telegraf --config $amaLogsProcessMetricsConfFile &
     else
         echo "telegraf-ama-logs-process-metrics.conf not found, skipping ama-logs process metrics monitoring"
     fi
