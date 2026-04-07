@@ -1,59 +1,22 @@
-# to merge trivy scan PR, temporarily ignore CVE-2026-24051 until a fix is available
+# Telegraf
 CVE-2026-24051
-
-# nats-server: Identity spoofing via Nats-Request-Info header
 CVE-2026-33223
-
-# nats-server: Client identity spoofing via Nats-Request-Info header manipulation
 CVE-2026-33246
-
-# nats-server: Authentication bypass due to incorrect Subject DN matching
 CVE-2026-33248
-
-# nats-server: Unauthorized trace message redirection via message tracing headers
 CVE-2026-33249
-
-# google.golang.org/grpc: Authorization bypass due to improper HTTP/2 path validation
 CVE-2026-33186
-
-# stdlib: Incorrect parsing of IPv6 host literals in net/url
 CVE-2026-25679
-
-# stdlib: html/template URLs in meta content attribute actions issue
 CVE-2026-27142
-
-# github.com/antchfx/xpath: Denial of Service due to infinite loop via boolean XPath
 CVE-2026-32287
-
-# Moby: AuthZ plugin bypass when provided oversized request bodies
 CVE-2026-34040
-
-# Moby: Privilege validation bypass during plugin installation
 CVE-2026-33997
-
-# nats-server: Denial of Service via malformed WebSockets frame
 CVE-2026-27889
-
-# nats-server: Denial of Service via leafnode compression
 CVE-2026-29785
-
-# nats-server: Information disclosure of MQTT passwords through monitoring endpoints
 CVE-2026-33216
-
-# nats-server: Access control bypass via unapplied ACLs in MQTT namespace
 CVE-2026-33217
-
-# nats-server: Denial of Service via malformed message pre-authentication on leafnode
 CVE-2026-33218
-
-# nats-server: Information disclosure of credentials via monitoring port and command-line arguments
 CVE-2026-33247
-
-# nats-server: Session and message hijacking via MQTT Client ID malfeasance
 CVE-2026-33215
-
-# nats-server: Denial of Service via unbounded memory use in WebSockets
 CVE-2026-33219
-
-# nats-server: Unauthorized data modification via JetStream stream restore
 CVE-2026-33222
+CVE-2026-34986
