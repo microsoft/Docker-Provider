@@ -425,6 +425,10 @@ spec:
             - name: CLUSTER_CLOUD_ENVIRONMENT
               value: "{{ $.Values.global.commonGlobals.CloudEnvironment | lower }}"
 {{- end }}
+            - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
           securityContext:
             privileged: true
             capabilities:
@@ -604,6 +608,10 @@ spec:
                   fieldPath: spec.nodeName
             - name: CLUSTER_CLOUD_ENVIRONMENT
               value: "{{ $.Values.Azure.Cluster.Cloud | lower }}"
+            - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
           securityContext:
             privileged: true
             capabilities:
