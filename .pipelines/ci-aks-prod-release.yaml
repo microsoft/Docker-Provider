@@ -74,6 +74,7 @@ extends:
         name: Azure-Pipelines-CI-Test-EO
         image: ci-1es-managed-windows-2022
         os: windows
+    serviceTreeId: $(ServiceTreeGuid)
     customBuildTags:
     - ES365AIMigrationTooling
     stages:
@@ -431,6 +432,7 @@ extends:
           inputs:
             EndpointProviderType: ApprovalService
             TaskAction: RegisterAndRollout
+            UseServerMonitorTask: true
             SkipRegistrationIfExists: True
             ApprovalServiceEnvironment: $(ev2Environment)
             ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment-Managed-SDP/ServiceGroupRoot
