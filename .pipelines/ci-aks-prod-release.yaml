@@ -51,6 +51,10 @@ variables:
   value: $(VAR_USER_ASSIGNED_IDENTITY_CLIENT_ID)
 - name: WorkspaceResourceId
   value: $(VAR_WORKSPACE_RESOURCE_ID)
+- name: IS_PR
+  value: $[eq(variables['Build.Reason'], 'PullRequest')]
+- name: IS_MAIN_BRANCH
+  value: $[eq(variables['Build.SourceBranchName'], 'ci_prod')]
 resources:
   containers: []
   pipelines:
@@ -486,6 +490,7 @@ extends:
     - stage: Stage_3
       displayName: Deploy ama-logs to CI AKS Prod Clusters via Helm
       dependsOn: Stage_2
+      condition: and(eq(dependencies.Stage_2.result, 'Succeeded'), eq(variables.IS_PR, false), eq(variables.IS_MAIN_BRANCH, true), ne(variables.AgentImageTagSuffix, ''))
       pool:
         name: Azure-Pipelines-CI-Test-EO
         image: ci-1es-managed-ubuntu-2204
