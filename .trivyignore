@@ -2,3 +2,6 @@
 CVE-2026-34040
 CVE-2026-33997
 CVE-2026-34986
+
+# telegraf aws-sdk-go-v2 DoS vulnerability (MEDIUM) - fix not yet available in telegraf package
+GHSA-xmrv-pmrh-hhx2
