@@ -34,6 +34,7 @@ OmsAgent:
   workspaceKey: "<your_workspace_key>"
   
   # Image configuration
+  imageRepository: "/azuremonitor/containerinsights/ciprod"
   imageTagLinux: <image_to_be_deployed_for_linux>
   imageTagWindows: <image_to_be_deployed_for_windows>
   isImagePullPolicyAlways: false

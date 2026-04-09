@@ -43,6 +43,7 @@ extends:
     - ES365AIMigrationTooling
     stages:
     - stage: stage
+      displayName: 'Build and Publish Container Images'
       jobs:
       - job: common
         pool:
@@ -881,3 +882,74 @@ extends:
             FileDirPath: '$(Build.ArtifactStagingDirectory)'
             DisableRemediation: false
             AcceptableOutdatedSignatureInHours: 72
+
+    - stage: Deploy_and_Test_Images_In_Dev_Clusters
+      displayName: Deploy and Test Images in Dev Clusters
+      lockBehavior: sequential
+      dependsOn: 
+        - stage
+      condition: |
+        and(eq(dependencies.stage.result, 'Succeeded'), eq(variables.IS_PR, false), eq(variables.IS_MAIN_BRANCH, true))
+      variables:
+        # Override the helm chart's default image repository (/azuremonitor/containerinsights/ciprod) to use cidev
+        ImageRepositoryOverride: '/azuremonitor/containerinsights/cidev'
+        # Use image tags built from the previous build stage
+        linuxImageTagUnderTest: $[stageDependencies.stage.common.outputs['setup.linuxImagetag']]
+        windowsImageTagUnderTest: $[stageDependencies.stage.common.outputs['setup.windowsImageTag']]
+      jobs:
+      # TODO: remomve the two temp cluster and add more clusters from test automation framework when the tests are stable
+      # ============================================================
+      # Cluster 1: zane-test — Deploy via Helm
+      # ============================================================
+      - template: /.pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
+        parameters:
+          clusterName: 'zane-test'
+          resourceGroup: 'zane-test'
+          region: 'westus2'
+          subscriptionId: $(CI_BUILD_SUB_ID)
+          workspaceId: $(ZANE_TEST_LA2_LAW_ID) # zane-test-la2
+          amalogsLinuxImage: $(linuxImageTagUnderTest)
+          amalogsWindowsImage: $(windowsImageTagUnderTest)
+          imageRepository: $(ImageRepositoryOverride)
+          environment: 'CI-Agent-Dev'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+
+      # Cluster 1: zane-test — Run E2E Tests
+      - template: /.pipelines/e2e-test-templates/test-ci-image-in-aks-cluster.yml@self
+        parameters:
+          clusterName: 'zane-test'
+          resourceGroup: 'zane-test'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+          environmentName: 'CI-Agent-Dev'
+          dependsOnDeployJob: 'Deploy_AmaLogs_zane_test'
+          azureClientId: $(ZANE_TEST_CLIENT_ID)
+          azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
+          teamsWebhookUri: $(TeamsWebhookUri)
+
+      # ============================================================
+      # Cluster 2: zane-test2 — Deploy via Helm
+      # ============================================================
+      - template: /.pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
+        parameters:
+          clusterName: 'zane-test2'
+          resourceGroup: 'zane-test'
+          region: 'centralus'
+          subscriptionId: $(CI_BUILD_SUB_ID)
+          workspaceId: $(ZANE_TEST_LA2_LAW_ID) # zane-test2-la2
+          amalogsLinuxImage: $(linuxImageTagUnderTest)
+          amalogsWindowsImage: $(windowsImageTagUnderTest)
+          imageRepository: $(ImageRepositoryOverride)
+          environment: 'CI-Agent-Dev2'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+
+      # Cluster 2: zane-test2 — Run E2E Tests
+      - template: /.pipelines/e2e-test-templates/test-ci-image-in-aks-cluster.yml@self
+        parameters:
+          clusterName: 'zane-test2'
+          resourceGroup: 'zane-test'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+          environmentName: 'CI-Agent-Dev2'
+          dependsOnDeployJob: 'Deploy_AmaLogs_zane_test2'
+          azureClientId: $(ZANE_TEST2_CLIENT_ID)
+          azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
+          teamsWebhookUri: $(TeamsWebhookUri)

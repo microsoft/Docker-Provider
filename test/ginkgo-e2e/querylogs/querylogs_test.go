@@ -20,11 +20,11 @@ var _ = Describe("When querying the logs for the table", func() {
 				Skip("ContainerLog test skipped because GENEVA_INTEGRATION is set to 'true'")
 			}
 			var err error
-			query := table + " | where TimeGenerated > ago(15m) | summarize count()"
+			query := table + " | where TimeGenerated > ago(5m) | summarize count()"
 			err = utils.QueryLogsForCount(LogsClient, AKSResourceId, query, false)
 			// If ContainerLogV2 is configured, query ContainerLogV2 table instead of ContainerLog
 			if err != nil && strings.Contains(table, "ContainerLog") {
-				query := "ContainerLogV2 | where TimeGenerated > ago(15m) | summarize count()"
+				query := "ContainerLogV2 | where TimeGenerated > ago(5m) | summarize count()"
 				err = utils.QueryLogsForCount(LogsClient, AKSResourceId, query, false)
 			}
 			Expect(err).NotTo(HaveOccurred())
@@ -46,7 +46,7 @@ var _ = Describe("When querying the logs for the ContainerInventory", func() {
 		func(column string) {
 			// Skip records with ContainerState 'Waiting' to avoid false positives due to the container being in a waiting state.
 			// If the pod name contains 'ama-logs', we include it to ensure we capture the ama-logs agent containers.
-			query := "ContainerInventory | where TimeGenerated > ago(1h) and (ContainerState !~ 'Waiting' or ContainerHostname contains 'ama-logs') | summarize countif(isempty(" + column + ") or isnull(" + column + "))"
+			query := "ContainerInventory | where TimeGenerated > ago(5m) and (ContainerState !~ 'Waiting' or ContainerHostname contains 'ama-logs') | summarize countif(isempty(" + column + ") or isnull(" + column + "))"
 			err := utils.QueryLogsForCount(LogsClient, AKSResourceId, query, true)
 			Expect(err).NotTo(HaveOccurred())
 		},
