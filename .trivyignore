@@ -1,28 +1,10 @@
-# to merge trivy scan PR, temporarily ignore CVE-2026-24051 until a fix is available
-CVE-2026-24051
-
-# to unblock PR merge 
-# go dependencies - temporarily ignore until upstream fixes are available
-CVE-2026-32287
+# telegraf cves for which fix is not yet available
 CVE-2026-34040
 CVE-2026-33997
-CVE-2026-27889
-CVE-2026-29785
-CVE-2026-33216
-CVE-2026-33217
-CVE-2026-33218
-CVE-2026-33247
-CVE-2026-33215
-CVE-2026-33219
-CVE-2026-33222
-CVE-2026-33223
-CVE-2026-33246
-CVE-2026-33248
-CVE-2026-33249
-CVE-2026-33186
-CVE-2026-25679
-CVE-2026-27142
+CVE-2026-34986
 
-# to unblock PR merge 
-# opt/telegraf (gobinary)
-CVE-2026-34986 
+# telegraf aws-sdk-go-v2 DoS vulnerability (MEDIUM) - fix not yet available in telegraf package
+GHSA-xmrv-pmrh-hhx2
+
+# telegraf opentelemetry-go BSD kenv path vulnerability (HIGH) - fix not yet available in telegraf package
+CVE-2026-39883
