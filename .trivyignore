@@ -8,3 +8,8 @@ GHSA-xmrv-pmrh-hhx2
 
 # telegraf opentelemetry-go BSD kenv path vulnerability (HIGH) - fix not yet available in telegraf package
 CVE-2026-39883
+
+# telegraf medium cves - fix not yet available in telegraf package
+CVE-2026-32281
+CVE-2026-32288
+CVE-2026-32289
