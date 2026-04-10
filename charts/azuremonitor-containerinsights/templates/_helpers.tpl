@@ -59,15 +59,6 @@ win-3.1.34
   {{- end -}}
 {{- end -}}
 
-{{/* Get image tag - used for addon-token-adapter */}}
-{{- define "get.imagetag" -}}
-{{- if eq .component "addon-token-adapter-linux" -}}
-master.250902.1
-{{- else if eq .component "addon-token-adapter-windows" -}}
-master.250902.1
-{{- end -}}
-{{- end -}}
-
 {{/*
 =============================================================================
 MCR REPOSITORY SECTION (from AKS chart)
