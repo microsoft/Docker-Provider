@@ -275,9 +275,15 @@ extends:
               # Set initial repositories to primary
               export TRIVY_DB_REPOSITORY=$PRIMARY_TRIVY_DB_REPOSITORY
               export TRIVY_JAVA_DB_REPOSITORY=$PRIMARY_TRIVY_JAVA_DB_REPOSITORY
+              # If branch name contains "ignore-trivy", don't fail on vulnerabilities
+              TRIVY_EXIT_CODE_FLAG=1
+              if echo "$(Build.SourceBranch)" | grep -qi "ignore-trivy"; then
+                  echo "Branch name contains 'ignore-trivy'. Trivy scan will not fail on vulnerabilities."
+                  TRIVY_EXIT_CODE_FLAG=0
+              fi
               # Function to run Trivy scan and handle output
               run_trivy_scan() {
-                  trivy image --exit-code 1 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM "${{ variables.repoImageName }}:$(linuxImagetag)" > trivy_output.log 2>&1
+                  trivy image --exit-code $TRIVY_EXIT_CODE_FLAG --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM "${{ variables.repoImageName }}:$(linuxImagetag)" > trivy_output.log 2>&1
                   return $?
               }
               # Attempt scan up to 5 times with repository fallback
