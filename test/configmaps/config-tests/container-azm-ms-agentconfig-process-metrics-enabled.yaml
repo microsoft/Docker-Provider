@@ -1,0 +1,83 @@
+kind: ConfigMap
+apiVersion: v1
+data:
+  schema-version:
+    #string.used by agent to parse config. supported versions are {v1}. Configs with other schema versions will be rejected by the agent.
+    v1
+  config-version:
+    #string.used by customer to keep track of this config file's version in their source control/repository (max allowed 10 chars, other chars will be truncated)
+    ver1
+  log-data-collection-settings: |-
+    # Log data collection settings
+    # Any errors related to config map settings can be found in the KubeMonAgentEvents table in the Log Analytics workspace that the cluster is sending data to.
+
+    [log_collection_settings]
+       [log_collection_settings.stdout]
+          enabled = true
+          exclude_namespaces = ["kube-system","gatekeeper-system"]
+
+       [log_collection_settings.stderr]
+          enabled = true
+          exclude_namespaces = ["kube-system","gatekeeper-system"]
+
+       [log_collection_settings.env_var]
+          enabled = true
+       [log_collection_settings.enrich_container_logs]
+          enabled = false
+       [log_collection_settings.collect_all_kube_events]
+          enabled = false
+       [log_collection_settings.schema]
+          containerlog_schema_version = "v2"
+
+  prometheus-data-collection-settings: |-
+    # Custom Prometheus metrics data collection settings
+    [prometheus_data_collection_settings.cluster]
+        interval = "1m"
+        monitor_kubernetes_pods = false
+
+    [prometheus_data_collection_settings.node]
+        interval = "1m"
+
+  metric_collection_settings: |-
+    # Metrics collection settings for metrics sent to Log Analytics and MDM
+    [metric_collection_settings.collect_kube_system_pv_metrics]
+      enabled = false
+
+  alertable-metrics-configuration-settings: |-
+    # Alertable metrics configuration settings for container resource utilization
+    [alertable_metrics_configuration_settings.container_resource_utilization_thresholds]
+        container_cpu_threshold_percentage = 95.0
+        container_memory_rss_threshold_percentage = 95.0
+        container_memory_working_set_threshold_percentage = 95.0
+
+    # Alertable metrics configuration settings for persistent volume utilization
+    [alertable_metrics_configuration_settings.pv_utilization_thresholds]
+        pv_usage_threshold_percentage = 60.0
+
+    # Alertable metrics configuration settings for completed jobs count
+    [alertable_metrics_configuration_settings.job_completion_threshold]
+        job_completion_threshold_time_minutes = 360
+  integrations: |-
+    [integrations.azure_network_policy_manager]
+        collect_basic_metrics = false
+        collect_advanced_metrics = false
+    [integrations.azure_subnet_ip_usage]
+        enabled = false
+
+# Doc - https://github.com/microsoft/Docker-Provider/blob/ci_prod/Documentation/AgentSettings/ReadMe.md
+  agent-settings: |-
+    [agent_settings.high_log_scale]
+      enabled = false
+
+    [agent_settings.prometheus_fbit_settings]
+      tcp_listener_chunk_size = 10
+      tcp_listener_buffer_size = 10
+      tcp_listener_mem_buf_limit = 200
+
+    # Enable collection of ama-logs process metrics via telegraf
+    [agent_settings.collect_ama_logs_process_metrics]
+        enabled = true
+
+metadata:
+  name: container-azm-ms-agentconfig
+  namespace: kube-system

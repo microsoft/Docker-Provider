@@ -24,4 +24,8 @@ const (
 
 	// IntermittentErrorThreshold is the maximum number of occurrences allowed for expected intermittent errors
 	IntermittentErrorThreshold = 10
+
+	// ConfigMap processing test scenario labels
+	ConfigProcessMetricsEnabled = "config-processing-process-metrics-enabled"
+	ConfigProcessMetricsDefault = "config-processing-process-metrics-default"
 )

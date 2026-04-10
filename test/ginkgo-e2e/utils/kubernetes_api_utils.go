@@ -548,6 +548,28 @@ func GetAllNodes(clientset *kubernetes.Clientset) ([]corev1.Node, error) {
 	return nodes.Items, nil
 }
 
+// CountProcessInstances counts instances of a process in the given container
+// across pods matching the label. Returns the count from the first matching pod.
+func CountProcessInstances(client *kubernetes.Clientset, config *rest.Config,
+	namespace, labelName, labelValue, containerName, processName string) (int, error) {
+
+	pods, err := GetPodsWithLabel(client, namespace, labelName, labelValue)
+	if err != nil {
+		return 0, err
+	}
+
+	command := []string{"bash", "-c",
+		fmt.Sprintf("ps aux | grep '%s' | grep -v grep | wc -l", processName)}
+	stdout, _, err := ExecCmd(client, config, pods[0].Name, containerName, namespace, command)
+	if err != nil {
+		return 0, err
+	}
+
+	count := 0
+	fmt.Sscanf(strings.TrimSpace(stdout), "%d", &count)
+	return count, nil
+}
+
 // CheckFileForErrors checks if a specific file in a linux container contains errors.
 // It tolerates intermittent errors up to 10 occurrences per pattern.
 func CheckFileForErrors(clientset *kubernetes.Clientset, Cfg *rest.Config, namespace, labelName, labelValue, containerName, filePath string) error {

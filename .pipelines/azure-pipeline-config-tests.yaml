@@ -1,4 +1,7 @@
-# ConfigMap Testing Pipeline for ama-logs (stub - full implementation in zane/configmap-testing-pipeline)
+# ConfigMap Testing Pipeline for ama-logs
+# Applies different ConfigMap variants, restarts pods, and runs scenario-specific Ginkgo tests via TestKube.
+# Manual trigger only.
+
 trigger: none
 pr: none
 
@@ -9,13 +12,143 @@ parameters:
   - name: clusterResourceGroup
     displayName: 'AKS Cluster Resource Group'
     type: string
+  - name: branch
+    displayName: 'Git branch for TestKube workflows'
+    type: string
+    default: 'ci_prod'
 
 stages:
 - stage: ConfigMapTests
   jobs:
-  - job: Placeholder
+  - job: RunConfigMapTests
+    timeoutInMinutes: 120
+    displayName: "ConfigMap Processing Tests"
     pool:
       name: Azure-Pipelines-CI-Test-EO
+    variables:
+      skipComponentGovernanceDetection: true
     steps:
-    - script: echo "Pipeline created. Point to branch zane/configmap-testing-pipeline for full implementation."
-      displayName: 'Placeholder'
+    - checkout: self
+      persistCredentials: true
+
+    # === Setup ===
+
+    - script: |
+        curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+      displayName: 'Install Azure CLI'
+
+    - script: |
+        set -euo pipefail
+        echo "Ensuring kubectl & helm are installed"
+        if ! command -v az >/dev/null 2>&1; then
+          echo "Azure CLI not found; aborting" >&2
+          exit 1
+        fi
+        if ! command -v kubectl >/dev/null 2>&1; then
+          echo "kubectl not found. Installing via 'az aks install-cli' with sudo"
+          sudo az aks install-cli
+        else
+          echo "kubectl already installed: $(kubectl version --client --short || true)"
+        fi
+        if ! command -v helm >/dev/null 2>&1; then
+          echo "Helm not found. Installing Helm 3"
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+        else
+          echo "Helm already installed: $(helm version --short || true)"
+        fi
+      displayName: 'Install kubectl and Helm'
+
+    - task: AzureCLI@2
+      displayName: Get kubeconfig
+      inputs:
+        azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+        scriptLocation: 'inlineScript'
+        scriptType: 'bash'
+        inlineScript: 'az aks get-credentials -g ${{ parameters.clusterResourceGroup }} -n ${{ parameters.clusterName }}'
+
+    - script: |
+        echo "Install testkube CLI"
+        wget -qO - https://repo.testkube.io/key.pub | sudo apt-key add -
+        echo "deb https://repo.testkube.io/linux linux main" | sudo tee -a /etc/apt/sources.list
+        sudo apt-get update
+        sudo apt-get install -y testkube
+      displayName: 'Install Testkube CLI'
+
+    - bash: |
+        set -euo pipefail
+
+        # Remove stale CRDs that block Helm ownership
+        stale_crds=(
+            "testworkflowexecutions.testworkflows.testkube.io"
+            "testworkflows.testkube.io"
+            "testworkflows.testworkflows.testkube.io"
+            "testworkflowtemplates.testworkflows.testkube.io"
+        )
+        echo "Checking for stale Testkube CRDs"
+        for crd in "${stale_crds[@]}"; do
+            if kubectl get crd "$crd" >/dev/null 2>&1; then
+                owner=$(kubectl get crd "$crd" -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}')
+                if [[ "$owner" != "Helm" ]]; then
+                    echo "Deleting CRD $crd with unmanaged owner: ${owner:-none}"
+                    kubectl delete crd "$crd" --wait=true || true
+                fi
+            fi
+        done
+
+        # Clean up existing TestKube installation if present
+        if helm list -n testkube 2>/dev/null | grep -q testkube; then
+            echo "Found existing Testkube installation. Cleaning up..."
+            helm uninstall testkube -n testkube || true
+            kubectl delete namespace testkube --wait=true --timeout=120s || true
+            sleep 30
+        fi
+
+        # Install TestKube
+        helm repo add kubeshop https://kubeshop.github.io/helm-charts
+        helm repo update
+        helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./helm-testkube-values.yaml
+
+        # Apply RBAC
+        kubectl apply -f ./api-server-permissions.yaml
+
+        echo "Waiting for TestKube to be ready..."
+        sleep 60
+      workingDirectory: $(Build.SourcesDirectory)/test/testkube
+      displayName: 'Install TestKube on cluster'
+
+    # === Scenario 1: process-metrics-enabled ===
+    - bash: |
+        chmod +x ./run-configtest-scenario.sh
+        ./run-configtest-scenario.sh \
+          --configmap "../../test/configmaps/config-tests/container-azm-ms-agentconfig-process-metrics-enabled.yaml" \
+          --crs "./config-processing-test-crs/testkube-config-test-process-metrics-enabled-crs.yaml" \
+          --scenario "process-metrics-enabled" \
+          --branch "${{ parameters.branch }}"
+      workingDirectory: $(Build.SourcesDirectory)/test/testkube
+      displayName: "ConfigTest: process-metrics-enabled"
+      continueOnError: true
+
+    # === Scenario 2: process-metrics-default (restore defaults) ===
+    - bash: |
+        chmod +x ./run-configtest-scenario.sh
+        ./run-configtest-scenario.sh \
+          --configmap "../../kubernetes/container-azm-ms-agentconfig.yaml" \
+          --crs "./config-processing-test-crs/testkube-config-test-process-metrics-default-crs.yaml" \
+          --scenario "process-metrics-default" \
+          --branch "${{ parameters.branch }}"
+      workingDirectory: $(Build.SourcesDirectory)/test/testkube
+      displayName: "ConfigTest: process-metrics-default"
+      continueOnError: true
+
+    # === Cleanup ===
+    - bash: |
+        echo "Restoring original configmap..."
+        kubectl apply -f $(Build.SourcesDirectory)/kubernetes/container-azm-ms-agentconfig.yaml || true
+
+        echo "Cleaning up Testkube installation..."
+        helm uninstall testkube -n testkube || true
+        kubectl delete namespace testkube --wait=true --timeout=120s || true
+        echo "Cleanup complete."
+      workingDirectory: $(Build.SourcesDirectory)/test/testkube
+      displayName: 'Cleanup'
+      condition: always()
