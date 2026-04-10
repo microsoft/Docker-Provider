@@ -47,6 +47,25 @@ require "fileutils"
 
 @disableRSTelegraf = false
 
+# Substitute default values for prometheus placeholders in the telegraf config file.
+# This is needed when no configmap is mounted or configmap doesn't have prom settings,
+# so that raw $AZMON_DS_PROM_* placeholders don't remain in the conf file.
+# Telegraf 1.38.0+ uses strict env var handling by default and will fail on undefined env vars.
+def substituteDsDefaultsInTelegrafConf
+  if !@controller.nil? && @controller.casecmp(@daemonset) == 0
+    telegrafConfFile = "/etc/opt/microsoft/docker-cimprov/telegraf.conf"
+    if File.file?(telegrafConfFile)
+      text = File.read(telegrafConfFile)
+      new_contents = text.gsub("$AZMON_DS_PROM_INTERVAL", @defaultDsInterval)
+      new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDPASS", "[]")
+      new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDDROP", "[]")
+      new_contents = new_contents.gsub("$AZMON_DS_PROM_URLS", "[]")
+      File.open(telegrafConfFile, "w") { |file| file.puts new_contents }
+      puts "config::Successfully substituted default prometheus placeholders in telegraf conf file for daemonset"
+    end
+  end
+end
+
 def get_command_windows(env_variable_name, env_variable_value)
   return "#{env_variable_name}=#{env_variable_value}\n"
 end
@@ -419,9 +438,11 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             end
           else
             ConfigParseErrorLogger.logError("Typecheck failed for prometheus config settings for daemonset, using defaults, please use right types for all settings")
+            substituteDsDefaultsInTelegrafConf
           end # end of type check condition
         rescue => errorStr
           ConfigParseErrorLogger.logError("Exception while parsing config file for prometheus config for daemonset: #{errorStr}, using defaults, please check correctness of configmap")
+          substituteDsDefaultsInTelegrafConf
           puts "****************End Prometheus Config Processing********************"
         end
       end # end of controller type check
@@ -437,6 +458,8 @@ if !@configSchemaVersion.nil? && !@configSchemaVersion.empty? && @configSchemaVe
   configMapSettings = parseConfigMap
   if !configMapSettings.nil?
     populateSettingValuesFromConfigMap(configMapSettings)
+  else
+    substituteDsDefaultsInTelegrafConf
   end
 else
   if (File.file?(@promConfigMapMountPath))
@@ -444,5 +467,6 @@ else
   else
     puts "config::No configmap mounted for prometheus custom config, using defaults"
   end
+  substituteDsDefaultsInTelegrafConf
 end
 puts "****************End Prometheus Config Processing********************"
