@@ -114,7 +114,7 @@ mongodb:
     # -- MongoDB image repository
     repository: testkube-cloud-372110/testkube/mongodb
     # -- MongoDB image tag
-    tag: 8.0.15
+    tag: 8.2.5
     # -- MongoDB image pull Secret
     pullSecrets: []
   nodeSelector: 
