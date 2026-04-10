@@ -10,6 +10,7 @@ CVE-2026-27142
 CVE-2026-32287
 CVE-2026-34040
 CVE-2026-33997
+<<<<<<< HEAD
 CVE-2026-27889
 CVE-2026-29785
 CVE-2026-33216
@@ -20,3 +21,17 @@ CVE-2026-33215
 CVE-2026-33219
 CVE-2026-33222
 CVE-2026-34986
+=======
+CVE-2026-34986
+
+# telegraf aws-sdk-go-v2 DoS vulnerability (MEDIUM) - fix not yet available in telegraf package
+GHSA-xmrv-pmrh-hhx2
+
+# telegraf opentelemetry-go BSD kenv path vulnerability (HIGH) - fix not yet available in telegraf package
+CVE-2026-39883
+
+# telegraf medium cves - fix not yet available in telegraf package
+CVE-2026-32281
+CVE-2026-32288
+CVE-2026-32289
+>>>>>>> 6eb6f0ac341a8a2e9b1efe994cff73ba9f8dc526
