@@ -95,6 +95,7 @@ COPY ./amalogswindows/installer/conf/fluent-bit-azmon-multi-tenancy.conf /etc/fl
 
 # copy telegraf conf file
 COPY ./amalogswindows/installer/conf/telegraf.conf /etc/telegraf/
+COPY ./amalogswindows/installer/conf/telegraf-ama-logs-process-metrics.conf /etc/telegraf/
 
 # copy keepcert alive ruby scripts
 COPY ./amalogswindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluent/plugin/
