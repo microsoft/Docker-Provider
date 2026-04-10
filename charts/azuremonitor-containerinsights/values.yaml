@@ -483,6 +483,11 @@ Azure:
     memoryLimit: "100Mi"
     cpuRequest: "20m"
     memoryRequest: "50Mi"
+  msiTokenAdapterWin:
+    cpuLimit: "250m"
+    memoryLimit: "500Mi"
+    cpuRequest: "100m"
+    memoryRequest: "100Mi"
   proxySettings:
     isProxyEnabled: false
     httpProxy: ""
