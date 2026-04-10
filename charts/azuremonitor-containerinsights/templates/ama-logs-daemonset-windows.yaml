@@ -102,7 +102,7 @@ spec:
           resources:
 {{ toYaml .Values.amalogs.resources.daemonsetwindows | indent 12 }}
 {{- else }}
-          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/containerinsights/ciprod:{{- default $amalogsWindowsDefaultImageTag .Values.OmsAgent.imageTagWindows -}}"
+          image: "{{ template "addon_mcr_repository_base" . }}{{ .Values.OmsAgent.imageRepository | default "/azuremonitor/containerinsights/ciprod" }}:{{- default $amalogsWindowsDefaultImageTag .Values.OmsAgent.imageTagWindows -}}"
         {{- if .Values.OmsAgent.isImagePullPolicyAlways }}
           imagePullPolicy: Always
         {{- else }}
