@@ -56,9 +56,11 @@ kubectl rollout status ds/ama-logs -n kube-system --timeout=5m
 kubectl rollout status deploy/ama-logs-rs -n kube-system --timeout=5m
 kubectl rollout status ds/ama-logs-windows -n kube-system --timeout=5m 2>/dev/null || echo "ama-logs-windows rollout status skipped"
 
-# Step 4: Apply the TestKube workflow CRD
-echo "Applying TestKube workflow CRD: ${CRS}"
-kubectl apply -f "${CRS}"
+# Step 4: Apply the TestKube workflow CRD (with branch override)
+echo "Applying TestKube workflow CRD: ${CRS} (branch: ${BRANCH})"
+CRS_PATCHED="${CRS%.yaml}-patched.yaml"
+sed "s|revision: ci_prod|revision: ${BRANCH}|g" "${CRS}" > "${CRS_PATCHED}"
+kubectl apply -f "${CRS_PATCHED}"
 
 # Step 5: Run the testworkflow
 echo "Running testworkflow: ${WORKFLOW_NAME}"
