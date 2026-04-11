@@ -548,8 +548,8 @@ func GetAllNodes(clientset *kubernetes.Clientset) ([]corev1.Node, error) {
 	return nodes.Items, nil
 }
 
-// CountProcessInstances counts instances of a process in the given container
-// across pods matching the label. Returns the count from the first matching pod.
+// CountProcessInstances counts instances of a process in a Linux container.
+// Returns the count from the first matching pod.
 func CountProcessInstances(client *kubernetes.Clientset, config *rest.Config,
 	namespace, labelName, labelValue, containerName, processName string) (int, error) {
 
@@ -560,6 +560,28 @@ func CountProcessInstances(client *kubernetes.Clientset, config *rest.Config,
 
 	command := []string{"bash", "-c",
 		fmt.Sprintf("ps aux | grep '%s' | grep -v grep | wc -l", processName)}
+	stdout, _, err := ExecCmd(client, config, pods[0].Name, containerName, namespace, command)
+	if err != nil {
+		return 0, err
+	}
+
+	count := 0
+	fmt.Sscanf(strings.TrimSpace(stdout), "%d", &count)
+	return count, nil
+}
+
+// CountWindowsProcessInstances counts instances of a process in a Windows container using PowerShell.
+// Returns the count from the first matching pod.
+func CountWindowsProcessInstances(client *kubernetes.Clientset, config *rest.Config,
+	namespace, labelName, labelValue, containerName, processName string) (int, error) {
+
+	pods, err := GetPodsWithLabel(client, namespace, labelName, labelValue)
+	if err != nil {
+		return 0, err
+	}
+
+	command := []string{"powershell", "-Command",
+		fmt.Sprintf("@(Get-Process -Name '%s' -ErrorAction SilentlyContinue).Count", processName)}
 	stdout, _, err := ExecCmd(client, config, pods[0].Name, containerName, namespace, command)
 	if err != nil {
 		return 0, err
