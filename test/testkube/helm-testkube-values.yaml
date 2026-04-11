@@ -117,9 +117,16 @@ mongodb:
     tag: 8.2.5
     # -- MongoDB image pull Secret
     pullSecrets: []
-  nodeSelector: 
+  nodeSelector:
     kubernetes.io/os: linux
     kubernetes.io/arch: amd64
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.azure.com/fips_enabled
+            operator: DoesNotExist
   # ref: https://cloud.google.com/kubernetes-engine/docs/how-to/prepare-arm-workloads-for-deployment#node-affinity-multi-arch-arm
   # -- Uncomment to schedule a multi-arch image to any available architecture type in a GGP Standard k8s cluster.
   #  tolerations:
