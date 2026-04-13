@@ -423,7 +423,7 @@ Azure:
         - --token-server-listening-port={{ .Values.msiTokenServerListeningPort | default 7777 }}
         - --health-server-listening-port={{ .Values.msiTokenHealthServerPort | default 9999 }}
         - --restart-pod-waiting-minutes-on-broken-connection={{ .Values.msiTokenRestartPodMinutes | default 240 }}
-      image: "mcr.microsoft.com/aks/msi/addon-token-adapter:{{ .Values.msiTokenAdapterImageTag | default "master.260209.2" }}"
+      image: "mcr.microsoft.com/aks/msi/addon-token-adapter:master.260209.2"
       imagePullPolicy: IfNotPresent
       env:
         - name: AZMON_COLLECT_ENV
@@ -457,7 +457,7 @@ Azure:
         - --token-server-listening-port={{ .Values.msiTokenServerListeningPort | default 7777 }}
         - --health-server-listening-port={{ .Values.msiTokenHealthServerPort | default 9999 }}
         - --restart-pod-waiting-minutes-on-broken-connection={{ .Values.msiTokenRestartPodMinutes | default 240 }}
-      image: "mcr.microsoft.com/aks/msi/addon-token-adapter:{{ .Values.msiTokenAdapterImageTag | default "master.260209.2" }}"
+      image: "mcr.microsoft.com/aks/msi/addon-token-adapter:master.260209.2"
       imagePullPolicy: IfNotPresent
       livenessProbe:
         httpGet:
