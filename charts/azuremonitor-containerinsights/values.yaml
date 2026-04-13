@@ -423,7 +423,7 @@ Azure:
         - --token-server-listening-port={{ .Values.msiTokenServerListeningPort | default 7777 }}
         - --health-server-listening-port={{ .Values.msiTokenHealthServerPort | default 9999 }}
         - --restart-pod-waiting-minutes-on-broken-connection={{ .Values.msiTokenRestartPodMinutes | default 240 }}
-      image: "mcr.microsoft.com/aks/msi/addon-token-adapter:master.250902.1"
+      image: "mcr.microsoft.com/aks/msi/addon-token-adapter:{{ .Values.msiTokenAdapterImageTag | default "master.260209.2" }}"
       imagePullPolicy: IfNotPresent
       env:
         - name: AZMON_COLLECT_ENV
@@ -436,11 +436,11 @@ Azure:
         periodSeconds: 60
       resources:
         limits:
-          cpu: {{ ((.Values.msiTokenAdapterLinux | default dict).cpuLimit) | default "100m" }}
-          memory: {{ ((.Values.msiTokenAdapterLinux | default dict).memoryLimit) | default "100Mi" }}
+          cpu: {{ ((.Values.msiTokenAdapterLinux | default dict).cpuLimit) | default "500m" }}
+          memory: {{ ((.Values.msiTokenAdapterLinux | default dict).memoryLimit) | default "500Mi" }}
         requests:
           cpu: {{ ((.Values.msiTokenAdapterLinux | default dict).cpuRequest) | default "20m" }}
-          memory: {{ ((.Values.msiTokenAdapterLinux | default dict).memoryRequest) | default "50Mi" }}
+          memory: {{ ((.Values.msiTokenAdapterLinux | default dict).memoryRequest) | default "30Mi" }}
       securityContext:
         capabilities:
           drop:
@@ -457,7 +457,7 @@ Azure:
         - --token-server-listening-port={{ .Values.msiTokenServerListeningPort | default 7777 }}
         - --health-server-listening-port={{ .Values.msiTokenHealthServerPort | default 9999 }}
         - --restart-pod-waiting-minutes-on-broken-connection={{ .Values.msiTokenRestartPodMinutes | default 240 }}
-      image: "mcr.microsoft.com/aks/msi/addon-token-adapter:master.250902.1"
+      image: "mcr.microsoft.com/aks/msi/addon-token-adapter:{{ .Values.msiTokenAdapterImageTag | default "master.260209.2" }}"
       imagePullPolicy: IfNotPresent
       livenessProbe:
         httpGet:
@@ -479,10 +479,10 @@ Azure:
           add:
             - NET_ADMIN
   msiTokenAdapterLinux:
-    cpuLimit: "100m"
-    memoryLimit: "100Mi"
+    cpuLimit: "500m"
+    memoryLimit: "500Mi"
     cpuRequest: "20m"
-    memoryRequest: "50Mi"
+    memoryRequest: "30Mi"
   msiTokenAdapterWin:
     cpuLimit: "250m"
     memoryLimit: "500Mi"
