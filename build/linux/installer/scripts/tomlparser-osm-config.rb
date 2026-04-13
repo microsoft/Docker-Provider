@@ -131,6 +131,34 @@ def replaceOsmTelegrafConfigPlaceHolders
   end
 end
 
+# Substitute default (empty) value for the OSM placeholder in the telegraf config file.
+# This is needed when no OSM configmap is mounted or config parsing fails,
+# so that the raw $AZMON_TELEGRAF_OSM_PROM_PLUGINS placeholder doesn't remain in the conf file.
+# Telegraf 1.38.0+ uses strict env var handling by default and will fail on undefined env vars.
+def substituteOsmDefaultsInTelegrafConf
+  begin
+    if @tgfTestConfigFile.nil? || @tgfConfigFile.nil?
+      return
+    end
+    # Use the test config file if prom custom config parser already created it,
+    # otherwise create it from the production config file.
+    if !File.file?(@tgfTestConfigFile)
+      if File.file?(@tgfConfigFile)
+        puts "config::osm::test telegraf config file #{@tgfTestConfigFile} does not exist, creating from #{@tgfConfigFile}"
+        FileUtils.cp(@tgfConfigFile, @tgfTestConfigFile)
+      else
+        return
+      end
+    end
+    tgfConfig = File.read(@tgfTestConfigFile)
+    tgfConfig = tgfConfig.gsub("$AZMON_TELEGRAF_OSM_PROM_PLUGINS", "")
+    File.open(@tgfTestConfigFile, "w") { |file| file.puts tgfConfig }
+    puts "config::osm::Successfully substituted default OSM placeholders in #{@tgfTestConfigFile}"
+  rescue => errorStr
+    puts "config::osm::error:Exception while substituting default OSM placeholders - #{errorStr}"
+  end
+end
+
 @osmConfigSchemaVersion = ENV["AZMON_OSM_CFG_SCHEMA_VERSION"]
 puts "****************Start OSM Config Processing********************"
 if !@osmConfigSchemaVersion.nil? && !@osmConfigSchemaVersion.empty? && @osmConfigSchemaVersion.strip.casecmp("v1") == 0 #note v1 is the only supported schema version , so hardcoding it
@@ -157,6 +185,8 @@ if !@osmConfigSchemaVersion.nil? && !@osmConfigSchemaVersion.empty? && @osmConfi
     else
       puts "config::osm::Exception while opening file for writing OSM telemetry environment variables"
     end
+  else
+    substituteOsmDefaultsInTelegrafConf
   end
 else
   if (File.file?(@configMapMountPath))
@@ -164,5 +194,6 @@ else
   else
     puts "config::No configmap mounted for OSM config, using defaults"
   end
+  substituteOsmDefaultsInTelegrafConf
 end
 puts "****************End OSM Config Processing********************"
