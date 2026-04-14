@@ -49,10 +49,14 @@ require "fileutils"
 
 # Substitute default values for prometheus placeholders in the telegraf config file.
 # This is needed when no configmap is mounted or configmap doesn't have prom settings,
-# so that raw $AZMON_DS_PROM_* placeholders don't remain in the conf file.
+# so that raw $AZMON_* placeholders don't remain in the conf file.
 # Telegraf 1.38.0+ uses strict env var handling by default and will fail on undefined env vars.
 def substituteDsDefaultsInTelegrafConf
-  if !@controller.nil? && @controller.casecmp(@daemonset) == 0
+  if @controller.nil?
+    return
+  end
+
+  if @controller.casecmp(@daemonset) == 0 && (@containerType.nil? || @containerType.casecmp(@promSideCar) != 0)
     telegrafConfFile = "/etc/opt/microsoft/docker-cimprov/telegraf.conf"
     if File.file?(telegrafConfFile)
       text = File.read(telegrafConfFile)
@@ -62,6 +66,37 @@ def substituteDsDefaultsInTelegrafConf
       new_contents = new_contents.gsub("$AZMON_DS_PROM_URLS", "[]")
       File.open(telegrafConfFile, "w") { |file| file.puts new_contents }
       puts "config::Successfully substituted default prometheus placeholders in telegraf conf file for daemonset"
+    end
+  elsif @controller.casecmp(@daemonset) == 0 && !@containerType.nil? && @containerType.casecmp(@promSideCar) == 0
+    telegrafConfFile = "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
+    if File.file?(telegrafConfFile)
+      text = File.read(telegrafConfFile)
+      new_contents = text.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_INTERVAL", @defaultCustomPrometheusInterval)
+      new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_FIELDPASS", "[]")
+      new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_FIELDDROP", "[]")
+      new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS", "monitor_kubernetes_pods = false")
+      new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE", "pod_scrape_scope = \"cluster\"")
+      new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_LABEL_SELECTOR", "")
+      new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR", "")
+      new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
+      File.open(telegrafConfFile, "w") { |file| file.puts new_contents }
+      puts "config::Successfully substituted default prometheus placeholders in telegraf conf file for prometheus sidecar"
+    end
+  elsif @controller.casecmp(@replicaset) == 0
+    telegrafConfFile = "/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
+    if File.file?(telegrafConfFile)
+      text = File.read(telegrafConfFile)
+      new_contents = text.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_INTERVAL", @defaultRsInterval)
+      new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_FIELDPASS", "[]")
+      new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_FIELDDROP", "[]")
+      new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_URLS", "[]")
+      new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS", "monitor_kubernetes_pods = false")
+      new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE", "pod_scrape_scope = \"cluster\"")
+      new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_LABEL_SELECTOR", "")
+      new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR", "")
+      new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
+      File.open(telegrafConfFile, "w") { |file| file.puts new_contents }
+      puts "config::Successfully substituted default prometheus placeholders in telegraf conf file for replicaset"
     end
   end
 end
@@ -282,9 +317,11 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             end
           else
             ConfigParseErrorLogger.logError("Typecheck failed for prometheus config settings for replicaset, using defaults, please use right types for all settings")
+            substituteDsDefaultsInTelegrafConf
           end # end of type check condition
         rescue => errorStr
           ConfigParseErrorLogger.logError("Exception while parsing config file for prometheus config for replicaset: #{errorStr}, using defaults")
+          substituteDsDefaultsInTelegrafConf
           setRsPromDefaults
           puts "****************End Prometheus Config Processing********************"
         end
@@ -384,9 +421,11 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             end
           else
             ConfigParseErrorLogger.logError("Typecheck failed for prometheus config settings for prometheus side car, using defaults, please use right types for all settings")
+            substituteDsDefaultsInTelegrafConf
           end # end of type check condition
         rescue => errorStr
           ConfigParseErrorLogger.logError("Exception while parsing config file for prometheus config for promethues side car: #{errorStr}, using defaults")
+          substituteDsDefaultsInTelegrafConf
           puts "****************End Prometheus Config Processing********************"
         end
       elsif @controller.casecmp(@daemonset) == 0 && !parsedConfig[:prometheus_data_collection_settings][:node].nil?
