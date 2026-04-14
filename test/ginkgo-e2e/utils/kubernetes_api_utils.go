@@ -548,8 +548,18 @@ func GetAllNodes(clientset *kubernetes.Clientset) ([]corev1.Node, error) {
 	return nodes.Items, nil
 }
 
+// getFirstRunningPod returns the first pod in Running phase from the list.
+func getFirstRunningPod(pods []corev1.Pod) (corev1.Pod, error) {
+	for _, pod := range pods {
+		if pod.Status.Phase == corev1.PodRunning {
+			return pod, nil
+		}
+	}
+	return corev1.Pod{}, fmt.Errorf("no running pods found (total pods: %d)", len(pods))
+}
+
 // CountProcessInstances counts instances of a process in a Linux container.
-// Returns the count from the first matching pod.
+// Returns the count from the first running pod.
 func CountProcessInstances(client *kubernetes.Clientset, config *rest.Config,
 	namespace, labelName, labelValue, containerName, processName string) (int, error) {
 
@@ -557,10 +567,14 @@ func CountProcessInstances(client *kubernetes.Clientset, config *rest.Config,
 	if err != nil {
 		return 0, err
 	}
+	pod, err := getFirstRunningPod(pods)
+	if err != nil {
+		return 0, err
+	}
 
 	command := []string{"bash", "-c",
 		fmt.Sprintf("ps aux | grep '%s' | grep -v grep | wc -l", processName)}
-	stdout, _, err := ExecCmd(client, config, pods[0].Name, containerName, namespace, command)
+	stdout, _, err := ExecCmd(client, config, pod.Name, containerName, namespace, command)
 	if err != nil {
 		return 0, err
 	}
@@ -571,7 +585,7 @@ func CountProcessInstances(client *kubernetes.Clientset, config *rest.Config,
 }
 
 // CountWindowsProcessInstances counts instances of a process in a Windows container using PowerShell.
-// Returns the count from the first matching pod.
+// Returns the count from the first running pod.
 func CountWindowsProcessInstances(client *kubernetes.Clientset, config *rest.Config,
 	namespace, labelName, labelValue, containerName, processName string) (int, error) {
 
@@ -579,10 +593,14 @@ func CountWindowsProcessInstances(client *kubernetes.Clientset, config *rest.Con
 	if err != nil {
 		return 0, err
 	}
+	pod, err := getFirstRunningPod(pods)
+	if err != nil {
+		return 0, err
+	}
 
 	command := []string{"powershell", "-Command",
 		fmt.Sprintf("@(Get-Process -Name '%s' -ErrorAction SilentlyContinue).Count", processName)}
-	stdout, _, err := ExecCmd(client, config, pods[0].Name, containerName, namespace, command)
+	stdout, _, err := ExecCmd(client, config, pod.Name, containerName, namespace, command)
 	if err != nil {
 		return 0, err
 	}
