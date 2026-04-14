@@ -9050,8 +9050,8 @@
             "value": "ReplicaSet"
           },
           {
-            "displayText": "PrometheusSideCar",
-            "value": "PrometheusSideCar"
+            "displayText": "PrometheusSidecar",
+            "value": "PrometheusSidecar"
           }
         ]
       },
