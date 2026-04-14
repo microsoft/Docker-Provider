@@ -13,3 +13,11 @@ CVE-2026-39883
 CVE-2026-32281
 CVE-2026-32288
 CVE-2026-32289
+
+# golang stdlib cves - fix requires go 1.25.9 or 1.26.2, telegraf built with 1.26.1
+CVE-2026-32280
+CVE-2026-32282
+CVE-2026-33810
+
+# prometheus dependency - stored XSS via metric names/label values (MEDIUM)
+CVE-2026-40179

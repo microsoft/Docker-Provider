@@ -79,15 +79,7 @@ echo "$(fluent-bit --version)" >> packages_version.txt
 
 # install fluentd
 fluentd_version="1.16.3"
-for i in 1 2 3; do
-    gem install fluentd -v $fluentd_version --no-document && break
-    echo "gem install fluentd attempt $i failed, retrying in 10s..."
-    sleep 10
-done
-if ! command -v fluentd &> /dev/null; then
-    echo "ERROR: fluentd installation failed after 3 attempts"
-    exit 1
-fi
+gem install fluentd -v $fluentd_version --no-document
 
 # remove the test directory from fluentd
 rm -rf /usr/lib/ruby/gems/3.3.0/gems/fluentd-$fluentd_version/test/
@@ -95,16 +87,8 @@ rm -rf /usr/lib/ruby/gems/3.3.0/gems/fluentd-$fluentd_version/test/
 echo "$(fluentd --version)" >> packages_version.txt
 fluentd --setup ./fluent
 
-for i in 1 2 3; do
-    gem install gyoku iso8601 bigdecimal --no-doc && break
-    echo "gem install gyoku/iso8601/bigdecimal attempt $i failed, retrying in 10s..."
-    sleep 10
-done
-for i in 1 2 3; do
-    gem install tomlrb -v "2.0.1" --no-document && break
-    echo "gem install tomlrb attempt $i failed, retrying in 10s..."
-    sleep 10
-done
+gem install gyoku iso8601 bigdecimal --no-doc
+gem install tomlrb -v "2.0.1" --no-document
 gem install ipaddress --no-document
 gem install jwt -v "2.7.1" --no-document
 gem install racc --no-document
