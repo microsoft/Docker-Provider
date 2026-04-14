@@ -111,8 +111,12 @@ stages:
         # Apply RBAC
         kubectl apply -f ./api-server-permissions.yaml
 
-        echo "Waiting for TestKube to be ready..."
-        sleep 60
+        echo "Waiting for TestKube API server to be ready..."
+        kubectl rollout status deployment/testkube-api-server -n testkube --timeout=300s
+        echo "Waiting for TestKube operator to be ready..."
+        kubectl rollout status deployment/testkube-operator-controller-manager -n testkube --timeout=120s
+        # Give the API server a moment to finish initialization after pod is ready
+        sleep 15
       workingDirectory: $(Build.SourcesDirectory)/test/testkube
       displayName: 'Install TestKube on cluster'
 
