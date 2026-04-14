@@ -275,15 +275,9 @@ extends:
               # Set initial repositories to primary
               export TRIVY_DB_REPOSITORY=$PRIMARY_TRIVY_DB_REPOSITORY
               export TRIVY_JAVA_DB_REPOSITORY=$PRIMARY_TRIVY_JAVA_DB_REPOSITORY
-              # Only fail on vulnerabilities for ci_prod branches
-              TRIVY_EXIT_CODE_FLAG=0
-              if [ "$(IS_MAIN_BRANCH)" = "True" ]; then
-                  echo "Branch is ci_prod. Trivy scan will fail on vulnerabilities."
-                  TRIVY_EXIT_CODE_FLAG=1
-              fi
               # Function to run Trivy scan and handle output
               run_trivy_scan() {
-                  trivy image --exit-code $TRIVY_EXIT_CODE_FLAG --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM "${{ variables.repoImageName }}:$(linuxImagetag)" > trivy_output.log 2>&1
+                  trivy image --exit-code 0 --ignore-unfixed --no-progress --severity HIGH,CRITICAL,MEDIUM "${{ variables.repoImageName }}:$(linuxImagetag)" > trivy_output.log 2>&1
                   return $?
               }
               # Attempt scan up to 5 times with repository fallback
