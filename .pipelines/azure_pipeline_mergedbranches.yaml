@@ -277,14 +277,9 @@ extends:
               export TRIVY_JAVA_DB_REPOSITORY=$PRIMARY_TRIVY_JAVA_DB_REPOSITORY
               # Only fail on vulnerabilities for ci_prod branches
               TRIVY_EXIT_CODE_FLAG=0
-              if echo "$(Build.SourceBranch)" | grep -qi "ci_prod"; then
+              if [ "$(IS_MAIN_BRANCH)" = "True" ]; then
                   echo "Branch is ci_prod. Trivy scan will fail on vulnerabilities."
                   TRIVY_EXIT_CODE_FLAG=1
-              fi
-              # Allow ignoring Trivy failures via branch name
-              if echo "$(Build.SourceBranch)" | grep -qi "ignore-trivy"; then
-                  echo "Branch name contains 'ignore-trivy'. Trivy scan will not fail on vulnerabilities."
-                  TRIVY_EXIT_CODE_FLAG=0
               fi
               # Function to run Trivy scan and handle output
               run_trivy_scan() {
