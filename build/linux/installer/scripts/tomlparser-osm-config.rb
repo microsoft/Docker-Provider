@@ -11,8 +11,7 @@ require_relative "ConfigParseErrorLogger"
 @replicaset = "replicaset"
 @prometheusSidecar = "prometheussidecar"
 
-if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.casecmp(@replicaset) == 0 &&
-   (@sidecarScrapingEnabled.nil? || (!@sidecarScrapingEnabled.nil? && !@sidecarScrapingEnabled.empty? && @sidecarScrapingEnabled.strip.casecmp("false") == 0))
+if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.casecmp(@replicaset) == 0
   @tgfConfigFile = "/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
   @tgfTestConfigFile = "/opt/telegraf-test-rs.conf"
 elsif !@containerType.nil? && !@containerType.empty? && @containerType.strip.casecmp(@prometheusSidecar) == 0

@@ -289,6 +289,15 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               # Label selectors can be formatted as "app in (app1, app2, app3)", so split by commas only outside parentheses to get the number of key-value pairs.
               kubernetesLabelSelectorsLength = kubernetesLabelSelectors.split(/,\s*(?=[^()]*(?:\(|$))/).length
               kubernetesFieldSelectorsLength = kubernetesFieldSelectors.split(",").length
+            else
+              # When sidecar scraping is enabled, pod monitoring is handled by the sidecar.
+              # Substitute default values for pod-monitoring placeholders so they don't remain
+              # as raw $AZMON_* vars. Telegraf 1.38.0+ strict env var handling will fail otherwise.
+              new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS", "# monitor_kubernetes_pods disabled (sidecar scraping enabled)")
+              new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE", "")
+              new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_LABEL_SELECTOR", "")
+              new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR", "")
+              new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
             end
 
             File.open(file_name, "w") { |file| file.puts new_contents }
