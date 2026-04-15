@@ -120,6 +120,14 @@ stages:
           --show-only charts/testkube-operator/templates/crds.yaml \
           | kubectl apply --server-side -f -
 
+        # Label/annotate CRDs so Helm adopts them as part of the "testkube" release
+        echo "Labeling CRDs for Helm ownership..."
+        for crd in $(kubectl get crds -o name | grep testkube); do
+          kubectl label "$crd" app.kubernetes.io/managed-by=Helm --overwrite
+          kubectl annotate "$crd" meta.helm.sh/release-name=testkube --overwrite
+          kubectl annotate "$crd" meta.helm.sh/release-namespace=testkube --overwrite
+        done
+
         echo "Waiting for CRDs to be established..."
         for crd in testworkflows.testworkflows.testkube.io testworkflowtemplates.testworkflows.testkube.io testworkflowexecutions.testworkflows.testkube.io; do
           kubectl wait --for=condition=Established crd/"$crd" --timeout=60s || echo "Warning: CRD $crd not yet established"
