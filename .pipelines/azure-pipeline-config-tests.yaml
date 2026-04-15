@@ -116,18 +116,9 @@ stages:
         helm template testkube kubeshop/testkube -n testkube \
           -f ./helm-testkube-values.yaml \
           --set testkube-operator.enabled=true \
-          --show-only 'charts/testkube-operator/templates/crds/*.yaml' \
-          | kubectl apply --server-side -f - 2>/dev/null || {
-            echo "Helm template CRD extraction failed, trying direct CRD apply..."
-            # Fallback: pull chart and apply CRDs directory
-            helm pull kubeshop/testkube --untar --untardir /tmp/testkube-chart
-            if [ -d /tmp/testkube-chart/testkube/charts/testkube-operator/crds ]; then
-              kubectl apply --server-side -f /tmp/testkube-chart/testkube/charts/testkube-operator/crds/
-            elif [ -d /tmp/testkube-chart/testkube/charts/testkube-operator/templates/crds ]; then
-              kubectl apply --server-side -f /tmp/testkube-chart/testkube/charts/testkube-operator/templates/crds/
-            fi
-            rm -rf /tmp/testkube-chart
-          }
+          --set testkube-operator.installCRD=true \
+          --show-only charts/testkube-operator/templates/crds.yaml \
+          | kubectl apply --server-side -f -
 
         echo "Waiting for CRDs to be established..."
         for crd in testworkflows.testworkflows.testkube.io testworkflowtemplates.testworkflows.testkube.io testworkflowexecutions.testworkflows.testkube.io; do
