@@ -105,20 +105,44 @@ stages:
             sleep 30
         fi
 
-        # Install TestKube
+        # Add Helm repo
         helm repo add kubeshop https://kubeshop.github.io/helm-charts
         helm repo update
-        helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube \
+
+        # Pre-install CRDs from the chart so post-install hooks can create
+        # TestWorkflowTemplate resources. The operator is disabled in values
+        # (existing CI clusters already have CRDs from prior installs).
+        echo "Pre-installing TestKube CRDs from chart..."
+        helm template testkube kubeshop/testkube -n testkube \
           -f ./helm-testkube-values.yaml \
-          --set testkube-operator.enabled=true
+          --set testkube-operator.enabled=true \
+          --show-only 'charts/testkube-operator/templates/crds/*.yaml' \
+          | kubectl apply --server-side -f - 2>/dev/null || {
+            echo "Helm template CRD extraction failed, trying direct CRD apply..."
+            # Fallback: pull chart and apply CRDs directory
+            helm pull kubeshop/testkube --untar --untardir /tmp/testkube-chart
+            if [ -d /tmp/testkube-chart/testkube/charts/testkube-operator/crds ]; then
+              kubectl apply --server-side -f /tmp/testkube-chart/testkube/charts/testkube-operator/crds/
+            elif [ -d /tmp/testkube-chart/testkube/charts/testkube-operator/templates/crds ]; then
+              kubectl apply --server-side -f /tmp/testkube-chart/testkube/charts/testkube-operator/templates/crds/
+            fi
+            rm -rf /tmp/testkube-chart
+          }
+
+        echo "Waiting for CRDs to be established..."
+        for crd in testworkflows.testworkflows.testkube.io testworkflowtemplates.testworkflows.testkube.io testworkflowexecutions.testworkflows.testkube.io; do
+          kubectl wait --for=condition=Established crd/"$crd" --timeout=60s || echo "Warning: CRD $crd not yet established"
+        done
+
+        # Install TestKube (operator stays DISABLED — CRDs already in place)
+        helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube \
+          -f ./helm-testkube-values.yaml
 
         # Apply RBAC
         kubectl apply -f ./api-server-permissions.yaml
 
         echo "Waiting for TestKube API server to be ready..."
         kubectl rollout status deployment/testkube-api-server -n testkube --timeout=300s
-        echo "Waiting for TestKube operator to be ready..."
-        kubectl rollout status deployment/testkube-operator-controller-manager -n testkube --timeout=120s
         # Give the API server a moment to finish initialization after pod is ready
         sleep 15
       workingDirectory: $(Build.SourcesDirectory)/test/testkube
