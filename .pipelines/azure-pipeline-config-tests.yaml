@@ -39,7 +39,7 @@ stages:
 - stage: Deploy
   displayName: 'Deploy ama-logs'
   jobs:
-  - template: .pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
+  - template: helm-deploy-templates/ama-logs-helm-deploy.yaml
     parameters:
       clusterName: ${{ parameters.clusterName }}
       resourceGroup: ${{ parameters.clusterResourceGroup }}
