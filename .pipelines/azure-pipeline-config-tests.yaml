@@ -9,13 +9,15 @@ parameters:
   - name: clusterName
     displayName: 'AKS Cluster Name'
     type: string
+    default: 'zane-configmap-test'
   - name: clusterResourceGroup
     displayName: 'AKS Cluster Resource Group'
     type: string
+    default: 'zane-config-test'
   - name: branch
     displayName: 'Git branch for TestKube workflows'
     type: string
-    default: 'ci_prod'
+    default: 'zane/configmap-testing-pipeline'
 
 stages:
 - stage: ConfigMapTests
