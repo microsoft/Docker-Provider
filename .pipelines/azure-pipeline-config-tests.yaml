@@ -1,0 +1,21 @@
+# ConfigMap Testing Pipeline for ama-logs (stub - full implementation in zane/configmap-testing-pipeline)
+trigger: none
+pr: none
+
+parameters:
+  - name: clusterName
+    displayName: 'AKS Cluster Name'
+    type: string
+  - name: clusterResourceGroup
+    displayName: 'AKS Cluster Resource Group'
+    type: string
+
+stages:
+- stage: ConfigMapTests
+  jobs:
+  - job: Placeholder
+    pool:
+      name: Azure-Pipelines-CI-Test-EO
+    steps:
+    - script: echo "Pipeline created. Point to branch zane/configmap-testing-pipeline for full implementation."
+      displayName: 'Placeholder'

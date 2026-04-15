@@ -865,6 +865,36 @@ function Start-Fluent-Telegraf {
         fluentd --reg-winsvc i --reg-winsvc-auto-start --winsvc-name fluentdwinaks --reg-winsvc-fluentdopt '-c C:/etc/fluent/fluent.conf -o C:/etc/fluent/fluent.log'
     }
 
+    # start a telegraf instance for collecting process metrics inside ama-logs containers (if enabled via ConfigMap)
+    $collectAmaLogsProcessMetrics = [System.Environment]::GetEnvironmentVariable('AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS')
+    if (![string]::IsNullOrEmpty($collectAmaLogsProcessMetrics) -and $collectAmaLogsProcessMetrics.ToLower() -eq 'true') {
+        $amaLogsProcessMetricsConfFile = "C:\etc\telegraf\telegraf-ama-logs-process-metrics.conf"
+        if (Test-Path $amaLogsProcessMetricsConfFile) {
+            $podName = [System.Environment]::GetEnvironmentVariable('PODNAME')
+            (Get-Content $amaLogsProcessMetricsConfFile).replace('placeholder_hostname', $hostName).replace('placeholder_podname', $podName) | Set-Content $amaLogsProcessMetricsConfFile
+            # Set AKS resource ID
+            $aksResourceId = [System.Environment]::GetEnvironmentVariable('AKS_RESOURCE_ID')
+            if (![string]::IsNullOrEmpty($aksResourceId)) {
+                (Get-Content $amaLogsProcessMetricsConfFile).replace('placeholder_aksresourceid', $aksResourceId) | Set-Content $amaLogsProcessMetricsConfFile
+            }
+            # Set App Insights instrumentation key (Base64 decode)
+            $appInsightsAuth = [System.Environment]::GetEnvironmentVariable('APPLICATIONINSIGHTS_AUTH')
+            if (![string]::IsNullOrEmpty($appInsightsAuth) -and ![string]::IsNullOrEmpty($aksResourceId)) {
+                $appInsightsKey = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($appInsightsAuth)).Trim()
+                (Get-Content $amaLogsProcessMetricsConfFile).replace('placeholder_appinsights_key', $appInsightsKey) | Set-Content $amaLogsProcessMetricsConfFile
+                Write-Host "Starting telegraf for collecting process metrics inside ama-logs containers (Windows)"
+                C:\opt\telegraf\telegraf.exe --service install --service-name telegraf-ama-logs-process-metrics --config $amaLogsProcessMetricsConfFile
+                C:\opt\telegraf\telegraf.exe --service start --service-name telegraf-ama-logs-process-metrics
+            } else {
+                Write-Host "APPLICATIONINSIGHTS_AUTH or AKS_RESOURCE_ID not set, skipping ama-logs process metrics monitoring"
+            }
+        } else {
+            Write-Host "telegraf-ama-logs-process-metrics.conf not found, skipping ama-logs process metrics monitoring"
+        }
+    } else {
+        Write-Host "ama-logs process metrics monitoring not enabled (set agent_settings.collect_ama_logs_process_metrics.enabled=true in ConfigMap)"
+    }
+
     Notepad.exe | Out-Null
 }
 

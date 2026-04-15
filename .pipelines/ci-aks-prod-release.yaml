@@ -51,6 +51,10 @@ variables:
   value: $(VAR_USER_ASSIGNED_IDENTITY_CLIENT_ID)
 - name: WorkspaceResourceId
   value: $(VAR_WORKSPACE_RESOURCE_ID)
+- name: IS_PR
+  value: $[eq(variables['Build.Reason'], 'PullRequest')]
+- name: IS_MAIN_BRANCH
+  value: $[eq(variables['Build.SourceBranchName'], 'ci_prod')]
 resources:
   containers: []
   pipelines:
@@ -481,11 +485,12 @@ extends:
     # Stage 3: Deploy ama-logs to AKS Clusters via Helm
     # =============================================================================
     # To add a new cluster, simply add an entry to the template list below.
-    # Each cluster only needs: clusterName, resourceGroup, region, subscriptionId, workspaceId, and imageTag.
+    # Each cluster only needs: clusterName, resourceGroup, region, subscriptionId, workspaceId, amalogsLinuxImage, and amalogsWindowsImage.
     # =============================================================================
     - stage: Stage_3
       displayName: Deploy ama-logs to CI AKS Prod Clusters via Helm
       dependsOn: Stage_2
+      condition: and(eq(dependencies.Stage_2.result, 'Succeeded'), eq(variables.IS_PR, false), eq(variables.IS_MAIN_BRANCH, true), ne(variables.AgentImageTagSuffix, ''))
       pool:
         name: Azure-Pipelines-CI-Test-EO
         image: ci-1es-managed-ubuntu-2204
@@ -499,7 +504,8 @@ extends:
           region: 'westcentralus'
           subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
           workspaceId: '22f38e11-4f59-480c-b4b8-2573156b6e06' # "Monitoring-Model-Cluster-WCUS"
-          imageTag: '$(AgentImageTagSuffix)'
+          amalogsLinuxImage: '$(AgentImageTagSuffix)'
+          amalogsWindowsImage: 'win-$(AgentImageTagSuffix)'
           environment: 'CI-Deploy-To-Prod-Cluster-1'
       # Monitoring-Model-Cluster-WEU
       - template: .pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
@@ -509,5 +515,6 @@ extends:
           region: 'westeurope'
           subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
           workspaceId: '5c269467-32a9-4468-a1d6-ec1cac551e74' # "Monitoring-Model-Cluster-WEU"
-          imageTag: '$(AgentImageTagSuffix)'
+          amalogsLinuxImage: '$(AgentImageTagSuffix)'
+          amalogsWindowsImage: 'win-$(AgentImageTagSuffix)'
           environment: 'CI-Deploy-To-Prod-Cluster-2'
