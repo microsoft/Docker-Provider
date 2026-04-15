@@ -106,7 +106,9 @@ stages:
         # Install TestKube
         helm repo add kubeshop https://kubeshop.github.io/helm-charts
         helm repo update
-        helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube -f ./helm-testkube-values.yaml
+        helm upgrade --install --create-namespace testkube kubeshop/testkube -n testkube \
+          -f ./helm-testkube-values.yaml \
+          --set testkube-operator.enabled=true
 
         # Apply RBAC
         kubectl apply -f ./api-server-permissions.yaml
