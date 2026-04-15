@@ -308,7 +308,7 @@ spec:
               value: {{ $.Values.OmsAgent.syslogHostPort | default 28330 | quote}}
           {{- end }}
             - name: AZMON_RETINA_FLOW_LOGS_ENABLED
-              value: "{{ $.Values.OmsAgent.isRetinaFlowLogsEnabled | default false }}"
+              value: "{{ $.Values.OmsAgent.retinaFlowLogsEnabled | default false }}"
             - name: AZMON_RESOURCE_OPTIMIZATION_ENABLED
               value: "{{ $.Values.OmsAgent.isResourceOptimizationEnabled | default false }}"
             - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
@@ -447,7 +447,7 @@ spec:
             - mountPath: /var/run/mdsd-ci
               name: mdsd-sock
           {{- end }}
-          {{- if $.Values.OmsAgent.isRetinaFlowLogsEnabled }}
+          {{- if $.Values.OmsAgent.retinaFlowLogsEnabled }}
             - mountPath: /var/log/acns/hubble
               name: acns-hubble
           {{- end }}
@@ -844,7 +844,7 @@ spec:
           hostPath:
             path: /var/run/mdsd-ci
         {{- end }}
-        {{- if $.Values.OmsAgent.isRetinaFlowLogsEnabled }}
+        {{- if $.Values.OmsAgent.retinaFlowLogsEnabled }}
         - name: acns-hubble
           hostPath:
             path: /var/log/acns/hubble

@@ -32,7 +32,6 @@ OmsAgent:
   enableDaemonsetSizingForExtensions: true
   isCustomMetricsDisabled: false
   isUsingAADAuth: "true"
-  retinaFlowLogsEnabled: false
   workspaceID: "<your_workspace_id>"
   accessTokenSecretName: "ama-logs-secret"
   # Cloud environment
@@ -79,7 +78,7 @@ OmsAgent:
   isPrometheusMetricsScrapingDisabled: false
   isSidecarScrapingEnabled: true
   isRSVPAEnabled: false
-  isRetinaFlowLogsEnabled: false
+  retinaFlowLogsEnabled: false
   isResourceOptimizationEnabled: false
   isWindowsAMAFluentBitEnabled: false
   isMultitenancyLogsEnabled: false
