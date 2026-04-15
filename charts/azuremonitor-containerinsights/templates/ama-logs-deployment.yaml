@@ -2,7 +2,6 @@
 {{- $isArcExtension := $arcSettings.isArcExtension }}
 {{- $amalogsLinuxDefaultImageTag := dict "component" "ama-logs-linux" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.addonImageTag" }}
 {{- $amalogsRSVPAImageTag := dict "component" "addon-resizer" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.addonImageTag" -}}
-{{- $addonTokenAdapterLinuxDefaultImageTag := dict "component" "addon-token-adapter-linux" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag"}}
 {{/* Determine isusingaadauth value */}}
 {{- $isusingaadauth := false -}}
 {{- if not $isArcExtension -}}
@@ -192,39 +191,7 @@ spec:
 {{- else }}
 {{- if $isusingaadauth }}
         - name: addon-token-adapter
-          command:
-            - /addon-token-adapter
-          args:
-            - --secret-namespace=kube-system
-            - --secret-name={{ .Values.OmsAgent.accessTokenSecretName }}
-            - --token-server-listening-port=8888
-            - --health-server-listening-port=9999
-            - --restart-pod-waiting-minutes-on-broken-connection=240
-          image: "{{ template "addon_mcr_repository_base" . }}/aks/msi/addon-token-adapter:{{- $addonTokenAdapterLinuxDefaultImageTag -}}"
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: AZMON_COLLECT_ENV
-              value: "false"
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: 9999
-            initialDelaySeconds: 10
-            periodSeconds: 60
-          resources:
-            limits:
-              cpu: 500m
-              memory: 500Mi
-            requests:
-              cpu: 100m
-              memory: 100Mi
-          securityContext:
-            capabilities:
-              drop:
-                - ALL
-              add:
-                - NET_ADMIN
-                - NET_RAW
+{{ tpl .Values.Azure.Identity.AADMsiTokenAdapterLinuxYaml $ | nindent 10 }}
 {{- end }}
 {{- end }}
 {{/* Main ama-logs Container */}}
