@@ -5,34 +5,36 @@ set -euo pipefail
 # Usage:
 #   ./run-configtest-scenario.sh \
 #     --configmap <path-to-configmap-yaml> \
-#     --crs <path-to-testkube-crs-yaml> \
 #     --scenario <scenario-name> \
+#     --label <ginkgo-label-filter> \
 #     --branch <git-branch>
 #
 # Steps:
 #   1. Apply the configmap variant
 #   2. Rollout restart ama-logs workloads
 #   3. Wait for rollout to complete
-#   4. Apply the TestKube workflow CRD
+#   4. Generate TestKube workflow CRD from template and apply
 #   5. Run the testworkflow and collect results
 
 CONFIGMAP=""
-CRS=""
 SCENARIO=""
+LABEL=""
 BRANCH="ci_prod"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TEMPLATE="${SCRIPT_DIR}/config-processing-test-crs/testkube-config-test-template.yaml"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --configmap) CONFIGMAP="$2"; shift 2 ;;
-        --crs) CRS="$2"; shift 2 ;;
         --scenario) SCENARIO="$2"; shift 2 ;;
+        --label) LABEL="$2"; shift 2 ;;
         --branch) BRANCH="$2"; shift 2 ;;
         *) echo "Unknown argument: $1"; exit 1 ;;
     esac
 done
 
-if [[ -z "$CONFIGMAP" || -z "$CRS" || -z "$SCENARIO" ]]; then
-    echo "Error: --configmap, --crs, and --scenario are required"
+if [[ -z "$CONFIGMAP" || -z "$SCENARIO" || -z "$LABEL" ]]; then
+    echo "Error: --configmap, --scenario, and --label are required"
     exit 1
 fi
 
@@ -56,11 +58,14 @@ kubectl rollout status ds/ama-logs -n kube-system --timeout=5m
 kubectl rollout status deploy/ama-logs-rs -n kube-system --timeout=5m
 kubectl rollout status ds/ama-logs-windows -n kube-system --timeout=5m 2>/dev/null || echo "ama-logs-windows rollout status skipped"
 
-# Step 4: Apply the TestKube workflow CRD (with branch override)
-echo "Applying TestKube workflow CRD: ${CRS} (branch: ${BRANCH})"
-CRS_PATCHED="${CRS%.yaml}-patched.yaml"
-sed "s|revision: ci_prod|revision: ${BRANCH}|g" "${CRS}" > "${CRS_PATCHED}"
-kubectl apply -f "${CRS_PATCHED}"
+# Step 4: Generate TestKube workflow CRD from template and apply
+echo "Generating TestKube workflow CRD for scenario: ${SCENARIO} (label: ${LABEL}, branch: ${BRANCH})"
+GENERATED="/tmp/testkube-crs-${SCENARIO}.yaml"
+sed -e "s|__SCENARIO__|${SCENARIO}|g" \
+    -e "s|__BRANCH__|${BRANCH}|g" \
+    -e "s|__LABEL__|${LABEL}|g" \
+    "${TEMPLATE}" > "${GENERATED}"
+kubectl apply -f "${GENERATED}"
 
 # Step 5: Run the testworkflow
 echo "Running testworkflow: ${WORKFLOW_NAME}"

@@ -1,7 +1,7 @@
 apiVersion: testworkflows.testkube.io/v1
 kind: TestWorkflow
 metadata:
-  name: config-test-process-metrics-default
+  name: config-test-__SCENARIO__
   namespace: testkube
 spec:
   config:
@@ -11,7 +11,7 @@ spec:
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
-      revision: ci_prod
+      revision: __BRANCH__
       paths:
       - test/ginkgo-e2e
   steps:
@@ -23,7 +23,7 @@ spec:
         - name: GOTOOLCHAIN
           value: "{{config.GOTOOLCHAIN}}"
       shell: |
-        ginkgo run -r --label-filter "config-processing-process-metrics-default" ./configprocessing
+        ginkgo run -r --label-filter "__LABEL__" ./configprocessing
   pod:
     nodeSelector:
       kubernetes.io/os: linux

@@ -34,6 +34,16 @@ parameters:
     displayName: 'ADO Environment for deployment approval'
     type: string
     default: 'Zane-ConfigTest-Deploy'
+  - name: scenarios
+    displayName: 'Test scenarios to run'
+    type: object
+    default:
+      - name: process-metrics-enabled
+        configmap: test/configmaps/config-tests/container-azm-ms-agentconfig-process-metrics-enabled.yaml
+        label: config-processing-process-metrics-enabled
+      - name: process-metrics-default
+        configmap: kubernetes/container-azm-ms-agentconfig.yaml
+        label: config-processing-process-metrics-default
 
 stages:
 - stage: Deploy
@@ -179,29 +189,18 @@ stages:
       workingDirectory: $(Build.SourcesDirectory)/test/testkube
       displayName: 'Install TestKube on cluster'
 
-    # === Scenario 1: process-metrics-enabled ===
-    - bash: |
-        chmod +x ./run-configtest-scenario.sh
-        ./run-configtest-scenario.sh \
-          --configmap "../../test/configmaps/config-tests/container-azm-ms-agentconfig-process-metrics-enabled.yaml" \
-          --crs "./config-processing-test-crs/testkube-config-test-process-metrics-enabled-crs.yaml" \
-          --scenario "process-metrics-enabled" \
-          --branch "${{ parameters.branch }}"
-      workingDirectory: $(Build.SourcesDirectory)/test/testkube
-      displayName: "ConfigTest: process-metrics-enabled"
-      continueOnError: true
-
-    # === Scenario 2: process-metrics-default (restore defaults) ===
-    - bash: |
-        chmod +x ./run-configtest-scenario.sh
-        ./run-configtest-scenario.sh \
-          --configmap "../../kubernetes/container-azm-ms-agentconfig.yaml" \
-          --crs "./config-processing-test-crs/testkube-config-test-process-metrics-default-crs.yaml" \
-          --scenario "process-metrics-default" \
-          --branch "${{ parameters.branch }}"
-      workingDirectory: $(Build.SourcesDirectory)/test/testkube
-      displayName: "ConfigTest: process-metrics-default"
-      continueOnError: true
+    # === Run test scenarios ===
+    - ${{ each scenario in parameters.scenarios }}:
+      - bash: |
+          chmod +x ./run-configtest-scenario.sh
+          ./run-configtest-scenario.sh \
+            --configmap "$(Build.SourcesDirectory)/${{ scenario.configmap }}" \
+            --scenario "${{ scenario.name }}" \
+            --label "${{ scenario.label }}" \
+            --branch "${{ parameters.branch }}"
+        workingDirectory: $(Build.SourcesDirectory)/test/testkube
+        displayName: "ConfigTest: ${{ scenario.name }}"
+        continueOnError: true
 
     # === Cleanup ===
     - bash: |
