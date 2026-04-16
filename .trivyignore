@@ -1,3 +1,9 @@
+<<<<<<< HEAD
+=======
+# telegraf cves for which fix is not yet available
+CVE-2026-34040
+CVE-2026-33997
+>>>>>>> 630e6530c448c0aaf64f951da07054bfe9121869
 CVE-2026-34986
 
 # telegraf aws-sdk-go-v2 DoS vulnerability (MEDIUM) - fix not yet available in telegraf package
@@ -9,4 +15,8 @@ CVE-2026-39883
 # telegraf medium cves - fix not yet available in telegraf package
 CVE-2026-32281
 CVE-2026-32288
+<<<<<<< HEAD
 CVE-2026-32289
+=======
+CVE-2026-32289
+>>>>>>> 630e6530c448c0aaf64f951da07054bfe9121869
