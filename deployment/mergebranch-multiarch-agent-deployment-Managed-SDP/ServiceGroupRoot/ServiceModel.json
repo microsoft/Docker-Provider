@@ -9,7 +9,9 @@
     "displayName": "ContainerInsightsAgent",
     "buildout": {
       "isForAutomatedBuildout": "True"
-    }
+    },
+    "serviceSpecificationPath": "ServiceSpec.json",
+    "serviceGroupSpecificationPath": "ServiceGroupSpec.json"
   },
   "serviceResourceGroupDefinitions": [
     {

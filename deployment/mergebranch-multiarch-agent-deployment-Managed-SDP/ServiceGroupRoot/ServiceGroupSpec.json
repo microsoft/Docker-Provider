@@ -1,0 +1,6 @@
+{
+  "name": "Microsoft.ContainerInsights.Agent",
+  "description": "Container Insights Agent Deployment",
+  "ownerGroupContactEmail": "omscontainers@microsoft.com",
+  "contentVersion": "1.0.0.0"
+}
