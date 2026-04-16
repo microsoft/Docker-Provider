@@ -132,6 +132,9 @@ jobs:
               # Wait for daemonset pods (pods are always deployed to kube-system namespace)
               kubectl rollout status daemonset/ama-logs -n kube-system --timeout=60s || echo "Warning: Daemonset rollout not complete within timeout"
               
+              # Wait for Windows daemonset pods (longer timeout due to large Windows container images)
+              kubectl rollout status daemonset/ama-logs-windows -n kube-system --timeout=600s 2>/dev/null || echo "Warning: Windows Daemonset rollout not complete within timeout (may not have Windows nodes)"
+              
               # Wait for replicaset pod
               kubectl rollout status deployment/ama-logs-rs -n kube-system --timeout=60s 2>/dev/null || \
                 kubectl rollout status replicaset -l rsName=ama-logs-rs -n kube-system --timeout=60s 2>/dev/null || \
@@ -231,7 +234,7 @@ jobs:
                 echo "INFO: No Windows ama-logs pods found (cluster may not have Windows nodes)"
                 echo "Skipping Windows verification"
               else
-                WINDOWS_IMAGE=$(kubectl get pods -n kube-system -l component=ama-logs-agent-windows -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs-windows")].image}' 2>/dev/null)
+                WINDOWS_IMAGE=$(kubectl get pods -n kube-system -l component=ama-logs-agent-windows --field-selector=status.phase=Running -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs-windows")].image}' 2>/dev/null)
                 
                 if [ -z "$WINDOWS_IMAGE" ]; then
                   echo "❌ ERROR: Could not retrieve ama-logs-windows container image"
@@ -246,6 +249,25 @@ jobs:
                     VERIFICATION_PASSED=false
                   fi
                 fi
+              fi
+              
+              # ---- 4. Wait for any terminating Windows pods to be fully removed ----
+              echo "--- 4. Checking for terminating Windows pods ---"
+              TERMINATING_WAIT=0
+              TERMINATING_MAX=600
+              while [ $TERMINATING_WAIT -lt $TERMINATING_MAX ]; do
+                TERMINATING_PODS=$(kubectl get pods -n kube-system -l component=ama-logs-agent-windows --field-selector=status.phase!=Running -o jsonpath='{.items[*].metadata.name}' 2>/dev/null)
+                if [ -z "$TERMINATING_PODS" ]; then
+                  echo "✅ No terminating Windows pods found"
+                  break
+                fi
+                echo "⏳ Waiting for terminating Windows pods to be removed: $TERMINATING_PODS ($TERMINATING_WAIT/${TERMINATING_MAX}s)"
+                sleep 15
+                TERMINATING_WAIT=$((TERMINATING_WAIT + 15))
+              done
+              if [ $TERMINATING_WAIT -ge $TERMINATING_MAX ]; then
+                echo "⚠️ Warning: Terminating Windows pods still present after ${TERMINATING_MAX}s"
+                VERIFICATION_PASSED=false
               fi
               
               echo ""
