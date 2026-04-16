@@ -418,8 +418,8 @@ function categoryResponse(
 // ── Tool Registrations ─────────────────────────────────────────
 
 server.tool(
-  "tsg_triage",
-  "Run initial triage queries: agent version, cluster scale, pod/node counts, high log scale mode, AKS alerts, private cluster check.",
+  "ama_logs_tsg_triage",
+  "Run initial triage queries for ama-logs (Container Insights): agent version, cluster scale, pod/node counts, high log scale mode, AKS alerts, private cluster check.",
   {
     cluster: clusterParam,
     timeRange: timeRangeParam,
@@ -439,8 +439,8 @@ server.tool(
 );
 
 server.tool(
-  "tsg_errors",
-  "Scan all error categories: exceptions, MDSD send/create errors, network upload failures, OMS Homing errors, AKS alerts for daemonset and replicaset.",
+  "ama_logs_tsg_errors",
+  "Scan all ama-logs error categories: exceptions, MDSD send/create errors, network upload failures, OMS Homing errors, AKS alerts for daemonset and replicaset.",
   {
     cluster: clusterParam,
     timeRange: timeRangeParam,
@@ -460,8 +460,8 @@ server.tool(
 );
 
 server.tool(
-  "tsg_workload",
-  "Check agent workload health: memory RSS, CPU usage, container logs generated/sec, log size/sec, telegraf metrics, for daemonset, replicaset, and Windows pods.",
+  "ama_logs_tsg_workload",
+  "Check ama-logs agent workload health: memory RSS, CPU usage, container logs generated/sec, log size/sec, telegraf metrics, for daemonset, replicaset, and Windows pods.",
   {
     cluster: clusterParam,
     timeRange: timeRangeParam,
@@ -481,7 +481,7 @@ server.tool(
 );
 
 server.tool(
-  "tsg_pods",
+  "ama_logs_tsg_pods",
   "Check ama-logs pod health: restarts, alert status for daemonset and replicaset pods.",
   {
     cluster: clusterParam,
@@ -502,8 +502,8 @@ server.tool(
 );
 
 server.tool(
-  "tsg_logs",
-  "Get raw trace logs from a specific component: daemonset, replicaset, or windows.",
+  "ama_logs_tsg_logs",
+  "Get raw ama-logs trace logs from a specific component: daemonset, replicaset, or windows.",
   {
     cluster: clusterParam,
     component: z
@@ -537,8 +537,8 @@ server.tool(
 );
 
 server.tool(
-  "tsg_config",
-  "Check agent configuration: configmap settings, excluded namespaces, container log table format, high log scale mode.",
+  "ama_logs_tsg_config",
+  "Check ama-logs agent configuration: configmap settings, excluded namespaces, container log table format, high log scale mode.",
   {
     cluster: clusterParam,
     timeRange: timeRangeParam,
@@ -558,8 +558,8 @@ server.tool(
 );
 
 server.tool(
-  "tsg_query",
-  "Run an arbitrary KQL query against any configured data source: ContainerInsightsAppInsights, AKS, AKS CCP.",
+  "ama_logs_tsg_query",
+  "Run an arbitrary KQL query against any ama-logs data source: ContainerInsightsAppInsights, AKS, AKS CCP.",
   {
     datasource: z
       .enum(["ContainerInsightsAppInsights", "AKS", "AKS CCP"])
@@ -669,8 +669,8 @@ server.tool(
 );
 
 server.tool(
-  "tsg_auth_check",
-  "Validate credentials and connectivity to all data sources. Run this first if queries fail with 403 or connection errors.",
+  "ama_logs_tsg_auth_check",
+  "Validate ama-logs TSG credentials and connectivity to all data sources (ContainerInsightsAgent-Prod App Insights, AKS Kusto). Run this first if queries fail with 403 or connection errors.",
   {
     autoFix: z.boolean().default(true).describe("Attempt to automatically fix auth issues (default: true)"),
   },
