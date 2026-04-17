@@ -239,6 +239,10 @@ spec:
           - name: CLUSTER_CLOUD_ENVIRONMENT
             value: "{{ .Values.global.commonGlobals.CloudEnvironment | lower }}"
 {{- end }}
+          - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.uid
           volumeMounts:
           - mountPath: C:\ProgramData\docker\containers
             name: docker-windows-containers
