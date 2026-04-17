@@ -1,7 +1,14 @@
 {
   "Settings": {
     "environment": "Prod",
-    "tenantid": "33e01921-4d64-4f8c-a055-5bdaffd5e33d"
+    "tenantid": "33e01921-4d64-4f8c-a055-5bdaffd5e33d",
+    "acrName": "containerinsights.azurecr.io",
+    "managedIdentity": "/subscriptions/30c56c3a-54da-46ea-b004-06eb33432687/resourceGroups/containerinsightsprod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ev2-agent-release",
+    "agentRelease": "ciprod",
+    "agentImageTagSuffix": "",
+    "cdpxLinuxTag": "",
+    "cdpxWindowsTag": "",
+    "overrideTag": "false"
   },
   "Geographies": [
     {

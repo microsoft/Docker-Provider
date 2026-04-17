@@ -58,6 +58,17 @@ extends:
       dependsOn: []
       variables:
         ob_release_environment: Production
+        configurationOverrides: |
+          {
+            "ConfigurationSpecification": {
+              "Settings": {
+                "agentImageTagSuffix": "$(VAR_AGENT_IMAGE_TAG_SUFFIX)",
+                "cdpxLinuxTag": "$(VAR_CDPX_LINUX_TAG)",
+                "cdpxWindowsTag": "$(VAR_CDPX_WINDOWS_TAG)",
+                "overrideTag": "$(VAR_OVERRIDE_TAG)"
+              }
+            }
+          }
       jobs:
       - job: PROD_Prod_Managed_SDP
         displayName: PROD_Prod_Managed_SDP
@@ -78,6 +89,7 @@ extends:
             StageMapName: Microsoft.Azure.SDP.Standard
             Select: ${{parameters.select}}
             ApprovalServiceEnvironment: Production
+            ConfigurationOverrides: $(configurationOverrides)
     ev2ManagedSdpRolloutConfig:
       rolloutType: ${{parameters.rolloutType}}
       overrideManagedValidationDuration: ${{parameters.overrideManagedValidationDuration}}
