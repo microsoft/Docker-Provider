@@ -12,6 +12,7 @@ require_relative "ConfigParseErrorLogger"
 @logEnableKubernetesMetadataCacheTTLSeconds = 60
 @enableHighLogScaleMode = false
 @enableCustomMetrics = false
+@amaLogsCollectProcessMetricsEnabled = false
 
 def is_windows?
   return !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
@@ -90,6 +91,14 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       end
     end
 
+    if !parsedConfig.nil? && !parsedConfig[:agent_settings].nil?
+      collect_ama_logs_process_metrics_config = parsedConfig[:agent_settings][:collect_ama_logs_process_metrics]
+      if !collect_ama_logs_process_metrics_config.nil? && !collect_ama_logs_process_metrics_config[:enabled].nil?
+        @amaLogsCollectProcessMetricsEnabled = collect_ama_logs_process_metrics_config[:enabled].to_s.strip.downcase == "true"
+        puts "Using config map value: AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS = #{@amaLogsCollectProcessMetricsEnabled}"
+      end
+    end
+
   rescue => errorStr
     puts "config::error:Exception while reading config settings for agent configuration setting - #{errorStr}, using defaults"
   end
@@ -131,6 +140,9 @@ if is_windows?
       file.write(commands)
     end
 
+    commands = get_command_windows("AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS", @amaLogsCollectProcessMetricsEnabled)
+    file.write(commands)
+
     commands = get_command_windows("AZMON_KUBERNETES_METADATA_CACHE_TTL_SECONDS", @logEnableKubernetesMetadataCacheTTLSeconds)
     file.write(commands)
     # Close file after writing all environment variables
@@ -153,6 +165,7 @@ else
     if @enableCustomMetrics
       file.write("export ENABLE_CUSTOM_METRICS=#{@enableCustomMetrics}\n")
     end
+    file.write("export AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS=#{@amaLogsCollectProcessMetricsEnabled}\n")
     file.write("export AZMON_KUBERNETES_METADATA_CACHE_TTL_SECONDS=#{@logEnableKubernetesMetadataCacheTTLSeconds}\n")
     # Close file after writing all environment variables
     file.close

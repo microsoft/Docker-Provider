@@ -1214,7 +1214,7 @@ else
             if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ] && [ -e "/opt/telegraf-test-prom-side-car.conf" ]; then
                   if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
                         echo "****************Start Telegraf in Test Mode**************************"
-                        /opt/telegraf --config /opt/telegraf-test-prom-side-car.conf --input-filter file -test
+                        /opt/telegraf --non-strict-env-handling --config /opt/telegraf-test-prom-side-car.conf --input-filter file -test
                         if [ $? -eq 0 ]; then
                               mv "/opt/telegraf-test-prom-side-car.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
                               echo "Moving test conf file to telegraf side-car conf since test run succeeded"
@@ -1226,7 +1226,7 @@ else
             else
                   if [ -e "/opt/telegraf-test.conf" ]; then
                         echo "****************Start Telegraf in Test Mode**************************"
-                        /opt/telegraf --config /opt/telegraf-test.conf --input-filter file -test
+                        /opt/telegraf --non-strict-env-handling --config /opt/telegraf-test.conf --input-filter file -test
                         if [ $? -eq 0 ]; then
                               mv "/opt/telegraf-test.conf" "/etc/opt/microsoft/docker-cimprov/telegraf.conf"
                               echo "Moving test conf file to telegraf daemonset conf since test run succeeded"
@@ -1237,7 +1237,7 @@ else
       else
             if [ -e "/opt/telegraf-test-rs.conf" ]; then
                   echo "****************Start Telegraf in Test Mode**************************"
-                  /opt/telegraf --config /opt/telegraf-test-rs.conf --input-filter file -test
+                  /opt/telegraf --non-strict-env-handling --config /opt/telegraf-test-rs.conf --input-filter file -test
                   if [ $? -eq 0 ]; then
                         mv "/opt/telegraf-test-rs.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
                         echo "Moving test conf file to telegraf replicaset conf since test run succeeded"
@@ -1389,10 +1389,39 @@ elif [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
     elif [ "${CONTROLLER_TYPE}" != "ReplicaSet" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${LOGS_AND_EVENTS_ONLY}" == "true" ]; then
         echo "not starting telegraf for LOGS_AND_EVENTS_ONLY daemonset"
     else
-        /opt/telegraf --config $telegrafConfFile &
+        /opt/telegraf --non-strict-env-handling --config $telegrafConfFile &
     fi
 else
     echo "not starting telegraf (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
+fi
+
+#start a telegraf instance for collecting process metrics inside ama-logs containers (if enabled via ConfigMap)
+if [ "${AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS}" == "true" ]; then
+    amaLogsProcessMetricsConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-ama-logs-process-metrics.conf"
+    if [ -e "$amaLogsProcessMetricsConfFile" ]; then
+        echo "start a telegraf instance for collecting process metrics inside ama-logs containers"
+        nodename=$(cat /var/opt/microsoft/docker-cimprov/state/containerhostname)
+        podname=$(hostname)
+        sed -i -e "s/placeholder_hostname/$nodename/g" $amaLogsProcessMetricsConfFile
+        sed -i -e "s/placeholder_podname/$podname/g" $amaLogsProcessMetricsConfFile
+        # Set ControllerType for PrometheusSidecar
+        if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
+            sed -i -e 's/\$CONTROLLER_TYPE/PrometheusSidecar/g' $amaLogsProcessMetricsConfFile
+        fi
+        # Set App Insights instrumentation key (Base64 decode)
+        if [ -n "$APPLICATIONINSIGHTS_AUTH" ] && [ -n "$AKS_RESOURCE_ID" ]; then
+            appinsightsKey=$(echo "$APPLICATIONINSIGHTS_AUTH" | base64 -d | tr -d '\n')
+            sed -i -e "s/placeholder_appinsights_key/$appinsightsKey/g" $amaLogsProcessMetricsConfFile
+            # Use /proc so telegraf only collect process metrics inside ama-logs containers.
+            HOST_PROC=/proc /opt/telegraf --non-strict-env-handling --config $amaLogsProcessMetricsConfFile &
+        else
+            echo "APPLICATIONINSIGHTS_AUTH or AKS_RESOURCE_ID not set, skipping ama-logs process metrics monitoring"
+        fi
+    else
+        echo "telegraf-ama-logs-process-metrics.conf not found, skipping ama-logs process metrics monitoring"
+    fi
+else
+    echo "ama-logs process metrics monitoring not enabled (set agent_settings.collect_ama_logs_process_metrics.enabled=true in ConfigMap)"
 fi
 
 

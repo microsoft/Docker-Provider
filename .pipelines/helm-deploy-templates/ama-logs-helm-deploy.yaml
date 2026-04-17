@@ -4,10 +4,11 @@
 #     parameters:
 #       clusterName: 'my-cluster'
 #       resourceGroup: 'my-rg'
-#       region: 'eastus'
-#       subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
+#       region: e.g. 'eastus'
+#       subscriptionId: 'your-subscription-id'
 #       workspaceId: 'your-workspace-id'
-#       imageTag: '$(AgentImageTagSuffix)'  # e.g., 3.1.32
+#       amalogsLinuxImage: "ama-logs linux image tag"
+#       amalogsWindowsImage: "ama-logs windows image tag"
 #       environment: 'deployment environment'
 
 parameters:
@@ -23,9 +24,16 @@ parameters:
 - name: workspaceId
   type: string
   displayName: 'Log Analytics Workspace ID'
-- name: imageTag
+- name: amalogsLinuxImage
   type: string
   displayName: 'Image tag suffix (e.g., 3.1.32)'
+- name: amalogsWindowsImage
+  type: string
+  displayName: 'Image tag suffix (e.g., win-3.1.32)'
+- name: imageRepository
+  type: string
+  default: '/azuremonitor/containerinsights/ciprod'
+  displayName: 'Image repository path (e.g., /azuremonitor/containerinsights/ciprod or /azuremonitor/containerinsights/cidev)'
 - name: environment
   type: string
   displayName: 'Azure DevOps Environment name'
@@ -34,9 +42,6 @@ parameters:
 - name: cloudEnvironment
   type: string
   default: 'azurepubliccloud'
-- name: kubernetesVersion
-  type: string
-  default: '1.32.7'
 - name: azureSubscription
   type: string
   default: 'ContainerInsights_Build_Subscription_CI'
@@ -46,9 +51,6 @@ parameters:
 - name: releaseName
   type: string
   default: 'azuremonitor-containers'
-- name: helmVersion
-  type: string
-  default: '3.12.3'
 - name: dependsOn
   type: object
   default: []
@@ -83,7 +85,7 @@ jobs:
         - task: HelmInstaller@1
           displayName: Install Helm
           inputs:
-            helmVersionToInstall: '${{ parameters.helmVersion }}'
+            helmVersionToInstall: 'latest'
         - task: HelmDeploy@0
           displayName: 'Helm Deploy: ama-logs to ${{ parameters.clusterName }}'
           inputs:
@@ -99,7 +101,7 @@ jobs:
             # TODO: When it is merged to ci_prod, the following chartPath will be updated accordingly.
             chartPath: '$(Build.SourcesDirectory)/charts/azuremonitor-containerinsights-for-prod-clusters'
             releaseName: '${{ parameters.releaseName }}'
-            overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageTagLinux=${{ parameters.imageTag }},OmsAgent.imageTagWindows=win-${{ parameters.imageTag }}'
+            overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageRepository=${{ parameters.imageRepository }},OmsAgent.imageTagLinux=${{ parameters.amalogsLinuxImage }},OmsAgent.imageTagWindows=${{ parameters.amalogsWindowsImage }}'
             waitForExecution: false
             arguments: '--timeout 10m --install'
         - task: AzureCLI@2
@@ -115,8 +117,8 @@ jobs:
               echo "Cluster: ${{ parameters.clusterName }}"
               echo "Resource Group: ${{ parameters.resourceGroup }}"
               echo "Region: ${{ parameters.region }}"
-              echo "Linux Image Tag: ${{ parameters.imageTag }}"
-              echo "Windows Image Tag: win-${{ parameters.imageTag }}"
+              echo "Linux Image Tag: ${{ parameters.amalogsLinuxImage }}"
+              echo "Windows Image Tag: ${{ parameters.amalogsWindowsImage }}"
               echo ""
               
               echo "Getting AKS credentials..."
@@ -151,8 +153,8 @@ jobs:
               echo "=========================================="
               echo "Image Verification"
               echo "=========================================="
-              EXPECTED_LINUX_TAG="${{ parameters.imageTag }}"
-              EXPECTED_WINDOWS_TAG="win-${{ parameters.imageTag }}"
+              EXPECTED_LINUX_TAG="${{ parameters.amalogsLinuxImage }}"
+              EXPECTED_WINDOWS_TAG="${{ parameters.amalogsWindowsImage }}"
               VERIFICATION_PASSED=true
               
               echo "Expected Linux image tag: $EXPECTED_LINUX_TAG"
