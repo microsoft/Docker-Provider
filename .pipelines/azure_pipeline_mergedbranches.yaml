@@ -1070,3 +1070,20 @@ extends:
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
           additionalTestParams: 'LinuxTestsOnly=true'
+
+      # ============================================================
+      # Cluster: ci-logs-dev-aks-std-prof-config-test1 — Deploy via Helm
+      # This cluster is used for ConfigMap testing
+      # ============================================================
+      - template: /.pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
+        parameters:
+          clusterName: 'ci-logs-dev-aks-std-prof-config-test1'
+          resourceGroup: 'ci-logs-dev-aks-configmap-test'
+          region: 'westus2'
+          subscriptionId: $(CI_BUILD_SUB_ID)
+          workspaceId: $(CI-LOGS-DEV-AKS-CONFIGMAP-TEST_LAW_ID)
+          amalogsLinuxImage: $(linuxImageTagUnderTest)
+          amalogsWindowsImage: $(windowsImageTagUnderTest)
+          imageRepository: $(ImageRepositoryOverride)
+          environment: 'CI-Agent-Dev-Aks-Configmap-Test1'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
