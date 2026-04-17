@@ -51,6 +51,10 @@ parameters:
 - name: releaseName
   type: string
   default: 'azuremonitor-containers'
+- name: additionalOverrides
+  type: string
+  default: ''
+  displayName: 'Additional Helm override values (comma-separated key=value pairs)'
 - name: dependsOn
   type: object
   default: []
@@ -101,7 +105,7 @@ jobs:
             # TODO: When it is merged to ci_prod, the following chartPath will be updated accordingly.
             chartPath: '$(Build.SourcesDirectory)/charts/azuremonitor-containerinsights-for-prod-clusters'
             releaseName: '${{ parameters.releaseName }}'
-            overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageRepository=${{ parameters.imageRepository }},OmsAgent.imageTagLinux=${{ parameters.amalogsLinuxImage }},OmsAgent.imageTagWindows=${{ parameters.amalogsWindowsImage }}'
+            overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageRepository=${{ parameters.imageRepository }},OmsAgent.imageTagLinux=${{ parameters.amalogsLinuxImage }},OmsAgent.imageTagWindows=${{ parameters.amalogsWindowsImage }}${{ if ne(parameters.additionalOverrides, '''') }},${{ parameters.additionalOverrides }}${{ end }}'
             waitForExecution: false
             arguments: '--timeout 10m --install'
         - task: AzureCLI@2
