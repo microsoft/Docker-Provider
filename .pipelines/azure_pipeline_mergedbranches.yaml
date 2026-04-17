@@ -1055,6 +1055,8 @@ extends:
           imageRepository: $(ImageRepositoryOverride)
           environment: 'CI-Agent-NetworkFlowLogs'
           azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+          # TODO: Use OmsAgent.retinaFlowLogsEnabled=true once we use the merged chart
+          additionalOverrides: 'OmsAgent.isRetinaFlowLogsEnabled=true'
 
       # Cluster 6: ci-logs-prod-aks-networkflowlogs — Run E2E Tests
       - template: /.pipelines/e2e-test-templates/test-ci-image-in-aks-cluster.yml@self
