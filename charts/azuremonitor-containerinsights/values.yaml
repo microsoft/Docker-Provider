@@ -477,16 +477,6 @@ Azure:
             - ALL
           add:
             - NET_ADMIN
-  msiTokenAdapterLinux:
-    cpuLimit: "500m"
-    memoryLimit: "500Mi"
-    cpuRequest: "20m"
-    memoryRequest: "30Mi"
-  msiTokenAdapterWin:
-    cpuLimit: "250m"
-    memoryLimit: "500Mi"
-    cpuRequest: "100m"
-    memoryRequest: "100Mi"
   proxySettings:
     isProxyEnabled: false
     httpProxy: ""
@@ -495,3 +485,14 @@ Azure:
     proxyCert: ""
     isCustomCert: false
     autonomousFqdn: "<arca_autonomous_fqdn>"
+
+msiTokenAdapterLinux:
+  cpuLimit: "500m"
+  memoryLimit: "500Mi"
+  cpuRequest: "20m"
+  memoryRequest: "30Mi"
+msiTokenAdapterWin:
+  cpuLimit: "250m"
+  memoryLimit: "500Mi"
+  cpuRequest: "100m"
+  memoryRequest: "100Mi"
