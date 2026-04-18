@@ -9,31 +9,15 @@ parameters:
   - name: clusterName
     displayName: 'AKS Cluster Name'
     type: string
-    default: 'zane-configmap-test'
+    default: 'ci-logs-dev-aks-std-prof-config-test1'
   - name: clusterResourceGroup
     displayName: 'AKS Cluster Resource Group'
     type: string
-    default: 'zane-config-test'
+    default: 'ci-logs-dev-aks-configmap-test'
   - name: branch
     displayName: 'Git branch for TestKube workflows'
     type: string
     default: 'zane/configmap-testing-pipeline'
-  - name: amalogsLinuxImage
-    displayName: 'ama-logs Linux image tag'
-    type: string
-    default: '3.1.35-6-gbadded121-20260410023110'
-  - name: amalogsWindowsImage
-    displayName: 'ama-logs Windows image tag'
-    type: string
-    default: 'win-3.1.35-6-gbadded121-20260410023110'
-  - name: imageRepository
-    displayName: 'Image repository path'
-    type: string
-    default: '/azuremonitor/containerinsights/cidev'
-  - name: deployEnvironment
-    displayName: 'ADO Environment for deployment approval'
-    type: string
-    default: 'Zane-ConfigTest-Deploy'
   - name: scenarios
     displayName: 'Test scenarios to run'
     type: object
@@ -46,23 +30,7 @@ parameters:
         label: config-processing-process-metrics-default
 
 stages:
-- stage: Deploy
-  displayName: 'Deploy ama-logs'
-  jobs:
-  - template: helm-deploy-templates/ama-logs-helm-deploy.yaml
-    parameters:
-      clusterName: ${{ parameters.clusterName }}
-      resourceGroup: ${{ parameters.clusterResourceGroup }}
-      region: 'uksouth'
-      subscriptionId: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
-      workspaceId: '9906d02f-e852-4559-8291-3a2b241f909b'
-      amalogsLinuxImage: ${{ parameters.amalogsLinuxImage }}
-      amalogsWindowsImage: ${{ parameters.amalogsWindowsImage }}
-      imageRepository: ${{ parameters.imageRepository }}
-      environment: ${{ parameters.deployEnvironment }}
-
 - stage: ConfigMapTests
-  dependsOn: Deploy
   jobs:
   - job: RunConfigMapTests
     timeoutInMinutes: 120
