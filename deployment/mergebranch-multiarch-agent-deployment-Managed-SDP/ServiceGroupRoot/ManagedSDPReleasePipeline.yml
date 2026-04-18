@@ -49,6 +49,19 @@ parameters:
   type: string
   default: regions(*)
   values: 
+variables:
+- name: configurationOverrides
+  value: |
+    {
+      "ConfigurationSpecification": {
+        "Settings": {
+          "agentImageTagSuffix": "$(VAR_AGENT_IMAGE_TAG_SUFFIX)",
+          "cdpxLinuxTag": "$(VAR_CDPX_LINUX_TAG)",
+          "cdpxWindowsTag": "$(VAR_CDPX_WINDOWS_TAG)",
+          "overrideTag": "$(VAR_OVERRIDE_TAG)"
+        }
+      }
+    }
 extends:
   template: v2/OneBranch.Official.CrossPlat.yml@templates
   parameters:
@@ -58,17 +71,6 @@ extends:
       dependsOn: []
       variables:
         ob_release_environment: Production
-        configurationOverrides: |
-          {
-            "ConfigurationSpecification": {
-              "Settings": {
-                "agentImageTagSuffix": "$(VAR_AGENT_IMAGE_TAG_SUFFIX)",
-                "cdpxLinuxTag": "$(VAR_CDPX_LINUX_TAG)",
-                "cdpxWindowsTag": "$(VAR_CDPX_WINDOWS_TAG)",
-                "overrideTag": "$(VAR_OVERRIDE_TAG)"
-              }
-            }
-          }
       jobs:
       - job: PROD_Prod_Managed_SDP
         displayName: PROD_Prod_Managed_SDP
