@@ -152,3 +152,55 @@ spec:
     nodeSelector:
       kubernetes.io/os: linux
       kubernetes.io/arch: amd64
+---
+apiVersion: testworkflows.testkube.io/v1
+kind: TestWorkflow
+metadata:
+  name: countprocess
+  namespace: testkube
+  labels:
+    test-type: ginkgo-test
+spec:
+  config:
+    EXPECTED_TELEGRAF_DS:
+      type: string
+      default: "1"
+    EXPECTED_TELEGRAF_RS:
+      type: string
+      default: "0"
+    EXPECTED_TELEGRAF_PROMETHEUS:
+      type: string
+      default: "0"
+    EXPECTED_TELEGRAF_WINDOWS:
+      type: string
+      default: "0"
+    GOTOOLCHAIN:
+      type: string
+      default: ""
+  content:
+    git:
+      uri: https://github.com/microsoft/Docker-Provider/
+      revision: ci_prod
+      paths:
+      - test/ginkgo-e2e
+  steps:
+    - name: Run test
+      container:
+        workingDir: /data/repo/test/ginkgo-e2e
+        image: cerebro31/ginkgo-test:latest
+        env:
+        - name: EXPECTED_TELEGRAF_DS
+          value: "{{config.EXPECTED_TELEGRAF_DS}}"
+        - name: EXPECTED_TELEGRAF_RS
+          value: "{{config.EXPECTED_TELEGRAF_RS}}"
+        - name: EXPECTED_TELEGRAF_PROMETHEUS
+          value: "{{config.EXPECTED_TELEGRAF_PROMETHEUS}}"
+        - name: EXPECTED_TELEGRAF_WINDOWS
+          value: "{{config.EXPECTED_TELEGRAF_WINDOWS}}"
+        - name: GOTOOLCHAIN
+          value: "{{config.GOTOOLCHAIN}}"
+      shell: ginkgo run -r ./countprocess
+  pod:
+    nodeSelector:
+      kubernetes.io/os: linux
+      kubernetes.io/arch: amd64

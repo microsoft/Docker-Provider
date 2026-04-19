@@ -1,4 +1,4 @@
-package configprocessing_test
+package countprocess_test
 
 import (
 	"testing"
@@ -14,9 +14,9 @@ import (
 var K8sClient *kubernetes.Clientset
 var Cfg *rest.Config
 
-func TestConfigProcessing(t *testing.T) {
+func TestCountProcess(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "ConfigMap Processing Test Suite")
+	RunSpecs(t, "Count Process Test Suite")
 }
 
 var _ = BeforeSuite(func() {

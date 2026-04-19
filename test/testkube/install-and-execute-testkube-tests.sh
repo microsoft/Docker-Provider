@@ -1,9 +1,13 @@
 #!/bin/bash
 
+ConfigTestMode=false
+ConfigMap=""
+Workflows=""
+
 for ARGUMENT in "$@"
 do
    KEY=$(echo $ARGUMENT | cut -f1 -d=)
-   VALUE=$(echo $ARGUMENT | cut -f2 -d=)
+   VALUE=$(echo $ARGUMENT | cut -f2- -d=)
 
    case "$KEY" in
            AzureClientId) AzureClientId=$VALUE ;;
@@ -11,12 +15,107 @@ do
            TeamsWebhookUri) TeamsWebhookUri=$VALUE ;;
            LinuxTestsOnly) LinuxTestsOnly=$VALUE ;;
            GenevaIntegration) GenevaIntegration=$VALUE ;;
+           ConfigTestMode) ConfigTestMode=$VALUE ;;
+           ConfigMap) ConfigMap=$VALUE ;;
+           Workflows) Workflows=$VALUE ;;
            *)
     esac
 done
 
 cluster="$(kubectl config current-context)"
 echo "Current cluster: $cluster"
+
+# ============================================================
+# ConfigTest mode: apply configmap, wait, run a single workflow
+# Assumes TestKube is already installed by the pipeline setup.
+# ============================================================
+if [[ "$ConfigTestMode" == "true" ]]; then
+    echo "========== ConfigTest Mode =========="
+
+    if [[ -z "$ConfigMap" || -z "$Workflows" ]]; then
+        echo "Error: ConfigTestMode requires ConfigMap and Workflows parameters"
+        exit 1
+    fi
+
+    # Apply the configmap variant
+    echo "Applying configmap: ${ConfigMap}"
+    kubectl apply -f "${ConfigMap}"
+
+    # Wait for ama-logs to detect the configmap change and restart
+    echo "Waiting 60s for ama-logs to detect configmap change..."
+    sleep 60
+
+    failed_workflows=()
+    successful_workflows=()
+
+    # Parse workflows: "wf1:key=val,key=val|wf2:key=val|wf3:"
+    IFS='|' read -ra wf_entries <<< "$Workflows"
+    for entry in "${wf_entries[@]}"; do
+        wf_name="${entry%%:*}"
+        wf_config="${entry#*:}"
+
+        # Build --config flags for this workflow
+        config_flags="--config GOTOOLCHAIN=auto"
+        if [[ -n "$wf_config" ]]; then
+            IFS=',' read -ra pairs <<< "$wf_config"
+            for pair in "${pairs[@]}"; do
+                config_flags+=" --config ${pair}"
+            done
+        fi
+
+        echo "Running workflow: ${wf_name} with config: ${config_flags}"
+        kubectl testkube run testworkflow "${wf_name}" ${config_flags} --verbose
+
+        echo "Waiting for execution to be created..."
+        sleep 5
+
+        execution_id=$(kubectl testkube get testworkflowexecution | grep -i "${wf_name}" | head -n 1 | awk '{print $1}')
+        echo "Execution ID: ${execution_id}"
+
+        if [[ -z "${execution_id}" ]]; then
+            echo "Error: Could not find execution ID for ${wf_name}"
+            failed_workflows+=("${wf_name} (no execution ID)")
+            continue
+        fi
+
+        kubectl testkube watch testworkflowexecution "${execution_id}"
+
+        kubectl testkube get testworkflowexecution "${execution_id}" --output json > "testkube-results-${wf_name}.json"
+
+        if ! jq empty "testkube-results-${wf_name}.json" 2>/dev/null; then
+            echo "Error: Failed to get valid JSON results for ${wf_name}"
+            cat "testkube-results-${wf_name}.json"
+            failed_workflows+=("${wf_name} (invalid JSON)")
+            continue
+        fi
+
+        result_status=$(jq -r '.result.status' "testkube-results-${wf_name}.json")
+        if [[ "${result_status}" == "failed" ]]; then
+            echo "TestWorkflow FAILED: ${wf_name} (execution: ${execution_id})"
+            kubectl testkube get testworkflowexecution "${execution_id}" --logs-only
+            failed_workflows+=("${wf_name} (execution: ${execution_id})")
+        else
+            echo "TestWorkflow PASSED: ${wf_name} (execution: ${execution_id})"
+            successful_workflows+=("${wf_name} (execution: ${execution_id})")
+        fi
+    done
+
+    echo ""
+    echo "========== ConfigTest Summary =========="
+    if [[ ${#successful_workflows[@]} -gt 0 ]]; then
+        echo "Passed:"
+        for wf in "${successful_workflows[@]}"; do echo "  - $wf"; done
+    fi
+    if [[ ${#failed_workflows[@]} -gt 0 ]]; then
+        echo "Failed:"
+        for wf in "${failed_workflows[@]}"; do echo "  - $wf"; done
+        echo "========================================"
+        exit 1
+    fi
+    echo "All workflows passed."
+    echo "========================================"
+    exit 0
+fi
 
 # Remove stale CRDs that block Helm ownership
 stale_crds=(

@@ -24,10 +24,14 @@ parameters:
     default:
       - name: process-metrics-enabled
         configmap: test/configmaps/config-tests/container-azm-ms-agentconfig-process-metrics-enabled.yaml
-        label: config-processing-process-metrics-enabled
+        workflows: >-
+          countprocess:EXPECTED_TELEGRAF_DS=2,EXPECTED_TELEGRAF_RS=1,EXPECTED_TELEGRAF_PROMETHEUS=1,EXPECTED_TELEGRAF_WINDOWS=1
+          |querylogs:
       - name: process-metrics-default
         configmap: kubernetes/container-azm-ms-agentconfig.yaml
-        label: config-processing-process-metrics-default
+        workflows: >-
+          countprocess:EXPECTED_TELEGRAF_DS=1,EXPECTED_TELEGRAF_RS=0,EXPECTED_TELEGRAF_PROMETHEUS=0,EXPECTED_TELEGRAF_WINDOWS=0
+          |containerstatus-linux:
 
 stages:
 - stage: ConfigMapTests
@@ -157,15 +161,22 @@ stages:
       workingDirectory: $(Build.SourcesDirectory)/test/testkube
       displayName: 'Install TestKube on cluster'
 
+    # Apply TestWorkflow CRs (includes countprocess and others)
+    - bash: |
+        kubectl apply -f ./testkube-test-crs.yaml
+        echo "Waiting for TestWorkflows to be registered..."
+        sleep 10
+      workingDirectory: $(Build.SourcesDirectory)/test/testkube
+      displayName: 'Apply TestWorkflow CRs'
+
     # === Run test scenarios ===
     - ${{ each scenario in parameters.scenarios }}:
       - bash: |
-          chmod +x ./run-configtest-scenario.sh
-          ./run-configtest-scenario.sh \
-            --configmap "$(Build.SourcesDirectory)/${{ scenario.configmap }}" \
-            --scenario "${{ scenario.name }}" \
-            --label "${{ scenario.label }}" \
-            --branch "${{ parameters.branch }}"
+          chmod +x ./install-and-execute-testkube-tests.sh
+          ./install-and-execute-testkube-tests.sh \
+            ConfigTestMode=true \
+            ConfigMap="$(Build.SourcesDirectory)/${{ scenario.configmap }}" \
+            Workflows="${{ scenario.workflows }}"
         workingDirectory: $(Build.SourcesDirectory)/test/testkube
         displayName: "ConfigTest: ${{ scenario.name }}"
         continueOnError: true

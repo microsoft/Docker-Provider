@@ -1,4 +1,4 @@
-module docker-provider/test/configprocessing
+module docker-provider/test/countprocess
 
 go 1.26.1
 
