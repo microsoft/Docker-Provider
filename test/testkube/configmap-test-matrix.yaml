@@ -1,0 +1,36 @@
+# configmap-test-matrix.yaml
+# Declarative test matrix for ama-logs ConfigMap tests.
+# Each case: apply a configmap, then run workflows with specified params.
+#
+# Schema:
+#   defaults.params    — merged into every workflow (lowest priority)
+#   case-level params  — merged into all workflows in that case (overrides defaults)
+#   workflow params    — merged last (highest priority)
+#   configmap          — path relative to repo root; kubectl apply -f + 60s wait
+
+defaults:
+  params:
+    GOTOOLCHAIN: "auto"
+
+cases:
+  - name: process-metrics-enabled
+    configmap: test/configmaps/config-tests/container-azm-ms-agentconfig-process-metrics-enabled.yaml
+    workflows:
+      - name: countprocess
+        params:
+          EXPECTED_TELEGRAF_DS: "2"
+          EXPECTED_TELEGRAF_RS: "1"
+          EXPECTED_TELEGRAF_PROMETHEUS: "1"
+          EXPECTED_TELEGRAF_WINDOWS: "1"
+      - name: querylogs
+
+  - name: process-metrics-default
+    configmap: kubernetes/container-azm-ms-agentconfig.yaml
+    workflows:
+      - name: countprocess
+        params:
+          EXPECTED_TELEGRAF_DS: "1"
+          EXPECTED_TELEGRAF_RS: "0"
+          EXPECTED_TELEGRAF_PROMETHEUS: "0"
+          EXPECTED_TELEGRAF_WINDOWS: "0"
+      - name: containerstatus-linux

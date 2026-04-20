@@ -18,20 +18,7 @@ parameters:
     displayName: 'Git branch for TestKube workflows'
     type: string
     default: 'zane/configmap-testing-pipeline'
-  - name: scenarios
-    displayName: 'Test scenarios to run'
-    type: object
-    default:
-      - name: process-metrics-enabled
-        configmap: test/configmaps/config-tests/container-azm-ms-agentconfig-process-metrics-enabled.yaml
-        workflows: >-
-          countprocess:EXPECTED_TELEGRAF_DS=2,EXPECTED_TELEGRAF_RS=1,EXPECTED_TELEGRAF_PROMETHEUS=1,EXPECTED_TELEGRAF_WINDOWS=1
-          |querylogs:
-      - name: process-metrics-default
-        configmap: kubernetes/container-azm-ms-agentconfig.yaml
-        workflows: >-
-          countprocess:EXPECTED_TELEGRAF_DS=1,EXPECTED_TELEGRAF_RS=0,EXPECTED_TELEGRAF_PROMETHEUS=0,EXPECTED_TELEGRAF_WINDOWS=0
-          |containerstatus-linux:
+  # Test scenarios are defined in test/testkube/configmap-test-matrix.yaml
 
 stages:
 - stage: ConfigMapTests
@@ -169,17 +156,13 @@ stages:
       workingDirectory: $(Build.SourcesDirectory)/test/testkube
       displayName: 'Apply TestWorkflow CRs'
 
-    # === Run test scenarios ===
-    - ${{ each scenario in parameters.scenarios }}:
-      - bash: |
-          chmod +x ./install-and-execute-testkube-tests.sh
-          ./install-and-execute-testkube-tests.sh \
-            ConfigTestMode=true \
-            ConfigMap="$(Build.SourcesDirectory)/${{ scenario.configmap }}" \
-            Workflows="${{ scenario.workflows }}"
-        workingDirectory: $(Build.SourcesDirectory)/test/testkube
-        displayName: "ConfigTest: ${{ scenario.name }}"
-        continueOnError: true
+    # === Run test matrix ===
+    - bash: |
+        chmod +x ./run-matrix-tests.sh
+        ./run-matrix-tests.sh \
+          --repo-root "$(Build.SourcesDirectory)"
+      workingDirectory: $(Build.SourcesDirectory)/test/testkube
+      displayName: "Run ConfigMap Test Matrix"
 
     # === Cleanup ===
     - bash: |
