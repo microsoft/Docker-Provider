@@ -180,7 +180,7 @@ spec:
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
-      revision: ci_prod
+      revision: zane/configmap-testing-pipeline
       paths:
       - test/ginkgo-e2e
   steps:
