@@ -80,8 +80,17 @@ metadata:
 {{- end }}
 rules:
 - apiGroups: [""]
-  resources: ["pods", "events", "nodes", "nodes/stats", "nodes/metrics", "nodes/spec", "nodes/proxy", "namespaces", "services", "persistentvolumes"]
+  resources: ["pods", "events", "nodes", "nodes/stats", "nodes/metrics", "nodes/spec", "namespaces", "services", "persistentvolumes"]
   verbs: ["list", "get", "watch"]
+{{- if semverCompare ">=1.33.0" .Values.global.commonGlobals.Versions.Kubernetes }}
+- apiGroups: [""]
+  resources: ["nodes/pods"]
+  verbs: ["list", "get", "watch"]
+{{- else }}
+- apiGroups: [""]
+  resources: ["nodes/proxy"]
+  verbs: ["list", "get", "watch"]
+{{- end }}
 - apiGroups: ["apps", "extensions", "autoscaling"]
   resources: ["replicasets", "deployments", "horizontalpodautoscalers"]
   verbs: ["list"]
@@ -533,7 +542,7 @@ spec:
                 - NET_RAW
 {{- end }}
         - name: ama-logs
-          image: "{{ template "addon_mcr_repository_base" $ }}/azuremonitor/containerinsights/ciprod:{{- default $amalogsLinuxDefaultImageTag $.Values.OmsAgent.imageTagLinux -}}"
+          image: "{{ template "addon_mcr_repository_base" $ }}{{ $.Values.OmsAgent.imageRepository | default "/azuremonitor/containerinsights/ciprod" }}:{{- default $amalogsLinuxDefaultImageTag $.Values.OmsAgent.imageTagLinux -}}"
         {{- if $.Values.OmsAgent.isImagePullPolicyAlways }}
           imagePullPolicy: Always
         {{- else }}
@@ -624,6 +633,10 @@ spec:
               value: "{{ $.Values.OmsAgent.isTelegrafLivenessprobeEnabled | default false }}"
             - name: CLUSTER_CLOUD_ENVIRONMENT
               value: "{{ $.Values.global.commonGlobals.CloudEnvironment | lower }}"
+            - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
           livenessProbe:
             exec:
               command:
@@ -715,7 +728,7 @@ spec:
           {{- end }}
       {{- if and (not $.Values.OmsAgent.isPrometheusMetricsScrapingDisabled) $.Values.OmsAgent.isSidecarScrapingEnabled }}
         - name: ama-logs-prometheus
-          image: "{{ template "addon_mcr_repository_base" $ }}/azuremonitor/containerinsights/ciprod:{{- default $amalogsLinuxDefaultImageTag $.Values.OmsAgent.imageTagLinux -}}"
+          image: "{{ template "addon_mcr_repository_base" $ }}{{ $.Values.OmsAgent.imageRepository | default "/azuremonitor/containerinsights/ciprod" }}:{{- default $amalogsLinuxDefaultImageTag $.Values.OmsAgent.imageTagLinux -}}"
         {{- if $.Values.OmsAgent.isImagePullPolicyAlways }}
           imagePullPolicy: Always
         {{- else }}
@@ -786,6 +799,10 @@ spec:
               value: "{{ $.Values.OmsAgent.isTelegrafLivenessprobeEnabled | default false }}"
             - name: CLUSTER_CLOUD_ENVIRONMENT
               value: "{{ $.Values.global.commonGlobals.CloudEnvironment | lower }}"
+            - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
           securityContext:
             privileged: true
             capabilities:
@@ -1084,7 +1101,7 @@ spec:
                 - NET_RAW
 {{- end }}
         - name: ama-logs
-          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/containerinsights/ciprod:{{- default $amalogsLinuxDefaultImageTag .Values.OmsAgent.imageTagLinux -}}"
+          image: "{{ template "addon_mcr_repository_base" . }}{{ .Values.OmsAgent.imageRepository | default "/azuremonitor/containerinsights/ciprod" }}:{{- default $amalogsLinuxDefaultImageTag .Values.OmsAgent.imageTagLinux -}}"
         {{- if .Values.OmsAgent.isImagePullPolicyAlways }}
           imagePullPolicy: Always
         {{- else }}
@@ -1171,6 +1188,10 @@ spec:
               value: "{{ .Values.OmsAgent.isWindowsAMAFluentBitEnabled | default false }}"
             - name: CLUSTER_CLOUD_ENVIRONMENT
               value: "{{ .Values.global.commonGlobals.CloudEnvironment | lower }}"
+            - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
           securityContext:
             privileged: true
             capabilities:
@@ -1364,7 +1385,7 @@ spec:
               value: "3"
       containers:
         - name: ama-logs-windows
-          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/containerinsights/ciprod:{{- default $amalogsWindowsDefaultImageTag .Values.OmsAgent.imageTagWindows -}}"
+          image: "{{ template "addon_mcr_repository_base" . }}{{ .Values.OmsAgent.imageRepository | default "/azuremonitor/containerinsights/ciprod" }}:{{- default $amalogsWindowsDefaultImageTag .Values.OmsAgent.imageTagWindows -}}"
         {{- if .Values.OmsAgent.isImagePullPolicyAlways }}
           imagePullPolicy: Always
         {{- else }}
@@ -1463,6 +1484,10 @@ spec:
             value: "{{ .Values.OmsAgent.isWindowsAMAFluentBitEnabled | default false }}"
           - name: CLUSTER_CLOUD_ENVIRONMENT
             value: "{{ .Values.global.commonGlobals.CloudEnvironment | lower }}"
+          - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.uid
           volumeMounts:
           - mountPath: C:\ProgramData\docker\containers
             name: docker-windows-containers
@@ -1777,7 +1802,7 @@ spec:
                 - NET_ADMIN
                 - NET_RAW
         - name: ama-logs
-          image: "{{ template "addon_mcr_repository_base" . }}/azuremonitor/containerinsights/ciprod:{{- default $amalogsLinuxDefaultImageTag .Values.OmsAgent.imageTagLinux -}}"
+          image: "{{ template "addon_mcr_repository_base" . }}{{ .Values.OmsAgent.imageRepository | default "/azuremonitor/containerinsights/ciprod" }}:{{- default $amalogsLinuxDefaultImageTag .Values.OmsAgent.imageTagLinux -}}"
         {{- if .Values.OmsAgent.isImagePullPolicyAlways }}
           imagePullPolicy: Always
         {{- else }}
