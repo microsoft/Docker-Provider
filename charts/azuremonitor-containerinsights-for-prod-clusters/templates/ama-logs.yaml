@@ -15,6 +15,7 @@
 {{- $aksclustername := last $resourceParts -}}
 {{- $aksResourceGroup := index $resourceParts 4 -}}
 {{- $region := .Values.global.commonGlobals.Region -}}
+{{- $cloudEnv := lower $.Values.global.commonGlobals.CloudEnvironment }}
 {{- $aksnoderesourcegroup := printf "MC_%s_%s_%s" $aksResourceGroup $aksclustername $region -}}
 apiVersion: v1
 kind: Secret
@@ -36,14 +37,17 @@ data:
 {{- if .Values.OmsAgent.isFairfax }}
   DOMAIN: {{ b64enc "opinsights.azure.us" }}
 {{- end }}
-{{- if eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT" }}
+{{- if eq $cloudEnv "usnat" }}
   DOMAIN: {{ b64enc "opinsights.azure.eaglex.ic.gov" }}
 {{- end }}
-{{- if eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC" }}
+{{- if eq $cloudEnv "ussec" }}
   DOMAIN: {{ b64enc "opinsights.azure.microsoft.scloud" }}
 {{- end }}
-{{- if eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD" }}
+{{- if eq $cloudEnv "azurebleucloud" }}
   DOMAIN: {{ b64enc "opinsights.sovcloud-api.fr" }}
+{{- end }}
+{{- if eq $cloudEnv "azuredeloscloud" }}
+  DOMAIN: {{ b64enc "opinsights.sovcloud-api.de" }}
 {{- end }}
 {{- if .Values.OmsAgent.httpsProxy }}
   PROXY: {{ .Values.OmsAgent.httpsProxy | b64enc | quote }}
@@ -602,17 +606,21 @@ spec:
               value: "4319"
             - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
               value: "{{ $.Values.OmsAgent.isPrometheusMetricsScrapingDisabled }}"
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USNat") }}
+          {{- if (eq $cloudEnv "usnat") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
           {{- end }}
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USSec") }}
+          {{- if (eq $cloudEnv "ussec") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
+          {{- if (eq $cloudEnv "azurebleucloud") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
+          {{- end }}
+          {{- if (eq $cloudEnv "azuredeloscloud") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.sovcloud-api.de/v2/"
           {{- end }}
           {{- if $isusingaadauth }}
             - name: USING_AAD_MSI_AUTH
@@ -632,7 +640,7 @@ spec:
             - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
               value: "{{ $.Values.OmsAgent.isTelegrafLivenessprobeEnabled | default false }}"
             - name: CLUSTER_CLOUD_ENVIRONMENT
-              value: "{{ $.Values.global.commonGlobals.CloudEnvironment | lower }}"
+              value: "{{ $cloudEnv }}"
             - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
               valueFrom:
                 fieldRef:
@@ -772,17 +780,21 @@ spec:
               value: "PrometheusSidecar"
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
               value: "{{ $.Values.OmsAgent.identityClientID }}"
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USNat") }}
+          {{- if (eq $cloudEnv "usnat") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
           {{- end }}
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USSec") }}
+          {{- if (eq $cloudEnv "ussec") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
+          {{- if (eq $cloudEnv "azurebleucloud") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
+          {{- end }}
+          {{- if (eq $cloudEnv "azuredeloscloud") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.sovcloud-api.de/v2/"
           {{- end }}
           {{- if $isusingaadauth }}
             - name: USING_AAD_MSI_AUTH
@@ -798,7 +810,7 @@ spec:
             - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
               value: "{{ $.Values.OmsAgent.isTelegrafLivenessprobeEnabled | default false }}"
             - name: CLUSTER_CLOUD_ENVIRONMENT
-              value: "{{ $.Values.global.commonGlobals.CloudEnvironment | lower }}"
+              value: "{{ $cloudEnv }}"
             - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
               valueFrom:
                 fieldRef:
@@ -1155,17 +1167,21 @@ spec:
             - name: SIDECAR_SCRAPING_ENABLED
               value: "false"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
+          {{- if (eq $cloudEnv "usnat") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
+          {{- if (eq $cloudEnv "ussec") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
+          {{- if (eq $cloudEnv "azurebleucloud") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
+          {{- end }}
+          {{- if (eq $cloudEnv "azuredeloscloud") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.sovcloud-api.de/v2/"
           {{- end }}
           {{- if $isusingaadauth }}
             - name: USING_AAD_MSI_AUTH
@@ -1187,7 +1203,7 @@ spec:
             - name: AZMON_WINDOWS_FLUENT_BIT_ENABLED
               value: "{{ .Values.OmsAgent.isWindowsAMAFluentBitEnabled | default false }}"
             - name: CLUSTER_CLOUD_ENVIRONMENT
-              value: "{{ .Values.global.commonGlobals.CloudEnvironment | lower }}"
+              value: "{{ $cloudEnv }}"
             - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
               valueFrom:
                 fieldRef:
@@ -1451,15 +1467,19 @@ spec:
           - name: SIDECAR_SCRAPING_ENABLED
             value: "false"
         {{- end }}
-        {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
+        {{- if (eq $cloudEnv "usnat") }}
           - name: REQUIRES_CERT_BOOTSTRAP
             value: "true"
         {{- end }}
-        {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
+        {{- if (eq $cloudEnv "ussec") }}
           - name: REQUIRES_CERT_BOOTSTRAP
             value: "true"
         {{- end }}
-        {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
+        {{- if (eq $cloudEnv "azurebleucloud") }}
+          - name: REQUIRES_CERT_BOOTSTRAP
+            value: "true"
+        {{- end }}
+        {{- if (eq $cloudEnv "azuredeloscloud") }}
           - name: REQUIRES_CERT_BOOTSTRAP
             value: "true"
         {{- end }}
@@ -1483,7 +1503,7 @@ spec:
           - name: AZMON_WINDOWS_FLUENT_BIT_ENABLED
             value: "{{ .Values.OmsAgent.isWindowsAMAFluentBitEnabled | default false }}"
           - name: CLUSTER_CLOUD_ENVIRONMENT
-            value: "{{ .Values.global.commonGlobals.CloudEnvironment | lower }}"
+            value: "{{ $cloudEnv }}"
           - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
             valueFrom:
               fieldRef:
@@ -1840,24 +1860,28 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
+          {{- if (eq $cloudEnv "usnat") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
+          {{- if (eq $cloudEnv "ussec") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
+          {{- if (eq $cloudEnv "azurebleucloud") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
+          {{- end }}
+          {{- if (eq $cloudEnv "azuredeloscloud") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.sovcloud-api.de/v2/"
           {{- end }}
             - name: USING_AAD_MSI_AUTH
               value: "true"
             - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
               value: "{{ .Values.AppmonitoringAgent.enabled }}"
             - name: CLUSTER_CLOUD_ENVIRONMENT
-              value: "{{ .Values.global.commonGlobals.CloudEnvironment | lower }}"
+              value: "{{ $cloudEnv }}"
           securityContext:
             privileged: true
             capabilities:

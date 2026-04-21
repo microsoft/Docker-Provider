@@ -293,11 +293,11 @@ if not, this function will return none and caller should set the default/fallbac
 {{/* should use AzureStackCloud */}}
 {{- define "should_use_azurestackcloud" -}}
   {{- $cloud_environment := (.Values.global.commonGlobals.CloudEnvironment | default "azurepubliccloud" | lower) }}
-  {{- has $cloud_environment (list "usnat" "ussec" "azurebleucloud") -}}
+  {{- has $cloud_environment (list "usnat" "ussec" "azurebleucloud" "azuredeloscloud") -}}
 {{- end }}
 
 {{/* should mount ca certs from host */}}
 {{- define "should_mount_hostca" -}}
   {{- $cloud_environment := (.Values.global.commonGlobals.CloudEnvironment | default "azurepubliccloud" | lower) }}
-  {{- has $cloud_environment (list "usnat" "ussec" "azurebleucloud") -}}
+  {{- has $cloud_environment (list "usnat" "ussec" "azurebleucloud" "azuredeloscloud") -}}
 {{- end }}

@@ -109,6 +109,11 @@ function Set-CloudSpecificApplicationInsightsConfig {
             Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_AUTH" "NTYwYmMyYjctMmNmOC1iN2Q0LWI4YTItYzNjYWJhODU3MTMz"
             Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_ENDPOINT" "https://bleufrancecentral-0.in.applicationinsights.sovcloud-api.fr/v2/track"
         }
+        "azuredeloscloud" {
+            Write-Host "Set-CloudSpecificApplicationInsightsConfig: Setting Application Insights configuration for azuredeloscloud"
+            Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_AUTH" "<your_applicationinsights_auth_key>"
+            Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_ENDPOINT" "https://<region>.in.applicationinsights.sovcloud-api.de/v2/track"
+        }
         default {
             Write-Host "Set-CloudSpecificApplicationInsightsConfig: defaulting to Public Cloud Application Insights configuration"
         }
@@ -203,7 +208,7 @@ function Is-SupportedCloudEnvironment {
     param (
         [string]$cloudEnvironment
     )
-    $supportedCloudEnvironments = @("azurepubliccloud", "azurechinacloud", "azureusgovernmentcloud", "usnat", "ussec", "azurebleucloud")
+    $supportedCloudEnvironments = @("azurepubliccloud", "azurechinacloud", "azureusgovernmentcloud", "usnat", "ussec", "azurebleucloud", "azuredeloscloud")
     if ($supportedCloudEnvironments -contains $cloudEnvironment) {
         return $true
     }
@@ -229,6 +234,7 @@ function Get-ClusterCloudEnvironment {
                 "opinsights.azure.eaglex.ic.gov" { $cloud_environment = "usnat" }
                 "opinsights.azure.microsoft.scloud" { $cloud_environment = "ussec" }
                 "opinsights.sovcloud-api.fr" { $cloud_environment = "azurebleucloud" }
+                "opinsights.sovcloud-api.de" { $cloud_environment = "azuredeloscloud" }
             }
         }
         else {
@@ -279,6 +285,7 @@ function Get-McsAzureResourceEndpoint {
             "usnat" { $mcs_azure_resource_endpoint = "https://monitor.azure.eaglex.ic.gov/" }
             "ussec" { $mcs_azure_resource_endpoint = "https://monitor.azure.microsoft.scloud/" }
             "azurebleucloud" { $mcs_azure_resource_endpoint = "https://monitor.sovcloud-api.fr/" }
+            "azuredeloscloud" { $mcs_azure_resource_endpoint = "https://monitor.sovcloud-api.de/" }
         }
     }
     return $mcs_azure_resource_endpoint
@@ -297,6 +304,7 @@ function Get-McsEndpoint {
             "usnat" { $mcs_endpoint = "monitor.azure.eaglex.ic.gov" }
             "ussec" { $mcs_endpoint = "monitor.azure.microsoft.scloud" }
             "azurebleucloud" { $mcs_endpoint = "monitor.sovcloud-api.fr" }
+            "azuredeloscloud" { $mcs_endpoint = "monitor.sovcloud-api.de" }
         }
     }
     return $mcs_endpoint
@@ -332,6 +340,7 @@ function Get-McsGlobalEndpoint {
                 "usnat" { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.eaglex.ic.gov" }
                 "ussec" { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.microsoft.scloud" }
                 "azurebleucloud" { $mcs_globalendpoint = "https://global.handler.control.monitor.sovcloud-api.fr" }
+                "azuredeloscloud" { $mcs_globalendpoint = "https://global.handler.control.monitor.sovcloud-api.de" }
             }
         }
     }
