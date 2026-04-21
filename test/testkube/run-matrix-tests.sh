@@ -50,8 +50,10 @@ fi
 
 # ── Read case data ──────────────────────────────────────────
 default_params=$(yq -o=json '.defaults.params // {}' "$MATRIX_FILE")
+default_wait=$(yq '.defaults.wait_seconds // 60' "$MATRIX_FILE")
 configmap=$(yq ".cases[${case_index}].configmap // \"\"" "$MATRIX_FILE")
 case_params=$(yq -o=json ".cases[${case_index}].params // {}" "$MATRIX_FILE")
+wait_seconds=$(yq ".cases[${case_index}].wait_seconds // ${default_wait}" "$MATRIX_FILE")
 wf_count=$(yq ".cases[${case_index}].workflows | length" "$MATRIX_FILE")
 
 echo "=========================================="
@@ -63,8 +65,8 @@ if [[ -n "$configmap" ]]; then
     local_path="${REPO_ROOT}/${configmap}"
     echo "Applying configmap: ${local_path}"
     kubectl apply -f "${local_path}"
-    echo "Waiting 60s for ama-logs to detect configmap change..."
-    sleep 60
+    echo "Waiting ${wait_seconds}s for ama-logs to detect configmap change..."
+    sleep "${wait_seconds}"
 fi
 
 # ── Run workflows ───────────────────────────────────────────
@@ -82,6 +84,8 @@ for (( w=0; w<wf_count; w++ )); do
     config_flags=""
     while IFS= read -r key; do
         val=$(echo "$merged" | jq -r --arg k "$key" '.[$k]')
+        # Expand env var references (e.g., ${AZURE_TENANT_ID} -> actual value)
+        val=$(echo "$val" | envsubst)
         config_flags+=" --config ${key}=${val}"
     done < <(echo "$merged" | jq -r 'keys[]')
 

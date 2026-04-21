@@ -6,9 +6,12 @@
 #   defaults.params    — merged into every workflow (lowest priority)
 #   case-level params  — merged into all workflows in that case (overrides defaults)
 #   workflow params    — merged last (highest priority)
-#   configmap          — path relative to repo root; kubectl apply -f + 60s wait
+#   configmap          — path relative to repo root; kubectl apply -f then wait
+#   defaults.wait_seconds — global wait time after applying configmap (default: 60)
+#   case-level wait_seconds — per-case override
 
 defaults:
+  wait_seconds: 600
   params:
     GOTOOLCHAIN: "auto"
 
@@ -23,6 +26,10 @@ cases:
           EXPECTED_TELEGRAF_PROMETHEUS: "1"
           EXPECTED_TELEGRAF_WINDOWS: "1"
       - name: querylogs
+        params:
+          AZURE_TENANT_ID: ${AZURE_TENANT_ID}
+          AZURE_CLIENT_ID: ${AZURE_CLIENT_ID}
+          GENEVA_INTEGRATION: false
 
   - name: process-metrics-default
     configmap: kubernetes/container-azm-ms-agentconfig.yaml

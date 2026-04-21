@@ -210,6 +210,10 @@ stages:
         workingDirectory: $(Build.SourcesDirectory)/test/testkube
         displayName: "ConfigTest: ${{ caseName }}"
         continueOnError: true
+        env:
+          AZURE_TENANT_ID: $(AZURE_TENANT_ID)
+          AZURE_CLIENT_ID: $(AZURE_CLIENT_ID)
+          GENEVA_INTEGRATION: false
 
     # === Cleanup ===
     - bash: |
