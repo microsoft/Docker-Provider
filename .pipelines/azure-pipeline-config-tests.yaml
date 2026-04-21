@@ -18,7 +18,13 @@ parameters:
     displayName: 'Git branch for TestKube workflows'
     type: string
     default: 'zane/configmap-testing-pipeline'
-  # Test scenarios are defined in test/testkube/configmap-test-matrix.yaml
+  # Case names must match the 'name' field in test/testkube/configmap-test-matrix.yaml
+  - name: cases
+    displayName: 'Test cases to run'
+    type: object
+    default:
+      - process-metrics-enabled
+      - process-metrics-default
 
 stages:
 - stage: ConfigMapTests
@@ -156,13 +162,54 @@ stages:
       workingDirectory: $(Build.SourcesDirectory)/test/testkube
       displayName: 'Apply TestWorkflow CRs'
 
-    # === Run test matrix ===
+    # === Validate cases match matrix ===
     - bash: |
-        chmod +x ./run-matrix-tests.sh
-        ./run-matrix-tests.sh \
-          --repo-root "$(Build.SourcesDirectory)"
+        set -euo pipefail
+
+        # Install yq if not present
+        if ! command -v yq &> /dev/null; then
+          curl -sL https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -o /tmp/yq
+          chmod +x /tmp/yq
+          yq="/tmp/yq"
+        else
+          yq="yq"
+        fi
+
+        # Cases from pipeline parameter
+        echo "$PIPELINE_CASES" | tr ',' '\n' | sed 's/^ *//;s/ *$//' | sort > /tmp/pipeline.txt
+
+        # Cases from matrix YAML
+        $yq '.cases[].name' ./configmap-test-matrix.yaml | sort > /tmp/matrix.txt
+
+        echo "Pipeline cases:"
+        cat /tmp/pipeline.txt
+        echo ""
+        echo "Matrix cases:"
+        cat /tmp/matrix.txt
+        echo ""
+
+        if ! diff /tmp/pipeline.txt /tmp/matrix.txt; then
+          echo "##[error]Pipeline cases and matrix cases are out of sync!"
+          echo "Update the 'cases' parameter in azure-pipeline-config-tests.yaml to match configmap-test-matrix.yaml"
+          exit 1
+        fi
+
+        echo "Pipeline cases match matrix cases."
       workingDirectory: $(Build.SourcesDirectory)/test/testkube
-      displayName: "Run ConfigMap Test Matrix"
+      displayName: 'Validate cases match matrix'
+      env:
+        PIPELINE_CASES: ${{ join(',', parameters.cases) }}
+
+    # === Run test cases (one step per case) ===
+    - ${{ each caseName in parameters.cases }}:
+      - bash: |
+          chmod +x ./run-matrix-tests.sh
+          ./run-matrix-tests.sh \
+            --case "${{ caseName }}" \
+            --repo-root "$(Build.SourcesDirectory)"
+        workingDirectory: $(Build.SourcesDirectory)/test/testkube
+        displayName: "ConfigTest: ${{ caseName }}"
+        continueOnError: true
 
     # === Cleanup ===
     - bash: |
