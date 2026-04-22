@@ -109,11 +109,11 @@ function Set-CloudSpecificApplicationInsightsConfig {
             Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_AUTH" "NTYwYmMyYjctMmNmOC1iN2Q0LWI4YTItYzNjYWJhODU3MTMz"
             Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_ENDPOINT" "https://bleufrancecentral-0.in.applicationinsights.sovcloud-api.fr/v2/track"
         }
-        "azuredeloscloud" {
-            Write-Host "Set-CloudSpecificApplicationInsightsConfig: Setting Application Insights configuration for azuredeloscloud"
-            Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_AUTH" "<your_applicationinsights_auth_key>"
-            Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_ENDPOINT" "https://<region>.in.applicationinsights.sovcloud-api.de/v2/track"
-        }
+        # "azuredeloscloud" {
+        #     Write-Host "Set-CloudSpecificApplicationInsightsConfig: Setting Application Insights configuration for azuredeloscloud"
+        #     Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_AUTH" "<your_applicationinsights_auth_key>"
+        #     Set-ProcessAndMachineEnvVariables "APPLICATIONINSIGHTS_ENDPOINT" "https://<region>.in.applicationinsights.sovcloud-api.de/v2/track"
+        # }
         default {
             Write-Host "Set-CloudSpecificApplicationInsightsConfig: defaulting to Public Cloud Application Insights configuration"
         }
