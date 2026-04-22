@@ -90,6 +90,17 @@ jobs:
           displayName: Install Helm
           inputs:
             helmVersionToInstall: 'latest'
+        - task: AzureCLI@2
+          displayName: 'Detect Kubernetes Version'
+          inputs:
+            azureSubscription: '${{ parameters.azureSubscription }}'
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              az aks get-credentials --resource-group ${{ parameters.resourceGroup }} --name ${{ parameters.clusterName }} --overwrite-existing --admin
+              K8S_VERSION=$(kubectl version -o json | jq -r '.serverVersion.gitVersion' | sed 's/^v//')
+              echo "Detected Kubernetes version: $K8S_VERSION"
+              echo "##vso[task.setvariable variable=K8S_VERSION]$K8S_VERSION"
         - task: HelmDeploy@0
           displayName: 'Helm Deploy: ama-logs to ${{ parameters.clusterName }}'
           inputs:
@@ -106,9 +117,9 @@ jobs:
             chartPath: '$(Build.SourcesDirectory)/charts/azuremonitor-containerinsights-for-prod-clusters'
             releaseName: '${{ parameters.releaseName }}'
             ${{ if ne(parameters.additionalOverrides, '') }}:
-              overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageRepository=${{ parameters.imageRepository }},OmsAgent.imageTagLinux=${{ parameters.amalogsLinuxImage }},OmsAgent.imageTagWindows=${{ parameters.amalogsWindowsImage }},${{ parameters.additionalOverrides }}'
+              overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},global.commonGlobals.Versions.Kubernetes=$(K8S_VERSION),OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageRepository=${{ parameters.imageRepository }},OmsAgent.imageTagLinux=${{ parameters.amalogsLinuxImage }},OmsAgent.imageTagWindows=${{ parameters.amalogsWindowsImage }},${{ parameters.additionalOverrides }}'
             ${{ else }}:
-              overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageRepository=${{ parameters.imageRepository }},OmsAgent.imageTagLinux=${{ parameters.amalogsLinuxImage }},OmsAgent.imageTagWindows=${{ parameters.amalogsWindowsImage }}'
+              overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},global.commonGlobals.Versions.Kubernetes=$(K8S_VERSION),OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageRepository=${{ parameters.imageRepository }},OmsAgent.imageTagLinux=${{ parameters.amalogsLinuxImage }},OmsAgent.imageTagWindows=${{ parameters.amalogsWindowsImage }}'
             waitForExecution: false
             arguments: '--timeout 10m --install'
         - task: AzureCLI@2
