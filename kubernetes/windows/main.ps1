@@ -883,8 +883,10 @@ function Start-Fluent-Telegraf {
                 $appInsightsKey = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($appInsightsAuth)).Trim()
                 (Get-Content $amaLogsProcessMetricsConfFile).replace('placeholder_appinsights_key', $appInsightsKey) | Set-Content $amaLogsProcessMetricsConfFile
                 Write-Host "Starting telegraf for collecting process metrics inside ama-logs containers (Windows)"
-                C:\opt\telegraf\telegraf.exe --service install --service-name telegraf-ama-logs-process-metrics --config $amaLogsProcessMetricsConfFile
-                C:\opt\telegraf\telegraf.exe --service start --service-name telegraf-ama-logs-process-metrics
+                # Create symlink to give this telegraf instance a distinct process name
+                New-Item -ItemType SymbolicLink -Path "C:\opt\telegraf\telegraf-process-metrics.exe" -Target "C:\opt\telegraf\telegraf.exe" -Force
+                C:\opt\telegraf\telegraf-process-metrics.exe --service install --service-name telegraf-ama-logs-process-metrics --config $amaLogsProcessMetricsConfFile
+                C:\opt\telegraf\telegraf-process-metrics.exe --service start --service-name telegraf-ama-logs-process-metrics
             } else {
                 Write-Host "APPLICATIONINSIGHTS_AUTH or AKS_RESOURCE_ID not set, skipping ama-logs process metrics monitoring"
             }

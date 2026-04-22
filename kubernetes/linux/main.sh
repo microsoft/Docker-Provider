@@ -1413,7 +1413,9 @@ if [ "${AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS}" == "true" ]; then
             appinsightsKey=$(echo "$APPLICATIONINSIGHTS_AUTH" | base64 -d | tr -d '\n')
             sed -i -e "s/placeholder_appinsights_key/$appinsightsKey/g" $amaLogsProcessMetricsConfFile
             # Use /proc so telegraf only collect process metrics inside ama-logs containers.
-            HOST_PROC=/proc /opt/telegraf --non-strict-env-handling --config $amaLogsProcessMetricsConfFile &
+            # Create symlink to give this telegraf instance a distinct process name
+            ln -sf /opt/telegraf /opt/telegraf-process-metrics
+            HOST_PROC=/proc /opt/telegraf-process-metrics --non-strict-env-handling --config $amaLogsProcessMetricsConfFile &
         else
             echo "APPLICATIONINSIGHTS_AUTH or AKS_RESOURCE_ID not set, skipping ama-logs process metrics monitoring"
         fi
