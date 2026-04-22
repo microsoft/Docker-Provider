@@ -54,11 +54,23 @@ default_wait=$(yq '.defaults.wait_seconds // 60' "$MATRIX_FILE")
 configmap=$(yq ".cases[${case_index}].configmap // \"\"" "$MATRIX_FILE")
 case_params=$(yq -o=json ".cases[${case_index}].params // {}" "$MATRIX_FILE")
 wait_seconds=$(yq ".cases[${case_index}].wait_seconds // ${default_wait}" "$MATRIX_FILE")
-wf_count=$(yq ".cases[${case_index}].workflows | length" "$MATRIX_FILE")
+
+# Expand workflow groups: any workflow name matching a key under "defaults" gets replaced
+case_workflows=$(yq -o=json ".cases[${case_index}].workflows // []" "$MATRIX_FILE")
+defaults_json=$(yq -o=json '.defaults // {}' "$MATRIX_FILE")
+all_workflows=$(jq -n --argjson wfs "$case_workflows" --argjson defaults "$defaults_json" '
+  [($wfs[] | if $defaults[.name] then $defaults[.name][] else . end)]
+')
+wf_count=$(echo "$all_workflows" | jq 'length')
 
 echo "=========================================="
 echo "Case: ${CASE_NAME}"
 echo "=========================================="
+echo "Workflows to run (${wf_count}):"
+for (( i=0; i<wf_count; i++ )); do
+    echo "  - $(echo "$all_workflows" | jq -r ".[${i}].name")"
+done
+echo ""
 
 # ── Apply configmap if specified ────────────────────────────
 if [[ -n "$configmap" ]]; then
@@ -74,8 +86,8 @@ failed=()
 passed=()
 
 for (( w=0; w<wf_count; w++ )); do
-    wf_name=$(yq ".cases[${case_index}].workflows[${w}].name" "$MATRIX_FILE")
-    wf_params=$(yq -o=json ".cases[${case_index}].workflows[${w}].params // {}" "$MATRIX_FILE")
+    wf_name=$(echo "$all_workflows" | jq -r ".[${w}].name")
+    wf_params=$(echo "$all_workflows" | jq ".[${w}].params // {}")
 
     # Merge: defaults < case < workflow (rightmost wins)
     merged=$(echo "$default_params" "$case_params" "$wf_params" | jq -s '.[0] * .[1] * .[2]')
@@ -129,7 +141,9 @@ done
 
 # ── Summary ─────────────────────────────────────────────────
 echo ""
-echo "--- ${CASE_NAME} Summary ---"
+echo "=========================================="
+echo "${CASE_NAME} Summary (${#passed[@]} passed, ${#failed[@]} failed out of ${wf_count})"
+echo "=========================================="
 if [[ ${#passed[@]} -gt 0 ]]; then
     echo "Passed:"
     for wf in "${passed[@]}"; do echo "  - $wf"; done

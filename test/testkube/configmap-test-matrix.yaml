@@ -3,10 +3,11 @@
 # Each case: apply a configmap, then run workflows with specified params.
 #
 # Schema:
-#   defaults.params    — merged into every workflow (lowest priority)
-#   case-level params  — merged into all workflows in that case (overrides defaults)
-#   workflow params    — merged last (highest priority)
-#   configmap          — path relative to repo root; kubectl apply -f then wait
+#   defaults.params      — merged into every workflow (lowest priority)
+#   defaults.<group_name> — reusable workflow groups, included via "- name: <group_name>"
+#   case-level params    — merged into all workflows in that case (overrides defaults)
+#   workflow params      — merged last (highest priority)
+#   configmap            — path relative to repo root; kubectl apply -f then wait
 #   defaults.wait_seconds — global wait time after applying configmap (default: 60)
 #   case-level wait_seconds — per-case override
 
@@ -14,6 +15,16 @@ defaults:
   wait_seconds: 600
   params:
     GOTOOLCHAIN: "auto"
+  common_workflows:
+    - name: querylogs
+      params:
+        AZURE_TENANT_ID: ${AZURE_TENANT_ID}
+        AZURE_CLIENT_ID: ${AZURE_CLIENT_ID}
+        GENEVA_INTEGRATION: false
+    - name: containerstatus-linux
+  common_workflows_test_only:
+      - name: containerstatus-windows
+
 
 cases:
   - name: process-metrics-enabled
@@ -25,11 +36,8 @@ cases:
           EXPECTED_TELEGRAF_RS: "1"
           EXPECTED_TELEGRAF_PROMETHEUS: "1"
           EXPECTED_TELEGRAF_WINDOWS: "1"
-      - name: querylogs
-        params:
-          AZURE_TENANT_ID: ${AZURE_TENANT_ID}
-          AZURE_CLIENT_ID: ${AZURE_CLIENT_ID}
-          GENEVA_INTEGRATION: false
+      - name: common_workflows
+      - name: common_workflows_test_only
 
   - name: process-metrics-default
     configmap: kubernetes/container-azm-ms-agentconfig.yaml
@@ -40,4 +48,5 @@ cases:
           EXPECTED_TELEGRAF_RS: "0"
           EXPECTED_TELEGRAF_PROMETHEUS: "0"
           EXPECTED_TELEGRAF_WINDOWS: "0"
-      - name: containerstatus-linux
+      - name: common_workflows
+      - name: common_workflows_test_only
