@@ -1,0 +1,521 @@
+{
+  "Version": "1",
+  "ToggleName": "OmsAgent.omsAgentDsCPULimitLinux",
+  "Type": "string",
+  "LastUpdatedAt": null,
+  "ExtensionType": "microsoft.azuremonitor.containers",
+  "OwnerTeam": "container insights",
+  "Description": "This is OmsAgent.omsAgentDsCPULimitLinux toggle.",
+  "Rules": [
+    {
+      "Matchers": [
+        {
+          "Field": "tenantID",
+          "Operator": "equals",
+          "Values": [
+            "3f8a7bc4-e337-47a5-a0fc-0d512c0e05f1"
+          ]
+        }
+      ],
+      "Value": "500m"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "subscriptionID",
+          "Operator": "equals",
+          "Values": [
+            "5d3d4b48-4355-49ad-890d-c49efc3a211d",
+            "76f7de7a-d5db-4e4f-a420-01bb9ed53c38",
+            "2413d5bc-1a80-4042-a810-7b555fa8a3fe",
+            "4d3929f2-b919-497d-857d-5ea305b29b96",
+            "56e97ff1-9c42-43ed-bb2a-559acb00f73f",
+            "76f7de7a-d5db-4e4f-a420-01bb9ed53c38",
+            "243d2d34-0535-4ee6-bb4b-f0508dad5daf",
+            "f01f89ae-5a19-4ea0-89f7-f6b1af08b7a6",
+            "4d3929f2-b919-497d-857d-5ea305b29b96",
+            "9cff731e-4a39-42e0-9835-543ad13ab87b",
+            "32d97c57-2563-491e-80fd-0fe0bf78c180",
+            "30f714a6-c2ee-43a6-a80c-aefbb5352299",
+            "83a88bb9-d44d-4cdd-b878-c52a9f0c7273",
+            "6ec4e609-d5f1-4776-a6a0-d20063a22fad",
+            "2413d5bc-1a80-4042-a810-7b555fa8a3fe",
+            "f11be3e3-51e3-4fc1-a87b-707aabc1894c",
+            "6bff413a-2936-43cf-a29a-de2f55a72108",
+            "f4287a70-392e-4f52-b467-0b1394af89f1",
+            "b089cb15-f9a0-4fd2-8d3b-bacd53a5c131",
+            "5e71b15c-d6af-4321-838e-e3b91e640335",
+            "0be14ed7-5de0-4d16-aead-b571b19c0a2e",
+            "8afa98be-ba1b-45d0-a18f-960e0c4ce13f",
+            "badc6105-6a32-47fb-9b9f-568e27f7dc42",
+            "56e97ff1-9c42-43ed-bb2a-559acb00f73f",
+            "73448736-5c88-4e19-8fc8-aa2db3c81b6f",
+            "48115578-f2b5-4867-8c7a-f76cc9de71e3",
+            "98d8579e-4e83-418e-8902-86455360f259",
+            "fc9c6660-cbac-4ff2-b80f-b7bdbcf347e0",
+            "1962e577-e475-4143-ae6d-6dbddf43e670",
+            "917b1a18-8ea4-4180-b913-5b0cc18e79ae",
+            "81af4e03-17db-4c8b-954c-b6f281386761",
+            "d5ede54f-a928-4ded-b904-b2619f55938f",
+            "1b1c6c79-4305-4762-b898-7956e496cb61",
+            "d53883e6-2fac-4cbf-a1d3-6bf327931140",
+            "5ebefb54-f8fd-4324-a9fa-6f9f456109fb",
+            "227b0c9a-e8ee-4142-a1d6-b90f8a2e4678",
+            "78774747-a65b-480c-ada4-5be1ac8a4395",
+            "523a1451-b301-49d0-b5da-37666f16db82",
+            "e400eddd-0ac8-4131-b6f6-86c1ad0bdf93",
+            "7935e40a-860d-4d5f-829b-e58ecb4ef1af",
+            "d6fb551c-6b22-45ec-b6f0-5d823258a690",
+            "0487afd8-f533-4928-b272-8c2a71a1b778",
+            "b0777adb-be55-405d-a6b1-cf071986feee",
+            "0fa4e109-3f7d-4486-a837-404396515a06",
+            "f40f4d5f-01c9-4584-b82e-51fe4233b8bf",
+            "da4bc489-c3d6-43ee-a0cf-73552746bf9b",
+            "8d5251b2-97e1-43ba-b4e6-7f9612e94584",
+            "6c6ae6af-feb3-4297-b021-2947cbdaa3ac",
+            "a755958b-e86b-41dd-9e5d-33fb36238a9b",
+            "1c1f8740-de53-4131-8bee-14d7682f3903",
+            "129b6cfe-6dac-4959-a76b-c218a18d9425",
+            "b5c20432-65bf-4cf1-a1b1-2155607dc0e0",
+            "da4c7485-4ba5-48b4-b92b-7c00d82ceec8",
+            "7c464ce6-1ef5-45e2-b78a-2dac72ab52c1",
+            "8d7b8da1-e642-4b5e-b7f2-0ed059688c34",
+            "8b052598-3d2b-4186-9deb-d85ef2a1d45a",
+            "d8e3a26b-1ad3-45cb-b66e-9e0e2fee0987",
+            "2e6b9e8e-838c-49fc-a301-8326aa2c2463",
+            "bb08bb67-3678-44c6-813e-1e1c8dcb4dd4",
+            "422e481f-fc6d-42fc-a02d-bc208bd1d166",
+            "729cd2a1-95fb-40d9-8737-bec94d3d29b9",
+            "ebd7d29a-362f-4a51-a821-2a4a1e03a987",
+            "3c825c62-641b-4f9d-9c9b-5133a294f247",
+            "3c75e15b-f16e-4a87-8ffc-6fec685dd397",
+            "67a4804c-fb1b-4bf2-b596-0fbb6f6c2ac7",
+            "435c1a7f-f06c-4c72-a099-27a157c2585f",
+            "f583caa6-0d06-4920-aded-c23d113e3cdb",
+            "0917586a-1e4a-4187-949b-5bbce131edb4",
+            "6614504b-c9bc-4590-ae2a-7362da409bcf",
+            "05445897-2e2f-49c7-8fbb-4bd4b4192da1",
+            "4ccd930f-06ee-4ea7-bff1-cc51ecafa86f",
+            "c0a8609d-d7cc-4d67-b8a7-2e083edd81ab",
+            "28986181-ff32-4552-a449-934f5d93dee8",
+            "26d8c25c-0798-4619-abc4-e8ae5d1747a6",
+            "b29acdaf-cd4e-4baa-bace-253436329817",
+            "3ea35d6d-8d81-4973-a769-51068ba53bf0",
+            "238ff6bc-1bc5-4f15-a8fa-df0a5ac7dc2e",
+            "d4e6d972-a6a8-4462-a014-e3dfe18cea65",
+            "6d7873b4-7cd4-4ae1-8d01-2c021d630985",
+            "b4271a47-06b7-43a6-9ee5-7447db3ecb10",
+            "a64a3be0-7721-4904-a8c9-27e34f27f48f",
+            "19f99090-f927-4c0b-b700-64189718f0c8",
+            "77f6bab6-a95f-40fe-9002-d4f69b6d20d3",
+            "3a06d8e0-8794-45ca-a3cc-70b6e3639d43",
+            "11e0bcef-d243-49b7-8ae6-d12401fa75c9",
+            "5716a210-4235-454e-965b-0b7d80b944cd",
+            "de5fcfc6-f030-4d44-be31-6f386db36846",
+            "af016903-c782-49eb-bf38-a2ccd1c726d8",
+            "59c39406-86ba-4f1c-9887-5b9550bf9b80",
+            "dafe21cc-9927-4cca-9efe-77d327b11cec",
+            "6edf1225-b04f-4856-a652-4d64af8745d8",
+            "1b575af4-63ed-4e25-9a11-876daab489ca",
+            "ebeec00a-6d9e-4daa-8ba0-4aa547bff7a6",
+            "7968518c-cbaa-430d-9985-0dec304d6a9d",
+            "e17bdda5-9db7-49e0-9ef7-fe79d35129b3",
+            "d1d86ee7-501b-445c-94fa-8ec2f4c729b8",
+            "0b264335-0ef4-4ff6-904e-4a361798b535",
+            "cd220903-a762-4836-a8b8-02dedd57dd78",
+            "3df4a4f4-dc81-4148-b1d2-6c34448e4509",
+            "291ba368-5c2a-4f5f-9e33-090661de60f2",
+            "ebee7d42-40f6-4cfa-b67f-8d5ff68ac736",
+            "dc464e05-3ac0-4e3d-a8a4-27e5878b6a72",
+            "76a47820-5802-4a3e-82ba-93bdfee57965",
+            "1484456a-4b83-4d7e-87c4-d9a6c47dd251",
+            "ae896ab2-5173-43de-9f57-138c60984d23",
+            "e0613448-0c69-4915-8a25-391fabefd713",
+            "e75cfd44-c6ea-48b2-b561-01d09a057554",
+            "c294960a-837a-499f-9ed6-498aaae6849b",
+            "12909b50-81cf-432a-a7fd-c10f7bddb5fe",
+            "09cbfcf2-268e-4162-9a83-9c6af9aa763e",
+            "7ccb63b4-c85d-4af6-a7f6-40a46aa302da",
+            "236a7cbb-a2c6-466e-9a05-41256e87b027",
+            "834a9bf1-957d-4d3c-bc5e-54d7ab6e0f48",
+            "90aca730-e7fd-4535-ac9a-7949358345b1",
+            "cc5ada81-ab99-4aa7-aa5d-43d5a03b9399",
+            "14f5b6f8-6ef7-4f84-9024-6cde591f60a0",
+            "6ab039ea-b267-44c1-a029-e68e37868190",
+            "4363a6c6-c630-4424-b305-8927bedceafe"
+          ]
+        }
+      ],
+      "Value": "5"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "subscriptionID",
+          "Operator": "equals",
+          "Values": [
+            "80178ca3-02ea-4ed9-8ac5-8a7afc7abf9c",
+            "cbdff586-ef30-4f82-8223-57aefef1de31",
+            "c9216ad4-6242-49ab-91bd-7f16f999b9e4",
+            "97966e0f-6376-485f-9cdc-4cbeeadae946",
+            "f35263e2-2f52-48e5-b246-1e90db5a9acb",
+            "e1dc519a-f72b-4bf2-810e-ddf9755f2ccf",
+            "19ef2a40-638d-41bc-adde-5949db9ac143",
+            "94f35f2b-6a93-45ab-b74e-9ca5e6bd7443",
+            "c6a8b3a3-3a89-44d3-99d5-b8812f3f1743",
+            "1b66bfb7-5775-45fd-9e8c-abdc1c6608b3",
+            "8280a05a-a17c-4514-8608-31a687d8cec0",
+            "eb01cf4e-ed69-4505-a34a-cbe4a1fee5bf",
+            "c5fc96f2-ccf2-4239-b536-9314562b04a3",
+            "ca867e5e-33f0-4103-9a02-4b75944ed8ba",
+            "6309d3bc-d038-4d4b-a851-ff3dd974147a",
+            "46a8dbc1-71f2-4ba3-b70f-5909fd55239a",
+            "4b3d82eb-ef95-46b9-a5b5-21aea335b33f",
+            "5d1ea9db-f87a-436c-9a67-139cf89e5950",
+            "efd05403-4e8d-4993-b3b4-7b874795ad4c",
+            "78a7f33c-cc25-4f43-95ce-a42c8e86700d",
+            "745c5a06-bf26-4a3b-8d83-91b83c3a7d27",
+            "fb110928-f261-4ab3-b787-770581b7f24a",
+            "380b6fa9-a11c-46a1-8c86-c754c0892842",
+            "3592e34c-8b95-4c31-93ca-70f87112e458",
+            "7e7d7830-f440-4979-aaf6-a8830e88f92b",
+            "f65c260d-6c29-451f-b554-b9a7e7b1dd6e",
+            "1efcf50d-b589-45a1-88b7-b3e5f7ce5cd8",
+            "e625a24c-cef1-40ef-94f6-fa2785d97eca",
+            "1b540b76-dc51-4c73-b4ea-449860b2e15c",
+            "d808a188-1689-4843-b278-e259085cd843",
+            "ce4411d9-c7d4-4df4-9384-9ee8aebbb0ae",
+            "488ec92e-70c3-4649-9ab6-59fbcb39224d",
+            "1af4f178-cdd1-4c62-afd8-bb6510fa5bf0",
+            "319d39b9-3db3-4c14-bb7f-93995923b356",
+            "401239b3-ba41-4a0d-a788-6e6bba22f8b7",
+            "3f8dc369-9c85-4a10-bd17-845d2a04c48b",
+            "bd10e849-7d57-46a8-90b4-f9bdd2a47604",
+            "b1c6fe81-e31b-4a7f-b429-14ca89718e09",
+            "5eed3e12-d776-405a-bb0f-e044a7d99209",
+            "cb6f239d-5da0-41f2-9815-a661f9e50ac3",
+            "a8f55565-3e17-4369-aba8-ca51920b8d2b",
+            "a052c9fa-e571-45eb-a967-36bac632ae50",
+            "e32cc760-4e40-401f-b0d0-48caf3357b74",
+            "8944fad7-7cd5-42ed-bd5a-44746145733a",
+            "cc6c6576-48ae-4401-aadf-df049b5fe8a3",
+            "91a78aa1-e12a-4dd2-9d34-b80afab49d61",
+            "3b82564e-bcee-43f3-9fc5-6b79069d9d2f",
+            "708ad4d8-ece1-4626-ad4f-7b92404f6bf0",
+            "9deff73d-6736-415b-b721-5062d4b1b3de",
+            "0dc1d55b-ef95-4e2d-92c2-13c348d6b281"
+          ]
+        }
+      ],
+      "Value": "3"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "armId",
+          "Operator": "equals",
+          "Values": [
+            "/subscriptions/660c5b25-778e-4a95-a5ea-7af381e33f53/resourcegroups/cn-prdcne2-rtm2-k8s-rg/providers/Microsoft.ContainerService/managedClusters/cn-prdcne2-rtm2-k8s",
+            "/subscriptions/46d147da-c441-4a79-acd0-c61bc2848973/resourceGroups/cn-prdcne2-platformprod-k8s-rg/providers/Microsoft.ContainerService/managedClusters/cn-prdcne2-platformprod-k8s",
+            "/subscriptions/df278ee1-c9cb-4422-b846-6eb5f9e91016/resourceGroups/rg-us-lower-kmr-test/providers/Microsoft.ContainerService/managedClusters/aks-us-lower-kmr-test",
+            "/subscriptions/51c57a84-65a0-49ff-86f9-4b3e459e3063/resourceGroups/rg-us-preprod-kmr/providers/Microsoft.ContainerService/managedClusters/aks-us-preprod-kmr",
+            "/subscriptions/6d45e94c-0055-4295-be6f-c3c07c47875b/resourceGroups/rg-jp-preprod-kmr/providers/Microsoft.ContainerService/managedClusters/aks-jp-preprod-kmr",
+            "/subscriptions/dc06159b-e9da-48a4-9a3f-387289022a62/resourceGroups/rg-us-prod-kmr/providers/Microsoft.ContainerService/managedClusters/aks-us-prod-kmr",
+            "/subscriptions/2188337c-032b-42f8-9030-c9493d53524d/resourceGroups/runtime-weu-aks/providers/Microsoft.ContainerService/managedClusters/csg-fb-prd-eu-weu",
+            "/subscriptions/0d045d7c-80f4-4024-b03c-765acc78d491/resourceGroups/runtime-weu-aks/providers/Microsoft.ContainerService/managedClusters/csg-fb-stg-eu-weu",
+            "/subscriptions/0ab6a914-e8f1-471c-b27c-46f7d0ed43e0/resourceGroups/runtime-weu-aks-cicd/providers/Microsoft.ContainerService/managedClusters/csg-runtime-cicd-eu-weu",
+            "/subscriptions/0ab6a914-e8f1-471c-b27c-46f7d0ed43e0/resourceGroups/runtime-weu-aks-ops/providers/Microsoft.ContainerService/managedClusters/csg-runtime-ops-eu-weu",
+            "/subscriptions/25157378-2fd4-4caa-a17c-e0ba18e8673a/resourceGroups/runtime-weu-aks/providers/Microsoft.ContainerService/managedClusters/csg-shared-stg-eu-weu",
+            "/subscriptions/28066ff1-698d-4a26-b081-03b842c823d8/resourceGroups/runtime-weu-aks/providers/Microsoft.ContainerService/managedClusters/csg-shared-dev-eu-weu",
+            "/subscriptions/2af0557e-d296-43a6-a634-99d934f6dddf/resourceGroups/runtime-cus-aks/providers/Microsoft.ContainerService/managedClusters/csg-csgna-stg-us-cus",
+            "/subscriptions/32c49c7b-a46c-4419-8233-b2518ce5fdf3/resourceGroups/runtime-weu-aks/providers/Microsoft.ContainerService/managedClusters/csg-platform-stg-eu-weu",
+            "/subscriptions/34477926-88aa-44fa-8837-0e4a4a254a28/resourceGroups/runtime-jpe-aks/providers/Microsoft.ContainerService/managedClusters/csg-shared-prd-jp-jpe",
+            "/subscriptions/3a1cf57b-5c7b-4506-8f7f-3850d2e9618c/resourceGroups/runtime-weu-aks/providers/Microsoft.ContainerService/managedClusters/csg-platform-prd-eu-weu",
+            "/subscriptions/454dcd46-3277-4514-b8c5-26664b87effc/resourceGroups/runtime-cus-aks/providers/Microsoft.ContainerService/managedClusters/csg-platform-prd-us-cus",
+            "/subscriptions/57477abc-e6c8-4f63-a504-e919fd6a5200/resourceGroups/runtime-jpe-aks/providers/Microsoft.ContainerService/managedClusters/csg-platform-prd-jp-jpe",
+            "/subscriptions/6d4d4259-1d2d-4c3e-94e3-d0a3eeada1d7/resourceGroups/runtime-weu-aks/providers/Microsoft.ContainerService/managedClusters/csg-fb-dev-eu-weu",
+            "/subscriptions/a7b2c7a5-4c2e-4360-a72e-9d414f98239b/resourceGroups/runtime-cus-aks/providers/Microsoft.ContainerService/managedClusters/csg-csgna-prd-us-cus",
+            "/subscriptions/cb83e507-16d4-438b-b5a9-83f21ea9b2e8/resourceGroups/runtime-weu-aks/providers/Microsoft.ContainerService/managedClusters/csg-shared-prd-eu-weu",
+            "/subscriptions/d40f9145-3ea3-456f-b778-f92505eeae26/resourceGroups/runtime-cus-aks/providers/Microsoft.ContainerService/managedClusters/csg-csgna-dev-us-cus",
+            "/subscriptions/d8dc8216-9ad3-41ef-8343-d2619d89c567/resourceGroups/runtime-weu-aks/providers/Microsoft.ContainerService/managedClusters/csg-platform-dev-eu-weu",
+            "/subscriptions/f48959dd-855c-47fe-a419-3704c78f681d/resourceGroups/runtime-cus-aks/providers/Microsoft.ContainerService/managedClusters/csg-shared-prd-us-cus",
+            "/subscriptions/7d8f00e8-9d27-4f9b-9f15-6ae6a1eb40ee/resourceGroups/rg-jp-prod-kmr/providers/Microsoft.ContainerService/managedClusters/aks-jp-prod-kmr",
+            "/subscriptions/1147988c-8516-4b4c-8b61-7be5c39c9e17/resourcegroups/az-phiapp-prod-01-esco-prod-westus-rg-01/providers/microsoft.containerservice/managedclusters/esco-aksphi-prod-westus-cluster-01",
+            "/subscriptions/99a3af26-911d-4bc5-8fcc-8f9de81e46c5/resourceGroups/rg-aks-dev-container-westus2/providers/Microsoft.ContainerService/managedClusters/aks-dev-westus2"
+          ]
+        }
+      ],
+      "Value": "1"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "armId",
+          "Operator": "equals",
+          "Values": [
+            "/subscriptions/8750c60a-c450-4dd6-bdfb-9137044d5b64/resourceGroups/Testing-EUS2/providers/Microsoft.ContainerService/managedClusters/eus2-testing-2",
+            "/subscriptions/8750c60a-c450-4dd6-bdfb-9137044d5b64/resourceGroups/Testing-WUS2/providers/Microsoft.ContainerService/managedClusters/wus2-testing-2",
+            "/subscriptions/b4b0cbab-64dc-42bc-9d95-ea7c8d0cf188/resourcegroups/gangams-aks-log-scale-neu/providers/Microsoft.ContainerService/managedClusters/gangams-aks-log-scale-neu"
+          ]
+        }
+      ],
+      "Value": "5"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "armId",
+          "Operator": "equals",
+          "Values": [
+            "/subscriptions/375658e5-ff59-44d2-9f7e-60c9b176c583/resourceGroups/rg-kr-fst-sb-snd-eus2-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-sb-snd-eus2-c82d",
+            "/subscriptions/375658e5-ff59-44d2-9f7e-60c9b176c583/resourceGroups/rg-kr-fst-sb-snd-cus-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-sb-snd-cus-3339",
+            "/subscriptions/e790f9e5-a16a-4109-8fbd-b1129bab6b13/resourceGroups/rg-kr-fst-np-dev-eus2-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-np-dev-eus2-ab73",
+            "/subscriptions/e790f9e5-a16a-4109-8fbd-b1129bab6b13/resourceGroups/rg-kr-fst-np-dev-cus-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-np-dev-cus-de33",
+            "/subscriptions/e790f9e5-a16a-4109-8fbd-b1129bab6b13/resourceGroups/rg-kr-fst-np-tst-eus2-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-np-tst-eus2-ab4f",
+            "/subscriptions/e790f9e5-a16a-4109-8fbd-b1129bab6b13/resourceGroups/rg-kr-fst-np-tst-cus-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-np-tst-cus-76d5",
+            "/subscriptions/e7b72563-124f-483c-9c2a-0f2a24d91de1/resourceGroups/rg-kr-fst-p-stg-eus2-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-p-stg-eus2-7c1c",
+            "/subscriptions/e7b72563-124f-483c-9c2a-0f2a24d91de1/resourceGroups/rg-kr-fst-p-stg-cus-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-p-stg-cus-a502",
+            "/subscriptions/e7b72563-124f-483c-9c2a-0f2a24d91de1/resourceGroups/rg-kr-fst-p-prd-eus2-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-p-prd-eus2-33b3",
+            "/subscriptions/e7b72563-124f-483c-9c2a-0f2a24d91de1/resourceGroups/rg-kr-fst-p-prd-cus-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-p-prd-cus-d325",
+            "/subscriptions/35af2518-0034-44cc-b208-2bf7bf2b1d2d/resourceGroups/rg-miccm-aks-prod-emea-weu-1/providers/Microsoft.ContainerService/managedClusters/aks-miccm-prod-emea-weu-1",
+            "/subscriptions/169653ab-4b95-48c7-b88c-ce57cc44f8ce/resourceGroups/rg-miccm-aks-prod-amap-cus-1/providers/Microsoft.ContainerService/managedClusters/aks-miccm-prod-amap-cus-1",
+            "/subscriptions/7d3b3a3e-49fe-4faa-98f1-11ed72d12d4a/resourceGroups/rg-miccm-aks-dev-emea-weu-1/providers/Microsoft.ContainerService/managedClusters/aks-miccm-dev-emea-weu-1",
+            "/subscriptions/b82ce7d7-a7bd-4542-9a94-4497695c6117/resourceGroups/rg-miccm-devtools-aks-prod-amap-cus/providers/Microsoft.ContainerService/managedClusters/aks-miccm-devtools-prod-amap-cus",
+            "/subscriptions/c99f0493-ef0b-4023-9634-9e6cf2f1a0c5/resourceGroups/rg-miccm-devtools-aks-prod-emea-weu/providers/Microsoft.ContainerService/managedClusters/aks-miccm-devtools-prod-emea-weu",
+            "/subscriptions/511cdf0e-2b7d-44d1-83a0-d4aeb576aca7/resourceGroups/rg-miccm-aks-nonprod-amap-cus-1/providers/Microsoft.ContainerService/managedClusters/aks-miccm-nonprod-amap-cus-1",
+            "/subscriptions/25bb1f44-a0ae-48ed-bcbb-b99f2c5a2384/resourceGroups/rg-miccm-aks-nonprod-emea-weu-1/providers/Microsoft.ContainerService/managedClusters/aks-miccm-nonprod-emea-weu-1",
+            "/subscriptions/1a3581b5-064a-4b85-9102-aadc96d53e5a/resourceGroups/rg-miccm-devtools-aks-prod-cn-cnn3/providers/Microsoft.ContainerService/managedClusters/aks-miccm-devtools-prod-cn-cnn3",
+            "/subscriptions/0908804a-1cfb-4076-a008-fb0944fa46aa/resourceGroups/rg-miccm-aks-nonprod-cn-cnn3-1/providers/Microsoft.ContainerService/managedClusters/aks-miccm-nonprod-cn-cnn3-1",
+            "/subscriptions/101eed11-9db7-4221-8197-314b47799766/resourceGroups/rg-miccm-aks-prod-cn-cnn3-1/providers/Microsoft.ContainerService/managedClusters/aks-miccm-prod-cn-cnn3-1",
+            "/subscriptions/03fbda2c-7b85-45b6-abee-706c29243362/resourcegroups/azc-test-wus2-rg/providers/Microsoft.ContainerService/managedClusters/azc-test-wus2-aks"
+          ]
+        }
+      ],
+      "Value": "750m"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "subscriptionID",
+          "Operator": "equals",
+          "Values": [
+            "65e4460d-7c8b-49f1-a761-bb4cac63120b"
+          ]
+        }
+      ],
+      "Value": "1"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "subscriptionID",
+          "Operator": "equals",
+          "Values": [
+            "a705d761-7366-486d-88e9-79dd9216f5b9",
+            "faef68a0-cdf2-44c0-8eb8-f3cdebffef3e",
+            "f0bfee9e-2a83-4184-bbce-b570751ce8f6",
+            "4e235881-cb2c-4a1e-9a2d-0516ec000c9d",
+            "e8a9b63c-5787-40b3-82cf-70756a7463d9"
+          ]
+        }
+      ],
+      "Value": "2"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "subscriptionID",
+          "Operator": "equals",
+          "Values": [
+            "fc599d2a-8573-4b51-8760-3b2a2523c1c6"
+          ]
+        }
+      ],
+      "Value": "4"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "armId",
+          "Operator": "equals",
+          "Values": [
+            "/subscriptions/67b49d2e-c5b7-4988-a379-0d5dc5dfdb05/resourceGroups/rg-dp-aks-corebe-prelive/providers/Microsoft.ContainerService/managedClusters/dp-corebe-prelive-aks",
+            "/subscriptions/aee20027-9965-4d49-931a-e8695dcc74b0/resourcegroups/rg-dp-aks-corebe-prod/providers/Microsoft.ContainerService/managedClusters/dp-corebe-prod-aks",
+            "/subscriptions/87043035-79c8-4473-8038-baf2ea03af22/resourcegroups/rg-dp-aks-corebe-approval/providers/Microsoft.ContainerService/managedClusters/dp-corebe-approval-aks",
+            "/subscriptions/f0623b21-1f8d-4b92-a855-ef470558bf28/resourceGroups/rg-idm-dev3-aks001/providers/Microsoft.ContainerService/managedClusters/aks-idm-dev3-common001",
+            "/subscriptions/e212b59b-0287-4cde-8604-8b67635de479/resourceGroups/rg-phi-prod-westcentralus-aks-prod01-01/providers/Microsoft.ContainerService/managedClusters/aks-phi-prod-westcentralus-prod01-01",
+            "/subscriptions/9d27018b-eeaf-4016-92a9-42ca7e3e43f1/resourceGroups/nsas-westus2-prod-p1a-gen-rg/providers/Microsoft.ContainerService/managedClusters/nsas-westus2-prod-p1a-gen-aks",
+            "/subscriptions/6a4fe4c0-970d-47d7-b8ff-e8ff5cdb047a/resourceGroups/commoninfra-prod-esc-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-esc-0",
+            "/subscriptions/3da8cf98-81da-421d-9290-4518ac496f9f/resourceGroups/commoninfra-prod-jnb-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-jnb-0",
+            "/subscriptions/ffcb2682-852b-48ac-b9d9-8f8825253c62/resourceGroups/commoninfra-prod-itn-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-itn-0",
+            "/subscriptions/eadb71c8-86ca-49ce-971a-153485ed6ecc/resourceGroups/commoninfra-prod-brse-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-brse-0",
+            "/subscriptions/5205343f-cadc-47f7-bb99-088a9ba2a701/resourceGroups/commoninfra-prod-mrs-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-mrs-0",
+            "/subscriptions/1d236bce-f678-40f8-a2ad-50ae622f8d14/resourceGroups/commoninfra-prod-ml-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-ml-0",
+            "/subscriptions/9c17859b-9ab8-4a0a-9aa5-098cd50498b5/resourceGroups/commoninfra-prod-ch-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-ch-0",
+            "/subscriptions/b3bc7b10-18be-40aa-b587-852a8cef04a1/resourceGroups/commoninfra-prod-twnw-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-twnw-0",
+            "/subscriptions/0374a5a8-4015-42d3-95d8-8e090b3e1401/resourceGroups/commoninfra-prod-yt-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-yt-0",
+            "/subscriptions/7749b5e1-b739-47e0-9071-26e1b33f4ee4/resourceGroups/commoninfra-prod-chn-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-chn-0",
+            "/subscriptions/838a9a96-2cfc-4ab9-9334-59c519f68428/resourceGroups/commoninfra-prod-ma-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-ma-0",
+            "/subscriptions/c1126c38-c136-4756-9ddc-660871f87488/resourceGroups/commoninfra-prod-ilc-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-ilc-0",
+            "/subscriptions/61767392-d5f2-450d-a51d-a39b0257071d/resourceGroups/commoninfra-prod-mxc-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-mxc-0",
+            "/subscriptions/27c5ae9b-8d33-4ddd-a75f-be2378331e3e/resourceGroups/commoninfra-prod-ln-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-ln-0",
+            "/subscriptions/6d1998fd-9eb0-43ce-8e25-18496e98af31/resourceGroups/commoninfra-prod-auh-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-auh-0",
+            "/subscriptions/e63df4f1-de60-42a9-9bf3-5db07cb6be6a/resourceGroups/commoninfra-prod-now-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-now-0",
+            "/subscriptions/ce51cd17-68a2-4bf9-9e4f-71174eb75502/resourceGroups/commoninfra-prod-ps-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-ps-0",
+            "/subscriptions/c5780efc-5543-4522-ad6c-2776dd3e2f44/resourceGroups/commoninfra-prod-cpt-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-cpt-0",
+            "/subscriptions/ada6b962-1718-47ee-add7-d0bdfe4a1c85/resourceGroups/commoninfra-prod-den-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-den-0",
+            "/subscriptions/d41943a4-052a-4b2a-8be5-abf031c439f4/resourceGroups/commoninfra-prod-os-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-os-0",
+            "/subscriptions/2dca625c-d137-42bf-a57f-9c1eaef8f409/resourceGroups/commoninfra-prod-chw-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-chw-0",
+            "/subscriptions/338a7bb6-59ec-46a2-87d2-084e00c54258/resourceGroups/commoninfra-prod-dxb-1/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-dxb-1",
+            "/subscriptions/338a7bb6-59ec-46a2-87d2-084e00c54258/resourceGroups/commoninfra-prod-dxb-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-dxb-0",
+            "/subscriptions/a1dae834-e1e6-4dce-94a7-6597c6454e23/resourceGroups/commoninfra-prod-twn-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-twn-0",
+            "/subscriptions/56d9979a-8a4b-4424-aaff-908a955d0222/resourceGroups/commoninfra-prod-noe-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-noe-0",
+            "/subscriptions/a95e8c67-c483-4529-bf99-7c148271885a/resourceGroups/commoninfra-prod-par-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-par-0",
+            "/subscriptions/9641652b-35ba-496d-a0f6-42972c4b749a/resourceGroups/commoninfra-prod-cw-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-cw-0",
+            "/subscriptions/0b10f641-928c-41db-ad53-29324f1ea45e/resourceGroups/commoninfra-prod-ty-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-ty-0",
+            "/subscriptions/bc1d8b6f-eb07-489c-afb0-1e23e5f3ebe9/resourceGroups/commoninfra-prod-usw3-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-usw3-0",
+            "/subscriptions/231c26d5-9f15-40d5-9d81-ddb38d397cae/resourceGroups/commoninfra-prod-pn-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-pn-0",
+            "/subscriptions/cd993a7a-4753-4162-a434-7285eb7f3f5a/resourceGroups/commoninfra-prod-cbr2-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-cbr2-0",
+            "/subscriptions/affc6c82-5ee1-48e9-9797-1218405a0c23/resourceGroups/commoninfra-prod-sy-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-sy-0",
+            "/subscriptions/86a31c6b-9d5b-4020-8155-12953ec023bd/resourceGroups/commoninfra-prod-yq-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-yq-0",
+            "/subscriptions/9685b574-d6c7-4f7a-8dd0-1758bb87f885/resourceGroups/commoninfra-prod-cy-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-cy-0",
+            "/subscriptions/cbacedb3-12ab-4756-8f0a-5fb166b3cc85/resourceGroups/commoninfra-prod-cq-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-cq-0",
+            "/subscriptions/8be8d62b-7a6f-4315-9123-e19cb4902ab0/resourceGroups/commoninfra-prod-cbr-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-cbr-0",
+            "/subscriptions/c1126c38-c136-4756-9ddc-660871f87488/resourceGroups/commoninfra-prod-ilc-1/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-ilc-1",
+            "/subscriptions/fde38130-8ea3-410d-8078-140943ca4d47/resourceGroups/commoninfra-prod-dewc-0/providers/Microsoft.ContainerService/managedClusters/commoninfra-prod-dewc-0",
+            "/subscriptions/4b32c6ff-7b8e-4d92-803d-4684ecd2670f/resourceGroups/APWEPRDRGPAKS/providers/Microsoft.ContainerService/managedClusters/APWEPRD003AKS001",
+            "/subscriptions/9e59826f-164a-4a6c-88d2-9bb4fd287831/resourcegroups/APWEDEVRGPAKS/providers/Microsoft.ContainerService/managedClusters/APWEDEV001AKS001",
+            "/subscriptions/6afd3127-a357-47c0-b357-1ea76ca2928f/resourcegroups/APWEPRDRGPAKS/providers/Microsoft.ContainerService/managedClusters/APWEPRD004AKS001",
+            "/subscriptions/6afd3127-a357-47c0-b357-1ea76ca2928f/resourcegroups/APWEPRDRGPAKS/providers/Microsoft.ContainerService/managedClusters/APWEPRD004AKS002",
+            "/subscriptions/4b32c6ff-7b8e-4d92-803d-4684ecd2670f/resourcegroups/APWEPRDRGPAKS/providers/Microsoft.ContainerService/managedClusters/APWEPRD003AKS002",
+            "/subscriptions/9b6572d8-12b6-47db-9839-1e76e60ed4e3/resourceGroups/rg-cedec-k8s-int/providers/Microsoft.ContainerService/managedClusters/aks-cedec-k8s-int"
+          ]
+        }
+      ],
+      "Value": "2"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "armId",
+          "Operator": "equals",
+          "Values": [
+            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourceGroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-high-log-scale-eus",
+            "/subscriptions/2133779d-5d85-4d01-8e89-253921aab7a6/resourceGroups/uks-prod-comm-mega-lab-aks-rg/providers/Microsoft.ContainerService/managedClusters/uks-prod-comm-mega-lab-aks1",
+            "/subscriptions/2133779d-5d85-4d01-8e89-253921aab7a6/resourceGroups/uks-prod-comm-mega-lab-aks-rg/providers/Microsoft.ContainerService/managedClusters/uks-prod-comm-mega-lab-aks2"
+          ]
+        }
+      ],
+      "Value": "3"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "tenantID",
+          "Operator": "equals",
+          "Values": [
+            "cdc5aeea-15c5-4db6-b079-fcadd2505dc2"
+          ]
+        }
+      ],
+      "Value": "3"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "region",
+          "Operator": "equals",
+          "Values": [
+            "eastus2euap"
+          ]
+        }
+      ],
+      "Value": "3"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "region",
+          "Operator": "equals",
+          "Values": [
+            "centraluseuap"
+          ]
+        }
+      ],
+      "Value": "1"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "region",
+          "Operator": "equals",
+          "Values": [
+            "westcentralus"
+          ]
+        }
+      ],
+      "Value": "3"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "region",
+          "Operator": "equals",
+          "Values": [
+            "uksouth"
+          ]
+        }
+      ],
+      "Value": "3"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "region",
+          "Operator": "equals",
+          "Values": [
+            "eastus"
+          ]
+        }
+      ],
+      "Value": "3"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "region",
+          "Operator": "equals",
+          "Values": [
+            "australiaeast",
+            "australiacentral",
+            "brazilsouth",
+            "canadacentral",
+            "centralindia",
+            "eastasia",
+            "eastus2",
+            "francecentral",
+            "germanywestcentral",
+            "japaneast",
+            "jioindiawest",
+            "koreacentral",
+            "northcentralus",
+            "northeurope",
+            "norwayeast",
+            "qatarcentral",
+            "southafricanorth",
+            "swedencentral",
+            "switzerlandnorth",
+            "uaenorth",
+            "ukwest",
+            "westus2",
+            "usgovvirginia",
+            "usgovarizona",
+            "chinaeast2",
+            "chinanorth3"
+          ]
+        }
+      ],
+      "Value": "1"
+    }
+  ]
+}

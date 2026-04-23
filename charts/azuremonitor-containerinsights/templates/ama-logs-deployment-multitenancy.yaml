@@ -1,0 +1,223 @@
+{{- $arcSettings := include "arc-extension-settings" . | fromYaml }}
+{{- $isArcExtension := $arcSettings.isArcExtension }}
+{{/* AKS-only resource */}}
+{{- if not $isArcExtension }}
+{{- $amalogsLinuxDefaultImageTag := dict "component" "ama-logs-linux" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.addonImageTag" }}
+{{/* Determine isusingaadauth value */}}
+{{- $isusingaadauth := false -}}
+{{- if hasKey .Values.OmsAgent "isUsingAADAuth" -}}
+  {{- $isusingaadauth = .Values.OmsAgent.isUsingAADAuth -}}
+{{- end -}}
+{{- $cloudEnv := lower .Values.global.commonGlobals.CloudEnvironment }}
+{{- if and $isusingaadauth .Values.OmsAgent.isMultitenancyLogsEnabled }}
+---
+{{- if semverCompare ">=1.16.0" .Values.global.commonGlobals.Versions.Kubernetes }}
+apiVersion: apps/v1
+{{- else }}
+apiVersion: extensions/v1beta1
+{{- end }}
+kind: Deployment
+metadata:
+  name: ama-logs-multitenancy
+  namespace: kube-system
+  labels:
+    component: ama-logs-agent
+    tier: node
+    kubernetes.azure.com/managedby: aks
+{{- if .Values.legacyAddonDelivery }}
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+{{- end }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      rsName: "ama-logs-multitenancy"
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        rsName: "ama-logs-multitenancy"
+        kubernetes.azure.com/managedby: aks
+      annotations:
+        agentVersion: "azure-mdsd-1.37.0"
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+        dockerProviderVersion: "18.0.1-0"
+        schema-versions: "v1"
+        WSID: {{ .Values.OmsAgent.workspaceID | b64enc | quote }}
+        kubernetes.azure.com/no-http-proxy-vars: "true"
+{{- if semverCompare "<1.11.0" .Values.global.commonGlobals.Versions.Kubernetes }}
+        scheduler.alpha.kubernetes.io/critical-pod: ""
+{{- end }}
+    spec:
+{{- if semverCompare ">=1.11.0" .Values.global.commonGlobals.Versions.Kubernetes }}
+      priorityClassName: system-node-critical
+{{- end }}
+      tolerations:
+      - key: "CriticalAddonsOnly"
+        operator: "Exists"
+      volumes:
+        - name: ama-logs-secret
+          secret:
+            secretName: ama-logs-secret
+        - name: settings-vol-config
+          configMap:
+            name: container-azm-ms-agentconfig
+            optional: true
+      {{- if (eq (include "should_mount_hostca" . ) "true" ) }}
+        - name: anchors-ubuntu
+          hostPath:
+            path: /usr/local/share/ca-certificates/
+            type: DirectoryOrCreate
+        - name: anchors-mariner
+          hostPath:
+            path: /etc/pki/ca-trust/source/anchors
+            type: DirectoryOrCreate
+      {{- end }}
+      serviceAccountName: ama-logs
+      containers:
+        - name: addon-token-adapter
+{{ tpl $.Values.Azure.Identity.AADMsiTokenAdapterLinuxYaml $ | nindent 10 }}
+        - name: ama-logs
+          image: "{{ template "addon_mcr_repository_base" . }}{{ .Values.OmsAgent.imageRepository | default "/azuremonitor/containerinsights/ciprod" }}:{{- default $amalogsLinuxDefaultImageTag .Values.OmsAgent.imageTagLinux -}}"
+        {{- if .Values.OmsAgent.isImagePullPolicyAlways }}
+          imagePullPolicy: Always
+        {{- else }}
+          imagePullPolicy: IfNotPresent
+        {{- end }}
+          resources:
+            limits:
+              cpu: "{{ .Values.OmsAgent.omsAgentMultitenancyCPULimitLinux }}"
+              memory: "{{ .Values.OmsAgent.omsAgentMultitenancyMemoryLimitLinux }}"
+            requests:
+              cpu: "{{ .Values.OmsAgent.omsAgentMultitenancyCPURequestLinux }}"
+              memory: "{{ .Values.OmsAgent.omsAgentMultitenancyMemoryRequestLinux }}"
+          env:
+            - name: AZMON_MULTI_TENANCY_LOG_COLLECTION
+              value: "true"
+            - name: AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE
+              value: "true"
+            - name: CONTAINER_MEMORY_LIMIT_IN_BYTES
+              valueFrom:
+                resourceFieldRef:
+                  containerName: ama-logs
+                  resource: limits.memory
+            - name: AKS_CLUSTER_NAME
+              value: "{{ .Values.OmsAgent.aksClusterName }}"
+            - name: AKS_RESOURCE_ID
+              value: "{{ .Values.OmsAgent.aksResourceID }}"
+            - name: AKS_NODE_RESOURCE_GROUP
+              value: "{{ .Values.OmsAgent.aksNodeResourceGroup }}"
+            - name: AKS_REGION
+              value: "{{ $.Values.global.commonGlobals.Region }}"
+            - name: CONTROLLER_TYPE
+              value: "ReplicaSet"
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          {{- if (eq $cloudEnv "usnat") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
+          {{- end }}
+          {{- if (eq $cloudEnv "ussec") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.scloud/v2/"
+          {{- end }}
+          {{- if (eq $cloudEnv "azurebleucloud") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
+          {{- end }}
+            - name: USING_AAD_MSI_AUTH
+              value: "true"
+            - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
+              value: "{{ .Values.AppmonitoringAgent.enabled }}"
+            - name: CLUSTER_CLOUD_ENVIRONMENT
+              value: "{{ $cloudEnv }}"
+            - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+          securityContext:
+            privileged: true
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - DAC_OVERRIDE
+          ports:
+            - name: http
+              containerPort: 24225
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /etc/ama-logs-secret
+              name: ama-logs-secret
+              readOnly: true
+            - mountPath: /etc/config/settings
+              name: settings-vol-config
+              readOnly: true
+          {{- if (eq (include "should_mount_hostca" . ) "true" ) }}
+            # USSec and USNat have cloud-specific Root and Intermediate CAs that must be mounted into all running containers from the host
+            # Container Insights has logic to update the trust store in the image based on certs present in /anchors/ mounts below
+            - mountPath: /anchors/mariner
+              name: anchors-mariner
+              readOnly: true
+            - mountPath: /anchors/ubuntu
+              name: anchors-ubuntu
+              readOnly: true
+          {{- end }}
+          {{- if .Values.OmsAgent.trustedCA }}
+            - mountPath: /etc/ssl/certs/proxy-cert.crt
+              subPath: PROXYCERT.crt
+              name: ama-logs-secret
+              readOnly: true
+          {{- end }}
+          lifecycle:
+            preStop:
+              exec:
+               command: [
+                  "sh", "-c",
+                  # Introduce a delay to the shutdown sequence to wait for the
+                  # pod eviction event to propagate. Then, gracefully shutdown
+                  "sleep 5"
+                ]
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - /opt/livenessprobe.sh
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            timeoutSeconds: 15
+          readinessProbe:
+            tcpSocket:
+              port: 24225
+            initialDelaySeconds: 10
+            periodSeconds: 30
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.azure.com/cluster
+                operator: Exists
+              - key: type
+                operator: NotIn
+                values:
+                - virtual-kubelet
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            preference:
+              matchExpressions:
+              - key: kubernetes.azure.com/mode
+                operator: In
+                values:
+                - system
+{{- end }}
+{{- end }}
