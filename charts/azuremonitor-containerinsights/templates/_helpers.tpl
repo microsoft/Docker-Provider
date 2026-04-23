@@ -93,7 +93,7 @@ HOST CA CERTIFICATE MOUNTING SECTION (from AKS chart)
 {{/* Check if host CA certs should be mounted for specific cloud environments */}}
 {{- define "should_mount_hostca" -}}
   {{- $cloud_environment := (.Values.global.commonGlobals.CloudEnvironment | default "azurepubliccloud" | lower) }}
-  {{- has $cloud_environment (list "usnat" "ussec" "azurebleucloud" "azuredeloscloud") -}}
+  {{- has $cloud_environment (list "usnat" "ussec" "azurebleucloud") -}}
 {{- end }}
 {{/*
 =============================================================================
