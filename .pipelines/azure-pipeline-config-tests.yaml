@@ -203,8 +203,8 @@ stages:
     # === Run test cases (one step per case) ===
     - ${{ each caseName in parameters.cases }}:
       - bash: |
-          chmod +x ./run-matrix-tests.sh
-          ./run-matrix-tests.sh \
+          chmod +x ./run-configmap-test-case.sh
+          ./run-configmap-test-case.sh \
             --case "${{ caseName }}" \
             --repo-root "$(Build.SourcesDirectory)"
         workingDirectory: $(Build.SourcesDirectory)/test/testkube
