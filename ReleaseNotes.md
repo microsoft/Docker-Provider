@@ -8,6 +8,50 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 04/22/2026 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.3.0 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.3.0 (windows)
+- Linux
+  - [azurelinux 3.0.20260204](https://github.com/microsoft/azurelinux/releases/tag/3.0.20260401-3.0)
+  - Golang - 1.26.2
+  - Ruby - arm64 - 3.3.5-7, x86_64 - 3.3.10
+  - MDSD - 1.40.3
+  - Telegraf - 1.38.2
+  - Fluent-bit - 4.0.14
+  - Fluentd - 1.16.3
+- Windows
+  - Golang - 1.26.2
+  - Ruby - 3.1.1
+  - Windows AMA - 47.7.1
+  - Telegraf - 1.24.2
+  - Fluent-bit - 4.0.3
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Common (Linux + Windows)
+    * 3.1.36 - CVE fixes by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1631
+    * Fix Telegraf Env Handling issue by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1645
+    * Add nodes/pods based on k8s version by @rashmichandrashekar in https://github.com/microsoft/Docker-Provider/pull/1609
+
+- Infra
+    * let trivy fail when cves are detected by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1591
+    * let ginkgo-e2e decide gotoolchain version by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1610
+    * ama-logs deployment and test in dev clusters by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1625
+    * Ignore unfixed telegraf cves for 3.1.36 by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1637
+    * collect ama-logs process metrics through telegraf by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1629
+    * guard image deploy to prod clusters by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1638
+    * fix: update testkube MongoDB image tag from 8.0.15 to 8.2.5 by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1641
+    * add stub pipeline YAML for configmap testing by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1642
+    * fix: schedule testkube MongoDB on non-FIPS nodes by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1639
+    * disable trivyscan failure by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1644
+    * add test clusters by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1635    
+    * Add retry logic for gem install to handle QEMU arm64 segfaults by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1648
+    * fix ama-logs-windows time issue by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1647
+    * enable networkflowlogs through helm chart by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1649
+    * add dev cluster for configmap testing by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1651
+    * Store all Current Toggle Documents for Logs by @NicAtMS in https://github.com/microsoft/Docker-Provider/pull/1630
+    * auto k8s version detect by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1654
+
 ### 02/25/2026 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.1.35 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.1.35 (windows)

@@ -476,7 +476,7 @@ spec:
   template:
     metadata:
       annotations:
-        agentVersion: "azure-mdsd-1.37.0"
+        agentVersion: "azure-mdsd-1.40.3"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         WSID: {{ $.Values.OmsAgent.workspaceID | b64enc | quote }}
@@ -1010,7 +1010,7 @@ spec:
         rsName: "ama-logs-rs"
         kubernetes.azure.com/managedby: aks
       annotations:
-        agentVersion: "azure-mdsd-1.37.0"
+        agentVersion: "azure-mdsd-1.40.3"
         cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
@@ -1366,7 +1366,7 @@ spec:
         tier: node-win
         kubernetes.azure.com/managedby: aks
       annotations:
-        agentVersion: "46.17.2"
+        agentVersion: "47.7.1"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         WSID: {{ .Values.OmsAgent.workspaceID | b64enc | quote }}
@@ -1731,7 +1731,7 @@ spec:
         rsName: "ama-logs-multitenancy"
         kubernetes.azure.com/managedby: aks
       annotations:
-        agentVersion: "azure-mdsd-1.37.0"
+        agentVersion: "azure-mdsd-1.40.3"
         cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
@@ -1858,6 +1858,10 @@ spec:
               value: "{{ .Values.AppmonitoringAgent.enabled }}"
             - name: CLUSTER_CLOUD_ENVIRONMENT
               value: "{{ .Values.global.commonGlobals.CloudEnvironment | lower }}"
+            - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
           securityContext:
             privileged: true
             capabilities:
