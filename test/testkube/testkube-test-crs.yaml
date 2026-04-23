@@ -156,7 +156,7 @@ spec:
 apiVersion: testworkflows.testkube.io/v1
 kind: TestWorkflow
 metadata:
-  name: countprocess
+  name: count-telegraf-process
   namespace: testkube
   labels:
     test-type: ginkgo-test
@@ -199,7 +199,7 @@ spec:
           value: "{{config.EXPECTED_TELEGRAF_WINDOWS}}"
         - name: GOTOOLCHAIN
           value: "{{config.GOTOOLCHAIN}}"
-      shell: ginkgo run -r ./countprocess
+      shell: ginkgo --label-filter="count-telegraf-process" ./configmap
   pod:
     nodeSelector:
       kubernetes.io/os: linux

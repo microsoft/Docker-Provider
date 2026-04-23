@@ -18,9 +18,10 @@ var (
 )
 
 const (
-	WindowsLabel = "windows"
-	ARM64Label   = "arm64"
-	FIPSLabel    = "fips"
+	WindowsLabel              = "windows"
+	ARM64Label                = "arm64"
+	FIPSLabel                 = "fips"
+	CountTelegrafProcessLabel = "count-telegraf-process" // also referenced in testkube-test-crs.yaml
 
 	// IntermittentErrorThreshold is the maximum number of occurrences allowed for expected intermittent errors
 	IntermittentErrorThreshold = 10

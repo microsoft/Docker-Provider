@@ -30,7 +30,7 @@ cases:
   - name: process-metrics-enabled
     configmap: test/configmaps/config-tests/container-azm-ms-agentconfig-process-metrics-enabled.yaml
     workflows:
-      - name: countprocess
+      - name: count-telegraf-process
         params:
           EXPECTED_TELEGRAF_DS: "2"
           EXPECTED_TELEGRAF_RS: "1"
@@ -42,7 +42,7 @@ cases:
   - name: process-metrics-default
     configmap: kubernetes/container-azm-ms-agentconfig.yaml
     workflows:
-      - name: countprocess
+      - name: count-telegraf-process
         params:
           EXPECTED_TELEGRAF_DS: "1"
           EXPECTED_TELEGRAF_RS: "0"
