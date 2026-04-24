@@ -1408,24 +1408,26 @@ fi
 #start a telegraf instance for collecting process metrics inside ama-logs containers (if enabled via ConfigMap)
 if [ "${AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS}" == "true" ]; then
     amaLogsProcessMetricsConfFile="/etc/opt/microsoft/docker-cimprov/telegraf-ama-logs-process-metrics.conf"
+    amaLogsProcessMetricsConfRuntime="/opt/telegraf-ama-logs-process-metrics.conf"
     if [ -e "$amaLogsProcessMetricsConfFile" ]; then
         echo "start a telegraf instance for collecting process metrics inside ama-logs containers"
+        cp "$amaLogsProcessMetricsConfFile" "$amaLogsProcessMetricsConfRuntime"
         nodename=$(cat /var/opt/microsoft/docker-cimprov/state/containerhostname)
         podname=$(hostname)
-        sed -i -e "s/placeholder_hostname/$nodename/g" $amaLogsProcessMetricsConfFile
-        sed -i -e "s/placeholder_podname/$podname/g" $amaLogsProcessMetricsConfFile
+        sed -i -e "s/placeholder_hostname/$nodename/g" $amaLogsProcessMetricsConfRuntime
+        sed -i -e "s/placeholder_podname/$podname/g" $amaLogsProcessMetricsConfRuntime
         # Set ControllerType for PrometheusSidecar
         if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
-            sed -i -e 's/\$CONTROLLER_TYPE/PrometheusSidecar/g' $amaLogsProcessMetricsConfFile
+            sed -i -e 's/\$CONTROLLER_TYPE/PrometheusSidecar/g' $amaLogsProcessMetricsConfRuntime
         fi
         # Set App Insights instrumentation key (Base64 decode)
         if [ -n "$APPLICATIONINSIGHTS_AUTH" ] && [ -n "$AKS_RESOURCE_ID" ]; then
             appinsightsKey=$(echo "$APPLICATIONINSIGHTS_AUTH" | base64 -d | tr -d '\n')
-            sed -i -e "s/placeholder_appinsights_key/$appinsightsKey/g" $amaLogsProcessMetricsConfFile
+            sed -i -e "s/placeholder_appinsights_key/$appinsightsKey/g" $amaLogsProcessMetricsConfRuntime
             # Use /proc so telegraf only collect process metrics inside ama-logs containers.
-            HOST_PROC=/proc /opt/telegraf --non-strict-env-handling --config $amaLogsProcessMetricsConfFile &
+            HOST_PROC=/proc /opt/telegraf --non-strict-env-handling --config $amaLogsProcessMetricsConfRuntime &
         else
-            echo "APPLICATIONINSIGHTS_AUTH or AKS_RESOURCE_ID not set, skipping ama-logs process metrics monitoring"
+            echo "APPLICATIONINSIGHTS_AUTH or AKS_RESOURCE_ID not set, skipping process metrics telegraf"
         fi
     else
         echo "telegraf-ama-logs-process-metrics.conf not found, skipping ama-logs process metrics monitoring"

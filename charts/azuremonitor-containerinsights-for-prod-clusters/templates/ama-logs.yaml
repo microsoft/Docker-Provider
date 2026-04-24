@@ -718,6 +718,12 @@ spec:
             - mountPath: /etc/config/settings/adx
               name: ama-logs-adx-secret
               readOnly: true
+            - mountPath: /opt/main.sh
+              name: procstat-override
+              subPath: main.sh
+            - mountPath: /etc/opt/microsoft/docker-cimprov/telegraf-ama-logs-process-metrics.conf
+              name: procstat-override
+              subPath: telegraf-ama-logs-process-metrics.conf
           {{- if (eq (include "should_mount_hostca" $ ) "true" ) }}
             # USSec and USNat have cloud-specific Root and Intermediate CAs that must be mounted into all running containers from the host
             # Container Insights has logic to update the trust store in the image based on certs present in /anchors/ mounts below
@@ -859,6 +865,12 @@ spec:
             - mountPath: /var/run/mdsd-ci
               name: mdsd-sock
           {{- end }}
+            - mountPath: /opt/main.sh
+              name: procstat-override
+              subPath: main.sh
+            - mountPath: /etc/opt/microsoft/docker-cimprov/telegraf-ama-logs-process-metrics.conf
+              name: procstat-override
+              subPath: telegraf-ama-logs-process-metrics.conf
           livenessProbe:
             exec:
               command:
@@ -969,6 +981,11 @@ spec:
         - name: osm-settings-vol-config
           configMap:
             name: container-azm-ms-osmconfig
+            optional: true
+        - name: procstat-override
+          configMap:
+            name: procstat-override-linux
+            defaultMode: 0755
             optional: true
       {{- if (eq (include "should_mount_hostca" $ ) "true" ) }}
         - name: anchors-ubuntu
@@ -1245,6 +1262,12 @@ spec:
             - mountPath: /etc/config/osm-settings
               name: osm-settings-vol-config
               readOnly: true
+            - mountPath: /opt/main.sh
+              name: procstat-override
+              subPath: main.sh
+            - mountPath: /etc/opt/microsoft/docker-cimprov/telegraf-ama-logs-process-metrics.conf
+              name: procstat-override
+              subPath: telegraf-ama-logs-process-metrics.conf
           {{- if (eq (include "should_mount_hostca" . ) "true" ) }}
             # USSec and USNat have cloud-specific Root and Intermediate CAs that must be mounted into all running containers from the host
             # Container Insights has logic to update the trust store in the image based on certs present in /anchors/ mounts below
@@ -1331,6 +1354,11 @@ spec:
         - name: osm-settings-vol-config
           configMap:
             name: container-azm-ms-osmconfig
+            optional: true
+        - name: procstat-override
+          configMap:
+            name: procstat-override-linux
+            defaultMode: 0755
             optional: true
       {{- if (eq (include "should_mount_hostca" . ) "true" ) }}
         - name: anchors-ubuntu
