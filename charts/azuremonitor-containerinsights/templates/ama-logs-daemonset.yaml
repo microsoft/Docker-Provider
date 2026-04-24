@@ -297,6 +297,10 @@ spec:
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
           {{- end }}
+          {{- if (eq $cloudEnv "azuredeloscloud") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.sovcloud-api.de/v2/"
+          {{- end }}
           {{- if $isusingaadauth }}
             - name: USING_AAD_MSI_AUTH
               value: "true"
@@ -676,6 +680,10 @@ spec:
           {{- if (eq $cloudEnv "azurebleucloud") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
+          {{- end }}
+          {{- if (eq $cloudEnv "azuredeloscloud") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.sovcloud-api.de/v2/"
           {{- end }}
           {{- if $isusingaadauth }}
             - name: USING_AAD_MSI_AUTH

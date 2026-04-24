@@ -129,6 +129,10 @@ spec:
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
           {{- end }}
+          {{- if (eq $cloudEnv "azuredeloscloud") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.sovcloud-api.de/v2/"
+          {{- end }}
             - name: USING_AAD_MSI_AUTH
               value: "true"
             - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED

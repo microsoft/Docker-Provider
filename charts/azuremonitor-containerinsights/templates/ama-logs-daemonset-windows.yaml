@@ -216,6 +216,10 @@ spec:
           - name: REQUIRES_CERT_BOOTSTRAP
             value: "true"
         {{- end }}
+        {{- if (eq $cloudEnv "azuredeloscloud") }}
+          - name: REQUIRES_CERT_BOOTSTRAP
+            value: "true"
+        {{- end }}
         {{- if $isusingaadauth }}
           - name: USING_AAD_MSI_AUTH
             value: "true"

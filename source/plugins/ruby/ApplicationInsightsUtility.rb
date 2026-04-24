@@ -309,6 +309,8 @@ class ApplicationInsightsUtility
           workspaceCloud = "ussec"
         elsif workspaceDomain.casecmp("opinsights.sovcloud-api.fr") == 0
           workspaceCloud = "azurebleucloud"
+        elsif workspaceDomain.casecmp("opinsights.sovcloud-api.de") == 0
+          workspaceCloud = "azuredeloscloud"
         else
           workspaceCloud = "Unknown"
         end
