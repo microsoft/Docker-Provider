@@ -68,7 +68,7 @@ spec:
         checksum/secret: {{ include (print $.Template.BasePath "/ama-logs-secret.yaml") . | sha256sum }}
         checksum/config: {{ toYaml .Values.amalogs.resources | sha256sum }}
 {{- else }}
-        agentVersion: "46.17.2"
+        agentVersion: "47.7.1"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         WSID: {{ .Values.OmsAgent.workspaceID | b64enc | quote }}

@@ -42,8 +42,8 @@ OmsAgent:
   
   # Image configuration
   imageRepository: "/azuremonitor/containerinsights/ciprod"
-  imageTagLinux: "3.1.35"
-  imageTagWindows: "win-3.1.35"
+  imageTagLinux: "3.3.0"
+  imageTagWindows: "win-3.3.0"
   isImagePullPolicyAlways: false
 
   # Resource ID and cluster information
@@ -215,12 +215,12 @@ OmsAgent:
 amalogs:
   image:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
-    tag: "3.1.35"
-    tagWindows: "win-3.1.35"
+    tag: "3.3.0"
+    tagWindows: "win-3.3.0"
     pullPolicy: IfNotPresent
     dockerProviderVersion: "18.0.1-0"
-    agentVersion: "azure-mdsd-1.37.0"
-    winAgentVersion: "46.31.3" # there is no base agent version for windows agent
+    agentVersion: "azure-mdsd-1.40.3"
+    winAgentVersion: "47.7.1" # there is no base agent version for windows agent
 
   # The priority used by the ama-logs priority class for the daemonset pods
   # Note that this is not execution piority - it is scheduling priority, as
