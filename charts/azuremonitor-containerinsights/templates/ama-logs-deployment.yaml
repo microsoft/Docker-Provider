@@ -62,7 +62,7 @@ spec:
         checksum/config: {{ toYaml .Values.amalogs.resources | sha256sum }}
         checksum/logsettings: {{ toYaml .Values.amalogs.logsettings | sha256sum }}
 {{- else }}
-        agentVersion: "azure-mdsd-1.37.0"
+        agentVersion: "azure-mdsd-1.40.3"
         cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
