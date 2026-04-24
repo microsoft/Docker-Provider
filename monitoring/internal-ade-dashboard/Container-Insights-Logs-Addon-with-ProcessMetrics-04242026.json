@@ -12178,7 +12178,7 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"mdsd\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"mdsd\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1024 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "5206bc70-57d3-4144-b424-2737a8301a18",
       "usedVariables": [
         "_endTime",
@@ -12193,7 +12193,7 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"fluent-bit\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"fluent-bit\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1024 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "e71e2a01-e41b-464b-97d2-83e908a544ee",
       "usedVariables": [
         "_endTime",
@@ -12208,7 +12208,7 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"telegraf\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName), \" [PID:\", tostring(customDimensions.pid), \"]\")\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"telegraf\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1024 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName), \" [PID:\", tostring(customDimensions.pid), \"]\")\r\n| render timechart",
       "id": "46f758a2-a83e-484d-bf3c-e87a8399f0bb",
       "usedVariables": [
         "_endTime",
@@ -12223,7 +12223,7 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"ruby\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"ruby\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1024 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "dc47d4c6-5134-4630-9c79-de8e789003f6",
       "usedVariables": [
         "_endTime",
@@ -12238,7 +12238,7 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"crond\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"crond\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1024 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "4a3493c3-b929-486d-a4bb-70dd492e5443",
       "usedVariables": [
         "_endTime",
@@ -12253,7 +12253,7 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"inotifywait\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"inotifywait\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1024 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "2fef68af-eb9c-4604-b303-9802799b8ec5",
       "usedVariables": [
         "_endTime",
@@ -12268,7 +12268,7 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.pattern) == \"fluentd\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.pattern) == \"fluentd\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1024 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "261d3a18-edcd-4caa-a200-b4f2b3f19418",
       "usedVariables": [
         "_endTime",
@@ -12283,7 +12283,7 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.pattern) == \"main.sh\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.pattern) == \"main.sh\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) in (\"DaemonSet\", \"ReplicaSet\", \"PrometheusSidecar\")\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1024 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "b5c27ac6-d331-4f46-8808-f19f8a0ad33f",
       "usedVariables": [
         "_endTime",
@@ -12298,7 +12298,7 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"fluent-bit\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"fluent-bit\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1024 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "2bd46191-0923-4f29-a4c5-58bd8387847a",
       "usedVariables": [
         "_endTime",
@@ -12313,7 +12313,7 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"telegraf\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName), \" [PID:\", tostring(customDimensions.pid), \"]\")\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"telegraf\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1024 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName), \" [PID:\", tostring(customDimensions.pid), \"]\")\r\n| render timechart",
       "id": "198ff59a-438f-4e5e-bf9c-bb5055b89c5a",
       "usedVariables": [
         "_endTime",
@@ -12328,7 +12328,7 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"MonAgentLauncher\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"MonAgentLauncher\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1024 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "a1fca3cf-4f2c-47f5-9c49-6eb2070004fd",
       "usedVariables": [
         "_endTime",
@@ -12343,7 +12343,7 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"MonAgentCore\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"MonAgentCore\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1024 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "b7632913-d57c-49d5-86ee-3928241c8bd5",
       "usedVariables": [
         "_endTime",
@@ -12358,7 +12358,7 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"MonAgentHost\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"MonAgentHost\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1024 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "e8997727-bf0e-4400-b56e-f81749bb8776",
       "usedVariables": [
         "_endTime",
@@ -12373,7 +12373,7 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"MonAgentManager\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"MonAgentManager\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1024 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "7ff4680a-d244-42f5-888d-4f1cd50d0331",
       "usedVariables": [
         "_endTime",
@@ -12388,7 +12388,7 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"AzurePerfCollectorExtension\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"AzurePerfCollectorExtension\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1024 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "de90ac6d-97fd-4fa2-88f7-74a5366f2abb",
       "usedVariables": [
         "_endTime",
@@ -12403,7 +12403,7 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"AzureProfilerExtension\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"AzureProfilerExtension\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1024 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "127030e4-301c-4aca-969a-b43b6039cd1f",
       "usedVariables": [
         "_endTime",
@@ -12418,7 +12418,7 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"AggregatorHost\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"AggregatorHost\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1024 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "354518f9-1e9d-4d8b-be1c-15fcfe2cce65",
       "usedVariables": [
         "_endTime",
@@ -12433,7 +12433,7 @@
         "kind": "inline",
         "dataSourceId": "78c8522c-31b4-4851-adbd-45195c9d70f1"
       },
-      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"powershell\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1048576 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
+      "text": "customMetrics\r\n| where timestamp > _startTime and timestamp < _endTime\r\n| where name contains \"memory_anonymous\"\r\n| where tostring(customDimensions.exe) == \"powershell\"\r\n| where tostring(customDimensions.AksResourceId) =~ clusterIdForProcessMetrics\r\n| where tostring(customDimensions.ControllerType) == \"DaemonSet-Windows\"\r\n| where (isempty(controllerType) or tostring(customDimensions.ControllerType) in (controllerType))\r\n| summarize Anon_MB = percentile(value, 90) / 1024 by bin(timestamp, totimespan(binSize)), Series = strcat(tostring(customDimensions.ControllerType), \" / \", tostring(customDimensions.PodName))\r\n| render timechart",
       "id": "811c3eb3-82e0-4376-9e54-6835c0ac2c38",
       "usedVariables": [
         "_endTime",
