@@ -1,7 +1,6 @@
 {{- $arcSettings := include "arc-extension-settings" . | fromYaml }}
 {{- $isArcExtension := $arcSettings.isArcExtension }}
 {{- $amalogsWindowsDefaultImageTag := dict "component" "ama-logs-win" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.addonImageTag" }}
-{{- $addonTokenAdapterWindowsDefaultImageTag := dict "component" "addon-token-adapter-windows" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag"}}
 {{/* Determine isusingaadauth value */}}
 {{- $isusingaadauth := false -}}
 {{- if not $isArcExtension -}}
@@ -240,6 +239,10 @@ spec:
           - name: CLUSTER_CLOUD_ENVIRONMENT
             value: "{{ .Values.global.commonGlobals.CloudEnvironment | lower }}"
 {{- end }}
+          - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.uid
           volumeMounts:
           - mountPath: C:\ProgramData\docker\containers
             name: docker-windows-containers
@@ -294,36 +297,7 @@ spec:
 {{- if not $isArcExtension }}
 {{- if and (and $isusingaadauth .Values.OmsAgent.isWindowsAMAEnabled) (not .Values.OmsAgent.isWindowsAddonTokenAdapterDisabled) }}
         - name: addon-token-adapter-win
-          command:
-            - addon-token-adapter-win
-          args:
-            - --secret-namespace=kube-system
-            - --secret-name={{ .Values.OmsAgent.accessTokenSecretName }}
-            - --token-server-listening-port=8888
-            - --health-server-listening-port=9999
-            - --restart-pod-waiting-minutes-on-broken-connection=240
-          image: "{{ template "addon_mcr_repository_base" . }}/aks/msi/addon-token-adapter:{{- $addonTokenAdapterWindowsDefaultImageTag -}}"
-          imagePullPolicy: IfNotPresent
-          env:
-          - name: AZMON_COLLECT_ENV
-            value: "false"
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: 9999
-            initialDelaySeconds: 10
-            periodSeconds: 60
-          resources:
-            limits:
-              cpu: 400m
-              memory: 400Mi
-            requests:
-              cpu: 100m
-              memory: 100Mi
-          securityContext:
-            capabilities:
-              drop:
-                - ALL
+{{ tpl .Values.Azure.Identity.AADMsiTokenAdapterWindowsYaml $ | nindent 10 }}
               add:
                 - NET_ADMIN
                 - NET_RAW

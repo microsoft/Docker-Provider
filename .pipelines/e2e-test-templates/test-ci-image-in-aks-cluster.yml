@@ -1,0 +1,115 @@
+parameters:
+- name: clusterName
+  type: string
+- name: resourceGroup
+  type: string
+- name: azureSubscription
+  type: string
+  default: 'ContainerInsights_Build_Subscription_CI'
+- name: environmentName
+  type: string
+- name: dependsOnDeployJob
+  type: string
+  displayName: 'Name of the deploy job this test depends on (e.g., Deploy_AmaLogs_zane_test)'
+- name: azureClientId
+  type: string
+- name: azureTenantId
+  type: string
+- name: teamsWebhookUri
+  type: string
+  default: '$(TeamsWebhookUri)'
+- name: additionalTestParams
+  type: string
+  default: ''
+
+jobs:
+- deployment: Test_${{ replace(parameters.clusterName, '-', '_') }}
+  displayName: 'Test: ${{ parameters.clusterName }}'
+  environment: ${{ parameters.environmentName }}
+  dependsOn: ${{ parameters.dependsOnDeployJob }}
+  pool:
+    name: Azure-Pipelines-CI-Test-EO
+    image: ci-1es-managed-ubuntu-2204
+    os: linux
+  variables:
+    skipComponentGovernanceDetection: true
+  strategy:
+    runOnce:
+      deploy:
+        steps:
+        - checkout: self
+          persistCredentials: true
+
+        - script: |
+            set -euo pipefail
+            echo "Ensuring kubectl is installed"
+            if ! command -v kubectl >/dev/null 2>&1; then
+              echo "Installing kubectl"
+              sudo az aks install-cli
+            else
+              echo "kubectl already installed: $(kubectl version --client --short || true)"
+            fi
+          displayName: 'Install kubectl'
+
+        - task: AzureCLI@2
+          displayName: 'Get credentials for ${{ parameters.clusterName }}'
+          inputs:
+            azureSubscription: ${{ parameters.azureSubscription }}
+            scriptLocation: 'inlineScript'
+            scriptType: 'bash'
+            inlineScript: 'az aks get-credentials -g ${{ parameters.resourceGroup }} -n ${{ parameters.clusterName }}'
+
+        - task: Bash@3
+          displayName: 'Wait for logs to be ingested into Log Analytics (20 min)'
+          inputs:
+            targetType: 'inline'
+            script: |
+              echo "========================================"
+              echo "Waiting for Log Analytics Ingestion"
+              echo "========================================"
+              echo "Cluster: ${{ parameters.clusterName }}"
+              echo ""
+              echo "Waiting 10 minutes to allow logs to be ingested..."
+              echo "This ensures queries will find logs from the newly deployed containers."
+              echo ""
+              
+              wait_time=600
+              interval=60
+              elapsed=0
+              
+              while [ $elapsed -lt $wait_time ]; do
+                remaining=$((wait_time - elapsed))
+                minutes_elapsed=$((elapsed / 60))
+                minutes_remaining=$((remaining / 60))
+                echo "⏳ Waiting... ($minutes_elapsed/$((wait_time / 60)) minutes elapsed, $minutes_remaining minutes remaining)"
+                sleep $interval
+                elapsed=$((elapsed + interval))
+              done
+              
+              echo ""
+              echo "✓ Wait complete! Logs should now be available in Log Analytics."
+              echo "========================================"
+
+        - bash: |
+            echo "Running tests for cluster: ${{ parameters.clusterName }}"
+            
+            chmod +x ./install-and-execute-testkube-tests.sh
+            ./install-and-execute-testkube-tests.sh \
+              AzureClientId=${{ parameters.azureClientId }} \
+              AzureTenantId=${{ parameters.azureTenantId }} \
+              TeamsWebhookUri=${{ parameters.teamsWebhookUri }} \
+              ${{ parameters.additionalTestParams }}
+          workingDirectory: $(Build.SourcesDirectory)/test/testkube/
+          displayName: 'Install Testkube and run E2E tests'
+
+        # Log completion
+        - bash: |
+            echo "========================================="
+            echo "TEST COMPLETE"
+            echo "========================================="
+            echo "Cluster: ${{ parameters.clusterName }}"
+            echo "Build ID: $(Build.BuildId)"
+            echo "✓ Testing finished for: ${{ parameters.clusterName }}"
+            echo "========================================="
+          displayName: 'Test Completion'
+          condition: always()

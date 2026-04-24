@@ -1,7 +1,6 @@
 {{- $arcSettings := include "arc-extension-settings" . | fromYaml }}
 {{- $isArcExtension := $arcSettings.isArcExtension }}
 {{- $amalogsLinuxDefaultImageTag := dict "component" "ama-logs-linux" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.addonImageTag" }}
-{{- $addonTokenAdapterLinuxDefaultImageTag := dict "component" "addon-token-adapter-linux" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag"}}
 {{/* Determine isusingaadauth value */}}
 {{- $isusingaadauth := false -}}
 {{- if not $isArcExtension -}}
@@ -190,40 +189,7 @@ spec:
 {{- else }}
 {{- if $isusingaadauth }}
         - name: addon-token-adapter
-          command:
-            - /addon-token-adapter
-          args:
-            - --secret-namespace=kube-system
-            - --secret-name={{ $.Values.OmsAgent.accessTokenSecretName }}
-            - --token-server-listening-port=8888
-            - --health-server-listening-port=9999
-            - --restart-pod-waiting-minutes-on-broken-connection=240
-          image: "{{ template "addon_mcr_repository_base" $ }}/aks/msi/addon-token-adapter:{{- $addonTokenAdapterLinuxDefaultImageTag -}}"
-          imagePullPolicy: IfNotPresent
-          env:
-            - name: AZMON_COLLECT_ENV
-              value: "false"
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: 9999
-            initialDelaySeconds: 10
-            periodSeconds: 60
-          resources:
-            limits:
-              {{- $containerResources := index $size.containers "addon-token-adapter" }}
-              cpu: {{ $containerResources.cpuLimit }}
-              memory: {{ $containerResources.memoryLimit }}
-            requests:
-              cpu: {{ $containerResources.cpuRequest }}
-              memory: {{ $containerResources.memoryRequest }}
-          securityContext:
-            capabilities:
-              drop:
-                - ALL
-              add:
-                - NET_ADMIN
-                - NET_RAW
+{{ tpl $.Values.Azure.Identity.AADMsiTokenAdapterLinuxYaml $ | nindent 10 }}
 {{- end }}
 {{- end }}
 {{/* Main ama-logs Container */}}
@@ -342,7 +308,7 @@ spec:
               value: {{ $.Values.OmsAgent.syslogHostPort | default 28330 | quote}}
           {{- end }}
             - name: AZMON_RETINA_FLOW_LOGS_ENABLED
-              value: "{{ $.Values.OmsAgent.isRetinaFlowLogsEnabled | default false }}"
+              value: "{{ $.Values.OmsAgent.retinaFlowLogsEnabled | default false }}"
             - name: AZMON_RESOURCE_OPTIMIZATION_ENABLED
               value: "{{ $.Values.OmsAgent.isResourceOptimizationEnabled | default false }}"
             - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
@@ -425,6 +391,10 @@ spec:
             - name: CLUSTER_CLOUD_ENVIRONMENT
               value: "{{ $.Values.global.commonGlobals.CloudEnvironment | lower }}"
 {{- end }}
+            - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
           securityContext:
             privileged: true
             capabilities:
@@ -481,7 +451,7 @@ spec:
             - mountPath: /var/run/mdsd-ci
               name: mdsd-sock
           {{- end }}
-          {{- if $.Values.OmsAgent.isRetinaFlowLogsEnabled }}
+          {{- if $.Values.OmsAgent.retinaFlowLogsEnabled }}
             - mountPath: /var/log/acns/hubble
               name: acns-hubble
           {{- end }}
@@ -604,6 +574,10 @@ spec:
                   fieldPath: spec.nodeName
             - name: CLUSTER_CLOUD_ENVIRONMENT
               value: "{{ $.Values.Azure.Cluster.Cloud | lower }}"
+            - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
           securityContext:
             privileged: true
             capabilities:
@@ -878,7 +852,7 @@ spec:
           hostPath:
             path: /var/run/mdsd-ci
         {{- end }}
-        {{- if $.Values.OmsAgent.isRetinaFlowLogsEnabled }}
+        {{- if $.Values.OmsAgent.retinaFlowLogsEnabled }}
         - name: acns-hubble
           hostPath:
             path: /var/log/acns/hubble

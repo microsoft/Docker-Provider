@@ -32,7 +32,6 @@ OmsAgent:
   enableDaemonsetSizingForExtensions: true
   isCustomMetricsDisabled: false
   isUsingAADAuth: "true"
-  retinaFlowLogsEnabled: false
   workspaceID: "<your_workspace_id>"
   accessTokenSecretName: "ama-logs-secret"
   # Cloud environment
@@ -79,7 +78,7 @@ OmsAgent:
   isPrometheusMetricsScrapingDisabled: false
   isSidecarScrapingEnabled: true
   isRSVPAEnabled: false
-  isRetinaFlowLogsEnabled: false
+  retinaFlowLogsEnabled: false
   isResourceOptimizationEnabled: false
   isWindowsAMAFluentBitEnabled: false
   isMultitenancyLogsEnabled: false
@@ -413,6 +412,71 @@ Azure:
   Extension:
     Name: ""
     ResourceId: ""
+  Identity:
+    AADMsiTokenAdapterLinuxYaml: |-
+      command:
+        - /addon-token-adapter
+      args:
+        - --secret-namespace=kube-system
+        - --secret-name=aad-msi-auth-token
+        - --token-server-listening-port={{ .Values.msiTokenServerListeningPort | default 7777 }}
+        - --health-server-listening-port={{ .Values.msiTokenHealthServerPort | default 9999 }}
+        - --restart-pod-waiting-minutes-on-broken-connection={{ .Values.msiTokenRestartPodMinutes | default 240 }}
+      image: "mcr.microsoft.com/aks/msi/addon-token-adapter:master.260209.2"
+      imagePullPolicy: IfNotPresent
+      env:
+        - name: AZMON_COLLECT_ENV
+          value: "false"
+      livenessProbe:
+        httpGet:
+          path: /healthz
+          port: {{ .Values.msiTokenHealthServerPort | default 9999 }}
+        initialDelaySeconds: 10
+        periodSeconds: 60
+      resources:
+        limits:
+          cpu: {{ ((.Values.msiTokenAdapterLinux | default dict).cpuLimit) | default "500m" }}
+          memory: {{ ((.Values.msiTokenAdapterLinux | default dict).memoryLimit) | default "500Mi" }}
+        requests:
+          cpu: {{ ((.Values.msiTokenAdapterLinux | default dict).cpuRequest) | default "20m" }}
+          memory: {{ ((.Values.msiTokenAdapterLinux | default dict).memoryRequest) | default "30Mi" }}
+      securityContext:
+        capabilities:
+          drop:
+            - ALL
+          add:
+            - NET_ADMIN
+            - NET_RAW
+    AADMsiTokenAdapterWindowsYaml: |-
+      command:
+        - addon-token-adapter-win
+      args:
+        - --secret-namespace=kube-system
+        - --secret-name=aad-msi-auth-token
+        - --token-server-listening-port={{ .Values.msiTokenServerListeningPort | default 7777 }}
+        - --health-server-listening-port={{ .Values.msiTokenHealthServerPort | default 9999 }}
+        - --restart-pod-waiting-minutes-on-broken-connection={{ .Values.msiTokenRestartPodMinutes | default 240 }}
+      image: "mcr.microsoft.com/aks/msi/addon-token-adapter:master.260209.2"
+      imagePullPolicy: IfNotPresent
+      livenessProbe:
+        httpGet:
+          path: /healthz
+          port: {{ .Values.msiTokenHealthServerPort | default 9999 }}
+        initialDelaySeconds: 10
+        periodSeconds: 60
+      resources:
+        limits:
+          cpu: {{ ((.Values.msiTokenAdapterWin | default dict).cpuLimit) | default "250m" }}
+          memory: {{ ((.Values.msiTokenAdapterWin | default dict).memoryLimit) | default "500Mi" }}
+        requests:
+          cpu: {{ ((.Values.msiTokenAdapterWin | default dict).cpuRequest) | default "100m" }}
+          memory: {{ ((.Values.msiTokenAdapterWin | default dict).memoryRequest) | default "100Mi" }}
+      securityContext:
+        capabilities:
+          drop:
+            - ALL
+          add:
+            - NET_ADMIN
   proxySettings:
     isProxyEnabled: false
     httpProxy: ""
@@ -421,3 +485,14 @@ Azure:
     proxyCert: ""
     isCustomCert: false
     autonomousFqdn: "<arca_autonomous_fqdn>"
+
+msiTokenAdapterLinux:
+  cpuLimit: "500m"
+  memoryLimit: "500Mi"
+  cpuRequest: "20m"
+  memoryRequest: "30Mi"
+msiTokenAdapterWin:
+  cpuLimit: "250m"
+  memoryLimit: "500Mi"
+  cpuRequest: "100m"
+  memoryRequest: "100Mi"

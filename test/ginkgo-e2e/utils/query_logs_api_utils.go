@@ -131,7 +131,7 @@ func CompareResourcesInLogsAndKubeAPI(K8sClient *kubernetes.Clientset, logsClien
 		for _, node := range nodes {
 			resources = append(resources, node.Name)
 		}
-		query = logsTable + " | where TimeGenerated > ago(15m) | distinct Computer"
+		query = logsTable + " | where TimeGenerated > ago(5m) | distinct Computer"
 	} else if logsTable == "KubePodInventory" {
 		pods, err := GetAllAgentPods(K8sClient)
 		if err != nil {
@@ -144,7 +144,7 @@ func CompareResourcesInLogsAndKubeAPI(K8sClient *kubernetes.Clientset, logsClien
 			}
 			resources = append(resources, pod.Name)
 		}
-		query = logsTable + " | where TimeGenerated > ago(15m) | distinct Name"
+		query = logsTable + " | where TimeGenerated > ago(5m) | distinct Name"
 	}
 
 	return CompareResourcesHelper(logsClient, resourceID, query, resources)
