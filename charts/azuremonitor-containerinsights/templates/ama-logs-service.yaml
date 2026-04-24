@@ -1,0 +1,32 @@
+{{- $arcSettings := include "arc-extension-settings" . | fromYaml }}
+{{- $isArcExtension := $arcSettings.isArcExtension }}
+{{/* AKS-only resource */}}
+{{- if not $isArcExtension }}
+{{/* Determine isusingaadauth value */}}
+{{- $isusingaadauth := false -}}
+{{- if hasKey .Values.OmsAgent "isUsingAADAuth" -}}
+  {{- $isusingaadauth = .Values.OmsAgent.isUsingAADAuth -}}
+{{- end -}}
+{{- if and $isusingaadauth .Values.OmsAgent.isMultitenancyLogsEnabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ama-logs-service
+  namespace: kube-system
+  labels:
+{{- if .Values.legacyAddonDelivery }}
+    kubernetes.io/cluster-service: "true"
+    addonmanager.kubernetes.io/mode: Reconcile
+{{- end }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 24225
+      targetPort: 24225
+      protocol: TCP
+      name: fluentbit-fwd
+  selector:
+    rsName: "ama-logs-multitenancy"
+{{- end }}
+{{- end }}

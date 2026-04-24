@@ -11,6 +11,7 @@ function Get-McsEndpoint {
             "usnat"                   { $mcs_endpoint = "monitor.azure.eaglex.ic.gov" }
             "ussec"                   { $mcs_endpoint = "monitor.azure.microsoft.scloud" }
             "azurebleucloud"          { $mcs_endpoint = "monitor.sovcloud-api.fr" }
+            "azuredeloscloud"         { $mcs_endpoint = "monitor.sovcloud-api.de" }
         }
     }
     return $mcs_endpoint

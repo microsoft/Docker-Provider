@@ -1,3 +1,7 @@
+{{- $arcSettings := include "arc-extension-settings" . | fromYaml }}
+{{- $isArcExtension := $arcSettings.isArcExtension }}
+{{/* Arc-only resource */}}
+{{- if $isArcExtension }}
 {{- if or ( contains "microsoft.kubernetes/connectedclusters" (.Values.Azure.Cluster.ResourceId | lower)) ( contains "microsoft.hybridcontainerservice/provisionedclusters" (.Values.Azure.Cluster.ResourceId | lower)) }}
 #extension model
 {{- if not (empty .Values.Azure.Extension.Name) }}
@@ -37,4 +41,5 @@ spec:
   {{- if not (empty .Values.Azure.Extension.Name) }}
   resourceId: {{ .Values.Azure.Extension.Name }}
   {{- end }}
+{{- end }}
 {{- end }}

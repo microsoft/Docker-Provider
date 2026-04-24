@@ -15,6 +15,7 @@ test_valid_environment_variables() {
         "usnat"
         "ussec"
         "azurebleucloud"
+        "azuredeloscloud"
     )
 
     for cloud in "${test_cases[@]}"; do
@@ -46,6 +47,7 @@ test_domain_file_fallback() {
         "opinsights.azure.eaglex.ic.gov:usnat"
         "opinsights.azure.microsoft.scloud:ussec"
         "opinsights.sovcloud-api.fr:azurebleucloud"
+        "opinsights.sovcloud-api.de:azuredeloscloud"
     )
 
     for test_case in "${test_cases[@]}"; do

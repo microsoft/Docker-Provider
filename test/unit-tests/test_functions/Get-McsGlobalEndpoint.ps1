@@ -26,6 +26,7 @@ function Get-McsGlobalEndpoint{
                 "usnat"                   { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.eaglex.ic.gov" }
                 "ussec"                   { $mcs_globalendpoint = "https://global.handler.control.monitor.azure.microsoft.scloud" }
                 "azurebleucloud"          { $mcs_globalendpoint = "https://global.handler.control.monitor.sovcloud-api.fr" }
+                "azuredeloscloud"         { $mcs_globalendpoint = "https://global.handler.control.monitor.sovcloud-api.de" }
             }
         }
     }
