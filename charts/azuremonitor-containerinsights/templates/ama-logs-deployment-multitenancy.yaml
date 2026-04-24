@@ -8,6 +8,7 @@
 {{- if hasKey .Values.OmsAgent "isUsingAADAuth" -}}
   {{- $isusingaadauth = .Values.OmsAgent.isUsingAADAuth -}}
 {{- end -}}
+{{- $cloudEnv := lower .Values.global.commonGlobals.CloudEnvironment }}
 {{- if and $isusingaadauth .Values.OmsAgent.isMultitenancyLogsEnabled }}
 ---
 {{- if semverCompare ">=1.16.0" .Values.global.commonGlobals.Versions.Kubernetes }}
@@ -116,24 +117,28 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
+          {{- if (eq $cloudEnv "usnat") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
+          {{- if (eq $cloudEnv "ussec") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
+          {{- if (eq $cloudEnv "azurebleucloud") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
+          {{- end }}
+          {{- if (eq $cloudEnv "azuredeloscloud") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.sovcloud-api.de/v2/"
           {{- end }}
             - name: USING_AAD_MSI_AUTH
               value: "true"
             - name: APPMONITORING_AUTOINSTRUMENTATION_ENABLED
               value: "{{ .Values.AppmonitoringAgent.enabled }}"
             - name: CLUSTER_CLOUD_ENVIRONMENT
-              value: "{{ .Values.global.commonGlobals.CloudEnvironment | lower }}"
+              value: "{{ $cloudEnv }}"
             - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
               valueFrom:
                 fieldRef:

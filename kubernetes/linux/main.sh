@@ -6,7 +6,7 @@ startTime=$(date +%s)
 echo "startup script start @ $(date +'%Y-%m-%dT%H:%M:%S')"
 
 # Supported cloud environments
-SUPPORTED_CLOUDS=("azurepubliccloud" "azurechinacloud" "azureusgovernmentcloud" "usnat" "ussec" "azurebleucloud")
+SUPPORTED_CLOUDS=("azurepubliccloud" "azurechinacloud" "azureusgovernmentcloud" "usnat" "ussec" "azurebleucloud" "azuredeloscloud")
 
 getDomainFromSecret() {
       # Read the domain from the AMA logs secret and convert to lowercase
@@ -52,6 +52,9 @@ getClusterCloudEnvironment() {
                   ;;
             "opinsights.sovcloud-api.fr")
                   echo "azurebleucloud"
+                  ;;
+            "opinsights.sovcloud-api.de")
+                  echo "azuredeloscloud"
                   ;;
             ""|*)
                   echo "unknown"
@@ -154,6 +157,13 @@ setCloudSpecificApplicationInsightsConfig() {
             echo "export APPLICATIONINSIGHTS_ENDPOINT=$APPLICATIONINSIGHTS_ENDPOINT" >>~/.bashrc
             source ~/.bashrc
             ;;
+      #    "azuredeloscloud")
+      #       APPLICATIONINSIGHTS_AUTH="<your_applicationinsights_auth_key>"
+      #       APPLICATIONINSIGHTS_ENDPOINT="https://<region>.in.applicationinsights.sovcloud-api.de/v2/track"
+      #       echo "export APPLICATIONINSIGHTS_AUTH=$APPLICATIONINSIGHTS_AUTH" >>~/.bashrc
+      #       echo "export APPLICATIONINSIGHTS_ENDPOINT=$APPLICATIONINSIGHTS_ENDPOINT" >>~/.bashrc
+      #       source ~/.bashrc
+      #       ;;
           *)
             echo "default is Public cloud"
             ;;

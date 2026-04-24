@@ -15,6 +15,7 @@
 {{/* Outer condition: AKS always renders, Arc renders with valid credentials */}}
 {{- if or (not $isArcExtension) (and $isArcExtension (and (ne .Values.amalogs.secret.key "<your_workspace_key>") (ne .Values.amalogs.secret.wsid "<your_workspace_id>") (or (ne .Values.amalogs.env.clusterName "<your_cluster_name>") (ne .Values.amalogs.env.clusterId "<your_cluster_id>") (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>")))) }}
 {{/* DaemonSet Sizing: AKS uses t-shirt sizing loop, Arc generates a single DaemonSet */}}
+{{- $cloudEnv := lower $.Values.global.commonGlobals.CloudEnvironment }}
 {{- $useDaemonSetSizing := false -}}
 {{- $singleSize := dict -}}
 {{- $sizes := list (dict) -}}
@@ -284,17 +285,21 @@ spec:
               value: "4320"
             - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
               value: "{{ $.Values.OmsAgent.isPrometheusMetricsScrapingDisabled }}"
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USNat") }}
+          {{- if (eq $cloudEnv "usnat") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
           {{- end }}
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USSec") }}
+          {{- if (eq $cloudEnv "ussec") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
+          {{- if (eq $cloudEnv "azurebleucloud") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
+          {{- end }}
+          {{- if (eq $cloudEnv "azuredeloscloud") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.sovcloud-api.de/v2/"
           {{- end }}
           {{- if $isusingaadauth }}
             - name: USING_AAD_MSI_AUTH
@@ -389,7 +394,7 @@ spec:
               value: "{{ $.Values.Azure.Cluster.Cloud | lower }}"
 {{- else }}
             - name: CLUSTER_CLOUD_ENVIRONMENT
-              value: "{{ $.Values.global.commonGlobals.CloudEnvironment | lower }}"
+              value: "{{ $cloudEnv }}"
 {{- end }}
             - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
               valueFrom:
@@ -664,17 +669,21 @@ spec:
               value: "PrometheusSidecar"
             - name: USER_ASSIGNED_IDENTITY_CLIENT_ID
               value: "{{ $.Values.OmsAgent.identityClientID }}"
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USNat") }}
+          {{- if (eq $cloudEnv "usnat") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
           {{- end }}
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "USSec") }}
+          {{- if (eq $cloudEnv "ussec") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq $.Values.global.commonGlobals.CloudEnvironment "AzureBleuCloud") }}
+          {{- if (eq $cloudEnv "azurebleucloud") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
+          {{- end }}
+          {{- if (eq $cloudEnv "azuredeloscloud") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.sovcloud-api.de/v2/"
           {{- end }}
           {{- if $isusingaadauth }}
             - name: USING_AAD_MSI_AUTH
@@ -690,7 +699,7 @@ spec:
             - name: AZMON_TELEGRAF_LIVENESSPROBE_ENABLED
               value: "{{ $.Values.OmsAgent.isTelegrafLivenessprobeEnabled | default false }}"
             - name: CLUSTER_CLOUD_ENVIRONMENT
-              value: "{{ $.Values.global.commonGlobals.CloudEnvironment | lower }}"
+              value: "{{ $cloudEnv }}"
           securityContext:
             privileged: true
             capabilities:

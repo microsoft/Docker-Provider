@@ -13,6 +13,7 @@
     {{- $isusingaadauth = .Values.amalogs.useAADAuth -}}
   {{- end -}}
 {{- end -}}
+{{- $cloudEnv := lower .Values.global.commonGlobals.CloudEnvironment }}
 {{/* Outer condition: AKS always renders, Arc renders with valid credentials */}}
 {{- if or (not $isArcExtension) (and $isArcExtension (and (ne .Values.amalogs.secret.key "<your_workspace_key>") (ne .Values.amalogs.secret.wsid "<your_workspace_id>") (or (ne .Values.amalogs.env.clusterName "<your_cluster_name>") (ne .Values.amalogs.env.clusterId "<your_cluster_id>") (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>")))) }}
 ---
@@ -322,17 +323,21 @@ spec:
             - name: SIDECAR_SCRAPING_ENABLED
               value: "false"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USNAT") }}
+          {{- if (eq $cloudEnv "usnat") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "USSEC") }}
+          {{- if (eq $cloudEnv "ussec") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.scloud/v2/"
           {{- end }}
-          {{- if (eq (upper .Values.global.commonGlobals.CloudEnvironment) "AZUREBLEUCLOUD") }}
+          {{- if (eq $cloudEnv "azurebleucloud") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.sovcloud-api.fr/v2/"
+          {{- end }}
+          {{- if (eq $cloudEnv "azuredeloscloud") }}
+            - name: MCR_URL
+              value: "https://mcr.microsoft.sovcloud-api.de/v2/"
           {{- end }}
           {{- if $isusingaadauth }}
             - name: USING_AAD_MSI_AUTH
@@ -363,7 +368,7 @@ spec:
               value: "{{ .Values.Azure.Cluster.Cloud | lower }}"
 {{- else }}
             - name: CLUSTER_CLOUD_ENVIRONMENT
-              value: "{{ .Values.global.commonGlobals.CloudEnvironment | lower }}"
+              value: "{{ $cloudEnv }}"
 {{- end }}
             - name: AMCS_CLIENT_INSTALL_ID_OVERRIDE
               valueFrom:

@@ -11,7 +11,8 @@ function Test-ValidEnvironmentVariables {
         "azureusgovernmentcloud",
         "usnat",
         "ussec",
-        "azurebleucloud"
+        "azurebleucloud",
+        "azuredeloscloud"
     )
 
     foreach ($cloud in $testCases) {
@@ -38,7 +39,8 @@ function Test-DomainFileFallback {
         @{domain="opinsights.azure.us"; expected="azureusgovernmentcloud"},
         @{domain="opinsights.azure.eaglex.ic.gov"; expected="usnat"},
         @{domain="opinsights.azure.microsoft.scloud"; expected="ussec"},
-        @{domain="opinsights.sovcloud-api.fr"; expected="azurebleucloud"}
+        @{domain="opinsights.sovcloud-api.fr"; expected="azurebleucloud"},
+        @{domain="opinsights.sovcloud-api.de"; expected="azuredeloscloud"}
     )
 
     foreach ($testCase in $testCases) {
