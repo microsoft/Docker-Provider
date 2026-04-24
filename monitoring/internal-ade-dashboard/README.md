@@ -8,14 +8,22 @@
 | `(New)Container-Insights-Logs-Addon-with-ProcessMetrics-readable.json` | Readable/formatted version with process metrics |
 | `(New-NoUpdate)Container-Insights-Logs-Addon-with-ProcessMetrics.json` | Process metrics version (no updates) |
 | `Container-Insights-Logs-Addon-with-ProcessMetrics-04152026.json` | Snapshot from 04/15/2026 |
-| `Container-Insights-Logs-Addon-with-ProcessMetrics-04222026.json` | Snapshot from 04/22/2026 |
+| `Container-Insights-Logs-Addon-with-ProcessMetrics-04222026.json` | Snapshot from 04/22/2026 — fluentd query fix (`pattern` → `exe`) |
 | `Container-Insights-Logs-Addon-with-ProcessMetrics-04232026.json` | Snapshot from 04/23/2026 |
 | `Container-Insights-Logs-Addon-with-ProcessMetrics-04242026.json` | **Latest** — snapshot from 04/24/2026 (based on 04/15 file) |
 | `downloadeddashboard-zane-dashboard-test.json` | Test dashboard (downloaded from portal) |
 
 ## What's New in 04/24/2026
 
-Added **18 new "Memory Anonymous P90 (MB)" panels** appended at the end of the process metrics page, based on the 04/15 dashboard.
+### Fix: fluentd dashboard query uses `exe` instead of `pattern`
+
+Changed fluentd process metrics queries from `customDimensions.pattern == "fluentd"` to `customDimensions.exe == "fluentd"` in `Container-Insights-Logs-Addon-with-ProcessMetrics-04222026.json` (2 queries: memory_rss and cpu_usage for fluentd).
+
+**Why:** `pattern = "fluentd"` in procstat matches both the fluentd supervisor (PID name=`fluentd`) and the ruby worker (PID name=`ruby`), causing fluentd and ruby to show identical values on the dashboard. Using `exe = "fluentd"` matches only the supervisor process, so ruby and fluentd now report distinct memory/CPU values.
+
+### Added 18 new "Memory Anonymous P90 (MB)" panels
+
+Added panels appended at the end of the process metrics page, based on the 04/15 dashboard.
 
 ### Why
 
