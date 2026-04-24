@@ -9,12 +9,13 @@
 | `(New-NoUpdate)Container-Insights-Logs-Addon-with-ProcessMetrics.json` | Process metrics version (no updates) |
 | `Container-Insights-Logs-Addon-with-ProcessMetrics-04152026.json` | Snapshot from 04/15/2026 |
 | `Container-Insights-Logs-Addon-with-ProcessMetrics-04222026.json` | Snapshot from 04/22/2026 |
-| `Container-Insights-Logs-Addon-with-ProcessMetrics-04232026.json` | **Latest** — snapshot from 04/23/2026 |
+| `Container-Insights-Logs-Addon-with-ProcessMetrics-04232026.json` | Snapshot from 04/23/2026 |
+| `Container-Insights-Logs-Addon-with-ProcessMetrics-04242026.json` | **Latest** — snapshot from 04/24/2026 (based on 04/15 file) |
 | `downloadeddashboard-zane-dashboard-test.json` | Test dashboard (downloaded from portal) |
 
-## What's New in 04/23/2026
+## What's New in 04/24/2026
 
-Added **20 new "Memory Anonymous P90 (MB)" panels** (one per monitored process) alongside the existing "Memory RSS P90 (MB)" panels.
+Added **18 new "Memory Anonymous P90 (MB)" panels** appended at the end of the process metrics page, based on the 04/15 dashboard.
 
 ### Why
 
@@ -24,11 +25,11 @@ The new `memory_anonymous` metric reports only RssAnon (heap, stack), which maps
 
 ### New Panels
 
-**Linux** (9 panels):
-mdsd, fluent-bit, telegraf, telegraf-process-metrics, ruby, crond, inotifywait, fluentd, main.sh
+**Linux** (8 panels):
+mdsd, fluent-bit, telegraf, ruby, crond, inotifywait, fluentd, main.sh
 
-**Windows** (11 panels):
-fluent-bit, telegraf, telegraf-process-metrics, MonAgentLauncher, MonAgentCore, MonAgentHost, MonAgentManager, AzurePerfCollectorExtension, AzureProfilerExtension, AggregatorHost, powershell
+**Windows** (10 panels):
+fluent-bit, telegraf, MonAgentLauncher, MonAgentCore, MonAgentHost, MonAgentManager, AzurePerfCollectorExtension, AzureProfilerExtension, AggregatorHost, powershell
 
 ### Prerequisite
 
