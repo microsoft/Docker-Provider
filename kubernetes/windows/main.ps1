@@ -879,7 +879,7 @@ function Start-Fluent-Telegraf {
     if (![string]::IsNullOrEmpty($collectAmaLogsProcessMetrics) -and $collectAmaLogsProcessMetrics.ToLower() -eq 'true') {
         $amaLogsProcessMetricsConfFile = "C:\etc\telegraf\telegraf-ama-logs-process-metrics.conf"
         # Copy to writable path for ConfigMap subPath mounts (read-only)
-        $amaLogsProcessMetricsConfRuntime = "C:\etc\telegraf\telegraf-ama-logs-process-metrics-runtime.conf"
+        $amaLogsProcessMetricsConfRuntime = "C:\opt\telegraf\telegraf-ama-logs-process-metrics.conf"
         if (Test-Path $amaLogsProcessMetricsConfFile) {
             Copy-Item $amaLogsProcessMetricsConfFile $amaLogsProcessMetricsConfRuntime -Force
             $podName = [System.Environment]::GetEnvironmentVariable('PODNAME')
