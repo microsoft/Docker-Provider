@@ -878,21 +878,24 @@ function Start-Fluent-Telegraf {
     $collectAmaLogsProcessMetrics = [System.Environment]::GetEnvironmentVariable('AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS')
     if (![string]::IsNullOrEmpty($collectAmaLogsProcessMetrics) -and $collectAmaLogsProcessMetrics.ToLower() -eq 'true') {
         $amaLogsProcessMetricsConfFile = "C:\etc\telegraf\telegraf-ama-logs-process-metrics.conf"
+        # Copy to writable path for ConfigMap subPath mounts (read-only)
+        $amaLogsProcessMetricsConfRuntime = "C:\etc\telegraf\telegraf-ama-logs-process-metrics-runtime.conf"
         if (Test-Path $amaLogsProcessMetricsConfFile) {
+            Copy-Item $amaLogsProcessMetricsConfFile $amaLogsProcessMetricsConfRuntime -Force
             $podName = [System.Environment]::GetEnvironmentVariable('PODNAME')
-            (Get-Content $amaLogsProcessMetricsConfFile).replace('placeholder_hostname', $hostName).replace('placeholder_podname', $podName) | Set-Content $amaLogsProcessMetricsConfFile
+            (Get-Content $amaLogsProcessMetricsConfRuntime).replace('placeholder_hostname', $hostName).replace('placeholder_podname', $podName) | Set-Content $amaLogsProcessMetricsConfRuntime
             # Set AKS resource ID
             $aksResourceId = [System.Environment]::GetEnvironmentVariable('AKS_RESOURCE_ID')
             if (![string]::IsNullOrEmpty($aksResourceId)) {
-                (Get-Content $amaLogsProcessMetricsConfFile).replace('placeholder_aksresourceid', $aksResourceId) | Set-Content $amaLogsProcessMetricsConfFile
+                (Get-Content $amaLogsProcessMetricsConfRuntime).replace('placeholder_aksresourceid', $aksResourceId) | Set-Content $amaLogsProcessMetricsConfRuntime
             }
             # Set App Insights instrumentation key (Base64 decode)
             $appInsightsAuth = [System.Environment]::GetEnvironmentVariable('APPLICATIONINSIGHTS_AUTH')
             if (![string]::IsNullOrEmpty($appInsightsAuth) -and ![string]::IsNullOrEmpty($aksResourceId)) {
                 $appInsightsKey = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($appInsightsAuth)).Trim()
-                (Get-Content $amaLogsProcessMetricsConfFile).replace('placeholder_appinsights_key', $appInsightsKey) | Set-Content $amaLogsProcessMetricsConfFile
+                (Get-Content $amaLogsProcessMetricsConfRuntime).replace('placeholder_appinsights_key', $appInsightsKey) | Set-Content $amaLogsProcessMetricsConfRuntime
                 Write-Host "Starting telegraf for collecting process metrics inside ama-logs containers (Windows)"
-                C:\opt\telegraf\telegraf.exe --service install --service-name telegraf-ama-logs-process-metrics --config $amaLogsProcessMetricsConfFile
+                C:\opt\telegraf\telegraf.exe --service install --service-name telegraf-ama-logs-process-metrics --config $amaLogsProcessMetricsConfRuntime
                 C:\opt\telegraf\telegraf.exe --service start --service-name telegraf-ama-logs-process-metrics
             } else {
                 Write-Host "APPLICATIONINSIGHTS_AUTH or AKS_RESOURCE_ID not set, skipping ama-logs process metrics monitoring"

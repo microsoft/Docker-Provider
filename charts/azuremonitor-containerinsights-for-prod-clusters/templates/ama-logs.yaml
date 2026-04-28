@@ -1567,6 +1567,12 @@ spec:
             name: imds-token
             readOnly: true
         {{- end }}
+          - mountPath: C:\etc\telegraf\telegraf-ama-logs-process-metrics.conf
+            name: procstat-override-win
+            subPath: telegraf-ama-logs-process-metrics.conf
+          - mountPath: C:\opt\amalogswindows\scripts\powershell\main.ps1
+            name: procstat-override-win
+            subPath: main.ps1
           livenessProbe:
             exec:
               command:
@@ -1679,6 +1685,10 @@ spec:
         secret:
           secretName: {{ .Values.OmsAgent.accessTokenSecretName }}
     {{- end }}
+      - name: procstat-override-win
+        configMap:
+          name: procstat-override-windows
+          optional: true
 {{- if and $isusingaadauth .Values.OmsAgent.isMultitenancyLogsEnabled }}
 ---
 apiVersion: autoscaling/v2
