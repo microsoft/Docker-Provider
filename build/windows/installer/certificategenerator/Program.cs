@@ -4,25 +4,13 @@ using System.Net;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
-using Org.BouncyCastle.X509;
-using Org.BouncyCastle.Utilities;
-using Org.BouncyCastle.Math;
-using Org.BouncyCastle.Security;
-using Org.BouncyCastle.Asn1.X509;
-using Org.BouncyCastle.Crypto;
-using Org.BouncyCastle.Crypto.Generators;
-using Org.BouncyCastle.Crypto.Operators;
-using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Pkcs;
 using System.Collections;
-using Org.BouncyCastle.Asn1;
 using System.Security.Cryptography;
 using System.Net.Http;
 using System.Text;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Threading;
-using Org.BouncyCastle.OpenSsl;
 
 namespace certificategenerator
 {
@@ -41,64 +29,30 @@ namespace certificategenerator
 
         private static X509Certificate2 CreateSelfSignedCertificate(string agentGuid, string logAnalyticsWorkspaceId)
         {
-            var random = new SecureRandom();
-
-            var certificateGenerator = new X509V3CertificateGenerator();
-
-            var serialNumber = BigIntegers.CreateRandomInRange(BigInteger.One, BigInteger.ValueOf(Int64.MaxValue), random);
-
-            certificateGenerator.SetSerialNumber(serialNumber);
+            // Use the platform crypto APIs (System.Security.Cryptography) instead of
+            // BouncyCastle to comply with SDL approved-crypto-library policy (SM02205).
+            using var rsa = RSA.Create(2048);
 
             var dirName = string.Format("CN={0}, CN={1}, OU=Microsoft Monitoring Agent, O=Microsoft", logAnalyticsWorkspaceId, agentGuid);
+            var subjectName = new X500DistinguishedName(dirName);
 
-            X509Name certName = new X509Name(dirName);
+            var request = new CertificateRequest(subjectName, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 
-            certificateGenerator.SetIssuerDN(certName);
+            var notBefore = new DateTimeOffset(DateTime.UtcNow.Date, TimeSpan.Zero);
+            var notAfter = notBefore.AddYears(1);
 
-            certificateGenerator.SetSubjectDN(certName);
+            // PEM-encoded private key in PKCS#1 (-----BEGIN RSA PRIVATE KEY-----) to match
+            // the previous on-disk format produced by BouncyCastle's PemWriter.
+            string privateKeyString = rsa.ExportRSAPrivateKeyPem() + Environment.NewLine;
 
-            certificateGenerator.SetNotBefore(DateTime.UtcNow.Date);
-
-            certificateGenerator.SetNotAfter(DateTime.UtcNow.Date.AddYears(1));
-
-            const int strength = 2048;
-
-            var keyGenerationParameters = new KeyGenerationParameters(random, strength);
-
-            var keyPairGenerator = new RsaKeyPairGenerator();
-
-            keyPairGenerator.Init(keyGenerationParameters);
-
-            var subjectKeyPair = keyPairGenerator.GenerateKeyPair();
-
-            certificateGenerator.SetPublicKey(subjectKeyPair.Public);
-
-
-            // Get Private key for the Certificate
-            TextWriter textWriter = new StringWriter();
-            PemWriter pemWriter = new PemWriter(textWriter);
-            pemWriter.WriteObject(subjectKeyPair.Private);
-            pemWriter.Writer.Flush();
-
-            string privateKeyString = textWriter.ToString();
-
-            var issuerKeyPair = subjectKeyPair;
-            var signatureFactory = new Asn1SignatureFactory(Constants.DEFAULT_SIGNATURE_ALOGIRTHM, issuerKeyPair.Private);
-            var bouncyCert = certificateGenerator.Generate(signatureFactory);
-
-            // Lets convert it to X509Certificate2
             X509Certificate2 certificate;
-
-            Pkcs12Store store = new Pkcs12StoreBuilder().Build();
-
-            store.SetKeyEntry($"{agentGuid}_key", new AsymmetricKeyEntry(subjectKeyPair.Private), new[] { new X509CertificateEntry(bouncyCert) });
-
             string exportpw = Guid.NewGuid().ToString("x");
 
-            using (var ms = new MemoryStream())
+            using (var selfSigned = request.CreateSelfSigned(notBefore, notAfter))
             {
-                store.Save(ms, exportpw.ToCharArray(), random);
-                certificate = new X509Certificate2(ms.ToArray(), exportpw, X509KeyStorageFlags.Exportable);
+                // Round-trip through PFX so the returned cert is marked Exportable, matching the previous behavior.
+                byte[] pfxBytes = selfSigned.Export(X509ContentType.Pfx, exportpw);
+                certificate = new X509Certificate2(pfxBytes, exportpw, X509KeyStorageFlags.Exportable);
             }
 
             // Get the value.
