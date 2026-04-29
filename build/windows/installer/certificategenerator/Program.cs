@@ -33,13 +33,18 @@ namespace certificategenerator
             // BouncyCastle to comply with SDL approved-crypto-library policy (SM02205).
             using var rsa = RSA.Create(2048);
 
-            var dirName = string.Format("CN={0}, CN={1}, OU=Microsoft Monitoring Agent, O=Microsoft", logAnalyticsWorkspaceId, agentGuid);
-            // X500DistinguishedNameFlags.None encodes the DN in the SAME order as the source
-            // string (CN=<wsId>, CN=<agentGuid>, OU=..., O=Microsoft). The constructor default
-            // is Reversed (RFC 2253), which would flip the order and cause the OMS
-            // AgentService.svc onboarding endpoint to return HTTP 403. The legacy
-            // BouncyCastle X509Name(string) used source-order encoding, so we mirror that.
-            var subjectName = new X500DistinguishedName(dirName, X500DistinguishedNameFlags.None);
+            // Build the subject DN with the same byte-level encoding the legacy BouncyCastle
+            // X509Name(string) produced: source-order RDNs (CN=<wsId>, CN=<agentGuid>, OU=...,
+            // O=Microsoft) and UTF8String for every value. The OMS AgentService.svc onboarding
+            // endpoint compares the encoded subject and returns HTTP 403 if either the order
+            // or the string-tag differs. X500DistinguishedNameBuilder emits RDNs in REVERSE
+            // of Add() order, so we add them last-to-first.
+            var subjectBuilder = new X500DistinguishedNameBuilder();
+            subjectBuilder.Add("2.5.4.10", "Microsoft", System.Formats.Asn1.UniversalTagNumber.UTF8String); // O
+            subjectBuilder.Add("2.5.4.11", "Microsoft Monitoring Agent", System.Formats.Asn1.UniversalTagNumber.UTF8String); // OU
+            subjectBuilder.Add("2.5.4.3", agentGuid, System.Formats.Asn1.UniversalTagNumber.UTF8String); // CN
+            subjectBuilder.Add("2.5.4.3", logAnalyticsWorkspaceId, System.Formats.Asn1.UniversalTagNumber.UTF8String); // CN
+            var subjectName = subjectBuilder.Build();
 
             var request = new CertificateRequest(subjectName, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 
