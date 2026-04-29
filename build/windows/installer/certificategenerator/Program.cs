@@ -34,7 +34,12 @@ namespace certificategenerator
             using var rsa = RSA.Create(2048);
 
             var dirName = string.Format("CN={0}, CN={1}, OU=Microsoft Monitoring Agent, O=Microsoft", logAnalyticsWorkspaceId, agentGuid);
-            var subjectName = new X500DistinguishedName(dirName);
+            // X500DistinguishedNameFlags.None encodes the DN in the SAME order as the source
+            // string (CN=<wsId>, CN=<agentGuid>, OU=..., O=Microsoft). The constructor default
+            // is Reversed (RFC 2253), which would flip the order and cause the OMS
+            // AgentService.svc onboarding endpoint to return HTTP 403. The legacy
+            // BouncyCastle X509Name(string) used source-order encoding, so we mirror that.
+            var subjectName = new X500DistinguishedName(dirName, X500DistinguishedNameFlags.None);
 
             var request = new CertificateRequest(subjectName, rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 

@@ -7,12 +7,11 @@ metadata:
     name: windows-log-ltsc2022
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
   name: second-log-app
   namespace: windows-log-ltsc2022
 spec:
-  replicas: 1
   selector:
    matchLabels:
     app: second-log-app
