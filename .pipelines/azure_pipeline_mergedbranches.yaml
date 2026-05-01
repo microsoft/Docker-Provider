@@ -419,8 +419,7 @@ extends:
               docker cp signingContainer:C:\opt\fluent-bit\bin\containerinventory.so .
               echo "Extract perf.so"
               docker cp signingContainer:C:\opt\fluent-bit\bin\perf.so .
-              echo "Removing container"
-              docker rm signingContainer
+              echo "Keeping signingContainer alive; it will be reused by 'Replace files in origin Image' to avoid a second Hyper-V HCS sandbox on C:."
               echo "List ArtifactStagingDirectory"
               ls $(Build.ArtifactStagingDirectory)
               ls .
@@ -525,20 +524,31 @@ extends:
           inputs:
             targetType: 'inline'
             script: |
-              docker create --isolation=hyperv --name pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned
+              $ErrorActionPreference = 'Stop'
+              function Invoke-Docker {
+                & docker @args
+                if ($LASTEXITCODE -ne 0) { throw "docker $($args -join ' ') failed with exit code $LASTEXITCODE" }
+              }
+              Write-Host "=== Disk space and docker usage before copy-back ==="
+              Get-PSDrive C, D | Format-Table -AutoSize
+              docker system df
+              Write-Host "=== Reusing signingContainer (kept alive from 'Extract files to sign') to avoid a second HCS sandbox on C: ==="
               echo "Copy Signed binaries/folders back to docker image"
-              docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.exe pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.exe
-              docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.dll pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.dll
-              docker cp $(Build.ArtifactStagingDirectory)/fpSigning/livenessprobe.exe pushContainer:C:\opt\amalogswindows\scripts\cmd\livenessprobe.exe
-              docker cp $(Build.ArtifactStagingDirectory)/fpSigning/powershell/. pushContainer:C:\opt\amalogswindows\scripts\powershell/
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/BouncyCastle.Crypto.dll pushContainer:C:\opt\amalogswindows\certgenerator\BouncyCastle.Crypto.dll
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/Newtonsoft.Json.dll pushContainer:C:\opt\amalogswindows\certgenerator\Newtonsoft.Json.dll
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/fluent-bit/. pushContainer:C:\opt\fluent-bit/
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/ruby31/. pushContainer:C:\ruby31/
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/telegraf.exe pushContainer:C:\opt\telegraf\telegraf.exe
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/out_oms.so pushContainer:C:\opt\amalogswindows\out_oms.so
-              docker commit pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
-              docker rm pushContainer
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.exe signingContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.exe
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.dll signingContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.dll
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/fpSigning/livenessprobe.exe signingContainer:C:\opt\amalogswindows\scripts\cmd\livenessprobe.exe
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/fpSigning/powershell/. signingContainer:C:\opt\amalogswindows\scripts\powershell/
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/ossSigning/BouncyCastle.Crypto.dll signingContainer:C:\opt\amalogswindows\certgenerator\BouncyCastle.Crypto.dll
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/ossSigning/Newtonsoft.Json.dll signingContainer:C:\opt\amalogswindows\certgenerator\Newtonsoft.Json.dll
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/ossSigning/fluent-bit/. signingContainer:C:\opt\fluent-bit/
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/ossSigning/ruby31/. signingContainer:C:\ruby31/
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/ossSigning/telegraf.exe signingContainer:C:\opt\telegraf\telegraf.exe
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/ossSigning/out_oms.so signingContainer:C:\opt\amalogswindows\out_oms.so
+              Invoke-Docker commit signingContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
+              Invoke-Docker rm signingContainer
+              Write-Host "=== Disk space and docker usage after commit ==="
+              Get-PSDrive C, D | Format-Table -AutoSize
+              docker system df
         - task: PowerShell@2
           displayName: Push Docker Image
           inputs:
@@ -546,6 +556,7 @@ extends:
             script: |
               if ("$(Build.Reason)" -ne "PullRequest") {
                 docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
+                if ($LASTEXITCODE -ne 0) { throw "docker push failed with exit code $LASTEXITCODE" }
               }
         - task: CodeQL3000Finalize@0
           condition: eq(variables.IS_MAIN_BRANCH, true)
@@ -627,8 +638,7 @@ extends:
               docker cp signingContainer:C:\opt\fluent-bit\bin\containerinventory.so .
               echo "Extract perf.so"
               docker cp signingContainer:C:\opt\fluent-bit\bin\perf.so .
-              echo "Removing container"
-              docker rm signingContainer
+              echo "Keeping signingContainer alive; it will be reused by 'Replace files in origin Image' to avoid a second Hyper-V HCS sandbox on C:."
               echo "List ArtifactStagingDirectory"
               ls $(Build.ArtifactStagingDirectory)
               ls .
@@ -733,20 +743,31 @@ extends:
           inputs:
             targetType: 'inline'
             script: |
-              docker create --isolation=hyperv --name pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)-unsigned
+              $ErrorActionPreference = 'Stop'
+              function Invoke-Docker {
+                & docker @args
+                if ($LASTEXITCODE -ne 0) { throw "docker $($args -join ' ') failed with exit code $LASTEXITCODE" }
+              }
+              Write-Host "=== Disk space and docker usage before copy-back ==="
+              Get-PSDrive C, D | Format-Table -AutoSize
+              docker system df
+              Write-Host "=== Reusing signingContainer (kept alive from 'Extract files to sign') to avoid a second HCS sandbox on C: ==="
               echo "Copy Signed binaries/folders back to docker image"
-              docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.exe pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.exe
-              docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.dll pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.dll
-              docker cp $(Build.ArtifactStagingDirectory)/fpSigning/livenessprobe.exe pushContainer:C:\opt\amalogswindows\scripts\cmd\livenessprobe.exe
-              docker cp $(Build.ArtifactStagingDirectory)/fpSigning/powershell/. pushContainer:C:\opt\amalogswindows\scripts\powershell/
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/BouncyCastle.Crypto.dll pushContainer:C:\opt\amalogswindows\certgenerator\BouncyCastle.Crypto.dll
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/Newtonsoft.Json.dll pushContainer:C:\opt\amalogswindows\certgenerator\Newtonsoft.Json.dll
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/fluent-bit/. pushContainer:C:\opt\fluent-bit/
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/ruby31/. pushContainer:C:\ruby31/
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/telegraf.exe pushContainer:C:\opt\telegraf\telegraf.exe
-              docker cp $(Build.ArtifactStagingDirectory)/ossSigning/out_oms.so pushContainer:C:\opt\amalogswindows\out_oms.so
-              docker commit pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
-              docker rm pushContainer
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.exe signingContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.exe
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.dll signingContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.dll
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/fpSigning/livenessprobe.exe signingContainer:C:\opt\amalogswindows\scripts\cmd\livenessprobe.exe
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/fpSigning/powershell/. signingContainer:C:\opt\amalogswindows\scripts\powershell/
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/ossSigning/BouncyCastle.Crypto.dll signingContainer:C:\opt\amalogswindows\certgenerator\BouncyCastle.Crypto.dll
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/ossSigning/Newtonsoft.Json.dll signingContainer:C:\opt\amalogswindows\certgenerator\Newtonsoft.Json.dll
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/ossSigning/fluent-bit/. signingContainer:C:\opt\fluent-bit/
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/ossSigning/ruby31/. signingContainer:C:\ruby31/
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/ossSigning/telegraf.exe signingContainer:C:\opt\telegraf\telegraf.exe
+              Invoke-Docker cp $(Build.ArtifactStagingDirectory)/ossSigning/out_oms.so signingContainer:C:\opt\amalogswindows\out_oms.so
+              Invoke-Docker commit signingContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
+              Invoke-Docker rm signingContainer
+              Write-Host "=== Disk space and docker usage after commit ==="
+              Get-PSDrive C, D | Format-Table -AutoSize
+              docker system df
         - task: PowerShell@2
           displayName: Push Docker Image
           inputs:
@@ -754,6 +775,7 @@ extends:
             script: |
               if ("$(Build.Reason)" -ne "PullRequest") {
                 docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
+                if ($LASTEXITCODE -ne 0) { throw "docker push failed with exit code $LASTEXITCODE" }
               }
         - task: CodeQL3000Finalize@0
           condition: eq(variables.IS_MAIN_BRANCH, true)
