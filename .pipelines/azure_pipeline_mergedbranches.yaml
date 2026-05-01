@@ -1030,3 +1030,22 @@ extends:
           imageRepository: $(ImageRepositoryOverride)
           environment: 'CI-Agent-Dev-Aks-Configmap-Test1'
           azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+
+      # ============================================================
+      # Cluster: ci-logs-dev-aks-all-nodes — Deploy via Helm
+      # Matrix-coverage cluster with one node per OS / arch / FIPS combo
+      # (Ubuntu, AzureLinux, Windows2022; amd64 + arm64; non-FIPS + FIPS).
+      # Used to validate ama-logs works across different type of node variants.
+      # ============================================================
+      - template: /.pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
+        parameters:
+          clusterName: 'ci-logs-dev-aks-all-nodes'
+          resourceGroup: 'ci-logs-dev-aks-eastus'
+          region: 'eastus'
+          subscriptionId: $(CI_BUILD_SUB_ID)
+          workspaceId: $(CI_LOGS_DEV_AKS_EASTUS_LAW_ID)
+          amalogsLinuxImage: $(linuxImageTagUnderTest)
+          amalogsWindowsImage: $(windowsImageTagUnderTest)
+          imageRepository: $(ImageRepositoryOverride)
+          environment: 'CI-Agent-Dev-Aks-All-Nodes'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
