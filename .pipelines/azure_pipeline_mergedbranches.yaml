@@ -390,7 +390,7 @@ extends:
             targetType: 'inline'
             script: |
               echo "Creating docker container"
-              docker create --name signingContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned
+              docker create --isolation=hyperv --name signingContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned
               echo "Creating fist party directory"
               mkdir -p $(Build.ArtifactStagingDirectory)/fpSigning
               cd $(Build.ArtifactStagingDirectory)/fpSigning
@@ -525,7 +525,7 @@ extends:
           inputs:
             targetType: 'inline'
             script: |
-              docker create --name pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned
+              docker create --isolation=hyperv --name pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned
               echo "Copy Signed binaries/folders back to docker image"
               docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.exe pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.exe
               docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.dll pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.dll
@@ -598,7 +598,7 @@ extends:
             targetType: 'inline'
             script: |
               echo "Creating docker container"
-              docker create --name signingContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)-unsigned
+              docker create --isolation=hyperv --name signingContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)-unsigned
               echo "Creating fist party directory"
               mkdir -p $(Build.ArtifactStagingDirectory)/fpSigning
               cd $(Build.ArtifactStagingDirectory)/fpSigning
@@ -733,7 +733,7 @@ extends:
           inputs:
             targetType: 'inline'
             script: |
-              docker create --name pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)-unsigned
+              docker create --isolation=hyperv --name pushContainer ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)-unsigned
               echo "Copy Signed binaries/folders back to docker image"
               docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.exe pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.exe
               docker cp $(Build.ArtifactStagingDirectory)/fpSigning/CertificateGenerator.dll pushContainer:C:\opt\amalogswindows\certgenerator\CertificateGenerator.dll
