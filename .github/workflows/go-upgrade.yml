@@ -1,0 +1,138 @@
+name: Go Version & Dependencies Upgrade
+
+on:
+  schedule:
+    # Run daily at 6:00 AM UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  go-upgrade:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ci_prod
+          fetch-depth: 0
+
+      - name: Detect latest Go version from MCR
+        id: detect
+        run: |
+          LATEST_TAG=$(curl -sf https://mcr.microsoft.com/v2/oss/go/microsoft/golang/tags/list \
+            | jq -r '.tags[]' \
+            | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' \
+            | sort -V \
+            | tail -1)
+          echo "latest_go_version=$LATEST_TAG" >> "$GITHUB_OUTPUT"
+          echo "golang_image=mcr.microsoft.com/oss/go/microsoft/golang:${LATEST_TAG}" >> "$GITHUB_OUTPUT"
+
+          CURRENT_GO=$(grep -m1 '^go ' source/plugins/go/src/go.mod | awk '{print $2}')
+          echo "current_go_version=$CURRENT_GO" >> "$GITHUB_OUTPUT"
+          echo "Latest Go: $LATEST_TAG, Current Go: $CURRENT_GO"
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ steps.detect.outputs.latest_go_version }}
+
+      - name: Update go.mod files and pipeline variable
+        run: |
+          GO_VERSION="${{ steps.detect.outputs.latest_go_version }}"
+          GOLANG_IMAGE="${{ steps.detect.outputs.golang_image }}"
+
+          # Update GOLANG_BASE_IMAGE variable in the ADO pipeline YAML
+          sed -i "s|GOLANG_BASE_IMAGE: 'mcr.microsoft.com/oss/go/microsoft/golang:.*'|GOLANG_BASE_IMAGE: '${GOLANG_IMAGE}'|" .pipelines/azure_pipeline_mergedbranches.yaml
+
+          MODULE_DIRS=(
+            "source/plugins/go/src"
+            "source/plugins/go/input"
+            "test/ginkgo-e2e/utils"
+            "test/ginkgo-e2e/querylogs"
+            "test/ginkgo-e2e/containerstatus"
+            "test/ginkgo-e2e/livenessprobe"
+          )
+          for dir in "${MODULE_DIRS[@]}"; do
+            echo "=== Updating $dir ==="
+            cd "$dir"
+            go mod edit -go="$GO_VERSION"
+            go get -u ./...
+            go mod tidy
+            cd "$GITHUB_WORKSPACE"
+          done
+
+      - name: Check for changes and existing PR
+        id: changes
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          GO_VERSION="${{ steps.detect.outputs.latest_go_version }}"
+          BRANCH="auto/upgrade-go-${GO_VERSION}"
+          EXISTING_PR=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number' 2>/dev/null)
+          if [ -n "$EXISTING_PR" ]; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "Open PR #$EXISTING_PR already exists for $BRANCH. Skipping."
+          elif git diff --quiet; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "No changes detected"
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "Changes detected:"
+            git diff --stat
+          fi
+
+      - name: Create Pull Request
+        if: steps.changes.outputs.has_changes == 'true'
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          BRANCH="auto/upgrade-go-${{ steps.detect.outputs.latest_go_version }}"
+          git checkout -B "$BRANCH"
+          git add -A
+          git commit -m "chore(deps): Upgrade Go to ${{ steps.detect.outputs.latest_go_version }} and update dependencies
+
+          Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+          git push origin "$BRANCH" --force
+
+          # Write PR body to a file to avoid YAML indentation issues
+          {
+            echo "## Automated Go Upgrade"
+            echo ""
+            echo "- **Go version**: \`${{ steps.detect.outputs.current_go_version }}\` → \`${{ steps.detect.outputs.latest_go_version }}\`"
+            echo "- **GOLANG_BASE_IMAGE**: \`${{ steps.detect.outputs.golang_image }}\`"
+            echo "- **Dependencies**: Updated all go.mod files with \`go get -u ./...\` + \`go mod tidy\`"
+            echo ""
+            echo "### Modules updated"
+            echo "- \`source/plugins/go/src\`"
+            echo "- \`source/plugins/go/input\`"
+            echo "- \`test/ginkgo-e2e/utils\`"
+            echo "- \`test/ginkgo-e2e/querylogs\`"
+            echo "- \`test/ginkgo-e2e/containerstatus\`"
+            echo "- \`test/ginkgo-e2e/livenessprobe\`"
+            echo ""
+            echo "### Next steps"
+            echo "- [ ] Review dependency changes"
+            echo "- [ ] Verify pipeline build passes"
+            echo ""
+            echo "_This PR was created automatically by the Go upgrade workflow._"
+          } > /tmp/pr-body.md
+
+          gh pr create \
+            --base ci_prod \
+            --head "$BRANCH" \
+            --title "chore(deps): Upgrade Go to ${{ steps.detect.outputs.latest_go_version }} and update dependencies" \
+            --body-file /tmp/pr-body.md \
+            --label "dependencies"
