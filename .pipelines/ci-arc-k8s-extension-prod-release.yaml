@@ -45,12 +45,12 @@ extends:
   parameters:
     pool:
       name: Azure-Pipelines-CI-Test-EO
-      image: ci-1es-managed-windows-2022
+      image: ci-1es-managed-windows-2025
       os: windows
     sdl:
       sourceAnalysisPool:
         name: Azure-Pipelines-CI-Test-EO
-        image: ci-1es-managed-windows-2022
+        image: ci-1es-managed-windows-2025
         os: windows
     customBuildTags:
     - ES365AIMigrationTooling
@@ -59,7 +59,7 @@ extends:
       displayName: ci-arc-k8s-extension-all-regions-prod-release(MCR)
       pool:
         name: Azure-Pipelines-CI-Test-EO
-        image: ci-1es-managed-windows-2022
+        image: ci-1es-managed-windows-2025
         os: windows
       jobs:
       - job: releaseGating
@@ -323,7 +323,7 @@ extends:
       trigger: manual
       pool:
         name: Azure-Pipelines-CI-Test-EO
-        image: ci-1es-managed-windows-2022
+        image: ci-1es-managed-windows-2025
         os: windows
       jobs:
       - job: releaseGating
@@ -600,7 +600,7 @@ extends:
       - Wait_After_Stage_2
       pool:
         name: Azure-Pipelines-CI-Test-EO
-        image: ci-1es-managed-windows-2022
+        image: ci-1es-managed-windows-2025
         os: windows
       jobs:
       - job: releaseGating
@@ -877,7 +877,7 @@ extends:
       - Wait_After_Stage_3
       pool:
         name: Azure-Pipelines-CI-Test-EO
-        image: ci-1es-managed-windows-2022
+        image: ci-1es-managed-windows-2025
         os: windows
       jobs:
       - job: releaseGating
@@ -1154,7 +1154,7 @@ extends:
       - Wait_After_Stage_4
       pool:
         name: Azure-Pipelines-CI-Test-EO
-        image: ci-1es-managed-windows-2022
+        image: ci-1es-managed-windows-2025
         os: windows
       jobs:
       - job: releaseGating
@@ -1418,7 +1418,7 @@ extends:
       trigger: manual
       pool:
         name: Azure-Pipelines-CI-Test-EO
-        image: ci-1es-managed-windows-2022
+        image: ci-1es-managed-windows-2025
         os: windows
       jobs:
       - job: Job_1
@@ -1443,7 +1443,7 @@ extends:
       trigger: manual
       pool:
         name: Azure-Pipelines-CI-Test-EO
-        image: ci-1es-managed-windows-2022
+        image: ci-1es-managed-windows-2025
         os: windows
       jobs:
       - job: releaseGating

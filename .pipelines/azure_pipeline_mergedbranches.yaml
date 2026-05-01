@@ -37,7 +37,7 @@ extends:
     sdl:
       sourceAnalysisPool:
         name: Azure-Pipelines-CI-Test-EO
-        image: ci-1es-managed-windows-2022
+        image: ci-1es-managed-windows-2025
         os: windows
     customBuildTags:
     - ES365AIMigrationTooling
@@ -332,7 +332,7 @@ extends:
       - job: build_windows_2019
         pool:
           name: Azure-Pipelines-CI-Test-EO
-          image: ci-1es-managed-windows-2022
+          image: ci-1es-managed-windows-2025
           os: windows
         timeoutInMinutes: 120
         dependsOn:
@@ -552,7 +552,7 @@ extends:
       - job: build_windows_2022
         pool:
           name: Azure-Pipelines-CI-Test-EO
-          image: ci-1es-managed-windows-2022
+          image: ci-1es-managed-windows-2025
           os: windows
         timeoutInMinutes: 120
         dependsOn:
@@ -760,7 +760,7 @@ extends:
       - job: build_windows_multi_arc
         pool:
           name: Azure-Pipelines-CI-Test-EO
-          image: ci-1es-managed-windows-2022
+          image: ci-1es-managed-windows-2025
           os: windows
         timeoutInMinutes: 120
         dependsOn:
