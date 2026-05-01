@@ -1,4 +1,4 @@
-name: Check Telegraf Package Upgrade
+name: Telegraf Package Upgrade
 
 on:
   schedule:
@@ -129,30 +129,32 @@ jobs:
           # Create branch, commit, push
           git checkout -b "$BRANCH"
           git add kubernetes/linux/setup.sh
-          git commit -m "Upgrade telegraf-agent to ${LATEST}"
+          git commit -m "Upgrade telegraf-agent to ${LATEST}
+
+          Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
           git push origin "$BRANCH"
 
           # Write PR body to a file (avoids shell quoting issues with release notes)
           cat > /tmp/pr-body.md <<PRBODY_EOF
-          ## Summary
-          Automated upgrade of \`telegraf-agent\` package from \`${CURRENT}\` to \`${LATEST}\`.
+## Summary
+Automated upgrade of \`telegraf-agent\` package from \`${CURRENT}\` to \`${LATEST}\`.
 
-          New package detected on [PMC](https://packages.microsoft.com/azurelinux/3.0/prod/cloud-native/x86_64/Packages/t/).
+New package detected on [PMC](https://packages.microsoft.com/azurelinux/3.0/prod/cloud-native/x86_64/Packages/t/).
 
-          ### Changes
-          - Updated \`kubernetes/linux/setup.sh\`: \`telegraf-agent-${CURRENT}\` → \`telegraf-agent-${LATEST}\`
+### Changes
+- Updated \`kubernetes/linux/setup.sh\`: \`telegraf-agent-${CURRENT}\` → \`telegraf-agent-${LATEST}\`
 
-          ### Upstream Release Notes
-          [Full release notes](https://github.com/influxdata/telegraf/releases/tag/v${LATEST}) | [Compare changes](https://github.com/influxdata/telegraf/compare/v${CURRENT}...v${LATEST})
+### Upstream Release Notes
+[Full release notes](https://github.com/influxdata/telegraf/releases/tag/v${LATEST}) | [Compare changes](https://github.com/influxdata/telegraf/compare/v${CURRENT}...v${LATEST})
 
-          <details><summary>Release notes for v${LATEST}</summary>
+<details><summary>Release notes for v${LATEST}</summary>
 
-          ${RELEASE_NOTES}
+${RELEASE_NOTES}
 
-          </details>
+</details>
 
-          _This PR was created automatically by the telegraf upgrade workflow._
-          PRBODY_EOF
+_This PR was created automatically by the telegraf upgrade workflow._
+PRBODY_EOF
 
           # Create PR
           gh pr create \
