@@ -564,6 +564,25 @@ extends:
           Codeql.SkipTaskAutoInjection: true
           windowsAMAUrl: $[ dependencies.common.outputs['setup.windowsAMAUrl'] ]
         steps:
+        - powershell: |
+            Write-Host "=== OS ==="
+            Get-ComputerInfo | Select-Object OsName, OsVersion, OsBuildNumber, WindowsInstallationType | Format-List
+            Write-Host "=== dotnet --info ==="
+            try { dotnet --info } catch { Write-Host "dotnet not on PATH: $_" }
+            Write-Host "=== dotnet --list-runtimes ==="
+            try { dotnet --list-runtimes } catch { Write-Host "dotnet not on PATH: $_" }
+            Write-Host "=== dotnet --list-sdks ==="
+            try { dotnet --list-sdks } catch { Write-Host "dotnet not on PATH: $_" }
+            Write-Host "=== Shared runtimes on disk (Program Files) ==="
+            if (Test-Path 'C:\Program Files\dotnet\shared') {
+              Get-ChildItem 'C:\Program Files\dotnet\shared' -Recurse -Depth 1 | Select-Object FullName
+            } else { Write-Host 'C:\Program Files\dotnet\shared not present' }
+            Write-Host "=== Shared runtimes on disk (Program Files x86) ==="
+            if (Test-Path 'C:\Program Files (x86)\dotnet\shared') {
+              Get-ChildItem 'C:\Program Files (x86)\dotnet\shared' -Recurse -Depth 1 | Select-Object FullName
+            } else { Write-Host 'C:\Program Files (x86)\dotnet\shared not present' }
+          displayName: 'Diag: list .NET runtimes on agent'
+          continueOnError: true
         - task: PowerShell@2
           inputs:
             targetType: 'filePath'
