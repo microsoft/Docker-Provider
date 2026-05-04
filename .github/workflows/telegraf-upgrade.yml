@@ -1,0 +1,164 @@
+name: Telegraf Package Upgrade
+
+on:
+  schedule:
+    # Run daily at 10 AM UTC
+    - cron: '0 10 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-telegraf:
+    name: Check for new telegraf-agent on PMC
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ci_prod
+
+      - name: Check for new telegraf version
+        id: check
+        run: |
+          set -euo pipefail
+
+          PMC_URL="https://packages.microsoft.com/azurelinux/3.0/prod/cloud-native/x86_64/Packages/t/"
+
+          # Get latest telegraf-agent version from PMC (format: telegraf-agent-1.38.2-1)
+          LATEST_PKG=$(curl -sf "$PMC_URL" \
+            | grep -oP 'telegraf-agent-\K[0-9]+\.[0-9]+\.[0-9]+-[0-9]+(?=\.azl3)' \
+            | sort -V | tail -1)
+
+          if [ -z "$LATEST_PKG" ]; then
+            echo "ERROR: Could not determine latest telegraf version from PMC"
+            exit 1
+          fi
+
+          # Extract version (e.g., 1.38.2) and full package ref (e.g., 1.38.2-1)
+          LATEST_VERSION=$(echo "$LATEST_PKG" | grep -oP '^[0-9]+\.[0-9]+\.[0-9]+')
+          echo "latest_version=$LATEST_VERSION" >> "$GITHUB_OUTPUT"
+          echo "latest_pkg=$LATEST_PKG" >> "$GITHUB_OUTPUT"
+
+          # Get current version from setup.sh
+          CURRENT_VERSION=$(grep -oP 'telegraf-agent-\K[0-9]+\.[0-9]+\.[0-9]+' kubernetes/linux/setup.sh)
+          echo "current_version=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
+
+          echo "PMC latest: telegraf-agent-$LATEST_PKG"
+          echo "setup.sh:  telegraf-agent-$CURRENT_VERSION"
+
+          if [ "$LATEST_VERSION" = "$CURRENT_VERSION" ]; then
+            echo "Telegraf is already up to date ($CURRENT_VERSION)"
+            echo "needs_update=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "New version available: $LATEST_VERSION (current: $CURRENT_VERSION)"
+            echo "needs_update=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check for existing PR
+        if: steps.check.outputs.needs_update == 'true'
+        id: existing_pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh pr list \
+            --search "Upgrade telegraf-agent to ${{ steps.check.outputs.latest_version }} in:title" \
+            --state open \
+            --json number \
+            --jq 'length')
+          if [ "$EXISTING" -gt 0 ]; then
+            echo "PR already exists for version ${{ steps.check.outputs.latest_version }}"
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Fetch upstream release notes
+        if: steps.check.outputs.needs_update == 'true' && steps.existing_pr.outputs.exists == 'false'
+        id: release_notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          LATEST="${{ steps.check.outputs.latest_version }}"
+
+          # Fetch release notes from influxdata/telegraf (best-effort)
+          NOTES=""
+          if NOTES=$(gh api "repos/influxdata/telegraf/releases/tag/v${LATEST}" --jq '.body' 2>/dev/null); then
+            # Truncate if too long (keep under 30k chars to stay within GitHub PR body limits)
+            if [ "${#NOTES}" -gt 30000 ]; then
+              NOTES="${NOTES:0:30000}
+
+          ... _(truncated — see full release notes link above)_"
+            fi
+          else
+            NOTES="_Could not fetch release notes. See the links above for full details._"
+          fi
+
+          # Output multiline release notes using unique EOF delimiter
+          DELIM="RELEASE_NOTES_$(head -c 16 /dev/urandom | base64 | tr -dc 'A-Za-z0-9')"
+          echo "notes<<${DELIM}" >> "$GITHUB_OUTPUT"
+          printf '%s\n' "$NOTES" >> "$GITHUB_OUTPUT"
+          echo "${DELIM}" >> "$GITHUB_OUTPUT"
+
+      - name: Update setup.sh and create PR
+        if: steps.check.outputs.needs_update == 'true' && steps.existing_pr.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_NOTES: ${{ steps.release_notes.outputs.notes }}
+        run: |
+          set -euo pipefail
+
+          CURRENT="${{ steps.check.outputs.current_version }}"
+          LATEST="${{ steps.check.outputs.latest_version }}"
+          BRANCH="auto/upgrade-telegraf-${LATEST}"
+
+          # Update version in setup.sh
+          sed -i "s/telegraf-agent-${CURRENT}/telegraf-agent-${LATEST}/g" kubernetes/linux/setup.sh
+
+          # Verify the change was made
+          grep "telegraf-agent-${LATEST}" kubernetes/linux/setup.sh
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Create branch, commit, push
+          git checkout -b "$BRANCH"
+          git add kubernetes/linux/setup.sh
+          git commit -m "Upgrade telegraf-agent to ${LATEST}
+
+          Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+          git push origin "$BRANCH"
+
+          # Write PR body to a file (avoids shell quoting issues with release notes)
+          cat > /tmp/pr-body.md <<PRBODY_EOF
+## Summary
+Automated upgrade of \`telegraf-agent\` package from \`${CURRENT}\` to \`${LATEST}\`.
+
+New package detected on [PMC](https://packages.microsoft.com/azurelinux/3.0/prod/cloud-native/x86_64/Packages/t/).
+
+### Changes
+- Updated \`kubernetes/linux/setup.sh\`: \`telegraf-agent-${CURRENT}\` → \`telegraf-agent-${LATEST}\`
+
+### Upstream Release Notes
+[Full release notes](https://github.com/influxdata/telegraf/releases/tag/v${LATEST}) | [Compare changes](https://github.com/influxdata/telegraf/compare/v${CURRENT}...v${LATEST})
+
+<details><summary>Release notes for v${LATEST}</summary>
+
+${RELEASE_NOTES}
+
+</details>
+
+_This PR was created automatically by the telegraf upgrade workflow._
+PRBODY_EOF
+
+          # Create PR
+          gh pr create \
+            --title "Upgrade telegraf-agent to ${LATEST}" \
+            --body-file /tmp/pr-body.md \
+            --base ci_prod \
+            --head "$BRANCH"
