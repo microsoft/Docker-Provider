@@ -10,6 +10,7 @@ import { z } from "zod";
 
 import { DATA_SOURCES, APP_INSIGHTS } from "./datasources.js";
 import { QUERIES, QueryCategory, parameterizeQuery } from "./queries.js";
+import { scrapeICMIncident } from "./icm-browser.js";
 
 // ── Configuration ──────────────────────────────────────────────
 const QUERY_TIMEOUT_MS = parseInt(process.env.KQL_TIMEOUT_MS || "180000", 10);
@@ -419,7 +420,7 @@ function categoryResponse(
 
 server.tool(
   "ama_logs_tsg_triage",
-  "Run initial triage queries for ama-logs (Container Insights): agent version, cluster scale, pod/node counts, high log scale mode, AKS alerts, private cluster check.",
+  "Run initial triage queries for ama-logs (Container Insights): agent version, cluster scale, pod/node counts, high log scale mode, AKS alerts, private cluster check, managed cluster profile, addon identity, fleet version distribution, RS heartbeat check.",
   {
     cluster: clusterParam,
     timeRange: timeRangeParam,
@@ -440,7 +441,7 @@ server.tool(
 
 server.tool(
   "ama_logs_tsg_errors",
-  "Scan all ama-logs error categories: exceptions, MDSD send/create errors, network upload failures, OMS Homing errors, AKS alerts for daemonset and replicaset.",
+  "Scan all ama-logs error categories: exceptions, MDSD send/create errors, network upload failures, OMS Homing errors, AKS alerts for daemonset and replicaset, node NetworkNotReady events.",
   {
     cluster: clusterParam,
     timeRange: timeRangeParam,
@@ -482,7 +483,7 @@ server.tool(
 
 server.tool(
   "ama_logs_tsg_pods",
-  "Check ama-logs pod health: restarts, alert status for daemonset and replicaset pods.",
+  "Check ama-logs pod health: restarts, alert status for daemonset and replicaset pods, KubeSystemEvents (pod events summary, lifecycle timeline, crash summary, FailedMount, liveness probe failures, container start/exit).",
   {
     cluster: clusterParam,
     timeRange: timeRangeParam,
@@ -538,7 +539,7 @@ server.tool(
 
 server.tool(
   "ama_logs_tsg_config",
-  "Check ama-logs agent configuration: configmap settings, excluded namespaces, container log table format, high log scale mode.",
+  "Check ama-logs agent configuration: configmap settings, excluded namespaces, container log table format, high log scale mode, addon reconciler events.",
   {
     cluster: clusterParam,
     timeRange: timeRangeParam,
@@ -723,6 +724,25 @@ server.tool(
 
     return { content: [{ type: "text" as const, text: results.join("\n") }] };
   },
+);
+
+// Tool: ama_logs_tsg_icm_page
+server.tool(
+  "ama_logs_tsg_icm_page",
+  "Scrape an ICM incident page via Edge browser CDP connection. Works on both Windows (native) and WSL2. Opens the incident in Edge (or finds an already-open tab) and extracts the authored summary, discussion entries, and ARM resource IDs. On Windows, connects to localhost:9222. On WSL2, connects via port proxy on 9223. Requires Edge running with --remote-debugging-port=9222. Use this to get ICM details not available via the ICM API (authored summary text, discussion content, ARM resource IDs mentioned in descriptions).",
+  {
+    incidentId: z
+      .number()
+      .int()
+      .positive()
+      .describe("The ICM incident ID to scrape, e.g. 749876123"),
+  },
+  async ({ incidentId }) => {
+    const text = await scrapeICMIncident(incidentId);
+    return {
+      content: [{ type: "text" as const, text }],
+    };
+  }
 );
 
 // ── Server Startup ─────────────────────────────────────────────
