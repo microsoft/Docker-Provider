@@ -41,13 +41,13 @@ var _ = Describe("When querying the logs for the table", func() {
 	)
 })
 
-var _ = Describe("When querying ContainerLogV2 per node", func() {
-	It("Every node hosting an ama-logs DaemonSet pod should have ContainerLogV2 rows", func() {
+var _ = Describe("When querying Container logs per node", func() {
+	It("Every node hosting an ama-logs DaemonSet pod should have Container logs", func() {
 		if PerNodeLogCoverageEnabled != "true" {
-			Skip("Per-node ContainerLogV2 coverage skipped because PER_NODE_LOG_COVERAGE is not set to 'true'")
+			Skip("Per-node Container log coverage skipped because PER_NODE_LOG_COVERAGE is not set to 'true'")
 		}
 		if GenevaIntegrationEnabled == "true" {
-			Skip("ContainerLogV2 per-node coverage skipped because GENEVA_INTEGRATION is set to 'true'")
+			Skip("Container log per-node coverage skipped because GENEVA_INTEGRATION is set to 'true'")
 		}
 
 		expectedNodes, err := utils.GetExpectedAmaLogsNodes(K8sClient)
