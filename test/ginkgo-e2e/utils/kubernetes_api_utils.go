@@ -522,6 +522,26 @@ func GetAndUpdateConfigMap(clientset *kubernetes.Clientset, configMapName, confi
 	return nil
 }
 
+// GetExpectedAmaLogsNodes returns the names of all nodes in the cluster.
+// This is the set of nodes that ama-logs DaemonSets are expected to cover
+// for ContainerLogV2 ingestion. Crucially, this set is derived from the
+// Kubernetes node list directly (not from where ama-logs pods actually
+// landed), so a node where the DaemonSet failed to schedule (taint,
+// resource pressure, image pull failure, etc.) is still expected and will
+// be reported as missing by the per-node coverage check.
+func GetExpectedAmaLogsNodes(clientset *kubernetes.Clientset) ([]string, error) {
+	nodes, err := GetAllNodes(clientset)
+	if err != nil {
+		return nil, err
+	}
+
+	names := make([]string, 0, len(nodes))
+	for _, n := range nodes {
+		names = append(names, n.Name)
+	}
+	return names, nil
+}
+
 func GetAllAgentPods(clientset *kubernetes.Clientset) ([]corev1.Pod, error) {
 	podList, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
 	if err != nil {

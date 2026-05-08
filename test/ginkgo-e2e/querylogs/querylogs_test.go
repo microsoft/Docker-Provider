@@ -41,6 +41,22 @@ var _ = Describe("When querying the logs for the table", func() {
 	)
 })
 
+var _ = Describe("When querying ContainerLogV2 per node", func() {
+	It("Every node hosting an ama-logs DaemonSet pod should have ContainerLogV2 rows", func() {
+		if GenevaIntegrationEnabled == "true" {
+			Skip("ContainerLogV2 per-node coverage skipped because GENEVA_INTEGRATION is set to 'true'")
+		}
+
+		expectedNodes, err := utils.GetExpectedAmaLogsNodes(K8sClient)
+		Expect(err).NotTo(HaveOccurred())
+
+		observed, err := utils.QueryContainerLogV2CountsByComputer(LogsClient, AKSResourceId, "5m")
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(utils.AssertContainerLogV2NodeCoverage(expectedNodes, observed)).NotTo(HaveOccurred())
+	})
+})
+
 var _ = Describe("When querying the logs for the ContainerInventory", func() {
 	DescribeTable("Column should have zero empty values",
 		func(column string) {
