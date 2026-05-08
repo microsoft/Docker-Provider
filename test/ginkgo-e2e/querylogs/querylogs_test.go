@@ -53,7 +53,7 @@ var _ = Describe("When querying ContainerLogV2 per node", func() {
 		expectedNodes, err := utils.GetExpectedAmaLogsNodes(K8sClient)
 		Expect(err).NotTo(HaveOccurred())
 
-		observed, err := utils.QueryContainerLogV2CountsByComputer(LogsClient, AKSResourceId, "5m")
+		observed, err := utils.GetComputerFromContainerLog(LogsClient, AKSResourceId, "5m")
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(utils.AssertContainerLogV2NodeCoverage(expectedNodes, observed)).NotTo(HaveOccurred())
