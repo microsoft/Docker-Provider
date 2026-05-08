@@ -200,10 +200,10 @@ func queryCountsByComputer(logsClient *azquery.LogsClient, resourceID string, ta
 	return counts, nil
 }
 
-// AssertContainerLogV2NodeCoverage returns nil if every expected node appears
+// AssertContainerLogNodeCoverage returns nil if every expected node appears
 // in the per-Computer count map with a positive row count (compared
 // case-insensitively), or an error listing the missing nodes otherwise.
-func AssertContainerLogV2NodeCoverage(expectedNodes []string, observedCountsByComputer map[string]int64) error {
+func AssertContainerLogNodeCoverage(expectedNodes []string, observedCountsByComputer map[string]int64) error {
 	if len(expectedNodes) == 0 {
 		return fmt.Errorf("no expected nodes provided; cannot verify ContainerLogV2 coverage")
 	}
