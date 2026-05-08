@@ -151,18 +151,7 @@ func CompareResourcesInLogsAndKubeAPI(K8sClient *kubernetes.Clientset, logsClien
 	return CompareResourcesHelper(logsClient, resourceID, query, resources)
 }
 
-// GetComputerFromContainerLog queries the Log Analytics workspace for
-// the number of ContainerLogV2 rows ingested per node (Computer) within the
-// given time window (e.g. "5m"). Returns a map keyed by lowercased Computer
-// name with the row count as value.
-//
-// ContainerLogV2 and ContainerLog are mutually exclusive — a cluster writes
-// to one or the other based on its schema configuration. This helper only
-// falls back to ContainerLog when the ContainerLogV2 query *errors* (e.g.
-// the V2 table does not exist in a V1-configured workspace). A successful V2
-// query that returns zero rows is treated as a real ingestion failure and
-// surfaced as an empty map; callers must NOT interpret that as a reason to
-// fall back, otherwise V2 ingestion failures would be silently masked.
+
 func GetComputerFromContainerLog(logsClient *azquery.LogsClient, resourceID string, window string) (map[string]int64, error) {
 	counts, v2Err := queryCountsByComputer(logsClient, resourceID, "ContainerLogV2", window)
 	if v2Err == nil {
