@@ -15,6 +15,13 @@ jobs:
     name: Check for new telegraf-agent on PMC
     runs-on: ubuntu-latest
     steps:
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -61,7 +68,7 @@ jobs:
         if: steps.check.outputs.needs_update == 'true'
         id: existing_pr
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
         run: |
           EXISTING=$(gh pr list \
             --search "Upgrade telegraf-agent to ${{ steps.check.outputs.latest_version }} in:title" \
@@ -78,16 +85,14 @@ jobs:
       - name: Fetch upstream release notes
         if: steps.check.outputs.needs_update == 'true' && steps.existing_pr.outputs.exists == 'false'
         id: release_notes
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
           LATEST="${{ steps.check.outputs.latest_version }}"
 
-          # Fetch release notes from influxdata/telegraf (best-effort)
+          # Fetch release notes from influxdata/telegraf (best-effort, unauthenticated)
           NOTES=""
-          if NOTES=$(gh api "repos/influxdata/telegraf/releases/tag/v${LATEST}" --jq '.body' 2>/dev/null); then
+          if NOTES=$(curl -sf "https://api.github.com/repos/influxdata/telegraf/releases/tags/v${LATEST}" | python3 -c 'import sys,json,re; body=json.load(sys.stdin)["body"]; print(re.split(r"\n### Packages\b", body)[0].rstrip())' 2>/dev/null); then
             # Truncate if too long (keep under 30k chars to stay within GitHub PR body limits)
             if [ "${#NOTES}" -gt 30000 ]; then
               NOTES="${NOTES:0:30000}
@@ -107,7 +112,7 @@ jobs:
       - name: Update setup.sh and create PR
         if: steps.check.outputs.needs_update == 'true' && steps.existing_pr.outputs.exists == 'false'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
           RELEASE_NOTES: ${{ steps.release_notes.outputs.notes }}
         run: |
           set -euo pipefail
@@ -132,29 +137,29 @@ jobs:
           git commit -m "Upgrade telegraf-agent to ${LATEST}
 
           Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
-          git push origin "$BRANCH"
+          git push origin "$BRANCH" --force
 
           # Write PR body to a file (avoids shell quoting issues with release notes)
-          cat > /tmp/pr-body.md <<PRBODY_EOF
-## Summary
-Automated upgrade of \`telegraf-agent\` package from \`${CURRENT}\` to \`${LATEST}\`.
-
-New package detected on [PMC](https://packages.microsoft.com/azurelinux/3.0/prod/cloud-native/x86_64/Packages/t/).
-
-### Changes
-- Updated \`kubernetes/linux/setup.sh\`: \`telegraf-agent-${CURRENT}\` → \`telegraf-agent-${LATEST}\`
-
-### Upstream Release Notes
-[Full release notes](https://github.com/influxdata/telegraf/releases/tag/v${LATEST}) | [Compare changes](https://github.com/influxdata/telegraf/compare/v${CURRENT}...v${LATEST})
-
-<details><summary>Release notes for v${LATEST}</summary>
-
-${RELEASE_NOTES}
-
-</details>
-
-_This PR was created automatically by the telegraf upgrade workflow._
-PRBODY_EOF
+          {
+            echo "## Summary"
+            echo "Automated upgrade of \`telegraf-agent\` package from \`${CURRENT}\` to \`${LATEST}\`."
+            echo ""
+            echo "New package detected on [PMC](https://packages.microsoft.com/azurelinux/3.0/prod/cloud-native/x86_64/Packages/t/)."
+            echo ""
+            echo "### Changes"
+            echo "- Updated \`kubernetes/linux/setup.sh\`: \`telegraf-agent-${CURRENT}\` → \`telegraf-agent-${LATEST}\`"
+            echo ""
+            echo "### Upstream Release Notes"
+            echo "[Full release notes](https://github.com/influxdata/telegraf/releases/tag/v${LATEST}) | [Compare changes](https://github.com/influxdata/telegraf/compare/v${CURRENT}...v${LATEST})"
+            echo ""
+            echo "<details><summary>Release notes for v${LATEST}</summary>"
+            echo ""
+            echo "${RELEASE_NOTES}"
+            echo ""
+            echo "</details>"
+            echo ""
+            echo "_This PR was created automatically by the telegraf upgrade workflow._"
+          } > /tmp/pr-body.md
 
           # Create PR
           gh pr create \
@@ -162,3 +167,6 @@ PRBODY_EOF
             --body-file /tmp/pr-body.md \
             --base ci_prod \
             --head "$BRANCH"
+
+          # Trigger ADO build pipeline on the PR
+          gh pr comment "$BRANCH" --body "/azp run"
