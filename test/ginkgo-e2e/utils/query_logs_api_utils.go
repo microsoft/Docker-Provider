@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -148,4 +149,62 @@ func CompareResourcesInLogsAndKubeAPI(K8sClient *kubernetes.Clientset, logsClien
 	}
 
 	return CompareResourcesHelper(logsClient, resourceID, query, resources)
+}
+
+
+func GetComputerFromContainerLog(logsClient *azquery.LogsClient, resourceID string, window string) (map[string]int64, error) {
+	counts, v2Err := queryCountsByComputer(logsClient, resourceID, "ContainerLogV2", window)
+	if v2Err == nil {
+		return counts, nil
+	}
+
+	fallback, fbErr := queryCountsByComputer(logsClient, resourceID, "ContainerLog", window)
+	if fbErr != nil {
+		return nil, fmt.Errorf("ContainerLogV2 query failed: %v; ContainerLog fallback failed: %v", v2Err, fbErr)
+	}
+	return fallback, nil
+}
+
+func queryCountsByComputer(logsClient *azquery.LogsClient, resourceID string, table string, window string) (map[string]int64, error) {
+	query := fmt.Sprintf("%s | where TimeGenerated > ago(%s) | summarize count() by Computer", table, window)
+	tables, err := QueryLogs(logsClient, resourceID, query)
+	if err != nil {
+		return nil, err
+	}
+
+	counts := map[string]int64{}
+	for _, t := range tables {
+		for _, row := range t.Rows {
+			if len(row) < 2 {
+				continue
+			}
+			computer, ok := row[0].(string)
+			if !ok || computer == "" {
+				continue
+			}
+			count, _ := row[1].(float64)
+			counts[strings.ToLower(computer)] += int64(count)
+		}
+	}
+	return counts, nil
+}
+
+// AssertContainerLogNodeCoverage returns nil if every expected node appears
+// in the per-Computer count map with a positive row count (compared
+// case-insensitively), or an error listing the missing nodes otherwise.
+func AssertContainerLogNodeCoverage(expectedNodes []string, observedCountsByComputer map[string]int64) error {
+	if len(expectedNodes) == 0 {
+		return fmt.Errorf("no expected nodes provided; cannot verify ContainerLogV2 coverage")
+	}
+
+	var missing []string
+	for _, n := range expectedNodes {
+		if observedCountsByComputer[strings.ToLower(n)] <= 0 {
+			missing = append(missing, n)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("ContainerLogV2 ingestion is missing for %d/%d expected node(s): %s", len(missing), len(expectedNodes), strings.Join(missing, ", "))
+	}
+	return nil
 }

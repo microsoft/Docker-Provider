@@ -18,6 +18,7 @@ var LogsClient *azquery.LogsClient
 var AKSResourceId string
 var RetinaNetworkFlowLogsEnabled string
 var GenevaIntegrationEnabled string
+var PerNodeLogCoverageEnabled string
 var Cfg *rest.Config
 
 func TestQuerylogs(t *testing.T) {
@@ -34,6 +35,7 @@ var _ = BeforeSuite(func() {
 	RetinaNetworkFlowLogsEnabled, err = utils.IsRetinaNetworkFlowLogsEnabled(K8sClient, "kube-system", "component", "ama-logs-agent", "ama-logs")
 	Expect(err).NotTo(HaveOccurred())
 	GenevaIntegrationEnabled = os.Getenv("GENEVA_INTEGRATION")
+	PerNodeLogCoverageEnabled = os.Getenv("PER_NODE_LOG_COVERAGE")
 	LogsClient, err = utils.SetupLogsClient()
 	Expect(err).NotTo(HaveOccurred())
 })
