@@ -41,7 +41,9 @@ gem uninstall net-imap --force
 # remove rexml gem as it has a known CVE (CVE-2025-58767) and is not used by the agent
 gem uninstall rexml --force
 
-sudo tdnf install -y azure-mdsd-1.40.3
+curl -L -o /tmp/azure-mdsd.rpm "https://github.com/microsoft/Docker-Provider/releases/download/mdsd-oom-kill-fix/azure-mdsd-1.42.0-pr.11279377.merge.6628.x86_64.rpm"
+sudo tdnf install -y /tmp/azure-mdsd.rpm
+rm -f /tmp/azure-mdsd.rpm
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
 rm /usr/sbin/telegraf
