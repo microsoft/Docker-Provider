@@ -1050,3 +1050,19 @@ extends:
           imageRepository: $(ImageRepositoryOverride)
           environment: 'CI-Agent-Dev-Aks-All-Nodes'
           azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+
+      # Cluster: ci-logs-dev-aks-all-nodes — Run E2E Tests
+      # PerNodeLogCoverage=true enables the per-node ContainerLogV2 ingestion
+      # check; this cluster has a log generator deployed on every node so
+      # every node is expected to ship logs.
+      - template: /.pipelines/e2e-test-templates/test-ci-image-in-aks-cluster.yml@self
+        parameters:
+          clusterName: 'ci-logs-dev-aks-all-nodes'
+          resourceGroup: 'ci-logs-dev-aks-eastus'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+          environmentName: 'CI-Agent-Dev-Aks-All-Nodes'
+          dependsOnDeployJob: 'Deploy_AmaLogs_ci_logs_dev_aks_all_nodes'
+          azureClientId: 'AllNodesClientId'
+          azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
+          teamsWebhookUri: $(TeamsWebhookUri)
+          additionalTestParams: 'PerNodeLogCoverage=true'
