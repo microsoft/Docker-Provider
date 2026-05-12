@@ -80,12 +80,17 @@ extends:
         dependsOn: 
         steps:
         - download: build-artifacts
+        - script: |
+            echo "configurationOverrides value:"
+            echo "$(configurationOverrides)"
+          displayName: Debug - Print ConfigurationOverrides
+        - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
           displayName: Ev2 Managed SDP Rollout
-          task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
           inputs:
             EndpointProviderType: ApprovalService
             TaskAction: RegisterAndRollout
             SkipRegistrationIfExists: True
+            ForceRegistration: true
             ServiceRootPath: ${{parameters.ServiceRootPath}}
             RolloutSpecPath: ${{parameters.RolloutSpecPath}}
             StageMapName: Microsoft.Azure.SDP.Standard
