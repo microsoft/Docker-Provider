@@ -11,6 +11,7 @@ do
            TeamsWebhookUri) TeamsWebhookUri=$VALUE ;;
            LinuxTestsOnly) LinuxTestsOnly=$VALUE ;;
            GenevaIntegration) GenevaIntegration=$VALUE ;;
+           PerNodeLogCoverage) PerNodeLogCoverage=$VALUE ;;
            *)
     esac
 done
@@ -66,6 +67,7 @@ export AZURE_CLIENT_ID=$AzureClientId
 export AZURE_TENANT_ID=$AzureTenantId
 export WEBHOOK_URI=$TeamsWebhookUri
 export GENEVA_INTEGRATION=$GenevaIntegration
+export PER_NODE_LOG_COVERAGE=$PerNodeLogCoverage
 kubectl apply -f ./api-server-permissions.yaml
 kubectl apply -f ./testkube-test-crs.yaml
 
@@ -88,6 +90,7 @@ for wf in "${workflows[@]}"; do
     echo "Running workflow: $wf"
     kubectl testkube run testworkflow "$wf" \
         --config GENEVA_INTEGRATION="$GENEVA_INTEGRATION" \
+        --config PER_NODE_LOG_COVERAGE="$PER_NODE_LOG_COVERAGE" \
         --config AZURE_TENANT_ID="$AZURE_TENANT_ID" \
         --config AZURE_CLIENT_ID="$AZURE_CLIENT_ID" \
         --config GOTOOLCHAIN="auto" \

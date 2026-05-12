@@ -63,7 +63,7 @@ sudo tdnf install jq-1.7.1-1.azl3 -y
 #used to setcaps for ruby process to read /proc/env
 sudo tdnf install libcap -y
 
-sudo tdnf install telegraf-agent-1.38.2 -y
+sudo tdnf install telegraf-agent-1.38.3 -y
 telegraf_version=$(sudo tdnf list installed | grep telegraf | awk '{print $2}')
 echo "telegraf $telegraf_version" >> packages_version.txt
 mv /usr/bin/telegraf-agent /opt/telegraf
@@ -77,9 +77,28 @@ echo "DOCKER_CIMPROV_VERSION=$docker_cimprov_version" >> packages_version.txt
 sudo tdnf install azcu-fluent-bit-4.0.14 -y
 echo "$(fluent-bit --version)" >> packages_version.txt
 
+# Retry wrapper for gem install commands.
+# Native extension builds under QEMU emulation for arm64 can hit sporadic
+# segfaults in GCC/make, so we retry transient failures automatically.
+gem_install_with_retry() {
+    local max_retries=3
+    local attempt=1
+    while [ $attempt -le $max_retries ]; do
+        echo "gem install attempt $attempt/$max_retries: gem install $@"
+        if gem install "$@"; then
+            return 0
+        fi
+        echo "WARNING: gem install failed (attempt $attempt/$max_retries)"
+        attempt=$((attempt + 1))
+        sleep 2
+    done
+    echo "ERROR: gem install failed after $max_retries attempts: gem install $@"
+    exit 1
+}
+
 # install fluentd
 fluentd_version="1.16.3"
-gem install fluentd -v $fluentd_version --no-document
+gem_install_with_retry fluentd -v $fluentd_version --no-document
 
 # remove the test directory from fluentd
 rm -rf /usr/lib/ruby/gems/3.3.0/gems/fluentd-$fluentd_version/test/
@@ -87,14 +106,14 @@ rm -rf /usr/lib/ruby/gems/3.3.0/gems/fluentd-$fluentd_version/test/
 echo "$(fluentd --version)" >> packages_version.txt
 fluentd --setup ./fluent
 
-gem install gyoku iso8601 bigdecimal --no-doc
-gem install tomlrb -v "2.0.1" --no-document
-gem install ipaddress --no-document
-gem install jwt -v "2.7.1" --no-document
-gem install racc --no-document
+gem_install_with_retry gyoku iso8601 bigdecimal --no-doc
+gem_install_with_retry tomlrb -v "2.0.1" --no-document
+gem_install_with_retry ipaddress --no-document
+gem_install_with_retry jwt -v "2.7.1" --no-document
+gem_install_with_retry racc --no-document
 
 # Reinstall zlib gem to fix CVE-2026-27820
-gem install zlib -v "3.2.3" --no-document 
+gem_install_with_retry zlib -v "3.2.3" --no-document 
 # uninstall old zlib gem
 rm /usr/lib/ruby/gems/3.3.0/specifications/default/zlib-3.1.1.gemspec
 rm -rf /usr/lib/ruby/gems/3.3.0/gems/zlib-3.1.1

@@ -1,0 +1,90 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: log-gen-all-nodes
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: log-gen-linux
+  namespace: log-gen-all-nodes
+  labels:
+    app: log-gen
+    os: linux
+spec:
+  selector:
+    matchLabels:
+      app: log-gen
+      os: linux
+  template:
+    metadata:
+      labels:
+        app: log-gen
+        os: linux
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+      - operator: Exists
+      containers:
+      - name: log-gen
+        image: mcr.microsoft.com/cbl-mariner/busybox:2.0
+        command: ["sh", "-c"]
+        args:
+        - 'i=0; while true; do i=$((i+1)); echo "log-gen-linux line $i node=$NODE_NAME ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)"; sleep 1; done'
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        resources:
+          requests:
+            cpu: 5m
+            memory: 16Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: log-gen-windows
+  namespace: log-gen-all-nodes
+  labels:
+    app: log-gen
+    os: windows
+spec:
+  selector:
+    matchLabels:
+      app: log-gen
+      os: windows
+  template:
+    metadata:
+      labels:
+        app: log-gen
+        os: windows
+    spec:
+      nodeSelector:
+        kubernetes.io/os: windows
+        kubernetes.azure.com/os-sku: Windows2022
+      tolerations:
+      - operator: Exists
+      containers:
+      - name: log-gen
+        image: mcr.microsoft.com/windows/servercore:ltsc2022
+        command: ["powershell", "-c"]
+        args:
+        - '$i = 0; while ($true) { $i++; Write-Output "log-gen-windows line $i node=$env:NODE_NAME ts=$(Get-Date -Format o)"; Start-Sleep -Seconds 1 }'
+        env:
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        resources:
+          requests:
+            cpu: 50m
+            memory: 256Mi
+          limits:
+            cpu: 200m
+            memory: 512Mi

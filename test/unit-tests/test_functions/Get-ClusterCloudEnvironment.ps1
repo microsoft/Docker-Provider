@@ -2,7 +2,7 @@ function Is-SupportedCloudEnvironment {
     param (
         [string]$cloudEnvironment
     )
-    $supportedCloudEnvironments = @("azurepubliccloud", "azurechinacloud", "azureusgovernmentcloud", "usnat", "ussec", "azurebleucloud")
+    $supportedCloudEnvironments = @("azurepubliccloud", "azurechinacloud", "azureusgovernmentcloud", "usnat", "ussec", "azurebleucloud", "azuredeloscloud")
     if ($supportedCloudEnvironments -contains $cloudEnvironment) {
         return $true
     }
@@ -27,6 +27,7 @@ function Get-ClusterCloudEnvironment{
                 "opinsights.azure.eaglex.ic.gov"      { $cloud_environment = "usnat" }
                 "opinsights.azure.microsoft.scloud"   { $cloud_environment = "ussec" }
                 "opinsights.sovcloud-api.fr"          { $cloud_environment = "azurebleucloud" }
+                "opinsights.sovcloud-api.de"          { $cloud_environment = "azuredeloscloud" }
             }
         } else {
             Write-Host "Domain name either null or empty. Defaulting to azurepubliccloud."

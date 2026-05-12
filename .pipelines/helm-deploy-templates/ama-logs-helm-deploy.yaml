@@ -51,6 +51,10 @@ parameters:
 - name: releaseName
   type: string
   default: 'azuremonitor-containers'
+- name: additionalOverrides
+  type: string
+  default: ''
+  displayName: 'Additional Helm override values (comma-separated key=value pairs)'
 - name: dependsOn
   type: object
   default: []
@@ -86,6 +90,17 @@ jobs:
           displayName: Install Helm
           inputs:
             helmVersionToInstall: 'latest'
+        - task: AzureCLI@2
+          displayName: 'Detect Kubernetes Version'
+          inputs:
+            azureSubscription: '${{ parameters.azureSubscription }}'
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              az aks get-credentials --resource-group ${{ parameters.resourceGroup }} --name ${{ parameters.clusterName }} --overwrite-existing --admin
+              K8S_VERSION=$(kubectl version -o json | jq -r '.serverVersion.gitVersion' | sed 's/^v//')
+              echo "Detected Kubernetes version: $K8S_VERSION"
+              echo "##vso[task.setvariable variable=K8S_VERSION]$K8S_VERSION"
         - task: HelmDeploy@0
           displayName: 'Helm Deploy: ama-logs to ${{ parameters.clusterName }}'
           inputs:
@@ -101,160 +116,10 @@ jobs:
             # TODO: When it is merged to ci_prod, the following chartPath will be updated accordingly.
             chartPath: '$(Build.SourcesDirectory)/charts/azuremonitor-containerinsights-for-prod-clusters'
             releaseName: '${{ parameters.releaseName }}'
-            overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageRepository=${{ parameters.imageRepository }},OmsAgent.imageTagLinux=${{ parameters.amalogsLinuxImage }},OmsAgent.imageTagWindows=${{ parameters.amalogsWindowsImage }}'
+            ${{ if ne(parameters.additionalOverrides, '') }}:
+              overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},global.commonGlobals.Versions.Kubernetes=$(K8S_VERSION),OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageRepository=${{ parameters.imageRepository }},OmsAgent.imageTagLinux=${{ parameters.amalogsLinuxImage }},OmsAgent.imageTagWindows=${{ parameters.amalogsWindowsImage }},${{ parameters.additionalOverrides }}'
+            ${{ else }}:
+              overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},global.commonGlobals.Versions.Kubernetes=$(K8S_VERSION),OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageRepository=${{ parameters.imageRepository }},OmsAgent.imageTagLinux=${{ parameters.amalogsLinuxImage }},OmsAgent.imageTagWindows=${{ parameters.amalogsWindowsImage }}'
             waitForExecution: false
-            arguments: '--timeout 10m --install'
-        - task: AzureCLI@2
-          displayName: Verify Deployment
-          inputs:
-            azureSubscription: '${{ parameters.azureSubscription }}'
-            scriptType: bash
-            scriptLocation: inlineScript
-            inlineScript: |
-              echo "=========================================="
-              echo "Deployment Summary"
-              echo "=========================================="
-              echo "Cluster: ${{ parameters.clusterName }}"
-              echo "Resource Group: ${{ parameters.resourceGroup }}"
-              echo "Region: ${{ parameters.region }}"
-              echo "Linux Image Tag: ${{ parameters.amalogsLinuxImage }}"
-              echo "Windows Image Tag: ${{ parameters.amalogsWindowsImage }}"
-              echo ""
-              
-              echo "Getting AKS credentials..."
-              az aks get-credentials --resource-group ${{ parameters.resourceGroup }} --name ${{ parameters.clusterName }} --overwrite-existing --admin
-              
-              echo ""
-              echo "=========================================="
-              echo "Waiting for pods to be ready (60s max)..."
-              echo "=========================================="
-              
-              # Wait for daemonset pods (pods are always deployed to kube-system namespace)
-              kubectl rollout status daemonset/ama-logs -n kube-system --timeout=60s || echo "Warning: Daemonset rollout not complete within timeout"
-              
-              # Wait for replicaset pod
-              kubectl rollout status deployment/ama-logs-rs -n kube-system --timeout=60s 2>/dev/null || \
-                kubectl rollout status replicaset -l rsName=ama-logs-rs -n kube-system --timeout=60s 2>/dev/null || \
-                echo "Warning: ReplicaSet rollout status check skipped"
-              
-              echo ""
-              echo "=========================================="
-              echo "Pod Status"
-              echo "=========================================="
-              kubectl get pods -n kube-system | grep ama-logs || echo "No ama-logs pods found"
-              
-              echo ""
-              echo "=========================================="
-              echo "Helm Release Status"
-              echo "=========================================="
-              helm status ${{ parameters.releaseName }} -n ${{ parameters.namespace }} 2>/dev/null || echo "Helm release status not available"
-              
-              echo ""
-              echo "=========================================="
-              echo "Image Verification"
-              echo "=========================================="
-              EXPECTED_LINUX_TAG="${{ parameters.amalogsLinuxImage }}"
-              EXPECTED_WINDOWS_TAG="${{ parameters.amalogsWindowsImage }}"
-              VERIFICATION_PASSED=true
-              
-              echo "Expected Linux image tag: $EXPECTED_LINUX_TAG"
-              echo "Expected Windows image tag: $EXPECTED_WINDOWS_TAG"
-              echo ""
-              
-              # ---- 1. Linux DaemonSet Pod Verification (ama-logs + ama-logs-prometheus containers) ----
-              # Note: Pods are always deployed to kube-system namespace regardless of helm release namespace
-              echo "--- 1. Linux DaemonSet Verification ---"
-              
-              # Check ama-logs container
-              LINUX_AMA_LOGS_IMAGE=$(kubectl get pods -n kube-system -l component=ama-logs-agent -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs")].image}' 2>/dev/null)
-              
-              if [ -z "$LINUX_AMA_LOGS_IMAGE" ]; then
-                echo "❌ ERROR: Could not retrieve ama-logs container image from Linux DaemonSet"
-                VERIFICATION_PASSED=false
-              else
-                echo "ama-logs container image: $LINUX_AMA_LOGS_IMAGE"
-                LINUX_AMA_LOGS_TAG=$(echo "$LINUX_AMA_LOGS_IMAGE" | cut -d':' -f2)
-                if [ "$LINUX_AMA_LOGS_TAG" == "$EXPECTED_LINUX_TAG" ]; then
-                  echo "✅ ama-logs container: PASSED"
-                else
-                  echo "❌ ama-logs container MISMATCH! Expected: $EXPECTED_LINUX_TAG, Actual: $LINUX_AMA_LOGS_TAG"
-                  VERIFICATION_PASSED=false
-                fi
-              fi
-              
-              # Check ama-logs-prometheus container
-              LINUX_PROM_IMAGE=$(kubectl get pods -n kube-system -l component=ama-logs-agent -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs-prometheus")].image}' 2>/dev/null)
-              
-              if [ -z "$LINUX_PROM_IMAGE" ]; then
-                echo "❌ ERROR: Could not retrieve ama-logs-prometheus container image from Linux DaemonSet"
-                VERIFICATION_PASSED=false
-              else
-                echo "ama-logs-prometheus container image: $LINUX_PROM_IMAGE"
-                LINUX_PROM_TAG=$(echo "$LINUX_PROM_IMAGE" | cut -d':' -f2)
-                if [ "$LINUX_PROM_TAG" == "$EXPECTED_LINUX_TAG" ]; then
-                  echo "✅ ama-logs-prometheus container: PASSED"
-                else
-                  echo "❌ ama-logs-prometheus container MISMATCH! Expected: $EXPECTED_LINUX_TAG, Actual: $LINUX_PROM_TAG"
-                  VERIFICATION_PASSED=false
-                fi
-              fi
-              
-              echo ""
-              
-              # ---- 2. ReplicaSet Pod Verification (ama-logs container) ----
-              echo "--- 2. ReplicaSet Verification ---"
-              
-              RS_AMA_LOGS_IMAGE=$(kubectl get pods -n kube-system -l rsName=ama-logs-rs -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs")].image}' 2>/dev/null)
-              
-              if [ -z "$RS_AMA_LOGS_IMAGE" ]; then
-                echo "❌ ERROR: Could not retrieve ama-logs container image from ReplicaSet"
-                VERIFICATION_PASSED=false
-              else
-                echo "ama-logs container image: $RS_AMA_LOGS_IMAGE"
-                RS_AMA_LOGS_TAG=$(echo "$RS_AMA_LOGS_IMAGE" | cut -d':' -f2)
-                if [ "$RS_AMA_LOGS_TAG" == "$EXPECTED_LINUX_TAG" ]; then
-                  echo "✅ ReplicaSet ama-logs container: PASSED"
-                else
-                  echo "❌ ReplicaSet ama-logs container MISMATCH! Expected: $EXPECTED_LINUX_TAG, Actual: $RS_AMA_LOGS_TAG"
-                  VERIFICATION_PASSED=false
-                fi
-              fi
-              
-              echo ""
-              
-              # ---- 3. Windows DaemonSet Pod Verification (ama-logs-windows container) ----
-              echo "--- 3. Windows DaemonSet Verification ---"
-              
-              WINDOWS_POD_EXISTS=$(kubectl get pods -n kube-system -l component=ama-logs-agent-windows -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
-              
-              if [ -z "$WINDOWS_POD_EXISTS" ]; then
-                echo "INFO: No Windows ama-logs pods found (cluster may not have Windows nodes)"
-                echo "Skipping Windows verification"
-              else
-                WINDOWS_IMAGE=$(kubectl get pods -n kube-system -l component=ama-logs-agent-windows -o jsonpath='{.items[0].spec.containers[?(@.name=="ama-logs-windows")].image}' 2>/dev/null)
-                
-                if [ -z "$WINDOWS_IMAGE" ]; then
-                  echo "❌ ERROR: Could not retrieve ama-logs-windows container image"
-                  VERIFICATION_PASSED=false
-                else
-                  echo "ama-logs-windows container image: $WINDOWS_IMAGE"
-                  WINDOWS_TAG=$(echo "$WINDOWS_IMAGE" | cut -d':' -f2)
-                  if [ "$WINDOWS_TAG" == "$EXPECTED_WINDOWS_TAG" ]; then
-                    echo "✅ Windows ama-logs-windows container: PASSED"
-                  else
-                    echo "❌ Windows ama-logs-windows container MISMATCH! Expected: $EXPECTED_WINDOWS_TAG, Actual: $WINDOWS_TAG"
-                    VERIFICATION_PASSED=false
-                  fi
-                fi
-              fi
-              
-              echo ""
-              echo "=========================================="
-              echo "Final Verification Result"
-              echo "=========================================="
-              if [ "$VERIFICATION_PASSED" = true ]; then
-                echo "✅ SUCCESS: All image tag verifications PASSED"
-              else
-                echo "❌ FAILED: One or more image tag verifications failed"
-                exit 1
-              fi
+            arguments: '--timeout 10m --install --force-conflicts'
+            

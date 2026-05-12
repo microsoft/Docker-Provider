@@ -1,0 +1,644 @@
+{
+  "Version": "1",
+  "ToggleName": "OmsAgent.omsAgentDsMemoryLimitLinux",
+  "Type": "string",
+  "LastUpdatedAt": null,
+  "ExtensionType": "microsoft.azuremonitor.containers",
+  "OwnerTeam": "container insights",
+  "Description": "This is OmsAgent.omsAgentDsMemoryLimitLinux toggle.",
+  "Rules": [
+    {
+      "Matchers": [
+        {
+          "Field": "tenantID",
+          "Operator": "equals",
+          "Values": [
+            "fa465c02-c505-4574-993d-a392c07f2a77"
+          ]
+        }
+      ],
+      "Value": "1.5Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "armId",
+          "Operator": "equals",
+          "Values": [
+            "/subscriptions/72c4aaa3-727f-4ac1-987c-dbefde8f9a0d/resourcegroups/rg-eu-prod-kmr/providers/Microsoft.ContainerService/managedClusters/aks-eu-prod-kmr",
+            "/subscriptions/27ee1ba9-6997-433d-80e3-601a23a334dd/resourcegroups/rg-eu-preprod-kmr/providers/Microsoft.ContainerService/managedClusters/aks-eu-preprod-kmr",
+            "/subscriptions/9b6572d8-12b6-47db-9839-1e76e60ed4e3/resourceGroups/rg-cedec-k8s-int/providers/Microsoft.ContainerService/managedClusters/aks-cedec-k8s-int"
+          ]
+        }
+      ],
+      "Value": "3Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "armId",
+          "Operator": "equals",
+          "Values": [
+            "/subscriptions/c982451a-f788-47a1-8964-ab9b47c27a6b/resourcegroups/mpexvds1-rg-ext-gtw-01/providers/Microsoft.ContainerService/managedClusters/mpexvds1-aks-ext-gtw-01"
+          ]
+        }
+      ],
+      "Value": "4Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "tenantID",
+          "Operator": "equals",
+          "Values": [
+            "3f8a7bc4-e337-47a5-a0fc-0d512c0e05f1"
+          ]
+        }
+      ],
+      "Value": "750Mi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "subscriptionID",
+          "Operator": "equals",
+          "Values": [
+            "7709144c-caa9-42f5-ba43-9c84e3dae1ed",
+            "95cb8f74-d845-46a1-ac83-eb682e53cea3",
+            "c5acd408-0cc6-4d81-a196-fed376665c3d",
+            "135321f8-e488-43af-95e7-e4d993facaff",
+            "38ff45bf-8a73-49fd-94f7-bee5e7fa0be5",
+            "db7d3327-8318-4d0e-a9ae-179af8992532",
+            "807067f9-c30a-4602-9326-9775ee7e5f8a",
+            "bb1e362a-29ce-46a6-831b-e1bee60b29eb",
+            "80166fc9-fb36-426b-b852-80a1671233a5",
+            "d882e029-d245-41c4-b2dc-b35db76e1274",
+            "7e03360e-a3dc-408c-a9d7-9e23d6a36dc8",
+            "76f7de7a-d5db-4e4f-a420-01bb9ed53c38",
+            "2413d5bc-1a80-4042-a810-7b555fa8a3fe",
+            "6bff413a-2936-43cf-a29a-de2f55a72108",
+            "c5ce0187-fa97-48dc-ac05-97dbac6e879f",
+            "223ccf37-385d-4d03-a6a7-3c8921e298e9",
+            "a82f31b3-64ff-4c98-b9c5-722ddd56190a",
+            "83a88bb9-d44d-4cdd-b878-c52a9f0c7273",
+            "9081bff1-1e1a-4de8-87ce-4bc9498db8c8",
+            "30f714a6-c2ee-43a6-a80c-aefbb5352299",
+            "27c5ae9b-8d33-4ddd-a75f-be2378331e3e",
+            "5d3d4b48-4355-49ad-890d-c49efc3a211d",
+            "1764bedd-80b8-4da5-ba88-f39222a22fd6",
+            "1e43d87e-cb3d-4d23-8e1b-e73ead54e917",
+            "56e97ff1-9c42-43ed-bb2a-559acb00f73f",
+            "727e0506-eafe-4794-9c9d-2118137c4720",
+            "5e71b15c-d6af-4321-838e-e3b91e640335",
+            "9cff731e-4a39-42e0-9835-543ad13ab87b",
+            "0374a5a8-4015-42d3-95d8-8e090b3e1401",
+            "338a7bb6-59ec-46a2-87d2-084e00c54258",
+            "9a5b6102-d270-4c27-a17c-61176c853b11",
+            "7bbb147e-deba-4e18-a7fd-1e0dbdc44dd9",
+            "9acf0797-27d1-4fa0-ab53-559ea232bff3",
+            "86a31c6b-9d5b-4020-8155-12953ec023bd",
+            "87fa8cbc-f27e-48cd-8c99-4c2a5b0efae4",
+            "affc6c82-5ee1-48e9-9797-1218405a0c23",
+            "a53c4265-1928-48c5-8e6c-3e8cce4f02c3",
+            "3da8cf98-81da-421d-9290-4518ac496f9f",
+            "13bd908d-9285-436b-8ac8-545ce5f606d0",
+            "6a6d3035-3b02-48ad-9d46-1a790b5c7b8b",
+            "0dc3b254-bec8-4936-a3ab-1a27c94155ff",
+            "3b9558fa-fbe5-4f28-8878-e95f289d46ce",
+            "4ab0dce8-30bf-480f-baef-f38058850510",
+            "f45a9609-1372-4f01-a996-ad51be913c47",
+            "ada6b962-1718-47ee-add7-d0bdfe4a1c85",
+            "6eab39c2-a421-4a80-b3a7-691a88498392",
+            "5ca0fdd7-27ad-40f6-9fe7-ac341341f531",
+            "6a4fe4c0-970d-47d7-b8ff-e8ff5cdb047a",
+            "fde38130-8ea3-410d-8078-140943ca4d47",
+            "c1126c38-c136-4756-9ddc-660871f87488",
+            "838a9a96-2cfc-4ab9-9334-59c519f68428",
+            "4d3929f2-b919-497d-857d-5ea305b29b96",
+            "a95e8c67-c483-4529-bf99-7c148271885a",
+            "2fb092f0-25b5-47da-aac4-cc855a1e8f97",
+            "f11be3e3-51e3-4fc1-a87b-707aabc1894c",
+            "8b28f24e-ea67-48d3-8de0-4b180e944d15",
+            "2dca625c-d137-42bf-a57f-9c1eaef8f409",
+            "c5780efc-5543-4522-ad6c-2776dd3e2f44",
+            "e01835ce-652a-4fbc-9f61-946cfd00157e",
+            "00a53248-a96f-4f46-b0fd-b950ad90a0ea",
+            "9685b574-d6c7-4f7a-8dd0-1758bb87f885",
+            "55799efc-4151-4173-8cbf-5add0b778ec1",
+            "badc6105-6a32-47fb-9b9f-568e27f7dc42",
+            "1be7db66-eabe-467b-87a5-8166856b7c2a",
+            "5205343f-cadc-47f7-bb99-088a9ba2a701",
+            "7749b5e1-b739-47e0-9071-26e1b33f4ee4",
+            "d1fccc93-b681-4e15-9d46-2b862d9448e7",
+            "3cecfed0-1f48-466b-aedf-a55dfb8701e9",
+            "1b37b8e8-f399-4e41-878f-3a9fd21cb951",
+            "82810074-6c03-4978-b8c3-c669850b3cb7",
+            "1d236bce-f678-40f8-a2ad-50ae622f8d14",
+            "7667a02b-213d-41b6-b5aa-44893f9d2205",
+            "09ccc411-5ec3-4b4e-864d-28d47e253615",
+            "f4287a70-392e-4f52-b467-0b1394af89f1",
+            "3d1353e4-5fc2-42dc-bfa8-cd378e6ad084",
+            "3d09df74-0c9e-4a83-aa52-5ed9032b8aea",
+            "cbacedb3-12ab-4756-8f0a-5fb166b3cc85",
+            "b089cb15-f9a0-4fd2-8d3b-bacd53a5c131",
+            "8afa98be-ba1b-45d0-a18f-960e0c4ce13f",
+            "3acf794b-b3c0-4ea2-a3d4-b31b2ed29251",
+            "e946ebf5-9752-4bde-925a-f709ec2c1e0c",
+            "9e5e1f4d-41ed-4808-a75b-90e4aaa154d2",
+            "eadb71c8-86ca-49ce-971a-153485ed6ecc",
+            "0b10f641-928c-41db-ad53-29324f1ea45e",
+            "e4c6efe2-6876-4e5a-be61-e6360f38c45e",
+            "d06f41e1-06a4-4877-86a5-9def11332a55",
+            "e63df4f1-de60-42a9-9bf3-5db07cb6be6a",
+            "9c17859b-9ab8-4a0a-9aa5-098cd50498b5",
+            "246828d6-a4a0-41f1-ad35-b8a5f657d0b0",
+            "231c26d5-9f15-40d5-9d81-ddb38d397cae",
+            "f972d9d9-58e1-4689-ad58-0f0179d6751b",
+            "aa391535-d694-49ca-9615-5a0f513a0ba2",
+            "48115578-f2b5-4867-8c7a-f76cc9de71e3",
+            "c45de7a8-8ccc-4d09-8312-aa9010a0f9ec",
+            "ec359c08-9bc4-498d-91d5-f623282a2edf",
+            "4ddeb387-d37e-49db-81ff-01881076e6c4",
+            "b4965724-da5f-49e4-98d0-75790a9fec51",
+            "822457af-4732-456f-9fbc-f8298b566eb8",
+            "32d97c57-2563-491e-80fd-0fe0bf78c180",
+            "6ec4e609-d5f1-4776-a6a0-d20063a22fad",
+            "243d2d34-0535-4ee6-bb4b-f0508dad5daf",
+            "bc1d8b6f-eb07-489c-afb0-1e23e5f3ebe9",
+            "d41943a4-052a-4b2a-8be5-abf031c439f4",
+            "9641652b-35ba-496d-a0f6-42972c4b749a",
+            "51fb51f2-e5bf-46f0-b17a-52ec5c27b49f",
+            "56d9979a-8a4b-4424-aaff-908a955d0222",
+            "a1dae834-e1e6-4dce-94a7-6597c6454e23",
+            "6f332bf1-4406-4871-85c6-db1422982608",
+            "fbbaa54f-d8ca-4c29-8919-85ba03e5bb3f",
+            "d99f2938-839b-438b-b2ae-e87df8fe90d8",
+            "37fb7014-d63b-4f56-98a5-5c5ae249beec",
+            "d6cd83c4-bf63-408a-91aa-c6e279cd7c3b",
+            "6d1998fd-9eb0-43ce-8e25-18496e98af31",
+            "f8f2c24b-a30e-445c-bd4d-85d6aa53a16d",
+            "0be14ed7-5de0-4d16-aead-b571b19c0a2e",
+            "61767392-d5f2-450d-a51d-a39b0257071d",
+            "c290f375-85df-4fb1-9d3c-3911f62dff5c",
+            "98f06d65-9387-4fc6-8e69-590f919c68ea",
+            "ce51cd17-68a2-4bf9-9e4f-71174eb75502",
+            "ffcb2682-852b-48ac-b9d9-8f8825253c62",
+            "73448736-5c88-4e19-8fc8-aa2db3c81b6f",
+            "cd993a7a-4753-4162-a434-7285eb7f3f5a",
+            "8be8d62b-7a6f-4315-9123-e19cb4902ab0",
+            "0cdde961-c1d3-4132-8de4-2b039562ddd7",
+            "b276fab0-f356-4efe-94d8-2eae32083205",
+            "6020c6b9-01ed-4ed1-85fe-eb439fe69599",
+            "f01f89ae-5a19-4ea0-89f7-f6b1af08b7a6",
+            "d15b647f-5392-4c9c-8856-486f22baa919",
+            "b3bc7b10-18be-40aa-b587-852a8cef04a1",
+            "c69ad7ff-5c78-4694-bd64-4cf5e2b1f145",
+            "3824fb10-9ade-4826-a98d-b00f096cd806",
+            "3e8babc1-886e-4000-89d5-4954a5658cc6",
+            "98d8579e-4e83-418e-8902-86455360f259",
+            "fc9c6660-cbac-4ff2-b80f-b7bdbcf347e0",
+            "1962e577-e475-4143-ae6d-6dbddf43e670",
+            "917b1a18-8ea4-4180-b913-5b0cc18e79ae",
+            "81af4e03-17db-4c8b-954c-b6f281386761",
+            "d5ede54f-a928-4ded-b904-b2619f55938f",
+            "1b1c6c79-4305-4762-b898-7956e496cb61",
+            "d53883e6-2fac-4cbf-a1d3-6bf327931140",
+            "5ebefb54-f8fd-4324-a9fa-6f9f456109fb",
+            "227b0c9a-e8ee-4142-a1d6-b90f8a2e4678",
+            "78774747-a65b-480c-ada4-5be1ac8a4395",
+            "523a1451-b301-49d0-b5da-37666f16db82",
+            "e400eddd-0ac8-4131-b6f6-86c1ad0bdf93",
+            "7935e40a-860d-4d5f-829b-e58ecb4ef1af",
+            "d6fb551c-6b22-45ec-b6f0-5d823258a690",
+            "0487afd8-f533-4928-b272-8c2a71a1b778",
+            "b0777adb-be55-405d-a6b1-cf071986feee",
+            "0fa4e109-3f7d-4486-a837-404396515a06",
+            "f40f4d5f-01c9-4584-b82e-51fe4233b8bf",
+            "da4bc489-c3d6-43ee-a0cf-73552746bf9b",
+            "8d5251b2-97e1-43ba-b4e6-7f9612e94584",
+            "6c6ae6af-feb3-4297-b021-2947cbdaa3ac",
+            "a755958b-e86b-41dd-9e5d-33fb36238a9b",
+            "1c1f8740-de53-4131-8bee-14d7682f3903",
+            "129b6cfe-6dac-4959-a76b-c218a18d9425",
+            "b5c20432-65bf-4cf1-a1b1-2155607dc0e0",
+            "da4c7485-4ba5-48b4-b92b-7c00d82ceec8",
+            "7c464ce6-1ef5-45e2-b78a-2dac72ab52c1",
+            "8d7b8da1-e642-4b5e-b7f2-0ed059688c34",
+            "8b052598-3d2b-4186-9deb-d85ef2a1d45a",
+            "d8e3a26b-1ad3-45cb-b66e-9e0e2fee0987",
+            "2e6b9e8e-838c-49fc-a301-8326aa2c2463",
+            "bb08bb67-3678-44c6-813e-1e1c8dcb4dd4",
+            "422e481f-fc6d-42fc-a02d-bc208bd1d166",
+            "729cd2a1-95fb-40d9-8737-bec94d3d29b9",
+            "ebd7d29a-362f-4a51-a821-2a4a1e03a987",
+            "3c825c62-641b-4f9d-9c9b-5133a294f247",
+            "3c75e15b-f16e-4a87-8ffc-6fec685dd397",
+            "67a4804c-fb1b-4bf2-b596-0fbb6f6c2ac7",
+            "435c1a7f-f06c-4c72-a099-27a157c2585f",
+            "f583caa6-0d06-4920-aded-c23d113e3cdb",
+            "0917586a-1e4a-4187-949b-5bbce131edb4",
+            "6614504b-c9bc-4590-ae2a-7362da409bcf",
+            "05445897-2e2f-49c7-8fbb-4bd4b4192da1",
+            "4ccd930f-06ee-4ea7-bff1-cc51ecafa86f",
+            "c0a8609d-d7cc-4d67-b8a7-2e083edd81ab",
+            "28986181-ff32-4552-a449-934f5d93dee8",
+            "26d8c25c-0798-4619-abc4-e8ae5d1747a6",
+            "b29acdaf-cd4e-4baa-bace-253436329817",
+            "3ea35d6d-8d81-4973-a769-51068ba53bf0",
+            "238ff6bc-1bc5-4f15-a8fa-df0a5ac7dc2e",
+            "d4e6d972-a6a8-4462-a014-e3dfe18cea65",
+            "6d7873b4-7cd4-4ae1-8d01-2c021d630985",
+            "b4271a47-06b7-43a6-9ee5-7447db3ecb10",
+            "a64a3be0-7721-4904-a8c9-27e34f27f48f",
+            "19f99090-f927-4c0b-b700-64189718f0c8",
+            "77f6bab6-a95f-40fe-9002-d4f69b6d20d3",
+            "3a06d8e0-8794-45ca-a3cc-70b6e3639d43",
+            "11e0bcef-d243-49b7-8ae6-d12401fa75c9",
+            "5716a210-4235-454e-965b-0b7d80b944cd",
+            "de5fcfc6-f030-4d44-be31-6f386db36846",
+            "af016903-c782-49eb-bf38-a2ccd1c726d8",
+            "59c39406-86ba-4f1c-9887-5b9550bf9b80",
+            "dafe21cc-9927-4cca-9efe-77d327b11cec",
+            "6edf1225-b04f-4856-a652-4d64af8745d8",
+            "1b575af4-63ed-4e25-9a11-876daab489ca",
+            "ebeec00a-6d9e-4daa-8ba0-4aa547bff7a6",
+            "7968518c-cbaa-430d-9985-0dec304d6a9d",
+            "e17bdda5-9db7-49e0-9ef7-fe79d35129b3",
+            "d1d86ee7-501b-445c-94fa-8ec2f4c729b8",
+            "0b264335-0ef4-4ff6-904e-4a361798b535",
+            "cd220903-a762-4836-a8b8-02dedd57dd78",
+            "3df4a4f4-dc81-4148-b1d2-6c34448e4509",
+            "291ba368-5c2a-4f5f-9e33-090661de60f2",
+            "ebee7d42-40f6-4cfa-b67f-8d5ff68ac736",
+            "dc464e05-3ac0-4e3d-a8a4-27e5878b6a72",
+            "76a47820-5802-4a3e-82ba-93bdfee57965",
+            "1484456a-4b83-4d7e-87c4-d9a6c47dd251",
+            "ae896ab2-5173-43de-9f57-138c60984d23",
+            "e0613448-0c69-4915-8a25-391fabefd713",
+            "e75cfd44-c6ea-48b2-b561-01d09a057554",
+            "c294960a-837a-499f-9ed6-498aaae6849b",
+            "12909b50-81cf-432a-a7fd-c10f7bddb5fe",
+            "09cbfcf2-268e-4162-9a83-9c6af9aa763e",
+            "7ccb63b4-c85d-4af6-a7f6-40a46aa302da",
+            "236a7cbb-a2c6-466e-9a05-41256e87b027",
+            "834a9bf1-957d-4d3c-bc5e-54d7ab6e0f48",
+            "90aca730-e7fd-4535-ac9a-7949358345b1",
+            "cc5ada81-ab99-4aa7-aa5d-43d5a03b9399",
+            "14f5b6f8-6ef7-4f84-9024-6cde591f60a0",
+            "6ab039ea-b267-44c1-a029-e68e37868190",
+            "4363a6c6-c630-4424-b305-8927bedceafe"
+          ]
+        }
+      ],
+      "Value": "6Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "armId",
+          "Operator": "equals",
+          "Values": [
+            "/subscriptions/c9b8b93f-1194-42b7-8ffd-ae29d477b386/resourceGroups/dp-p44-prod-aks-rg/providers/Microsoft.ContainerService/managedClusters/dp-p44-prod-aks",
+            "/subscriptions/ae3975f2-1557-484e-9a05-350b7ec89a41/resourceGroups/pmargjemyaeo/providers/Microsoft.ContainerService/managedClusters/pmaakjemyaeo001",
+            "/subscriptions/2188337c-032b-42f8-9030-c9493d53524d/resourceGroups/runtime-weu-aks/providers/Microsoft.ContainerService/managedClusters/csg-fb-prd-eu-weu",
+            "/subscriptions/0d045d7c-80f4-4024-b03c-765acc78d491/resourceGroups/runtime-weu-aks/providers/Microsoft.ContainerService/managedClusters/csg-fb-stg-eu-weu",
+            "/subscriptions/0ab6a914-e8f1-471c-b27c-46f7d0ed43e0/resourceGroups/runtime-weu-aks-cicd/providers/Microsoft.ContainerService/managedClusters/csg-runtime-cicd-eu-weu",
+            "/subscriptions/0ab6a914-e8f1-471c-b27c-46f7d0ed43e0/resourceGroups/runtime-weu-aks-ops/providers/Microsoft.ContainerService/managedClusters/csg-runtime-ops-eu-weu",
+            "/subscriptions/25157378-2fd4-4caa-a17c-e0ba18e8673a/resourceGroups/runtime-weu-aks/providers/Microsoft.ContainerService/managedClusters/csg-shared-stg-eu-weu",
+            "/subscriptions/28066ff1-698d-4a26-b081-03b842c823d8/resourceGroups/runtime-weu-aks/providers/Microsoft.ContainerService/managedClusters/csg-shared-dev-eu-weu",
+            "/subscriptions/2af0557e-d296-43a6-a634-99d934f6dddf/resourceGroups/runtime-cus-aks/providers/Microsoft.ContainerService/managedClusters/csg-csgna-stg-us-cus",
+            "/subscriptions/32c49c7b-a46c-4419-8233-b2518ce5fdf3/resourceGroups/runtime-weu-aks/providers/Microsoft.ContainerService/managedClusters/csg-platform-stg-eu-weu",
+            "/subscriptions/34477926-88aa-44fa-8837-0e4a4a254a28/resourceGroups/runtime-jpe-aks/providers/Microsoft.ContainerService/managedClusters/csg-shared-prd-jp-jpe",
+            "/subscriptions/3a1cf57b-5c7b-4506-8f7f-3850d2e9618c/resourceGroups/runtime-weu-aks/providers/Microsoft.ContainerService/managedClusters/csg-platform-prd-eu-weu",
+            "/subscriptions/454dcd46-3277-4514-b8c5-26664b87effc/resourceGroups/runtime-cus-aks/providers/Microsoft.ContainerService/managedClusters/csg-platform-prd-us-cus",
+            "/subscriptions/57477abc-e6c8-4f63-a504-e919fd6a5200/resourceGroups/runtime-jpe-aks/providers/Microsoft.ContainerService/managedClusters/csg-platform-prd-jp-jpe",
+            "/subscriptions/6d4d4259-1d2d-4c3e-94e3-d0a3eeada1d7/resourceGroups/runtime-weu-aks/providers/Microsoft.ContainerService/managedClusters/csg-fb-dev-eu-weu",
+            "/subscriptions/a7b2c7a5-4c2e-4360-a72e-9d414f98239b/resourceGroups/runtime-cus-aks/providers/Microsoft.ContainerService/managedClusters/csg-csgna-prd-us-cus",
+            "/subscriptions/cb83e507-16d4-438b-b5a9-83f21ea9b2e8/resourceGroups/runtime-weu-aks/providers/Microsoft.ContainerService/managedClusters/csg-shared-prd-eu-weu",
+            "/subscriptions/d40f9145-3ea3-456f-b778-f92505eeae26/resourceGroups/runtime-cus-aks/providers/Microsoft.ContainerService/managedClusters/csg-csgna-dev-us-cus",
+            "/subscriptions/d8dc8216-9ad3-41ef-8343-d2619d89c567/resourceGroups/runtime-weu-aks/providers/Microsoft.ContainerService/managedClusters/csg-platform-dev-eu-weu",
+            "/subscriptions/f48959dd-855c-47fe-a419-3704c78f681d/resourceGroups/runtime-cus-aks/providers/Microsoft.ContainerService/managedClusters/csg-shared-prd-us-cus",
+            "/subscriptions/b3a9aacb-606e-48f9-94ab-f6a11032ee70/resourceGroups/a01544p1p01/providers/Microsoft.ContainerService/managedClusters/zna-zorbamodernprod",
+            "/subscriptions/10f9474b-a629-415b-9558-941c24693724/resourceGroups/rg-aks/providers/Microsoft.ContainerService/managedClusters/aks-atoss8",
+            "/subscriptions/10f9474b-a629-415b-9558-941c24693724/resourceGroups/rg-aks/providers/Microsoft.ContainerService/managedClusters/aks-atoss3",
+            "/subscriptions/10f9474b-a629-415b-9558-941c24693724/resourceGroups/rg-aks/providers/Microsoft.ContainerService/managedClusters/aks-atoss5"
+          ]
+        }
+      ],
+      "Value": "1.5Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "armId",
+          "Operator": "equals",
+          "Values": [
+            "/subscriptions/c18a2fb3-1766-45b6-8cfa-5b41c10bc645/resourceGroups/rg-aks-prd-we-002/providers/Microsoft.ContainerService/managedClusters/aks-shared-prd-we-002",
+            "/subscriptions/357baeec-2e3e-4bb3-9acc-4d82e2bf2dd0/resourceGroups/app-prod400thor-prod-eastus/providers/Microsoft.ContainerService/managedClusters/us-prod400thor-prod-aks-000"
+          ]
+        }
+      ],
+      "Value": "5Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "armId",
+          "Operator": "equals",
+          "Values": [
+            "/subscriptions/660c5b25-778e-4a95-a5ea-7af381e33f53/resourcegroups/cn-prdcne2-rtm2-k8s-rg/providers/Microsoft.ContainerService/managedClusters/cn-prdcne2-rtm2-k8s",
+            "/subscriptions/35af2518-0034-44cc-b208-2bf7bf2b1d2d/resourceGroups/rg-miccm-aks-prod-emea-weu-1/providers/Microsoft.ContainerService/managedClusters/aks-miccm-prod-emea-weu-1",
+            "/subscriptions/169653ab-4b95-48c7-b88c-ce57cc44f8ce/resourceGroups/rg-miccm-aks-prod-amap-cus-1/providers/Microsoft.ContainerService/managedClusters/aks-miccm-prod-amap-cus-1",
+            "/subscriptions/7d3b3a3e-49fe-4faa-98f1-11ed72d12d4a/resourceGroups/rg-miccm-aks-dev-emea-weu-1/providers/Microsoft.ContainerService/managedClusters/aks-miccm-dev-emea-weu-1",
+            "/subscriptions/b82ce7d7-a7bd-4542-9a94-4497695c6117/resourceGroups/rg-miccm-devtools-aks-prod-amap-cus/providers/Microsoft.ContainerService/managedClusters/aks-miccm-devtools-prod-amap-cus",
+            "/subscriptions/c99f0493-ef0b-4023-9634-9e6cf2f1a0c5/resourceGroups/rg-miccm-devtools-aks-prod-emea-weu/providers/Microsoft.ContainerService/managedClusters/aks-miccm-devtools-prod-emea-weu",
+            "/subscriptions/511cdf0e-2b7d-44d1-83a0-d4aeb576aca7/resourceGroups/rg-miccm-aks-nonprod-amap-cus-1/providers/Microsoft.ContainerService/managedClusters/aks-miccm-nonprod-amap-cus-1",
+            "/subscriptions/25bb1f44-a0ae-48ed-bcbb-b99f2c5a2384/resourceGroups/rg-miccm-aks-nonprod-emea-weu-1/providers/Microsoft.ContainerService/managedClusters/aks-miccm-nonprod-emea-weu-1",
+            "/subscriptions/1a3581b5-064a-4b85-9102-aadc96d53e5a/resourceGroups/rg-miccm-devtools-aks-prod-cn-cnn3/providers/Microsoft.ContainerService/managedClusters/aks-miccm-devtools-prod-cn-cnn3",
+            "/subscriptions/0908804a-1cfb-4076-a008-fb0944fa46aa/resourceGroups/rg-miccm-aks-nonprod-cn-cnn3-1/providers/Microsoft.ContainerService/managedClusters/aks-miccm-nonprod-cn-cnn3-1",
+            "/subscriptions/101eed11-9db7-4221-8197-314b47799766/resourceGroups/rg-miccm-aks-prod-cn-cnn3-1/providers/Microsoft.ContainerService/managedClusters/aks-miccm-prod-cn-cnn3-1",
+            "/subscriptions/494e84fd-455a-45fd-bdaa-d84b74b5d626/resourceGroups/rg-2051pr/providers/Microsoft.ContainerService/managedClusters/aks-je2051prblue-001",
+            "/subscriptions/710ce9ae-dfed-4c2d-b815-d9011249c5f4/resourceGroups/rg-2051pf/providers/Microsoft.ContainerService/managedClusters/aks-je2051pfblue-001",
+            "/subscriptions/1147988c-8516-4b4c-8b61-7be5c39c9e17/resourceGroups/az-phiapp-prod-01-esco-prod-westus-rg-01/providers/Microsoft.ContainerService/managedClusters/esco-aksphi-prod-westus-cluster-01",
+            "/subscriptions/99a3af26-911d-4bc5-8fcc-8f9de81e46c5/resourceGroups/rg-aks-dev-container-westus2/providers/Microsoft.ContainerService/managedClusters/aks-dev-westus2",
+            "/subscriptions/954d6ec6-646d-498f-add3-3bc506059d67/resourceGroups/ebp-stage-application-blue/providers/Microsoft.ContainerService/managedClusters/ebp-stage-application-blue",
+            "/subscriptions/fc6020e3-54ae-4018-91c8-8d07b2444b07/resourceGroups/prod-rg/providers/Microsoft.ContainerService/managedClusters/prod-aks",
+            "/subscriptions/d9e12e04-520d-40e3-80cd-acb680e890c2/resourceGroups/rg-owl-infrastructure-prod-northeurope/providers/Microsoft.ContainerService/managedClusters/aks-owl-infrastructure-prod-northeurope",
+            "/subscriptions/375658e5-ff59-44d2-9f7e-60c9b176c583/resourceGroups/rg-kr-fst-sb-snd-eus2-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-sb-snd-eus2-c82d",
+            "/subscriptions/375658e5-ff59-44d2-9f7e-60c9b176c583/resourceGroups/rg-kr-fst-sb-snd-cus-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-sb-snd-cus-3339",
+            "/subscriptions/e790f9e5-a16a-4109-8fbd-b1129bab6b13/resourceGroups/rg-kr-fst-np-dev-eus2-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-np-dev-eus2-ab73",
+            "/subscriptions/e790f9e5-a16a-4109-8fbd-b1129bab6b13/resourceGroups/rg-kr-fst-np-dev-cus-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-np-dev-cus-de33",
+            "/subscriptions/e790f9e5-a16a-4109-8fbd-b1129bab6b13/resourceGroups/rg-kr-fst-np-tst-eus2-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-np-tst-eus2-ab4f",
+            "/subscriptions/e790f9e5-a16a-4109-8fbd-b1129bab6b13/resourceGroups/rg-kr-fst-np-tst-cus-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-np-tst-cus-76d5",
+            "/subscriptions/e7b72563-124f-483c-9c2a-0f2a24d91de1/resourceGroups/rg-kr-fst-p-stg-eus2-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-p-stg-eus2-7c1c",
+            "/subscriptions/e7b72563-124f-483c-9c2a-0f2a24d91de1/resourceGroups/rg-kr-fst-p-stg-cus-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-p-stg-cus-a502",
+            "/subscriptions/e7b72563-124f-483c-9c2a-0f2a24d91de1/resourceGroups/rg-kr-fst-p-prd-eus2-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-p-prd-eus2-33b3",
+            "/subscriptions/e7b72563-124f-483c-9c2a-0f2a24d91de1/resourceGroups/rg-kr-fst-p-prd-cus-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-p-prd-cus-d325",
+            "/subscriptions/7c72c4f9-c83b-46ba-be69-aee391628126/resourceGroups/rgrp-dva2-dt-aks002/providers/Microsoft.ContainerService/managedClusters/akse-dva2-dt-rdw002",
+            "/subscriptions/4e6a7a01-59a1-4bd0-aa31-143f66640add/resourceGroups/EU-EVOC-KTB-PROD/providers/Microsoft.ContainerService/managedClusters/EU-KTB-PROD-AKS-Cluster-01",
+            "/subscriptions/0600feb8-2d83-4874-9b17-d77b61a81d5e/resourceGroups/rg-sdc-ekp-prod-01/providers/Microsoft.ContainerService/managedClusters/aks-sdc-ekp-prod-01"
+          ]
+        }
+      ],
+      "Value": "2Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "armId",
+          "Operator": "equals",
+          "Values": [
+            "/subscriptions/8750c60a-c450-4dd6-bdfb-9137044d5b64/resourceGroups/Testing-EUS2/providers/Microsoft.ContainerService/managedClusters/eus2-testing-2",
+            "/subscriptions/8750c60a-c450-4dd6-bdfb-9137044d5b64/resourceGroups/Testing-WUS2/providers/Microsoft.ContainerService/managedClusters/wus2-testing-2",
+            "/subscriptions/aee20027-9965-4d49-931a-e8695dcc74b0/resourceGroups/rg-dp-aks-corebe-prod/providers/Microsoft.ContainerService/managedClusters/dp-corebe-prod-aks"
+          ]
+        }
+      ],
+      "Value": "8Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "subscriptionID",
+          "Operator": "equals",
+          "Values": [
+            "a705d761-7366-486d-88e9-79dd9216f5b9",
+            "faef68a0-cdf2-44c0-8eb8-f3cdebffef3e",
+            "f0bfee9e-2a83-4184-bbce-b570751ce8f6",
+            "4e235881-cb2c-4a1e-9a2d-0516ec000c9d",
+            "926501fc-7a9a-4154-9f3c-f3310714a3f2"
+          ]
+        }
+      ],
+      "Value": "2Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "subscriptionID",
+          "Operator": "equals",
+          "Values": [
+            "65e4460d-7c8b-49f1-a761-bb4cac63120b",
+            "e8a9b63c-5787-40b3-82cf-70756a7463d9"
+          ]
+        }
+      ],
+      "Value": "3Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "subscriptionID",
+          "Operator": "equals",
+          "Values": [
+            "fc599d2a-8573-4b51-8760-3b2a2523c1c6"
+          ]
+        }
+      ],
+      "Value": "4Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "subscriptionID",
+          "Operator": "equals",
+          "Values": [
+            "80178ca3-02ea-4ed9-8ac5-8a7afc7abf9c",
+            "cbdff586-ef30-4f82-8223-57aefef1de31",
+            "c9216ad4-6242-49ab-91bd-7f16f999b9e4",
+            "97966e0f-6376-485f-9cdc-4cbeeadae946",
+            "f35263e2-2f52-48e5-b246-1e90db5a9acb",
+            "e1dc519a-f72b-4bf2-810e-ddf9755f2ccf",
+            "19ef2a40-638d-41bc-adde-5949db9ac143",
+            "94f35f2b-6a93-45ab-b74e-9ca5e6bd7443",
+            "c6a8b3a3-3a89-44d3-99d5-b8812f3f1743",
+            "1b66bfb7-5775-45fd-9e8c-abdc1c6608b3",
+            "8280a05a-a17c-4514-8608-31a687d8cec0",
+            "eb01cf4e-ed69-4505-a34a-cbe4a1fee5bf",
+            "c5fc96f2-ccf2-4239-b536-9314562b04a3",
+            "ca867e5e-33f0-4103-9a02-4b75944ed8ba",
+            "6309d3bc-d038-4d4b-a851-ff3dd974147a",
+            "46a8dbc1-71f2-4ba3-b70f-5909fd55239a",
+            "4b3d82eb-ef95-46b9-a5b5-21aea335b33f",
+            "5d1ea9db-f87a-436c-9a67-139cf89e5950",
+            "efd05403-4e8d-4993-b3b4-7b874795ad4c",
+            "78a7f33c-cc25-4f43-95ce-a42c8e86700d",
+            "745c5a06-bf26-4a3b-8d83-91b83c3a7d27",
+            "fb110928-f261-4ab3-b787-770581b7f24a",
+            "380b6fa9-a11c-46a1-8c86-c754c0892842",
+            "3592e34c-8b95-4c31-93ca-70f87112e458",
+            "7e7d7830-f440-4979-aaf6-a8830e88f92b",
+            "f65c260d-6c29-451f-b554-b9a7e7b1dd6e",
+            "1efcf50d-b589-45a1-88b7-b3e5f7ce5cd8",
+            "e625a24c-cef1-40ef-94f6-fa2785d97eca",
+            "1b540b76-dc51-4c73-b4ea-449860b2e15c",
+            "d808a188-1689-4843-b278-e259085cd843",
+            "ce4411d9-c7d4-4df4-9384-9ee8aebbb0ae",
+            "488ec92e-70c3-4649-9ab6-59fbcb39224d",
+            "1af4f178-cdd1-4c62-afd8-bb6510fa5bf0",
+            "319d39b9-3db3-4c14-bb7f-93995923b356",
+            "401239b3-ba41-4a0d-a788-6e6bba22f8b7",
+            "3f8dc369-9c85-4a10-bd17-845d2a04c48b",
+            "bd10e849-7d57-46a8-90b4-f9bdd2a47604",
+            "b1c6fe81-e31b-4a7f-b429-14ca89718e09",
+            "5eed3e12-d776-405a-bb0f-e044a7d99209",
+            "cb6f239d-5da0-41f2-9815-a661f9e50ac3",
+            "a8f55565-3e17-4369-aba8-ca51920b8d2b",
+            "a052c9fa-e571-45eb-a967-36bac632ae50",
+            "e32cc760-4e40-401f-b0d0-48caf3357b74",
+            "8944fad7-7cd5-42ed-bd5a-44746145733a",
+            "cc6c6576-48ae-4401-aadf-df049b5fe8a3",
+            "91a78aa1-e12a-4dd2-9d34-b80afab49d61",
+            "3b82564e-bcee-43f3-9fc5-6b79069d9d2f",
+            "708ad4d8-ece1-4626-ad4f-7b92404f6bf0",
+            "9deff73d-6736-415b-b721-5062d4b1b3de",
+            "0dc1d55b-ef95-4e2d-92c2-13c348d6b281"
+          ]
+        }
+      ],
+      "Value": "2.5Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "armId",
+          "Operator": "equals",
+          "Values": [
+            "/subscriptions/67b49d2e-c5b7-4988-a379-0d5dc5dfdb05/resourceGroups/rg-dp-aks-corebe-prelive/providers/Microsoft.ContainerService/managedClusters/dp-corebe-prelive-aks",
+            "/subscriptions/87043035-79c8-4473-8038-baf2ea03af22/resourcegroups/rg-dp-aks-corebe-approval/providers/Microsoft.ContainerService/managedClusters/dp-corebe-approval-aks",
+            "/subscriptions/b4b0cbab-64dc-42bc-9d95-ea7c8d0cf188/resourcegroups/gangams-aks-log-scale-neu/providers/Microsoft.ContainerService/managedClusters/gangams-aks-log-scale-neu",
+            "/subscriptions/f0623b21-1f8d-4b92-a855-ef470558bf28/resourceGroups/rg-idm-dev3-aks001/providers/Microsoft.ContainerService/managedClusters/aks-idm-dev3-common001",
+            "/subscriptions/df278ee1-c9cb-4422-b846-6eb5f9e91016/resourceGroups/rg-us-lower-kmr-test/providers/Microsoft.ContainerService/managedClusters/aks-us-lower-kmr-test",
+            "/subscriptions/51c57a84-65a0-49ff-86f9-4b3e459e3063/resourceGroups/rg-us-preprod-kmr/providers/Microsoft.ContainerService/managedClusters/aks-us-preprod-kmr",
+            "/subscriptions/6d45e94c-0055-4295-be6f-c3c07c47875b/resourceGroups/rg-jp-preprod-kmr/providers/Microsoft.ContainerService/managedClusters/aks-jp-preprod-kmr",
+            "/subscriptions/dc06159b-e9da-48a4-9a3f-387289022a62/resourceGroups/rg-us-prod-kmr/providers/Microsoft.ContainerService/managedClusters/aks-us-prod-kmr",
+            "/subscriptions/7d8f00e8-9d27-4f9b-9f15-6ae6a1eb40ee/resourceGroups/rg-jp-prod-kmr/providers/Microsoft.ContainerService/managedClusters/aks-jp-prod-kmr",
+            "/subscriptions/da568096-fba6-4b09-9d94-b373373b6034/resourceGroups/ats-cicd-prod-apps/providers/Microsoft.ContainerService/managedClusters/ats-cicd-prod-aks_apps",
+            "/subscriptions/10f9474b-a629-415b-9558-941c24693724/resourceGroups/rg-aks/providers/Microsoft.ContainerService/managedClusters/aks-atoss14"
+          ]
+        }
+      ],
+      "Value": "3Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "armId",
+          "Operator": "equals",
+          "Values": [
+            "/subscriptions/9d27018b-eeaf-4016-92a9-42ca7e3e43f1/resourceGroups/nsas-westus2-prod-p1a-gen-rg/providers/Microsoft.ContainerService/managedClusters/nsas-westus2-prod-p1a-gen-aks",
+            "/subscriptions/7c72c4f9-c83b-46ba-be69-aee391628126/resourceGroups/rgrp-dva2-dt-aks001/providers/Microsoft.ContainerService/managedClusters/akse-dva2-dt-rdw001",
+            "/subscriptions/13ba3d64-3abd-4d9e-8f92-940050538e3b/resourceGroups/rgrp-pva2-dt-rdw002/providers/Microsoft.ContainerService/managedClusters/akse-pva2-dt-rdw002",
+            "/subscriptions/13ba3d64-3abd-4d9e-8f92-940050538e3b/resourceGroups/rgrp-pva2-dt-rdw001/providers/Microsoft.ContainerService/managedClusters/akse-pva2-dt-rdw001",
+            "/subscriptions/9b491dd6-598e-498c-98a0-d3bbd2290821/resourceGroups/rg-hk01-eas-p-internal-cont01/providers/Microsoft.ContainerService/managedClusters/aks-hk01-eas-p-internal-cu03",
+            "/subscriptions/9b491dd6-598e-498c-98a0-d3bbd2290821/resourceGroups/rg-hk01-eas-p-internet-cont01/providers/Microsoft.ContainerService/managedClusters/aks-hk01-eas-p-internet-cu03",
+            "/subscriptions/9b491dd6-598e-498c-98a0-d3bbd2290821/resourceGroups/rg-hk01-eas-p-omnichnl01-resource01/providers/Microsoft.ContainerService/managedClusters/aks-hk01-eas-p-internal-omni01",
+            "/subscriptions/9b491dd6-598e-498c-98a0-d3bbd2290821/resourceGroups/rg-hk01-eas-u-internal-cont01/providers/Microsoft.ContainerService/managedClusters/aks-hk01-eas-u-internal-cu03",
+            "/subscriptions/9b491dd6-598e-498c-98a0-d3bbd2290821/resourceGroups/rg-hk01-eas-u-internet-cont01/providers/Microsoft.ContainerService/managedClusters/aks-hk01-eas-u-internet-cu03"
+          ]
+        }
+      ],
+      "Value": "1.5Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "armId",
+          "Operator": "equals",
+          "Values": [
+            "/subscriptions/46d147da-c441-4a79-acd0-c61bc2848973/resourceGroups/cn-prdcne2-platformprod-k8s-rg/providers/Microsoft.ContainerService/managedClusters/cn-prdcne2-platformprod-k8s",
+            "/subscriptions/2133779d-5d85-4d01-8e89-253921aab7a6/resourceGroups/uks-prod-comm-mega-lab-aks-rg/providers/Microsoft.ContainerService/managedClusters/uks-prod-comm-mega-lab-aks1",
+            "/subscriptions/2133779d-5d85-4d01-8e89-253921aab7a6/resourceGroups/uks-prod-comm-mega-lab-aks-rg/providers/Microsoft.ContainerService/managedClusters/uks-prod-comm-mega-lab-aks2"
+          ]
+        }
+      ],
+      "Value": "3.5Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "armId",
+          "Operator": "equals",
+          "Values": [
+            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourceGroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-high-log-scale-eus",
+            "/subscriptions/1147988c-8516-4b4c-8b61-7be5c39c9e17/resourceGroups/az-phiapp-prod-01-esco-prod-westus-rg-01/providers/Microsoft.ContainerService/managedClusters/esco-aksphi-prod-westus-cluster-01"
+          ]
+        }
+      ],
+      "Value": "2.5Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "tenantID",
+          "Operator": "equals",
+          "Values": [
+            "cdc5aeea-15c5-4db6-b079-fcadd2505dc2"
+          ]
+        }
+      ],
+      "Value": "2.5Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "region",
+          "Operator": "equals",
+          "Values": [
+            "eastus2euap",
+            "centraluseuap"
+          ]
+        }
+      ],
+      "Value": "2.5Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "region",
+          "Operator": "equals",
+          "Values": [
+            "westcentralus"
+          ]
+        }
+      ],
+      "Value": "2.5Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "region",
+          "Operator": "equals",
+          "Values": [
+            "uksouth"
+          ]
+        }
+      ],
+      "Value": "2.5Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "region",
+          "Operator": "equals",
+          "Values": [
+            "eastus"
+          ]
+        }
+      ],
+      "Value": "2.5Gi"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "subscriptionID",
+          "Operator": "equals",
+          "Values": [
+            "54659c0d-c017-4709-ae74-51877a5bce2a"
+          ]
+        }
+      ],
+      "Value": "2.5Gi"
+    }
+  ]
+}

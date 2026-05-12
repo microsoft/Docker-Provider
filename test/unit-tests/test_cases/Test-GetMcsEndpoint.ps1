@@ -29,6 +29,10 @@ function Test-CloudEnvironments {
         @{
             cloud = "azurebleucloud"
             expected = "monitor.sovcloud-api.fr"
+        },
+        @{
+            cloud = "azuredeloscloud"
+            expected = "monitor.sovcloud-api.de"
         }
     )
 
