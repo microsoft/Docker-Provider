@@ -1062,7 +1062,7 @@ extends:
           azureSubscription: 'ContainerInsights_Build_Subscription_CI'
           environmentName: 'CI-Agent-Dev-Aks-All-Nodes'
           dependsOnDeployJob: 'Deploy_AmaLogs_ci_logs_dev_aks_all_nodes'
-          azureClientId: 'AllNodesClientId'
+          azureClientId: $(AllNodesClientId)
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
           additionalTestParams: 'PerNodeLogCoverage=true'
