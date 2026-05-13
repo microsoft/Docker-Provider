@@ -11,10 +11,10 @@ require_relative "ConfigParseErrorLogger"
 @configSchemaVersion = ""
 # Setting default values which will be used in case they are not set in the configmap or if configmap doesnt exist
 @collectStdoutLogs = true
-@stdoutExcludeNamespaces = "kube-system,gatekeeper-system"
+@stdoutExcludeNamespaces = "kube-system,gatekeeper-system,azuresecuritylinuxagent"
 @stdoutIncludeSystemPods = ""
 @collectStderrLogs = true
-@stderrExcludeNamespaces = "kube-system,gatekeeper-system"
+@stderrExcludeNamespaces = "kube-system,gatekeeper-system,azuresecuritylinuxagent"
 @stderrIncludeSystemPods = ""
 @collectClusterEnvVariables = true
 @logTailPath = "/var/log/containers/*.log"
@@ -187,12 +187,12 @@ def parseConfigMap
       return parsedConfig
     else
       puts "config::configmap container-azm-ms-agentconfig for settings not mounted, using defaults"
-      @excludePath = "*_kube-system_*.log"
+      @excludePath = "*_kube-system_*.log,*_azuresecuritylinuxagent_*.log"
       return nil
     end
   rescue => errorStr
     ConfigParseErrorLogger.logError("Exception while parsing config map for log collection/env variable settings: #{errorStr}, using defaults, please check config map for errors")
-    @excludePath = "*_kube-system_*.log"
+    @excludePath = "*_kube-system_*.log,*_azuresecuritylinuxagent_*.log"
     return nil
   end
 end
@@ -575,7 +575,7 @@ else
   if (File.file?(@configMapMountPath))
     ConfigParseErrorLogger.logError("config::unsupported/missing config schema version - '#{@configSchemaVersion}' , using defaults, please use supported schema version")
   end
-  @excludePath = "*_kube-system_*.log"
+  @excludePath = "*_kube-system_*.log,*_azuresecuritylinuxagent_*.log"
 end
 
 # Write the settings to file, so that they can be set as environment variables
