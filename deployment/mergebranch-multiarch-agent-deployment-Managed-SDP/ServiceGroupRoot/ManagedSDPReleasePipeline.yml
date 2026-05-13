@@ -49,29 +49,24 @@ parameters:
   type: string
   default: regions(*)
   values: 
-- name: agentImageTagSuffix
-  displayName: Agent Image Tag Suffix
-  type: string
-- name: cdpxLinuxTag
-  displayName: CDPX Linux Tag
-  type: string
-- name: cdpxWindowsTag
-  displayName: CDPX Windows Tag
-  type: string
-- name: overrideTag
-  displayName: Override Tag
-  type: string
-  default: 'false'
 variables:
+- name: agentImageTagSuffixValue
+  value: $(VAR_AGENT_IMAGE_TAG_SUFFIX)
+- name: cdpxLinuxTagValue
+  value: $(VAR_CDPX_LINUX_TAG)
+- name: cdpxWindowsTagValue
+  value: $(VAR_CDPX_WINDOWS_TAG)
+- name: overrideTagValue
+  value: $(VAR_OVERRIDE_TAG)
 - name: configurationOverrides
   value: |
     {
       "ConfigurationSpecification": {
         "Settings": {
-          "agentImageTagSuffix": "${{ parameters.agentImageTagSuffix }}",
-          "cdpxLinuxTag": "${{ parameters.cdpxLinuxTag }}",
-          "cdpxWindowsTag": "${{ parameters.cdpxWindowsTag }}",
-          "overrideTag": "${{ parameters.overrideTag }}"
+          "agentImageTagSuffix": "$(agentImageTagSuffixValue)",
+          "cdpxLinuxTag": "$(cdpxLinuxTagValue)",
+          "cdpxWindowsTag": "$(cdpxWindowsTagValue)",
+          "overrideTag": "$(overrideTagValue)"
         }
       }
     }

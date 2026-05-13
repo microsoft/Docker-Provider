@@ -45,6 +45,8 @@ variables:
   value: $(VAR_MANAGED_IDENTITY)
 - name: OverrideTag
   value: $(VAR_OVERRIDE_TAG)
+- name: configurationOverrides
+  value: '{"ConfigurationSpecification":{"Settings":{"agentImageTagSuffix":"$(AgentImageTagSuffix)","cdpxLinuxTag":"$(CDPXLinuxTag)","cdpxWindowsTag":"$(CDPXWindowsTag)","overrideTag":"$(OverrideTag)"}}}'
 - name: ServiceTreeGuid
   value: $(VAR_SERVICE_TREE_GUID)
 - name: UserAssignedIdentityClientId
@@ -438,12 +440,13 @@ extends:
             TaskAction: RegisterAndRollout
             UseServerMonitorTask: true
             SkipRegistrationIfExists: True
+            ForceRegistration: true
             ApprovalServiceEnvironment: $(ev2Environment)
             ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment-Managed-SDP/ServiceGroupRoot
             RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment-Managed-SDP/ServiceGroupRoot/RolloutSpec.json
             StageMapName: Microsoft.Azure.SDP.Standard
             Select: regions(*)
-            InlineDynamicBindingOverrides: '{ "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json", "contentVersion": "0.0.0.1", "scopeBindings": [ { "scopeTagName": "Global", "bindings": [ { "find": "__ACR_NAME__", "replaceWith": "$(ACRName)" }, { "find": "__AGENT_RELEASE__", "replaceWith": "$(AgentRelease)" }, { "find": "__AGENT_IMAGE_TAG_SUFFIX__", "replaceWith": "$(AgentImageTagSuffix)" }, { "find": "__MANAGED_IDENTITY__", "replaceWith": "$(ManagedIdentity)" }, { "find": "__CDPX_LINUX_TAG__", "replaceWith": "$(CDPXLinuxTag)" }, { "find": "__CDPX_WINDOWS_TAG__", "replaceWith": "$(CDPXWindowsTag)" }, { "find": "__OVERRIDE_TAG__", "replaceWith": "$(OverrideTag)" } ] } ] }'
+            ConfigurationOverrides: $(configurationOverrides)
           env:
             ServiceTreeGuid: 3170cdd2-19f0-4027-912b-1027311691a2
           target:
