@@ -49,16 +49,29 @@ parameters:
   type: string
   default: regions(*)
   values: 
+- name: agentImageTagSuffix
+  displayName: Agent Image Tag Suffix
+  type: string
+- name: cdpxLinuxTag
+  displayName: CDPX Linux Tag
+  type: string
+- name: cdpxWindowsTag
+  displayName: CDPX Windows Tag
+  type: string
+- name: overrideTag
+  displayName: Override Tag
+  type: string
+  default: 'false'
 variables:
 - name: configurationOverrides
   value: |
     {
       "ConfigurationSpecification": {
         "Settings": {
-          "agentImageTagSuffix": "$(VAR_AGENT_IMAGE_TAG_SUFFIX)",
-          "cdpxLinuxTag": "$(VAR_CDPX_LINUX_TAG)",
-          "cdpxWindowsTag": "$(VAR_CDPX_WINDOWS_TAG)",
-          "overrideTag": "$(VAR_OVERRIDE_TAG)"
+          "agentImageTagSuffix": "${{ parameters.agentImageTagSuffix }}",
+          "cdpxLinuxTag": "${{ parameters.cdpxLinuxTag }}",
+          "cdpxWindowsTag": "${{ parameters.cdpxWindowsTag }}",
+          "overrideTag": "${{ parameters.overrideTag }}"
         }
       }
     }
@@ -80,10 +93,6 @@ extends:
         dependsOn: 
         steps:
         - download: build-artifacts
-        - script: |
-            echo "configurationOverrides value:"
-            echo "$(configurationOverrides)"
-          displayName: Debug - Print ConfigurationOverrides
         - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
           displayName: Ev2 Managed SDP Rollout
           inputs:
