@@ -4,10 +4,15 @@
 {{- $addonTokenAdapterWindowsDefaultImageTag := dict "component" "addon-token-adapter-windows" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.imagetag"}}
 {{- $amalogsRSVPAImageTag := dict "component" "addon-resizer" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.addonImageTag" -}}
 {{- $WinImageTag := default $amalogsWindowsDefaultImageTag .Values.OmsAgent.imageTagWindows -}}
-{{/* Determine isusingaadauth value from OmsAgent.isUsingAADAuth */}}
+{{/* Determine isusingaadauth value from OmsAgent.isUsingAADAuth.
+     Compare as a lowercased string because Helm --set and quoted YAML
+     both deliver this value as a string, and any non-empty string is
+     truthy in Go templates (so "false" would otherwise evaluate to true). */}}
 {{- $isusingaadauth := false -}}
 {{- if hasKey .Values.OmsAgent "isUsingAADAuth" -}}
-  {{- $isusingaadauth = .Values.OmsAgent.isUsingAADAuth -}}
+  {{- if eq (lower (toString .Values.OmsAgent.isUsingAADAuth)) "true" -}}
+    {{- $isusingaadauth = true -}}
+  {{- end -}}
 {{- end -}}
 {{/* TODO This needs to be fixed post Canary validation */}}
 {{/* Extract cluster information from aksresourceid */}}

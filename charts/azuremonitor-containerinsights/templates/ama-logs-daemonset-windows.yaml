@@ -1,15 +1,22 @@
 {{- $arcSettings := include "arc-extension-settings" . | fromYaml }}
 {{- $isArcExtension := $arcSettings.isArcExtension }}
 {{- $amalogsWindowsDefaultImageTag := dict "component" "ama-logs-win" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.addonImageTag" }}
-{{/* Determine isusingaadauth value */}}
+{{/* Determine isusingaadauth value.
+     Compare as a lowercased string because Helm --set and quoted YAML
+     both deliver this value as a string, and any non-empty string is
+     truthy in Go templates (so "false" would otherwise evaluate to true). */}}
 {{- $isusingaadauth := false -}}
 {{- if not $isArcExtension -}}
   {{- if hasKey .Values.OmsAgent "isUsingAADAuth" -}}
-    {{- $isusingaadauth = .Values.OmsAgent.isUsingAADAuth -}}
+    {{- if eq (lower (toString .Values.OmsAgent.isUsingAADAuth)) "true" -}}
+      {{- $isusingaadauth = true -}}
+    {{- end -}}
   {{- end -}}
 {{- else -}}
   {{- if and .Values.amalogs (hasKey .Values.amalogs "useAADAuth") -}}
-    {{- $isusingaadauth = .Values.amalogs.useAADAuth -}}
+    {{- if eq (lower (toString .Values.amalogs.useAADAuth)) "true" -}}
+      {{- $isusingaadauth = true -}}
+    {{- end -}}
   {{- end -}}
 {{- end -}}
 {{- $cloudEnv := lower .Values.global.commonGlobals.CloudEnvironment }}
