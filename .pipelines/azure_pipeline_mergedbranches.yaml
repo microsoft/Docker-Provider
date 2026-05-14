@@ -93,7 +93,11 @@ extends:
             tar -czvf ../artifacts.tar.gz pushAgentToAcr.sh
             cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension/ServiceGroupRoot/Scripts
             tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ pushChartToAcr.sh
+            cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension-Managed-SDP/ServiceGroupRoot/Scripts
+            tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ ../../../../charts/azuremonitor-containerinsights/ pushChartToAcr.sh
             cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension-release-v2/ServiceGroupRoot/Scripts
+            tar -czvf ../artifacts.tar.gz arcExtensionRelease.sh
+            cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension-release-v2-Managed-SDP/ServiceGroupRoot/Scripts
             tar -czvf ../artifacts.tar.gz arcExtensionRelease.sh
             windowsAMAUrl=""
             if [ -z "$WINDOWS_AMA_URL" ]
