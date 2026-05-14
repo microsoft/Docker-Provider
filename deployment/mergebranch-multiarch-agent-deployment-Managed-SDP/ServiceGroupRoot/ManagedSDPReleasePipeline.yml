@@ -1,0 +1,108 @@
+trigger: none
+resources:
+  pipelines:
+  - pipeline: build-artifacts
+    source: CDPX\docker-provider\ContainerInsights-MultiArch-MergedBranches
+  repositories:
+  - repository: templates
+    type: git
+    name: OneBranch.Pipelines/GovernedTemplates
+    ref: refs/heads/main
+parameters:
+- name: rolloutType
+  displayName: Rollout Type
+  type: string
+  default: normal
+  values:
+  - normal
+  - emergency
+  - globaloutage
+- name: overrideManagedValidationDuration
+  displayName: Override standard SDP duration?
+  type: boolean
+  default: false
+  values:
+  - true
+  - false
+- name: managedValidationOverrideDurationInHours
+  displayName: Managed validation override duration in hours
+  type: number
+  default: 0
+  values: 
+- name: icmIncidentId
+  displayName: ICM Incident Id
+  type: number
+  default: 0
+  values: 
+- name: ServiceRootPath
+  displayName: Service Root Path
+  type: string
+  default: $(Pipeline.Workspace)/build-artifacts/drop/build/mergebranch-multiarch-agent-deployment-Managed-SDP/ServiceGroupRoot
+  values: 
+- name: RolloutSpecPath
+  displayName: Rollout Spec Path
+  type: string
+  default: $(Pipeline.Workspace)/build-artifacts/drop/build/mergebranch-multiarch-agent-deployment-Managed-SDP/ServiceGroupRoot/RolloutSpec.json
+  values: 
+- name: select
+  displayName: Select
+  type: string
+  default: regions(*)
+  values: 
+variables:
+- name: agentImageTagSuffixValue
+  value: $(VAR_AGENT_IMAGE_TAG_SUFFIX)
+- name: cdpxLinuxTagValue
+  value: $(VAR_CDPX_LINUX_TAG)
+- name: cdpxWindowsTagValue
+  value: $(VAR_CDPX_WINDOWS_TAG)
+- name: overrideTagValue
+  value: $(VAR_OVERRIDE_TAG)
+- name: configurationOverrides
+  value: |
+    {
+      "ConfigurationSpecification": {
+        "Settings": {
+          "agentImageTagSuffix": "$(agentImageTagSuffixValue)",
+          "cdpxLinuxTag": "$(cdpxLinuxTagValue)",
+          "cdpxWindowsTag": "$(cdpxWindowsTagValue)",
+          "overrideTag": "$(overrideTagValue)"
+        }
+      }
+    }
+extends:
+  template: v2/OneBranch.Official.CrossPlat.yml@templates
+  parameters:
+    stages:
+    - stage: PROD_Prod_Managed_SDP
+      displayName: 'Production: Managed SDP'
+      dependsOn: []
+      variables:
+        ob_release_environment: Production
+      jobs:
+      - job: PROD_Prod_Managed_SDP
+        displayName: PROD_Prod_Managed_SDP
+        pool:
+          type: release
+        condition: 
+        dependsOn: 
+        steps:
+        - download: build-artifacts
+        - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+          displayName: Ev2 Managed SDP Rollout
+          inputs:
+            EndpointProviderType: ApprovalService
+            TaskAction: RegisterAndRollout
+            SkipRegistrationIfExists: True
+            ForceRegistration: true
+            ServiceRootPath: ${{parameters.ServiceRootPath}}
+            RolloutSpecPath: ${{parameters.RolloutSpecPath}}
+            StageMapName: Microsoft.Azure.SDP.Standard
+            Select: ${{parameters.select}}
+            ApprovalServiceEnvironment: Production
+            ConfigurationOverrides: $(configurationOverrides)
+    ev2ManagedSdpRolloutConfig:
+      rolloutType: ${{parameters.rolloutType}}
+      overrideManagedValidationDuration: ${{parameters.overrideManagedValidationDuration}}
+      managedValidationOverrideDurationInHours: ${{parameters.managedValidationOverrideDurationInHours}}
+      icmIncidentId: ${{parameters.icmIncidentId}}
