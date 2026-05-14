@@ -92,7 +92,7 @@ extends:
             cd $(Build.SourcesDirectory)/deployment/mergebranch-multiarch-agent-deployment-Managed-SDP/ServiceGroupRoot/Scripts
             tar -czvf ../artifacts.tar.gz pushAgentToAcr.sh
             cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension/ServiceGroupRoot/Scripts
-            tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ pushChartToAcr.sh
+            tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ ../../../../charts/azuremonitor-containerinsights/ pushChartToAcr.sh
             cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension-Managed-SDP/ServiceGroupRoot/Scripts
             tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ ../../../../charts/azuremonitor-containerinsights/ pushChartToAcr.sh
             cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension-release-v2/ServiceGroupRoot/Scripts
@@ -1066,7 +1066,7 @@ extends:
           azureSubscription: 'ContainerInsights_Build_Subscription_CI'
           environmentName: 'CI-Agent-Dev-Aks-All-Nodes'
           dependsOnDeployJob: 'Deploy_AmaLogs_ci_logs_dev_aks_all_nodes'
-          azureClientId: 'AllNodesClientId'
+          azureClientId: $(AllNodesClientId)
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
           additionalTestParams: 'PerNodeLogCoverage=true'
