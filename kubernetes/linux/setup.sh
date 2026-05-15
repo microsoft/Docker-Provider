@@ -63,7 +63,7 @@ sudo tdnf install jq-1.7.1-1.azl3 -y
 #used to setcaps for ruby process to read /proc/env
 sudo tdnf install libcap -y
 
-sudo tdnf install telegraf-agent-1.38.3 -y
+sudo tdnf install telegraf-agent-1.38.4 -y
 telegraf_version=$(sudo tdnf list installed | grep telegraf | awk '{print $2}')
 echo "telegraf $telegraf_version" >> packages_version.txt
 mv /usr/bin/telegraf-agent /opt/telegraf
@@ -74,7 +74,7 @@ docker_cimprov_version=$(sudo tdnf list installed | grep docker-cimprov | awk '{
 echo "DOCKER_CIMPROV_VERSION=$docker_cimprov_version" >> packages_version.txt
 
 #install fluent-bit
-sudo tdnf install azcu-fluent-bit-4.0.14 -y
+sudo tdnf install azcu-fluent-bit-5.0.4 -y
 echo "$(fluent-bit --version)" >> packages_version.txt
 
 # Retry wrapper for gem install commands.
