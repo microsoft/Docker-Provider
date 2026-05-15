@@ -3,7 +3,11 @@ trigger:
   branches:
     include:
     - ci_prod
+    - auto/upgrade-telegraf-*
+    - auto/upgrade-go-*
+    - dependabot/*
 pr:
+  autoCancel: true
   branches:
     include:
     - ci_prod
