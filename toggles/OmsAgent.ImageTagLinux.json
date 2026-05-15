@@ -120,6 +120,18 @@
         }
       ],
       "Value": "3.1.35"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "armId",
+          "Operator": "equals",
+          "Values": [
+            "/subscriptions/9138cf85-e4be-44c6-ad6c-a334bb6f943b/resourceGroups/NE-EMEA-RG-preprod-netauto/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-preprod-netauto"
+          ]
+        }
+      ],
+      "Value": "3.3.0-mdsd-oom-kill-fix"
     }
   ]
 }
