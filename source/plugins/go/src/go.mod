@@ -12,13 +12,13 @@ require (
 	github.com/tinylib/msgp v1.6.4
 	github.com/ugorji/go/codec v1.3.1
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
-	k8s.io/api v0.36.0
-	k8s.io/apimachinery v0.36.0
-	k8s.io/client-go v0.36.0
+	k8s.io/api v0.36.1
+	k8s.io/apimachinery v0.36.1
+	k8s.io/client-go v0.36.1
 )
 
 require (
-	code.cloudfoundry.org/clock v1.69.0 // indirect
+	code.cloudfoundry.org/clock v1.70.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -37,7 +37,7 @@ require (
 	golang.org/x/term v0.43.0 // indirect
 	golang.org/x/text v0.37.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20260507235316-19c3011e7fa0 // indirect
+	k8s.io/kube-openapi v0.0.0-20260512234627-ef417d054102 // indirect
 	k8s.io/utils v0.0.0-20260507154919-ff6756f316d2 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )

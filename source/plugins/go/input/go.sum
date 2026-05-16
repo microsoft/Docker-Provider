@@ -1,6 +1,6 @@
 code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c/go.mod h1:QD9Lzhd/ux6eNQVUDVRJX/RKTigpewimNYBi7ivZKY8=
-code.cloudfoundry.org/clock v1.69.0 h1:1hR864FRXyCcjw+1p77iUoxTIDgoXVvhblIsOrXaxOM=
-code.cloudfoundry.org/clock v1.69.0/go.mod h1:+ikbfwCwwAad/NxA3wKkF9BmP4UYID6/gWDZnMtWXjU=
+code.cloudfoundry.org/clock v1.70.0 h1:uG04cx3v0ztdmtcGSVmYfHUdG596A5V5Slt37xwJGTM=
+code.cloudfoundry.org/clock v1.70.0/go.mod h1:h5C2CUJ0PsVnVeEe9c7eNmDdAbxjywHZHZx9dc2Gwnw=
 dario.cat/mergo v1.0.0 h1:AGCNq9Evsj31mOgNPcLyXc+4PNABt905YmuqPYYpBWk=
 dario.cat/mergo v1.0.0/go.mod h1:uNxQE+84aUszobStD9th8a29P2fMDhsBdgRYvZOxGmk=
 github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c h1:udKWzYgxTojEKWjV8V+WSxDXJ4NFATAsZjh8iIbsQIg=
