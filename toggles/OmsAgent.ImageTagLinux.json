@@ -1,11 +1,11 @@
 {
   "Version": "1",
-  "ToggleName": "OmsAgent.ImageTagLinux",
+  "ToggleName": "OmsAgent.imageTagLinux",
   "Type": "string",
   "LastUpdatedAt": null,
   "ExtensionType": "microsoft.azuremonitor.containers",
   "OwnerTeam": "container insights",
-  "Description": "This is OmsAgent.ImageTagLinux toggle.",
+  "Description": "This is OmsAgent.imageTagLinux toggle.",
   "Rules": [
     {
       "Matchers": [

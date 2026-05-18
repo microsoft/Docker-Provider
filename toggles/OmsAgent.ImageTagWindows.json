@@ -1,11 +1,11 @@
 {
   "Version": "1",
-  "ToggleName": "OmsAgent.ImageTagWindows",
+  "ToggleName": "OmsAgent.imageTagWindows",
   "Type": "string",
   "LastUpdatedAt": null,
   "ExtensionType": "microsoft.azuremonitor.containers",
   "OwnerTeam": "container insights",
-  "Description": "This is OmsAgent.ImageTagWindows toggle.",
+  "Description": "This is OmsAgent.imageTagWindows toggle.",
   "Rules": [
     {
       "Matchers": [
