@@ -109,7 +109,7 @@ fluentd --setup ./fluent
 gem_install_with_retry gyoku iso8601 bigdecimal --no-doc
 gem_install_with_retry tomlrb -v "2.0.1" --no-document
 gem_install_with_retry ipaddress --no-document
-gem_install_with_retry jwt -v "2.7.1" --no-document
+gem_install_with_retry jwt -v "3.2.0" --no-document
 gem_install_with_retry racc --no-document
 
 # Reinstall zlib gem to fix CVE-2026-27820
