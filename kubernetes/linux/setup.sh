@@ -118,7 +118,10 @@ gem_install_with_retry zlib -v "3.2.3" --no-document
 rm /usr/lib/ruby/gems/3.3.0/specifications/default/zlib-3.1.1.gemspec
 rm -rf /usr/lib/ruby/gems/3.3.0/gems/zlib-3.1.1
 
-# Reinstall erb gem to fix CVE-2026-41316
+# Reinstall erb gem to fix CVE-2026-41316.
+# NOTE: when ruby is upgraded, check the default bundled erb version
+# (`ruby -rerb -e 'p ERB::VERSION'`). If it's 4.0.3.1 or higher, remove
+# this block and let the ruby package provide erb directly.
 gem_install_with_retry erb -v "4.0.3.1" --no-document
 # uninstall old erb default gem
 rm -f /usr/lib/ruby/gems/3.3.0/specifications/default/erb-4.0.3.gemspec
