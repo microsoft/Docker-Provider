@@ -118,6 +118,17 @@ gem_install_with_retry zlib -v "3.2.3" --no-document
 rm /usr/lib/ruby/gems/3.3.0/specifications/default/zlib-3.1.1.gemspec
 rm -rf /usr/lib/ruby/gems/3.3.0/gems/zlib-3.1.1
 
+# EXPERIMENT (branch zane/remote-erb-4.3.0): remove erb default gem entirely
+# to empirically verify whether fluentd startup depends on erb being present.
+# Expected outcome: fluentd LoadError via webrick -> erbhandler -> require "erb"
+# resulting in CrashLoopBackOff.
+rm -f /usr/lib/ruby/gems/3.3.0/specifications/default/erb-4.0.3.gemspec
+rm -rf /usr/lib/ruby/gems/3.3.0/gems/erb-4.0.3
+rm -f /usr/lib/ruby/3.3.0/erb.rb
+rm -rf /usr/lib/ruby/3.3.0/erb
+rm -rf /usr/lib/ruby/3.3.0/x86_64-linux/erb
+rm -f /usr/bin/erb /usr/local/bin/erb
+
 rm -f $TMPDIR/docker-cimprov*.sh
 rm -f $TMPDIR/mdsd.xml
 rm -f $TMPDIR/envmdsd
