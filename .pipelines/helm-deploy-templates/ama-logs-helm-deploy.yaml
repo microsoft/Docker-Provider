@@ -121,5 +121,5 @@ jobs:
             ${{ else }}:
               overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},global.commonGlobals.Versions.Kubernetes=$(K8S_VERSION),OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageRepository=${{ parameters.imageRepository }},OmsAgent.imageTagLinux=${{ parameters.amalogsLinuxImage }},OmsAgent.imageTagWindows=${{ parameters.amalogsWindowsImage }}'
             waitForExecution: false
-            arguments: '--timeout 10m --install --force-conflicts'
+            arguments: '--timeout 10m --install --server-side=true --force-conflicts'
             
