@@ -8,6 +8,48 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 05/28/2026 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.4.0 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.4.0 (windows)
+- Linux
+  - Golang - 1.26.3
+  - MDSD - 1.40.3
+  - Telegraf - 1.38.4
+  - Fluent-bit - 5.0.4
+  - Fluentd - 1.16.3
+- Windows
+  - Golang - 1.26.3
+  - Windows AMA - 47.7.1
+  - Telegraf - 1.24.2
+  - Fluent-bit - 5.0.3
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Common (Linux + Windows)
+    * Fix CVE-2026-41316: upgrade erb gem to 4.0.3.1 in ama-logs Linux image (#1692)
+    * Fix CVE-2026-45363: upgrade jwt gem to 3.2.0 (#1693)
+    * chore(deps): Upgrade Go to 1.26.3 and update dependencies (#1676, #1690, #1694, #1696)
+    * Upgrade telegraf-agent to 1.38.3 (#1670)
+    * Upgrade telegraf-agent to 1.38.4 (#1685)
+    * Upgrade fluent-bit (Linux 5.0.4, Windows 5.0.3) (#1671)
+    * Fix Windows multiline test yamls (#1686)
+
+- Infra
+    * Migrate release pipeline to SDP (#1681)
+    * pipeline change for merged chart (#1682)
+    * fix(helm): coerce OmsAgent.isUsingAADAuth to a boolean (#1679)
+    * fix: add --force-conflicts to helm deploy to resolve server-side apply ownership conflicts (#1667)
+    * ci: auto-trigger build pipeline for robot upgrade branches (#1688)
+    * chore: Add automated Go version upgrade workflow (#1665)
+    * Add automated telegraf-agent upgrade workflow (#1652)
+    * fix: process metrics collection for fluentd, ruby, and telegraf. add ProcessName field for easy query (#1662)
+    * fix(ci): use variable reference for AllNodesClientId in e2e test stage (#1683)
+    * Update OmsAgent.ImageTagLinux.json (#1684)
+    * Add multiline-validation skill (#1687)
+    * add e2e tests to all nodes clusters (#1677)
+    * remove deployment verification (#1678)
+    * add ci-logs-dev-aks-all-nodes deploy job (#1666)
+
 ### 04/22/2026 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.3.0 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.3.0 (windows)
