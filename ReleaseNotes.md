@@ -38,6 +38,7 @@ additional questions or comments.
     * Upgrade telegraf-agent to 1.38.3 by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1670
     * Upgrade telegraf-agent to 1.38.4 by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1685
     * Upgrade fluent-bit (Linux 5.0.4, Windows 5.0.3) by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1671
+    * fix: fluentd procstat pattern by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1662
 
 - Infra
     * Fix Windows multiline test yamls by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1686
@@ -48,7 +49,6 @@ additional questions or comments.
     * ci: auto-trigger build pipeline for robot upgrade branches by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1688
     * chore: Add automated Go version upgrade workflow by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1665
     * Add automated telegraf-agent upgrade workflow by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1652
-    * Zane/fix fluentd procstat pattern by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1662
     * fix(ci): use variable reference for AllNodesClientId in e2e test stage by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1683
     * Update OmsAgent.ImageTagLinux Toggle Document by @NicAtMS in https://github.com/microsoft/Docker-Provider/pull/1684
     * Add multiline-validation skill by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1687
