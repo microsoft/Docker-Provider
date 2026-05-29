@@ -38,9 +38,9 @@ additional questions or comments.
     * Upgrade telegraf-agent to 1.38.3 by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1670
     * Upgrade telegraf-agent to 1.38.4 by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1685
     * Upgrade fluent-bit (Linux 5.0.4, Windows 5.0.3) by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1671
-    * Fix Windows multiline test yamls by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1686
 
 - Infra
+    * Fix Windows multiline test yamls by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1686
     * Migrate release pipeline to SDP by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1681
     * Update pipeline for merged chart integration by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1682
     * fix(helm): coerce OmsAgent.isUsingAADAuth to a boolean by @rashmichandrashekar in https://github.com/microsoft/Docker-Provider/pull/1679
