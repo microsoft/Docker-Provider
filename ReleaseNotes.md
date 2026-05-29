@@ -12,13 +12,16 @@ additional questions or comments.
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.4.0 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.4.0 (windows)
 - Linux
+  - [azurelinux 3.0.20260517](https://github.com/microsoft/azurelinux/releases/tag/3.0.20260517-3.0)
   - Golang - 1.26.3
+  - Ruby - arm64 - 3.3.5-7, x86_64 - 3.3.10
   - MDSD - 1.40.3
   - Telegraf - 1.38.4
   - Fluent-bit - 5.0.4
   - Fluentd - 1.16.3
 - Windows
   - Golang - 1.26.3
+  - Ruby - 3.1.1
   - Windows AMA - 47.7.1
   - Telegraf - 1.24.2
   - Fluent-bit - 5.0.3
@@ -26,29 +29,32 @@ additional questions or comments.
 ##### Code change log
 ## What's Changed
 - Common (Linux + Windows)
-    * Fix CVE-2026-41316: upgrade erb gem to 4.0.3.1 in ama-logs Linux image (#1692)
-    * Fix CVE-2026-45363: upgrade jwt gem to 3.2.0 (#1693)
-    * chore(deps): Upgrade Go to 1.26.3 and update dependencies (#1676, #1690, #1694, #1696)
-    * Upgrade telegraf-agent to 1.38.3 (#1670)
-    * Upgrade telegraf-agent to 1.38.4 (#1685)
-    * Upgrade fluent-bit (Linux 5.0.4, Windows 5.0.3) (#1671)
-    * Fix Windows multiline test yamls (#1686)
+    * Fix CVE-2026-41316: upgrade erb gem to 4.0.3.1 in ama-logs Linux image by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1692
+    * Fix CVE-2026-45363: upgrade jwt gem to 3.2.0 by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1693
+    * chore(deps): Upgrade Go to 1.26.3 and update dependencies by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1676
+    * chore(deps): Upgrade Go to 1.26.3 and update dependencies by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1690
+    * chore(deps): Upgrade Go to 1.26.3 and update dependencies by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1694
+    * chore(deps): Upgrade Go to 1.26.3 and update dependencies by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1696
+    * Upgrade telegraf-agent to 1.38.3 by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1670
+    * Upgrade telegraf-agent to 1.38.4 by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1685
+    * Upgrade fluent-bit (Linux 5.0.4, Windows 5.0.3) by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1671
+    * Fix Windows multiline test yamls by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1686
 
 - Infra
-    * Migrate release pipeline to SDP (#1681)
-    * pipeline change for merged chart (#1682)
-    * fix(helm): coerce OmsAgent.isUsingAADAuth to a boolean (#1679)
-    * fix: add --force-conflicts to helm deploy to resolve server-side apply ownership conflicts (#1667)
-    * ci: auto-trigger build pipeline for robot upgrade branches (#1688)
-    * chore: Add automated Go version upgrade workflow (#1665)
-    * Add automated telegraf-agent upgrade workflow (#1652)
-    * fix: process metrics collection for fluentd, ruby, and telegraf. add ProcessName field for easy query (#1662)
-    * fix(ci): use variable reference for AllNodesClientId in e2e test stage (#1683)
-    * Update OmsAgent.ImageTagLinux.json (#1684)
-    * Add multiline-validation skill (#1687)
-    * add e2e tests to all nodes clusters (#1677)
-    * remove deployment verification (#1678)
-    * add ci-logs-dev-aks-all-nodes deploy job (#1666)
+    * Migrate release pipeline to SDP by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1681
+    * Update pipeline for merged chart integration by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1682
+    * fix(helm): coerce OmsAgent.isUsingAADAuth to a boolean by @rashmichandrashekar in https://github.com/microsoft/Docker-Provider/pull/1679
+    * fix: add --force-conflicts to helm deploy to resolve server-side apply ownership conflicts by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1667
+    * ci: auto-trigger build pipeline for robot upgrade branches by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1688
+    * chore: Add automated Go version upgrade workflow by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1665
+    * Add automated telegraf-agent upgrade workflow by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1652
+    * Zane/fix fluentd procstat pattern by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1662
+    * fix(ci): use variable reference for AllNodesClientId in e2e test stage by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1683
+    * Update OmsAgent.ImageTagLinux Toggle Document by @NicAtMS in https://github.com/microsoft/Docker-Provider/pull/1684
+    * Add multiline-validation skill by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1687
+    * add e2e tests to all nodes clusters by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1677
+    * remove deployment verification by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1678
+    * pipelines: add ci-logs-dev-aks-all-nodes deploy job by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1666
 
 ### 04/22/2026 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.3.0 (linux)
