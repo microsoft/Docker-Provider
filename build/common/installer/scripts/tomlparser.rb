@@ -29,7 +29,7 @@ require_relative "ConfigParseErrorLogger"
 @logEnableKubernetesMetadata = ENV["AZMON_KUBERNETES_METADATA_ENABLED"]&.downcase == "true" || false
 @logKubernetesMetadataIncludeFields = "podlabels,podannotations,poduid,image,imageid,imagerepo,imagetag"
 @annotationBasedLogFiltering = false
-@allowed_system_namespaces = ['kube-system', 'gatekeeper-system', 'calico-system', 'azure-arc', 'kube-public', 'kube-node-lease']
+@allowed_system_namespaces = ['kube-system', 'gatekeeper-system', 'calico-system', 'azure-arc', 'kube-public', 'kube-node-lease', 'azuresecuritylinuxagent']
 @isAzMonMultiTenancyLogCollectionEnabled = false
 @isAzMonMultiTenancyFallbackIngestionDisabled = false
 @isAzMonMultiTenancyLogCollectionAdvancedMode = false
