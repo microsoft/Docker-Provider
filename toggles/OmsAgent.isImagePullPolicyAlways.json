@@ -1,11 +1,11 @@
 {
   "Version": "1",
-  "ToggleName": "OmsAgent.ImagePullPolicyAlways",
+  "ToggleName": "OmsAgent.isImagePullPolicyAlways",
   "Type": "bool",
   "LastUpdatedAt": null,
   "ExtensionType": "microsoft.azuremonitor.containers",
   "OwnerTeam": "container insights",
-  "Description": "This is OmsAgent.ImagePullPolicyAlways toggle.",
+  "Description": "This is OmsAgent.isImagePullPolicyAlways toggle.",
   "Rules": [
     {
       "Matchers": [
