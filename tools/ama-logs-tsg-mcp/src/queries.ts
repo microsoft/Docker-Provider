@@ -532,6 +532,18 @@ union withsource=TS FrontEndQoSEvents, AsyncQoSEvents
 | summarize max = max(ContainerCount) by bin(timestamp, totimespan(Interval))
 | order by timestamp desc`,
     },
+    {
+      name: "Addon CPU Throttling",
+      datasource: "AKS CCP",
+      kql: `let ccpId = toscalar(KubeSystemEvents | where PreciseTimeStamp >= _startTime | where resourceId =~ _cluster | take 1 | project cluster_id);
+AKSClusterMetrics
+| where PreciseTimeStamp >= _startTime
+| where cluster_id == ccpId
+| where metric == "pod_container:container_cpu_cfs_throttled_milliseconds:max_rate5m"
+| where podName startswith "ama-logs"
+| summarize max_throttle_ms = max(value) by bin(PreciseTimeStamp, 5m), podName, containerName
+| order by PreciseTimeStamp desc`,
+    },
   ],
 
   // ─────────────────────────────────────────────
