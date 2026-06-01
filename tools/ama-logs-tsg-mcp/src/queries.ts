@@ -108,13 +108,69 @@ export const QUERIES: Record<QueryCategory, Query[]> = {
     },
     {
       name: "Private Cluster Check",
-      datasource: "AKS CCP",
+      datasource: "AKS",
       kql: `ManagedClusterSnapshot
 | where TIMESTAMP >= _startTime
-| where id =~ _cluster
-| project TIMESTAMP, id, privateLinkProfile
-| order by TIMESTAMP desc
-| take 1`,
+| where name == '_clusterName'
+| top 1 by TIMESTAMP desc
+| project TIMESTAMP, privateLinkProfile = tostring(privateLinkProfile)`,
+    },
+    {
+      name: "Fleet Version Distribution",
+      datasource: "ContainerInsightsAppInsights",
+      kql: `customEvents
+| where timestamp >= _startTime and timestamp <= _endTime
+| where name == "ContainerLogDaemonSetHeartbeatEvent"
+| extend Version = tostring(customDimensions.Version)
+| summarize Pods = dcount(tostring(customDimensions.Computer)), Events = count() by Version
+| order by Events desc`,
+    },
+    {
+      name: "RS Heartbeat Check",
+      datasource: "ContainerInsightsAppInsights",
+      kql: `customEvents
+| where timestamp >= _startTime and timestamp <= _endTime
+| where name == "KubePodInventoryHeartBeatEvent"
+| extend ID = tostring(customDimensions.ID)
+| where ID =~ _cluster
+| extend Computer = tostring(customDimensions.Computer)
+| where Computer startswith "ama-logs-rs-"
+| summarize HeartbeatCount = count(), LastHeartbeat = max(timestamp) by Computer
+| order by LastHeartbeat desc`,
+    },
+    {
+      name: "Managed Cluster Profile",
+      datasource: "AKS",
+      kql: `ManagedClusterSnapshot
+| where TIMESTAMP >= _startTime
+| where name == '_clusterName'
+| top 1 by TIMESTAMP desc
+| project TIMESTAMP,
+    location,
+    provisioningState,
+    omsagent_enabled = tostring(addonProfiles.omsagent.enabled),
+    omsagent_useAADAuth = tostring(addonProfiles.omsagent.config.useAADAuth),
+    omsagent_addonv2 = tostring(addonProfiles.omsagent.config.addonv2),
+    omsagent_workspace = tostring(addonProfiles.omsagent.config.logAnalyticsWorkspaceResourceID),
+    privateLinkProfile = tostring(privateLinkProfile)`,
+    },
+    {
+      name: "Managed Cluster Addon Identity",
+      datasource: "AKS",
+      kql: `ManagedClusterMonitoring
+| where TIMESTAMP >= _startTime
+| where subscriptionID == '_subscriptionId' and resourceName == '_clusterName'
+| where entitytype == "managedcluster"
+| top 1 by TIMESTAMP desc
+| extend msgJson = parse_json(msg)
+| project
+    controlPlaneID = tostring(msgJson.controlPlaneID),
+    omsagent_enabled = tostring(msgJson.containerService.properties.addonProfiles.omsagent.enabled),
+    omsagent_useAADAuth = tostring(msgJson.containerService.properties.addonProfiles.omsagent.config.useAADAuth),
+    omsagent_identity_resourceId = tostring(msgJson.containerService.properties.addonProfiles.omsagent.identity.resourceId),
+    omsagent_identity_clientId = tostring(msgJson.containerService.properties.addonProfiles.omsagent.identity.clientId),
+    azureMonitorProfile = tostring(msgJson.containerService.properties.azureMonitorProfile),
+    workspace = tostring(msgJson.containerService.properties.addonProfiles.omsagent.config.logAnalyticsWorkspaceResourceID)`,
     },
     {
       name: "AKS Alerts Firing",
@@ -128,6 +184,64 @@ export const QUERIES: Record<QueryCategory, Query[]> = {
 | extend Status = alertname
 | distinct PodName, Status
 | order by PodName asc`,
+    },
+    {
+      name: "Addon Enable/Disable History",
+      datasource: "AKS",
+      kql: `ManagedClusterSnapshot
+| where name == '_clusterName'
+| where TIMESTAMP >= _startTime
+| extend omsEnabled = tostring(parse_json(tostring(addonProfiles.omsagent)).enabled)
+| extend omsConfig = tostring(parse_json(tostring(addonProfiles.omsagent)).config)
+| summarize arg_min(TIMESTAMP, omsEnabled, omsConfig, provisioningState, latestOperationID) by bin(TIMESTAMP, 1h)
+| order by TIMESTAMP asc`,
+    },
+    {
+      name: "Cluster Node Info",
+      datasource: "AKS",
+      kql: `ManagedClusterSnapshot
+| where name == '_clusterName'
+| where TIMESTAMP >= _startTime
+| top 1 by TIMESTAMP desc
+| project
+    location,
+    provisioningState,
+    kubernetesVersion = tostring(orchestratorProfile.orchestratorVersion),
+    nodeResourceGroup,
+    privateLinkProfile = tostring(privateLinkProfile)`,
+    },
+    {
+      name: "Mutating Operations",
+      datasource: "AKS",
+      kql: `let tenMinutesInMs = (10*60*1000);
+union withsource=TS FrontEndQoSEvents, AsyncQoSEvents
+| where PreciseTimeStamp >= _startTime
+| where
+    subscriptionID =~ '_subscriptionId' and
+    resourceGroupName =~ '_resourceGroup' and
+    resourceName =~ '_clusterName'
+| where httpMethod != "GET" and operationName !startswith "List"
+| where operationName !in ('RunCommandHandler.POST')
+| extend logPreciseTime = todatetime(coalesce(
+    tostring(column_ifexists("logPreciseTime", datetime(null))),
+    tostring(column_ifexists("logPreciseTime_datetime", datetime(null))),
+    column_ifexists("logPreciseTime_string", ""),
+    ""
+))
+| extend StartTime = datetime_add("millisecond", (latency * -1), logPreciseTime)
+| extend EndTime = logPreciseTime
+| extend errorDetails = iff(errorDetails != 'na', errorDetails, '')
+| summarize
+    StartTime = min(StartTime), EndTime = max(EndTime),
+    take_any(operationName, suboperationName, agentPoolName, httpMethod, httpStatus, resultCode, result, errorDetails, userAgent, clientPrincipalName)
+    by operationID
+| extend Content = strcat(tostring(split(operationName, 'Handler')[0]),
+    iif(isempty(agentPoolName), strcat(" (", suboperationName, ")"),
+    strcat(" - ", suboperationName, " (", agentPoolName, ")")))
+| extend durationMin = round(datetime_diff("second", EndTime, StartTime) / 60.0, 1)
+| project StartTime, EndTime, durationMin, Content, operationName, suboperationName,
+    agentPoolName, result, resultCode, errorDetails, operationID, userAgent, clientPrincipalName
+| order by StartTime asc`,
     },
   ],
 
@@ -241,6 +355,17 @@ export const QUERIES: Record<QueryCategory, Query[]> = {
 | extend PodName = parse_json(log).podName
 | extend Status = trim_start("AmaLogsAgentReplicaSet", alertname)
 | distinct PodName, tostring(parse_json(log).containerName), Status`,
+    },
+    {
+      name: "Node NetworkNotReady Events",
+      datasource: "AKS CCP",
+      kql: `KubeSystemEvents
+| where TIMESTAMP >= _startTime
+| where resourceId =~ _cluster
+| where reason == "NetworkNotReady"
+| project TIMESTAMP, pod=name, msg=substring(message, 0, 200)
+| order by TIMESTAMP desc
+| take 20`,
     },
   ],
 
@@ -453,6 +578,126 @@ export const QUERIES: Record<QueryCategory, Query[]> = {
 | extend AlertStatus = trim_start("AmaLogsAgentReplicaSet", alertname)
 | distinct PodName, containerName, AlertStatus`,
     },
+    {
+      name: "Pod Events Summary",
+      datasource: "AKS CCP",
+      kql: `KubeSystemEvents
+| where TIMESTAMP >= _startTime
+| where resourceId =~ _cluster
+| where name has "ama-logs"
+| summarize count() by reason
+| order by count_ desc`,
+    },
+    {
+      name: "Pod Lifecycle Timeline",
+      datasource: "AKS CCP",
+      kql: `KubeSystemEvents
+| where TIMESTAMP >= _startTime
+| where resourceId =~ _cluster
+| where name has "ama-logs"
+| where reason in ("Created", "Started", "BackOff", "Killing", "Unhealthy", "FailedMount", "NetworkNotReady", "SandboxChanged", "Scheduled", "SuccessfulCreate", "ScalingReplicaSet")
+| project TIMESTAMP, pod=name, reason, msg=substring(message, 0, 150)
+| order by TIMESTAMP desc
+| take 100`,
+    },
+    {
+      name: "Per-Pod Crash Summary",
+      datasource: "AKS CCP",
+      kql: `KubeSystemEvents
+| where TIMESTAMP >= _startTime
+| where resourceId =~ _cluster
+| where name has "ama-logs"
+| where reason == "BackOff"
+| extend container = extract("container \\"([^\\"]+)\\"", 1, message)
+| summarize BackOffs = count(), FirstSeen = min(TIMESTAMP), LastSeen = max(TIMESTAMP) by name, container
+| order by BackOffs desc`,
+    },
+    {
+      name: "FailedMount Events",
+      datasource: "AKS CCP",
+      kql: `KubeSystemEvents
+| where TIMESTAMP >= _startTime
+| where resourceId =~ _cluster
+| where name has "ama-logs"
+| where reason == "FailedMount"
+| project TIMESTAMP, pod=name, message
+| order by TIMESTAMP desc
+| take 50`,
+    },
+    {
+      name: "Liveness Probe Failures",
+      datasource: "AKS CCP",
+      kql: `KubeSystemEvents
+| where TIMESTAMP >= _startTime
+| where resourceId =~ _cluster
+| where name has "ama-logs"
+| where reason in ("Unhealthy", "Killing")
+| project TIMESTAMP, pod=name, reason, msg=substring(message, 0, 200)
+| order by TIMESTAMP desc
+| take 50`,
+    },
+    {
+      name: "Container Start/Exit Timeline",
+      datasource: "AKS CCP",
+      kql: `KubeSystemEvents
+| where TIMESTAMP >= _startTime
+| where resourceId =~ _cluster
+| where name has "ama-logs"
+| where reason in ("Created", "Started", "BackOff", "Killing")
+| extend container = case(
+    message has "addon-token-adapter", "addon-token-adapter",
+    message has "ama-logs-prometheus", "ama-logs-prometheus",
+    message has "ama-logs", "ama-logs",
+    extract("container \\"([^\\"]+)\\"", 1, message))
+| summarize count() by name, reason, container
+| order by name asc, reason asc`,
+    },
+    {
+      name: "Container Termination Reason (Kube-Audit)",
+      datasource: "AKS CCP",
+      kql: `let ccpId = toscalar(KubeSystemEvents | where TIMESTAMP >= _startTime | where resourceId =~ _cluster | take 1 | project cluster_id);
+KubeAudit
+| where TIMESTAMP >= _startTime
+| where cluster_id == ccpId
+| where objectRef has "ama-logs" and verb == "patch"
+| where requestObject has "terminated"
+| extend ro = parse_json(requestObject)
+| extend statuses = ro.status.containerStatuses
+| mvexpand statuses
+| where tostring(statuses.lastState) has "terminated"
+| extend terminated = parse_json(tostring(statuses.lastState.terminated))
+| project TIMESTAMP,
+    container = tostring(statuses.name),
+    reason = tostring(terminated.reason),
+    exitCode = toint(terminated.exitCode),
+    startedAt = tostring(terminated.startedAt),
+    finishedAt = tostring(terminated.finishedAt)
+| order by TIMESTAMP desc
+| take 20`,
+    },
+    {
+      name: "Kill Reason Breakdown",
+      datasource: "AKS CCP",
+      kql: `KubeSystemEvents
+| where TIMESTAMP >= _startTime
+| where resourceId =~ _cluster
+| where name startswith "ama-logs"
+| where reason == "Killing" or message has "OOM" or message has "evict" or message has "memory"
+| summarize count() by reason, message=substring(message, 0, 300)
+| order by count_ desc`,
+    },
+    {
+      name: "AKSKubeEvents - Non-Routine Events",
+      datasource: "AKS CCP",
+      kql: `let ccpId = toscalar(KubeSystemEvents | where TIMESTAMP >= _startTime | where resourceId =~ _cluster | take 1 | project cluster_id);
+AKSKubeEvents
+| where TIMESTAMP >= _startTime
+| where cluster_id == ccpId
+| where name startswith "ama-logs"
+| where reason !in ("BackOff", "Pulled", "Created", "Started")
+| summarize count() by reason, container, message=substring(message, 0, 300)
+| order by count_ desc`,
+    },
   ],
 
   // ─────────────────────────────────────────────
@@ -516,6 +761,17 @@ export const QUERIES: Record<QueryCategory, Query[]> = {
 | take 1`,
     },
     {
+      name: "Addon Reconciler Events",
+      datasource: "AKS",
+      kql: `AddonConfigReconcilerEvents
+| where TIMESTAMP >= _startTime
+| where helmReleaseName == "azure-monitor-logs-adapter-helmrelease"
+| where level in ("error", "warning")
+| project TIMESTAMP, level, Underlay, msg=substring(msg, 0, 200)
+| order by TIMESTAMP desc
+| take 20`,
+    },
+    {
       name: "Data Collection Table",
       datasource: "ContainerInsightsAppInsights",
       kql: `customEvents
@@ -575,6 +831,12 @@ export function parameterizeQuery(
   const nameMatch = params.cluster.match(/\/managedClusters\/([^/]+)$/i);
   if (nameMatch) {
     q = q.replace(/'_clusterName'/g, `'${nameMatch[1]}'`);
+  }
+
+  // Resource group (extracted from ARM ID)
+  const rgMatch = params.cluster.match(/\/resourceGroups\/([^/]+)\//i);
+  if (rgMatch) {
+    q = q.replace(/'_resourceGroup'/g, `'${rgMatch[1]}'`);
   }
 
   return q;
