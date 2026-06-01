@@ -49,6 +49,12 @@ export const DATA_SOURCES: Record<string, DataSource> = {
     database: "AKSprod",
     description: "AKS RP alternate region: AgentPoolSnapshot, ManagedClusterSnapshot for westeurope clusters",
   },
+  "AKS GuestAgent": {
+    name: "AKS GuestAgent",
+    clusterUri: "https://aksguestagent.centralus.kusto.windows.net",
+    database: "aksguestagent",
+    description: "AKS node guest agent telemetry: GuestAgentGenericLogs (PSI pressure, cgroup memory, node health)",
+  },
 };
 
 export const APP_INSIGHTS = {

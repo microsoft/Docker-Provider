@@ -113,7 +113,7 @@ Run `tsg_triage` → "Addon Enable/Disable History" to detect if the customer di
 |------|-------------|
 | `tsg_triage` | Initial triage: agent version, cluster scale (pod/node counts), high log scale mode, PODS_CHUNK_SIZE, controller counts, private cluster check, AKS alerts firing, addon enable/disable history, cluster node info |
 | `tsg_errors` | Scan error categories: exceptions, MDSD send/create errors, network upload failures, OMS Homing errors, AKS alerts for daemonset and replicaset |
-| `tsg_workload` | Workload health: memory RSS, CPU usage (daemonset, replicaset, sidecar, Windows), container logs generated/sec, log size/sec, telegraf metrics, container counts |
+| `tsg_workload` | Workload health: memory RSS, CPU usage (daemonset, replicaset, sidecar, Windows), container logs generated/sec, log size/sec, telegraf metrics, container counts, node PSI pressure (CPU/Memory/IO), node cgroup memory usage |
 | `tsg_pods` | Pod restarts, alert status, container termination reasons from kube-audit (distinguishes OOMKilled vs Error), kill reason breakdown, non-routine events from AKSKubeEvents |
 | `tsg_logs` | Raw trace logs from specific component (daemonset, replicaset, windows) |
 | `tsg_config` | Agent configuration: configmap settings, excluded namespaces, container log table format, high log scale mode |
@@ -295,6 +295,8 @@ After each investigation, if you wrote useful ad-hoc KQL queries via `tsg_query`
 | Windows pod issues | `tsg_workload` + `tsg_errors` | Windows Agent |
 | High log volume / mem buf overlimit | `tsg_workload` + `tsg_config` | Agent OOM Kills / Missing Logs |
 | MDSD send errors | `tsg_errors` | Missing Container Logs |
+| Node resource pressure (PSI) | `tsg_workload` (PSI Pressure query) or `tsg_query` (AKS GuestAgent) | Agent Resource Usage |
+| Node cgroup memory usage | `tsg_workload` (CGroup Memory query) or `tsg_query` (AKS GuestAgent) | Agent Resource Usage |
 | CVE reported | N/A | Vulnerabilities |
 
 ## Companion Files
