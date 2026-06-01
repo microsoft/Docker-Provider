@@ -15,11 +15,33 @@ On AKS clusters running **containerd 1.7.x** with **Ubuntu 22.04 (cgroup v2)**, 
 - Run `tsg_pods` → check "Container Termination Reason (Kube-Audit)" which extracts the actual termination status from kube-audit patches
 - Run `tsg_pods` → check "Kill Reason Breakdown" — if no `Killing` events but many `BackOff` events, it's likely OOM
 
-**Definitive confirmation** requires `dmesg | grep -i oom` from the node — ask the customer to run:
+**Definitive confirmation** requires checking for kernel OOM events. Three approaches, from easiest to hardest:
+
+**1. Check AKS telemetry for node-problem-detector OOM events (no SSH needed):**
+AKS runs `node-problem-detector` (NPD) on every node, which monitors `/dev/kmsg` (kernel log) and emits Kubernetes events when the kernel OOM killer fires. Query `AKSKubeEvents` for these:
+```kql
+-- datasource: AKS CCP
+AKSKubeEvents
+| where PreciseTimeStamp > ago(7d)
+| where cluster_id == '<ccp-id>'
+| where reason has_any ("OOMKilling", "OOMKilled", "SystemOOM")
+   or message has_any ("oom", "OOM", "killed process", "memory cgroup")
+   or reportingController has_any ("node-problem-detector", "kernel-monitor")
+| project PreciseTimeStamp, kind, name, namespace, reason, message, reportingController
+| order by PreciseTimeStamp desc
+```
+**If this returns zero rows, the kernel OOM killer did NOT fire** — the exit 137 is from something else (liveness probe, addon reconciliation, etc).
+
+**2. Check for `OOMKilled` termination reason via kube-audit:**
+Run `tsg_pods` → "Container Termination Reason" — this extracts the actual termination reason from kube-audit status patches. If it shows `Reason: Error` instead of `Reason: OOMKilled`, and approach #1 above returns zero rows, it's definitively not OOM.
+
+**3. Run dmesg from a debug pod (requires CSS or cluster access):**
 ```bash
 # Use azurelinux:3.0 (NOT cbl-mariner). nsenter is NOT available — use chroot instead.
 kubectl debug node/<node-name> -it --image=mcr.microsoft.com/azurelinux/base/core:3.0 -- chroot /host bash -c 'dmesg | grep -i oom'
 ```
+
+⚠️ **dmesg is NOT available in AKS Kusto telemetry** — there are no syslog, dmesg, or kernel log tables in AKS CCP, AKS prod, or Azcore. The NPD approach (#1) is the telemetry-only alternative.
 
 ⚠️ `systemd-oomd` is NOT installed on AKS nodes — only the kernel cgroup OOM killer operates.
 
@@ -98,6 +120,7 @@ When MDSD fails to complete initialization, the liveness probe (`/opt/livenesspr
 | KubeSystemEvents `Killing` reason | `"failed liveness probe"` | No `Killing` event |
 | Memory at crash time | Low (8-20 MB) | Near container limit |
 | `Unhealthy` events before kill | Yes | No |
+| NPD `OOMKilling` events in AKSKubeEvents | None | Present |
 | Container runs >60s before crash | Yes (probe `initialDelaySeconds: 60`) | Often crashes <30s |
 | Termination message | `"mdsd is not running"` or `"Fluentbit is not running"` | None |
 
