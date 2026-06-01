@@ -29,7 +29,10 @@ Exit code 137 means SIGKILL, which can come from:
 1. **Cgroup OOM killer** — kernel kills the container for exceeding memory limits
 2. **Node-level OOM killer** — kernel kills processes when the node is under memory pressure
 3. **Kubelet eviction** — kubelet evicts pods when node resources are low
-4. **External SIGKILL** — addon reconciliation, node image upgrade, or other controller kills the pod
+4. **Liveness probe failure** — kubelet kills container because liveness probe returned non-zero
+5. **External SIGKILL** — addon reconciliation, node image upgrade, or other controller kills the pod
+
+**⚠️ Liveness probe kills look identical to OOM kills** — both show `Exit Code: 137, Reason: Error`. Check KubeSystemEvents for `"Container ama-logs failed liveness probe, will be restarted"` Killing events to distinguish them.
 
 **To rule out cgroup OOM, check actual memory usage at crash time:**
 ```kql
@@ -75,6 +78,72 @@ A hash change means the pod spec changed — commonly the `addon-token-adapter` 
 - A race condition in pod startup
 - Node-specific cached state (stale image layers, corrupted volumes)
 - Timing-dependent configmap or secret propagation
+
+### Liveness Probe Killing Container (Exit 137, NOT OOM)
+
+When MDSD fails to complete initialization, the liveness probe (`/opt/livenessprobe.sh`) detects missing processes and kills the container. This produces `Exit Code: 137, Reason: Error` — identical to OOM.
+
+**The liveness probe checks (in order):**
+1. `dcr-config-parser.rb` — re-parses DCR config; exits 1 if config changed
+2. `inotifyoutput.txt` — exits 1 if configmap was modified (ArgoCD watch out!)
+3. `ps -ef | grep mdsd` — exits 1 if MDSD not running
+4. `ps -ef | grep fluent-bit` — exits 1 if fluent-bit not running
+5. `ps -ef | grep fluentd` — exits 1 if fluentd not running (unless LOGS_AND_EVENTS_ONLY)
+6. `ps -ef | grep telegraf` — conditional check
+
+**Diagnosis: Liveness probe kill vs OOM:**
+
+| Evidence | Liveness Probe Kill | Cgroup OOM |
+|----------|-------------------|------------|
+| KubeSystemEvents `Killing` reason | `"failed liveness probe"` | No `Killing` event |
+| Memory at crash time | Low (8-20 MB) | Near container limit |
+| `Unhealthy` events before kill | Yes | No |
+| Container runs >60s before crash | Yes (probe `initialDelaySeconds: 60`) | Often crashes <30s |
+| Termination message | `"mdsd is not running"` or `"Fluentbit is not running"` | None |
+
+**Check for liveness probe kills:**
+```kql
+-- datasource: AKS CCP
+KubeSystemEvents
+| where PreciseTimeStamp > ago(3d)
+| where resourceId =~ _cluster
+| where name startswith "ama-logs"
+| where reason in ("Killing", "Unhealthy")
+| where message has "liveness probe"
+| project PreciseTimeStamp, name, reason, message=substring(message,0,200)
+| order by PreciseTimeStamp desc
+```
+
+**Root cause: MDSD fails to initialize → liveness probe catches it:**
+1. Container starts → main.sh runs → MDSD starts (`"START mdsd"` logged)
+2. MDSD tries to authenticate via addon-token-adapter
+3. If token not available within 30s → MDSD never reaches "Onboarding success"
+4. Without MDSD, fluentd/fluent-bit/telegraf never start
+5. Container stays at 8-18 MB (processes never fully initialize)
+6. After 60s, liveness probe finds missing processes → exits 1
+7. Kubelet sends SIGKILL → exit code 137, Reason: Error
+
+**Why non-deterministic (some pods healthy, some crash on same spec):**
+The race between addon-token-adapter readiness and MDSD's auth timeout. The addon-token-adapter sidecar starts concurrently with ama-logs. If the token adapter takes too long to initialize, MDSD times out. This race is timing-dependent — a single pod restart may fix it.
+
+**Recommended actions:**
+1. Ask CSS to restart crashing pods one at a time: `kubectl delete pod <pod> -n kube-system`
+2. If restart fixes it → confirms race condition. No code fix needed.
+3. If restart doesn't fix it → check addon-token-adapter logs: `kubectl logs <pod> -n kube-system -c addon-token-adapter`
+4. Check MDSD startup: `kubectl logs <pod> -n kube-system -c ama-logs | head -50`
+5. Check termination message: `kubectl get pod <pod> -n kube-system -o jsonpath='{.status.containerStatuses[?(@.name=="ama-logs")].lastState.terminated.message}'`
+
+**Spec change investigation via kube-audit:**
+```kql
+-- datasource: AKS CCP
+KubeAudit
+| where PreciseTimeStamp between(<start> .. <end>)
+| where cluster_id == '<ccp-id>'
+| where objectRef has "ama-logs" and verb == "patch"
+| where tostring(objectRef.resource) in ("daemonsets", "deployments")
+| project PreciseTimeStamp, verb, resource=tostring(objectRef.resource),
+    name=tostring(objectRef.name), requestBody=substring(tostring(requestObject), 0, 2000)
+```
 
 ## Diagnostic Steps
 

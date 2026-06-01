@@ -534,7 +534,7 @@ union withsource=TS FrontEndQoSEvents, AsyncQoSEvents
     },
     {
       name: "Addon CPU Throttling",
-      datasource: "AKS CCP",
+      datasource: "AKS",
       kql: `let ccpId = toscalar(KubeSystemEvents | where PreciseTimeStamp >= _startTime | where resourceId =~ _cluster | take 1 | project cluster_id);
 AKSClusterMetrics
 | where PreciseTimeStamp >= _startTime

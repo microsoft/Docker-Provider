@@ -281,6 +281,7 @@ After each investigation, if you wrote useful ad-hoc KQL queries via `tsg_query`
 | Agent OOMKilled | `tsg_pods` + `tsg_workload` | Agent OOM Kills |
 | Exit code 137 / Reason: Error | `tsg_pods` (check "Container Termination Reason") | Agent OOM Kills (containerd cgroup v2 bug) |
 | Exit 137 but low memory | `tsg_workload` + `tsg_query` (Azcore/AzcrpBI) | Agent OOM Kills → "Ruling Out OOM" |
+| Liveness probe killing container | `tsg_query` (AKS CCP: KubeSystemEvents Killing+Unhealthy) | Agent OOM Kills → "Liveness Probe Killing Container" |
 | All pods crash after addon reconciliation | `tsg_triage` (check "Mutating Operations") | Agent OOM Kills → "Addon Reconciliation" |
 | High memory / CPU | `tsg_workload` | Agent Resource Usage |
 | Pod CrashLoopBackOff | `tsg_pods` + `tsg_errors` | Agent OOM Kills |
