@@ -563,7 +563,7 @@ server.tool(
   "Run an arbitrary KQL query against any ama-logs data source: ContainerInsightsAppInsights, AKS, AKS CCP, Azcore.",
   {
     datasource: z
-      .enum(["ContainerInsightsAppInsights", "AKS", "AKS CCP", "Azcore"])
+      .enum(["ContainerInsightsAppInsights", "AKS", "AKS CCP", "Azcore", "AzcrpBI"])
       .describe("Data source to query against"),
     kql: z.string().describe("KQL query to execute"),
     cluster: z
