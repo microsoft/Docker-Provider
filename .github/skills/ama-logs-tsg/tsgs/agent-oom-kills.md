@@ -64,6 +64,18 @@ The AKS addon reconciler periodically redeploys ama-logs pods. If the new deploy
 - `ReconcileAddon` — addon-specific reconciliation
 - `UpgradeNodeImageAgentPoolHandler` — node image upgrade (may fix or trigger issues)
 
+**Detecting spec changes:** When the addon reconciler changes the deployment spec, the RS deployment hash changes (e.g. `ama-logs-rs-556cfbbc67` → `ama-logs-rs-555c8f87fd`). Check KubeSystemEvents for `ScalingReplicaSet` events:
+```kql
+KubeSystemEvents | where cluster_id == '<ccp-id>' | where name has 'ama-logs-rs'
+| where reason == 'ScalingReplicaSet' | project PreciseTimeStamp, name, message
+```
+A hash change means the pod spec changed — commonly the `addon-token-adapter` sidecar image was updated. Check the `Pulling` events to see what new images were pulled.
+
+**Partial recovery after node image upgrade:** If some DS pods recover after a node image upgrade while others don't (on different nodes), and VM health shows no correlation, the issue may be:
+- A race condition in pod startup
+- Node-specific cached state (stale image layers, corrupted volumes)
+- Timing-dependent configmap or secret propagation
+
 ## Diagnostic Steps
 
 ### 1. Identify which pod type is OOMing
