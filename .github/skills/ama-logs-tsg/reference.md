@@ -11,6 +11,7 @@
 | `Azcore` | Kusto | Azure VM health metrics: CPU, memory pressure per VM (`azcore.centralus`) |
 | `AzcrpBI` | Kusto | Azure CRP BI: VMSS instance → VM ID mapping (`azcrpbifollower`) |
 | `Azcrp` | Kusto | Azure CRP: VM API QoS events, VMSS operations (`azcrp`) |
+| `AKS GuestAgent` | Kusto | AKS node guest agent telemetry: PSI pressure, cgroup memory (`aksguestagent.centralus`) |
 
 ### AKS Region Routing
 
@@ -54,7 +55,7 @@ Legacy pod names (pre-AMA migration):
 The `tsg_query` tool runs arbitrary KQL against any configured data source.
 
 ### Parameters
-- `datasource` — One of: `ContainerInsightsAppInsights`, `AKS`, `AKS CCP`, `Azcore`, `AzcrpBI`, `Azcrp`, `AKS SwedenCentral`
+- `datasource` — One of: `ContainerInsightsAppInsights`, `AKS`, `AKS CCP`, `Azcore`, `AzcrpBI`, `Azcrp`, `AKS SwedenCentral`, `AKS GuestAgent`
 - `kql` — The KQL query string
 - `cluster` — Optional ARM resource ID (replaces `_cluster` in KQL)
 - `timeRange` — Optional time range (default: "24h")
@@ -290,3 +291,95 @@ cluster("azcore.centralus").database("Fa").VmCounterFiveMinuteRoleInstanceCentra
 | `resourceId` | ARM resource ID |
 
 To correlate pods to nodes, use KubeAudit `objectRef.name` for node operations, or App Insights `customDimensions.Node` for agent telemetry.
+
+## Node PSI Pressure & CGroup Memory (GuestAgentGenericLogs)
+
+**Datasource:** `AKS GuestAgent` (`aksguestagent.centralus.kusto.windows.net` / `aksguestagent`)
+
+⚠️ **This datasource may need the cluster URI or database name adjusted.** The `GuestAgentGenericLogs` table contains AKS node guest agent telemetry including PSI pressure metrics and cgroup memory usage.
+
+### PSI Pressure Metrics
+
+PSI (Pressure Stall Information) is a Linux kernel feature that measures resource contention at the cgroup level. Source: `cgroup-pressure-telemetry.sh` in the AgentBaker repo.
+
+**Key metric:** `some_avg60` — percentage of the last 60 seconds that **some** tasks were stalled waiting for a resource.
+
+**Severity scale:**
+| some_avg60 | Severity | Impact |
+|-----------|----------|--------|
+| < 5% | Normal | No impact on workloads |
+| 5–10% | Light | Workloads may notice slight delays |
+| 10–25% | Moderate | Workloads slowing down |
+| 25–50% | Significant | Critical services affected |
+| 50–90% | Severe | Node degrading |
+| > 90% | Critical | Node at risk of going NotReady |
+
+**Cgroup slices monitored:**
+| Slice | Contains |
+|-------|----------|
+| `cgroup_pressure` | Whole node (root cgroup) |
+| `system_slice_pressure` | System services (kubelet, containerd, systemd) |
+| `kubepods_slice_pressure` | All Kubernetes pods |
+| `kubelet_service_pressure` | Kubelet process |
+| `containerd_service_pressure` | Container runtime |
+| `azure_slice_pressure` | Azure platform services |
+
+**When both CPU and Memory PSI are > 90%:** Vicious cycle — memory pressure causes swapping → consumes CPU → CPU delays memory management → worsens memory pressure. Node often can't self-recover; reboot may be needed.
+
+**Query: PSI Pressure by Cgroup Slice**
+```kql
+-- datasource: AKS GuestAgent
+GuestAgentGenericLogs
+| where PreciseTimeStamp >= ago(24h)
+| where resourceId =~ _cluster
+| where Level == "AKS.Runtime.pressure_telemetry_cgroupv2"
+| extend ExtLog = parse_json(Message)
+| extend P = ExtLog.Pressure
+| project theDate = PreciseTimeStamp, node = tostring(NodeName),
+    cgroup_cpu = todouble(P.cgroup_pressure.CPUPressure.some_avg60),
+    cgroup_mem = todouble(P.cgroup_pressure.MemoryPressure.some_avg60),
+    kubepods_cpu = todouble(P.kubepods_slice_pressure.CPUPressure.some_avg60),
+    kubepods_mem = todouble(P.kubepods_slice_pressure.MemoryPressure.some_avg60),
+    kubelet_cpu = todouble(P.kubelet_service_pressure.CPUPressure.some_avg60),
+    containerd_cpu = todouble(P.containerd_service_pressure.CPUPressure.some_avg60),
+    containerd_io = todouble(P.containerd_service_pressure.IOPressure.some_avg60)
+| order by theDate asc
+```
+
+### CGroup Memory Usage
+
+Shows actual memory consumption per cgroup slice in GB. Useful for:
+- Identifying which slice is consuming the most memory
+- Detecting memory spikes correlated with crashes
+- Seeing the impact of node reboots (all values drop to zero)
+
+**Query: CGroup Memory Usage by Slice (GB)**
+```kql
+-- datasource: AKS GuestAgent
+GuestAgentGenericLogs
+| where PreciseTimeStamp >= ago(24h)
+| where resourceId =~ _cluster
+| where Level == "AKS.Runtime.cgroup_memory_telemetry"
+| extend ExtLog = parse_json(Message)
+| project theDate = PreciseTimeStamp, node = tostring(NodeName),
+    CgroupCapacity = todouble(ExtLog.CgroupCapacity) / 1073741824,
+    CgroupMemory = todouble(ExtLog.CgroupMemory) / 1073741824,
+    KubePodsSlice = todouble(ExtLog.KubePodsSlice) / 1073741824,
+    KubePodsMax = todouble(ExtLog.KubePodsMax) / 1073741824,
+    SystemSlice = todouble(ExtLog.SystemSlice) / 1073741824,
+    ContainerdService = todouble(ExtLog.ContainerdService) / 1073741824,
+    KubeletService = todouble(ExtLog.KubeletService) / 1073741824,
+    AzureSlice = todouble(ExtLog.AzureSlice) / 1073741824,
+    UserSlice = todouble(ExtLog.UserSlice) / 1073741824
+| order by theDate asc
+```
+
+### Interpreting CGroup Memory + PSI Together
+
+| Pattern | Meaning |
+|---------|---------|
+| High kubepods memory + high PSI CPU | Workload memory pressure causing CPU stalls (page reclaim) |
+| CgroupMemory near CgroupCapacity | Node approaching total memory limit — OOM killer likely |
+| Memory drops to zero briefly | Node reboot — expect IO pressure spike on recovery |
+| ContainerdService memory spike | Container runtime memory leak or high container churn |
+| All PSI zero + crash | Crash is NOT resource-related — check liveness probes, auth, MDSD init |

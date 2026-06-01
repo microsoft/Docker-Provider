@@ -544,6 +544,50 @@ AKSClusterMetrics
 | summarize max_throttle_ms = max(value) by bin(PreciseTimeStamp, 5m), podName, containerName
 | order by PreciseTimeStamp desc`,
     },
+    {
+      name: "Node PSI Pressure (CPU/Memory/IO)",
+      datasource: "AKS GuestAgent",
+      kql: `GuestAgentGenericLogs
+| where PreciseTimeStamp >= _startTime and PreciseTimeStamp <= _endTime
+| where resourceId =~ _cluster
+| where Level == "AKS.Runtime.pressure_telemetry_cgroupv2"
+| extend ExtLog = parse_json(Message)
+| extend Pressure = ExtLog.Pressure
+| project theDate = PreciseTimeStamp,
+    node = tostring(NodeName),
+    cgroup_cpu = todouble(Pressure.cgroup_pressure.CPUPressure.some_avg60),
+    cgroup_mem = todouble(Pressure.cgroup_pressure.MemoryPressure.some_avg60),
+    cgroup_io = todouble(Pressure.cgroup_pressure.IOPressure.some_avg60),
+    system_cpu = todouble(Pressure.system_slice_pressure.CPUPressure.some_avg60),
+    kubepods_cpu = todouble(Pressure.kubepods_slice_pressure.CPUPressure.some_avg60),
+    kubepods_mem = todouble(Pressure.kubepods_slice_pressure.MemoryPressure.some_avg60),
+    kubelet_cpu = todouble(Pressure.kubelet_service_pressure.CPUPressure.some_avg60),
+    containerd_cpu = todouble(Pressure.containerd_service_pressure.CPUPressure.some_avg60),
+    containerd_io = todouble(Pressure.containerd_service_pressure.IOPressure.some_avg60),
+    azure_cpu = todouble(Pressure.azure_slice_pressure.CPUPressure.some_avg60)
+| order by theDate asc`,
+    },
+    {
+      name: "Node CGroup Memory Usage (GB)",
+      datasource: "AKS GuestAgent",
+      kql: `GuestAgentGenericLogs
+| where PreciseTimeStamp >= _startTime and PreciseTimeStamp <= _endTime
+| where resourceId =~ _cluster
+| where Level == "AKS.Runtime.cgroup_memory_telemetry"
+| extend ExtLog = parse_json(Message)
+| project theDate = PreciseTimeStamp,
+    node = tostring(NodeName),
+    CgroupCapacity = todouble(ExtLog.CgroupCapacity) / 1073741824,
+    CgroupMemory = todouble(ExtLog.CgroupMemory) / 1073741824,
+    KubePodsSlice = todouble(ExtLog.KubePodsSlice) / 1073741824,
+    KubePodsMax = todouble(ExtLog.KubePodsMax) / 1073741824,
+    SystemSlice = todouble(ExtLog.SystemSlice) / 1073741824,
+    ContainerdService = todouble(ExtLog.ContainerdService) / 1073741824,
+    KubeletService = todouble(ExtLog.KubeletService) / 1073741824,
+    AzureSlice = todouble(ExtLog.AzureSlice) / 1073741824,
+    UserSlice = todouble(ExtLog.UserSlice) / 1073741824
+| order by theDate asc`,
+    },
   ],
 
   // ─────────────────────────────────────────────

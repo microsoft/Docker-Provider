@@ -560,10 +560,10 @@ server.tool(
 
 server.tool(
   "ama_logs_tsg_query",
-  "Run an arbitrary KQL query against any ama-logs data source: ContainerInsightsAppInsights, AKS, AKS CCP, Azcore.",
+  "Run an arbitrary KQL query against any ama-logs data source: ContainerInsightsAppInsights, AKS, AKS CCP, Azcore, AKS GuestAgent.",
   {
     datasource: z
-      .enum(["ContainerInsightsAppInsights", "AKS", "AKS CCP", "Azcore", "AzcrpBI", "Azcrp", "AKS SwedenCentral"])
+      .enum(["ContainerInsightsAppInsights", "AKS", "AKS CCP", "Azcore", "AzcrpBI", "Azcrp", "AKS SwedenCentral", "AKS GuestAgent"])
       .describe("Data source to query against"),
     kql: z.string().describe("KQL query to execute"),
     cluster: z
