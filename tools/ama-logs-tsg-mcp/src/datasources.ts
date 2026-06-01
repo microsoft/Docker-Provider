@@ -31,6 +31,12 @@ export const DATA_SOURCES: Record<string, DataSource> = {
     database: "Fa",
     description: "Azure VM health metrics: CPU, memory pressure, disk (VmCounterFiveMinuteRoleInstanceCentralBondTable)",
   },
+  AzcrpBI: {
+    name: "AzcrpBI",
+    clusterUri: "https://azcrpbifollower.kusto.windows.net",
+    database: "bi_allprod",
+    description: "Azure CRP BI: VMSS instance details, VM IDs (VMScaleSetVMInstance)",
+  },
 };
 
 export const APP_INSIGHTS = {
