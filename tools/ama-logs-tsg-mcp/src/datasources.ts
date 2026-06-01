@@ -37,6 +37,18 @@ export const DATA_SOURCES: Record<string, DataSource> = {
     database: "bi_allprod",
     description: "Azure CRP BI: VMSS instance details, VM IDs (VMScaleSetVMInstance)",
   },
+  Azcrp: {
+    name: "Azcrp",
+    clusterUri: "https://azcrp.kusto.windows.net",
+    database: "crp_allprod",
+    description: "Azure CRP: VM API QoS events, VMSS operations (VMApiQosEvent)",
+  },
+  "AKS SwedenCentral": {
+    name: "AKS SwedenCentral",
+    clusterUri: "https://altaksrpam.swedencentral.kusto.windows.net",
+    database: "AKSprod",
+    description: "AKS RP alternate region: AgentPoolSnapshot, ManagedClusterSnapshot for westeurope clusters",
+  },
 };
 
 export const APP_INSIGHTS = {
