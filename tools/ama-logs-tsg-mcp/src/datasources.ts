@@ -15,15 +15,21 @@ export const DATA_SOURCES: Record<string, DataSource> = {
   },
   AKS: {
     name: "AKS",
-    clusterUri: "https://aks.centralus.kusto.windows.net",
+    clusterUri: "https://akshuba.centralus.kusto.windows.net",
     database: "AKSprod",
     description: "AKS cluster state, pod restarts, node status",
   },
   "AKS CCP": {
     name: "AKS CCP",
-    clusterUri: "https://aksccp.centralus.kusto.windows.net",
-    database: "AKSccpVMProd",
-    description: "AKS control plane configuration and snapshots",
+    clusterUri: "https://akshuba.centralus.kusto.windows.net",
+    database: "AKSccplogs",
+    description: "AKS control plane logs, kube events, audit logs",
+  },
+  Azcore: {
+    name: "Azcore",
+    clusterUri: "https://azcore.centralus.kusto.windows.net",
+    database: "Fa",
+    description: "Azure VM health metrics: CPU, memory pressure, disk (VmCounterFiveMinuteRoleInstanceCentralBondTable)",
   },
 };
 
