@@ -193,6 +193,30 @@ FrontEndContextActivity
 | Jarvis | https://jarvis-west.dc.ad.msft.net | ODS ingestion logs, quota, latency |
 | Azure Service Insights | https://azureserviceinsights.trafficmanager.net | Cluster info, pods, nodes |
 
+### ⚠️ dmesg / Kernel Logs Are NOT in AKS Telemetry
+
+There are **no syslog, dmesg, or kernel log tables** in any AKS Kusto database (CCP, prod, or Azcore). The following tables were checked and confirmed absent: `Syslog`, `LinuxDiagnostics`, `NodeDiagnostics`, `KernelLog`, `Dmesg`.
+
+**To check for kernel OOM kills without SSH/dmesg, use node-problem-detector (NPD) events:**
+
+AKS runs NPD on every node. NPD monitors `/dev/kmsg` and emits Kubernetes events for kernel OOM kills. These appear in `AKSKubeEvents` with reason `OOMKilling`:
+
+```kql
+-- datasource: AKS CCP
+AKSKubeEvents
+| where PreciseTimeStamp > ago(7d)
+| where cluster_id == '<ccp-id>'
+| where reason has_any ("OOMKilling", "OOMKilled", "SystemOOM")
+   or reportingController has_any ("node-problem-detector", "kernel-monitor")
+| project PreciseTimeStamp, kind, name, reason, message, reportingController
+```
+
+**Zero rows = kernel OOM killer did NOT fire.** This is the telemetry-only equivalent of `dmesg | grep oom`.
+
+Other useful NPD event reasons: `KernelOops`, `TaskHung`, `DockerHung`, `MemoryPressure`.
+
+If the customer has **Container Insights syslog collection** enabled, kernel OOM messages flow to the `Syslog` table in their Log Analytics workspace — but this is customer-side config, not AKS infrastructure telemetry.
+
 ## Node-Level VM Health Investigation
 
 When exit 137 crashes don't appear to be OOM (agent memory is low), investigate VM-level health to rule out host memory pressure.
