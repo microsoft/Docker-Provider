@@ -103,6 +103,17 @@ extends:
             tar -czvf ../artifacts.tar.gz arcExtensionRelease.sh
             cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension-release-v2-Managed-SDP/ServiceGroupRoot/Scripts
             tar -czvf ../artifacts.tar.gz arcExtensionRelease.sh
+            # Stamp a unique Ev2 artifacts version per build. Ev2 dedups artifact
+            # registration on this versionFile; a static buildver.txt makes Ev2 skip
+            # uploading new artifacts ("already registered"), freezing the published
+            # chart at whatever was first registered. Writing $(Build.BuildNumber)
+            # forces fresh registration on every build.
+            echo $(Build.BuildNumber) > $(Build.SourcesDirectory)/deployment/mergebranch-multiarch-agent-deployment/ServiceGroupRoot/buildver.txt
+            echo $(Build.BuildNumber) > $(Build.SourcesDirectory)/deployment/mergebranch-multiarch-agent-deployment-Managed-SDP/ServiceGroupRoot/buildver.txt
+            echo $(Build.BuildNumber) > $(Build.SourcesDirectory)/deployment/arc-k8s-extension/ServiceGroupRoot/buildver.txt
+            echo $(Build.BuildNumber) > $(Build.SourcesDirectory)/deployment/arc-k8s-extension-Managed-SDP/ServiceGroupRoot/buildver.txt
+            echo $(Build.BuildNumber) > $(Build.SourcesDirectory)/deployment/arc-k8s-extension-release-v2/ServiceGroupRoot/buildver.txt
+            echo $(Build.BuildNumber) > $(Build.SourcesDirectory)/deployment/arc-k8s-extension-release-v2-Managed-SDP/ServiceGroupRoot/buildver.txt
             windowsAMAUrl=""
             if [ -z "$WINDOWS_AMA_URL" ]
               then
