@@ -70,7 +70,7 @@ push_local_chart_to_acr() {
   fi
 
   echo "generate chart package file"
-  export CHART_FILE=$(helm package charts/azuremonitor-containerinsights/ | awk -F'[:]' '{gsub(/ /, "", $2); print $2}')
+  export CHART_FILE=$(helm package charts/azuremonitor-containerinsights/ --version ${CHART_VERSION} | awk -F'[:]' '{gsub(/ /, "", $2); print $2}')
   if [ $? -eq 0 ]; then
     echo "chart package file generated successfully."
   else

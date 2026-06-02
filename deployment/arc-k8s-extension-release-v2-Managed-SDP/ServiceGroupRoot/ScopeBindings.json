@@ -1,0 +1,63 @@
+{
+  "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",
+  "contentVersion": "0.0.0.1",
+  "scopeBindings": [
+    {
+      "scopeTagName": "Stable",
+      "bindings": [
+        {
+          "find": "__RELEASE_STAGE__",
+          "replaceWith": "$config(releaseStage)"
+        },
+        {
+          "find": "__ADMIN_SUBSCRIPTION_ID__",
+          "replaceWith": "$config(adminSubscriptionId)"
+        },
+        {
+          "find": "__CHART_VERSION__",
+          "replaceWith": "$config(chartVersion)"
+        },
+        {
+          "find": "__IS_CUSTOMER_HIDDEN__",
+          "replaceWith": "$config(isCustomerHidden)"
+        },
+        {
+          "find": "__REGISTER_REGIONS_CANARY__",
+          "replaceWith": "$config(registerRegionsCanary)"
+        },
+        {
+          "find": "__RELEASE_TRAINS_PREVIEW_PATH__",
+          "replaceWith": "$config(releaseTrainsPreviewPath)"
+        },
+        {
+          "find": "__RELEASE_TRAINS_STABLE_PATH__",
+          "replaceWith": "$config(releaseTrainsStablePath)"
+        },
+        {
+          "find": "__REGISTER_REGIONS_BATCH__",
+          "replaceWith": "$config(registerRegionsBatch)"
+        },
+        {
+          "find": "__RESOURCE_AUDIENCE__",
+          "replaceWith": "$config(resourceAudience)"
+        },
+        {
+          "find": "__SPN_CLIENT_ID__",
+          "replaceWith": "$config(spnClientId)"
+        },
+        {
+          "find": "__SPN_SECRET__",
+          "replaceWith": "$config(spnSecret)"
+        },
+        {
+          "find": "__SPN_TENANT_ID__",
+          "replaceWith": "$config(spnTenantId)"
+        },
+        {
+          "find": "__MANAGED_IDENTITY__",
+          "replaceWith": "$config(managedIdentity)"
+        }
+      ]
+    }
+  ]
+}

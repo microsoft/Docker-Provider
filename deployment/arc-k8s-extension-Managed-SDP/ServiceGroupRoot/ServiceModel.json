@@ -1,0 +1,51 @@
+{
+  "$schema": "https://ev2schema.azure.net/schemas/2020-04-01/RegionAgnosticServiceModel.json",
+  "contentVersion": "1.0.0.0",
+  "serviceMetadata": {
+    "serviceGroup": "Microsoft.ContainerInsights.Extension.ChartPush",
+    "serviceIdentifier": "3170cdd2-19f0-4027-912b-1027311691a2",
+    "tenantId": "$config(tenantId)",
+    "environment": "$config(environment)",
+    "displayName": "ContainerInsightsExtension-ChartPush",
+    "buildout": {
+      "isForAutomatedBuildout": "True"
+    },
+    "serviceSpecificationPath": "ServiceSpec.json",
+    "serviceGroupSpecificationPath": "ServiceGroupSpec.json"
+  },
+  "serviceResourceGroupDefinitions": [
+    {
+      "name": "SRG.ShellExtension",
+      "azureResourceGroupName": "$config(azureResourceGroup)",
+      "scopeTags": [
+        {
+          "name": "Stable"
+        }
+      ],
+      "subscriptionKey": "$config(subscriptionkey)",
+      "stamps": {
+        "count": "$config(stampCount)"
+      },
+      "serviceResourceDefinitions": [
+        {
+          "name": "ShellExtension",
+          "composedOf": {
+            "extension": {
+              "rolloutParametersPath": "Parameters\\ChartPush.Parameters.json",
+              "shell": [
+                {
+                  "type": "ShellExtensionType",
+                  "properties": {
+                    "imageName": "adm-ubuntu-2004-l",
+                    "imageVersion": "v8"
+                  }
+                }
+              ]
+            }
+          },
+          "scopeTags": []
+        }
+      ]
+    }
+  ]
+}
