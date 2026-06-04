@@ -255,7 +255,7 @@
           "Values": [
             "/subscriptions/8750c60a-c450-4dd6-bdfb-9137044d5b64/resourceGroups/Testing-EUS2/providers/Microsoft.ContainerService/managedClusters/eus2-testing-2",
             "/subscriptions/8750c60a-c450-4dd6-bdfb-9137044d5b64/resourceGroups/Testing-WUS2/providers/Microsoft.ContainerService/managedClusters/wus2-testing-2",
-            "/subscriptions/b4b0cbab-64dc-42bc-9d95-ea7c8d0cf188/resourcegroups/gangams-aks-log-scale-neu/providers/Microsoft.ContainerService/managedClusters/gangams-aks-log-scale-neu"
+            "/subscriptions/b4b0cbab-64dc-42bc-9d95-ea7c8d0cf188/resourceGroups/gangams-aks-log-scale-neu/providers/Microsoft.ContainerService/managedClusters/gangams-aks-log-scale-neu"
           ]
         }
       ],
@@ -340,7 +340,7 @@
           "Operator": "equals",
           "Values": [
             "/subscriptions/67b49d2e-c5b7-4988-a379-0d5dc5dfdb05/resourceGroups/rg-dp-aks-corebe-prelive/providers/Microsoft.ContainerService/managedClusters/dp-corebe-prelive-aks",
-            "/subscriptions/aee20027-9965-4d49-931a-e8695dcc74b0/resourcegroups/rg-dp-aks-corebe-prod/providers/Microsoft.ContainerService/managedClusters/dp-corebe-prod-aks",
+            "/subscriptions/aee20027-9965-4d49-931a-e8695dcc74b0/resourceGroups/rg-dp-aks-corebe-prod/providers/Microsoft.ContainerService/managedClusters/dp-corebe-prod-aks",
             "/subscriptions/87043035-79c8-4473-8038-baf2ea03af22/resourcegroups/rg-dp-aks-corebe-approval/providers/Microsoft.ContainerService/managedClusters/dp-corebe-approval-aks",
             "/subscriptions/f0623b21-1f8d-4b92-a855-ef470558bf28/resourceGroups/rg-idm-dev3-aks001/providers/Microsoft.ContainerService/managedClusters/aks-idm-dev3-common001",
             "/subscriptions/e212b59b-0287-4cde-8604-8b67635de479/resourceGroups/rg-phi-prod-westcentralus-aks-prod01-01/providers/Microsoft.ContainerService/managedClusters/aks-phi-prod-westcentralus-prod01-01",

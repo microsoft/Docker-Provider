@@ -17,41 +17,7 @@
           ]
         }
       ],
-      "Value": "3.1.35"
-    },
-    {
-      "Matchers": [
-        {
-          "Field": "armId",
-          "Operator": "equals",
-          "Values": [
-            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourceGroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-eus2",
-            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourceGroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-geneva-integration",
-            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourceGroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-geneva-integration-multi-tenancy",
-            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourceGroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-legacy-multiline",
-            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourceGroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-mariner",
-            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourceGroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-syslog",
-            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourceGroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-uksouth-msi",
-            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourceGroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-kata-eus2",
-            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourcegroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-work-load-identity",
-            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourceGroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-wcus-fips",
-            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourceGroups/ci-logs-prod-aks-uai/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-uai",
-            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourceGroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-metadata-msi",
-            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourceGroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-metadata-geneva",
-            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourcegroups/ci-logs-prod-aks-ampls-rg/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-ampls-wus3",
-            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourceGroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-custom-metrics-enabled",
-            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourcegroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-high-log-scale-eus2",
-            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourceGroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-azm-multitenancy",
-            "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourceGroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-networkflowlogs",
-            "/subscriptions/a7f29eef-0132-45da-b03c-6f40a9d40ac2/resourcegroups/AKSTestDeploy/providers/Microsoft.ContainerService/managedClusters/testAKS",
-            "/subscriptions/b4b0cbab-64dc-42bc-9d95-ea7c8d0cf188/resourceGroups/gangams-aks-log-scale-neu/providers/Microsoft.ContainerService/managedClusters/gangams-aks-log-scale-neu",
-            "/subscriptions/b4b0cbab-64dc-42bc-9d95-ea7c8d0cf188/resourceGroups/gangams-aks-test2-euap/providers/Microsoft.ContainerService/managedClusters/gangams-aks-test2-euap",
-            "/subscriptions/b4b0cbab-64dc-42bc-9d95-ea7c8d0cf188/resourcegroups/gangams-aks-ns-multi-tenancy/providers/Microsoft.ContainerService/managedClusters/gangams-aks-ns-multi-tenancy",
-            "/subscriptions/d67b705f-d9a4-4cee-881a-3bab1c20e567/resourceGroups/AmaE2E_CI_230829223014_rg/providers/Microsoft.ContainerService/managedClusters/ciamacollabakscluster"
-          ]
-        }
-      ],
-      "Value": "3.1.35"
+      "Value": "3.3.0"
     },
     {
       "Matchers": [
@@ -91,7 +57,7 @@
           ]
         }
       ],
-      "Value": "3.1.35"
+      "Value": "3.3.0"
     },
     {
       "Matchers": [
@@ -107,7 +73,7 @@
           ]
         }
       ],
-      "Value": "3.1.35"
+      "Value": "3.3.0"
     },
     {
       "Matchers": [
@@ -119,7 +85,7 @@
           ]
         }
       ],
-      "Value": "3.1.35"
+      "Value": "3.3.0"
     },
     {
       "Matchers": [
