@@ -1,90 +1,12 @@
 {
   "Version": "1",
-  "ToggleName": "OmsAgent.omsAgentRsMemoryLimit",
+  "ToggleName": "OmsAgent.omsAgentRsCPULimit",
   "Type": "string",
   "LastUpdatedAt": null,
   "ExtensionType": "microsoft.azuremonitor.containers",
   "OwnerTeam": "container insights",
-  "Description": "This is a OmsAgent.omsAgentRsMemoryLimit toggle.",
+  "Description": "This is a OmsAgent.omsAgentRsCPULimit toggle.",
   "Rules": [
-    {
-      "Matchers": [
-        {
-          "Field": "armId",
-          "Operator": "equals",
-          "Values": [
-            "/subscriptions/357baeec-2e3e-4bb3-9acc-4d82e2bf2dd0/resourceGroups/app-prod400thor-prod-eastus/providers/Microsoft.ContainerService/managedClusters/us-prod400thor-prod-aks-000",
-            "/subscriptions/dc0e2d09-260f-4050-9e05-a9730d3deeff/resourceGroups/cosmic-prod-d05-034-nam-eastus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-034-nam-eastus-aks",
-            "/subscriptions/1672d71c-7807-483f-93ae-b736f29c99a4/resourceGroups/cosmic-prod-d05-019-nam-westus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-019-nam-westus-aks",
-            "/subscriptions/eee87bc2-5ab0-46e3-9f42-497073f85d1f/resourceGroups/cosmic-prod-d05-009-nam-centralus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-009-nam-centralus-aks",
-            "/subscriptions/a9282eec-425a-45db-be6f-55c0de06e4bd/resourceGroups/cosmic-prod-d05-020-nam-westus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-020-nam-westus-aks",
-            "/subscriptions/197427b8-fd97-4cc8-bd92-c3262fc61f0e/resourceGroups/cosmic-prod-d05-013-nam-centralus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-013-nam-centralus-aks",
-            "/subscriptions/66736039-9f76-4aff-b15c-6f6b9108896d/resourceGroups/cosmic-prod-d05-022-nam-westus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-022-nam-westus-aks",
-            "/subscriptions/a8c835c4-2f37-4168-82a0-48a4c0b60339/resourceGroups/cosmic-prod-d05-008-nam-centralus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-008-nam-centralus-aks",
-            "/subscriptions/5e8ad183-7e3d-4407-acfc-2e110cf6cfcc/resourceGroups/cosmic-prod-d05-006-nam-centralus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-006-nam-centralus-aks",
-            "/subscriptions/a4eef204-494e-4c35-8ad2-4beecdae532a/resourceGroups/cosmic-prod-d05-024-nam-westus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-024-nam-westus-aks",
-            "/subscriptions/cf5ea78f-fc56-4878-b840-b87dc125f210/resourceGroups/cosmic-prod-d05-016-nam-westus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-016-nam-westus-aks",
-            "/subscriptions/87f2090e-230f-41f0-ad63-7f4f7f7c84f4/resourceGroups/cosmic-prod-d05-011-nam-centralus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-011-nam-centralus-aks",
-            "/subscriptions/8678f3db-93cc-4a8c-9cc7-d1c787d588a1/resourcegroups/cosmic-prod-d05-018-nam-westus/providers/microsoft.containerservice/managedclusters/cosmic-prod-d05-018-nam-westus-aks",
-            "/subscriptions/638e7c67-0c04-4abe-ae1d-fafa5abb3b35/resourceGroups/cosmic-prod-d05-013-nam-westus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-013-nam-westus-aks",
-            "/subscriptions/e2780566-7e1a-438d-bf0e-275c3b42c9b4/resourceGroups/cosmic-prod-d05-007-nam-centralus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-007-nam-centralus-aks",
-            "/subscriptions/5fa80657-3565-4c46-8aa8-0e3a885a1868/resourceGroups/cosmic-prod-d05-025-nam-westus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-025-nam-westus-aks",
-            "/subscriptions/d43654c0-608d-4dcb-8c43-582ec524b36a/resourceGroups/cosmic-prod-d05-015-nam-centralus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-015-nam-centralus-aks",
-            "/subscriptions/022173d4-becc-4f0b-9992-8e6fc1d41749/resourceGroups/cosmic-prod-d05-021-nam-westus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-021-nam-westus-aks",
-            "/subscriptions/c65cdcf6-97f1-4505-9f04-c02e30d6b615/resourceGroups/cosmic-prod-d05-012-nam-centralus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-012-nam-centralus-aks",
-            "/subscriptions/63efa647-60cc-4d48-b758-8aeb6f6775fa/resourceGroups/cosmic-prod-d05-017-nam-westus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-017-nam-westus-aks",
-            "/subscriptions/31c001bc-4288-4a86-8e79-626f0e631917/resourceGroups/cosmic-prod-d05-010-nam-centralus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-010-nam-centralus-aks",
-            "/subscriptions/121f36d6-4d66-40f1-adf8-37ca8f50b3fe/resourceGroups/cosmic-prod-d05-014-nam-centralus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-014-nam-centralus-aks",
-            "/subscriptions/23bf01ca-dd10-4627-b586-4b6df191d788/resourceGroups/cosmic-prod-d05-023-nam-westus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-023-nam-westus-aks",
-            "/subscriptions/9afae273-29ab-4173-839e-c2ee1cb685c8/resourceGroups/cosmic-prod-d05-028-nam-centralus/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-028-nam-centralus-aks"
-          ]
-        }
-      ],
-      "Value": "5Gi"
-    },
-    {
-      "Matchers": [
-        {
-          "Field": "armId",
-          "Operator": "equals",
-          "Values": [
-            "/subscriptions/da568096-fba6-4b09-9d94-b373373b6034/resourceGroups/ats-cicd-prod-apps/providers/Microsoft.ContainerService/managedClusters/ats-cicd-prod-aks_apps",
-            "/subscriptions/10f9474b-a629-415b-9558-941c24693724/resourceGroups/rg-aks/providers/Microsoft.ContainerService/managedClusters/aks-atoss14"
-          ]
-        }
-      ],
-      "Value": "3Gi"
-    },
-    {
-      "Matchers": [
-        {
-          "Field": "subscriptionID",
-          "Operator": "equals",
-          "Values": [
-            "926501fc-7a9a-4154-9f3c-f3310714a3f2",
-            "78c7eb66-aebe-4bcb-a73e-74918d830ca1"
-          ]
-        }
-      ],
-      "Value": "3Gi"
-    },
-    {
-      "Matchers": [
-        {
-          "Field": "tenantID",
-          "Operator": "equals",
-          "Values": [
-            "cdc5aeea-15c5-4db6-b079-fcadd2505dc2",
-            "d294a672-1e15-47e3-b224-84ff4f6f24d5",
-            "a972b02b-2e02-4381-9dda-f8c703e9d5b9",
-            "dc12cfcb-7c57-4e3e-92b9-6ea4cbc258e9",
-            "ec044cc1-d8de-4194-a9b6-f5abc1c30081",
-            "88f5c6b0-7fdc-4820-a3b1-3ae9c8b0e881"
-          ]
-        }
-      ],
-      "Value": "5Gi"
-    },
     {
       "Matchers": [
         {
@@ -179,7 +101,7 @@
           ]
         }
       ],
-      "Value": "8G"
+      "Value": "5"
     },
     {
       "Matchers": [
@@ -193,7 +115,7 @@
           ]
         }
       ],
-      "Value": "8G"
+      "Value": "5"
     },
     {
       "Matchers": [
@@ -205,7 +127,7 @@
           ]
         }
       ],
-      "Value": "8G"
+      "Value": "5"
     },
     {
       "Matchers": [
@@ -218,7 +140,7 @@
           ]
         }
       ],
-      "Value": "8G"
+      "Value": "5"
     },
     {
       "Matchers": [
@@ -231,7 +153,7 @@
           ]
         }
       ],
-      "Value": "8G"
+      "Value": "5"
     },
     {
       "Matchers": [
@@ -244,7 +166,7 @@
           ]
         }
       ],
-      "Value": "8G"
+      "Value": "5"
     },
     {
       "Matchers": [
@@ -256,7 +178,7 @@
           ]
         }
       ],
-      "Value": "8G"
+      "Value": "5"
     },
     {
       "Matchers": [
@@ -277,7 +199,7 @@
           ]
         }
       ],
-      "Value": "8G"
+      "Value": "5"
     },
     {
       "Matchers": [
@@ -290,7 +212,7 @@
           ]
         }
       ],
-      "Value": "2G"
+      "Value": "2"
     },
     {
       "Matchers": [
@@ -309,7 +231,7 @@
           ]
         }
       ],
-      "Value": "8G"
+      "Value": "5"
     },
     {
       "Matchers": [
@@ -328,7 +250,7 @@
           ]
         }
       ],
-      "Value": "8G"
+      "Value": "5"
     }
   ]
 }
