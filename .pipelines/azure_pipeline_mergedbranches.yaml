@@ -16,7 +16,7 @@ variables:
   subscription: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
   containerRegistry: 'containerinsightsprod'
   repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/containerinsights/cidev'
-  GOLANG_BASE_IMAGE: 'mcr.microsoft.com/oss/go/microsoft/golang:1.26.3'
+  GOLANG_BASE_IMAGE: 'mcr.microsoft.com/oss/go/microsoft/golang:1.26.4'
   IS_PR: $[eq(variables['Build.Reason'], 'PullRequest')]
   IS_MAIN_BRANCH: $[eq(variables['Build.SourceBranchName'], 'ci_prod')]
   IS_RELEASE: $[ne(variables['TELEMETRY_TAG'], '')]
