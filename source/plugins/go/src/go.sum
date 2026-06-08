@@ -1,6 +1,6 @@
 code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c/go.mod h1:QD9Lzhd/ux6eNQVUDVRJX/RKTigpewimNYBi7ivZKY8=
-code.cloudfoundry.org/clock v1.72.0 h1:C67MTXFcRSiZVY/Qberi19tClSFhbecO3coM3R6i69Y=
-code.cloudfoundry.org/clock v1.72.0/go.mod h1:5CXwuBJnTZ9WBxuQmzhE5xxxkxlrgY4F/hRq1U2pvGk=
+code.cloudfoundry.org/clock v1.73.0 h1:gx+BvUbDlKQfvxVatrzbFlmX3EwJ3uSHRYnn70+hALk=
+code.cloudfoundry.org/clock v1.73.0/go.mod h1:5CXwuBJnTZ9WBxuQmzhE5xxxkxlrgY4F/hRq1U2pvGk=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
