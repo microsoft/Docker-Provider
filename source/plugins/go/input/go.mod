@@ -5,7 +5,7 @@ go 1.26.4
 require github.com/calyptia/plugin v1.4.4
 
 require (
-	code.cloudfoundry.org/clock v1.73.0 // indirect
+	code.cloudfoundry.org/clock v1.74.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/calyptia/cmetrics-go v0.1.9 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
@@ -13,7 +13,7 @@ require (
 	github.com/ugorji/go/codec v1.3.1 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
+	golang.org/x/sys v0.46.0 // indirect
 )
 
 require (
