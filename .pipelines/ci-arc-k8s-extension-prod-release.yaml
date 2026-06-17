@@ -608,8 +608,6 @@ extends:
             delayForMinutes: 1500
     - stage: Stage_1
       displayName: ci-arc-k8s-extension-all-regions-prod-release(MCR)
-      dependsOn:
-      - Wait_After_Canary
       trigger: manual
       pool:
         name: Azure-Pipelines-CI-Test-EO
