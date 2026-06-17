@@ -74,6 +74,7 @@ spec:
         cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
+        checksum/secret: {{ include (print $.Template.BasePath "/ama-logs-secret.yaml") . | sha256sum }}
         WSID: {{ .Values.OmsAgent.workspaceID | b64enc | quote }}
         kubernetes.azure.com/no-http-proxy-vars: "true"
 {{- end }}
