@@ -292,6 +292,8 @@ spec:
               value: "4320"
             - name: PROMETHEUS_METRICS_SCRAPING_DISABLED
               value: "{{ $.Values.OmsAgent.isPrometheusMetricsScrapingDisabled }}"
+            - name: EXTENSION_DROPPED_CONFIG_FIX_ENABLED
+              value: "true"
           {{- if (eq $cloudEnv "usnat") }}
             - name: MCR_URL
               value: "https://mcr.microsoft.eaglex.ic.gov/v2/"
