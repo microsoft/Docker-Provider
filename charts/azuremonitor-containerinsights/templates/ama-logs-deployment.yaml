@@ -366,6 +366,8 @@ spec:
               value: "{{ .Values.OmsAgent.isTelegrafLivenessprobeEnabled | default false }}"
             - name: AZMON_WINDOWS_FLUENT_BIT_ENABLED
               value: "{{ .Values.OmsAgent.isWindowsAMAFluentBitEnabled | default false }}"
+            - name: EXTENSION_DROPPED_CONFIG_FIX_ENABLED
+              value: "true"
 {{- end }}
 {{- if $isArcExtension }}
             - name: HOSTNAME

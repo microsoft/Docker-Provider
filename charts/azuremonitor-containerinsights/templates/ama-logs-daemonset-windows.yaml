@@ -256,6 +256,8 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.uid
+          - name: EXTENSION_DROPPED_CONFIG_FIX_ENABLED
+            value: "true"
           volumeMounts:
           - mountPath: C:\ProgramData\docker\containers
             name: docker-windows-containers
