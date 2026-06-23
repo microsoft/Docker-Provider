@@ -1,0 +1,203 @@
+# Default values for azuremonitor-containers-extension (envsubst template).
+#
+# This file is the envsubst SOURCE for values.yaml. The build pipeline
+# (.pipelines/azure_pipeline_mergedbranches.yaml) runs:
+#   envsubst < values-template.yaml > values.yaml
+# substituting ${IMAGE_TAG}, ${IMAGE_TAG_WINDOWS}, ${INCLUDE_DEPENDENT_CHARTS}, etc.
+#
+# It mirrors charts/azuremonitor-containers/values.yaml plus the additions required
+# by the AKS cluster-extension framework (Azure.Identity token adapter,
+# IncludeDependentCharts).
+
+## global is populated by the AKS cluster-extension framework at install time.
+global:
+  commonGlobals:
+    Customer:
+      AzureResourceID: ""
+
+## When true, dependent charts (if any) are rendered; controlled at package time
+## via ${INCLUDE_DEPENDENT_CHARTS}.
+IncludeDependentCharts: ${INCLUDE_DEPENDENT_CHARTS}
+
+## Values under Azure are populated by the AKS extension platform during install.
+Azure:
+  Cluster:
+    Cloud: <your_cluster_cloud>
+    Region: <your_cluster_region>
+    ResourceId: <your_cluster_id>
+  Extension:
+    Name: ""
+    ResourceId: ""
+  ## Identity is injected by the AKS extension framework: the managed-addon token
+  ## adapter sidecar yaml is supplied here by the platform.
+  ## TODO(P0): confirm the exact token-adapter values the partner team injects. DevSkim: ignore DS176209
+  Identity:
+    AADMsiTokenAdapterLinuxYaml: ""
+    AADMsiTokenAdapterWindowsYaml: ""
+  proxySettings:
+    isProxyEnabled: false
+    httpProxy: ""
+    httpsProxy: ""
+    noProxy: ""
+    proxyCert: ""
+    isCustomCert: false
+    autonomousFqdn: "<arca_autonomous_fqdn>"
+amalogs:
+  image:
+    # Fixed MCR repo for the extension delivery (chart pulls images from prod MCR).
+    repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
+    tag: "${IMAGE_TAG}"
+    tagWindows: "${IMAGE_TAG_WINDOWS}"
+    pullPolicy: IfNotPresent
+    dockerProviderVersion: "18.0.1-0"
+    agentVersion: "azure-mdsd-1.40.3"
+    winAgentVersion: "47.7.1" # there is no base agent version for windows agent
+
+  # Scheduling priority for the ama-logs daemonset pods (must be > 0).
+  priority: 10
+
+  # Run in high log scale mode or not.
+  enableHighLogScaleMode: false
+
+  # When true, additional agent workflow logs are emitted (used for e2e and Arc conformance testing).
+  ISTEST: false
+
+  # Use AAD MSI auth (Arc K8s).
+  useAADAuth: false
+
+  # True if this cluster is connected to the ArcA control plane.
+  isArcACluster: false
+
+  # Ignore the proxy settings.
+  ignoreExtensionProxySettings: false
+
+  # Allow ama-logs pods to be scheduled on nodes with taints.
+  scheduleOnTaintedNodes: false
+
+  # Enable/disable service account timebound token.
+  enableServiceAccountTimeBoundToken: true
+
+  # Enable/disable custom metrics (deprecated; disabled by default).
+  enableCustomMetrics: false
+
+  # Enable/disable Telegraf livenessprobe.
+  enableTelegrafLivenessprobe: false
+
+  secret:
+    wsid: <your_workspace_id>
+    key: <your_workspace_key>
+  domain: opinsights.azure.com
+  proxy: <your_proxy_config>
+  metricsEndpoint: <your_metrics_endpoint>
+  tokenAudience: <your_token_audience>
+  env:
+    clusterName: <your_cluster_name>
+    clusterId: <your_cluster_id>
+    clusterRegion: <your_cluster_region>
+  rbac: true
+  sidecarscraping: true
+  syslog:
+    enabled: false
+    syslogPort: 28330
+  logsettings:
+    logflushintervalsecs: "15"
+    tailbufchunksizemegabytes: "1"
+    tailbufmaxsizemegabytes: "1"
+    custommountpath: ""
+
+  tolerations:
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoExecute"
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "PreferNoSchedule"
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoSchedule"
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "NoExecute"
+    - key: "node-role.kubernetes.io/master"
+      operator: "Exists"
+      effect: "PreferNoSchedule"
+  tolerationsUnrestricted:
+    - operator: "Exists"
+      effect: "NoSchedule"
+    - operator: "Exists"
+      effect: "NoExecute"
+    - operator: "Exists"
+      effect: "PreferNoSchedule"
+
+  daemonset:
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/os
+              operator: In
+              values:
+                - linux
+            - key: type
+              operator: NotIn
+              values:
+                - virtual-kubelet
+  deployment:
+    affinity:
+      nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: storageprofile
+                operator: NotIn
+                values:
+                - managed
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: kubernetes.io/os
+              operator: In
+              values:
+                - linux
+            - key: type
+              operator: NotIn
+              values:
+                - virtual-kubelet
+            - key: kubernetes.io/role
+              operator: NotIn
+              values:
+                - master
+  resources:
+    daemonsetlinux:
+      requests:
+        cpu: 75m
+        memory: 325Mi
+      limits:
+        cpu: 150m
+        memory: 750Mi
+    daemonsetwindows:
+      requests:
+        cpu: 500m
+        memory: 700Mi
+      limits:
+        cpu: 2
+        memory: 2Gi
+    deployment:
+      requests:
+        cpu: 150m
+        memory: 250Mi
+      limits:
+        cpu: 1
+        memory: 1Gi
+    daemonsetlinuxsidecar:
+        limits:
+          cpu: 500m
+          memory: 1Gi
+        requests:
+          cpu: 75m
+          memory: 225Mi

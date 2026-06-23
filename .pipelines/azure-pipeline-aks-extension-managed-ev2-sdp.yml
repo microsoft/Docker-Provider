@@ -1,0 +1,179 @@
+#################################################################################
+#                               OneBranch Pipelines                             #
+# Documentation:  https://aka.ms/obpipelines                                    #
+# Yaml Schema:    https://aka.ms/obpipelines/yaml/schema                        #
+# Reference doc:  https://msazure.visualstudio.com/One/_wiki/wikis/One.wiki/    #
+#                 671961/Automating-release-of-new-versions-using-ev2           #
+#                                                                               #
+# Purpose: Roll out new versions of the extension type                          #
+#   microsoft.azuremonitor.containers (Container Insights logs / ama-logs)      #
+# to AKS (Managed) clusters via the central Ev2 extension rollout artifacts.    #
+#                                                                               #
+# This is the ama-logs analogue of prometheus-collector's                       #
+# .pipelines/azure-pipeline-aks-extension-managed-ev2-sdp.yml. It delivers the  #
+# unified extension Helm chart from MCR and lets the cluster-extension platform #
+# (central SDP policy) auto-install/upgrade it on AKS managed clusters.         #
+#                                                                               #
+# ACTIVATION DEPENDENCY (P0, cross-team):                                        #
+#   The ClusterConfig / Cluster-Extensions partner team must first register     #
+#   `microsoft.azuremonitor.containers` as an AKS managed-cluster extension     #
+#   type and create the AKS packageConfig + serviceGroup. Until then this       #
+#   pipeline authors the rollout but cannot successfully run. All values marked #
+#   TODO(P0) below must be confirmed with that team before first run. DevSkim: ignore DS176209
+#################################################################################
+
+trigger: none
+
+parameters:
+  - name: 'overrideExtensionVersion'
+    displayName: 'Override Extension Version (leave blank to use upstream build runName)'
+    type: string
+    default: ''
+
+  - name: 'releaseTrain'
+    displayName: 'Release Train'
+    type: string
+    default: 'preview'
+    values:
+      - preview
+      - stable
+
+  - name: 'rolloutType'
+    displayName: 'SDP rollout type'
+    type: string
+    default: 'normal'
+    values:
+      - normal
+      - emergency
+      - globaloutage
+
+  - name: 'overrideManagedValidationDuration'
+    displayName: 'Override standard SDP duration?'
+    type: boolean
+    default: false
+
+  - name: 'managedValidationDurationInHours'
+    displayName: 'Override standard SDP duration (in hours)'
+    type: number
+    default: 0
+
+  - name: 'icmIncidentId'
+    displayName: 'IcM Incident Id (required when rollout type is globaloutage)'
+    type: number
+    default: 0
+
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: OneBranch.Pipelines/GovernedTemplates
+      ref: refs/heads/main
+  pipelines:
+    # Upstream build pipeline that publishes the unified extension helm chart to MCR.
+    # runName is used as the extension/chart version unless overridden.
+    - pipeline: '_ci-build'
+      project: 'microsoft'
+      source: 'CDPX\docker-provider\ContainerInsights-MultiArch-MergedBranches'
+
+variables:
+  # ---- Identifiers ---------------------------------------------------------
+  # Container Insights service tree id (same value used in the existing
+  # deployment/**/ServiceGroupRoot/ServiceModel.json and ci-*-release pipelines).
+  - name: serviceIdentifier
+    value: '3170cdd2-19f0-4027-912b-1027311691a2'
+
+  # Ev2 ServiceGroup registered with the extension platform team for AKS
+  # Managed central rollout of microsoft.azuremonitor.containers.
+  # TODO(P0): confirm exact name with ClusterConfig/Extensions partner team DevSkim: ignore DS176209
+  # (modelled on the metrics example:
+  #  Microsoft.Azure.InfrastructureInsights.ContainerInsights.AzureMonitorMetrics).
+  - name: serviceGroup
+    value: 'Microsoft.Azure.InfrastructureInsights.ContainerInsights.AzureMonitorLogs'
+
+  # ---- Version selection ---------------------------------------------------
+  - ${{ if ne(parameters.overrideExtensionVersion, '') }}:
+      - name: extensionVersionValue
+        value: '${{ parameters.overrideExtensionVersion }}'
+  - ${{ if eq(parameters.overrideExtensionVersion, '') }}:
+      - name: extensionVersionValue
+        value: '$(resources.pipeline._ci-build.runName)'
+
+  # ---- ConfigurationOverrides (per cloud) ---------------------------------
+  # TODO(P0): packageConfig must be the AKS package config name the partner team DevSkim: ignore DS176209
+  # creates for microsoft.azuremonitor.containers (logs equivalent of
+  # Microsoft.AzureMonitor.Containers.Metrics-PromAks052926).
+  # userAssignedIdentity is the existing ci-prod ev2-agent-release MSI used by the
+  # current agent Ev2 release (deployment/.../Configurations.Public.Prod.json), and
+  # must be the MSI registered in the extension type registration `msiClientIds`.
+  - name: ProdConfigurationOverrides
+    value: |
+      {
+        "ConfigurationSpecification": {
+          "settings": {
+            "extensionTypeName": "microsoft.azuremonitor.containers",
+            "packageConfig": "TODO_P0_AKS_PACKAGE_CONFIG_NAME",
+            "helmChartUrl": "mcr.microsoft.com/azuremonitor/containerinsights/ciprod/ama-logs",
+            "userAssignedIdentity": "/subscriptions/30c56c3a-54da-46ea-b004-06eb33432687/resourceGroups/containerinsightsprod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ev2-agent-release",
+            "version": "$(extensionVersionValue)",
+            "releaseTrain": "${{ parameters.releaseTrain }}"
+          }
+        }
+      }
+
+  - name: LinuxContainerImage
+    value: 'mcr.microsoft.com/oss/go/microsoft/golang:1.24.2-fips-azurelinux3.0'
+  - name: RevisionCounter
+    value: $[counter('0', 1)]
+  - name: CustomBuildVersion
+    value: "Build - $(extensionVersionValue) Release - $(RevisionCounter) ReleaseTrain - ${{ parameters.releaseTrain }}"
+
+# Disable showing the last commit message.
+appendCommitMessageToRunName: false
+
+extends:
+  template: v2/OneBranch.Official.CrossPlat.yml@templates
+  parameters:
+    ev2ManagedSdpRolloutConfig:
+      rolloutType: ${{ parameters.rolloutType }}
+      overrideManagedValidationDuration: ${{ parameters.overrideManagedValidationDuration }}
+      managedValidationOverrideDurationInHours: ${{ parameters.managedValidationDurationInHours }}
+      icmIncidentId: ${{ parameters.icmIncidentId }}
+
+    stages:
+      - stage: PROD_Managed_SDP
+        displayName: "PROD: Managed SDP"
+        variables:
+          ob_release_environment: Production
+        jobs:
+          - job: PROD_Managed_SDP
+            displayName: "PROD: Managed SDP"
+            pool:
+              type: release
+            steps:
+              - task: onebranch.pipeline.version@1
+                condition: ne(variables['CustomBuildVersion'], '')
+                displayName: "Setup BuildNumber"
+                inputs:
+                  system: 'Custom'
+                  customVersion: '$(CustomBuildVersion)'
+              - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+                displayName: "Ev2 Managed SDP Rollout (Prod)"
+                inputs:
+                  EndpointProviderType: ApprovalService
+                  ApprovalServiceEnvironment: Production
+                  TaskAction: CentralArtifactsRollout
+                  CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
+                  CentralArtifactsPolicyName: CentralArtifactsPolicy
+                  ServiceIdentifier: $(serviceIdentifier)
+                  ServiceGroup: $(serviceGroup)
+                  ConfigurationOverrides: $(ProdConfigurationOverrides)
+                  # For first-run / canary testing of the pipeline itself,
+                  # temporarily replace the line below with an explicit
+                  # region filter, e.g.:
+                  #   Select: regions(eastus2euap)
+                  # to roll out to the 2 EUAP regions only. Once validated,
+                  # restore `regions(*)` so the central SDP policy controls
+                  # the wave order (Canary -> Pilot -> ... -> HighAvailability).
+                  Select: regions(centraluseuap,eastus2euap)
+                  #Select: regions(*)
+                  ArtifactsVersionOverride: $(extensionVersionValue)

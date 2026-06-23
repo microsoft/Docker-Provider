@@ -1,0 +1,28 @@
+apiVersion: v2
+# appVersion is the agent image tag this chart deploys; injected at package time.
+appVersion: ${IMAGE_TAG}
+description: Helm chart for deploying the Azure Monitor Container Insights (ama-logs) agent as a managed cluster extension on AKS (Managed) clusters
+name: azuremonitor-containers-extension
+# Chart version is decoupled from appVersion so the extension/chart version can be
+# stamped independently at package time (envsubst). See azure_pipeline_mergedbranches.yaml.
+version: ${HELM_SEMVER}
+kubeVersion: "^1.10.0-0"
+keywords:
+  - monitoring
+  - azuremonitor
+  - azure
+  - ama
+  - containerinsights
+  - logs
+  - containerhealth
+  - kubernetesmonitoring
+  - kubernetes
+home: https://docs.microsoft.com/en-us/azure/monitoring/monitoring-container-health
+icon: https://raw.githubusercontent.com/microsoft/Docker-Provider/ci_prod/img/azuremonitor-containers.svg
+sources:
+  - https://github.com/microsoft/Docker-Provider/tree/ci_prod
+maintainers:
+  - name: vishiy
+    email: visnara@microsoft.com
+  - name: ganga1980
+    email: gangams@microsoft.com

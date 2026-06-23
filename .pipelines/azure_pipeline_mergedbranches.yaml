@@ -902,6 +902,84 @@ extends:
             FileDirPath: '$(Build.ArtifactStagingDirectory)'
             DisableRemediation: false
             AcceptableOutdatedSignatureInHours: 72
+      # ---------------------------------------------------------------------------
+      # Package + push the AKS extension Helm chart (ama-logs) to MCR.
+      #
+      # Consumed by the central-artifacts Ev2 Managed-SDP rollout pipeline:
+      #   .pipelines/azure-pipeline-aks-extension-managed-ev2-sdp.yml  (AKS Managed)
+      #
+      # INCUBATION: gated on BUILD_EXTENSION_CHART=true so it does NOT affect normal
+      # builds until charts/azuremonitor-containers-extension is production-ready
+      # (see that chart's EXTENSION-MIGRATION.md). Set the pipeline variable to enable.
+      # ---------------------------------------------------------------------------
+      - job: package_extension_chart
+        displayName: "Package and push ama-logs extension helm chart"
+        condition: and(succeeded(), eq(variables['BUILD_EXTENSION_CHART'], 'true'))
+        dependsOn:
+        - common
+        - build_linux
+        - build_windows_multi_arc
+        variables:
+          linuxTelemetryTag: $[ dependencies.common.outputs['setup.linuxTelemetryTag'] ]
+          windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
+          Codeql.SkipTaskAutoInjection: true
+          # Extension chart repo path in ACR/MCR (mirrors the agent image namespace).
+          extensionChartAcrPath: 'public/azuremonitor/containerinsights/cidev/ama-logs'
+        templateContext:
+          outputs:
+          - output: pipelineArtifact
+            targetPath: '$(Build.ArtifactStagingDirectory)/extension-chart'
+            artifactName: extension-chart-drop
+        steps:
+        - task: HelmInstaller@1
+          displayName: Install Helm
+          inputs:
+            helmVersionToInstall: 3.19.0
+        - task: AzureCLI@2
+          displayName: "Package + push extension chart (AKS)"
+          inputs:
+            azureSubscription: ${{ variables.armServiceConnectionName }}
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              set -euo pipefail
+              sudo apt-get update && sudo apt-get install -y gettext-base
+              mkdir -p $(Build.ArtifactStagingDirectory)/extension-chart
+
+              # Chart version must be SemVer2. Use the telemetry tag for release builds,
+              # otherwise a dev prerelease derived from the image tag.
+              CHART_VERSION="$(linuxTelemetryTag)"
+              if [ "$(IS_RELEASE)" != "True" ]; then
+                CHART_VERSION="0.0.0-$(echo "$(linuxTelemetryTag)" | tr '._/' '-' )"
+              fi
+              echo "Extension chart version: $CHART_VERSION"
+
+              cd charts/azuremonitor-containers-extension
+              export HELM_SEMVER="$CHART_VERSION"
+              export IMAGE_TAG="$(linuxTelemetryTag)"
+              export IMAGE_TAG_WINDOWS="$(windowsTelemetryTag)"
+              export INCLUDE_DEPENDENT_CHARTS="false"
+              envsubst < Chart-template.yaml > Chart.yaml
+              envsubst < values-template.yaml > values.yaml
+
+              echo "=== helm lint ==="
+              helm lint .
+
+              helm package . --version "$CHART_VERSION"
+              cp ./azuremonitor-containers-extension-*.tgz $(Build.ArtifactStagingDirectory)/extension-chart/
+
+              # Only push on non-PR builds.
+              if [ "$(IS_PR)" == "True" ]; then
+                echo "PR build - skipping chart push to ACR."
+                exit 0
+              fi
+
+              export HELM_EXPERIMENTAL_OCI=1
+              az acr login -n ${{ variables.containerRegistry }}
+              CHART_TGZ=$(ls ./azuremonitor-containers-extension-*.tgz)
+              DEST="oci://${{ variables.containerRegistry }}.azurecr.io/$(extensionChartAcrPath)"
+              echo "Pushing $CHART_TGZ -> $DEST (version $CHART_VERSION)"
+              helm push "$CHART_TGZ" "$DEST"
 
     - stage: Deploy_and_Test_Images_In_Dev_Clusters
       displayName: Deploy and Test Images in Dev Clusters
