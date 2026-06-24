@@ -1,6 +1,6 @@
 # This script is only for AKS cluster testing. It reads the template files (Chart-template.yaml and values-template.yaml),
 # replaces placeholders with actual values, and then writes the modified content back to new files (Chart.yaml and values.yaml).
-# The placeholders replaced include HELM_SEMVER, IMAGE_TAG, IMAGE_TAG_WINDOWS, and INCLUDE_DEPENDENT_CHARTS.
+# The placeholders replaced include HELM_SEMVER, IMAGE_TAG, and IMAGE_TAG_WINDOWS.
 #
 # NOTE: this renders the chart for a plain `helm install`, which BYPASSES the cluster-extension platform.
 # The platform-injected identity / token adapter (Azure.Identity.AADMsiTokenAdapter*Yaml) will NOT be present,
@@ -32,7 +32,6 @@ $chartTemplateContent = $chartTemplateContent -replace '\$\{IMAGE_TAG\}', $Image
 # Replace placeholders in values-template.yaml
 $valuesTemplateContent = $valuesTemplateContent -replace '\$\{IMAGE_TAG\}', $ImageTag
 $valuesTemplateContent = $valuesTemplateContent -replace '\$\{IMAGE_TAG_WINDOWS\}', $ImageTagWindows
-$valuesTemplateContent = $valuesTemplateContent -replace '\$\{INCLUDE_DEPENDENT_CHARTS\}', 'false'
 $valuesTemplateContent = $valuesTemplateContent -replace '\$\{HELM_SEMVER\}', $ChartVersion
 
 # Write the modified content back to the files

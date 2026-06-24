@@ -3,21 +3,16 @@
 # This file is the envsubst SOURCE for values.yaml. The build pipeline
 # (.pipelines/azure_pipeline_mergedbranches.yaml) runs:
 #   envsubst < values-template.yaml > values.yaml
-# substituting ${IMAGE_TAG}, ${IMAGE_TAG_WINDOWS}, ${INCLUDE_DEPENDENT_CHARTS}, etc.
+# substituting ${IMAGE_TAG} and ${IMAGE_TAG_WINDOWS}.
 #
 # It mirrors charts/azuremonitor-containers/values.yaml plus the additions required
-# by the AKS cluster-extension framework (Azure.Identity token adapter,
-# IncludeDependentCharts).
+# by the AKS cluster-extension framework (Azure.Identity token adapter).
 
 ## global is populated by the AKS cluster-extension framework at install time.
 global:
   commonGlobals:
     Customer:
       AzureResourceID: ""
-
-## When true, dependent charts (if any) are rendered; controlled at package time
-## via ${INCLUDE_DEPENDENT_CHARTS}.
-IncludeDependentCharts: ${INCLUDE_DEPENDENT_CHARTS}
 
 ## Values under Azure are populated by the AKS extension platform during install.
 Azure:

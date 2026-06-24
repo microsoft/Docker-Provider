@@ -958,7 +958,6 @@ extends:
               export HELM_SEMVER="$CHART_VERSION"
               export IMAGE_TAG="$(linuxTelemetryTag)"
               export IMAGE_TAG_WINDOWS="$(windowsTelemetryTag)"
-              export INCLUDE_DEPENDENT_CHARTS="false"
               envsubst < Chart-template.yaml > Chart.yaml
               envsubst < values-template.yaml > values.yaml
 

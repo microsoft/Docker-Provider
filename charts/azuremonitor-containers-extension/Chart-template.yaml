@@ -1,6 +1,7 @@
 apiVersion: v2
+type: application
 # appVersion is the agent image tag this chart deploys; injected at package time.
-appVersion: ${IMAGE_TAG}
+appVersion: "${IMAGE_TAG}"
 description: Helm chart for deploying the Azure Monitor Container Insights (ama-logs) agent as a managed cluster extension on AKS (Managed) clusters
 name: azuremonitor-containers-extension
 # Chart version is decoupled from appVersion so the extension/chart version can be

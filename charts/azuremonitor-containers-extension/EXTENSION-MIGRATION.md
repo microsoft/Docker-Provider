@@ -21,9 +21,9 @@ migration plan.
 
 ## What is implemented here (scaffold)
 - `Chart-template.yaml` / `values-template.yaml` — envsubst sources; the build stamps
-  `${HELM_SEMVER}`, `${IMAGE_TAG}`, `${IMAGE_TAG_WINDOWS}`, `${INCLUDE_DEPENDENT_CHARTS}`.
+  `${HELM_SEMVER}`, `${IMAGE_TAG}`, `${IMAGE_TAG_WINDOWS}`.
 - `values-template.yaml` additions: `global.commonGlobals`, `Azure.Identity` token-adapter
-  placeholders, `IncludeDependentCharts`.
+  placeholders.
 
 ## Remaining work (TODO before activation)
 These require the AKS extension values schema (still being finalized on the prometheus
@@ -50,7 +50,7 @@ the spec.
 ## Local validation
 ```
 wsl bash -c 'cd charts/azuremonitor-containers-extension && \
-  IMAGE_TAG=dev IMAGE_TAG_WINDOWS=win-dev HELM_SEMVER=0.0.0-dev INCLUDE_DEPENDENT_CHARTS=false \
+  IMAGE_TAG=dev IMAGE_TAG_WINDOWS=win-dev HELM_SEMVER=0.0.0-dev \
   envsubst < Chart-template.yaml > Chart.yaml && \
   envsubst < values-template.yaml > values.yaml && \
   helm lint . && helm template . \
