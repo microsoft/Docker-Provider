@@ -1311,14 +1311,16 @@ func extractImageID(hash string) string {
 }
 
 func parseImageDetails(image string) (repo, name, tag string) {
-	slashLocation := strings.Index(image, "/")
-	colonLocation := strings.Index(image, ":")
-	atLocation := strings.Index(image, "@")
-
-	// Exclude the digest part for imageRepo/image/tag parsing, if present
-	if atLocation != -1 {
+	// Exclude the digest part for imageRepo/image/tag parsing, if present.
+	// This must happen before computing slash/colon positions, otherwise a colon
+	// inside the digest (e.g. "repo/name@sha256:...") would yield a colonLocation
+	// past the truncated string length and cause a slice out-of-range panic.
+	if atLocation := strings.Index(image, "@"); atLocation != -1 {
 		image = image[:atLocation]
 	}
+
+	slashLocation := strings.Index(image, "/")
+	colonLocation := strings.Index(image, ":")
 
 	// If colonLocation is -1 (not found), set it to the length of the image string
 	if colonLocation == -1 {
