@@ -45,6 +45,31 @@
     {
       "Matchers": [
         {
+          "Field": "subscriptionID",
+          "Operator": "equals",
+          "Values": [
+            "4cdde026-a1dc-48ef-98be-b48892c3f96d"
+          ]
+        }
+      ],
+      "Value": "3G"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "armId",
+          "Operator": "equals",
+          "Values": [
+            "/subscriptions/e099a149-1107-4c15-9609-23cd1ea4ed8b/resourceGroups/cosmic-prod-d05-019-eur-northeurope/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-019-eur-northeurope-aks",
+            "/subscriptions/630dbd84-34ca-4ead-9958-322a0dde77f9/resourceGroups/cosmic-prod-d05-002-eur-westeurope/providers/Microsoft.ContainerService/managedClusters/cosmic-prod-d05-002-eur-westeurope-aks"
+          ]
+        }
+      ],
+      "Value": "2G"
+    },
+    {
+      "Matchers": [
+        {
           "Field": "armId",
           "Operator": "equals",
           "Values": [
