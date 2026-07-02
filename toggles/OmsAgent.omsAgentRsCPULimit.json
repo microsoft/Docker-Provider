@@ -97,83 +97,17 @@
             "4ad45dd2-0749-40f2-8fa3-360dd918d166",
             "97cf6e5a-08be-4d71-a850-c65dab004d9b",
             "76e5de50-88fc-450e-938a-eb200b3f5ab5",
-            "1e62e812-202b-4de0-bc19-d45b1c4ccb1c"
-          ]
-        }
-      ],
-      "Value": "5"
-    },
-    {
-      "Matchers": [
-        {
-          "Field": "subscriptionID",
-          "Operator": "equals",
-          "Values": [
+            "1e62e812-202b-4de0-bc19-d45b1c4ccb1c",
             "2dec9943-5db1-4aa9-9b4d-5f5fe2e8465e",
             "daf557e5-b0e8-4046-825f-7d43e92cf9b4",
-            "4d641501-dbb3-44b9-97e3-946e5cd957c2"
-          ]
-        }
-      ],
-      "Value": "5"
-    },
-    {
-      "Matchers": [
-        {
-          "Field": "subscriptionID",
-          "Operator": "equals",
-          "Values": [
-            "3626cfa1-6db8-4d95-a769-bf952591a228"
-          ]
-        }
-      ],
-      "Value": "5"
-    },
-    {
-      "Matchers": [
-        {
-          "Field": "subscriptionID",
-          "Operator": "equals",
-          "Values": [
+            "4d641501-dbb3-44b9-97e3-946e5cd957c2",
+            "3626cfa1-6db8-4d95-a769-bf952591a228",
             "3a6f3563-a8d6-4d47-869c-14d37eddf93d",
-            "4d0d6b18-5e07-4e30-b239-321d874f75f5"
-          ]
-        }
-      ],
-      "Value": "5"
-    },
-    {
-      "Matchers": [
-        {
-          "Field": "subscriptionID",
-          "Operator": "equals",
-          "Values": [
+            "4d0d6b18-5e07-4e30-b239-321d874f75f5",
             "01993b85-2035-47d7-99ad-a70e8520136f",
-            "9b8218f9-902a-4d20-a65c-e98acec5362f"
-          ]
-        }
-      ],
-      "Value": "5"
-    },
-    {
-      "Matchers": [
-        {
-          "Field": "subscriptionID",
-          "Operator": "equals",
-          "Values": [
+            "9b8218f9-902a-4d20-a65c-e98acec5362f",
             "afe495ca-b99a-4e36-86c8-9e0e41697f1c",
-            "37deca37-c375-4a14-b90a-043849bd2bf1"
-          ]
-        }
-      ],
-      "Value": "5"
-    },
-    {
-      "Matchers": [
-        {
-          "Field": "subscriptionID",
-          "Operator": "equals",
-          "Values": [
+            "37deca37-c375-4a14-b90a-043849bd2bf1",
             "854c9ddb-fe9e-4aea-8d58-99ed88282881"
           ]
         }
@@ -204,6 +138,26 @@
     {
       "Matchers": [
         {
+          "Field": "subscriptionID",
+          "Operator": "equals",
+          "Values": [
+            "b8ceb4e5-f05b-4562-a9f5-14acb1f24219"
+          ]
+        },
+        {
+          "Field": "region",
+          "Operator": "equals",
+          "Values": [
+            "southeastasia",
+            "eastus2"
+          ]
+        }
+      ],
+      "Value": "5"
+    },
+    {
+      "Matchers": [
+        {
           "Field": "armId",
           "Operator": "equals",
           "Values": [
@@ -225,44 +179,6 @@
         }
       ],
       "Value": "2"
-    },
-    {
-      "Matchers": [
-        {
-          "Field": "subscriptionID",
-          "Operator": "equals",
-          "Values": [
-            "b8ceb4e5-f05b-4562-a9f5-14acb1f24219"
-          ]
-        },
-        {
-          "Field": "region",
-          "Operator": "equals",
-          "Values": [
-            "southeastasia"
-          ]
-        }
-      ],
-      "Value": "5"
-    },
-    {
-      "Matchers": [
-        {
-          "Field": "subscriptionID",
-          "Operator": "equals",
-          "Values": [
-            "b8ceb4e5-f05b-4562-a9f5-14acb1f24219"
-          ]
-        },
-        {
-          "Field": "region",
-          "Operator": "equals",
-          "Values": [
-            "eastus2"
-          ]
-        }
-      ],
-      "Value": "5"
     }
   ]
 }
