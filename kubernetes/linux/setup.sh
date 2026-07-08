@@ -97,7 +97,10 @@ gem_install_with_retry() {
 }
 
 # install fluentd
-fluentd_version="1.16.3"
+# Bumped 1.16.3 -> 1.19.3 to fix CVE-2026-44024, CVE-2026-44025, CVE-2026-44160,
+# CVE-2026-44161. This also pulls fixed transitive gems concurrent-ruby (>= 1.3.7,
+# fixes CVE-2026-54904/54905/54906) and msgpack (>= 1.8.2, fixes CVE-2026-54522).
+fluentd_version="1.19.3"
 gem_install_with_retry fluentd -v $fluentd_version --no-document
 
 # remove the test directory from fluentd
