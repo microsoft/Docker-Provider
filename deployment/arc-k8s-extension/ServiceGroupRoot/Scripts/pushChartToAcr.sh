@@ -62,7 +62,7 @@ pull_chart_from_source_mcr_to_push_to_dest_acr() {
 }
 
 # push to local release candidate chart to canary region
-push_local_chart_to_canary_region() {
+push_local_chart_to_acr() {
   destAcrFullPath=${1}
   if [ -z $destAcrFullPath ]; then
       echo "-e error dest acr path must be provided "
@@ -70,7 +70,7 @@ push_local_chart_to_canary_region() {
   fi
 
   echo "generate chart package file"
-  export CHART_FILE=$(helm package charts/azuremonitor-containers/ | awk -F'[:]' '{gsub(/ /, "", $2); print $2}')
+  export CHART_FILE=$(helm package charts/azuremonitor-containerinsights/ | awk -F'[:]' '{gsub(/ /, "", $2); print $2}')
   if [ $? -eq 0 ]; then
     echo "chart package file generated successfully."
   else
@@ -127,15 +127,14 @@ case $RELEASE_STAGE in
   Canary)
     echo "START: Release stage - Canary"
     destAcrFullPath=oci://${ACR_NAME}/public/${CANARY_REGION_REPO_PATH}
-    push_local_chart_to_canary_region $destAcrFullPath
+    push_local_chart_to_acr $destAcrFullPath
     echo "END: Release stage - Canary"
     ;;
 
   Pilot | Prod1)
     echo "START: Release stage - Pilot"
-    srcMcrFullPath=oci://${MCR_NAME}/${CANARY_REGION_REPO_PATH}/${CHART_NAME}
     destAcrFullPath=oci://${ACR_NAME}/public/${PILOT_REGION_REPO_PATH}
-    pull_chart_from_source_mcr_to_push_to_dest_acr $srcMcrFullPath $destAcrFullPath
+    push_local_chart_to_acr $destAcrFullPath
     echo "END: Release stage - Pilot"
     ;;
 

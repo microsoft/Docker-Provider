@@ -3,10 +3,15 @@
 {{/* AKS-only resource */}}
 {{- if not $isArcExtension }}
 {{- $amalogsLinuxDefaultImageTag := dict "component" "ama-logs-linux" "version" .Values.global.commonGlobals.Versions.Kubernetes | include "get.addonImageTag" }}
-{{/* Determine isusingaadauth value */}}
+{{/* Determine isusingaadauth value.
+     Compare as a lowercased string because Helm --set and quoted YAML
+     both deliver this value as a string, and any non-empty string is
+     truthy in Go templates (so "false" would otherwise evaluate to true). */}}
 {{- $isusingaadauth := false -}}
 {{- if hasKey .Values.OmsAgent "isUsingAADAuth" -}}
-  {{- $isusingaadauth = .Values.OmsAgent.isUsingAADAuth -}}
+  {{- if eq (lower (toString .Values.OmsAgent.isUsingAADAuth)) "true" -}}
+    {{- $isusingaadauth = true -}}
+  {{- end -}}
 {{- end -}}
 {{- $cloudEnv := lower .Values.global.commonGlobals.CloudEnvironment }}
 {{- if and $isusingaadauth .Values.OmsAgent.isMultitenancyLogsEnabled }}

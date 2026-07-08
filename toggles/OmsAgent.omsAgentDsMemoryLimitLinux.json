@@ -359,7 +359,7 @@
             "/subscriptions/101eed11-9db7-4221-8197-314b47799766/resourceGroups/rg-miccm-aks-prod-cn-cnn3-1/providers/Microsoft.ContainerService/managedClusters/aks-miccm-prod-cn-cnn3-1",
             "/subscriptions/494e84fd-455a-45fd-bdaa-d84b74b5d626/resourceGroups/rg-2051pr/providers/Microsoft.ContainerService/managedClusters/aks-je2051prblue-001",
             "/subscriptions/710ce9ae-dfed-4c2d-b815-d9011249c5f4/resourceGroups/rg-2051pf/providers/Microsoft.ContainerService/managedClusters/aks-je2051pfblue-001",
-            "/subscriptions/1147988c-8516-4b4c-8b61-7be5c39c9e17/resourceGroups/az-phiapp-prod-01-esco-prod-westus-rg-01/providers/Microsoft.ContainerService/managedClusters/esco-aksphi-prod-westus-cluster-01",
+            "/subscriptions/1147988c-8516-4b4c-8b61-7be5c39c9e17/resourcegroups/az-phiapp-prod-01-esco-prod-westus-rg-01/providers/microsoft.containerservice/managedclusters/esco-aksphi-prod-westus-cluster-01",
             "/subscriptions/99a3af26-911d-4bc5-8fcc-8f9de81e46c5/resourceGroups/rg-aks-dev-container-westus2/providers/Microsoft.ContainerService/managedClusters/aks-dev-westus2",
             "/subscriptions/954d6ec6-646d-498f-add3-3bc506059d67/resourceGroups/ebp-stage-application-blue/providers/Microsoft.ContainerService/managedClusters/ebp-stage-application-blue",
             "/subscriptions/fc6020e3-54ae-4018-91c8-8d07b2444b07/resourceGroups/prod-rg/providers/Microsoft.ContainerService/managedClusters/prod-aks",
@@ -376,7 +376,52 @@
             "/subscriptions/e7b72563-124f-483c-9c2a-0f2a24d91de1/resourceGroups/rg-kr-fst-p-prd-cus-common/providers/Microsoft.ContainerService/managedClusters/aks-kr-fst-p-prd-cus-d325",
             "/subscriptions/7c72c4f9-c83b-46ba-be69-aee391628126/resourceGroups/rgrp-dva2-dt-aks002/providers/Microsoft.ContainerService/managedClusters/akse-dva2-dt-rdw002",
             "/subscriptions/4e6a7a01-59a1-4bd0-aa31-143f66640add/resourceGroups/EU-EVOC-KTB-PROD/providers/Microsoft.ContainerService/managedClusters/EU-KTB-PROD-AKS-Cluster-01",
-            "/subscriptions/0600feb8-2d83-4874-9b17-d77b61a81d5e/resourceGroups/rg-sdc-ekp-prod-01/providers/Microsoft.ContainerService/managedClusters/aks-sdc-ekp-prod-01"
+            "/subscriptions/0600feb8-2d83-4874-9b17-d77b61a81d5e/resourceGroups/rg-sdc-ekp-prod-01/providers/Microsoft.ContainerService/managedClusters/aks-sdc-ekp-prod-01",
+            "/subscriptions/6433a095-fe38-48b6-b88a-337325c31f21/resourceGroups/ne-emea-rg-dev-perfcntr/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-dev-PERFCNTR",
+            "/subscriptions/9138cf85-e4be-44c6-ad6c-a334bb6f943b/resourceGroups/NE-EMEA-RG-preprod-netauto/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-preprod-netauto",
+            "/subscriptions/11e533ae-7288-4294-bde4-18d0684e11c6/resourceGroups/WE-EMEA-RG-qua-ESAFETY/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-qua-ESAFETY",
+            "/subscriptions/748a96d6-871d-4538-84c1-02d15506a366/resourceGroups/WE-EMEA-RG-prd-ESAFETY/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-prd-ESAFETY",
+            "/subscriptions/3b4cf7d3-24ed-4f20-b5bd-bafd1e7ceadc/resourceGroups/WE-EMEA-RG-dev-esafety/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-dev-esafety",
+            "/subscriptions/e14365db-cb8d-434e-beaf-4a626e5f5b04/resourceGroups/NE-EMEA-RG-qua-OneView/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-qua-OneView",
+            "/subscriptions/f19a449a-b41c-444e-b3d8-b74e91a0acb1/resourceGroups/NE-EMEA-RG-prd-OneView/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-prd-OneView",
+            "/subscriptions/e14365db-cb8d-434e-beaf-4a626e5f5b04/resourceGroups/NE-EMEA-RG-dev-ONEVIEW/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-dev-ONEVIEW",
+            "/subscriptions/2d1b9baf-0859-4ff7-bd76-6e1d30131684/resourceGroups/NE-EMEA-RG-pd-ADOAGENTS/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-pd-ADOAGENTS",
+            "/subscriptions/a830ec9f-28cb-4dc8-aa5c-a7b68e36e31c/resourceGroups/EA-APAC-RG-pd-ADOAGENTS/providers/Microsoft.ContainerService/managedClusters/EA-APAC-AKS-pd-ADOAGENTS",
+            "/subscriptions/38925a2b-8637-4420-81e2-f00187e9eaba/resourceGroups/EU-AMER-RG-pd-ADOAGENTS/providers/Microsoft.ContainerService/managedClusters/EU-AMER-AKS-pd-ADOAGENTS",
+            "/subscriptions/84e1505e-a464-4687-97c7-5bde5e5293f0/resourceGroups/WE-EMEA-RG-drp-ADOAGENTS/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-drp-ADOAGENTS",
+            "/subscriptions/bffa56c8-c97c-417d-889b-a356f8157c5a/resourceGroups/WE-EMEA-RG-dev-MS/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-dev-MS",
+            "/subscriptions/2cf511a3-15e2-489c-bd37-5d60386d8e40/resourceGroups/WE-EMEA-RG-qua-MS/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-qua-MS",
+            "/subscriptions/618af350-a06c-4bf1-8bf2-0b1d43562ada/resourceGroups/WE-EMEA-RG-prd-MS/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-prd-MS",
+            "/subscriptions/b75b1b76-8810-4040-a339-2ecf3cdf90ed/resourceGroups/WE-EMEA-RG-qua-PERFCNTR/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-qua-PERFCNTR",
+            "/subscriptions/78ae4405-19c8-45f8-870f-21673a1d798d/resourceGroups/NE-EMEA-RG-npd-PERFCNTR/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-npd-PERFCNTR",
+            "/subscriptions/669de701-4936-4838-8249-d599ee3da043/resourceGroups/WE-EMEA-RG-prd-PERFCNTR/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-prd-PERFCNTR",
+            "/subscriptions/2764023b-842a-4aa8-bf2d-efd6cb5556e1/resourceGroups/EA-APAC-RG-prd-WEHOMEHK/providers/Microsoft.ContainerService/managedClusters/EA-APAC-AKS-prd-WEHOMEHK",
+            "/subscriptions/cad580ab-505c-43ad-8e13-bd928de48031/resourceGroups/EA-APAC-RG-UAT-WEHOME/providers/Microsoft.ContainerService/managedClusters/EA-APAC-AKS-UAT-WEHOME",
+            "/subscriptions/16358352-47bb-47f0-842c-fcb9ffcedf28/resourceGroups/NE-EMEA-RG-prd-netauto/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-prd-netauto",
+            "/subscriptions/31eb9f6f-0bb8-4700-a141-6d5000b893ca/resourceGroups/WE-EMEA-RG-prd-NGLORA/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-prd-NGLORA",
+            "/subscriptions/d98e2de7-919a-4014-b54d-6055b3e6f354/resourceGroups/WE-EMEA-RG-qwlaaks-wla/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-qwlaaks-wla",
+            "/subscriptions/9a8062dd-1906-477a-9503-5fb418928bc7/resourceGroups/WE-EMEA-RG-npd-Confluen/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-npd-Confluen",
+            "/subscriptions/af5e9f7e-492b-4182-ae26-73547b7a9ae8/resourceGroups/WE-EMEA-RG-prd-Confluen/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-prd-Confluen",
+            "/subscriptions/d58387d7-06d4-4623-b28c-9274b7c6d6f1/resourceGroups/NE-EMEA-RG-dev-CONSUMER/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-dev-CONSUMER",
+            "/subscriptions/d58387d7-06d4-4623-b28c-9274b7c6d6f1/resourceGroups/NE-EMEA-RG-UAT-CONSUMER/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-UAT-CONSUMER",
+            "/subscriptions/24e141f7-a1e4-4044-8993-db04326f81b9/resourceGroups/WE-EMEA-RG-prd-DEVOPST/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-prd-DEVOPST",
+            "/subscriptions/81bbd98e-619b-4e74-92e9-3a6e4585ba3c/resourceGroups/NE-EMEA-RG-dev-SOFTFACT/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-dev-SOFTFACT",
+            "/subscriptions/6bd3b2ba-3bf1-4b19-bfed-55c6a6de1482/resourceGroups/NE-EMEA-RG-prd-SOFTFACT/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-prd-SOFTFACT",
+            "/subscriptions/744c6e4f-1229-4b45-a710-a52baaa89493/resourceGroups/WE-EMEA-RG-npd-SQ/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-npd-SQ",
+            "/subscriptions/3dd2c465-a82a-46fc-b38c-91dd05a58972/resourceGroups/WE-EMEA-RG-pd-SUZANNE/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-pd-SUZANNE",
+            "/subscriptions/294956c9-6690-4cb5-8bea-f1dfe70b1d5a/resourceGroups/WE-EMEA-RG-dev-SUZANNE/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-dev-SUZANNE",
+            "/subscriptions/962e4f4c-0c3e-4e08-8cf3-1c52e1ad3e32/resourceGroups/NE-EMEA-RG-dev-BDMP/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-dev-BDMP",
+            "/subscriptions/962e4f4c-0c3e-4e08-8cf3-1c52e1ad3e32/resourceGroups/NE-EMEA-RG-qua-BDMP/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-qua-BDMP",
+            "/subscriptions/962e4f4c-0c3e-4e08-8cf3-1c52e1ad3e32/resourceGroups/NE-EMEA-RG-ppd-BDMP/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-ppd-BDMP",
+            "/subscriptions/cc215a8c-c536-46ca-9248-7dbbd7b8cf7e/resourceGroups/NE-EMEA-RG-prd-BDMP/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-prd-BDMP",
+            "/subscriptions/2b79c9cc-f341-4f0b-a9d7-57da8a842221/resourceGroups/NE-EMEA-RG-prd-EUDEVOPS/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-prd-EUDEVOPS",
+            "/subscriptions/5870d9c2-4313-4670-804f-690c27dd362c/resourceGroups/NE-EMEA-RG-dev-FORMCNTR/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-dev-FORMCNTR",
+            "/subscriptions/a3079a73-4024-41ad-8d09-8bf3ef9aa9e6/resourceGroups/WE-EMEA-RG-ppd-FORMCNTR/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-ppd-FORMCNTR",
+            "/subscriptions/1753c29b-924f-4860-bd54-5ba7c2492ed3/resourceGroups/WE-EMEA-RG-prd-FORMCNTR/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-prd-FORMCNTR",
+            "/subscriptions/80a798ea-2db2-4457-bab7-42e48fbadc00/resourceGroups/NE-EMEA-RG-qua-FORMCNTR/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-qua-FORMCNTR",
+            "/subscriptions/4107e77f-ae78-4f22-8d4f-702309444ad3/resourceGroups/WE-EMEA-RG-npd-Smartff/providers/Microsoft.ContainerService/managedClusters/WE-EMEA-AKS-npd-Smartff",
+            "/subscriptions/56d337ce-f5a5-4e66-bcea-9ed2f036f248/resourceGroups/ne-emea-rg-ppd-consumer/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-ppd-CONSUMER",
+            "/subscriptions/56d337ce-f5a5-4e66-bcea-9ed2f036f248/resourceGroups/NE-EMEA-RG-prd-CONSUMER/providers/Microsoft.ContainerService/managedClusters/NE-EMEA-AKS-prd-CONSUMER"
           ]
         }
       ],
@@ -406,7 +451,8 @@
             "faef68a0-cdf2-44c0-8eb8-f3cdebffef3e",
             "f0bfee9e-2a83-4184-bbce-b570751ce8f6",
             "4e235881-cb2c-4a1e-9a2d-0516ec000c9d",
-            "926501fc-7a9a-4154-9f3c-f3310714a3f2"
+            "926501fc-7a9a-4154-9f3c-f3310714a3f2",
+            "78c7eb66-aebe-4bcb-a73e-74918d830ca1"
           ]
         }
       ],
@@ -506,7 +552,7 @@
           "Values": [
             "/subscriptions/67b49d2e-c5b7-4988-a379-0d5dc5dfdb05/resourceGroups/rg-dp-aks-corebe-prelive/providers/Microsoft.ContainerService/managedClusters/dp-corebe-prelive-aks",
             "/subscriptions/87043035-79c8-4473-8038-baf2ea03af22/resourcegroups/rg-dp-aks-corebe-approval/providers/Microsoft.ContainerService/managedClusters/dp-corebe-approval-aks",
-            "/subscriptions/b4b0cbab-64dc-42bc-9d95-ea7c8d0cf188/resourcegroups/gangams-aks-log-scale-neu/providers/Microsoft.ContainerService/managedClusters/gangams-aks-log-scale-neu",
+            "/subscriptions/b4b0cbab-64dc-42bc-9d95-ea7c8d0cf188/resourceGroups/gangams-aks-log-scale-neu/providers/Microsoft.ContainerService/managedClusters/gangams-aks-log-scale-neu",
             "/subscriptions/f0623b21-1f8d-4b92-a855-ef470558bf28/resourceGroups/rg-idm-dev3-aks001/providers/Microsoft.ContainerService/managedClusters/aks-idm-dev3-common001",
             "/subscriptions/df278ee1-c9cb-4422-b846-6eb5f9e91016/resourceGroups/rg-us-lower-kmr-test/providers/Microsoft.ContainerService/managedClusters/aks-us-lower-kmr-test",
             "/subscriptions/51c57a84-65a0-49ff-86f9-4b3e459e3063/resourceGroups/rg-us-preprod-kmr/providers/Microsoft.ContainerService/managedClusters/aks-us-preprod-kmr",
@@ -561,7 +607,7 @@
           "Operator": "equals",
           "Values": [
             "/subscriptions/9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb/resourceGroups/ci-logs-prod-aks/providers/Microsoft.ContainerService/managedClusters/ci-logs-prod-aks-high-log-scale-eus",
-            "/subscriptions/1147988c-8516-4b4c-8b61-7be5c39c9e17/resourceGroups/az-phiapp-prod-01-esco-prod-westus-rg-01/providers/Microsoft.ContainerService/managedClusters/esco-aksphi-prod-westus-cluster-01"
+            "/subscriptions/1147988c-8516-4b4c-8b61-7be5c39c9e17/resourcegroups/az-phiapp-prod-01-esco-prod-westus-rg-01/providers/microsoft.containerservice/managedclusters/esco-aksphi-prod-westus-cluster-01"
           ]
         }
       ],
@@ -623,18 +669,6 @@
           "Operator": "equals",
           "Values": [
             "eastus"
-          ]
-        }
-      ],
-      "Value": "2.5Gi"
-    },
-    {
-      "Matchers": [
-        {
-          "Field": "subscriptionID",
-          "Operator": "equals",
-          "Values": [
-            "54659c0d-c017-4709-ae74-51877a5bce2a"
           ]
         }
       ],

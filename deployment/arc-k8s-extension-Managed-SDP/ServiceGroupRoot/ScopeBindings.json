@@ -1,0 +1,31 @@
+{
+  "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",
+  "contentVersion": "0.0.0.1",
+  "scopeBindings": [
+    {
+      "scopeTagName": "Stable",
+      "bindings": [
+        {
+          "find": "__RELEASE_STAGE__",
+          "replaceWith": "$config(releaseStage)"
+        },
+        {
+          "find": "__ACR_NAME__",
+          "replaceWith": "$config(acrName)"
+        },
+        {
+          "find": "__REPO_TYPE__",
+          "replaceWith": "$config(repoType)"
+        },
+        {
+          "find": "__CHART_VERSION__",
+          "replaceWith": "$config(chartVersion)"
+        },
+        {
+          "find": "__MANAGED_IDENTITY__",
+          "replaceWith": "$config(managedIdentity)"
+        }
+      ]
+    }
+  ]
+}

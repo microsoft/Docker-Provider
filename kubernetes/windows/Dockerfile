@@ -40,7 +40,7 @@ RUN refreshenv \
 && gem install tomlrb -v 2.0.1 \
 && gem install gyoku -v 1.3.1 \
 && gem install ipaddress -v 0.8.3 \
-&& gem install jwt -v 2.7.1 \
+&& gem install jwt -v 3.2.0 \
 && gem sources --clear-all
 
 # Remove gem cache and chocolatey
@@ -104,7 +104,7 @@ COPY ./amalogswindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluen
 COPY ./amalogswindows/ruby/ /etc/fluent/plugin/
 
 # default value will be overwritten by pipeline
-ARG IMAGE_TAG=win-3.3.0
+ARG IMAGE_TAG=win-3.4.0
 ENV AGENT_VERSION ${IMAGE_TAG}
 
 ENV OS_TYPE "windows"

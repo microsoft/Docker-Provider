@@ -3,7 +3,11 @@ trigger:
   branches:
     include:
     - ci_prod
+    - auto/upgrade-telegraf-*
+    - auto/upgrade-go-*
+    - dependabot/*
 pr:
+  autoCancel: true
   branches:
     include:
     - ci_prod
@@ -12,6 +16,7 @@ variables:
   subscription: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
   containerRegistry: 'containerinsightsprod'
   repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/containerinsights/cidev'
+  GOLANG_BASE_IMAGE: 'mcr.microsoft.com/oss/go/microsoft/golang:1.26.4'
   IS_PR: $[eq(variables['Build.Reason'], 'PullRequest')]
   IS_MAIN_BRANCH: $[eq(variables['Build.SourceBranchName'], 'ci_prod')]
   IS_RELEASE: $[ne(variables['TELEMETRY_TAG'], '')]
@@ -88,12 +93,27 @@ extends:
             echo "authAKVName is $AUTH_AKV_NAME"
             echo "authCertName is $AUTH_CERT_NAME"
             echo "authSignCertName is $AUTH_SIGN_CERT_NAME"
-            cd $(Build.SourcesDirectory)/deployment/mergebranch-multiarch-agent-deployment/ServiceGroupRoot/Scripts
+            cd $(Build.SourcesDirectory)/deployment/mergebranch-multiarch-agent-deployment-Managed-SDP/ServiceGroupRoot/Scripts
             tar -czvf ../artifacts.tar.gz pushAgentToAcr.sh
             cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension/ServiceGroupRoot/Scripts
-            tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ pushChartToAcr.sh
+            tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ ../../../../charts/azuremonitor-containerinsights/ pushChartToAcr.sh
+            cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension-Managed-SDP/ServiceGroupRoot/Scripts
+            tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ ../../../../charts/azuremonitor-containerinsights/ pushChartToAcr.sh
             cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension-release-v2/ServiceGroupRoot/Scripts
             tar -czvf ../artifacts.tar.gz arcExtensionRelease.sh
+            cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension-release-v2-Managed-SDP/ServiceGroupRoot/Scripts
+            tar -czvf ../artifacts.tar.gz arcExtensionRelease.sh
+            # Stamp a unique Ev2 artifacts version per build. Ev2 dedups artifact
+            # registration on this versionFile; a static buildver.txt makes Ev2 skip
+            # uploading new artifacts ("already registered"), freezing the published
+            # chart at whatever was first registered. Writing $(Build.BuildNumber)
+            # forces fresh registration on every build.
+            echo $(Build.BuildNumber) > $(Build.SourcesDirectory)/deployment/mergebranch-multiarch-agent-deployment/ServiceGroupRoot/buildver.txt
+            echo $(Build.BuildNumber) > $(Build.SourcesDirectory)/deployment/mergebranch-multiarch-agent-deployment-Managed-SDP/ServiceGroupRoot/buildver.txt
+            echo $(Build.BuildNumber) > $(Build.SourcesDirectory)/deployment/arc-k8s-extension/ServiceGroupRoot/buildver.txt
+            echo $(Build.BuildNumber) > $(Build.SourcesDirectory)/deployment/arc-k8s-extension-Managed-SDP/ServiceGroupRoot/buildver.txt
+            echo $(Build.BuildNumber) > $(Build.SourcesDirectory)/deployment/arc-k8s-extension-release-v2/ServiceGroupRoot/buildver.txt
+            echo $(Build.BuildNumber) > $(Build.SourcesDirectory)/deployment/arc-k8s-extension-release-v2-Managed-SDP/ServiceGroupRoot/buildver.txt
             windowsAMAUrl=""
             if [ -z "$WINDOWS_AMA_URL" ]
               then
@@ -998,8 +1018,7 @@ extends:
           imageRepository: $(ImageRepositoryOverride)
           environment: 'CI-Agent-NetworkFlowLogs'
           azureSubscription: 'ContainerInsights_Build_Subscription_CI'
-          # TODO: Use OmsAgent.retinaFlowLogsEnabled=true once we use the merged chart
-          additionalOverrides: 'OmsAgent.isRetinaFlowLogsEnabled=true'
+          additionalOverrides: 'OmsAgent.retinaFlowLogsEnabled=true'
 
       # Cluster: ci-logs-prod-aks-networkflowlogs — Run E2E Tests
       - template: /.pipelines/e2e-test-templates/test-ci-image-in-aks-cluster.yml@self
@@ -1049,3 +1068,19 @@ extends:
           imageRepository: $(ImageRepositoryOverride)
           environment: 'CI-Agent-Dev-Aks-All-Nodes'
           azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+
+      # Cluster: ci-logs-dev-aks-all-nodes — Run E2E Tests
+      # PerNodeLogCoverage=true enables the per-node ContainerLogV2 ingestion
+      # check; this cluster has a log generator deployed on every node so
+      # every node is expected to ship logs.
+      - template: /.pipelines/e2e-test-templates/test-ci-image-in-aks-cluster.yml@self
+        parameters:
+          clusterName: 'ci-logs-dev-aks-all-nodes'
+          resourceGroup: 'ci-logs-dev-aks-eastus'
+          azureSubscription: 'ContainerInsights_Build_Subscription_CI'
+          environmentName: 'CI-Agent-Dev-Aks-All-Nodes'
+          dependsOnDeployJob: 'Deploy_AmaLogs_ci_logs_dev_aks_all_nodes'
+          azureClientId: $(AllNodesClientId)
+          azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
+          teamsWebhookUri: $(TeamsWebhookUri)
+          additionalTestParams: 'PerNodeLogCoverage=true'

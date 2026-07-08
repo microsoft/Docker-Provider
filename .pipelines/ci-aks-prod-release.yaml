@@ -45,6 +45,8 @@ variables:
   value: $(VAR_MANAGED_IDENTITY)
 - name: OverrideTag
   value: $(VAR_OVERRIDE_TAG)
+- name: configurationOverrides
+  value: '{"ConfigurationSpecification":{"Settings":{"agentImageTagSuffix":"$(AgentImageTagSuffix)","cdpxLinuxTag":"$(CDPXLinuxTag)","cdpxWindowsTag":"$(CDPXWindowsTag)","overrideTag":"$(OverrideTag)"}}}'
 - name: ServiceTreeGuid
   value: $(VAR_SERVICE_TREE_GUID)
 - name: UserAssignedIdentityClientId
@@ -78,6 +80,7 @@ extends:
         name: Azure-Pipelines-CI-Test-EO
         image: ci-1es-managed-windows-2022
         os: windows
+    serviceTreeId: $(ServiceTreeGuid)
     customBuildTags:
     - ES365AIMigrationTooling
     stages:
@@ -272,8 +275,6 @@ extends:
         variables:
         - name: ev2Environment
           value: Production
-        - name: Ev2MonintoringUrl
-          value: https://azureservicedeploy.msft.net/api/monitorrollout
         - name: OneESPT.JobType
           value: releaseJob
           readonly: true
@@ -287,7 +288,7 @@ extends:
           value: windows
           readonly: true
         - name: OneESPT.Workflow
-          value: ev2-classic
+          value: ev2-managed-sdp
           readonly: true
         - name: runCodesignValidationInjection
           value: false
@@ -432,24 +433,24 @@ extends:
 
             workingDirectory: $(Pipeline.Workspace)/ev2Artifact/windows-drop/windows
             failOnStderr: true
-        - task: vsrm-ev2.vss-services-ev2.adm-release-task.ExpressV2Internal@1
+        - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+          displayName: Ev2 Managed SDP - Deploy
           inputs:
-            UseServerMonitorTask: true
             EndpointProviderType: ApprovalService
+            TaskAction: RegisterAndRollout
+            UseServerMonitorTask: true
+            SkipRegistrationIfExists: True
+            ForceRegistration: true
             ApprovalServiceEnvironment: $(ev2Environment)
-            ServiceRootLocation: LinkedArtifact
-            RolloutSpecType: RSPath
-            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment/ServiceGroupRoot
-            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment/ServiceGroupRoot/RolloutSpecs/RolloutSpecs.json
-            OutputRolloutId: RolloutId
-            OutputServiceGroupName: ServiceGroupName
-            OutputRolloutStatus: RolloutStatus
-            InlineDynamicBindingOverrides: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",     "contentVersion": "0.0.0.1",     "scopeBindings": [                {             "scopeTagName": "Global",             "bindings": [                         {                     "find": "__ACR_NAME__",                     "replaceWith": "$(ACRName)"                 },                             {                     "find": "__AGENT_RELEASE__",                     "replaceWith": "$(AgentRelease)"                 },                  {                     "find": "__AGENT_IMAGE_TAG_SUFFIX__",                     "replaceWith": "$(AgentImageTagSuffix)"                 },                 {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(ManagedIdentity)"                 },                  {                     "find": "__CDPX_LINUX_TAG__",                     "replaceWith": "$(CDPXLinuxTag)"                 },                 {                     "find": "__CDPX_WINDOWS_TAG__",                     "replaceWith": "$(CDPXWindowsTag)"                 },                 {                     "find": "__OVERRIDE_TAG__",                     "replaceWith": "$(OverrideTag)"                 }             ]         }                                                                                                                                                     ] }'
+            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment-Managed-SDP/ServiceGroupRoot
+            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/mergebranch-multiarch-agent-deployment-Managed-SDP/ServiceGroupRoot/RolloutSpec.json
+            StageMapName: Microsoft.Azure.SDP.Standard
+            Select: regions(*)
+            ConfigurationOverrides: $(configurationOverrides)
           env:
             ServiceTreeGuid: 3170cdd2-19f0-4027-912b-1027311691a2
           target:
             container: host
-          displayName: Ev2 Classic - Deploy
       - job: Ev2_rollout_ev2_monitoring
         variables:
         - name: OneESPT
@@ -462,7 +463,7 @@ extends:
           value: windows
           readonly: true
         - name: OneESPT.Workflow
-          value: ev2-classic
+          value: ev2-managed-sdp
           readonly: true
         - name: ev2Environment
           value: Production
@@ -489,13 +490,85 @@ extends:
     # =============================================================================
     - stage: Stage_3
       displayName: Deploy ama-logs to CI AKS Prod Clusters via Helm
-      dependsOn: Stage_2
-      condition: and(eq(dependencies.Stage_2.result, 'Succeeded'), eq(variables.IS_PR, false), eq(variables.IS_MAIN_BRANCH, true), ne(variables.AgentImageTagSuffix, ''))
+      # Stage_2 does not "complete" for ~24h because of the Ev2 SDP bake/monitoring
+      # window, but the ama-logs images are published to MCR early in that stage's
+      # rollout. Instead of waiting on Stage_2 to finish, run Stage_3 independently
+      # (dependsOn: []) and gate the actual deploys on a job that polls MCR until the
+      # new image tags are available. This mirrors the ama-metrics release pipeline.
+      dependsOn: []
+      condition: and(eq(variables.IS_PR, false), eq(variables.IS_MAIN_BRANCH, true), ne(variables.AgentImageTagSuffix, ''))
       pool:
         name: Azure-Pipelines-CI-Test-EO
         image: ci-1es-managed-ubuntu-2204
         os: linux
       jobs:
+      # Poll MCR until the ama-logs Linux and Windows images for this build's tag are
+      # published (by Stage_2's Ev2 rollout). All cluster deploys below wait on this.
+      - job: WaitForMCRImages
+        displayName: 'Wait for ama-logs images on MCR'
+        timeoutInMinutes: 1500
+        variables:
+        - name: OneESPT
+          value: true
+          readonly: true
+        - name: OneESPT.BuildType
+          value: Official
+          readonly: true
+        - name: OneESPT.OS
+          value: linux
+          readonly: true
+        - name: skipComponentGovernanceDetection
+          value: true
+        - name: Codeql.SkipTaskAutoInjection
+          value: true
+        steps:
+        - checkout: none
+        - task: Bash@3
+          displayName: 'Check ama-logs images are published to MCR'
+          target:
+            container: host
+          env:
+            LINUX_TAG: '$(AgentImageTagSuffix)'
+            WINDOWS_TAG: 'win-$(AgentImageTagSuffix)'
+            MCR_REGISTRY: 'mcr.microsoft.com'
+            PROD_MCR_AGENT_REPO: '/azuremonitor/containerinsights/ciprod'
+            # 1440 attempts * 60s = up to 24h, covering the Stage_2 rollout window.
+            MAX_RETRIES: 1440
+            SLEEP_INTERVAL: 60
+          inputs:
+            targetType: inline
+            script: |
+              set -uo pipefail
+
+              # Returns the HTTP status code for a tag's manifest on MCR.
+              # A 200 means the image tag exists. Querying the manifest directly
+              # (instead of grepping /tags/list) avoids substring false positives
+              # and pagination issues on the large ciprod repo.
+              check_tag() {
+                local tag="$1"
+                curl -sSL -o /dev/null -w "%{http_code}" \
+                  -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.v2+json" \
+                  "https://${MCR_REGISTRY}/v2${PROD_MCR_AGENT_REPO}/manifests/${tag}" || echo "000"
+              }
+
+              echo "Waiting for ama-logs images to be published to MCR:"
+              echo "  Linux:   ${MCR_REGISTRY}${PROD_MCR_AGENT_REPO}:${LINUX_TAG}"
+              echo "  Windows: ${MCR_REGISTRY}${PROD_MCR_AGENT_REPO}:${WINDOWS_TAG}"
+              echo "  MAX_RETRIES=${MAX_RETRIES} SLEEP_INTERVAL=${SLEEP_INTERVAL}s"
+
+              for i in $(seq 1 "$MAX_RETRIES"); do
+                linux_code=$(check_tag "$LINUX_TAG")
+                windows_code=$(check_tag "$WINDOWS_TAG")
+                echo "Attempt ${i}/${MAX_RETRIES}: linux=${linux_code} windows=${windows_code}"
+                if [ "$linux_code" = "200" ] && [ "$windows_code" = "200" ]; then
+                  echo "Both ama-logs images are published to MCR."
+                  exit 0
+                fi
+                sleep "$SLEEP_INTERVAL"
+              done
+
+              echo "##[error]ama-logs images not published to MCR within $((MAX_RETRIES * SLEEP_INTERVAL / 60)) minutes."
+              exit 1
       # Monitoring-Model-Cluster-WCUS
       - template: .pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
         parameters:
@@ -507,6 +580,7 @@ extends:
           amalogsLinuxImage: '$(AgentImageTagSuffix)'
           amalogsWindowsImage: 'win-$(AgentImageTagSuffix)'
           environment: 'CI-Deploy-To-Prod-Cluster-1'
+          dependsOn: ['WaitForMCRImages']
       # Monitoring-Model-Cluster-WEU
       - template: .pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
         parameters:
@@ -518,3 +592,4 @@ extends:
           amalogsLinuxImage: '$(AgentImageTagSuffix)'
           amalogsWindowsImage: 'win-$(AgentImageTagSuffix)'
           environment: 'CI-Deploy-To-Prod-Cluster-2'
+          dependsOn: ['WaitForMCRImages']

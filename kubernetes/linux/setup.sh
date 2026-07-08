@@ -63,7 +63,7 @@ sudo tdnf install jq-1.7.1-1.azl3 -y
 #used to setcaps for ruby process to read /proc/env
 sudo tdnf install libcap -y
 
-sudo tdnf install telegraf-agent-1.38.2 -y
+sudo tdnf install telegraf-agent-1.39.1 -y
 telegraf_version=$(sudo tdnf list installed | grep telegraf | awk '{print $2}')
 echo "telegraf $telegraf_version" >> packages_version.txt
 mv /usr/bin/telegraf-agent /opt/telegraf
@@ -74,7 +74,7 @@ docker_cimprov_version=$(sudo tdnf list installed | grep docker-cimprov | awk '{
 echo "DOCKER_CIMPROV_VERSION=$docker_cimprov_version" >> packages_version.txt
 
 #install fluent-bit
-sudo tdnf install azcu-fluent-bit-4.0.14 -y
+sudo tdnf install azcu-fluent-bit-5.0.4 -y
 echo "$(fluent-bit --version)" >> packages_version.txt
 
 # Retry wrapper for gem install commands.
@@ -109,7 +109,7 @@ fluentd --setup ./fluent
 gem_install_with_retry gyoku iso8601 bigdecimal --no-doc
 gem_install_with_retry tomlrb -v "2.0.1" --no-document
 gem_install_with_retry ipaddress --no-document
-gem_install_with_retry jwt -v "2.7.1" --no-document
+gem_install_with_retry jwt -v "3.2.0" --no-document
 gem_install_with_retry racc --no-document
 
 # Reinstall zlib gem to fix CVE-2026-27820
@@ -117,6 +117,15 @@ gem_install_with_retry zlib -v "3.2.3" --no-document
 # uninstall old zlib gem
 rm /usr/lib/ruby/gems/3.3.0/specifications/default/zlib-3.1.1.gemspec
 rm -rf /usr/lib/ruby/gems/3.3.0/gems/zlib-3.1.1
+
+# Reinstall erb gem to fix CVE-2026-41316.
+# NOTE: when ruby is upgraded, check the default bundled erb version
+# (`ruby -rerb -e 'p ERB::VERSION'`). If it's 4.0.3.1 or higher, remove
+# this block and let the ruby package provide erb directly.
+gem_install_with_retry erb -v "4.0.3.1" --no-document
+# uninstall old erb default gem
+rm -f /usr/lib/ruby/gems/3.3.0/specifications/default/erb-4.0.3.gemspec
+rm -rf /usr/lib/ruby/gems/3.3.0/gems/erb-4.0.3
 
 rm -f $TMPDIR/docker-cimprov*.sh
 rm -f $TMPDIR/mdsd.xml

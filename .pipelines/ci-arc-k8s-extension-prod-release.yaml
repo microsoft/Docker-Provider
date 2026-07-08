@@ -29,6 +29,12 @@ variables:
   value: ''
 - name: SPN_TENANT_ID
   value: $(VAR_SPN_TENANT_ID)
+- name: REGISTER_REGIONS_BATCH
+  value: ''
+- name: RELEASE_STAGE_NAME
+  value: 'Stable'
+- name: configurationOverrides
+  value: '{"ConfigurationSpecification":{"Settings":{"adminSubscriptionId":"$(ADMIN_SUBSCRIPTION_ID)","chartVersion":"$(CHART_VERSION)","isCustomerHidden":"$(IS_CUSTOMER_HIDDEN)","registerRegionsCanary":"$(REGISTER_REGIONS_CANARY)","releaseTrainsPreviewPath":"$(RELEASE_TRAINS_PREVIEW_PATH)","releaseTrainsStablePath":"$(RELEASE_TRAINS_STABLE_PATH)","registerRegionsBatch":"$(REGISTER_REGIONS_BATCH)","resourceAudience":"$(RESOURCE_AUDIENCE)","spnClientId":"$(SPN_CLIENT_ID)","spnSecret":"$(SPN_SECRET)","spnTenantId":"$(SPN_TENANT_ID)","managedIdentity":"$(MANAGED_IDENTITY)","releaseStage":"$(RELEASE_STAGE_NAME)","acrName":"$(ACRName)","repoType":"$(RepoType)"}}}'
 resources:
   containers: []
   pipelines:
@@ -43,6 +49,8 @@ resources:
 extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
   parameters:
+    settings:
+      networkIsolationPolicy: Permissive,CFSClean
     pool:
       name: Azure-Pipelines-CI-Test-EO
       image: ci-1es-managed-windows-2022
@@ -55,8 +63,8 @@ extends:
     customBuildTags:
     - ES365AIMigrationTooling
     stages:
-    - stage: Stage_1
-      displayName: ci-arc-k8s-extension-all-regions-prod-release(MCR)
+    - stage: Stage_Canary_MCR
+      displayName: Canary MCR
       pool:
         name: Azure-Pipelines-CI-Test-EO
         image: ci-1es-managed-windows-2022
@@ -142,6 +150,8 @@ extends:
         variables:
         - name: ev2Environment
           value: Production
+        - name: RELEASE_STAGE_NAME
+          value: Canary
         - name: Ev2MonintoringUrl
           value: https://azureservicedeploy.msft.net/api/monitorrollout
         - name: OneESPT.JobType
@@ -271,24 +281,568 @@ extends:
             repository: none
           target:
             container: host
-        - task: vsrm-ev2.vss-services-ev2.adm-release-task.ExpressV2Internal@1
+        - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+          displayName: Ev2 Managed SDP - Chart Push
           inputs:
-            UseServerMonitorTask: true
             EndpointProviderType: ApprovalService
+            TaskAction: RegisterAndRollout
+            UseServerMonitorTask: true
+            SkipRegistrationIfExists: True
+            ForceRegistration: true
             ApprovalServiceEnvironment: $(ev2Environment)
-            ServiceRootLocation: LinkedArtifact
-            RolloutSpecType: RSPath
-            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension/ServiceGroupRoot
-            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension/ServiceGroupRoot/RolloutSpecs/Public.Pilot.RolloutSpec.json
-            OutputRolloutId: RolloutId
-            OutputServiceGroupName: ServiceGroupName
-            OutputRolloutStatus: RolloutStatus
-            InlineDynamicBindingOverrides: '{   "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",   "contentVersion": "0.0.0.1",   "scopeBindings": [     {       "scopeTagName": "Pilot",       "bindings": [         {           "find": "__ACR_NAME__",           "replaceWith": "$(ACRName)"         },         {           "find": "__REPO_TYPE__",           "replaceWith": "$(RepoType)"         },         {           "find": "__CHART_VERSION__",           "replaceWith": "$(CHART_VERSION)"         },                 {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(MANAGED_IDENTITY)"                 }       ]     }   ] }'
+            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-Managed-SDP/ServiceGroupRoot
+            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-Managed-SDP/ServiceGroupRoot/RolloutSpec.json
+            StageMapName: Microsoft.Azure.SDP.Standard
+            Select: regions(*)
+            ConfigurationOverrides: $(configurationOverrides)
           env:
             ServiceTreeGuid: 3170cdd2-19f0-4027-912b-1027311691a2
           target:
             container: host
-          displayName: Ev2 Classic - Deploy
+      - job: Ev2_rollout_ev2_monitoring
+        variables:
+        - name: OneESPT
+          value: true
+          readonly: true
+        - name: OneESPT.BuildType
+          value: Official
+          readonly: true
+        - name: OneESPT.OS
+          value: windows
+          readonly: true
+        - name: OneESPT.Workflow
+          value: ev2-classic
+          readonly: true
+        - name: ev2Environment
+          value: Production
+        - name: Ev2MonintoringUrl
+          value: 'https://azureservicedeploy.msft.net/api/monitorrollout'
+        displayName: Agent Job - Ev2 Ev2 Monitoring
+        pool:
+          name: server
+        dependsOn:
+        - Ev2_rollout_ev2_rollout
+        timeoutInMinutes: '0'
+        steps:
+        - task: vsrm-ev2.vss-server-ev2.1950188C-A844-4040-A014-A326BC8332D3.Ev2Agentless@1
+          displayName: Ev2 - Monitoring
+          inputs:
+            Ev2MonintoringUrl: $(Ev2MonintoringUrl)
+    - stage: Stage_Canary_Regions
+      displayName: Canary Regions Release
+      trigger: manual
+      pool:
+        name: Azure-Pipelines-CI-Test-EO
+        image: ci-1es-managed-windows-2022
+        os: windows
+      jobs:
+      - job: releaseGating
+        displayName: Release Gating
+        variables:
+        - name: OneESPT
+          value: true
+          readonly: true
+        - name: OneESPT.BuildType
+          value: Official
+          readonly: true
+        - name: OneESPT.OS
+          value: windows
+          readonly: true
+        - name: runCodesignValidationInjection
+          value: false
+        - name: Codeql.SkipTaskAutoInjection
+          value: true
+        - name: skipComponentGovernanceDetection
+          value: true
+        - name: skipNugetSecurityAnalysis
+          value: true
+        steps:
+        - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+          condition: false
+          inputs:
+            repository: none
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: Branch Validation (1ES PT)
+          continueOnError: true
+          target:
+            container: host
+          env:
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+            SYSTEM_COLLECTIONURI: $(System.CollectionUri)
+            SYSTEM_TEAMPROJECT: $(System.TeamProject)
+            SYSTEM_TEAMPROJECTID: $(System.TeamProjectId)
+            BUILD_REPOSITORY_URI: $(Build.Repository.Uri)
+            BUILD_SOURCEBRANCH: $(Build.SourceBranch)
+            BUILD_REPOSITORY_NAME: $(Build.Repository.Name)
+            BUILD_REPOSITORY_ID: $(Build.Repository.ID)
+            BUILD_REPOSITORYPROVIDER: $(Build.Repository.Provider)
+            BUILD_SOURCEVERSION: $(Build.SourceVersion)
+            TASK_MODE: audit
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: release_gating.py
+      - job: approval
+        variables:
+        - name: OneESPT
+          value: true
+          readonly: true
+        - name: OneESPT.BuildType
+          value: Official
+          readonly: true
+        - name: OneESPT.OS
+          value: windows
+          readonly: true
+        - name: ev2Environment
+          value: Production
+        - name: Ev2MonintoringUrl
+          value: 'https://azureservicedeploy.msft.net/api/monitorrollout'
+        displayName: Approval
+        pool:
+          name: server
+        timeoutInMinutes: 7200
+        dependsOn:
+        - releaseGating
+        steps:
+        - task: ApprovalTask@1
+          inputs:
+            environment: $(ev2Environment)
+            servicetreeguid: 3170cdd2-19f0-4027-912b-1027311691a2
+      - job: Ev2_rollout_ev2_rollout
+        displayName: Agent job - Ev2 Ev2 Rollout
+        timeoutInMinutes: '0'
+        condition: succeeded()
+        dependsOn:
+        - approval
+        variables:
+        - name: ev2Environment
+          value: Production
+        - name: RELEASE_STAGE_NAME
+          value: CanaryStable
+        - name: Ev2MonintoringUrl
+          value: https://azureservicedeploy.msft.net/api/monitorrollout
+        - name: OneESPT.JobType
+          value: releaseJob
+          readonly: true
+        - name: OneESPT
+          value: true
+          readonly: true
+        - name: OneESPT.BuildType
+          value: Official
+          readonly: true
+        - name: OneESPT.OS
+          value: windows
+          readonly: true
+        - name: OneESPT.Workflow
+          value: ev2-classic
+          readonly: true
+        - name: runCodesignValidationInjection
+          value: false
+        - name: Codeql.SkipTaskAutoInjection
+          value: true
+        - name: skipComponentGovernanceDetection
+          value: true
+        - name: skipNugetSecurityAnalysis
+          value: true
+        - name: OneES_targetName
+          value: host
+        steps:
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: Validate Hosted Pool Information (1ES PT)
+          continueOnError: false
+          target:
+            container: host
+          env:
+            HOST_ARCHITECTURE: amd64
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+            SYSTEM_DEFINITIONID: $(System.DefinitionId)
+            SYSTEM_COLLECTIONURI: $(System.CollectionUri)
+            SYSTEM_TEAMPROJECT: $(System.TeamProject)
+            SYSTEM_TEAMPROJECTID: $(System.TeamProjectId)
+            BUILD_REPOSITORY_ID: $(Build.Repository.ID)
+            BUILD_REPOSITORY_URI: $(Build.Repository.Uri)
+            PIPELINEGOVERNANCESTATUS_AUDITED: variables['PipelineGovernanceStatus_Audited']
+            PIPELINECLASSIFICATION_AUDITED: variables['PipelineClassification_Audited']
+            BUILD_REASON: $(Build.Reason)
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: validateHostedPool.ps1
+            arguments: -TargetName '' -StepTargets '' -StepsLength 0 -SkipStatelessValidation True -OS windows -IgnoreProductionPoolCheck  -IsOfficialTemplate -IsProductionReleasePipeline
+        - task: DownloadPipelineArtifact@2
+          displayName: ⏬ Pipeline Artifact Download
+          inputs:
+            buildType: specific
+            project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
+            definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
+            allowFailedBuilds: false
+            buildVersionToDownload: specific
+            pipelineId: $(resources.pipeline._ci-arc-k8s-extension-prod-release.runID)
+            pipeline: _ci-arc-k8s-extension-prod-release
+            targetPath: $(Pipeline.Workspace)/ev2Artifact
+          target:
+            container: host
+        - task: AzureArtifacts.drop-validator-task.drop-validator-task.DropValidatorTask@0
+          displayName: "\U0001F6E1 Validate SBoM Manifest (1ES PT)"
+          condition: succeeded()
+          continueOnError: False
+          timeoutInMinutes: 30
+          env:
+            SBOMVALIDATOR_TEMPIGNOREMISSING: true
+          inputs:
+            BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
+            OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
+            ValidateSignature: True
+            Verbosity: 'Verbose'
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: Post-SBoM Validation (1ES PT)
+          continueOnError: true
+          target:
+            container: host
+          condition: succeeded()
+          env:
+            OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: post_sbom_validation.py
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: Validate Source Build (1ES PT)
+          continueOnError: false
+          target:
+            container: host
+          env:
+            BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
+            IsProduction: True
+            OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: validate_source_build.py
+        - task: securedevelopmentteam.vss-secure-development-tools.build-task-codesignvalidation.CodeSign@1
+          displayName: "\U0001F6E1 Guardian: CodeSign Validation"
+          target:
+            container: host
+          condition: and(succeeded(), ne(variables['ONEES_ENFORCED_CODESIGNVALIDATION_ENABLED'], 'false'))
+          continueOnError: true
+          timeoutInMinutes: 10
+          inputs:
+            Path: $(Pipeline.Workspace)/ev2Artifact
+            MaxThreads: $(OneES_UsableProcessorCount)
+            FailIfNoTargetsFound: false
+            ExcludePassesFromLog: False
+            Targets: f|**\*.dll;f|**\*.exe;f|**\*.sys;f|**\*.ps1;f|**\*.psm1;f|**\*.ps1xml;f|**\*.psc1;f|**\*.psd1;f|**\*.cdxml;f|**\*.vbs;f|**\*.js;f|**\*.wsf;-|.gdn\**;
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: "\U0001F6E1 Guardian: Check CodeSign Validation Results (1ES PT)"
+          continueOnError: true
+          target:
+            container: host
+          condition: and(succeeded(), ne(variables['ONEES_ENFORCED_CODESIGNVALIDATION_ENABLED'], 'false'))
+          env:
+            OneES_PipelineWorkspace: $(Pipeline.Workspace)
+            OneES_DeleteCodeSignValidationResult: True
+            OneES_CustomPolicyFile: ''
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: check_csv_results.ps1
+        - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+          condition: false
+          inputs:
+            repository: none
+          target:
+            container: host
+        - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+          displayName: Ev2 Managed SDP - Deploy
+          inputs:
+            EndpointProviderType: ApprovalService
+            TaskAction: RegisterAndRollout
+            UseServerMonitorTask: true
+            SkipRegistrationIfExists: True
+            ForceRegistration: true
+            ApprovalServiceEnvironment: $(ev2Environment)
+            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2-Managed-SDP/ServiceGroupRoot
+            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2-Managed-SDP/ServiceGroupRoot/RolloutSpec.json
+            StageMapName: Microsoft.Azure.SDP.Standard
+            Select: regions(*)
+            ConfigurationOverrides: $(configurationOverrides)
+          env:
+            ServiceTreeGuid: 3170cdd2-19f0-4027-912b-1027311691a2
+          target:
+            container: host
+      - job: Ev2_rollout_ev2_monitoring
+        variables:
+        - name: OneESPT
+          value: true
+          readonly: true
+        - name: OneESPT.BuildType
+          value: Official
+          readonly: true
+        - name: OneESPT.OS
+          value: windows
+          readonly: true
+        - name: OneESPT.Workflow
+          value: ev2-classic
+          readonly: true
+        - name: ev2Environment
+          value: Production
+        - name: Ev2MonintoringUrl
+          value: 'https://azureservicedeploy.msft.net/api/monitorrollout'
+        displayName: Agent job - Ev2 Ev2 Monitoring
+        pool:
+          name: server
+        dependsOn:
+        - Ev2_rollout_ev2_rollout
+        timeoutInMinutes: '0'
+        steps:
+        - task: vsrm-ev2.vss-server-ev2.1950188C-A844-4040-A014-A326BC8332D3.Ev2Agentless@1
+          displayName: Ev2 - Monitoring
+          inputs:
+            Ev2MonintoringUrl: $(Ev2MonintoringUrl)
+    - stage: Wait_After_Canary
+      displayName: Wait after Canary Regions
+      dependsOn: Stage_Canary_Regions
+      jobs:
+      - job: WaitJob
+        displayName: Wait for Bake Time
+        timeoutInMinutes: 1600
+        pool: server
+        steps:
+        - task: Delay@1
+          inputs:
+            delayForMinutes: 1500
+    - stage: Stage_1
+      displayName: ci-arc-k8s-extension-all-regions-prod-release(MCR)
+      trigger: manual
+      pool:
+        name: Azure-Pipelines-CI-Test-EO
+        image: ci-1es-managed-windows-2022
+        os: windows
+      jobs:
+      - job: releaseGating
+        displayName: Release Gating
+        variables:
+        - name: OneESPT
+          value: true
+          readonly: true
+        - name: OneESPT.BuildType
+          value: Official
+          readonly: true
+        - name: OneESPT.OS
+          value: windows
+          readonly: true
+        - name: runCodesignValidationInjection
+          value: false
+        - name: Codeql.SkipTaskAutoInjection
+          value: true
+        - name: skipComponentGovernanceDetection
+          value: true
+        - name: skipNugetSecurityAnalysis
+          value: true
+        steps:
+        - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+          condition: false
+          inputs:
+            repository: none
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: Branch Validation (1ES PT)
+          continueOnError: true
+          target:
+            container: host
+          env:
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+            SYSTEM_COLLECTIONURI: $(System.CollectionUri)
+            SYSTEM_TEAMPROJECT: $(System.TeamProject)
+            SYSTEM_TEAMPROJECTID: $(System.TeamProjectId)
+            BUILD_REPOSITORY_URI: $(Build.Repository.Uri)
+            BUILD_SOURCEBRANCH: $(Build.SourceBranch)
+            BUILD_REPOSITORY_NAME: $(Build.Repository.Name)
+            BUILD_REPOSITORY_ID: $(Build.Repository.ID)
+            BUILD_REPOSITORYPROVIDER: $(Build.Repository.Provider)
+            BUILD_SOURCEVERSION: $(Build.SourceVersion)
+            TASK_MODE: audit
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: release_gating.py
+      - job: approval
+        variables:
+        - name: OneESPT
+          value: true
+          readonly: true
+        - name: OneESPT.BuildType
+          value: Official
+          readonly: true
+        - name: OneESPT.OS
+          value: windows
+          readonly: true
+        - name: ev2Environment
+          value: Production
+        - name: Ev2MonintoringUrl
+          value: 'https://azureservicedeploy.msft.net/api/monitorrollout'
+        displayName: Approval
+        pool:
+          name: server
+        timeoutInMinutes: 7200
+        dependsOn:
+        - releaseGating
+        steps:
+        - task: ApprovalTask@1
+          inputs:
+            environment: $(ev2Environment)
+            servicetreeguid: 3170cdd2-19f0-4027-912b-1027311691a2
+      - job: Ev2_rollout_ev2_rollout
+        displayName: Agent Job - Ev2 Ev2 Rollout
+        timeoutInMinutes: '0'
+        condition: succeeded()
+        dependsOn:
+        - approval
+        variables:
+        - name: ev2Environment
+          value: Production
+        - name: RELEASE_STAGE_NAME
+          value: Pilot
+        - name: Ev2MonintoringUrl
+          value: https://azureservicedeploy.msft.net/api/monitorrollout
+        - name: OneESPT.JobType
+          value: releaseJob
+          readonly: true
+        - name: OneESPT
+          value: true
+          readonly: true
+        - name: OneESPT.BuildType
+          value: Official
+          readonly: true
+        - name: OneESPT.OS
+          value: windows
+          readonly: true
+        - name: OneESPT.Workflow
+          value: ev2-classic
+          readonly: true
+        - name: runCodesignValidationInjection
+          value: false
+        - name: Codeql.SkipTaskAutoInjection
+          value: true
+        - name: skipComponentGovernanceDetection
+          value: true
+        - name: skipNugetSecurityAnalysis
+          value: true
+        - name: OneES_targetName
+          value: host
+        steps:
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: Validate Hosted Pool Information (1ES PT)
+          continueOnError: false
+          target:
+            container: host
+          env:
+            HOST_ARCHITECTURE: amd64
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+            SYSTEM_DEFINITIONID: $(System.DefinitionId)
+            SYSTEM_COLLECTIONURI: $(System.CollectionUri)
+            SYSTEM_TEAMPROJECT: $(System.TeamProject)
+            SYSTEM_TEAMPROJECTID: $(System.TeamProjectId)
+            BUILD_REPOSITORY_ID: $(Build.Repository.ID)
+            BUILD_REPOSITORY_URI: $(Build.Repository.Uri)
+            PIPELINEGOVERNANCESTATUS_AUDITED: variables['PipelineGovernanceStatus_Audited']
+            PIPELINECLASSIFICATION_AUDITED: variables['PipelineClassification_Audited']
+            BUILD_REASON: $(Build.Reason)
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: validateHostedPool.ps1
+            arguments: -TargetName '' -StepTargets '' -StepsLength 0 -SkipStatelessValidation True -OS windows -IgnoreProductionPoolCheck  -IsOfficialTemplate -IsProductionReleasePipeline
+        - task: DownloadPipelineArtifact@2
+          displayName: ⏬ Pipeline Artifact Download
+          inputs:
+            buildType: specific
+            project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
+            definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
+            allowFailedBuilds: false
+            buildVersionToDownload: specific
+            pipelineId: $(resources.pipeline._ci-arc-k8s-extension-prod-release.runID)
+            pipeline: _ci-arc-k8s-extension-prod-release
+            targetPath: $(Pipeline.Workspace)/ev2Artifact
+          target:
+            container: host
+        - task: AzureArtifacts.drop-validator-task.drop-validator-task.DropValidatorTask@0
+          displayName: "\U0001F6E1 Validate SBoM Manifest (1ES PT)"
+          condition: succeeded()
+          continueOnError: False
+          timeoutInMinutes: 30
+          env:
+            SBOMVALIDATOR_TEMPIGNOREMISSING: true
+          inputs:
+            BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
+            OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
+            ValidateSignature: True
+            Verbosity: 'Verbose'
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: Post-SBoM Validation (1ES PT)
+          continueOnError: true
+          target:
+            container: host
+          condition: succeeded()
+          env:
+            OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: post_sbom_validation.py
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: Validate Source Build (1ES PT)
+          continueOnError: false
+          target:
+            container: host
+          env:
+            BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
+            IsProduction: True
+            OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: validate_source_build.py
+        - task: securedevelopmentteam.vss-secure-development-tools.build-task-codesignvalidation.CodeSign@1
+          displayName: "\U0001F6E1 Guardian: CodeSign Validation"
+          target:
+            container: host
+          condition: and(succeeded(), ne(variables['ONEES_ENFORCED_CODESIGNVALIDATION_ENABLED'], 'false'))
+          continueOnError: true
+          timeoutInMinutes: 10
+          inputs:
+            Path: $(Pipeline.Workspace)/ev2Artifact
+            MaxThreads: $(OneES_UsableProcessorCount)
+            FailIfNoTargetsFound: false
+            ExcludePassesFromLog: False
+            Targets: f|**\*.dll;f|**\*.exe;f|**\*.sys;f|**\*.ps1;f|**\*.psm1;f|**\*.ps1xml;f|**\*.psc1;f|**\*.psd1;f|**\*.cdxml;f|**\*.vbs;f|**\*.js;f|**\*.wsf;-|.gdn\**;
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: "\U0001F6E1 Guardian: Check CodeSign Validation Results (1ES PT)"
+          continueOnError: true
+          target:
+            container: host
+          condition: and(succeeded(), ne(variables['ONEES_ENFORCED_CODESIGNVALIDATION_ENABLED'], 'false'))
+          env:
+            OneES_PipelineWorkspace: $(Pipeline.Workspace)
+            OneES_DeleteCodeSignValidationResult: True
+            OneES_CustomPolicyFile: ''
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: check_csv_results.ps1
+        - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+          condition: false
+          inputs:
+            repository: none
+          target:
+            container: host
+        - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+          displayName: Ev2 Managed SDP - Chart Push
+          inputs:
+            EndpointProviderType: ApprovalService
+            TaskAction: RegisterAndRollout
+            UseServerMonitorTask: true
+            SkipRegistrationIfExists: True
+            ForceRegistration: true
+            ApprovalServiceEnvironment: $(ev2Environment)
+            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-Managed-SDP/ServiceGroupRoot
+            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-Managed-SDP/ServiceGroupRoot/RolloutSpec.json
+            StageMapName: Microsoft.Azure.SDP.Standard
+            Select: regions(*)
+            ConfigurationOverrides: $(configurationOverrides)
+          env:
+            ServiceTreeGuid: 3170cdd2-19f0-4027-912b-1027311691a2
+          target:
+            container: host
       - job: Ev2_rollout_ev2_monitoring
         variables:
         - name: OneESPT
@@ -406,6 +960,8 @@ extends:
         variables:
         - name: ev2Environment
           value: Production
+        - name: REGISTER_REGIONS_BATCH
+          value: "westcentralus"
         - name: Ev2MonintoringUrl
           value: https://azureservicedeploy.msft.net/api/monitorrollout
         - name: OneESPT.JobType
@@ -535,24 +1091,24 @@ extends:
             repository: none
           target:
             container: host
-        - task: vsrm-ev2.vss-services-ev2.adm-release-task.ExpressV2Internal@1
+        - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+          displayName: Ev2 Managed SDP - Deploy
           inputs:
-            UseServerMonitorTask: true
             EndpointProviderType: ApprovalService
+            TaskAction: RegisterAndRollout
+            UseServerMonitorTask: true
+            SkipRegistrationIfExists: True
+            ForceRegistration: true
             ApprovalServiceEnvironment: $(ev2Environment)
-            ServiceRootLocation: LinkedArtifact
-            RolloutSpecType: RSPath
-            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
-            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot/RolloutSpecs/Public.Stable.RolloutSpec.json
-            OutputRolloutId: RolloutId
-            OutputServiceGroupName: ServiceGroupName
-            OutputRolloutStatus: RolloutStatus
-            InlineDynamicBindingOverrides: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",     "contentVersion": "0.0.0.1",     "scopeBindings": [                {             "scopeTagName": "Stable",             "bindings": [                 {                     "find": "__RELEASE_STAGE__",                     "replaceWith": "Stable"                 },                 {                     "find": "__ADMIN_SUBSCRIPTION_ID__",                     "replaceWith": "$(ADMIN_SUBSCRIPTION_ID)"                 },                 {                     "find": "__CHART_VERSION__",                     "replaceWith": "$(CHART_VERSION)"                 },                 {                     "find": "__IS_CUSTOMER_HIDDEN__",                     "replaceWith": "$(IS_CUSTOMER_HIDDEN)"                 },                 {                     "find": "__REGISTER_REGIONS_CANARY__",                     "replaceWith": "$(REGISTER_REGIONS_CANARY)"                 },                 {                     "find": "__RELEASE_TRAINS_PREVIEW_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_PREVIEW_PATH)"                 },                 {                     "find": "__RELEASE_TRAINS_STABLE_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_STABLE_PATH)"                 },                 {                     "find": "__REGISTER_REGIONS_BATCH__",                     "replaceWith": "westcentralus"                 },                 {                     "find": "__RESOURCE_AUDIENCE__",                     "replaceWith": "$(RESOURCE_AUDIENCE)"                 },                 {                     "find": "__SPN_CLIENT_ID__",                     "replaceWith": "$(SPN_CLIENT_ID)"                 },                 {                     "find": "__SPN_SECRET__",                     "replaceWith": "$(SPN_SECRET)"                 },                 {                     "find": "__SPN_TENANT_ID__",                     "replaceWith": "$(SPN_TENANT_ID)"                 },                  {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(MANAGED_IDENTITY)"                 }             ]         }                ]         }                                                                                                                       '
+            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2-Managed-SDP/ServiceGroupRoot
+            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2-Managed-SDP/ServiceGroupRoot/RolloutSpec.json
+            StageMapName: Microsoft.Azure.SDP.Standard
+            Select: regions(*)
+            ConfigurationOverrides: $(configurationOverrides)
           env:
             ServiceTreeGuid: 3170cdd2-19f0-4027-912b-1027311691a2
           target:
             container: host
-          displayName: Ev2 Classic - Deploy
       - job: Ev2_rollout_ev2_monitoring
         variables:
         - name: OneESPT
@@ -683,6 +1239,8 @@ extends:
         variables:
         - name: ev2Environment
           value: Production
+        - name: REGISTER_REGIONS_BATCH
+          value: "westcentralus,southcentralus,southeastasia,uksouth"
         - name: Ev2MonintoringUrl
           value: https://azureservicedeploy.msft.net/api/monitorrollout
         - name: OneESPT.JobType
@@ -812,24 +1370,24 @@ extends:
             repository: none
           target:
             container: host
-        - task: vsrm-ev2.vss-services-ev2.adm-release-task.ExpressV2Internal@1
+        - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+          displayName: Ev2 Managed SDP - Deploy
           inputs:
-            UseServerMonitorTask: true
             EndpointProviderType: ApprovalService
+            TaskAction: RegisterAndRollout
+            UseServerMonitorTask: true
+            SkipRegistrationIfExists: True
+            ForceRegistration: true
             ApprovalServiceEnvironment: $(ev2Environment)
-            ServiceRootLocation: LinkedArtifact
-            RolloutSpecType: RSPath
-            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
-            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot/RolloutSpecs/Public.Stable.RolloutSpec.json
-            OutputRolloutId: RolloutId
-            OutputServiceGroupName: ServiceGroupName
-            OutputRolloutStatus: RolloutStatus
-            InlineDynamicBindingOverrides: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",     "contentVersion": "0.0.0.1",     "scopeBindings": [                {             "scopeTagName": "Stable",             "bindings": [                 {                     "find": "__RELEASE_STAGE__",                     "replaceWith": "Stable"                 },                 {                     "find": "__ADMIN_SUBSCRIPTION_ID__",                     "replaceWith": "$(ADMIN_SUBSCRIPTION_ID)"                 },                 {                     "find": "__CHART_VERSION__",                     "replaceWith": "$(CHART_VERSION)"                 },                 {                     "find": "__IS_CUSTOMER_HIDDEN__",                     "replaceWith": "$(IS_CUSTOMER_HIDDEN)"                 },                 {                     "find": "__REGISTER_REGIONS_CANARY__",                     "replaceWith": "$(REGISTER_REGIONS_CANARY)"                 },                 {                     "find": "__RELEASE_TRAINS_PREVIEW_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_PREVIEW_PATH)"                 },                 {                     "find": "__RELEASE_TRAINS_STABLE_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_STABLE_PATH)"                 },                 {                     "find": "__REGISTER_REGIONS_BATCH__",                     "replaceWith": "westcentralus,southcentralus,southeastasia,uksouth"                 },                 {                     "find": "__RESOURCE_AUDIENCE__",                     "replaceWith": "$(RESOURCE_AUDIENCE)"                 },                 {                     "find": "__SPN_CLIENT_ID__",                     "replaceWith": "$(SPN_CLIENT_ID)"                 },                 {                     "find": "__SPN_SECRET__",                     "replaceWith": "$(SPN_SECRET)"                 },                 {                     "find": "__SPN_TENANT_ID__",                     "replaceWith": "$(SPN_TENANT_ID)"                 },                  {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(MANAGED_IDENTITY)"                 }             ]         }                ]         }                                                                                                                       '
+            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2-Managed-SDP/ServiceGroupRoot
+            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2-Managed-SDP/ServiceGroupRoot/RolloutSpec.json
+            StageMapName: Microsoft.Azure.SDP.Standard
+            Select: regions(*)
+            ConfigurationOverrides: $(configurationOverrides)
           env:
             ServiceTreeGuid: 3170cdd2-19f0-4027-912b-1027311691a2
           target:
             container: host
-          displayName: Ev2 Classic - Deploy
       - job: Ev2_rollout_ev2_monitoring
         variables:
         - name: OneESPT
@@ -960,6 +1518,8 @@ extends:
         variables:
         - name: ev2Environment
           value: Production
+        - name: REGISTER_REGIONS_BATCH
+          value: "westcentralus,southcentralus,southeastasia,uksouth,westus2,australiaeast,eastus2,northcentralus,koreacentral,eastasia,japaneast"
         - name: Ev2MonintoringUrl
           value: https://azureservicedeploy.msft.net/api/monitorrollout
         - name: OneESPT.JobType
@@ -1089,24 +1649,24 @@ extends:
             repository: none
           target:
             container: host
-        - task: vsrm-ev2.vss-services-ev2.adm-release-task.ExpressV2Internal@1
+        - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+          displayName: Ev2 Managed SDP - Deploy
           inputs:
-            UseServerMonitorTask: true
             EndpointProviderType: ApprovalService
+            TaskAction: RegisterAndRollout
+            UseServerMonitorTask: true
+            SkipRegistrationIfExists: True
+            ForceRegistration: true
             ApprovalServiceEnvironment: $(ev2Environment)
-            ServiceRootLocation: LinkedArtifact
-            RolloutSpecType: RSPath
-            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
-            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot/RolloutSpecs/Public.Stable.RolloutSpec.json
-            OutputRolloutId: RolloutId
-            OutputServiceGroupName: ServiceGroupName
-            OutputRolloutStatus: RolloutStatus
-            InlineDynamicBindingOverrides: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",     "contentVersion": "0.0.0.1",     "scopeBindings": [                {             "scopeTagName": "Stable",             "bindings": [                 {                     "find": "__RELEASE_STAGE__",                     "replaceWith": "Stable"                 },                 {                     "find": "__ADMIN_SUBSCRIPTION_ID__",                     "replaceWith": "$(ADMIN_SUBSCRIPTION_ID)"                 },                 {                     "find": "__CHART_VERSION__",                     "replaceWith": "$(CHART_VERSION)"                 },                 {                     "find": "__IS_CUSTOMER_HIDDEN__",                     "replaceWith": "$(IS_CUSTOMER_HIDDEN)"                 },                 {                     "find": "__REGISTER_REGIONS_CANARY__",                     "replaceWith": "$(REGISTER_REGIONS_CANARY)"                 },                 {                     "find": "__RELEASE_TRAINS_PREVIEW_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_PREVIEW_PATH)"                 },                 {                     "find": "__RELEASE_TRAINS_STABLE_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_STABLE_PATH)"                 },                 {                     "find": "__REGISTER_REGIONS_BATCH__",                     "replaceWith": "westcentralus,southcentralus,southeastasia,uksouth,westus2,australiaeast,eastus2,northcentralus,koreacentral,eastasia,japaneast"                 },                 {                     "find": "__RESOURCE_AUDIENCE__",                     "replaceWith": "$(RESOURCE_AUDIENCE)"                 },                 {                     "find": "__SPN_CLIENT_ID__",                     "replaceWith": "$(SPN_CLIENT_ID)"                 },                 {                     "find": "__SPN_SECRET__",                     "replaceWith": "$(SPN_SECRET)"                 },                 {                     "find": "__SPN_TENANT_ID__",                     "replaceWith": "$(SPN_TENANT_ID)"                 },                  {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(MANAGED_IDENTITY)"                 }             ]         }                ]         }                                                                                                                       '
+            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2-Managed-SDP/ServiceGroupRoot
+            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2-Managed-SDP/ServiceGroupRoot/RolloutSpec.json
+            StageMapName: Microsoft.Azure.SDP.Standard
+            Select: regions(*)
+            ConfigurationOverrides: $(configurationOverrides)
           env:
             ServiceTreeGuid: 3170cdd2-19f0-4027-912b-1027311691a2
           target:
             container: host
-          displayName: Ev2 Classic - Deploy
       - job: Ev2_rollout_ev2_monitoring
         variables:
         - name: OneESPT
@@ -1237,6 +1797,8 @@ extends:
         variables:
         - name: ev2Environment
           value: Production
+        - name: REGISTER_REGIONS_BATCH
+          value: "westcentralus,southcentralus,southeastasia,uksouth,westus2,australiaeast,eastus2,northcentralus,koreacentral,eastasia,japaneast,westeurope,northeurope,eastus,francecentral,westus,centralus,canadacentral,westus3,australiacentral,australiacentral2,australiasoutheast,brazilsouth,brazilsoutheast,canadaeast,centralindia,francesouth,germanycentral,germanynorth,germanynortheast,germanywestcentral,italynorth,japanwest,jioindiacentral,jioindiawest,koreasouth,norwayeast,norwaywest,polandcentral,qatarcentral,southafricanorth,southafricawest,southindia,swedencentral,swedensouth,switzerlandnorth,switzerlandwest,uaecentral,uaenorth,uknorth,uksouth2,ukwest,westindia"
         - name: Ev2MonintoringUrl
           value: https://azureservicedeploy.msft.net/api/monitorrollout
         - name: OneESPT.JobType
@@ -1366,24 +1928,24 @@ extends:
             repository: none
           target:
             container: host
-        - task: vsrm-ev2.vss-services-ev2.adm-release-task.ExpressV2Internal@1
+        - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+          displayName: Ev2 Managed SDP - Deploy
           inputs:
-            UseServerMonitorTask: true
             EndpointProviderType: ApprovalService
+            TaskAction: RegisterAndRollout
+            UseServerMonitorTask: true
+            SkipRegistrationIfExists: True
+            ForceRegistration: true
             ApprovalServiceEnvironment: $(ev2Environment)
-            ServiceRootLocation: LinkedArtifact
-            RolloutSpecType: RSPath
-            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
-            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot/RolloutSpecs/Public.Stable.RolloutSpec.json
-            OutputRolloutId: RolloutId
-            OutputServiceGroupName: ServiceGroupName
-            OutputRolloutStatus: RolloutStatus
-            InlineDynamicBindingOverrides: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",     "contentVersion": "0.0.0.1",     "scopeBindings": [                {             "scopeTagName": "Stable",             "bindings": [                 {                     "find": "__RELEASE_STAGE__",                     "replaceWith": "Stable"                 },                 {                     "find": "__ADMIN_SUBSCRIPTION_ID__",                     "replaceWith": "$(ADMIN_SUBSCRIPTION_ID)"                 },                 {                     "find": "__CHART_VERSION__",                     "replaceWith": "$(CHART_VERSION)"                 },                 {                     "find": "__IS_CUSTOMER_HIDDEN__",                     "replaceWith": "$(IS_CUSTOMER_HIDDEN)"                 },                 {                     "find": "__REGISTER_REGIONS_CANARY__",                     "replaceWith": "$(REGISTER_REGIONS_CANARY)"                 },                 {                     "find": "__RELEASE_TRAINS_PREVIEW_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_PREVIEW_PATH)"                 },                 {                     "find": "__RELEASE_TRAINS_STABLE_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_STABLE_PATH)"                 },                 {                     "find": "__REGISTER_REGIONS_BATCH__",                     "replaceWith": "westcentralus,southcentralus,southeastasia,uksouth,westus2,australiaeast,eastus2,northcentralus,koreacentral,eastasia,japaneast,westeurope,northeurope,eastus,francecentral,westus,centralus,canadacentral,westus3,australiacentral,australiacentral2,australiasoutheast,brazilsouth,brazilsoutheast,canadaeast,centralindia,francesouth,germanycentral,germanynorth,germanynortheast,germanywestcentral,italynorth,japanwest,jioindiacentral,jioindiawest,koreasouth,norwayeast,norwaywest,polandcentral,qatarcentral,southafricanorth,southafricawest,southindia,swedencentral,swedensouth,switzerlandnorth,switzerlandwest,uaecentral,uaenorth,uknorth,uksouth2,ukwest,westindia"                 },                 {                     "find": "__RESOURCE_AUDIENCE__",                     "replaceWith": "$(RESOURCE_AUDIENCE)"                 },                 {                     "find": "__SPN_CLIENT_ID__",                     "replaceWith": "$(SPN_CLIENT_ID)"                 },                 {                     "find": "__SPN_SECRET__",                     "replaceWith": "$(SPN_SECRET)"                 },                 {                     "find": "__SPN_TENANT_ID__",                     "replaceWith": "$(SPN_TENANT_ID)"                 },                  {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(MANAGED_IDENTITY)"                 }             ]         }                ]         }                                                                                                                       '
+            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2-Managed-SDP/ServiceGroupRoot
+            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2-Managed-SDP/ServiceGroupRoot/RolloutSpec.json
+            StageMapName: Microsoft.Azure.SDP.Standard
+            Select: regions(*)
+            ConfigurationOverrides: $(configurationOverrides)
           env:
             ServiceTreeGuid: 3170cdd2-19f0-4027-912b-1027311691a2
           target:
             container: host
-          displayName: Ev2 Classic - Deploy
       - job: Ev2_rollout_ev2_monitoring
         variables:
         - name: OneESPT
@@ -1526,6 +2088,8 @@ extends:
         variables:
         - name: ev2Environment
           value: Production
+        - name: REGISTER_REGIONS_BATCH
+          value: "westcentralus,southcentralus,southeastasia,uksouth,westus2,australiaeast,eastus2,northcentralus,koreacentral,eastasia,japaneast,westeurope,northeurope,eastus,francecentral,westus,centralus,canadacentral,westus3,australiacentral,australiacentral2,australiasoutheast,brazilsouth,brazilsoutheast,canadaeast,centralindia,francesouth,germanycentral,germanynorth,germanynortheast,germanywestcentral,italynorth,japanwest,jioindiacentral,jioindiawest,koreasouth,norwayeast,norwaywest,polandcentral,qatarcentral,southafricanorth,southafricawest,southindia,swedencentral,swedensouth,switzerlandnorth,switzerlandwest,uaecentral,uaenorth,uknorth,uksouth2,ukwest,westindia,usgovvirginia"
         - name: Ev2MonintoringUrl
           value: https://azureservicedeploy.msft.net/api/monitorrollout
         - name: OneESPT.JobType
@@ -1655,24 +2219,24 @@ extends:
             repository: none
           target:
             container: host
-        - task: vsrm-ev2.vss-services-ev2.adm-release-task.ExpressV2Internal@1
+        - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+          displayName: Ev2 Managed SDP - Deploy
           inputs:
-            UseServerMonitorTask: true
             EndpointProviderType: ApprovalService
+            TaskAction: RegisterAndRollout
+            UseServerMonitorTask: true
+            SkipRegistrationIfExists: True
+            ForceRegistration: true
             ApprovalServiceEnvironment: $(ev2Environment)
-            ServiceRootLocation: LinkedArtifact
-            RolloutSpecType: RSPath
-            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot
-            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2/ServiceGroupRoot/RolloutSpecs/Public.Stable.RolloutSpec.json
-            OutputRolloutId: RolloutId
-            OutputServiceGroupName: ServiceGroupName
-            OutputRolloutStatus: RolloutStatus
-            InlineDynamicBindingOverrides: '{     "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/scopeBindings.json",     "contentVersion": "0.0.0.1",     "scopeBindings": [                {             "scopeTagName": "Stable",             "bindings": [                 {                     "find": "__RELEASE_STAGE__",                     "replaceWith": "Stable"                 },                 {                     "find": "__ADMIN_SUBSCRIPTION_ID__",                     "replaceWith": "$(ADMIN_SUBSCRIPTION_ID)"                 },                 {                     "find": "__CHART_VERSION__",                     "replaceWith": "$(CHART_VERSION)"                 },                 {                     "find": "__IS_CUSTOMER_HIDDEN__",                     "replaceWith": "$(IS_CUSTOMER_HIDDEN)"                 },                 {                     "find": "__REGISTER_REGIONS_CANARY__",                     "replaceWith": "$(REGISTER_REGIONS_CANARY)"                 },                 {                     "find": "__RELEASE_TRAINS_PREVIEW_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_PREVIEW_PATH)"                 },                 {                     "find": "__RELEASE_TRAINS_STABLE_PATH__",                     "replaceWith": "$(RELEASE_TRAINS_STABLE_PATH)"                 },                 {                     "find": "__REGISTER_REGIONS_BATCH__",                     "replaceWith": "westcentralus,southcentralus,southeastasia,uksouth,westus2,australiaeast,eastus2,northcentralus,koreacentral,eastasia,japaneast,westeurope,northeurope,eastus,francecentral,westus,centralus,canadacentral,westus3,australiacentral,australiacentral2,australiasoutheast,brazilsouth,brazilsoutheast,canadaeast,centralindia,francesouth,germanycentral,germanynorth,germanynortheast,germanywestcentral,italynorth,japanwest,jioindiacentral,jioindiawest,koreasouth,norwayeast,norwaywest,polandcentral,qatarcentral,southafricanorth,southafricawest,southindia,swedencentral,swedensouth,switzerlandnorth,switzerlandwest,uaecentral,uaenorth,uknorth,uksouth2,ukwest,westindia,usgovvirginia"                 },                 {                     "find": "__RESOURCE_AUDIENCE__",                     "replaceWith": "$(RESOURCE_AUDIENCE)"                 },                 {                     "find": "__SPN_CLIENT_ID__",                     "replaceWith": "$(SPN_CLIENT_ID)"                 },                 {                     "find": "__SPN_SECRET__",                     "replaceWith": "$(SPN_SECRET)"                 },                 {                     "find": "__SPN_TENANT_ID__",                     "replaceWith": "$(SPN_TENANT_ID)"                 },                  {                     "find": "__MANAGED_IDENTITY__",                     "replaceWith": "$(MANAGED_IDENTITY)"                 }             ]         }                ]         }                                                                                                                       '
+            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2-Managed-SDP/ServiceGroupRoot
+            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-release-v2-Managed-SDP/ServiceGroupRoot/RolloutSpec.json
+            StageMapName: Microsoft.Azure.SDP.Standard
+            Select: regions(*)
+            ConfigurationOverrides: $(configurationOverrides)
           env:
             ServiceTreeGuid: 3170cdd2-19f0-4027-912b-1027311691a2
           target:
             container: host
-          displayName: Ev2 Classic - Deploy
       - job: Ev2_rollout_ev2_monitoring
         variables:
         - name: OneESPT

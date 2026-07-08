@@ -11,6 +11,9 @@ spec:
     GENEVA_INTEGRATION:
       type: string
       default: "false"
+    PER_NODE_LOG_COVERAGE:
+      type: string
+      default: "false"
     GOTOOLCHAIN:
       type: string
       default: ""
@@ -47,6 +50,9 @@ metadata:
 spec:
   config:
     GENEVA_INTEGRATION:
+      type: string
+      default: "false"
+    PER_NODE_LOG_COVERAGE:
       type: string
       default: "false"
     GOTOOLCHAIN:
@@ -124,6 +130,9 @@ spec:
     GENEVA_INTEGRATION:
       type: string
       default: "false"
+    PER_NODE_LOG_COVERAGE:
+      type: string
+      default: "false"
     GOTOOLCHAIN:
       type: string
       default: ""
@@ -145,6 +154,8 @@ spec:
         value: "{{config.AZURE_CLIENT_ID}}"
       - name: GENEVA_INTEGRATION
         value: "{{config.GENEVA_INTEGRATION}}"
+      - name: PER_NODE_LOG_COVERAGE
+        value: "{{config.PER_NODE_LOG_COVERAGE}}"
       - name: GOTOOLCHAIN
         value: "{{config.GOTOOLCHAIN}}"
     shell: ginkgo ./querylogs

@@ -41,8 +41,8 @@ OmsAgent:
   
   # Image configuration
   imageRepository: "/azuremonitor/containerinsights/ciprod"
-  imageTagLinux: "3.3.0"
-  imageTagWindows: "win-3.3.0"
+  imageTagLinux: "3.4.0"
+  imageTagWindows: "win-3.4.0"
   isImagePullPolicyAlways: false
 
   # Resource ID and cluster information
@@ -214,8 +214,8 @@ OmsAgent:
 amalogs:
   image:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
-    tag: "3.3.0"
-    tagWindows: "win-3.3.0"
+    tag: "3.4.0"
+    tagWindows: "win-3.4.0"
     pullPolicy: IfNotPresent
     dockerProviderVersion: "18.0.1-0"
     agentVersion: "azure-mdsd-1.40.3"
