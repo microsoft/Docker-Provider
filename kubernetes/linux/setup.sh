@@ -97,7 +97,9 @@ gem_install_with_retry() {
 }
 
 # install fluentd
-fluentd_version="1.16.3"
+# 1.19.3 is the first release that fixes CVE-2026-44024 (critical RCE), CVE-2026-44025,
+# CVE-2026-44160 and CVE-2026-44161. Requires Ruby >= 3.2 (satisfied by the ruby 3.3.x installed above).
+fluentd_version="1.19.3"
 gem_install_with_retry fluentd -v $fluentd_version --no-document
 
 # remove the test directory from fluentd
