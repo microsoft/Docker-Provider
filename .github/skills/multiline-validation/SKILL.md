@@ -24,7 +24,7 @@ Confirm with the user; suggest defaults from the most recent run if available.
 
 ## Derived Values
 
-Parse from `charts/azuremonitor-containerinsights/values.yaml` — do not ask the user.
+Parse from `charts/azuremonitor-containerinsights-for-prod-clusters/values.yaml` — do not ask the user.
 
 | Value | Source |
 |-------|--------|
@@ -90,13 +90,13 @@ Re-run this block after each image swap so each snapshot has a clean log window.
 
 ### Update Image Tags and Deploy
 
-1. Edit `charts/azuremonitor-containerinsights/values.yaml`:
+1. Edit `charts/azuremonitor-containerinsights-for-prod-clusters/values.yaml`:
    - `imageRepository: "/azuremonitor/containerinsights/<repo>"` (`ciprod` for OLD, `cidev` for NEW)
    - `imageTagLinux: <linux-tag>`
    - `imageTagWindows: <windows-tag>`
 2. Helm upgrade against the existing release name (do not use `--install` with a different release name — it will fail on owned ServiceAccounts):
    ```bash
-   helm upgrade <release-name> ./charts/azuremonitor-containerinsights -n <release-namespace>
+   helm upgrade <release-name> ./charts/azuremonitor-containerinsights-for-prod-clusters -n <release-namespace>
    ```
 3. Record deploy time in UTC (`Get-Date -Format 'u'` or `(Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')`).
 4. Wait for rollouts:

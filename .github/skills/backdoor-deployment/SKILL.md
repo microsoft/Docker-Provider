@@ -16,7 +16,7 @@ Check with the user if they want to use the default values or provide new ones.
 |-------|-------------|---------|
 | **Branch name** | Git branch to build | `suyadav/aiautomation` |
 | **Current production image** | Production image tag (e.g. `ciprod:X.Y.Z`) | `ciprod:3.1.35` |
-| **YAML file path** | Helm values file for backdoor deployment | `./../azuremonitor-containerinsights/values.yaml` |
+| **YAML file path** | Helm values file for backdoor deployment | `./../azuremonitor-containerinsights-for-prod-clusters/values.yaml` |
 
 ## Derived Values
 
@@ -62,7 +62,7 @@ Always use `--install` to handle both fresh installs and upgrades:
 ```bash
 helm upgrade --install ama-logs <chart-path> -n kube-system
 ```
-where `<chart-path>` is the directory containing the YAML (e.g. `./../azuremonitor-containerinsights/`).
+where `<chart-path>` is the directory containing the YAML (e.g. `./../azuremonitor-containerinsights-for-prod-clusters/`).
 
 ### Collect Table Data
 
