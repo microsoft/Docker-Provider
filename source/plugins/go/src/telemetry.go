@@ -295,6 +295,15 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 					telemetryDimensions["logsAndEventsOnly"] = logsAndEventsOnly
 				}
 
+				azmonMultilineEnabled := os.Getenv("AZMON_MULTILINE_ENABLED")
+				if azmonMultilineEnabled != "" {
+					telemetryDimensions["multilineEnabled"] = azmonMultilineEnabled
+					azmonMultilineLanguages := os.Getenv("AZMON_MULTILINE_LANGUAGES")
+					if azmonMultilineLanguages != "" {
+						telemetryDimensions["multilineLanguages"] = azmonMultilineLanguages
+					}
+				}
+
 				isHighLogScaleMode := os.Getenv("IS_HIGH_LOG_SCALE_MODE")
 				if isHighLogScaleMode != "" {
 					telemetryDimensions["isHighLogScaleMode"] = isHighLogScaleMode
