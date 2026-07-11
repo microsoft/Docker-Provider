@@ -1,0 +1,161 @@
+{
+  "Version": "1",
+  "ToggleName": "OmsAgent.isRSVPAEnabled",
+  "Type": "bool",
+  "LastUpdatedAt": null,
+  "ExtensionType": "microsoft.azuremonitor.containers",
+  "OwnerTeam": "container insights",
+  "Description": "This is a OmsAgent.isRSVPAEnabled toggle.",
+  "Rules": [
+    {
+      "Matchers": [
+        {
+          "Field": "subscriptionID",
+          "Operator": "equals",
+          "Values": [
+            "5a9b24b3-4658-4e41-b650-762cc0026438",
+            "90376dc6-e4a0-49c3-930d-38ee8e2bafa4",
+            "72b61f0d-9bea-401f-ba03-2053af77b5e7",
+            "0efdbfb0-83c9-4a75-ba65-a43712133d6b",
+            "5615fb19-da1d-4613-8304-6eab6e2f73a0",
+            "e242e8e0-8f1a-4be7-bfb4-939a5d7b66a3",
+            "e003af68-c3d1-4ba5-b8d6-1541d37a5692",
+            "b87d5f7f-c192-4bc2-9665-dc20d89bbc55",
+            "3dfda4f0-64f7-4d2c-b50b-89765a49ab73",
+            "d46c68e0-8b35-4db9-a707-b71488c04bd4",
+            "b70f6964-ace4-4a00-b080-5dd92276bfee",
+            "00096350-4a62-4d47-99d9-89577ce638d6",
+            "b899c5f9-7387-492e-83ea-2ef9c8899ea7",
+            "f26c9e88-52cd-4b5d-82f5-523ae7eae62b",
+            "efb352c2-d9f8-40e3-9261-9d4713418080",
+            "5c49de40-bbf8-4fdb-a47b-57e3f55e5454",
+            "d8c3a34c-ec16-428d-ba5e-e59de8e21b97",
+            "2163e0ba-8c3f-4429-be57-19d6d4720a37",
+            "93825132-35dd-4deb-b927-c2f2ca14b538",
+            "9fbf6a4b-0ddd-4c25-8136-61cf4d495a73",
+            "5fd14449-ca2e-46a2-9443-c0b360c24901",
+            "5bb99260-5c2f-4a52-b21b-5c9d6411ec20",
+            "48901586-fab8-41e0-a19d-36b91e20e2b6",
+            "e7cb004c-561c-444a-aafe-bff8a9485436",
+            "f2361075-22b4-46f9-bfac-d5ed93ef8471",
+            "d11dff58-5109-41c6-b3e5-fa9bcdf06766",
+            "d612d6cb-60e7-4a9f-a072-3954d14dc7ff",
+            "7cfeb8f8-bcf0-4506-8241-7f6fbd8c825f",
+            "2f51e221-4db6-45f0-82af-bceddf3f0613",
+            "fc84b76b-0a29-47f2-bbd4-2ab02fa483f0",
+            "22af41df-5813-4f07-8ea2-f7fc30aab262",
+            "5fca70fc-5ef7-4be4-b494-82e54848fbf5",
+            "637dd898-5a5e-40d3-8e9e-f7efadacf48d",
+            "41e9fae1-e7a8-4d9c-98ee-4a62ceddd2c4",
+            "0cc331d1-31c1-4a51-9615-a9365da8fb50",
+            "8bc1c0bb-38cb-4514-89a2-5a072de5318c",
+            "f729bb21-576d-4800-a8ea-4888f74f9c0e",
+            "d5aaf863-7104-4f20-99f8-217c3a9f7073",
+            "50227472-610b-4a8c-90e8-e5f8046a4063",
+            "1cf7c3d5-2e3a-4589-b344-71d55923a241",
+            "298b337c-8bcf-4ba7-9761-b0e70bd6ae91",
+            "4f1f6b0c-0c00-42b4-8f0e-0b8f4ae7ca6d",
+            "3fd2f1e0-9c2d-41fc-b68d-c52e0d7150d9",
+            "df1cbb80-14d4-4633-875d-1ea8fa7e614e",
+            "060631ee-39d1-49ec-941e-f7b30c0e6a86",
+            "39b35ee4-ac5d-4bf8-98be-ec90b8bffc2c",
+            "4b644951-9cdf-4554-97ee-15befd1f107b",
+            "1d09bcb7-e6d4-4de6-beb0-de43d38de923",
+            "0043b0a7-148b-4094-8866-abc80fff9df4",
+            "1f1a6b41-f916-4185-bdf4-74c680d2aa72",
+            "812f1ba2-73fd-40c2-8ee5-f8f59d4a6e7d",
+            "3de7290b-465f-4a5e-bac6-e40b0bc6920d",
+            "60736ce1-a313-4892-a2ad-5892ecee53ca",
+            "c9a251d8-1272-4c0f-8055-8271bbc1d677",
+            "7ff878e4-9faa-4fd2-b534-8bc437f4d100",
+            "e343f556-3599-4624-a9c1-2bf695c0882e",
+            "5ddea2e3-e9a1-4877-958f-edfb4a92ddf0",
+            "3e2aa15f-923a-460c-90a0-9e533d7ab2df",
+            "0fb499ac-5979-4b63-b48c-3b5dc1341c50",
+            "d7f49630-34b4-4321-a5fd-fda48b934d2c",
+            "ac278355-ccb5-4659-b8e7-f0ba8d250629",
+            "6123cf4f-e4d1-4fd5-8fe5-44cb3670006f",
+            "9b88bd64-d315-48de-96bc-83051ed25fdc",
+            "90a53f69-8043-4628-b38a-39ed2604fea4",
+            "10bfb9e6-85b2-4277-81bb-ffc7f4251847",
+            "6d75d755-f2a1-454a-a0dd-6df13ab4cc63",
+            "15e9c363-c4eb-44cc-9b7f-4bd0d9d8b43b",
+            "2eb39735-cde4-40b6-af89-566d5437b189",
+            "faf0c3f2-bf98-4bd5-97a6-acf8965709e4",
+            "12064f0f-5bb2-458f-8df3-445dc357789b",
+            "83e51092-ef27-4abd-a37c-a879981e1ee9",
+            "9448ef71-15e0-4520-846f-11e862142f89",
+            "cd8ce5de-7c82-4a27-ba20-2e7254703e31",
+            "d50c817f-6c93-4f27-b7b7-b756b679ce30",
+            "e100d814-8765-41db-9f74-7f592b4d687b",
+            "ad04d8cd-6eb4-4aa5-a8d3-6b6594b0fb1a",
+            "5cb937f6-8380-4127-a4ea-dca045101ee9",
+            "6df60800-567c-42e6-9840-3dbb688c8268",
+            "6ea4e1a1-9489-4661-bbb0-eec7165fc275",
+            "eef870e1-d6b5-4721-b346-73fe886d4292",
+            "bf55aab8-7f9b-4204-83eb-f693ecb41019",
+            "4ad45dd2-0749-40f2-8fa3-360dd918d166",
+            "97cf6e5a-08be-4d71-a850-c65dab004d9b",
+            "76e5de50-88fc-450e-938a-eb200b3f5ab5",
+            "1e62e812-202b-4de0-bc19-d45b1c4ccb1c",
+            "2dec9943-5db1-4aa9-9b4d-5f5fe2e8465e",
+            "daf557e5-b0e8-4046-825f-7d43e92cf9b4",
+            "d8248fec-df2a-42bc-a1ab-a57bf34bb2cb",
+            "4d641501-dbb3-44b9-97e3-946e5cd957c2",
+            "3626cfa1-6db8-4d95-a769-bf952591a228",
+            "3a6f3563-a8d6-4d47-869c-14d37eddf93d",
+            "4d0d6b18-5e07-4e30-b239-321d874f75f5",
+            "01993b85-2035-47d7-99ad-a70e8520136f",
+            "9b8218f9-902a-4d20-a65c-e98acec5362f",
+            "afe495ca-b99a-4e36-86c8-9e0e41697f1c",
+            "37deca37-c375-4a14-b90a-043849bd2bf1",
+            "a51cc6d1-a88c-4ebd-ba03-58574b33d06b",
+            "854c9ddb-fe9e-4aea-8d58-99ed88282881"
+          ]
+        }
+      ],
+      "Value": "true"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "region",
+          "Operator": "equals",
+          "Values": [
+            "eastus2",
+            "eastus",
+            "centralus"
+          ]
+        },
+        {
+          "Field": "subscriptionID",
+          "Operator": "equals",
+          "Values": [
+            "c0f9902d-fecf-4266-8a2d-f5c6a7b6cc89"
+          ]
+        }
+      ],
+      "Value": "true"
+    },
+    {
+      "Matchers": [
+        {
+          "Field": "subscriptionID",
+          "Operator": "equals",
+          "Values": [
+            "b8ceb4e5-f05b-4562-a9f5-14acb1f24219"
+          ]
+        },
+        {
+          "Field": "region",
+          "Operator": "equals",
+          "Values": [
+            "southeastasia",
+            "eastus2"
+          ]
+        }
+      ],
+      "Value": "true"
+    }
+  ]
+}
