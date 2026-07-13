@@ -54,6 +54,10 @@
             "value": "__REGISTER_REGIONS_BATCH__"
           },
           {
+            "name": "ARC_API_URL",
+            "value": "__ARC_API_URL__"
+          },
+          {
             "name": "RESOURCE_AUDIENCE",
             "value": "__RESOURCE_AUDIENCE__"
           },

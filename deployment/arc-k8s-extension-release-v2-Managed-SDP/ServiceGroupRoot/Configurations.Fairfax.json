@@ -1,16 +1,17 @@
 {
   "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/ConfigurationSpecification.json",
   "Settings": {
-    "tenantId": "33e01921-4d64-4f8c-a055-5bdaffd5e33d",
-    "environment": "Prod",
-    "releaseStage": "Stable",
+    "tenantId": "$(aad.tenants.USME.id)",
+    "environment": "Fairfax",
+    "releaseStage": "SovereignStable",
     "adminSubscriptionId": "",
     "chartVersion": "",
     "isCustomerHidden": "",
     "registerRegionsCanary": "",
     "releaseTrainsPreviewPath": "",
     "releaseTrainsStablePath": "",
-    "registerRegionsBatch": "",
+    "registerRegionsBatch": "usgovvirginia,usgovtexas,usgovarizona",
+    "arcApiUrl": "https://usgovvirginia.dp.kubernetesconfiguration.azure.us",
     "resourceAudience": "",
     "spnClientId": "",
     "spnSecret": "",
@@ -25,7 +26,7 @@
       "Settings": {},
       "Regions": [
         {
-          "Name": "eastus2",
+          "Name": "usgovvirginia",
           "Settings": {
             "stampCount": 1,
             "azureResourceGroup": "ContainerInsightsExtension-Pilot-Release",

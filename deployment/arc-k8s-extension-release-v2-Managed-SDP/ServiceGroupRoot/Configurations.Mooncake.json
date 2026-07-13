@@ -1,0 +1,39 @@
+{
+  "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/ConfigurationSpecification.json",
+  "Settings": {
+    "tenantId": "$(aad.tenants.CME.id)",
+    "environment": "Mooncake",
+    "releaseStage": "SovereignStable",
+    "adminSubscriptionId": "",
+    "chartVersion": "",
+    "isCustomerHidden": "",
+    "registerRegionsCanary": "",
+    "releaseTrainsPreviewPath": "",
+    "releaseTrainsStablePath": "",
+    "registerRegionsBatch": "chinaeast2,chinanorth2,chinaeast3,chinanorth3",
+    "arcApiUrl": "https://chinaeast2.dp.kubernetesconfiguration.azure.cn",
+    "resourceAudience": "",
+    "spnClientId": "",
+    "spnSecret": "",
+    "spnTenantId": "",
+    "managedIdentity": "",
+    "acrName": "",
+    "repoType": ""
+  },
+  "Geographies": [
+    {
+      "Name": "China",
+      "Settings": {},
+      "Regions": [
+        {
+          "Name": "chinaeast2",
+          "Settings": {
+            "stampCount": 1,
+            "azureResourceGroup": "ContainerInsightsExtension-Pilot-Release",
+            "subscriptionkey": "ContainerInsights-30c56c3a-54da-46ea-b004-06eb33432687"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/ConfigurationSpecification.json",
+  "Settings": {
+    "tenantId": "33e01921-4d64-4f8c-a055-5bdaffd5e33d",
+    "environment": "Prod",
+    "releaseStage": "Stable",
+    "adminSubscriptionId": "",
+    "chartVersion": "",
+    "isCustomerHidden": "",
+    "registerRegionsCanary": "",
+    "releaseTrainsPreviewPath": "",
+    "releaseTrainsStablePath": "",
+    "registerRegionsBatch": "",
+    "arcApiUrl": "https://eastus2euap.dp.kubernetesconfiguration.azure.com",
+    "resourceAudience": "",
+    "spnClientId": "",
+    "spnSecret": "",
+    "spnTenantId": "",
+    "managedIdentity": "",
+    "acrName": "",
+    "repoType": ""
+  },
+  "Geographies": [
+    {
+      "Name": "United States",
+      "Settings": {},
+      "Regions": [
+        {
+          "Name": "eastus2",
+          "Settings": {
+            "stampCount": 1,
+            "azureResourceGroup": "ContainerInsightsExtension-Pilot-Release",
+            "subscriptionkey": "ContainerInsights-30c56c3a-54da-46ea-b004-06eb33432687"
+          }
+        }
+      ]
+    }
+  ]
+}

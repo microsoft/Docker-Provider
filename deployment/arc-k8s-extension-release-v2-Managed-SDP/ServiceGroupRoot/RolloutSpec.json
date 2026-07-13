@@ -7,7 +7,7 @@
     "name": "ContainerInsightsExtension-Release",
     "configuration": {
       "serviceGroupScope": {
-        "specPath": "Configurations.Public.Prod.json"
+        "specPath": "Configurations.$rolloutinfra().json"
       }
     },
     "rolloutType": "Major",

@@ -12,6 +12,7 @@ CHART_VERSION=${CHART_VERSION}
 PACKAGE_CONFIG_NAME="${PACKAGE_CONFIG_NAME:-microsoft.azuremonitor.containers-pkg092025}"
 API_VERSION="${API_VERSION:-2021-05-01}"
 METHOD="${METHOD:-put}"
+ARC_API_URL="${ARC_API_URL:-}"
 REGISTRY_PATH_CANARY_STABLE="https://mcr.microsoft.com/azuremonitor/containerinsights/canary/stable/azuremonitor-containers"
 REGISTRY_PATH_PROD_STABLE="https://mcr.microsoft.com/azuremonitor/containerinsights/prod1/stable/azuremonitor-containers"
 
@@ -25,6 +26,10 @@ if [ -z "$IS_CUSTOMER_HIDDEN" ]; then
 fi
 if [ -z "$CHART_VERSION" ]; then
     echo "-e error chart version must be provided "
+    exit 1
+fi
+if [ -z "$ARC_API_URL" ]; then
+    echo "-e error Arc registration API URL must be provided "
     exit 1
 fi
 
@@ -212,6 +217,47 @@ cat <<EOF >> "request.json"
 EOF
     ;;
 
+  SovereignStable)
+if [ -z "$RELEASE_TRAINS_STABLE_PATH" ]; then
+    echo "-e error stable release train must be provided "
+    exit 1
+fi
+if [ -z "$REGISTER_REGIONS_BATCH" ]; then
+    echo "-e error sovereign release regions must be provided "
+    exit 1
+fi
+MCR_NAME_PATH="oci://mcr.microsoft.com/azuremonitor/containerinsights/prod1/stable/azuremonitor-containers"
+echo "Pulling chart from MCR:${MCR_NAME_PATH}"
+helm pull ${MCR_NAME_PATH} --version ${CHART_VERSION}
+if [ $? -eq 0 ]; then
+  echo "Pulling chart from MCR:${MCR_NAME_PATH}:${CHART_VERSION} completed successfully."
+else
+  echo "-e error Pulling chart from MCR:${MCR_NAME_PATH}:${CHART_VERSION} failed. Please review Ev2 pipeline logs for more details on the error."
+  exit 1
+fi
+# Sovereign clouds register only their stable production endpoint.
+cat <<EOF > "request.json"
+{
+    "artifactEndpoints": [
+        {
+            "Regions": [
+                $REGISTER_REGIONS_BATCH
+            ],
+            "Releasetrains": [
+                $RELEASE_TRAINS_STABLE_PATH
+            ],
+            "FullPathToHelmChart": "$REGISTRY_PATH_PROD_STABLE",
+            "ExtensionUpdateFrequencyInMinutes": 60,
+            "IsCustomerHidden": $IS_CUSTOMER_HIDDEN,
+            "ReadyforRollout": true,
+            "RollbackVersion": null,
+            "PackageConfigName": "$PACKAGE_CONFIG_NAME"
+        }
+    ]
+}
+EOF
+    ;;
+
   *)
     echo -n "unknown release stage"
     exit 1
@@ -253,7 +299,6 @@ else
 fi
 ACCESS_TOKEN=$(echo $ACCESS_TOKEN | tr -d '"' | tr -d '"\r\n')
 
-ARC_API_URL="https://eastus2euap.dp.kubernetesconfiguration.azure.com"
 EXTENSION_NAME="microsoft.azuremonitor.containers"
 
 echo "start send request"

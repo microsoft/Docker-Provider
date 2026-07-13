@@ -38,6 +38,10 @@
           "replaceWith": "$config(registerRegionsBatch)"
         },
         {
+          "find": "__ARC_API_URL__",
+          "replaceWith": "$config(arcApiUrl)"
+        },
+        {
           "find": "__RESOURCE_AUDIENCE__",
           "replaceWith": "$config(resourceAudience)"
         },
