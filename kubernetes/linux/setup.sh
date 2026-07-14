@@ -16,7 +16,7 @@ sudo update-ca-trust
 # the mariner package version is behind the global packages so we are using different versions for arm64 and x86_64
 if [ "$ARCH" == "arm64" ]; then
     sudo tdnf install ruby-3.3.5-7.azl3.aarch64 -y
-    sudo tdnf install zlib-devel -y
+    sudo tdnf install zlib-devel openssl-devel -y
 else
     tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
     wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20251023.tar.gz -O ruby-build.tar.gz
