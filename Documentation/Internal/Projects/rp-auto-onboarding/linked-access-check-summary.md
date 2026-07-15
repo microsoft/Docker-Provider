@@ -1,8 +1,8 @@
-# Linked Access Check for ama-logs — What It Is & Can We Remove It
+# Linked Access Check for ama-logs — What It Is & Can & How We Remove It
 
-*Short, shareable overview, organized as five questions: (1) what the linked
+\*Short, shareable overview, organized as five questions: (1) what the linked
 access check is in the scope of ama-logs, (2) why it is needed now, (3) why we
-want to remove it, (4) whether we can remove it, and (5) how it can be removed.*
+want to remove it, (4) whether we can remove it, and (5) how it can be removed.\*
 
 ---
 
@@ -15,14 +15,14 @@ request body.
 For ama-logs enabling, the caller makes an ARM call to write a **cluster**, and
 the call includes a workspace ID. So ARM enforces:
 
-> When you `PUT` a cluster with a workspace ID in the body, you must **already
-> have permission on that workspace** — otherwise ARM returns **403** before
+> When you `PUT` a cluster with a workspace ID in the body, you must \*\*already
+> have permission on that workspace\*\* — otherwise ARM returns **403** before
 > aks-rp ever runs.
 
 **What it actually checks:** the gate is defined as **four** linked-access-check
 records. All four share the same **trigger** (`actionName` =
-`Microsoft.ContainerService/managedClusters/write`) and the same **body
-property** (`linkedProperty` =
+`Microsoft.ContainerService/managedClusters/write`) and the same \*\*body
+property\*\* (`linkedProperty` =
 `properties.addonProfiles.omsagent.config.logAnalyticsWorkspaceResourceID`), and
 differ only in the **linked action** (`linkedAction`) they demand.
 
@@ -49,9 +49,9 @@ linked action on the target workspace — any miss → 403:
 - **#3 is a write** — so a pure workspace *Reader* is not enough to pass the
   gate; onboarding needs a write-capable role on the workspace side.
 
-**Scope of linked property:** this gate is attached **only to the omsagent addonProfile
-path**. The newer **azureMonitorProfile** onboarding surface has **no linked
-access check at all** today — so the check as it exists is entirely a
+**Scope of linked property:** this gate is attached \*\*only to the omsagent addonProfile
+path\*\*. The newer **azureMonitorProfile** onboarding surface has \*\*no linked
+access check at all\*\* today — so the check as it exists is entirely a
 **legacy-omsagent** construct.
 
 ---
@@ -63,8 +63,8 @@ using its **own first-party identity (service principal)** — *not* the caller'
 identity. Because the RP acts as itself, nothing downstream re-checks whether the
 *caller* was allowed to use that workspace.
 
-➡️ **The linked access check is the only place the caller's workspace permission
-is verified.** Remove it with nothing else changing, and any caller who can
+➡️ \*\*The linked access check is the only place the caller's workspace permission
+is verified.\*\* Remove it with nothing else changing, and any caller who can
 create a cluster could point it at a workspace they don't own and have the RP
 pull that workspace's key for them.
 
@@ -132,8 +132,8 @@ If not, we need keep it. If we remove it, we need **aks-rp can support the same 
 
 ## 5. How can we remove it?
 
-- The linked access check lives in the **Microsoft.ContainerService ARM manifest
-  source** (not in aks-rp code). Removal = deleting/relaxing those four manifest
+- The linked access check lives in the \*\*Microsoft.ContainerService ARM manifest
+  source\*\* (not in aks-rp code). Removal = deleting/relaxing those four manifest
   entries on the omsagent property.
 - It is a static manifest change; aks-rp code is unchanged by the removal itself.
 
