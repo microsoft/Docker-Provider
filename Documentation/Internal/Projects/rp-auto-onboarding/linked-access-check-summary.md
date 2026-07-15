@@ -6,6 +6,18 @@ want to remove it, (4) whether we can remove it, and (5) how it can be removed.*
 
 ---
 
+## TL;DR
+
+The omsagent linked access check is **four ANDed checks**. They fall into two
+groups with different removal conditions:
+
+| Check(s) | What it gates | Paths affected | Removal condition |
+|---|---|---|---|
+| **#1, #3, #4** — `sharedkeys/read`, `solutions/write`, `solutions/read` | Legacy shared-key + OMS-solutions onboarding (the workspace **key** aks-rp fetches and the ContainerInsights solution) | **Legacy only** (not exercised on MSI) | Remove when **either** (a) the legacy shared-key path of ama-logs is **fully retired** *(**preferred**)*, **or** (b) **aks-rp performs the same checks on behalf of the user**. |
+| **#2** — `workspaces/read` | Caller's read guard on the workspace; mirrors the workspace **GET** aks-rp does (**both** paths) to read the workspace **GUID** (`CustomerID`) injected into the ama-logs helm chart | **Both** legacy and MSI | Remove when **either** (a) we **do not inject the customer's workspace ID into our telemetry** — feasible on **MSI**, where the agent can self-derive the GUID from its local DCR config chunks (see Q4), but **not** on legacy shared-key onboarding — **or** (b) **aks-rp performs the same read check on behalf of the user** *(**preferred** — supportable once ama-logs integrates **OBO** in aks-rp)*. |
+
+---
+
 ## 1. What is it, in the scope of ama-logs?
 
 **Linked access check** = an ARM manifest rule that ties a write on **one**
@@ -44,8 +56,12 @@ linked action on the target workspace — any miss → 403:
   is the old **OMS "solutions"** model, where Container Insights
   installed a `ContainerInsights(workspace)` *solution* on the workspace. This is
   **not** part of the MSI path.
-- So three of the four checks (#1, #3, #4) exist to support **legacy onboarding**;
-- #2 (`workspaces/read`) is generic.
+- So three of the four checks (#1, #3, #4) exist to support **legacy onboarding**.
+- **#2 (`workspaces/read`) applies to both paths** — it's the caller's read guard
+  on the workspace, and it mirrors the workspace **GET** aks-rp itself does (on both
+  legacy and MSI paths) to read the workspace **GUID** (`CustomerID`) that gets
+  injected into the ama-logs helm chart. So #2 is the only check that does real work
+  on the MSI path.
 - **#3 is a write** — so a pure workspace *Reader* is not enough to pass the
   gate; onboarding needs a write-capable role on the workspace side.
 
@@ -64,9 +80,9 @@ identity. Because the RP acts as itself, nothing downstream re-checks whether th
 *caller* was allowed to use that workspace.
 
 ➡️ **The linked access check is the only place the caller's workspace permission
-is verified.** Remove it with nothing else changing, and any caller who can
-create a cluster could point it at a workspace they don't own and have the RP
-pull that workspace's key for them.
+is verified** (see Q4 for the per-path impact). Remove it with nothing else
+changing, and any caller who can create a cluster could point it at a workspace
+they don't own and have the RP pull that workspace's key for them.
 
 #1, #3, and #4 are **only on the legacy shared-key path** — that's the path that
 fetches a key. The azureMonitorProfile (managed-identity) path has no linked
@@ -74,13 +90,27 @@ access check and uses managed identity instead of a shared key.
 
 #2 is a general read permission, this guards that user can not use a workspace id that the user has no read permission to when enabling ama-logs.
 
+**What #2 (`workspaces/read`) actually enables in aks-rp:** aks-rp itself performs
+a workspace **GET** (`workspaces/read`) — on **both** the legacy and MSI paths — to
+read the workspace's `CustomerID` (the workspace GUID). That GUID is stored as the
+omsagent addon config `WorkspaceID` and injected into the **ama-logs helm chart** so
+the agent knows which workspace to send data to. The RP does this GET with its
+**own first-party identity**; linked-access-check #2 is the caller-side mirror,
+enforcing that the user who issued the PUT also has read on that same workspace.
+This is why #2 is the one check that does real work on the MSI path.
+(Source: `putmanagedclusterasync_addon.go` → `getLogAnalyticsWorkspaceInfo` —
+workspace GET → `customerID` → `AddonConfigOmsWorkspaceID`; `oms_agent.go` helm
+values → `WorkspaceID`.)
+
 ---
 
 ## 3. Why do we want to remove it?
 
-1. The linked access check feature is **not supported during new region build** (⚠️ **TO BE CONFIRMED**).
-2. The **legacy path of ama-logs is retiring**, so there is no need to keep the
-   linked access check in ARM, at least #1, #3, and #4.
+1. The linked access check does not work during **region build**. During region
+   build, the workspace is not yet available, so we need to bootstrap from a
+   workspace in another GA region — and **cross-region linked access check is not
+   supported**.
+2. The **legacy path of ama-logs is retiring**, so there is no need to keep the linked access check in ARM, at least #1, #3, and #4.
 
 ---
 
@@ -119,13 +149,34 @@ legacy path actually relies on this gate:
 
 Therefore,
 For #1, #3, and #4:
-1. The **legacy path of ama-logs is fully retired**.
+1. The **legacy path of ama-logs is fully retired**. *(**preferred**)*
 Or,
 2. **aks-rp can support the same functions** that the linked access check does **on behalf of the user**.
 
 For #2:
-⚠️ **[TO BE DISCUSSED]** Depending on whether we allow a user associate any workspace id.
-If not, we need keep it. If we remove it, we need **aks-rp can support the same functions** that the linked access check does **on behalf of the user**.
+#2 (`workspaces/read`) backs **two** things: (a) aks-rp reading the workspace
+**GUID** (`CustomerID`) to inject into the ama-logs helm chart, and (b) the
+caller-side permission guard on the workspace (ama-logs telemetry onboarding).
+It can be removed when **either**:
+1. we **do not inject the customer's workspace ID into our telemetry**, **or**
+2. **aks-rp can support the same functions** that the linked access check does **on behalf of the user**. *(**preferred** — supportable once ama-logs integrates **OBO** in aks-rp)*
+
+**More on option (a) — can the agent obtain the workspace ID itself?**
+For **MSI-onboarded** clusters, **yes**: the ama-logs agent can self-derive the
+workspace GUID from the **DCR config chunks** that `mdsd` fetches from AMCS at
+runtime (using the agent's own MSI/AAD token), cached locally in the container at
+`/etc/mdsd.d/config-cache/configchunks/*.json`. Modern DCR config has no literal
+`workspaceId` field — the GUID is embedded in the **ODS channel** the data routes
+to: `channels[].endpoint = https://<GUID>.ods.opinsights.azure.com` (and
+`sendToChannels -> "ods-<GUID>"`). So on MSI, aks-rp would **not** need to inject
+the workspace ID — the agent already has it via the DCR-issued channel config.
+- **Caveat — MSI only.** This relies on the AMCS/DCR path, which is the MSI/AAD
+  onboarding path. **Legacy shared-key** onboarding does **not** use AMCS/DCR
+  chunks; there the workspace ID still comes from the `WSID` secret/env that
+  aks-rp injects, so option (a) does **not** cover the legacy path.
+- Verified: the GUID extracted from the DCR chunk matched the pod's onboarded
+  `/etc/omsagent-secret/WSID`. *(Source: sibling investigation —
+  `mdsd-workspaceid-from-configchunks.md`.)*
 
 
 ---
@@ -141,13 +192,16 @@ If not, we need keep it. If we remove it, we need **aks-rp can support the same 
 
 ## Bottom line
 
-The linked access check is a **front-door permission gate** whose real weight is
-on the **legacy shared-key path**, where aks-rp fetches the workspace key as the
-**RP's identity, not the caller's** — making the gate the only caller-side
-workspace check. On the **MSI path** it is largely redundant (no key is fetched;
-DCR/managed-identity is granted separately). So any plan to remove it must keep a
-caller-permission enforcement for the **legacy** path, while the **MSI** path can
-tolerate removal with only an associate-to-unowned-workspace effect.
+The linked access check is a **front-door permission gate**. Its legacy-specific
+weight (#1, #3, #4) is on the **shared-key path**, where aks-rp fetches the
+workspace key as the **RP's identity, not the caller's** — making the gate the only
+caller-side check for that key. **#2 (`workspaces/read`) is different**: it applies
+to **both** paths and mirrors the workspace **GET** aks-rp performs to read the
+workspace **GUID** (`CustomerID`) it injects into the ama-logs helm chart, so on the
+**MSI path #2 still does real work** (the legacy checks #1/#3/#4 do not). Any plan to
+remove it must therefore (a) keep caller-permission enforcement for the **legacy**
+shared-key path, and (b) for #2, either stop injecting the customer's workspace ID
+into our telemetry, or have aks-rp enforce the same read check on behalf of the user.
 
 ---
 
