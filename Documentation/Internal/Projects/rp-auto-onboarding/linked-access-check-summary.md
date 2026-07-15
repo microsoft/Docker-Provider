@@ -14,7 +14,7 @@ groups with different removal conditions:
 | Check(s) | What it gates | Paths affected | Removal condition |
 |---|---|---|---|
 | **#1, #3, #4** — `sharedkeys/read`, `solutions/write`, `solutions/read` | Legacy shared-key + OMS-solutions onboarding (the workspace **key** aks-rp fetches and the ContainerInsights solution) | **Legacy only** (not exercised on MSI) | Remove when **either** (a) the legacy shared-key path of ama-logs is **fully retired** *(**preferred**)*, **or** (b) **aks-rp performs the same checks on behalf of the user**. |
-| **#2** — `workspaces/read` | Caller's read guard on the workspace; mirrors the workspace **GET** aks-rp does (**both** paths) to read the workspace **GUID** (`CustomerID`) injected into the ama-logs helm chart | **Both** legacy and MSI | Remove when **either** (a) we **do not inject the customer's workspace ID into our telemetry** — feasible on **MSI**, where the agent can self-derive the GUID from its local DCR config chunks (see Q4), but **not** on legacy shared-key onboarding — **or** (b) **aks-rp performs the same read check on behalf of the user** *(**preferred** — supportable once ama-logs integrates **OBO** in aks-rp)*. |
+| **#2** — `workspaces/read` | Backs the workspace **GET** aks-rp does (**both** paths) to read the workspace **GUID** (`CustomerID`) injected into the ama-logs helm chart | **Both** legacy and MSI | Remove when **either** (a) we **do not inject the customer's workspace ID into our telemetry** — feasible on **MSI**, where the agent can self-derive the GUID from its local DCR config chunks (see Q4), but **not** on legacy shared-key onboarding — **or** (b) **aks-rp performs the same read check on behalf of the user** *(**preferred** — supportable once ama-logs integrates **OBO** in aks-rp)*. |
 
 ---
 
@@ -57,11 +57,11 @@ linked action on the target workspace — any miss → 403:
   installed a `ContainerInsights(workspace)` *solution* on the workspace. This is
   **not** part of the MSI path.
 - So three of the four checks (#1, #3, #4) exist to support **legacy onboarding**.
-- **#2 (`workspaces/read`) applies to both paths** — it's the caller's read guard
-  on the workspace, and it mirrors the workspace **GET** aks-rp itself does (on both
-  legacy and MSI paths) to read the workspace **GUID** (`CustomerID`) that gets
-  injected into the ama-logs helm chart. So #2 is the only check that does real work
-  on the MSI path.
+- **#2 (`workspaces/read`) applies to both paths** — it mirrors the workspace
+  **GET** aks-rp itself does (on both legacy and MSI paths) to read the workspace
+  **GUID** (`CustomerID`) that gets injected into the ama-logs helm chart. That
+  GUID retrieval-and-injection is its purpose, and it's why #2 is the only check
+  that does real work on the MSI path.
 - **#3 is a write** — so a pure workspace *Reader* is not enough to pass the
   gate; onboarding needs a write-capable role on the workspace side.
 
@@ -88,7 +88,9 @@ they don't own and have the RP pull that workspace's key for them.
 fetches a key. The azureMonitorProfile (managed-identity) path has no linked
 access check and uses managed identity instead of a shared key.
 
-#2 is a general read permission, this guards that user can not use a workspace id that the user has no read permission to when enabling ama-logs.
+#2 mirrors the workspace **GET** aks-rp performs to read the workspace GUID; it
+requires that the caller has read on the workspace that aks-rp is about to read on
+their behalf when enabling ama-logs.
 
 **What #2 (`workspaces/read`) actually enables in aks-rp:** aks-rp itself performs
 a workspace **GET** (`workspaces/read`) — on **both** the legacy and MSI paths — to
@@ -136,10 +138,11 @@ legacy path actually relies on this gate:
   `sharedkeys/read` check (#1) isn't functionally exercised, and the legacy OMS
   `solutions/*` checks (#3/#4) don't apply either — for these three the gate is
   effectively **over-gating** this path today.
-- **#2 (`workspaces/read`) is the exception** — it still does real work on the
-  MSI path: it's the caller's read-permission guard on the workspace, and it
-  applies regardless of auth path (it stops a caller associating a workspace they
-  can't even read).
+- **#2 (`workspaces/read`) is the exception** — it still applies on the MSI path.
+  Its purpose here is to mirror the workspace **GET** aks-rp performs (on both
+  paths) to read the workspace **GUID** (`CustomerID`) that it injects into the
+  ama-logs helm chart. So on MSI, #2 exists specifically to back that GUID
+  retrieval-and-injection, not a broader association guard.
 - Removing the check here means a caller could **associate** a cluster to a
   workspace they don't own, but **no key is issued** — workspace authentication
   still requires the cluster's managed identity + a **DCR association**, which is
@@ -154,9 +157,9 @@ Or,
 2. **aks-rp can support the same functions** that the linked access check does **on behalf of the user**.
 
 For #2:
-#2 (`workspaces/read`) backs **two** things: (a) aks-rp reading the workspace
-**GUID** (`CustomerID`) to inject into the ama-logs helm chart, and (b) the
-caller-side permission guard on the workspace (ama-logs telemetry onboarding).
+#2 (`workspaces/read`) exists for a **single** purpose: aks-rp reads the workspace
+**GUID** (`CustomerID`) and injects it into the ama-logs helm chart, and #2 is the
+caller-side mirror of that read.
 It can be removed when **either**:
 1. we **do not inject the customer's workspace ID into our telemetry**, **or**
 2. **aks-rp can support the same functions** that the linked access check does **on behalf of the user**. *(**preferred** — supportable once ama-logs integrates **OBO** in aks-rp)*
