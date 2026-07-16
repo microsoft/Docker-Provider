@@ -3,8 +3,14 @@ name: $(Date:yyyyMMdd).$(Rev:r)
 variables:
 - name: ACRName
   value: $(VAR_ACR_NAME)
+# AgentImageTagSuffix is the image/chart tag promoted to ciprod MCR and used for
+# the helm deploys below. It now sources from the picked build run's runName
+# (= the build SEMVER, e.g. 3.6.0-ci-prod-<date>-<sha>) instead of a manually set
+# variable, so a release just picks a build run and uses whatever version is
+# inside it (mirrors ama-metrics resources.pipeline.<alias>.runName). The build
+# pipeline sets its run number to SEMVER via ##vso[build.updatebuildnumber].
 - name: AgentImageTagSuffix
-  value: $(VAR_AGENT_IMAGE_TAG_SUFFIX)
+  value: $(resources.pipeline._ci-aks-prod-release.runName)
 - name: AgentRelease
   value: $(VAR_AGENT_RELEASE)
 - name: AKSEngineCluster
@@ -496,7 +502,7 @@ extends:
       # (dependsOn: []) and gate the actual deploys on a job that polls MCR until the
       # new image tags are available. This mirrors the ama-metrics release pipeline.
       dependsOn: []
-      condition: and(eq(variables.IS_PR, false), eq(variables.IS_MAIN_BRANCH, true), ne(variables.AgentImageTagSuffix, ''))
+      condition: and(eq(variables.IS_PR, false), eq(variables.IS_MAIN_BRANCH, true))
       pool:
         name: Azure-Pipelines-CI-Test-EO
         image: ci-1es-managed-ubuntu-2204

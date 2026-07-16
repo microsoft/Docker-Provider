@@ -101,6 +101,15 @@ extends:
             echo "##vso[task.setvariable variable=windowsTelemetryTag;isOutput=true]$windowsTelemetryTag"
             echo "SEMVER is $SEMVER"
             echo "##vso[task.setvariable variable=SEMVER;isOutput=true]$SEMVER"
+            # Set the pipeline run number to SEMVER so downstream release pipelines
+            # can consume this exact build version via
+            # resources.pipeline.<alias>.runName (mirrors ama-metrics). A release then
+            # just picks a build run and uses whatever version is inside it, instead
+            # of hand-setting an image tag suffix. NOTE: the $(Build.BuildNumber)
+            # macros in the buildver.txt writes below are already expanded to the
+            # original unique run number at step start, so this override does not
+            # affect Ev2 artifact-version uniqueness.
+            echo "##vso[build.updatebuildnumber]$SEMVER"
             echo "appRegistrationClientId is $APP_REGISTRATION_CLIENT_ID"
             echo "appRegistrationTenantId is $APP_REGISTRATION_TENANT_ID"
             echo "authAKVName is $AUTH_AKV_NAME"
