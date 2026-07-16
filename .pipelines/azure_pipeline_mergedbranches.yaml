@@ -962,8 +962,9 @@ extends:
             set -e
             mkdir -p $(Build.ArtifactStagingDirectory)/helm-chart
             # Generate the chart from the committed templates using the SEMVER-derived
-            # tags, then lint + package. Runs on PRs too (validation), but the chart is
-            # only pushed / published on non-PR ci_prod builds (see gated steps below).
+            # tags, then lint + package. The chart is pushed to cidev on every build
+            # (mirrors ama-metrics, whose chart push is ungated); only the ADO pipeline
+            # artifact publish is gated to non-PR ci_prod builds (see the gated output above).
             export HELM_SEMVER="$(HELM_SEMVER)"
             export IMAGE_TAG="$(IMAGE_TAG)"
             export IMAGE_TAG_WINDOWS="$(IMAGE_TAG_WINDOWS)"
@@ -983,7 +984,6 @@ extends:
           displayName: "Generate, lint and package Helm chart"
         - task: AzureCLI@2
           displayName: "Push Helm chart to ACR"
-          condition: and(succeeded(), eq(variables.IS_PR, false), eq(variables.IS_MAIN_BRANCH, true))
           inputs:
             azureSubscription: ${{ variables.armServiceConnectionName }}
             scriptType: bash
