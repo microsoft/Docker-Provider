@@ -66,10 +66,21 @@ extends:
         steps:
         - task: ComponentGovernanceComponentDetection@0
         - bash: |
-            commit=$(git describe)
-            datetime=$(date +%Y%m%d%H%M%S)
-            linuxImagetag="$commit"-"$datetime"
-            windowsImageTag=win-"$commit"-"$datetime"
+            # Derive SEMVER from the repo-root VERSION file instead of git tags.
+            # Format: <VERSION>-<branch>-<date>-<commit>
+            if [ "$(IS_PR)" == "True" ]; then
+              BRANCH_NAME=$(System.PullRequest.SourceBranch)
+            else
+              BRANCH_NAME=$(Build.SourceBranch)
+              BRANCH_NAME=${BRANCH_NAME#refs/heads/}
+            fi
+            BRANCH_NAME=$(echo "$BRANCH_NAME" | tr / - | tr . - | tr _ - | cut -c1-90)
+            COMMIT_SHA=$(echo "$(Build.SourceVersion)" | cut -b -8)
+            DATE=$(TZ=America/Los_Angeles date +%m-%d-%Y)
+            VERSION=$(cat $(Build.SourcesDirectory)/VERSION)
+            SEMVER=$VERSION-$BRANCH_NAME-$DATE-$COMMIT_SHA
+            linuxImagetag=$SEMVER
+            windowsImageTag=win-$SEMVER
             telemetryTag=$linuxImagetag
             if [ -z "$TELEMETRY_TAG" ]
               then
@@ -88,11 +99,22 @@ extends:
             echo "##vso[task.setvariable variable=windowsImageTag;isOutput=true]$windowsImageTag"
             echo "##vso[task.setvariable variable=linuxTelemetryTag;isOutput=true]$linuxTelemetryTag"
             echo "##vso[task.setvariable variable=windowsTelemetryTag;isOutput=true]$windowsTelemetryTag"
+            echo "SEMVER is $SEMVER"
+            echo "##vso[task.setvariable variable=SEMVER;isOutput=true]$SEMVER"
             echo "appRegistrationClientId is $APP_REGISTRATION_CLIENT_ID"
             echo "appRegistrationTenantId is $APP_REGISTRATION_TENANT_ID"
             echo "authAKVName is $AUTH_AKV_NAME"
             echo "authCertName is $AUTH_CERT_NAME"
             echo "authSignCertName is $AUTH_SIGN_CERT_NAME"
+            # Generate Chart.yaml/values.yaml from the committed *-template.yaml files
+            # so the Ev2 source tar + CopyFiles below include the SEMVER-stamped chart
+            # for the downstream release pipeline. Only templates are committed.
+            export HELM_SEMVER="$SEMVER"
+            export IMAGE_TAG="$linuxImagetag"
+            export IMAGE_TAG_WINDOWS="$windowsImageTag"
+            CI_CHART_DIR="$(Build.SourcesDirectory)/charts/azuremonitor-containerinsights"
+            envsubst '${HELM_SEMVER} ${IMAGE_TAG} ${IMAGE_TAG_WINDOWS}' < "$CI_CHART_DIR/Chart-template.yaml" > "$CI_CHART_DIR/Chart.yaml"
+            envsubst '${HELM_SEMVER} ${IMAGE_TAG} ${IMAGE_TAG_WINDOWS}' < "$CI_CHART_DIR/values-template.yaml" > "$CI_CHART_DIR/values.yaml"
             cd $(Build.SourcesDirectory)/deployment/mergebranch-multiarch-agent-deployment-Managed-SDP/ServiceGroupRoot/Scripts
             tar -czvf ../artifacts.tar.gz pushAgentToAcr.sh
             cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension/ServiceGroupRoot/Scripts
@@ -902,6 +924,65 @@ extends:
             FileDirPath: '$(Build.ArtifactStagingDirectory)'
             DisableRemediation: false
             AcceptableOutdatedSignatureInHours: 72
+
+      - job: helm_chart
+        displayName: "Package and Publish Helm Chart"
+        dependsOn: common
+        pool:
+          name: Azure-Pipelines-CI-Test-EO
+          image: ci-1es-managed-ubuntu-2204
+          os: linux
+        variables:
+          HELM_SEMVER: $[ dependencies.common.outputs['setup.SEMVER'] ]
+          IMAGE_TAG: $[ dependencies.common.outputs['setup.linuxImagetag'] ]
+          IMAGE_TAG_WINDOWS: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
+          skipComponentGovernanceDetection: true
+          Codeql.SkipTaskAutoInjection: true
+        templateContext:
+          outputs:
+          - output: pipelineArtifact
+            targetPath: '$(Build.ArtifactStagingDirectory)/helm-chart'
+            artifactName: helm-chart-drop
+            condition: and(succeeded(), eq(variables.IS_PR, false), eq(variables.IS_MAIN_BRANCH, true))
+        steps:
+        - task: HelmInstaller@1
+          displayName: "Install Helm"
+          inputs:
+            helmVersionToInstall: 'latest'
+        - bash: |
+            set -e
+            mkdir -p $(Build.ArtifactStagingDirectory)/helm-chart
+            # Generate the chart from the committed templates using the SEMVER-derived
+            # tags, then lint + package. Runs on PRs too (validation), but the chart is
+            # only pushed / published on non-PR ci_prod builds (see gated steps below).
+            export HELM_SEMVER="$(HELM_SEMVER)"
+            export IMAGE_TAG="$(IMAGE_TAG)"
+            export IMAGE_TAG_WINDOWS="$(IMAGE_TAG_WINDOWS)"
+            cd $(Build.SourcesDirectory)/charts/azuremonitor-containerinsights
+            envsubst '${HELM_SEMVER} ${IMAGE_TAG} ${IMAGE_TAG_WINDOWS}' < Chart-template.yaml > Chart.yaml
+            envsubst '${HELM_SEMVER} ${IMAGE_TAG} ${IMAGE_TAG_WINDOWS}' < values-template.yaml > values.yaml
+            echo "----- generated Chart.yaml -----"
+            cat Chart.yaml
+            helm lint .
+            helm package . --version "$(HELM_SEMVER)" --destination $(Build.ArtifactStagingDirectory)/helm-chart
+            ls -l $(Build.ArtifactStagingDirectory)/helm-chart
+          displayName: "Generate, lint and package Helm chart"
+        - task: AzureCLI@2
+          displayName: "Push Helm chart to ACR"
+          condition: and(succeeded(), eq(variables.IS_PR, false), eq(variables.IS_MAIN_BRANCH, true))
+          inputs:
+            azureSubscription: ${{ variables.armServiceConnectionName }}
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              set -e
+              az account set -s ${{ variables.subscription }}
+              az acr login -n ${{ variables.containerRegistry }}
+              CHART_TGZ="$(Build.ArtifactStagingDirectory)/helm-chart/azuremonitor-containers-$(HELM_SEMVER).tgz"
+              helm push "$CHART_TGZ" oci://${{ variables.repoImageName }}
+              echo "{\"helmChartName\":\"azuremonitor-containers\",\"helmChartVersion\":\"$(HELM_SEMVER)\",\"helmChartRef\":\"oci://${{ variables.repoImageName }}/azuremonitor-containers:$(HELM_SEMVER)\"}" > $(Build.ArtifactStagingDirectory)/helm-chart/metadata.json
+              cat $(Build.ArtifactStagingDirectory)/helm-chart/metadata.json
+              echo "##vso[task.logissue type=warning]Helm chart pushed: oci://${{ variables.repoImageName }}/azuremonitor-containers:$(HELM_SEMVER)"
 
     - stage: Deploy_and_Test_Images_In_Dev_Clusters
       displayName: Deploy and Test Images in Dev Clusters

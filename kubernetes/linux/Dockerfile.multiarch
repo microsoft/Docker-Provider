@@ -75,8 +75,9 @@ ENV KUBE_CLIENT_BACKOFF_BASE 1
 ENV KUBE_CLIENT_BACKOFF_DURATION 0
 ENV RUBY_GC_HEAP_OLDOBJECT_LIMIT_FACTOR 1.0
 
-# default value will be overwritten by pipeline
-ARG IMAGE_TAG=3.4.0
+# default value is a non-release placeholder; the real version is injected by the
+# build pipeline via --build-arg IMAGE_TAG=<SEMVER>
+ARG IMAGE_TAG=0.0.0-dev
 ENV AGENT_VERSION ${IMAGE_TAG}
 
 WORKDIR ${tmpdir}

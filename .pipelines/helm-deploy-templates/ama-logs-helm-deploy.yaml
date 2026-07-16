@@ -90,6 +90,23 @@ jobs:
         steps:
         - checkout: self
           displayName: Checkout repository
+        - bash: |
+            set -euo pipefail
+            CHART_DIR="$(Build.SourcesDirectory)/charts/azuremonitor-containerinsights"
+            cd "$CHART_DIR"
+            # The committed chart is template-only (Chart.yaml/values.yaml are
+            # generated at build time from the *-template.yaml files, see
+            # azure_pipeline_mergedbranches.yaml). Regenerate them here so the
+            # FilePath Helm deploy below has a complete chart in this job's
+            # fresh checkout.
+            export HELM_SEMVER="${{ parameters.amalogsLinuxImage }}"
+            export IMAGE_TAG="${{ parameters.amalogsLinuxImage }}"
+            export IMAGE_TAG_WINDOWS="${{ parameters.amalogsWindowsImage }}"
+            envsubst '${HELM_SEMVER} ${IMAGE_TAG} ${IMAGE_TAG_WINDOWS}' < Chart-template.yaml > Chart.yaml
+            envsubst '${HELM_SEMVER} ${IMAGE_TAG} ${IMAGE_TAG_WINDOWS}' < values-template.yaml > values.yaml
+            echo "----- generated Chart.yaml -----"
+            cat Chart.yaml
+          displayName: 'Generate Chart.yaml and values.yaml from templates'
         - task: HelmInstaller@1
           displayName: Install Helm
           inputs:
