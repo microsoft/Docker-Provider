@@ -524,7 +524,7 @@ extends:
         steps:
         - checkout: none
         - task: Bash@3
-          displayName: 'Check ama-logs images are published to MCR'
+          displayName: 'Check ama-logs images and Helm chart are published to MCR'
           target:
             container: host
           env:
@@ -532,6 +532,9 @@ extends:
             WINDOWS_TAG: 'win-$(AgentImageTagSuffix)'
             MCR_REGISTRY: 'mcr.microsoft.com'
             PROD_MCR_AGENT_REPO: '/azuremonitor/containerinsights/ciprod'
+            PROD_MCR_CHART_REPO: '/azuremonitor/containerinsights/ciprod/azuremonitor-containers'
+            CHART_TAG: '$(AgentImageTagSuffix)'
+            CHART_TAG_ARC: '$(AgentImageTagSuffix)-arc'
             # 1440 attempts * 60s = up to 24h, covering the Stage_2 rollout window.
             MAX_RETRIES: 1440
             SLEEP_INTERVAL: 60
@@ -541,33 +544,38 @@ extends:
               set -uo pipefail
 
               # Returns the HTTP status code for a tag's manifest on MCR.
-              # A 200 means the image tag exists. Querying the manifest directly
-              # (instead of grepping /tags/list) avoids substring false positives
-              # and pagination issues on the large ciprod repo.
+              # A 200 means the manifest (container image or OCI Helm chart) exists.
+              # Querying the manifest directly (instead of grepping /tags/list) avoids
+              # substring false positives and pagination issues on the large ciprod repo.
               check_tag() {
-                local tag="$1"
+                local repo="$1"
+                local tag="$2"
                 curl -sSL -o /dev/null -w "%{http_code}" \
                   -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.v2+json" \
-                  "https://${MCR_REGISTRY}/v2${PROD_MCR_AGENT_REPO}/manifests/${tag}" || echo "000"
+                  "https://${MCR_REGISTRY}/v2${repo}/manifests/${tag}" || echo "000"
               }
 
-              echo "Waiting for ama-logs images to be published to MCR:"
-              echo "  Linux:   ${MCR_REGISTRY}${PROD_MCR_AGENT_REPO}:${LINUX_TAG}"
-              echo "  Windows: ${MCR_REGISTRY}${PROD_MCR_AGENT_REPO}:${WINDOWS_TAG}"
+              echo "Waiting for ama-logs images and Helm chart to be published to MCR:"
+              echo "  Linux:      ${MCR_REGISTRY}${PROD_MCR_AGENT_REPO}:${LINUX_TAG}"
+              echo "  Windows:    ${MCR_REGISTRY}${PROD_MCR_AGENT_REPO}:${WINDOWS_TAG}"
+              echo "  Chart:      ${MCR_REGISTRY}${PROD_MCR_CHART_REPO}:${CHART_TAG}"
+              echo "  Chart(arc): ${MCR_REGISTRY}${PROD_MCR_CHART_REPO}:${CHART_TAG_ARC}"
               echo "  MAX_RETRIES=${MAX_RETRIES} SLEEP_INTERVAL=${SLEEP_INTERVAL}s"
 
               for i in $(seq 1 "$MAX_RETRIES"); do
-                linux_code=$(check_tag "$LINUX_TAG")
-                windows_code=$(check_tag "$WINDOWS_TAG")
-                echo "Attempt ${i}/${MAX_RETRIES}: linux=${linux_code} windows=${windows_code}"
-                if [ "$linux_code" = "200" ] && [ "$windows_code" = "200" ]; then
-                  echo "Both ama-logs images are published to MCR."
+                linux_code=$(check_tag "$PROD_MCR_AGENT_REPO" "$LINUX_TAG")
+                windows_code=$(check_tag "$PROD_MCR_AGENT_REPO" "$WINDOWS_TAG")
+                chart_code=$(check_tag "$PROD_MCR_CHART_REPO" "$CHART_TAG")
+                chart_arc_code=$(check_tag "$PROD_MCR_CHART_REPO" "$CHART_TAG_ARC")
+                echo "Attempt ${i}/${MAX_RETRIES}: linux=${linux_code} windows=${windows_code} chart=${chart_code} chart-arc=${chart_arc_code}"
+                if [ "$linux_code" = "200" ] && [ "$windows_code" = "200" ] && [ "$chart_code" = "200" ] && [ "$chart_arc_code" = "200" ]; then
+                  echo "All ama-logs images and Helm chart tags are published to MCR."
                   exit 0
                 fi
                 sleep "$SLEEP_INTERVAL"
               done
 
-              echo "##[error]ama-logs images not published to MCR within $((MAX_RETRIES * SLEEP_INTERVAL / 60)) minutes."
+              echo "##[error]ama-logs images/chart not published to MCR within $((MAX_RETRIES * SLEEP_INTERVAL / 60)) minutes."
               exit 1
       # Monitoring-Model-Cluster-WCUS
       - template: .pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self
