@@ -33,6 +33,8 @@
       "targetType": "ServiceResourceDefinition",
       "targetName": "ShellExtension",
       "actions": [
+        "shell/PushAgentToACR",
+        "shell/PushAgentToACR-1",
         "shell/PushChartToACR"
       ],
       "dependsOn": []
