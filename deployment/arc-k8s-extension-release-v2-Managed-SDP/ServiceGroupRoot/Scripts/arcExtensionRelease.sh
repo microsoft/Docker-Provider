@@ -12,8 +12,14 @@ CHART_VERSION=${CHART_VERSION}
 PACKAGE_CONFIG_NAME="${PACKAGE_CONFIG_NAME:-microsoft.azuremonitor.containers-pkg092025}"
 API_VERSION="${API_VERSION:-2021-05-01}"
 METHOD="${METHOD:-put}"
-REGISTRY_PATH_CANARY_STABLE="https://mcr.microsoft.com/azuremonitor/containerinsights/canary/stable/azuremonitor-containers"
-REGISTRY_PATH_PROD_STABLE="https://mcr.microsoft.com/azuremonitor/containerinsights/prod1/stable/azuremonitor-containers"
+# The build packages the Helm chart and pushes it to cidev; the AKS prod release
+# promotes it to the single ciprod OCI path (<version> for the AKS extension and
+# <version>-arc for the Arc K8s extension). This Arc release no longer packages or
+# pushes the chart - it only registers the already-promoted ciprod chart with the
+# Arc Registration API (mirrors ama-metrics). Both release-train paths below now
+# resolve to that single promoted ciprod chart.
+REGISTRY_PATH_CANARY_STABLE="https://mcr.microsoft.com/azuremonitor/containerinsights/ciprod/azuremonitor-containers"
+REGISTRY_PATH_PROD_STABLE="https://mcr.microsoft.com/azuremonitor/containerinsights/ciprod/azuremonitor-containers"
 
 if [ -z "$REGISTER_REGIONS_CANARY" ]; then
     echo "-e error release region must be provided "
@@ -37,7 +43,7 @@ if [ -z "$RELEASE_TRAINS_PREVIEW_PATH" ]; then
     echo "-e error preview release train must be provided "
     exit 1
 fi
-MCR_NAME_PATH="oci://mcr.microsoft.com/azuremonitor/containerinsights/canary/stable/azuremonitor-containers"
+MCR_NAME_PATH="oci://mcr.microsoft.com/azuremonitor/containerinsights/ciprod/azuremonitor-containers"
 echo "Pulling chart from MCR:${MCR_NAME_PATH}"
 helm pull ${MCR_NAME_PATH} --version ${CHART_VERSION}
 if [ $? -eq 0 ]; then
@@ -81,7 +87,7 @@ if [ -z "$RELEASE_TRAINS_STABLE_PATH" ]; then
     echo "-e error stable release train must be provided "
     exit 1
 fi
-MCR_NAME_PATH="oci://mcr.microsoft.com/azuremonitor/containerinsights/canary/stable/azuremonitor-containers"
+MCR_NAME_PATH="oci://mcr.microsoft.com/azuremonitor/containerinsights/ciprod/azuremonitor-containers"
 echo "Pulling chart from MCR:${MCR_NAME_PATH}"
 helm pull ${MCR_NAME_PATH} --version ${CHART_VERSION}
 if [ $? -eq 0 ]; then
@@ -145,7 +151,7 @@ if [ -z "$REGISTER_REGIONS_BATCH" ]; then
     echo "-e error stable release regions must be provided "
     exit 1
 fi
-MCR_NAME_PATH="oci://mcr.microsoft.com/azuremonitor/containerinsights/prod1/stable/azuremonitor-containers"
+MCR_NAME_PATH="oci://mcr.microsoft.com/azuremonitor/containerinsights/ciprod/azuremonitor-containers"
 echo "Pulling chart from MCR:${MCR_NAME_PATH}"
 helm pull ${MCR_NAME_PATH} --version ${CHART_VERSION}
 if [ $? -eq 0 ]; then
