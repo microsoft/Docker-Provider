@@ -13,9 +13,8 @@
 *.orig
 *~
 
-# Chart source/generator files — the build (and generate_helm_files.sh)
-# substitutes these into the real Chart.yaml/values.yaml before packaging,
-# so the templates and the script must not ship inside the chart.
+# Chart source files — the build substitutes these into the real
+# Chart.yaml/values.yaml before packaging, so the templates must not
+# ship inside the chart.
 Chart-template.yaml
 values-template.yaml
-generate_helm_files.sh
