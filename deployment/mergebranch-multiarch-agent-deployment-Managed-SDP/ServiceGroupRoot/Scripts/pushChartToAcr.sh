@@ -5,11 +5,10 @@ set -e
 #
 # Promotes the ama-logs Helm chart from cidev to the ciprod OCI registry, mirroring
 # pushAgentToAcr.sh (which promotes the agent container image). The build packages the
-# same chart and pushes it to cidev under two tags: <CDPX_TAG> and <CDPX_TAG>-arc.
-# This script copies both to ciprod under the clean release tag, matching the promoted
-# agent image tag:
-#   cidev azuremonitor-containers:<CDPX_TAG>      -> ciprod azuremonitor-containers:<AGENT_IMAGE_TAG_SUFFIX>       (AKS extension)
-#   cidev azuremonitor-containers:<CDPX_TAG>-arc  -> ciprod azuremonitor-containers:<AGENT_IMAGE_TAG_SUFFIX>-arc   (Arc K8s extension)
+# same chart and pushes it to cidev under two tags: <AGENT_IMAGE_TAG_SUFFIX> and
+# <AGENT_IMAGE_TAG_SUFFIX>-arc. This script copies both to ciprod under the same tag:
+#   cidev azuremonitor-containers:<AGENT_IMAGE_TAG_SUFFIX>      -> ciprod azuremonitor-containers:<AGENT_IMAGE_TAG_SUFFIX>       (AKS extension)
+#   cidev azuremonitor-containers:<AGENT_IMAGE_TAG_SUFFIX>-arc  -> ciprod azuremonitor-containers:<AGENT_IMAGE_TAG_SUFFIX>-arc   (Arc K8s extension)
 
 if [ -z $AGENT_IMAGE_TAG_SUFFIX ]; then
   echo "-e error value of AGENT_IMAGE_TAG_SUFFIX variable shouldnt be empty. check release variables"
@@ -18,11 +17,6 @@ fi
 
 if [ -z $AGENT_RELEASE ]; then
   echo "-e error AGENT_RELEASE shouldnt be empty. check release variables"
-  exit 1
-fi
-
-if [ -z $CDPX_TAG ]; then
-  echo "-e error value of CDPX_TAG shouldn't be empty. check release variables"
   exit 1
 fi
 

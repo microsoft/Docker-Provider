@@ -23,31 +23,6 @@ variables:
   value: $(VAR_AKS_SCALE_CLUSTER_REGION)
 - name: AKSScaleClusterResourceId
   value: $(VAR_AKS_SCALE_CLUSTER_RESOURCE_ID)
-- name: CDPXLinuxACR
-  value: $(VAR_CDPX_LINUX_ACR)
-- name: CDPXLinuxRegistry
-  value: $(VAR_CDPX_LINUX_REGISTRY)
-- name: CDPXLinuxRepoName
-  value: $(VAR_CDPX_LINUX_REPO_NAME)
-# CDPXLinuxTag is the SOURCE tag for the cidev->ciprod promotion of the linux
-# image and the Helm chart (the build pushes both to cidev under the SEMVER).
-# It now sources from the picked build run's runName (= SEMVER) instead of a
-# manually set variable, so the release always promotes the exact artifacts the
-# chosen build produced (mirrors ama-metrics resources.pipeline.<alias>.runName).
-- name: CDPXLinuxTag
-  value: $(resources.pipeline._ci-aks-prod-release.runName)
-- name: CDPXWindowsACR
-  value: $(VAR_CDPX_WINDOWS_ACR)
-- name: CDPXWindowsRegistry
-  value: $(VAR_CDPX_WINDOWS_REGISTRY)
-- name: CDPXWindowsRepoName
-  value: $(VAR_CDPX_WINDOWS_REPO_NAME)
-# CDPXWindowsTag is the SOURCE tag for the cidev->ciprod promotion of the
-# windows image, which the build pushes to cidev as win-<SEMVER>. It is the
-# runName (= SEMVER) with the same win- prefix, so no manually set variable is
-# needed.
-- name: CDPXWindowsTag
-  value: win-$(resources.pipeline._ci-aks-prod-release.runName)
 - name: CIKV
   value: $(VAR_CIKV)
 - name: CIRelease
@@ -61,7 +36,7 @@ variables:
 - name: OverrideTag
   value: $(VAR_OVERRIDE_TAG)
 - name: configurationOverrides
-  value: '{"ConfigurationSpecification":{"Settings":{"agentImageTagSuffix":"$(AgentImageTagSuffix)","cdpxLinuxTag":"$(CDPXLinuxTag)","cdpxWindowsTag":"$(CDPXWindowsTag)","overrideTag":"$(OverrideTag)"}}}'
+  value: '{"ConfigurationSpecification":{"Settings":{"agentImageTagSuffix":"$(AgentImageTagSuffix)","overrideTag":"$(OverrideTag)"}}}'
 - name: ServiceTreeGuid
   value: $(VAR_SERVICE_TREE_GUID)
 - name: UserAssignedIdentityClientId

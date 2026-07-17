@@ -38,12 +38,8 @@
             "value": "public/azuremonitor/containerinsights/__AGENT_RELEASE__:__AGENT_IMAGE_TAG_SUFFIX__"
           },
           {
-            "name": "CDPX_TAG",
-            "value": "__CDPX_LINUX_TAG__"
-          },
-          {
             "name": "SOURCE_IMAGE_FULL_PATH",
-            "value": "mcr.microsoft.com/azuremonitor/containerinsights/cidev:__CDPX_LINUX_TAG__"
+            "value": "mcr.microsoft.com/azuremonitor/containerinsights/cidev:__AGENT_IMAGE_TAG_SUFFIX__"
           },
           {
             "name": "OVERRIDE_TAG",
@@ -94,12 +90,8 @@
             "value": "public/azuremonitor/containerinsights/__AGENT_RELEASE__:win-__AGENT_IMAGE_TAG_SUFFIX__"
           },
           {
-            "name": "CDPX_TAG",
-            "value": "__CDPX_WINDOWS_TAG__"
-          },
-          {
             "name": "SOURCE_IMAGE_FULL_PATH",
-            "value": "mcr.microsoft.com/azuremonitor/containerinsights/cidev:__CDPX_WINDOWS_TAG__"
+            "value": "mcr.microsoft.com/azuremonitor/containerinsights/cidev:win-__AGENT_IMAGE_TAG_SUFFIX__"
           },
           {
             "name": "OVERRIDE_TAG",
@@ -146,12 +138,8 @@
             "value": "__AGENT_IMAGE_TAG_SUFFIX__"
           },
           {
-            "name": "CDPX_TAG",
-            "value": "__CDPX_LINUX_TAG__"
-          },
-          {
             "name": "SOURCE_CHART_FULL_PATH",
-            "value": "mcr.microsoft.com/azuremonitor/containerinsights/cidev/azuremonitor-containers:__CDPX_LINUX_TAG__"
+            "value": "mcr.microsoft.com/azuremonitor/containerinsights/cidev/azuremonitor-containers:__AGENT_IMAGE_TAG_SUFFIX__"
           },
           {
             "name": "DEST_CHART_REPO",
