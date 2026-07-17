@@ -491,7 +491,7 @@ extends:
             WINDOWS_TAG: 'win-$(AgentImageTagSuffix)'
             MCR_REGISTRY: 'mcr.microsoft.com'
             PROD_MCR_AGENT_REPO: '/azuremonitor/containerinsights/ciprod'
-            PROD_MCR_CHART_REPO: '/azuremonitor/containerinsights/ciprod/azuremonitor-containers'
+            PROD_MCR_CHART_REPO: '/azuremonitor/helmchart/containerinsights/ciprod/azuremonitor-containers'
             CHART_TAG: '$(AgentImageTagSuffix)'
             CHART_TAG_ARC: '$(AgentImageTagSuffix)-arc'
             # 1440 attempts * 60s = up to 24h, covering the Stage_2 rollout window.

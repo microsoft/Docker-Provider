@@ -139,11 +139,11 @@
           },
           {
             "name": "SOURCE_CHART_FULL_PATH",
-            "value": "mcr.microsoft.com/azuremonitor/containerinsights/cidev/azuremonitor-containers:__AGENT_IMAGE_TAG_SUFFIX__"
+            "value": "mcr.microsoft.com/azuremonitor/containerinsights/preview/azuremonitor-containers:__AGENT_IMAGE_TAG_SUFFIX__"
           },
           {
             "name": "DEST_CHART_REPO",
-            "value": "public/azuremonitor/containerinsights/__AGENT_RELEASE__/azuremonitor-containers"
+            "value": "public/azuremonitor/helmchart/containerinsights/__AGENT_RELEASE__/azuremonitor-containers"
           },
           {
             "name": "OVERRIDE_TAG",

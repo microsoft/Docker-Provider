@@ -16,6 +16,10 @@ variables:
   subscription: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
   containerRegistry: 'containerinsightsprod'
   repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/containerinsights/cidev'
+  # Helm chart is pushed to a dedicated chart path, decoupled from the agent image path
+  # (repoImageName). The chart reuses the already-onboarded `preview` MCR repo instead of a
+  # new cidev chart repo; the prod release promotes it to the `helmchart/... /ciprod` path.
+  chartRepoName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/containerinsights/preview'
   GOLANG_BASE_IMAGE: 'mcr.microsoft.com/oss/go/microsoft/golang:1.26.5'
   IS_PR: $[eq(variables['Build.Reason'], 'PullRequest')]
   IS_MAIN_BRANCH: $[eq(variables['Build.SourceBranchName'], 'ci_prod')]
@@ -962,9 +966,10 @@ extends:
             set -e
             mkdir -p $(Build.ArtifactStagingDirectory)/helm-chart
             # Generate the chart from the committed templates using the SEMVER-derived
-            # tags, then lint + package. The chart is pushed to cidev on every build
-            # (mirrors ama-metrics, whose chart push is ungated); only the ADO pipeline
-            # artifact publish is gated to non-PR ci_prod builds (see the gated output above).
+            # tags, then lint + package. The chart is pushed to the preview chart repo on
+            # every build (mirrors ama-metrics, whose chart push is ungated); only the ADO
+            # pipeline artifact publish is gated to non-PR ci_prod builds (see the gated
+            # output above).
             export HELM_SEMVER="$(HELM_SEMVER)"
             export IMAGE_TAG="$(IMAGE_TAG)"
             export IMAGE_TAG_WINDOWS="$(IMAGE_TAG_WINDOWS)"
@@ -977,8 +982,8 @@ extends:
             helm package . --version "$(HELM_SEMVER)" --destination $(Build.ArtifactStagingDirectory)/helm-chart
             # Package the same chart a second time under an -arc prerelease version so the
             # build publishes both an AKS-extension tag (<SEMVER>) and an Arc tag
-            # (<SEMVER>-arc) to cidev, mirroring the ama-metrics build. The prod release
-            # promotes both tags to ciprod.
+            # (<SEMVER>-arc) to the preview chart repo, mirroring the ama-metrics build. The
+            # prod release promotes both tags to the ciprod chart repo.
             helm package . --version "$(HELM_SEMVER)-arc" --destination $(Build.ArtifactStagingDirectory)/helm-chart
             ls -l $(Build.ArtifactStagingDirectory)/helm-chart
           displayName: "Generate, lint and package Helm chart"
@@ -994,12 +999,12 @@ extends:
               az acr login -n ${{ variables.containerRegistry }}
               CHART_TGZ="$(Build.ArtifactStagingDirectory)/helm-chart/azuremonitor-containers-$(HELM_SEMVER).tgz"
               CHART_TGZ_ARC="$(Build.ArtifactStagingDirectory)/helm-chart/azuremonitor-containers-$(HELM_SEMVER)-arc.tgz"
-              helm push "$CHART_TGZ" oci://${{ variables.repoImageName }}
+              helm push "$CHART_TGZ" oci://${{ variables.chartRepoName }}
               # Arc tag: same chart, pushed under <SEMVER>-arc for the Arc K8s extension path.
-              helm push "$CHART_TGZ_ARC" oci://${{ variables.repoImageName }}
-              echo "{\"helmChartName\":\"azuremonitor-containers\",\"helmChartVersion\":\"$(HELM_SEMVER)\",\"helmChartRef\":\"oci://${{ variables.repoImageName }}/azuremonitor-containers:$(HELM_SEMVER)\",\"helmChartArcRef\":\"oci://${{ variables.repoImageName }}/azuremonitor-containers:$(HELM_SEMVER)-arc\"}" > $(Build.ArtifactStagingDirectory)/helm-chart/metadata.json
+              helm push "$CHART_TGZ_ARC" oci://${{ variables.chartRepoName }}
+              echo "{\"helmChartName\":\"azuremonitor-containers\",\"helmChartVersion\":\"$(HELM_SEMVER)\",\"helmChartRef\":\"oci://${{ variables.chartRepoName }}/azuremonitor-containers:$(HELM_SEMVER)\",\"helmChartArcRef\":\"oci://${{ variables.chartRepoName }}/azuremonitor-containers:$(HELM_SEMVER)-arc\"}" > $(Build.ArtifactStagingDirectory)/helm-chart/metadata.json
               cat $(Build.ArtifactStagingDirectory)/helm-chart/metadata.json
-              echo "##vso[task.logissue type=warning]Helm chart pushed: oci://${{ variables.repoImageName }}/azuremonitor-containers:$(HELM_SEMVER) and :$(HELM_SEMVER)-arc"
+              echo "##vso[task.logissue type=warning]Helm chart pushed: oci://${{ variables.chartRepoName }}/azuremonitor-containers:$(HELM_SEMVER) and :$(HELM_SEMVER)-arc"
 
     - stage: Deploy_and_Test_Images_In_Dev_Clusters
       displayName: Deploy and Test Images in Dev Clusters

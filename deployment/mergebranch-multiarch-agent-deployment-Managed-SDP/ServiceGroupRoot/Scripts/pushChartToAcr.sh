@@ -36,7 +36,7 @@ if [ -z $DEST_CHART_REPO ]; then
 fi
 
 # MCR repo (without the ACR host / public prefix) used only for the overwrite check below.
-CHART_MCR_REPO="azuremonitor/containerinsights/${AGENT_RELEASE}/azuremonitor-containers"
+CHART_MCR_REPO="azuremonitor/helmchart/containerinsights/${AGENT_RELEASE}/azuremonitor-containers"
 
 # Make sure the chart tag being pushed will not overwrite an existing tag in mcr.
 # Unlike the agent image repo, the chart repo may not exist yet on the first ever
