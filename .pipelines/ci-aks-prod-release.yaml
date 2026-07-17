@@ -29,16 +29,25 @@ variables:
   value: $(VAR_CDPX_LINUX_REGISTRY)
 - name: CDPXLinuxRepoName
   value: $(VAR_CDPX_LINUX_REPO_NAME)
+# CDPXLinuxTag is the SOURCE tag for the cidev->ciprod promotion of the linux
+# image and the Helm chart (the build pushes both to cidev under the SEMVER).
+# It now sources from the picked build run's runName (= SEMVER) instead of a
+# manually set variable, so the release always promotes the exact artifacts the
+# chosen build produced (mirrors ama-metrics resources.pipeline.<alias>.runName).
 - name: CDPXLinuxTag
-  value: $(VAR_CDPX_LINUX_TAG)
+  value: $(resources.pipeline._ci-aks-prod-release.runName)
 - name: CDPXWindowsACR
   value: $(VAR_CDPX_WINDOWS_ACR)
 - name: CDPXWindowsRegistry
   value: $(VAR_CDPX_WINDOWS_REGISTRY)
 - name: CDPXWindowsRepoName
   value: $(VAR_CDPX_WINDOWS_REPO_NAME)
+# CDPXWindowsTag is the SOURCE tag for the cidev->ciprod promotion of the
+# windows image, which the build pushes to cidev as win-<SEMVER>. It is the
+# runName (= SEMVER) with the same win- prefix, so no manually set variable is
+# needed.
 - name: CDPXWindowsTag
-  value: $(VAR_CDPX_WINDOWS_TAG)
+  value: win-$(resources.pipeline._ci-aks-prod-release.runName)
 - name: CIKV
   value: $(VAR_CIKV)
 - name: CIRelease
@@ -408,37 +417,6 @@ extends:
             repository: none
           target:
             container: host
-        - task: Bash@3
-          displayName: Set CDPX Linux Tag
-          inputs:
-            targetType: inline
-            script: |
-              # Write your commands here
-
-              LINUX_TAG=$(jq '."image.name"' metadata.json | tr -d '"' | cut -d':' -f2)
-              echo $LINUX_TAG
-
-              set +x
-              echo "##vso[task.setvariable variable=CDPXLinuxTag;]$LINUX_TAG"
-              set -x
-            workingDirectory: $(Pipeline.Workspace)/ev2Artifact/linux-drop/linux
-            failOnStderr: true
-        - task: Bash@3
-          displayName: Set CDPX Windows Tag
-          inputs:
-            targetType: inline
-            script: |+
-              # Write your commands here
-
-              WINDOWS_TAG=$(jq '."image.name"' metadata.json | tr -d '"' | cut -d':' -f2)
-              echo $WINDOWS_TAG
-
-              set +x
-              echo "##vso[task.setvariable variable=CDPXWindowsTag;]$WINDOWS_TAG"
-              set -x
-
-            workingDirectory: $(Pipeline.Workspace)/ev2Artifact/windows-drop/windows
-            failOnStderr: true
         - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
           displayName: Ev2 Managed SDP - Deploy
           inputs:
