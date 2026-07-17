@@ -116,6 +116,29 @@ extends:
           inputs:
             repoId: microsoft/Docker-Provider
             path: release_gating.py
+        - powershell: |
+            $repo = "azuremonitor/helmchart/containerinsights/ciprod/azuremonitor-containers"
+            $version = "$(CHART_VERSION)"
+            $url = "https://mcr.microsoft.com/v2/$repo/tags/list"
+            Write-Host "Preflight: checking $url for tag '$version'"
+            $found = $false
+            for ($i = 1; $i -le 6; $i++) {
+              try {
+                $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 30
+                if ($resp.tags -contains $version) { $found = $true; break }
+                Write-Host "Attempt $i/6: tag '$version' not present yet."
+              } catch {
+                $msg = $_.Exception.Message
+                Write-Host "Attempt $i/6: MCR query failed: $msg"
+              }
+              Start-Sleep -Seconds 30
+            }
+            if (-not $found) {
+              Write-Host "##vso[task.logissue type=error]Preflight failed: chart '${repo}:${version}' is not available on the ciprod MCR path. Run the AKS prod release for this build first (it promotes the -arc chart to ciprod), then allow ACR->MCR mirror propagation time."
+              exit 1
+            }
+            Write-Host "Preflight passed: chart '${repo}:${version}' is available on MCR."
+          displayName: Preflight - verify -arc chart on ciprod MCR
       - job: approval
         variables:
         - name: OneESPT
@@ -394,6 +417,29 @@ extends:
           inputs:
             repoId: microsoft/Docker-Provider
             path: release_gating.py
+        - powershell: |
+            $repo = "azuremonitor/helmchart/containerinsights/ciprod/azuremonitor-containers"
+            $version = "$(CHART_VERSION)"
+            $url = "https://mcr.microsoft.com/v2/$repo/tags/list"
+            Write-Host "Preflight: checking $url for tag '$version'"
+            $found = $false
+            for ($i = 1; $i -le 6; $i++) {
+              try {
+                $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 30
+                if ($resp.tags -contains $version) { $found = $true; break }
+                Write-Host "Attempt $i/6: tag '$version' not present yet."
+              } catch {
+                $msg = $_.Exception.Message
+                Write-Host "Attempt $i/6: MCR query failed: $msg"
+              }
+              Start-Sleep -Seconds 30
+            }
+            if (-not $found) {
+              Write-Host "##vso[task.logissue type=error]Preflight failed: chart '${repo}:${version}' is not available on the ciprod MCR path. Run the AKS prod release for this build first (it promotes the -arc chart to ciprod), then allow ACR->MCR mirror propagation time."
+              exit 1
+            }
+            Write-Host "Preflight passed: chart '${repo}:${version}' is available on MCR."
+          displayName: Preflight - verify -arc chart on ciprod MCR
       - job: approval
         variables:
         - name: OneESPT
@@ -673,6 +719,29 @@ extends:
           inputs:
             repoId: microsoft/Docker-Provider
             path: release_gating.py
+        - powershell: |
+            $repo = "azuremonitor/helmchart/containerinsights/ciprod/azuremonitor-containers"
+            $version = "$(CHART_VERSION)"
+            $url = "https://mcr.microsoft.com/v2/$repo/tags/list"
+            Write-Host "Preflight: checking $url for tag '$version'"
+            $found = $false
+            for ($i = 1; $i -le 6; $i++) {
+              try {
+                $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 30
+                if ($resp.tags -contains $version) { $found = $true; break }
+                Write-Host "Attempt $i/6: tag '$version' not present yet."
+              } catch {
+                $msg = $_.Exception.Message
+                Write-Host "Attempt $i/6: MCR query failed: $msg"
+              }
+              Start-Sleep -Seconds 30
+            }
+            if (-not $found) {
+              Write-Host "##vso[task.logissue type=error]Preflight failed: chart '${repo}:${version}' is not available on the ciprod MCR path. Run the AKS prod release for this build first (it promotes the -arc chart to ciprod), then allow ACR->MCR mirror propagation time."
+              exit 1
+            }
+            Write-Host "Preflight passed: chart '${repo}:${version}' is available on MCR."
+          displayName: Preflight - verify -arc chart on ciprod MCR
       - job: approval
         variables:
         - name: OneESPT
@@ -952,6 +1021,29 @@ extends:
           inputs:
             repoId: microsoft/Docker-Provider
             path: release_gating.py
+        - powershell: |
+            $repo = "azuremonitor/helmchart/containerinsights/ciprod/azuremonitor-containers"
+            $version = "$(CHART_VERSION)"
+            $url = "https://mcr.microsoft.com/v2/$repo/tags/list"
+            Write-Host "Preflight: checking $url for tag '$version'"
+            $found = $false
+            for ($i = 1; $i -le 6; $i++) {
+              try {
+                $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 30
+                if ($resp.tags -contains $version) { $found = $true; break }
+                Write-Host "Attempt $i/6: tag '$version' not present yet."
+              } catch {
+                $msg = $_.Exception.Message
+                Write-Host "Attempt $i/6: MCR query failed: $msg"
+              }
+              Start-Sleep -Seconds 30
+            }
+            if (-not $found) {
+              Write-Host "##vso[task.logissue type=error]Preflight failed: chart '${repo}:${version}' is not available on the ciprod MCR path. Run the AKS prod release for this build first (it promotes the -arc chart to ciprod), then allow ACR->MCR mirror propagation time."
+              exit 1
+            }
+            Write-Host "Preflight passed: chart '${repo}:${version}' is available on MCR."
+          displayName: Preflight - verify -arc chart on ciprod MCR
       - job: approval
         variables:
         - name: OneESPT
@@ -1231,6 +1323,29 @@ extends:
           inputs:
             repoId: microsoft/Docker-Provider
             path: release_gating.py
+        - powershell: |
+            $repo = "azuremonitor/helmchart/containerinsights/ciprod/azuremonitor-containers"
+            $version = "$(CHART_VERSION)"
+            $url = "https://mcr.microsoft.com/v2/$repo/tags/list"
+            Write-Host "Preflight: checking $url for tag '$version'"
+            $found = $false
+            for ($i = 1; $i -le 6; $i++) {
+              try {
+                $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 30
+                if ($resp.tags -contains $version) { $found = $true; break }
+                Write-Host "Attempt $i/6: tag '$version' not present yet."
+              } catch {
+                $msg = $_.Exception.Message
+                Write-Host "Attempt $i/6: MCR query failed: $msg"
+              }
+              Start-Sleep -Seconds 30
+            }
+            if (-not $found) {
+              Write-Host "##vso[task.logissue type=error]Preflight failed: chart '${repo}:${version}' is not available on the ciprod MCR path. Run the AKS prod release for this build first (it promotes the -arc chart to ciprod), then allow ACR->MCR mirror propagation time."
+              exit 1
+            }
+            Write-Host "Preflight passed: chart '${repo}:${version}' is available on MCR."
+          displayName: Preflight - verify -arc chart on ciprod MCR
       - job: approval
         variables:
         - name: OneESPT
@@ -1522,6 +1637,29 @@ extends:
           inputs:
             repoId: microsoft/Docker-Provider
             path: release_gating.py
+        - powershell: |
+            $repo = "azuremonitor/helmchart/containerinsights/ciprod/azuremonitor-containers"
+            $version = "$(CHART_VERSION)"
+            $url = "https://mcr.microsoft.com/v2/$repo/tags/list"
+            Write-Host "Preflight: checking $url for tag '$version'"
+            $found = $false
+            for ($i = 1; $i -le 6; $i++) {
+              try {
+                $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 30
+                if ($resp.tags -contains $version) { $found = $true; break }
+                Write-Host "Attempt $i/6: tag '$version' not present yet."
+              } catch {
+                $msg = $_.Exception.Message
+                Write-Host "Attempt $i/6: MCR query failed: $msg"
+              }
+              Start-Sleep -Seconds 30
+            }
+            if (-not $found) {
+              Write-Host "##vso[task.logissue type=error]Preflight failed: chart '${repo}:${version}' is not available on the ciprod MCR path. Run the AKS prod release for this build first (it promotes the -arc chart to ciprod), then allow ACR->MCR mirror propagation time."
+              exit 1
+            }
+            Write-Host "Preflight passed: chart '${repo}:${version}' is available on MCR."
+          displayName: Preflight - verify -arc chart on ciprod MCR
       - job: approval
         variables:
         - name: OneESPT
