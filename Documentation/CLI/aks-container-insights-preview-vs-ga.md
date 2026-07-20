@@ -58,6 +58,7 @@ The five container-insights capability flags — `--enable-msi-auth-for-monitori
 
 - **Stale preview labels** — the five graduated flags are still `is_preview=True` in aks-preview.
 - **Redundant override** — aks-preview monkey-patches `ContainerInsightsStreams`, but the value is now identical to the acs canonical list (dead override).
+- **Disable caveat (RP source-of-truth)** — the RP treats `azureMonitorProfile.containerInsights.enabled` as the source of truth. `az aks disable-addons -a monitoring` flips only `addonProfiles.omsagent.enabled=false`, leaving `containerInsights.enabled=true`, so the RP may re-enable the addon. aks-preview's `--disable-azure-monitor-logs` clears both surfaces (`_disable_azure_monitor_logs`, `managed_cluster_decorator.py` L8774–8779) and is the reliable disable — but it's an extension-only alias, so core `az aks` users lack it.
 - **Scope** — this compares CLI surface only; ARM/REST api-versions (`Microsoft.ContainerService`, `Microsoft.Insights` DCR) are a separate axis. The `azuremonitormetrics/constants.py` API versions belong to the metrics path, not logs.
 - **Verify** — GA facts read from azure-cli `dev` branch; confirm against your pinned CLI release before relying on them.
 
