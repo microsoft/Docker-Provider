@@ -455,13 +455,7 @@ extends:
       # (dependsOn: []) and gate the actual deploys on a job that polls MCR until the
       # new image tags are available. This mirrors the ama-metrics release pipeline.
       dependsOn: []
-      # TEMP (chart-only promotion test): image transfer to ciprod is disabled in the
-      # Ev2 SGR (RolloutSpec.json keeps only shell/PushChartToACR), so no ama-logs images
-      # are published to MCR for this run. WaitForMCRImages below would therefore poll for
-      # 24h and fail, and the cluster deploys have no image to pull. Disable Stage_3 for the
-      # test. REVERT to restore the line below:
-      #   condition: and(eq(variables.IS_PR, false), eq(variables.IS_MAIN_BRANCH, true))
-      condition: false
+      condition: and(eq(variables.IS_PR, false), eq(variables.IS_MAIN_BRANCH, true))
       pool:
         name: Azure-Pipelines-CI-Test-EO
         image: ci-1es-managed-ubuntu-2204
