@@ -6,7 +6,7 @@ variables:
 - name: ADMIN_SUBSCRIPTION_ID
   value: $(VAR_ADMIN_SUBSCRIPTION_ID)
 - name: CHART_VERSION
-  value: $(resources.pipeline._ci-arc-k8s-extension-prod-release.runName)-arc
+  value: $(VAR_CHART_VERSION)
 - name: IS_CUSTOMER_HIDDEN
   value: $(VAR_IS_CUSTOMER_HIDDEN)
 - name: MANAGED_IDENTITY
@@ -63,6 +63,271 @@ extends:
     customBuildTags:
     - ES365AIMigrationTooling
     stages:
+    - stage: Stage_Canary_MCR
+      displayName: Canary MCR
+      pool:
+        name: Azure-Pipelines-CI-Test-EO
+        image: ci-1es-managed-windows-2022
+        os: windows
+      jobs:
+      - job: releaseGating
+        displayName: Release Gating
+        variables:
+        - name: OneESPT
+          value: true
+          readonly: true
+        - name: OneESPT.BuildType
+          value: Official
+          readonly: true
+        - name: OneESPT.OS
+          value: windows
+          readonly: true
+        - name: runCodesignValidationInjection
+          value: false
+        - name: Codeql.SkipTaskAutoInjection
+          value: true
+        - name: skipComponentGovernanceDetection
+          value: true
+        - name: skipNugetSecurityAnalysis
+          value: true
+        steps:
+        - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+          condition: false
+          inputs:
+            repository: none
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: Branch Validation (1ES PT)
+          continueOnError: true
+          target:
+            container: host
+          env:
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+            SYSTEM_COLLECTIONURI: $(System.CollectionUri)
+            SYSTEM_TEAMPROJECT: $(System.TeamProject)
+            SYSTEM_TEAMPROJECTID: $(System.TeamProjectId)
+            BUILD_REPOSITORY_URI: $(Build.Repository.Uri)
+            BUILD_SOURCEBRANCH: $(Build.SourceBranch)
+            BUILD_REPOSITORY_NAME: $(Build.Repository.Name)
+            BUILD_REPOSITORY_ID: $(Build.Repository.ID)
+            BUILD_REPOSITORYPROVIDER: $(Build.Repository.Provider)
+            BUILD_SOURCEVERSION: $(Build.SourceVersion)
+            TASK_MODE: audit
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: release_gating.py
+      - job: approval
+        variables:
+        - name: OneESPT
+          value: true
+          readonly: true
+        - name: OneESPT.BuildType
+          value: Official
+          readonly: true
+        - name: OneESPT.OS
+          value: windows
+          readonly: true
+        - name: ev2Environment
+          value: Production
+        - name: Ev2MonintoringUrl
+          value: 'https://azureservicedeploy.msft.net/api/monitorrollout'
+        displayName: Approval
+        pool:
+          name: server
+        timeoutInMinutes: 7200
+        dependsOn:
+        - releaseGating
+        steps:
+        - task: ApprovalTask@1
+          inputs:
+            environment: $(ev2Environment)
+            servicetreeguid: 3170cdd2-19f0-4027-912b-1027311691a2
+      - job: Ev2_rollout_ev2_rollout
+        displayName: Agent Job - Ev2 Ev2 Rollout
+        timeoutInMinutes: '0'
+        condition: succeeded()
+        dependsOn:
+        - approval
+        variables:
+        - name: ev2Environment
+          value: Production
+        - name: RELEASE_STAGE_NAME
+          value: Canary
+        - name: Ev2MonintoringUrl
+          value: https://azureservicedeploy.msft.net/api/monitorrollout
+        - name: OneESPT.JobType
+          value: releaseJob
+          readonly: true
+        - name: OneESPT
+          value: true
+          readonly: true
+        - name: OneESPT.BuildType
+          value: Official
+          readonly: true
+        - name: OneESPT.OS
+          value: windows
+          readonly: true
+        - name: OneESPT.Workflow
+          value: ev2-classic
+          readonly: true
+        - name: runCodesignValidationInjection
+          value: false
+        - name: Codeql.SkipTaskAutoInjection
+          value: true
+        - name: skipComponentGovernanceDetection
+          value: true
+        - name: skipNugetSecurityAnalysis
+          value: true
+        - name: OneES_targetName
+          value: host
+        steps:
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: Validate Hosted Pool Information (1ES PT)
+          continueOnError: false
+          target:
+            container: host
+          env:
+            HOST_ARCHITECTURE: amd64
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+            SYSTEM_DEFINITIONID: $(System.DefinitionId)
+            SYSTEM_COLLECTIONURI: $(System.CollectionUri)
+            SYSTEM_TEAMPROJECT: $(System.TeamProject)
+            SYSTEM_TEAMPROJECTID: $(System.TeamProjectId)
+            BUILD_REPOSITORY_ID: $(Build.Repository.ID)
+            BUILD_REPOSITORY_URI: $(Build.Repository.Uri)
+            PIPELINEGOVERNANCESTATUS_AUDITED: variables['PipelineGovernanceStatus_Audited']
+            PIPELINECLASSIFICATION_AUDITED: variables['PipelineClassification_Audited']
+            BUILD_REASON: $(Build.Reason)
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: validateHostedPool.ps1
+            arguments: -TargetName '' -StepTargets '' -StepsLength 0 -SkipStatelessValidation True -OS windows -IgnoreProductionPoolCheck  -IsOfficialTemplate -IsProductionReleasePipeline
+        - task: DownloadPipelineArtifact@2
+          displayName: ⏬ Pipeline Artifact Download
+          inputs:
+            buildType: specific
+            project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
+            definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
+            allowFailedBuilds: false
+            buildVersionToDownload: specific
+            pipelineId: $(resources.pipeline._ci-arc-k8s-extension-prod-release.runID)
+            pipeline: _ci-arc-k8s-extension-prod-release
+            targetPath: $(Pipeline.Workspace)/ev2Artifact
+          target:
+            container: host
+        - task: AzureArtifacts.drop-validator-task.drop-validator-task.DropValidatorTask@0
+          displayName: "\U0001F6E1 Validate SBoM Manifest (1ES PT)"
+          condition: succeeded()
+          continueOnError: False
+          timeoutInMinutes: 30
+          env:
+            SBOMVALIDATOR_TEMPIGNOREMISSING: true
+          inputs:
+            BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
+            OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
+            ValidateSignature: True
+            Verbosity: 'Verbose'
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: Post-SBoM Validation (1ES PT)
+          continueOnError: true
+          target:
+            container: host
+          condition: succeeded()
+          env:
+            OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: post_sbom_validation.py
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: Validate Source Build (1ES PT)
+          continueOnError: false
+          target:
+            container: host
+          env:
+            BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
+            IsProduction: True
+            OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: validate_source_build.py
+        - task: securedevelopmentteam.vss-secure-development-tools.build-task-codesignvalidation.CodeSign@1
+          displayName: "\U0001F6E1 Guardian: CodeSign Validation"
+          target:
+            container: host
+          condition: and(succeeded(), ne(variables['ONEES_ENFORCED_CODESIGNVALIDATION_ENABLED'], 'false'))
+          continueOnError: true
+          timeoutInMinutes: 10
+          inputs:
+            Path: $(Pipeline.Workspace)/ev2Artifact
+            MaxThreads: $(OneES_UsableProcessorCount)
+            FailIfNoTargetsFound: false
+            ExcludePassesFromLog: False
+            Targets: f|**\*.dll;f|**\*.exe;f|**\*.sys;f|**\*.ps1;f|**\*.psm1;f|**\*.ps1xml;f|**\*.psc1;f|**\*.psd1;f|**\*.cdxml;f|**\*.vbs;f|**\*.js;f|**\*.wsf;-|.gdn\**;
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: "\U0001F6E1 Guardian: Check CodeSign Validation Results (1ES PT)"
+          continueOnError: true
+          target:
+            container: host
+          condition: and(succeeded(), ne(variables['ONEES_ENFORCED_CODESIGNVALIDATION_ENABLED'], 'false'))
+          env:
+            OneES_PipelineWorkspace: $(Pipeline.Workspace)
+            OneES_DeleteCodeSignValidationResult: True
+            OneES_CustomPolicyFile: ''
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: check_csv_results.ps1
+        - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+          condition: false
+          inputs:
+            repository: none
+          target:
+            container: host
+        - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+          displayName: Ev2 Managed SDP - Chart Push
+          inputs:
+            EndpointProviderType: ApprovalService
+            TaskAction: RegisterAndRollout
+            UseServerMonitorTask: true
+            SkipRegistrationIfExists: True
+            ForceRegistration: true
+            ApprovalServiceEnvironment: $(ev2Environment)
+            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-Managed-SDP/ServiceGroupRoot
+            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-Managed-SDP/ServiceGroupRoot/RolloutSpec.json
+            StageMapName: Microsoft.Azure.SDP.Standard
+            Select: regions(*)
+            ConfigurationOverrides: $(configurationOverrides)
+          env:
+            ServiceTreeGuid: 3170cdd2-19f0-4027-912b-1027311691a2
+          target:
+            container: host
+      - job: Ev2_rollout_ev2_monitoring
+        variables:
+        - name: OneESPT
+          value: true
+          readonly: true
+        - name: OneESPT.BuildType
+          value: Official
+          readonly: true
+        - name: OneESPT.OS
+          value: windows
+          readonly: true
+        - name: OneESPT.Workflow
+          value: ev2-classic
+          readonly: true
+        - name: ev2Environment
+          value: Production
+        - name: Ev2MonintoringUrl
+          value: 'https://azureservicedeploy.msft.net/api/monitorrollout'
+        displayName: Agent Job - Ev2 Ev2 Monitoring
+        pool:
+          name: server
+        dependsOn:
+        - Ev2_rollout_ev2_rollout
+        timeoutInMinutes: '0'
+        steps:
+        - task: vsrm-ev2.vss-server-ev2.1950188C-A844-4040-A014-A326BC8332D3.Ev2Agentless@1
+          displayName: Ev2 - Monitoring
+          inputs:
+            Ev2MonintoringUrl: $(Ev2MonintoringUrl)
     - stage: Stage_Canary_Regions
       displayName: Canary Regions Release
       trigger: manual
@@ -116,29 +381,6 @@ extends:
           inputs:
             repoId: microsoft/Docker-Provider
             path: release_gating.py
-        - powershell: |
-            $repo = "azuremonitor/helmchart/containerinsights/ciprod/azuremonitor-containers"
-            $version = "$(CHART_VERSION)"
-            $url = "https://mcr.microsoft.com/v2/$repo/tags/list"
-            Write-Host "Preflight: checking $url for tag '$version'"
-            $found = $false
-            for ($i = 1; $i -le 6; $i++) {
-              try {
-                $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 30
-                if ($resp.tags -contains $version) { $found = $true; break }
-                Write-Host "Attempt $i/6: tag '$version' not present yet."
-              } catch {
-                $msg = $_.Exception.Message
-                Write-Host "Attempt $i/6: MCR query failed: $msg"
-              }
-              Start-Sleep -Seconds 30
-            }
-            if (-not $found) {
-              Write-Host "##vso[task.logissue type=error]Preflight failed: chart '${repo}:${version}' is not available on the ciprod MCR path. Run the AKS prod release for this build first (it promotes the -arc chart to ciprod), then allow ACR->MCR mirror propagation time."
-              exit 1
-            }
-            Write-Host "Preflight passed: chart '${repo}:${version}' is available on MCR."
-          displayName: Preflight - verify -arc chart on ciprod MCR
       - job: approval
         variables:
         - name: OneESPT
@@ -364,6 +606,272 @@ extends:
         - task: Delay@1
           inputs:
             delayForMinutes: 1500
+    - stage: Stage_1
+      displayName: ci-arc-k8s-extension-all-regions-prod-release(MCR)
+      trigger: manual
+      pool:
+        name: Azure-Pipelines-CI-Test-EO
+        image: ci-1es-managed-windows-2022
+        os: windows
+      jobs:
+      - job: releaseGating
+        displayName: Release Gating
+        variables:
+        - name: OneESPT
+          value: true
+          readonly: true
+        - name: OneESPT.BuildType
+          value: Official
+          readonly: true
+        - name: OneESPT.OS
+          value: windows
+          readonly: true
+        - name: runCodesignValidationInjection
+          value: false
+        - name: Codeql.SkipTaskAutoInjection
+          value: true
+        - name: skipComponentGovernanceDetection
+          value: true
+        - name: skipNugetSecurityAnalysis
+          value: true
+        steps:
+        - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+          condition: false
+          inputs:
+            repository: none
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: Branch Validation (1ES PT)
+          continueOnError: true
+          target:
+            container: host
+          env:
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+            SYSTEM_COLLECTIONURI: $(System.CollectionUri)
+            SYSTEM_TEAMPROJECT: $(System.TeamProject)
+            SYSTEM_TEAMPROJECTID: $(System.TeamProjectId)
+            BUILD_REPOSITORY_URI: $(Build.Repository.Uri)
+            BUILD_SOURCEBRANCH: $(Build.SourceBranch)
+            BUILD_REPOSITORY_NAME: $(Build.Repository.Name)
+            BUILD_REPOSITORY_ID: $(Build.Repository.ID)
+            BUILD_REPOSITORYPROVIDER: $(Build.Repository.Provider)
+            BUILD_SOURCEVERSION: $(Build.SourceVersion)
+            TASK_MODE: audit
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: release_gating.py
+      - job: approval
+        variables:
+        - name: OneESPT
+          value: true
+          readonly: true
+        - name: OneESPT.BuildType
+          value: Official
+          readonly: true
+        - name: OneESPT.OS
+          value: windows
+          readonly: true
+        - name: ev2Environment
+          value: Production
+        - name: Ev2MonintoringUrl
+          value: 'https://azureservicedeploy.msft.net/api/monitorrollout'
+        displayName: Approval
+        pool:
+          name: server
+        timeoutInMinutes: 7200
+        dependsOn:
+        - releaseGating
+        steps:
+        - task: ApprovalTask@1
+          inputs:
+            environment: $(ev2Environment)
+            servicetreeguid: 3170cdd2-19f0-4027-912b-1027311691a2
+      - job: Ev2_rollout_ev2_rollout
+        displayName: Agent Job - Ev2 Ev2 Rollout
+        timeoutInMinutes: '0'
+        condition: succeeded()
+        dependsOn:
+        - approval
+        variables:
+        - name: ev2Environment
+          value: Production
+        - name: RELEASE_STAGE_NAME
+          value: Pilot
+        - name: Ev2MonintoringUrl
+          value: https://azureservicedeploy.msft.net/api/monitorrollout
+        - name: OneESPT.JobType
+          value: releaseJob
+          readonly: true
+        - name: OneESPT
+          value: true
+          readonly: true
+        - name: OneESPT.BuildType
+          value: Official
+          readonly: true
+        - name: OneESPT.OS
+          value: windows
+          readonly: true
+        - name: OneESPT.Workflow
+          value: ev2-classic
+          readonly: true
+        - name: runCodesignValidationInjection
+          value: false
+        - name: Codeql.SkipTaskAutoInjection
+          value: true
+        - name: skipComponentGovernanceDetection
+          value: true
+        - name: skipNugetSecurityAnalysis
+          value: true
+        - name: OneES_targetName
+          value: host
+        steps:
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: Validate Hosted Pool Information (1ES PT)
+          continueOnError: false
+          target:
+            container: host
+          env:
+            HOST_ARCHITECTURE: amd64
+            SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+            SYSTEM_DEFINITIONID: $(System.DefinitionId)
+            SYSTEM_COLLECTIONURI: $(System.CollectionUri)
+            SYSTEM_TEAMPROJECT: $(System.TeamProject)
+            SYSTEM_TEAMPROJECTID: $(System.TeamProjectId)
+            BUILD_REPOSITORY_ID: $(Build.Repository.ID)
+            BUILD_REPOSITORY_URI: $(Build.Repository.Uri)
+            PIPELINEGOVERNANCESTATUS_AUDITED: variables['PipelineGovernanceStatus_Audited']
+            PIPELINECLASSIFICATION_AUDITED: variables['PipelineClassification_Audited']
+            BUILD_REASON: $(Build.Reason)
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: validateHostedPool.ps1
+            arguments: -TargetName '' -StepTargets '' -StepsLength 0 -SkipStatelessValidation True -OS windows -IgnoreProductionPoolCheck  -IsOfficialTemplate -IsProductionReleasePipeline
+        - task: DownloadPipelineArtifact@2
+          displayName: ⏬ Pipeline Artifact Download
+          inputs:
+            buildType: specific
+            project: $(resources.pipeline._ci-arc-k8s-extension-prod-release.projectID)
+            definition: $(resources.pipeline._ci-arc-k8s-extension-prod-release.pipelineID)
+            allowFailedBuilds: false
+            buildVersionToDownload: specific
+            pipelineId: $(resources.pipeline._ci-arc-k8s-extension-prod-release.runID)
+            pipeline: _ci-arc-k8s-extension-prod-release
+            targetPath: $(Pipeline.Workspace)/ev2Artifact
+          target:
+            container: host
+        - task: AzureArtifacts.drop-validator-task.drop-validator-task.DropValidatorTask@0
+          displayName: "\U0001F6E1 Validate SBoM Manifest (1ES PT)"
+          condition: succeeded()
+          continueOnError: False
+          timeoutInMinutes: 30
+          env:
+            SBOMVALIDATOR_TEMPIGNOREMISSING: true
+          inputs:
+            BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
+            OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
+            ValidateSignature: True
+            Verbosity: 'Verbose'
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: Post-SBoM Validation (1ES PT)
+          continueOnError: true
+          target:
+            container: host
+          condition: succeeded()
+          env:
+            OutputPath: $(Agent.TempDirectory)/sbom_validation_results.json
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: post_sbom_validation.py
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: Validate Source Build (1ES PT)
+          continueOnError: false
+          target:
+            container: host
+          env:
+            BuildDropPath: $(Pipeline.Workspace)/ev2Artifact/linux-drop
+            IsProduction: True
+            OneES_ArtifactType: $(DownloadPipelineArtifactResourceTypes)
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: validate_source_build.py
+        - task: securedevelopmentteam.vss-secure-development-tools.build-task-codesignvalidation.CodeSign@1
+          displayName: "\U0001F6E1 Guardian: CodeSign Validation"
+          target:
+            container: host
+          condition: and(succeeded(), ne(variables['ONEES_ENFORCED_CODESIGNVALIDATION_ENABLED'], 'false'))
+          continueOnError: true
+          timeoutInMinutes: 10
+          inputs:
+            Path: $(Pipeline.Workspace)/ev2Artifact
+            MaxThreads: $(OneES_UsableProcessorCount)
+            FailIfNoTargetsFound: false
+            ExcludePassesFromLog: False
+            Targets: f|**\*.dll;f|**\*.exe;f|**\*.sys;f|**\*.ps1;f|**\*.psm1;f|**\*.ps1xml;f|**\*.psc1;f|**\*.psd1;f|**\*.cdxml;f|**\*.vbs;f|**\*.js;f|**\*.wsf;-|.gdn\**;
+        - task: 1ESGPTRunTask@3.0.376
+          displayName: "\U0001F6E1 Guardian: Check CodeSign Validation Results (1ES PT)"
+          continueOnError: true
+          target:
+            container: host
+          condition: and(succeeded(), ne(variables['ONEES_ENFORCED_CODESIGNVALIDATION_ENABLED'], 'false'))
+          env:
+            OneES_PipelineWorkspace: $(Pipeline.Workspace)
+            OneES_DeleteCodeSignValidationResult: True
+            OneES_CustomPolicyFile: ''
+          inputs:
+            repoId: microsoft/Docker-Provider
+            path: check_csv_results.ps1
+        - task: 6d15af64-176c-496d-b583-fd2ae21d4df4@1
+          condition: false
+          inputs:
+            repository: none
+          target:
+            container: host
+        - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+          displayName: Ev2 Managed SDP - Chart Push
+          inputs:
+            EndpointProviderType: ApprovalService
+            TaskAction: RegisterAndRollout
+            UseServerMonitorTask: true
+            SkipRegistrationIfExists: True
+            ForceRegistration: true
+            ApprovalServiceEnvironment: $(ev2Environment)
+            ServiceRootPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-Managed-SDP/ServiceGroupRoot
+            RolloutSpecPath: $(Pipeline.Workspace)/ev2Artifact/drop/build/arc-k8s-extension-Managed-SDP/ServiceGroupRoot/RolloutSpec.json
+            StageMapName: Microsoft.Azure.SDP.Standard
+            Select: regions(*)
+            ConfigurationOverrides: $(configurationOverrides)
+          env:
+            ServiceTreeGuid: 3170cdd2-19f0-4027-912b-1027311691a2
+          target:
+            container: host
+      - job: Ev2_rollout_ev2_monitoring
+        variables:
+        - name: OneESPT
+          value: true
+          readonly: true
+        - name: OneESPT.BuildType
+          value: Official
+          readonly: true
+        - name: OneESPT.OS
+          value: windows
+          readonly: true
+        - name: OneESPT.Workflow
+          value: ev2-classic
+          readonly: true
+        - name: ev2Environment
+          value: Production
+        - name: Ev2MonintoringUrl
+          value: 'https://azureservicedeploy.msft.net/api/monitorrollout'
+        displayName: Agent Job - Ev2 Ev2 Monitoring
+        pool:
+          name: server
+        dependsOn:
+        - Ev2_rollout_ev2_rollout
+        timeoutInMinutes: '0'
+        steps:
+        - task: vsrm-ev2.vss-server-ev2.1950188C-A844-4040-A014-A326BC8332D3.Ev2Agentless@1
+          displayName: Ev2 - Monitoring
+          inputs:
+            Ev2MonintoringUrl: $(Ev2MonintoringUrl)
     - stage: Stage_2
       displayName: Pilot Regions
       trigger: manual
@@ -417,29 +925,6 @@ extends:
           inputs:
             repoId: microsoft/Docker-Provider
             path: release_gating.py
-        - powershell: |
-            $repo = "azuremonitor/helmchart/containerinsights/ciprod/azuremonitor-containers"
-            $version = "$(CHART_VERSION)"
-            $url = "https://mcr.microsoft.com/v2/$repo/tags/list"
-            Write-Host "Preflight: checking $url for tag '$version'"
-            $found = $false
-            for ($i = 1; $i -le 6; $i++) {
-              try {
-                $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 30
-                if ($resp.tags -contains $version) { $found = $true; break }
-                Write-Host "Attempt $i/6: tag '$version' not present yet."
-              } catch {
-                $msg = $_.Exception.Message
-                Write-Host "Attempt $i/6: MCR query failed: $msg"
-              }
-              Start-Sleep -Seconds 30
-            }
-            if (-not $found) {
-              Write-Host "##vso[task.logissue type=error]Preflight failed: chart '${repo}:${version}' is not available on the ciprod MCR path. Run the AKS prod release for this build first (it promotes the -arc chart to ciprod), then allow ACR->MCR mirror propagation time."
-              exit 1
-            }
-            Write-Host "Preflight passed: chart '${repo}:${version}' is available on MCR."
-          displayName: Preflight - verify -arc chart on ciprod MCR
       - job: approval
         variables:
         - name: OneESPT
@@ -719,29 +1204,6 @@ extends:
           inputs:
             repoId: microsoft/Docker-Provider
             path: release_gating.py
-        - powershell: |
-            $repo = "azuremonitor/helmchart/containerinsights/ciprod/azuremonitor-containers"
-            $version = "$(CHART_VERSION)"
-            $url = "https://mcr.microsoft.com/v2/$repo/tags/list"
-            Write-Host "Preflight: checking $url for tag '$version'"
-            $found = $false
-            for ($i = 1; $i -le 6; $i++) {
-              try {
-                $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 30
-                if ($resp.tags -contains $version) { $found = $true; break }
-                Write-Host "Attempt $i/6: tag '$version' not present yet."
-              } catch {
-                $msg = $_.Exception.Message
-                Write-Host "Attempt $i/6: MCR query failed: $msg"
-              }
-              Start-Sleep -Seconds 30
-            }
-            if (-not $found) {
-              Write-Host "##vso[task.logissue type=error]Preflight failed: chart '${repo}:${version}' is not available on the ciprod MCR path. Run the AKS prod release for this build first (it promotes the -arc chart to ciprod), then allow ACR->MCR mirror propagation time."
-              exit 1
-            }
-            Write-Host "Preflight passed: chart '${repo}:${version}' is available on MCR."
-          displayName: Preflight - verify -arc chart on ciprod MCR
       - job: approval
         variables:
         - name: OneESPT
@@ -1021,29 +1483,6 @@ extends:
           inputs:
             repoId: microsoft/Docker-Provider
             path: release_gating.py
-        - powershell: |
-            $repo = "azuremonitor/helmchart/containerinsights/ciprod/azuremonitor-containers"
-            $version = "$(CHART_VERSION)"
-            $url = "https://mcr.microsoft.com/v2/$repo/tags/list"
-            Write-Host "Preflight: checking $url for tag '$version'"
-            $found = $false
-            for ($i = 1; $i -le 6; $i++) {
-              try {
-                $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 30
-                if ($resp.tags -contains $version) { $found = $true; break }
-                Write-Host "Attempt $i/6: tag '$version' not present yet."
-              } catch {
-                $msg = $_.Exception.Message
-                Write-Host "Attempt $i/6: MCR query failed: $msg"
-              }
-              Start-Sleep -Seconds 30
-            }
-            if (-not $found) {
-              Write-Host "##vso[task.logissue type=error]Preflight failed: chart '${repo}:${version}' is not available on the ciprod MCR path. Run the AKS prod release for this build first (it promotes the -arc chart to ciprod), then allow ACR->MCR mirror propagation time."
-              exit 1
-            }
-            Write-Host "Preflight passed: chart '${repo}:${version}' is available on MCR."
-          displayName: Preflight - verify -arc chart on ciprod MCR
       - job: approval
         variables:
         - name: OneESPT
@@ -1323,29 +1762,6 @@ extends:
           inputs:
             repoId: microsoft/Docker-Provider
             path: release_gating.py
-        - powershell: |
-            $repo = "azuremonitor/helmchart/containerinsights/ciprod/azuremonitor-containers"
-            $version = "$(CHART_VERSION)"
-            $url = "https://mcr.microsoft.com/v2/$repo/tags/list"
-            Write-Host "Preflight: checking $url for tag '$version'"
-            $found = $false
-            for ($i = 1; $i -le 6; $i++) {
-              try {
-                $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 30
-                if ($resp.tags -contains $version) { $found = $true; break }
-                Write-Host "Attempt $i/6: tag '$version' not present yet."
-              } catch {
-                $msg = $_.Exception.Message
-                Write-Host "Attempt $i/6: MCR query failed: $msg"
-              }
-              Start-Sleep -Seconds 30
-            }
-            if (-not $found) {
-              Write-Host "##vso[task.logissue type=error]Preflight failed: chart '${repo}:${version}' is not available on the ciprod MCR path. Run the AKS prod release for this build first (it promotes the -arc chart to ciprod), then allow ACR->MCR mirror propagation time."
-              exit 1
-            }
-            Write-Host "Preflight passed: chart '${repo}:${version}' is available on MCR."
-          displayName: Preflight - verify -arc chart on ciprod MCR
       - job: approval
         variables:
         - name: OneESPT
@@ -1637,29 +2053,6 @@ extends:
           inputs:
             repoId: microsoft/Docker-Provider
             path: release_gating.py
-        - powershell: |
-            $repo = "azuremonitor/helmchart/containerinsights/ciprod/azuremonitor-containers"
-            $version = "$(CHART_VERSION)"
-            $url = "https://mcr.microsoft.com/v2/$repo/tags/list"
-            Write-Host "Preflight: checking $url for tag '$version'"
-            $found = $false
-            for ($i = 1; $i -le 6; $i++) {
-              try {
-                $resp = Invoke-RestMethod -Uri $url -Method Get -TimeoutSec 30
-                if ($resp.tags -contains $version) { $found = $true; break }
-                Write-Host "Attempt $i/6: tag '$version' not present yet."
-              } catch {
-                $msg = $_.Exception.Message
-                Write-Host "Attempt $i/6: MCR query failed: $msg"
-              }
-              Start-Sleep -Seconds 30
-            }
-            if (-not $found) {
-              Write-Host "##vso[task.logissue type=error]Preflight failed: chart '${repo}:${version}' is not available on the ciprod MCR path. Run the AKS prod release for this build first (it promotes the -arc chart to ciprod), then allow ACR->MCR mirror propagation time."
-              exit 1
-            }
-            Write-Host "Preflight passed: chart '${repo}:${version}' is available on MCR."
-          displayName: Preflight - verify -arc chart on ciprod MCR
       - job: approval
         variables:
         - name: OneESPT
