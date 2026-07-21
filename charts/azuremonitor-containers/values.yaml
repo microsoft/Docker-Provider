@@ -24,8 +24,8 @@ Azure:
 amalogs:
   image:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
-    tag: "3.4.0"
-    tagWindows: "win-3.4.0"
+    tag: "3.5.0"
+    tagWindows: "win-3.5.0"
     pullPolicy: IfNotPresent
     dockerProviderVersion: "18.0.1-0"
     agentVersion: "azure-mdsd-1.40.3"
