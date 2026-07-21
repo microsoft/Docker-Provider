@@ -62,9 +62,9 @@ The five container-insights capability flags — `--enable-msi-auth-for-monitori
 - **Redundant override** — aks-preview monkey-patches `ContainerInsightsStreams`, but the value is now identical to the acs canonical list (dead override).
 - **Disable caveat (RP source-of-truth)** — the RP treats `azureMonitorProfile.containerInsights.enabled` as the source of truth. `az aks disable-addons -a monitoring` flips only `addonProfiles.omsagent.enabled=false`, leaving `containerInsights.enabled=true`, so the RP may re-enable the addon. aks-preview's `--disable-azure-monitor-logs` clears both surfaces (`_disable_azure_monitor_logs`, `managed_cluster_decorator.py` L8774–8779) and is the reliable disable — but it's an extension-only alias, so core `az aks` users lack it.
 - **Scope — two axes** — this compares **Axis 1 (CLI surface / flag preview status)** only. **Axis 2 (REST api-version)** is separate: this extension's vendored SDK talks only to `2026-04-02-preview`, while GA `az aks` calls a stable api-version — the `containerInsights` field must exist there for the migration to be truly GA end-to-end. ARM/REST api-versions (`Microsoft.ContainerService`, `Microsoft.Insights` DCR) and the `azuremonitormetrics/constants.py` versions (metrics path, not logs) are all Axis 2 and out of scope.
-- **Verify** — GA facts read from azure-cli `dev` branch; confirm against your pinned CLI release before relying on them.
+- **Verify** — Axis 1 GA status confirmed against released tag **`azure-cli-2.88.0`**: the five flags are registered without `is_preview` in `acs/_params.py` (L507–511 create, L968–972 update), and `aks create`/`aks update` are GA commands (not preview-registered). Axis 2 (REST api-version carrying `containerInsights`) was **not** independently verified.
 
 ## Sources
 
 - aks-preview: `src/aks-preview/azext_aks_preview/_params.py` (L826–840, L1600–1795, L3026–3130), `addonconfiguration.py`, `azuremonitormetrics/constants.py`, `setup.py` (VERSION `21.0.0b9`)
-- Core: `Azure/azure-cli` dev branch `acs/_params.py` (L506–511, L957–972), `acs/addonconfiguration.py`
+- Core: `Azure/azure-cli` released tag `azure-cli-2.88.0` `acs/_params.py` (L507–511, L968–972), `acs/commands.py` (L116–117), `acs/addonconfiguration.py`
