@@ -6,6 +6,8 @@ Comparison of the `aks-preview` extension (`21.0.0b9`) vs core `az aks` (azure-c
 
 The five container-insights capability flags — `--enable-msi-auth-for-monitoring`, `--enable-syslog`, `--data-collection-settings`, `--enable-high-log-scale-mode`, `--ampls-resource-id` — have **graduated to GA** in core `az aks` (registered with no `is_preview`), but `aks-preview` still labels those same five `is_preview=True` (a stale label, not a capability gap). The exception is the convenience aliases `--enable-azure-monitor-logs` / `--disable-azure-monitor-logs`, which are **not in core `az aks` at all** (extension-only). Note these two aliases are *not* preview-flagged in aks-preview — they are simply absent from core. The DCR/DCRA engine, preset validation, and stream list live once in shared `acs.addonconfiguration`, which both surfaces import.
 
+> **What "GA" means here (scope):** this doc compares **Axis 1 — the CLI surface** (which command package registers a flag as preview). "GA" = the flag is registered *without* `is_preview` in the core `acs` module (Azure/azure-cli); "preview" = `is_preview=True` in this `aks-preview` extension. It does **not** assert **Axis 2 — the REST api-version** is GA. The extension's vendored SDK pins the preview api-version `2026-04-02-preview`; end-to-end GA additionally requires the stable api-version that core `az aks` calls to carry the `azureMonitorProfile.containerInsights` field. Axis 2 is out of scope below. The `aks-preview` extension contains only the preview CLI surface — the GA `az aks` command lives in the separate `Azure/azure-cli` repo, and the extension inherits `--enable-addons` and the monitoring params from it.
+
 ## Flag matrix
 
 | CLI flag | aks-preview | core az aks | Delta |
@@ -59,7 +61,7 @@ The five container-insights capability flags — `--enable-msi-auth-for-monitori
 - **Stale preview labels** — the five graduated flags are still `is_preview=True` in aks-preview.
 - **Redundant override** — aks-preview monkey-patches `ContainerInsightsStreams`, but the value is now identical to the acs canonical list (dead override).
 - **Disable caveat (RP source-of-truth)** — the RP treats `azureMonitorProfile.containerInsights.enabled` as the source of truth. `az aks disable-addons -a monitoring` flips only `addonProfiles.omsagent.enabled=false`, leaving `containerInsights.enabled=true`, so the RP may re-enable the addon. aks-preview's `--disable-azure-monitor-logs` clears both surfaces (`_disable_azure_monitor_logs`, `managed_cluster_decorator.py` L8774–8779) and is the reliable disable — but it's an extension-only alias, so core `az aks` users lack it.
-- **Scope** — this compares CLI surface only; ARM/REST api-versions (`Microsoft.ContainerService`, `Microsoft.Insights` DCR) are a separate axis. The `azuremonitormetrics/constants.py` API versions belong to the metrics path, not logs.
+- **Scope — two axes** — this compares **Axis 1 (CLI surface / flag preview status)** only. **Axis 2 (REST api-version)** is separate: this extension's vendored SDK talks only to `2026-04-02-preview`, while GA `az aks` calls a stable api-version — the `containerInsights` field must exist there for the migration to be truly GA end-to-end. ARM/REST api-versions (`Microsoft.ContainerService`, `Microsoft.Insights` DCR) and the `azuremonitormetrics/constants.py` versions (metrics path, not logs) are all Axis 2 and out of scope.
 - **Verify** — GA facts read from azure-cli `dev` branch; confirm against your pinned CLI release before relying on them.
 
 ## Sources
