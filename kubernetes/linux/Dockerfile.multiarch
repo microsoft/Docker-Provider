@@ -34,13 +34,25 @@ RUN tdnf install -y \
         gnupg \
         make \
         logrotate \
-        busybox \
+        busybox-1.38.0 \
         gawk \
         tar \
         ca-certificates \
         postgresql-libs \
     && rm -rf /var/lib/apt/lists/*
 RUN mkdir /busybin && busybox --install /busybin
+
+# Install rclone 1.74.4
+RUN if [ "${TARGETARCH}" == "arm64" ]; then \
+    RCLONE_ARCH="arm64"; \
+else \
+    RCLONE_ARCH="amd64"; \
+fi && \
+wget -q https://github.com/rclone/rclone/releases/download/v1.74.4/rclone-v1.74.4-linux-${RCLONE_ARCH}.zip -O /tmp/rclone.zip && \
+unzip -q /tmp/rclone.zip -d /tmp && \
+mv /tmp/rclone-v1.74.4-linux-${RCLONE_ARCH}/rclone /usr/local/bin/rclone && \
+chmod +x /usr/local/bin/rclone && \
+rm -rf /tmp/rclone.zip /tmp/rclone-v1.74.4-linux-${RCLONE_ARCH}
 
 COPY --from=golang-builder /src/kubernetes/linux/Linux_ULINUX_1.0_*_64_Release/docker-cimprov-*.*.*-*.*.sh $tmpdir/
 COPY kubernetes/linux/setup.sh kubernetes/linux/main.sh kubernetes/linux/defaultpromenvvariables kubernetes/linux/defaultpromenvvariables-rs kubernetes/linux/defaultpromenvvariables-sidecar kubernetes/linux/mdsd.xml kubernetes/linux/envmdsd kubernetes/linux/logrotate.conf $tmpdir/
@@ -109,6 +121,7 @@ COPY --from=builder /usr/bin/fluentd /usr/bin/fluentd
 COPY --from=builder /usr/bin/update-ca-trust /usr/bin/update-ca-trust
 COPY --from=builder /usr/bin/p11-kit /usr/bin/p11-kit
 COPY --from=builder /usr/bin/trust /usr/bin/trust
+COPY --from=builder /usr/local/bin/rclone /usr/local/bin/rclone
 COPY --from=builder /usr/share/pki/ca-trust-source /usr/share/pki/ca-trust-source
 COPY --from=builder /usr/share/p11-kit/ /usr/share/p11-kit/
 
@@ -135,6 +148,7 @@ COPY --from=builder /usr/lib/libpopt.so.0 /usr/lib/libc.so.6 /usr/lib/
 COPY --from=builder /usr/lib/libcurl.so.4 /usr/lib/libz.so.1 /usr/lib/libc.so.6 /usr/lib/libnghttp2.so.14 /usr/lib/libssh2.so.1 /usr/lib/libgssapi_krb5.so.2 /usr/lib/libzstd.so.1 /usr/lib/libkrb5.so.3 /usr/lib/libk5crypto.so.3 /usr/lib/libcom_err.so.2 /usr/lib/libkrb5support.so.0 /usr/lib/libresolv.so.2 /usr/lib/
 # jq dependencies
 COPY --from=builder /usr/lib/libjq.so.1 /usr/lib/libc.so.6 /usr/lib/libm.so.6 /usr/lib/libonig.so.5 /usr/lib/
+# rclone dependencies (statically linked, no .so files needed)
 # update-ca-trust dependencies
 COPY --from=builder /lib/libp11-kit.so.0 /lib/libffi.so.8 /lib/libtasn1.so.6 /lib/
 COPY --from=builder /lib/pkcs11/p11-kit-trust.so /lib/pkcs11/
