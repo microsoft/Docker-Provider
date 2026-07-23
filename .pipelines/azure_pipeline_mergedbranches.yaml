@@ -35,6 +35,11 @@ resources:
 extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
   parameters:
+    # SFI SR21 (MountainPass): onboard to CFS network isolation in AUDIT mode.
+    # 'Permissive' reports public-feed (CFSClean) violations without failing the
+    # build. Drop 'Permissive' to flip to enforcing once builds are violation-free.
+    settings:
+      networkIsolationPolicy: Permissive,CFSClean
     pool:
       name: Azure-Pipelines-CI-Test-EO
       image: ci-1es-managed-ubuntu-2204
