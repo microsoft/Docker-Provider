@@ -55,6 +55,10 @@ parameters:
   type: string
   default: ''
   displayName: 'Additional Helm override values (comma-separated key=value pairs)'
+- name: accessTokenSecretName
+  type: string
+  default: 'aad-msi-auth-token'
+  displayName: 'Secret name the addon-token-adapter reads for the AAD MSI token (use ama-logs-secret for legacy workspace-key auth clusters)'
 - name: dependsOn
   type: object
   default: []
@@ -112,14 +116,12 @@ jobs:
             namespace: '${{ parameters.namespace }}'
             command: 'upgrade'
             chartType: 'FilePath'
-            # The following chart is copied over from feature branch https://github.com/microsoft/Docker-Provider/tree/longw/addon-to-extension-quick-Test
-            # TODO: When it is merged to ci_prod, the following chartPath will be updated accordingly.
-            chartPath: '$(Build.SourcesDirectory)/charts/azuremonitor-containerinsights-for-prod-clusters'
+            chartPath: '$(Build.SourcesDirectory)/charts/azuremonitor-containerinsights'
             releaseName: '${{ parameters.releaseName }}'
             ${{ if ne(parameters.additionalOverrides, '') }}:
-              overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},global.commonGlobals.Versions.Kubernetes=$(K8S_VERSION),OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageRepository=${{ parameters.imageRepository }},OmsAgent.imageTagLinux=${{ parameters.amalogsLinuxImage }},OmsAgent.imageTagWindows=${{ parameters.amalogsWindowsImage }},${{ parameters.additionalOverrides }}'
+              overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},global.commonGlobals.Versions.Kubernetes=$(K8S_VERSION),Azure.Cluster.ResourceId=$(AKS_RESOURCE_ID),OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.accessTokenSecretName=${{ parameters.accessTokenSecretName }},OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageRepository=${{ parameters.imageRepository }},OmsAgent.imageTagLinux=${{ parameters.amalogsLinuxImage }},OmsAgent.imageTagWindows=${{ parameters.amalogsWindowsImage }},${{ parameters.additionalOverrides }}'
             ${{ else }}:
-              overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},global.commonGlobals.Versions.Kubernetes=$(K8S_VERSION),OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageRepository=${{ parameters.imageRepository }},OmsAgent.imageTagLinux=${{ parameters.amalogsLinuxImage }},OmsAgent.imageTagWindows=${{ parameters.amalogsWindowsImage }}'
+              overrideValues: 'global.commonGlobals.CloudEnvironment=${{ parameters.cloudEnvironment }},global.commonGlobals.Region=${{ parameters.region }},global.commonGlobals.Versions.Kubernetes=$(K8S_VERSION),Azure.Cluster.ResourceId=$(AKS_RESOURCE_ID),OmsAgent.aksResourceID=$(AKS_RESOURCE_ID),OmsAgent.accessTokenSecretName=${{ parameters.accessTokenSecretName }},OmsAgent.workspaceID=${{ parameters.workspaceId }},OmsAgent.imageRepository=${{ parameters.imageRepository }},OmsAgent.imageTagLinux=${{ parameters.amalogsLinuxImage }},OmsAgent.imageTagWindows=${{ parameters.amalogsWindowsImage }}'
             waitForExecution: false
             arguments: '--timeout 10m --install --server-side=true --force-conflicts'
             

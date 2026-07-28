@@ -219,3 +219,160 @@ func TestProcessIncludes(t *testing.T) {
 		t.Errorf("Expected result to be %v, but got %v", expectedResult, result)
 	}
 }
+
+func TestParseImageDetails(t *testing.T) {
+	testCases := []struct {
+		desc         string
+		image        string
+		expectedRepo string
+		expectedName string
+		expectedTag  string
+	}{
+		// --- no registry/host ---
+		{
+			desc:         "bare name",
+			image:        "nginx",
+			expectedRepo: "",
+			expectedName: "nginx",
+			expectedTag:  "latest",
+		},
+		{
+			desc:         "name + tag",
+			image:        "nginx:1.21",
+			expectedRepo: "",
+			expectedName: "nginx",
+			expectedTag:  "1.21",
+		},
+		{
+			desc:         "name + digest, no tag",
+			image:        "nginx@sha256:abc123def456",
+			expectedRepo: "",
+			expectedName: "nginx",
+			expectedTag:  "latest",
+		},
+		// --- namespace/name (no host) ---
+		{
+			desc:         "namespace/name",
+			image:        "library/nginx",
+			expectedRepo: "library",
+			expectedName: "nginx",
+			expectedTag:  "latest",
+		},
+		{
+			desc:         "namespace/name + tag",
+			image:        "library/nginx:1.21",
+			expectedRepo: "library",
+			expectedName: "nginx",
+			expectedTag:  "1.21",
+		},
+		{
+			desc:         "namespace/name + digest, no tag",
+			image:        "library/nginx@sha256:abc123def456",
+			expectedRepo: "library",
+			expectedName: "nginx",
+			expectedTag:  "latest",
+		},
+		// --- host/path ---
+		{
+			desc:         "host/name + tag",
+			image:        "docker.io/library/nginx:1.21",
+			expectedRepo: "docker.io",
+			expectedName: "library/nginx",
+			expectedTag:  "1.21",
+		},
+		{
+			desc:         "host/multi-segment path + tag",
+			image:        "mcr.microsoft.com/azuremonitor/containerinsights/cidev:3.1.34",
+			expectedRepo: "mcr.microsoft.com",
+			expectedName: "azuremonitor/containerinsights/cidev",
+			expectedTag:  "3.1.34",
+		},
+		{
+			desc:         "host/multi-segment path + digest, no tag",
+			image:        "mcr.microsoft.com/azuremonitor/containerinsights/cidev@sha256:abc123",
+			expectedRepo: "mcr.microsoft.com",
+			expectedName: "azuremonitor/containerinsights/cidev",
+			expectedTag:  "latest",
+		},
+		{
+			// The crash that motivated the fix: digest-pinned, tagless image (ubiquitous on OpenShift).
+			desc:         "host/name + digest, no tag (OpenShift) - previously panicked",
+			image:        "quay.io/openshift-release-dev/ocp-release@sha256:ed3b2be8d2673f8669ba2a6d4951011b9b4d52eb4a28eb46ed87c05d175cc196",
+			expectedRepo: "quay.io",
+			expectedName: "openshift-release-dev/ocp-release",
+			expectedTag:  "latest",
+		},
+		{
+			desc:         "tag AND digest",
+			image:        "repo/name:1.0@sha256:abc123",
+			expectedRepo: "repo",
+			expectedName: "name",
+			expectedTag:  "1.0",
+		},
+		// --- known limitation: registry with an explicit :port is mis-split because the
+		// parser treats the first colon as the tag delimiter. Documented here as the
+		// current (non-panicking) behavior so any future change to it is intentional. ---
+		{
+			desc:         "host:port/name + tag (known quirk: port mistaken for tag)",
+			image:        "myregistry.io:5000/team/app:1.0",
+			expectedRepo: "",
+			expectedName: "myregistry.io",
+			expectedTag:  "5000/team/app:1.0",
+		},
+		{
+			desc:         "host:port/name + digest (known quirk)",
+			image:        "myregistry.io:5000/team/app@sha256:abc123",
+			expectedRepo: "",
+			expectedName: "myregistry.io",
+			expectedTag:  "5000/team/app",
+		},
+		{
+			desc:         "localhost:port/name (known quirk)",
+			image:        "localhost:5000/app",
+			expectedRepo: "",
+			expectedName: "localhost",
+			expectedTag:  "5000/app",
+		},
+		// --- edge case ---
+		{
+			desc:         "empty string",
+			image:        "",
+			expectedRepo: "",
+			expectedName: "",
+			expectedTag:  "latest",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			repo, name, tag := parseImageDetails(tc.image)
+			assert.Equal(t, tc.expectedRepo, repo, "repo mismatch for image %q", tc.image)
+			assert.Equal(t, tc.expectedName, name, "name mismatch for image %q", tc.image)
+			assert.Equal(t, tc.expectedTag, tag, "tag mismatch for image %q", tc.image)
+		})
+	}
+}
+
+func TestProcessIncludesDigestPinnedImage(t *testing.T) {
+	// Reproduces the crash where a digest-pinned, tagless image (e.g. on OpenShift)
+	// triggered a slice out-of-range panic in parseImageDetails via processIncludes.
+	kubernetesMetadataMap := map[string]interface{}{
+		"container_hash":  "ocp-release@sha256:ed3b2be8d2673f8669ba2a6d4951011b9b4d52eb4a28eb46ed87c05d175cc196",
+		"container_image": "quay.io/openshift-release-dev/ocp-release@sha256:ed3b2be8d2673f8669ba2a6d4951011b9b4d52eb4a28eb46ed87c05d175cc196",
+	}
+
+	includesList := []string{"imagerepo", "image", "imagetag", "imageid"}
+
+	expectedResult := map[string]interface{}{
+		"imageRepo": "quay.io",
+		"image":     "openshift-release-dev/ocp-release",
+		"imageTag":  "latest",
+		"imageID":   "sha256:ed3b2be8d2673f8669ba2a6d4951011b9b4d52eb4a28eb46ed87c05d175cc196",
+	}
+
+	result := processIncludes(kubernetesMetadataMap, includesList)
+
+	if !reflect.DeepEqual(result, expectedResult) {
+		t.Errorf("Expected result to be %v, but got %v", expectedResult, result)
+	}
+}

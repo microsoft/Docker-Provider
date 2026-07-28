@@ -16,7 +16,7 @@ sudo update-ca-trust
 # the mariner package version is behind the global packages so we are using different versions for arm64 and x86_64
 if [ "$ARCH" == "arm64" ]; then
     sudo tdnf install ruby-3.3.5-7.azl3.aarch64 -y
-    sudo tdnf install zlib-devel -y
+    sudo tdnf install zlib-devel openssl-devel -y
 else
     tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
     wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20251023.tar.gz -O ruby-build.tar.gz
@@ -63,7 +63,7 @@ sudo tdnf install jq-1.7.1-1.azl3 -y
 #used to setcaps for ruby process to read /proc/env
 sudo tdnf install libcap -y
 
-sudo tdnf install telegraf-agent-1.38.4 -y
+sudo tdnf install telegraf-agent-1.39.1 -y
 telegraf_version=$(sudo tdnf list installed | grep telegraf | awk '{print $2}')
 echo "telegraf $telegraf_version" >> packages_version.txt
 mv /usr/bin/telegraf-agent /opt/telegraf
@@ -97,7 +97,9 @@ gem_install_with_retry() {
 }
 
 # install fluentd
-fluentd_version="1.16.3"
+# 1.19.3 is the first release that fixes CVE-2026-44024 (critical RCE), CVE-2026-44025,
+# CVE-2026-44160 and CVE-2026-44161. Requires Ruby >= 3.2 (satisfied by the ruby 3.3.x installed above).
+fluentd_version="1.19.3"
 gem_install_with_retry fluentd -v $fluentd_version --no-document
 
 # remove the test directory from fluentd

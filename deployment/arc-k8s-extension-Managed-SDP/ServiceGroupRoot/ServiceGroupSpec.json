@@ -1,0 +1,6 @@
+{
+  "name": "Microsoft.ContainerInsights.Extension.ChartPush",
+  "description": "Container Insights Extension Chart Push",
+  "ownerGroupContactEmail": "omscontainers@microsoft.com",
+  "contentVersion": "1.0.0.0"
+}

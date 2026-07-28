@@ -1,0 +1,38 @@
+{
+  "$schema": "https://ev2schema.azure.net/schemas/2020-01-01/ConfigurationSpecification.json",
+  "Settings": {
+    "tenantId": "33e01921-4d64-4f8c-a055-5bdaffd5e33d",
+    "environment": "Prod",
+    "releaseStage": "Pilot",
+    "adminSubscriptionId": "",
+    "chartVersion": "0.0.1",
+    "isCustomerHidden": "",
+    "registerRegionsCanary": "",
+    "releaseTrainsPreviewPath": "",
+    "releaseTrainsStablePath": "",
+    "registerRegionsBatch": "",
+    "resourceAudience": "",
+    "spnClientId": "",
+    "spnSecret": "",
+    "spnTenantId": "",
+    "managedIdentity": "/subscriptions/30c56c3a-54da-46ea-b004-06eb33432687/resourceGroups/containerinsightsprod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ev2-agent-release",
+    "acrName": "containerinsightsprod",
+    "repoType": "stable"
+  },
+  "Geographies": [
+    {
+      "Name": "United States",
+      "Settings": {},
+      "Regions": [
+        {
+          "Name": "eastus2",
+          "Settings": {
+            "stampCount": 1,
+            "azureResourceGroup": "ContainerInsightsExtension-ChartPush",
+            "subscriptionkey": "ContainerInsights-30c56c3a-54da-46ea-b004-06eb33432687"
+          }
+        }
+      ]
+    }
+  ]
+}

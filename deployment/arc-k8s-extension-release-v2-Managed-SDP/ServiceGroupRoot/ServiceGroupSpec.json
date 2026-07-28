@@ -1,0 +1,6 @@
+{
+  "name": "Microsoft.ContainerInsights.Extension",
+  "description": "Container Insights Arc K8s Extension Release",
+  "ownerGroupContactEmail": "omscontainers@microsoft.com",
+  "contentVersion": "1.0.0.0"
+}

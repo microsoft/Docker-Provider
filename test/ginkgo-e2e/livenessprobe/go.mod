@@ -1,6 +1,6 @@
 module docker-provider/test/livenessprobe
 
-go 1.26.3
+go 1.26.5
 
 replace docker-provider/test/utils => ../utils
 
@@ -8,12 +8,12 @@ require (
 	docker-provider/test/utils v0.0.0
 	github.com/onsi/ginkgo/v2 v2.27.2
 	github.com/onsi/gomega v1.38.2
-	k8s.io/client-go v0.36.1
+	k8s.io/client-go v0.36.2
 )
 
 require (
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.21.1 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.13.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.22.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.12.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/monitor/azquery v1.2.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.7.2 // indirect
@@ -23,20 +23,19 @@ require (
 	github.com/fxamacker/cbor/v2 v2.9.2 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
-	github.com/go-openapi/jsonpointer v0.23.1 // indirect
-	github.com/go-openapi/jsonreference v0.21.5 // indirect
-	github.com/go-openapi/swag v0.26.0 // indirect
-	github.com/go-openapi/swag/cmdutils v0.26.0 // indirect
-	github.com/go-openapi/swag/conv v0.26.0 // indirect
-	github.com/go-openapi/swag/fileutils v0.26.0 // indirect
-	github.com/go-openapi/swag/jsonname v0.26.0 // indirect
-	github.com/go-openapi/swag/jsonutils v0.26.0 // indirect
-	github.com/go-openapi/swag/loading v0.26.0 // indirect
-	github.com/go-openapi/swag/mangling v0.26.0 // indirect
-	github.com/go-openapi/swag/netutils v0.26.0 // indirect
-	github.com/go-openapi/swag/stringutils v0.26.0 // indirect
-	github.com/go-openapi/swag/typeutils v0.26.0 // indirect
-	github.com/go-openapi/swag/yamlutils v0.26.0 // indirect
+	github.com/go-openapi/jsonpointer v1.0.0 // indirect
+	github.com/go-openapi/jsonreference v1.0.0 // indirect
+	github.com/go-openapi/swag v0.27.0 // indirect
+	github.com/go-openapi/swag/cmdutils v0.27.0 // indirect
+	github.com/go-openapi/swag/conv v0.27.0 // indirect
+	github.com/go-openapi/swag/fileutils v0.27.0 // indirect
+	github.com/go-openapi/swag/jsonutils v0.27.0 // indirect
+	github.com/go-openapi/swag/loading v0.27.0 // indirect
+	github.com/go-openapi/swag/mangling v0.27.0 // indirect
+	github.com/go-openapi/swag/netutils v0.27.0 // indirect
+	github.com/go-openapi/swag/stringutils v0.27.0 // indirect
+	github.com/go-openapi/swag/typeutils v0.27.0 // indirect
+	github.com/go-openapi/swag/yamlutils v0.27.0 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/gnostic-models v0.7.1 // indirect
@@ -55,28 +54,28 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/crypto v0.52.0 // indirect
-	golang.org/x/mod v0.35.0 // indirect
-	golang.org/x/net v0.55.0 // indirect
+	golang.org/x/crypto v0.54.0 // indirect
+	golang.org/x/mod v0.37.0 // indirect
+	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
-	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.45.0 // indirect
-	golang.org/x/term v0.43.0 // indirect
-	golang.org/x/text v0.37.0 // indirect
+	golang.org/x/sync v0.22.0 // indirect
+	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/term v0.45.0 // indirect
+	golang.org/x/text v0.40.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
-	golang.org/x/tools v0.44.0 // indirect
+	golang.org/x/tools v0.47.0 // indirect
 	google.golang.org/protobuf v1.36.12-0.20260120151049-f2248ac996af // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	k8s.io/api v0.36.1 // indirect
-	k8s.io/apimachinery v0.36.1 // indirect
+	k8s.io/api v0.36.2 // indirect
+	k8s.io/apimachinery v0.36.2 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20260520065146-aa012df4f4af // indirect
-	k8s.io/streaming v0.36.1 // indirect
-	k8s.io/utils v0.0.0-20260507154919-ff6756f316d2 // indirect
+	k8s.io/kube-openapi v0.0.0-20260706235625-cdb1db5517a0 // indirect
+	k8s.io/streaming v0.36.2 // indirect
+	k8s.io/utils v0.0.0-20260707023825-cf1189d6abe3 // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
-	sigs.k8s.io/structured-merge-diff/v6 v6.4.0 // indirect
+	sigs.k8s.io/structured-merge-diff/v6 v6.4.2 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )

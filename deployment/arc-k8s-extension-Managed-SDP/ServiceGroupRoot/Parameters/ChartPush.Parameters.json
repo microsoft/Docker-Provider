@@ -1,0 +1,50 @@
+{
+  "$schema": "http://schema.express.azure.com/schemas/2022-01-01/RolloutParameters.json",
+  "contentVersion": "1.0.0.0",
+  "shellExtensions": [
+    {
+      "name": "PushChartToACR",
+      "type": "ShellExtensionType",
+      "properties": {
+        "maxExecutionTime": "PT1H",
+        "useFallBackLocations": true,
+        "skipDeleteAfterExecution": false
+      },
+      "package": {
+        "reference": {
+          "path": "artifacts.tar.gz"
+        }
+      },
+      "launch": {
+        "command": [
+          "/bin/bash",
+          "pushChartToAcr.sh"
+        ],
+        "environmentVariables": [
+          {
+            "name": "RELEASE_STAGE",
+            "value": "__RELEASE_STAGE__"
+          },
+          {
+            "name": "ACR_NAME",
+            "value": "__ACR_NAME__"
+          },
+          {
+            "name": "REPO_TYPE",
+            "value": "__REPO_TYPE__"
+          },
+          {
+            "name": "CHART_VERSION",
+            "value": "__CHART_VERSION__"
+          }
+        ],
+        "identity": {
+          "type": "userAssigned",
+          "userAssignedIdentities": [
+            "__MANAGED_IDENTITY__"
+          ]
+        }
+      }
+    }
+  ]
+}

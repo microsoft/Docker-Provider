@@ -1,0 +1,8 @@
+{
+  "providerType": "ServiceTree",
+  "identifier": "3170cdd2-19f0-4027-912b-1027311691a2",
+  "description": "Container Insights Extension",
+  "ownerGroupContactEmail": "omscontainers@microsoft.com",
+  "policyCheckEnabled": true,
+  "contentVersion": "1.0.0.0"
+}

@@ -1,0 +1,90 @@
+{
+  "$schema": "http://schema.express.azure.com/schemas/2022-01-01/RolloutParameters.json",
+  "contentVersion": "1.0.0.0",
+  "shellExtensions": [
+    {
+      "name": "ArcExtensionRelease",
+      "type": "ShellExtensionType",
+      "properties": {
+        "maxExecutionTime": "PT1H",
+        "useFallBackLocations": false,
+        "skipDeleteAfterExecution": false
+      },
+      "package": {
+        "reference": {
+          "path": "artifacts.tar.gz"
+        }
+      },
+      "launch": {
+        "command": [
+          "/bin/bash",
+          "arcExtensionRelease.sh"
+        ],
+        "environmentVariables": [
+          {
+            "name": "RELEASE_STAGE",
+            "value": "__RELEASE_STAGE__"
+          },
+          {
+            "name": "ADMIN_SUBSCRIPTION_ID",
+            "value": "__ADMIN_SUBSCRIPTION_ID__"
+          },
+          {
+            "name": "CHART_VERSION",
+            "value": "__CHART_VERSION__"
+          },
+          {
+            "name": "IS_CUSTOMER_HIDDEN",
+            "value": "__IS_CUSTOMER_HIDDEN__"
+          },
+          {
+            "name": "REGISTER_REGIONS_CANARY",
+            "value": "__REGISTER_REGIONS_CANARY__"
+          },
+          {
+            "name": "RELEASE_TRAINS_PREVIEW_PATH",
+            "value": "__RELEASE_TRAINS_PREVIEW_PATH__"
+          },
+          {
+            "name": "RELEASE_TRAINS_STABLE_PATH",
+            "value": "__RELEASE_TRAINS_STABLE_PATH__"
+          },
+          {
+            "name": "REGISTER_REGIONS_BATCH",
+            "value": "__REGISTER_REGIONS_BATCH__"
+          },
+          {
+            "name": "RESOURCE_AUDIENCE",
+            "value": "__RESOURCE_AUDIENCE__"
+          },
+          {
+            "name": "SPN_CLIENT_ID",
+            "value": "__SPN_CLIENT_ID__"
+          },
+          {
+            "name": "SPN_SECRET",
+            "value": "__SPN_SECRET__"
+          },
+          {
+            "name": "SPN_TENANT_ID",
+            "value": "__SPN_TENANT_ID__"
+          }
+        ],
+        "identity": {
+          "type": "userAssigned",
+          "userAssignedIdentities": [
+            "__MANAGED_IDENTITY__"
+          ]
+        }
+      }
+    }
+  ],
+  "wait": [
+    {
+      "name": "waitSdpBakeTime",
+      "properties": {
+        "duration": "PT24H"
+      }
+    }
+  ]
+}
