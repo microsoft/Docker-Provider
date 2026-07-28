@@ -105,7 +105,7 @@ spec:
         checksum/config: {{ toYaml $.Values.amalogs.resources | sha256sum }}
         checksum/logsettings: {{ toYaml $.Values.amalogs.logsettings | sha256sum }}
 {{- else }}
-        agentVersion: "azure-mdsd-1.40.3"
+        agentVersion: "azure-mdsd-1.42.0"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         WSID: {{ $.Values.OmsAgent.workspaceID | b64enc | quote }}

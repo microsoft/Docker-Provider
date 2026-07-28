@@ -218,7 +218,7 @@ amalogs:
     tagWindows: "${IMAGE_TAG_WINDOWS}"
     pullPolicy: IfNotPresent
     dockerProviderVersion: "18.0.1-0"
-    agentVersion: "azure-mdsd-1.40.3"
+    agentVersion: "azure-mdsd-1.42.0"
     winAgentVersion: "47.7.1" # there is no base agent version for windows agent
 
   # The priority used by the ama-logs priority class for the daemonset pods
