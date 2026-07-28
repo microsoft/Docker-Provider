@@ -46,7 +46,7 @@ spec:
         rsName: "ama-logs-multitenancy"
         kubernetes.azure.com/managedby: aks
       annotations:
-        agentVersion: "azure-mdsd-1.40.3"
+        agentVersion: "azure-mdsd-1.42.0"
         cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"

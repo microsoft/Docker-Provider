@@ -8,6 +8,29 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 07/28/2026 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.6.0 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.6.0 (windows)
+- Linux
+  - [azurelinux 3.0.20260712](https://github.com/microsoft/azurelinux/releases/tag/3.0.20260712-3.0)
+  - Golang - 1.26.5
+  - Ruby - arm64 - 3.3.5-7, x86_64 - 3.3.10
+  - MDSD - 1.42.0
+  - Telegraf - 1.39.1
+  - Fluent-bit - 5.0.4
+  - Fluentd - 1.19.3
+- Windows
+  - Golang - 1.26.5
+  - Ruby - 3.1.1
+  - Windows AMA - 47.7.1
+  - Telegraf - 1.24.2
+  - Fluent-bit - 5.0.3
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Common (Linux + Windows)
+    * OTLP GRPC support by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1711
+
 ### 07/21/2026 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.5.0 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.5.0 (windows)

@@ -24,11 +24,11 @@ Azure:
 amalogs:
   image:
     repo: "mcr.microsoft.com/azuremonitor/containerinsights/ciprod"
-    tag: "3.5.0"
-    tagWindows: "win-3.5.0"
+    tag: "3.6.0"
+    tagWindows: "win-3.6.0"
     pullPolicy: IfNotPresent
     dockerProviderVersion: "18.0.1-0"
-    agentVersion: "azure-mdsd-1.40.3"
+    agentVersion: "azure-mdsd-1.42.0"
     winAgentVersion: "47.7.1" # there is no base agent version for windows agent
 
   # The priority used by the ama-logs priority class for the daemonset pods
