@@ -55,6 +55,30 @@ export const DATA_SOURCES: Record<string, DataSource> = {
     database: "aksguestagent",
     description: "AKS node guest agent telemetry: GuestAgentGenericLogs (PSI pressure, cgroup memory, node health)",
   },
+  ARMPROD: {
+    name: "ARMPROD",
+    clusterUri: "https://armprod.kusto.windows.net",
+    database: "ARMProd",
+    description: "ARM incoming requests (HttpIncomingRequests) for global endpoints",
+  },
+  ARMPRODWEU: {
+    name: "ARMPRODWEU",
+    clusterUri: "https://armprodweu.kusto.windows.net",
+    database: "ARMProd",
+    description: "ARM incoming requests for west europe region",
+  },
+  ARMPRODWUS2: {
+    name: "ARMPRODWUS2",
+    clusterUri: "https://armprodwus2.kusto.windows.net",
+    database: "ARMProd",
+    description: "ARM incoming requests for west us 2 region",
+  },
+  ARMFF: {
+    name: "ARMFF",
+    clusterUri: "https://armff.kusto.usgovcloudapi.net",
+    database: "armff",
+    description: "ARM Fairfax (US Gov) incoming requests, RP proxy calls, async operations",
+  },
 };
 
 export const APP_INSIGHTS = {
