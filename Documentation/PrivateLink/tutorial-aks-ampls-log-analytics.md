@@ -94,7 +94,9 @@ Each of these zones must be:
 > [!NOTE]
 > Step 2 and Step 3 are independent. It is possible for a zone to have correct A records (step 2 done) but return public IPs from inside the cluster (step 3 missed). This is the most common failure mode observed in production support cases.
 
-## Step 1 — Set variables
+## Step 1 — Set variables (CLI only)
+
+If you're using the Azure portal, skip this step; the portal collects these values in each wizard. If you're using the CLI, set:
 
 ```bash
 # Change these to match your environment
@@ -117,6 +119,23 @@ az group create -n $RG_MONITORING -l $LOC
 
 ## Step 2 — Create the Log Analytics workspace and Data Collection Endpoint
 
+# [Azure portal](#tab/portal)
+
+Create the Log Analytics workspace:
+
+1. In the portal, search for **Log Analytics workspaces** and select **Create**.
+2. On the **Basics** tab, choose your subscription and resource group, enter a **Name** (for example, `aks-law`), and select your region.
+3. Select **Review + create**, then **Create**.
+
+Create the Data Collection Endpoint:
+
+1. Search for **Monitor** in the portal, then select **Data Collection Endpoints** in the left navigation.
+2. Select **Create**.
+3. On the **Basics** tab, choose your subscription and resource group, enter a **Name** (for example, `aks-dce`), select the same region as your AKS cluster, and leave **Public network access** as **Enabled** for now.
+4. Select **Review + create**, then **Create**.
+
+# [Azure CLI](#tab/cli)
+
 ```bash
 LAW_ID=$(az monitor log-analytics workspace create \
   --resource-group $RG_MONITORING --workspace-name $LAW --location $LOC \
@@ -128,9 +147,30 @@ DCE_ID=$(az monitor data-collection endpoint create \
   --query id -o tsv)
 ```
 
+---
+
 At this point, `publicNetworkAccessForIngestion` is left as `Enabled`. We will disable it in Step 7 after private link is fully wired up. Doing so up-front would prevent any pre-existing agent from talking to the workspace during the changeover window.
 
 ## Step 3 — Create the AMPLS and scope in the workspace and DCE
+
+# [Azure portal](#tab/portal)
+
+Create the Azure Monitor Private Link Scope:
+
+1. Search for **Azure Monitor Private Link Scopes** in the portal and select **Create**.
+2. On the **Basics** tab, choose your subscription and resource group, enter a **Name** (for example, `aks-ampls`), and leave both **Query access mode** and **Ingestion access mode** as **Open** — we will restrict them later if desired.
+3. Select **Review + create**, then **Create**.
+
+Add the workspace and DCE as scoped resources:
+
+1. Open the newly created AMPLS.
+2. In the left navigation, select **Azure Monitor Resources**.
+3. Select **Add**, choose your Log Analytics workspace, and select **Apply**.
+4. Select **Add** again, choose your Data Collection Endpoint, and select **Apply**.
+
+You should see both resources listed under **Azure Monitor Resources**.
+
+# [Azure CLI](#tab/cli)
 
 ```bash
 # AMPLS is a global resource
@@ -152,9 +192,60 @@ az monitor private-link-scope scoped-resource create \
   --name dce-conn --linked-resource $DCE_ID
 ```
 
+---
+
 ## Step 4 — Create the private endpoint in the AKS VNET
 
-The private endpoint's NIC must live in a subnet inside the same VNET as your AKS cluster (or in a peered VNET with a working DNS forwarder, covered in the troubleshooting section).
+The private endpoint's NIC must live in a subnet inside the same VNET as your AKS cluster (or in a peered VNET with a working DNS forwarder — see the troubleshooting section).
+
+> [!TIP]
+> **The Azure portal wizard's DNS integration option is the safest path.** If you select **Integrate with private DNS zone = Yes**, the portal creates all five required DNS zones, links each to the private endpoint's VNET, and attaches each to the private endpoint in one action. This is Step 5 done for you.
+>
+> If you use the CLI, IaC, or the portal wizard with **Integrate = No**, you must perform Step 5 manually. Missing any zone silently breaks the corresponding data path.
+
+# [Azure portal (recommended)](#tab/portal)
+
+1. Open your AMPLS in the portal.
+2. In the left navigation, select **Private Endpoint connections**.
+3. Select **Private endpoint** to launch the create wizard.
+
+Fill out the wizard tabs:
+
+**Basics tab**
+- **Subscription**, **Resource group**: same as your AMPLS
+- **Name**: `aks-ampls-pe` (or similar)
+- **Region**: same as your AKS cluster
+
+**Resource tab**
+- **Resource type**: `Microsoft.Insights/privateLinkScopes` (pre-filled)
+- **Resource**: your AMPLS (pre-filled)
+- **Target sub-resource**: `azuremonitor`
+
+**Virtual Network tab**
+- **Virtual network**: your AKS cluster's VNET
+- **Subnet**: your dedicated private-endpoint subnet (do not use the AKS node subnet)
+- Leave **Network policy for private endpoints** at the default
+- Leave **Private IP configuration** at **Dynamically allocate IP address**
+
+**DNS tab**
+- **Integrate with private DNS zone**: **Yes** — this is the critical selection
+- The portal will create and link all five Private DNS zones for you
+- Leave the auto-generated names as-is unless you have a specific naming convention
+
+**Review + create**: verify, then select **Create**.
+
+Once the private endpoint deploys, the portal has already:
+
+- Created five Private DNS zones (`privatelink.monitor.azure.com`, `privatelink.ods.opinsights.azure.com`, `privatelink.oms.opinsights.azure.com`, `privatelink.agentsvc.azure-automation.net`, `privatelink.blob.core.windows.net`) in the same resource group as the PE.
+- Linked each zone to the AKS VNET via `virtualNetworkLinks`.
+- Attached each zone to the private endpoint's `privateDnsZoneGroup`.
+- Populated A records inside each zone for the scoped LAW's ODS FQDN, the DCE endpoints, and other global endpoints.
+
+You can proceed directly to Step 6.
+
+# [Azure CLI](#tab/cli)
+
+Create the PE without DNS integration; Step 5 handles the five zones explicitly.
 
 ```bash
 VNET_ID=$(az network vnet show -g $VNET_RG -n $VNET_NAME --query id -o tsv)
@@ -168,9 +259,48 @@ az network private-endpoint create \
   --connection-name ampls-conn
 ```
 
+You must proceed to Step 5 to create + link + attach the five zones.
+
+---
+
 ## Step 5 — Create the five Private DNS zones, link them to the AKS VNET, and attach them to the private endpoint
 
-This is the step where most misconfigurations occur. Missing any one zone breaks the corresponding data path. Missing a VNET link causes pods to fall back to public DNS resolution even though A records are present.
+> [!NOTE]
+> If you used the **Azure portal** in Step 4 with **Integrate = Yes**, this step is already complete — skip to Step 6. This step is required only if you used the CLI, Bicep/ARM, or the portal with **Integrate = No**.
+
+This is the step where most misconfigurations occur when done manually. Missing any one zone breaks the corresponding data path. Missing a VNET link causes pods to fall back to public DNS resolution even though A records are present.
+
+# [Azure portal (manual DNS)](#tab/portal)
+
+For each of the five zones (`privatelink.monitor.azure.com`, `privatelink.ods.opinsights.azure.com`, `privatelink.oms.opinsights.azure.com`, `privatelink.agentsvc.azure-automation.net`, `privatelink.blob.core.windows.net`):
+
+**5a. Create the zone**
+1. Search for **Private DNS zones** in the portal, select **Create**.
+2. Choose your subscription and resource group, enter the zone name exactly as listed above.
+3. Select **Review + create**, then **Create**.
+
+**5b. Link the zone to the AKS VNET**
+1. Open the newly created zone.
+2. In the left navigation, select **Virtual network links**.
+3. Select **Add**.
+4. Enter a **Link name** (for example, `aks-vnet-link`).
+5. Choose the AKS VNET.
+6. Leave **Enable auto registration** off.
+7. Select **OK**.
+
+**5c. Attach the zone to the private endpoint**
+1. Open your private endpoint in the portal.
+2. In the left navigation, select **DNS configuration**.
+3. Select **Add configuration**.
+4. Enter a **Configuration name** (for example, `privatelink-ods`).
+5. Choose the Private DNS zone you just created.
+6. Select **Add**.
+
+Repeat 5a–5c for each of the five zones. This is 15 portal actions total — the CLI loop in the next tab is faster and less error-prone.
+
+# [Azure CLI](#tab/cli)
+
+Loop over the five zones in one command:
 
 ```bash
 ZONES=(
@@ -204,7 +334,19 @@ for z in "${ZONES[@]}"; do
 done
 ```
 
-After Step 5c completes for all five zones, verify that the workspace's A record has been created:
+---
+
+After Step 5c completes for all five zones (or Step 4 completed with portal auto-integration), verify that the workspace's A record has been created:
+
+# [Azure portal](#tab/portal)
+
+1. Open the **`privatelink.ods.opinsights.azure.com`** Private DNS zone in the portal.
+2. In the left navigation, select **Recordsets**.
+3. You should see exactly one A record whose name matches your workspace's **Workspace ID** (a GUID), with a value in the private-endpoint subnet's IP range.
+
+If the record is missing, the private endpoint isn't attached to this zone. Revisit Step 5c.
+
+# [Azure CLI](#tab/cli)
 
 ```bash
 WSID=$(az monitor log-analytics workspace show --ids $LAW_ID --query customerId -o tsv)
@@ -217,7 +359,31 @@ az network private-dns record-set a list \
 
 You should see exactly one row with a private IP address from the private endpoint's subnet.
 
+---
+
 ## Step 6 — Deploy or reconfigure AKS in the same VNET
+
+# [Azure portal](#tab/portal)
+
+If your AKS cluster does not yet exist:
+
+1. Search for **Kubernetes services** in the portal and select **Create → Create a Kubernetes cluster**.
+2. On the **Basics** tab, choose your subscription and resource group, enter a **Cluster name**, and select the same region as your AMPLS.
+3. Optionally, enable **API server VNET integration** or **Private cluster** for API-server private link (this is orthogonal to AMPLS).
+4. On the **Networking** tab, under **Container networking**, choose **Azure CNI** (or **Azure CNI Overlay**).
+5. Choose **Bring your own virtual network** and select your VNET and node subnet — the same VNET as the private endpoint from Step 4.
+6. Complete the remaining tabs with your usual settings.
+7. Select **Review + create**, then **Create**.
+
+Associate the DCE with the cluster:
+
+1. Open your DCE in the portal.
+2. In the left navigation, select **Resources**.
+3. Select **Add** and choose your AKS cluster.
+
+For an existing cluster in the same VNET, no reconfiguration is needed for AMPLS itself — private link is a VNET-level concern. Only associate the DCE as described above.
+
+# [Azure CLI](#tab/cli)
 
 If your AKS cluster does not yet exist:
 
@@ -245,7 +411,32 @@ az monitor data-collection rule association create \
   --resource-uri $CLUSTER_ID
 ```
 
+---
+
 ## Step 7 — Enable monitoring and lock down the workspace
+
+# [Azure portal](#tab/portal)
+
+Enable Container Insights:
+
+1. Open your AKS cluster in the portal.
+2. In the left navigation, under **Monitoring**, select **Insights**.
+3. Select **Configure Azure Monitor**.
+4. Choose your Log Analytics workspace (`aks-law`).
+5. Under **Authentication**, choose **Managed identity**.
+6. Select **Configure**.
+
+Wait a few minutes for the monitoring addon to deploy. You can verify by checking that the `ama-logs` daemonset pods are in the `Running` state under **Workloads → Daemon sets → kube-system**.
+
+Lock down the workspace:
+
+1. Open your Log Analytics workspace in the portal.
+2. In the left navigation, under **Settings**, select **Network Isolation**.
+3. Under **Virtual networks access configuration**, set **Accept data ingestion from public networks not connected through a Private Link Scope** to **No**.
+4. Leave the query setting according to your preference.
+5. Select **Save**.
+
+# [Azure CLI](#tab/cli)
 
 Enable Container Insights with AAD-managed-identity auth:
 
@@ -264,9 +455,13 @@ az monitor log-analytics workspace update \
   --set properties.publicNetworkAccessForIngestion=Disabled
 ```
 
+---
+
 ## Step 8 — Verify DNS resolution from inside the cluster
 
-This step is what catches the most common misconfiguration. **Do not skip it.**
+This step is what catches the most common misconfiguration. **Do not skip it, and do not substitute a portal-only check.** The portal's PE **DNS configuration** blade shows what A records exist inside your Private DNS zones — but that says nothing about whether the pod's DNS resolver can actually reach them. The two are independent.
+
+Use `kubectl` regardless of whether the rest of your setup used the portal:
 
 ```bash
 az aks get-credentials -g $RG_AKS -n $AKS_NAME --overwrite-existing
@@ -298,7 +493,29 @@ If any FQDN returns a **public** IP (typically `20.x.x.x`, `40.x.x.x`, or `52.x.
 
 ## Step 9 — Verify data is flowing to the workspace
 
-Wait five minutes after Step 8 succeeds, then query the workspace:
+Wait five minutes after Step 8 succeeds, then check the workspace.
+
+# [Azure portal](#tab/portal)
+
+Two ways to verify:
+
+**Container Insights UI**
+1. Open your AKS cluster in the portal.
+2. Under **Monitoring**, select **Insights**.
+3. The **Cluster**, **Nodes**, **Controllers**, and **Containers** tabs should populate with data.
+
+**KQL query**
+1. Open your Log Analytics workspace in the portal.
+2. In the left navigation, select **Logs**.
+3. Run:
+   ```kusto
+   union ContainerLogV2, KubeEvents, KubePodInventory
+   | where TimeGenerated > ago(10m)
+   | summarize count() by Type
+   ```
+4. You should see nonzero counts for `KubeEvents`, `KubePodInventory`, and (once workload pods generate stdout logs) `ContainerLogV2`.
+
+# [Azure CLI](#tab/cli)
 
 ```bash
 az monitor log-analytics query --workspace $WSID \
@@ -308,6 +525,8 @@ az monitor log-analytics query --workspace $WSID \
 ```
 
 You should see nonzero counts for `KubeEvents`, `KubePodInventory`, and (once workload pods generate stdout logs) `ContainerLogV2`.
+
+---
 
 ## Troubleshooting
 
