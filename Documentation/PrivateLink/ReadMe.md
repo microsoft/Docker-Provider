@@ -4,7 +4,29 @@ This folder contains reference documentation for the AMPLS + AKS + Log Analytics
 
 ## Files
 
-- [`tutorial-aks-ampls-log-analytics.md`](tutorial-aks-ampls-log-analytics.md) — proposed Microsoft Learn tutorial that walks through the complete setup with CLI commands, a Bicep template, and verification steps. Intended as a starting point for a docs PR against `MicrosoftDocs/azure-monitor-docs` to close the end-to-end walkthrough gap identified during ICM 21000001094698.
+- [`tutorial-aks-ampls-log-analytics.md`](tutorial-aks-ampls-log-analytics.md) — proposed Microsoft Learn tutorial that walks through the complete setup with CLI commands, a Bicep template, portal steps, and verification steps. Intended as a starting point for a docs PR against `MicrosoftDocs/azure-monitor-docs` to close the end-to-end walkthrough gap identified during ICM 21000001094698.
+- [`screenshots/`](screenshots/) — reference screenshots captured against a real portal deployment (Grace's dev sub, 2026-08-04) as visual aids for the portal steps in the tutorial. These need to be re-captured in a clean tenant before the docs PR ships. See the inventory below.
+
+## Screenshot inventory
+
+| File | What it shows | Referenced in tutorial |
+|---|---|---|
+| `01-create-law.png` | Create Log Analytics workspace, Basics tab | Step 2 (Portal tab) |
+| `02-create-dce.png` | Create Data Collection Endpoint (deep link attempt) | — |
+| `02-dce-list.png` | Data Collection Endpoints list with **Create** button | Step 2 (Portal tab) |
+| `03-ampls-scoped-resources.png` | AMPLS **Azure Monitor Resources** blade with LAW + DCE scoped | Step 3 (Portal tab) |
+| `04-pe-wizard-basics.png` | Create private endpoint wizard, **Basics** tab | Step 4 (Portal tab) |
+| `04-pe-wizard-resource.png` | Create private endpoint wizard, **Resource** tab | Step 4 (Portal tab) |
+| `05-pe-dns-configuration.png` | PE DNS configuration blade top (viewport) | — |
+| `05-pe-dns-config-healthy.png` | PE DNS configuration blade mid-scroll | — |
+| `05-pe-dns-config-full.png` | PE DNS configuration blade with 5 zone configs showing A records | Step 4 (Portal tab) — "Integrate = Yes" outcome |
+| `06-law-network-isolation.png` | Log Analytics workspace **Network Isolation** blade | Step 7 (Portal tab) |
+| `06-law-public-network-access.png` | LAW **Public network access** management pane with Ingestion / Query radio options | Step 7 (Portal tab) |
+
+Notes for the docs PR:
+- Screenshots were captured against the current Azure portal (as of 2026-08-04). Portal UI drifts — re-verify before shipping.
+- Screenshots contain Grace's tenant/subscription info (`ContainerInsights_Dev_Grace`, `grwehner@microsoft.com`). Docs team should re-capture in a clean tenant using anonymized names.
+- A screenshot of the **DNS tab in the PE Create wizard** with **Integrate with private DNS zone = Yes** selected is the most valuable image for this tutorial and is missing here — the wizard's field validation blocked automated navigation to that tab. Priority to capture manually for the docs PR.
 
 ## Background
 
