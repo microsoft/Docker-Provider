@@ -94,9 +94,11 @@ Each of these zones must be:
 > [!NOTE]
 > Step 2 and Step 3 are independent. It is possible for a zone to have correct A records (step 2 done) but return public IPs from inside the cluster (step 3 missed). This is the most common failure mode observed in production support cases.
 
-## Step 1 — Set variables (CLI only)
+## Step 1 — Set variables or parameters
 
-If you're using the Azure portal, skip this step; the portal collects these values in each wizard. If you're using the CLI, set:
+If you're using the Azure portal, skip this step; the portal collects these values in each wizard.
+
+# [Azure CLI](#tab/cli)
 
 ```bash
 # Change these to match your environment
@@ -116,6 +118,47 @@ PE=aks-ampls-pe
 az account set --subscription $SUB
 az group create -n $RG_MONITORING -l $LOC
 ```
+
+# [Bicep](#tab/bicep)
+
+Save the following as `main.bicep`. You'll append resources to this file in each step. Deploy at the end of Step 5 with a single `az deployment group create`.
+
+```bicep
+// main.bicep — see full assembled template at the end of this tutorial
+targetScope = 'resourceGroup'
+
+@description('Location for regional resources')
+param location string = resourceGroup().location
+
+@description('Log Analytics workspace name')
+param workspaceName string = 'aks-law'
+
+@description('Data Collection Endpoint name')
+param dceName string = 'aks-dce'
+
+@description('AMPLS name')
+param amplsName string = 'aks-ampls'
+
+@description('Private endpoint name')
+param peName string = 'aks-ampls-pe'
+
+@description('Resource ID of the subnet where the PE NIC will live')
+param peSubnetId string
+
+@description('Resource ID of the AKS cluster VNET (zones will be linked to this VNET)')
+param aksVnetId string
+```
+
+Deploy at the end of Step 5:
+
+```bash
+az group create -n aks-monitoring-rg -l westus3
+az deployment group create \
+  -g aks-monitoring-rg -f main.bicep \
+  -p peSubnetId=<pe-subnet-id> aksVnetId=<aks-vnet-id>
+```
+
+---
 
 ## Step 2 — Create the Log Analytics workspace and Data Collection Endpoint
 
@@ -147,9 +190,36 @@ DCE_ID=$(az monitor data-collection endpoint create \
   --query id -o tsv)
 ```
 
+# [Bicep](#tab/bicep)
+
+Append to `main.bicep`:
+
+```bicep
+resource workspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
+  name: workspaceName
+  location: location
+  properties: {
+    sku: { name: 'PerGB2018' }
+    // Left Enabled during setup; locked down in Step 7 after DNS is verified.
+    publicNetworkAccessForIngestion: 'Enabled'
+    publicNetworkAccessForQuery: 'Enabled'
+  }
+}
+
+resource dce 'Microsoft.Insights/dataCollectionEndpoints@2023-03-11' = {
+  name: dceName
+  location: location
+  properties: {
+    networkAcls: {
+      publicNetworkAccess: 'Enabled'
+    }
+  }
+}
+```
+
 ---
 
-At this point, `publicNetworkAccessForIngestion` is left as `Enabled`. We will disable it in Step 7 after private link is fully wired up. Doing so up-front would prevent any pre-existing agent from talking to the workspace during the changeover window.
+Note: `publicNetworkAccessForIngestion` is left as `Enabled`. We will disable it in Step 7 after private link is fully wired up. Doing so up-front would prevent any pre-existing agent from talking to the workspace during the changeover window.
 
 ## Step 3 — Create the AMPLS and scope in the workspace and DCE
 
@@ -190,6 +260,39 @@ az monitor private-link-scope scoped-resource create \
 az monitor private-link-scope scoped-resource create \
   --resource-group $RG_MONITORING --scope-name $AMPLS \
   --name dce-conn --linked-resource $DCE_ID
+```
+
+# [Bicep](#tab/bicep)
+
+Append to `main.bicep`:
+
+```bicep
+resource ampls 'Microsoft.Insights/privateLinkScopes@2021-07-01-preview' = {
+  name: amplsName
+  location: 'global'
+  properties: {
+    accessModeSettings: {
+      queryAccessMode: 'Open'
+      ingestionAccessMode: 'Open'
+    }
+  }
+}
+
+resource lawScope 'Microsoft.Insights/privateLinkScopes/scopedResources@2021-07-01-preview' = {
+  parent: ampls
+  name: 'law-conn'
+  properties: {
+    linkedResourceId: workspace.id
+  }
+}
+
+resource dceScope 'Microsoft.Insights/privateLinkScopes/scopedResources@2021-07-01-preview' = {
+  parent: ampls
+  name: 'dce-conn'
+  properties: {
+    linkedResourceId: dce.id
+  }
+}
 ```
 
 ---
@@ -257,6 +360,32 @@ az network private-endpoint create \
   --private-connection-resource-id $AMPLS_ID \
   --group-id azuremonitor \
   --connection-name ampls-conn
+```
+
+You must proceed to Step 5 to create + link + attach the five zones.
+
+# [Bicep](#tab/bicep)
+
+Append to `main.bicep`. Bicep does not have an "auto-integrate DNS zone" flag — the equivalent is defining the `privateDnsZoneGroup` child resource (in Step 5).
+
+```bicep
+resource pe 'Microsoft.Network/privateEndpoints@2023-05-01' = {
+  name: peName
+  location: location
+  properties: {
+    subnet: { id: peSubnetId }
+    privateLinkServiceConnections: [
+      {
+        name: 'ampls-conn'
+        properties: {
+          privateLinkServiceId: ampls.id
+          groupIds: [ 'azuremonitor' ]
+        }
+      }
+    ]
+  }
+  dependsOn: [ lawScope, dceScope ]
+}
 ```
 
 You must proceed to Step 5 to create + link + attach the five zones.
@@ -332,6 +461,54 @@ for z in "${ZONES[@]}"; do
     --zone-name $ZONE_KEY \
     --private-dns-zone $ZONE_ID
 done
+```
+
+# [Bicep](#tab/bicep)
+
+Append to `main.bicep`. This block creates all five zones, links each to the AKS VNET, and attaches all five to the PE's `privateDnsZoneGroup` in one deployment:
+
+```bicep
+var zones = [
+  'privatelink.monitor.azure.com'
+  'privatelink.ods.opinsights.azure.com'
+  'privatelink.oms.opinsights.azure.com'
+  'privatelink.agentsvc.azure-automation.net'
+  'privatelink.blob.core.windows.net'
+]
+
+resource dnsZones 'Microsoft.Network/privateDnsZones@2020-06-01' = [for z in zones: {
+  name: z
+  location: 'global'
+}]
+
+resource vnetLinks 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-06-01' = [for (z, i) in zones: {
+  name: '${z}/aks-vnet-link'
+  location: 'global'
+  properties: {
+    virtualNetwork: { id: aksVnetId }
+    registrationEnabled: false
+  }
+  dependsOn: [ dnsZones[i] ]
+}]
+
+resource dnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2023-05-01' = {
+  parent: pe
+  name: 'default'
+  properties: {
+    privateDnsZoneConfigs: [for (z, i) in zones: {
+      name: replace(z, '.', '-')
+      properties: { privateDnsZoneId: dnsZones[i].id }
+    }]
+  }
+}
+```
+
+Now deploy the complete `main.bicep`:
+
+```bash
+az deployment group create \
+  -g aks-monitoring-rg -f main.bicep \
+  -p peSubnetId=<pe-subnet-id> aksVnetId=<aks-vnet-id>
 ```
 
 ---
@@ -411,6 +588,33 @@ az monitor data-collection rule association create \
   --resource-uri $CLUSTER_ID
 ```
 
+# [Bicep](#tab/bicep)
+
+Creating an AKS cluster with Bicep involves a large `Microsoft.ContainerService/managedClusters` resource with your specific networking, identity, and node pool configuration — outside the scope of this tutorial. Follow the [AKS Bicep quickstart](/azure/aks/learn/quick-kubernetes-deploy-bicep) for that.
+
+For an existing AKS cluster deployed via Bicep, add this data collection rule association in your AMPLS Bicep or a separate module to bind the DCE to the cluster:
+
+```bicep
+@description('Resource ID of the AKS cluster')
+param aksClusterId string
+
+// Reference the AKS cluster as an existing resource
+resource aks 'Microsoft.ContainerService/managedClusters@2024-01-01' existing = {
+  scope: resourceGroup(split(aksClusterId, '/')[4])
+  name: split(aksClusterId, '/')[8]
+}
+
+resource dceAssoc 'Microsoft.Insights/dataCollectionRuleAssociations@2022-06-01' = {
+  name: 'configurationAccessEndpoint'
+  scope: aks
+  properties: {
+    dataCollectionEndpointId: dce.id
+  }
+}
+```
+
+Add `aksClusterId` to your parameters block in Step 1 and pass it when you deploy.
+
 ---
 
 ## Step 7 — Enable monitoring and lock down the workspace
@@ -454,6 +658,47 @@ az monitor log-analytics workspace update \
   --ids $LAW_ID \
   --set properties.publicNetworkAccessForIngestion=Disabled
 ```
+
+# [Bicep](#tab/bicep)
+
+Enable the monitoring add-on by adding `addonProfiles.omsagent` to your AKS cluster's Bicep resource. Because this requires modifying the AKS resource definition itself, we recommend running the `az aks enable-addons` CLI command directly against the existing cluster (see the CLI tab) — otherwise you must reconcile the full AKS Bicep resource with your existing cluster's state.
+
+If you own the AKS Bicep and want to declare the addon there, add:
+
+```bicep
+resource aksCluster 'Microsoft.ContainerService/managedClusters@2024-01-01' = {
+  // ... existing AKS cluster properties ...
+  properties: {
+    // ... existing properties ...
+    addonProfiles: {
+      omsagent: {
+        enabled: true
+        config: {
+          logAnalyticsWorkspaceResourceID: workspace.id
+          useAADAuth: 'true'
+        }
+      }
+    }
+  }
+}
+```
+
+Lock down the workspace by updating the Step 2 workspace resource to set `publicNetworkAccessForIngestion: 'Disabled'`. This is a change to the resource declared in Step 2:
+
+```bicep
+resource workspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
+  name: workspaceName
+  location: location
+  properties: {
+    sku: { name: 'PerGB2018' }
+    publicNetworkAccessForIngestion: 'Disabled'  // ← was 'Enabled' in Step 2; flip AFTER Step 8 verifies
+    publicNetworkAccessForQuery: 'Enabled'
+  }
+}
+```
+
+> [!IMPORTANT]
+> Do not flip `publicNetworkAccessForIngestion` to `Disabled` in the same deployment as the initial setup. Deploy Steps 2–6 first with `Enabled`, complete Step 8 verification, then run a second deployment with `Disabled`. This avoids a chicken-and-egg where the workspace is locked down before the private DNS path is proven.
 
 ---
 
@@ -593,17 +838,32 @@ kubectl -n kube-system delete pod -l component=ama-logs-agent
 
 New pods start within seconds. Repeat Step 8 to confirm private resolution before running Step 9.
 
-## Complete Bicep template
+## Complete assembled `main.bicep`
 
-Combining Steps 3–5 into a single deployable Bicep file:
+The Bicep tabs throughout Steps 1–5 build up a single file. Here is the complete assembled `main.bicep` for reference:
 
 ```bicep
+targetScope = 'resourceGroup'
+
+@description('Location for regional resources')
 param location string = resourceGroup().location
-param amplsName string
-param workspaceId string
-param dceId string
-param peName string
+
+@description('Log Analytics workspace name')
+param workspaceName string = 'aks-law'
+
+@description('Data Collection Endpoint name')
+param dceName string = 'aks-dce'
+
+@description('AMPLS name')
+param amplsName string = 'aks-ampls'
+
+@description('Private endpoint name')
+param peName string = 'aks-ampls-pe'
+
+@description('Resource ID of the subnet where the PE NIC will live')
 param peSubnetId string
+
+@description('Resource ID of the AKS cluster VNET (zones will be linked to this VNET)')
 param aksVnetId string
 
 var zones = [
@@ -614,27 +874,64 @@ var zones = [
   'privatelink.blob.core.windows.net'
 ]
 
+resource workspace 'Microsoft.OperationalInsights/workspaces@2022-10-01' = {
+  name: workspaceName
+  location: location
+  properties: {
+    sku: { name: 'PerGB2018' }
+    // Change to 'Disabled' AFTER Step 8 verifies DNS resolves privately.
+    publicNetworkAccessForIngestion: 'Enabled'
+    publicNetworkAccessForQuery: 'Enabled'
+  }
+}
+
+resource dce 'Microsoft.Insights/dataCollectionEndpoints@2023-03-11' = {
+  name: dceName
+  location: location
+  properties: {
+    networkAcls: { publicNetworkAccess: 'Enabled' }
+  }
+}
+
 resource ampls 'Microsoft.Insights/privateLinkScopes@2021-07-01-preview' = {
   name: amplsName
   location: 'global'
   properties: {
     accessModeSettings: {
-      ingestionAccessMode: 'Open'
       queryAccessMode: 'Open'
+      ingestionAccessMode: 'Open'
     }
   }
 }
 
-resource lawScoped 'Microsoft.Insights/privateLinkScopes/scopedResources@2021-07-01-preview' = {
+resource lawScope 'Microsoft.Insights/privateLinkScopes/scopedResources@2021-07-01-preview' = {
   parent: ampls
   name: 'law-conn'
-  properties: { linkedResourceId: workspaceId }
+  properties: { linkedResourceId: workspace.id }
 }
 
-resource dceScoped 'Microsoft.Insights/privateLinkScopes/scopedResources@2021-07-01-preview' = {
+resource dceScope 'Microsoft.Insights/privateLinkScopes/scopedResources@2021-07-01-preview' = {
   parent: ampls
   name: 'dce-conn'
-  properties: { linkedResourceId: dceId }
+  properties: { linkedResourceId: dce.id }
+}
+
+resource pe 'Microsoft.Network/privateEndpoints@2023-05-01' = {
+  name: peName
+  location: location
+  properties: {
+    subnet: { id: peSubnetId }
+    privateLinkServiceConnections: [
+      {
+        name: 'ampls-conn'
+        properties: {
+          privateLinkServiceId: ampls.id
+          groupIds: [ 'azuremonitor' ]
+        }
+      }
+    ]
+  }
+  dependsOn: [ lawScope, dceScope ]
 }
 
 resource dnsZones 'Microsoft.Network/privateDnsZones@2020-06-01' = [for z in zones: {
@@ -652,24 +949,6 @@ resource vnetLinks 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2020-0
   dependsOn: [ dnsZones[i] ]
 }]
 
-resource pe 'Microsoft.Network/privateEndpoints@2023-05-01' = {
-  name: peName
-  location: location
-  properties: {
-    subnet: { id: peSubnetId }
-    privateLinkServiceConnections: [
-      {
-        name: 'ampls-conn'
-        properties: {
-          privateLinkServiceId: ampls.id
-          groupIds: [ 'azuremonitor' ]
-        }
-      }
-    ]
-  }
-  dependsOn: [ lawScoped, dceScoped ]
-}
-
 resource dnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2023-05-01' = {
   parent: pe
   name: 'default'
@@ -680,7 +959,23 @@ resource dnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2
     }]
   }
 }
+
+output workspaceId string = workspace.id
+output dceId string = dce.id
+output amplsId string = ampls.id
 ```
+
+Deploy with:
+
+```bash
+az deployment group create \
+  -g aks-monitoring-rg -f main.bicep \
+  -p peSubnetId=<pe-subnet-id> aksVnetId=<aks-vnet-id>
+```
+
+To convert to an ARM JSON template, use `az bicep build --file main.bicep`.
+
+For Terraform users, the [`azurerm_monitor_private_link_scope`](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_private_link_scope), [`azurerm_monitor_private_link_scoped_service`](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/monitor_private_link_scoped_service), [`azurerm_private_endpoint`](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_endpoint) (with a five-entry `private_dns_zone_group.private_dns_zone_ids`), and [`azurerm_private_dns_zone_virtual_network_link`](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/private_dns_zone_virtual_network_link) resources map directly to the Bicep resources above. Make sure the `private_dns_zone_ids` array includes **all five** zones.
 
 ## Related content
 
