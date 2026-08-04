@@ -17,6 +17,8 @@ This folder contains reference documentation for the AMPLS + AKS + Log Analytics
 | `03-ampls-scoped-resources.png` | AMPLS **Azure Monitor Resources** blade with LAW + DCE scoped | Step 3 (Portal tab) |
 | `04-pe-wizard-basics.png` | Create private endpoint wizard, **Basics** tab | Step 4 (Portal tab) |
 | `04-pe-wizard-resource.png` | Create private endpoint wizard, **Resource** tab | Step 4 (Portal tab) |
+| `04-pe-wizard-dns-tab-yes.png` | Create private endpoint wizard, **DNS** tab with `Integrate with private DNS zone = Yes` and all 5 zones auto-listed | Step 4 (Portal tab) — the key visual for the "recommended path" |
+| `04-pe-wizard-dns-tab-disabled-by-id-alias.png` | DNS tab with `Yes` disabled because the Resource tab used **Connect by resource ID or alias** | Step 4 (Portal tab) — the warning callout |
 | `05-pe-dns-configuration.png` | PE DNS configuration blade top (viewport) | — |
 | `05-pe-dns-config-healthy.png` | PE DNS configuration blade mid-scroll | — |
 | `05-pe-dns-config-full.png` | PE DNS configuration blade with 5 zone configs showing A records | Step 4 (Portal tab) — "Integrate = Yes" outcome |
@@ -26,7 +28,6 @@ This folder contains reference documentation for the AMPLS + AKS + Log Analytics
 Notes for the docs PR:
 - Screenshots were captured against the current Azure portal (as of 2026-08-04). Portal UI drifts — re-verify before shipping.
 - Screenshots contain Grace's tenant/subscription info (`ContainerInsights_Dev_Grace`, `grwehner@microsoft.com`). Docs team should re-capture in a clean tenant using anonymized names.
-- A screenshot of the **DNS tab in the PE Create wizard** with **Integrate with private DNS zone = Yes** selected is the most valuable image for this tutorial and is missing here — the wizard's field validation blocked automated navigation to that tab. Priority to capture manually for the docs PR.
 
 ## Background
 

@@ -342,8 +342,15 @@ Fill out the wizard tabs:
 
 **DNS tab**
 - **Integrate with private DNS zone**: **Yes** — this is the critical selection
-- The portal will create and link all five Private DNS zones for you
-- Leave the auto-generated names as-is unless you have a specific naming convention
+- The portal shows all five zones it will create for the `azuremonitor` sub-resource. Verify all five appear (monitor, oms, ods, agentsvc, blob).
+- Leave the auto-generated Configuration names as-is unless you have a specific naming convention.
+
+![Create private endpoint, DNS tab with 'Integrate with private DNS zone = Yes' selected and all 5 zones listed](screenshots/04-pe-wizard-dns-tab-yes.png)
+
+> [!WARNING]
+> On the **Resource** tab, if you chose **Connect to an Azure resource by resource ID or alias** instead of **Connect to an Azure resource in my directory**, the **Integrate with private DNS zone** option on the DNS tab will be **disabled**, forcing you to manage the five zones manually (Step 5). Use the in-directory picker whenever possible.
+>
+> ![DNS tab with Yes disabled because the Resource tab used Connect by resource ID](screenshots/04-pe-wizard-dns-tab-disabled-by-id-alias.png)
 
 **Review + create**: verify, then select **Create**.
 
