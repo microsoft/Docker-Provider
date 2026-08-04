@@ -170,12 +170,16 @@ Create the Log Analytics workspace:
 2. On the **Basics** tab, choose your subscription and resource group, enter a **Name** (for example, `aks-law`), and select your region.
 3. Select **Review + create**, then **Create**.
 
+![Create Log Analytics workspace, Basics tab](screenshots/01-create-law.png)
+
 Create the Data Collection Endpoint:
 
 1. Search for **Monitor** in the portal, then select **Data Collection Endpoints** in the left navigation.
 2. Select **Create**.
 3. On the **Basics** tab, choose your subscription and resource group, enter a **Name** (for example, `aks-dce`), select the same region as your AKS cluster, and leave **Public network access** as **Enabled** for now.
 4. Select **Review + create**, then **Create**.
+
+![Data Collection Endpoints list, Create button](screenshots/02-dce-list.png)
 
 # [Azure CLI](#tab/cli)
 
@@ -239,6 +243,8 @@ Add the workspace and DCE as scoped resources:
 4. Select **Add** again, choose your Data Collection Endpoint, and select **Apply**.
 
 You should see both resources listed under **Azure Monitor Resources**.
+
+![AMPLS Azure Monitor Resources tab with scoped LAW and DCE](screenshots/03-ampls-scoped-resources.png)
 
 # [Azure CLI](#tab/cli)
 
@@ -319,10 +325,14 @@ Fill out the wizard tabs:
 - **Name**: `aks-ampls-pe` (or similar)
 - **Region**: same as your AKS cluster
 
+![Create private endpoint, Basics tab](screenshots/04-pe-wizard-basics.png)
+
 **Resource tab**
 - **Resource type**: `Microsoft.Insights/privateLinkScopes` (pre-filled)
 - **Resource**: your AMPLS (pre-filled)
 - **Target sub-resource**: `azuremonitor`
+
+![Create private endpoint, Resource tab](screenshots/04-pe-wizard-resource.png)
 
 **Virtual Network tab**
 - **Virtual network**: your AKS cluster's VNET
@@ -343,6 +353,10 @@ Once the private endpoint deploys, the portal has already:
 - Linked each zone to the AKS VNET via `virtualNetworkLinks`.
 - Attached each zone to the private endpoint's `privateDnsZoneGroup`.
 - Populated A records inside each zone for the scoped LAW's ODS FQDN, the DCE endpoints, and other global endpoints.
+
+Verify by opening the PE's **DNS configuration** blade. You should see 5 top-level Configuration rows (one per zone), each expandable to show its A records:
+
+![PE DNS configuration blade with all 5 zones populated](screenshots/05-pe-dns-config-full.png)
 
 You can proceed directly to Step 6.
 
@@ -636,9 +650,15 @@ Lock down the workspace:
 
 1. Open your Log Analytics workspace in the portal.
 2. In the left navigation, under **Settings**, select **Network Isolation**.
-3. Under **Virtual networks access configuration**, set **Accept data ingestion from public networks not connected through a Private Link Scope** to **No**.
-4. Leave the query setting according to your preference.
-5. Select **Save**.
+3. On the **Public access** tab, select **Manage**.
+
+   ![LAW Network Isolation blade](screenshots/06-law-network-isolation.png)
+
+4. Under **Ingestion access**, choose **Restricted public inbound, enabled public outbound** (which disables public ingestion) or **Secured by perimeter** if you have a Network Security Perimeter set up.
+5. Leave the **Query access** setting according to your preference.
+6. Select **Save**.
+
+   ![LAW Public network access management](screenshots/06-law-public-network-access.png)
 
 # [Azure CLI](#tab/cli)
 
