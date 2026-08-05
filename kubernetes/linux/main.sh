@@ -540,9 +540,7 @@ fi
 
 # common agent config settings applicable for all container types
 ruby tomlparser-common-agent-config.rb
-cat common_agent_config_env_var | while read line; do
-      echo $line >> ~/.bashrc
-done
+cat common_agent_config_env_var >> ~/.bashrc
 source common_agent_config_env_var
 
 # check if high log scale mode enabled
@@ -558,17 +556,13 @@ fi
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
       ruby tomlparser-agent-config.rb
 
-      cat agent_config_env_var | while read line; do
-            echo $line >> ~/.bashrc
-      done
+      cat agent_config_env_var >> ~/.bashrc
       source agent_config_env_var
 
       #Parse the configmap to set the right environment variables for network policy manager (npm) integration.
       ruby tomlparser-npm-config.rb
 
-      cat integration_npm_config_env_var | while read line; do
-            echo $line >> ~/.bashrc
-      done
+      cat integration_npm_config_env_var >> ~/.bashrc
       source integration_npm_config_env_var
 fi
 
@@ -767,9 +761,7 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${GENEVA_LOGS_INTEGRATIO
       #Parse the configmap to set the right environment variables.
       ruby tomlparser.rb
 
-      cat config_env_var | while read line; do
-            echo $line >>~/.bashrc
-      done
+      cat config_env_var >>~/.bashrc
       source config_env_var
 fi
 
@@ -778,9 +770,7 @@ if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
       #Parse geneva config
       ruby tomlparser-geneva-config.rb
 
-      cat geneva_config_env_var | while read line; do
-            echo $line >> ~/.bashrc
-      done
+      cat geneva_config_env_var >> ~/.bashrc
       source geneva_config_env_var
 
       if [ ! -e "/etc/config/kube.conf" ]; then
@@ -811,28 +801,20 @@ ruby tomlparser-prom-customconfig.rb
 #Setting default environment variables to be used in any case of failure in the above steps
 if [ ! -e "/etc/config/kube.conf" ]; then
       if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
-            cat defaultpromenvvariables-sidecar | while read line; do
-                  echo $line >>~/.bashrc
-            done
+            cat defaultpromenvvariables-sidecar >>~/.bashrc
             source defaultpromenvvariables-sidecar
       else
-            cat defaultpromenvvariables | while read line; do
-                  echo $line >>~/.bashrc
-            done
+            cat defaultpromenvvariables >>~/.bashrc
             source defaultpromenvvariables
       fi
 else
-      cat defaultpromenvvariables-rs | while read line; do
-            echo $line >>~/.bashrc
-      done
+      cat defaultpromenvvariables-rs >>~/.bashrc
       source defaultpromenvvariables-rs
 fi
 
 #Sourcing environment variable file if it exists. This file has telemetry and whether kubernetes pods are monitored
 if [ -e "telemetry_prom_config_env_var" ]; then
-      cat telemetry_prom_config_env_var | while read line; do
-            echo $line >>~/.bashrc
-      done
+      cat telemetry_prom_config_env_var >>~/.bashrc
       source telemetry_prom_config_env_var
       setGlobalEnvVar TELEMETRY_RS_TELEGRAF_DISABLED "${TELEMETRY_RS_TELEGRAF_DISABLED}"
 else
@@ -853,9 +835,7 @@ if [ ! -e "/etc/config/kube.conf" ]; then
             ruby tomlparser-prom-agent-config.rb
             #Sourcing config environment variable file if it exists
             if [ -e "side_car_fbit_config_env_var" ]; then
-                  cat side_car_fbit_config_env_var | while read line; do
-                        echo $line >>~/.bashrc
-                  done
+                  cat side_car_fbit_config_env_var >>~/.bashrc
                   source side_car_fbit_config_env_var
             fi
       fi
@@ -865,17 +845,13 @@ fi
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ] && [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" != "true" ]; then
       ruby tomlparser-mdm-metrics-config.rb
 
-      cat config_mdm_metrics_env_var | while read line; do
-            echo $line >>~/.bashrc
-      done
+      cat config_mdm_metrics_env_var >>~/.bashrc
       source config_mdm_metrics_env_var
 
       #Parse the configmap to set the right environment variables for metric collection settings
       ruby tomlparser-metric-collection-config.rb
 
-      cat config_metric_collection_env_var | while read line; do
-            echo $line >>~/.bashrc
-      done
+      cat config_metric_collection_env_var >>~/.bashrc
       source config_metric_collection_env_var
 fi
 
@@ -885,9 +861,7 @@ if [[ ( ( ! -e "/etc/config/kube.conf" ) && ( "${CONTAINER_TYPE}" == "Prometheus
       ruby tomlparser-osm-config.rb
 
       if [ -e "integration_osm_config_env_var" ]; then
-            cat integration_osm_config_env_var | while read line; do
-                  echo $line >>~/.bashrc
-            done
+            cat integration_osm_config_env_var >>~/.bashrc
             source integration_osm_config_env_var
       else
             setGlobalEnvVar TELEMETRY_OSM_CONFIGURATION_NAMESPACES_COUNT 0
@@ -1017,9 +991,7 @@ echo "export SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH=$SKIP_IMDS_LOOKUP_FOR_LEGACY_AUTH"
 # this used by mdsd to determine cloud specific LA endpoints
 export OMS_TLD=$domain
 echo "export OMS_TLD=$OMS_TLD" >>~/.bashrc
-cat /etc/mdsd.d/envmdsd | while read line; do
-      echo $line >>~/.bashrc
-done
+cat /etc/mdsd.d/envmdsd >>~/.bashrc
 source /etc/mdsd.d/envmdsd
 MDSD_AAD_MSI_AUTH_ARGS=""
 # check if its AAD Auth MSI mode via USING_AAD_MSI_AUTH
@@ -1191,9 +1163,7 @@ fi
 
 ruby dcr-config-parser.rb
 if [ -e "/opt/dcr_env_var" ]; then
-      cat dcr_env_var | while read line; do
-            echo $line >>~/.bashrc
-      done
+      cat dcr_env_var >>~/.bashrc
       source /opt/dcr_env_var
       setGlobalEnvVar LOGS_AND_EVENTS_ONLY "${LOGS_AND_EVENTS_ONLY}"
 fi

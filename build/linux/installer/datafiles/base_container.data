@@ -69,6 +69,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/tomlparser.rb;                                             build/common/installer/scripts/tomlparser.rb;     755; root; root
 /opt/fluent-bit-conf-customizer.rb;                             build/common/installer/scripts/fluent-bit-conf-customizer.rb;     755; root; root
 /opt/ConfigParseErrorLogger.rb;                                 build/common/installer/scripts/ConfigParseErrorLogger.rb;           755; root; root
+/opt/ConfigValueSanitizer.rb;                                   build/common/installer/scripts/ConfigValueSanitizer.rb;             755; root; root
 /opt/tomlparser-npm-config.rb;                                  build/linux/installer/scripts/tomlparser-npm-config.rb;     755; root; root
 /opt/tomlparser-osm-config.rb;                                  build/linux/installer/scripts/tomlparser-osm-config.rb;     755; root; root
 /opt/dcr-config-parser.rb;                                      build/linux/installer/scripts/dcr-config-parser.rb;     755; root; root

@@ -5,6 +5,7 @@
 require "tomlrb"
 
 require_relative "ConfigParseErrorLogger"
+require_relative "ConfigValueSanitizer"
 
 @configMapMountPath = "/etc/config/settings/log-data-collection-settings"
 @configVersion = ""
@@ -593,35 +594,35 @@ if !file.nil?
     @logExclusionRegexPattern = "stderr"
   end
   file.write("export AZMON_COLLECT_STDOUT_LOGS=#{@collectStdoutLogs}\n")
-  file.write("export AZMON_LOG_TAIL_PATH=#{@logTailPath}\n")
+  file.write("export AZMON_LOG_TAIL_PATH=#{ConfigValueSanitizer.shell_quote(@logTailPath)}\n")
   logTailPathDir = File.dirname(@logTailPath)
-  file.write("export AZMON_LOG_TAIL_PATH_DIR=#{logTailPathDir}\n")
-  file.write("export AZMON_LOG_EXCLUSION_REGEX_PATTERN=\"#{@logExclusionRegexPattern}\"\n")
-  file.write("export AZMON_STDOUT_EXCLUDED_NAMESPACES=#{@stdoutExcludeNamespaces}\n")
-  file.write("export AZMON_STDOUT_INCLUDED_SYSTEM_PODS=#{@stdoutIncludeSystemPods}\n")
+  file.write("export AZMON_LOG_TAIL_PATH_DIR=#{ConfigValueSanitizer.shell_quote(logTailPathDir)}\n")
+  file.write("export AZMON_LOG_EXCLUSION_REGEX_PATTERN=#{ConfigValueSanitizer.shell_quote(@logExclusionRegexPattern)}\n")
+  file.write("export AZMON_STDOUT_EXCLUDED_NAMESPACES=#{ConfigValueSanitizer.shell_quote(@stdoutExcludeNamespaces)}\n")
+  file.write("export AZMON_STDOUT_INCLUDED_SYSTEM_PODS=#{ConfigValueSanitizer.shell_quote(@stdoutIncludeSystemPods)}\n")
   file.write("export AZMON_COLLECT_STDERR_LOGS=#{@collectStderrLogs}\n")
-  file.write("export AZMON_STDERR_EXCLUDED_NAMESPACES=#{@stderrExcludeNamespaces}\n")
-  file.write("export AZMON_STDERR_INCLUDED_SYSTEM_PODS=#{@stderrIncludeSystemPods}\n")
+  file.write("export AZMON_STDERR_EXCLUDED_NAMESPACES=#{ConfigValueSanitizer.shell_quote(@stderrExcludeNamespaces)}\n")
+  file.write("export AZMON_STDERR_INCLUDED_SYSTEM_PODS=#{ConfigValueSanitizer.shell_quote(@stderrIncludeSystemPods)}\n")
   file.write("export AZMON_CLUSTER_COLLECT_ENV_VAR=#{@collectClusterEnvVariables}\n")
-  file.write("export AZMON_CLUSTER_LOG_TAIL_EXCLUDE_PATH=#{@excludePath}\n")
+  file.write("export AZMON_CLUSTER_LOG_TAIL_EXCLUDE_PATH=#{ConfigValueSanitizer.shell_quote(@excludePath)}\n")
   file.write("export AZMON_CLUSTER_CONTAINER_LOG_ENRICH=#{@enrichContainerLogs}\n")
   file.write("export AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS=#{@collectAllKubeEvents}\n")
-  file.write("export AZMON_CONTAINER_LOGS_ROUTE=#{@containerLogsRoute}\n")
-  file.write("export AZMON_CONTAINER_LOG_SCHEMA_VERSION=#{@containerLogSchemaVersion}\n")
+  file.write("export AZMON_CONTAINER_LOGS_ROUTE=#{ConfigValueSanitizer.shell_quote(@containerLogsRoute)}\n")
+  file.write("export AZMON_CONTAINER_LOG_SCHEMA_VERSION=#{ConfigValueSanitizer.shell_quote(@containerLogSchemaVersion)}\n")
   file.write("export AZMON_MULTILINE_ENABLED=#{@logEnableMultiline}\n")
-  file.write("export AZMON_MULTILINE_LANGUAGES=#{@stacktraceLanguages}\n")
+  file.write("export AZMON_MULTILINE_LANGUAGES=#{ConfigValueSanitizer.shell_quote(@stacktraceLanguages)}\n")
   file.write("export AZMON_KUBERNETES_METADATA_ENABLED=#{@logEnableKubernetesMetadata}\n")
-  file.write("export AZMON_KUBERNETES_METADATA_INCLUDES_FIELDS=#{@logKubernetesMetadataIncludeFields}\n")
+  file.write("export AZMON_KUBERNETES_METADATA_INCLUDES_FIELDS=#{ConfigValueSanitizer.shell_quote(@logKubernetesMetadataIncludeFields)}\n")
   file.write("export AZMON_ANNOTATION_BASED_LOG_FILTERING=#{@annotationBasedLogFiltering}\n")
   if @isAzMonMultiTenancyLogCollectionEnabled
     file.write("export AZMON_MULTI_TENANCY_LOG_COLLECTION=#{@isAzMonMultiTenancyLogCollectionEnabled}\n")
     file.write("export AZMON_MULTI_TENANCY_FALLBACK_INGESTION_DISABLED=#{@isAzMonMultiTenancyFallbackIngestionDisabled}\n")
     file.write("export AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE=#{@isAzMonMultiTenancyLogCollectionAdvancedMode}\n")
     azMonMultiTenantNamespacesString = @azMonMultiTenantNamespaces.join(",")
-    file.write("export AZMON_MULTI_TENANCY_NAMESPACES=#{azMonMultiTenantNamespacesString}\n")
+    file.write("export AZMON_MULTI_TENANCY_NAMESPACES=#{ConfigValueSanitizer.shell_quote(azMonMultiTenantNamespacesString)}\n")
     file.write("export AZMON_MULTI_TENANCY_STORAGE_MAX_CHUNKS_UP=#{@azMonMultiTenancyMaxStorageChunksUp}\n")
-    file.write("export AZMON_MULTI_TENANCY_SVC_BUFFER_CHUNK_SIZE=#{@azMonMultiTenancyServiceBufferChunkSize}\n")
-    file.write("export AZMON_MULTI_TENANCY_SVC_BUFFER_MAX_SIZE=#{@azMonMultiTenancyServiceBufferMaxSize}\n")
+    file.write("export AZMON_MULTI_TENANCY_SVC_BUFFER_CHUNK_SIZE=#{ConfigValueSanitizer.shell_quote(@azMonMultiTenancyServiceBufferChunkSize)}\n")
+    file.write("export AZMON_MULTI_TENANCY_SVC_BUFFER_MAX_SIZE=#{ConfigValueSanitizer.shell_quote(@azMonMultiTenancyServiceBufferMaxSize)}\n")
   end
 
   # Close file after writing all environment variables
@@ -639,7 +640,7 @@ which is the ENTRYPOINT script for the windows aks log container
 =end
 
 def get_command_windows(env_variable_name, env_variable_value)
-  return "#{env_variable_name}=#{env_variable_value}\n"
+  return "#{env_variable_name}=#{ConfigValueSanitizer.single_line(env_variable_value)}\n"
 end
 
 if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0

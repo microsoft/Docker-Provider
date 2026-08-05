@@ -24,6 +24,11 @@ test/unit-tests/
     ├── Test-GetMcsGlobalEndpoint.ps1
     ├── Test-IsSupportedCloudEnvironment.ps1
     └── Test-GetLogAnalyticsWorkspaceDomain.ps1
+└── ruby/                     # Minitest tests for the configmap toml parsers
+    ├── parser_test_helper.rb
+    ├── config_value_sanitizer_test.rb
+    ├── tomlparser_geneva_config_test.rb
+    └── tomlparser_log_collection_test.rb
 ```
 
 ## Running the Tests
@@ -50,6 +55,17 @@ To run all PowerShell unit tests:
 To run a specific PowerShell test file:
 ```powershell
 ./test/unit-tests/test_cases/Test-GetClusterCloudEnvironment.ps1
+```
+
+### Ruby Tests
+Requires the `tomlrb` gem. To run all Ruby unit tests:
+```bash
+./test/unit-tests/run_ruby_tests.sh
+```
+
+To run a specific Ruby test file:
+```bash
+ruby test/unit-tests/ruby/tomlparser_geneva_config_test.rb
 ```
 
 ## Available Tests
@@ -89,6 +105,13 @@ Tests workspace domain determination:
 - Invalid domains
 - Default domain handling
 - Empty/missing configurations
+
+### ConfigMap Parser Tests (Ruby)
+Tests that values read from the `container-azm-ms-agentconfig` configmap cannot inject shell commands
+into the env var files that `main.sh` appends to `~/.bashrc` and sources as root:
+- Shell quoting and escaping of untrusted values
+- Allowlist validation of the Geneva account settings and of infra/tenant namespaces
+- Generated env var files are sourced in bash and asserted to round-trip values without executing them
 
 ## Adding New Tests
 

@@ -5,6 +5,7 @@ require "tomlrb"
 require "json"
 
 require_relative "ConfigParseErrorLogger"
+require_relative "ConfigValueSanitizer"
 
 @configMapMountPath = "/etc/config/settings/integrations"
 @configSchemaVersion = ""
@@ -14,6 +15,18 @@ require_relative "ConfigParseErrorLogger"
 @disable_linux = false
 
 GENEVA_SUPPORTED_ENVIRONMENTS = ["Test", "Stage", "DiagnosticsProd", "FirstpartyProd", "BillingProd", "ExternalProd", "CaMooncake", "CaFairfax", "CaBlackforest", "Bleu"]
+# The values below are attacker controllable (they come from the container-azm-ms-agentconfig configmap) and end up in
+# env var files which get sourced by the agent shell scripts, in fluent-bit conf files and in file names. Restrict them
+# to the characters the corresponding Geneva/Kubernetes identifiers can actually contain.
+GENEVA_ENVIRONMENT_PATTERN = /\A[A-Za-z0-9_\-\.]{1,64}\z/
+GENEVA_ACCOUNT_PATTERN = /\A[A-Za-z0-9_\-\.]{1,64}\z/
+GENEVA_NAMESPACE_PATTERN = /\A[A-Za-z0-9_\-\.]{1,64}\z/
+GENEVA_REGION_PATTERN = /\A[A-Za-z0-9_\-\.]{1,64}\z/
+GENEVA_CONFIG_VERSION_PATTERN = /\A[A-Za-z0-9_\-\.]{1,64}\z/
+# supported auth id formats are <keyword>#<value> where value can be a guid or an ARM resource id
+GENEVA_AUTH_ID_PATTERN = /\A[A-Za-z0-9_\-\.#\/]{1,512}\z/
+# kubernetes namespace (DNS-1123 label) optionally suffixed with * to indicate a namespace prefix match
+K8S_NAMESPACE_PATTERN = /\A[a-z0-9]([\-a-z0-9]*[a-z0-9])?(\-?\*)?\z/
 @geneva_account_environment = "" # Supported values Test, Stage, DiagnosticsProd, FirstpartyProd, BillingProd, ExternalProd, CaMooncake, CaFairfax, CaBlackforest, Bleu
 @geneva_account_name = ""
 @geneva_account_namespace = ""
@@ -114,6 +127,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
                infra_namespaces.kind_of?(Array) && infra_namespaces.length > 0 &&
                infra_namespaces[0].kind_of?(String) # Checking only for the first element to be string because toml enforces the arrays to contain elements of same type
               infra_namespaces.each do |namespace|
+                next if !isValidK8sNamespace(namespace)
                 if @infra_namespaces.empty?
                   # To not append , for the first element
                   @infra_namespaces.concat(namespace)
@@ -167,18 +181,18 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               @geneva_gcs_region = geneva_gcs_region
               @geneva_gcs_authid = geneva_gcs_authid
 
-              if !geneva_logs_config_version.nil? && !geneva_logs_config_version.empty?
+              if ConfigValueSanitizer.valid?(geneva_logs_config_version, GENEVA_CONFIG_VERSION_PATTERN)
                 @geneva_logs_config_version = geneva_logs_config_version
               else
                 @geneva_logs_config_version = "1.0"
-                puts "Since config version not specified so using default config version : #{@geneva_logs_config_version}"
+                puts "Since config version not specified or not valid so using default config version : #{@geneva_logs_config_version}"
               end
 
-              if !geneva_logs_config_version_windows.nil? && !geneva_logs_config_version_windows.empty?
+              if ConfigValueSanitizer.valid?(geneva_logs_config_version_windows, GENEVA_CONFIG_VERSION_PATTERN)
                 @geneva_logs_config_version_windows = geneva_logs_config_version_windows
               else
                 @geneva_logs_config_version_windows = "1.0"
-                puts "Since config version for windows not specified so using default config version : #{@geneva_logs_config_version_windows}"
+                puts "Since config version for windows not specified or not valid so using default config version : #{@geneva_logs_config_version_windows}"
               end
             else
               puts "config::geneva_logs::error: provided geneva logs config is not valid"
@@ -192,6 +206,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
                tenant_namespaces.kind_of?(Array) && tenant_namespaces.length > 0 &&
                tenant_namespaces[0].kind_of?(String) # Checking only for the first element to be string because toml enforces the arrays to contain elements of same type
               tenant_namespaces.each do |namespace|
+                next if !isValidK8sNamespace(namespace)
                 if @tenant_namespaces.empty?
                   # To not append , for the first element
                   @tenant_namespaces.concat(namespace)
@@ -230,33 +245,47 @@ def populateSettingValuesFromConfigMap(parsedConfig)
   end
 end
 
+def isValidK8sNamespace(namespace)
+  if !ConfigValueSanitizer.valid?(namespace, K8S_NAMESPACE_PATTERN)
+    puts "config::geneva_logs::error:ignoring invalid kubernetes namespace specified in the configmap"
+    return false
+  end
+  return true
+end
+
 def isValidGenevaConfig(environment, namespace, namespacewindows, account, authid, region)
   isValid = false
   begin
-    if environment.nil? || environment.empty?
+    if !ConfigValueSanitizer.valid?(environment, GENEVA_ENVIRONMENT_PATTERN)
       puts "config::geneva_logs::error:geneva environment MUST be valid"
       return isValid
     end
 
-    if namespace.nil? || namespace.empty?
+    if !ConfigValueSanitizer.valid?(namespace, GENEVA_NAMESPACE_PATTERN)
       puts "config::geneva_logs::error:geneva account namespace MUST be valid"
       return isValid
     end
 
-    if region.nil? || region.empty?
+    if !namespacewindows.nil? && !namespacewindows.empty? && !ConfigValueSanitizer.valid?(namespacewindows, GENEVA_NAMESPACE_PATTERN)
+      puts "config::geneva_logs::error:geneva account namespace for windows MUST be valid"
+      return isValid
+    end
+
+    if !account.nil? && !account.empty? && !ConfigValueSanitizer.valid?(account, GENEVA_ACCOUNT_PATTERN)
+      puts "config::geneva_logs::error:geneva account MUST be valid"
+      return isValid
+    end
+
+    if !ConfigValueSanitizer.valid?(region, GENEVA_REGION_PATTERN)
       puts "config::geneva_logs::error:geneva GCS region MUST be valid"
       return isValid
     end
 
-    if authid.nil? || authid.empty?
+    if !ConfigValueSanitizer.valid?(authid, GENEVA_AUTH_ID_PATTERN)
       puts "config::geneva_logs::error:geneva GCS AuthID MUST be valid"
       return isValid
     end
-    ## namespacewindows is optional hence we dont need this validation
-    # if namespacewindows.nil? || namespacewindows.empty?
-    #   puts "config::geneva_logs::error:geneva account namespace for windows MUST be valid"
-    #   return isValid
-    # end
+    ## namespacewindows and account are optional hence they are only validated when specified
     # TODO - add the validation once we figured out the environment for airgap clouds
     # GENEVA_SUPPORTED_ENVIRONMENTS.map(&:downcase).include?(environment.downcase)
     isValid = true
@@ -267,7 +296,7 @@ def isValidGenevaConfig(environment, namespace, namespacewindows, account, authi
 end
 
 def get_command_windows(env_variable_name, env_variable_value)
-  return "#{env_variable_name}=#{env_variable_value}\n"
+  return "#{env_variable_name}=#{ConfigValueSanitizer.single_line(env_variable_value)}\n"
 end
 
 def is_configure_geneva_env_vars()
@@ -316,16 +345,16 @@ if !file.nil?
       end
 
       if is_configure_geneva_env_vars()
-        file.write("export MONITORING_GCS_ENVIRONMENT=#{@geneva_account_environment}\n")
-        file.write("export MONITORING_GCS_NAMESPACE=#{@geneva_account_namespace}\n")
-        file.write("export MONITORING_GCS_ACCOUNT=#{@geneva_account_name}\n")
-        file.write("export MONITORING_GCS_REGION=#{@geneva_gcs_region}\n")
-        file.write("export MONITORING_CONFIG_VERSION=#{@geneva_logs_config_version}\n")
-        file.write("export MONITORING_GCS_AUTH_ID=#{@geneva_gcs_authid}\n")
-        file.write("export MONITORING_GCS_AUTH_ID_TYPE=AuthMSIToken")
+        file.write("export MONITORING_GCS_ENVIRONMENT=#{ConfigValueSanitizer.shell_quote(@geneva_account_environment)}\n")
+        file.write("export MONITORING_GCS_NAMESPACE=#{ConfigValueSanitizer.shell_quote(@geneva_account_namespace)}\n")
+        file.write("export MONITORING_GCS_ACCOUNT=#{ConfigValueSanitizer.shell_quote(@geneva_account_name)}\n")
+        file.write("export MONITORING_GCS_REGION=#{ConfigValueSanitizer.shell_quote(@geneva_gcs_region)}\n")
+        file.write("export MONITORING_CONFIG_VERSION=#{ConfigValueSanitizer.shell_quote(@geneva_logs_config_version)}\n")
+        file.write("export MONITORING_GCS_AUTH_ID=#{ConfigValueSanitizer.shell_quote(@geneva_gcs_authid)}\n")
+        file.write("export MONITORING_GCS_AUTH_ID_TYPE=AuthMSIToken\n")
       end
-      file.write("export GENEVA_LOGS_INFRA_NAMESPACES=#{@infra_namespaces}\n")
-      file.write("export GENEVA_LOGS_TENANT_NAMESPACES=#{@tenant_namespaces}\n")
+      file.write("export GENEVA_LOGS_INFRA_NAMESPACES=#{ConfigValueSanitizer.shell_quote(@infra_namespaces)}\n")
+      file.write("export GENEVA_LOGS_TENANT_NAMESPACES=#{ConfigValueSanitizer.shell_quote(@tenant_namespaces)}\n")
 
       # This required environment variable in geneva mode
       file.write("export MDSD_MSGPACK_SORT_COLUMNS=1\n")
