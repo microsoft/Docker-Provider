@@ -81,7 +81,7 @@ To run all Ruby unit tests:
 ./test/unit-tests/run_ruby_tests.sh
 ```
 
-To run only parser tests:
+To run only the parser tests (no `fluentd` needed):
 
 ```bash
 for f in test/unit-tests/ruby/*_test.rb; do ruby "$f"; done
@@ -92,9 +92,14 @@ To run a specific Ruby test file:
 ruby test/unit-tests/ruby/tomlparser_geneva_config_test.rb
 ```
 
-To run only the parser tests (no `fluentd` needed):
+Pass `-v` to print the name of each test as it runs instead of the default dots:
 ```bash
-for f in test/unit-tests/ruby/*_test.rb; do ruby "$f"; done
+for f in test/unit-tests/ruby/*_test.rb; do ruby "$f" -v; done
+```
+
+To run a single test case by name:
+```bash
+ruby test/unit-tests/ruby/tomlparser_geneva_config_test.rb -n test_name_here
 ```
 
 ## Available Tests
