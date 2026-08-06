@@ -58,14 +58,43 @@ To run a specific PowerShell test file:
 ```
 
 ### Ruby Tests
-Requires the `tomlrb` gem. To run all Ruby unit tests:
+
+#### Prerequisites
+`run_ruby_tests.sh` loads every `*_test.rb` under `source/plugins/ruby/` in addition to the
+parser tests, so the fluentd plugin dependencies are needed as well:
+
+```bash
+sudo apt install -y build-essential ruby-dev libssl-dev zlib1g-dev
+gem install fluentd tomlrb ipaddress jwt yajl-ruby
+```
+
+| Gem | Required by |
+| --- | --- |
+| `tomlrb` | configmap toml parsers under `build/common/installer/scripts/` |
+| `fluentd` | `fluent/test` harness used by `source/plugins/ruby/in_kube_nodes_test.rb` |
+| `ipaddress`, `jwt`, `yajl-ruby` | `source/plugins/ruby/KubernetesApiClient.rb` |
+
+`minitest` ships with Ruby, so no separate install is needed.
+
+To run all Ruby unit tests:
 ```bash
 ./test/unit-tests/run_ruby_tests.sh
+```
+
+To run only parser tests:
+
+```bash
+for f in test/unit-tests/ruby/*_test.rb; do ruby "$f"; done
 ```
 
 To run a specific Ruby test file:
 ```bash
 ruby test/unit-tests/ruby/tomlparser_geneva_config_test.rb
+```
+
+To run only the parser tests (no `fluentd` needed):
+```bash
+for f in test/unit-tests/ruby/*_test.rb; do ruby "$f"; done
 ```
 
 ## Available Tests
