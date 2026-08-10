@@ -407,6 +407,8 @@ extends:
           displayName: 'install prereqs'
         - task: CodeQL3000Init@0
           condition: eq(variables.IS_MAIN_BRANCH, true)
+        - task: NuGetAuthenticate@1
+          displayName: 'Authenticate to CFS NuGet feed'
         - script: |
             setlocal enabledelayedexpansion
             powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\windows\Makefile.ps1"
@@ -626,6 +628,8 @@ extends:
           displayName: 'install prereqs'
         - task: CodeQL3000Init@0
           condition: eq(variables.IS_MAIN_BRANCH, true)
+        - task: NuGetAuthenticate@1
+          displayName: 'Authenticate to CFS NuGet feed'
         - script: |
             setlocal enabledelayedexpansion
             powershell.exe -ExecutionPolicy Unrestricted -NoProfile -WindowStyle Hidden -File "build\windows\Makefile.ps1"
