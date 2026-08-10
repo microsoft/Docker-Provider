@@ -16,7 +16,7 @@ sudo update-ca-trust
 # the mariner package version is behind the global packages so we are using different versions for arm64 and x86_64
 if [ "$ARCH" == "arm64" ]; then
     sudo tdnf install ruby-3.3.5-7.azl3.aarch64 -y
-    sudo tdnf install zlib-devel -y
+    sudo tdnf install zlib-devel openssl-devel -y
 else
     tdnf install -y gcc patch bzip2 openssl-devel libyaml-devel libffi-devel readline-devel zlib-devel gdbm-devel ncurses-devel
     wget https://github.com/rbenv/ruby-build/archive/refs/tags/v20251023.tar.gz -O ruby-build.tar.gz
@@ -41,7 +41,7 @@ gem uninstall net-imap --force
 # remove rexml gem as it has a known CVE (CVE-2025-58767) and is not used by the agent
 gem uninstall rexml --force
 
-sudo tdnf install -y azure-mdsd-1.40.3
+sudo tdnf install -y azure-mdsd-1.42.0
 cp -f $TMPDIR/mdsd.xml /etc/mdsd.d
 cp -f $TMPDIR/envmdsd /etc/mdsd.d
 rm /usr/sbin/telegraf

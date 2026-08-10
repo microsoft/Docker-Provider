@@ -84,22 +84,40 @@ startAMACoreAgent() {
          echo "export AMACALogFilePath=$AMACALogFilePath"
       } >> ~/.bashrc
 
-      if isOpenTelemetryLogsEnabled; then
-            export PA_AMCS_PROTOCOL="HttpProtobuf"
-            export PA_AMCS_HOST="0.0.0.0"
-            export PA_AMCS_PORT=4319
+      if isOpenTelemetryLogsEnabled; then         
+            export OTLP_HTTP_PROTOBUF_LOGS_TRACES_HOST="0.0.0.0"
+            export OTLP_GRPC_LOGS_TRACES_HOST="0.0.0.0"   
+            export OTLP_HTTP_PROTOBUF_LOGS_TRACES_PORT=4319
+            export OTLP_GRPC_LOGS_TRACES_PORT=4320
             if [ -n "${AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT}" ]; then
                   # Convert AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT from string to int
                   port_int=$((AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT + 0))
                   if [ "$port_int" -gt 0 ] 2>/dev/null; then
-                        export PA_AMCS_PORT=$port_int
+                        export OTLP_HTTP_PROTOBUF_LOGS_TRACES_PORT=$port_int
                   fi
             fi
 
+            if [ -n "${AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT_GRPC}" ]; then
+                  # Convert AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT_GRPC from string to int
+                  port_grpc_int=$((AZMON_OPENTELEMETRYLOGS_CONTAINER_PORT_GRPC + 0))
+                  if [ "$port_grpc_int" -gt 0 ] 2>/dev/null; then
+                        export OTLP_GRPC_LOGS_TRACES_PORT=$port_grpc_int
+                  fi
+            fi            
+
             {
-                  echo "export PA_AMCS_PROTOCOL=$PA_AMCS_PROTOCOL"
-                  echo "export PA_AMCS_PORT=$PA_AMCS_PORT"
-                  echo "export PA_AMCS_HOST=$PA_AMCS_HOST"
+                  echo "export OTLP_HTTP_PROTOBUF_LOGS_TRACES_HOST=$OTLP_HTTP_PROTOBUF_LOGS_TRACES_HOST"
+                  echo "export OTLP_GRPC_LOGS_TRACES_HOST=$OTLP_GRPC_LOGS_TRACES_HOST"
+                  echo "export OTLP_HTTP_PROTOBUF_LOGS_TRACES_PORT=$OTLP_HTTP_PROTOBUF_LOGS_TRACES_PORT"
+                  echo "export OTLP_GRPC_LOGS_TRACES_PORT=$OTLP_GRPC_LOGS_TRACES_PORT"
+            } >> ~/.bashrc
+      else
+            echo "OpenTelemetry logs not enabled, disabling OTLP ports for AMACoreAgent"
+            export OTLP_HTTP_PROTOBUF_LOGS_TRACES_PORT=-1
+            export OTLP_GRPC_LOGS_TRACES_PORT=-1
+            {
+                  echo "export OTLP_HTTP_PROTOBUF_LOGS_TRACES_PORT=$OTLP_HTTP_PROTOBUF_LOGS_TRACES_PORT"
+                  echo "export OTLP_GRPC_LOGS_TRACES_PORT=$OTLP_GRPC_LOGS_TRACES_PORT"
             } >> ~/.bashrc
       fi
 

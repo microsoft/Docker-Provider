@@ -8,6 +8,84 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 07/28/2026 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.6.0 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.6.0 (windows)
+- Linux
+  - [azurelinux 3.0.20260712](https://github.com/microsoft/azurelinux/releases/tag/3.0.20260712-3.0)
+  - Golang - 1.26.5
+  - Ruby - arm64 - 3.3.5-7, x86_64 - 3.3.10
+  - MDSD - 1.42.0
+  - Telegraf - 1.39.1
+  - Fluent-bit - 5.0.4
+  - Fluentd - 1.19.3
+- Windows
+  - Golang - 1.26.5
+  - Ruby - 3.1.1
+  - Windows AMA - 47.7.1
+  - Telegraf - 1.24.2
+  - Fluent-bit - 5.0.3
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Common (Linux + Windows)
+    * OTLP GRPC support by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1711
+
+### 07/21/2026 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.5.0 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.5.0 (windows)
+- Linux
+  - [azurelinux 3.0.20260706](https://github.com/microsoft/azurelinux/releases/tag/3.0.20260706-3.0)
+  - Golang - 1.26.5
+  - Ruby - arm64 - 3.3.5-7, x86_64 - 3.3.10
+  - MDSD - 1.40.3
+  - Telegraf - 1.39.1
+  - Fluent-bit - 5.0.4
+  - Fluentd - 1.19.3
+- Windows
+  - Golang - 1.26.5
+  - Ruby - 3.1.1
+  - Windows AMA - 47.7.1
+  - Telegraf - 1.24.2
+  - Fluent-bit - 5.0.3
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Common (Linux + Windows)
+    * 3.5.0 CVE fixes by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1728
+    * fix(ci): install openssl-devel on arm64 for fluentd openssl gem build by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1740
+    * fix(agent): prevent panic in parseImageDetails for digest-pinned images by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1723
+    * Emit multiline telemetry from DaemonSet heartbeat by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1672
+    * chore(deps): Upgrade Go to 1.26.3 and update dependencies by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1697
+    * Revert "chore(deps): Upgrade Go to 1.26.3 and update dependencies (#1697)" by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1702
+    * chore(deps): Upgrade Go to 1.26.4 and update dependencies by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1707
+    * chore(deps): Upgrade Go to 1.26.4 and update dependencies by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1710
+    * chore(deps): Upgrade Go to 1.26.4 and update dependencies by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1712
+    * chore(deps): Upgrade Go to 1.26.4 and update dependencies by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1722
+    * chore(deps): Upgrade Go to 1.26.4 and update dependencies by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1724
+    * chore(deps): Upgrade Go to 1.26.4 and update dependencies by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1731
+    * chore(deps): Upgrade Go to 1.26.4 and update dependencies by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1732
+    * chore(deps): Upgrade Go to 1.26.5 and update dependencies by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1733
+    * Upgrade telegraf-agent to 1.39.0 by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1713
+    * Upgrade telegraf-agent to 1.39.1 by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1725
+
+- Infra
+    * Toggle File Name Fixes by @NicAtMS in https://github.com/microsoft/Docker-Provider/pull/1691
+    * Sync CI toggles by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1708
+    * Cleanup toggles for CI by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1743
+    * clean up trivyignore by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1695
+    * Arc release pipelines SDP migration by @wanlonghenry in https://github.com/microsoft/Docker-Provider/pull/1689
+    * fix(ci): stamp unique Ev2 buildver.txt per build to prevent chart freeze by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1704
+    * add canary in arc prod release pipeline by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1715
+    * Fix for extension dropped config issue & revert canary release PR by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1718
+    * feat(ci): re-add Arc canary stages to prod release pipeline by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1720
+    * Release 3.4.1 chart by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1719
+    * revert 3.4.1 chart changes by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1734
+    * fix(ci): gate Stage_3 deploy on MCR image availability instead of Stage_2 completion by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1727
+    * fix(ci): switch e2e helm deploy to merged azuremonitor-containerinsights chart by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1726
+    * fix(ci): set Azure.Cluster.ResourceId in e2e helm deploy so AKS workloads render by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1738
+    * managed ev2 pipeline for logs by @rashmichandrashekar in https://github.com/microsoft/Docker-Provider/pull/1745
+
 ### 05/28/2026 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.4.0 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.4.0 (windows)

@@ -1,0 +1,271 @@
+#################################################################################
+#                               OneBranch Pipelines                             #
+# Documentation:  https://aka.ms/obpipelines                                    #
+# Yaml Schema:    https://aka.ms/obpipelines/yaml/schema                        #
+# Reference doc:  https://msazure.visualstudio.com/One/_wiki/wikis/One.wiki/    #
+#                 671961/Automating-release-of-new-versions-using-ev2           #
+#                                                                               #
+# Purpose: Roll out new versions of the extension type                          #
+#   microsoft.azuremonitor.containers.metrics                                   #
+# to Arc-enabled (Connected) clusters via the central Ev2 extension rollout    #
+# artifacts, using packageConfig:                                               #
+#   Microsoft.AzureMonitor.Containers.Metrics-Prom092625                        #
+#                                                                               #
+# This replaces the custom Ev2 ServiceGroup approach previously used in         #
+# .pipelines/deployment/arc-extension-release/.                                 #
+#################################################################################
+
+trigger: none
+
+parameters:
+  - name: 'overrideExtensionVersion'
+    displayName: 'Override Extension Version (leave as "auto" to use upstream build runName)'
+    type: string
+    default: 'auto'
+
+  - name: 'releaseTrain'
+    displayName: 'Release Train'
+    type: string
+    default: 'preview'
+    values:
+      - preview
+      - stable
+
+  - name: 'rolloutType'
+    displayName: 'SDP rollout type'
+    type: string
+    default: 'normal'
+    values:
+      - normal
+      - emergency
+      - globaloutage
+
+  - name: 'overrideManagedValidationDuration'
+    displayName: 'Override standard SDP duration?'
+    type: boolean
+    default: false
+
+  - name: 'managedValidationDurationInHours'
+    displayName: 'Override standard SDP duration (in hours)'
+    type: number
+    default: 0
+
+  - name: 'icmIncidentId'
+    displayName: 'IcM Incident Id (required when rollout type is globaloutage)'
+    type: number
+    default: 0
+
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: OneBranch.Pipelines/GovernedTemplates
+      ref: refs/heads/main
+  pipelines:
+    # Upstream build pipeline that publishes the helm chart to MCR.
+    # runName is used as the extension/chart version unless overridden.
+    - pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+      project: 'microsoft'
+      source: 'CDPX\docker-provider\ContainerInsights-MultiArch-MergedBranches'
+
+variables:
+  # ---- Identifiers ---------------------------------------------------------
+  # Prometheus-collector service tree id (same value used in existing
+  # .pipelines/deployment/**/ServiceGroupRoot/ServiceModel.json).
+  - name: serviceIdentifier
+    value: '3170cdd2-19f0-4027-912b-1027311691a2'
+
+  # Ev2 ServiceGroup registered with the extension platform team for central
+  # rollout of microsoft.azuremonitor.containers.metrics. Same SG is used by
+  # the AKS pipeline; PackageConfigName below scopes this rollout to Arc
+  # (Connected) clusters.
+  # TODO: confirm exact name with ClusterConfig/Extensions partner team
+  # (modelled on the argo example: Microsoft.Azure.ClusterConfig.ExtensionRollout.ArgoCd).
+  - name: serviceGroup
+    value: 'microsoft.azuremonitor.containers'
+
+  # ---- Version selection ---------------------------------------------------
+  # The build pipeline packages and pushes the SAME helm chart twice:
+  #   * <runName>          -> consumed by the AKS rollout pipeline
+  #   * <runName>-arc      -> consumed by THIS Arc rollout pipeline
+  # See pushChartToAcr.sh and the "Build: push helm chart to dev ACR" step
+  # in .pipelines/azure-pipeline-build.yml for the dual-tag push.
+  #
+  # When `overrideExtensionVersion` is left at its default value of 'auto',
+  # the pipeline uses the runName of the latest upstream build pipeline run
+  # (resolved at runtime by the resources.pipelines reference). Any other
+  # value is taken as an explicit version override (e.g. for rollback or for
+  # pinning to a known-good build). The '-arc' suffix is always appended.
+  - ${{ if ne(parameters.overrideExtensionVersion, 'auto') }}:
+      - name: baseVersionValue
+        value: '${{ parameters.overrideExtensionVersion }}'
+  - ${{ if eq(parameters.overrideExtensionVersion, 'auto') }}:
+      - name: baseVersionValue
+        value: '$(resources.pipeline._ContainerInsights-MultiArch-MergedBranches.runName)'
+  - name: extensionVersionValue
+    value: '$(baseVersionValue)-arc'
+
+  # ---- ConfigurationOverrides (per cloud) ---------------------------------
+  # extensionTypeName / packageConfig / helmChartUrl mirror
+  # .pipelines/deployment/arc-extension-release/ServiceGroupRoot/Configuration.*.json
+  # userAssignedIdentity must be the MSI registered in the *cloud-specific*
+  # extension type registration document (msiClientIds field). See:
+  # https://msazure.visualstudio.com/One/_wiki/wikis/One.wiki/202225/Extension-Type-Registration
+
+  - name: ProdConfigurationOverrides
+    value: |
+      {
+        "ConfigurationSpecification": {
+          "settings": {
+            "extensionTypeName": "microsoft.azuremonitor.containers",
+            "packageConfig": "microsoft.azuremonitor.containers-pkg092025",
+            "helmChartUrl": "mcr.microsoft.com/azuremonitor/containerinsights/prod1/stable/azuremonitor-containers",
+            "userAssignedIdentity": "/subscriptions/30c56c3a-54da-46ea-b004-06eb33432687/resourceGroups/containerinsightsprod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ev2-agent-release",
+            "version": "$(extensionVersionValue)",
+            "releaseTrain": "${{ parameters.releaseTrain }}"
+          }
+        }
+      }
+
+  # - name: FairfaxConfigurationOverrides
+  #   value: |
+  #     {
+  #       "ConfigurationSpecification": {
+  #         "settings": {
+  #           "extensionTypeName": "microsoft.azuremonitor.containers.metrics",
+  #           "packageConfig": "Microsoft.AzureMonitor.Containers.Metrics-Prom092625",
+  #           "helmChartUrl": "mcr.microsoft.com/azuremonitor/containerinsights/ciprod/ama-metrics",
+  #           "userAssignedIdentity": "REPLACE_WITH_FAIRFAX_MSI_ARM_ID",
+  #           "version": "$(extensionVersionValue)",
+  #           "releaseTrain": "${{ parameters.releaseTrain }}"
+  #         }
+  #       }
+  #     }
+
+  # - name: MooncakeConfigurationOverrides
+  #   value: |
+  #     {
+  #       "ConfigurationSpecification": {
+  #         "settings": {
+  #           "extensionTypeName": "microsoft.azuremonitor.containers.metrics",
+  #           "packageConfig": "Microsoft.AzureMonitor.Containers.Metrics-Prom092625",
+  #           "helmChartUrl": "mcr.microsoft.com/azuremonitor/containerinsights/ciprod/ama-metrics",
+  #           "userAssignedIdentity": "REPLACE_WITH_MOONCAKE_MSI_ARM_ID",
+  #           "version": "$(extensionVersionValue)",
+  #           "releaseTrain": "${{ parameters.releaseTrain }}"
+  #         }
+  #       }
+  #     }
+
+  - name: LinuxContainerImage
+    value: 'mcr.microsoft.com/oss/go/microsoft/golang:1.24.2-fips-azurelinux3.0'
+  - name: RevisionCounter
+    value: $[counter('0', 1)]
+  - name: CustomBuildVersion
+    value: "Build - $(extensionVersionValue) Release - $(RevisionCounter) ReleaseTrain - ${{ parameters.releaseTrain }}"
+
+# Disable showing the last commit message.
+appendCommitMessageToRunName: false
+
+extends:
+  template: v2/OneBranch.Official.CrossPlat.yml@templates
+  parameters:
+    ev2ManagedSdpRolloutConfig:
+      rolloutType: ${{ parameters.rolloutType }}
+      overrideManagedValidationDuration: ${{ parameters.overrideManagedValidationDuration }}
+      managedValidationOverrideDurationInHours: ${{ parameters.managedValidationDurationInHours }}
+      icmIncidentId: ${{ parameters.icmIncidentId }}
+
+    stages:
+      - stage: PROD_Managed_SDP
+        displayName: "PROD: Managed SDP"
+        variables:
+          ob_release_environment: Production
+        jobs:
+          - job: PROD_Managed_SDP
+            displayName: "PROD: Managed SDP"
+            pool:
+              type: release
+            steps:
+              - task: onebranch.pipeline.version@1
+                condition: ne(variables['CustomBuildVersion'], '')
+                displayName: "Setup BuildNumber"
+                inputs:
+                  system: 'Custom'
+                  customVersion: '$(CustomBuildVersion)'
+              - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+                displayName: "Ev2 Managed SDP Rollout (Prod)"
+                inputs:
+                  EndpointProviderType: ApprovalService
+                  ApprovalServiceEnvironment: Production
+                  TaskAction: CentralArtifactsRollout
+                  CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
+                  CentralArtifactsPolicyName: CentralArtifactsPolicy
+                  ServiceIdentifier: $(serviceIdentifier)
+                  ServiceGroup: $(serviceGroup)
+                  ConfigurationOverrides: $(ProdConfigurationOverrides)
+                  # For first-run / canary testing of the pipeline itself,
+                  # temporarily replace the line below with an explicit
+                  # region filter, e.g.:
+                  #   Select: regions(eastus2euap)
+                  # to roll out to the 2 EUAP regions only. Once validated,
+                  # restore `regions(*)` so the central SDP policy controls
+                  # the wave order (Canary -> Pilot -> ... -> HighAvailability).
+                  Select: regions(centraluseuap,eastus2euap)
+                  #Select: regions(*)
+                  ArtifactsVersionOverride: $(extensionVersionValue)
+
+      # - stage: FF_Managed_SDP
+      #   displayName: "FF: Managed SDP"
+      #   dependsOn: PROD_Managed_SDP
+      #   variables:
+      #     ob_release_environment: Fairfax
+      #   templateContext:
+      #     cloud: Public
+      #     isProduction: true
+      #     approval:
+      #       workflow: approvalService
+      #   jobs:
+      #     - job: FF_Managed_SDP
+      #       displayName: "FF: Managed SDP"
+      #       pool:
+      #         type: release
+      #       steps:
+      #         - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+      #           displayName: "Ev2 Managed SDP Rollout (Fairfax)"
+      #           inputs:
+      #             EndpointProviderType: ApprovalService
+      #             ApprovalServiceEnvironment: Fairfax
+      #             TaskAction: CentralArtifactsRollout
+      #             CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
+      #             CentralArtifactsPolicyName: CentralArtifactsPolicy
+      #             ServiceIdentifier: $(serviceIdentifier)
+      #             ServiceGroup: $(serviceGroup)
+      #             ConfigurationOverrides: $(FairfaxConfigurationOverrides)
+      #             Select: regions(*)
+      #             ArtifactsVersionOverride: $(extensionVersionValue)
+
+      # - stage: MC_Managed_SDP
+      #   displayName: "MC: Managed SDP"
+      #   dependsOn: PROD_Managed_SDP
+      #   variables:
+      #     ob_release_environment: Mooncake
+      #   jobs:
+      #     - job: MC_Managed_SDP
+      #       displayName: "MC: Managed SDP"
+      #       pool:
+      #         type: release
+      #       steps:
+      #         - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+      #           displayName: "Ev2 Managed SDP Rollout (Mooncake)"
+      #           inputs:
+      #             EndpointProviderType: ApprovalService
+      #             ApprovalServiceEnvironment: Mooncake
+      #             TaskAction: CentralArtifactsRollout
+      #             CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
+      #             CentralArtifactsPolicyName: CentralArtifactsPolicy
+      #             ServiceIdentifier: $(serviceIdentifier)
+      #             ServiceGroup: $(serviceGroup)
+      #             ConfigurationOverrides: $(MooncakeConfigurationOverrides)
+      #             Select: regions(*)
+      #             ArtifactsVersionOverride: $(extensionVersionValue)

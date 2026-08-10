@@ -1,0 +1,254 @@
+#################################################################################
+#                               OneBranch Pipelines                             #
+# Documentation:  https://aka.ms/obpipelines                                    #
+# Yaml Schema:    https://aka.ms/obpipelines/yaml/schema                        #
+# Reference doc:  https://msazure.visualstudio.com/One/_wiki/wikis/One.wiki/    #
+#                 671961/Automating-release-of-new-versions-using-ev2           #
+#                                                                               #
+# Purpose: Roll out new versions of the extension type                          #
+#   microsoft.azuremonitor.containers.metrics                                   #
+# to AKS (Managed) clusters via the central Ev2 extension rollout artifacts,    #
+# using packageConfig: Microsoft.AzureMonitor.Containers.Metrics-PromAks052926. #
+#                                                                               #
+# This replaces the custom Ev2 ServiceGroup approach previously used in         #
+# .pipelines/deployment/aks-extension-release/ (now removed in favor of the     #
+# central artifacts model documented in wiki page 671961).                      #
+#################################################################################
+
+trigger: none
+
+parameters:
+  - name: 'overrideExtensionVersion'
+    displayName: 'Override Extension Version (leave as "auto" to use upstream build runName)'
+    type: string
+    default: 'auto'
+
+  - name: 'releaseTrain'
+    displayName: 'Release Train'
+    type: string
+    default: 'preview'
+    values:
+      - preview
+      - stable
+
+  - name: 'rolloutType'
+    displayName: 'SDP rollout type'
+    type: string
+    default: 'normal'
+    values:
+      - normal
+      - emergency
+      - globaloutage
+
+  - name: 'overrideManagedValidationDuration'
+    displayName: 'Override standard SDP duration?'
+    type: boolean
+    default: false
+
+  - name: 'managedValidationDurationInHours'
+    displayName: 'Override standard SDP duration (in hours)'
+    type: number
+    default: 0
+
+  - name: 'icmIncidentId'
+    displayName: 'IcM Incident Id (required when rollout type is globaloutage)'
+    type: number
+    default: 0
+
+resources:
+  repositories:
+    - repository: templates
+      type: git
+      name: OneBranch.Pipelines/GovernedTemplates
+      ref: refs/heads/main
+  pipelines:
+    # Upstream build pipeline that publishes the helm chart to MCR.
+    # runName is used as the extension/chart version unless overridden.
+    - pipeline: '_ContainerInsights-MultiArch-MergedBranches'
+      project: 'microsoft'
+      source: 'CDPX\docker-provider\ContainerInsights-MultiArch-MergedBranches'
+
+variables:
+  # ---- Identifiers ---------------------------------------------------------
+  # Prometheus-collector service tree id (same value used in existing
+  # .pipelines/deployment/**/ServiceGroupRoot/ServiceModel.json).
+  - name: serviceIdentifier
+    value: '3170cdd2-19f0-4027-912b-1027311691a2'
+
+  # Ev2 ServiceGroup registered with the extension platform team for AKS
+  # Managed central rollout of microsoft.azuremonitor.containers.metrics.
+  # TODO: confirm exact name with ClusterConfig/Extensions partner team
+  # (modelled on the argo example: Microsoft.Azure.ClusterConfig.ExtensionRollout.ArgoCd).
+  - name: serviceGroup
+    value: 'microsoft.azuremonitor.containers'
+
+  # ---- Version selection ---------------------------------------------------
+  # When `overrideExtensionVersion` is left at its default value of 'auto',
+  # the pipeline uses the runName of the latest upstream build pipeline run
+  # (resolved at runtime by the resources.pipelines reference). Any other
+  # value is taken as an explicit version override. 
+  - ${{ if ne(parameters.overrideExtensionVersion, 'auto') }}:
+      - name: extensionVersionValue
+        value: '${{ parameters.overrideExtensionVersion }}'
+  - ${{ if eq(parameters.overrideExtensionVersion, 'auto') }}:
+      - name: extensionVersionValue
+        value: '$(resources.pipeline._ContainerInsights-MultiArch-MergedBranches.runName)'
+
+  # ---- ConfigurationOverrides (per cloud) ---------------------------------
+  # extensionTypeName / packageConfig / helmChartUrl values were sourced from
+  # the legacy .pipelines/deployment/aks-extension-release/Configuration.*.json
+  # files (now removed). MSI ARM IDs below must be the cloud-specific identity
+  # registered in the extension type registration document (msiClientIds field).
+  # See: https://msazure.visualstudio.com/One/_wiki/wikis/One.wiki/202225/Extension-Type-Registration
+
+  - name: ProdConfigurationOverrides
+    value: |
+      {
+        "ConfigurationSpecification": {
+          "settings": {
+            "extensionTypeName": "microsoft.azuremonitor.containers",
+            "packageConfig": "microsoft.azuremonitor.containers-pkgciaks062626",
+            "helmChartUrl": "mcr.microsoft.com/azuremonitor/containerinsights/prod1/stable/azuremonitor-containers",
+            "userAssignedIdentity": "/subscriptions/30c56c3a-54da-46ea-b004-06eb33432687/resourceGroups/containerinsightsprod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ev2-agent-release",
+            "version": "$(extensionVersionValue)",
+            "releaseTrain": "${{ parameters.releaseTrain }}",
+            "kustoGatingWaitDuration": "PT1H"
+          }
+        }
+      }
+ # Will be uncommenting the below once we have tested out all clouds
+  # - name: FairfaxConfigurationOverrides
+  #   value: |
+  #     {
+  #       "ConfigurationSpecification": {
+  #         "settings": {
+  #           "extensionTypeName": "microsoft.azuremonitor.containers.metrics",
+  #           "packageConfig": "Microsoft.AzureMonitor.Containers.Metrics-PromAks052926",
+  #           "helmChartUrl": "mcr.microsoft.com/azuremonitor/containerinsights/ciprod/ama-metrics",
+  #           "userAssignedIdentity": "REPLACE_WITH_FAIRFAX_MSI_ARM_ID",
+  #           "version": "$(extensionVersionValue)",
+  #           "releaseTrain": "${{ parameters.releaseTrain }}"
+  #         }
+  #       }
+  #     }
+
+  # - name: MooncakeConfigurationOverrides
+  #   value: |
+  #     {
+  #       "ConfigurationSpecification": {
+  #         "settings": {
+  #           "extensionTypeName": "microsoft.azuremonitor.containers.metrics",
+  #           "packageConfig": "Microsoft.AzureMonitor.Containers.Metrics-PromAks052926",
+  #           "helmChartUrl": "mcr.microsoft.com/azuremonitor/containerinsights/ciprod/ama-metrics",
+  #           "userAssignedIdentity": "REPLACE_WITH_MOONCAKE_MSI_ARM_ID",
+  #           "version": "$(extensionVersionValue)",
+  #           "releaseTrain": "${{ parameters.releaseTrain }}"
+  #         }
+  #       }
+  #     }
+
+  - name: LinuxContainerImage
+    value: 'mcr.microsoft.com/oss/go/microsoft/golang:1.24.2-fips-azurelinux3.0'
+  - name: RevisionCounter
+    value: $[counter('0', 1)]
+  - name: CustomBuildVersion
+    value: "Build - $(extensionVersionValue) Release - $(RevisionCounter) ReleaseTrain - ${{ parameters.releaseTrain }}"
+
+# Disable showing the last commit message.
+appendCommitMessageToRunName: false
+
+extends:
+  template: v2/OneBranch.Official.CrossPlat.yml@templates
+  parameters:
+    ev2ManagedSdpRolloutConfig:
+      rolloutType: ${{ parameters.rolloutType }}
+      overrideManagedValidationDuration: ${{ parameters.overrideManagedValidationDuration }}
+      managedValidationOverrideDurationInHours: ${{ parameters.managedValidationDurationInHours }}
+      icmIncidentId: ${{ parameters.icmIncidentId }}
+
+    stages:
+      - stage: PROD_Managed_SDP
+        displayName: "PROD: Managed SDP"
+        variables:
+          ob_release_environment: Production
+        jobs:
+          - job: PROD_Managed_SDP
+            displayName: "PROD: Managed SDP"
+            pool:
+              type: release
+            steps:
+              - task: onebranch.pipeline.version@1
+                condition: ne(variables['CustomBuildVersion'], '')
+                displayName: "Setup BuildNumber"
+                inputs:
+                  system: 'Custom'
+                  customVersion: '$(CustomBuildVersion)'
+              - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+                displayName: "Ev2 Managed SDP Rollout (Prod)"
+                inputs:
+                  EndpointProviderType: ApprovalService
+                  ApprovalServiceEnvironment: Production
+                  TaskAction: CentralArtifactsRollout
+                  CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
+                  CentralArtifactsPolicyName: CentralArtifactsPolicy
+                  ServiceIdentifier: $(serviceIdentifier)
+                  ServiceGroup: $(serviceGroup)
+                  ConfigurationOverrides: $(ProdConfigurationOverrides)
+                  # Uncomment below to only rollout the extension version in euap regions for testing
+                  Select: regions(centraluseuap,eastus2euap)
+                  # Select: regions(*)
+
+      # - stage: FF_Managed_SDP
+      #   displayName: "FF: Managed SDP"
+      #   dependsOn: PROD_Managed_SDP
+      #   variables:
+      #     ob_release_environment: Fairfax
+      #   templateContext:
+      #     cloud: Public
+      #     isProduction: true
+      #     approval:
+      #       workflow: approvalService
+      #   jobs:
+      #     - job: FF_Managed_SDP
+      #       displayName: "FF: Managed SDP"
+      #       pool:
+      #         type: release
+      #       steps:
+      #         - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+      #           displayName: "Ev2 Managed SDP Rollout (Fairfax)"
+      #           inputs:
+      #             EndpointProviderType: ApprovalService
+      #             ApprovalServiceEnvironment: Fairfax
+      #             TaskAction: CentralArtifactsRollout
+      #             CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
+      #             CentralArtifactsPolicyName: CentralArtifactsPolicy
+      #             ServiceIdentifier: $(serviceIdentifier)
+      #             ServiceGroup: $(serviceGroup)
+      #             ConfigurationOverrides: $(FairfaxConfigurationOverrides)
+      #             Select: regions(*)
+      # #             ArtifactsVersionOverride: $(extensionVersionValue)
+
+      # - stage: MC_Managed_SDP
+      #   displayName: "MC: Managed SDP"
+      #   dependsOn: PROD_Managed_SDP
+      #   variables:
+      #     ob_release_environment: Mooncake
+      #   jobs:
+      #     - job: MC_Managed_SDP
+      #       displayName: "MC: Managed SDP"
+      #       pool:
+      #         type: release
+      #       steps:
+      #         - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+      #           displayName: "Ev2 Managed SDP Rollout (Mooncake)"
+      #           inputs:
+      #             EndpointProviderType: ApprovalService
+      #             ApprovalServiceEnvironment: Mooncake
+      #             TaskAction: CentralArtifactsRollout
+      #             CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
+      #             CentralArtifactsPolicyName: CentralArtifactsPolicy
+      #             ServiceIdentifier: $(serviceIdentifier)
+      #             ServiceGroup: $(serviceGroup)
+      #             ConfigurationOverrides: $(MooncakeConfigurationOverrides)
+      #             Select: regions(*)
+      # #             ArtifactsVersionOverride: $(extensionVersionValue)
