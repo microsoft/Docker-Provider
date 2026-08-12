@@ -37,7 +37,7 @@ jobs:
       - name: Set-Helm-tag
         run: echo "HELMTAG=${ACR_REGISTRY}${ACR_REPOSITORY}:${IMAGE_TAG_NAME}-chart-${BRANCH_NAME}-${HELM_CHART_VERSION}-${IMAGE_TAG_DATE}-${COMMIT_SHA}" >> $GITHUB_ENV
       - name: Checkout-code
-        uses: actions/checkout@v2
+        uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2.8.0
       - name: Show-versions-On-build-machine
         run: lsb_release -a && go version && helm version && docker version
       - name: Install-build-dependencies
@@ -84,7 +84,7 @@ jobs:
       - name: Set-image-telemetry-tag
         run: echo ("IMAGETAG_TELEMETRY=" + $env:IMAGE_TAG_NAME + "-" + $env:BRANCH_NAME + "-" + $env:IMAGE_TAG_DATE + "-" + $env:COMMIT_SHA) >> $env:GITHUB_ENV
       - name: Checkout-code
-        uses: actions/checkout@v2
+        uses: actions/checkout@0717577d45739eb3c851188b29f50ed6c0b2194e # v2.8.0
       - name: Show-versions-On-build-machine
         run: systeminfo && go version && docker version
       - name: Build-source-code
