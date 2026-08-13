@@ -49,6 +49,10 @@ jobs:
           sudo gem install fluentd -v "1.14.2" --no-document
           sudo gem install ipaddress --no-document
           sudo fluentd --setup ./fluent
+      - name: install configmap parser dependencies
+        run: |
+          # keep in sync with the tomlrb version installed in kubernetes/linux/setup.sh
+          sudo gem install tomlrb -v "2.0.1" --no-document
       - name: Run unit tests
         run: |
           cd ${{ github.workspace }}

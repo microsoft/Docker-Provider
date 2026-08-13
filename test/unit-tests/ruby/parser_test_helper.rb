@@ -37,11 +37,16 @@ module ParserTestHelper
     RUBY
 
     parserEnv = { "AZMON_AGENT_CFG_SCHEMA_VERSION" => "v1", "OS_TYPE" => "linux" }.merge(env)
-    output, _status = Open3.capture2e(parserEnv, "ruby", "-r", harnessFile, File.join(SCRIPTS_DIR, parserScript), chdir: workdir)
+    output, status = Open3.capture2e(parserEnv, "ruby", "-r", harnessFile, File.join(SCRIPTS_DIR, parserScript), chdir: workdir)
 
     envVarFile = File.join(workdir, envVarFileName)
-    envVarFileContents = File.exist?(envVarFile) ? File.read(envVarFile) : nil
-    return output, envVarFileContents
+    # the parsers rescue their own errors, so a missing env var file means the script itself blew up
+    # (a missing gem, a syntax error). surface the subprocess output instead of failing later on nil.
+    unless File.exist?(envVarFile)
+      raise "#{parserScript} did not write #{envVarFileName} (exit status #{status.exitstatus}):\n#{output}"
+    end
+
+    return output, File.read(envVarFile)
   end
 
   # Sources envVarFile in bash and returns the resulting value of each requested variable.
