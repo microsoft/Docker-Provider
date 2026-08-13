@@ -73,10 +73,9 @@ if ($false -eq (Test-Path -Path $certsrcdir)) {
 Write-Host("set the cerificate generator source code directory : " + $certsrcdir + " ...")
 Set-Location -Path $certsrcdir
 
-Write-Host("Adding dotnet packages Newtonsoft.json and BouncyCastle ...")
-dotnet add package Newtonsoft.json
-dotnet add package BouncyCastle
-Write-Host("Successfully added dotnet packages") -ForegroundColor Green
+# Newtonsoft.Json and BouncyCastle are pinned as PackageReference in CertificateGenerator.csproj.
+# 'dotnet add package' without a version resolves the latest from the configured source, which
+# reaches api.nuget.org and un-pins the versions at build time. Restore below uses NuGet.config.
 dotnet build  -f $dotnetcoreframework
 Write-Host("Building Certificate generator code and ...") -ForegroundColor Green
 
