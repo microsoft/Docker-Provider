@@ -21,6 +21,10 @@ variables:
   # new cidev chart repo; the prod release promotes it to the `helmchart/... /ciprod` path.
   chartRepoName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/containerinsights/preview'
   GOLANG_BASE_IMAGE: 'mcr.microsoft.com/oss/go/microsoft/golang:1.26.5'
+  # QEMU used to emulate linux/arm64 during the multi-arch docker build. Keep this current:
+  # older QEMU builds make the emulated gcc segfault at random while compiling ruby native
+  # gem extensions. MCR mirror of tonistiigi/binfmt, used to avoid Docker Hub rate limiting.
+  QEMU_BINFMT_IMAGE: 'mcr.microsoft.com/mirror/docker/tonistiigi/binfmt:qemu-v9.2.2-52'
   IS_PR: $[eq(variables['Build.Reason'], 'PullRequest')]
   IS_MAIN_BRANCH: $[eq(variables['Build.SourceBranchName'], 'ci_prod')]
   IS_RELEASE: $[ne(variables['TELEMETRY_TAG'], '')]
@@ -203,7 +207,9 @@ extends:
             toolVersion: Latest
             targetDirectory: '$(Build.SourcesDirectory)'
       - job: build_linux
-        timeoutInMinutes: 120
+        # the emulated linux/arm64 leg is slow, and setup.sh retries native gem builds that
+        # segfault under emulation, so leave headroom rather than failing on the job timeout
+        timeoutInMinutes: 180
         dependsOn: common
         variables:
           linuxImagetag: $[ dependencies.common.outputs['setup.linuxImagetag'] ]
@@ -227,10 +233,22 @@ extends:
             scriptLocation: inlineScript
             inlineScript: |
               mkdir -p $(Build.ArtifactStagingDirectory)/linux
-              sudo apt-get update && sudo apt-get -y install qemu binfmt-support qemu-user-static
               docker system prune --all -f
               docker images -q --filter "dangling=true" | xargs docker rmi
-              docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+              # Register binfmt handlers for cross-arch (linux/arm64) emulation.
+              # NOTE: this previously used `multiarch/qemu-user-static --reset -p yes`, which pins the
+              # QEMU binary from that image into the kernel (-p yes => binfmt_misc 'F' flag). That image
+              # is abandoned (last push 2023-01, QEMU 7.2), and the apt qemu-user-static it sat on top of
+              # is frozen at QEMU 6.2 on ubuntu-22.04 -- apt only backports fixes, never new upstream
+              # versions. Emulated gcc segfaults at random on those, which broke the arm64 leg roughly
+              # half the time while compiling the ruby native gem extensions in kubernetes/linux/setup.sh.
+              # tonistiigi/binfmt tracks current QEMU releases and is what docker/setup-qemu-action uses.
+              # Pulled from the MCR mirror to avoid Docker Hub rate limiting.
+              docker run --rm --privileged $(QEMU_BINFMT_IMAGE) --uninstall 'qemu-*' || true
+              docker run --rm --privileged $(QEMU_BINFMT_IMAGE) --install all || exit 1
+              # fail fast (instead of 30+ minutes into the arm64 build) if emulation is not usable.
+              # NOTE: this script does not run under 'set -e', so check explicitly.
+              docker run --rm --platform linux/arm64 mcr.microsoft.com/azurelinux/base/core:3.0 uname -m || exit 1
               docker buildx create --name testbuilder
               docker buildx use testbuilder
               az --version

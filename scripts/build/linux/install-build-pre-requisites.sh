@@ -70,9 +70,19 @@ install_docker_buildx()
     sudo mkdir -p $HOME/.docker/cli-plugins
     sudo mv buildx-v* $HOME/.docker/cli-plugins
 
-    # install the emulator support
-    sudo apt-get -y install qemu binfmt-support qemu-user-static
-    docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+    # install the emulator support.
+    # NOTE: `--install all` pins the QEMU binaries from this image into the kernel via binfmt_misc,
+    # so the image tag decides which QEMU actually emulates arm64. tonistiigi/binfmt tracks current
+    # QEMU releases; the previously used multiarch/qemu-user-static image is abandoned (QEMU 7.2) and
+    # the apt qemu-user-static it sat on is frozen at QEMU 6.2 on ubuntu-22.04. On those, the emulated
+    # gcc segfaults at random while compiling the ruby native gem extensions in
+    # kubernetes/linux/setup.sh. Keep this tag in sync with QEMU_BINFMT_IMAGE in
+    # .pipelines/azure_pipeline_mergedbranches.yaml.
+    QEMU_BINFMT_IMAGE="mcr.microsoft.com/mirror/docker/tonistiigi/binfmt:qemu-v9.2.2-52"
+    # '|| true' because this script runs under 'set -e' and the uninstall is a no-op (and may
+    # report failure) on a machine that has no emulators registered yet
+    docker run --rm --privileged ${QEMU_BINFMT_IMAGE} --uninstall 'qemu-*' || true
+    docker run --rm --privileged ${QEMU_BINFMT_IMAGE} --install all
 
     docker buildx create --name testbuilder
     docker buildx use testbuilder

@@ -80,19 +80,21 @@ echo "$(fluent-bit --version)" >> packages_version.txt
 # Retry wrapper for gem install commands.
 # Native extension builds under QEMU emulation for arm64 can hit sporadic
 # segfaults in GCC/make, so we retry transient failures automatically.
+# Retries are cheap: gems that already installed successfully are skipped, so each
+# attempt resumes where the previous one crashed rather than starting over.
 gem_install_with_retry() {
-    local max_retries=3
+    local max_retries=5
     local attempt=1
     while [ $attempt -le $max_retries ]; do
-        echo "gem install attempt $attempt/$max_retries: gem install $@"
+        echo "gem install attempt $attempt/$max_retries: gem install $*"
         if gem install "$@"; then
             return 0
         fi
-        echo "WARNING: gem install failed (attempt $attempt/$max_retries)"
+        echo "WARNING: gem install failed (attempt $attempt/$max_retries): gem install $*"
         attempt=$((attempt + 1))
-        sleep 2
+        sleep $((attempt * 5))
     done
-    echo "ERROR: gem install failed after $max_retries attempts: gem install $@"
+    echo "ERROR: gem install failed after $max_retries attempts: gem install $*"
     exit 1
 }
 
