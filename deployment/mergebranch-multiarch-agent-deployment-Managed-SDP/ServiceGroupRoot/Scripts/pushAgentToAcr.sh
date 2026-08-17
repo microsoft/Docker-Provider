@@ -44,11 +44,6 @@ if [ -z $AGENT_IMAGE_FULL_PATH ]; then
   exit 1
 fi
 
-if [ -z $CDPX_TAG ]; then
-  echo "-e error value of CDPX_TAG shouldn't be empty. check release variables"
-  exit 1
-fi
-
 if [ -z $ACR_NAME ]; then
   echo "-e error value of ACR_NAME shouldn't be empty. check release variables"
   exit 1

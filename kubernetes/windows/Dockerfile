@@ -103,8 +103,9 @@ COPY ./amalogswindows/installer/scripts/rubyKeepCertificateAlive/*.rb /etc/fluen
 #Copy fluentd ruby plugins
 COPY ./amalogswindows/ruby/ /etc/fluent/plugin/
 
-# default value will be overwritten by pipeline
-ARG IMAGE_TAG=win-3.6.0
+# default value is a non-release placeholder; the real version is injected by the
+# build pipeline via --build-arg IMAGE_TAG=win-<SEMVER>
+ARG IMAGE_TAG=win-0.0.0-dev
 ENV AGENT_VERSION ${IMAGE_TAG}
 
 ENV OS_TYPE "windows"

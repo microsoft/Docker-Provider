@@ -34,7 +34,8 @@
       "targetName": "ShellExtension",
       "actions": [
         "shell/PushAgentToACR",
-        "shell/PushAgentToACR-1"
+        "shell/PushAgentToACR-1",
+        "shell/PushChartToACR"
       ],
       "dependsOn": []
     }

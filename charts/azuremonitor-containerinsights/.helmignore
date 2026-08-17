@@ -1,0 +1,20 @@
+# Patterns to ignore when building Helm packages.
+# Files here are excluded from the packaged .tgz (matched by basename unless
+# anchored with a leading /). Generation of Chart.yaml/values.yaml happens
+# before `helm package`, so ignoring the *-template sources is safe.
+
+# Common VCS / editor / OS cruft
+.git/
+.gitignore
+.DS_Store
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+
+# Chart source files — the build substitutes these into the real
+# Chart.yaml/values.yaml before packaging, so the templates must not
+# ship inside the chart.
+Chart-template.yaml
+values-template.yaml

@@ -16,6 +16,10 @@ variables:
   subscription: '9b96ebbd-c57a-42d1-bbe9-b69296e4c7fb'
   containerRegistry: 'containerinsightsprod'
   repoImageName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/containerinsights/cidev'
+  # Helm chart is pushed to a dedicated chart path, decoupled from the agent image path
+  # (repoImageName). The chart reuses the already-onboarded `preview` MCR repo instead of a
+  # new cidev chart repo; the prod release promotes it to the `helmchart/... /ciprod` path.
+  chartRepoName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/containerinsights/preview'
   GOLANG_BASE_IMAGE: 'mcr.microsoft.com/oss/go/microsoft/golang:1.26.6'
   # QEMU used to emulate linux/arm64 during the multi-arch docker build. Keep this current:
   # older QEMU builds make the emulated gcc segfault at random while compiling ruby native
@@ -70,10 +74,21 @@ extends:
         steps:
         - task: ComponentGovernanceComponentDetection@0
         - bash: |
-            commit=$(git describe)
-            datetime=$(date +%Y%m%d%H%M%S)
-            linuxImagetag="$commit"-"$datetime"
-            windowsImageTag=win-"$commit"-"$datetime"
+            # Derive SEMVER from the repo-root VERSION file instead of git tags.
+            # Format: <VERSION>-<branch>-<date>-<commit>
+            if [ "$(IS_PR)" == "True" ]; then
+              BRANCH_NAME=$(System.PullRequest.SourceBranch)
+            else
+              BRANCH_NAME=$(Build.SourceBranch)
+              BRANCH_NAME=${BRANCH_NAME#refs/heads/}
+            fi
+            BRANCH_NAME=$(echo "$BRANCH_NAME" | tr / - | tr . - | tr _ - | cut -c1-90)
+            COMMIT_SHA=$(echo "$(Build.SourceVersion)" | cut -b -8)
+            DATE=$(TZ=America/Los_Angeles date +%m-%d-%Y)
+            VERSION=$(cat $(Build.SourcesDirectory)/VERSION)
+            SEMVER=$VERSION-$BRANCH_NAME-$DATE-$COMMIT_SHA
+            linuxImagetag=$SEMVER
+            windowsImageTag=win-$SEMVER
             telemetryTag=$linuxImagetag
             if [ -z "$TELEMETRY_TAG" ]
               then
@@ -92,13 +107,33 @@ extends:
             echo "##vso[task.setvariable variable=windowsImageTag;isOutput=true]$windowsImageTag"
             echo "##vso[task.setvariable variable=linuxTelemetryTag;isOutput=true]$linuxTelemetryTag"
             echo "##vso[task.setvariable variable=windowsTelemetryTag;isOutput=true]$windowsTelemetryTag"
+            echo "SEMVER is $SEMVER"
+            echo "##vso[task.setvariable variable=SEMVER;isOutput=true]$SEMVER"
+            # Set the pipeline run number to SEMVER so downstream release pipelines
+            # can consume this exact build version via
+            # resources.pipeline.<alias>.runName (mirrors ama-metrics). A release then
+            # just picks a build run and uses whatever version is inside it, instead
+            # of hand-setting an image tag suffix. NOTE: the $(Build.BuildNumber)
+            # macros in the buildver.txt writes below are already expanded to the
+            # original unique run number at step start, so this override does not
+            # affect Ev2 artifact-version uniqueness.
+            echo "##vso[build.updatebuildnumber]$SEMVER"
             echo "appRegistrationClientId is $APP_REGISTRATION_CLIENT_ID"
             echo "appRegistrationTenantId is $APP_REGISTRATION_TENANT_ID"
             echo "authAKVName is $AUTH_AKV_NAME"
             echo "authCertName is $AUTH_CERT_NAME"
             echo "authSignCertName is $AUTH_SIGN_CERT_NAME"
+            # Generate Chart.yaml/values.yaml from the committed *-template.yaml files
+            # so the Ev2 source tar + CopyFiles below include the SEMVER-stamped chart
+            # for the downstream release pipeline. Only templates are committed.
+            export HELM_SEMVER="$SEMVER"
+            export IMAGE_TAG="$linuxImagetag"
+            export IMAGE_TAG_WINDOWS="$windowsImageTag"
+            CI_CHART_DIR="$(Build.SourcesDirectory)/charts/azuremonitor-containerinsights"
+            envsubst '${HELM_SEMVER} ${IMAGE_TAG} ${IMAGE_TAG_WINDOWS}' < "$CI_CHART_DIR/Chart-template.yaml" > "$CI_CHART_DIR/Chart.yaml"
+            envsubst '${HELM_SEMVER} ${IMAGE_TAG} ${IMAGE_TAG_WINDOWS}' < "$CI_CHART_DIR/values-template.yaml" > "$CI_CHART_DIR/values.yaml"
             cd $(Build.SourcesDirectory)/deployment/mergebranch-multiarch-agent-deployment-Managed-SDP/ServiceGroupRoot/Scripts
-            tar -czvf ../artifacts.tar.gz pushAgentToAcr.sh
+            tar -czvf ../artifacts.tar.gz pushAgentToAcr.sh pushChartToAcr.sh
             cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension/ServiceGroupRoot/Scripts
             tar -czvf ../artifacts.tar.gz ../../../../charts/azuremonitor-containers/ ../../../../charts/azuremonitor-containerinsights/ pushChartToAcr.sh
             cd $(Build.SourcesDirectory)/deployment/arc-k8s-extension-Managed-SDP/ServiceGroupRoot/Scripts
@@ -924,6 +959,74 @@ extends:
             FileDirPath: '$(Build.ArtifactStagingDirectory)'
             DisableRemediation: false
             AcceptableOutdatedSignatureInHours: 72
+
+      - job: helm_chart
+        displayName: "Package and Publish Helm Chart"
+        dependsOn: common
+        pool:
+          name: Azure-Pipelines-CI-Test-EO
+          image: ci-1es-managed-ubuntu-2204
+          os: linux
+        variables:
+          HELM_SEMVER: $[ dependencies.common.outputs['setup.SEMVER'] ]
+          IMAGE_TAG: $[ dependencies.common.outputs['setup.linuxImagetag'] ]
+          IMAGE_TAG_WINDOWS: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
+          skipComponentGovernanceDetection: true
+          Codeql.SkipTaskAutoInjection: true
+        templateContext:
+          outputs:
+          - output: pipelineArtifact
+            targetPath: '$(Build.ArtifactStagingDirectory)/helm-chart'
+            artifactName: helm-chart-drop
+            condition: and(succeeded(), eq(variables.IS_PR, false), eq(variables.IS_MAIN_BRANCH, true))
+        steps:
+        - task: HelmInstaller@1
+          displayName: "Install Helm"
+          inputs:
+            helmVersionToInstall: 'latest'
+        - bash: |
+            set -e
+            mkdir -p $(Build.ArtifactStagingDirectory)/helm-chart
+            # Generate the chart from the committed templates using the SEMVER-derived
+            # tags, then lint + package. The chart is pushed to the preview chart repo on
+            # every build (mirrors ama-metrics, whose chart push is ungated); only the ADO
+            # pipeline artifact publish is gated to non-PR ci_prod builds (see the gated
+            # output above).
+            export HELM_SEMVER="$(HELM_SEMVER)"
+            export IMAGE_TAG="$(IMAGE_TAG)"
+            export IMAGE_TAG_WINDOWS="$(IMAGE_TAG_WINDOWS)"
+            cd $(Build.SourcesDirectory)/charts/azuremonitor-containerinsights
+            envsubst '${HELM_SEMVER} ${IMAGE_TAG} ${IMAGE_TAG_WINDOWS}' < Chart-template.yaml > Chart.yaml
+            envsubst '${HELM_SEMVER} ${IMAGE_TAG} ${IMAGE_TAG_WINDOWS}' < values-template.yaml > values.yaml
+            echo "----- generated Chart.yaml -----"
+            cat Chart.yaml
+            helm lint .
+            helm package . --version "$(HELM_SEMVER)" --destination $(Build.ArtifactStagingDirectory)/helm-chart
+            # Package the same chart a second time under an -arc prerelease version so the
+            # build publishes both an AKS-extension tag (<SEMVER>) and an Arc tag
+            # (<SEMVER>-arc) to the preview chart repo, mirroring the ama-metrics build. The
+            # prod release promotes both tags to the ciprod chart repo.
+            helm package . --version "$(HELM_SEMVER)-arc" --destination $(Build.ArtifactStagingDirectory)/helm-chart
+            ls -l $(Build.ArtifactStagingDirectory)/helm-chart
+          displayName: "Generate, lint and package Helm chart"
+        - task: AzureCLI@2
+          displayName: "Push Helm chart to ACR"
+          inputs:
+            azureSubscription: ${{ variables.armServiceConnectionName }}
+            scriptType: bash
+            scriptLocation: inlineScript
+            inlineScript: |
+              set -e
+              az account set -s ${{ variables.subscription }}
+              az acr login -n ${{ variables.containerRegistry }}
+              CHART_TGZ="$(Build.ArtifactStagingDirectory)/helm-chart/azuremonitor-containers-$(HELM_SEMVER).tgz"
+              CHART_TGZ_ARC="$(Build.ArtifactStagingDirectory)/helm-chart/azuremonitor-containers-$(HELM_SEMVER)-arc.tgz"
+              helm push "$CHART_TGZ" oci://${{ variables.chartRepoName }}
+              # Arc tag: same chart, pushed under <SEMVER>-arc for the Arc K8s extension path.
+              helm push "$CHART_TGZ_ARC" oci://${{ variables.chartRepoName }}
+              echo "{\"helmChartName\":\"azuremonitor-containers\",\"helmChartVersion\":\"$(HELM_SEMVER)\",\"helmChartRef\":\"oci://${{ variables.chartRepoName }}/azuremonitor-containers:$(HELM_SEMVER)\",\"helmChartArcRef\":\"oci://${{ variables.chartRepoName }}/azuremonitor-containers:$(HELM_SEMVER)-arc\"}" > $(Build.ArtifactStagingDirectory)/helm-chart/metadata.json
+              cat $(Build.ArtifactStagingDirectory)/helm-chart/metadata.json
+              echo "##vso[task.logissue type=warning]Helm chart pushed: oci://${{ variables.chartRepoName }}/azuremonitor-containers:$(HELM_SEMVER) and :$(HELM_SEMVER)-arc"
 
     - stage: Deploy_and_Test_Images_In_Dev_Clusters
       displayName: Deploy and Test Images in Dev Clusters
