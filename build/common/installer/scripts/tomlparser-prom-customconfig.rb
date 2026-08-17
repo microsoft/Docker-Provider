@@ -119,6 +119,16 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
       timeout_config_key = "response_timeout"
     end
 
+    # 'fieldpass'/'fielddrop' were deprecated in telegraf 1.29.0 and removed in 1.40.0.
+    # Windows still ships telegraf 1.24.2, which predates the replacement options, so it
+    # must keep emitting the legacy option names.
+    field_include_key = "fieldinclude"
+    field_exclude_key = "fieldexclude"
+    if is_windows?
+      field_include_key = "fieldpass"
+      field_exclude_key = "fielddrop"
+    end
+
     pluginConfigsWithNamespaces = ""
     monitorKubernetesPodsNamespaces.each do |namespace|
       if !namespace.nil?
@@ -133,8 +143,8 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
   monitor_kubernetes_pods_namespace = \"#{namespace}\"
   kubernetes_label_selector = \"#{kubernetesLabelSelectors}\"
   kubernetes_field_selector = \"#{kubernetesFieldSelectors}\"
-  fieldpass = #{fieldPassSetting}
-  fielddrop = #{fieldDropSetting}
+  #{field_include_key} = #{fieldPassSetting}
+  #{field_exclude_key} = #{fieldDropSetting}
   metric_version = #{@metricVersion}
   url_tag = \"#{@urlTag}\"
   #{timeout_config_key} = \"#{@responseTimeout}\"

@@ -1242,7 +1242,7 @@ else
             if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ] && [ -e "/opt/telegraf-test-prom-side-car.conf" ]; then
                   if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
                         echo "****************Start Telegraf in Test Mode**************************"
-                        /opt/telegraf --non-strict-env-handling --config /opt/telegraf-test-prom-side-car.conf --input-filter file -test
+                        /opt/telegraf config check --non-strict-env-handling --config /opt/telegraf-test-prom-side-car.conf
                         if [ $? -eq 0 ]; then
                               mv "/opt/telegraf-test-prom-side-car.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
                               echo "Moving test conf file to telegraf side-car conf since test run succeeded"
@@ -1254,7 +1254,7 @@ else
             else
                   if [ -e "/opt/telegraf-test.conf" ]; then
                         echo "****************Start Telegraf in Test Mode**************************"
-                        /opt/telegraf --non-strict-env-handling --config /opt/telegraf-test.conf --input-filter file -test
+                        /opt/telegraf config check --non-strict-env-handling --config /opt/telegraf-test.conf
                         if [ $? -eq 0 ]; then
                               mv "/opt/telegraf-test.conf" "/etc/opt/microsoft/docker-cimprov/telegraf.conf"
                               echo "Moving test conf file to telegraf daemonset conf since test run succeeded"
@@ -1265,7 +1265,7 @@ else
       else
             if [ -e "/opt/telegraf-test-rs.conf" ]; then
                   echo "****************Start Telegraf in Test Mode**************************"
-                  /opt/telegraf --non-strict-env-handling --config /opt/telegraf-test-rs.conf --input-filter file -test
+                  /opt/telegraf config check --non-strict-env-handling --config /opt/telegraf-test-rs.conf
                   if [ $? -eq 0 ]; then
                         mv "/opt/telegraf-test-rs.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
                         echo "Moving test conf file to telegraf replicaset conf since test run succeeded"

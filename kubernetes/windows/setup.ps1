@@ -42,6 +42,11 @@ Write-Host ('Finished Installing Fluentbit')
 Write-Host ('Installing Telegraf');
 try {
     # For next telegraf update, make sure to update config changes in telegraf.conf, tomlparser-prom-customconfig.rb and tomlparser-osm-config.rb
+    # NOTE: Windows is intentionally pinned to an older telegraf than Linux. Linux uses the
+    # 'fieldinclude'/'fieldexclude' options (added in 1.29.0, replacing 'fieldpass'/'fielddrop'
+    # which were removed in 1.40.0), while the Windows configs below must keep the legacy
+    # 'fieldpass'/'fielddrop' names until telegraf here is upgraded to >= 1.29.0.
+    # tomlparser-prom-customconfig.rb is shared by both and branches on is_windows? for this.
     $telegrafUri='https://dl.influxdata.com/telegraf/releases/telegraf-1.24.2_windows_amd64.zip'
     Invoke-WebRequest -Uri $telegrafUri -OutFile /installation/telegraf.zip
     Expand-Archive -Path /installation/telegraf.zip -Destination /installation/telegraf
