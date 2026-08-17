@@ -3,8 +3,14 @@ name: $(Date:yyyyMMdd).$(Rev:r)
 variables:
 - name: ACRName
   value: $(VAR_ACR_NAME)
+# AgentImageTagSuffix is the image/chart tag promoted to ciprod MCR and used for
+# the helm deploys below. It now sources from the picked build run's runName
+# (= the build SEMVER, e.g. 3.6.0-ci-prod-<date>-<sha>) instead of a manually set
+# variable, so a release just picks a build run and uses whatever version is
+# inside it (mirrors ama-metrics resources.pipeline.<alias>.runName). The build
+# pipeline sets its run number to SEMVER via ##vso[build.updatebuildnumber].
 - name: AgentImageTagSuffix
-  value: $(VAR_AGENT_IMAGE_TAG_SUFFIX)
+  value: $(resources.pipeline._ci-aks-prod-release.runName)
 - name: AgentRelease
   value: $(VAR_AGENT_RELEASE)
 - name: AKSEngineCluster
@@ -17,22 +23,6 @@ variables:
   value: $(VAR_AKS_SCALE_CLUSTER_REGION)
 - name: AKSScaleClusterResourceId
   value: $(VAR_AKS_SCALE_CLUSTER_RESOURCE_ID)
-- name: CDPXLinuxACR
-  value: $(VAR_CDPX_LINUX_ACR)
-- name: CDPXLinuxRegistry
-  value: $(VAR_CDPX_LINUX_REGISTRY)
-- name: CDPXLinuxRepoName
-  value: $(VAR_CDPX_LINUX_REPO_NAME)
-- name: CDPXLinuxTag
-  value: $(VAR_CDPX_LINUX_TAG)
-- name: CDPXWindowsACR
-  value: $(VAR_CDPX_WINDOWS_ACR)
-- name: CDPXWindowsRegistry
-  value: $(VAR_CDPX_WINDOWS_REGISTRY)
-- name: CDPXWindowsRepoName
-  value: $(VAR_CDPX_WINDOWS_REPO_NAME)
-- name: CDPXWindowsTag
-  value: $(VAR_CDPX_WINDOWS_TAG)
 - name: CIKV
   value: $(VAR_CIKV)
 - name: CIRelease
@@ -46,7 +36,7 @@ variables:
 - name: OverrideTag
   value: $(VAR_OVERRIDE_TAG)
 - name: configurationOverrides
-  value: '{"ConfigurationSpecification":{"Settings":{"agentImageTagSuffix":"$(AgentImageTagSuffix)","cdpxLinuxTag":"$(CDPXLinuxTag)","cdpxWindowsTag":"$(CDPXWindowsTag)","overrideTag":"$(OverrideTag)"}}}'
+  value: '{"ConfigurationSpecification":{"Settings":{"agentImageTagSuffix":"$(AgentImageTagSuffix)","overrideTag":"$(OverrideTag)"}}}'
 - name: ServiceTreeGuid
   value: $(VAR_SERVICE_TREE_GUID)
 - name: UserAssignedIdentityClientId
@@ -402,37 +392,6 @@ extends:
             repository: none
           target:
             container: host
-        - task: Bash@3
-          displayName: Set CDPX Linux Tag
-          inputs:
-            targetType: inline
-            script: |
-              # Write your commands here
-
-              LINUX_TAG=$(jq '."image.name"' metadata.json | tr -d '"' | cut -d':' -f2)
-              echo $LINUX_TAG
-
-              set +x
-              echo "##vso[task.setvariable variable=CDPXLinuxTag;]$LINUX_TAG"
-              set -x
-            workingDirectory: $(Pipeline.Workspace)/ev2Artifact/linux-drop/linux
-            failOnStderr: true
-        - task: Bash@3
-          displayName: Set CDPX Windows Tag
-          inputs:
-            targetType: inline
-            script: |+
-              # Write your commands here
-
-              WINDOWS_TAG=$(jq '."image.name"' metadata.json | tr -d '"' | cut -d':' -f2)
-              echo $WINDOWS_TAG
-
-              set +x
-              echo "##vso[task.setvariable variable=CDPXWindowsTag;]$WINDOWS_TAG"
-              set -x
-
-            workingDirectory: $(Pipeline.Workspace)/ev2Artifact/windows-drop/windows
-            failOnStderr: true
         - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
           displayName: Ev2 Managed SDP - Deploy
           inputs:
@@ -496,7 +455,7 @@ extends:
       # (dependsOn: []) and gate the actual deploys on a job that polls MCR until the
       # new image tags are available. This mirrors the ama-metrics release pipeline.
       dependsOn: []
-      condition: and(eq(variables.IS_PR, false), eq(variables.IS_MAIN_BRANCH, true), ne(variables.AgentImageTagSuffix, ''))
+      condition: and(eq(variables.IS_PR, false), eq(variables.IS_MAIN_BRANCH, true))
       pool:
         name: Azure-Pipelines-CI-Test-EO
         image: ci-1es-managed-ubuntu-2204
@@ -524,7 +483,7 @@ extends:
         steps:
         - checkout: none
         - task: Bash@3
-          displayName: 'Check ama-logs images are published to MCR'
+          displayName: 'Check ama-logs images and Helm chart are published to MCR'
           target:
             container: host
           env:
@@ -532,6 +491,9 @@ extends:
             WINDOWS_TAG: 'win-$(AgentImageTagSuffix)'
             MCR_REGISTRY: 'mcr.microsoft.com'
             PROD_MCR_AGENT_REPO: '/azuremonitor/containerinsights/ciprod'
+            PROD_MCR_CHART_REPO: '/azuremonitor/helmchart/containerinsights/ciprod/azuremonitor-containers'
+            CHART_TAG: '$(AgentImageTagSuffix)'
+            CHART_TAG_ARC: '$(AgentImageTagSuffix)-arc'
             # 1440 attempts * 60s = up to 24h, covering the Stage_2 rollout window.
             MAX_RETRIES: 1440
             SLEEP_INTERVAL: 60
@@ -541,33 +503,38 @@ extends:
               set -uo pipefail
 
               # Returns the HTTP status code for a tag's manifest on MCR.
-              # A 200 means the image tag exists. Querying the manifest directly
-              # (instead of grepping /tags/list) avoids substring false positives
-              # and pagination issues on the large ciprod repo.
+              # A 200 means the manifest (container image or OCI Helm chart) exists.
+              # Querying the manifest directly (instead of grepping /tags/list) avoids
+              # substring false positives and pagination issues on the large ciprod repo.
               check_tag() {
-                local tag="$1"
+                local repo="$1"
+                local tag="$2"
                 curl -sSL -o /dev/null -w "%{http_code}" \
                   -H "Accept: application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.v2+json" \
-                  "https://${MCR_REGISTRY}/v2${PROD_MCR_AGENT_REPO}/manifests/${tag}" || echo "000"
+                  "https://${MCR_REGISTRY}/v2${repo}/manifests/${tag}" || echo "000"
               }
 
-              echo "Waiting for ama-logs images to be published to MCR:"
-              echo "  Linux:   ${MCR_REGISTRY}${PROD_MCR_AGENT_REPO}:${LINUX_TAG}"
-              echo "  Windows: ${MCR_REGISTRY}${PROD_MCR_AGENT_REPO}:${WINDOWS_TAG}"
+              echo "Waiting for ama-logs images and Helm chart to be published to MCR:"
+              echo "  Linux:      ${MCR_REGISTRY}${PROD_MCR_AGENT_REPO}:${LINUX_TAG}"
+              echo "  Windows:    ${MCR_REGISTRY}${PROD_MCR_AGENT_REPO}:${WINDOWS_TAG}"
+              echo "  Chart:      ${MCR_REGISTRY}${PROD_MCR_CHART_REPO}:${CHART_TAG}"
+              echo "  Chart(arc): ${MCR_REGISTRY}${PROD_MCR_CHART_REPO}:${CHART_TAG_ARC}"
               echo "  MAX_RETRIES=${MAX_RETRIES} SLEEP_INTERVAL=${SLEEP_INTERVAL}s"
 
               for i in $(seq 1 "$MAX_RETRIES"); do
-                linux_code=$(check_tag "$LINUX_TAG")
-                windows_code=$(check_tag "$WINDOWS_TAG")
-                echo "Attempt ${i}/${MAX_RETRIES}: linux=${linux_code} windows=${windows_code}"
-                if [ "$linux_code" = "200" ] && [ "$windows_code" = "200" ]; then
-                  echo "Both ama-logs images are published to MCR."
+                linux_code=$(check_tag "$PROD_MCR_AGENT_REPO" "$LINUX_TAG")
+                windows_code=$(check_tag "$PROD_MCR_AGENT_REPO" "$WINDOWS_TAG")
+                chart_code=$(check_tag "$PROD_MCR_CHART_REPO" "$CHART_TAG")
+                chart_arc_code=$(check_tag "$PROD_MCR_CHART_REPO" "$CHART_TAG_ARC")
+                echo "Attempt ${i}/${MAX_RETRIES}: linux=${linux_code} windows=${windows_code} chart=${chart_code} chart-arc=${chart_arc_code}"
+                if [ "$linux_code" = "200" ] && [ "$windows_code" = "200" ] && [ "$chart_code" = "200" ] && [ "$chart_arc_code" = "200" ]; then
+                  echo "All ama-logs images and Helm chart tags are published to MCR."
                   exit 0
                 fi
                 sleep "$SLEEP_INTERVAL"
               done
 
-              echo "##[error]ama-logs images not published to MCR within $((MAX_RETRIES * SLEEP_INTERVAL / 60)) minutes."
+              echo "##[error]ama-logs images/chart not published to MCR within $((MAX_RETRIES * SLEEP_INTERVAL / 60)) minutes."
               exit 1
       # Monitoring-Model-Cluster-WCUS
       - template: .pipelines/helm-deploy-templates/ama-logs-helm-deploy.yaml@self

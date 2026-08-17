@@ -32,3 +32,6 @@ source/plugins/go/src/*.h
 *.byebug_history
 go.work.sum
 go.work
+# generated helm chart files (created at build time from templates; see charts/azuremonitor-containerinsights/*-template.yaml)
+charts/azuremonitor-containerinsights/Chart.yaml
+charts/azuremonitor-containerinsights/values.yaml
