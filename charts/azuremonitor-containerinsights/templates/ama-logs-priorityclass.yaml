@@ -16,7 +16,7 @@ metadata:
   name: ama-logs
   # Priority classes don't have labels :-)
   annotations:
-    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
     component: ama-logs-agent
