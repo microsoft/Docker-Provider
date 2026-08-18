@@ -34,9 +34,6 @@ OmsAgent:
   isUsingAADAuth: "true"
   workspaceID: "<your_workspace_id>"
   accessTokenSecretName: "ama-logs-secret"
-  # Cloud environment
-  isMoonCake: false
-  isFairfax: false
   workspaceKey: "<your_workspace_key>"
   
   # Image configuration
