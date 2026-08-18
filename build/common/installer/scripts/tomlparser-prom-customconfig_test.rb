@@ -120,6 +120,11 @@ class PromCustomConfigTest < Minitest::Test
   def parse_generated_toml(conf)
     normalized = conf.gsub(/^(\s*[\w.]+\s*=\s*)\$[A-Z0-9_]+[ \t]*$/) { "#{Regexp.last_match(1)}[]" }
     normalized = normalized.gsub(/^[ \t]*\$[A-Z0-9_]+[ \t]*$/, "")
+    # tomlrb 2.0.1, the version the agent ships, cannot parse inline tables that use quoted
+    # keys (the templates contain `tags = {"interface" = ["lo"]}`). Collapse inline table
+    # values so the rest of the file parses on every 2.x release. Injected plugins declare
+    # their own `[[inputs.x]]` table headers, which this leaves untouched.
+    normalized = normalized.gsub(/^(\s*[\w.]+\s*=\s*)\{[^{}\n]*\}[ \t]*$/) { "#{Regexp.last_match(1)}{}" }
     Tomlrb.parse(normalized)
   end
 
