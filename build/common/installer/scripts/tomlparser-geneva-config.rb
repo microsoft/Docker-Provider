@@ -18,10 +18,10 @@ GENEVA_SUPPORTED_ENVIRONMENTS = ["Test", "Stage", "DiagnosticsProd", "Firstparty
 # The values below are attacker controllable (they come from the container-azm-ms-agentconfig configmap) and end up in
 # env var files which get sourced by the agent shell scripts, in fluent-bit conf files and in file names. Restrict them
 # to the characters the corresponding Geneva/Kubernetes identifiers can actually contain.
-GENEVA_ENVIRONMENT_PATTERN = /\A[A-Za-z0-9_\-\.]{1,64}\z/
-GENEVA_ACCOUNT_PATTERN = /\A[A-Za-z0-9_\-\.]{1,64}\z/
-GENEVA_NAMESPACE_PATTERN = /\A[A-Za-z0-9_\-\.]{1,64}\z/
-GENEVA_REGION_PATTERN = /\A[A-Za-z0-9_\-\.]{1,64}\z/
+GENEVA_ENVIRONMENT_PATTERN = /\A[A-Za-z][A-Za-z0-9_\-\.]{0,63}\z/
+GENEVA_ACCOUNT_PATTERN = /\A[A-Za-z][A-Za-z0-9]{0,63}\z/
+GENEVA_NAMESPACE_PATTERN = /\A[A-Za-z][A-Za-z0-9]{0,63}\z/
+GENEVA_REGION_PATTERN = /\A[A-Za-z][A-Za-z0-9]{0,63}\z/
 GENEVA_CONFIG_VERSION_PATTERN = /\A[A-Za-z0-9_\-\.]{1,64}\z/
 # supported auth id formats are <keyword>#<value> where value can be a guid or an ARM resource id
 GENEVA_AUTH_ID_PATTERN = /\A[A-Za-z0-9_\-\.#\/]{1,512}\z/

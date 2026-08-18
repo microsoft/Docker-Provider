@@ -45,6 +45,80 @@ class TomlParserGenevaConfigTests < Minitest::Test
     end
   end
 
+  def test_geneva_account_name_rules
+    validAccounts = ["A", "MyServiceRTE24", "A" * 64]
+    invalidAccounts = ["1Account", "Account_Name", "Account-Name", "Account.Name", "A" * 65]
+
+    validAccounts.each do |account|
+      Dir.mktmpdir do |workdir|
+        _output, envVarFileContents = run_geneva_parser(<<~TOML, workdir)
+          [integrations.geneva_logs]
+          enabled = true
+          environment = "DiagnosticsProd"
+          namespace = "TestNamespace"
+          account = "#{account}"
+          region = "eastus"
+          authid = "client_id#11111111-1111-1111-1111-111111111111"
+        TOML
+
+        assert_includes envVarFileContents, "export MONITORING_GCS_ACCOUNT='#{account}'\n"
+      end
+    end
+
+    invalidAccounts.each do |account|
+      Dir.mktmpdir do |workdir|
+        _output, envVarFileContents = run_geneva_parser(<<~TOML, workdir)
+          [integrations.geneva_logs]
+          enabled = true
+          environment = "DiagnosticsProd"
+          namespace = "TestNamespace"
+          account = "#{account}"
+          region = "eastus"
+          authid = "client_id#11111111-1111-1111-1111-111111111111"
+        TOML
+
+        assert_includes envVarFileContents, "export MONITORING_GCS_ACCOUNT=''\n"
+      end
+    end
+  end
+
+  def test_geneva_namespace_rules
+    validNamespaces = ["A", "Logs1", "A" * 64]
+    invalidNamespaces = ["1Logs", "Logs_Namespace", "Logs-Namespace", "Logs.Namespace", "A" * 65]
+
+    validNamespaces.each do |namespace|
+      Dir.mktmpdir do |workdir|
+        _output, envVarFileContents = run_geneva_parser(<<~TOML, workdir)
+          [integrations.geneva_logs]
+          enabled = true
+          environment = "DiagnosticsProd"
+          namespace = "#{namespace}"
+          account = "TestAccount"
+          region = "eastus"
+          authid = "client_id#11111111-1111-1111-1111-111111111111"
+        TOML
+
+        assert_includes envVarFileContents, "export MONITORING_GCS_NAMESPACE='#{namespace}'\n"
+      end
+    end
+
+    invalidNamespaces.each do |namespace|
+      Dir.mktmpdir do |workdir|
+        _output, envVarFileContents = run_geneva_parser(<<~TOML, workdir)
+          [integrations.geneva_logs]
+          enabled = true
+          environment = "DiagnosticsProd"
+          namespace = "#{namespace}"
+          account = "TestAccount"
+          region = "eastus"
+          authid = "client_id#11111111-1111-1111-1111-111111111111"
+        TOML
+
+        assert_includes envVarFileContents, "export MONITORING_GCS_NAMESPACE=''\n"
+      end
+    end
+  end
+
   def test_environment_with_shell_metacharacters_is_rejected
     Dir.mktmpdir do |workdir|
       marker = File.join(workdir, "pwned")
@@ -63,6 +137,97 @@ class TomlParserGenevaConfigTests < Minitest::Test
 
       ParserTestHelper.source_env_file(File.join(workdir, ENV_VAR_FILE), ["MONITORING_GCS_ENVIRONMENT"])
       refute File.exist?(marker), "configmap value was executed as a shell command"
+    end
+  end
+
+  def test_geneva_environment_rules
+    validEnvironments = ["A", "DiagnosticsProd", "Test_env-1.0", "A" * 64]
+    invalidEnvironments = ["1DiagnosticsProd", "_Test", "-Test", ".Test", "A" * 65]
+
+    validEnvironments.each do |environment|
+      Dir.mktmpdir do |workdir|
+        _output, envVarFileContents = run_geneva_parser(<<~TOML, workdir)
+          [integrations.geneva_logs]
+          enabled = true
+          environment = "#{environment}"
+          namespace = "TestNamespace"
+          account = "TestAccount"
+          region = "eastus"
+          authid = "client_id#11111111-1111-1111-1111-111111111111"
+        TOML
+
+        assert_includes envVarFileContents, "export MONITORING_GCS_ENVIRONMENT='#{environment}'\n"
+      end
+    end
+
+    invalidEnvironments.each do |environment|
+      Dir.mktmpdir do |workdir|
+        _output, envVarFileContents = run_geneva_parser(<<~TOML, workdir)
+          [integrations.geneva_logs]
+          enabled = true
+          environment = "#{environment}"
+          namespace = "TestNamespace"
+          account = "TestAccount"
+          region = "eastus"
+          authid = "client_id#11111111-1111-1111-1111-111111111111"
+        TOML
+
+        assert_includes envVarFileContents, "export MONITORING_GCS_ENVIRONMENT=''\n"
+      end
+    end
+  end
+
+  def test_invalid_windows_namespace_rejects_geneva_config
+    Dir.mktmpdir do |workdir|
+      _output, envVarFileContents = run_geneva_parser(<<~TOML, workdir)
+        [integrations.geneva_logs]
+        enabled = true
+        environment = "DiagnosticsProd"
+        namespace = "TestNamespace"
+        namespacewindows = "Windows_Namespace"
+        account = "TestAccount"
+        region = "eastus"
+        authid = "client_id#11111111-1111-1111-1111-111111111111"
+      TOML
+
+      assert_includes envVarFileContents, "export MONITORING_GCS_NAMESPACE=''\n"
+    end
+  end
+
+  def test_geneva_region_rules
+    validRegions = ["eastus", "A", "A" * 64]
+    invalidRegions = ["1eastus", "east_us", "A" * 65]
+
+    validRegions.each do |region|
+      Dir.mktmpdir do |workdir|
+        _output, envVarFileContents = run_geneva_parser(<<~TOML, workdir)
+          [integrations.geneva_logs]
+          enabled = true
+          environment = "DiagnosticsProd"
+          namespace = "TestNamespace"
+          account = "TestAccount"
+          region = "#{region}"
+          authid = "client_id#11111111-1111-1111-1111-111111111111"
+        TOML
+
+        assert_includes envVarFileContents, "export MONITORING_GCS_REGION='#{region}'\n"
+      end
+    end
+
+    invalidRegions.each do |region|
+      Dir.mktmpdir do |workdir|
+        _output, envVarFileContents = run_geneva_parser(<<~TOML, workdir)
+          [integrations.geneva_logs]
+          enabled = true
+          environment = "DiagnosticsProd"
+          namespace = "TestNamespace"
+          account = "TestAccount"
+          region = "#{region}"
+          authid = "client_id#11111111-1111-1111-1111-111111111111"
+        TOML
+
+        assert_includes envVarFileContents, "export MONITORING_GCS_REGION=''\n"
+      end
     end
   end
 
