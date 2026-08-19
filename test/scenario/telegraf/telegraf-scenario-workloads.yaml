@@ -1,0 +1,227 @@
+# Telegraf / custom-Prometheus scenario workloads.
+#
+# Deploy these before capturing a telegraf validation snapshot. Each workload
+# exists to exercise a specific config-map setting that
+# build/common/installer/scripts/tomlparser-prom-customconfig.rb serializes into
+# the generated telegraf configuration:
+#
+#   ci-telegraf-a  ns          -> monitor_kubernetes_pods_namespaces (include)
+#   ci-telegraf-b  ns          -> monitor_kubernetes_pods_namespaces (2nd plugin)
+#   labels scenario=alpha/beta -> kubernetes_label_selector
+#   status.phase=Running       -> kubernetes_field_selector
+#   Service prom-svc-a         -> kubernetes_services + cluster-level urls
+#   DaemonSet hostPort 32112   -> node-level urls with $NODE_IP
+#   Windows deployment         -> Windows daemonset custom prom path
+#
+# The golang reference app emits, among others:
+#   empty_dimension_rainfall, empty_dimension_summary,
+#   go_goroutines, go_threads, go_info, process_open_fds
+# go_info is deliberately used as the fielddrop probe.
+#
+# Apply:  kubectl apply -f test/scenario/telegraf/telegraf-scenario-workloads.yaml
+# Remove: kubectl delete ns ci-telegraf-a ci-telegraf-b
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ci-telegraf-a
+  labels:
+    purpose: telegraf-scenario
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ci-telegraf-b
+  labels:
+    purpose: telegraf-scenario
+---
+# ---------------------------------------------------------------------------
+# Scenario A: annotated pod in namespace ci-telegraf-a, label scenario=alpha
+# Targets: monitor_kubernetes_pods, label_selector, field_selector, namespaces
+# ---------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prom-ref-a
+  namespace: ci-telegraf-a
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prom-ref
+      scenario: alpha
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '2112'
+        prometheus.io/path: '/metrics'
+      labels:
+        app: prom-ref
+        scenario: alpha
+        tier: frontend
+    spec:
+      containers:
+        - name: ref-app-golang
+          image: mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:6.7.5-main-09-12-2023-8fbde9ca-ref-app-golang
+          env:
+            - name: RUN_PERF_TEST
+              value: "false"
+            - name: SCRAPE_INTERVAL
+              value: "15"
+          ports:
+            - containerPort: 2112
+              protocol: TCP
+              name: weather-app
+            - containerPort: 2113
+              protocol: TCP
+              name: untyped
+          resources:
+            limits: { cpu: 100m, memory: 100Mi }
+            requests: { cpu: 50m, memory: 50Mi }
+      nodeSelector:
+        kubernetes.io/os: linux
+---
+# ---------------------------------------------------------------------------
+# Scenario B: annotated pod in namespace ci-telegraf-b, label scenario=beta.
+# Proves a SECOND per-namespace [[inputs.prometheus]] plugin is generated, and
+# lets namespace/label filters be proven to exclude when configured to.
+# ---------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prom-ref-b
+  namespace: ci-telegraf-b
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prom-ref
+      scenario: beta
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '2112'
+      labels:
+        app: prom-ref
+        scenario: beta
+        tier: backend
+    spec:
+      containers:
+        - name: ref-app-golang
+          image: mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:6.7.5-main-09-12-2023-8fbde9ca-ref-app-golang
+          env:
+            - name: RUN_PERF_TEST
+              value: "false"
+            - name: SCRAPE_INTERVAL
+              value: "15"
+          ports:
+            - containerPort: 2112
+              protocol: TCP
+          resources:
+            limits: { cpu: 100m, memory: 100Mi }
+            requests: { cpu: 50m, memory: 50Mi }
+      nodeSelector:
+        kubernetes.io/os: linux
+---
+# ---------------------------------------------------------------------------
+# Service for cluster-level `urls` and `kubernetes_services` scraping
+# ---------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: prom-svc-a
+  namespace: ci-telegraf-a
+  labels:
+    app: prom-ref
+spec:
+  selector:
+    app: prom-ref
+    scenario: alpha
+  ports:
+    - name: weather-app
+      protocol: TCP
+      port: 2112
+      targetPort: 2112
+    - name: untyped
+      protocol: TCP
+      port: 2113
+      targetPort: 2113
+---
+# ---------------------------------------------------------------------------
+# Node-level scraping target: DaemonSet exposing a hostPort so the ama-logs
+# daemonset can scrape http://$NODE_IP:32112/metrics on every Linux node.
+# ---------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: prom-ref-node
+  namespace: ci-telegraf-a
+spec:
+  selector:
+    matchLabels:
+      app: prom-ref-node
+  template:
+    metadata:
+      labels:
+        app: prom-ref-node
+        scenario: node
+    spec:
+      containers:
+        - name: ref-app-golang
+          image: mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:6.7.5-main-09-12-2023-8fbde9ca-ref-app-golang
+          env:
+            - name: RUN_PERF_TEST
+              value: "false"
+            - name: SCRAPE_INTERVAL
+              value: "15"
+          ports:
+            - containerPort: 2112
+              hostPort: 32112
+              protocol: TCP
+          resources:
+            limits: { cpu: 100m, memory: 100Mi }
+            requests: { cpu: 50m, memory: 50Mi }
+      nodeSelector:
+        kubernetes.io/os: linux
+---
+# ---------------------------------------------------------------------------
+# Windows scenario: exercises the Windows daemonset custom-prom path
+# (same parser, separate template, and a shipped telegraf version whose
+# duration grammar is the stricter of the two).
+# Delete this document if the cluster has no Windows nodepool.
+# ---------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: win-prom-ref
+  namespace: ci-telegraf-a
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: win-prom-ref
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '2112'
+      labels:
+        app: win-prom-ref
+        scenario: windows
+    spec:
+      containers:
+        - name: win-ref-app-golang
+          image: mcr.microsoft.com/azuremonitor/containerinsights/cidev:win-prometheus-reference-app-golang
+          env:
+            - name: RUN_PERF_TEST
+              value: "false"
+            - name: SCRAPE_INTERVAL
+              value: "60"
+          ports:
+            - containerPort: 2112
+              protocol: TCP
+      nodeSelector:
+        kubernetes.io/os: windows
+        kubernetes.azure.com/os-sku: Windows2022

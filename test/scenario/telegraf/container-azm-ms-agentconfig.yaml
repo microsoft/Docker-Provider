@@ -1,0 +1,46 @@
+# Controlled config map for telegraf validation.
+#
+# This is the CONTROLLED VARIABLE of the A/B run: apply it once, before the
+# OLD-image snapshot, and do not touch it again until both snapshots are taken.
+# If it changes between snapshots the comparison is invalid.
+#
+# Every setting here exists to exercise one sink in
+# build/common/installer/scripts/tomlparser-prom-customconfig.rb.
+#
+# BEFORE APPLYING: replace __NODE0_IP__ with a real Linux node internal IP:
+#   kubectl get nodes -o wide
+#
+# NOTE on key names (silent-failure trap): the cluster-section selector keys are
+# `kubernetes_label_selector` and `kubernetes_field_selector` -- NOT
+# `monitor_kubernetes_pods_label_selector`. Only `monitor_kubernetes_pods_namespaces`
+# carries the `monitor_` prefix. Wrong names parse fine and emit nothing.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: container-azm-ms-agentconfig
+  namespace: kube-system
+data:
+  schema-version: v1
+  config-version: telegraf-validation
+  prometheus-data-collection-settings: |-
+    [prometheus_data_collection_settings.cluster]
+        # Cluster-level (replicaset / prometheus-sidecar) custom scraping.
+        interval = "1m"
+        # go_info is in fieldpass AND fielddrop -- its ABSENCE from the data is
+        # what proves fielddrop still applies after TOML serialization.
+        fieldpass = ["empty_dimension_rainfall", "empty_dimension_summary", "go_goroutines", "go_threads", "process_open_fds", "go_info"]
+        fielddrop = ["go_info"]
+        kubernetes_services = ["http://prom-svc-a.ci-telegraf-a.svc.cluster.local:2112/metrics"]
+        urls = ["http://__NODE0_IP__:32112/metrics"]
+        monitor_kubernetes_pods = true
+        monitor_kubernetes_pods_namespaces = ["ci-telegraf-a", "ci-telegraf-b"]
+        kubernetes_label_selector = "app=prom-ref"
+        kubernetes_field_selector = "status.phase=Running"
+
+    [prometheus_data_collection_settings.node]
+        # Node-level (daemonset) custom scraping.
+        # $NODE_IP is expanded by telegraf at runtime -- it must survive escaping.
+        interval = "1m"
+        urls = ["http://$NODE_IP:32112/metrics"]
+        fieldpass = ["empty_dimension_rainfall", "go_goroutines", "go_threads"]
+        fielddrop = ["go_threads"]
