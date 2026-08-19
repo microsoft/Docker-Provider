@@ -18,7 +18,7 @@ require (
 )
 
 require (
-	code.cloudfoundry.org/clock v1.83.0 // indirect
+	code.cloudfoundry.org/clock v1.84.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
@@ -43,7 +43,7 @@ require (
 )
 
 require (
-	github.com/fxamacker/cbor/v2 v2.9.2 // indirect
+	github.com/fxamacker/cbor/v2 v2.9.3 // indirect
 	github.com/go-openapi/swag/cmdutils v0.28.0 // indirect
 	github.com/go-openapi/swag/conv v0.28.0 // indirect
 	github.com/go-openapi/swag/fileutils v0.28.0 // indirect

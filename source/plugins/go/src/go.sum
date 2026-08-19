@@ -1,6 +1,6 @@
 code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c/go.mod h1:QD9Lzhd/ux6eNQVUDVRJX/RKTigpewimNYBi7ivZKY8=
-code.cloudfoundry.org/clock v1.83.0 h1:mfvo8W/0rbabUP14xffa/IaGjNVPbROta8kZoG9nuB0=
-code.cloudfoundry.org/clock v1.83.0/go.mod h1:7ZvHLD4H0HfcO8WJsGb/CCOTT9bky1ruYUwCP5glzRA=
+code.cloudfoundry.org/clock v1.84.0 h1:nYJHcG5WSDSxVYNOp+/GwqVHN5Y0VAMbbRZwetw+RJ4=
+code.cloudfoundry.org/clock v1.84.0/go.mod h1:POPXUjWjYxGzHXU/AYe6P0f4rell+a7X5SZG0Q6UxAU=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -12,8 +12,8 @@ github.com/emicklei/go-restful/v3 v3.13.0/go.mod h1:6n3XBCmQQb25CM2LCACGz8ukIrRr
 github.com/fluent/fluent-bit-go v0.0.0-20260616051939-71a89c3094aa h1:bJAK1hCElkhRaKe5mVlA+L2W8eZGbAu8PiPgqG8AkiA=
 github.com/fluent/fluent-bit-go v0.0.0-20260616051939-71a89c3094aa/go.mod h1:x/u2lzbBSYVY+ixxF6gtaS+RBawwGjrNwpLgtHPB9fc=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
-github.com/fxamacker/cbor/v2 v2.9.2 h1:X4Ksno9+x3cz0TZv69ec1hxP/+tymuR8PXQJyDwfh78=
-github.com/fxamacker/cbor/v2 v2.9.2/go.mod h1:vM4b+DJCtHn+zz7h3FFp/hDAI9WNWCsZj23V5ytsSxQ=
+github.com/fxamacker/cbor/v2 v2.9.3 h1:oQBnFATpNdY8gJHTndDDv5Xl4QqNaz51G5LLEPhng3Q=
+github.com/fxamacker/cbor/v2 v2.9.3/go.mod h1:vM4b+DJCtHn+zz7h3FFp/hDAI9WNWCsZj23V5ytsSxQ=
 github.com/go-logr/logr v1.4.4 h1:tG4xh9yMsRCAiodLVTxyrkzSZ9+o0L1Kg/+cPVcbP/8=
 github.com/go-logr/logr v1.4.4/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
 github.com/go-openapi/jsonpointer v1.0.0 h1:kR9tHqY0CtZaOPVFm622dPVNhrvYpwr4uCxgL3h1H8s=
