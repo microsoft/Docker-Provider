@@ -1,6 +1,6 @@
 module docker-provider/test/utils
 
-go 1.26.6
+go 1.26.7
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.0
@@ -22,18 +22,18 @@ require (
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-openapi/jsonpointer v1.0.0 // indirect
 	github.com/go-openapi/jsonreference v1.0.0 // indirect
-	github.com/go-openapi/swag v0.28.0 // indirect
-	github.com/go-openapi/swag/cmdutils v0.28.0 // indirect
-	github.com/go-openapi/swag/conv v0.28.0 // indirect
-	github.com/go-openapi/swag/fileutils v0.28.0 // indirect
-	github.com/go-openapi/swag/jsonutils v0.28.0 // indirect
-	github.com/go-openapi/swag/loading v0.28.0 // indirect
-	github.com/go-openapi/swag/mangling v0.28.0 // indirect
-	github.com/go-openapi/swag/netutils v0.28.0 // indirect
-	github.com/go-openapi/swag/pools v0.28.0 // indirect
-	github.com/go-openapi/swag/stringutils v0.28.0 // indirect
-	github.com/go-openapi/swag/typeutils v0.28.0 // indirect
-	github.com/go-openapi/swag/yamlutils v0.28.0 // indirect
+	github.com/go-openapi/swag v0.29.0 // indirect
+	github.com/go-openapi/swag/cmdutils v0.29.0 // indirect
+	github.com/go-openapi/swag/conv v0.29.0 // indirect
+	github.com/go-openapi/swag/fileutils v0.29.0 // indirect
+	github.com/go-openapi/swag/jsonutils v0.29.0 // indirect
+	github.com/go-openapi/swag/loading v0.29.0 // indirect
+	github.com/go-openapi/swag/mangling v0.29.0 // indirect
+	github.com/go-openapi/swag/netutils v0.29.0 // indirect
+	github.com/go-openapi/swag/pools v0.29.0 // indirect
+	github.com/go-openapi/swag/stringutils v0.29.0 // indirect
+	github.com/go-openapi/swag/typeutils v0.29.0 // indirect
+	github.com/go-openapi/swag/yamlutils v0.29.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.3.1 // indirect
 	github.com/google/gnostic-models v0.7.1 // indirect
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
