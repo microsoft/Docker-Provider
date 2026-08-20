@@ -90,14 +90,87 @@ def checkForType(variable, varType)
   end
 end
 
+# Telegraf parses interval values with Go's time.ParseDuration, which accepts one or more
+# decimal numbers each followed by a unit suffix (for example "30s", "1.5s" or "1h30m").
+# The unit set below is the intersection of what the Linux and Windows agents accept; "d"
+# is deliberately excluded because the older telegraf shipped on Windows rejects it.
+# The anchors must be \A and \z (not ^ and $) so that a value such as "1m\n<injected toml>"
+# cannot pass validation by matching only its first line.
+TELEGRAF_DURATION_REGEX = /\A(?:(?:\d+(?:\.\d+)?|\.\d+)(?:ns|us|\u00B5s|\u03BCs|ms|s|m|h))+\z/
+TELEGRAF_DURATION_NUMBER_REGEX = /\d+(?:\.\d+)?|\.\d+/
+
+# Kubernetes namespaces are RFC 1123 labels.
+KUBERNETES_NAMESPACE_REGEX = /\A[a-z0-9]([-a-z0-9]*[a-z0-9])?\z/
+KUBERNETES_NAMESPACE_MAX_LENGTH = 63
+
+TOML_ESCAPE_MAP = {
+  "\\" => "\\\\",
+  "\"" => "\\\"",
+  "\b" => "\\b",
+  "\t" => "\\t",
+  "\n" => "\\n",
+  "\f" => "\\f",
+  "\r" => "\\r",
+}.freeze
+
+# Serializes a value as a quoted TOML basic string. Config map content is untrusted, so every
+# character that could terminate the string or introduce new TOML structure is escaped. This
+# prevents a value from breaking out of its assignment and declaring extra telegraf plugins.
+def toTomlBasicString(value)
+  escaped = value.to_s.gsub(/[\\"\u0000-\u001F\u007F]/) do |char|
+    TOML_ESCAPE_MAP[char] || format("\\u%04X", char.ord)
+  end
+  return "\"#{escaped}\""
+end
+
+# Serializes an array of values as a TOML array of basic strings.
+def toTomlStringArray(values)
+  if values.nil? || values.length == 0
+    return "[]"
+  end
+  return "[" + values.map { |value| toTomlBasicString(value) }.join(",") + "]"
+end
+
+def isValidTelegrafInterval(interval)
+  if !interval.kind_of?(String) || (interval =~ TELEGRAF_DURATION_REGEX).nil?
+    return false
+  end
+  # Reject zero durations such as "0s" or "0h0m"; telegraf cannot scrape on a zero interval.
+  total = 0.0
+  interval.scan(TELEGRAF_DURATION_NUMBER_REGEX).each { |number| total += number.to_f }
+  return total > 0
+end
+
+# Returns the interval to use, falling back to the default when the configured value is not a
+# valid telegraf duration. The rejected value is never echoed back since it is untrusted input.
+def resolveInterval(interval, defaultInterval, settingName)
+  if interval.nil?
+    return defaultInterval
+  end
+  if isValidTelegrafInterval(interval)
+    return interval
+  end
+  ConfigParseErrorLogger.logError("Invalid interval specified for #{settingName}, using default of #{defaultInterval}. Expected a positive telegraf duration such as 30s, 1m or 1h30m.")
+  return defaultInterval
+end
+
+def isValidKubernetesNamespace(namespace)
+  return namespace.kind_of?(String) &&
+         namespace.length <= KUBERNETES_NAMESPACE_MAX_LENGTH &&
+         !(namespace =~ KUBERNETES_NAMESPACE_REGEX).nil?
+end
+
 def replaceDefaultMonitorPodSettings(new_contents, monitorKubernetesPods, kubernetesLabelSelectors, kubernetesFieldSelectors)
   begin
     puts "config::Starting to substitute the placeholders in telegraf conf copy file with no namespace filters"
-    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS", ("monitor_kubernetes_pods = #{monitorKubernetesPods}"))
-    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE", ("pod_scrape_scope = \"#{(@controller.casecmp(@replicaset) == 0) ? "cluster" : "node"}\""))
+    podScrapeScope = (@controller.casecmp(@replicaset) == 0) ? "cluster" : "node"
+    # The block form of gsub is required throughout: with a replacement string ruby would
+    # interpret sequences such as \\ or \0 in the (escaped) untrusted value as backreferences.
+    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS") { "monitor_kubernetes_pods = #{monitorKubernetesPods}" }
+    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE") { "pod_scrape_scope = #{toTomlBasicString(podScrapeScope)}" }
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_PLUGINS_WITH_NAMESPACE_FILTER", "")
-    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_LABEL_SELECTOR", ("kubernetes_label_selector = \"#{kubernetesLabelSelectors}\""))
-    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR", ("kubernetes_field_selector = \"#{kubernetesFieldSelectors}\""))
+    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_LABEL_SELECTOR") { "kubernetes_label_selector = #{toTomlBasicString(kubernetesLabelSelectors)}" }
+    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR") { "kubernetes_field_selector = #{toTomlBasicString(kubernetesFieldSelectors)}" }
   rescue => errorStr
     puts "Exception while replacing default pod monitor settings for custom prometheus scraping: #{errorStr}"
   end
@@ -120,30 +193,36 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
     end
 
     pluginConfigsWithNamespaces = ""
+    podScrapeScope = (@controller.casecmp(@replicaset) == 0) ? "cluster" : "node"
     monitorKubernetesPodsNamespaces.each do |namespace|
       if !namespace.nil?
         #Stripping namespaces to remove leading and trailing whitespaces
-        namespace.strip!
+        namespace = namespace.to_s.strip
         if namespace.length > 0
+          if !isValidKubernetesNamespace(namespace)
+            # Untrusted value, so it is not echoed back into the logs.
+            ConfigParseErrorLogger.logError("Skipping an entry in monitor_kubernetes_pods_namespaces because it is not a valid kubernetes namespace")
+            next
+          end
           pluginConfigsWithNamespaces += "\n[[inputs.prometheus]]
-  interval = \"#{interval}\"
+  interval = #{toTomlBasicString(interval)}
   monitor_kubernetes_pods = true
-  pod_namespace_label_name = \"#{@podNamespace}\"
-  pod_scrape_scope = \"#{(@controller.casecmp(@replicaset) == 0) ? "cluster" : "node"}\"
-  monitor_kubernetes_pods_namespace = \"#{namespace}\"
-  kubernetes_label_selector = \"#{kubernetesLabelSelectors}\"
-  kubernetes_field_selector = \"#{kubernetesFieldSelectors}\"
+  pod_namespace_label_name = #{toTomlBasicString(@podNamespace)}
+  pod_scrape_scope = #{toTomlBasicString(podScrapeScope)}
+  monitor_kubernetes_pods_namespace = #{toTomlBasicString(namespace)}
+  kubernetes_label_selector = #{toTomlBasicString(kubernetesLabelSelectors)}
+  kubernetes_field_selector = #{toTomlBasicString(kubernetesFieldSelectors)}
   fieldpass = #{fieldPassSetting}
   fielddrop = #{fieldDropSetting}
   metric_version = #{@metricVersion}
-  url_tag = \"#{@urlTag}\"
-  #{timeout_config_key} = \"#{@responseTimeout}\"
-  tls_ca = \"#{@tlsCa}\"
+  url_tag = #{toTomlBasicString(@urlTag)}
+  #{timeout_config_key} = #{toTomlBasicString(@responseTimeout)}
+  tls_ca = #{toTomlBasicString(@tlsCa)}
   insecure_skip_verify = #{@insecureSkipVerify}\n"
         end
       end
     end
-    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_PLUGINS_WITH_NAMESPACE_FILTER", pluginConfigsWithNamespaces)
+    new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_PLUGINS_WITH_NAMESPACE_FILTER") { pluginConfigsWithNamespaces }
     return new_contents
   rescue => errorStr
     puts "Exception while creating prometheus input plugins to filter namespaces for custom prometheus: #{errorStr}, using defaults"
@@ -186,7 +265,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
              (monitorKubernetesPods.nil? || (!monitorKubernetesPods.nil? && (!!monitorKubernetesPods == monitorKubernetesPods))) # Checking for Boolean type, since 'Boolean' is not defined as a type in ruby
             puts "config::Successfully passed typecheck for config settings for replicaset"
             #if setting is nil assign default values
-            interval = (interval.nil?) ? @defaultRsInterval : interval
+            interval = resolveInterval(interval, @defaultRsInterval, "prometheus_data_collection_settings.cluster")
             fieldPass = (fieldPass.nil?) ? @defaultRsFieldPass : fieldPass
             fieldDrop = (fieldDrop.nil?) ? @defaultRsFieldDrop : fieldDrop
             kubernetesServices = (kubernetesServices.nil?) ? @defaultRsK8sServices : kubernetesServices
@@ -203,13 +282,13 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             puts "config::Starting to substitute the placeholders in telegraf conf copy file for replicaset"
             #Replace the placeholder config values with values from custom config
             text = File.read(file_name)
-            new_contents = text.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_INTERVAL", interval)
-            fieldPassSetting = (fieldPass.length > 0) ? ("[\"" + fieldPass.join("\",\"") + "\"]") : "[]"
-            new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_FIELDPASS", fieldPassSetting)
-            fieldDropSetting = (fieldDrop.length > 0) ? ("[\"" + fieldDrop.join("\",\"") + "\"]") : "[]"
-            new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_FIELDDROP", fieldDropSetting)
-            new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_URLS", ((urls.length > 0) ? ("[\"" + urls.join("\",\"") + "\"]") : "[]"))
-            new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_K8S_SERVICES", ((kubernetesServices.length > 0) ? ("[\"" + kubernetesServices.join("\",\"") + "\"]") : "[]"))
+            new_contents = text.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_INTERVAL") { interval }
+            fieldPassSetting = toTomlStringArray(fieldPass)
+            new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_FIELDPASS") { fieldPassSetting }
+            fieldDropSetting = toTomlStringArray(fieldDrop)
+            new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_FIELDDROP") { fieldDropSetting }
+            new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_URLS") { toTomlStringArray(urls) }
+            new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_K8S_SERVICES") { toTomlStringArray(kubernetesServices) }
 
             # Check to see if monitor_kubernetes_pods is set to true with a valid setting for monitor_kubernetes_namespaces to enable scraping for specific namespaces
             # Adding nil check here as well since checkForTypeArray returns true even if setting is nil to accomodate for other settings to be able -
@@ -292,7 +371,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
              (monitorKubernetesPods.nil? || (!monitorKubernetesPods.nil? && (!!monitorKubernetesPods == monitorKubernetesPods))) #Checking for Boolean type, since 'Boolean' is not defined as a type in ruby
             puts "config::Successfully passed typecheck for config settings for custom prometheus scraping"
             #if setting is nil assign default values
-            interval = (interval.nil?) ? @defaultCustomPrometheusInterval : interval
+            interval = resolveInterval(interval, @defaultCustomPrometheusInterval, "prometheus_data_collection_settings.cluster")
             fieldPass = (fieldPass.nil?) ? @defaultCustomPrometheusFieldPass : fieldPass
             fieldDrop = (fieldDrop.nil?) ? @defaultCustomPrometheusFieldDrop : fieldDrop
             monitorKubernetesPods = (monitorKubernetesPods.nil?) ? @defaultCustomPrometheusMonitorPods : monitorKubernetesPods
@@ -309,11 +388,11 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             puts "config::Starting to substitute the placeholders in telegraf conf copy file for linux or conf file for windows for custom prometheus scraping"
             #Replace the placeholder config values with values from custom config
             text = File.read(file_name)
-            new_contents = text.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_INTERVAL", interval)
-            fieldPassSetting = (fieldPass.length > 0) ? ("[\"" + fieldPass.join("\",\"") + "\"]") : "[]"
-            new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_FIELDPASS", fieldPassSetting)
-            fieldDropSetting = (fieldDrop.length > 0) ? ("[\"" + fieldDrop.join("\",\"") + "\"]") : "[]"
-            new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_FIELDDROP", fieldDropSetting)
+            new_contents = text.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_INTERVAL") { interval }
+            fieldPassSetting = toTomlStringArray(fieldPass)
+            new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_FIELDPASS") { fieldPassSetting }
+            fieldDropSetting = toTomlStringArray(fieldDrop)
+            new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_FIELDDROP") { fieldDropSetting }
 
             # Check to see if monitor_kubernetes_pods is set to true with a valid setting for monitor_kubernetes_namespaces to enable scraping for specific namespaces
             # Adding nil check here as well since checkForTypeArray returns true even if setting is nil to accomodate for other settings to be able -
@@ -386,7 +465,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             puts "config::Successfully passed typecheck for config settings for daemonset"
 
             #if setting is nil assign default values
-            interval = (interval.nil?) ? @defaultDsInterval : interval
+            interval = resolveInterval(interval, @defaultDsInterval, "prometheus_data_collection_settings.node")
             fieldPass = (fieldPass.nil?) ? @defaultDsFieldPass : fieldPass
             fieldDrop = (fieldDrop.nil?) ? @defaultDsFieldDrop : fieldDrop
             urls = (urls.nil?) ? @defaultDsPromUrls : urls
@@ -398,10 +477,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             puts "config::Starting to substitute the placeholders in telegraf conf copy file for daemonset"
             #Replace the placeholder config values with values from custom config
             text = File.read(file_name)
-            new_contents = text.gsub("$AZMON_DS_PROM_INTERVAL", interval)
-            new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDPASS", ((fieldPass.length > 0) ? ("[\"" + fieldPass.join("\",\"") + "\"]") : "[]"))
-            new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDDROP", ((fieldDrop.length > 0) ? ("[\"" + fieldDrop.join("\",\"") + "\"]") : "[]"))
-            new_contents = new_contents.gsub("$AZMON_DS_PROM_URLS", ((urls.length > 0) ? ("[\"" + urls.join("\",\"") + "\"]") : "[]"))
+            new_contents = text.gsub("$AZMON_DS_PROM_INTERVAL") { interval }
+            new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDPASS") { toTomlStringArray(fieldPass) }
+            new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDDROP") { toTomlStringArray(fieldDrop) }
+            new_contents = new_contents.gsub("$AZMON_DS_PROM_URLS") { toTomlStringArray(urls) }
             File.open(file_name, "w") { |file| file.puts new_contents }
             puts "config::Successfully substituted the placeholders in telegraf conf file for daemonset"
 

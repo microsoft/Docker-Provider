@@ -81,7 +81,7 @@ data:
         # Cluster level scrape endpoint(s). These metrics will be scraped from agent's Replicaset (singleton)
         # Any errors related to prometheus scraping can be found in the KubeMonAgentEvents table in the Log Analytics workspace that the cluster is sending data to.
 
-        #Interval specifying how often to scrape for metrics. This is duration of time and can be specified for supporting settings by combining an integer value and time unit as a string value. Valid time units are ns, us (or µs), ms, s, m, h.
+        #Interval specifying how often to scrape for metrics. This is duration of time and can be specified for supporting settings by combining an integer value and time unit as a string value. Valid time units are ns, us (or µs), ms, s, m, h. If the value is not a valid duration, the default of 1m is used.
         interval = "1m"
 
         ## Uncomment the following settings with valid string arrays for prometheus scraping
@@ -122,7 +122,7 @@ data:
         # Node level scrape endpoint(s). These metrics will be scraped from agent's DaemonSet running in every node in the cluster
         # Any errors related to prometheus scraping can be found in the KubeMonAgentEvents table in the Log Analytics workspace that the cluster is sending data to.
 
-        #Interval specifying how often to scrape for metrics. This is duration of time and can be specified for supporting settings by combining an integer value and time unit as a string value. Valid time units are ns, us (or µs), ms, s, m, h.
+        #Interval specifying how often to scrape for metrics. This is duration of time and can be specified for supporting settings by combining an integer value and time unit as a string value. Valid time units are ns, us (or µs), ms, s, m, h. If the value is not a valid duration, the default of 1m is used.
         interval = "1m"
 
         ## Uncomment the following settings with valid string arrays for prometheus scraping
