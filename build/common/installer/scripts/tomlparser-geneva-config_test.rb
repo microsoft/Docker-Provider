@@ -135,6 +135,16 @@ class GenevaConfigTest < Minitest::Test
     assert isValidGenevaEnvironment("SomeAirgapProd42")
   end
 
+  def test_geneva_names_must_start_with_a_letter
+    ["Prod_1", "Prod-1", "Prod.1", "A"].each do |value|
+      assert isValidGenevaName(value), "expected #{value.inspect} to be a valid geneva name"
+    end
+
+    ["1Prod", "_Prod", "-Prod", ".Prod"].each do |value|
+      refute isValidGenevaName(value), "expected #{value.inspect} to be an invalid geneva name"
+    end
+  end
+
   def test_invalid_values_are_rejected
     invalid = [
       "Test; id",
@@ -164,8 +174,14 @@ class GenevaConfigTest < Minitest::Test
   end
 
   def test_valid_regions_and_config_versions_are_accepted
-    ["westus2", "east-us-2", "westus_2", "chinanorth3"].each { |value| assert isValidGenevaRegion(value) }
+    ["westus2", "chinanorth3", "A"].each { |value| assert isValidGenevaRegion(value) }
     ["1.0", "2.1", "Ver2v0", "1_0", "1-0"].each { |value| assert isValidGenevaConfigVersion(value) }
+  end
+
+  def test_geneva_region_must_start_with_a_letter_and_be_alphanumeric
+    ["1westus", "east-us-2", "westus_2", "west.us2", "-westus", "westus-"].each do |value|
+      refute isValidGenevaRegion(value), "expected #{value.inspect} to be an invalid region"
+    end
   end
 
   def test_authid_must_use_a_supported_identifier

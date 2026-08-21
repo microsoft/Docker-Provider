@@ -23,10 +23,11 @@ GENEVA_SUPPORTED_ENVIRONMENTS = ["Test", "Stage", "DiagnosticsProd", "Firstparty
 # The anchors must be \A and \z (not ^ and $) so that a value such as "prod\n<injected command>"
 # cannot pass validation by matching only its first line.
 
-# Geneva environment, account and namespace identifiers are alphanumeric.
-GENEVA_NAME_REGEX = /\A[A-Za-z0-9]{1,64}\z/
-# GCS region, for example "westus2".
-GENEVA_REGION_REGEX = /\A[A-Za-z0-9]([A-Za-z0-9._-]{0,62}[A-Za-z0-9])?\z/
+# Geneva environment, account and namespace identifiers must start with a letter and then may
+# contain letters, digits, underscores, hyphens or periods.
+GENEVA_NAME_REGEX = /\A[A-Za-z][A-Za-z0-9_\-\.]{0,63}\z/
+# GCS region must start with a letter and contain only letters or digits.
+GENEVA_REGION_REGEX = /\A[A-Za-z][A-Za-z0-9]{0,63}\z/
 # Agent xml config version, for example "1.0" or "Ver2v0".
 GENEVA_CONFIG_VERSION_REGEX = /\A[A-Za-z0-9][A-Za-z0-9._-]{0,63}\z/
 # MUST be <identifier>#<value>, for example client_id#<guid> or mi_res_id#<identity resource id>.
