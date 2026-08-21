@@ -48,6 +48,7 @@ jobs:
         run: |
           sudo gem install fluentd -v "1.14.2" --no-document
           sudo gem install ipaddress --no-document
+          sudo gem install tomlrb -v "2.0.1" --no-document
           sudo fluentd --setup ./fluent
       - name: install configmap parser dependencies
         run: |

@@ -12,6 +12,11 @@ Dir.glob(File.join(script_path, "../../build/linux/installer/scripts/*_test.rb")
     require_relative filename
 end
 
+Dir.glob(File.join(script_path, "../../build/common/installer/scripts/*_test.rb")) do |filename|
+    require_relative filename
+end
+
 Dir.glob(File.join(script_path, "ruby/*_test.rb")) do |filename|
     require_relative filename
 end
+
