@@ -99,7 +99,7 @@ class GenevaConfigTest < Minitest::Test
 
   # Sources the generated file the same way main.sh does and reports the resulting variables.
   def source_env_file(result)
-    script = "set -e\n. #{result[:env_file_path]}\n" +
+    script = "set -e\n. \"#{result[:env_file_path]}\"\n" +
              ["MONITORING_GCS_ENVIRONMENT", "MONITORING_GCS_NAMESPACE", "MONITORING_GCS_ACCOUNT",
               "MONITORING_GCS_REGION", "MONITORING_CONFIG_VERSION", "MONITORING_GCS_AUTH_ID",
               "MONITORING_GCS_AUTH_ID_TYPE", "GENEVA_LOGS_INFRA_NAMESPACES",
