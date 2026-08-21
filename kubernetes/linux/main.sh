@@ -780,7 +780,7 @@ if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
 
       # The values in this file come from the config map, so the lines are copied verbatim:
       # an unquoted echo would word split and glob expand them (an infra namespace may end
-      # with a wildcard) instead of preserving the quoting the parser emitted.
+      # with a wildcard) instead of preserving the quoting that the parser emitted.
       while IFS= read -r line; do
             printf '%s\n' "$line" >> ~/.bashrc
       done < geneva_config_env_var
