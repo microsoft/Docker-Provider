@@ -32,9 +32,10 @@ GENEVA_CONFIG_VERSION_REGEX = /\A[A-Za-z0-9][A-Za-z0-9._-]{0,63}\z/
 # MUST be <identifier>#<value>, for example client_id#<guid> or mi_res_id#<identity resource id>.
 # The windows agent relies on the same shape when it splits the value on "#".
 GENEVA_AUTH_ID_REGEX = /\A(?:client_id|object_id|mi_res_id)#[A-Za-z0-9._\-\/()]{1,512}\z/i
-# Kubernetes namespaces are RFC 1123 labels.
-KUBERNETES_NAMESPACE_REGEX = /\A[a-z0-9]([-a-z0-9]*[a-z0-9])?\z/
-KUBERNETES_NAMESPACE_MAX_LENGTH = 63
+# Kubernetes namespaces are RFC 1123 labels. Keep these constants Geneva-specific because the
+# unit test driver loads all common parser tests into one Ruby process.
+GENEVA_KUBERNETES_NAMESPACE_REGEX = /\A[a-z0-9]([-a-z0-9]*[a-z0-9])?\z/
+GENEVA_KUBERNETES_NAMESPACE_MAX_LENGTH = 63
 # Infra namespaces may carry a trailing wildcard, which main.sh strips before using the value as
 # part of a generated fluent-bit config file name.
 GENEVA_INFRA_NAMESPACE_WILDCARD_SUFFIX = "-*"
@@ -81,8 +82,8 @@ end
 
 def isValidKubernetesNamespace(namespace)
   return namespace.kind_of?(String) &&
-         namespace.length <= KUBERNETES_NAMESPACE_MAX_LENGTH &&
-         !(namespace =~ KUBERNETES_NAMESPACE_REGEX).nil?
+         namespace.length <= GENEVA_KUBERNETES_NAMESPACE_MAX_LENGTH &&
+         !(namespace =~ GENEVA_KUBERNETES_NAMESPACE_REGEX).nil?
 end
 
 def isValidGenevaInfraNamespace(namespace)
