@@ -206,6 +206,80 @@ class GenevaConfigTest < Minitest::Test
     refute isValidKubernetesNamespace("a" * 64)
   end
 
+  # --- joinValidNamespaces -------------------------------------------------------------------
+
+  # main.sh splits this list again and interpolates each entry into a `cp` target, a file name and
+  # a `sed -i "s/.../.../g"` expression, so the joined list is a sink in its own right.
+
+  def test_join_valid_namespaces_returns_empty_for_non_array_input
+    [nil, "kube-system", {}, 42].each do |value|
+      assert_equal "", joinValidNamespaces(value, "infra_namespaces", true),
+                   "expected #{value.inspect} to produce an empty list"
+    end
+    assert_equal "", joinValidNamespaces([], "tenant_namespaces", false)
+  end
+
+  def test_join_valid_namespaces_preserves_order_and_strips_whitespace
+    assert_equal "zeta,alpha,mid",
+                 joinValidNamespaces(["zeta", "alpha", "mid"], "tenant_namespaces", false)
+    assert_equal "kube-system,default",
+                 joinValidNamespaces([" kube-system ", "\tdefault\n"], "tenant_namespaces", false)
+  end
+
+  # Duplicates are the tenant's problem, not a safety issue, so they are passed through unchanged.
+  def test_join_valid_namespaces_keeps_duplicates
+    assert_equal "team-a,team-a", joinValidNamespaces(["team-a", "team-a"], "tenant_namespaces", false)
+  end
+
+  def test_join_valid_namespaces_skips_blank_and_invalid_entries
+    assert_equal "default",
+                 joinValidNamespaces(["", "   ", "default"], "tenant_namespaces", false)
+    assert_equal "",
+                 joinValidNamespaces(["BadNamespace", "has space", "a" * 64], "tenant_namespaces", false)
+    assert_equal "kube-system,team-a",
+                 joinValidNamespaces(["kube-system", "Bad_Namespace", "team-a"], "tenant_namespaces", false)
+  end
+
+  # The wildcard suffix is only meaningful for infra namespaces, which main.sh strips before it
+  # builds the generated fluent-bit config file name. A tenant namespace must be an exact label.
+  def test_join_valid_namespaces_applies_the_wildcard_rule_only_for_infra
+    assert_equal "kube-system,infra-*",
+                 joinValidNamespaces(["kube-system", "infra-*"], "infra_namespaces", true)
+    assert_equal "kube-system",
+                 joinValidNamespaces(["kube-system", "infra-*"], "tenant_namespaces", false)
+  end
+
+  def test_join_valid_namespaces_drops_injection_payloads
+    payloads.each do |payload|
+      assert_equal "kube-system",
+                   joinValidNamespaces([payload, "kube-system"], "infra_namespaces", true),
+                   "the payload #{payload.inspect} was not dropped from the infra list"
+      assert_equal "default",
+                   joinValidNamespaces(["default", payload], "tenant_namespaces", false),
+                   "the payload #{payload.inspect} was not dropped from the tenant list"
+    end
+  end
+
+  # Non string entries cannot reach here through toml, which enforces a single element type, but
+  # the coercion is what keeps a surprising type from raising and taking the integration down.
+  def test_join_valid_namespaces_coerces_non_string_entries
+    assert_equal "default", joinValidNamespaces([nil, "default"], "tenant_namespaces", false)
+    assert_equal "42", joinValidNamespaces([42], "tenant_namespaces", false)
+  end
+
+  def test_join_valid_namespaces_error_does_not_echo_the_rejected_entry
+    payload = "evil; touch /tmp/#{SENTINEL_NAME} #"
+    result = nil
+    _, stderr = capture_subprocess_io do
+      result = joinValidNamespaces(["kube-system", payload], "infra_namespaces", true)
+    end
+
+    assert_equal "kube-system", result
+    assert_includes stderr, "infra_namespaces"
+    refute_includes stderr, payload
+    refute_includes stderr, SENTINEL_NAME
+  end
+
   def test_config_version_falls_back_to_default_without_echoing_input
     assert_equal "1.0", resolveConfigVersion(nil, "configversion")
     assert_equal "1.0", resolveConfigVersion("", "configversion")
