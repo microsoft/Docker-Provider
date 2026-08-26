@@ -242,7 +242,6 @@ extends:
                   # Uncomment below to only rollout the extension version in euap regions for testing
                   # Select: regions(centraluseuap,eastus2euap)
                   Select: regions(*)
-                  ArtifactsVersionOverride: $(extensionVersionValue)
 
       - stage: FF_Managed_SDP
         displayName: "FF: Managed SDP"
