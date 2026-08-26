@@ -1,8 +1,6 @@
 module Docker-Provider/source/plugins/go/input
 
-go 1.26.7
-
-require github.com/calyptia/plugin v1.4.4
+go 1.27.0
 
 require (
 	code.cloudfoundry.org/clock v1.84.0 // indirect
@@ -18,6 +16,7 @@ require (
 
 require (
 	Docker-Provider/source/plugins/go/src v0.0.0
+	github.com/calyptia/plugin v1.4.4
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
 	github.com/sirupsen/logrus v1.10.1
