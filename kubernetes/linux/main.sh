@@ -778,9 +778,12 @@ if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ]; then
       #Parse geneva config
       ruby tomlparser-geneva-config.rb
 
-      cat geneva_config_env_var | while read line; do
-            echo $line >> ~/.bashrc
-      done
+      # The values in this file come from the config map, so the lines are copied verbatim:
+      # an unquoted echo would word split and glob expand them (an infra namespace may end
+      # with a wildcard) instead of preserving the quoting that the parser emitted.
+      while IFS= read -r line; do
+            printf '%s\n' "$line" >> ~/.bashrc
+      done < geneva_config_env_var
       source geneva_config_env_var
 
       if [ ! -e "/etc/config/kube.conf" ]; then
