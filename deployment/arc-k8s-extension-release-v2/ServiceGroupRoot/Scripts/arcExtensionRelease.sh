@@ -13,7 +13,7 @@ PACKAGE_CONFIG_NAME="${PACKAGE_CONFIG_NAME:-microsoft.azuremonitor.containers-pk
 API_VERSION="${API_VERSION:-2021-05-01}"
 METHOD="${METHOD:-put}"
 REGISTRY_PATH_CANARY_STABLE="https://mcr.microsoft.com/azuremonitor/containerinsights/canary/stable/azuremonitor-containers"
-REGISTRY_PATH_PROD_STABLE="https://mcr.microsoft.com/azuremonitor/containerinsights/prod1/stable/azuremonitor-containers"
+REGISTRY_PATH_PROD_STABLE="https://mcr.microsoft.com/azuremonitor/helmchart/containerinsights/ciprod/azuremonitor-containers"
 
 if [ -z "$REGISTER_REGIONS_CANARY" ]; then
     echo "-e error release region must be provided "
@@ -145,7 +145,7 @@ if [ -z "$REGISTER_REGIONS_BATCH" ]; then
     echo "-e error stable release regions must be provided "
     exit 1
 fi
-MCR_NAME_PATH="oci://mcr.microsoft.com/azuremonitor/containerinsights/prod1/stable/azuremonitor-containers"
+MCR_NAME_PATH="oci://mcr.microsoft.com/azuremonitor/helmchart/containerinsights/ciprod/azuremonitor-containers"
 echo "Pulling chart from MCR:${MCR_NAME_PATH}"
 helm pull ${MCR_NAME_PATH} --version ${CHART_VERSION}
 if [ $? -eq 0 ]; then
