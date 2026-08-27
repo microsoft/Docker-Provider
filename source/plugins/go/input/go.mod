@@ -3,7 +3,7 @@ module Docker-Provider/source/plugins/go/input
 go 1.27.0
 
 require (
-	code.cloudfoundry.org/clock v1.84.0 // indirect
+	code.cloudfoundry.org/clock v1.85.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/calyptia/cmetrics-go v0.1.9 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
@@ -19,7 +19,7 @@ require (
 	github.com/calyptia/plugin v1.4.4
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/microsoft/ApplicationInsights-Go v0.4.4
-	github.com/sirupsen/logrus v1.10.1
+	github.com/sirupsen/logrus v1.10.2
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
