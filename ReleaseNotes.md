@@ -8,6 +8,43 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 08/28/2026 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.7.0-<tbd> (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.7.0-<tbd> (windows)
+- Linux
+  - azurelinux 3.0 (floating tag — exact build TBD at image build time)
+  - Golang - 1.27.0
+  - Ruby - arm64 - 3.3.5-7, x86_64 - 3.3.10
+  - MDSD - 1.42.0
+  - Telegraf - 1.39.3
+  - Fluent-bit - 5.0.4
+  - Fluentd - 1.19.3
+- Windows
+  - Golang - 1.27.0
+  - Ruby - 3.1.1
+  - Windows AMA - 47.7.1
+  - Telegraf - 1.24.2
+  - Fluent-bit - 5.0.3
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Common (Linux + Windows)
+    * Harden Geneva configmap handling by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1771
+    * Harden config map value handling in custom prometheus config generation by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1766
+    * Fix extension chart for FF & MC by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1765
+    * chore(deps): Upgrade Go to 1.26.6 and update dependencies by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1763
+    * chore(deps): Upgrade Go to 1.26.6 and update dependencies by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1767
+    * chore(deps): Upgrade Go to 1.26.7 and update dependencies by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1768
+    * chore(deps): Upgrade Go to 1.27.0 and update dependencies by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1770
+    * chore(deps): Upgrade Go to 1.27.0 and update dependencies by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1773
+    * Upgrade telegraf-agent to 1.39.3 by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1760
+
+- Infra
+    * simplify ama-logs release process by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1744
+    * Fix flaky arm64 multi-arch build: register binfmt with current QEMU by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1762
+    * Route NuGet restore through CFS feed (SR21 CFSClean) by @bragi92 in https://github.com/microsoft/Docker-Provider/pull/1756
+    * Add special clouds to ev2 rollout by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1772
+
 ### 07/28/2026 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.6.0 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.6.0 (windows)
