@@ -44,11 +44,11 @@ pipelines:
         credscan:
           lastModifiedDate: 2025-06-25
         eslint:
-          lastModifiedDate: 2025-06-25
+          lastModifiedDate: 2026-08-30
         psscriptanalyzer:
-          lastModifiedDate: 2025-06-25
+          lastModifiedDate: 2026-08-30
         armory:
-          lastModifiedDate: 2025-06-25
+          lastModifiedDate: 2026-08-30
   1021:
     retail:
       source:
