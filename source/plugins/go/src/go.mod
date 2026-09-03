@@ -2,6 +2,16 @@ module Docker-Provider/source/plugins/go/src
 
 go 1.27.0
 
+// This is temporary. The underlying defect is an EVP_PKEY_Q_keygen allowlist that
+// rejects provider-supplied key names, so ML-KEM-768 fetches but will not generate; it
+// is fixed by microsoft/azurelinux#18630 (merged 2026-08-27) and ships as
+// openssl-3.3.7-5.azl3. As of 2026-09-03 the repo still carries only 3.3.7-4. Once the
+// runtime base image picks up 3.3.7-5, rebuild, confirm a TLS handshake succeeds
+// without this line, and delete it -- tracked upstream at microsoft/go#2472. Note this
+// is a package bump, not an OpenSSL 3.5 or Azure Linux 4.0 migration. The build fails
+// loudly if the knob is ever removed from Go, so this cannot rot silently.
+godebug tlsmlkem=0
+
 require (
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/fluent/fluent-bit-go v0.0.0-20260825100519-ee23069796c9
