@@ -20,7 +20,7 @@ variables:
   # (repoImageName). The chart reuses the already-onboarded `preview` MCR repo instead of a
   # new cidev chart repo; the prod release promotes it to the `helmchart/... /ciprod` path.
   chartRepoName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/containerinsights/preview'
-  GOLANG_BASE_IMAGE: 'mcr.microsoft.com/oss/go/microsoft/golang:1.27.0'
+  GOLANG_BASE_IMAGE: 'mcr.microsoft.com/oss/go/microsoft/golang:1.27.1'
   # QEMU used to emulate linux/arm64 during the multi-arch docker build. Keep this current:
   # older QEMU builds make the emulated gcc segfault at random while compiling ruby native
   # gem extensions. MCR mirror of tonistiigi/binfmt, used to avoid Docker Hub rate limiting.

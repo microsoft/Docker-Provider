@@ -1,6 +1,6 @@
 module Docker-Provider/source/plugins/go/src
 
-go 1.27.0
+go 1.27.1
 
 require (
 	github.com/Microsoft/go-winio v0.6.2
@@ -18,7 +18,7 @@ require (
 )
 
 require (
-	code.cloudfoundry.org/clock v1.85.0 // indirect
+	code.cloudfoundry.org/clock v1.86.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.3 // indirect

@@ -1,9 +1,9 @@
 module Docker-Provider/source/plugins/go/input
 
-go 1.27.0
+go 1.27.1
 
 require (
-	code.cloudfoundry.org/clock v1.85.0 // indirect
+	code.cloudfoundry.org/clock v1.86.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/calyptia/cmetrics-go v0.1.9 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
