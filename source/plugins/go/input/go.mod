@@ -2,6 +2,9 @@ module Docker-Provider/source/plugins/go/input
 
 go 1.27.0
 
+// keep in sync with ../src/go.mod.
+godebug tlsmlkem=0
+
 require (
 	code.cloudfoundry.org/clock v1.85.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
