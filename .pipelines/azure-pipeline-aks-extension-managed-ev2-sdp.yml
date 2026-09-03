@@ -233,7 +233,7 @@ extends:
 
       - stage: FF_Managed_SDP
         displayName: "FF: Managed SDP"
-        # dependsOn: PROD_Managed_SDP
+        dependsOn: PROD_Managed_SDP
         variables:
           ob_release_environment: Fairfax
         jobs:
@@ -257,7 +257,7 @@ extends:
 
       - stage: MC_Managed_SDP
         displayName: "MC: Managed SDP"
-        # dependsOn: PROD_Managed_SDP
+        dependsOn: PROD_Managed_SDP
         variables:
           ob_release_environment: Mooncake
         jobs:
@@ -281,7 +281,7 @@ extends:
 
       - stage: USSec_Managed_SDP
         displayName: "USSec: Managed SDP"
-        # dependsOn: PROD_Managed_SDP
+        dependsOn: PROD_Managed_SDP
         variables:
           ob_release_environment: USSec
           ob_release_stagetype: deployment
@@ -308,7 +308,7 @@ extends:
 
       - stage: USNat_Managed_SDP
         displayName: "USNat: Managed SDP"
-        # dependsOn: PROD_Managed_SDP
+        dependsOn: PROD_Managed_SDP
         variables:
           ob_release_environment: USNat
           ob_release_stagetype: deployment
