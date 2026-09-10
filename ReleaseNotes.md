@@ -8,11 +8,34 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
-### 08/28/2026 -
-##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.7.0-<tbd> (linux)
-##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.7.0-<tbd> (windows)
+### 09/03/2026 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.8.0-ci-prod-09-03-2026-fd42f68c (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.8.0-ci-prod-09-03-2026-fd42f68c (windows)
 - Linux
-  - azurelinux 3.0 (floating tag — exact build TBD at image build time)
+  - [azurelinux 3.0.20260809](https://github.com/microsoft/azurelinux/releases/tag/3.0.20260809-3.0)
+  - Golang - 1.27.0
+  - Ruby - arm64 - 3.3.5-7, x86_64 - 3.3.10
+  - MDSD - 1.42.0
+  - Telegraf - 1.39.3
+  - Fluent-bit - 5.0.4
+  - Fluentd - 1.19.3
+- Windows
+  - Golang - 1.27.0
+  - Ruby - 3.1.1
+  - Windows AMA - 47.7.1
+  - Telegraf - 1.24.2
+  - Fluent-bit - 5.0.3
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Common (Linux + Windows)
+    * fix: restore Linux Go plugin telemetry and outbound TLS (godebug tlsmlkem=0) by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1778
+
+### 08/28/2026 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.7.0-ci-prod-08-28-2026-925ade3d (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.7.0-ci-prod-08-28-2026-925ade3d (windows)
+- Linux
+  - [azurelinux 3.0.20260809](https://github.com/microsoft/azurelinux/releases/tag/3.0.20260809-3.0)
   - Golang - 1.27.0
   - Ruby - arm64 - 3.3.5-7, x86_64 - 3.3.10
   - MDSD - 1.42.0
