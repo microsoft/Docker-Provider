@@ -263,6 +263,10 @@ extends:
                 docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --push --provenance=false .
                 echo "##vso[task.logissue type=warning]Linux image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)"
                 docker pull ${{ variables.repoImageName }}:$(linuxImagetag)
+                # Extract the resolved Azure Linux base image version for release notes
+                AZURELINUX_VERSION=$(docker run --rm --entrypoint="" ${{ variables.repoImageName }}:$(linuxImagetag) cat /etc/os-release | grep ^VERSION= | cut -d= -f2 | tr -d '"')
+                echo "##vso[task.setvariable variable=AZURELINUX_VERSION]$AZURELINUX_VERSION"
+                echo "##vso[task.logissue type=warning]Azure Linux base image version: $AZURELINUX_VERSION"
               else
                 docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --provenance=false .
                 # load the multi-arch image to run tests
