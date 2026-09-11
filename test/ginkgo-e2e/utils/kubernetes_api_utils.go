@@ -600,3 +600,30 @@ func CheckFileForErrors(clientset *kubernetes.Clientset, Cfg *rest.Config, names
 
 	return nil
 }
+
+// GetAgentNodesReadyLongerThan returns the names of the nodes running a pod with the given
+// label that have been up for at least minAge. Younger pods are excluded because the agent
+// publishes telemetry on a fixed interval, so a pod that has not yet reached its first publish
+// has legitimately reported nothing and would otherwise fail the assertion during a rollout.
+func GetAgentNodesReadyLongerThan(clientset *kubernetes.Clientset, namespace, labelName, labelValue string, minAge time.Duration) ([]string, error) {
+	pods, err := GetPodsWithLabel(clientset, namespace, labelName, labelValue)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pods with label %s=%s: %v", labelName, labelValue, err)
+	}
+	if len(pods) == 0 {
+		return nil, fmt.Errorf("no pods found with label %s=%s", labelName, labelValue)
+	}
+
+	nodes := []string{}
+	for _, pod := range pods {
+		if pod.Spec.NodeName == "" || pod.Status.Phase != corev1.PodRunning {
+			continue
+		}
+		if pod.Status.StartTime == nil || time.Since(pod.Status.StartTime.Time) < minAge {
+			continue
+		}
+		nodes = append(nodes, pod.Spec.NodeName)
+	}
+
+	return nodes, nil
+}
