@@ -133,6 +133,9 @@ spec:
     PER_NODE_LOG_COVERAGE:
       type: string
       default: "false"
+    AGENT_TELEMETRY_RESOURCE_ID:
+      type: string
+      default: ""
     GOTOOLCHAIN:
       type: string
       default: ""
@@ -156,6 +159,8 @@ spec:
         value: "{{config.GENEVA_INTEGRATION}}"
       - name: PER_NODE_LOG_COVERAGE
         value: "{{config.PER_NODE_LOG_COVERAGE}}"
+      - name: AGENT_TELEMETRY_RESOURCE_ID
+        value: "{{config.AGENT_TELEMETRY_RESOURCE_ID}}"
       - name: GOTOOLCHAIN
         value: "{{config.GOTOOLCHAIN}}"
     shell: ginkgo ./querylogs

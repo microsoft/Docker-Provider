@@ -2,11 +2,20 @@ package querylogs_test
 
 import (
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"docker-provider/test/utils"
+)
+
+const (
+	// The Go output plugin publishes telemetry every defaultTelemetryPushIntervalSeconds
+	// (300s), so a pod younger than this has legitimately not reported a heartbeat yet.
+	agentTelemetryPublishInterval = 5 * time.Minute
+	// Span several publish intervals so one delayed batch does not fail the assertion.
+	agentTelemetryWindow = "20m"
 )
 
 var _ = Describe("When querying the logs for the table", func() {
@@ -65,7 +74,15 @@ var _ = Describe("When querying the logs for the ContainerInventory", func() {
 		func(column string) {
 			// Skip records with ContainerState 'Waiting' to avoid false positives due to the container being in a waiting state.
 			// If the pod name contains 'ama-logs', we include it to ensure we capture the ama-logs agent containers.
-			query := "ContainerInventory | where TimeGenerated > ago(5m) and (ContainerState !~ 'Waiting' or ContainerHostname contains 'ama-logs') | summarize countif(isempty(" + column + ") or isnull(" + column + "))"
+			imageFilter := ""
+			if column == "ImageTag" {
+				// Images pinned by digest carry no tag, and the agent deliberately leaves
+				// ImageTag empty for them, so they cannot be asserted on here.
+				digestPinned, err := utils.GetDigestPinnedImages(K8sClient)
+				Expect(err).NotTo(HaveOccurred())
+				imageFilter = utils.BuildImageExclusionFilter(digestPinned)
+			}
+			query := "ContainerInventory | where TimeGenerated > ago(5m) and (ContainerState !~ 'Waiting' or ContainerHostname contains 'ama-logs')" + imageFilter + " | summarize countif(isempty(" + column + ") or isnull(" + column + "))"
 			err := utils.QueryLogsForCount(LogsClient, AKSResourceId, query, true)
 			Expect(err).NotTo(HaveOccurred())
 		},
@@ -85,4 +102,27 @@ var _ = Describe("When querying the number of resources of the cluster", func() 
 		Entry("Pods", "KubePodInventory"),
 		Entry("Nodes", "KubeNodeInventory"),
 	)
+})
+
+var _ = Describe("When querying the agent telemetry heartbeat", func() {
+	It("Every node running an ama-logs DaemonSet pod should report a telemetry heartbeat", func() {
+		if AgentTelemetryResourceId == "" {
+			Skip("Agent telemetry heartbeat check skipped because AGENT_TELEMETRY_RESOURCE_ID is not set")
+		}
+
+		// A running agent does not imply working telemetry. Container logs reach the workspace
+		// over a local mdsd socket, so they keep flowing even when the agent's outbound
+		// telemetry path is entirely broken. Asserting that the heartbeat actually arrived is
+		// what distinguishes the two.
+		expectedNodes, err := utils.GetAgentNodesReadyLongerThan(K8sClient, "kube-system", "component", "ama-logs-agent", agentTelemetryPublishInterval)
+		Expect(err).NotTo(HaveOccurred())
+		if len(expectedNodes) == 0 {
+			Skip("No ama-logs DaemonSet pod has been running long enough to have published telemetry")
+		}
+
+		observed, err := utils.GetComputerFromAgentHeartbeat(LogsClient, AgentTelemetryResourceId, AKSResourceId, agentTelemetryWindow)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(utils.AssertNodeCoverage("agent telemetry heartbeat", expectedNodes, observed)).NotTo(HaveOccurred())
+	})
 })

@@ -151,7 +151,6 @@ func CompareResourcesInLogsAndKubeAPI(K8sClient *kubernetes.Clientset, logsClien
 	return CompareResourcesHelper(logsClient, resourceID, query, resources)
 }
 
-
 func GetComputerFromContainerLog(logsClient *azquery.LogsClient, resourceID string, window string) (map[string]int64, error) {
 	counts, v2Err := queryCountsByComputer(logsClient, resourceID, "ContainerLogV2", window)
 	if v2Err == nil {
@@ -189,12 +188,54 @@ func queryCountsByComputer(logsClient *azquery.LogsClient, resourceID string, ta
 	return counts, nil
 }
 
-// AssertContainerLogNodeCoverage returns nil if every expected node appears
-// in the per-Computer count map with a positive row count (compared
-// case-insensitively), or an error listing the missing nodes otherwise.
-func AssertContainerLogNodeCoverage(expectedNodes []string, observedCountsByComputer map[string]int64) error {
+// AgentTelemetryHeartbeatEvent is the App Insights custom event the Go output plugin emits once
+// per publish interval from every DaemonSet pod. It is the signal that goes silent when the
+// agent's outbound telemetry path breaks while container logs keep flowing over the local mdsd
+// socket, so its arrival is asserted directly rather than inferred from the agent's own logs.
+const AgentTelemetryHeartbeatEvent = "ContainerLogDaemonSetHeartbeatEvent"
+
+// GetComputerFromAgentHeartbeat returns the number of agent telemetry heartbeats received per
+// node, keyed by lowercased node name. It queries the agent telemetry Application Insights
+// resource rather than the cluster's workspace: the heartbeat is agent self-telemetry and is
+// never ingested into the customer workspace.
+func GetComputerFromAgentHeartbeat(logsClient *azquery.LogsClient, telemetryResourceID string, aksResourceID string, window string) (map[string]int64, error) {
+	// Resource IDs are matched case-insensitively because the agent reports both
+	// /resourcegroups/ and /resourceGroups/ spellings for the same cluster.
+	query := fmt.Sprintf(`customEvents
+| where timestamp > ago(%s)
+| where name == "%s"
+| extend ClusterId = iff(isnotempty(tostring(customDimensions.ID)), tostring(customDimensions.ID), tostring(customDimensions.AKS_RESOURCE_ID))
+| where ClusterId =~ "%s"
+| summarize count() by Computer = tostring(customDimensions.Computer)`,
+		window, AgentTelemetryHeartbeatEvent, aksResourceID)
+
+	tables, err := QueryLogs(logsClient, telemetryResourceID, query)
+	if err != nil {
+		return nil, err
+	}
+
+	counts := map[string]int64{}
+	for _, t := range tables {
+		for _, row := range t.Rows {
+			if len(row) < 2 {
+				continue
+			}
+			computer, ok := row[0].(string)
+			if !ok || computer == "" {
+				continue
+			}
+			count, _ := row[1].(float64)
+			counts[strings.ToLower(computer)] += int64(count)
+		}
+	}
+	return counts, nil
+}
+
+// AssertNodeCoverage returns nil if every expected node appears in the per-Computer count map
+// with a positive count (compared case-insensitively), or an error listing the missing nodes.
+func AssertNodeCoverage(signal string, expectedNodes []string, observedCountsByComputer map[string]int64) error {
 	if len(expectedNodes) == 0 {
-		return fmt.Errorf("no expected nodes provided; cannot verify ContainerLogV2 coverage")
+		return fmt.Errorf("no expected nodes provided; cannot verify %s coverage", signal)
 	}
 
 	var missing []string
@@ -204,7 +245,14 @@ func AssertContainerLogNodeCoverage(expectedNodes []string, observedCountsByComp
 		}
 	}
 	if len(missing) > 0 {
-		return fmt.Errorf("ContainerLogV2 ingestion is missing for %d/%d expected node(s): %s", len(missing), len(expectedNodes), strings.Join(missing, ", "))
+		return fmt.Errorf("%s is missing for %d/%d expected node(s): %s", signal, len(missing), len(expectedNodes), strings.Join(missing, ", "))
 	}
 	return nil
+}
+
+// AssertContainerLogNodeCoverage returns nil if every expected node appears
+// in the per-Computer count map with a positive row count (compared
+// case-insensitively), or an error listing the missing nodes otherwise.
+func AssertContainerLogNodeCoverage(expectedNodes []string, observedCountsByComputer map[string]int64) error {
+	return AssertNodeCoverage("ContainerLogV2", expectedNodes, observedCountsByComputer)
 }

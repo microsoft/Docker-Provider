@@ -141,7 +141,7 @@ func GetContainerEnvVars(clientset *kubernetes.Clientset, namespace string, labe
 		}
 	}
 
-	return nil, fmt.Errorf("container %s not found in pod %s", containerName, &pods[0].Name)
+	return nil, fmt.Errorf("container %s not found in pod %s", containerName, pods[0].Name)
 }
 
 func GetAKSResourceID(clientset *kubernetes.Clientset, namespace string, labelKey string, labelValue string, containerName string) (string, error) {
@@ -302,7 +302,8 @@ func ExecCmd(client *kubernetes.Clientset, config *rest.Config, podName string, 
 		return "", "", fmt.Errorf("Error while creating command executor: %v", err)
 	}
 
-	ctx, _ := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
 	var stdoutB, stderrB bytes.Buffer
 	if err := exec.StreamWithContext(ctx, remotecommand.StreamOptions{
 		Stdout: &stdoutB,
@@ -599,4 +600,101 @@ func CheckFileForErrors(clientset *kubernetes.Clientset, Cfg *rest.Config, names
 	}
 
 	return nil
+}
+
+// GetAgentNodesReadyLongerThan returns the names of the nodes running a pod with the given
+// label that have been up for at least minAge. Younger pods are excluded because the agent
+// publishes telemetry on a fixed interval, so a pod that has not yet reached its first publish
+// has legitimately reported nothing and would otherwise fail the assertion during a rollout.
+func GetAgentNodesReadyLongerThan(clientset *kubernetes.Clientset, namespace, labelName, labelValue string, minAge time.Duration) ([]string, error) {
+	pods, err := GetPodsWithLabel(clientset, namespace, labelName, labelValue)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pods with label %s=%s: %v", labelName, labelValue, err)
+	}
+	if len(pods) == 0 {
+		return nil, fmt.Errorf("no pods found with label %s=%s", labelName, labelValue)
+	}
+
+	nodes := []string{}
+	for _, pod := range pods {
+		if pod.Spec.NodeName == "" || pod.Status.Phase != corev1.PodRunning {
+			continue
+		}
+		if pod.Status.StartTime == nil || time.Since(pod.Status.StartTime.Time) < minAge {
+			continue
+		}
+		nodes = append(nodes, pod.Spec.NodeName)
+	}
+
+	return nodes, nil
+}
+
+// GetDigestPinnedImages returns the ContainerInventory "Image" values for containers whose pod
+// spec pins the image by digest and gives no tag. Those records carry an empty ImageTag by
+// design: kubernetes_container_inventory.rb defaults the tag to "latest" only when no digest is
+// given, so requiring a non-empty ImageTag for them would contradict the agent. References that
+// carry both a tag and a digest (repository/image:imagetag@digest) keep their tag and are
+// therefore still asserted on.
+func GetDigestPinnedImages(clientset *kubernetes.Clientset) ([]string, error) {
+	podList, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	seen := map[string]bool{}
+	images := []string{}
+	for _, pod := range podList.Items {
+		containers := append([]corev1.Container{}, pod.Spec.Containers...)
+		containers = append(containers, pod.Spec.InitContainers...)
+
+		for _, container := range containers {
+			if image := digestPinnedImageName(container.Image); image != "" && !seen[image] {
+				seen[image] = true
+				images = append(images, image)
+			}
+		}
+	}
+
+	return images, nil
+}
+
+// digestPinnedImageName returns the ContainerInventory "Image" value for a reference pinned by
+// digest with no tag, or an empty string for any other reference. It mirrors the agent: strip
+// the digest first, then treat a remaining colon as the tag, then drop the registry.
+func digestPinnedImageName(imageRef string) string {
+	digestAt := strings.Index(imageRef, "@")
+	if digestAt < 0 {
+		return ""
+	}
+
+	image := imageRef[:digestAt]
+	if strings.Contains(image, ":") {
+		return ""
+	}
+
+	if slash := strings.Index(image, "/"); slash >= 0 {
+		image = image[slash+1:]
+	}
+
+	return image
+}
+
+// BuildImageExclusionFilter renders a KQL clause removing the given ContainerInventory Image
+// values from a query, or an empty string when there is nothing to exclude.
+func BuildImageExclusionFilter(images []string) string {
+	quoted := []string{}
+	for _, image := range images {
+		// Image names cannot contain quotes or backslashes; skip anything unexpected rather
+		// than risk injecting it into the query.
+		if strings.ContainsAny(image, "\"\\") {
+			continue
+		}
+		quoted = append(quoted, "\""+image+"\"")
+	}
+
+	if len(quoted) == 0 {
+		return ""
+	}
+
+	return " | where Image !in (" + strings.Join(quoted, ", ") + ")"
 }

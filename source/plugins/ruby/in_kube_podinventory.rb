@@ -743,13 +743,6 @@ module Fluent::Plugin
     def watch_pods
       $log.info("in_kube_podinventory::watch_pods:Start @ #{Time.now.utc.iso8601}")
       podsResourceVersion = nil
-      # invoke getWindowsNodes to handle scenario where windowsNodeNameCache not populated yet on containerstart
-      winNodes = KubernetesApiClient.getWindowsNodesArray()
-      if winNodes.length > 0
-        @windowsNodeNameCacheMutex.synchronize {
-          @windowsNodeNameListCache = winNodes.dup
-        }
-      end
       loop do
         begin
           if podsResourceVersion.nil?
@@ -757,10 +750,23 @@ module Fluent::Plugin
             @podCacheMutex.synchronize {
               @podItemsCache.clear()
             }
+            # Resolve the windows node list synchronously for every full LIST rather than relying
+            # on watch_windows_nodes having refreshed the shared cache first. isWindows is stamped
+            # once, here, and getOptimizedItem then drops the container spec/status of anything
+            # classified linux - so a cache that is empty or stale at this moment permanently
+            # mislabels every windows pod. Falls back to the cache if the call fails.
             currentWindowsNodeNameList = []
-            @windowsNodeNameCacheMutex.synchronize {
-              currentWindowsNodeNameList = @windowsNodeNameListCache.dup
-            }
+            winNodes = KubernetesApiClient.getWindowsNodesArray()
+            if winNodes.length > 0
+              currentWindowsNodeNameList = winNodes.dup
+              @windowsNodeNameCacheMutex.synchronize {
+                @windowsNodeNameListCache = winNodes.dup
+              }
+            else
+              @windowsNodeNameCacheMutex.synchronize {
+                currentWindowsNodeNameList = @windowsNodeNameListCache.dup
+              }
+            end
             continuationToken = nil
             resourceUri = "pods?limit=#{@PODS_CHUNK_SIZE}"
             $log.info("in_kube_podinventory::watch_pods:Getting pods from Kube API: #{resourceUri} @ #{Time.now.utc.iso8601}")
@@ -1070,9 +1076,14 @@ module Fluent::Plugin
       loop do
         begin
           if nodesResourceVersion.nil?
-            @windowsNodeNameCacheMutex.synchronize {
-              @windowsNodeNameListCache.clear()
-            }
+            # Build the refreshed list in a local buffer and swap it into the shared cache only
+            # after the LIST (including pagination) has succeeded. Clearing the shared cache up
+            # front leaves it empty for the duration of the API round-trip, and a concurrent
+            # watch_pods LIST in that window classifies every windows pod as linux.
+            # getOptimizedItem then drops those pods' container spec/status irreversibly, so
+            # windows ContainerInventory silently stops until this plugin is restarted.
+            windowsNodeNameList = []
+            listSucceeded = false
             continuationToken = nil
             resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?labelSelector=kubernetes.io%2Fos%3Dwindows&limit=#{@NODES_CHUNK_SIZE}")
             $log.info("in_kube_podinventory::watch_windows_nodes:Getting windows nodes from Kube API: #{resourceUri} @ #{Time.now.utc.iso8601}")
@@ -1083,16 +1094,15 @@ module Fluent::Plugin
               $log.info("in_kube_podinventory::watch_windows_nodes:Done getting windows nodes from Kube API @ #{Time.now.utc.iso8601}")
               if (!nodeInventory.nil? && !nodeInventory.empty?)
                 nodesResourceVersion = nodeInventory["metadata"]["resourceVersion"]
+                listSucceeded = true
                 if (nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
                   $log.info("in_kube_podinventory::watch_windows_nodes: number of windows node items :#{nodeInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
                   nodeInventory["items"].each do |item|
                     key = item["metadata"]["name"]
                     if !key.nil? && !key.empty?
-                      @windowsNodeNameCacheMutex.synchronize {
-                        if !@windowsNodeNameListCache.include?(key)
-                          @windowsNodeNameListCache.push(key)
-                        end
-                      }
+                      if !windowsNodeNameList.include?(key)
+                        windowsNodeNameList.push(key)
+                      end
                     else
                       $log.warn "in_kube_podinventory::watch_windows_nodes:Received node name either nil or empty  @ #{Time.now.utc.iso8601}"
                     end
@@ -1106,6 +1116,7 @@ module Fluent::Plugin
                 if responseCode.nil? || responseCode != "200"
                   $log.info("in_kube_podinventory::watch_windows_nodes:Getting windows nodes from Kube API: #{resourceUri}&continue=#{continuationToken} failed with statuscode: #{responseCode} @ #{Time.now.utc.iso8601}")
                   nodesResourceVersion = nil
+                  listSucceeded = false # discard the partial buffer and keep the previous cache
                   break # break, if any of the pagination call failed so that full cache can be rebuild with LIST again
                 else
                   if (!nodeInventory.nil? && !nodeInventory.empty?)
@@ -1115,11 +1126,9 @@ module Fluent::Plugin
                       nodeInventory["items"].each do |item|
                         key = item["metadata"]["name"]
                         if !key.nil? && !key.empty?
-                          @windowsNodeNameCacheMutex.synchronize {
-                            if !@windowsNodeNameListCache.include?(key)
-                              @windowsNodeNameListCache.push(key)
-                            end
-                          }
+                          if !windowsNodeNameList.include?(key)
+                            windowsNodeNameList.push(key)
+                          end
                         else
                           $log.warn "in_kube_podinventory::watch_windows_nodes:Received node name either nil or empty  @ #{Time.now.utc.iso8601}"
                         end
@@ -1130,6 +1139,14 @@ module Fluent::Plugin
                   end
                 end
               end
+            end
+            # Publish the refreshed list atomically. On any failure path the partial buffer is
+            # discarded and the previous cache is retained, so the shared cache is never observed
+            # empty while a LIST is in flight.
+            if listSucceeded
+              @windowsNodeNameCacheMutex.synchronize {
+                @windowsNodeNameListCache = windowsNodeNameList.dup
+              }
             end
           end
           if nodesResourceVersion.nil? || nodesResourceVersion.empty? || nodesResourceVersion == "0"

@@ -27,10 +27,10 @@
 │   ├── prometheus-scraping                         - Prometheus scraping configurations and reference apps.
 │   │   ├── prom-service-for-rs-scraping.yaml
 │   │   ├── prometheus-reference-app.yaml
-│   │   ├── win-prometheus-ref-app-ltsc2019.yml
+│   │   ├── win-prometheus-ref-app-ltsc2025.yml
 │   │   ├── win-prometheus-ref-app-ltsc2022.yml
 │   ├── scenario                                    - Scenario-based test configurations and YAML files.
-│   │   ├── log-app-win-ltsc2019.yml
+│   │   ├── log-app-win-ltsc2025.yml
 │   │   ├── log-app-win-ltsc2022.yml
 │   │   ├── log-generator-app.yaml
 │   │   ├── multiline/                              - Subdirectory for multiline log tests.

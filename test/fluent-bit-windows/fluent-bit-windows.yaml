@@ -25,10 +25,12 @@ spec:
              - key: kubernetes.azure.com/os-sku
                operator: In
                values:
-               - Windows2019 # For Windows 2022, use Windows2022
+               - Windows2025 # For Windows 2022, use Windows2022
       containers:
       - name: fluent-bit
-        image: fluent/fluent-bit:windows-2019-2.2.2 # For Windows 2022, use 2022 instead of 2019
+        # fluent-bit publishes Windows Server 2025 images from 4.2.2 onwards only.
+        # For Windows 2022, use windows-2022-4.2.8 instead.
+        image: fluent/fluent-bit:windows-2025-4.2.8
         imagePullPolicy: IfNotPresent
         resources:
           limits:

@@ -1,11 +1,11 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: win-prometheus-reference-app-ltsc2019
+  name: win-prometheus-reference-app-ltsc2025
 spec:
   selector:
     matchLabels:
-      app: win-prometheus-reference-app-ltsc2019
+      app: win-prometheus-reference-app-ltsc2025
   replicas: 1
   template:
     metadata:
@@ -13,7 +13,7 @@ spec:
         prometheus.io/port: '2112'
         prometheus.io/scrape: 'true'
       labels:
-        app: win-prometheus-reference-app-ltsc2019
+        app: win-prometheus-reference-app-ltsc2025
     spec:
       containers:
         - name: win-prometheus-reference-app-golang
@@ -45,6 +45,6 @@ spec:
                values:
                - windows
              - key: kubernetes.azure.com/os-sku
-               operator: NotIn
+               operator: In
                values:
-               - Windows2022
+               - Windows2025

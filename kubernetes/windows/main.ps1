@@ -57,10 +57,25 @@ function Test-FluentbitTcpListener {
     while ($retryAttempts -lt $retryCount) {
         $retryAttempts++
         Write-Host "Test-FluentbitTcpListener: Retry attempt $retryAttempts/$retryCount..."
-        $netstatOutput = netstat -an | Select-String "LISTENING"
-        if ($netstatOutput -match ":$port") {
-            Write-Host "Test-FluentbitTcpListener: Fluentbit TCP listener is UP and running on port $port."
-            return $true
+        # Probe the port by actually connecting to it instead of parsing "netstat -an".
+        # netstat returns no output at all inside Windows Server 2025 containers, which made
+        # this check always fail on WS2025 nodes and left telegraf permanently unstarted.
+        $tcpClient = $null
+        try {
+            $tcpClient = New-Object System.Net.Sockets.TcpClient
+            $tcpClient.Connect("127.0.0.1", $port)
+            if ($tcpClient.Connected) {
+                Write-Host "Test-FluentbitTcpListener: Fluentbit TCP listener is UP and running on port $port."
+                return $true
+            }
+        }
+        catch {
+            # Listener not accepting connections yet - fall through and retry.
+        }
+        finally {
+            if ($null -ne $tcpClient) {
+                $tcpClient.Close()
+            }
         }
         Start-Sleep -Seconds $retryDelaySeconds
     }

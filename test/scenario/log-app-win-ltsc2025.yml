@@ -2,15 +2,15 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: windows-log-ltsc2019
+  name: windows-log-ltsc2025
   labels:
-    name: windows-log-ltsc2019
+    name: windows-log-ltsc2025
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: second-log-app
-  namespace: windows-log-ltsc2019
+  namespace: windows-log-ltsc2025
 spec:
   replicas: 1
   selector:
@@ -26,7 +26,7 @@ spec:
       emptyDir: {}
     containers:
     - name: second-log-app
-      image: mcr.microsoft.com/windows/servercore:ltsc2019
+      image: mcr.microsoft.com/windows/servercore:ltsc2025
       command: ["powershell", "-c"]
       args:
         - "$counter = 1; For(;;) { echo $counter; $counter++; Start-Sleep -Seconds 1; }"
@@ -45,6 +45,6 @@ spec:
                values:
                - windows
              - key: kubernetes.azure.com/os-sku
-               operator: NotIn
+               operator: In
                values:
-               - Windows2022
+               - Windows2025
