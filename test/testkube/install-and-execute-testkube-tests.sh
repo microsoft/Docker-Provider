@@ -114,22 +114,39 @@ for wf in "${workflows[@]}"; do
         exit 1
     fi
 
-    # Watch until the testworkflow finishes
+    # Watch until the testworkflow finishes. The exit code is the authoritative result:
+    # the CLI returns non-zero when the execution fails.
     kubectl testkube watch testworkflowexecution $execution_id
+    watch_rc=$?
 
-    # Get the results as a formatted json file
-    kubectl testkube get testworkflowexecution $execution_id --output json > "testkube-results-${wf}.json"
+    # Get the results as a formatted json file.
+    # The execution status is not necessarily final the moment `watch` returns, so poll briefly
+    # for a terminal one instead of reading a status that is still "running" and mistaking it
+    # for a result. An empty file satisfies `jq empty`, so the document is also confirmed to be
+    # an object before any field is read out of it. The poll is kept short because the status is
+    # only ever corroboration: it can add a failure, never clear one.
+    wf_status=""
+    for attempt in $(seq 1 10); do
+        kubectl testkube get testworkflowexecution $execution_id --output json > "testkube-results-${wf}.json"
+        if [[ -s "testkube-results-${wf}.json" ]] && jq -e 'type == "object"' "testkube-results-${wf}.json" >/dev/null 2>&1; then
+            wf_status=$(jq -r '.result.status // empty' "testkube-results-${wf}.json")
+        fi
+        case "$wf_status" in
+            passed|failed|aborted|canceled) break ;;
+        esac
+        sleep 1
+    done
+    echo "TestWorkflow $wf finished with exit code $watch_rc and status '${wf_status:-unknown}'"
 
-    # Verify the JSON is valid
-    if ! jq empty "testkube-results-${wf}.json" 2>/dev/null; then
-        echo "Error: Failed to get valid JSON results from testkube for $wf"
-        echo "Contents of testkube-results-${wf}.json:"
-        cat "testkube-results-${wf}.json"
-        exit 1
-    fi
+    # The status only decides the outcome once it is terminal. When it never became terminal,
+    # or no usable JSON was returned at all, the exit code of `watch` is the only signal left,
+    # and it is what stops a failing workflow from being reported as a successful one.
+    status_failed=0
+    case "$wf_status" in
+        failed|aborted|canceled) status_failed=1 ;;
+    esac
 
-    # For any test that has failed, print out the logs
-    if [[ $(jq -r '.result.status' "testkube-results-${wf}.json") == "failed" ]]; then
+    if [[ $watch_rc -ne 0 || $status_failed -eq 1 ]]; then
 
         echo "TestWorkflow failed. Execution ID: $execution_id"
 
