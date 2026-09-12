@@ -20,6 +20,7 @@ var RetinaNetworkFlowLogsEnabled string
 var GenevaIntegrationEnabled string
 var PerNodeLogCoverageEnabled string
 var AgentTelemetryResourceId string
+var AgentTelemetryVersion string
 var Cfg *rest.Config
 
 func TestQuerylogs(t *testing.T) {
@@ -38,6 +39,7 @@ var _ = BeforeSuite(func() {
 	GenevaIntegrationEnabled = os.Getenv("GENEVA_INTEGRATION")
 	PerNodeLogCoverageEnabled = os.Getenv("PER_NODE_LOG_COVERAGE")
 	AgentTelemetryResourceId = os.Getenv("AGENT_TELEMETRY_RESOURCE_ID")
+	AgentTelemetryVersion = os.Getenv("AGENT_TELEMETRY_VERSION")
 	LogsClient, err = utils.SetupLogsClient()
 	Expect(err).NotTo(HaveOccurred())
 })

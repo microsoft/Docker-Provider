@@ -1,6 +1,7 @@
 package querylogs_test
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -96,25 +97,73 @@ var _ = Describe("When querying the number of resources of the cluster", func() 
 	)
 })
 
-var _ = Describe("When querying the agent telemetry heartbeat", func() {
-	It("Every node running an ama-logs DaemonSet pod should report a telemetry heartbeat", func() {
+var _ = Describe("When querying the agent telemetry", func() {
+	// expectedVersionByNode maps each node to the image tag its agent is running, which the
+	// agent reports back as customDimensions.Version. Resolving it per node is what makes these
+	// assertions verify the image the deploy stage just rolled out, rather than accepting
+	// telemetry that its predecessor published earlier in the same query window.
+	var expectedVersionByNode map[string]string
+
+	BeforeEach(func() {
 		if AgentTelemetryResourceId == "" {
-			Skip("Agent telemetry heartbeat check skipped because AGENT_TELEMETRY_RESOURCE_ID is not set")
+			Skip("Agent telemetry checks skipped because AGENT_TELEMETRY_RESOURCE_ID is not set")
 		}
 
+		var err error
+		expectedVersionByNode, err = utils.GetAgentImageTagsByNode(K8sClient, "kube-system", "component", "ama-logs-agent", "ama-logs", agentTelemetryPublishInterval)
+		Expect(err).NotTo(HaveOccurred())
+		if len(expectedVersionByNode) == 0 {
+			Skip("No ama-logs DaemonSet pod has been running long enough to have published telemetry")
+		}
+
+		// The build bakes AGENT_VERSION in from its own telemetry tag rather than from the
+		// image tag, and the two diverge on release builds, where TELEMETRY_TAG overrides it.
+		// When the pipeline passes that tag it is authoritative, so prefer it over the tag
+		// read off the pod.
+		if AgentTelemetryVersion != "" {
+			for node := range expectedVersionByNode {
+				expectedVersionByNode[node] = AgentTelemetryVersion
+			}
+		}
+	})
+
+	It("Every node running an ama-logs DaemonSet pod should report a telemetry heartbeat from the deployed image", func() {
 		// A running agent does not imply working telemetry. Container logs reach the workspace
 		// over a local mdsd socket, so they keep flowing even when the agent's outbound
 		// telemetry path is entirely broken. Asserting that the heartbeat actually arrived is
 		// what distinguishes the two.
-		expectedNodes, err := utils.GetAgentNodesReadyLongerThan(K8sClient, "kube-system", "component", "ama-logs-agent", agentTelemetryPublishInterval)
-		Expect(err).NotTo(HaveOccurred())
-		if len(expectedNodes) == 0 {
-			Skip("No ama-logs DaemonSet pod has been running long enough to have published telemetry")
-		}
-
-		observed, err := utils.GetComputerFromAgentHeartbeat(LogsClient, AgentTelemetryResourceId, AKSResourceId, agentTelemetryWindow)
+		observed, err := utils.GetAgentTelemetryVersionsByNode(LogsClient, AgentTelemetryResourceId, AKSResourceId, agentTelemetryWindow, "customEvents", utils.AgentTelemetryHeartbeatEvent)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(utils.AssertNodeCoverage("agent telemetry heartbeat", expectedNodes, observed)).NotTo(HaveOccurred())
+		Expect(utils.AssertNodeVersionCoverage("agent telemetry heartbeat", expectedVersionByNode, observed)).NotTo(HaveOccurred())
+	})
+
+	DescribeTable("Every node should publish agent telemetry from the deployed image to the table",
+		func(table string) {
+			// The heartbeat only proves the custom event path works. Metrics travel the same
+			// outbound connection but through a different SDK track call, so a break confined
+			// to one of them stays invisible until each table is asserted on its own.
+			observed, err := utils.GetAgentTelemetryVersionsByNode(LogsClient, AgentTelemetryResourceId, AKSResourceId, agentTelemetryWindow, table, "")
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(utils.AssertNodeVersionCoverage(table, expectedVersionByNode, observed)).NotTo(HaveOccurred())
+		},
+		Entry("customEvents", "customEvents"),
+		Entry("customMetrics", "customMetrics"),
+	)
+
+	It("Agent log traces that arrive should come from the deployed image", func() {
+		// traces carries the agent's own log lines, and only those that are not "Information"
+		// level, so a healthy agent emits none: in a sampled 30 minute window only 41,491 of
+		// the 107,982 clusters reporting a heartbeat produced a single trace. Requiring traces
+		// would fail the majority of healthy clusters, so the query still has to succeed and
+		// any trace that does arrive still has to come from the deployed image, but an empty
+		// result is reported rather than failed.
+		observed, err := utils.GetAgentTelemetryVersionsByNode(LogsClient, AgentTelemetryResourceId, AKSResourceId, agentTelemetryWindow, "traces", "")
+		Expect(err).NotTo(HaveOccurred())
+
+		AddReportEntry("agent log traces", fmt.Sprintf("%d trace(s) from %d/%d node(s) in the last %s", utils.TotalItems(observed), len(observed), len(expectedVersionByNode), agentTelemetryWindow))
+
+		Expect(utils.AssertReportedNodeVersions("agent log traces", expectedVersionByNode, observed)).NotTo(HaveOccurred())
 	})
 })

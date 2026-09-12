@@ -141,7 +141,7 @@ func GetContainerEnvVars(clientset *kubernetes.Clientset, namespace string, labe
 		}
 	}
 
-	return nil, fmt.Errorf("container %s not found in pod %s", containerName, &pods[0].Name)
+	return nil, fmt.Errorf("container %s not found in pod %s", containerName, pods[0].Name)
 }
 
 func GetAKSResourceID(clientset *kubernetes.Clientset, namespace string, labelKey string, labelValue string, containerName string) (string, error) {
@@ -616,14 +616,71 @@ func GetAgentNodesReadyLongerThan(clientset *kubernetes.Clientset, namespace, la
 
 	nodes := []string{}
 	for _, pod := range pods {
-		if pod.Spec.NodeName == "" || pod.Status.Phase != corev1.PodRunning {
-			continue
-		}
-		if pod.Status.StartTime == nil || time.Since(pod.Status.StartTime.Time) < minAge {
+		if !podPublishedAtLeastOnce(pod, minAge) {
 			continue
 		}
 		nodes = append(nodes, pod.Spec.NodeName)
 	}
 
 	return nodes, nil
+}
+
+// podPublishedAtLeastOnce reports whether a pod is running on a node and has been up long
+// enough to have reached at least one telemetry publish interval.
+func podPublishedAtLeastOnce(pod corev1.Pod, minAge time.Duration) bool {
+	if pod.Spec.NodeName == "" || pod.Status.Phase != corev1.PodRunning {
+		return false
+	}
+	return pod.Status.StartTime != nil && time.Since(pod.Status.StartTime.Time) >= minAge
+}
+
+// ImageTag returns the tag of a container image reference, or an empty string when the
+// reference carries no tag. Any digest is stripped first so a reference that pins both a tag
+// and a digest still yields its tag, and the tag is only looked for after the final "/" so
+// that the port in a registry host is never mistaken for one.
+func ImageTag(imageRef string) string {
+	if at := strings.Index(imageRef, "@"); at >= 0 {
+		imageRef = imageRef[:at]
+	}
+	colon := strings.LastIndex(imageRef, ":")
+	if colon <= strings.LastIndex(imageRef, "/") {
+		return ""
+	}
+	return imageRef[colon+1:]
+}
+
+// GetAgentImageTagsByNode returns the image tag the agent container is running on each node,
+// keyed by lowercased node name, for pods that have been up for at least minAge.
+//
+// The image build bakes this tag into the image as AGENT_VERSION (`ENV AGENT_VERSION
+// ${IMAGE_TAG}`) and the agent reports it as customDimensions.Version on every telemetry item.
+// Comparing the two is what ties an assertion to the image currently deployed, rather than to
+// any agent that happens to have reported for the cluster inside the query window.
+func GetAgentImageTagsByNode(clientset *kubernetes.Clientset, namespace, labelName, labelValue, containerName string, minAge time.Duration) (map[string]string, error) {
+	pods, err := GetPodsWithLabel(clientset, namespace, labelName, labelValue)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pods with label %s=%s: %v", labelName, labelValue, err)
+	}
+	if len(pods) == 0 {
+		return nil, fmt.Errorf("no pods found with label %s=%s", labelName, labelValue)
+	}
+
+	tagsByNode := map[string]string{}
+	for _, pod := range pods {
+		if !podPublishedAtLeastOnce(pod, minAge) {
+			continue
+		}
+		for _, container := range pod.Spec.Containers {
+			if container.Name != containerName {
+				continue
+			}
+			tag := ImageTag(container.Image)
+			if tag == "" {
+				return nil, fmt.Errorf("container %s in pod %s runs image %q, which carries no tag to match the reported agent version against", containerName, pod.Name, container.Image)
+			}
+			tagsByNode[strings.ToLower(pod.Spec.NodeName)] = tag
+		}
+	}
+
+	return tagsByNode, nil
 }

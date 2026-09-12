@@ -13,6 +13,7 @@ do
            GenevaIntegration) GenevaIntegration=$VALUE ;;
            PerNodeLogCoverage) PerNodeLogCoverage=$VALUE ;;
            AgentTelemetryResourceId) AgentTelemetryResourceId=$VALUE ;;
+           AgentTelemetryVersion) AgentTelemetryVersion=$VALUE ;;
            *)
     esac
 done
@@ -70,6 +71,7 @@ export WEBHOOK_URI=$TeamsWebhookUri
 export GENEVA_INTEGRATION=$GenevaIntegration
 export PER_NODE_LOG_COVERAGE=$PerNodeLogCoverage
 export AGENT_TELEMETRY_RESOURCE_ID=$AgentTelemetryResourceId
+export AGENT_TELEMETRY_VERSION=$AgentTelemetryVersion
 kubectl apply -f ./api-server-permissions.yaml
 kubectl apply -f ./testkube-test-crs.yaml
 
@@ -94,6 +96,7 @@ for wf in "${workflows[@]}"; do
         --config GENEVA_INTEGRATION="$GENEVA_INTEGRATION" \
         --config PER_NODE_LOG_COVERAGE="$PER_NODE_LOG_COVERAGE" \
         --config AGENT_TELEMETRY_RESOURCE_ID="$AGENT_TELEMETRY_RESOURCE_ID" \
+        --config AGENT_TELEMETRY_VERSION="$AGENT_TELEMETRY_VERSION" \
         --config AZURE_TENANT_ID="$AZURE_TENANT_ID" \
         --config AZURE_CLIENT_ID="$AZURE_CLIENT_ID" \
         --config GOTOOLCHAIN="auto" \
