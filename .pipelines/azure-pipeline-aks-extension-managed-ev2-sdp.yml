@@ -26,10 +26,27 @@ parameters:
   - name: 'releaseTrain'
     displayName: 'Release Train'
     type: string
-    default: 'preview'
+    default: 'stable'
     values:
       - preview
       - stable
+
+  # Optional. 'none' (the default) means NO rollback: the run is a normal
+  # roll-forward to the version selected above.
+  #
+  # Azure DevOps renders a parameter whose default is an empty string as a
+  # REQUIRED field, so we default to the 'none' sentinel and strip it back to an
+  # empty string in the ConfigurationOverrides below. The central artifacts
+  # register.sh writes an empty rollbackVersion as JSON null, i.e. no rollback.
+  #
+  # HOW TO ROLL BACK: RollbackVersion is stored on the version document that is
+  # being registered (the rollout PATCHes .../versions/<version>), so set BOTH:
+  #   overrideExtensionVersion -> the bad version currently in the field (roll back FROM)
+  #   rollbackVersion          -> the last known-good version (roll back TO)
+  - name: 'rollbackVersion'
+    displayName: 'Rollback version ("none" = roll forward)'
+    type: string
+    default: 'none'
 
   - name: 'rolloutType'
     displayName: 'SDP rollout type'
@@ -100,6 +117,10 @@ variables:
   # files (now removed). MSI ARM IDs below must be the cloud-specific identity
   # registered in the extension type registration document (msiClientIds field).
   # See: https://msazure.visualstudio.com/One/_wiki/wikis/One.wiki/202225/Extension-Type-Registration
+  #
+  # rollbackVersion is resolved at compile time: the 'none' sentinel collapses to
+  # an empty string, which the central artifacts register.sh writes as JSON null
+  # (no rollback). See the rollbackVersion parameter above.
 
   - name: ProdConfigurationOverrides
     value: |
@@ -112,6 +133,7 @@ variables:
             "userAssignedIdentity": "/subscriptions/30c56c3a-54da-46ea-b004-06eb33432687/resourceGroups/containerinsightsprod/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ev2-agent-release",
             "version": "$(extensionVersionValue)",
             "releaseTrain": "${{ parameters.releaseTrain }}",
+            "rollbackVersion": "${{ replace(parameters.rollbackVersion, 'none', '') }}",
             "kustoGatingWaitDuration": "PT1H"
           }
         }
@@ -127,6 +149,7 @@ variables:
             "userAssignedIdentity": "/subscriptions/e4f0f588-48fc-43c1-86b3-2861f1ddaa9d/resourcegroups/container-insights-extension-fairfax/providers/Microsoft.ManagedIdentity/userAssignedIdentities/extension-rollout-identity-ContainerInsights",
             "version": "$(extensionVersionValue)",
             "releaseTrain": "${{ parameters.releaseTrain }}",
+            "rollbackVersion": "${{ replace(parameters.rollbackVersion, 'none', '') }}",
             "kustoGatingWaitDuration": "PT1H"
           }
         }
@@ -143,6 +166,7 @@ variables:
             "userAssignedIdentity": "/subscriptions/fdbe2580-1746-4bb7-ae1a-da7ada55880b/resourcegroups/container-insights-extension-mooncake/providers/Microsoft.ManagedIdentity/userAssignedIdentities/Extension-insights-mooncake",
             "version": "$(extensionVersionValue)",
             "releaseTrain": "${{ parameters.releaseTrain }}",
+            "rollbackVersion": "${{ replace(parameters.rollbackVersion, 'none', '') }}",
             "kustoGatingWaitDuration": "PT1H"
           }
         }
@@ -159,6 +183,7 @@ variables:
             "userAssignedIdentity": "/subscriptions/f8272cc8-8c5a-438c-ad5c-21264c697c53/resourcegroups/ContainerInsights-AI/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ContainerInsights-MI",
             "version": "$(extensionVersionValue)",
             "releaseTrain": "${{ parameters.releaseTrain }}",
+            "rollbackVersion": "${{ replace(parameters.rollbackVersion, 'none', '') }}",
             "kustoGatingWaitDuration": "PT1H"
           }
         }
@@ -175,6 +200,7 @@ variables:
             "userAssignedIdentity": "/subscriptions/3be87dbe-53e1-410a-b8b7-a0d8fa86a9e9/resourcegroups/ContainerInsights-AI/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ContainerInsights-MI",
             "version": "$(extensionVersionValue)",
             "releaseTrain": "${{ parameters.releaseTrain }}",
+            "rollbackVersion": "${{ replace(parameters.rollbackVersion, 'none', '') }}",
             "kustoGatingWaitDuration": "PT1H"
           }
         }
