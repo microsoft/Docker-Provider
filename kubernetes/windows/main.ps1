@@ -35,6 +35,33 @@ function Remove-WindowsServiceIfItExists($name) {
     }
 }
 
+function Test-TcpListenerByConnect {
+    param (
+        [int]$port,
+        [int]$timeoutMs = 2000
+    )
+
+    # Probe the listener by actually connecting to it rather than enumerating sockets.
+    # On Windows Server 2025 hosts, netstat and Get-NetTCPConnection return no rows inside the
+    # container even though the listener is present and accepting connections, which made the
+    # previous netstat-based check fail forever and prevented telegraf from ever starting.
+    $client = New-Object System.Net.Sockets.TcpClient
+    try {
+        $asyncResult = $client.BeginConnect('127.0.0.1', $port, $null, $null)
+        if (-not $asyncResult.AsyncWaitHandle.WaitOne($timeoutMs)) {
+            return $false
+        }
+        $client.EndConnect($asyncResult)
+        return $client.Connected
+    }
+    catch {
+        return $false
+    }
+    finally {
+        $client.Close()
+    }
+}
+
 function Test-FluentbitTcpListener {
     param (
         [int]$port
@@ -54,17 +81,19 @@ function Test-FluentbitTcpListener {
     $retryCount = [int]$waitTimeSecs
     $retryAttempts = 0
     $retryDelaySeconds = 1
-    while ($retryAttempts -lt $retryCount) {
+    # Bound the loop by wall-clock time so the configured wait window is honored regardless of
+    # how long an individual connect probe takes to fail.
+    $deadline = (Get-Date).AddSeconds($retryCount)
+    while ((Get-Date) -lt $deadline) {
         $retryAttempts++
-        Write-Host "Test-FluentbitTcpListener: Retry attempt $retryAttempts/$retryCount..."
-        $netstatOutput = netstat -an | Select-String "LISTENING"
-        if ($netstatOutput -match ":$port") {
+        Write-Host "Test-FluentbitTcpListener: Retry attempt $retryAttempts (waiting up to $retryCount seconds)..."
+        if (Test-TcpListenerByConnect -port $port -timeoutMs 1000) {
             Write-Host "Test-FluentbitTcpListener: Fluentbit TCP listener is UP and running on port $port."
             return $true
         }
         Start-Sleep -Seconds $retryDelaySeconds
     }
-    Write-Host "Test-FluentbitTcpListener: Failed to detect TCP listener after $retryCount attempts. Exiting script."
+    Write-Host "Test-FluentbitTcpListener: Failed to detect TCP listener within $retryCount seconds ($retryAttempts attempts). Exiting script."
     return $false
 }
 
