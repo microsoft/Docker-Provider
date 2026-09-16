@@ -23,7 +23,8 @@ $testFiles = @(
     "Test-GetLogAnalyticsWorkspaceDomain.ps1",
     "Test-GetMcsEndpoint.ps1",
     "Test-GetMcsGlobalEndpoint.ps1",
-    "Test-IsCanaryRegion.ps1"
+    "Test-IsCanaryRegion.ps1",
+    "Test-TelegrafPackage.ps1"
 )
 
 foreach ($testFile in $testFiles) {

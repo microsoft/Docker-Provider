@@ -4,6 +4,37 @@ More advanced information needed to develop or build the docker provider will li
 
 <!-- TODO: eventually move dev info from README.md to here-->
 
+## Windows Telegraf dependency
+
+`kubernetes/windows/setup.ps1` installs the official Telegraf 1.40.0 Windows AMD64
+ZIP and verifies its pinned SHA256 before extraction. The package corresponds to
+upstream commit `e9017dc3266369d6fa185e0e130af1d1d4021ce9`. The existing Windows
+pipeline continues to sign `C:\opt\telegraf\telegraf.exe` as an OSS dependency.
+
+The official binary is built with Go 1.27.0 for `windows/amd64`, `GOAMD64=v1`.
+Go's [Windows OS floor](https://go.dev/wiki/MinimumRequirements#windows) is Windows
+10 or Windows Server 2016 and newer. Both repository image targets, LTSC2019 and
+LTSC2022, meet that floor; this does not replace validation inside those images
+or in installed-service mode.
+
+Upgrade the two configurations in `build/windows/installer/conf/` and
+`tomlparser-prom-customconfig.rb` together with the binary. Windows uses `timeout`
+for the overall 15-second metric-scrape timeout, `fieldinclude`/`fieldexclude` for
+the existing config-map field filters, and procstat `tag_with = ["pid"]` to retain
+PID tags. The config-map keys remain `fieldpass`/`fielddrop`; Linux rendering is
+unchanged. Run `ruby build/common/installer/scripts/tomlparser-prom-customconfig_test.rb`
+for rendering coverage with and without namespace filters. On Windows, set
+`TELEGRAF_WINDOWS_BINARY` to the extracted `telegraf.exe` to also load the generated
+configs with that binary in bounded `--test` mode, without Kubernetes access or
+running output plugins.
+
+This stock upgrade is a partial mitigation: node discovery rereads the token file
+on retries after a failed poll, without relying on file modification time. The
+[1.40.0 discovery code](https://github.com/influxdata/telegraf/blob/e9017dc3266369d6fa185e0e130af1d1d4021ce9/plugins/inputs/prometheus/kubernetes.go)
+still omits response cleanup on non-200 status codes and lacks an explicit
+discovery request timeout. The metric-scrape `timeout` does not bound that path.
+HTTP/2 negotiation is not a substitute for fixing those remaining issues.
+
 ## Testing
 Last updated 8/18/2021
 

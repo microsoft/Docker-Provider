@@ -54,6 +54,13 @@ To run a specific PowerShell test file:
 
 ## Available Tests
 
+### Windows Telegraf Package
+`test_cases/Test-TelegrafPackage.ps1` exercises the Telegraf installation block from
+`kubernetes/windows/setup.ps1` with mocked package operations. It checks the pinned
+URL, SHA256 verification before extraction, archive layout, and fail-fast behavior
+for download, hash, extraction, and move failures. It does not download packages or
+modify the host installation.
+
 ### Cloud Environment Detection (Linux & Windows)
 Tests the cloud environment detection logic which determines the Azure cloud environment from either:
 - Environment variable (CLUSTER_CLOUD_ENVIRONMENT)
