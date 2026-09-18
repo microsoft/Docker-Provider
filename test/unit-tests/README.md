@@ -61,6 +61,12 @@ URL, SHA256 verification before extraction, archive layout, and fail-fast behavi
 for download, hash, extraction, and move failures. It does not download packages or
 modify the host installation.
 
+### Windows Telegraf Service
+`test_cases/Test-TelegrafService.ps1` checks registration of both Telegraf roles
+through the bundled Windows service dispatcher. Run
+`ruby build/windows/installer/scripts/telegraf-windows-service_test.rb` for child
+process lifecycle, shutdown, containment-failure, and unexpected-exit coverage.
+
 ### Cloud Environment Detection (Linux & Windows)
 Tests the cloud environment detection logic which determines the Azure cloud environment from either:
 - Environment variable (CLUSTER_CLOUD_ENVIRONMENT)

@@ -17,6 +17,17 @@ Go's [Windows OS floor](https://go.dev/wiki/MinimumRequirements#windows) is Wind
 LTSC2022, meet that floor; this does not replace validation inside those images
 or in installed-service mode.
 
+The Windows entrypoint registers both Telegraf services through
+`telegraf-windows-service.rb`, using the same already-installed `win32-service`
+dispatcher as Fluentd. Telegraf 1.40's native service detection requires its
+`services.exe` parent to be in session 0, which is not guaranteed in Windows containers.
+The host runs the unchanged executable with `--console`, monitors child exit, and
+forwards SCM stop through the child's private console/process group. Shutdown is
+bounded; a kill-on-close job prevents an orphan if the host exits. The service
+PID is the Ruby host; the Telegraf PID is its child. Role-only host arguments keep
+the existing procstat config-path filters selecting Telegraf rather than Ruby.
+Per-role logs under `C:\opt\telegraf\logs` rotate at 5 MiB with two backups.
+
 Upgrade the two configurations in `build/windows/installer/conf/` and
 `tomlparser-prom-customconfig.rb` together with the binary. Windows uses `timeout`
 for the overall 15-second metric-scrape timeout, `fieldinclude`/`fieldexclude` for
