@@ -1,0 +1,210 @@
+# OTLP metrics over gRPC -> <nodeIP>:28334
+#
+# 28334 is the ama-metrics-node host port named otlp-grpc-port
+# (-> prometheus-collector container port 56680).
+# Deployed into otlp-grpc so the namespace matches the transport, consistent
+# with the gRPC logs/traces workload. Change the namespace here (and in
+# --otlp-attributes) if you want it colocated in otlp-http instead.
+# One pod per Linux node with three containers, one per metric type
+# (Gauge / Sum / Histogram), so the full metric shape matrix is exercised.
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: otlp-grpc-metrics-gen
+  namespace: otlp-grpc
+  labels:
+    app: otlp-gen
+    signal: metrics
+    otlp-protocol: grpc
+spec:
+  selector:
+    matchLabels:
+      app: otlp-gen
+      signal: metrics
+      otlp-protocol: grpc
+  template:
+    metadata:
+      labels:
+        app: otlp-gen
+        signal: metrics
+        otlp-protocol: grpc
+        app.kubernetes.io/component: otlp-grpc-metrics-gen
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: gauge
+          image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:v0.161.0
+          args:
+            - metrics
+            - --otlp-endpoint=$(NODE_IP):28334
+            - --otlp-insecure
+            - --duration=inf
+            - --rate=5
+            - --workers=1
+            - --interval=30s
+            - --allow-export-failures
+            - --service=$(OTEL_SERVICE_NAME)
+            - --metric-type=Gauge
+            - --otlp-metric-name=otlp_grpc_gauge
+            - --otlp-attributes=microsoft.applicationId="$(AI_APP_ID)"
+            - --otlp-attributes=service.version="1.0.0"
+            - --otlp-attributes=service.namespace="otlp-grpc"
+            - --otlp-attributes=k8s.node.name="$(NODE_NAME)"
+            - --otlp-attributes=k8s.pod.name="$(POD_NAME)"
+            - --otlp-attributes=k8s.namespace.name="otlp-grpc"
+            - --telemetry-attributes=otlp.transport="grpc"
+            - --telemetry-attributes=otlp.target.port=28334
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: AI_APP_ID
+              value: cfcfab17-8114-4a2f-94a6-a0ae5f186c14
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "microsoft.applicationId=$(AI_APP_ID),service.name=$(OTEL_SERVICE_NAME),service.namespace=otlp-grpc,service.version=1.0.0"
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+        - name: sum
+          image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:v0.161.0
+          args:
+            - metrics
+            - --otlp-endpoint=$(NODE_IP):28334
+            - --otlp-insecure
+            - --duration=inf
+            - --rate=5
+            - --workers=1
+            - --interval=30s
+            - --allow-export-failures
+            - --service=$(OTEL_SERVICE_NAME)
+            - --metric-type=Sum
+            - --aggregation-temporality=delta
+            - --otlp-metric-name=otlp_grpc_sum
+            - --otlp-attributes=microsoft.applicationId="$(AI_APP_ID)"
+            - --otlp-attributes=service.version="1.0.0"
+            - --otlp-attributes=service.namespace="otlp-grpc"
+            - --otlp-attributes=k8s.node.name="$(NODE_NAME)"
+            - --otlp-attributes=k8s.pod.name="$(POD_NAME)"
+            - --otlp-attributes=k8s.namespace.name="otlp-grpc"
+            - --telemetry-attributes=otlp.transport="grpc"
+            - --telemetry-attributes=otlp.target.port=28334
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: AI_APP_ID
+              value: cfcfab17-8114-4a2f-94a6-a0ae5f186c14
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "microsoft.applicationId=$(AI_APP_ID),service.name=$(OTEL_SERVICE_NAME),service.namespace=otlp-grpc,service.version=1.0.0"
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+        - name: histogram
+          image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:v0.161.0
+          args:
+            - metrics
+            - --otlp-endpoint=$(NODE_IP):28334
+            - --otlp-insecure
+            - --duration=inf
+            - --rate=5
+            - --workers=1
+            - --interval=30s
+            - --allow-export-failures
+            - --service=$(OTEL_SERVICE_NAME)
+            - --metric-type=Histogram
+            - --otlp-metric-name=otlp_grpc_histogram
+            - --otlp-attributes=microsoft.applicationId="$(AI_APP_ID)"
+            - --otlp-attributes=service.version="1.0.0"
+            - --otlp-attributes=service.namespace="otlp-grpc"
+            - --otlp-attributes=k8s.node.name="$(NODE_NAME)"
+            - --otlp-attributes=k8s.pod.name="$(POD_NAME)"
+            - --otlp-attributes=k8s.namespace.name="otlp-grpc"
+            - --telemetry-attributes=otlp.transport="grpc"
+            - --telemetry-attributes=otlp.target.port=28334
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: AI_APP_ID
+              value: cfcfab17-8114-4a2f-94a6-a0ae5f186c14
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "microsoft.applicationId=$(AI_APP_ID),service.name=$(OTEL_SERVICE_NAME),service.namespace=otlp-grpc,service.version=1.0.0"
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL

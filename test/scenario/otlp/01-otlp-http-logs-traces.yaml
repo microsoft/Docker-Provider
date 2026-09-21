@@ -1,0 +1,183 @@
+# OTLP logs + traces over HTTP/protobuf -> <nodeIP>:28331
+#
+# 28331 is the ama-logs host port for the OTLP HTTP receiver
+# (APPMONITORING_OPENTELEMETRYLOGS_PORT -> container port 4319).
+# Each pod targets its own node via status.hostIP, so a DaemonSet exercises
+# the receiver on every Linux node.
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: otlp-http-logs-gen
+  namespace: otlp-http
+  labels:
+    app: otlp-gen
+    signal: logs
+    otlp-protocol: http-protobuf
+spec:
+  selector:
+    matchLabels:
+      app: otlp-gen
+      signal: logs
+      otlp-protocol: http-protobuf
+  template:
+    metadata:
+      labels:
+        app: otlp-gen
+        signal: logs
+        otlp-protocol: http-protobuf
+        app.kubernetes.io/component: otlp-http-logs-gen
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: telemetrygen
+          image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:v0.161.0
+          args:
+            - logs
+            - --otlp-endpoint=$(NODE_IP):28331
+            - --otlp-http
+            - --otlp-http-url-path=/v1/logs
+            - --otlp-insecure
+            - --duration=inf
+            - --rate=5
+            - --workers=1
+            - --interval=30s
+            - --allow-export-failures
+            - --service=$(OTEL_SERVICE_NAME)
+            - --body=otlp http logs from $(NODE_NAME)
+            - --severity-text=Info
+            - --severity-number=9
+            - --otlp-attributes=microsoft.applicationId="$(AI_APP_ID)"
+            - --otlp-attributes=service.version="1.0.0"
+            - --otlp-attributes=service.namespace="otlp-http"
+            - --otlp-attributes=k8s.node.name="$(NODE_NAME)"
+            - --otlp-attributes=k8s.pod.name="$(POD_NAME)"
+            - --otlp-attributes=k8s.namespace.name="otlp-http"
+            - --telemetry-attributes=otlp.transport="http-protobuf"
+            - --telemetry-attributes=otlp.target.port=28331
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: AI_APP_ID
+              value: dc577961-1e7f-4715-a9fd-5fb35ae76911
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "microsoft.applicationId=$(AI_APP_ID),service.name=$(OTEL_SERVICE_NAME),service.namespace=otlp-http,service.version=1.0.0"
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: otlp-http-traces-gen
+  namespace: otlp-http
+  labels:
+    app: otlp-gen
+    signal: traces
+    otlp-protocol: http-protobuf
+spec:
+  selector:
+    matchLabels:
+      app: otlp-gen
+      signal: traces
+      otlp-protocol: http-protobuf
+  template:
+    metadata:
+      labels:
+        app: otlp-gen
+        signal: traces
+        otlp-protocol: http-protobuf
+        app.kubernetes.io/component: otlp-http-traces-gen
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: telemetrygen
+          image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:v0.161.0
+          args:
+            - traces
+            - --otlp-endpoint=$(NODE_IP):28331
+            - --otlp-http
+            - --otlp-http-url-path=/v1/traces
+            - --otlp-insecure
+            - --duration=inf
+            - --rate=5
+            - --workers=1
+            - --interval=30s
+            - --allow-export-failures
+            - --service=$(OTEL_SERVICE_NAME)
+            - --child-spans=3
+            - --span-duration=50ms
+            - --otlp-attributes=microsoft.applicationId="$(AI_APP_ID)"
+            - --otlp-attributes=service.version="1.0.0"
+            - --otlp-attributes=service.namespace="otlp-http"
+            - --otlp-attributes=k8s.node.name="$(NODE_NAME)"
+            - --otlp-attributes=k8s.pod.name="$(POD_NAME)"
+            - --otlp-attributes=k8s.namespace.name="otlp-http"
+            - --telemetry-attributes=otlp.transport="http-protobuf"
+            - --telemetry-attributes=otlp.target.port=28331
+          env:
+            - name: OTEL_SERVICE_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.labels['app.kubernetes.io/component']
+            - name: AI_APP_ID
+              value: dc577961-1e7f-4715-a9fd-5fb35ae76911
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "microsoft.applicationId=$(AI_APP_ID),service.name=$(OTEL_SERVICE_NAME),service.namespace=otlp-http,service.version=1.0.0"
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
