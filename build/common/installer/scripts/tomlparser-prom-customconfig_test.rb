@@ -374,7 +374,7 @@ class PromCustomConfigTest < Minitest::Test
       Dir.mktmpdir("windows-telegraf-config") do |dir|
         path = File.join(dir, "telegraf.conf")
         File.write(path, conf)
-        Open3.popen3({ "NODE_IP" => "127.0.0.1" }, binary, "--console", "--test", "--config", path) do |stdin, stdout, stderr, process|
+        Open3.popen3({ "NODE_IP" => "127.0.0.1" }, binary, "--console", "--test", "--config", path) do |stdin, stdout, stderr, process| # DevSkim: ignore DS162092 -- Loopback-only config smoke test.
           stdin.close
           readers = [Thread.new { stdout.read }, Thread.new { stderr.read }]
           completed = !process.join(20).nil?

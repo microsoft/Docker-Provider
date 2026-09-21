@@ -35,15 +35,17 @@ class TelegrafServiceWorkerTest < Minitest::Test
   end
 
   class Processes
-    attr_reader :started, :waiter, :kills, :command, :options
+    attr_reader :started, :waiter, :kills, :command, :options, :events
 
     def initialize
       @started = Queue.new
       @waiter = Waiter.new
       @kills = []
+      @events = []
     end
 
     def spawn(*command, **options)
+      @events << :spawn
       @command, @options = command, options
       options[:out].puts("fixture log")
       @started << true
@@ -59,17 +61,11 @@ class TelegrafServiceWorkerTest < Minitest::Test
       @kills << [signal, pid]
       @waiter.finish
     end
-
-    def waitpid(pid, flags = nil)
-      return nil if flags && @waiter.alive?
-      @waiter.value
-      pid
-    end
   end
 
   class Console
-    attr_accessor :signal_result, :complete_on_interrupt, :fail_attach
-    attr_reader :prepared, :closed, :attached, :interrupted
+    attr_accessor :signal_result, :complete_on_interrupt, :fail_prepare
+    attr_reader :prepared, :closed, :interrupted
 
     def initialize(processes)
       @processes = processes
@@ -78,12 +74,9 @@ class TelegrafServiceWorkerTest < Minitest::Test
     end
 
     def prepare
+      @processes.events << :prepare
+      raise Errno::EACCES, "job fixture" if @fail_prepare
       @prepared = true
-    end
-
-    def attach(pid)
-      raise Errno::EACCES, "job fixture" if @fail_attach
-      @attached = pid
     end
 
     def interrupt(pid)
@@ -123,7 +116,7 @@ class TelegrafServiceWorkerTest < Minitest::Test
     assert_equal [TelegrafServiceWorker::EXECUTABLE, "--console", "--config", 'C:\etc\telegraf\telegraf.conf'], @processes.command
     assert @processes.options[:new_pgroup]
     assert @console.prepared
-    assert_equal 123, @console.attached
+    assert_equal [:prepare, :spawn], @processes.events
     assert_equal 123, @console.interrupted
     assert_empty @processes.kills
     assert @console.closed
@@ -155,10 +148,12 @@ class TelegrafServiceWorkerTest < Minitest::Test
     assert @console.closed
   end
 
-  def test_job_assignment_failure_does_not_leave_an_unmanaged_process
-    @console.fail_attach = true
+  def test_job_preparation_failure_prevents_child_creation
+    @console.fail_prepare = true
     assert_raises(Errno::EACCES) { @worker.run }
-    assert_equal [["KILL", 123]], @processes.kills
+    assert_nil @processes.command
+    assert_empty @processes.kills
+    assert_equal [:prepare], @processes.events
     assert @console.closed
   end
 

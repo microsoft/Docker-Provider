@@ -65,7 +65,12 @@ modify the host installation.
 `test_cases/Test-TelegrafService.ps1` checks registration of both Telegraf roles
 through the bundled Windows service dispatcher. Run
 `ruby build/windows/installer/scripts/telegraf-windows-service_test.rb` for child
-process lifecycle, shutdown, containment-failure, and unexpected-exit coverage.
+process lifecycle, shutdown, pre-spawn containment-failure, and unexpected-exit coverage.
+On Windows, `ruby build/windows/installer/scripts/telegraf-windows-console_test.rb`
+also verifies native containment when the host dies before `spawn` returns and
+when console cleanup precedes host exit. It uses only bounded local Ruby fixture
+processes, not installed services, Telegraf, or cluster access. These tests are
+included in the Ruby test driver; native cases skip on non-Windows platforms.
 
 ### Cloud Environment Detection (Linux & Windows)
 Tests the cloud environment detection logic which determines the Azure cloud environment from either:

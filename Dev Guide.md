@@ -23,10 +23,16 @@ dispatcher as Fluentd. Telegraf 1.40's native service detection requires its
 `services.exe` parent to be in session 0, which is not guaranteed in Windows containers.
 The host runs the unchanged executable with `--console`, monitors child exit, and
 forwards SCM stop through the child's private console/process group. Shutdown is
-bounded; a kill-on-close job prevents an orphan if the host exits. The service
+bounded; the host joins a kill-on-close job before spawning, so the child inherits
+containment at creation, including if the host dies before `spawn` returns. The
+non-inheritable job handle stays open until host process exit so console cleanup
+does not kill the host before SCM shutdown completes. The service
 PID is the Ruby host; the Telegraf PID is its child. Role-only host arguments keep
 the existing procstat config-path filters selecting Telegraf rather than Ruby.
 Per-role logs under `C:\opt\telegraf\logs` rotate at 5 MiB with two backups.
+The native startup-boundary regression uses only local sleeping Ruby processes:
+`ruby build/windows/installer/scripts/telegraf-windows-console_test.rb`.
+It runs on Windows with the image's existing `ffi` dependency and skips on Linux.
 
 Upgrade the two configurations in `build/windows/installer/conf/` and
 `tomlparser-prom-customconfig.rb` together with the binary. Windows uses `timeout`
