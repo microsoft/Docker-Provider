@@ -35,7 +35,7 @@ require "fileutils"
 @monitorKubernetesPodsVersion = 2
 @urlTag = "scrapeUrl"
 @bearerToken = "/var/run/secrets/kubernetes.io/serviceaccount/token"
-@prometheusTimeout = "15s"
+@responseTimeout = "15s"
 @tlsCa = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 @insecureSkipVerify = true
 @podNamespace = "pod_namespace"
@@ -186,9 +186,8 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR")
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE")
 
-    # Keep Linux rendering unchanged while Windows uses the current Telegraf filter names.
-    fieldPassConfigKey = is_windows? ? "fieldinclude" : "fieldpass"
-    fieldDropConfigKey = is_windows? ? "fieldexclude" : "fielddrop"
+    timeout_config_key = "timeout"
+
     pluginConfigsWithNamespaces = ""
     podScrapeScope = (@controller.casecmp(@replicaset) == 0) ? "cluster" : "node"
     monitorKubernetesPodsNamespaces.each do |namespace|
@@ -209,11 +208,11 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
   monitor_kubernetes_pods_namespace = #{toTomlBasicString(namespace)}
   kubernetes_label_selector = #{toTomlBasicString(kubernetesLabelSelectors)}
   kubernetes_field_selector = #{toTomlBasicString(kubernetesFieldSelectors)}
-  #{fieldPassConfigKey} = #{fieldPassSetting}
-  #{fieldDropConfigKey} = #{fieldDropSetting}
+  fieldpass = #{fieldPassSetting}
+  fielddrop = #{fieldDropSetting}
   metric_version = #{@metricVersion}
   url_tag = #{toTomlBasicString(@urlTag)}
-  timeout = #{toTomlBasicString(@prometheusTimeout)}
+  #{timeout_config_key} = #{toTomlBasicString(@responseTimeout)}
   tls_ca = #{toTomlBasicString(@tlsCa)}
   insecure_skip_verify = #{@insecureSkipVerify}\n"
         end
