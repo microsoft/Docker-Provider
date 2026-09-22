@@ -1041,10 +1041,6 @@ extends:
         # Use image tags built from the previous build stage
         linuxImageTagUnderTest: $[stageDependencies.stage.common.outputs['setup.linuxImagetag']]
         windowsImageTagUnderTest: $[stageDependencies.stage.common.outputs['setup.windowsImageTag']]
-        # The agent reports this tag, not the image tag, as customDimensions.Version: it is
-        # baked into the image as AGENT_VERSION and the two differ on release builds, where
-        # TELEMETRY_TAG overrides it. The telemetry assertions match against it.
-        linuxTelemetryTagUnderTest: $[stageDependencies.stage.common.outputs['setup.linuxTelemetryTag']]
       jobs:
       # ============================================================
       # Cluster: ci-logs-prod-aks-geneva-integration-multi-tenancy — Deploy via Helm
@@ -1073,7 +1069,7 @@ extends:
           azureClientId: $(AksGenevaIntegrationMultiTenancyClientId)
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
-          additionalTestParams: 'GenevaIntegration=true'
+          additionalTestParams: 'GenevaIntegration=true AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(linuxImageTagUnderTest)'
 
       # ============================================================
       # Cluster: ci-logs-prod-aks-work-load-identity — Deploy via Helm
@@ -1102,7 +1098,7 @@ extends:
           azureClientId: $(AksWorkLoadIdentityClientId)
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
-          additionalTestParams: 'LinuxTestsOnly=true'
+          additionalTestParams: 'LinuxTestsOnly=true AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(linuxImageTagUnderTest)'
 
       # ============================================================
       # Cluster: ci-logs-prod-wcus-fips — Deploy via Helm
@@ -1131,11 +1127,7 @@ extends:
           azureClientId: $(WcusFipsClientId)
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
-          # Agent self-telemetry is published to the Container Insights agent Application
-          # Insights resource, never to the cluster's workspace, so it is queried separately.
-          # Only this cluster's identity is granted Monitoring Reader on that resource, so the
-          # telemetry assertions stay scoped here and self-skip everywhere else.
-          additionalTestParams: 'AgentTelemetryResourceId=/subscriptions/13d371f9-5a39-46d5-8e1b-60158c49db84/resourceGroups/ContainerInsightsAgent-Prod/providers/microsoft.insights/components/ContainerInsightsAgent-Prod AgentTelemetryVersion=$(linuxTelemetryTagUnderTest)'
+          additionalTestParams: 'AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(linuxImageTagUnderTest)'
 
       # ============================================================
       # Cluster: ci-logs-prod-aks-networkflowlogs — Deploy via Helm
@@ -1165,7 +1157,7 @@ extends:
           azureClientId: $(NetworkFlowLogsClientId)
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
-          additionalTestParams: 'LinuxTestsOnly=true'
+          additionalTestParams: 'LinuxTestsOnly=true AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(linuxImageTagUnderTest)'
 
       # ============================================================
       # Cluster: ci-logs-dev-aks-std-prof-config-test1 — Deploy via Helm
@@ -1217,4 +1209,4 @@ extends:
           azureClientId: $(AllNodesClientId)
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
-          additionalTestParams: 'PerNodeLogCoverage=true'
+          additionalTestParams: 'PerNodeLogCoverage=true AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(linuxImageTagUnderTest)'
