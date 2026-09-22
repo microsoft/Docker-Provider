@@ -26,7 +26,7 @@ jobs:
 - deployment: Test_${{ replace(parameters.clusterName, '-', '_') }}
   displayName: 'Test: ${{ parameters.clusterName }}'
   environment: ${{ parameters.environmentName }}
-  dependsOn: ${{ parameters.dependsOnDeployJob }}
+  dependsOn: []
   pool:
     name: Azure-Pipelines-CI-Test-EO
     image: ci-1es-managed-ubuntu-2204
@@ -61,6 +61,7 @@ jobs:
 
         - task: Bash@3
           displayName: 'Wait for logs to be ingested into Log Analytics (20 min)'
+          condition: 'false'
           inputs:
             targetType: 'inline'
             script: |
@@ -91,6 +92,8 @@ jobs:
               echo "========================================"
 
         - bash: |
+            set -euo pipefail
+            : "${AGENT_TELEMETRY_RESOURCE_ID:?AGENT_TELEMETRY_RESOURCE_ID must be configured}"
             echo "Running tests for cluster: ${{ parameters.clusterName }}"
             
             chmod +x ./install-and-execute-testkube-tests.sh

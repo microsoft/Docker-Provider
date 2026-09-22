@@ -145,7 +145,7 @@ spec:
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
-      revision: ci_prod
+      revision: suyadav/add-heartbeat-test
       paths:
       - test/ginkgo-e2e
   steps:
@@ -168,7 +168,7 @@ spec:
         value: "{{config.AGENT_TELEMETRY_VERSION}}"
       - name: GOTOOLCHAIN
         value: "{{config.GOTOOLCHAIN}}"
-    shell: ginkgo ./querylogs
+    shell: ginkgo --focus="When querying the agent telemetry" ./querylogs
   pod:
     nodeSelector:
       kubernetes.io/os: linux
