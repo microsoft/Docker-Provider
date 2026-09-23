@@ -56,6 +56,7 @@ module Fluent::Plugin
 
       @watchWinNodesThread = nil
       @windowsNodeNameListCache = []
+      @windowsNodeNameCacheReady = false
       @windowsContainerRecordsCacheSizeBytes = 0
 
       @kubeservicesTag = "oneagent.containerInsights.KUBE_SERVICES_BLOB"
@@ -108,6 +109,7 @@ module Fluent::Plugin
         @podCacheMutex = Mutex.new
         @serviceCacheMutex = Mutex.new
         @windowsNodeNameCacheMutex = Mutex.new
+        @windowsNodeNameCacheCondition = ConditionVariable.new
         @thread = Thread.new(&method(:run_periodic))
         @watchWinNodesThread = Thread.new(&method(:watch_windows_nodes))
         @watchPodsThread = Thread.new(&method(:watch_pods))
@@ -121,6 +123,9 @@ module Fluent::Plugin
         @mutex.synchronize {
           @finished = true
           @condition.signal
+        }
+        @windowsNodeNameCacheMutex.synchronize {
+          @windowsNodeNameCacheCondition.broadcast
         }
         @thread.join
         @watchPodsThread.join
@@ -742,24 +747,18 @@ module Fluent::Plugin
 
     def watch_pods
       $log.info("in_kube_podinventory::watch_pods:Start @ #{Time.now.utc.iso8601}")
+      @windowsNodeNameCacheMutex.synchronize {
+        @windowsNodeNameCacheCondition.wait(@windowsNodeNameCacheMutex) until @windowsNodeNameCacheReady || @finished
+      }
+      return if @finished
+
       podsResourceVersion = nil
-      # invoke getWindowsNodes to handle scenario where windowsNodeNameCache not populated yet on containerstart
-      winNodes = KubernetesApiClient.getWindowsNodesArray()
-      if winNodes.length > 0
-        @windowsNodeNameCacheMutex.synchronize {
-          @windowsNodeNameListCache = winNodes.dup
-        }
-      end
       loop do
         begin
           if podsResourceVersion.nil?
             # clear cache before filling the cache with list
             @podCacheMutex.synchronize {
               @podItemsCache.clear()
-            }
-            currentWindowsNodeNameList = []
-            @windowsNodeNameCacheMutex.synchronize {
-              currentWindowsNodeNameList = @windowsNodeNameListCache.dup
             }
             continuationToken = nil
             resourceUri = "pods?limit=#{@PODS_CHUNK_SIZE}"
@@ -777,13 +776,9 @@ module Fluent::Plugin
                     key = item["metadata"]["uid"]
                     if !key.nil? && !key.empty?
                       nodeName = (!item["spec"].nil? && !item["spec"]["nodeName"].nil?) ? item["spec"]["nodeName"] : ""
-                      isWindowsPodItem = false
-                      if !nodeName.empty? &&
-                         !currentWindowsNodeNameList.nil? &&
-                         !currentWindowsNodeNameList.empty? &&
-                         currentWindowsNodeNameList.include?(nodeName)
-                        isWindowsPodItem = true
-                      end
+                      isWindowsPodItem = @windowsNodeNameCacheMutex.synchronize {
+                        @windowsNodeNameListCache.include?(nodeName)
+                      }
                       podItem = KubernetesApiClient.getOptimizedItem("pods", item, isWindowsPodItem)
                       if !podItem.nil? && !podItem.empty?
                         @podCacheMutex.synchronize {
@@ -816,13 +811,9 @@ module Fluent::Plugin
                         key = item["metadata"]["uid"]
                         if !key.nil? && !key.empty?
                           nodeName = (!item["spec"].nil? && !item["spec"]["nodeName"].nil?) ? item["spec"]["nodeName"] : ""
-                          isWindowsPodItem = false
-                          if !nodeName.empty? &&
-                             !currentWindowsNodeNameList.nil? &&
-                             !currentWindowsNodeNameList.empty? &&
-                             currentWindowsNodeNameList.include?(nodeName)
-                            isWindowsPodItem = true
-                          end
+                          isWindowsPodItem = @windowsNodeNameCacheMutex.synchronize {
+                            @windowsNodeNameListCache.include?(nodeName)
+                          }
                           podItem = KubernetesApiClient.getOptimizedItem("pods", item, isWindowsPodItem)
                           if !podItem.nil? && !podItem.empty?
                             @podCacheMutex.synchronize {
@@ -874,18 +865,10 @@ module Fluent::Plugin
                     if ((notice["type"] == "ADDED") || (notice["type"] == "MODIFIED"))
                       key = item["metadata"]["uid"]
                       if !key.nil? && !key.empty?
-                        currentWindowsNodeNameList = []
-                        @windowsNodeNameCacheMutex.synchronize {
-                          currentWindowsNodeNameList = @windowsNodeNameListCache.dup
-                        }
-                        isWindowsPodItem = false
                         nodeName = (!item["spec"].nil? && !item["spec"]["nodeName"].nil?) ? item["spec"]["nodeName"] : ""
-                        if !nodeName.empty? &&
-                           !currentWindowsNodeNameList.nil? &&
-                           !currentWindowsNodeNameList.empty? &&
-                           currentWindowsNodeNameList.include?(nodeName)
-                          isWindowsPodItem = true
-                        end
+                        isWindowsPodItem = @windowsNodeNameCacheMutex.synchronize {
+                          @windowsNodeNameListCache.include?(nodeName)
+                        }
                         podItem = KubernetesApiClient.getOptimizedItem("pods", item, isWindowsPodItem)
                         if !podItem.nil? && !podItem.empty?
                           @podCacheMutex.synchronize {
@@ -1070,67 +1053,40 @@ module Fluent::Plugin
       loop do
         begin
           if nodesResourceVersion.nil?
-            @windowsNodeNameCacheMutex.synchronize {
-              @windowsNodeNameListCache.clear()
-            }
+            windowsNodeNameList = []
+            listResourceVersion = nil
             continuationToken = nil
             resourceUri = KubernetesApiClient.getNodesResourceUri("nodes?labelSelector=kubernetes.io%2Fos%3Dwindows&limit=#{@NODES_CHUNK_SIZE}")
-            $log.info("in_kube_podinventory::watch_windows_nodes:Getting windows nodes from Kube API: #{resourceUri} @ #{Time.now.utc.iso8601}")
-            continuationToken, nodeInventory, responseCode = KubernetesApiClient.getResourcesAndContinuationTokenV2(resourceUri)
-            if responseCode.nil? || responseCode != "200"
-              $log.info("in_kube_podinventory::watch_windows_nodes:Getting windows nodes from Kube API: #{resourceUri} failed with statuscode: #{responseCode} @ #{Time.now.utc.iso8601}")
-            else
-              $log.info("in_kube_podinventory::watch_windows_nodes:Done getting windows nodes from Kube API @ #{Time.now.utc.iso8601}")
-              if (!nodeInventory.nil? && !nodeInventory.empty?)
-                nodesResourceVersion = nodeInventory["metadata"]["resourceVersion"]
-                if (nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-                  $log.info("in_kube_podinventory::watch_windows_nodes: number of windows node items :#{nodeInventory["items"].length}  from Kube API @ #{Time.now.utc.iso8601}")
-                  nodeInventory["items"].each do |item|
-                    key = item["metadata"]["name"]
-                    if !key.nil? && !key.empty?
-                      @windowsNodeNameCacheMutex.synchronize {
-                        if !@windowsNodeNameListCache.include?(key)
-                          @windowsNodeNameListCache.push(key)
-                        end
-                      }
-                    else
-                      $log.warn "in_kube_podinventory::watch_windows_nodes:Received node name either nil or empty  @ #{Time.now.utc.iso8601}"
-                    end
-                  end
-                end
-              else
-                $log.warn "in_kube_podinventory::watch_windows_nodes:Received empty nodeInventory  @ #{Time.now.utc.iso8601}"
+            begin
+              pageResourceUri = resourceUri
+              if !continuationToken.nil? && !continuationToken.empty?
+                pageResourceUri += "&continue=#{continuationToken}"
               end
-              while (!continuationToken.nil? && !continuationToken.empty?)
-                continuationToken, nodeInventory, responseCode = KubernetesApiClient.getResourcesAndContinuationTokenV2(resourceUri + "&continue=#{continuationToken}")
-                if responseCode.nil? || responseCode != "200"
-                  $log.info("in_kube_podinventory::watch_windows_nodes:Getting windows nodes from Kube API: #{resourceUri}&continue=#{continuationToken} failed with statuscode: #{responseCode} @ #{Time.now.utc.iso8601}")
-                  nodesResourceVersion = nil
-                  break # break, if any of the pagination call failed so that full cache can be rebuild with LIST again
-                else
-                  if (!nodeInventory.nil? && !nodeInventory.empty?)
-                    nodesResourceVersion = nodeInventory["metadata"]["resourceVersion"]
-                    if (nodeInventory.key?("items") && !nodeInventory["items"].nil? && !nodeInventory["items"].empty?)
-                      $log.info("in_kube_podinventory::watch_windows_nodes : number of windows node items :#{nodeInventory["items"].length} from Kube API @ #{Time.now.utc.iso8601}")
-                      nodeInventory["items"].each do |item|
-                        key = item["metadata"]["name"]
-                        if !key.nil? && !key.empty?
-                          @windowsNodeNameCacheMutex.synchronize {
-                            if !@windowsNodeNameListCache.include?(key)
-                              @windowsNodeNameListCache.push(key)
-                            end
-                          }
-                        else
-                          $log.warn "in_kube_podinventory::watch_windows_nodes:Received node name either nil or empty  @ #{Time.now.utc.iso8601}"
-                        end
-                      end
-                    end
-                  else
-                    $log.warn "in_kube_podinventory::watch_windows_nodes:Received empty nodeInventory  @ #{Time.now.utc.iso8601}"
-                  end
-                end
+              $log.info("in_kube_podinventory::watch_windows_nodes:Getting windows nodes from Kube API: #{pageResourceUri} @ #{Time.now.utc.iso8601}")
+              continuationToken, nodeInventory, responseCode = KubernetesApiClient.getResourcesAndContinuationTokenV2(pageResourceUri)
+              unless responseCode == "200" && nodeInventory.is_a?(Hash) &&
+                     nodeInventory["metadata"].is_a?(Hash) && nodeInventory["items"].is_a?(Array)
+                raise "Invalid windows node LIST response for #{pageResourceUri}, statuscode: #{responseCode}"
               end
-            end
+              pageResourceVersion = nodeInventory["metadata"]["resourceVersion"]
+              unless pageResourceVersion.is_a?(String) && !pageResourceVersion.empty? && pageResourceVersion != "0" &&
+                     (listResourceVersion.nil? || listResourceVersion == pageResourceVersion)
+                raise "Invalid or inconsistent windows node LIST resourceVersion for #{pageResourceUri}: #{pageResourceVersion}"
+              end
+              listResourceVersion = pageResourceVersion
+              nodeInventory["items"].each do |item|
+                nodeName = item["metadata"]["name"]
+                raise "Invalid windows node name in LIST response for #{pageResourceUri}" unless nodeName.is_a?(String) && !nodeName.empty?
+                windowsNodeNameList.push(nodeName)
+              end
+            end while !continuationToken.nil? && !continuationToken.empty?
+            windowsNodeNameList.uniq!
+            @windowsNodeNameCacheMutex.synchronize {
+              @windowsNodeNameListCache = windowsNodeNameList
+              @windowsNodeNameCacheReady = true
+              @windowsNodeNameCacheCondition.broadcast
+            }
+            nodesResourceVersion = listResourceVersion
           end
           if nodesResourceVersion.nil? || nodesResourceVersion.empty? || nodesResourceVersion == "0"
             # https://github.com/kubernetes/kubernetes/issues/74022
@@ -1196,6 +1152,7 @@ module Fluent::Plugin
         rescue => errorStr
           $log.warn("in_kube_podinventory::watch_windows_nodes:failed with an error: #{errorStr} @ #{Time.now.utc.iso8601}")
           nodesResourceVersion = nil
+          sleep(30)
         end
       end
       $log.info("in_kube_podinventory::watch_windows_nodes:End @ #{Time.now.utc.iso8601}")
