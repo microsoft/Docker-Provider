@@ -79,9 +79,16 @@ echo "Wait for cluster to be ready"
 sleep 300
 
 echo "Run testkube testworkflows"
-workflows=("querylogs")
+workflows=()
 failed_workflows=()
 successful_workflows=()
+if [[ $LinuxTestsOnly == "true" ]]; then
+    echo "Running Linux tests only"
+    workflows=("containerstatus-linux" "querylogs")
+else
+    echo "Running all tests"
+    workflows=("containerstatus-linux" "containerstatus-windows" "querylogs")
+fi
 
 for wf in "${workflows[@]}"; do
     echo "Running workflow: $wf"
@@ -191,7 +198,7 @@ for wf in "${workflows[@]}"; do
 }
 EOF
 )
-        # curl -X POST -H "Content-Type: application/json" -d "$payload" $WEBHOOK_URI
+        curl -X POST -H "Content-Type: application/json" -d "$payload" $WEBHOOK_URI
 
         # Track the failed workflow for summary reporting
         failed_workflows+=("${wf} (execution: ${execution_id})")
