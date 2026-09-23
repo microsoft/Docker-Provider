@@ -8,8 +8,10 @@ require_relative "in_kube_podinventory"
 
 class InKubePodInventoryTests < Minitest::Test
   Watch = Struct.new(:events) do
-    def each(&block)
-      events.each(&block)
+    def each
+      events.each do |event|
+        yield(event.respond_to?(:call) ? event.call : event)
+      end
     end
 
     def finish
@@ -65,9 +67,8 @@ class InKubePodInventoryTests < Minitest::Test
     @plugin_class = Fluent::Plugin::Kube_PodInventory_Input
     @plugin = @plugin_class.allocate
     @plugin.instance_variable_set(:@windowsNodeNameListCache, ["win-cached"])
-    @plugin.instance_variable_set(:@windowsNodeNameCacheReady, true)
+    @plugin.instance_variable_set(:@podCacheRefreshRequested, false)
     @plugin.instance_variable_set(:@windowsNodeNameCacheMutex, Mutex.new)
-    @plugin.instance_variable_set(:@windowsNodeNameCacheCondition, ConditionVariable.new)
     @plugin.instance_variable_set(:@finished, false)
     @plugin.instance_variable_set(:@podItemsCache, {})
     @plugin.instance_variable_set(:@podCacheMutex, Mutex.new)
@@ -116,27 +117,26 @@ class InKubePodInventoryTests < Minitest::Test
     assert_equal ["win-a", "win-b"], cached_nodes
     assert_equal @api.requests.first + "&continue=next-page", @api.requests.last
     assert_equal "10", @api.watches.first.last[:resource_version]
+    assert @plugin.instance_variable_get(:@podCacheRefreshRequested)
   end
 
-  def test_valid_empty_node_list_clears_cache_and_marks_it_ready
-    @plugin.instance_variable_set(:@windowsNodeNameCacheReady, false)
+  def test_valid_empty_node_list_clears_cache_without_requesting_a_relist
     @api.responses = [[nil, node_inventory([]), "200"]]
 
     @plugin.watch_windows_nodes
 
     assert_empty cached_nodes
-    assert @plugin.instance_variable_get(:@windowsNodeNameCacheReady)
+    refute @plugin.instance_variable_get(:@podCacheRefreshRequested)
     assert_equal "nodes", @api.watches.first.first
   end
 
-  def test_invalid_first_page_preserves_cache_and_readiness
-    @plugin.instance_variable_set(:@windowsNodeNameCacheReady, false)
+  def test_invalid_first_page_preserves_cache_without_requesting_a_relist
     @api.responses = [[nil, nil, "503"]]
 
     @plugin.watch_windows_nodes
 
     assert_equal ["win-cached"], cached_nodes
-    refute @plugin.instance_variable_get(:@windowsNodeNameCacheReady)
+    refute @plugin.instance_variable_get(:@podCacheRefreshRequested)
     assert_empty @api.watches
     assert_equal [30], @retry_delays
   end
@@ -161,6 +161,7 @@ class InKubePodInventoryTests < Minitest::Test
 
       assert_equal ["win-cached"], cached_nodes, "Invalid page: #{response.inspect}"
       assert_empty @api.watches
+      refute @plugin.instance_variable_get(:@podCacheRefreshRequested)
     end
     assert_equal [30] * invalid_responses.length, @retry_delays
   end
@@ -198,46 +199,103 @@ class InKubePodInventoryTests < Minitest::Test
     assert_equal true, @api.classifications.fetch("pod-1")
   end
 
-  def with_waiting_pod_watcher
-    @plugin.instance_variable_set(:@windowsNodeNameCacheReady, false)
-    waiting = Queue.new
-    condition = @plugin.instance_variable_get(:@windowsNodeNameCacheCondition)
-    condition.define_singleton_method(:wait) do |mutex|
-      waiting << true
-      super(mutex)
-    end
-    pod_thread = Thread.new { @plugin.watch_pods }
-    Timeout.timeout(5) do
-      waiting.pop
-      assert_empty @api.requests
-      yield condition
-      pod_thread.value
-    end
-  ensure
-    pod_thread.kill if pod_thread&.alive?
-    pod_thread&.join
+  def test_linux_pods_start_before_windows_node_discovery
+    @plugin.instance_variable_set(:@windowsNodeNameListCache, [])
+    linux_pods = pod_inventory("linux-node")
+    @api.responses = [[nil, linux_pods, "200"]]
+
+    Timeout.timeout(5) { @plugin.watch_pods }
+
+    assert_equal ["pods?limit=2"], @api.requests
+    assert_equal false, @api.classifications.fetch("pod-1")
+    assert_equal linux_pods["items"].first, @plugin.instance_variable_get(:@podItemsCache).fetch("pod-1")
   end
 
-  def test_pod_watcher_waits_through_failed_initial_node_list
-    with_waiting_pod_watcher do
+  def test_linux_pods_continue_after_windows_node_discovery_fails
+    @plugin.instance_variable_set(:@windowsNodeNameListCache, [])
+    2.times do
       @api.responses = [[nil, nil, "503"]]
       @plugin.watch_windows_nodes
-      refute @plugin.instance_variable_get(:@windowsNodeNameCacheReady)
-      assert_equal 1, @api.requests.length
-
-      @api.responses = [[nil, node_inventory(["win-new"]), "200"], [nil, pod_inventory, "200"]]
-      @plugin.watch_windows_nodes
     end
-    assert_equal true, @api.classifications.fetch("pod-1")
+    @api.responses = [[nil, pod_inventory("linux-node"), "200"]]
+
+    Timeout.timeout(5) { @plugin.watch_pods }
+
+    assert_equal false, @api.classifications.fetch("pod-1")
+    assert_equal [30, 30], @retry_delays
+    assert_equal "pods", @api.watches.last.first
+    assert_equal ["pod-1"], @plugin.instance_variable_get(:@podItemsCache).keys
   end
 
-  def test_waiting_pod_watcher_exits_when_shutdown_is_requested
-    with_waiting_pod_watcher do |condition|
-      @plugin.instance_variable_get(:@windowsNodeNameCacheMutex).synchronize do
-        @plugin.instance_variable_set(:@finished, true)
-        condition.broadcast
-      end
-    end
+  def test_linux_only_cluster_does_not_relist_pods_after_empty_node_discovery
+    @plugin.instance_variable_set(:@windowsNodeNameListCache, [])
+    @plugin.define_singleton_method(:loop) { |&iteration| 2.times(&iteration) }
+    @api.responses = [[nil, node_inventory([]), "200"]]
+    @plugin.watch_windows_nodes
+    @api.responses = [[nil, pod_inventory("linux-node"), "200"]]
+
+    @plugin.watch_pods
+
+    assert_equal 1, @api.requests.count { |uri| uri.start_with?("pods?") }
+    assert_equal 2, @api.watches.count { |resource, _options| resource == "pods" }
+    assert_equal false, @api.classifications.fetch("pod-1")
+  end
+
+  def test_windows_node_discovery_during_pod_watch_triggers_recovery
+    @plugin.instance_variable_set(:@windowsNodeNameListCache, [])
+    @plugin.define_singleton_method(:loop) { |&iteration| 2.times(&iteration) }
+    linux_pod = pod_inventory("linux-node")["items"].first
+    linux_pod["metadata"]["uid"] = "pod-linux"
+    mixed_pods = pod_inventory
+    mixed_pods["items"] << linux_pod
+    @api.responses = [[nil, mixed_pods, "200"], [nil, node_inventory(["win-new"]), "200"], [nil, mixed_pods, "200"]]
+    @api.pod_events = [lambda {
+      assert_equal false, @api.classifications.fetch("pod-1")
+      @plugin.watch_windows_nodes
+      @api.pod_events = []
+      { "type" => "BOOKMARK", "object" => { "metadata" => { "resourceVersion" => "12" } } }
+    }]
+
+    @plugin.watch_pods
+
+    assert_equal true, @api.classifications.fetch("pod-1")
+    assert_equal false, @api.classifications.fetch("pod-linux")
+    assert_equal 2, @api.requests.count { |uri| uri.start_with?("pods?") }
+    assert_equal linux_pod, @plugin.instance_variable_get(:@podItemsCache).fetch("pod-linux")
+    refute @plugin.instance_variable_get(:@podCacheRefreshRequested)
+  end
+
+  def test_windows_node_discovery_recovers_pods_after_idle_watch_timeout
+    @plugin.instance_variable_set(:@windowsNodeNameListCache, [])
+    @plugin.define_singleton_method(:loop) { |&iteration| 2.times(&iteration) }
+    @api.responses = [[nil, pod_inventory, "200"], [nil, node_inventory(["win-new"]), "200"], [nil, pod_inventory, "200"]]
+    @api.pod_events = [lambda {
+      @plugin.watch_windows_nodes
+      @api.pod_events = []
+      raise Net::ReadTimeout
+    }]
+
+    @plugin.watch_pods
+
+    assert_equal true, @api.classifications.fetch("pod-1")
+    assert_equal 2, @api.requests.count { |uri| uri.start_with?("pods?") }
+  end
+
+  def test_unchanged_windows_nodes_do_not_request_another_pod_relist
+    @api.responses = [[nil, node_inventory(["win-cached"]), "200"]]
+    @api.node_events = [node_event("ADDED", "win-cached")]
+
+    @plugin.watch_windows_nodes
+
+    refute @plugin.instance_variable_get(:@podCacheRefreshRequested)
+  end
+
+  def test_pod_watcher_exits_if_shutdown_was_requested
+    @plugin.instance_variable_set(:@finished, true)
+
+    @plugin.watch_pods
+
     assert_empty @api.requests
+    assert_empty @api.watches
   end
 end

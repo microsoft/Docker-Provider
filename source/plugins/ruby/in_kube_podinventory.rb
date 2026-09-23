@@ -56,7 +56,7 @@ module Fluent::Plugin
 
       @watchWinNodesThread = nil
       @windowsNodeNameListCache = []
-      @windowsNodeNameCacheReady = false
+      @podCacheRefreshRequested = false
       @windowsContainerRecordsCacheSizeBytes = 0
 
       @kubeservicesTag = "oneagent.containerInsights.KUBE_SERVICES_BLOB"
@@ -109,7 +109,6 @@ module Fluent::Plugin
         @podCacheMutex = Mutex.new
         @serviceCacheMutex = Mutex.new
         @windowsNodeNameCacheMutex = Mutex.new
-        @windowsNodeNameCacheCondition = ConditionVariable.new
         @thread = Thread.new(&method(:run_periodic))
         @watchWinNodesThread = Thread.new(&method(:watch_windows_nodes))
         @watchPodsThread = Thread.new(&method(:watch_pods))
@@ -123,9 +122,6 @@ module Fluent::Plugin
         @mutex.synchronize {
           @finished = true
           @condition.signal
-        }
-        @windowsNodeNameCacheMutex.synchronize {
-          @windowsNodeNameCacheCondition.broadcast
         }
         @thread.join
         @watchPodsThread.join
@@ -747,14 +743,17 @@ module Fluent::Plugin
 
     def watch_pods
       $log.info("in_kube_podinventory::watch_pods:Start @ #{Time.now.utc.iso8601}")
-      @windowsNodeNameCacheMutex.synchronize {
-        @windowsNodeNameCacheCondition.wait(@windowsNodeNameCacheMutex) until @windowsNodeNameCacheReady || @finished
-      }
       return if @finished
 
       podsResourceVersion = nil
       loop do
         begin
+          @windowsNodeNameCacheMutex.synchronize {
+            if @podCacheRefreshRequested
+              podsResourceVersion = nil
+              @podCacheRefreshRequested = false
+            end
+          }
           if podsResourceVersion.nil?
             # clear cache before filling the cache with list
             @podCacheMutex.synchronize {
@@ -834,6 +833,8 @@ module Fluent::Plugin
               end
             end
           end
+          next if @windowsNodeNameCacheMutex.synchronize { @podCacheRefreshRequested }
+
           if podsResourceVersion.nil? || podsResourceVersion.empty? || podsResourceVersion == "0"
             # https://github.com/kubernetes/kubernetes/issues/74022
             $log.warn("in_kube_podinventory::watch_pods:received podsResourceVersion either nil or empty or 0 @ #{Time.now.utc.iso8601}")
@@ -847,6 +848,8 @@ module Fluent::Plugin
                 $log.warn("in_kube_podinventory::watch_pods:watch API returned nil watcher for watch connection with resource version: #{podsResourceVersion} @ #{Time.now.utc.iso8601}")
               else
                 watcher.each do |notice|
+                  break if @windowsNodeNameCacheMutex.synchronize { @podCacheRefreshRequested }
+
                   case notice["type"]
                   when "ADDED", "MODIFIED", "DELETED", "BOOKMARK"
                     item = notice["object"]
@@ -1082,9 +1085,8 @@ module Fluent::Plugin
             end while !continuationToken.nil? && !continuationToken.empty?
             windowsNodeNameList.uniq!
             @windowsNodeNameCacheMutex.synchronize {
+              @podCacheRefreshRequested = true unless (windowsNodeNameList - @windowsNodeNameListCache).empty?
               @windowsNodeNameListCache = windowsNodeNameList
-              @windowsNodeNameCacheReady = true
-              @windowsNodeNameCacheCondition.broadcast
             }
             nodesResourceVersion = listResourceVersion
           end
@@ -1121,6 +1123,7 @@ module Fluent::Plugin
                       @windowsNodeNameCacheMutex.synchronize {
                         if !@windowsNodeNameListCache.include?(key)
                           @windowsNodeNameListCache.push(key)
+                          @podCacheRefreshRequested = true
                         end
                       }
                     elsif notice["type"] == "DELETED"
