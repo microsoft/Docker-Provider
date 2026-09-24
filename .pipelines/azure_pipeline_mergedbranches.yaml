@@ -20,7 +20,7 @@ variables:
   # (repoImageName). The chart reuses the already-onboarded `preview` MCR repo instead of a
   # new cidev chart repo; the prod release promotes it to the `helmchart/... /ciprod` path.
   chartRepoName: '${{ variables.containerRegistry }}.azurecr.io/public/azuremonitor/containerinsights/preview'
-  GOLANG_BASE_IMAGE: 'mcr.microsoft.com/oss/go/microsoft/golang:1.26.5'
+  GOLANG_BASE_IMAGE: 'mcr.microsoft.com/oss/go/microsoft/golang:1.27.0'
   # QEMU used to emulate linux/arm64 during the multi-arch docker build. Keep this current:
   # older QEMU builds make the emulated gcc segfault at random while compiling ruby native
   # gem extensions. MCR mirror of tonistiigi/binfmt, used to avoid Docker Hub rate limiting.
@@ -263,6 +263,9 @@ extends:
                 docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --push --provenance=false .
                 echo "##vso[task.logissue type=warning]Linux image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)"
                 docker pull ${{ variables.repoImageName }}:$(linuxImagetag)
+                # Extract the resolved Azure Linux base image version for release notes
+                AZURELINUX_VERSION=$(docker run --rm --entrypoint="" ${{ variables.repoImageName }}:$(linuxImagetag) cat /etc/os-release | grep ^VERSION= | cut -d= -f2 | tr -d '"')
+                echo "##vso[task.logissue type=warning]Azure Linux base image version: $AZURELINUX_VERSION"
               else
                 docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --provenance=false .
                 # load the multi-arch image to run tests
