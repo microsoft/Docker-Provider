@@ -157,16 +157,16 @@ else
   file = File.open("common_agent_config_env_var", "w")
   if !file.nil?
     if @disableTelemetry
-      file.write("export DISABLE_TELEMETRY=#{@disableTelemetry}\n")
+      file.write("export DISABLE_TELEMETRY=#{ConfigValue.to_shell_single_quoted(@disableTelemetry)}\n")
     end
     if @enableHighLogScaleMode
-      file.write("export ENABLE_HIGH_LOG_SCALE_MODE=#{@enableHighLogScaleMode}\n")
+      file.write("export ENABLE_HIGH_LOG_SCALE_MODE=#{ConfigValue.to_shell_single_quoted(@enableHighLogScaleMode)}\n")
     end
     if @enableCustomMetrics
-      file.write("export ENABLE_CUSTOM_METRICS=#{@enableCustomMetrics}\n")
+      file.write("export ENABLE_CUSTOM_METRICS=#{ConfigValue.to_shell_single_quoted(@enableCustomMetrics)}\n")
     end
-    file.write("export AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS=#{@amaLogsCollectProcessMetricsEnabled}\n")
-    file.write("export AZMON_KUBERNETES_METADATA_CACHE_TTL_SECONDS=#{@logEnableKubernetesMetadataCacheTTLSeconds}\n")
+    file.write("export AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS=#{ConfigValue.to_shell_single_quoted(@amaLogsCollectProcessMetricsEnabled)}\n")
+    file.write("export AZMON_KUBERNETES_METADATA_CACHE_TTL_SECONDS=#{ConfigValue.to_shell_single_quoted(@logEnableKubernetesMetadataCacheTTLSeconds)}\n")
     # Close file after writing all environment variables
     file.close
   else

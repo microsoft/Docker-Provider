@@ -61,7 +61,7 @@ end
 file = File.open("config_metric_collection_env_var", "w")
 
 if !file.nil?
-  file.write("export AZMON_PV_COLLECT_KUBE_SYSTEM_METRICS=#{@collectPVKubeSystemMetrics}\n")
+  file.write("export AZMON_PV_COLLECT_KUBE_SYSTEM_METRICS=#{ConfigValue.to_shell_single_quoted(@collectPVKubeSystemMetrics)}\n")
   # Close file after writing all metric collection setting environment variables
   file.close
   puts "****************End Metric Collection Settings Processing********************"
