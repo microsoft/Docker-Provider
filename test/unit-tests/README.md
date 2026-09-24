@@ -54,6 +54,24 @@ To run a specific PowerShell test file:
 
 ## Available Tests
 
+### Windows Telegraf Package
+`test_cases/Test-TelegrafPackage.ps1` exercises the Telegraf installation block from
+`kubernetes/windows/setup.ps1` with mocked package operations. It checks the pinned
+URL, SHA256 verification before extraction, archive layout, and fail-fast behavior
+for download, hash, extraction, and move failures. It does not download packages or
+modify the host installation.
+
+### Windows Telegraf Service
+`test_cases/Test-TelegrafService.ps1` checks registration of both Telegraf roles
+through the bundled Windows service dispatcher. Run
+`ruby build/windows/installer/scripts/telegraf-windows-service_test.rb` for child
+process lifecycle, shutdown, pre-spawn containment-failure, and unexpected-exit coverage.
+On Windows, `ruby build/windows/installer/scripts/telegraf-windows-console_test.rb`
+also verifies native containment when the host dies before `spawn` returns and
+when console cleanup precedes host exit. It uses only bounded local Ruby fixture
+processes, not installed services, Telegraf, or cluster access. These tests are
+included in the Ruby test driver; native cases skip on non-Windows platforms.
+
 ### Cloud Environment Detection (Linux & Windows)
 Tests the cloud environment detection logic which determines the Azure cloud environment from either:
 - Environment variable (CLUSTER_CLOUD_ENVIRONMENT)
