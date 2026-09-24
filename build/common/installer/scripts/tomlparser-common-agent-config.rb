@@ -121,6 +121,11 @@ def get_command_windows(env_variable_name, env_variable_value)
   return "#{env_variable_name}=#{env_variable_value}\n"
 end
 
+def get_command_linux(env_variable_name, env_variable_value)
+  escaped_value = env_variable_value.to_s.gsub("'") { "'\\''" }
+  return "export #{env_variable_name}='#{escaped_value}'\n"
+end
+
 if is_windows?
   # Write the settings to file, so that they can be set as environment variables
   file = File.open("setcommonagentenv.txt", "w")
@@ -157,16 +162,16 @@ else
   file = File.open("common_agent_config_env_var", "w")
   if !file.nil?
     if @disableTelemetry
-      file.write("export DISABLE_TELEMETRY=#{@disableTelemetry}\n")
+      file.write(get_command_linux("DISABLE_TELEMETRY", @disableTelemetry))
     end
     if @enableHighLogScaleMode
-      file.write("export ENABLE_HIGH_LOG_SCALE_MODE=#{@enableHighLogScaleMode}\n")
+      file.write(get_command_linux("ENABLE_HIGH_LOG_SCALE_MODE", @enableHighLogScaleMode))
     end
     if @enableCustomMetrics
-      file.write("export ENABLE_CUSTOM_METRICS=#{@enableCustomMetrics}\n")
+      file.write(get_command_linux("ENABLE_CUSTOM_METRICS", @enableCustomMetrics))
     end
-    file.write("export AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS=#{@amaLogsCollectProcessMetricsEnabled}\n")
-    file.write("export AZMON_KUBERNETES_METADATA_CACHE_TTL_SECONDS=#{@logEnableKubernetesMetadataCacheTTLSeconds}\n")
+    file.write(get_command_linux("AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS", @amaLogsCollectProcessMetricsEnabled))
+    file.write(get_command_linux("AZMON_KUBERNETES_METADATA_CACHE_TTL_SECONDS", @logEnableKubernetesMetadataCacheTTLSeconds))
     # Close file after writing all environment variables
     file.close
   else
