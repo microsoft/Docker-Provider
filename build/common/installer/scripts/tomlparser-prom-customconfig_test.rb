@@ -242,9 +242,6 @@ class PromCustomConfigTest < Minitest::Test
   # --- end to end generation ----------------------------------------------------------------
 
   SCENARIOS.each_key do |scenario|
-    field_include_key = scenario == :windows ? "fieldpass" : "fieldinclude"
-    field_exclude_key = scenario == :windows ? "fielddrop" : "fieldexclude"
-
     define_method("test_interval_breakout_is_neutralized_#{scenario}") do
       result = run_parser(scenario, configmap_for(scenario, "interval = '''#{BREAKOUT}'''"))
       assert_no_injected_plugins(scenario, result[:conf], "the #{scenario} interval")
@@ -258,20 +255,24 @@ class PromCustomConfigTest < Minitest::Test
       result = run_parser(scenario, configmap_for(scenario, "fieldpass = ['''#{BREAKOUT}''']"))
       assert_no_injected_plugins(scenario, result[:conf], "the #{scenario} fieldpass array")
       # The value survives, but only as a single escaped string.
-      assert_includes collect_values(result[:conf], field_include_key), BREAKOUT
+      assert_includes collect_values(result[:conf], "fieldinclude"), BREAKOUT
     end
 
     define_method("test_fielddrop_breakout_is_neutralized_#{scenario}") do
       result = run_parser(scenario, configmap_for(scenario, "fielddrop = ['''#{BREAKOUT}''']"))
       assert_no_injected_plugins(scenario, result[:conf], "the #{scenario} fielddrop array")
-      assert_includes collect_values(result[:conf], field_exclude_key), BREAKOUT
+      assert_includes collect_values(result[:conf], "fieldexclude"), BREAKOUT
     end
 
     define_method("test_valid_settings_are_preserved_#{scenario}") do
       result = run_parser(scenario, configmap_for(scenario, "interval = \"45s\"\nfieldpass = [\"a\",\"b\"]\nfielddrop = [\"c\"]"))
       assert_includes result[:conf], "interval = \"45s\"", "a valid interval must be preserved"
-      assert_includes result[:conf], "#{field_include_key} = [\"a\",\"b\"]", "array formatting must be unchanged"
-      assert_includes result[:conf], "#{field_exclude_key} = [\"c\"]", "array formatting must be unchanged"
+      assert_includes result[:conf], "fieldinclude = [\"a\",\"b\"]", "array formatting must be unchanged"
+      assert_includes result[:conf], "fieldexclude = [\"c\"]", "array formatting must be unchanged"
+      parse_generated_toml(result[:conf])["inputs"]["prometheus"].each do |plugin|
+        refute plugin.key?("fieldpass")
+        refute plugin.key?("fielddrop")
+      end
       assert_no_injected_plugins(scenario, result[:conf], "a benign #{scenario} configuration")
     end
   end
@@ -337,8 +338,10 @@ class PromCustomConfigTest < Minitest::Test
           assert_equal "scrapeUrl", plugin["url_tag"]
           assert_equal "pod_namespace", plugin["pod_namespace_label_name"]
           assert_equal (scenario == :replicaset ? "cluster" : "node"), plugin["pod_scrape_scope"]
-          assert_equal ["requests_total"], plugin["fieldpass"]
-          assert_equal ["debug_total"], plugin["fielddrop"]
+          assert_equal ["requests_total"], plugin["fieldinclude"]
+          assert_equal ["debug_total"], plugin["fieldexclude"]
+          refute plugin.key?("fieldpass")
+          refute plugin.key?("fielddrop")
           assert_equal "app=metrics", plugin["kubernetes_label_selector"]
           assert_equal "spec.nodeName=test-node", plugin["kubernetes_field_selector"]
         end
@@ -379,6 +382,7 @@ class PromCustomConfigTest < Minitest::Test
           output = readers.map(&:value).join("\n")
           assert completed, "Telegraf config smoke test exceeded 20 seconds"
           assert process.value.success?, "Telegraf rejected the rendered config for #{namespaces.inspect}: #{output}"
+          refute_match(/Deprecation(?:Error|Warning).*"(?:fieldpass|fielddrop|pid_tag)"/, output)
         end
       end
     end
@@ -392,7 +396,8 @@ class PromCustomConfigTest < Minitest::Test
     config["inputs"]["procstat"].each do |plugin|
       assert_equal ["pid"], plugin["tag_with"]
       refute plugin.key?("pid_tag")
-      assert_equal ["cpu_usage", "memory_rss"], plugin["fieldpass"]
+      assert_equal ["cpu_usage", "memory_rss"], plugin["fieldinclude"]
+      refute plugin.key?("fieldpass")
       assert_equal "native", plugin["pid_finder"]
       assert_equal "agent_telemetry", plugin["name_override"]
       assert_equal "t.azm.ms/", plugin["name_prefix"]
@@ -415,9 +420,8 @@ class PromCustomConfigTest < Minitest::Test
     assert_equal BREAKOUT, plugin["kubernetes_label_selector"]
   end
 
-  def test_namespace_filters_preserve_platform_keys_and_escaping
+  def test_namespace_filters_preserve_modern_keys_and_escaping
     [:replicaset, :sidecar, :windows].each do |scenario|
-      field_include_key, field_exclude_key = scenario == :windows ? ["fieldpass", "fielddrop"] : ["fieldinclude", "fieldexclude"]
       body = "monitor_kubernetes_pods = true\n" \
              "monitor_kubernetes_pods_namespaces = [\"default\"]\n" \
              "fieldpass = ['''#{BREAKOUT}''']\n" \
@@ -429,13 +433,12 @@ class PromCustomConfigTest < Minitest::Test
       plugin = parse_generated_toml(result[:conf])["inputs"]["prometheus"]
                .find { |entry| entry["monitor_kubernetes_pods_namespace"] == "default" }
       refute_nil plugin
-      assert_equal [BREAKOUT], plugin[field_include_key]
-      assert_equal [BREAKOUT], plugin[field_exclude_key]
+      assert_equal [BREAKOUT], plugin["fieldinclude"]
+      assert_equal [BREAKOUT], plugin["fieldexclude"]
       assert_equal BREAKOUT, plugin["kubernetes_label_selector"]
       assert_equal BREAKOUT, plugin["kubernetes_field_selector"]
       assert_equal(scenario == :replicaset ? "cluster" : "node", plugin["pod_scrape_scope"])
-      unsupported_keys = scenario == :windows ? ["fieldinclude", "fieldexclude"] : ["fieldpass", "fielddrop"]
-      unsupported_keys.each { |key| refute plugin.key?(key), "#{scenario} must not emit #{key}" }
+      ["fieldpass", "fielddrop"].each { |key| refute plugin.key?(key), "#{scenario} must not emit #{key}" }
     end
   end
 

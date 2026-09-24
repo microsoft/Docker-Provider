@@ -186,18 +186,6 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR")
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE")
 
-    timeout_config_key = "timeout"
-
-    # 'fieldpass'/'fielddrop' were deprecated in telegraf 1.29.0 and removed in 1.40.0.
-    # Windows still ships telegraf 1.24.2, which predates the replacement options, so it
-    # must keep emitting the legacy option names.
-    field_include_key = "fieldinclude"
-    field_exclude_key = "fieldexclude"
-    if is_windows?
-      field_include_key = "fieldpass"
-      field_exclude_key = "fielddrop"
-    end
-
     pluginConfigsWithNamespaces = ""
     podScrapeScope = (@controller.casecmp(@replicaset) == 0) ? "cluster" : "node"
     monitorKubernetesPodsNamespaces.each do |namespace|
@@ -218,11 +206,11 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
   monitor_kubernetes_pods_namespace = #{toTomlBasicString(namespace)}
   kubernetes_label_selector = #{toTomlBasicString(kubernetesLabelSelectors)}
   kubernetes_field_selector = #{toTomlBasicString(kubernetesFieldSelectors)}
-  #{field_include_key} = #{fieldPassSetting}
-  #{field_exclude_key} = #{fieldDropSetting}
+  fieldinclude = #{fieldPassSetting}
+  fieldexclude = #{fieldDropSetting}
   metric_version = #{@metricVersion}
   url_tag = #{toTomlBasicString(@urlTag)}
-  #{timeout_config_key} = #{toTomlBasicString(@responseTimeout)}
+  timeout = #{toTomlBasicString(@responseTimeout)}
   tls_ca = #{toTomlBasicString(@tlsCa)}
   insecure_skip_verify = #{@insecureSkipVerify}\n"
         end

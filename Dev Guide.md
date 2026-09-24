@@ -6,12 +6,12 @@ More advanced information needed to develop or build the docker provider will li
 
 ## Windows Telegraf dependency
 
-`kubernetes/windows/setup.ps1` installs the official Telegraf 1.40.0 Windows AMD64
+`kubernetes/windows/setup.ps1` installs the official Telegraf 1.40.1 Windows AMD64
 ZIP and verifies its pinned SHA256 before extraction. The package corresponds to
-upstream commit `e9017dc3266369d6fa185e0e130af1d1d4021ce9`. The existing Windows
+upstream commit `26b8f4478b676f4f5e5d8ce1622cdf4f6c273bda`. The existing Windows
 pipeline continues to sign `C:\opt\telegraf\telegraf.exe` as an OSS dependency.
 
-The official binary is built with Go 1.27.0 for `windows/amd64`, `GOAMD64=v1`.
+The official binary is built with Go 1.27.1 for `windows/amd64`, `GOAMD64=v1`.
 Go's [Windows OS floor](https://go.dev/wiki/MinimumRequirements#windows) is Windows
 10 or Windows Server 2016 and newer. Both repository image targets, LTSC2019 and
 LTSC2022, meet that floor; this does not replace validation inside those images
@@ -40,10 +40,11 @@ to preserve the overall 15-second metric-scrape limit; upstream's
 [1.40 documentation](https://github.com/influxdata/telegraf/blob/e9017dc3266369d6fa185e0e130af1d1d4021ce9/plugins/inputs/prometheus/README.md#L152-L157)
 explains that `response_timeout` now covers headers only, unlike the
 [1.24.2 client timeout](https://github.com/influxdata/telegraf/blob/9550e7a533dd00632e14435e87ed3eb4b04832c6/plugins/inputs/prometheus/prometheus.go#L254-L261).
-Procstat uses `tag_with = ["pid"]` to retain PID tags. Existing `fieldpass`/`fielddrop`
-names are unchanged on both OSes because
-[1.40 still parses them](https://github.com/influxdata/telegraf/blob/e9017dc3266369d6fa185e0e130af1d1d4021ce9/config/config.go#L1649-L1687).
-Linux rendering remains unchanged. Run `ruby build/common/installer/scripts/tomlparser-prom-customconfig_test.rb`
+Procstat uses `tag_with = ["pid"]` to retain PID tags. Both OSes render
+`fieldinclude`/`fieldexclude` instead of the deprecated `fieldpass`/`fielddrop`
+Telegraf options. The public ConfigMap keys remain `fieldpass`/`fielddrop` for
+backward compatibility; the shared parser maps them to the current Telegraf names.
+Run `ruby build/common/installer/scripts/tomlparser-prom-customconfig_test.rb`
 for rendering coverage with and without namespace filters. On Windows, set
 `TELEGRAF_WINDOWS_BINARY` to the extracted `telegraf.exe` to also load the generated
 configs with that binary in bounded `--test` mode, without Kubernetes access or
