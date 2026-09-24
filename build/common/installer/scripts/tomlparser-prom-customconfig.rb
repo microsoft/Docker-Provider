@@ -186,8 +186,6 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR")
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE")
 
-    timeout_config_key = "timeout"
-
     pluginConfigsWithNamespaces = ""
     podScrapeScope = (@controller.casecmp(@replicaset) == 0) ? "cluster" : "node"
     monitorKubernetesPodsNamespaces.each do |namespace|
@@ -208,11 +206,11 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
   monitor_kubernetes_pods_namespace = #{toTomlBasicString(namespace)}
   kubernetes_label_selector = #{toTomlBasicString(kubernetesLabelSelectors)}
   kubernetes_field_selector = #{toTomlBasicString(kubernetesFieldSelectors)}
-  fieldpass = #{fieldPassSetting}
-  fielddrop = #{fieldDropSetting}
+  fieldinclude = #{fieldPassSetting}
+  fieldexclude = #{fieldDropSetting}
   metric_version = #{@metricVersion}
   url_tag = #{toTomlBasicString(@urlTag)}
-  #{timeout_config_key} = #{toTomlBasicString(@responseTimeout)}
+  timeout = #{toTomlBasicString(@responseTimeout)}
   tls_ca = #{toTomlBasicString(@tlsCa)}
   insecure_skip_verify = #{@insecureSkipVerify}\n"
         end

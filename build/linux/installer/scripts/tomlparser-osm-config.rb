@@ -108,7 +108,7 @@ def replaceOsmTelegrafConfigPlaceHolders
   monitor_kubernetes_pods = true
   pod_scrape_scope = \"#{(@controllerType.casecmp(@replicaset) == 0) ? "cluster" : "node"}\"
   monitor_kubernetes_pods_namespace = \"#{namespace}\"
-  fieldpass = #{@fieldPassSetting}
+  fieldinclude = #{@fieldPassSetting}
   metric_version = #{@metricVersion}
   url_tag = \"#{@urlTag}\"
   bearer_token = \"#{@bearerToken}\"
