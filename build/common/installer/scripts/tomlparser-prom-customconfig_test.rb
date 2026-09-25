@@ -91,7 +91,8 @@ class PromCustomConfigTest < Minitest::Test
         "SIDECAR_SCRAPING_ENABLED" => nil,
       }.merge(spec[:env])
 
-      stdout, stderr, = Open3.capture3(env, RbConfig.ruby, parser, chdir: sandbox)
+      stdout, stderr, status = Open3.capture3(env, RbConfig.ruby, parser, chdir: sandbox)
+      assert status.success?, "config parser failed: #{stdout}\n#{stderr}"
 
       telemetry_path = File.join(sandbox, "telemetry_prom_config_env_var")
       result = {
@@ -170,7 +171,7 @@ class PromCustomConfigTest < Minitest::Test
       "1m;id",                  # shell metacharacters
       "$(id)",
       "`id`",
-      "1d",                     # rejected: the telegraf shipped on windows does not support days
+      "1d",                     # rejected by the existing config-map duration contract
       "1",                      # missing unit
       "m",                      # missing number
       "",
@@ -305,6 +306,98 @@ class PromCustomConfigTest < Minitest::Test
     result = run_parser(:replicaset, configmap_for(:replicaset, body))
     assert_equal ["default", "kube-system"], monitored_namespaces(result[:conf])
     assert_no_injected_plugins(:replicaset, result[:conf], "a benign namespace configuration")
+  end
+
+  [:replicaset, :sidecar, :windows].each do |scenario|
+    { unfiltered: nil, empty_filter: [], namespace_filtered: ["default", "kube-system"] }.each do |name, namespaces|
+      define_method("test_prometheus_timeout_and_mapping_#{scenario}_#{name}") do
+        body = "monitor_kubernetes_pods = true\n" \
+               "interval = \"45s\"\n" \
+               "fieldpass = [\"requests_total\"]\n" \
+               "fielddrop = [\"debug_total\"]\n" \
+               "kubernetes_label_selector = \"app=metrics\"\n" \
+               "kubernetes_field_selector = \"spec.nodeName=test-node\""
+        body += "\nmonitor_kubernetes_pods_namespaces = #{namespaces.inspect}" unless namespaces.nil?
+
+        result = run_parser(scenario, configmap_for(scenario, body))
+        plugins = parse_generated_toml(result[:conf])["inputs"]["prometheus"]
+        monitored = plugins.select { |plugin| plugin["monitor_kubernetes_pods"] }
+        expected_namespaces = namespaces.nil? || namespaces.empty? ? [nil] : namespaces
+        assert_equal expected_namespaces, monitored.map { |plugin| plugin["monitor_kubernetes_pods_namespace"] }
+
+        monitored.each do |plugin|
+          assert_equal "15s", plugin["timeout"], "the overall scrape timeout must remain 15s"
+          refute plugin.key?("response_timeout"), "response_timeout only bounds response headers in current Telegraf"
+          assert_equal "45s", plugin["interval"]
+          assert_equal 2, plugin["metric_version"]
+          assert_equal "scrapeUrl", plugin["url_tag"]
+          assert_equal "pod_namespace", plugin["pod_namespace_label_name"]
+          assert_equal (scenario == :replicaset ? "cluster" : "node"), plugin["pod_scrape_scope"]
+          assert_equal ["requests_total"], plugin["fieldpass"]
+          assert_equal ["debug_total"], plugin["fielddrop"]
+          assert_equal "app=metrics", plugin["kubernetes_label_selector"]
+          assert_equal "spec.nodeName=test-node", plugin["kubernetes_field_selector"]
+        end
+
+        if scenario == :windows
+          plugins.each do |plugin|
+            assert_equal "15s", plugin["timeout"], "the base Windows plugin must also retain the overall timeout"
+            refute plugin.key?("response_timeout")
+          end
+        end
+      end
+    end
+  end
+
+  def test_windows_rendered_configs_load_in_packaged_telegraf
+    binary = ENV["TELEGRAF_WINDOWS_BINARY"]
+    skip "Set TELEGRAF_WINDOWS_BINARY to run the Windows binary config smoke test" if binary.nil? || binary.empty?
+    assert File.file?(binary), "TELEGRAF_WINDOWS_BINARY must point to telegraf.exe"
+
+    [nil, [], ["default", "kube-system"]].each do |namespaces|
+      body = "monitor_kubernetes_pods = true\nfieldpass = [\"requests_total\"]\nfielddrop = [\"debug_total\"]"
+      body += "\nmonitor_kubernetes_pods_namespaces = #{namespaces.inspect}" unless namespaces.nil?
+      conf = run_parser(:windows, configmap_for(:windows, body))[:conf]
+
+      # This smoke test loads the actual generated options without contacting Kubernetes
+      # or requiring a mounted service-account CA. --test never runs output plugins.
+      conf = conf.gsub(/^(\s*monitor_kubernetes_pods\s*=\s*)true[ \t]*$/) { "#{Regexp.last_match(1)}false" }
+      conf = conf.gsub(/^(\s*tls_ca\s*=\s*)"[^"]*"[ \t]*$/) { "#{Regexp.last_match(1)}\"\"" }
+
+      Dir.mktmpdir("windows-telegraf-config") do |dir|
+        path = File.join(dir, "telegraf.conf")
+        File.write(path, conf)
+        Open3.popen3({ "NODE_IP" => "127.0.0.1" }, binary, "--console", "--test", "--config", path) do |stdin, stdout, stderr, process| # DevSkim: ignore DS162092 -- Loopback-only config smoke test.
+          stdin.close
+          readers = [Thread.new { stdout.read }, Thread.new { stderr.read }]
+          completed = !process.join(20).nil?
+          Process.kill("KILL", process.pid) unless completed
+          output = readers.map(&:value).join("\n")
+          assert completed, "Telegraf config smoke test exceeded 20 seconds"
+          assert process.value.success?, "Telegraf rejected the rendered config for #{namespaces.inspect}: #{output}"
+        end
+      end
+    end
+  end
+
+  def test_windows_process_metrics_config_preserves_pid_tags_and_fields
+    path = File.join(REPO_ROOT, "build/windows/installer/conf/telegraf-ama-logs-process-metrics.conf")
+    config = Tomlrb.load_file(path)
+    assert_equal({ "telegraf_role" => "ama-logs-process-metrics" }, config["global_tags"])
+    assert_equal 11, config["inputs"]["procstat"].length
+    config["inputs"]["procstat"].each do |plugin|
+      assert_equal ["pid"], plugin["tag_with"]
+      refute plugin.key?("pid_tag")
+      assert_equal ["cpu_usage", "memory_rss"], plugin["fieldpass"]
+      assert_equal "native", plugin["pid_finder"]
+      assert_equal "agent_telemetry", plugin["name_override"]
+      assert_equal "t.azm.ms/", plugin["name_prefix"]
+      assert_equal "DaemonSet-Windows", plugin["tags"]["ControllerType"]
+    end
+    assert_equal(
+      { "ai.cloud.role" => "ControllerType", "ai.cloud.roleInstance" => "PodName" },
+      config["outputs"]["application_insights"].first["context_tag_sources"]
+    )
   end
 
   def test_selectors_are_escaped_in_generated_namespace_plugins
