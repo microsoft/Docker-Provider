@@ -767,9 +767,9 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${GENEVA_LOGS_INTEGRATIO
       #Parse the configmap to set the right environment variables.
       ruby tomlparser.rb
 
-      cat config_env_var | while read line; do
-            echo $line >>~/.bashrc
-      done
+      while IFS= read -r line; do
+            printf '%s\n' "$line" >> ~/.bashrc
+      done < config_env_var
       source config_env_var
 fi
 

@@ -73,6 +73,15 @@ def is_valid_number?(value)
   return !value.nil? && is_number?(value) && value.to_i > 0
 end
 
+def is_valid_log_version?(value)
+  return value.is_a?(String) && ["v1", "v2"].include?(value.downcase)
+end
+
+def get_command_linux(env_variable_name, env_variable_value)
+  escaped_value = env_variable_value.to_s.gsub("'") { "'\\''" }
+  return "export #{env_variable_name}='#{escaped_value}'\n"
+end
+
 def updateDefaultConfigSetting(configEntryName, configValue)
   begin
     if !configValue.nil?
@@ -356,8 +365,13 @@ def populateSettingValuesFromConfigMap(parsedConfig)
     #Get container log schema version setting
     begin
       if !parsedConfig[:log_collection_settings][:schema].nil? && !parsedConfig[:log_collection_settings][:schema][:containerlog_schema_version].nil?
-        @containerLogSchemaVersion = parsedConfig[:log_collection_settings][:schema][:containerlog_schema_version]
-        puts "config::Using config map setting for container log schema version"
+        schemaVersion = parsedConfig[:log_collection_settings][:schema][:containerlog_schema_version]
+        if is_valid_log_version?(schemaVersion)
+          @containerLogSchemaVersion = schemaVersion.downcase
+          puts "config::Using config map setting for container log schema version"
+        else
+          ConfigParseErrorLogger.logError("Invalid container log schema version; expected v1 or v2, using default")
+        end
       end
     rescue => errorStr
       ConfigParseErrorLogger.logError("Exception while reading config map settings for container log schema version - #{errorStr}, using defaults, please check config map for errors")
@@ -413,11 +427,12 @@ def populateSettingValuesFromConfigMap(parsedConfig)
     #Get container logs route setting
     begin
       if !parsedConfig[:log_collection_settings][:route_container_logs].nil? && !parsedConfig[:log_collection_settings][:route_container_logs][:version].nil?
-        if !parsedConfig[:log_collection_settings][:route_container_logs][:version].empty?
-          @containerLogsRoute = parsedConfig[:log_collection_settings][:route_container_logs][:version]
+        routeVersion = parsedConfig[:log_collection_settings][:route_container_logs][:version]
+        if is_valid_log_version?(routeVersion)
+          @containerLogsRoute = routeVersion.downcase
           puts "config::Using config map setting for container logs route: #{@containerLogsRoute}"
         else
-          puts "config::Ignoring config map settings and using default value since provided container logs route value is empty"
+          ConfigParseErrorLogger.logError("Invalid container logs route version; expected v1 or v2, using default")
         end
       end
     rescue => errorStr
@@ -592,36 +607,36 @@ if !file.nil?
   elsif !@collectStderrLogs
     @logExclusionRegexPattern = "stderr"
   end
-  file.write("export AZMON_COLLECT_STDOUT_LOGS=#{@collectStdoutLogs}\n")
-  file.write("export AZMON_LOG_TAIL_PATH=#{@logTailPath}\n")
+  file.write(get_command_linux("AZMON_COLLECT_STDOUT_LOGS", @collectStdoutLogs))
+  file.write(get_command_linux("AZMON_LOG_TAIL_PATH", @logTailPath))
   logTailPathDir = File.dirname(@logTailPath)
-  file.write("export AZMON_LOG_TAIL_PATH_DIR=#{logTailPathDir}\n")
-  file.write("export AZMON_LOG_EXCLUSION_REGEX_PATTERN=\"#{@logExclusionRegexPattern}\"\n")
-  file.write("export AZMON_STDOUT_EXCLUDED_NAMESPACES=#{@stdoutExcludeNamespaces}\n")
-  file.write("export AZMON_STDOUT_INCLUDED_SYSTEM_PODS=#{@stdoutIncludeSystemPods}\n")
-  file.write("export AZMON_COLLECT_STDERR_LOGS=#{@collectStderrLogs}\n")
-  file.write("export AZMON_STDERR_EXCLUDED_NAMESPACES=#{@stderrExcludeNamespaces}\n")
-  file.write("export AZMON_STDERR_INCLUDED_SYSTEM_PODS=#{@stderrIncludeSystemPods}\n")
-  file.write("export AZMON_CLUSTER_COLLECT_ENV_VAR=#{@collectClusterEnvVariables}\n")
-  file.write("export AZMON_CLUSTER_LOG_TAIL_EXCLUDE_PATH=#{@excludePath}\n")
-  file.write("export AZMON_CLUSTER_CONTAINER_LOG_ENRICH=#{@enrichContainerLogs}\n")
-  file.write("export AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS=#{@collectAllKubeEvents}\n")
-  file.write("export AZMON_CONTAINER_LOGS_ROUTE=#{@containerLogsRoute}\n")
-  file.write("export AZMON_CONTAINER_LOG_SCHEMA_VERSION=#{@containerLogSchemaVersion}\n")
-  file.write("export AZMON_MULTILINE_ENABLED=#{@logEnableMultiline}\n")
-  file.write("export AZMON_MULTILINE_LANGUAGES=#{@stacktraceLanguages}\n")
-  file.write("export AZMON_KUBERNETES_METADATA_ENABLED=#{@logEnableKubernetesMetadata}\n")
-  file.write("export AZMON_KUBERNETES_METADATA_INCLUDES_FIELDS=#{@logKubernetesMetadataIncludeFields}\n")
-  file.write("export AZMON_ANNOTATION_BASED_LOG_FILTERING=#{@annotationBasedLogFiltering}\n")
+  file.write(get_command_linux("AZMON_LOG_TAIL_PATH_DIR", logTailPathDir))
+  file.write(get_command_linux("AZMON_LOG_EXCLUSION_REGEX_PATTERN", @logExclusionRegexPattern))
+  file.write(get_command_linux("AZMON_STDOUT_EXCLUDED_NAMESPACES", @stdoutExcludeNamespaces))
+  file.write(get_command_linux("AZMON_STDOUT_INCLUDED_SYSTEM_PODS", @stdoutIncludeSystemPods))
+  file.write(get_command_linux("AZMON_COLLECT_STDERR_LOGS", @collectStderrLogs))
+  file.write(get_command_linux("AZMON_STDERR_EXCLUDED_NAMESPACES", @stderrExcludeNamespaces))
+  file.write(get_command_linux("AZMON_STDERR_INCLUDED_SYSTEM_PODS", @stderrIncludeSystemPods))
+  file.write(get_command_linux("AZMON_CLUSTER_COLLECT_ENV_VAR", @collectClusterEnvVariables))
+  file.write(get_command_linux("AZMON_CLUSTER_LOG_TAIL_EXCLUDE_PATH", @excludePath))
+  file.write(get_command_linux("AZMON_CLUSTER_CONTAINER_LOG_ENRICH", @enrichContainerLogs))
+  file.write(get_command_linux("AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS", @collectAllKubeEvents))
+  file.write(get_command_linux("AZMON_CONTAINER_LOGS_ROUTE", @containerLogsRoute))
+  file.write(get_command_linux("AZMON_CONTAINER_LOG_SCHEMA_VERSION", @containerLogSchemaVersion))
+  file.write(get_command_linux("AZMON_MULTILINE_ENABLED", @logEnableMultiline))
+  file.write(get_command_linux("AZMON_MULTILINE_LANGUAGES", @stacktraceLanguages))
+  file.write(get_command_linux("AZMON_KUBERNETES_METADATA_ENABLED", @logEnableKubernetesMetadata))
+  file.write(get_command_linux("AZMON_KUBERNETES_METADATA_INCLUDES_FIELDS", @logKubernetesMetadataIncludeFields))
+  file.write(get_command_linux("AZMON_ANNOTATION_BASED_LOG_FILTERING", @annotationBasedLogFiltering))
   if @isAzMonMultiTenancyLogCollectionEnabled
-    file.write("export AZMON_MULTI_TENANCY_LOG_COLLECTION=#{@isAzMonMultiTenancyLogCollectionEnabled}\n")
-    file.write("export AZMON_MULTI_TENANCY_FALLBACK_INGESTION_DISABLED=#{@isAzMonMultiTenancyFallbackIngestionDisabled}\n")
-    file.write("export AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE=#{@isAzMonMultiTenancyLogCollectionAdvancedMode}\n")
+    file.write(get_command_linux("AZMON_MULTI_TENANCY_LOG_COLLECTION", @isAzMonMultiTenancyLogCollectionEnabled))
+    file.write(get_command_linux("AZMON_MULTI_TENANCY_FALLBACK_INGESTION_DISABLED", @isAzMonMultiTenancyFallbackIngestionDisabled))
+    file.write(get_command_linux("AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE", @isAzMonMultiTenancyLogCollectionAdvancedMode))
     azMonMultiTenantNamespacesString = @azMonMultiTenantNamespaces.join(",")
-    file.write("export AZMON_MULTI_TENANCY_NAMESPACES=#{azMonMultiTenantNamespacesString}\n")
-    file.write("export AZMON_MULTI_TENANCY_STORAGE_MAX_CHUNKS_UP=#{@azMonMultiTenancyMaxStorageChunksUp}\n")
-    file.write("export AZMON_MULTI_TENANCY_SVC_BUFFER_CHUNK_SIZE=#{@azMonMultiTenancyServiceBufferChunkSize}\n")
-    file.write("export AZMON_MULTI_TENANCY_SVC_BUFFER_MAX_SIZE=#{@azMonMultiTenancyServiceBufferMaxSize}\n")
+    file.write(get_command_linux("AZMON_MULTI_TENANCY_NAMESPACES", azMonMultiTenantNamespacesString))
+    file.write(get_command_linux("AZMON_MULTI_TENANCY_STORAGE_MAX_CHUNKS_UP", @azMonMultiTenancyMaxStorageChunksUp))
+    file.write(get_command_linux("AZMON_MULTI_TENANCY_SVC_BUFFER_CHUNK_SIZE", @azMonMultiTenancyServiceBufferChunkSize))
+    file.write(get_command_linux("AZMON_MULTI_TENANCY_SVC_BUFFER_MAX_SIZE", @azMonMultiTenancyServiceBufferMaxSize))
   end
 
   # Close file after writing all environment variables
