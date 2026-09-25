@@ -1,6 +1,7 @@
 package querylogs_test
 
 import (
+	"fmt"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -84,5 +85,33 @@ var _ = Describe("When querying the number of resources of the cluster", func() 
 		},
 		Entry("Pods", "KubePodInventory"),
 		Entry("Nodes", "KubeNodeInventory"),
+	)
+})
+
+var _ = Describe("When querying the agent telemetry", func() {
+	DescribeTable("Every node should report telemetry from the new agent version",
+		func(telemetrySource string) {
+			if AgentTelemetryResourceId == "" {
+				Skip("Agent telemetry checks skipped because AGENT_TELEMETRY_RESOURCE_ID is not set")
+			}
+
+			Expect(AgentTelemetryVersion).NotTo(BeEmpty(), "AGENT_TELEMETRY_VERSION must be set to the newly deployed image tag")
+
+			expectedNodes, err := utils.GetExpectedAmaLogsNodes(K8sClient)
+			Expect(err).NotTo(HaveOccurred())
+
+			query := fmt.Sprintf(`%s
+| where timestamp > ago(15m)
+| extend ClusterId = iff(isnotempty(tostring(customDimensions.ID)), tostring(customDimensions.ID), tostring(customDimensions.AKS_RESOURCE_ID))
+| where ClusterId =~ %q
+| where tostring(customDimensions.Version) in (%q, %q)
+| distinct Computer = tolower(tostring(customDimensions.Computer))`, telemetrySource, AKSResourceId, AgentTelemetryVersion, "win-"+AgentTelemetryVersion)
+
+			err = utils.CompareResourcesHelper(LogsClient, AgentTelemetryResourceId, query, expectedNodes)
+			Expect(err).NotTo(HaveOccurred())
+		},
+		Entry("customMetrics", "customMetrics"),
+		Entry("traces", "traces"),
+		Entry("heartbeat", `customEvents | where name == "ContainerLogDaemonSetHeartbeatEvent"`),
 	)
 })

@@ -141,7 +141,7 @@ func GetContainerEnvVars(clientset *kubernetes.Clientset, namespace string, labe
 		}
 	}
 
-	return nil, fmt.Errorf("container %s not found in pod %s", containerName, &pods[0].Name)
+	return nil, fmt.Errorf("container %s not found in pod %s", containerName, pods[0].Name)
 }
 
 func GetAKSResourceID(clientset *kubernetes.Clientset, namespace string, labelKey string, labelValue string, containerName string) (string, error) {
