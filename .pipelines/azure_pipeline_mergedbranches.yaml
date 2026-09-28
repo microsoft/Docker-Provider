@@ -384,9 +384,16 @@ extends:
                   echo "Error: Trivy scan failed after 5 retries."
                   exit 1
               fi
+        # This only bootstraps a Go toolchain on the agent so the CodeQL-instrumented
+        # `make` below has one; the actual compiler is chosen by the `go` directive in
+        # our go.mod files (GOTOOLCHAIN=auto downloads it from GOPROXY). Keep this value
+        # on a version that ships in the hosted image's tool cache -- GoTool@0 falls back
+        # to downloading from go.dev/dl, which is not reachable from this pool, so a
+        # cache miss fails the job. The image currently caches 1.24.13, 1.25.14, 1.26.8.
         - task: GoTool@0
+          retryCountOnTaskFailure: 2
           inputs:
-            version: '1.23.8'
+            version: '1.26.8'
         - bash: |
             cd $(System.DefaultWorkingDirectory)/build/linux/
             ls
