@@ -35,7 +35,7 @@ $installTelegraf = [scriptblock]::Create($body.Substring(1, $body.Length - 2))
 
     function Invoke-WebRequest($Uri, $OutFile, $ErrorAction) {
         Record-Operation 'download' $ErrorAction
-        Assert-Equals 'https://dl.influxdata.com/telegraf/releases/telegraf-1.40.0_windows_amd64.zip' $Uri 'official versioned ZIP' | Out-Null
+        Assert-Equals 'https://dl.influxdata.com/telegraf/releases/telegraf-1.40.1_windows_amd64.zip' $Uri 'official versioned ZIP' | Out-Null
         Assert-Equals '\installation\telegraf.zip' $OutFile 'download destination' | Out-Null
     }
 
@@ -54,7 +54,7 @@ $installTelegraf = [scriptblock]::Create($body.Substring(1, $body.Length - 2))
 
     function Move-Item($Path, $Destination, $ErrorAction) {
         Record-Operation 'move' $ErrorAction
-        Assert-Equals '\installation\telegraf\telegraf-1.40.0\*' $Path 'versioned archive layout' | Out-Null
+        Assert-Equals '\installation\telegraf\telegraf-1.40.1\*' $Path 'versioned archive layout' | Out-Null
         Assert-Equals '\opt\telegraf\' $Destination 'existing runtime and signing path' | Out-Null
     }
 
@@ -69,7 +69,7 @@ $installTelegraf = [scriptblock]::Create($body.Substring(1, $body.Length - 2))
     foreach ($case in $cases) {
         $script:operations = @()
         $script:failureAt = $case.FailureAt
-        $script:archiveHash = '9D85E3FA89D99E4B0E53E4AA40F069E828204CF5548EDE9B9B7C95C31FE869DD'
+        $script:archiveHash = 'CABE07907628AFC17CE8C58A1C27B3A55A838B1FB9418B2C05E9342E6E8AF8D9'
         if ($case.Name -eq 'hash mismatch') {
             $script:archiveHash = '0' * 64
         }
