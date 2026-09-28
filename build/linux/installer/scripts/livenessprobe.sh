@@ -1,7 +1,19 @@
 #!/bin/bash
 source /opt/env_vars
 
+DCR_OUTPUT_FILE=""
+
+cleanupDcrOutput() {
+    if [ -n "${DCR_OUTPUT_FILE}" ]; then
+        rm -f -- "${DCR_OUTPUT_FILE}"
+        DCR_OUTPUT_FILE=""
+    fi
+}
+
+trap cleanupDcrOutput EXIT
+
 syslogSetup() {
+    local syslog_status
     syslog_status=$(cat /var/opt/microsoft/docker-cimprov/state/syslog.status 2>/dev/null)
     if grep -qr LINUX_SYSLOGS_BLOB /etc/mdsd.d/config-cache/configchunks > /dev/null 2>&1; then
             if [[ "$syslog_status" == "disabled" ]]; then
@@ -17,17 +29,41 @@ syslogSetup() {
 }
 
 if [[ "${CONTROLLER_TYPE}" == "DaemonSet" ]]; then
-  if [[ "${CONTAINER_TYPE}" == "PrometheusSidecar" && "${GENEVA_LOGS_INTEGRATION}" == "true" && -d "/var/run/mdsd-ci" ]]; then
-    syslogSetup
-  else
-    syslogSetup
-    CURRENT_LOGS_AND_EVENTS_ONLY=${LOGS_AND_EVENTS_ONLY}
-    ruby /opt/dcr-config-parser.rb > /dev/write-to-traces 2>&1
-    source /opt/dcr_env_var
-    if [ "${LOGS_AND_EVENTS_ONLY}" != "${CURRENT_LOGS_AND_EVENTS_ONLY}" ]; then
-      echo "dcr_env_var has been updated - dcr config changed" > /dev/termination-log
+  syslogSetup
+  if [[ "${DCR_REQUIRED}" == "true" ]]; then
+    if [[ "${LOGS_AND_EVENTS_ONLY}" != "true" && "${LOGS_AND_EVENTS_ONLY}" != "false" ]]; then
+      echo "Stored LOGS_AND_EVENTS_ONLY value is missing or invalid" > /dev/termination-log
       exit 1
     fi
+
+    if ! DCR_OUTPUT_FILE=$(mktemp "${TMPDIR:-/tmp}/dcr_env_var.XXXXXX"); then
+      echo "Failed to create DCR parser output file" > /dev/termination-log
+      exit 1
+    fi
+
+    if ! ruby /opt/dcr-config-parser.rb "${DCR_OUTPUT_FILE}" > /dev/write-to-traces 2>&1; then
+      echo "Failed to parse required DCR" > /dev/termination-log
+      exit 1
+    fi
+
+    CURRENT_LOGS_AND_EVENTS_ONLY=""
+    IFS= read -r CURRENT_LOGS_AND_EVENTS_ONLY < "${DCR_OUTPUT_FILE}"
+    DCR_OUTPUT_SIZE=$(wc -c < "${DCR_OUTPUT_FILE}")
+    cleanupDcrOutput
+    if [[ ( "${CURRENT_LOGS_AND_EVENTS_ONLY}" == "true" && "${DCR_OUTPUT_SIZE}" -ne 5 ) ||
+          ( "${CURRENT_LOGS_AND_EVENTS_ONLY}" == "false" && "${DCR_OUTPUT_SIZE}" -ne 6 ) ||
+          ( "${CURRENT_LOGS_AND_EVENTS_ONLY}" != "true" && "${CURRENT_LOGS_AND_EVENTS_ONLY}" != "false" ) ]]; then
+      echo "Current LOGS_AND_EVENTS_ONLY value is missing or invalid" > /dev/termination-log
+      exit 1
+    fi
+
+    if [ "${LOGS_AND_EVENTS_ONLY}" != "${CURRENT_LOGS_AND_EVENTS_ONLY}" ]; then
+      echo "DCR configuration changed" > /dev/termination-log
+      exit 1
+    fi
+  elif [[ "${DCR_REQUIRED}" != "false" ]]; then
+    echo "DCR_REQUIRED value is missing or invalid" > /dev/termination-log
+    exit 1
   fi
 fi
 
