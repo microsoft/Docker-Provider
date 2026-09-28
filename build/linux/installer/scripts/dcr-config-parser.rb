@@ -48,7 +48,14 @@ begin
                               .map { |stream| stream["stream"] }
 
   logs_and_events_only = streams.none? { |stream| !logs_and_events_streams.include?(stream) }
-  File.write(output_path, "#{logs_and_events_only}\n")
+  begin
+    File.write(output_path, "#{logs_and_events_only}\n")
+  rescue StandardError => e
+    ConfigParseErrorLogger.logError(
+      "Failed to write DCR parser output file '#{output_path}': #{e}"
+    )
+    exit 1
+  end
 rescue StandardError => e
   ConfigParseErrorLogger.logError("Exception while parsing dcr: #{e}")
   exit 1

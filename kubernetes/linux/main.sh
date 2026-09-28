@@ -203,37 +203,89 @@ gracefulShutdown() {
 
 DCR_OUTPUT_FILE=""
 DCR_VALUE=""
+DCR_ERROR=""
 
 cleanupDcrOutput() {
+      local cleanupoutput
+      local cleanupstatus
+
       if [ -n "${DCR_OUTPUT_FILE}" ]; then
-           rm -f -- "${DCR_OUTPUT_FILE}"
+           cleanupoutput=$(rm -f -- "${DCR_OUTPUT_FILE}" 2>&1)
+           cleanupstatus=$?
+           if [ $cleanupstatus -ne 0 ]; then
+                 if [ -n "${DCR_ERROR}" ]; then
+                       DCR_ERROR="${DCR_ERROR}
+Failed to remove DCR parser output file '${DCR_OUTPUT_FILE}': ${cleanupoutput}"
+                 else
+                       DCR_ERROR="Failed to remove DCR parser output file '${DCR_OUTPUT_FILE}': ${cleanupoutput}"
+                 fi
+                 return 1
+           fi
            DCR_OUTPUT_FILE=""
       fi
+      return 0
 }
 
 parseDcrConfig() {
       local parserstatus
+      local parseroutput
+      local mktempstatus
+      local mktempoutput
       local outputsize
+      local outputsizeerror
       local expectedsize
 
-      cleanupDcrOutput
-      DCR_OUTPUT_FILE=$(mktemp "${TMPDIR:-/tmp}/dcr_env_var.XXXXXX") || return 1
-      ruby /opt/dcr-config-parser.rb "${DCR_OUTPUT_FILE}"
+      DCR_ERROR=""
+      DCR_VALUE=""
+      if ! cleanupDcrOutput; then
+           return 1
+      fi
+      mktempoutput=$(mktemp "${TMPDIR:-/tmp}/dcr_env_var.XXXXXX" 2>&1)
+      mktempstatus=$?
+      if [ $mktempstatus -ne 0 ]; then
+           DCR_ERROR="Failed to create DCR parser output file: ${mktempoutput}"
+           return 1
+      fi
+      if [ ! -f "${mktempoutput}" ]; then
+           DCR_ERROR="Failed to create DCR parser output file: unexpected mktemp output '${mktempoutput}'"
+           return 1
+      fi
+      DCR_OUTPUT_FILE="${mktempoutput}"
+      parseroutput=$(ruby /opt/dcr-config-parser.rb "${DCR_OUTPUT_FILE}" 2>&1)
       parserstatus=$?
+      if [ $parserstatus -ne 0 ]; then
+           DCR_ERROR="${parseroutput//config::error::/}"
+      fi
       if [ $parserstatus -eq 0 ]; then
-           DCR_VALUE=""
-           IFS= read -r DCR_VALUE < "${DCR_OUTPUT_FILE}"
-           outputsize=$(wc -c < "${DCR_OUTPUT_FILE}")
-           case "${DCR_VALUE}" in
-                 true) expectedsize=5 ;;
-                 false) expectedsize=6 ;;
-                 *) expectedsize=-1 ;;
-           esac
-           if [ "${outputsize}" -ne "${expectedsize}" ]; then
+           if ! { IFS= read -r DCR_VALUE < "${DCR_OUTPUT_FILE}"; } 2>/dev/null; then
+                DCR_ERROR="DCR parser output file is empty or unreadable: '${DCR_OUTPUT_FILE}'"
                 parserstatus=1
+           else
+                outputsizeerror=$({ wc -c < "${DCR_OUTPUT_FILE}"; } 2>&1)
+                if [ $? -ne 0 ]; then
+                     DCR_ERROR="Failed to inspect DCR parser output file '${DCR_OUTPUT_FILE}': ${outputsizeerror}"
+                     parserstatus=1
+                else
+                     outputsize="${outputsizeerror//[[:space:]]/}"
+                     if [[ -z "${outputsize}" || "${outputsize}" == *[!0-9]* ]]; then
+                          DCR_ERROR="Failed to inspect DCR parser output file '${DCR_OUTPUT_FILE}': ${outputsizeerror}"
+                          parserstatus=1
+                     else
+                          case "${DCR_VALUE}" in
+                                true) expectedsize=5 ;;
+                                false) expectedsize=6 ;;
+                                *) expectedsize=-1 ;;
+                          esac
+                          if [ "${outputsize}" -ne "${expectedsize}" ]; then
+                               parserstatus=1
+                          fi
+                     fi
+                fi
            fi
       fi
-      cleanupDcrOutput
+      if ! cleanupDcrOutput; then
+           parserstatus=1
+      fi
       return $parserstatus
 }
 
@@ -1291,9 +1343,13 @@ fi
 
 if [ "${DCR_REQUIRED}" == "true" ]; then
       dcrwaitsecs=0
-      until parseDcrConfig > /dev/null 2>&1; do
+      until parseDcrConfig; do
             if [ $((dcrwaitsecs % 30)) -eq 0 ]; then
-                  echo "Required DCR is not available; waiting before retry"
+                  if [ -n "${DCR_ERROR}" ]; then
+                        printf '%s\n' "${DCR_ERROR}"
+                  else
+                        echo "Required DCR is not available; waiting before retry"
+                  fi
             fi
             sleep 5
             dcrwaitsecs=$((dcrwaitsecs + 5))

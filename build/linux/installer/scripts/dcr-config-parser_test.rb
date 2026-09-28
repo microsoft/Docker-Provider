@@ -165,6 +165,23 @@ class DcrConfigParserTest < Minitest::Test
     assert_includes stderr, "Output file path is required"
   end
 
+  def test_reports_output_file_write_failure_separately
+    write_dcr(["CONTAINERINSIGHTS_CONTAINERLOGV2"])
+    unavailable_output = File.join(@sandbox, "missing", "result")
+
+    _, stderr, status = Open3.capture3(
+      RbConfig.ruby,
+      @parser,
+      unavailable_output,
+      chdir: @sandbox
+    )
+
+    refute status.success?
+    assert_includes stderr, "Failed to write DCR parser output file"
+    assert_includes stderr, unavailable_output
+    refute_includes stderr, "Exception while parsing dcr"
+  end
+
   def test_caller_owns_all_applicability_decisions
     write_dcr(["CONTAINERINSIGHTS_CONTAINERLOGV2"])
     bypass_environments = [

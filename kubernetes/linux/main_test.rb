@@ -56,10 +56,21 @@ class MainStartupTest < Minitest::Test
     Open3.capture3(bash_path, "-c", script, chdir: @sandbox)
   end
 
-  def run_dcr_parser(parser_status: 0, parser_value: "true", write_output: true)
+  def run_dcr_parser(
+    parser_status: 0,
+    parser_value: "true",
+    parser_error: "",
+    write_output: true,
+    create_tmp_dir: true,
+    remove_status: 0,
+    remove_output_after_write: false,
+    initial_dcr_value: ""
+  )
     bin_dir = File.join(@sandbox, "bin")
     tmp_dir = File.join(@sandbox, "tmp")
-    FileUtils.mkdir_p([bin_dir, tmp_dir])
+    error_capture = File.join(@sandbox, "dcr-error")
+    FileUtils.mkdir_p(bin_dir)
+    FileUtils.mkdir_p(tmp_dir) if create_tmp_dir
     parser = File.join(bin_dir, "ruby")
     File.write(
       parser,
@@ -69,17 +80,33 @@ class MainStartupTest < Minitest::Test
         if [ "${WRITE_OUTPUT}" == "true" ]; then
           printf '%s\\n' "${PARSER_VALUE}" > "$output"
         fi
+        if [ "${REMOVE_OUTPUT_AFTER_WRITE}" == "true" ]; then
+          rm -f -- "$output"
+        fi
+        printf '%s' "${PARSER_ERROR}" >&2
         exit "${PARSER_STATUS}"
       SH
     )
     FileUtils.chmod(0o755, parser)
+    remove_stub = if remove_status != 0
+                    <<~SH
+                      rm() {
+                        echo "mock removal failure" >&2
+                        return "${REMOVE_STATUS}"
+                      }
+                    SH
+                  else
+                    ""
+                  end
     script = <<~SH
       #{function_source("cleanupDcrOutput")}
       #{function_source("parseDcrConfig")}
+      #{remove_stub}
       DCR_OUTPUT_FILE=""
-      DCR_VALUE=""
+      DCR_VALUE="${INITIAL_DCR_VALUE}"
       parseDcrConfig
       status=$?
+      printf '%s' "$DCR_ERROR" > "#{shell_path(error_capture)}"
       printf '%s\\n' "$DCR_VALUE"
       printf '%s\\n' "$DCR_OUTPUT_FILE"
       exit "$status"
@@ -90,13 +117,19 @@ class MainStartupTest < Minitest::Test
         "TMPDIR" => shell_path(tmp_dir),
         "PARSER_STATUS" => parser_status.to_s,
         "PARSER_VALUE" => parser_value,
+        "PARSER_ERROR" => parser_error,
         "WRITE_OUTPUT" => write_output.to_s,
+        "REMOVE_STATUS" => remove_status.to_s,
+        "REMOVE_OUTPUT_AFTER_WRITE" => remove_output_after_write.to_s,
+        "INITIAL_DCR_VALUE" => initial_dcr_value,
       },
       bash_path,
       "-c",
       script,
       chdir: @sandbox
-    ).then { |stdout, stderr, status| [stdout.lines.map(&:chomp), stderr, status, tmp_dir] }
+    ).then do |stdout, stderr, status|
+      [stdout.lines.map(&:chomp), stderr, status, tmp_dir, File.read(error_capture)]
+    end
   end
 
   def run_set_global_env_var(env_path)
@@ -236,6 +269,68 @@ class MainStartupTest < Minitest::Test
 
     refute status.success?
     assert_empty Dir.glob(File.join(tmp_dir, "dcr_env_var.*"))
+  end
+
+  def test_parse_dcr_config_preserves_parser_diagnostic
+    _, _, status, _, diagnostic = run_dcr_parser(
+      parser_status: 23,
+      parser_error: "Failed to write DCR parser output file"
+    )
+
+    refute status.success?
+    assert_equal "Failed to write DCR parser output file", diagnostic
+  end
+
+  def test_parse_dcr_config_removes_telemetry_error_marker_from_startup_diagnostic
+    _, _, status, _, diagnostic = run_dcr_parser(
+      parser_status: 23,
+      parser_error: "config::error::Failed to write DCR parser output file"
+    )
+
+    refute status.success?
+    assert_includes diagnostic, "Failed to write DCR parser output file"
+    refute_includes diagnostic, "config::error::"
+  end
+
+  def test_parse_dcr_config_clears_stale_value_before_failure
+    output, _, status, = run_dcr_parser(
+      parser_status: 23,
+      initial_dcr_value: "true"
+    )
+
+    refute status.success?
+    assert_equal "", output.first
+  end
+
+  def test_parse_dcr_config_captures_temporary_file_creation_error
+    _, stderr, status, _, diagnostic = run_dcr_parser(create_tmp_dir: false)
+
+    refute status.success?
+    assert_empty stderr
+    assert_includes diagnostic, "Failed to create DCR parser output file"
+    assert_includes diagnostic, "dcr_env_var.XXXXXX"
+    assert_includes diagnostic, "No such file or directory"
+  end
+
+  def test_parse_dcr_config_captures_temporary_file_cleanup_error
+    _, stderr, status, _, diagnostic = run_dcr_parser(remove_status: 17)
+
+    refute status.success?, "stderr=#{stderr.inspect} diagnostic=#{diagnostic.inspect}"
+    assert_empty stderr
+    assert_includes diagnostic, "Failed to remove DCR parser output file"
+    assert_includes diagnostic, "mock removal failure"
+  end
+
+  def test_parse_dcr_config_captures_output_open_error_without_stderr
+    _, stderr, status, _, diagnostic = run_dcr_parser(remove_output_after_write: true)
+
+    refute status.success?
+    assert_empty stderr
+    assert_includes diagnostic, "empty or unreadable"
+  end
+
+  def test_dcr_wait_does_not_redirect_the_function_to_dev_null
+    refute_match(/until parseDcrConfig\s*>\s*\/dev\/null/, File.read(MAIN_PATH))
   end
 
   def test_set_global_env_var_fails_when_state_cannot_be_written
