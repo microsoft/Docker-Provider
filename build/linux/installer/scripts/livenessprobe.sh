@@ -6,7 +6,6 @@ DCR_OUTPUT_FILE=""
 cleanupDcrOutput() {
     if [ -n "${DCR_OUTPUT_FILE}" ]; then
         rm -f -- "${DCR_OUTPUT_FILE}"
-        DCR_OUTPUT_FILE=""
     fi
 }
 
@@ -46,16 +45,19 @@ if [[ "${CONTROLLER_TYPE}" == "DaemonSet" ]]; then
       exit 1
     fi
 
-    CURRENT_LOGS_AND_EVENTS_ONLY=""
-    IFS= read -r CURRENT_LOGS_AND_EVENTS_ONLY < "${DCR_OUTPUT_FILE}"
-    DCR_OUTPUT_SIZE=$(wc -c < "${DCR_OUTPUT_FILE}")
-    cleanupDcrOutput
-    if [[ ( "${CURRENT_LOGS_AND_EVENTS_ONLY}" == "true" && "${DCR_OUTPUT_SIZE}" -ne 5 ) ||
-          ( "${CURRENT_LOGS_AND_EVENTS_ONLY}" == "false" && "${DCR_OUTPUT_SIZE}" -ne 6 ) ||
-          ( "${CURRENT_LOGS_AND_EVENTS_ONLY}" != "true" && "${CURRENT_LOGS_AND_EVENTS_ONLY}" != "false" ) ]]; then
+    DCR_OUTPUT_CONTENT=""
+    if IFS= read -r -d '' DCR_OUTPUT_CONTENT < "${DCR_OUTPUT_FILE}"; then
       echo "Current LOGS_AND_EVENTS_ONLY value is missing or invalid" > /dev/termination-log
       exit 1
     fi
+    case "${DCR_OUTPUT_CONTENT}" in
+      $'true\n') CURRENT_LOGS_AND_EVENTS_ONLY=true ;;
+      $'false\n') CURRENT_LOGS_AND_EVENTS_ONLY=false ;;
+      *)
+        echo "Current LOGS_AND_EVENTS_ONLY value is missing or invalid" > /dev/termination-log
+        exit 1
+        ;;
+    esac
 
     if [ "${LOGS_AND_EVENTS_ONLY}" != "${CURRENT_LOGS_AND_EVENTS_ONLY}" ]; then
       echo "DCR configuration changed" > /dev/termination-log

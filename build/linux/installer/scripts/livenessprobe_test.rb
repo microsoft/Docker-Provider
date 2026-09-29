@@ -37,7 +37,13 @@ class LivenessProbeTest < Minitest::Test
           exit 97
         fi
         output="${!#}"
-        printf '%s\\n' "${PARSER_VALUE}" > "$output"
+        if [ "${NUL_OUTPUT}" == "true" ]; then
+          printf 'true\\n\\0invalid\\n' > "$output"
+        elif [ "${APPEND_NEWLINE}" == "true" ]; then
+          printf '%s\\n' "${PARSER_VALUE}" > "$output"
+        else
+          printf '%s' "${PARSER_VALUE}" > "$output"
+        fi
       SH
     )
     write_executable(
@@ -103,13 +109,15 @@ class LivenessProbeTest < Minitest::Test
     )
   end
 
-  def run_probe(parser_status: 0, parser_value: "true")
+  def run_probe(parser_status: 0, parser_value: "true", nul_output: false, append_newline: true)
     Open3.capture3(
       {
         "TMPDIR" => shell_path(@tmp_dir),
         "PARSER_SENTINEL" => shell_path(@parser_sentinel),
         "PARSER_STATUS" => parser_status.to_s,
         "PARSER_VALUE" => parser_value,
+        "NUL_OUTPUT" => nul_output.to_s,
+        "APPEND_NEWLINE" => append_newline.to_s,
       },
       bash_path,
       shell_path(@probe),
@@ -163,6 +171,47 @@ class LivenessProbeTest < Minitest::Test
     _, _, status = run_probe(parser_value: "true\ninvalid")
 
     refute status.success?
+  end
+
+  def test_fails_when_parser_output_uses_nul_instead_of_newline
+    write_environment(dcr_required: "true", initial_value: "true")
+
+    _, _, status = run_probe(nul_output: true)
+
+    refute status.success?
+    assert_empty Dir.glob(File.join(@tmp_dir, "dcr_env_var.*"))
+  end
+
+  def test_fails_when_parser_output_omits_trailing_newline
+    write_environment(dcr_required: "true", initial_value: "true")
+
+    _, _, status = run_probe(append_newline: false)
+
+    refute status.success?
+  end
+
+  def test_fails_when_false_parser_output_omits_trailing_newline
+    write_environment(dcr_required: "true", initial_value: "false")
+
+    _, _, status = run_probe(parser_value: "false", append_newline: false)
+
+    refute status.success?
+  end
+
+  def test_fails_when_parser_output_has_extra_newline
+    write_environment(dcr_required: "true", initial_value: "true")
+
+    _, _, status = run_probe(parser_value: "true\n")
+
+    refute status.success?
+  end
+
+  def test_succeeds_when_false_value_matches_initial_value
+    write_environment(dcr_required: "true", initial_value: "false")
+
+    stdout, stderr, status = run_probe(parser_value: "false")
+
+    assert status.success?, success_diagnostics(stdout, stderr, status)
   end
 
   def test_succeeds_when_current_value_matches_initial_value

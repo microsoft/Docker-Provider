@@ -39,18 +39,51 @@ class MainStartupTest < Minitest::Test
     lines[start..finish].join
   end
 
-  def run_onboarding(info: nil, error: nil, live_process: true)
+  def dcr_output_setup_source
+    lines = File.readlines(MAIN_PATH)
+    start = lines.index { |line| line.start_with?("dcrOutputFile=$(mktemp ") }
+    raise "DCR output setup not found" unless start
+
+    finish = ((start + 1)...lines.length).find { |index| lines[index] == "}\n" }
+    raise "end of DCR output setup not found" unless finish
+
+    lines[start..finish].join
+  end
+
+  def dcr_startup_source
+    lines = File.readlines(MAIN_PATH)
+    start = lines.index { |line| line == "if [ \"${DCR_REQUIRED}\" == \"true\" ]; then\n" }
+    raise "DCR startup block not found" unless start
+
+    finish = ((start + 1)...lines.length).find { |index| lines[index] == "fi\n" }
+    raise "end of DCR startup block not found" unless finish
+
+    lines[start..finish].join
+  end
+
+  def run_onboarding(info: nil, error: nil, live_process: true, success_after_sleeps: nil)
     File.write(File.join(@mdsd_log, "mdsd.info"), info.to_s)
     File.write(File.join(@mdsd_log, "mdsd.err"), error.to_s)
     script = <<~SH
       #{function_source("checkAgentOnboardingStatus")}
       isGenevaMode() { false; }
       MDSD_LOG="#{shell_path(@mdsd_log)}"
-      if #{live_process ? "sleep 30 & MDSD_PID=$!" : "MDSD_PID=99999999"}; then
-        checkAgentOnboardingStatus true
+      #{success_after_sleeps ? <<~SLEEP : ""}
+        sleepCalls=0
+        sleep() {
+          sleepCalls=$((sleepCalls + 1))
+          if [ "$sleepCalls" -eq #{success_after_sleeps} ]; then
+            echo "Loaded data sources" > "$MDSD_LOG/mdsd.info"
+          fi
+        }
+      SLEEP
+      status=1
+      if #{live_process ? "command sleep 30 & mdsdPid=$!" : "mdsdPid=99999999"}; then
+        checkAgentOnboardingStatus true "$mdsdPid"
         status=$?
       fi
-      #{live_process ? "kill \"$MDSD_PID\" 2>/dev/null || true" : ""}
+      #{live_process ? "kill \"$mdsdPid\" 2>/dev/null || true" : ""}
+      #{success_after_sleeps ? "echo SLEEP_CALLS=$sleepCalls" : ""}
       exit "$status"
     SH
     Open3.capture3(bash_path, "-c", script, chdir: @sandbox)
@@ -61,75 +94,62 @@ class MainStartupTest < Minitest::Test
     parser_value: "true",
     parser_error: "",
     write_output: true,
-    create_tmp_dir: true,
-    remove_status: 0,
-    remove_output_after_write: false,
-    initial_dcr_value: ""
+    append_output: false,
+    existing_output: nil,
+    nul_output: false,
+    append_newline: true
   )
     bin_dir = File.join(@sandbox, "bin")
-    tmp_dir = File.join(@sandbox, "tmp")
-    error_capture = File.join(@sandbox, "dcr-error")
+    output_file = File.join(@sandbox, "dcr-output")
     FileUtils.mkdir_p(bin_dir)
-    FileUtils.mkdir_p(tmp_dir) if create_tmp_dir
+    File.write(output_file, existing_output) unless existing_output.nil?
     parser = File.join(bin_dir, "ruby")
     File.write(
       parser,
       <<~SH
         #!/bin/bash
         output="${!#}"
-        if [ "${WRITE_OUTPUT}" == "true" ]; then
-          printf '%s\\n' "${PARSER_VALUE}" > "$output"
-        fi
-        if [ "${REMOVE_OUTPUT_AFTER_WRITE}" == "true" ]; then
-          rm -f -- "$output"
+        if [ "${NUL_OUTPUT}" == "true" ]; then
+          printf 'true\\n\\0invalid\\n' > "$output"
+        elif [ "${WRITE_OUTPUT}" == "true" ]; then
+          if [ "${APPEND_OUTPUT}" == "true" ]; then
+            printf '%s\\n' "${PARSER_VALUE}" >> "$output"
+          elif [ "${APPEND_NEWLINE}" == "true" ]; then
+            printf '%s\\n' "${PARSER_VALUE}" > "$output"
+          else
+            printf '%s' "${PARSER_VALUE}" > "$output"
+          fi
         fi
         printf '%s' "${PARSER_ERROR}" >&2
         exit "${PARSER_STATUS}"
       SH
     )
     FileUtils.chmod(0o755, parser)
-    remove_stub = if remove_status != 0
-                    <<~SH
-                      rm() {
-                        echo "mock removal failure" >&2
-                        return "${REMOVE_STATUS}"
-                      }
-                    SH
-                  else
-                    ""
-                  end
     script = <<~SH
-      #{function_source("cleanupDcrOutput")}
       #{function_source("parseDcrConfig")}
-      #{remove_stub}
-      DCR_OUTPUT_FILE=""
-      DCR_VALUE="${INITIAL_DCR_VALUE}"
-      parseDcrConfig
+      dcrValue=""
+      parseDcrConfig "#{shell_path(output_file)}" dcrValue
       status=$?
-      printf '%s' "$DCR_ERROR" > "#{shell_path(error_capture)}"
-      printf '%s\\n' "$DCR_VALUE"
-      printf '%s\\n' "$DCR_OUTPUT_FILE"
+      printf 'VALIDATED=%s' "$dcrValue"
       exit "$status"
     SH
-    Open3.capture3(
+    stdout, stderr, status = Open3.capture3(
       {
         "PATH" => "#{shell_path(bin_dir)}:#{ENV.fetch("PATH")}",
-        "TMPDIR" => shell_path(tmp_dir),
         "PARSER_STATUS" => parser_status.to_s,
         "PARSER_VALUE" => parser_value,
         "PARSER_ERROR" => parser_error,
         "WRITE_OUTPUT" => write_output.to_s,
-        "REMOVE_STATUS" => remove_status.to_s,
-        "REMOVE_OUTPUT_AFTER_WRITE" => remove_output_after_write.to_s,
-        "INITIAL_DCR_VALUE" => initial_dcr_value,
+        "APPEND_OUTPUT" => append_output.to_s,
+        "NUL_OUTPUT" => nul_output.to_s,
+        "APPEND_NEWLINE" => append_newline.to_s,
       },
       bash_path,
       "-c",
       script,
       chdir: @sandbox
-    ).then do |stdout, stderr, status|
-      [stdout.lines.map(&:chomp), stderr, status, tmp_dir, File.read(error_capture)]
-    end
+    )
+    [File.exist?(output_file) ? File.read(output_file) : nil, stdout, stderr, status]
   end
 
   def run_set_global_env_var(env_path)
@@ -204,6 +224,19 @@ class MainStartupTest < Minitest::Test
     refute status.success?
   end
 
+  def test_parse_dcr_config_fails_when_output_cannot_be_truncated
+    missing_output = File.join(@sandbox, "missing", "dcr-output")
+    script = <<~SH
+      #{function_source("parseDcrConfig")}
+      parseDcrConfig "#{shell_path(missing_output)}" dcrValue
+    SH
+
+    stdout, _, status = Open3.capture3(bash_path, "-c", script, chdir: @sandbox)
+
+    refute status.success?
+    assert_includes stdout, "Failed to empty DCR parser output file"
+  end
+
   def test_onboarding_failure_takes_precedence_over_success
     _, _, status = run_onboarding(
       info: "Loaded data sources\n",
@@ -223,114 +256,159 @@ class MainStartupTest < Minitest::Test
   def test_main_exits_when_onboarding_fails
     source = File.read(MAIN_PATH)
 
-    refute_match(/checkAgentOnboardingStatus\s+\$AAD_MSI_AUTH_MODE\s+30/, source)
     assert_match(
-      /if \[ "\$\{CONTROLLER_TYPE\}" == "DaemonSet" \] && \[ -z "\$\{CONTAINER_TYPE\}" \]; then\s+if ! checkAgentOnboardingStatus "\$\{AAD_MSI_AUTH_MODE\}"; then\s+exit 1\s+fi/,
-      source
-    )
-    assert_match(
-      /elif \[ "\$\{MUTE_PROM_SIDECAR\}" != "true" \]; then\s+checkAgentOnboardingStatus "\$\{AAD_MSI_AUTH_MODE\}" 30/,
+      /if \[ "\$\{MUTE_PROM_SIDECAR\}" != "true" \]; then\s+if ! checkAgentOnboardingStatus "\$\{AAD_MSI_AUTH_MODE\}" "\$\{mdsdPid\}"; then\s+exit 1\s+fi/,
       source
     )
   end
 
-  def test_parse_dcr_config_returns_valid_value_and_removes_temporary_output
-    output, stderr, status, tmp_dir = run_dcr_parser
+  def test_onboarding_wait_has_no_timeout_or_periodic_output
+    source = function_source("checkAgentOnboardingStatus")
+
+    refute_includes source, "waittimesecs"
+    refute_includes source, "totalsleptsecs"
+    refute_includes source, "Waiting for mdsd onboarding"
+  end
+
+  def test_onboarding_remains_active_beyond_former_timeout
+    stdout, stderr, status = run_onboarding(success_after_sleeps: 31)
 
     assert status.success?, stderr
-    assert_equal ["true", ""], output
-    assert_empty Dir.glob(File.join(tmp_dir, "dcr_env_var.*"))
+    assert_includes stdout, "SLEEP_CALLS=31"
   end
 
-  def test_parse_dcr_config_rejects_invalid_output_and_removes_temporary_output
-    output, _, status, tmp_dir = run_dcr_parser(parser_value: "invalid")
+  def test_parse_dcr_config_accepts_literal_value
+    output, stdout, stderr, status = run_dcr_parser
 
-    refute status.success?
-    assert_equal ["invalid", ""], output
-    assert_empty Dir.glob(File.join(tmp_dir, "dcr_env_var.*"))
+    assert status.success?, stderr
+    assert_equal "true\n", output
+    assert_equal "VALIDATED=true", stdout
   end
 
-  def test_parse_dcr_config_rejects_trailing_output_content
-    _, _, status, tmp_dir = run_dcr_parser(parser_value: "true\ninvalid")
+  def test_parse_dcr_config_rejects_invalid_value
+    _, stdout, _, status = run_dcr_parser(parser_value: "invalid")
 
     refute status.success?
-    assert_empty Dir.glob(File.join(tmp_dir, "dcr_env_var.*"))
+    assert_includes stdout, "DCR parser output is invalid"
+    assert stdout.end_with?("VALIDATED=")
+  end
+
+  def test_parse_dcr_config_accepts_false_value
+    output, stdout, stderr, status = run_dcr_parser(parser_value: "false")
+
+    assert status.success?, stderr
+    assert_equal "false\n", output
+    assert_equal "VALIDATED=false", stdout
+  end
+
+  def test_parse_dcr_config_rejects_missing_newline
+    _, _, _, status = run_dcr_parser(append_newline: false)
+
+    refute status.success?
+  end
+
+  def test_parse_dcr_config_rejects_false_without_newline
+    _, _, _, status = run_dcr_parser(parser_value: "false", append_newline: false)
+
+    refute status.success?
+  end
+
+  def test_parse_dcr_config_rejects_trailing_content
+    _, _, _, status = run_dcr_parser(parser_value: "true\ninvalid")
+
+    refute status.success?
+  end
+
+  def test_parse_dcr_config_rejects_trailing_blank_line
+    _, _, _, status = run_dcr_parser(parser_value: "true\n")
+
+    refute status.success?
+  end
+
+  def test_parse_dcr_config_rejects_nul_delimited_suffix
+    _, stdout, _, status = run_dcr_parser(nul_output: true)
+
+    refute status.success?
+    assert stdout.end_with?("VALIDATED=")
   end
 
   def test_parse_dcr_config_rejects_empty_output
-    _, _, status, tmp_dir = run_dcr_parser(write_output: false)
+    _, _, _, status = run_dcr_parser(write_output: false)
 
     refute status.success?
-    assert_empty Dir.glob(File.join(tmp_dir, "dcr_env_var.*"))
   end
 
-  def test_parse_dcr_config_propagates_parser_failure_and_removes_temporary_output
-    _, _, status, tmp_dir = run_dcr_parser(parser_status: 23)
-
-    refute status.success?
-    assert_empty Dir.glob(File.join(tmp_dir, "dcr_env_var.*"))
-  end
-
-  def test_parse_dcr_config_preserves_parser_diagnostic
-    _, _, status, _, diagnostic = run_dcr_parser(
+  def test_parse_dcr_config_propagates_parser_failure
+    _, _, stderr, status = run_dcr_parser(
       parser_status: 23,
-      parser_error: "Failed to write DCR parser output file"
+      parser_error: "parser failed"
     )
 
     refute status.success?
-    assert_equal "Failed to write DCR parser output file", diagnostic
+    assert_includes stderr, "parser failed"
   end
 
-  def test_parse_dcr_config_removes_telemetry_error_marker_from_startup_diagnostic
-    _, _, status, _, diagnostic = run_dcr_parser(
-      parser_status: 23,
-      parser_error: "config::error::Failed to write DCR parser output file"
+  def test_parse_dcr_config_truncates_reused_output_before_parsing
+    output, _, stderr, status = run_dcr_parser(
+      append_output: true,
+      existing_output: "stale\n"
     )
 
-    refute status.success?
-    assert_includes diagnostic, "Failed to write DCR parser output file"
-    refute_includes diagnostic, "config::error::"
+    assert status.success?, stderr
+    assert_equal "true\n", output
   end
 
-  def test_parse_dcr_config_clears_stale_value_before_failure
-    output, _, status, = run_dcr_parser(
-      parser_status: 23,
-      initial_dcr_value: "true"
+  def test_main_uses_one_script_lifetime_parser_output_and_cleanup_trap
+    source = File.read(MAIN_PATH)
+
+    assert_equal 1, source.scan(/mktemp .*dcr_env_var/).length
+    assert_match(/dcrOutputFile=.*mktemp/, source)
+    assert_match(/trap 'shutdown \$\?' EXIT/, source)
+    assert_match(/trap 'shutdown 0' TERM INT HUP QUIT/, source)
+    assert_includes function_source("shutdown"), 'rm -f -- "${dcrOutputFile}"'
+    refute_match(/\bDCR_(?:OUTPUT_FILE|VALUE|ERROR)\b/, source)
+  end
+
+  def test_main_retries_then_persists_only_validated_dcr_with_diagnostics
+    script = <<~SH
+      parseDcrConfig() {
+        attempts=$((attempts + 1))
+        echo "parser stdout diagnostic"
+        echo "parser stderr diagnostic" >&2
+        if [ "$attempts" -eq 1 ]; then
+          return 1
+        fi
+        printf -v "$2" '%s' false
+      }
+      sleep() { :; }
+      setGlobalEnvVar() { printf '%s=%s\\n' "$1" "$2"; }
+      attempts=0
+      DCR_REQUIRED=true
+      dcrOutputFile=/tmp/unused
+      #{dcr_startup_source}
+      printf 'ATTEMPTS=%s\\n' "$attempts"
+    SH
+
+    stdout, stderr, status = Open3.capture3(bash_path, "-c", script, chdir: @sandbox)
+
+    assert status.success?, stderr
+    assert_equal(
+      "parser stdout diagnostic\nparser stdout diagnostic\nLOGS_AND_EVENTS_ONLY=false\nATTEMPTS=2\n",
+      stdout
     )
+    assert_equal "parser stderr diagnostic\nparser stderr diagnostic\n", stderr
+  end
+
+  def test_main_fails_when_dcr_output_file_cannot_be_created
+    script = <<~SH
+      mktemp() { return 1; }
+      #{dcr_output_setup_source}
+    SH
+
+    stdout, _, status = Open3.capture3(bash_path, "-c", script, chdir: @sandbox)
 
     refute status.success?
-    assert_equal "", output.first
-  end
-
-  def test_parse_dcr_config_captures_temporary_file_creation_error
-    _, stderr, status, _, diagnostic = run_dcr_parser(create_tmp_dir: false)
-
-    refute status.success?
-    assert_empty stderr
-    assert_includes diagnostic, "Failed to create DCR parser output file"
-    assert_includes diagnostic, "dcr_env_var.XXXXXX"
-    assert_includes diagnostic, "No such file or directory"
-  end
-
-  def test_parse_dcr_config_captures_temporary_file_cleanup_error
-    _, stderr, status, _, diagnostic = run_dcr_parser(remove_status: 17)
-
-    refute status.success?, "stderr=#{stderr.inspect} diagnostic=#{diagnostic.inspect}"
-    assert_empty stderr
-    assert_includes diagnostic, "Failed to remove DCR parser output file"
-    assert_includes diagnostic, "mock removal failure"
-  end
-
-  def test_parse_dcr_config_captures_output_open_error_without_stderr
-    _, stderr, status, _, diagnostic = run_dcr_parser(remove_output_after_write: true)
-
-    refute status.success?
-    assert_empty stderr
-    assert_includes diagnostic, "empty or unreadable"
-  end
-
-  def test_dcr_wait_does_not_redirect_the_function_to_dev_null
-    refute_match(/until parseDcrConfig\s*>\s*\/dev\/null/, File.read(MAIN_PATH))
+    assert_includes stdout, "Failed to create DCR parser output file"
   end
 
   def test_set_global_env_var_fails_when_state_cannot_be_written
@@ -342,17 +420,78 @@ class MainStartupTest < Minitest::Test
   def test_shutdown_trap_is_installed_before_mdsd_starts
     source = File.read(MAIN_PATH)
 
-    assert_operator source.index("trap shutdown SIGTERM"), :<, source.index("\n      mdsd ")
+    assert_operator source.index("trap 'shutdown $?\' EXIT"), :<, source.index("\n      mdsd ")
+    assert_operator source.index("trap 'shutdown 0' TERM INT HUP QUIT"), :<, source.index("\n      mdsd ")
+  end
+
+  def test_shutdown_traps_remove_output_and_preserve_expected_status
+    trap_source = File.readlines(MAIN_PATH).grep(/^trap 'shutdown/)
+
+    [false, true].each do |service_mode|
+      {
+        "exit 7" => 7,
+        "(command sleep 0.1; kill -TERM $$) & wait" => 0,
+      }.each do |action, expected_status|
+        output_file = File.join(@sandbox, "dcr-output")
+        events_file = File.join(@sandbox, "shutdown-events")
+        File.write(output_file, "private")
+        FileUtils.rm_f(events_file)
+        script = <<~SH
+          #{function_source("shutdown")}
+          pkill() { echo "PKILL:$2" >> "#{shell_path(events_file)}"; }
+          isHighLogScaleMode() { false; }
+          gracefulShutdown() { echo "GRACEFUL" >> "#{shell_path(events_file)}"; }
+          dcrOutputFile="#{shell_path(output_file)}"
+          GENEVA_LOGS_INTEGRATION_SERVICE_MODE=#{service_mode}
+          AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE=false
+          #{trap_source.join}
+          #{action}
+        SH
+
+        _, stderr, status = Open3.capture3(bash_path, "-c", script, chdir: @sandbox)
+
+        assert_equal expected_status, status.exitstatus, stderr
+        refute File.exist?(output_file)
+        expected_event = service_mode ? "GRACEFUL\n" : "PKILL:mdsd\n"
+        assert_equal expected_event, File.read(events_file)
+      end
+    end
+  end
+
+  def test_onboarding_requires_mdsd_pid
+    script = <<~SH
+      #{function_source("checkAgentOnboardingStatus")}
+      checkAgentOnboardingStatus true ""
+    SH
+
+    stdout, _, status = Open3.capture3(bash_path, "-c", script, chdir: @sandbox)
+
+    refute status.success?
+    assert_includes stdout, "mdsd PID"
+  end
+
+  def test_onboarding_requires_authentication_mode
+    script = <<~SH
+      #{function_source("checkAgentOnboardingStatus")}
+      checkAgentOnboardingStatus "" "123"
+    SH
+
+    stdout, _, status = Open3.capture3(bash_path, "-c", script, chdir: @sandbox)
+
+    refute status.success?
+    assert_includes stdout, "authentication mode"
   end
 
   def test_environment_state_file_is_hardened_in_population_order
     source = File.read(MAIN_PATH)
     umask = source.index("umask 077")
     creation = source.index(": > /opt/env_vars")
+    parser_output = source.index("mktemp")
     read_only = source.index("chmod 400 /opt/env_vars")
     last_population = source.rindex("setGlobalEnvVar AZMON_RETINA_FLOW_LOGS_ENABLED")
 
     assert_operator umask, :<, creation
+    assert_operator umask, :<, parser_output
     assert_operator creation, :<, last_population
     assert_operator last_population, :<, read_only
   end

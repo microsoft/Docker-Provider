@@ -1,5 +1,7 @@
 #!/bin/bash
 
+umask 077
+
 # Get the start time of the setup in seconds
 startTime=$(date +%s)
 
@@ -201,95 +203,36 @@ gracefulShutdown() {
       echo "gracefulShutdown complete @ $(date +'%Y-%m-%dT%H:%M:%S')"
 }
 
-DCR_OUTPUT_FILE=""
-DCR_VALUE=""
-DCR_ERROR=""
-
-cleanupDcrOutput() {
-      local cleanupoutput
-      local cleanupstatus
-
-      if [ -n "${DCR_OUTPUT_FILE}" ]; then
-           cleanupoutput=$(rm -f -- "${DCR_OUTPUT_FILE}" 2>&1)
-           cleanupstatus=$?
-           if [ $cleanupstatus -ne 0 ]; then
-                 if [ -n "${DCR_ERROR}" ]; then
-                       DCR_ERROR="${DCR_ERROR}
-Failed to remove DCR parser output file '${DCR_OUTPUT_FILE}': ${cleanupoutput}"
-                 else
-                       DCR_ERROR="Failed to remove DCR parser output file '${DCR_OUTPUT_FILE}': ${cleanupoutput}"
-                 fi
-                 return 1
-           fi
-           DCR_OUTPUT_FILE=""
-      fi
-      return 0
-}
-
 parseDcrConfig() {
-      local parserstatus
-      local parseroutput
-      local mktempstatus
-      local mktempoutput
-      local outputsize
-      local outputsizeerror
-      local expectedsize
+      local outputFile=$1
+      local resultVariable=$2
+      local parserOutput
+      local validatedValue
 
-      DCR_ERROR=""
-      DCR_VALUE=""
-      if ! cleanupDcrOutput; then
+      if ! : > "${outputFile}"; then
+           echo "Failed to empty DCR parser output file '${outputFile}'"
            return 1
       fi
-      mktempoutput=$(mktemp "${TMPDIR:-/tmp}/dcr_env_var.XXXXXX" 2>&1)
-      mktempstatus=$?
-      if [ $mktempstatus -ne 0 ]; then
-           DCR_ERROR="Failed to create DCR parser output file: ${mktempoutput}"
+
+      if ! ruby /opt/dcr-config-parser.rb "${outputFile}"; then
            return 1
       fi
-      if [ ! -f "${mktempoutput}" ]; then
-           DCR_ERROR="Failed to create DCR parser output file: unexpected mktemp output '${mktempoutput}'"
-           return 1
+
+      if IFS= read -r -d '' parserOutput < "${outputFile}"; then
+            echo "DCR parser output is invalid"
+            return 1
       fi
-      DCR_OUTPUT_FILE="${mktempoutput}"
-      parseroutput=$(ruby /opt/dcr-config-parser.rb "${DCR_OUTPUT_FILE}" 2>&1)
-      parserstatus=$?
-      if [ $parserstatus -ne 0 ]; then
-           DCR_ERROR="${parseroutput//config::error::/}"
-      fi
-      if [ $parserstatus -eq 0 ]; then
-           if ! { IFS= read -r DCR_VALUE < "${DCR_OUTPUT_FILE}"; } 2>/dev/null; then
-                DCR_ERROR="DCR parser output file is empty or unreadable: '${DCR_OUTPUT_FILE}'"
-                parserstatus=1
-           else
-                outputsizeerror=$({ wc -c < "${DCR_OUTPUT_FILE}"; } 2>&1)
-                if [ $? -ne 0 ]; then
-                     DCR_ERROR="Failed to inspect DCR parser output file '${DCR_OUTPUT_FILE}': ${outputsizeerror}"
-                     parserstatus=1
-                else
-                     outputsize="${outputsizeerror//[[:space:]]/}"
-                     if [[ -z "${outputsize}" || "${outputsize}" == *[!0-9]* ]]; then
-                          DCR_ERROR="Failed to inspect DCR parser output file '${DCR_OUTPUT_FILE}': ${outputsizeerror}"
-                          parserstatus=1
-                     else
-                          case "${DCR_VALUE}" in
-                                true) expectedsize=5 ;;
-                                false) expectedsize=6 ;;
-                                *) expectedsize=-1 ;;
-                          esac
-                          if [ "${outputsize}" -ne "${expectedsize}" ]; then
-                               parserstatus=1
-                          fi
-                     fi
-                fi
-           fi
-      fi
-      if ! cleanupDcrOutput; then
-           parserstatus=1
-      fi
-      return $parserstatus
+      case "${parserOutput}" in
+            $'true\n') validatedValue=true ;;
+            $'false\n') validatedValue=false ;;
+            *)
+                  echo "DCR parser output is invalid"
+                  return 1
+                  ;;
+      esac
+
+      printf -v "${resultVariable}" '%s' "${validatedValue}"
 }
-
-trap cleanupDcrOutput EXIT
 
 # please use this instead of adding env vars to bashrc directly
 # usage: setGlobalEnvVar ENABLE_SIDECAR_SCRAPING true
@@ -301,19 +244,10 @@ setGlobalEnvVar() {
       fi
 }
 
-previousumask=$(umask)
-umask 077
 if ! : > /opt/env_vars; then
-      umask "$previousumask"
       echo "Failed to create /opt/env_vars"
       exit 1
 fi
-if ! chmod 600 /opt/env_vars; then
-      umask "$previousumask"
-      echo "Failed to make /opt/env_vars private"
-      exit 1
-fi
-umask "$previousumask"
 echo "source /opt/env_vars" >> ~/.bashrc
 
 waitforlisteneronTCPport() {
@@ -364,16 +298,12 @@ isGenevaMode() {
 }
 
 isDcrRequired() {
-      if [[ "${CONTROLLER_TYPE}" == "DaemonSet" &&
+      [[ "${CONTROLLER_TYPE}" == "DaemonSet" &&
             -z "${CONTAINER_TYPE}" &&
             "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" != "true" &&
             "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" &&
             ( ( "${GENEVA_LOGS_INTEGRATION}" != "true" && "${USING_AAD_MSI_AUTH}" == "true" ) ||
-              ( "${GENEVA_LOGS_INTEGRATION}" == "true" && "${AZMON_MULTI_TENANCY_LOG_COLLECTION}" == "true" ) ) ]]; then
-            true
-      else
-            false
-      fi
+              ( "${GENEVA_LOGS_INTEGRATION}" == "true" && "${AZMON_MULTI_TENANCY_LOG_COLLECTION}" == "true" ) ) ]]
 }
 
 isHighLogScaleMode() {
@@ -402,6 +332,10 @@ isOpenTelemetryLogsEnabled() {
 }
 
 shutdown() {
+     local exitstatus=$1
+
+     trap - EXIT TERM INT HUP QUIT
+     rm -f -- "${dcrOutputFile}"
      if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ] || [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]; then
          echo "graceful shutdown"
          gracefulShutdown
@@ -411,27 +345,25 @@ shutdown() {
             pkill -f amacoreagent
          fi
       fi
-      exit 0
+      exit "${exitstatus}"
 }
 
-trap shutdown SIGTERM
+dcrOutputFile=$(mktemp "${TMPDIR:-/tmp}/dcr_env_var.XXXXXX") || {
+      echo "Failed to create DCR parser output file"
+      exit 1
+}
+trap 'shutdown $?' EXIT
+trap 'shutdown 0' TERM INT HUP QUIT
 
 checkAgentOnboardingStatus() {
       local sleepdurationsecs=1
-      local totalsleptsecs=0
       local isaadmsiauthmode=$1
-      local waittimesecs=$2
-      local numeric='^[0-9]+$'
+      local mdsdpid=$2
       local successmessage="Onboarding success"
       local failuremessage="Failed to register certificate with OMS Homing service, giving up"
 
-      if [ -z "$1" ]; then
-            echo "${FUNCNAME[0]} called without the required authentication mode"
-            return 1
-      fi
-
-      if [ -n "${waittimesecs}" ] && ! [[ "${waittimesecs}" =~ ${numeric} ]]; then
-            echo "${FUNCNAME[0]} called with invalid wait time<${waittimesecs}>"
+      if [ -z "${isaadmsiauthmode}" ] || [ -z "${mdsdpid}" ]; then
+            echo "${FUNCNAME[0]} called without the required authentication mode or mdsd PID"
             return 1
       fi
 
@@ -453,19 +385,11 @@ checkAgentOnboardingStatus() {
             elif grep -q "$successmessage" "${MDSD_LOG}/mdsd.info" > /dev/null 2>&1; then
                   echo "Onboarding success"
                   return 0
-            elif [ -z "${MDSD_PID}" ] || ! kill -0 "${MDSD_PID}" > /dev/null 2>&1; then
+            elif ! kill -0 "${mdsdpid}" > /dev/null 2>&1; then
                   echo "mdsd terminated before onboarding completed"
                   return 1
             fi
-            if [ -n "${waittimesecs}" ] && [ "${totalsleptsecs}" -ge "${waittimesecs}" ]; then
-                  echo "${FUNCNAME[0]} giving up checking agent onboarding status after ${totalsleptsecs} secs"
-                  return 1
-            fi
-            if [ "${totalsleptsecs}" -gt 0 ] && [ $((totalsleptsecs % 30)) -eq 0 ]; then
-                  echo "Waiting for mdsd onboarding to complete"
-            fi
             sleep $sleepdurationsecs
-            totalsleptsecs=$((totalsleptsecs + sleepdurationsecs))
       done
 }
 
@@ -1164,9 +1088,10 @@ done
 source /etc/mdsd.d/envmdsd
 MDSD_AAD_MSI_AUTH_ARGS=""
 
-DCR_REQUIRED=false
 if isDcrRequired; then
       DCR_REQUIRED=true
+else
+      DCR_REQUIRED=false
 fi
 setGlobalEnvVar DCR_REQUIRED "${DCR_REQUIRED}"
 
@@ -1289,7 +1214,7 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
       fi
       # add -T 0xFFFF for full traces
       mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
-      MDSD_PID=$!
+      mdsdPid=$!
     else
       echo "not starting mdsd (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
     fi
@@ -1310,7 +1235,7 @@ else
       mkdir -p /var/run/mdsd-ci
       # add -T 0xFFFF for full traces
       mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos 2>>/dev/null &
-      MDSD_PID=$!
+      mdsdPid=$!
 fi
 
 # # Set up a cron job for logrotation
@@ -1331,30 +1256,19 @@ fi
 # Write messages from the liveness probe to stdout (so telemetry picks it up)
 touch /dev/write-to-traces
 
-if [ "${CONTROLLER_TYPE}" == "DaemonSet" ] && [ -z "${CONTAINER_TYPE}" ]; then
-      if ! checkAgentOnboardingStatus "${AAD_MSI_AUTH_MODE}"; then
+if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
+      if ! checkAgentOnboardingStatus "${AAD_MSI_AUTH_MODE}" "${mdsdPid}"; then
             exit 1
       fi
-elif [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
-      checkAgentOnboardingStatus "${AAD_MSI_AUTH_MODE}" 30
 else
       echo "not checking onboarding status (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
 fi
 
 if [ "${DCR_REQUIRED}" == "true" ]; then
-      dcrwaitsecs=0
-      until parseDcrConfig; do
-            if [ $((dcrwaitsecs % 30)) -eq 0 ]; then
-                  if [ -n "${DCR_ERROR}" ]; then
-                        printf '%s\n' "${DCR_ERROR}"
-                  else
-                        echo "Required DCR is not available; waiting before retry"
-                  fi
-            fi
+      until parseDcrConfig "${dcrOutputFile}" dcrValue; do
             sleep 5
-            dcrwaitsecs=$((dcrwaitsecs + 5))
       done
-      setGlobalEnvVar LOGS_AND_EVENTS_ONLY "${DCR_VALUE}"
+      setGlobalEnvVar LOGS_AND_EVENTS_ONLY "${dcrValue}"
 fi
 
 setGlobalEnvVar ENABLE_CUSTOM_METRICS "${ENABLE_CUSTOM_METRICS}"
