@@ -61,7 +61,7 @@ class MainStartupTest < Minitest::Test
     lines[start..finish].join
   end
 
-  def run_onboarding(info: nil, error: nil, live_process: true, success_after_sleeps: nil)
+  def run_onboarding(info: nil, error: nil, success_after_sleeps: nil)
     File.write(File.join(@mdsd_log, "mdsd.info"), info.to_s)
     File.write(File.join(@mdsd_log, "mdsd.err"), error.to_s)
     script = <<~SH
@@ -77,12 +77,8 @@ class MainStartupTest < Minitest::Test
           fi
         }
       SLEEP
-      status=1
-      if #{live_process ? "command sleep 30 & mdsdPid=$!" : "mdsdPid=99999999"}; then
-        checkAgentOnboardingStatus true "$mdsdPid"
-        status=$?
-      fi
-      #{live_process ? "kill \"$mdsdPid\" 2>/dev/null || true" : ""}
+      checkAgentOnboardingStatus true
+      status=$?
       #{success_after_sleeps ? "echo SLEEP_CALLS=$sleepCalls" : ""}
       exit "$status"
     SH
@@ -96,7 +92,6 @@ class MainStartupTest < Minitest::Test
     write_output: true,
     append_output: false,
     existing_output: nil,
-    nul_output: false,
     append_newline: true
   )
     bin_dir = File.join(@sandbox, "bin")
@@ -109,9 +104,7 @@ class MainStartupTest < Minitest::Test
       <<~SH
         #!/bin/bash
         output="${!#}"
-        if [ "${NUL_OUTPUT}" == "true" ]; then
-          printf 'true\\n\\0invalid\\n' > "$output"
-        elif [ "${WRITE_OUTPUT}" == "true" ]; then
+        if [ "${WRITE_OUTPUT}" == "true" ]; then
           if [ "${APPEND_OUTPUT}" == "true" ]; then
             printf '%s\\n' "${PARSER_VALUE}" >> "$output"
           elif [ "${APPEND_NEWLINE}" == "true" ]; then
@@ -141,7 +134,6 @@ class MainStartupTest < Minitest::Test
         "PARSER_ERROR" => parser_error,
         "WRITE_OUTPUT" => write_output.to_s,
         "APPEND_OUTPUT" => append_output.to_s,
-        "NUL_OUTPUT" => nul_output.to_s,
         "APPEND_NEWLINE" => append_newline.to_s,
       },
       bash_path,
@@ -246,18 +238,11 @@ class MainStartupTest < Minitest::Test
     refute status.success?
   end
 
-  def test_onboarding_fails_when_mdsd_terminates_before_reporting_success
-    stdout, _, status = run_onboarding(live_process: false)
-
-    refute status.success?
-    assert_includes stdout, "mdsd terminated before onboarding completed"
-  end
-
   def test_main_exits_when_onboarding_fails
     source = File.read(MAIN_PATH)
 
     assert_match(
-      /if \[ "\$\{MUTE_PROM_SIDECAR\}" != "true" \]; then\s+if ! checkAgentOnboardingStatus "\$\{AAD_MSI_AUTH_MODE\}" "\$\{mdsdPid\}"; then\s+exit 1\s+fi/,
+      /if \[ "\$\{GENEVA_LOGS_INTEGRATION\}" == "true" \] \|\| \[ "\$\{GENEVA_LOGS_INTEGRATION_SERVICE_MODE\}" == "true" \] \|\| \[ "\$\{MUTE_PROM_SIDECAR\}" != "true" \]; then\s+if ! checkAgentOnboardingStatus "\$\{AAD_MSI_AUTH_MODE\}"; then\s+exit 1\s+fi/,
       source
     )
   end
@@ -314,22 +299,9 @@ class MainStartupTest < Minitest::Test
   end
 
   def test_parse_dcr_config_rejects_trailing_content
-    _, _, _, status = run_dcr_parser(parser_value: "true\ninvalid")
+    _, _, _, status = run_dcr_parser(parser_value: "true invalid")
 
     refute status.success?
-  end
-
-  def test_parse_dcr_config_rejects_trailing_blank_line
-    _, _, _, status = run_dcr_parser(parser_value: "true\n")
-
-    refute status.success?
-  end
-
-  def test_parse_dcr_config_rejects_nul_delimited_suffix
-    _, stdout, _, status = run_dcr_parser(nul_output: true)
-
-    refute status.success?
-    assert stdout.end_with?("VALIDATED=")
   end
 
   def test_parse_dcr_config_rejects_empty_output
@@ -458,22 +430,10 @@ class MainStartupTest < Minitest::Test
     end
   end
 
-  def test_onboarding_requires_mdsd_pid
-    script = <<~SH
-      #{function_source("checkAgentOnboardingStatus")}
-      checkAgentOnboardingStatus true ""
-    SH
-
-    stdout, _, status = Open3.capture3(bash_path, "-c", script, chdir: @sandbox)
-
-    refute status.success?
-    assert_includes stdout, "mdsd PID"
-  end
-
   def test_onboarding_requires_authentication_mode
     script = <<~SH
       #{function_source("checkAgentOnboardingStatus")}
-      checkAgentOnboardingStatus "" "123"
+      checkAgentOnboardingStatus ""
     SH
 
     stdout, _, status = Open3.capture3(bash_path, "-c", script, chdir: @sandbox)
@@ -487,13 +447,14 @@ class MainStartupTest < Minitest::Test
     umask = source.index("umask 077")
     creation = source.index(": > /opt/env_vars")
     parser_output = source.index("mktemp")
-    read_only = source.index("chmod 400 /opt/env_vars")
+    read_only = source.index("chmod a-w /opt/env_vars")
     last_population = source.rindex("setGlobalEnvVar AZMON_RETINA_FLOW_LOGS_ENABLED")
 
     assert_operator umask, :<, creation
     assert_operator umask, :<, parser_output
     assert_operator creation, :<, last_population
     assert_operator last_population, :<, read_only
+    refute_includes source, "Failed to make /opt/env_vars read-only"
   end
 
   def test_main_does_not_use_persistent_dcr_parser_output

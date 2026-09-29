@@ -3,16 +3,16 @@
 require "json"
 require_relative "ConfigParseErrorLogger"
 
-logs_and_events_streams = {
+@logs_and_events_streams = {
   "CONTAINER_LOG_BLOB" => true,
   "CONTAINERINSIGHTS_CONTAINERLOGV2" => true,
   "KUBE_EVENTS_BLOB" => true,
   "KUBE_POD_INVENTORY_BLOB" => true,
 }
-output_path = ARGV[0]
+@output_path = ARGV[0]
 
 begin
-  raise "Output file path is required" if output_path.nil? || output_path.empty?
+  raise "Output file path is required" if @output_path.nil? || @output_path.empty?
 
   applicable_sources = nil
   Dir.glob("/etc/mdsd.d/config-cache/configchunks/*.json").each do |file|
@@ -47,12 +47,12 @@ begin
   streams = applicable_sources.flat_map { |source| source["streams"] }
                               .map { |stream| stream["stream"] }
 
-  logs_and_events_only = streams.none? { |stream| !logs_and_events_streams.include?(stream) }
+  logs_and_events_only = streams.none? { |stream| !@logs_and_events_streams.include?(stream) }
   begin
-    File.write(output_path, "#{logs_and_events_only}\n")
+    File.write(@output_path, "#{logs_and_events_only}\n", encoding: Encoding::UTF_8)
   rescue StandardError => e
     ConfigParseErrorLogger.logError(
-      "Failed to write DCR parser output file '#{output_path}': #{e}"
+      "Failed to write DCR parser output file '#{@output_path}': #{e}"
     )
     exit 1
   end

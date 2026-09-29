@@ -1,15 +1,55 @@
 #!/bin/bash
 source /opt/env_vars
 
-DCR_OUTPUT_FILE=""
+umask 077
 
 cleanupDcrOutput() {
-    if [ -n "${DCR_OUTPUT_FILE}" ]; then
-        rm -f -- "${DCR_OUTPUT_FILE}"
-    fi
+    rm -f -- "${dcrOutputFile}"
 }
 
+dcrOutputFile=$(mktemp "${TMPDIR:-/tmp}/dcr_env_var.XXXXXX") || {
+  echo "Failed to create DCR parser output file" > /dev/termination-log
+  exit 1
+}
 trap cleanupDcrOutput EXIT
+
+checkDcrConfig() {
+  local currentValue
+  local remainingValue
+
+  case "${LOGS_AND_EVENTS_ONLY}" in
+    true|false) ;;
+    *)
+      echo "Stored LOGS_AND_EVENTS_ONLY value is missing or invalid" > /dev/termination-log
+      return 1
+      ;;
+  esac
+
+  if ! : > "${dcrOutputFile}"; then
+    echo "Failed to empty DCR parser output file" > /dev/termination-log
+    return 1
+  fi
+  if ! ruby /opt/dcr-config-parser.rb "${dcrOutputFile}" > /dev/write-to-traces 2>&1; then
+    echo "Failed to parse required DCR" > /dev/termination-log
+    return 1
+  fi
+  if ! read currentValue remainingValue < "${dcrOutputFile}" || [ -n "${remainingValue}" ]; then
+    echo "Current LOGS_AND_EVENTS_ONLY value is missing or invalid" > /dev/termination-log
+    return 1
+  fi
+  case "${currentValue}" in
+    true|false) ;;
+    *)
+      echo "Current LOGS_AND_EVENTS_ONLY value is missing or invalid" > /dev/termination-log
+      return 1
+      ;;
+  esac
+
+  if [ "${LOGS_AND_EVENTS_ONLY}" != "${currentValue}" ]; then
+    echo "DCR configuration changed" > /dev/termination-log
+    return 1
+  fi
+}
 
 syslogSetup() {
     local syslog_status
@@ -29,44 +69,18 @@ syslogSetup() {
 
 if [[ "${CONTROLLER_TYPE}" == "DaemonSet" ]]; then
   syslogSetup
-  if [[ "${DCR_REQUIRED}" == "true" ]]; then
-    if [[ "${LOGS_AND_EVENTS_ONLY}" != "true" && "${LOGS_AND_EVENTS_ONLY}" != "false" ]]; then
-      echo "Stored LOGS_AND_EVENTS_ONLY value is missing or invalid" > /dev/termination-log
-      exit 1
-    fi
-
-    if ! DCR_OUTPUT_FILE=$(mktemp "${TMPDIR:-/tmp}/dcr_env_var.XXXXXX"); then
-      echo "Failed to create DCR parser output file" > /dev/termination-log
-      exit 1
-    fi
-
-    if ! ruby /opt/dcr-config-parser.rb "${DCR_OUTPUT_FILE}" > /dev/write-to-traces 2>&1; then
-      echo "Failed to parse required DCR" > /dev/termination-log
-      exit 1
-    fi
-
-    DCR_OUTPUT_CONTENT=""
-    if IFS= read -r -d '' DCR_OUTPUT_CONTENT < "${DCR_OUTPUT_FILE}"; then
-      echo "Current LOGS_AND_EVENTS_ONLY value is missing or invalid" > /dev/termination-log
-      exit 1
-    fi
-    case "${DCR_OUTPUT_CONTENT}" in
-      $'true\n') CURRENT_LOGS_AND_EVENTS_ONLY=true ;;
-      $'false\n') CURRENT_LOGS_AND_EVENTS_ONLY=false ;;
-      *)
-        echo "Current LOGS_AND_EVENTS_ONLY value is missing or invalid" > /dev/termination-log
+  case "${DCR_REQUIRED}" in
+    true)
+      if ! checkDcrConfig; then
         exit 1
-        ;;
-    esac
-
-    if [ "${LOGS_AND_EVENTS_ONLY}" != "${CURRENT_LOGS_AND_EVENTS_ONLY}" ]; then
-      echo "DCR configuration changed" > /dev/termination-log
+      fi
+      ;;
+    false) ;;
+    *)
+      echo "DCR_REQUIRED value is missing or invalid" > /dev/termination-log
       exit 1
-    fi
-  elif [[ "${DCR_REQUIRED}" != "false" ]]; then
-    echo "DCR_REQUIRED value is missing or invalid" > /dev/termination-log
-    exit 1
-  fi
+      ;;
+  esac
 fi
 
 if [ -s "inotifyoutput.txt" ]

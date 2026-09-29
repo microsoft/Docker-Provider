@@ -205,9 +205,9 @@ gracefulShutdown() {
 
 parseDcrConfig() {
       local outputFile=$1
-      local resultVariable=$2
-      local parserOutput
-      local validatedValue
+      local -n result=$2
+      local parsedValue
+      local remainingValue
 
       if ! : > "${outputFile}"; then
            echo "Failed to empty DCR parser output file '${outputFile}'"
@@ -218,20 +218,21 @@ parseDcrConfig() {
            return 1
       fi
 
-      if IFS= read -r -d '' parserOutput < "${outputFile}"; then
+      if ! read parsedValue remainingValue < "${outputFile}"; then
             echo "DCR parser output is invalid"
             return 1
       fi
-      case "${parserOutput}" in
-            $'true\n') validatedValue=true ;;
-            $'false\n') validatedValue=false ;;
+      if [ -n "${remainingValue}" ]; then
+            echo "DCR parser output is invalid"
+            return 1
+      fi
+      case "${parsedValue}" in
+            true|false) result="${parsedValue}" ;;
             *)
                   echo "DCR parser output is invalid"
                   return 1
                   ;;
       esac
-
-      printf -v "${resultVariable}" '%s' "${validatedValue}"
 }
 
 # please use this instead of adding env vars to bashrc directly
@@ -358,12 +359,11 @@ trap 'shutdown 0' TERM INT HUP QUIT
 checkAgentOnboardingStatus() {
       local sleepdurationsecs=1
       local isaadmsiauthmode=$1
-      local mdsdpid=$2
       local successmessage="Onboarding success"
       local failuremessage="Failed to register certificate with OMS Homing service, giving up"
 
-      if [ -z "${isaadmsiauthmode}" ] || [ -z "${mdsdpid}" ]; then
-            echo "${FUNCNAME[0]} called without the required authentication mode or mdsd PID"
+      if [ -z "${isaadmsiauthmode}" ]; then
+            echo "${FUNCNAME[0]} called without the required authentication mode"
             return 1
       fi
 
@@ -385,9 +385,6 @@ checkAgentOnboardingStatus() {
             elif grep -q "$successmessage" "${MDSD_LOG}/mdsd.info" > /dev/null 2>&1; then
                   echo "Onboarding success"
                   return 0
-            elif ! kill -0 "${mdsdpid}" > /dev/null 2>&1; then
-                  echo "mdsd terminated before onboarding completed"
-                  return 1
             fi
             sleep $sleepdurationsecs
       done
@@ -1214,7 +1211,6 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
       fi
       # add -T 0xFFFF for full traces
       mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
-      mdsdPid=$!
     else
       echo "not starting mdsd (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
     fi
@@ -1235,7 +1231,6 @@ else
       mkdir -p /var/run/mdsd-ci
       # add -T 0xFFFF for full traces
       mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos 2>>/dev/null &
-      mdsdPid=$!
 fi
 
 # # Set up a cron job for logrotation
@@ -1256,8 +1251,8 @@ fi
 # Write messages from the liveness probe to stdout (so telemetry picks it up)
 touch /dev/write-to-traces
 
-if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
-      if ! checkAgentOnboardingStatus "${AAD_MSI_AUTH_MODE}" "${mdsdPid}"; then
+if [ "${GENEVA_LOGS_INTEGRATION}" == "true" ] || [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ] || [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
+      if ! checkAgentOnboardingStatus "${AAD_MSI_AUTH_MODE}"; then
             exit 1
       fi
 else
@@ -1280,10 +1275,7 @@ else
 fi
 
 setGlobalEnvVar AZMON_RETINA_FLOW_LOGS_ENABLED "${AZMON_RETINA_FLOW_LOGS_ENABLED}"
-if ! chmod 400 /opt/env_vars; then
-      echo "Failed to make /opt/env_vars read-only"
-      exit 1
-fi
+chmod a-w /opt/env_vars
 
 #start fluentd
 if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ] && [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" != "true" ]; then

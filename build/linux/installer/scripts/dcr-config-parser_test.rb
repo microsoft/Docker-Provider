@@ -201,4 +201,12 @@ class DcrConfigParserTest < Minitest::Test
       assert_equal "true\n", result[:output]
     end
   end
+
+  def test_preserves_top_level_instance_scope_and_utf8_output
+    source = File.read(PARSER_PATH)
+
+    assert_match(/^@logs_and_events_streams = /, source)
+    assert_match(/^@output_path = /, source)
+    assert_includes source, "encoding: Encoding::UTF_8"
+  end
 end

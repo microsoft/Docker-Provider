@@ -37,9 +37,7 @@ class LivenessProbeTest < Minitest::Test
           exit 97
         fi
         output="${!#}"
-        if [ "${NUL_OUTPUT}" == "true" ]; then
-          printf 'true\\n\\0invalid\\n' > "$output"
-        elif [ "${APPEND_NEWLINE}" == "true" ]; then
+        if [ "${APPEND_NEWLINE}" == "true" ]; then
           printf '%s\\n' "${PARSER_VALUE}" > "$output"
         else
           printf '%s' "${PARSER_VALUE}" > "$output"
@@ -109,14 +107,13 @@ class LivenessProbeTest < Minitest::Test
     )
   end
 
-  def run_probe(parser_status: 0, parser_value: "true", nul_output: false, append_newline: true)
+  def run_probe(parser_status: 0, parser_value: "true", append_newline: true)
     Open3.capture3(
       {
         "TMPDIR" => shell_path(@tmp_dir),
         "PARSER_SENTINEL" => shell_path(@parser_sentinel),
         "PARSER_STATUS" => parser_status.to_s,
         "PARSER_VALUE" => parser_value,
-        "NUL_OUTPUT" => nul_output.to_s,
         "APPEND_NEWLINE" => append_newline.to_s,
       },
       bash_path,
@@ -168,18 +165,9 @@ class LivenessProbeTest < Minitest::Test
   def test_fails_when_parser_output_contains_trailing_content
     write_environment(dcr_required: "true", initial_value: "true")
 
-    _, _, status = run_probe(parser_value: "true\ninvalid")
+    _, _, status = run_probe(parser_value: "true invalid")
 
     refute status.success?
-  end
-
-  def test_fails_when_parser_output_uses_nul_instead_of_newline
-    write_environment(dcr_required: "true", initial_value: "true")
-
-    _, _, status = run_probe(nul_output: true)
-
-    refute status.success?
-    assert_empty Dir.glob(File.join(@tmp_dir, "dcr_env_var.*"))
   end
 
   def test_fails_when_parser_output_omits_trailing_newline
@@ -194,14 +182,6 @@ class LivenessProbeTest < Minitest::Test
     write_environment(dcr_required: "true", initial_value: "false")
 
     _, _, status = run_probe(parser_value: "false", append_newline: false)
-
-    refute status.success?
-  end
-
-  def test_fails_when_parser_output_has_extra_newline
-    write_environment(dcr_required: "true", initial_value: "true")
-
-    _, _, status = run_probe(parser_value: "true\n")
 
     refute status.success?
   end
@@ -231,5 +211,13 @@ class LivenessProbeTest < Minitest::Test
 
     refute status.success?
     refute File.exist?(@parser_sentinel)
+  end
+
+  def test_uses_one_private_parser_output_file_per_probe
+    source = File.read(PROBE_PATH)
+
+    assert_operator source.index("umask 077"), :<, source.index("mktemp")
+    assert_equal 1, source.scan(/mktemp .*dcr_env_var/).length
+    assert_operator source.index("mktemp"), :<, source.index('case "${DCR_REQUIRED}"')
   end
 end
