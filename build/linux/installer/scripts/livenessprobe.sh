@@ -20,7 +20,7 @@ checkDcrConfig() {
   case "${LOGS_AND_EVENTS_ONLY}" in
     true|false) ;;
     *)
-      echo "Stored LOGS_AND_EVENTS_ONLY value is missing or invalid" > /dev/termination-log
+      echo "Stored LOGS_AND_EVENTS_ONLY value is missing or invalid: '${LOGS_AND_EVENTS_ONLY}'" > /dev/termination-log
       return 1
       ;;
   esac
@@ -33,14 +33,18 @@ checkDcrConfig() {
     echo "Failed to parse required DCR" > /dev/termination-log
     return 1
   fi
-  if ! read currentValue remainingValue < "${dcrOutputFile}" || [ -n "${remainingValue}" ]; then
-    echo "Current LOGS_AND_EVENTS_ONLY value is missing or invalid" > /dev/termination-log
+  if ! read currentValue remainingValue < "${dcrOutputFile}"; then
+    echo "Failed to read current LOGS_AND_EVENTS_ONLY value" > /dev/termination-log
+    return 1
+  fi
+  if [ -n "${remainingValue}" ]; then
+    echo "Current LOGS_AND_EVENTS_ONLY output contains unexpected additional value: '${remainingValue}'" > /dev/termination-log
     return 1
   fi
   case "${currentValue}" in
     true|false) ;;
     *)
-      echo "Current LOGS_AND_EVENTS_ONLY value is missing or invalid" > /dev/termination-log
+      echo "Current LOGS_AND_EVENTS_ONLY value is missing or invalid: '${currentValue}'" > /dev/termination-log
       return 1
       ;;
   esac
@@ -77,7 +81,7 @@ if [[ "${CONTROLLER_TYPE}" == "DaemonSet" ]]; then
       ;;
     false) ;;
     *)
-      echo "DCR_REQUIRED value is missing or invalid" > /dev/termination-log
+      echo "DCR_REQUIRED value is missing or invalid: '${DCR_REQUIRED}'" > /dev/termination-log
       exit 1
       ;;
   esac

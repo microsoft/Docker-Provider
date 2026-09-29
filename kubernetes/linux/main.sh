@@ -219,17 +219,17 @@ parseDcrConfig() {
       fi
 
       if ! read parsedValue remainingValue < "${outputFile}"; then
-            echo "DCR parser output is invalid"
+            echo "Failed to read DCR parser output"
             return 1
       fi
       if [ -n "${remainingValue}" ]; then
-            echo "DCR parser output is invalid"
+            echo "DCR parser output contains unexpected additional value: '${remainingValue}'"
             return 1
       fi
       case "${parsedValue}" in
             true|false) result="${parsedValue}" ;;
             *)
-                  echo "DCR parser output is invalid"
+                  echo "DCR parser output contains invalid LOGS_AND_EVENTS_ONLY value: '${parsedValue}'"
                   return 1
                   ;;
       esac
@@ -239,16 +239,10 @@ parseDcrConfig() {
 # usage: setGlobalEnvVar ENABLE_SIDECAR_SCRAPING true
 setGlobalEnvVar() {
       export "$1"="$2"
-      if ! echo "export \"$1\"=\"$2\"" >> /opt/env_vars; then
-            echo "Failed to persist $1 in /opt/env_vars"
-            exit 1
-      fi
+      echo "export \"$1\"=\"$2\"" >> /opt/env_vars
 }
 
-if ! : > /opt/env_vars; then
-      echo "Failed to create /opt/env_vars"
-      exit 1
-fi
+touch /opt/env_vars
 echo "source /opt/env_vars" >> ~/.bashrc
 
 waitforlisteneronTCPport() {
@@ -378,13 +372,13 @@ checkAgentOnboardingStatus() {
       fi
 
       while true; do
-            if grep -q "$failuremessage" "${MDSD_LOG}/mdsd.err" > /dev/null 2>&1; then
+            if grep -q "$successmessage" "${MDSD_LOG}/mdsd.info" > /dev/null 2>&1; then
+                  echo "Onboarding success"
+                  return 0
+            elif grep -q "$failuremessage" "${MDSD_LOG}/mdsd.err" > /dev/null 2>&1; then
                   echo "Onboarding Failure: Reason: Failed to onboard the agent"
                   echo "Onboarding Failure: Please verify log analytics workspace configuration such as existence of the workspace, workspace key and workspace enabled for public ingestion"
                   return 1
-            elif grep -q "$successmessage" "${MDSD_LOG}/mdsd.info" > /dev/null 2>&1; then
-                  echo "Onboarding success"
-                  return 0
             fi
             sleep $sleepdurationsecs
       done

@@ -37,11 +37,12 @@ class LivenessProbeTest < Minitest::Test
           exit 97
         fi
         output="${!#}"
-        if [ "${APPEND_NEWLINE}" == "true" ]; then
-          printf '%s\\n' "${PARSER_VALUE}" > "$output"
+        if "${APPEND_NEWLINE:-false}"; then
+          newline=$'\\n'
         else
-          printf '%s' "${PARSER_VALUE}" > "$output"
+          newline=""
         fi
+        printf '%s%s' "${PARSER_VALUE}" "${newline}" > "$output"
       SH
     )
     write_executable(
@@ -90,8 +91,9 @@ class LivenessProbeTest < Minitest::Test
   end
 
   def write_executable(path, contents)
-    File.write(path, contents)
-    FileUtils.chmod(0o755, path)
+    File.open(path, File::WRONLY | File::CREAT | File::TRUNC, 0o755) do |file|
+      file.write(contents)
+    end
   end
 
   def write_environment(dcr_required:, initial_value:)
@@ -136,13 +138,22 @@ class LivenessProbeTest < Minitest::Test
     refute File.exist?(@parser_sentinel)
   end
 
-  def test_fails_when_stored_initial_value_is_invalid
+  def test_fails_when_stored_initial_value_is_missing
     write_environment(dcr_required: "true", initial_value: "")
 
     _, _, status = run_probe(parser_value: "true")
 
     refute status.success?
     refute File.exist?(@parser_sentinel)
+  end
+
+  def test_fails_when_stored_initial_value_is_invalid
+    write_environment(dcr_required: "true", initial_value: "stored-invalid-value")
+
+    _, _, status = run_probe(parser_value: "true")
+
+    refute status.success?
+    assert_includes File.read(@termination_log), "stored-invalid-value"
   end
 
   def test_fails_when_parser_fails
@@ -165,9 +176,10 @@ class LivenessProbeTest < Minitest::Test
   def test_fails_when_parser_output_contains_trailing_content
     write_environment(dcr_required: "true", initial_value: "true")
 
-    _, _, status = run_probe(parser_value: "true invalid")
+    _, _, status = run_probe(parser_value: "true trailing-value")
 
     refute status.success?
+    assert_includes File.read(@termination_log), "trailing-value"
   end
 
   def test_fails_when_parser_output_omits_trailing_newline
@@ -176,6 +188,7 @@ class LivenessProbeTest < Minitest::Test
     _, _, status = run_probe(append_newline: false)
 
     refute status.success?
+    assert_includes File.read(@termination_log), "Failed to read"
   end
 
   def test_fails_when_false_parser_output_omits_trailing_newline
@@ -204,13 +217,31 @@ class LivenessProbeTest < Minitest::Test
     assert_empty Dir.glob(File.join(@tmp_dir, "dcr_env_var.*"))
   end
 
-  def test_fails_when_dcr_requirement_is_invalid
+  def test_fails_when_dcr_requirement_is_missing
     write_environment(dcr_required: "", initial_value: "true")
 
     _, _, status = run_probe(parser_value: "true")
 
     refute status.success?
     refute File.exist?(@parser_sentinel)
+  end
+
+  def test_fails_when_dcr_requirement_is_invalid
+    write_environment(dcr_required: "required-invalid-value", initial_value: "true")
+
+    _, _, status = run_probe(parser_value: "true")
+
+    refute status.success?
+    assert_includes File.read(@termination_log), "required-invalid-value"
+  end
+
+  def test_fails_when_current_value_is_invalid
+    write_environment(dcr_required: "true", initial_value: "true")
+
+    _, _, status = run_probe(parser_value: "current-invalid-value")
+
+    refute status.success?
+    assert_includes File.read(@termination_log), "current-invalid-value"
   end
 
   def test_uses_one_private_parser_output_file_per_probe
