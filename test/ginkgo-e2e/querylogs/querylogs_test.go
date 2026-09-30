@@ -101,7 +101,7 @@ var _ = Describe("When querying the agent telemetry", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			query := fmt.Sprintf(`%s
-| where timestamp > ago(15m)
+| where timestamp > ago(30m)
 | extend ClusterId = iff(isnotempty(tostring(customDimensions.ID)), tostring(customDimensions.ID), tostring(customDimensions.AKS_RESOURCE_ID))
 | where ClusterId =~ %q
 | where tostring(customDimensions.Version) in (%q, %q)
