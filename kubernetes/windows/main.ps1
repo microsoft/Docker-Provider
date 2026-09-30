@@ -892,8 +892,8 @@ function Start-Fluent-Telegraf {
                 $appInsightsKey = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($appInsightsAuth)).Trim()
                 (Get-Content $amaLogsProcessMetricsConfFile).replace('placeholder_appinsights_key', $appInsightsKey) | Set-Content $amaLogsProcessMetricsConfFile
                 Write-Host "Starting telegraf for collecting process metrics inside ama-logs containers (Windows)"
-                C:\opt\telegraf\telegraf.exe --service install --service-name telegraf-ama-logs-process-metrics --config $amaLogsProcessMetricsConfFile
-                C:\opt\telegraf\telegraf.exe --service start --service-name telegraf-ama-logs-process-metrics
+                Install-TelegrafService -ServiceName telegraf-ama-logs-process-metrics
+                Start-Service -Name telegraf-ama-logs-process-metrics -ErrorAction Stop
             } else {
                 Write-Host "APPLICATIONINSIGHTS_AUTH or AKS_RESOURCE_ID not set, skipping ama-logs process metrics monitoring"
             }
@@ -905,6 +905,32 @@ function Start-Fluent-Telegraf {
     }
 
     Notepad.exe | Out-Null
+}
+
+function Install-TelegrafService {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateSet("telegraf", "telegraf-ama-logs-process-metrics")]
+        [string]$ServiceName
+    )
+
+    $serviceHost = "C:\opt\amalogswindows\scripts\ruby\telegraf-windows-service.rb"
+    if (!(Test-Path -LiteralPath $serviceHost -PathType Leaf)) {
+        throw "Telegraf Windows service host not found: $serviceHost"
+    }
+    $ruby = (Get-Command ruby.exe -ErrorAction Stop).Source
+    $role = "prometheus"
+    $displayName = "Telegraf Data Collector Service"
+    if ($ServiceName -eq "telegraf-ama-logs-process-metrics") {
+        $role = "process-metrics"
+        $displayName = "Telegraf AMA Logs Process Metrics"
+    }
+
+    # The stock executable's service detection requires SCM in session 0, while
+    # Windows containers can run SCM in another session. Reuse the shipped Ruby
+    # service dispatcher and run the unchanged executable as its console child.
+    $binaryPath = "`"$ruby`" `"$serviceHost`" $role"
+    New-Service -Name $ServiceName -BinaryPathName $binaryPath -DisplayName $displayName -StartupType Automatic -ErrorAction Stop | Out-Null
 }
 
 function Start-Telegraf {
@@ -949,7 +975,7 @@ function Start-Telegraf {
         (Get-Content "C:\etc\telegraf\telegraf.conf").replace('placeholder_hostname', $hostName) | Set-Content "C:\etc\telegraf\telegraf.conf"
 
         Write-Host "Installing telegraf service"
-        C:\opt\telegraf\telegraf.exe --service install --config "C:\etc\telegraf\telegraf.conf"
+        Install-TelegrafService -ServiceName telegraf
 
         if (Test-FluentbitTcpListener -port 25229) {
             Write-Host "Fluentbit tcp listener is running on port 25229"
@@ -973,16 +999,16 @@ function Start-Telegraf {
                 Write-Host "exception occured in delayed telegraf start.. continuing without exiting"
             }
             Write-Host "Running telegraf service in test mode"
-            C:\opt\telegraf\telegraf.exe --config "C:\etc\telegraf\telegraf.conf" --test
+            C:\opt\telegraf\telegraf.exe --console --config "C:\etc\telegraf\telegraf.conf" --test
             Write-Host "Starting telegraf service"
-            C:\opt\telegraf\telegraf.exe --service start
+            Start-Service -Name telegraf -ErrorAction Stop
 
             # Trying to start telegraf again if it did not start due to fluent bit not being ready at startup
             Get-Service telegraf | findstr Running
             if ($? -eq $false) {
                 Write-Host "trying to start telegraf in again in 30 seconds, since fluentbit might not have been ready..."
                 Start-Sleep -s 30
-                C:\opt\telegraf\telegraf.exe --service start
+                Start-Service -Name telegraf -ErrorAction Stop
                 Get-Service telegraf
             }
         }
