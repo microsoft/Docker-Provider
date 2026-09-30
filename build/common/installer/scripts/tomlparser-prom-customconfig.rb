@@ -92,8 +92,8 @@ end
 
 # Telegraf parses interval values with Go's time.ParseDuration, which accepts one or more
 # decimal numbers each followed by a unit suffix (for example "30s", "1.5s" or "1h30m").
-# The unit set below is the intersection of what the Linux and Windows agents accept; "d"
-# is deliberately excluded because the older telegraf shipped on Windows rejects it.
+# Keep the existing config-map duration contract on both Linux and Windows; "d" remains
+# deliberately excluded even when newer telegraf versions accept days.
 # The anchors must be \A and \z (not ^ and $) so that a value such as "1m\n<injected toml>"
 # cannot pass validation by matching only its first line.
 TELEGRAF_DURATION_REGEX = /\A(?:(?:\d+(?:\.\d+)?|\.\d+)(?:ns|us|\u00B5s|\u03BCs|ms|s|m|h))+\z/
@@ -187,10 +187,6 @@ def createPrometheusPluginsWithNamespaceSetting(monitorKubernetesPods, monitorKu
     new_contents = new_contents.gsub("$AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE", "# Commenting this out since new plugins will be created per namespace\n  # $AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE")
 
     timeout_config_key = "timeout"
-    if is_windows?
-      # For windows, the timeout config key is different because of old version of telegraf
-      timeout_config_key = "response_timeout"
-    end
 
     pluginConfigsWithNamespaces = ""
     podScrapeScope = (@controller.casecmp(@replicaset) == 0) ? "cluster" : "node"

@@ -4,6 +4,58 @@ More advanced information needed to develop or build the docker provider will li
 
 <!-- TODO: eventually move dev info from README.md to here-->
 
+## Windows Telegraf dependency
+
+`kubernetes/windows/setup.ps1` installs the official Telegraf 1.40.1 Windows AMD64
+ZIP and verifies its pinned SHA256 before extraction. The package corresponds to
+upstream commit `26b8f4478b676f4f5e5d8ce1622cdf4f6c273bda`. The existing Windows
+pipeline continues to sign `C:\opt\telegraf\telegraf.exe` as an OSS dependency.
+
+The official binary is built with Go 1.27.1 for `windows/amd64`, `GOAMD64=v1`.
+Go's [Windows OS floor](https://go.dev/wiki/MinimumRequirements#windows) is Windows
+10 or Windows Server 2016 and newer. Both repository image targets, LTSC2019 and
+LTSC2022, meet that floor; this does not replace validation inside those images
+or in installed-service mode.
+
+The Windows entrypoint registers both Telegraf services through
+`telegraf-windows-service.rb`, using the same already-installed `win32-service`
+dispatcher as Fluentd. Telegraf 1.40's native service detection requires its
+`services.exe` parent to be in session 0, which is not guaranteed in Windows containers.
+The host runs the unchanged executable with `--console`, monitors child exit, and
+forwards SCM stop through the child's private console/process group. Shutdown is
+bounded; the host joins a kill-on-close job before spawning, so the child inherits
+containment at creation, including if the host dies before `spawn` returns. The
+non-inheritable job handle stays open until host process exit so console cleanup
+does not kill the host before SCM shutdown completes. The service
+PID is the Ruby host; the Telegraf PID is its child. Role-only host arguments keep
+the existing procstat config-path filters selecting Telegraf rather than Ruby.
+Per-role logs under `C:\opt\telegraf\logs` rotate at 5 MiB with two backups.
+The native startup-boundary regression uses only local sleeping Ruby processes:
+`ruby build/windows/installer/scripts/telegraf-windows-console_test.rb`.
+It runs on Windows with the image's existing `ffi` dependency and skips on Linux.
+
+Upgrade the two configurations in `build/windows/installer/conf/` and
+`tomlparser-prom-customconfig.rb` together with the binary. Windows uses `timeout`
+to preserve the overall 15-second metric-scrape limit; upstream's
+[1.40 documentation](https://github.com/influxdata/telegraf/blob/e9017dc3266369d6fa185e0e130af1d1d4021ce9/plugins/inputs/prometheus/README.md#L152-L157)
+explains that `response_timeout` now covers headers only, unlike the
+[1.24.2 client timeout](https://github.com/influxdata/telegraf/blob/9550e7a533dd00632e14435e87ed3eb4b04832c6/plugins/inputs/prometheus/prometheus.go#L254-L261).
+Procstat uses `tag_with = ["pid"]` to retain PID tags. Existing `fieldpass`/`fielddrop`
+names are unchanged on both OSes because
+[1.40 still parses them](https://github.com/influxdata/telegraf/blob/e9017dc3266369d6fa185e0e130af1d1d4021ce9/config/config.go#L1649-L1687).
+Linux rendering remains unchanged. Run `ruby build/common/installer/scripts/tomlparser-prom-customconfig_test.rb`
+for rendering coverage with and without namespace filters. On Windows, set
+`TELEGRAF_WINDOWS_BINARY` to the extracted `telegraf.exe` to also load the generated
+configs with that binary in bounded `--test` mode, without Kubernetes access or
+running output plugins.
+
+This stock upgrade is a partial mitigation: node discovery rereads the token file
+on retries after a failed poll, without relying on file modification time. The
+[1.40.0 discovery code](https://github.com/influxdata/telegraf/blob/e9017dc3266369d6fa185e0e130af1d1d4021ce9/plugins/inputs/prometheus/kubernetes.go)
+still omits response cleanup on non-200 status codes and lacks an explicit
+discovery request timeout. The metric-scrape `timeout` does not bound that path.
+HTTP/2 negotiation is not a substitute for fixing those remaining issues.
+
 ## Testing
 Last updated 8/18/2021
 
