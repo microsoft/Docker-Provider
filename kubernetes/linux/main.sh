@@ -1,5 +1,18 @@
 #!/bin/bash
 
+# Restrict default file permissions to protect against accidental sensitive data leaks.
+umask 077
+
+if ! touch ~/.bashrc ; then
+      echo -e "error failed to touch ~/.bashrc"
+      exit 1
+fi
+
+if ! chmod go-rwx ~/.bashrc; then
+      echo -e "error failed to chmod ~/.bashrc"
+      exit 1
+fi
+
 # Get the start time of the setup in seconds
 startTime=$(date +%s)
 
@@ -193,12 +206,44 @@ gracefulShutdown() {
       echo "gracefulShutdown start @ $(date +'%Y-%m-%dT%H:%M:%S')"
       echo "gracefulShutdown fluent-bit process start @ $(date +'%Y-%m-%dT%H:%M:%S')"
       pkill -f fluent-bit
-      sleep "${FBIT_SERVICE_GRACE_INTERVAL_SECONDS}" # wait for the fluent-bit graceful shutdown before terminating mdsd to complete pending tasks if any
+      sleep "${FBIT_SERVICE_GRACE_INTERVAL_SECONDS:-10}" # wait for the fluent-bit graceful shutdown before terminating mdsd to complete pending tasks if any
       echo "gracefulShutdown fluent-bit process complete @ $(date +'%Y-%m-%dT%H:%M:%S')"
       echo "gracefulShutdown mdsd process start @ $(date +'%Y-%m-%dT%H:%M:%S')"
       pkill -f mdsd
       echo "gracefulShutdown mdsd process compelete @ $(date +'%Y-%m-%dT%H:%M:%S')"
       echo "gracefulShutdown complete @ $(date +'%Y-%m-%dT%H:%M:%S')"
+}
+
+parseDcrConfig() {
+      local outputFile=$1
+      local -n result=$2
+      local parsedValue
+      local remainingValue
+
+      if ! : > "${outputFile}"; then
+           echo "Failed to empty DCR parser output file '${outputFile}'"
+           return 1
+      fi
+
+      if ! ruby /opt/dcr-config-parser.rb "${outputFile}"; then
+           return 1
+      fi
+
+      if ! read parsedValue remainingValue < "${outputFile}"; then
+            echo "Failed to read DCR parser output"
+            return 1
+      fi
+      if [ -n "${remainingValue}" ]; then
+            echo "DCR parser output contains unexpected additional value: '${remainingValue}'"
+            return 1
+      fi
+      case "${parsedValue}" in
+            true|false) result="${parsedValue}" ;;
+            *)
+                  echo "DCR parser output contains invalid LOGS_AND_EVENTS_ONLY value: '${parsedValue}'"
+                  return 1
+                  ;;
+      esac
 }
 
 # please use this instead of adding env vars to bashrc directly
@@ -207,8 +252,8 @@ setGlobalEnvVar() {
       export "$1"="$2"
       echo "export \"$1\"=\"$2\"" >> /opt/env_vars
 }
+
 touch /opt/env_vars
-touch /opt/dcr_env_var
 echo "source /opt/env_vars" >> ~/.bashrc
 
 waitforlisteneronTCPport() {
@@ -258,6 +303,15 @@ isGenevaMode() {
   fi
 }
 
+isDcrRequired() {
+      [[ "${CONTROLLER_TYPE}" == "DaemonSet" &&
+            -z "${CONTAINER_TYPE}" &&
+            "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" != "true" &&
+            "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" &&
+            ( ( "${GENEVA_LOGS_INTEGRATION}" != "true" && "${USING_AAD_MSI_AUTH}" == "true" ) ||
+              ( "${GENEVA_LOGS_INTEGRATION}" == "true" && "${AZMON_MULTI_TENANCY_LOG_COLLECTION}" == "true" ) ) ]]
+}
+
 isHighLogScaleMode() {
      if [[ "${CONTROLLER_TYPE}" == "DaemonSet" && \
           "${CONTAINER_TYPE}" != "PrometheusSidecar" && \
@@ -283,52 +337,69 @@ isOpenTelemetryLogsEnabled() {
       fi
 }
 
+tmpBase="${TMPDIR:-/tmp}/dcr_env_var.$$"
+
+cleanupDcrOutput() {
+     rm -f -- "${tmpBase}".??????
+}
+
+shutdown() {
+     local exitstatus=$1
+
+     trap - EXIT TERM INT HUP QUIT
+     cleanupDcrOutput
+     if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ] || [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]; then
+         echo "graceful shutdown"
+         gracefulShutdown
+      else
+         pkill -f mdsd
+         if isHighLogScaleMode; then
+            pkill -f amacoreagent
+         fi
+      fi
+      exit "${exitstatus}"
+}
+
+trap cleanupDcrOutput EXIT
+trap 'exit 0' TERM INT HUP QUIT
+
+dcrOutputFile=$(mktemp "${tmpBase}.XXXXXX") || {
+      echo "Failed to create DCR parser output file"
+      exit 1
+}
+
 checkAgentOnboardingStatus() {
       local sleepdurationsecs=1
-      local totalsleptsecs=0
       local isaadmsiauthmode=$1
-      local waittimesecs=$2
-      local numeric='^[0-9]+$'
+      local successmessage="Onboarding success"
+      local failuremessage="Failed to register certificate with OMS Homing service, giving up"
 
-      if [ -z "$1" ] || [ -z "$2" ]; then
-            echo "${FUNCNAME[0]} called with incorrect arguments<$1 , $2>. Required arguments <#isaadmsiauthmode, #wait-time-in-seconds>"
-            return -1
-      else
-
-            if [[ $waittimesecs =~ $numeric ]]; then
-                  successMessage="Onboarding success"
-                  failureMessage="Failed to register certificate with OMS Homing service, giving up"
-                  if [ "${isaadmsiauthmode}" == "true" ]; then
-                        successMessage="Loaded data sources"
-                        failureMessage="Failed to load data sources into config"
-                  fi
-
-                  if isGenevaMode; then
-                        successMessage="Config downloaded and parsed"
-                        failureMessage="failed to download start up config"
-                  fi
-                  while true; do
-                        if [ $totalsleptsecs -gt $waittimesecs ]; then
-                              echo "${FUNCNAME[0]} giving up checking agent onboarding status after $totalsleptsecs secs"
-                              return 1
-                        fi
-
-                        if grep -q "$successMessage" "${MDSD_LOG}/mdsd.info" > /dev/null 2>&1; then
-                              echo "Onboarding success"
-                              return 0
-                        elif grep -q "$failureMessage" "${MDSD_LOG}/mdsd.err" > /dev/null 2>&1; then
-                              echo "Onboarding Failure: Reason: Failed to onboard the agent"
-                              echo "Onboarding Failure: Please verify log analytics workspace configuration such as existence of the workspace, workspace key and workspace enabled for public ingestion"
-                              return 1
-                        fi
-                        sleep $sleepdurationsecs
-                        totalsleptsecs=$(($totalsleptsecs + 1))
-                  done
-            else
-                  echo "${FUNCNAME[0]} called with non-numeric arguments<$2>. Required arguments <#wait-time-in-seconds>"
-                  return -1
-            fi
+      if [ -z "${isaadmsiauthmode}" ]; then
+            echo "${FUNCNAME[0]} called without the required authentication mode"
+            return 1
       fi
+
+      if [ "${isaadmsiauthmode}" == "true" ]; then
+            successmessage="Loaded data sources"
+            failuremessage="Failed to load data sources into config"
+      fi
+
+      if isGenevaMode; then
+            successmessage="Config downloaded and parsed"
+            failuremessage="failed to download start up config"
+      fi
+
+      while true; do
+            if grep -q "$successmessage" "${MDSD_LOG}/mdsd.info" > /dev/null 2>&1; then
+                  echo "Onboarding success"
+                  return 0
+            elif grep -q "$failuremessage" "${MDSD_LOG}/mdsd.err" > /dev/null 2>&1; then
+                  echo "Onboarding Failure: Reason: Failed to onboard the agent"
+                  echo "Onboarding Failure: Please verify log analytics workspace configuration such as existence of the workspace, workspace key and workspace enabled for public ingestion"
+                  return 1
+            fi
+            sleep $sleepdurationsecs
+      done
 }
 
 # setup paths for ruby
@@ -1025,6 +1096,14 @@ cat /etc/mdsd.d/envmdsd | while read line; do
 done
 source /etc/mdsd.d/envmdsd
 MDSD_AAD_MSI_AUTH_ARGS=""
+
+if isDcrRequired; then
+      DCR_REQUIRED=true
+else
+      DCR_REQUIRED=false
+fi
+setGlobalEnvVar DCR_REQUIRED "${DCR_REQUIRED}"
+
 # check if its AAD Auth MSI mode via USING_AAD_MSI_AUTH
 export AAD_MSI_AUTH_MODE=false
 if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && isGenevaMode; then
@@ -1124,6 +1203,9 @@ else
 fi
 SYSLOG_PORT_CONFIG="-y 0" # disables syslog listener for mdsd
 
+trap 'shutdown $?' EXIT
+trap 'shutdown 0' TERM INT HUP QUIT
+
 if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
     if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
       echo "starting mdsd with mdsd-port=26130, fluentport=26230 and influxport=26330 in sidecar container..."
@@ -1184,21 +1266,19 @@ fi
 # Write messages from the liveness probe to stdout (so telemetry picks it up)
 touch /dev/write-to-traces
 
-if [ "${GENEVA_LOGS_INTEGRATION}" == "true" ] || [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ]; then
-     checkAgentOnboardingStatus $AAD_MSI_AUTH_MODE 30
-elif [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
-      checkAgentOnboardingStatus $AAD_MSI_AUTH_MODE 30
+if [ "${GENEVA_LOGS_INTEGRATION}" == "true" ] || [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ] || [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
+      if ! checkAgentOnboardingStatus "${AAD_MSI_AUTH_MODE}"; then
+            exit 1
+      fi
 else
       echo "not checking onboarding status (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
 fi
 
-ruby dcr-config-parser.rb
-if [ -e "/opt/dcr_env_var" ]; then
-      cat dcr_env_var | while read line; do
-            echo $line >>~/.bashrc
+if [ "${DCR_REQUIRED}" == "true" ]; then
+      until parseDcrConfig "${dcrOutputFile}" dcrValue; do
+            sleep 5
       done
-      source /opt/dcr_env_var
-      setGlobalEnvVar LOGS_AND_EVENTS_ONLY "${LOGS_AND_EVENTS_ONLY}"
+      setGlobalEnvVar LOGS_AND_EVENTS_ONLY "${dcrValue}"
 fi
 
 setGlobalEnvVar ENABLE_CUSTOM_METRICS "${ENABLE_CUSTOM_METRICS}"
@@ -1210,6 +1290,7 @@ else
 fi
 
 setGlobalEnvVar AZMON_RETINA_FLOW_LOGS_ENABLED "${AZMON_RETINA_FLOW_LOGS_ENABLED}"
+chmod a-w /opt/env_vars
 
 #start fluentd
 if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ] && [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" != "true" ]; then
@@ -1462,20 +1543,6 @@ elapsed=$((endTime-startTime))
 echo "startup script took: $elapsed seconds"
 
 echo "startup script end @ $(date +'%Y-%m-%dT%H:%M:%S')"
-
-shutdown() {
-     if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ] || [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]; then
-         echo "graceful shutdown"
-         gracefulShutdown
-      else
-         pkill -f mdsd
-         if isHighLogScaleMode; then
-            pkill -f amacoreagent
-         fi
-      fi
-}
-
-trap "shutdown" SIGTERM
 
 sleep inf &
 wait
