@@ -14,6 +14,8 @@ var (
 		"GetAgentConfigurations",
 		"RefreshConfigurations",
 		"canceled by user",
+		"(deleted)",
+		"errno=2] No such file or directory",
 	}
 )
 

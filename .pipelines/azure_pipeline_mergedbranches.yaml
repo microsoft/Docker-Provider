@@ -1072,7 +1072,7 @@ extends:
           azureClientId: $(AksGenevaIntegrationMultiTenancyClientId)
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
-          additionalTestParams: 'GenevaIntegration=true'
+          additionalTestParams: 'GenevaIntegration=true AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(linuxImageTagUnderTest)'
 
       # ============================================================
       # Cluster: ci-logs-prod-aks-work-load-identity — Deploy via Helm
@@ -1101,7 +1101,7 @@ extends:
           azureClientId: $(AksWorkLoadIdentityClientId)
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
-          additionalTestParams: 'LinuxTestsOnly=true'
+          additionalTestParams: 'LinuxTestsOnly=true AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(linuxImageTagUnderTest)'
 
       # ============================================================
       # Cluster: ci-logs-prod-wcus-fips — Deploy via Helm
@@ -1130,6 +1130,7 @@ extends:
           azureClientId: $(WcusFipsClientId)
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
+          additionalTestParams: 'AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(linuxImageTagUnderTest)'
 
       # ============================================================
       # Cluster: ci-logs-prod-aks-networkflowlogs — Deploy via Helm
@@ -1159,7 +1160,7 @@ extends:
           azureClientId: $(NetworkFlowLogsClientId)
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
-          additionalTestParams: 'LinuxTestsOnly=true'
+          additionalTestParams: 'LinuxTestsOnly=true AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(linuxImageTagUnderTest)'
 
       # ============================================================
       # Cluster: ci-logs-dev-aks-std-prof-config-test1 — Deploy via Helm
@@ -1211,4 +1212,4 @@ extends:
           azureClientId: $(AllNodesClientId)
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
-          additionalTestParams: 'PerNodeLogCoverage=true'
+          additionalTestParams: 'PerNodeLogCoverage=true AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(linuxImageTagUnderTest)'
