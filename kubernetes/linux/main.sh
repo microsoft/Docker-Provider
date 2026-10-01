@@ -1,6 +1,17 @@
 #!/bin/bash
 
+# Restrict default file permissions to protect against accidental sensitive data leaks.
 umask 077
+
+if ! touch ~/.bashrc ; then
+      echo -e "error failed to touch ~/.bashrc"
+      exit 1
+fi
+
+if ! chmod go-rwx ~/.bashrc; then
+      echo -e "error failed to chmod ~/.bashrc"
+      exit 1
+fi
 
 # Get the start time of the setup in seconds
 startTime=$(date +%s)
@@ -326,11 +337,17 @@ isOpenTelemetryLogsEnabled() {
       fi
 }
 
+tmpBase="${TMPDIR:-/tmp}/dcr_env_var.$$"
+
+cleanupDcrOutput() {
+     rm -f -- "${tmpBase}".??????
+}
+
 shutdown() {
      local exitstatus=$1
 
      trap - EXIT TERM INT HUP QUIT
-     rm -f -- "${dcrOutputFile}"
+     cleanupDcrOutput
      if [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" == "true" ] || [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" == "true" ]; then
          echo "graceful shutdown"
          gracefulShutdown
@@ -343,12 +360,13 @@ shutdown() {
       exit "${exitstatus}"
 }
 
-dcrOutputFile=$(mktemp "${TMPDIR:-/tmp}/dcr_env_var.XXXXXX") || {
+trap cleanupDcrOutput EXIT
+trap 'exit 0' TERM INT HUP QUIT
+
+dcrOutputFile=$(mktemp "${tmpBase}.XXXXXX") || {
       echo "Failed to create DCR parser output file"
       exit 1
 }
-trap 'shutdown $?' EXIT
-trap 'shutdown 0' TERM INT HUP QUIT
 
 checkAgentOnboardingStatus() {
       local sleepdurationsecs=1
@@ -1184,6 +1202,9 @@ else
       echo "SYSLOG_HOST_PORT is ${SYSLOG_HOST_PORT}. No changes made."
 fi
 SYSLOG_PORT_CONFIG="-y 0" # disables syslog listener for mdsd
+
+trap 'shutdown $?' EXIT
+trap 'shutdown 0' TERM INT HUP QUIT
 
 if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
     if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then

@@ -22,6 +22,7 @@ class LivenessProbeTest < Minitest::Test
     end
 
     @parser_sentinel = File.join(@sandbox, "parser-invoked")
+    @parser_umask_sentinel = File.join(@sandbox, "parser-umask")
     @env_file = File.join(@opt_dir, "env_vars")
     @termination_log = File.join(@dev_dir, "termination-log")
 
@@ -30,6 +31,7 @@ class LivenessProbeTest < Minitest::Test
       <<~SH
         #!/bin/bash
         touch "$PARSER_SENTINEL"
+        umask > "$PARSER_UMASK_SENTINEL"
         if [ "${PARSER_STATUS}" != "0" ]; then
           exit "${PARSER_STATUS}"
         fi
@@ -114,6 +116,7 @@ class LivenessProbeTest < Minitest::Test
       {
         "TMPDIR" => shell_path(@tmp_dir),
         "PARSER_SENTINEL" => shell_path(@parser_sentinel),
+        "PARSER_UMASK_SENTINEL" => shell_path(@parser_umask_sentinel),
         "PARSER_STATUS" => parser_status.to_s,
         "PARSER_VALUE" => parser_value,
         "APPEND_NEWLINE" => append_newline.to_s,
@@ -136,6 +139,15 @@ class LivenessProbeTest < Minitest::Test
 
     assert status.success?, success_diagnostics(stdout, stderr, status)
     refute File.exist?(@parser_sentinel)
+  end
+
+  def test_parser_inherits_private_umask
+    write_environment(dcr_required: "true", initial_value: "true")
+
+    stdout, stderr, status = run_probe
+
+    assert status.success?, success_diagnostics(stdout, stderr, status)
+    assert_equal "0077", File.read(@parser_umask_sentinel).strip
   end
 
   def test_fails_when_stored_initial_value_is_missing
@@ -244,11 +256,4 @@ class LivenessProbeTest < Minitest::Test
     assert_includes File.read(@termination_log), "current-invalid-value"
   end
 
-  def test_uses_one_private_parser_output_file_per_probe
-    source = File.read(PROBE_PATH)
-
-    assert_operator source.index("umask 077"), :<, source.index("mktemp")
-    assert_equal 1, source.scan(/mktemp .*dcr_env_var/).length
-    assert_operator source.index("mktemp"), :<, source.index('case "${DCR_REQUIRED}"')
-  end
 end

@@ -1,17 +1,21 @@
 #!/bin/bash
-source /opt/env_vars
 
+# Restrict default file permissions to protect against accidental sensitive data leaks.
 umask 077
 
-cleanupDcrOutput() {
-    rm -f -- "${dcrOutputFile}"
-}
+source /opt/env_vars
 
-dcrOutputFile=$(mktemp "${TMPDIR:-/tmp}/dcr_env_var.XXXXXX") || {
+tmpBase="${TMPDIR:-/tmp}/dcr_env_var.$$"
+
+cleanupDcrOutput() {
+    rm -f -- "${tmpBase}".??????
+}
+trap cleanupDcrOutput EXIT
+
+dcrOutputFile=$(mktemp "${tmpBase}.XXXXXX") || {
   echo "Failed to create DCR parser output file" > /dev/termination-log
   exit 1
 }
-trap cleanupDcrOutput EXIT
 
 checkDcrConfig() {
   local currentValue
