@@ -409,6 +409,51 @@ class PromCustomConfigTest < Minitest::Test
     )
   end
 
+  def test_linux_process_metrics_config_preserves_pid_tags_and_fields
+    path = File.join(REPO_ROOT, "build/linux/installer/conf/telegraf-ama-logs-process-metrics.conf")
+    config = Tomlrb.load_file(path)
+    assert_equal({ "telegraf_role" => "ama-logs-process-metrics" }, config["global_tags"])
+    assert_equal 9, config["inputs"]["procstat"].length
+    config["inputs"]["procstat"].each do |plugin|
+      assert_equal ["pid"], plugin["tag_with"]
+      refute plugin.key?("pid_tag")
+      assert_equal ["cpu_usage", "memory_rss"], plugin["fieldinclude"]
+      refute plugin.key?("fieldpass")
+      assert_equal "native", plugin["pid_finder"]
+      assert_equal "agent_telemetry", plugin["name_override"]
+      assert_equal "t.azm.ms/", plugin["name_prefix"]
+      assert_equal "$CONTROLLER_TYPE", plugin["tags"]["ControllerType"]
+      # ORDER matters: renamed keys must stay above [inputs.procstat.tags], otherwise
+      # TOML binds them to the nested table and telegraf never sees them.
+      ["tag_with", "fieldinclude"].each do |key|
+        refute plugin["tags"].key?(key), "#{key} must not be absorbed by [inputs.procstat.tags]"
+      end
+    end
+    assert_equal(
+      { "ai.cloud.role" => "ControllerType", "ai.cloud.roleInstance" => "PodName" },
+      config["outputs"]["application_insights"].first["context_tag_sources"]
+    )
+  end
+
+  # Telegraf treats an unrecognized plugin option as a fatal config-load error, so a single
+  # reintroduced legacy name silently stops the agent from loading that configuration.
+  REMOVED_TELEGRAF_OPTIONS = %w[fieldpass fielddrop pid_tag ignore_protocol_stats].freeze
+
+  def test_shipped_telegraf_templates_do_not_use_removed_options
+    templates = Dir.glob(File.join(REPO_ROOT, "build/{linux,windows}/installer/conf/telegraf*.conf")).sort
+    refute_empty templates, "expected to find shipped telegraf templates"
+
+    templates.each do |path|
+      offenders = File.readlines(path).each_with_index.filter_map do |line, index|
+        stripped = line.strip
+        next if stripped.empty? || stripped.start_with?("#")
+        option = REMOVED_TELEGRAF_OPTIONS.find { |name| stripped =~ /\A#{name}\s*=/ }
+        "#{File.basename(path)}:#{index + 1}: #{stripped}" if option
+      end
+      assert_empty offenders, "removed telegraf options must not be used in shipped templates"
+    end
+  end
+
   def test_selectors_are_escaped_in_generated_namespace_plugins
     body = "monitor_kubernetes_pods = true\n" \
            "monitor_kubernetes_pods_namespaces = [\"default\"]\n" \
