@@ -67,7 +67,6 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/os: windows
-        kubernetes.azure.com/os-sku: Windows2022
       tolerations:
       - operator: Exists
       containers:

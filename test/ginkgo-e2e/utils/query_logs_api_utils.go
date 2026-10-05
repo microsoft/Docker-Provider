@@ -151,7 +151,6 @@ func CompareResourcesInLogsAndKubeAPI(K8sClient *kubernetes.Clientset, logsClien
 	return CompareResourcesHelper(logsClient, resourceID, query, resources)
 }
 
-
 func GetComputerFromContainerLog(logsClient *azquery.LogsClient, resourceID string, window string) (map[string]int64, error) {
 	counts, v2Err := queryCountsByComputer(logsClient, resourceID, "ContainerLogV2", window)
 	if v2Err == nil {
@@ -189,12 +188,11 @@ func queryCountsByComputer(logsClient *azquery.LogsClient, resourceID string, ta
 	return counts, nil
 }
 
-// AssertContainerLogNodeCoverage returns nil if every expected node appears
-// in the per-Computer count map with a positive row count (compared
-// case-insensitively), or an error listing the missing nodes otherwise.
-func AssertContainerLogNodeCoverage(expectedNodes []string, observedCountsByComputer map[string]int64) error {
+// AssertNodeCoverage returns nil if every expected node appears in the per-Computer count map
+// with a positive count (compared case-insensitively), or an error listing the missing nodes.
+func AssertNodeCoverage(signal string, expectedNodes []string, observedCountsByComputer map[string]int64) error {
 	if len(expectedNodes) == 0 {
-		return fmt.Errorf("no expected nodes provided; cannot verify ContainerLogV2 coverage")
+		return fmt.Errorf("no expected nodes provided; cannot verify %s coverage", signal)
 	}
 
 	var missing []string
@@ -204,7 +202,14 @@ func AssertContainerLogNodeCoverage(expectedNodes []string, observedCountsByComp
 		}
 	}
 	if len(missing) > 0 {
-		return fmt.Errorf("ContainerLogV2 ingestion is missing for %d/%d expected node(s): %s", len(missing), len(expectedNodes), strings.Join(missing, ", "))
+		return fmt.Errorf("%s is missing for %d/%d expected node(s): %s", signal, len(missing), len(expectedNodes), strings.Join(missing, ", "))
 	}
 	return nil
+}
+
+// AssertContainerLogNodeCoverage returns nil if every expected node appears
+// in the per-Computer count map with a positive row count (compared
+// case-insensitively), or an error listing the missing nodes otherwise.
+func AssertContainerLogNodeCoverage(expectedNodes []string, observedCountsByComputer map[string]int64) error {
+	return AssertNodeCoverage("ContainerLogV2", expectedNodes, observedCountsByComputer)
 }
