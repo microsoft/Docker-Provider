@@ -8,6 +8,42 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 10/07/2026 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.9.0-<tbd> (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.9.0-<tbd> (windows)
+- Linux
+  - azurelinux 3.0 (<tbd>)
+  - Golang - 1.27.0
+  - Ruby - arm64 - 3.3.5-7, x86_64 - 3.3.10
+  - MDSD - 1.42.0
+  - Telegraf - 1.40.1
+  - Fluent-bit - 5.0.4
+  - Fluentd - 1.19.3
+- Windows
+  - Golang - 1.27.0
+  - Ruby - 3.1.1
+  - Windows AMA - 47.7.1
+  - Telegraf - 1.40.1
+  - Fluent-bit - 5.0.3
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Common (Linux + Windows)
+    * fix: remove inline comment corrupting Ignore_Older and improve networkflow error logging by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1793
+    * Fix Telegraf options removed in 1.40 on Linux and Windows (fieldpass -> fieldinclude, pid_tag -> tag_with) by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1764
+    * Prevent shell injection in ConfigMap-derived environment settings by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1790
+    * fix(windows): start telegraf on Windows Server 2025 hosts by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1782
+    * Upgrade telegraf-agent to 1.40.1 by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1789
+    * Upgrade Windows Telegraf to 1.40.0 by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1785
+
+- Infra
+    * Update backdoor-deployment skill to use the in-repo chart by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1795
+    * [tests] validate agent version telemetry & heartbeat by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1786
+    * fix(test): allow all-nodes log generator on Windows 2025 by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1791
+    * Add rollbackVersion option and default releaseTrain to stable in Ev2 SDP pipelines by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1781
+    * ci: emit Azure Linux base image version in build summary by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1780
+    * docs: update release notes for 3.7.0 and 3.8.0 by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1779
+
 ### 09/03/2026 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.8.0-ci-prod-09-03-2026-fd42f68c (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.8.0-ci-prod-09-03-2026-fd42f68c (windows)
