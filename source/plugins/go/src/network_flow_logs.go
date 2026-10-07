@@ -176,7 +176,11 @@ func mapNetworkFlowLogsToDataMap(dataMap map[string]interface{}, record map[stri
 
 	flow, ok := record["flow"].(map[string]interface{})
 	if !ok {
-		return fmt.Errorf("'flow' field not found or is not a map")
+		keys := make([]string, 0, len(record))
+		for k := range record {
+			keys = append(keys, k)
+		}
+		return fmt.Errorf("'flow' field not found or is not a map (type=%T, recordKeys=%v)", record["flow"], keys)
 	}
 	// TimeGenerated
 	if timeGenerated := extractString(flow, "time"); timeGenerated != "" {
