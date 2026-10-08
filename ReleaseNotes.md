@@ -9,10 +9,10 @@ additional questions or comments.
 
 ## Release History
 ### 10/07/2026 -
-##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.9.0-<tbd> (linux)
-##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.9.0-<tbd> (windows)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.9.0-ci-prod-10-07-2026-cd634797 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.9.0-ci-prod-10-07-2026-cd634797 (windows)
 - Linux
-  - azurelinux 3.0 (<tbd>)
+  - [azurelinux 3.0.20260923](https://github.com/microsoft/azurelinux/releases/tag/3.0.20260923-3.0)
   - Golang - 1.27.0
   - Ruby - arm64 - 3.3.5-7, x86_64 - 3.3.10
   - MDSD - 1.42.0
