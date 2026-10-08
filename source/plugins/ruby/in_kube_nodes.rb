@@ -371,30 +371,6 @@ module Fluent::Plugin
               if (File.file?(@@osmConfigMountPath))
                 properties["osmNamespaceCount"] = @@osmNamespaceCount
               end
-              ApplicationInsightsUtility.sendMetricTelemetry("NodeCoreCapacity", capacityInfo["cpu"], properties)
-              telemetrySent = true
-
-              # Telemetry for data collection config for replicaset
-              if (File.file?(@@configMapMountPath))
-                properties["collectAllKubeEvents"] = @@collectAllKubeEvents
-              end
-
-              #telemetry about prometheus metric collections settings for replicaset
-              if (File.file?(@@promConfigMountPath))
-                properties["rsPromInt"] = @@rsPromInterval
-                properties["rsPromFPC"] = @@rsPromFieldPassCount
-                properties["rsPromFDC"] = @@rsPromFieldDropCount
-                properties["rsPromServ"] = @@rsPromK8sServiceCount
-                properties["rsPromUrl"] = @@rsPromUrlCount
-                properties["rsPromMonPods"] = @@rsPromMonitorPods
-                properties["rsPromMonPodsNs"] = @@rsPromMonitorPodsNamespaceLength
-                properties["rsPromMonPodsLabelSelectorLength"] = @@rsPromMonitorPodsLabelSelectorLength
-                properties["rsPromMonPodsFieldSelectorLength"] = @@rsPromMonitorPodsFieldSelectorLength
-              end
-              # telemetry about osm metric settings for replicaset
-              if (File.file?(@@osmConfigMountPath))
-                properties["osmNamespaceCount"] = @@osmNamespaceCount
-              end
 
               # telemetry about mdsd backpressure limits for replicaset
               if (!@@mdsdBackPressureThresholdInMB.nil?) && (!@@mdsdBackPressureThresholdInMB.empty?)
