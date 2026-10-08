@@ -22,9 +22,11 @@ if [[ "${CONTROLLER_TYPE}" == "DaemonSet" ]]; then
   else
     syslogSetup
     CURRENT_LOGS_AND_EVENTS_ONLY=${LOGS_AND_EVENTS_ONLY}
-    ruby /opt/dcr-config-parser.rb > /dev/write-to-traces 2>&1
+    # this runs on every probe, so parser stdout goes to traces only when the mode changes; errors (stderr) still go every time
+    DCR_CONFIG_PARSER_OUTPUT=$(ruby /opt/dcr-config-parser.rb 2>/dev/write-to-traces)
     source /opt/dcr_env_var
     if [ "${LOGS_AND_EVENTS_ONLY}" != "${CURRENT_LOGS_AND_EVENTS_ONLY}" ]; then
+      [ -n "${DCR_CONFIG_PARSER_OUTPUT}" ] && echo "${DCR_CONFIG_PARSER_OUTPUT}" >> /dev/write-to-traces
       echo "dcr_env_var has been updated - dcr config changed" > /dev/termination-log
       exit 1
     fi
@@ -81,8 +83,8 @@ fi
 
 
 # LOGS_AND_EVENTS_ONLY mode in daemonset needs only mdsd and fluent-bit
+# (the mode is reported via the logsAndEventsOnly dimension on ContainerLogDaemonSetHeartbeatEvent)
 if [[ "${CONTROLLER_TYPE}" == "DaemonSet" && "${CONTAINER_TYPE}" != "PrometheusSidecar" && "${LOGS_AND_EVENTS_ONLY}" == "true" ]]; then
-  echo "Logs and events only mode enabled" > /dev/write-to-traces
   exit 0
 fi
 
