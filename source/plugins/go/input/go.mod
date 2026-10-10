@@ -1,20 +1,20 @@
 module Docker-Provider/source/plugins/go/input
 
-go 1.27.0
+go 1.27.2
 
 // keep in sync with ../src/go.mod.
 godebug tlsmlkem=0
 
 require (
-	code.cloudfoundry.org/clock v1.85.0 // indirect
-	github.com/Microsoft/go-winio v0.6.2 // indirect
+	code.cloudfoundry.org/clock v1.91.0 // indirect
+	github.com/Microsoft/go-winio v0.6.3 // indirect
 	github.com/calyptia/cmetrics-go v0.1.9 // indirect
 	github.com/gofrs/uuid v4.4.0+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/ugorji/go/codec v1.3.2 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 )
 
 require (
