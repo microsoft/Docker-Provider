@@ -114,6 +114,16 @@ Pull request must be approved by at least one engineering team members.
 
 We recommend using [Visual Studio Code](https://code.visualstudio.com/) for authoring. Windows 10 with Ubuntu App can be used for both Windows and Linux  Agent development and recommened to clone the code onto Ubuntu app so that you dont need to worry about line ending issues LF vs CRLF.
 
+# Linux Agent Diagnostic Logs
+
+The Linux agent mirrors `mdsd.err` and `mdsd.warn` to container stdout in both
+the main container and the active Prometheus sidecar. The original files remain
+under `/var/opt/microsoft/linuxmonagent/log` for onboarding checks and diagnostic
+collection. Forwarding includes startup messages and follows log rotation;
+`mdsd.info` and `mdsd.qos` remain file-only. Direct mdsd stderr is also retained
+in the container log stream. This exposes diagnostics without changing readiness
+checks or resolving the underlying onboarding failure.
+
 # Building code
 
 > Note: Building code in local computer is broken, please open github issue if you are blocked on this.

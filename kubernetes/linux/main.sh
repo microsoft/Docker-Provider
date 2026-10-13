@@ -62,6 +62,15 @@ getClusterCloudEnvironment() {
       esac
 }
 
+startMdsdLogForwarding() {
+      if ! touch "${MDSD_LOG}/mdsd.err" "${MDSD_LOG}/mdsd.warn"; then
+            echo "ERROR: unable to prepare mdsd logs for stdout forwarding" >&2
+            return 1
+      fi
+      # Read from the beginning to include startup failures, and follow names across log rotation.
+      tail -q -n +1 -F "${MDSD_LOG}/mdsd.err" "${MDSD_LOG}/mdsd.warn" &
+}
+
 startAMACoreAgent() {
       echo "AMACoreAgent: Starting AMA Core Agent since High Log scale or OpenTelemetry logs is enabled"
 
@@ -1143,6 +1152,7 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
             SYSLOG_PORT_CONFIG="" # enable syslog listener for mdsd for prometheus sidecar in geneva mode
       fi
       # add -T 0xFFFF for full traces
+      startMdsdLogForwarding
       mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
     else
       echo "not starting mdsd (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
@@ -1163,7 +1173,8 @@ else
       fi
       mkdir -p /var/run/mdsd-ci
       # add -T 0xFFFF for full traces
-      mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos 2>>/dev/null &
+      startMdsdLogForwarding
+      mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
 fi
 
 # # Set up a cron job for logrotation

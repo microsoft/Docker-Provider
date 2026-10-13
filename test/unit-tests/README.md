@@ -54,6 +54,16 @@ To run a specific PowerShell test file:
 
 ## Available Tests
 
+### Linux mdsd Console Logs
+`test_cases/test_mdsd_log_forwarding.sh` exercises the production forwarding
+function from `kubernetes/linux/main.sh` using BusyBox when available, or the host
+tail implementation otherwise. BusyBox is used by the Linux agent image.
+It verifies existing startup errors and subsequent errors and
+warnings reach stdout without duplicates or filename headers, files remain
+available for onboarding checks, forwarding resumes after copytruncate and file
+replacement, informational logs are not forwarded, and file preparation errors
+are surfaced. Run `bash test/unit-tests/test_cases/test_mdsd_log_forwarding.sh`.
+
 ### Windows Telegraf Package
 `test_cases/Test-TelegrafPackage.ps1` exercises the Telegraf installation block from
 `kubernetes/windows/setup.ps1` with mocked package operations. It checks the pinned
