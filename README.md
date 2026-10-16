@@ -116,13 +116,22 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 
 # Linux Agent Diagnostic Logs
 
-The Linux agent mirrors `mdsd.err` and `mdsd.warn` to container stdout in both
-the main container and the active Prometheus sidecar. The original files remain
+Linux mdsd log forwarding is disabled by default. To opt in, add the following
+to the `agent-settings` data in the `container-azm-ms-agentconfig` ConfigMap:
+
+```toml
+[agent_settings.mdsd_log_forwarding]
+  enabled = true
+```
+
+When enabled, the Linux agent mirrors `mdsd.err` and `mdsd.warn` to container
+stdout in both the main container and the active Prometheus sidecar. The original files remain
 under `/var/opt/microsoft/linuxmonagent/log` for onboarding checks and diagnostic
 collection. Forwarding includes startup messages and follows log rotation;
-`mdsd.info` and `mdsd.qos` remain file-only. Direct mdsd stderr is also retained
-in the container log stream. This exposes diagnostics without changing readiness
-checks or resolving the underlying onboarding failure.
+`mdsd.info` and `mdsd.qos` remain file-only. Set `enabled = false` or remove the
+setting to disable forwarding on the next agent start. Direct mdsd stderr handling
+is unchanged. This exposes diagnostics without changing readiness checks or
+resolving the underlying onboarding failure. Windows agents are unaffected.
 
 # Building code
 
@@ -424,4 +433,3 @@ If you have new interesting scenarios, please add/update them.
 
 This project has adopted the [Microsoft Open Source Code of Conduct] (https://opensource.microsoft.com/codeofconduct/).
 For more information see the [Code of Conduct FAQ] (https://opensource.microsoft.com/codeofconduct/faq/) or contact opencode@microsoft.com with any additional questions or comments.
-

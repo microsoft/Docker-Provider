@@ -63,6 +63,9 @@ getClusterCloudEnvironment() {
 }
 
 startMdsdLogForwarding() {
+      if [ "${AZMON_MDSD_LOG_FORWARDING_ENABLED:-false}" != "true" ]; then
+            return 0
+      fi
       if ! touch "${MDSD_LOG}/mdsd.err" "${MDSD_LOG}/mdsd.warn"; then
             echo "ERROR: unable to prepare mdsd logs for stdout forwarding" >&2
             return 1
@@ -1174,7 +1177,7 @@ else
       mkdir -p /var/run/mdsd-ci
       # add -T 0xFFFF for full traces
       startMdsdLogForwarding
-      mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
+      mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos 2>>/dev/null &
 fi
 
 # # Set up a cron job for logrotation
