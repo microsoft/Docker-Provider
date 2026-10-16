@@ -63,6 +63,15 @@ warnings reach stdout without duplicates or filename headers, files remain
 available for onboarding checks, forwarding resumes after copytruncate and file
 replacement, informational logs are not forwarded, and file preparation errors
 are surfaced. Run `bash test/unit-tests/test_cases/test_mdsd_log_forwarding.sh`.
+It also verifies that an unset, false, or invalid enablement variable produces no
+forwarder, output, or changes to the diagnostic files.
+
+`build/common/installer/scripts/tomlparser-common-agent-config_test.rb` checks
+the opt-in ConfigMap setting, including defaults, invalid values and schema,
+Windows compatibility, and the generated environment's effect on the production
+shell function. Run
+`ruby build/common/installer/scripts/tomlparser-common-agent-config_test.rb`
+with the existing Ruby test dependencies installed.
 
 ### Windows Telegraf Package
 `test_cases/Test-TelegrafPackage.ps1` exercises the Telegraf installation block from

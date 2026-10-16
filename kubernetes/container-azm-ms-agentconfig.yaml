@@ -171,6 +171,11 @@ data:
 
 # Doc - https://github.com/microsoft/Docker-Provider/blob/ci_prod/Documentation/AgentSettings/ReadMe.md
   agent-settings: |-
+    # Opt in to forwarding Linux mdsd error and warning files to container stdout.
+    # Applies to the main container and active Prometheus sidecar; original files are retained.
+    [agent_settings.mdsd_log_forwarding]
+      enabled = false
+
     # High log scale option for container logs high log volume scenarios. This mode is optimized for high log volume scenarios and have little higher resource utilization on low scale which will be addressed in subsequent agent releases.
     # Refer to public documentation for more details - https://aka.ms/cihsmode before enabling this setting as this setting has additional dependencies such as Data Collection endpoint and Microsoft-ContainerLogV2-HighScale stream instead of Microsoft-ContainerLogV2.
     [agent_settings.high_log_scale]

@@ -43,6 +43,20 @@ fi
 
 MDSD_LOG="${TEST_DIR}"
 printf '%s\n' "startup error" > "${MDSD_LOG}/mdsd.err"
+for setting in unset false invalid TRUE; do
+    if [ "${setting}" = "unset" ]; then
+        unset AZMON_MDSD_LOG_FORWARDING_ENABLED
+    else
+        AZMON_MDSD_LOG_FORWARDING_ENABLED="${setting}"
+    fi
+    startMdsdLogForwarding > "${TEST_DIR}/stdout" 2> "${TEST_DIR}/stderr"
+    assert_equals "" "$(jobs -pr)" "(no forwarder when setting is ${setting})"
+    assert_equals "" "$(cat "${TEST_DIR}/stdout" "${TEST_DIR}/stderr")" "(no output when setting is ${setting})"
+    assert_equals "false" "$([ -f "${MDSD_LOG}/mdsd.warn" ] && echo true || echo false)" "(no file creation when setting is ${setting})"
+    assert_equals "startup error" "$(cat "${MDSD_LOG}/mdsd.err")" "(existing file unchanged when setting is ${setting})"
+done
+
+AZMON_MDSD_LOG_FORWARDING_ENABLED=true
 startMdsdLogForwarding > "${TEST_DIR}/stdout" 2> "${TEST_DIR}/stderr"
 forwarder_pid=$!
 wait_for_line "startup error"

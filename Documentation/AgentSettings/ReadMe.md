@@ -1,3 +1,27 @@
+## Linux mdsd diagnostic log forwarding
+
+Forwarding is disabled by default. To opt in, merge this section into the
+`agent-settings` data of the `container-azm-ms-agentconfig` ConfigMap:
+
+```yaml
+  agent-settings: |-
+    [agent_settings.mdsd_log_forwarding]
+      enabled = true
+```
+
+Use a TOML boolean (`true` or `false`), not a quoted string. Missing or invalid
+values leave forwarding disabled. The setting is read at agent startup and
+applies to Linux main containers (DaemonSet and ReplicaSet) and active Prometheus
+sidecars. Muted sidecars and Windows agents are unaffected.
+
+When enabled, existing and new lines from `mdsd.err` and `mdsd.warn` are mirrored
+to container stdout. The files remain available under
+`/var/opt/microsoft/linuxmonagent/log`, with their existing rotation and onboarding
+checks unchanged. Informational and QoS logs remain file-only; direct mdsd stderr
+handling is unchanged. To disable forwarding, set `enabled = false` or remove the
+section and restart the agent containers. Forwarded diagnostics may be ingested
+by container log collectors, increasing log volume.
+
 ## Configurable agent settings for high scale prometheus metric scraping using pod annotations with prometheus sidecar.
 
 Container Insights agent runs native prometheus telegraf plugin to scrape prometheus metrics using pod annotations.
