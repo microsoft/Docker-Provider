@@ -171,9 +171,9 @@ data:
 
 # Doc - https://github.com/microsoft/Docker-Provider/blob/ci_prod/Documentation/AgentSettings/ReadMe.md
   agent-settings: |-
-    # Override amalogs.enableMdsdLogForwarding for Linux mdsd diagnostic logs.
+    # Enable Linux mdsd diagnostic logs independently of amalogs.enableMdsdLogForwarding.
     # Applies to the main container and active Prometheus sidecar; original files are retained.
-    # When omitted, use the extension setting (disabled by default).
+    # When false or omitted, use the extension setting (disabled by default).
     # [agent_settings.mdsd_log_forwarding]
       # enabled = true
 
