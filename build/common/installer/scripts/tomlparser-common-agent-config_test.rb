@@ -11,7 +11,7 @@ class CommonAgentConfigTest < Minitest::Test
   PARSER_PATH = File.join(SCRIPTS_DIR, "tomlparser-common-agent-config.rb")
   ENV_NAME = "AZMON_MDSD_LOG_FORWARDING_ENABLED"
 
-  def run_parser(config, expected:, schema: "v1", os: "linux", extension: nil)
+  def run_parser(config, expected:, schema: "v1", os: "linux", extension: nil, override: nil)
     Dir.mktmpdir("common-agent-config-test") do |sandbox|
       config_dir = File.join(sandbox, "etc/config/settings")
       FileUtils.mkdir_p(config_dir)
@@ -32,7 +32,11 @@ class CommonAgentConfigTest < Minitest::Test
       if os == "windows"
         refute_includes exports, ENV_NAME
       else
-        assert_includes exports, "export #{ENV_NAME}=#{expected}\n"
+        if override.nil?
+          refute_includes exports, ENV_NAME
+        else
+          assert_includes exports, "export #{ENV_NAME}=#{override}\n"
+        end
         function = File.read(File.join(REPO_ROOT, "kubernetes/linux/main.sh"))
                        .match(/^startMdsdLogForwarding\(\) \{$.*?^\}/m)[0]
         commands = <<~BASH
@@ -69,8 +73,8 @@ class CommonAgentConfigTest < Minitest::Test
   end
 
   def test_explicit_boolean_enablement_and_disablement
-    run_parser(config("true"), expected: true)
-    run_parser(config("false"), expected: false)
+    run_parser(config("true"), expected: true, override: true)
+    run_parser(config("false"), expected: false, override: false)
   end
 
   def test_extension_setting_is_used_when_configmap_override_is_absent
@@ -85,8 +89,8 @@ class CommonAgentConfigTest < Minitest::Test
   end
 
   def test_configmap_boolean_overrides_extension_setting
-    run_parser(config("false"), expected: false, extension: "true")
-    run_parser(config("true"), expected: true, extension: "false")
+    run_parser(config("false"), expected: false, extension: "true", override: false)
+    run_parser(config("true"), expected: true, extension: "false", override: true)
   end
 
   def test_invalid_configmap_preserves_extension_setting
