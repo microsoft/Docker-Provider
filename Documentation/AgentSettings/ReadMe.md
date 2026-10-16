@@ -1,6 +1,26 @@
 ## Linux mdsd diagnostic log forwarding
 
-Forwarding is disabled by default. To opt in, merge this section into the
+Forwarding is disabled by default. For an Arc extension release that includes
+the updated chart and agent image, set
+`properties.configurationSettings["amalogs.enableMdsdLogForwarding"]` to `"true"`
+on the `Microsoft.KubernetesConfiguration/extensions` resource. For example,
+the configuration settings portion of the extension resource is:
+
+```json
+{
+  "configurationSettings": {
+    "amalogs.enableMdsdLogForwarding": "true"
+  }
+}
+```
+
+The corresponding Helm value is `amalogs.enableMdsdLogForwarding` (default
+`false`). The legacy Arc chart and unified chart's Arc mode both inject
+`AZMON_MDSD_LOG_FORWARDING_ENABLED` into the Linux main and Prometheus sidecar
+containers of the DaemonSet and the ReplicaSet's Linux main container.
+The unified chart's AKS mode is unchanged.
+
+To override the extension setting on the cluster, merge this section into the
 `agent-settings` data of the `container-azm-ms-agentconfig` ConfigMap:
 
 ```yaml
@@ -9,8 +29,11 @@ Forwarding is disabled by default. To opt in, merge this section into the
       enabled = true
 ```
 
-Use a TOML boolean (`true` or `false`), not a quoted string. Missing or invalid
-values leave forwarding disabled. The setting is read at agent startup and
+Use a TOML boolean (`true` or `false`), not a quoted string. An explicit ConfigMap
+boolean takes precedence over the extension setting, including `false` overriding
+an enabled extension setting. An absent or invalid override preserves the
+extension value. With neither option enabled, forwarding is disabled.
+The setting is read at agent startup and
 applies to Linux main containers (DaemonSet and ReplicaSet) and active Prometheus
 sidecars. Muted sidecars and Windows agents are unaffected.
 
@@ -18,9 +41,16 @@ When enabled, existing and new lines from `mdsd.err` and `mdsd.warn` are mirrore
 to container stdout. The files remain available under
 `/var/opt/microsoft/linuxmonagent/log`, with their existing rotation and onboarding
 checks unchanged. Informational and QoS logs remain file-only; direct mdsd stderr
-handling is unchanged. To disable forwarding, set `enabled = false` or remove the
-section and restart the agent containers. Forwarded diagnostics may be ingested
+handling is unchanged. To disable forwarding, set the override to `enabled = false`,
+or remove the override and set the extension setting to `"false"`, then restart
+the agent containers if they have not already restarted as part of the extension
+update. Forwarded diagnostics may be ingested
 by container log collectors, increasing log volume.
+
+Both the chart and the agent image must be published in the extension release;
+updating only the agent image does not expose the extension configuration key.
+Any publisher-side configuration-key validation maintained outside this
+repository must also permit `amalogs.enableMdsdLogForwarding`.
 
 ## Configurable agent settings for high scale prometheus metric scraping using pod annotations with prometheus sidecar.
 

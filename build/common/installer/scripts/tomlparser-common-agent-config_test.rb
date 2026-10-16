@@ -11,7 +11,7 @@ class CommonAgentConfigTest < Minitest::Test
   PARSER_PATH = File.join(SCRIPTS_DIR, "tomlparser-common-agent-config.rb")
   ENV_NAME = "AZMON_MDSD_LOG_FORWARDING_ENABLED"
 
-  def run_parser(config, expected:, schema: "v1", os: "linux")
+  def run_parser(config, expected:, schema: "v1", os: "linux", extension: nil)
     Dir.mktmpdir("common-agent-config-test") do |sandbox|
       config_dir = File.join(sandbox, "etc/config/settings")
       FileUtils.mkdir_p(config_dir)
@@ -22,7 +22,7 @@ class CommonAgentConfigTest < Minitest::Test
       env = {
         "AZMON_AGENT_CFG_SCHEMA_VERSION" => schema,
         "OS_TYPE" => os,
-        ENV_NAME => "true",
+        ENV_NAME => extension,
         "BASH_ENV" => nil,
       }
       stdout, stderr, status = Open3.capture3(env, RbConfig.ruby, parser, chdir: sandbox)
@@ -71,6 +71,28 @@ class CommonAgentConfigTest < Minitest::Test
   def test_explicit_boolean_enablement_and_disablement
     run_parser(config("true"), expected: true)
     run_parser(config("false"), expected: false)
+  end
+
+  def test_extension_setting_is_used_when_configmap_override_is_absent
+    [nil, "[agent_settings]\n"].each do |value|
+      run_parser(value, expected: true, extension: "true")
+    end
+    shipped = YAML.safe_load(File.read(File.join(REPO_ROOT, "kubernetes/container-azm-ms-agentconfig.yaml")))
+    run_parser(shipped.fetch("data").fetch("agent-settings"), expected: true, extension: "true")
+    ["false", "invalid"].each do |value|
+      run_parser(nil, expected: false, extension: value)
+    end
+  end
+
+  def test_configmap_boolean_overrides_extension_setting
+    run_parser(config("false"), expected: false, extension: "true")
+    run_parser(config("true"), expected: true, extension: "false")
+  end
+
+  def test_invalid_configmap_preserves_extension_setting
+    assert_includes run_parser(config('"true"'), expected: true, extension: "true"), "ignoring invalid override"
+    assert_includes run_parser("[invalid", expected: true, extension: "true"), "Exception while parsing"
+    assert_includes run_parser(config("false"), expected: true, extension: "true", schema: "v2"), "unsupported/missing config schema"
   end
 
   def test_invalid_or_missing_enabled_values_are_reported_and_disabled

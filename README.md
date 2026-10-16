@@ -116,8 +116,14 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) for auth
 
 # Linux Agent Diagnostic Logs
 
-Linux mdsd log forwarding is disabled by default. To opt in, add the following
-to the `agent-settings` data in the `container-azm-ms-agentconfig` ConfigMap:
+Linux mdsd log forwarding is disabled by default. For an Arc extension release
+containing this feature, set the extension configuration setting
+`amalogs.enableMdsdLogForwarding` to `"true"` (or the equivalent Helm value to
+`true`). Both chart sources in this repository pass the setting to Linux
+DaemonSet main containers, Prometheus sidecars, and the ReplicaSet.
+
+Alternatively, add the following to the `agent-settings` data in the
+`container-azm-ms-agentconfig` ConfigMap:
 
 ```toml
 [agent_settings.mdsd_log_forwarding]
@@ -128,8 +134,11 @@ When enabled, the Linux agent mirrors `mdsd.err` and `mdsd.warn` to container
 stdout in both the main container and the active Prometheus sidecar. The original files remain
 under `/var/opt/microsoft/linuxmonagent/log` for onboarding checks and diagnostic
 collection. Forwarding includes startup messages and follows log rotation;
-`mdsd.info` and `mdsd.qos` remain file-only. Set `enabled = false` or remove the
-setting to disable forwarding on the next agent start. Direct mdsd stderr handling
+`mdsd.info` and `mdsd.qos` remain file-only. An explicit ConfigMap boolean overrides
+the extension setting; an absent or invalid override preserves the extension value.
+Set `enabled = false` to disable forwarding regardless of the extension setting,
+or omit the override and set the extension setting to `"false"`. Changes take
+effect at agent startup. Direct mdsd stderr handling
 is unchanged. This exposes diagnostics without changing readiness checks or
 resolving the underlying onboarding failure. Windows agents are unaffected.
 
