@@ -167,6 +167,8 @@ spec:
          value: {{ .Values.Azure.proxySettings.isCustomCert | quote }}
        - name: ENABLE_CUSTOM_METRICS
          value: {{ .Values.amalogs.enableCustomMetrics | quote }}
+       - name: AZMON_MDSD_LOG_FORWARDING_ENABLED
+         value: {{ eq (lower (toString .Values.amalogs.enableMdsdLogForwarding)) "true" | quote }}
        {{ if .Values.amalogs.ISTEST }}
        - name: AZMON_CLUSTER_COLLECT_ALL_KUBE_EVENTS
          value: "true"

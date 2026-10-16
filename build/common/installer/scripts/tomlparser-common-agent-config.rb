@@ -13,7 +13,7 @@ require_relative "ConfigParseErrorLogger"
 @enableHighLogScaleMode = false
 @enableCustomMetrics = false
 @amaLogsCollectProcessMetricsEnabled = false
-@mdsdLogForwardingEnabled = false
+@mdsdLogForwardingEnabled = ENV["AZMON_MDSD_LOG_FORWARDING_ENABLED"] == "true"
 
 def is_windows?
   return !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
@@ -107,7 +107,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           @mdsdLogForwardingEnabled = mdsd_log_forwarding[:enabled]
           puts "Using config map value: AZMON_MDSD_LOG_FORWARDING_ENABLED = #{@mdsdLogForwardingEnabled}"
         else
-          ConfigParseErrorLogger.logError("agent_settings.mdsd_log_forwarding.enabled must be a boolean, using default false")
+          ConfigParseErrorLogger.logError("agent_settings.mdsd_log_forwarding.enabled must be a boolean, ignoring invalid override")
         end
       end
     end
