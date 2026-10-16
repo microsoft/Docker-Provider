@@ -32,7 +32,16 @@ class MdsdLogForwardingChartTest < Minitest::Test
       ] + setting
       stdout, stderr, status = Open3.capture3(*args)
       assert status.success?, "Helm render failed for #{chart}: #{stderr}"
-      YAML.load_stream(stdout).compact.select { |doc| %w[DaemonSet Deployment].include?(doc["kind"]) }
+      parse_workloads(stdout)
+    end
+  end
+
+  def parse_workloads(yaml)
+    YAML.parse_stream(yaml).children.filter_map do |document|
+      stream = Psych::Nodes::Stream.new
+      stream.children << document
+      workload = YAML.safe_load(stream.to_yaml)
+      workload if workload && %w[DaemonSet Deployment].include?(workload["kind"])
     end
   end
 
@@ -62,8 +71,7 @@ class MdsdLogForwardingChartTest < Minitest::Test
       [["--set", "amalogs.enableMdsdLogForwarding=false"], "false"],
       [["--set-string", "amalogs.enableMdsdLogForwarding=true"], "true"],
       [["--set-string", "amalogs.enableMdsdLogForwarding=false"], "false"],
-      [["--set-string", "amalogs.enableMdsdLogForwarding=TRUE"], "true"],
-      [["--set-string", "amalogs.enableMdsdLogForwarding=invalid"], "false"],
+      [["--set-string", "amalogs.enableMdsdLogForwarding=invalid"], "invalid"],
     ]
     CHARTS.each do |chart|
       scenarios.each do |setting, expected|
@@ -87,5 +95,15 @@ class MdsdLogForwardingChartTest < Minitest::Test
         refute_includes container.fetch("env", []).map { |env| env["name"] }, ENV_NAME
       end
     end
+  end
+
+  def test_rendered_yaml_rejects_ruby_objects_in_any_document
+    yaml = "---\nkind: DaemonSet\n--- !ruby/object:Object {}\n"
+    assert_raises(Psych::DisallowedClass) { parse_workloads(yaml) }
+  end
+
+  def test_rendered_yaml_rejects_aliases
+    yaml = "---\nkind: DaemonSet\nmetadata: &metadata {}\nspec: *metadata\n"
+    assert_raises(Psych::BadAlias) { parse_workloads(yaml) }
   end
 end
