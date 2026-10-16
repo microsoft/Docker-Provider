@@ -20,7 +20,7 @@ The corresponding Helm value is `amalogs.enableMdsdLogForwarding` (default
 containers of the DaemonSet and the ReplicaSet's Linux main container.
 The unified chart's AKS mode is unchanged.
 
-To override the extension setting on the cluster, merge this section into the
+To enable forwarding through the ConfigMap, merge this section into the
 `agent-settings` data of the `container-azm-ms-agentconfig` ConfigMap:
 
 ```yaml
@@ -29,10 +29,12 @@ To override the extension setting on the cluster, merge this section into the
       enabled = true
 ```
 
-Use a TOML boolean (`true` or `false`), not a quoted string. An explicit ConfigMap
-boolean takes precedence over the extension setting, including `false` overriding
-an enabled extension setting. An absent or invalid override preserves the
-extension value. With neither option enabled, forwarding is disabled.
+Like process metrics, the ConfigMap value is converted to a string, trimmed, and
+compared to `"true"` case-insensitively. Boolean `true` or strings such as `" TRUE "`
+enable forwarding regardless of the extension setting. Like custom metrics,
+only an enabled value is exported; other values or an absent setting preserve
+the extension value.
+With neither option enabled, forwarding is disabled.
 The setting is read at agent startup and
 applies to Linux main containers (DaemonSet and ReplicaSet) and active Prometheus
 sidecars. Muted sidecars and Windows agents are unaffected.
@@ -41,8 +43,8 @@ When enabled, existing and new lines from `mdsd.err` and `mdsd.warn` are mirrore
 to container stdout. The files remain available under
 `/var/opt/microsoft/linuxmonagent/log`, with their existing rotation and onboarding
 checks unchanged. Informational and QoS logs remain file-only; direct mdsd stderr
-handling is unchanged. To disable forwarding, set the override to `enabled = false`,
-or remove the override and set the extension setting to `"false"`, then restart
+handling is unchanged. To disable forwarding, set the extension setting to `"false"`
+and remove or set the ConfigMap setting to `enabled = false`, then restart
 the agent containers if they have not already restarted as part of the extension
 update. Forwarded diagnostics may be ingested
 by container log collectors, increasing log volume.

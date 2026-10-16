@@ -134,10 +134,10 @@ When enabled, the Linux agent mirrors `mdsd.err` and `mdsd.warn` to container
 stdout in both the main container and the active Prometheus sidecar. The original files remain
 under `/var/opt/microsoft/linuxmonagent/log` for onboarding checks and diagnostic
 collection. Forwarding includes startup messages and follows log rotation;
-`mdsd.info` and `mdsd.qos` remain file-only. An explicit ConfigMap boolean overrides
-the extension setting; an absent or invalid override preserves the extension value.
-Set `enabled = false` to disable forwarding regardless of the extension setting,
-or omit the override and set the extension setting to `"false"`. Changes take
+`mdsd.info` and `mdsd.qos` remain file-only. Like custom metrics, ConfigMap
+`enabled = true` enables forwarding; `false`, absent, or invalid values leave the
+extension setting unchanged. To disable forwarding, set the extension setting to
+`"false"` and remove or set the ConfigMap setting to `enabled = false`. Changes take
 effect at agent startup. Direct mdsd stderr handling
 is unchanged. This exposes diagnostics without changing readiness checks or
 resolving the underlying onboarding failure. Windows agents are unaffected.
