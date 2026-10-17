@@ -92,16 +92,19 @@ class DcrConfigParserTest < Minitest::Test
     assert_processed(base, "unset Geneva infra namespaces")
   end
 
-  def test_scenario_3_service_modes_skip
+  def test_scenario_3_geneva_service_mode_skips
     assert_skipped({ "GENEVA_LOGS_INTEGRATION_SERVICE_MODE" => "true" }, "Geneva service mode")
+  end
+
+  def test_scenario_4_azure_monitor_service_mode_skips
     assert_skipped({ "AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE" => "true" }, "Azure Monitor service mode")
   end
 
-  def test_scenario_4_windows_skips
+  def test_scenario_5_windows_skips
     assert_skipped({ "OS_TYPE" => "Windows" }, "Windows")
   end
 
-  def test_scenario_5_non_msi_auth_skips
+  def test_scenario_6_non_msi_auth_skips
     assert_skipped({ "USING_AAD_MSI_AUTH" => nil }, "missing MSI auth")
     assert_skipped({ "USING_AAD_MSI_AUTH" => "false" }, "disabled MSI auth")
   end
