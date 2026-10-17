@@ -15,11 +15,29 @@ require_relative "ConfigParseErrorLogger"
 }
 @logs_and_events_only = false
 
-return if ENV['GENEVA_LOGS_INTEGRATION']&.strip&.casecmp?('true') && !ENV['AZMON_MULTI_TENANCY_LOG_COLLECTION']&.strip&.casecmp?('true')
-return if ENV['GENEVA_LOGS_INTEGRATION_SERVICE_MODE']&.strip&.casecmp?('true')
-return if ENV['AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE']&.strip&.casecmp?('true')
-return if !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp('windows').zero?
-return unless ENV['USING_AAD_MSI_AUTH']&.strip&.casecmp?('true')
+# Return early without checking DCRs in these cases:
+# 1. Geneva Logs integration is enabled and multi-tenancy is disabled. The container runs in Geneva mode, which does not use DCRs.
+# 2. Geneva Logs integration and multi-tenancy are enabled, and Geneva Logs infra namespaces are configured. The container runs in Geneva mode, which does not use DCRs.
+# 3. Geneva Logs service mode is enabled. The container runs in Geneva mode, which does not use DCRs.
+# 4. Azure Monitor service mode is enabled - Though it uses DCRs but it doesnt use the Container Insights extension DCR
+# 5. The OS is Windows. DCRs are at cluster level and checking at Linux Daemonset  level is enough and dont need windows daemonset to check DCRs
+# 6. AAD MSI authentication is not enabled. DCRs are not used in this configuration.
+
+def env_flag?(name, expected)
+  ENV[name]&.strip&.casecmp?(expected) == true
+end
+
+geneva_logs_integration = env_flag?("GENEVA_LOGS_INTEGRATION", "true")
+geneva_logs_infra_namespaces_set = !ENV.fetch("GENEVA_LOGS_INFRA_NAMESPACES", "").empty?
+
+# Scenarios 1 and 2 match isGenevaMode in kubernetes/linux/main.sh for the multi-tenancy values written by
+# the geneva config parser, so a tenant-only node (no infra namespaces) still runs mdsd with DCRs.
+return if geneva_logs_integration && env_flag?("GENEVA_LOGS_MULTI_TENANCY", "false")
+return if geneva_logs_integration && env_flag?("GENEVA_LOGS_MULTI_TENANCY", "true") && geneva_logs_infra_namespaces_set
+return if env_flag?("GENEVA_LOGS_INTEGRATION_SERVICE_MODE", "true") 
+return if env_flag?("AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE", "true")
+return if @os_type&.strip&.casecmp?("windows")
+return unless env_flag?("USING_AAD_MSI_AUTH", "true")
 
 if !@controllerType.nil? && !@controllerType.empty? && @controllerType.strip.casecmp("daemonset").zero? \
   && @containerType.nil?
