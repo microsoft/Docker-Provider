@@ -147,6 +147,14 @@ const (
 	eventNameWindowsFluentBitHeartbeat        = "WindowsFluentBitHeartbeatEvent"
 )
 
+func addContainerLogSchemaTelemetryDimension(dimensions map[string]string, schemaV2 bool, resolved bool) {
+	if !resolved {
+		delete(dimensions, "containerLogVer")
+		return
+	}
+	dimensions["containerLogVer"] = strconv.FormatBool(schemaV2)
+}
+
 // SendContainerLogPluginMetrics is a go-routine that flushes the data periodically (every 5 mins to App Insights)
 func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 	telemetryPushInterval, err := strconv.Atoi(telemetryPushIntervalProperty)
@@ -346,7 +354,8 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 				telemetryDimensions["PromFbitBufferSize"] = os.Getenv("AZMON_FBIT_BUFFER_SIZE")
 				telemetryDimensions["PromFbitMemBufLimit"] = os.Getenv("AZMON_FBIT_MEM_BUF_LIMIT")
 
-				telemetryDimensions["containerLogVer"] = strconv.FormatBool(ContainerLogSchemaV2)
+				schemaV2, schemaResolved := getContainerLogSchemaV2ForTelemetry()
+				addContainerLogSchemaTelemetryDimension(telemetryDimensions, schemaV2, schemaResolved)
 
 				if IsNetworkFlowLogsEnabled {
 					telemetryDimensions["nflEnabled"] = "true"

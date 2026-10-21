@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/fluent/fluent-bit-go/output"
@@ -113,6 +114,15 @@ const ContainerLogsADXRoute = "adx"
 // container logs schema (v2=ContainerLogsV2 table in LA, anything else ContainerLogs table in LA. This is applicable only if Container logs route is NOT ADX)
 const ContainerLogV2SchemaVersion = "v2"
 
+const (
+	containerLogSchemaModeUnknown uint32 = iota
+	containerLogSchemaModeV1
+	containerLogSchemaModeV2
+	containerLogSchemaModeDCR
+)
+
+var containerLogSchemaMode atomic.Uint32
+
 // env variable for AAD MSI Auth mode
 const AADMSIAuthMode = "AAD_MSI_AUTH_MODE"
 
@@ -165,16 +175,10 @@ var (
 	ContainerLogsRouteV2 bool
 	// container log route for routing thru ADX
 	ContainerLogsRouteADX bool
-	// container log schema (applicable only for non-ADX route)
-	ContainerLogSchemaV2 bool
-	// container log schema version from config map
-	ContainerLogV2ConfigMap bool
 	// Kubernetes Metadata enabled through configmap flag
 	KubernetesMetadataEnabled bool
 	// Kubernetes Metadata enabled include list
 	KubernetesMetadataIncludeList []string
-	// container log or container log v2 tag name for oneagent route
-	MdsdContainerLogTagName string
 	// ContainerLog Tag Refresh Tracker
 	MdsdContainerLogTagRefreshTracker time.Time
 	// kubemonagent events tag name for oneagent route
@@ -1506,11 +1510,54 @@ func PostInputPluginRecords(inputPluginRecords []map[interface{}]interface{}) in
 	return output.FLB_OK
 }
 
+// Publish policy atomically so repeated plugin initialization cannot expose transient auth defaults.
+func initializeContainerLogSchemaMode(configMapV2, msi, geneva, adx bool) {
+	mode := containerLogSchemaModeV1
+	if configMapV2 && !adx {
+		mode = containerLogSchemaModeV2
+	} else if !configMapV2 && msi && !geneva {
+		mode = containerLogSchemaModeDCR
+	}
+	containerLogSchemaMode.Store(mode)
+}
+
+func isContainerLogSchemaDCRControlled() bool {
+	return containerLogSchemaMode.Load() == containerLogSchemaModeDCR
+}
+
+func getContainerLogSchemaV2(useFromCache bool) (bool, error) {
+	switch containerLogSchemaMode.Load() {
+	case containerLogSchemaModeV1:
+		return false, nil
+	case containerLogSchemaModeV2:
+		return true, nil
+	case containerLogSchemaModeDCR:
+		return extension.GetInstance(FLBLogger, os.Getenv(ContainerTypeEnv)).IsContainerLogV2(useFromCache)
+	default:
+		return false, fmt.Errorf("container log schema policy is not initialized")
+	}
+}
+
+func getContainerLogSchemaV2ForTelemetry() (bool, bool) {
+	switch containerLogSchemaMode.Load() {
+	case containerLogSchemaModeV1:
+		return false, true
+	case containerLogSchemaModeV2:
+		return true, true
+	case containerLogSchemaModeDCR:
+		return extension.GetInstance(FLBLogger, os.Getenv(ContainerTypeEnv)).GetCachedContainerLogV2()
+	default:
+		return false, false
+	}
+}
+
 // PostDataHelper sends data to the ODS endpoint or oneagent or ADX
 func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 	start := time.Now()
 	var dataItemsLAv1 []DataItemLAv1
 	var dataItemsLAv2 []DataItemLAv2
+	var containerLogSchemaV2 bool
+	schemaResolved := false
 
 	var msgPackEntries []MsgPackEntry
 	var stringMap map[string]string
@@ -1601,24 +1648,34 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 		logEntry := ToString(record["log"])
 		logEntryTimeStamp := ToString(record["time"])
 
-		if !ContainerLogV2ConfigMap && IsAADMSIAuthMode == true && !IsGenevaLogsIntegrationEnabled {
-			if !IsWindows && MdsdMsgpUnixSocketClient == nil {
-				Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
-				CreateMDSDClient(ContainerLogV2, ContainerType)
-				if MdsdMsgpUnixSocketClient == nil {
-					Log("Error::mdsd::Unable to create mdsd client. Please check error log.")
-					ContainerLogTelemetryMutex.Lock()
-					defer ContainerLogTelemetryMutex.Unlock()
-					ContainerLogsMDSDClientCreateErrors += 1
-					return output.FLB_RETRY
+		// Keep one schema for the whole batch, including its payload and output tag.
+		if !schemaResolved {
+			useFromCache := true
+			if isContainerLogSchemaDCRControlled() {
+				if !IsWindows && MdsdMsgpUnixSocketClient == nil {
+					Log("Error::mdsd::mdsd connection does not exist. re-connecting ...")
+					CreateMDSDClient(ContainerLogV2, ContainerType)
+					if MdsdMsgpUnixSocketClient == nil {
+						Log("Error::mdsd::Unable to create mdsd client. Please check error log.")
+						ContainerLogTelemetryMutex.Lock()
+						defer ContainerLogTelemetryMutex.Unlock()
+						ContainerLogsMDSDClientCreateErrors += 1
+						return output.FLB_RETRY
+					}
 				}
+				useFromCache = checkIfUseFromCache(&MdsdContainerLogTagRefreshTracker)
 			}
-			useFromCache := checkIfUseFromCache(&MdsdContainerLogTagRefreshTracker)
-			ContainerLogSchemaV2 = extension.GetInstance(FLBLogger, ContainerType).IsContainerLogV2(useFromCache)
+			var err error
+			containerLogSchemaV2, err = getContainerLogSchemaV2(useFromCache)
+			if err != nil {
+				Log("Error::mdsd/ama::Unable to resolve container log schema. Will retry ... error: %s", err.Error())
+				return output.FLB_RETRY
+			}
+			schemaResolved = true
 		}
 
 		//ADX Schema & LAv2 schema are almost the same (except resourceId)
-		if ContainerLogSchemaV2 == true {
+		if containerLogSchemaV2 {
 			stringMap["Computer"] = Computer
 			stringMap["ContainerId"] = containerID
 			stringMap["ContainerName"] = containerName
@@ -1673,7 +1730,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 			}
 			msgPackEntries = append(msgPackEntries, msgPackEntry)
 		} else {
-			if ContainerLogSchemaV2 == true {
+			if containerLogSchemaV2 {
 				dataItemLAv2 = DataItemLAv2{
 					TimeGenerated:      stringMap["TimeGenerated"],
 					Computer:           stringMap["Computer"],
@@ -1730,21 +1787,20 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 	numContainerLogRecords := 0
 
-	if ContainerLogSchemaV2 == true {
-		MdsdContainerLogTagName = MdsdContainerLogV2SourceName
-	} else {
-		MdsdContainerLogTagName = MdsdContainerLogSourceName
+	mdsdContainerLogTagName := MdsdContainerLogSourceName
+	if containerLogSchemaV2 {
+		mdsdContainerLogTagName = MdsdContainerLogV2SourceName
 	}
 
 	if len(msgPackEntries) > 0 && ContainerLogsRouteV2 == true {
 		//flush to mdsd
 		if IsAADMSIAuthMode == true && !IsGenevaLogsIntegrationEnabled {
 			containerlogDataType := ContainerLogDataType
-			if ContainerLogSchemaV2 == true {
+			if containerLogSchemaV2 {
 				containerlogDataType = ContainerLogV2DataType
 			}
-			MdsdContainerLogTagName = getOutputStreamIdTag(containerlogDataType, MdsdContainerLogTagName, &MdsdContainerLogTagRefreshTracker)
-			if MdsdContainerLogTagName == "" {
+			mdsdContainerLogTagName = getOutputStreamIdTag(containerlogDataType, mdsdContainerLogTagName, &MdsdContainerLogTagRefreshTracker)
+			if mdsdContainerLogTagName == "" {
 				Log("Warn::mdsd::skipping Microsoft-ContainerLog or Microsoft-ContainerLogV2 or Microsoft-ContainerLogV2-HighScale stream since its opted out")
 				return output.FLB_RETRY
 			}
@@ -1752,14 +1808,14 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 
 		if IsWindows {
 			var datatype string
-			if ContainerLogSchemaV2 {
+			if containerLogSchemaV2 {
 				datatype = ContainerLogV2DataType
 			} else {
 				datatype = ContainerLogDataType
 			}
 			if EnsureGenevaOr3PNamedPipeExists(&ContainerLogNamedPipe, datatype, &ContainerLogsWindowsAMAClientCreateErrors, IsGenevaLogsIntegrationEnabled, &MdsdContainerLogTagRefreshTracker) {
 				Log("Info::AMA::Starting to write container logs to named pipe")
-				n, err := writeMsgPackEntries(ContainerLogNamedPipe, ContainerLogSchemaV2, MdsdContainerLogTagName, msgPackEntries)
+				n, err := writeMsgPackEntries(ContainerLogNamedPipe, containerLogSchemaV2, mdsdContainerLogTagName, msgPackEntries)
 				if err != nil {
 					Log("Error::AMA::Failed to write to AMA %d records. Will retry ... error : %s", len(msgPackEntries), err.Error())
 					if ContainerLogNamedPipe != nil {
@@ -1792,7 +1848,7 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				}
 			}
 
-			bts, er := writeMsgPackEntries(MdsdMsgpUnixSocketClient, ContainerLogSchemaV2, MdsdContainerLogTagName, msgPackEntries)
+			bts, er := writeMsgPackEntries(MdsdMsgpUnixSocketClient, containerLogSchemaV2, mdsdContainerLogTagName, msgPackEntries)
 			elapsed = time.Since(start)
 
 			if er != nil {
@@ -1812,12 +1868,12 @@ func PostDataHelper(tailPluginRecords []map[interface{}]interface{}) int {
 				Log("Success::mdsd::Successfully flushed %d container log records that was %d bytes to mdsd in %s ", numContainerLogRecords, bts, elapsed)
 			}
 		}
-	} else if (ContainerLogSchemaV2 == true && len(dataItemsLAv2) > 0) || len(dataItemsLAv1) > 0 { //ODS
+	} else if (containerLogSchemaV2 && len(dataItemsLAv2) > 0) || len(dataItemsLAv1) > 0 { //ODS
 		var logEntry interface{}
 		recordType := ""
 		loglinesCount := 0
 		//schema v2
-		if len(dataItemsLAv2) > 0 && ContainerLogSchemaV2 == true {
+		if len(dataItemsLAv2) > 0 && containerLogSchemaV2 {
 			logEntry = ContainerLogBlobLAv2{
 				DataType:  ContainerLogV2DataType,
 				IPName:    IPName,
@@ -2360,8 +2416,11 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	ContainerLogSchemaVersion := strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_CONTAINER_LOG_SCHEMA_VERSION")))
 	Log("AZMON_CONTAINER_LOG_SCHEMA_VERSION:%s", ContainerLogSchemaVersion)
 
-	ContainerLogSchemaV2 = false //default is v1 schema
-	ContainerLogV2ConfigMap = (strings.Compare(ContainerLogSchemaVersion, ContainerLogV2SchemaVersion) == 0)
+	containerLogV2ConfigMap := ContainerLogSchemaVersion == ContainerLogV2SchemaVersion
+	containerLogSchemaV2 := containerLogV2ConfigMap && !ContainerLogsRouteADX
+	initializeContainerLogSchemaMode(containerLogV2ConfigMap,
+		strings.EqualFold(os.Getenv(AADMSIAuthMode), "true"),
+		genevaLogsIntegrationEnabled == "true", ContainerLogsRouteADX)
 
 	IsAzMonMultiTenancyLogCollectionEnabled = false
 	multiTenancyEnabled := strings.TrimSpace(strings.ToLower(os.Getenv("AZMON_MULTI_TENANCY_LOG_COLLECTION")))
@@ -2393,8 +2452,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	if KubernetesMetadataEnabled && len(metadataIncludeList) > 0 {
 		KubernetesMetadataIncludeList = strings.Split(metadataIncludeList, ",")
 	}
-	if ContainerLogV2ConfigMap && ContainerLogsRouteADX != true {
-		ContainerLogSchemaV2 = true
+	if containerLogV2ConfigMap && ContainerLogsRouteADX != true {
 		Log("Container logs schema=%s", ContainerLogV2SchemaVersion)
 		fmt.Fprintf(os.Stdout, "Container logs schema=%s... \n", ContainerLogV2SchemaVersion)
 	}
@@ -2412,7 +2470,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 	if ContainerLogsRouteV2 == true {
 		if IsWindows {
 			var datatype string
-			if ContainerLogSchemaV2 {
+			if containerLogSchemaV2 {
 				datatype = ContainerLogV2DataType
 			} else {
 				datatype = ContainerLogDataType
@@ -2448,7 +2506,7 @@ func InitializePlugin(pluginConfPath string, agentVersion string) {
 		Log("Included resources set stdout: %v, stderr: %v", StdoutIncludeSystemResourceSet, StderrIncludeSystemResourceSet)
 		Log("Included system namespaces set stdout: %v, stderr: %v", StdoutIncludeSystemNamespaceSet, StderrIncludeSystemNamespaceSet)
 		//enrichment not applicable for ADX and v2 schema
-		if enrichContainerLogs == true && ContainerLogsRouteADX != true && ContainerLogSchemaV2 != true {
+		if enrichContainerLogs == true && ContainerLogsRouteADX != true && !containerLogSchemaV2 {
 			Log("ContainerLogEnrichment=true; starting goroutine to update containerimagenamemaps \n")
 			go updateContainerImageNameMaps()
 		} else {

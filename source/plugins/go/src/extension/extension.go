@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	uuid "github.com/google/uuid"
 )
@@ -16,7 +17,14 @@ type Extension struct {
 	datatypeStreamIdMap    map[string]string
 	dataCollectionSettings map[string]string
 	datatypeNamedPipeMap   map[string]string
+	containerLogSchema     atomic.Uint32
 }
+
+const (
+	containerLogSchemaUnknown uint32 = iota
+	containerLogSchemaV1
+	containerLogSchemaV2
+)
 
 const (
 	EXTENSION_SETTINGS_DATA_COLLECTION_SETTINGS                          = "dataCollectionSettings"
@@ -47,10 +55,10 @@ func GetInstance(flbLogger *log.Logger, containertype string) *Extension {
 			dataCollectionSettings: make(map[string]string),
 			datatypeNamedPipeMap:   make(map[string]string),
 		}
+		logger = flbLogger
+		containerType = containertype
 		flbLogger.Println("Extension Instance created")
 	})
-	logger = flbLogger
-	containerType = containertype
 	return singleton
 }
 
@@ -89,6 +97,9 @@ func getExtensionConfigs(extensionName string, extensionVersion string) ([]Exten
 	extensionData, err := getExtensionData(extensionName, extensionVersion)
 	if err != nil {
 		return nil, err
+	}
+	if len(extensionData.ExtensionConfigs) == 0 {
+		return nil, fmt.Errorf("no configuration available for extension %s", extensionName)
 	}
 	return extensionData.ExtensionConfigs, nil
 }
@@ -187,35 +198,60 @@ func getNamespacesFromDataCollectionSettings(dataCollectionSettings map[string]i
 	return namespaces
 }
 
-func (e *Extension) IsContainerLogV2(useFromCache bool) bool {
+// Read the last resolved schema without waiting for an in-flight AMA config request.
+func (e *Extension) GetCachedContainerLogV2() (bool, bool) {
+	schema := e.containerLogSchema.Load()
+	return schema == containerLogSchemaV2, schema != containerLogSchemaUnknown
+}
+
+func (e *Extension) setContainerLogSchemaV2(schemaV2 bool) {
+	schema := containerLogSchemaV1
+	if schemaV2 {
+		schema = containerLogSchemaV2
+	}
+	e.containerLogSchema.Store(schema)
+}
+
+func (e *Extension) IsContainerLogV2(useFromCache bool) (bool, error) {
 	extensionconfiglock.Lock()
 	defer extensionconfiglock.Unlock()
-	if useFromCache && len(e.dataCollectionSettings) > 0 && e.dataCollectionSettings["enablecontainerlogv2"] != "" {
-		return e.dataCollectionSettings["enablecontainerlogv2"] == "true"
+	if useFromCache {
+		switch e.dataCollectionSettings["enablecontainerlogv2"] {
+		case "true":
+			e.setContainerLogSchemaV2(true)
+			return true, nil
+		case "false":
+			e.setContainerLogSchemaV2(false)
+			return false, nil
+		}
 	}
-	var err error
 	dataCollectionSettingsItr, err := getDataCollectionSettingsInterface(ContainerInsightsExtension, ContainerInsightsExtensionVersion)
 	if err != nil {
-		message := fmt.Sprintf("Error getting dataCollectionSettings: %s", err.Error())
-		logger.Printf(message)
-		return false
+		e.dataCollectionSettings = nil
+		e.containerLogSchema.Store(containerLogSchemaUnknown)
+		logger.Printf("Error getting dataCollectionSettings: %s", err.Error())
+		return false, err
 	}
-	if len(dataCollectionSettingsItr) > 0 {
-		for k, v := range dataCollectionSettingsItr {
-			lk := strings.ToLower(k)
-			lv := strings.ToLower(fmt.Sprintf("%v", v))
-			e.dataCollectionSettings[lk] = fmt.Sprintf("%v", lv)
-		}
-	} else {
-		return false
+	settings := make(map[string]string, len(dataCollectionSettingsItr)+1)
+	for k, v := range dataCollectionSettingsItr {
+		settings[strings.ToLower(k)] = strings.ToLower(fmt.Sprintf("%v", v))
 	}
-
-	enablecontainerlogv2, ok := e.dataCollectionSettings["enablecontainerlogv2"]
+	enablecontainerlogv2, ok := settings["enablecontainerlogv2"]
 	if !ok {
-		return false
+		// A loaded configuration without this optional setting uses the v1 default.
+		enablecontainerlogv2 = "false"
 	}
-
-	return enablecontainerlogv2 == "true"
+	if enablecontainerlogv2 != "true" && enablecontainerlogv2 != "false" {
+		e.dataCollectionSettings = nil
+		e.containerLogSchema.Store(containerLogSchemaUnknown)
+		err := fmt.Errorf("invalid enableContainerLogV2 setting: %q", enablecontainerlogv2)
+		logger.Printf("Error getting dataCollectionSettings: %s", err.Error())
+		return false, err
+	}
+	settings["enablecontainerlogv2"] = enablecontainerlogv2
+	e.dataCollectionSettings = settings
+	e.setContainerLogSchemaV2(enablecontainerlogv2 == "true")
+	return enablecontainerlogv2 == "true", nil
 }
 
 func (e *Extension) GetOutputStreamId(datatype string, useFromCache bool) string {
@@ -228,7 +264,7 @@ func (e *Extension) GetOutputStreamId(datatype string, useFromCache bool) string
 	e.datatypeStreamIdMap, err = getDataTypeToStreamIdMappingFromCIExtension(false)
 	if err != nil {
 		message := fmt.Sprintf("Error getting datatype to streamid mapping: %s", err.Error())
-		logger.Printf(message)
+		logger.Print(message)
 	}
 	return e.datatypeStreamIdMap[datatype]
 }
@@ -243,7 +279,7 @@ func (e *Extension) GetOutputNamedPipe(datatype string, useFromCache bool) strin
 	e.datatypeNamedPipeMap, err = getDataTypeToStreamIdMappingFromCIExtension(true)
 	if err != nil {
 		message := fmt.Sprintf("Error getting datatype to named pipe mapping: %s", err.Error())
-		logger.Printf(message)
+		logger.Print(message)
 	}
 	return e.datatypeNamedPipeMap[datatype]
 }
@@ -253,7 +289,7 @@ func (e *Extension) IsDataCollectionSettingsConfigured() bool {
 	dataCollectionSettings, err := getDataCollectionSettingsInterface(ContainerInsightsExtension, ContainerInsightsExtensionVersion)
 	if err != nil {
 		message := fmt.Sprintf("Error getting dataCollectionSettings: %s", err.Error())
-		logger.Printf(message)
+		logger.Print(message)
 		return false
 	}
 	return len(dataCollectionSettings) > 0
@@ -265,7 +301,7 @@ func (e *Extension) GetDataCollectionIntervalSeconds() int {
 	dataCollectionSettings, err := getDataCollectionSettingsInterface(ContainerInsightsExtension, ContainerInsightsExtensionVersion)
 	if err != nil {
 		message := fmt.Sprintf("Error getting dataCollectionSettings: %s", err.Error())
-		logger.Printf(message)
+		logger.Print(message)
 	}
 
 	if len(dataCollectionSettings) > 0 {
@@ -276,18 +312,18 @@ func (e *Extension) GetDataCollectionIntervalSeconds() int {
 				intervalMinutes, err := toMinutes(interval)
 				if err != nil {
 					message := fmt.Sprintf("Error getting interval: %s", err.Error())
-					logger.Printf(message)
+					logger.Print(message)
 
 				}
 				if intervalMinutes >= EXTENSION_SETTINGS_DATA_COLLECTION_SETTINGS_INTERVAL_MIN && intervalMinutes <= EXTENSION_SETTINGS_DATA_COLLECTION_SETTINGS_INTERVAL_MAX {
 					collectionIntervalSeconds = intervalMinutes * 60
 				} else {
 					message := fmt.Sprintf("getDataCollectionIntervalSeconds: interval value not in the range 1m to 30m hence using default, 60s: %s", interval)
-					logger.Printf(message)
+					logger.Print(message)
 				}
 			} else {
 				message := fmt.Sprintf("getDataCollectionIntervalSeconds: interval value is invalid hence using default, 60s: %s", interval)
-				logger.Printf(message)
+				logger.Print(message)
 			}
 		}
 	}
@@ -301,7 +337,7 @@ func (e *Extension) GetNamespacesForDataCollection() []string {
 	dataCollectionSettings, err := getDataCollectionSettingsInterface(ContainerInsightsExtension, ContainerInsightsExtensionVersion)
 	if err != nil {
 		message := fmt.Sprintf("Error getting dataCollectionSettings: %s", err.Error())
-		logger.Printf(message)
+		logger.Print(message)
 	}
 
 	namespaces = getNamespacesFromDataCollectionSettings(dataCollectionSettings)
@@ -316,7 +352,7 @@ func (e *Extension) GetNamespaceFilteringModeForDataCollection() string {
 	dataCollectionSettings, err := getDataCollectionSettingsInterface(ContainerInsightsExtension, ContainerInsightsExtensionVersion)
 	if err != nil {
 		message := fmt.Sprintf("Error getting dataCollectionSettings: %s", err.Error())
-		logger.Printf(message)
+		logger.Print(message)
 	}
 
 	if len(dataCollectionSettings) > 0 {
