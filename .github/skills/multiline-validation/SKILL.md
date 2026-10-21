@@ -171,7 +171,7 @@ Build a single side-by-side table with one row per (Lang, OS) and these columns:
    ```bash
    kubectl exec -n kube-system <ama-logs-linux-pod> -c ama-logs -- cat /etc/opt/microsoft/docker-cimprov/fluent-bit.conf | grep -i multiline
    ```
-   Expect a `[FILTER] Name multiline` block with `multiline.parser` listing the configured languages.
+   Expect a `[FILTER] Name multiline` block with `multiline.parser` listing the configured languages (`java` renders as `azmon_java`, defined in `azm-containers-parser-multiline.conf`).
 
 ### Phase 2: OLD image snapshot
 

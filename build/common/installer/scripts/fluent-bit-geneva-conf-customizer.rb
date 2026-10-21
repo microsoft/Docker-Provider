@@ -40,6 +40,12 @@ def substituteResourceOptimization(resourceOptimizationEnabled, new_contents, is
   return new_contents
 end
 
+# fluent-bit's built-in "java" multiline parser misses exception headers without a message on containerd (CRI)
+# logs. azmon_java (azm-containers-parser-multiline.conf) is the same parser with that fixed.
+def getMultilineParsers(stacktraceLanguages)
+  return stacktraceLanguages.split(",").map { |lang| lang.strip.casecmp("java") == 0 ? "azmon_java" : lang.strip }.join(",")
+end
+
 def substituteFluentBitPlaceHolders(configFilePath)
   begin
     # Replace the fluentbit config file with custom values if present
@@ -112,7 +118,7 @@ def substituteFluentBitPlaceHolders(configFilePath)
     if !multilineLogging.nil? && multilineLogging.to_s.downcase == "true"
       if !stacktraceLanguages.nil? && !stacktraceLanguages.empty?
         new_contents = new_contents.gsub("#${MultilineEnabled}", "")
-        new_contents = new_contents.gsub("#${MultilineLanguages}", stacktraceLanguages)
+        new_contents = new_contents.gsub("#${MultilineLanguages}", getMultilineParsers(stacktraceLanguages))
       end
       new_contents = new_contents.gsub("azm-containers-parser.conf", "azm-containers-parser-multiline.conf")
       # replace parser with multiline version. ensure running script multiple times does not have negative impact
