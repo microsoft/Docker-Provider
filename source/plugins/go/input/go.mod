@@ -1,6 +1,6 @@
 module Docker-Provider/source/plugins/go/input
 
-go 1.27.0
+go 1.27.3
 
 // keep in sync with ../src/go.mod.
 godebug tlsmlkem=0
