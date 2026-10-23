@@ -101,7 +101,7 @@ function ConvertTo-BundleEntry([string]$Title, [byte[]]$Der, [int]$BlankLines) {
 }
 
 function New-TestRoot([string]$Name) {
-    $key = [System.Security.Cryptography.ECDsa]::Create([System.Security.Cryptography.ECCurve+NamedCurves]::nistP256)
+    $key = [System.Security.Cryptography.ECDsa]::Create([System.Security.Cryptography.ECCurve+NamedCurves]::nistP256) # DevSkim: ignore DS440100 -- Throwaway key for a test-only CA.
     try {
         $request = [System.Security.Cryptography.X509Certificates.CertificateRequest]::new("CN=$Name", $key, [System.Security.Cryptography.HashAlgorithmName]::SHA256)
         $request.CertificateExtensions.Add([System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension]::new($true, $false, 0, $true))
