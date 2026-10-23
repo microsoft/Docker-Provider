@@ -206,6 +206,40 @@ variables:
         }
       }
 
+  - name: BleuConfigurationOverrides
+    value: |
+      {
+        "ConfigurationSpecification": {
+          "settings": {
+            "extensionTypeName": "microsoft.azuremonitor.containers",
+            "packageConfig": "microsoft.azuremonitor.containers-pkgciaks062626",
+            "helmChartUrl": "mcr.sovcloud-azure.fr/azuremonitor/helmchart/containerinsights/ciprod/azuremonitor-containers",
+            "userAssignedIdentity": "/subscriptions/85e18fe6-65f2-4eb5-899e-32ce93b277dd/resourceGroups/extension-msi-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ev2-msi-ci",
+            "version": "$(extensionVersionValue)",
+            "releaseTrain": "${{ parameters.releaseTrain }}",
+            "rollbackVersion": "${{ replace(parameters.rollbackVersion, 'none', '') }}",
+            "kustoGatingWaitDuration": "PT1H"
+          }
+        }
+      }
+
+  - name: DelosConfigurationOverrides
+    value: |
+      {
+        "ConfigurationSpecification": {
+          "settings": {
+            "extensionTypeName": "microsoft.azuremonitor.containers",
+            "packageConfig": "microsoft.azuremonitor.containers-pkgciaks062626",
+            "helmChartUrl": "mcr.sovcloud-azure.de/azuremonitor/helmchart/containerinsights/ciprod/azuremonitor-containers",
+            "userAssignedIdentity": "/subscriptions/a58475e6-054b-40f9-9060-6c1c2eef7bbb/resourcegroups/extension-msi-rg/providers/Microsoft.ManagedIdentity/userAssignedIdentities/ev2-msi-ci",
+            "version": "$(extensionVersionValue)",
+            "releaseTrain": "${{ parameters.releaseTrain }}",
+            "rollbackVersion": "${{ replace(parameters.rollbackVersion, 'none', '') }}",
+            "kustoGatingWaitDuration": "PT1H"
+          }
+        }
+      }
+
   - name: LinuxContainerImage
     value: 'mcr.microsoft.com/oss/go/microsoft/golang:1.24.2-fips-azurelinux3.0'
   - name: RevisionCounter
@@ -357,4 +391,58 @@ extends:
                   ServiceIdentifier: $(serviceIdentifier)
                   ServiceGroup: $(serviceGroup)
                   ConfigurationOverrides: $(USNatConfigurationOverrides)
+                  Select: regions(*)
+
+      - stage: Bleu_Managed_SDP
+        displayName: "Bleu: Managed SDP"
+        dependsOn: PROD_Managed_SDP
+        variables:
+          ob_release_environment: Bleu
+          ob_release_stagetype: deployment
+          CvrpManifestRelativePath: '\build.manifest'
+        jobs:
+          - job: Bleu_Managed_SDP
+            displayName: "Bleu: Managed SDP"
+            pool:
+              type: release
+            steps:
+              - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+                displayName: "Ev2 Managed SDP Rollout (Bleu)"
+                inputs:
+                  EndpointProviderType: ApprovalService
+                  ApprovalServiceEnvironment: Bleu
+                  TaskAction: CentralArtifactsRollout
+                  CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
+                  CentralArtifactsTenantIdentifier: e4c3160c-c374-44ad-84d2-ddb8c649cdc8
+                  CentralArtifactsPolicyName: CentralArtifactsPolicy
+                  ServiceIdentifier: $(serviceIdentifier)
+                  ServiceGroup: $(serviceGroup)
+                  ConfigurationOverrides: $(BleuConfigurationOverrides)
+                  Select: regions(*)
+
+      - stage: Delos_Managed_SDP
+        displayName: "Delos: Managed SDP"
+        dependsOn: PROD_Managed_SDP
+        variables:
+          ob_release_environment: Delos
+          ob_release_stagetype: deployment
+          CvrpManifestRelativePath: '\build.manifest'
+        jobs:
+          - job: Delos_Managed_SDP
+            displayName: "Delos: Managed SDP"
+            pool:
+              type: release
+            steps:
+              - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+                displayName: "Ev2 Managed SDP Rollout (Delos)"
+                inputs:
+                  EndpointProviderType: ApprovalService
+                  ApprovalServiceEnvironment: Delos
+                  TaskAction: CentralArtifactsRollout
+                  CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
+                  CentralArtifactsTenantIdentifier: eee66108-c5af-47b1-a1ed-05435ae3f2d0
+                  CentralArtifactsPolicyName: CentralArtifactsPolicy
+                  ServiceIdentifier: $(serviceIdentifier)
+                  ServiceGroup: $(serviceGroup)
+                  ConfigurationOverrides: $(DelosConfigurationOverrides)
                   Select: regions(*)
