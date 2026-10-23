@@ -1,6 +1,6 @@
 module docker-provider/test/containerstatus
 
-go 1.27.0
+go 1.27.3
 
 replace docker-provider/test/utils => ../utils
 
