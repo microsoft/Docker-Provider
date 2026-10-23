@@ -57,11 +57,16 @@ else
   end
 end
 
+def get_command_linux(env_variable_name, env_variable_value)
+  escaped_value = env_variable_value.to_s.gsub("'") { "'\\''" }
+  return "export #{env_variable_name}='#{escaped_value}'\n"
+end
+
 # Write the settings to file, so that they can be set as environment variables
 file = File.open("config_metric_collection_env_var", "w")
 
 if !file.nil?
-  file.write("export AZMON_PV_COLLECT_KUBE_SYSTEM_METRICS=#{@collectPVKubeSystemMetrics}\n")
+  file.write(get_command_linux("AZMON_PV_COLLECT_KUBE_SYSTEM_METRICS", @collectPVKubeSystemMetrics))
   # Close file after writing all metric collection setting environment variables
   file.close
   puts "****************End Metric Collection Settings Processing********************"

@@ -205,7 +205,9 @@ gracefulShutdown() {
 # usage: setGlobalEnvVar ENABLE_SIDECAR_SCRAPING true
 setGlobalEnvVar() {
       export "$1"="$2"
-      echo "export \"$1\"=\"$2\"" >> /opt/env_vars
+      # /opt/env_vars is sourced by later shells, so the value is written as a single-quoted
+      # literal. Double quotes would leave it open to shell processing on the way back in.
+      printf "export %s='%s'\n" "$1" "$(printf '%s' "$2" | sed "s/'/'\\\\''/g")" >> /opt/env_vars
 }
 touch /opt/env_vars
 touch /opt/dcr_env_var
