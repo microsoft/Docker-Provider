@@ -8,6 +8,30 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 10/23/2026 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.9.1-<tbd> (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.9.1-<tbd> (windows)
+- Linux
+  - azurelinux 3.0 (<tbd>)
+  - Golang - 1.27.3
+  - Ruby - arm64 - 3.3.5-7, x86_64 - 3.3.10
+  - MDSD - 1.42.0
+  - Telegraf - 1.40.2
+  - Fluent-bit - 5.1.2
+  - Fluentd - 1.19.3
+- Windows
+  - Golang - 1.27.3
+  - Ruby - 3.1.1
+  - Windows AMA - 47.7.1
+  - Telegraf - 1.40.1
+  - Fluent-bit - 5.0.3
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Common (Linux + Windows)
+    * Upgrade Golang to 1.27.3.
+    * Linux only: upgrade Telegraf to 1.40.2 and Fluent-bit to 5.1.2.
+
 ### 10/07/2026 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.9.0-ci-prod-10-07-2026-cd634797 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.9.0-ci-prod-10-07-2026-cd634797 (windows)
