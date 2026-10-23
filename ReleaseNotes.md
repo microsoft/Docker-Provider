@@ -8,6 +8,32 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 10/23/2026 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.9.1-<tbd> (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.9.1-<tbd> (windows)
+- Linux
+  - azurelinux 3.0 (<tbd>)
+  - Golang - 1.27.3
+  - Ruby - arm64 - 3.3.5-7, x86_64 - 3.3.10
+  - MDSD - 1.42.0
+  - Telegraf - 1.40.2
+  - Fluent-bit - 5.1.2
+  - Fluentd - 1.19.3
+- Windows
+  - Golang - 1.27.3
+  - Ruby - 3.1.1
+  - Windows AMA - 47.7.1
+  - Telegraf - 1.40.1
+  - Fluent-bit - 5.0.3
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Common (Linux + Windows)
+    * fix(security): distrust compromised eMudhra CAs in Windows image; bump Go to 1.27.3 by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1808
+
+- Infra
+    * docs: fill 3.9.0 image tag and Azure Linux version in release notes by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1798
+
 ### 10/07/2026 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.9.0-ci-prod-10-07-2026-cd634797 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.9.0-ci-prod-10-07-2026-cd634797 (windows)
