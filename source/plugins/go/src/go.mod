@@ -1,6 +1,6 @@
 module Docker-Provider/source/plugins/go/src
 
-go 1.27.0
+go 1.27.3
 
 // This is temporary. The underlying defect is an EVP_PKEY_Q_keygen allowlist that
 // rejects provider-supplied key names, so ML-KEM-768 fetches but will not generate; it

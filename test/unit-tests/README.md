@@ -72,6 +72,18 @@ when console cleanup precedes host exit. It uses only bounded local Ruby fixture
 processes, not installed services, Telegraf, or cluster access. These tests are
 included in the Ruby test driver; native cases skip on non-Windows platforms.
 
+### Windows eMudhra CA Distrust
+`test_cases/Test-DistrustCompromisedCas.ps1` runs
+`kubernetes/windows/distrust-compromised-cas.ps1` with the `ruby.exe` on `PATH`
+against a fixture CA bundle in the format of Ruby's `cert.pem`. It checks that
+only the eMudhra anchor roots are removed (the rest of the bundle is kept byte
+for byte), that the 16 pinned intermediates are imported, that a rerun changes
+nothing, that an unpinned intermediate or a missing CA bundle fails before
+anything changes, and that the Ruby trust check fails when Ruby still trusts
+the compromised CAs. It uses throwaway `CurrentUser` certificate stores and
+never changes `LocalMachine` stores or the installed Ruby's CA bundle. The test
+skips when `ruby.exe` is not on `PATH`, except in GitHub Actions, where it fails.
+
 ### Cloud Environment Detection (Linux & Windows)
 Tests the cloud environment detection logic which determines the Azure cloud environment from either:
 - Environment variable (CLUSTER_CLOUD_ENVIRONMENT)

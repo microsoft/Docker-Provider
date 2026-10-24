@@ -55,6 +55,13 @@ ENV COMPlus_ThreadPool_UnfairSemaphoreSpinLimit 0
 
 WORKDIR /opt/amalogswindows/scripts/powershell
 
+# Distrust the eMudhra CAs affected by the October 2026 intermediate CA key compromise. Ruby (fluentd) trusts its
+# own CA bundle instead of the Windows certificate stores, so Windows' automatic distrust does not reach it.
+# The script fails the build when a check fails; keep it in its own RUN so nothing can mask its exit code.
+COPY distrust-compromised-cas.ps1 emudhra-compromised-intermediates.pem /opt/amalogswindows/distrust/
+RUN C:\opt\amalogswindows\distrust\distrust-compromised-cas.ps1 -RubyExe C:\ruby31\bin\ruby.exe
+RUN Remove-Item -Recurse -Force C:\opt\amalogswindows\distrust
+
 # copy certificate generator binaries zip
 COPY ./amalogswindows/*.zip /opt/amalogswindows/
 
