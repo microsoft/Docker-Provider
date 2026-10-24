@@ -1,7 +1,66 @@
 #!/bin/bash
+
+# Restrict default file permissions to protect against accidental sensitive data leaks.
+umask 077
+
 source /opt/env_vars
 
+tmpBase="${TMPDIR:-/tmp}/dcr_env_var.$$"
+
+cleanupDcrOutput() {
+    rm -f -- "${tmpBase}".??????
+}
+trap cleanupDcrOutput EXIT
+
+dcrOutputFile=$(mktemp "${tmpBase}.XXXXXX") || {
+  echo "Failed to create DCR parser output file" > /dev/termination-log
+  exit 1
+}
+
+checkDcrConfig() {
+  local currentValue
+  local remainingValue
+
+  case "${LOGS_AND_EVENTS_ONLY}" in
+    true|false) ;;
+    *)
+      echo "Stored LOGS_AND_EVENTS_ONLY value is missing or invalid: '${LOGS_AND_EVENTS_ONLY}'" > /dev/termination-log
+      return 1
+      ;;
+  esac
+
+  if ! : > "${dcrOutputFile}"; then
+    echo "Failed to empty DCR parser output file" > /dev/termination-log
+    return 1
+  fi
+  if ! ruby /opt/dcr-config-parser.rb "${dcrOutputFile}" > /dev/write-to-traces 2>&1; then
+    echo "Failed to parse required DCR" > /dev/termination-log
+    return 1
+  fi
+  if ! read currentValue remainingValue < "${dcrOutputFile}"; then
+    echo "Failed to read current LOGS_AND_EVENTS_ONLY value" > /dev/termination-log
+    return 1
+  fi
+  if [ -n "${remainingValue}" ]; then
+    echo "Current LOGS_AND_EVENTS_ONLY output contains unexpected additional value: '${remainingValue}'" > /dev/termination-log
+    return 1
+  fi
+  case "${currentValue}" in
+    true|false) ;;
+    *)
+      echo "Current LOGS_AND_EVENTS_ONLY value is missing or invalid: '${currentValue}'" > /dev/termination-log
+      return 1
+      ;;
+  esac
+
+  if [ "${LOGS_AND_EVENTS_ONLY}" != "${currentValue}" ]; then
+    echo "DCR configuration changed" > /dev/termination-log
+    return 1
+  fi
+}
+
 syslogSetup() {
+    local syslog_status
     syslog_status=$(cat /var/opt/microsoft/docker-cimprov/state/syslog.status 2>/dev/null)
     if grep -qr LINUX_SYSLOGS_BLOB /etc/mdsd.d/config-cache/configchunks > /dev/null 2>&1; then
             if [[ "$syslog_status" == "disabled" ]]; then
@@ -17,18 +76,19 @@ syslogSetup() {
 }
 
 if [[ "${CONTROLLER_TYPE}" == "DaemonSet" ]]; then
-  if [[ "${CONTAINER_TYPE}" == "PrometheusSidecar" && "${GENEVA_LOGS_INTEGRATION}" == "true" && -d "/var/run/mdsd-ci" ]]; then
-    syslogSetup
-  else
-    syslogSetup
-    CURRENT_LOGS_AND_EVENTS_ONLY=${LOGS_AND_EVENTS_ONLY}
-    ruby /opt/dcr-config-parser.rb > /dev/write-to-traces 2>&1
-    source /opt/dcr_env_var
-    if [ "${LOGS_AND_EVENTS_ONLY}" != "${CURRENT_LOGS_AND_EVENTS_ONLY}" ]; then
-      echo "dcr_env_var has been updated - dcr config changed" > /dev/termination-log
+  syslogSetup
+  case "${DCR_REQUIRED}" in
+    true)
+      if ! checkDcrConfig; then
+        exit 1
+      fi
+      ;;
+    false) ;;
+    *)
+      echo "DCR_REQUIRED value is missing or invalid: '${DCR_REQUIRED}'" > /dev/termination-log
       exit 1
-    fi
-  fi
+      ;;
+  esac
 fi
 
 if [ -s "inotifyoutput.txt" ]
