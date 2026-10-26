@@ -11,6 +11,7 @@ require "open3"
 class TomlParserConfigValueHandlingTest < Minitest::Test
   REPO = File.expand_path("../../../..", __dir__)
   SHELL_SYNTAX = "true$(touch EVALUATED)"
+  SHELL_BREAKOUT = "true'; touch EVALUATED; #"
 
   COMMON = {
     source: "build/common/installer/scripts/tomlparser-common-agent-config.rb",
@@ -33,7 +34,7 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
   # Generates the shell file, then sources it the way main.sh does. Returns whether the shell
   # processed the value and what bash ended up with. The parser's hardcoded image paths are
   # repointed at the fixture, so this needs no agent image.
-  def source_generated(parser, toml, vars = [])
+  def source_generated(parser, toml, vars = [], persist_to_bashrc: false)
     Dir.mktmpdir do |dir|
       settings = File.join(dir, "settings")
       File.write(settings, toml)
@@ -48,8 +49,18 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
       Open3.capture3({ "AZMON_AGENT_CFG_SCHEMA_VERSION" => "v1" },
                      RbConfig.ruby, File.join(dir, "parser.rb"), chdir: dir)
 
-      script = ". ./#{parser[:output]}; " + vars.map { |v| "printf '%s\\n' \"$#{v}\"" }.join("; ")
-      out, = Open3.capture3("bash", "-c", script, chdir: dir)
+      commands = if persist_to_bashrc
+                   main = File.read(File.join(REPO, "kubernetes/linux/main.sh"))
+                   file = Regexp.escape(parser[:output])
+                   copy_loop = main[/cat #{file} \| while[^\n]*\n[^\n]*\n\s*done|while[^\n]*\n[^\n]*\n\s*done < #{file}/]
+                   raise "could not find the #{parser[:output]} copy loop in main.sh" unless copy_loop
+
+                   "#{copy_loop}; . \"$HOME/.bashrc\""
+                 else
+                   ". ./#{parser[:output]}"
+                 end
+      script = commands + "; " + vars.map { |v| "printf '%s\\n' \"$#{v}\"" }.join("; ")
+      out, = Open3.capture3({ "HOME" => dir }, "bash", "-c", script, chdir: dir)
       return { evaluated: File.exist?(File.join(dir, "EVALUATED")), values: out.split("\n", -1) }
     end
   end
@@ -106,6 +117,26 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
 
     refute result[:evaluated], "a single quote in the value broke out of the quoted literal"
     assert_equal "it's$(touch EVALUATED)", result[:values].first
+  end
+
+  def test_quote_survives_copy_to_bashrc
+    result = source_generated(COMMON, <<~TOML, %w[ENABLE_CUSTOM_METRICS], persist_to_bashrc: true)
+      [agent_settings.custom_metrics]
+      enabled = "#{SHELL_BREAKOUT}"
+    TOML
+
+    refute result[:evaluated], "copying the generated file to .bashrc let the shell process the value"
+    assert_equal SHELL_BREAKOUT, result[:values].first
+  end
+
+  def test_metric_quote_survives_copy_to_bashrc
+    result = source_generated(METRIC, <<~TOML, %w[AZMON_PV_COLLECT_KUBE_SYSTEM_METRICS], persist_to_bashrc: true)
+      [metric_collection_settings.collect_kube_system_pv_metrics]
+      enabled = "#{SHELL_BREAKOUT}"
+    TOML
+
+    refute result[:evaluated], "copying the generated file to .bashrc let the shell process the value"
+    assert_equal SHELL_BREAKOUT, result[:values].first
   end
 
   def test_ordinary_values_are_unchanged
