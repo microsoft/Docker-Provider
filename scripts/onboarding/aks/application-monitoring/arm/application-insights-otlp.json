@@ -1,0 +1,99 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "applicationInsightsName": {
+      "type": "string",
+      "minLength": 1,
+      "metadata": {
+        "description": "Name of the OTLP-enabled Application Insights component."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Azure region for Application Insights and its workspaces."
+      }
+    },
+    "useManagedWorkspaces": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Let Application Insights create managed Log Analytics and Azure Monitor workspaces."
+      }
+    },
+    "logAnalyticsWorkspaceResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of an existing Log Analytics workspace when useManagedWorkspaces is false."
+      }
+    },
+    "azureMonitorWorkspaceResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Resource ID of an existing Azure Monitor workspace when useManagedWorkspaces is false."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {}
+    }
+  },
+  "variables": {
+    "baseProperties": {
+      "Application_Type": "web",
+      "AzureMonitorWorkspaceIngestionMode": "Enabled",
+      "Flow_Type": "Bluefield",
+      "Request_Source": "rest"
+    },
+    "customerManagedWorkspaceProperties": {
+      "WorkspaceResourceId": "[parameters('logAnalyticsWorkspaceResourceId')]",
+      "AzureMonitorWorkspaceResourceId": "[parameters('azureMonitorWorkspaceResourceId')]"
+    },
+    "componentProperties": "[union(variables('baseProperties'), if(parameters('useManagedWorkspaces'), createObject(), variables('customerManagedWorkspaceProperties')))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2025-01-23-preview",
+      "name": "[parameters('applicationInsightsName')]",
+      "location": "[parameters('location')]",
+      "kind": "web",
+      "tags": "[parameters('tags')]",
+      "properties": "[variables('componentProperties')]"
+    }
+  ],
+  "outputs": {
+    "applicationInsightsResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.Insights/components', parameters('applicationInsightsName'))]"
+    },
+    "logAnalyticsWorkspaceResourceId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2025-01-23-preview', 'full').properties.WorkspaceResourceId]"
+    },
+    "azureMonitorWorkspaceResourceId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2025-01-23-preview', 'full').properties.AzureMonitorWorkspaceResourceId]"
+    },
+    "dataCollectionRuleResourceId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2025-01-23-preview', 'full').properties.DataCollectionRuleResourceId]"
+    },
+    "otlpLogsEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2025-01-23-preview', 'full').properties.OTLPLogsEndpoint]"
+    },
+    "otlpMetricsEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2025-01-23-preview', 'full').properties.OTLPMetricsEndpoint]"
+    },
+    "otlpTracesEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2025-01-23-preview', 'full').properties.OTLPTracesEndpoint]"
+    }
+  }
+}

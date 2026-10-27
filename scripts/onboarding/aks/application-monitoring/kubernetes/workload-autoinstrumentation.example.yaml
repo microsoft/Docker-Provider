@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: java-autoinstrumented-example
+  namespace: replace-with-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: java-autoinstrumented-example
+  template:
+    metadata:
+      labels:
+        app: java-autoinstrumented-example
+      annotations:
+        instrumentation.opentelemetry.io/inject-java: "cr1"
+        monitor.azure.com/enable-application-logs: "true"
+    spec:
+      containers:
+        - name: application
+          image: replace-with-your-java-image:tag
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodejs-autoinstrumented-example
+  namespace: replace-with-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodejs-autoinstrumented-example
+  template:
+    metadata:
+      labels:
+        app: nodejs-autoinstrumented-example
+      annotations:
+        instrumentation.opentelemetry.io/inject-nodejs: "cr1"
+        monitor.azure.com/enable-application-logs: "true"
+    spec:
+      containers:
+        - name: application
+          image: replace-with-your-nodejs-image:tag
