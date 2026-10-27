@@ -35,14 +35,12 @@
   ],
   "outputs": {
     "aksApplicationMonitoringFeatureResourceId": {
-      "condition": "[parameters('registerAksApplicationMonitoringFeature')]",
       "type": "string",
-      "value": "[subscriptionResourceId('Microsoft.Features/featureProviders/subscriptionFeatureRegistrations', 'Microsoft.ContainerService', 'AzureMonitorAppMonitoringPreview')]"
+      "value": "[if(parameters('registerAksApplicationMonitoringFeature'), subscriptionResourceId('Microsoft.Features/featureProviders/subscriptionFeatureRegistrations', 'Microsoft.ContainerService', 'AzureMonitorAppMonitoringPreview'), '')]"
     },
     "applicationInsightsOtlpFeatureResourceId": {
-      "condition": "[parameters('registerApplicationInsightsOtlpFeature')]",
       "type": "string",
-      "value": "[subscriptionResourceId('Microsoft.Features/featureProviders/subscriptionFeatureRegistrations', 'Microsoft.Insights', 'OtlpApplicationInsights')]"
+      "value": "[if(parameters('registerApplicationInsightsOtlpFeature'), subscriptionResourceId('Microsoft.Features/featureProviders/subscriptionFeatureRegistrations', 'Microsoft.Insights', 'OtlpApplicationInsights'), '')]"
     }
   }
 }
