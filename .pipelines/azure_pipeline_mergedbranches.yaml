@@ -459,7 +459,7 @@ extends:
               New-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -ItemType Directory -Force
               cd kubernetes/windows
               # Build the Docker image
-              docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2019BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
+              docker build --pull --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2019BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
           displayName: "Docker windows build for ltsc2019"
           retryCountOnTaskFailure: 2
         - task: PowerShell@2
@@ -671,7 +671,7 @@ extends:
               az account show
               az account set -s ${{ variables.subscription }}
               az acr login -n ${{ variables.containerRegistry }}
-              docker build --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2022BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
+              docker build --pull --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2022BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
         - task: PowerShell@2
           displayName: Extract files to sign
           inputs:

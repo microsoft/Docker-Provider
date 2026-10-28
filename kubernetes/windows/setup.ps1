@@ -60,15 +60,27 @@ catch {
 Write-Host ('Finished Installing Telegraf')
 
 Write-Host ('Installing Visual C++ Redistributable Package')
-    $vcRedistLocation = 'https://aka.ms/vs/16/release/vc_redist.x64.exe'
+    $vcRedistLocation = 'https://aka.ms/vc14/vc_redist.x64.exe'
     $vcInstallerLocation = "\installation\vc_redist.x64.exe"
     $vcArgs = "/install /quiet /norestart"
     $ProgressPreference = 'SilentlyContinue'
-    Invoke-WebRequest -Uri $vcRedistLocation -OutFile $vcInstallerLocation
-    Start-Process $vcInstallerLocation -ArgumentList $vcArgs -NoNewWindow -Wait
-    Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /opt/fluent-bit/bin
-    Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /opt/fluent-bit/bin
-    Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /opt/fluent-bit/bin
+    Invoke-WebRequest -Uri $vcRedistLocation -OutFile $vcInstallerLocation -ErrorAction Stop
+    $vcSignature = Get-AuthenticodeSignature -FilePath $vcInstallerLocation -ErrorAction Stop
+    if ($vcSignature.Status -ne 'Valid' -or $vcSignature.SignerCertificate.Subject -notmatch '(^|,\s*)O=Microsoft Corporation(,|$)') {
+        throw "Visual C++ installer must have a valid Microsoft Authenticode signature"
+    }
+    $vcVersionInfo = (Get-Item -Path $vcInstallerLocation -ErrorAction Stop).VersionInfo
+    $vcVersion = [version]::new($vcVersionInfo.FileMajorPart, $vcVersionInfo.FileMinorPart, $vcVersionInfo.FileBuildPart, $vcVersionInfo.FilePrivatePart)
+    if ($vcVersion -lt [version]'14.40.33816') {
+        throw "Visual C++ installer version $vcVersion is below 14.40.33816"
+    }
+    $vcProcess = Start-Process $vcInstallerLocation -ArgumentList $vcArgs -NoNewWindow -Wait -PassThru -ErrorAction Stop
+    if ($vcProcess.ExitCode -notin @(0, 3010)) {
+        throw "Visual C++ installation failed with exit code $($vcProcess.ExitCode)"
+    }
+    Copy-Item -Path /Windows/System32/msvcp140.dll -Destination /opt/fluent-bit/bin -ErrorAction Stop
+    Copy-Item -Path /Windows/System32/vccorlib140.dll -Destination /opt/fluent-bit/bin -ErrorAction Stop
+    Copy-Item -Path /Windows/System32/vcruntime140.dll -Destination /opt/fluent-bit/bin -ErrorAction Stop
 Write-Host ('Finished Installing Visual C++ Redistributable Package')
 
 Write-Host ('Extracting Certificate Generator Package')
