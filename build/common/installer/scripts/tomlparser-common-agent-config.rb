@@ -13,6 +13,7 @@ require_relative "ConfigParseErrorLogger"
 @enableHighLogScaleMode = false
 @enableCustomMetrics = false
 @amaLogsCollectProcessMetricsEnabled = false
+@mdsdLogForwardingEnabled = false
 
 def is_windows?
   return !@os_type.nil? && !@os_type.empty? && @os_type.strip.casecmp("windows") == 0
@@ -99,6 +100,18 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       end
     end
 
+    if !is_windows? && !parsedConfig.nil? && !parsedConfig[:agent_settings].nil?
+      mdsd_log_forwarding = parsedConfig[:agent_settings][:mdsd_log_forwarding]
+      if !mdsd_log_forwarding.nil?
+        if mdsd_log_forwarding.is_a?(Hash) && !mdsd_log_forwarding[:enabled].nil?
+          @mdsdLogForwardingEnabled = mdsd_log_forwarding[:enabled].to_s.strip.downcase == "true"
+          puts "Using config map value: AZMON_MDSD_LOG_FORWARDING_ENABLED = #{@mdsdLogForwardingEnabled}"
+        else
+          ConfigParseErrorLogger.logError("agent_settings.mdsd_log_forwarding must contain an enabled value, ignoring invalid override")
+        end
+      end
+    end
+
   rescue => errorStr
     puts "config::error:Exception while reading config settings for agent configuration setting - #{errorStr}, using defaults"
   end
@@ -166,6 +179,9 @@ else
       file.write("export ENABLE_CUSTOM_METRICS=#{@enableCustomMetrics}\n")
     end
     file.write("export AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS=#{@amaLogsCollectProcessMetricsEnabled}\n")
+    if @mdsdLogForwardingEnabled
+      file.write("export AZMON_MDSD_LOG_FORWARDING_ENABLED=#{@mdsdLogForwardingEnabled}\n")
+    end
     file.write("export AZMON_KUBERNETES_METADATA_CACHE_TTL_SECONDS=#{@logEnableKubernetesMetadataCacheTTLSeconds}\n")
     # Close file after writing all environment variables
     file.close

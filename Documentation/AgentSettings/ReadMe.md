@@ -1,3 +1,23 @@
+## Linux mdsd diagnostic log forwarding
+
+Forward mdsd errors and warnings to container stdout so they are visible through
+`kubectl logs` and container log collectors. This setting is Linux-only and
+disabled by default. Original diagnostic files are retained.
+
+To enable, set the Arc extension configuration setting
+`amalogs.enableMdsdLogForwarding` to `"true"`, or add the following to the
+`container-azm-ms-agentconfig` ConfigMap:
+
+```yaml
+  agent-settings: |-
+    [agent_settings.mdsd_log_forwarding]
+      enabled = true
+```
+
+To disable, set the extension setting to `"false"` and remove or disable the
+ConfigMap setting. Changes take effect when agent containers restart.
+Forwarding may increase collected log volume.
+
 ## Configurable agent settings for high scale prometheus metric scraping using pod annotations with prometheus sidecar.
 
 Container Insights agent runs native prometheus telegraf plugin to scrape prometheus metrics using pod annotations.

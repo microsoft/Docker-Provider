@@ -89,6 +89,7 @@ The following table lists the configurable parameters of the MSOMS chart and the
 | `amalogs.image.tagWindows`  | image tag for Windows Agent.                            | Most recent release                                                                                                         |
 | `amalogs.image.imagerepo`   | image repo for Liunx & Windows.                         | Image repo path is mcr.microsoft.com/azuremonitor/containerinsights/ciprod
 | `amalogs.image.pullPolicy`  | image pull policy for the agent.                        | IfNotPresent                                                                                                                |
+| `amalogs.enableMdsdLogForwarding` | Mirror Linux mdsd error and warning files to stdout. An explicit agent ConfigMap setting takes precedence. | `false` |
 | `amalogs.secret.wsid`       | Azure Log analytics workspace id                        | Does not have a default value, needs to be provided                                                                         |
 | `amalogs.secret.key`        | Azure Log analytics workspace key                       | Does not have a default value, needs to be provided                                                                         |
 | `amalogs.domain`            | Azure Log analytics cloud domain (public,china, us govt)| opinsights.azure.com (Public cloud as default), opinsights.azure.cn (China Cloud), opinsights.azure.us (US Govt Cloud)      |
