@@ -1,0 +1,46 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "registerAksApplicationMonitoringFeature": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Register Microsoft.ContainerService/AzureMonitorAppMonitoringPreview in the AKS subscription."
+      }
+    },
+    "registerApplicationInsightsOtlpFeature": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Register Microsoft.Insights/OtlpApplicationInsights in the Application Insights subscription."
+      }
+    }
+  },
+  "resources": [
+    {
+      "condition": "[parameters('registerAksApplicationMonitoringFeature')]",
+      "type": "Microsoft.Features/featureProviders/subscriptionFeatureRegistrations",
+      "apiVersion": "2021-07-01",
+      "name": "Microsoft.ContainerService/AzureMonitorAppMonitoringPreview",
+      "properties": {}
+    },
+    {
+      "condition": "[parameters('registerApplicationInsightsOtlpFeature')]",
+      "type": "Microsoft.Features/featureProviders/subscriptionFeatureRegistrations",
+      "apiVersion": "2021-07-01",
+      "name": "Microsoft.Insights/OtlpApplicationInsights",
+      "properties": {}
+    }
+  ],
+  "outputs": {
+    "aksApplicationMonitoringFeatureResourceId": {
+      "type": "string",
+      "value": "[if(parameters('registerAksApplicationMonitoringFeature'), subscriptionResourceId('Microsoft.Features/featureProviders/subscriptionFeatureRegistrations', 'Microsoft.ContainerService', 'AzureMonitorAppMonitoringPreview'), '')]"
+    },
+    "applicationInsightsOtlpFeatureResourceId": {
+      "type": "string",
+      "value": "[if(parameters('registerApplicationInsightsOtlpFeature'), subscriptionResourceId('Microsoft.Features/featureProviders/subscriptionFeatureRegistrations', 'Microsoft.Insights', 'OtlpApplicationInsights'), '')]"
+    }
+  }
+}

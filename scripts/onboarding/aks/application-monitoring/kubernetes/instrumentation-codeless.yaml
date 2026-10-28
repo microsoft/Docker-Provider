@@ -1,0 +1,11 @@
+apiVersion: monitor.azure.com/v1
+kind: Instrumentation
+metadata:
+  name: default
+  namespace: replace-with-namespace
+spec:
+  settings:
+    autoInstrumentationPlatforms:
+      - Java
+  destination:
+    applicationInsightsConnectionString: "replace-with-application-insights-connection-string"

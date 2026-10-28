@@ -1,0 +1,58 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "clusterName": {
+      "type": "string",
+      "minLength": 1,
+      "metadata": {
+        "description": "Name of the existing AKS cluster. Deploy this template to the cluster resource group."
+      }
+    },
+    "clusterLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region of the AKS cluster."
+      }
+    },
+    "dataCollectionRuleResourceId": {
+      "type": "string",
+      "minLength": 1,
+      "metadata": {
+        "description": "DataCollectionRuleResourceId returned by the OTLP-enabled Application Insights component."
+      }
+    },
+    "associationName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional association name. A deterministic name is generated from the DCR resource ID when omitted."
+      }
+    }
+  },
+  "variables": {
+    "effectiveAssociationName": "[if(empty(parameters('associationName')), format('appmon-{0}', uniqueString(parameters('dataCollectionRuleResourceId'))), parameters('associationName'))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ContainerService/managedClusters/providers/dataCollectionRuleAssociations",
+      "apiVersion": "2025-05-11",
+      "name": "[format('{0}/microsoft.insights/{1}', parameters('clusterName'), variables('effectiveAssociationName'))]",
+      "location": "[parameters('clusterLocation')]",
+      "properties": {
+        "description": "Associates the Application Insights OTLP data collection rule with the AKS cluster.",
+        "dataCollectionRuleId": "[parameters('dataCollectionRuleResourceId')]"
+      }
+    }
+  ],
+  "outputs": {
+    "associationName": {
+      "type": "string",
+      "value": "[variables('effectiveAssociationName')]"
+    },
+    "associationResourceId": {
+      "type": "string",
+      "value": "[extensionResourceId(resourceId('Microsoft.ContainerService/managedClusters', parameters('clusterName')), 'Microsoft.Insights/dataCollectionRuleAssociations', variables('effectiveAssociationName'))]"
+    }
+  }
+}

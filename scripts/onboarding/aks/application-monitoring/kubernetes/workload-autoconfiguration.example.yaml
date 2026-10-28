@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otlp-autoconfigured-example
+  namespace: replace-with-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otlp-autoconfigured-example
+  template:
+    metadata:
+      labels:
+        app: otlp-autoconfigured-example
+      annotations:
+        instrumentation.opentelemetry.io/inject-configuration: "cr1"
+        instrumentation.opentelemetry.io/otel-protocol: "grpc"
+    spec:
+      containers:
+        - name: application
+          image: replace-with-your-otel-instrumented-image:tag

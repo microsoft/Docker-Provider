@@ -1,0 +1,116 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "clusterName": {
+      "type": "string",
+      "minLength": 1,
+      "metadata": {
+        "description": "Name of the existing AKS cluster. Deploy this template to the cluster resource group."
+      }
+    },
+    "clusterLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region of the AKS cluster."
+      }
+    },
+    "configureAutoInstrumentation": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Include the autoinstrumentation profile in this update."
+      }
+    },
+    "autoInstrumentationEnabled": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "configureOpenTelemetryMetrics": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Include the vendor-neutral OpenTelemetry metrics receiver profile in this update."
+      }
+    },
+    "openTelemetryMetricsEnabled": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "openTelemetryMetricsHttpPort": {
+      "type": "int",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 65535,
+      "metadata": {
+        "description": "Optional HTTP/Protobuf host port. Use 0 to omit the property and use the service default."
+      }
+    },
+    "openTelemetryMetricsGrpcPort": {
+      "type": "int",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 65535,
+      "metadata": {
+        "description": "Optional gRPC host port. Use 0 to omit the property and use the service default."
+      }
+    },
+    "configureOpenTelemetryLogsAndTraces": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Include the vendor-neutral OpenTelemetry logs and traces receiver profile in this update."
+      }
+    },
+    "openTelemetryLogsAndTracesEnabled": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "openTelemetryLogsAndTracesHttpPort": {
+      "type": "int",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 65535,
+      "metadata": {
+        "description": "Optional HTTP/Protobuf host port. Use 0 to omit the property and use the service default."
+      }
+    },
+    "openTelemetryLogsAndTracesGrpcPort": {
+      "type": "int",
+      "defaultValue": 0,
+      "minValue": 0,
+      "maxValue": 65535,
+      "metadata": {
+        "description": "Optional gRPC host port. Use 0 to omit the property and use the service default."
+      }
+    }
+  },
+  "variables": {
+    "openTelemetryMetricsProfile": "[union(createObject('enabled', parameters('openTelemetryMetricsEnabled')), if(greater(parameters('openTelemetryMetricsHttpPort'), 0), createObject('httpPort', parameters('openTelemetryMetricsHttpPort')), createObject()), if(greater(parameters('openTelemetryMetricsGrpcPort'), 0), createObject('grpcPort', parameters('openTelemetryMetricsGrpcPort')), createObject()))]",
+    "openTelemetryLogsAndTracesProfile": "[union(createObject('enabled', parameters('openTelemetryLogsAndTracesEnabled')), if(greater(parameters('openTelemetryLogsAndTracesHttpPort'), 0), createObject('httpPort', parameters('openTelemetryLogsAndTracesHttpPort')), createObject()), if(greater(parameters('openTelemetryLogsAndTracesGrpcPort'), 0), createObject('grpcPort', parameters('openTelemetryLogsAndTracesGrpcPort')), createObject()))]",
+    "appMonitoringProfile": "[union(if(parameters('configureAutoInstrumentation'), createObject('autoInstrumentation', createObject('enabled', parameters('autoInstrumentationEnabled'))), createObject()), if(parameters('configureOpenTelemetryMetrics'), createObject('openTelemetryMetrics', variables('openTelemetryMetricsProfile')), createObject()), if(parameters('configureOpenTelemetryLogsAndTraces'), createObject('openTelemetryLogsAndTraces', variables('openTelemetryLogsAndTracesProfile')), createObject()))]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ContainerService/managedClusters",
+      "apiVersion": "2026-06-01",
+      "name": "[parameters('clusterName')]",
+      "location": "[parameters('clusterLocation')]",
+      "properties": {
+        "azureMonitorProfile": {
+          "appMonitoring": "[variables('appMonitoringProfile')]"
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "clusterResourceId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.ContainerService/managedClusters', parameters('clusterName'))]"
+    },
+    "configuredAppMonitoringProfile": {
+      "type": "object",
+      "value": "[variables('appMonitoringProfile')]"
+    }
+  }
+}

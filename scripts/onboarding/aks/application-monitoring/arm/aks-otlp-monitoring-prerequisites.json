@@ -1,0 +1,337 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "clusterResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Full resource ID of an existing AKS cluster that has not already been onboarded to Managed Prometheus or Container Insights."
+      }
+    },
+    "clusterLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region of the AKS cluster."
+      }
+    },
+    "monitoringWorkspaceLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region for the infrastructure Azure Monitor and Log Analytics workspaces. This can differ from the AKS region when both resource types and the Container Insights region mapping support the selected region."
+      }
+    },
+    "createAzureMonitorWorkspace": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "azureMonitorWorkspaceName": {
+      "type": "string",
+      "defaultValue": "aks-infrastructure-amw"
+    },
+    "azureMonitorWorkspaceResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Existing infrastructure Azure Monitor workspace resource ID when createAzureMonitorWorkspace is false. The workspace must be in this deployment's resource group and monitoringWorkspaceLocation."
+      }
+    },
+    "createLogAnalyticsWorkspace": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "logAnalyticsWorkspaceName": {
+      "type": "string",
+      "defaultValue": "aks-container-insights-law"
+    },
+    "logAnalyticsWorkspaceResourceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Existing Log Analytics workspace resource ID when createLogAnalyticsWorkspace is false. The workspace must be in monitoringWorkspaceLocation."
+      }
+    },
+    "logAnalyticsWorkspaceRetentionInDays": {
+      "type": "int",
+      "defaultValue": 30,
+      "minValue": 30,
+      "maxValue": 730
+    },
+    "managedGrafanaName": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 23,
+      "metadata": {
+        "description": "Name for a new, dedicated Azure Managed Grafana resource."
+      }
+    },
+    "managedGrafanaLocation": {
+      "type": "string",
+      "metadata": {
+        "description": "Azure region for Azure Managed Grafana. This can differ from monitoringWorkspaceLocation when Grafana is unavailable in the workspace region."
+      }
+    },
+    "managedGrafanaSku": {
+      "type": "string",
+      "defaultValue": "Standard"
+    },
+    "grafanaAdminPrincipalId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional object ID of a user, group, service principal, or managed identity to grant Grafana Admin on the new Grafana resource."
+      }
+    },
+    "grafanaAdminPrincipalType": {
+      "type": "string",
+      "defaultValue": "User",
+      "allowedValues": [
+        "ForeignGroup",
+        "Group",
+        "ServicePrincipal",
+        "User"
+      ],
+      "metadata": {
+        "description": "Microsoft Entra principal type for grafanaAdminPrincipalId. Use ServicePrincipal for managed identities."
+      }
+    },
+    "metricLabelsAllowlist": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "metricAnnotationsAllowList": {
+      "type": "string",
+      "defaultValue": ""
+    },
+    "enableControlPlaneMetrics": {
+      "type": "bool",
+      "defaultValue": false
+    },
+    "containerInsightsStreams": {
+      "type": "array",
+      "defaultValue": [
+        "Microsoft-ContainerInsights-Group-Default"
+      ]
+    },
+    "containerInsightsCollectionInterval": {
+      "type": "string",
+      "defaultValue": "1m"
+    },
+    "preserveClusterTags": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Read and preserve the existing AKS tags when the Container Insights onboarding template updates the cluster."
+      }
+    },
+    "clusterTags": {
+      "type": "object",
+      "defaultValue": {},
+      "metadata": {
+        "description": "Explicit AKS tags to use when preserveClusterTags is false."
+      }
+    },
+    "tags": {
+      "type": "object",
+      "defaultValue": {}
+    }
+  },
+  "variables": {
+    "clusterSubscriptionId": "[split(parameters('clusterResourceId'), '/')[2]]",
+    "clusterResourceGroup": "[split(parameters('clusterResourceId'), '/')[4]]",
+    "effectiveAzureMonitorWorkspaceResourceId": "[if(parameters('createAzureMonitorWorkspace'), resourceId('Microsoft.Monitor/accounts', parameters('azureMonitorWorkspaceName')), parameters('azureMonitorWorkspaceResourceId'))]",
+    "effectiveLogAnalyticsWorkspaceResourceId": "[if(parameters('createLogAnalyticsWorkspace'), resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName')), parameters('logAnalyticsWorkspaceResourceId'))]",
+    "managedGrafanaResourceId": "[resourceId('Microsoft.Dashboard/grafana', parameters('managedGrafanaName'))]",
+    "grafanaAdminRoleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '22926164-76b3-42b3-bc55-97df8dab3e41')]",
+    "managedPrometheusDeploymentName": "[format('enable-managed-prometheus-{0}', uniqueString(parameters('clusterResourceId')))]",
+    "containerInsightsDeploymentName": "[format('enable-container-insights-{0}', uniqueString(parameters('clusterResourceId')))]",
+    "unusedPrivateLinkScopeResourceId": "[format('/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Insights/privateLinkScopes/not-used', split(parameters('clusterResourceId'), '/')[2], split(parameters('clusterResourceId'), '/')[4])]",
+    "managedPrometheusTemplateUri": "https://raw.githubusercontent.com/Azure/prometheus-collector/71a784f49d633b9f182a50c878c6dd48c75fd58d/AddonArmTemplate/FullAzureMonitorMetricsProfile.json",
+    "containerInsightsTemplateUri": "https://raw.githubusercontent.com/microsoft/Docker-Provider/804bfb6d7eec35d04312fd5713559c65ab1fa548/scripts/onboarding/aks/onboarding-using-msi-auth/existingClusterOnboarding.json"
+  },
+  "resources": [
+    {
+      "condition": "[parameters('createAzureMonitorWorkspace')]",
+      "type": "Microsoft.Monitor/accounts",
+      "apiVersion": "2025-10-03",
+      "name": "[parameters('azureMonitorWorkspaceName')]",
+      "location": "[parameters('monitoringWorkspaceLocation')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "publicNetworkAccess": "Enabled"
+      }
+    },
+    {
+      "condition": "[parameters('createLogAnalyticsWorkspace')]",
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2025-07-01",
+      "name": "[parameters('logAnalyticsWorkspaceName')]",
+      "location": "[parameters('monitoringWorkspaceLocation')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "sku": {
+          "name": "PerGB2018"
+        },
+        "retentionInDays": "[parameters('logAnalyticsWorkspaceRetentionInDays')]"
+      }
+    },
+    {
+      "type": "Microsoft.Dashboard/grafana",
+      "apiVersion": "2025-08-01",
+      "name": "[parameters('managedGrafanaName')]",
+      "location": "[parameters('managedGrafanaLocation')]",
+      "sku": {
+        "name": "[parameters('managedGrafanaSku')]"
+      },
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "tags": "[parameters('tags')]",
+      "properties": {}
+    },
+    {
+      "condition": "[not(empty(parameters('grafanaAdminPrincipalId')))]",
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "name": "[guid(variables('managedGrafanaResourceId'), parameters('grafanaAdminPrincipalId'), variables('grafanaAdminRoleDefinitionId'))]",
+      "scope": "[variables('managedGrafanaResourceId')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', variables('managedPrometheusDeploymentName'))]"
+      ],
+      "properties": {
+        "roleDefinitionId": "[variables('grafanaAdminRoleDefinitionId')]",
+        "principalId": "[parameters('grafanaAdminPrincipalId')]",
+        "principalType": "[parameters('grafanaAdminPrincipalType')]"
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[variables('managedPrometheusDeploymentName')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Monitor/accounts', parameters('azureMonitorWorkspaceName'))]",
+        "[resourceId('Microsoft.Dashboard/grafana', parameters('managedGrafanaName'))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('managedPrometheusTemplateUri')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "azureMonitorWorkspaceResourceId": {
+            "value": "[variables('effectiveAzureMonitorWorkspaceResourceId')]"
+          },
+          "azureMonitorWorkspaceLocation": {
+            "value": "[parameters('monitoringWorkspaceLocation')]"
+          },
+          "clusterResourceId": {
+            "value": "[parameters('clusterResourceId')]"
+          },
+          "clusterLocation": {
+            "value": "[parameters('clusterLocation')]"
+          },
+          "metricLabelsAllowlist": {
+            "value": "[parameters('metricLabelsAllowlist')]"
+          },
+          "metricAnnotationsAllowList": {
+            "value": "[parameters('metricAnnotationsAllowList')]"
+          },
+          "enableControlPlaneMetrics": {
+            "value": "[parameters('enableControlPlaneMetrics')]"
+          },
+          "grafanaResourceId": {
+            "value": "[variables('managedGrafanaResourceId')]"
+          },
+          "grafanaLocation": {
+            "value": "[parameters('managedGrafanaLocation')]"
+          },
+          "grafanaSku": {
+            "value": "[parameters('managedGrafanaSku')]"
+          },
+          "roleNameGuid": {
+            "value": "[guid(variables('effectiveAzureMonitorWorkspaceResourceId'), variables('managedGrafanaResourceId'), 'Monitoring Data Reader')]"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[variables('containerInsightsDeploymentName')]",
+      "subscriptionId": "[variables('clusterSubscriptionId')]",
+      "resourceGroup": "[variables('clusterResourceGroup')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName'))]",
+        "[resourceId('Microsoft.Resources/deployments', variables('managedPrometheusDeploymentName'))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('containerInsightsTemplateUri')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "aksResourceId": {
+            "value": "[parameters('clusterResourceId')]"
+          },
+          "aksResourceLocation": {
+            "value": "[parameters('clusterLocation')]"
+          },
+          "resourceTagValues": {
+            "value": "[if(parameters('preserveClusterTags'), if(contains(reference(parameters('clusterResourceId'), '2026-06-01', 'Full'), 'tags'), if(empty(reference(parameters('clusterResourceId'), '2026-06-01', 'Full').tags), createObject(), reference(parameters('clusterResourceId'), '2026-06-01', 'Full').tags), createObject()), parameters('clusterTags'))]"
+          },
+          "workspaceRegion": {
+            "value": "[parameters('monitoringWorkspaceLocation')]"
+          },
+          "workspaceResourceId": {
+            "value": "[variables('effectiveLogAnalyticsWorkspaceResourceId')]"
+          },
+          "streams": {
+            "value": "[parameters('containerInsightsStreams')]"
+          },
+          "enableContainerLogV2": {
+            "value": true
+          },
+          "enableSyslog": {
+            "value": false
+          },
+          "syslogLevels": {
+            "value": []
+          },
+          "syslogFacilities": {
+            "value": []
+          },
+          "dataCollectionInterval": {
+            "value": "[parameters('containerInsightsCollectionInterval')]"
+          },
+          "namespaceFilteringModeForDataCollection": {
+            "value": "Off"
+          },
+          "namespacesForDataCollection": {
+            "value": []
+          },
+          "useAzureMonitorPrivateLinkScope": {
+            "value": false
+          },
+          "azureMonitorPrivateLinkScopeResourceId": {
+            "value": "[variables('unusedPrivateLinkScopeResourceId')]"
+          }
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "infrastructureAzureMonitorWorkspaceResourceId": {
+      "type": "string",
+      "value": "[variables('effectiveAzureMonitorWorkspaceResourceId')]"
+    },
+    "containerInsightsLogAnalyticsWorkspaceResourceId": {
+      "type": "string",
+      "value": "[variables('effectiveLogAnalyticsWorkspaceResourceId')]"
+    },
+    "managedGrafanaResourceId": {
+      "type": "string",
+      "value": "[variables('managedGrafanaResourceId')]"
+    }
+  }
+}
