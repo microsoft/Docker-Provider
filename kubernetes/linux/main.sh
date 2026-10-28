@@ -205,7 +205,9 @@ gracefulShutdown() {
 # usage: setGlobalEnvVar ENABLE_SIDECAR_SCRAPING true
 setGlobalEnvVar() {
       export "$1"="$2"
-      echo "export \"$1\"=\"$2\"" >> /opt/env_vars
+      # /opt/env_vars is sourced by later shells, so the value is written as a single-quoted
+      # literal. Double quotes would leave it open to shell processing on the way back in.
+      printf "export %s='%s'\n" "$1" "$(printf '%s' "$2" | sed "s/'/'\\\\''/g")" >> /opt/env_vars
 }
 touch /opt/env_vars
 touch /opt/dcr_env_var
@@ -540,9 +542,9 @@ fi
 
 # common agent config settings applicable for all container types
 ruby tomlparser-common-agent-config.rb
-cat common_agent_config_env_var | while read line; do
-      echo $line >> ~/.bashrc
-done
+while IFS= read -r line; do
+      printf '%s\n' "$line" >> ~/.bashrc
+done < common_agent_config_env_var
 source common_agent_config_env_var
 
 # check if high log scale mode enabled
@@ -876,9 +878,9 @@ if [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${GENEVA_LOGS_INTEGRATIO
       #Parse the configmap to set the right environment variables for metric collection settings
       ruby tomlparser-metric-collection-config.rb
 
-      cat config_metric_collection_env_var | while read line; do
-            echo $line >>~/.bashrc
-      done
+      while IFS= read -r line; do
+            printf '%s\n' "$line" >> ~/.bashrc
+      done < config_metric_collection_env_var
       source config_metric_collection_env_var
 fi
 
