@@ -58,7 +58,7 @@
   "resources": [
     {
       "type": "Microsoft.Insights/components",
-      "apiVersion": "2025-01-23-preview",
+      "apiVersion": "2020-02-02",
       "name": "[parameters('applicationInsightsName')]",
       "location": "[parameters('location')]",
       "kind": "web",
@@ -73,27 +73,27 @@
     },
     "logAnalyticsWorkspaceResourceId": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2025-01-23-preview', 'full').properties.WorkspaceResourceId]"
+      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2020-02-02', 'full').properties.WorkspaceResourceId]"
     },
     "azureMonitorWorkspaceResourceId": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2025-01-23-preview', 'full').properties.AzureMonitorWorkspaceResourceId]"
+      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2020-02-02', 'full').properties.AzureMonitorWorkspaceResourceId]"
     },
     "dataCollectionRuleResourceId": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2025-01-23-preview', 'full').properties.DataCollectionRuleResourceId]"
+      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2020-02-02', 'full').properties.DataCollectionRuleResourceId]"
     },
     "otlpLogsEndpoint": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2025-01-23-preview', 'full').properties.OTLPLogsEndpoint]"
+      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2020-02-02', 'full').properties.OTLPLogsEndpoint]"
     },
     "otlpMetricsEndpoint": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2025-01-23-preview', 'full').properties.OTLPMetricsEndpoint]"
+      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2020-02-02', 'full').properties.OTLPMetricsEndpoint]"
     },
     "otlpTracesEndpoint": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2025-01-23-preview', 'full').properties.OTLPTracesEndpoint]"
+      "value": "[reference(resourceId('Microsoft.Insights/components', parameters('applicationInsightsName')), '2020-02-02', 'full').properties.OTLPTracesEndpoint]"
     }
   }
 }
