@@ -267,7 +267,7 @@ extends:
                 AZURELINUX_VERSION=$(docker run --rm --entrypoint="" ${{ variables.repoImageName }}:$(linuxImagetag) cat /etc/os-release | grep ^VERSION= | cut -d= -f2 | tr -d '"')
                 echo "##vso[task.logissue type=warning]Azure Linux base image version: $AZURELINUX_VERSION"
               else
-                docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --provenance=false .
+                docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --push --provenance=false .
                 # load the multi-arch image to run tests
                 docker buildx build --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --load --provenance=false .
               fi
@@ -622,9 +622,7 @@ extends:
           inputs:
             targetType: 'inline'
             script: |
-              if ("$(Build.Reason)" -ne "PullRequest") {
-                docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
-              }
+              docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)
         - task: CodeQL3000Finalize@0
           condition: eq(variables.IS_MAIN_BRANCH, true)
       - job: build_windows_2022
@@ -832,9 +830,7 @@ extends:
           inputs:
             targetType: 'inline'
             script: |
-              if ("$(Build.Reason)" -ne "PullRequest") {
-                docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
-              }
+              docker push ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
         - task: CodeQL3000Finalize@0
           condition: eq(variables.IS_MAIN_BRANCH, true)
       - job: build_windows_multi_arc
@@ -873,11 +869,9 @@ extends:
               az account set -s ${{ variables.subscription }}
               az acr login -n ${{ variables.containerRegistry }}
               @{"image.name"="${{ variables.repoImageName }}:$(windowsImageTag)"} | ConvertTo-Json -Compress | Out-File -Encoding ascii $(Build.ArtifactStagingDirectory)/windows/metadata.json
-              if ("$(Build.Reason)" -ne "PullRequest") {
-                 docker manifest create ${{ variables.repoImageName }}:$(windowsImageTag) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
-                 docker manifest push ${{ variables.repoImageName }}:$(windowsImageTag)
-                 Write-Host "##vso[task.logissue type=warning]Windows image built with tag: ${{ variables.repoImageName }}:$(windowsImageTag)"
-              }
+              docker manifest create ${{ variables.repoImageName }}:$(windowsImageTag) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion) ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)
+              docker manifest push ${{ variables.repoImageName }}:$(windowsImageTag)
+              Write-Host "##vso[task.logissue type=warning]Windows image built with tag: ${{ variables.repoImageName }}:$(windowsImageTag)"
         - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
           displayName: 'Generation Task'
           condition: eq(variables.IS_PR, true)
