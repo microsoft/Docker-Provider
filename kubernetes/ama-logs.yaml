@@ -1275,7 +1275,7 @@ spec:
         component: ama-logs-agent-windows
         tier: node-win
       annotations:
-        agentVersion: "47.7.1"
+        agentVersion: "47.14.1"
         dockerProviderVersion: "18.0.1-0"
         schema-versions: "v1"
         kubernetes.azure.com/no-http-proxy-vars: "true"
