@@ -34,7 +34,7 @@ var componentProperties = union(
 )
 
 #disable-next-line BCP081
-resource applicationInsights 'Microsoft.Insights/components@2025-01-23-preview' = {
+resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
   name: applicationInsightsName
   location: location
   kind: 'web'
@@ -42,10 +42,13 @@ resource applicationInsights 'Microsoft.Insights/components@2025-01-23-preview' 
   properties: componentProperties
 }
 
+#disable-next-line use-resource-symbol-reference
+var applicationInsightsState = reference(applicationInsights.id, '2020-02-02', 'Full')
+
 output applicationInsightsResourceId string = applicationInsights.id
-output logAnalyticsWorkspaceResourceId string = applicationInsights.properties.WorkspaceResourceId
-output azureMonitorWorkspaceResourceId string = applicationInsights.properties.AzureMonitorWorkspaceResourceId
-output dataCollectionRuleResourceId string = applicationInsights.properties.DataCollectionRuleResourceId
-output otlpLogsEndpoint string = applicationInsights.properties.OTLPLogsEndpoint
-output otlpMetricsEndpoint string = applicationInsights.properties.OTLPMetricsEndpoint
-output otlpTracesEndpoint string = applicationInsights.properties.OTLPTracesEndpoint
+output logAnalyticsWorkspaceResourceId string = applicationInsightsState.properties.WorkspaceResourceId
+output azureMonitorWorkspaceResourceId string = applicationInsightsState.properties.AzureMonitorWorkspaceResourceId
+output dataCollectionRuleResourceId string = applicationInsightsState.properties.DataCollectionRuleResourceId
+output otlpLogsEndpoint string = applicationInsightsState.properties.OTLPLogsEndpoint
+output otlpMetricsEndpoint string = applicationInsightsState.properties.OTLPMetricsEndpoint
+output otlpTracesEndpoint string = applicationInsightsState.properties.OTLPTracesEndpoint

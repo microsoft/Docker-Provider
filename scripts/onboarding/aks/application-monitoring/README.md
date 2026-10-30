@@ -17,7 +17,6 @@ native ARM resources. Azure control-plane templates are under [`arm`](arm) and
 
 | ARM | Bicep | Purpose |
 | --- | --- | --- |
-| [register-preview-features.subscription.json](arm/register-preview-features.subscription.json) | [register-preview-features.subscription.bicep](bicep/register-preview-features.subscription.bicep) | Registers the AKS application-monitoring and Application Insights OTLP preview features. |
 | [application-insights-codeless.json](arm/application-insights-codeless.json) | [application-insights-codeless.bicep](bicep/application-insights-codeless.bicep) | Creates a workspace-based Application Insights component for the codeless monitoring flow. |
 | [application-insights-otlp.json](arm/application-insights-otlp.json) | [application-insights-otlp.bicep](bicep/application-insights-otlp.bicep) | Creates an OTLP-enabled Application Insights component with managed or customer-managed workspaces. |
 | [associate-application-insights-dcr.json](arm/associate-application-insights-dcr.json) | [associate-application-insights-dcr.bicep](bicep/associate-application-insights-dcr.bicep) | Associates the OTLP-enabled Application Insights DCR with the AKS cluster. |
@@ -47,7 +46,7 @@ directly.
 | Documentation section | Artifact or note to add |
 | --- | --- |
 | [Prerequisites](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#prerequisites) | Link the [ARM](arm/application-insights-codeless.json) and [Bicep](bicep/application-insights-codeless.bicep) options for creating the required workspace-based Application Insights component. |
-| [Prepare a cluster](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#prepare-a-cluster) | Add ARM and Bicep tabs using [aks-app-monitoring-profile.json](arm/aks-app-monitoring-profile.json) and [aks-app-monitoring-profile.bicep](bicep/aks-app-monitoring-profile.bicep) with only autoinstrumentation configured. |
+| [Prepare a cluster](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#prepare-a-cluster) | Add a combined Bicep/ARM tab using [aks-app-monitoring-profile.json](arm/aks-app-monitoring-profile.json) and [aks-app-monitoring-profile.bicep](bicep/aks-app-monitoring-profile.bicep) with only autoinstrumentation configured. |
 | [Namespace-wide onboarding](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#namespace-wide-onboarding) | Link [instrumentation-codeless.yaml](kubernetes/instrumentation-codeless.yaml). This remains YAML rather than ARM. |
 | [Per-deployment onboarding](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#per-deployment-onboarding) | Link [instrumentation-per-deployment.yaml](kubernetes/instrumentation-per-deployment.yaml) and the deployments in [workload-autoinstrumentation.example.yaml](kubernetes/workload-autoinstrumentation.example.yaml). |
 | [Restart deployment](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#restart-deployment) | State that rollout restart is a Kubernetes action with no native ARM equivalent. |
@@ -59,12 +58,11 @@ directly.
 
 | Documentation section | Artifact or note to add |
 | --- | --- |
-| [Register the preview features](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol#1-register-the-preview-features) | Add ARM and Bicep tabs using [register-preview-features.subscription.json](arm/register-preview-features.subscription.json) and [register-preview-features.subscription.bicep](bicep/register-preview-features.subscription.bicep). Registration must complete before dependent templates are deployed. |
-| [Prepare the cluster](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol#2-prepare-the-cluster) | If the cluster is not already monitored, deploy the [ARM](arm/aks-otlp-monitoring-prerequisites.json) or [Bicep](bicep/aks-otlp-monitoring-prerequisites.bicep) prerequisites. The Bicep download must include [linked-template-deployment.bicep](bicep/linked-template-deployment.bicep) in the same folder. Then deploy the corresponding application-monitoring profile template with all three profiles configured. |
-| [Create an Application Insights resource with OTLP support](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol#3-create-an-application-insights-resource-with-otlp-support) | Add ARM and Bicep tabs using [application-insights-otlp.json](arm/application-insights-otlp.json) and [application-insights-otlp.bicep](bicep/application-insights-otlp.bicep). |
-| [Onboard applications to Application Insights](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol#4-onboard-applications-to-application-insights) | First deploy the [ARM](arm/associate-application-insights-dcr.json) or [Bicep](bicep/associate-application-insights-dcr.bicep) DCR association. Then link the three `Instrumentation` manifests plus [workload-autoinstrumentation.example.yaml](kubernetes/workload-autoinstrumentation.example.yaml) and [workload-autoconfiguration.example.yaml](kubernetes/workload-autoconfiguration.example.yaml). |
-| [Restart deployments to apply changes](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol#43-restart-deployments-to-apply-changes) | State that rollout restart is a Kubernetes action with no native ARM equivalent. |
-| [Advanced onboarding](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol#advanced-onboarding-custom-resources) | Use the YAML artifacts as downloadable examples. |
+| [Prepare the cluster](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol) | If the cluster is not already monitored, deploy the [ARM](arm/aks-otlp-monitoring-prerequisites.json) or [Bicep](bicep/aks-otlp-monitoring-prerequisites.bicep) prerequisites. The Bicep download must include [linked-template-deployment.bicep](bicep/linked-template-deployment.bicep) in the same folder. Then deploy the corresponding application-monitoring profile template with all three profiles configured. |
+| [Create an Application Insights resource with OTLP support](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol) | Add a combined Bicep/ARM tab using [application-insights-otlp.json](arm/application-insights-otlp.json) and [application-insights-otlp.bicep](bicep/application-insights-otlp.bicep). |
+| [Onboard applications to Application Insights](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol) | First deploy the [ARM](arm/associate-application-insights-dcr.json) or [Bicep](bicep/associate-application-insights-dcr.bicep) DCR association. Then link the three `Instrumentation` manifests plus [workload-autoinstrumentation.example.yaml](kubernetes/workload-autoinstrumentation.example.yaml) and [workload-autoconfiguration.example.yaml](kubernetes/workload-autoconfiguration.example.yaml). |
+| [Restart deployments to apply changes](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol) | State that rollout restart is a Kubernetes action with no native ARM equivalent. |
+| [Advanced onboarding](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol) | Use the YAML artifacts as downloadable examples. |
 
 ## Choose ARM or Bicep
 
@@ -74,21 +72,12 @@ below, replace `arm/<name>.json` with `bicep/<name>.bicep` to use Bicep.
 
 ## Deployment order
 
-1. For the OTLP preview only, deploy
-   the [ARM](arm/register-preview-features.subscription.json) or
-   [Bicep](bicep/register-preview-features.subscription.bicep) feature
-   registration template
-   to each applicable subscription. The codeless flow doesn't require this
-   step.
-2. Wait until each feature reports `Registered`, then re-register
-   `Microsoft.ContainerService` and `Microsoft.Insights` to propagate the
-   feature registrations.
-3. Deploy either
+1. Deploy either
    the codeless [ARM](arm/application-insights-codeless.json) or
    [Bicep](bicep/application-insights-codeless.bicep) template, or the OTLP
    [ARM](arm/application-insights-otlp.json) or
    [Bicep](bicep/application-insights-otlp.bicep) template.
-4. For the OTLP flow, check whether Managed Prometheus and Container Insights
+2. For the OTLP flow, check whether Managed Prometheus and Container Insights
    are enabled:
 
    ```azurecli
@@ -107,16 +96,16 @@ below, replace `arm/<name>.json` with `bicep/<name>.bicep` to use Bicep.
    aren't replaced. `monitoringWorkspaceLocation` can differ from the AKS
    region when the selected Azure Monitor and Log Analytics regions are
    supported.
-5. Deploy the application-monitoring profile
+3. Deploy the application-monitoring profile
    [ARM](arm/aks-app-monitoring-profile.json) or
    [Bicep](bicep/aks-app-monitoring-profile.bicep) template
    to the AKS resource group.
-6. For the OTLP flow, deploy
+4. For the OTLP flow, deploy
    the DCR association [ARM](arm/associate-application-insights-dcr.json) or
    [Bicep](bicep/associate-application-insights-dcr.bicep) template
    to the AKS resource group using `dataCollectionRuleResourceId` from the
    Application Insights deployment output.
-7. Replace the placeholders in the appropriate `Instrumentation` manifest,
+5. Replace the placeholders in the appropriate `Instrumentation` manifest,
    apply it to the cluster, add any per-deployment annotations, and restart the
    affected deployments.
 
@@ -124,23 +113,6 @@ The two manifests named `default` are alternatives. Don't apply
 [instrumentation-codeless.yaml](kubernetes/instrumentation-codeless.yaml) and
 [instrumentation-otlp.yaml](kubernetes/instrumentation-otlp.yaml) to the same
 namespace.
-
-Deploy preview registration at subscription scope:
-
-```azurecli
-# ARM
-az deployment sub create \
-  --location <deployment-location> \
-  --template-file arm/register-preview-features.subscription.json
-
-# Bicep
-az deployment sub create \
-  --location <deployment-location> \
-  --template-file bicep/register-preview-features.subscription.bicep
-```
-
-When AKS and Application Insights use different subscriptions, deploy once in
-each subscription and set the unrelated registration parameter to `false`.
 
 ## Apply manifests without persisting connection strings
 
@@ -450,8 +422,6 @@ Managed Prometheus.
 - `AzureMonitorWorkspaceIngestionMode=Enabled` is one-way. The Application
   Insights API does not support opting back out after OTLP ingestion is
   enabled.
-- Preview feature registration is asynchronous and can require approval. Do
-  not deploy preview registration and dependent resources in one deployment.
 
 For an ARM-managed entry point to Kubernetes configuration, use
 `Microsoft.KubernetesConfiguration/fluxConfigurations` to reconcile these YAML
