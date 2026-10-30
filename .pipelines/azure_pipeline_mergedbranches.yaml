@@ -285,7 +285,7 @@ extends:
           workingDirectory: $(Build.ArtifactStagingDirectory)/linux/
           displayName: "Install oras and build the payload json file"
           condition: eq(variables.IS_PR, false)
-        - task: EsrpCodeSigning@5
+        - task: EsrpCodeSigning@6
           condition: eq(variables.IS_PR, false)
           inputs:
             ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
@@ -506,7 +506,7 @@ extends:
           displayName: 'List files in DefaultWorking Directory'
         - script: dir $(Build.ArtifactStagingDirectory)
           displayName: 'List files in Staging Directory'
-        - task: EsrpCodeSigning@5
+        - task: EsrpCodeSigning@6
           inputs:
             ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
             UseMSIAuthentication: true
@@ -546,7 +546,7 @@ extends:
             MaxConcurrency: '50'
             MaxRetryAttempts: '5'
           displayName: 'EsrpCodeSigning for first party'
-        - task: EsrpCodeSigning@5
+        - task: EsrpCodeSigning@6
           inputs:
             ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
             UseMSIAuthentication: true
@@ -714,7 +714,7 @@ extends:
           displayName: 'List files in DefaultWorking Directory'
         - script: dir $(Build.ArtifactStagingDirectory)
           displayName: 'List files in Staging Directory'
-        - task: EsrpCodeSigning@5
+        - task: EsrpCodeSigning@6
           inputs:
             ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
             UseMSIAuthentication: true
@@ -754,7 +754,7 @@ extends:
             MaxConcurrency: '50'
             MaxRetryAttempts: '5'
           displayName: 'EsrpCodeSigning for first party'
-        - task: EsrpCodeSigning@5
+        - task: EsrpCodeSigning@6
           inputs:
             ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
             UseMSIAuthentication: true
@@ -902,7 +902,7 @@ extends:
           workingDirectory: $(Build.ArtifactStagingDirectory)/windows
           displayName: "Install oras and build the payload json file"
           condition: eq(variables.IS_PR, false)
-        - task: EsrpCodeSigning@5
+        - task: EsrpCodeSigning@6
           condition: eq(variables.IS_PR, false)
           inputs:
             ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
