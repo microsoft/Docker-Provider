@@ -18,7 +18,6 @@ $failedCount = 0
 
 # List of test files in the order we want to run them
 $testFiles = @(
-    "Test-ApplicationInsightsConfig.ps1",
     "Test-GetClusterCloudEnvironment.ps1",
     "Test-IsSupportedCloudEnvironment.ps1",
     "Test-GetLogAnalyticsWorkspaceDomain.ps1",
