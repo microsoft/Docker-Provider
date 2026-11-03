@@ -217,6 +217,29 @@ class PromCustomConfigTest < Minitest::Test
     assert_nil parsed["inputs"]
   end
 
+  def test_toml_basic_string_does_not_emit_template_placeholders
+    value = "$AZMON_TELEGRAF_CUSTOM_PROM_FIELDDROP"
+    rendered = toTomlBasicString(value)
+    refute_includes rendered, "$AZMON_"
+    assert_equal value, Tomlrb.parse("value = #{rendered}")["value"]
+    assert_equal "\"$HOME\"", toTomlBasicString("$HOME"), "other dollar signs must be unchanged"
+  end
+
+  def test_placeholder_names_in_fieldpass_are_not_expanded_by_later_substitutions
+    # fieldpass is substituted before fielddrop and the namespace plugin block, so a placeholder
+    # name stored in fieldpass must stay literal data instead of being expanded a second time.
+    {
+      replicaset: ["$AZMON_TELEGRAF_CUSTOM_PROM_FIELDDROP", "$AZMON_TELEGRAF_CUSTOM_PROM_URLS"],
+      daemonset: ["$AZMON_DS_PROM_FIELDDROP", "$AZMON_DS_PROM_URLS"],
+    }.each do |scenario, names|
+      body = "fieldpass = #{names.inspect}\nfielddrop = [\"a\\\"b\"]\nurls = [\"http://example.invalid/metrics\"]"
+      result = run_parser(scenario, configmap_for(scenario, body))
+      assert_no_injected_plugins(scenario, result[:conf], "placeholder text in fieldpass (#{scenario})")
+      included = parse_generated_toml(result[:conf])["inputs"]["prometheus"].map { |plugin| plugin["fieldinclude"] }.compact
+      assert_includes included, names, "fieldpass must round-trip as literal strings (#{scenario})"
+    end
+  end
+
   def test_toml_string_array_matches_previous_format_for_safe_values
     assert_equal "[]", toTomlStringArray([])
     assert_equal "[]", toTomlStringArray(nil)
