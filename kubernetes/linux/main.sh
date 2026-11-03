@@ -175,13 +175,13 @@ setCloudSpecificApplicationInsightsConfig() {
             echo "export APPLICATIONINSIGHTS_ENDPOINT=$APPLICATIONINSIGHTS_ENDPOINT" >>~/.bashrc
             source ~/.bashrc
             ;;
-      #    "azuredeloscloud")
-      #       APPLICATIONINSIGHTS_AUTH="<your_applicationinsights_auth_key>"
-      #       APPLICATIONINSIGHTS_ENDPOINT="https://<region>.in.applicationinsights.sovcloud-api.de/v2/track"
-      #       echo "export APPLICATIONINSIGHTS_AUTH=$APPLICATIONINSIGHTS_AUTH" >>~/.bashrc
-      #       echo "export APPLICATIONINSIGHTS_ENDPOINT=$APPLICATIONINSIGHTS_ENDPOINT" >>~/.bashrc
-      #       source ~/.bashrc
-      #       ;;
+         "azuredeloscloud")
+            APPLICATIONINSIGHTS_AUTH="ZjJhNGU4MWYtMzk3NC1kN2IwLWExYmItNGYzNjBiYjI3ZTdj"
+            APPLICATIONINSIGHTS_ENDPOINT="https://deloscloudgermanycentral-0.in.applicationinsights.sovcloud-api.de/v2/track"
+            echo "export APPLICATIONINSIGHTS_AUTH=$APPLICATIONINSIGHTS_AUTH" >>~/.bashrc
+            echo "export APPLICATIONINSIGHTS_ENDPOINT=$APPLICATIONINSIGHTS_ENDPOINT" >>~/.bashrc
+            source ~/.bashrc
+            ;;
           *)
             echo "default is Public cloud"
             ;;
