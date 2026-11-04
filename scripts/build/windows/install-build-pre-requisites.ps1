@@ -93,8 +93,8 @@ function Install-DotNetCoreSDK() {
         exit 1
     }
 
-   $url = "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/8.0.415/dotnet-sdk-8.0.415-win-x64.exe"
-   $output = Join-Path -Path $dotNetSdkTemp -ChildPath "dotnet-sdk-8.0.415-win-x64.exe"
+   $url = "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/8.0.427/dotnet-sdk-8.0.427-win-x64.exe"
+   $output = Join-Path -Path $dotNetSdkTemp -ChildPath "dotnet-sdk-8.0.427-win-x64.exe"
 
    Write-Host("downloading .NET 8 SDK: " + $dotNetSdkTemp + "  ...")
    Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
