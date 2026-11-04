@@ -3,7 +3,7 @@ terraform {
 
     azapi = {
       source  = "azure/azapi"
-      version = "=0.1.0"
+      version = "~>2.0"
     }
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -12,12 +12,7 @@ terraform {
   }
 }
 
-provider "azapi" {
-  default_location = "eastus"
-  default_tags = {
-    team = "Azure deployments"
-  }
-}
+provider "azapi" {}
 
 provider "azurerm" {
   features {}

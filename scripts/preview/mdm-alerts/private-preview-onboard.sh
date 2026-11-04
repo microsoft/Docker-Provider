@@ -93,9 +93,11 @@ echo "setting the subscription id of the cluster: ${clusterSubscriptionId}"
 az account set -s ${clusterSubscriptionId}
 
 echo "getting cluster object"
-clusterGetResponse=$(az rest --method get --uri $clusterResourceId?api-version=2019-11-01)
+clusterGetResponse=$(az rest --method get --uri "${clusterResourceId}?api-version=2026-07-01") || exit 1
 
-export jqquery=".properties.addonProfiles.omsagent.config.logAnalyticsWorkspaceResourceID=\"$workspaceResourceId\""
-echo $clusterGetResponse | jq $jqquery > putrequestbody.json
+printf '%s\n' "$clusterGetResponse" | jq -e --arg workspaceResourceId "$workspaceResourceId" \
+  'if (.properties.azureMonitorProfile.containerInsights.enabled | type) == "boolean" then
+     .properties.azureMonitorProfile.containerInsights.logAnalyticsWorkspaceResourceId = $workspaceResourceId
+   else error("Cluster has no valid Container Insights profile") end' > putrequestbody.json || exit 1
 
-az rest --method put --uri $clusterResourceId?api-version=2019-11-01 --body @putrequestbody.json --headers Content-Type=application/json
+az rest --method put --uri "${clusterResourceId}?api-version=2026-07-01" --body @putrequestbody.json --headers Content-Type=application/json

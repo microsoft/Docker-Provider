@@ -26,16 +26,12 @@
             "name": "[split(parameters('aksResourceId'),'/')[8]]",
             "type": "Microsoft.ContainerService/managedClusters",
             "location": "[parameters('aksResourceLocation')]",
-            "apiVersion": "2023-04-01",
+            "apiVersion": "2026-07-01",
             "properties": {
-                "mode": "Incremental",
-                "id": "[parameters('aksResourceId')]",
-                "addonProfiles": {
-                    "omsagent": {
+                "azureMonitorProfile": {
+                    "containerInsights": {
                         "enabled": false,
-                        "config": {
-                            "logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]"
-                        }
+                        "logAnalyticsWorkspaceResourceId": "[parameters('workspaceResourceId')]"
                     }
                 }
             }

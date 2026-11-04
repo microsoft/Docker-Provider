@@ -38,6 +38,48 @@ usage() {
     exit 1
 }
 
+get_aks_monitoring_profile() {
+    local resource_group=$1
+    local name=$2
+    local field=$3
+    local cluster_id
+    local value
+
+    cluster_id=$(az aks show -g "$resource_group" -n "$name" --query id -o tsv) || return 1
+    if [ -z "$cluster_id" ] || [ "$cluster_id" = "null" ]; then
+        echo "[Error] Could not get the resource ID for $name" >&2
+        return 1
+    fi
+    value=$(az rest --method get --uri "${cluster_id}?api-version=2026-07-01" \
+      --query "properties.azureMonitorProfile.containerInsights.${field}" -o tsv) || return 1
+    if [ "$field" = "enabled" ]; then
+        printf '%s\n' "${value,,}"
+    else
+        printf '%s\n' "$value"
+    fi
+}
+
+# Azure Monitor Profile has no auth-mode field, so this converter still needs the legacy source flag.
+get_aks_legacy_auth_mode() {
+    local resource_group=$1
+    local name=$2
+    local cluster
+
+    cluster=$(az aks show -g "$resource_group" -n "$name" -o json) || return 1
+    printf '%s\n' "$cluster" | jq -er '
+      [(.addonProfiles // {} | to_entries[]) | select(.key | ascii_downcase == "omsagent")] |
+      if length != 1 then error("Legacy authentication metadata is unavailable or ambiguous")
+      else
+        [(.[] .value.config // {} | to_entries[]) |
+          select(.key | ascii_downcase == "useaadauth") |
+          .value | tostring | ascii_downcase] | unique |
+        if length == 0 then "false"
+        elif length == 1 and (.[0] == "true" or .[0] == "false") then .[0]
+        else error("Invalid or conflicting legacy authentication flags")
+        end
+      end'
+}
+
 # Function to check prerequisites for a cluster
 check_prerequisites() {
     local cluster_type=$1
@@ -62,15 +104,22 @@ check_prerequisites() {
         fi
 
         # 3. Check if monitoring is enabled
-        # Case-insensitive check for monitoring status
-        local monitoring_enabled=$(az aks show -g "$resource_group" -n "$name" --query "addonProfiles.omsagent.enabled || addonProfiles.omsAgent.enabled" -o tsv | tr '[:upper:]' '[:lower:]')
+        local monitoring_enabled
+        monitoring_enabled=$(get_aks_monitoring_profile "$resource_group" "$name" enabled) || {
+            echo "[Error] Could not read Container Insights profile for $name" >&2
+            return 1
+        }
         if [ "$monitoring_enabled" != "true" ]; then
             echo "Container insights not enabled on this cluster" >&2
             return 1
         fi
 
         # 4. Check if monitoring is already using MSI
-        local auth_mode=$(az aks show -g "$resource_group" -n "$name" --query "addonProfiles.omsagent.config.useAADAuth || addonProfiles.omsAgent.config.useAADAuth || addonProfiles.omsagent.config.useaadauth || addonProfiles.omsAgent.config.useaadauth || ''" -o tsv | tr '[:upper:]' '[:lower:]')
+        local auth_mode
+        auth_mode=$(get_aks_legacy_auth_mode "$resource_group" "$name") || {
+            echo "[Error] Could not read legacy authentication mode for $name" >&2
+            return 1
+        }
         if [ "$auth_mode" = "true" ]; then
             echo "Monitoring already using MSI authentication" >&2
             return 1
@@ -181,17 +230,24 @@ perform_migration() {
             sleep 180
 
             # Check if monitoring is actually disabled
-            local monitoring_state=$(az aks show -g "$resource_group" -n "$name" --query "addonProfiles.omsagent.enabled || addonProfiles.omsAgent.enabled" -o tsv | tr '[:upper:]' '[:lower:]')
-            if [ "$monitoring_state" != "true" ]; then
+            local monitoring_state
+            monitoring_state=$(get_aks_monitoring_profile "$resource_group" "$name" enabled) || {
+                echo "[Error] Could not verify monitoring was disabled for $name" >&2
+                return 1
+            }
+            if [ "$monitoring_state" = "false" ]; then
                 echo "[$(date)] Successfully disabled monitoring"
                 break
-            else
+            elif [ "$monitoring_state" = "true" ]; then
                 echo "[$(date)] Monitoring is still enabled after attempt $attempt"
                 if [ $attempt -eq $max_attempts ]; then
                     echo "[Error] Failed to disable monitoring after $max_attempts attempts"
                     return 1
                 fi
                 attempt=$((attempt + 1))
+            else
+                echo "[Error] Invalid Container Insights enabled state for $name: $monitoring_state" >&2
+                return 1
             fi
         else
             az k8s-extension delete --name azuremonitor-containers -g "$resource_group" -c "$name" --cluster-type connectedClusters --yes && break
@@ -240,7 +296,11 @@ perform_migration() {
         fi
         
         # Verify MSI auth is enabled
-        local auth_mode=$(az aks show -g "$resource_group" -n "$name" --query "addonProfiles.omsagent.config.useAADAuth || addonProfiles.omsAgent.config.useAADAuth || addonProfiles.omsagent.config.useaadauth || addonProfiles.omsAgent.config.useaadauth || ''" -o tsv | tr '[:upper:]' '[:lower:]')
+        local auth_mode
+        auth_mode=$(get_aks_legacy_auth_mode "$resource_group" "$name") || {
+            echo "[Error] Could not verify managed identity authentication for $name" >&2
+            return 1
+        }
         [ "$auth_mode" = "true" ] || {
             echo "[Error] MSI authentication not enabled after configuration"
             return 1
@@ -285,6 +345,10 @@ echo "=== STEP 1: Prerequisites Check ==="
 # Check Azure CLI installation
 command -v az > /dev/null || {
     echo "[Error] Azure CLI not found. Please install Azure CLI"
+    exit 1
+}
+command -v jq > /dev/null || {
+    echo "[Error] jq not found. Please install jq"
     exit 1
 }
 
@@ -352,7 +416,11 @@ for subscription_id in "${SUBS[@]}"; do
             # Get workspace ID
             echo "[$(date)] Getting workspace ID for $name"
             if [ "$cluster_type" = "aks" ]; then
-                workspace_id=$(az aks show -g "$resource_group" -n "$name" --query "addonProfiles.omsagent.config.logAnalyticsWorkspaceResourceID || addonProfiles.omsAgent.config.logAnalyticsWorkspaceResourceID || addonProfiles.omsagent.config.loganalyticsworkspaceresourceid || addonProfiles.omsAgent.config.loganalyticsworkspaceresourceid" -o tsv)
+                workspace_id=$(get_aks_monitoring_profile "$resource_group" "$name" logAnalyticsWorkspaceResourceId) || {
+                    echo "[Error] Could not read the workspace for $name" >&2
+                    failed_clusters+=("$name - Workspace lookup failed")
+                    continue
+                }
             else
                 workspace_id=$(az k8s-extension show --name azuremonitor-containers --resource-group "$resource_group" --cluster-name "$name"  --cluster-type connectedClusters --query "configurationSettings.logAnalyticsWorkspaceResourceID" -o tsv)
             fi

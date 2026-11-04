@@ -298,7 +298,7 @@ release still owns `ama-logs`.
 
 > Check the exit code of `az` directly. Piping it into `tail`/`grep` masks failures behind the
 > pipeline's exit status, so a wrong workspace name can look like success. Verify by re-reading
-> `addonProfiles.omsagent.enabled` and the pod list rather than trusting the command's output.
+> `azureMonitorProfile.containerInsights.enabled` and the pod list rather than trusting the command's output.
 
 ### Collect Table Data
 
@@ -471,7 +471,8 @@ The workflow has two parallel tracks that converge after the build completes.
 2. **Set kubectl context**: `kubectl config use-context <cluster name>`. Then record whether the AKS
    **managed monitoring addon** is enabled — cleanup must put it back the way you found it:
    ```bash
-   az aks show -g <rg> -n <name> --query "addonProfiles.omsagent.enabled" -o tsv
+   az rest --method get --uri "<cluster-resource-id>?api-version=2026-07-01" \
+     --query "properties.azureMonitorProfile.containerInsights.enabled" -o tsv
    ```
    If `true`, it will revert your backdoor deployment every ~20 minutes — disable it and recreate the
    DCR association (see "AKS managed addon conflicts").

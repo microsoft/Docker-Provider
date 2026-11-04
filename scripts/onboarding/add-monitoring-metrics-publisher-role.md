@@ -2,6 +2,8 @@
 
 Monitoring Metrics Publishers role assignment required for AKS Monitoring agent (i.e. ama-logs) to push the custom metrics to Azure Monitor for the cluster resource.
 
+This grant is only for legacy custom metrics, not Container Insights MSI ingestion. The helpers below retain the service-principal flow. They fail explicitly for managed-identity clusters because `azureMonitorProfile.containerInsights` does not expose the collector identity; the cluster's control-plane identity is not a replacement. For legacy managed-identity custom metrics, assign the role directly to the known collector object ID or migrate to MSI authentication.
+
 Custom metrics can be used to alert and also the pining the charts of these metrics to the azure portal dashboard.
 
 For more details on custom metrics, read [custom-metrics-azure-monitor](https://docs.microsoft.com/en-us/azure/azure-monitor/platform/metrics-custom-overview)

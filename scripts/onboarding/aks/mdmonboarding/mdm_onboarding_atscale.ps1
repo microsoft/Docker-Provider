@@ -194,6 +194,7 @@ Write-Host("Successfully got all aks clusters ...") -ForegroundColor Green
 $clustersCount = $allClusters.Id.Length
 
 Write-Host("Adding role assignment for the clusters ...")
+$failedAssignments = $false
 
 for ($index = 0 ; $index -lt $clustersCount ; $index++) {
     #
@@ -202,25 +203,21 @@ for ($index = 0 ; $index -lt $clustersCount ; $index++) {
     $servicePrincipalMsiClientId = ""
     $clusterResourceId = $allClusters.Id[$index]
     $clusterName = $allClusters.Name[$index]
-    if ($allClusters.ServicePrincipalProfile[$index] -ne $null -and $allClusters.ServicePrincipalProfile[$index].ClientId -ne $null -and $allClusters.ServicePrincipalProfile[$index].ClientId -ne "")
+    if ($allClusters.ServicePrincipalProfile[$index] -ne $null -and $allClusters.ServicePrincipalProfile[$index].ClientId -ne $null -and $allClusters.ServicePrincipalProfile[$index].ClientId -ne "" -and $allClusters.ServicePrincipalProfile[$index].ClientId -ne "msi")
     {
         Write-Host("Found service principal for the cluster: $clusterResourceId...")
         $servicePrincipalMsiClientId = $allClusters.ServicePrincipalProfile[$index].ClientId
     }
     else {
-        $splitId = $allCLusters[$index].Id -split "(/)"
-        $ClusterResourceGroup = $splitId[8]
-        $ResourceDetailsArray = Get-AzResource -ResourceGroupName $ClusterResourceGroup -Name $clusterName -ResourceType "Microsoft.ContainerService/managedClusters" -ExpandProperties -ErrorAction Stop -WarningAction Stop
-        if ($ResourceDetailsArray -ne $null -and $ResourceDetailsArray[0].properties.addonprofiles.omsagent -ne $null -and $ResourceDetailsArray[0].properties.addonprofiles.omsagent.identity -ne $null) {
-            Write-Host("Found MSI for the cluster: $clusterResourceId...")
-            $servicePrincipalMsiClientId = $ResourceDetailsArray[0].properties.addonprofiles.omsagent.identity.clientId
-        }
+        Write-Host("Cannot infer the Container Insights collector identity for $clusterName from Azure Monitor Profile. MSI ingestion needs no Monitoring Metrics Publisher role. Grant legacy custom-metrics permissions to the known collector object ID or migrate to MSI authentication.") -ForegroundColor Red
+        $failedAssignments = $true
+        continue
     }
 
-    if ($servicePrincipalMsiClientId -ne "") {
+    if (-not [string]::IsNullOrEmpty($servicePrincipalMsiClientId)) {
         Write-Host("Adding role assignment for the cluster: $clusterResourceId, servicePrincipalMsiClientId: $servicePrincipalMsiClientId ...")
 
-        New-AzRoleAssignment -ApplicationId $servicePrincipalMsiClientId -scope $clusterResourceId -RoleDefinitionName "Monitoring Metrics Publisher"  -ErrorVariable assignmentError -ErrorAction SilentlyContinue
+        New-AzRoleAssignment -ApplicationId $servicePrincipalMsiClientId -scope $clusterResourceId -RoleDefinitionName "Monitoring Metrics Publisher" -ErrorVariable assignmentError -ErrorAction SilentlyContinue
 
         if ($assignmentError) {
 
@@ -230,6 +227,7 @@ for ($index = 0 ; $index -lt $clustersCount ; $index++) {
             }
             else {
                 Write-Host("Failed to add Monitoring Metrics Publisher role assignment to cluster : '" + $clusterName + "' , error : $assignmentError") -ForegroundColor Red
+                $failedAssignments = $true
             }
         }
         else {
@@ -238,8 +236,14 @@ for ($index = 0 ; $index -lt $clustersCount ; $index++) {
         Write-Host("Completed adding role assignment for the cluster: $clusterName ...")
     }
     else {
-        Write-Host("Unable to find service principal/msi associated with the cluster : '" + $clusterName + "'") -ForegroundColor Green
+        Write-Host("Unable to find service principal/msi associated with the cluster : '" + $clusterName + "'") -ForegroundColor Red
+        $failedAssignments = $true
     }
+}
+
+if ($failedAssignments) {
+    Stop-Transcript
+    exit 1
 }
 
 Write-Host("Completed adding role assignment for the aks clusters in subscriptionId :$SubscriptionId")

@@ -571,10 +571,12 @@ attach_monitoring_tags() {
 # enables aks monitoring addon for private preview and dont use this for aks prod
 enable_aks_monitoring_addon() {
   echo "getting cluster object"
-  clusterGetResponse=$(az rest --method get --uri $clusterResourceId?api-version=2020-03-01)
-  export jqquery=".properties.addonProfiles.omsagent.config.logAnalyticsWorkspaceResourceID=\"$workspaceResourceId\""
-  echo $clusterGetResponse | jq $jqquery >putrequestbody.json
-  status=$(az rest --method put --uri $clusterResourceId?api-version=2020-03-01 --body @putrequestbody.json --headers Content-Type=application/json)
+  clusterGetResponse=$(az rest --method get --uri "${clusterResourceId}?api-version=2026-07-01") || return 1
+  printf '%s\n' "$clusterGetResponse" | jq -e --arg workspaceResourceId "$workspaceResourceId" \
+    'if (.properties.azureMonitorProfile.containerInsights.enabled | type) == "boolean" then
+       .properties.azureMonitorProfile.containerInsights.logAnalyticsWorkspaceResourceId = $workspaceResourceId
+     else error("Cluster has no valid Container Insights profile") end' >putrequestbody.json || return 1
+  status=$(az rest --method put --uri "${clusterResourceId}?api-version=2026-07-01" --body @putrequestbody.json --headers Content-Type=application/json) || return 1
   echo "status after enabling of aks monitoringa addon:$status"
 }
 

@@ -1,10 +1,10 @@
 # How to enable AKS Monitoring Addon via Azure Policy
+The custom policy configures `azureMonitorProfile.containerInsights` with managed identity authentication and creates the required data collection rule and association. The minimal policy preserves the original `ContainerLog` schema; use the MSI Azure Policy template for configurable ContainerLogV2, syslog, and private-link settings.
+
 This doc describes how to enable AKS Monitoring Addon using Azure Custom Policy.Monitoring Addon Custom Policy can be assigned  
 either at subscription or resource group scope. If Azure Log Analytics workspace and AKS cluster are in different subscriptions then Managed Identity used by Policy assignnment has to have required role permissions on both the subscriptions or least on the resource of the Azure Log Aalytics workspace. Similarly, If the policy scoped to Resource Group, then Managed Identity should have required role permissions on the Log Analytics workspace if the workspace not in the selected Resource Group scope.
 
-Monitoring Addon require following roles on the Managed Identity used by Azure Policy
- - [azure-kubernetes-service-contributor-role](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#azure-kubernetes-service-contributor-role)
- - [log-analytics-contributor](https://docs.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#log-analytics-contributor)
+The policy assignment identity requires the [Contributor role](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/general#contributor) on the cluster resource group to update the cluster and create monitoring resources. It also needs access to read the configured workspace when that workspace is outside the assignment scope.
 
 ## Create and Assign Policy definition using Azure Portal
 

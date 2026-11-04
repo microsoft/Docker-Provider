@@ -10,11 +10,15 @@
         Example :
         AKS cluster ResourceId should be in this format : /subscriptions/<subId>/resourceGroups/<rgName>/providers/Microsoft.ContainerService/managedClusters/<clusterName>
         ARO Cluster ResourceId should be in this format : /subscriptions/<subId>/resourceGroups/<rgName>/providers/Microsoft.ContainerService/openShiftManagedClusters/<clusterName>
+
+    .PARAMETER UseAADAuth
+        Defaults to true for AKS and false for ARO. Set to false explicitly when troubleshooting legacy authentication.
 #>
 
 param(
     [Parameter(mandatory = $true)]
-    [string]$ClusterResourceId
+    [string]$ClusterResourceId,
+    [bool]$UseAADAuth
 )
 
 $ErrorActionPreference = "Stop"
@@ -38,12 +42,14 @@ if (($null -eq $ClusterResourceId) -or ($ClusterResourceId.Split("/").Length -ne
     exit 1
 }
 
-$UseAADAuth = $false
 $ClusterRegion = ""
 $isClusterAndWorkspaceInDifferentSubs = $false
 $ClusterType = "AKS"
 if ($ClusterResourceId.ToLower().Contains("microsoft.containerservice/openshiftmanagedclusters") -eq $true) {
     $ClusterType = "ARO";
+}
+if (-not $PSBoundParameters.ContainsKey("UseAADAuth")) {
+    $UseAADAuth = $ClusterType -eq "AKS"
 }
 
 # checks the all required Powershell modules exist and if not exists, request the user permission to install
@@ -350,7 +356,7 @@ Write-Host("Checking '" + $ClusterType + "' Cluster details...")
 $ResourceDetailsArray = $null
 try {
     if ("AKS" -eq $ClusterType) {
-        $ResourceDetailsArray = Get-AzResource -ResourceGroupName $ResourceGroupName -Name $ClusterName -ResourceType "Microsoft.ContainerService/managedClusters" -ExpandProperties -ErrorAction Stop -WarningAction Stop
+        $ResourceDetailsArray = Get-AzResource -ResourceGroupName $ResourceGroupName -Name $ClusterName -ResourceType "Microsoft.ContainerService/managedClusters" -ApiVersion "2026-07-01" -ExpandProperties -ErrorAction Stop -WarningAction Stop
         if ($null -eq $ResourceDetailsArray) {
             Write-Host("")
             Write-Host("Could not fetch cluster details: Please make sure that the '" + $ClusterType + "' Cluster name: '" + $ClusterName + "' is correct and you have access to the cluster") -ForegroundColor Red
@@ -364,9 +370,9 @@ try {
             Write-Host("")
             foreach ($ResourceDetail in $ResourceDetailsArray) {
                 if ($ResourceDetail.ResourceType -eq "Microsoft.ContainerService/managedClusters") {
-                    $addonProfiles = ($ResourceDetail.Properties.addonProfiles | ConvertTo-Json).toLower() | ConvertFrom-Json
+                    $containerInsights = $ResourceDetail.Properties.azureMonitorProfile.containerInsights
 
-                    if (($nul -eq $addonProfiles)  -or  ($null -eq $addonProfiles.omsagent) -or ($null -eq $addonProfiles.omsagent.config)) {
+                    if (($null -eq $containerInsights) -or ($containerInsights.enabled -ne $true) -or [string]::IsNullOrWhiteSpace($containerInsights.logAnalyticsWorkspaceResourceId)) {
                         Write-Host("Your cluster isn't onboarded to Azure monitor for containers. Please refer to the following documentation to onboard:") -ForegroundColor Red;
                         $clusterProperies = ($ResourceDetail.Properties  | ConvertTo-Json)
                         Write-Host("Cluster Properties found: " + $clusterProperies) -ForegroundColor Red;
@@ -376,11 +382,7 @@ try {
                         exit 1
                     }
 
-                    $LogAnalyticsWorkspaceResourceID = $addonProfiles.omsagent.config.loganalyticsworkspaceresourceid
-                    $isAADAuth = $addonProfiles.omsagent.config.useaadauth
-                    if ($true -eq $isAADAuth) {
-                       $UseAADAuth = $true
-                    }
+                    $LogAnalyticsWorkspaceResourceID = $containerInsights.logAnalyticsWorkspaceResourceId
 
                     Write-Host("AKS Cluster ResourceId: '" + $ResourceDetail.ResourceId + "', LogAnalyticsWorkspaceResourceId: '" + $LogAnalyticsWorkspaceResourceID + "', UseAADAuth: '" + $UseAADAuth + "'");
                     break
@@ -434,13 +436,10 @@ if (("AKS" -eq $ClusterType ) -and ($false -eq $UseAADAuth)) {
             $clusterSpnClientID = $clusterDetails.ServicePrincipalProfile.ClientId
             $isServicePrincipal = $true
         }
-        elseif ($ResourceDetailsArray -ne $null -and $ResourceDetailsArray[0].properties.addonprofiles.omsagent -ne $null -and $ResourceDetailsArray[0].properties.addonprofiles.omsagent.identity -ne $null) {
-            Write-Host('Attempting to provide permissions to MSI...') -ForegroundColor Green
-            if ($ResourceDetailsArray[0].properties.addonprofiles.omsagent.identity.objectid -ne "")
-            {
-                $clusterSpnMsiObjectID = $ResourceDetailsArray[0].properties.addonprofiles.omsagent.identity.objectid
-                $isServicePrincipal = $false
-            }
+        elseif ($clusterDetails.Identity -ne $null) {
+            Write-Host("Azure Monitor Profile does not expose legacy add-on identities. Migrate this cluster to managed identity authentication instead of repairing legacy custom-metrics permissions.") -ForegroundColor Red
+            Stop-Transcript
+            exit 1
         }
 
         $clusterLocation = $clusterDetails.Location

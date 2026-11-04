@@ -2867,7 +2867,7 @@
             "resources": []
           },
           "azureResourceGraph": {
-            "query": "Resources\r\n| where type =~ 'microsoft.containerservice/managedclusters'\r\n| where id =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| extend props = parse_json(properties)\r\n| extend lawResourceId = tostring(props.addonProfiles.omsAgent.config.logAnalyticsWorkspaceResourceID)\r\n| extend LAWS = iff(isnotempty(lawResourceId), lawResourceId, tostring(props.addonProfiles.omsagent.config.logAnalyticsWorkspaceResourceID))\r\n| project LAWS\r\n"
+            "query": "Resources\r\n| where type =~ 'microsoft.containerservice/managedclusters'\r\n| where id =~ \"/subscriptions/$Subscription/resourcegroups/$rg/providers/Microsoft.ContainerService/managedClusters/$Cluster\"\r\n| extend props = parse_json(properties)\r\n| extend LAWS = tostring(props.azureMonitorProfile.containerInsights.logAnalyticsWorkspaceResourceId)\r\n| project LAWS\r\n"
           },
           "queryType": "Azure Resource Graph",
           "refId": "A",

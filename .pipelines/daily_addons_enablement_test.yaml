@@ -21,33 +21,34 @@ jobs:
               scriptType: 'bash'
               scriptLocation: 'inlineScript'
               inlineScript: |
+                set -euo pipefail
                 az --version
                 az account show
                 az account set -s ${{ variables.subscription }}
                 
-                # Check if the omsagent addon is enabled
-                addonEnabled=$(az aks show --resource-group $(RESOURCEGROUP) --name $(AKSCLUSTERNAME) --query addonProfiles.omsagent.enabled -o tsv)
+                clusterResourceId=$(az aks show --resource-group $(RESOURCEGROUP) --name $(AKSCLUSTERNAME) --query id -o tsv)
+                containerInsightsEnabled=$(az rest --method get --uri "${clusterResourceId}?api-version=2026-07-01" --query properties.azureMonitorProfile.containerInsights.enabled -o json)
                 
-                if [ "$addonEnabled" == "true" ]; then
-                    echo "OMSAgent addon is enabled on the AKS cluster."
-                    disable=$(az aks disable-addons --addons monitoring --name $(AKSCLUSTERNAME) --resource-group $(RESOURCEGROUP))
-                    omsagentEnabled=$(echo $disable | jq '.addonProfiles.omsagent.enabled')
-                    if [ $omsagentEnabled == "true" ]; then
-                      echo "Omsagent is not disabled."
-                      exit -1
+                if [ "$containerInsightsEnabled" == "true" ]; then
+                    echo "Container Insights is enabled on the AKS cluster."
+                    az aks disable-addons --addons monitoring --name $(AKSCLUSTERNAME) --resource-group $(RESOURCEGROUP) > /dev/null
+                    containerInsightsEnabled=$(az rest --method get --uri "${clusterResourceId}?api-version=2026-07-01" --query properties.azureMonitorProfile.containerInsights.enabled -o json)
+                    if [ "$containerInsightsEnabled" != "false" ]; then
+                      echo "Container Insights is not disabled."
+                      exit 1
                     fi
                     
-                    echo "Re-enabling the OMSAgent addon..."
-                    enable=$(az aks enable-addons --addons monitoring --name $(AKSCLUSTERNAME) --resource-group $(RESOURCEGROUP) --workspace-resource-id $(LOGANALYTICSWORKSPACE))
-                    omsagentEnabled=$(echo $enable | jq '.addonProfiles.omsagent.enabled')
-                    if [ $omsagentEnabled == "false" ]; then
-                      echo "Omsagent is not enabled"
-                      exit -1
+                    echo "Re-enabling Container Insights..."
+                    az aks enable-addons --addons monitoring --name $(AKSCLUSTERNAME) --resource-group $(RESOURCEGROUP) --workspace-resource-id $(LOGANALYTICSWORKSPACE) > /dev/null
+                    containerInsightsEnabled=$(az rest --method get --uri "${clusterResourceId}?api-version=2026-07-01" --query properties.azureMonitorProfile.containerInsights.enabled -o json)
+                    if [ "$containerInsightsEnabled" != "true" ]; then
+                      echo "Container Insights is not enabled."
+                      exit 1
                     fi
-                    omsagentWorkspace=$(az aks show --resource-group $(RESOURCEGROUP) --name $(AKSCLUSTERNAME) --query addonProfiles.omsagent.config.logAnalyticsWorkspaceResourceID -o tsv)
-                    if [ "$omsagentWorkspace" != "$(LOGANALYTICSWORKSPACE)" ]; then
-                      echo "Omsagent is not enabled with the correct log analytics workspace - $omsagentWorkspace"
-                      exit -1
+                    containerInsightsWorkspace=$(az rest --method get --uri "${clusterResourceId}?api-version=2026-07-01" --query properties.azureMonitorProfile.containerInsights.logAnalyticsWorkspaceResourceId -o tsv)
+                    if [ "$containerInsightsWorkspace" != "$(LOGANALYTICSWORKSPACE)" ]; then
+                      echo "Container Insights is not enabled with the correct log analytics workspace - $containerInsightsWorkspace"
+                      exit 1
                     fi
                     
                     echo "Sleeping for everything to get set up and logs start flowing"
@@ -62,6 +63,6 @@ jobs:
                       exit -1
                     fi
                 else
-                    echo "OMSAgent addon is not enabled on the AKS cluster."
-                    exit -1
+                    echo "Container Insights is not enabled on the AKS cluster."
+                    exit 1
                 fi

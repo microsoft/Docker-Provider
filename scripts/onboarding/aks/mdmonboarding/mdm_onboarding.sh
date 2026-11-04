@@ -23,38 +23,34 @@ echo "clusterResourceGroup" = ${2}
 echo "clusterName" = ${3}
 
 # login to azure
-az  login
+az login || exit 1
 
 # set the account with specified subscriptionId
-az account set -s ${1}
+az account set -s "${1}" || exit 1
 
 # get the cluster resource id
 
-export CLUSTER_RESOURCE_ID=$(az aks show -g ${2} -n ${3} --query id -o tsv)
+CLUSTER_RESOURCE_ID=$(az aks show -g "${2}" -n "${3}" --query id -o tsv) || exit 1
+if [ -z "$CLUSTER_RESOURCE_ID" ] || [ "$CLUSTER_RESOURCE_ID" = "null" ]; then
+    echo "No cluster resource ID found" >&2
+    exit 1
+fi
 echo "clusterResourceId" = $CLUSTER_RESOURCE_ID
 
 # get the clientId of cluster service principal if it exists, else get msi
-export SP_ID=$(az aks show -g  ${2} -n ${3} --query servicePrincipalProfile.clientId -o tsv)
+SP_ID=$(az aks show -g "${2}" -n "${3}" --query servicePrincipalProfile.clientId -o tsv) || exit 1
 
-if [ -z $SP_ID ]; then
-      export MSI_ID=$(az aks show -g  ${2} -n ${3} --query addonProfiles.omsagent.identity.clientId -o tsv)
-      if [ -z $MSI_ID ]; then
-          echo "No service principal or msi found"
-      else
-          echo "Found msi for the cluster" = $MSI_ID
-          export CLIENT_ID=$MSI_ID
-      fi
+if [ -z "$SP_ID" ] || [ "$SP_ID" = "msi" ]; then
+      echo "Azure Monitor Profile does not expose the Container Insights collector identity. MSI ingestion needs no Monitoring Metrics Publisher role. For legacy custom metrics, grant the role to the known collector object ID or migrate to MSI authentication." >&2
+      exit 1
 else
       echo "Found service principal for the cluster" = $SP_ID
-      export CLIENT_ID=$SP_ID
+      assignee_args=(--assignee "$SP_ID")
 fi
 
-if [ ! -z $CLIENT_ID ]; then
-    echo " - Running .."
+echo " - Running .."
 
-    #  assign the cluster spn with Monitoring Metrics Publisher role to the cluster resource
-    az role assignment create --assignee $CLIENT_ID --scope $CLUSTER_RESOURCE_ID --role "Monitoring Metrics Publisher"
+# This explicit custom-metrics grant is not needed for Container Insights MSI ingestion.
+az role assignment create "${assignee_args[@]}" --scope "$CLUSTER_RESOURCE_ID" --role "Monitoring Metrics Publisher" || exit 1
 
-    # completed the role assignment
-    echo "completed the role assignment"
-fi
+echo "completed the role assignment"

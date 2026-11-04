@@ -202,23 +202,21 @@ Write-Host("Successfully checked specified cluster exists details...") -Foregrou
 
 # Check to see if Service Principal exists, if it does, use that. Else, use MSI
 $servicePrincipalMsiClientId = ""
-if ($cluster.ServicePrincipalProfile -ne $null -and $cluster.ServicePrincipalProfile.clientId -ne $null -and $cluster.ServicePrincipalProfile.clientId -ne "") {
+$clusterResourceId = $cluster.Id
+if ($cluster.ServicePrincipalProfile -ne $null -and $cluster.ServicePrincipalProfile.clientId -ne $null -and $cluster.ServicePrincipalProfile.clientId -ne "" -and $cluster.ServicePrincipalProfile.clientId -ne "msi") {
     $servicePrincipalMsiClientId = $cluster.ServicePrincipalProfile.clientId
-    $clusterResourceId = $cluster.Id
 } else {
-    $ResourceDetailsArray = Get-AzResource -ResourceGroupName $ClusterResourceGroup -Name $clusterName -ResourceType "Microsoft.ContainerService/managedClusters" -ExpandProperties -ErrorAction Stop -WarningAction Stop
-    if ($ResourceDetailsArray -ne $null -and $ResourceDetailsArray[0].properties.addonprofiles.omsagent -ne $null -and $ResourceDetailsArray[0].properties.addonprofiles.omsagent.identity -ne $null) {
-        $servicePrincipalMsiClientId = $ResourceDetailsArray[0].properties.addonprofiles.omsagent.identity.clientId
-        $clusterResourceId = $ResourceDetailsArray[0].ResourceId
-    }
+    Write-Host("Azure Monitor Profile does not expose the Container Insights collector identity. MSI ingestion needs no Monitoring Metrics Publisher role. Grant legacy custom-metrics permissions to the known collector object ID or migrate to MSI authentication.") -ForegroundColor Red
+    Stop-Transcript
+    exit 1
 }
 
 #
 #  Add Monitoring Metrics Publisher role assignment to the AKS cluster resource
 #
 
-if ($servicePrincipalMsiClientId -ne "") {
-    New-AzRoleAssignment -ApplicationId $servicePrincipalMsiClientId -scope $clusterResourceId -RoleDefinitionName "Monitoring Metrics Publisher"  -ErrorVariable assignmentError -ErrorAction SilentlyContinue
+if (-not [string]::IsNullOrEmpty($servicePrincipalMsiClientId)) {
+    New-AzRoleAssignment -ApplicationId $servicePrincipalMsiClientId -scope $clusterResourceId -RoleDefinitionName "Monitoring Metrics Publisher" -ErrorVariable assignmentError -ErrorAction SilentlyContinue
 
     if ($assignmentError) {
 
@@ -236,8 +234,8 @@ if ($servicePrincipalMsiClientId -ne "") {
     }
 }
 else {
-    Write-Host("Unable to find service principal/msi associated with the cluster : '" + $clusterName + "'") -ForegroundColor Green
+    Write-Host("Unable to find service principal/msi associated with the cluster : '" + $clusterName + "'") -ForegroundColor Red
+    Stop-Transcript
+    exit 1
 }
-
-
 
