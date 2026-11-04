@@ -398,6 +398,10 @@ For our single branch ci_prod, automatically deployed latest yaml with latest ag
    find ./e2e -type f -exec sed -i 's/\r$//' {} +
   ```
 3. Build the docker image, recommended to use ACR & MCR
+   `PYTHON_BASE_IMAGE` is required and has no default. Supply an approved,
+   supported Debian/Ubuntu-based Python image compatible with the `apt-get`
+   commands in the Dockerfile. Microsoft contributors can find the approved
+   image in the internal wiki.
   ```
    cd ~/Docker-Provider/test/e2e/src # based on your repo path
    docker login <acr> -u <user> -p <pwd> # login to acr
@@ -414,4 +418,3 @@ If you have new interesting scenarios, please add/update them.
 
 This project has adopted the [Microsoft Open Source Code of Conduct] (https://opensource.microsoft.com/codeofconduct/).
 For more information see the [Code of Conduct FAQ] (https://opensource.microsoft.com/codeofconduct/faq/) or contact opencode@microsoft.com with any additional questions or comments.
-
