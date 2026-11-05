@@ -1,6 +1,0 @@
-spec:
-  template:
-    metadata:
-      annotations:
-        instrumentation.opentelemetry.io/inject-nodejs: "cr1"
-        monitor.azure.com/enable-application-logs: "true"
