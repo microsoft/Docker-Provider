@@ -99,9 +99,9 @@ gem_install_with_retry() {
 }
 
 # install fluentd
-# 1.19.3 is the first release that fixes CVE-2026-44024 (critical RCE), CVE-2026-44025,
-# CVE-2026-44160 and CVE-2026-44161. Requires Ruby >= 3.2 (satisfied by the ruby 3.3.x installed above).
-fluentd_version="1.19.3"
+# 1.19.4 fixes GHSA-5hq3-r276-rfr5, GHSA-g69w-f42r-xp35 and GHSA-h3xv-5jpx-r4j2.
+# Requires Ruby >= 3.2 (satisfied by the ruby 3.3.x installed above).
+fluentd_version="1.19.4"
 gem_install_with_retry fluentd -v $fluentd_version --no-document
 
 # remove the test directory from fluentd
@@ -115,6 +115,14 @@ gem_install_with_retry tomlrb -v "2.0.1" --no-document
 gem_install_with_retry ipaddress --no-document
 gem_install_with_retry jwt -v "3.2.0" --no-document
 gem_install_with_retry racc --no-document
+
+# Replace the bundled resolver to fix CVE-2026-80212 and CVE-2026-80213.
+# Ruby 3.3.5 (arm64) bundles 0.3.0; Ruby 3.3.10 (amd64) bundles 0.3.1.
+gem_install_with_retry resolv -v "0.3.2" --no-document
+rm -f /usr/lib/ruby/gems/3.3.0/specifications/default/resolv-0.3.0.gemspec /usr/lib/ruby/gems/3.3.0/specifications/default/resolv-0.3.1.gemspec || exit 1
+rm -rf /usr/lib/ruby/gems/3.3.0/gems/resolv-0.3.0 /usr/lib/ruby/gems/3.3.0/gems/resolv-0.3.1 || exit 1
+rm -f /usr/lib/ruby/3.3.0/resolv.rb || exit 1
+ruby -rresolv -e 'abort "Expected resolv 0.3.2, loaded #{Resolv::VERSION}" unless Resolv::VERSION == "0.3.2"' || exit 1
 
 # Reinstall zlib gem to fix CVE-2026-27820
 gem_install_with_retry zlib -v "3.2.3" --no-document 
