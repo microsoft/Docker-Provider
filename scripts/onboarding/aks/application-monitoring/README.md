@@ -37,30 +37,14 @@ directly.
 | [instrumentation-codeless.yaml](kubernetes/instrumentation-codeless.yaml) | Onboards a namespace for Java autoinstrumentation. Replace `Java` with `NodeJs`, or list both only when every default-onboarded workload should receive both agents. |
 | [instrumentation-otlp.yaml](kubernetes/instrumentation-otlp.yaml) | Onboards a namespace for applications already instrumented with OpenTelemetry SDKs. |
 | [instrumentation-per-deployment.yaml](kubernetes/instrumentation-per-deployment.yaml) | Defines a named `Instrumentation` resource for selective per-deployment onboarding. |
-| [workload-autoinstrumentation.example.yaml](kubernetes/workload-autoinstrumentation.example.yaml) | Patches an existing Java deployment with autoinstrumentation annotations. |
-| [workload-nodejs-autoinstrumentation.example.yaml](kubernetes/workload-nodejs-autoinstrumentation.example.yaml) | Patches an existing Node.js deployment with autoinstrumentation annotations. |
-| [workload-autoconfiguration.example.yaml](kubernetes/workload-autoconfiguration.example.yaml) | Patches an existing OTLP SDK-instrumented deployment with autoconfiguration and a gRPC protocol override. |
+| [workload-autoinstrumentation.example.yaml](kubernetes/workload-autoinstrumentation.example.yaml) | Shows per-deployment Java and Node.js autoinstrumentation annotations. |
+| [workload-autoconfiguration.example.yaml](kubernetes/workload-autoconfiguration.example.yaml) | Shows per-deployment OTLP SDK autoconfiguration and a gRPC protocol override. |
 
-The `workload-*.example.yaml` files are strategic merge patches, not standalone
-Deployments. They preserve the workload's existing images, containers, labels,
-and replica count. After creating the `cr1` resource from
-[instrumentation-per-deployment.yaml](kubernetes/instrumentation-per-deployment.yaml)
-in the workload's namespace, run the command matching the workload from this
-directory, replacing the namespace and deployment name:
-
-```powershell
-# Java
-kubectl patch deployment <java-deployment> --namespace <namespace> --type strategic --patch-file kubernetes\workload-autoinstrumentation.example.yaml
-
-# Node.js
-kubectl patch deployment <nodejs-deployment> --namespace <namespace> --type strategic --patch-file kubernetes\workload-nodejs-autoinstrumentation.example.yaml
-
-# Application already instrumented with an OpenTelemetry SDK
-kubectl patch deployment <otlp-deployment> --namespace <namespace> --type strategic --patch-file kubernetes\workload-autoconfiguration.example.yaml
-```
-
-Changing the pod-template annotations triggers a deployment rollout. Change
-`cr1` in the patch if the `Instrumentation` resource has a different name.
+The full Deployment examples use `contoso.azurecr.io` as a syntactically valid
+placeholder for an approved Azure Container Registry. Replace the registry,
+repository, and tag before applying a manifest. Microsoft services must source
+production images from an approved production ACR or Microsoft Container
+Registry rather than relying on Docker Hub or another third-party registry.
 
 ## Documentation placement
 
@@ -71,10 +55,10 @@ Changing the pod-template annotations triggers a deployment rollout. Change
 | [Prerequisites](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#prerequisites) | Link the [ARM](arm/application-insights-codeless.json) and [Bicep](bicep/application-insights-codeless.bicep) options for creating the required workspace-based Application Insights component. |
 | [Prepare a cluster](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#prepare-a-cluster) | Add ARM and Bicep tabs using [aks-app-monitoring-profile.json](arm/aks-app-monitoring-profile.json) and [aks-app-monitoring-profile.bicep](bicep/aks-app-monitoring-profile.bicep) with only autoinstrumentation configured. |
 | [Namespace-wide onboarding](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#namespace-wide-onboarding) | Link [instrumentation-codeless.yaml](kubernetes/instrumentation-codeless.yaml). This remains YAML rather than ARM. |
-| [Per-deployment onboarding](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#per-deployment-onboarding) | Link [instrumentation-per-deployment.yaml](kubernetes/instrumentation-per-deployment.yaml), the [Java patch](kubernetes/workload-autoinstrumentation.example.yaml), and the [Node.js patch](kubernetes/workload-nodejs-autoinstrumentation.example.yaml). |
+| [Per-deployment onboarding](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#per-deployment-onboarding) | Link [instrumentation-per-deployment.yaml](kubernetes/instrumentation-per-deployment.yaml) and the deployments in [workload-autoinstrumentation.example.yaml](kubernetes/workload-autoinstrumentation.example.yaml). |
 | [Restart deployment](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#restart-deployment) | State that rollout restart is a Kubernetes action with no native ARM equivalent. |
 | [Remove autoinstrumentation for AKS](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#remove-autoinstrumentation-for-aks) | Delete the applicable `Instrumentation` resources and restart affected deployments while the webhook is still enabled. Only then reuse the [ARM](arm/aks-app-monitoring-profile.json) or [Bicep](bicep/aks-app-monitoring-profile.bicep) profile template with `autoInstrumentationEnabled=false`. |
-| [Annotations](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#annotations) | Link the [Java patch](kubernetes/workload-autoinstrumentation.example.yaml) and [Node.js patch](kubernetes/workload-nodejs-autoinstrumentation.example.yaml) for language injection and application-log annotations. |
+| [Annotations](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#annotations) | Link [workload-autoinstrumentation.example.yaml](kubernetes/workload-autoinstrumentation.example.yaml) for language injection and application-log annotations. |
 | [Prepare a cluster during AKS cluster create](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#prepare-a-cluster-during-aks-cluster-create) | Add the literal `azureMonitorProfile.appMonitoring` object shown below to the full AKS creation template. |
 
 ### OTLP article
@@ -84,7 +68,7 @@ Changing the pod-template annotations triggers a deployment rollout. Change
 | [Register the preview features](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol#1-register-the-preview-features) | Add ARM and Bicep tabs using [register-preview-features.subscription.json](arm/register-preview-features.subscription.json) and [register-preview-features.subscription.bicep](bicep/register-preview-features.subscription.bicep). Registration must complete before dependent templates are deployed. |
 | [Prepare the cluster](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol#2-prepare-the-cluster) | If the cluster is not already monitored, deploy the [ARM](arm/aks-otlp-monitoring-prerequisites.json) or [Bicep](bicep/aks-otlp-monitoring-prerequisites.bicep) prerequisites. The Bicep download must include [linked-template-deployment.bicep](bicep/linked-template-deployment.bicep) in the same folder. Then deploy the corresponding application-monitoring profile template with all three profiles configured. |
 | [Create an Application Insights resource with OTLP support](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol#3-create-an-application-insights-resource-with-otlp-support) | Add ARM and Bicep tabs using [application-insights-otlp.json](arm/application-insights-otlp.json) and [application-insights-otlp.bicep](bicep/application-insights-otlp.bicep). |
-| [Onboard applications to Application Insights](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol#4-onboard-applications-to-application-insights) | First deploy the [ARM](arm/associate-application-insights-dcr.json) or [Bicep](bicep/associate-application-insights-dcr.bicep) DCR association. Then link the three `Instrumentation` manifests plus the [Java patch](kubernetes/workload-autoinstrumentation.example.yaml), [Node.js patch](kubernetes/workload-nodejs-autoinstrumentation.example.yaml), and [OTLP patch](kubernetes/workload-autoconfiguration.example.yaml). |
+| [Onboard applications to Application Insights](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol#4-onboard-applications-to-application-insights) | First deploy the [ARM](arm/associate-application-insights-dcr.json) or [Bicep](bicep/associate-application-insights-dcr.bicep) DCR association. Then link the three `Instrumentation` manifests plus [workload-autoinstrumentation.example.yaml](kubernetes/workload-autoinstrumentation.example.yaml) and [workload-autoconfiguration.example.yaml](kubernetes/workload-autoconfiguration.example.yaml). |
 | [Restart deployments to apply changes](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol#43-restart-deployments-to-apply-changes) | State that rollout restart is a Kubernetes action with no native ARM equivalent. |
 | [Advanced onboarding](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol#advanced-onboarding-custom-resources) | Use the YAML artifacts as downloadable examples. |
 
