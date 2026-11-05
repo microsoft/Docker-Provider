@@ -40,12 +40,6 @@ directly.
 | [workload-autoinstrumentation.example.yaml](kubernetes/workload-autoinstrumentation.example.yaml) | Shows per-deployment Java and Node.js autoinstrumentation annotations. |
 | [workload-autoconfiguration.example.yaml](kubernetes/workload-autoconfiguration.example.yaml) | Shows per-deployment OTLP SDK autoconfiguration and a gRPC protocol override. |
 
-The full Deployment examples use `contoso.azurecr.io` as a syntactically valid
-placeholder for an approved Azure Container Registry. Replace the registry,
-repository, and tag before applying a manifest. Microsoft services must source
-production images from an approved production ACR or Microsoft Container
-Registry rather than relying on Docker Hub or another third-party registry.
-
 ## Documentation placement
 
 ### Codeless monitoring article
