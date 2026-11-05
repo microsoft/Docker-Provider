@@ -103,6 +103,9 @@ TELEGRAF_DURATION_NUMBER_REGEX = /\d+(?:\.\d+)?|\.\d+/
 KUBERNETES_NAMESPACE_REGEX = /\A[a-z0-9]([-a-z0-9]*[a-z0-9])?\z/
 KUBERNETES_NAMESPACE_MAX_LENGTH = 63
 
+# Prefix shared by every template placeholder that this parser substitutes.
+PLACEHOLDER_PREFIX_REGEX = /\$AZMON_/
+
 TOML_ESCAPE_MAP = {
   "\\" => "\\\\",
   "\"" => "\\\"",
@@ -116,10 +119,18 @@ TOML_ESCAPE_MAP = {
 # Serializes a value as a quoted TOML basic string. Config map content is untrusted, so every
 # character that could terminate the string or introduce new TOML structure is escaped. This
 # prevents a value from breaking out of its assignment and declaring extra telegraf plugins.
+#
+# The generated config is produced by substituting $AZMON_* placeholders into a template one after
+# another, so text inserted by an earlier substitution is scanned again by later ones. A value that
+# contains placeholder text (for example "$AZMON_TELEGRAF_CUSTOM_PROM_FIELDDROP") would therefore be
+# expanded a second time, outside of its quoted string. The "$" that introduces such a placeholder
+# is emitted as the TOML escape \u0024: it still parses back to the identical string value but the
+# rendered text no longer contains a placeholder for a later substitution to match.
 def toTomlBasicString(value)
   escaped = value.to_s.gsub(/[\\"\u0000-\u001F\u007F]/) do |char|
     TOML_ESCAPE_MAP[char] || format("\\u%04X", char.ord)
   end
+  escaped = escaped.gsub(PLACEHOLDER_PREFIX_REGEX) { "\\u0024AZMON_" }
   return "\"#{escaped}\""
 end
 
