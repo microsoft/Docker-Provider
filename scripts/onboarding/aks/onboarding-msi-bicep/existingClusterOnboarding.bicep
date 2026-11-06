@@ -33,8 +33,11 @@ param enableContainerLogV2 bool
 @description('An array of Container Insights Streams for Data collection')
 param streams array
 
-@description('Enable Retina Network Flow Logs in omsagent addon profile')
+@description('Enable Retina Network Flow Logs in Container Insights profile')
 param enableRetinaNetworkFlowLogs bool = false
+
+@description('Disable Prometheus metrics scraping in Container Insights profile. Defaults to false i.e. Prometheus scraping is enabled')
+param disablePrometheusMetricsScraping bool = false
 
 @description('Flag to indicate if Azure Monitor Private Link Scope should be used or not')
 param useAzureMonitorPrivateLinkScope bool
@@ -171,19 +174,18 @@ resource privateLinkScope_workspace 'Microsoft.Insights/privateLinkScopes/scoped
   }
 }
 
-resource aks_monitoring_msi_addon 'Microsoft.ContainerService/managedClusters@2023-04-01' = {
+#disable-next-line BCP081
+resource aks_monitoring_ci_profile 'Microsoft.ContainerService/managedClusters@2026-07-01' = {
   name: clusterName
   location: aksResourceLocation
   tags: resourceTagValues
   properties: {
-    addonProfiles: {
-      omsagent: {
+    azureMonitorProfile: {
+      containerInsights: {
         enabled: true
-        config: {
-          logAnalyticsWorkspaceResourceID: workspaceResourceId
-          useAADAuth: 'true'
-          enableRetinaNetworkFlags: enableRetinaNetworkFlowLogs ? 'true' : 'false'
-        }
+        logAnalyticsWorkspaceResourceId: workspaceResourceId
+        containerNetworkLogs: enableRetinaNetworkFlowLogs ? 'Enabled' : 'Disabled'
+        disablePrometheusMetricsScraping: disablePrometheusMetricsScraping
       }
     }
   }
