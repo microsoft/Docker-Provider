@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: application
-          image: replace-with-your-java-image:tag
+          image: contoso.azurecr.io/replace-with-your-java-image:tag
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -40,4 +40,4 @@ spec:
     spec:
       containers:
         - name: application
-          image: replace-with-your-nodejs-image:tag
+          image: contoso.azurecr.io/replace-with-your-nodejs-image:tag

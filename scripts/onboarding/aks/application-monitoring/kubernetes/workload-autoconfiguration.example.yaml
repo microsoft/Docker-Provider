@@ -18,4 +18,4 @@ spec:
     spec:
       containers:
         - name: application
-          image: replace-with-your-otel-instrumented-image:tag
+          image: contoso.azurecr.io/replace-with-your-otel-instrumented-image:tag
