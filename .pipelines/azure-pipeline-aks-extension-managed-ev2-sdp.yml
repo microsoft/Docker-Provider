@@ -287,162 +287,162 @@ extends:
                   ServiceIdentifier: $(serviceIdentifier)
                   ServiceGroup: $(serviceGroup)
                   ConfigurationOverrides: $(ProdConfigurationOverrides)
-                  # Uncomment below to only rollout the extension version in euap regions for testing
-                  # Select: regions(centraluseuap,eastus2euap)
-                  Select: regions(*)
+                  # Restrict this rollout to Saudi Arabia East.
+                  Select: regions(saudiarabiaeast)
 
-      - stage: FF_Managed_SDP
-        displayName: "FF: Managed SDP"
-        dependsOn: PROD_Managed_SDP
-        variables:
-          ob_release_environment: Fairfax
-        jobs:
-          - job: FF_Managed_SDP
-            displayName: "FF: Managed SDP"
-            pool:
-              type: release
-            steps:
-              - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
-                displayName: "Ev2 Managed SDP Rollout (Fairfax)"
-                inputs:
-                  EndpointProviderType: ApprovalService
-                  ApprovalServiceEnvironment: Fairfax
-                  TaskAction: CentralArtifactsRollout
-                  CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
-                  CentralArtifactsPolicyName: CentralArtifactsPolicy
-                  ServiceIdentifier: $(serviceIdentifier)
-                  ServiceGroup: $(serviceGroup)
-                  ConfigurationOverrides: $(FairfaxConfigurationOverrides)
-                  Select: regions(*)
+      # Other cloud stages are disabled for the Saudi Arabia East-only rollout.
+      # - stage: FF_Managed_SDP
+      #   displayName: "FF: Managed SDP"
+      #   dependsOn: PROD_Managed_SDP
+      #   variables:
+      #     ob_release_environment: Fairfax
+      #   jobs:
+      #     - job: FF_Managed_SDP
+      #       displayName: "FF: Managed SDP"
+      #       pool:
+      #         type: release
+      #       steps:
+      #         - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+      #           displayName: "Ev2 Managed SDP Rollout (Fairfax)"
+      #           inputs:
+      #             EndpointProviderType: ApprovalService
+      #             ApprovalServiceEnvironment: Fairfax
+      #             TaskAction: CentralArtifactsRollout
+      #             CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
+      #             CentralArtifactsPolicyName: CentralArtifactsPolicy
+      #             ServiceIdentifier: $(serviceIdentifier)
+      #             ServiceGroup: $(serviceGroup)
+      #             ConfigurationOverrides: $(FairfaxConfigurationOverrides)
+      #             Select: regions(*)
 
-      - stage: MC_Managed_SDP
-        displayName: "MC: Managed SDP"
-        dependsOn: PROD_Managed_SDP
-        variables:
-          ob_release_environment: Mooncake
-        jobs:
-          - job: MC_Managed_SDP
-            displayName: "MC: Managed SDP"
-            pool:
-              type: release
-            steps:
-              - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
-                displayName: "Ev2 Managed SDP Rollout (Mooncake)"
-                inputs:
-                  EndpointProviderType: ApprovalService
-                  ApprovalServiceEnvironment: Mooncake
-                  TaskAction: CentralArtifactsRollout
-                  CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
-                  CentralArtifactsPolicyName: CentralArtifactsPolicy
-                  ServiceIdentifier: $(serviceIdentifier)
-                  ServiceGroup: $(serviceGroup)
-                  ConfigurationOverrides: $(MooncakeConfigurationOverrides)
-                  Select: regions(*)
+      # - stage: MC_Managed_SDP
+      #   displayName: "MC: Managed SDP"
+      #   dependsOn: PROD_Managed_SDP
+      #   variables:
+      #     ob_release_environment: Mooncake
+      #   jobs:
+      #     - job: MC_Managed_SDP
+      #       displayName: "MC: Managed SDP"
+      #       pool:
+      #         type: release
+      #       steps:
+      #         - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+      #           displayName: "Ev2 Managed SDP Rollout (Mooncake)"
+      #           inputs:
+      #             EndpointProviderType: ApprovalService
+      #             ApprovalServiceEnvironment: Mooncake
+      #             TaskAction: CentralArtifactsRollout
+      #             CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
+      #             CentralArtifactsPolicyName: CentralArtifactsPolicy
+      #             ServiceIdentifier: $(serviceIdentifier)
+      #             ServiceGroup: $(serviceGroup)
+      #             ConfigurationOverrides: $(MooncakeConfigurationOverrides)
+      #             Select: regions(*)
 
-      - stage: USSec_Managed_SDP
-        displayName: "USSec: Managed SDP"
-        dependsOn: PROD_Managed_SDP
-        variables:
-          ob_release_environment: USSec
-          ob_release_stagetype: deployment
-          CvrpManifestRelativePath: '\build.manifest'
-        jobs:
-          - job: USSec_Managed_SDP
-            displayName: "USSec: Managed SDP"
-            pool:
-              type: release
-            steps:
-              - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
-                displayName: "Ev2 Managed SDP Rollout (USSec)"
-                inputs:
-                  EndpointProviderType: ApprovalService
-                  ApprovalServiceEnvironment: USSec
-                  TaskAction: CentralArtifactsRollout
-                  CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
-                  CentralArtifactsTenantIdentifier: 20ac2fc4-effc-4f76-ba7d-63c5ae134f5f
-                  CentralArtifactsPolicyName: CentralArtifactsPolicy
-                  ServiceIdentifier: $(serviceIdentifier)
-                  ServiceGroup: $(serviceGroup)
-                  ConfigurationOverrides: $(USSecConfigurationOverrides)
-                  Select: regions(*)
+      # - stage: USSec_Managed_SDP
+      #   displayName: "USSec: Managed SDP"
+      #   dependsOn: PROD_Managed_SDP
+      #   variables:
+      #     ob_release_environment: USSec
+      #     ob_release_stagetype: deployment
+      #     CvrpManifestRelativePath: '\build.manifest'
+      #   jobs:
+      #     - job: USSec_Managed_SDP
+      #       displayName: "USSec: Managed SDP"
+      #       pool:
+      #         type: release
+      #       steps:
+      #         - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+      #           displayName: "Ev2 Managed SDP Rollout (USSec)"
+      #           inputs:
+      #             EndpointProviderType: ApprovalService
+      #             ApprovalServiceEnvironment: USSec
+      #             TaskAction: CentralArtifactsRollout
+      #             CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
+      #             CentralArtifactsTenantIdentifier: 20ac2fc4-effc-4f76-ba7d-63c5ae134f5f
+      #             CentralArtifactsPolicyName: CentralArtifactsPolicy
+      #             ServiceIdentifier: $(serviceIdentifier)
+      #             ServiceGroup: $(serviceGroup)
+      #             ConfigurationOverrides: $(USSecConfigurationOverrides)
+      #             Select: regions(*)
 
-      - stage: USNat_Managed_SDP
-        displayName: "USNat: Managed SDP"
-        dependsOn: PROD_Managed_SDP
-        variables:
-          ob_release_environment: USNat
-          ob_release_stagetype: deployment
-          CvrpManifestRelativePath: '\build.manifest'
-        jobs:
-          - job: USNat_Managed_SDP
-            displayName: "USNat: Managed SDP"
-            pool:
-              type: release
-            steps:
-              - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
-                displayName: "Ev2 Managed SDP Rollout (USNat)"
-                inputs:
-                  EndpointProviderType: ApprovalService
-                  ApprovalServiceEnvironment: USNat
-                  TaskAction: CentralArtifactsRollout
-                  CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
-                  CentralArtifactsTenantIdentifier: 70a90262-f46c-48aa-ac4c-37e37f8be1a2
-                  CentralArtifactsPolicyName: CentralArtifactsPolicy
-                  ServiceIdentifier: $(serviceIdentifier)
-                  ServiceGroup: $(serviceGroup)
-                  ConfigurationOverrides: $(USNatConfigurationOverrides)
-                  Select: regions(*)
+      # - stage: USNat_Managed_SDP
+      #   displayName: "USNat: Managed SDP"
+      #   dependsOn: PROD_Managed_SDP
+      #   variables:
+      #     ob_release_environment: USNat
+      #     ob_release_stagetype: deployment
+      #     CvrpManifestRelativePath: '\build.manifest'
+      #   jobs:
+      #     - job: USNat_Managed_SDP
+      #       displayName: "USNat: Managed SDP"
+      #       pool:
+      #         type: release
+      #       steps:
+      #         - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+      #           displayName: "Ev2 Managed SDP Rollout (USNat)"
+      #           inputs:
+      #             EndpointProviderType: ApprovalService
+      #             ApprovalServiceEnvironment: USNat
+      #             TaskAction: CentralArtifactsRollout
+      #             CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
+      #             CentralArtifactsTenantIdentifier: 70a90262-f46c-48aa-ac4c-37e37f8be1a2
+      #             CentralArtifactsPolicyName: CentralArtifactsPolicy
+      #             ServiceIdentifier: $(serviceIdentifier)
+      #             ServiceGroup: $(serviceGroup)
+      #             ConfigurationOverrides: $(USNatConfigurationOverrides)
+      #             Select: regions(*)
 
-      - stage: Bleu_Managed_SDP
-        displayName: "Bleu: Managed SDP"
-        dependsOn: PROD_Managed_SDP
-        variables:
-          ob_release_environment: Bleu
-          ob_release_stagetype: deployment
-          CvrpManifestRelativePath: '\build.manifest'
-        jobs:
-          - job: Bleu_Managed_SDP
-            displayName: "Bleu: Managed SDP"
-            pool:
-              type: release
-            steps:
-              - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
-                displayName: "Ev2 Managed SDP Rollout (Bleu)"
-                inputs:
-                  EndpointProviderType: ApprovalService
-                  ApprovalServiceEnvironment: Bleu
-                  TaskAction: CentralArtifactsRollout
-                  CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
-                  CentralArtifactsTenantIdentifier: e4c3160c-c374-44ad-84d2-ddb8c649cdc8
-                  CentralArtifactsPolicyName: CentralArtifactsPolicy
-                  ServiceIdentifier: $(serviceIdentifier)
-                  ServiceGroup: $(serviceGroup)
-                  ConfigurationOverrides: $(BleuConfigurationOverrides)
-                  Select: regions(*)
+      # - stage: Bleu_Managed_SDP
+      #   displayName: "Bleu: Managed SDP"
+      #   dependsOn: PROD_Managed_SDP
+      #   variables:
+      #     ob_release_environment: Bleu
+      #     ob_release_stagetype: deployment
+      #     CvrpManifestRelativePath: '\build.manifest'
+      #   jobs:
+      #     - job: Bleu_Managed_SDP
+      #       displayName: "Bleu: Managed SDP"
+      #       pool:
+      #         type: release
+      #       steps:
+      #         - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+      #           displayName: "Ev2 Managed SDP Rollout (Bleu)"
+      #           inputs:
+      #             EndpointProviderType: ApprovalService
+      #             ApprovalServiceEnvironment: Bleu
+      #             TaskAction: CentralArtifactsRollout
+      #             CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
+      #             CentralArtifactsTenantIdentifier: e4c3160c-c374-44ad-84d2-ddb8c649cdc8
+      #             CentralArtifactsPolicyName: CentralArtifactsPolicy
+      #             ServiceIdentifier: $(serviceIdentifier)
+      #             ServiceGroup: $(serviceGroup)
+      #             ConfigurationOverrides: $(BleuConfigurationOverrides)
+      #             Select: regions(*)
 
-      - stage: Delos_Managed_SDP
-        displayName: "Delos: Managed SDP"
-        dependsOn: PROD_Managed_SDP
-        variables:
-          ob_release_environment: Delos
-          ob_release_stagetype: deployment
-          CvrpManifestRelativePath: '\build.manifest'
-        jobs:
-          - job: Delos_Managed_SDP
-            displayName: "Delos: Managed SDP"
-            pool:
-              type: release
-            steps:
-              - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
-                displayName: "Ev2 Managed SDP Rollout (Delos)"
-                inputs:
-                  EndpointProviderType: ApprovalService
-                  ApprovalServiceEnvironment: Delos
-                  TaskAction: CentralArtifactsRollout
-                  CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
-                  CentralArtifactsTenantIdentifier: eee66108-c5af-47b1-a1ed-05435ae3f2d0
-                  CentralArtifactsPolicyName: CentralArtifactsPolicy
-                  ServiceIdentifier: $(serviceIdentifier)
-                  ServiceGroup: $(serviceGroup)
-                  ConfigurationOverrides: $(DelosConfigurationOverrides)
-                  Select: regions(*)
+      # - stage: Delos_Managed_SDP
+      #   displayName: "Delos: Managed SDP"
+      #   dependsOn: PROD_Managed_SDP
+      #   variables:
+      #     ob_release_environment: Delos
+      #     ob_release_stagetype: deployment
+      #     CvrpManifestRelativePath: '\build.manifest'
+      #   jobs:
+      #     - job: Delos_Managed_SDP
+      #       displayName: "Delos: Managed SDP"
+      #       pool:
+      #         type: release
+      #       steps:
+      #         - task: vsrm-ev2.ev2-rollout.ev2-rollout-task.Ev2RARollout@2
+      #           displayName: "Ev2 Managed SDP Rollout (Delos)"
+      #           inputs:
+      #             EndpointProviderType: ApprovalService
+      #             ApprovalServiceEnvironment: Delos
+      #             TaskAction: CentralArtifactsRollout
+      #             CentralArtifactsServiceIdentifier: 2bbbdccc-fa4c-4f81-b9fd-12cd0234701c
+      #             CentralArtifactsTenantIdentifier: eee66108-c5af-47b1-a1ed-05435ae3f2d0
+      #             CentralArtifactsPolicyName: CentralArtifactsPolicy
+      #             ServiceIdentifier: $(serviceIdentifier)
+      #             ServiceGroup: $(serviceGroup)
+      #             ConfigurationOverrides: $(DelosConfigurationOverrides)
+      #             Select: regions(*)
