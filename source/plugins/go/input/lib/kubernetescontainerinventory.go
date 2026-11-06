@@ -64,14 +64,17 @@ func GetContainerInventoryRecords(podItem map[string]interface{}, batchTime stri
 
 		containerRuntime := ""
 		containerID := ""
-		if containerIDValue, ok := containerStatusMap["containerID"].(string); ok {
-			containerIDParts := strings.Split(containerIDValue, "//")
-			if len(containerIDParts) > 1 {
-				containerID = containerIDParts[1]
+		if value := containerStatusMap["containerID"]; value != nil && value != "" {
+			containerIDValue, ok := value.(string)
+			if !ok {
+				FLBLogger.Println("KubernetesContainerInventory::GetContainerInventoryRecords: Invalid container ID; skipping record")
+				continue
 			}
-			containerRuntimeParts := strings.Split(containerIDValue, ":")
-			if len(containerRuntimeParts) > 0 {
-				containerRuntime = containerRuntimeParts[0]
+			var found bool
+			containerRuntime, containerID, found = strings.Cut(containerIDValue, "://")
+			if !found || containerRuntime == "" || !isValidContainerID(containerID) {
+				FLBLogger.Println("KubernetesContainerInventory::GetContainerInventoryRecords: Invalid container ID; skipping record")
+				continue
 			}
 		}
 		containerInventoryRecord["InstanceID"] = containerID

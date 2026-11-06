@@ -6,6 +6,7 @@ class KubernetesContainerInventory
   require "time"
   require_relative "omslog"
   require_relative "ApplicationInsightsUtility"
+  require_relative "ContainerInventoryState"
 
   # cache the container and cgroup parent process
   @@containerCGroupCache = Hash.new
@@ -35,14 +36,19 @@ class KubernetesContainerInventory
             # containeId format is <containerRuntime>://<containerId>
             containerRuntime = ""
             containerId = ""
-            if !containerStatus["containerID"].nil?
-              containerRuntime = containerStatus["containerID"].split(":")[0]
-              containerId = containerStatus["containerID"].split("//")[1]
-              containerInventoryRecord["InstanceID"] = containerId
-            else
-              # for containers that have image issues (like invalid image/tag etc..) this will be empty. do not make it all 0
-              containerInventoryRecord["InstanceID"] = containerId
+            rawContainerId = containerStatus["containerID"]
+            if !rawContainerId.nil? && rawContainerId != ""
+              if rawContainerId.is_a?(String)
+                containerRuntime, separator, containerId = rawContainerId.partition("://")
+              end
+              unless rawContainerId.is_a?(String) && separator == "://" &&
+                  !containerRuntime.empty? && ContainerInventoryState.validContainerId?(containerId)
+                $log.warn("KubernetesContainerInventory::getContainerInventoryRecords : Invalid container ID; skipping record")
+                next
+              end
             end
+            # Containers with image issues can have no ID; retain their inventory without persisting it.
+            containerInventoryRecord["InstanceID"] = containerId
             # imagedId is either of the the format - repo@sha256:imageid or sha256:imageid
             imageIdValue = containerStatus["imageID"]
             if !imageIdValue.nil? && !imageIdValue.empty?
@@ -274,7 +280,7 @@ class KubernetesContainerInventory
         if isCGroupPidFetchRequired
           Dir["/hostfs/proc/*/cgroup"].each do |filename|
             begin
-              if File.file?(filename) && File.exist?(filename) && File.foreach(filename).grep(/#{containerId}/).any?
+              if File.file?(filename) && File.exist?(filename) && File.foreach(filename).grep(/#{Regexp.escape(containerId)}/).any?
                 # file full path is /hostfs/proc/<cGroupPid>/cgroup
                 cGroupPid = filename.split("/")[3]
                 if is_number?(cGroupPid)

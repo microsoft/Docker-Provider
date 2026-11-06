@@ -68,6 +68,14 @@ To run all unit tests run the commands `test/unit-tests/run_go_tests.sh` and `te
 ### Ruby
 Sample tests are provided in [in_kube_nodes_test.rb](source/plugin/ruby/in_kube_nodes_test.rb). They are meant to demo the tooling used for unit tests (as opposed to being comprehensive tests). Basic techniques like mocking are demonstrated there.
 
+Container inventory regression tests can run independently of Fluentd:
+`ruby -I source/plugins/ruby -r ./source/plugins/ruby/ContainerInventoryState_test.rb source/plugins/ruby/kubernetes_container_inventory_test.rb`.
+The matching Go tests run from `source/plugins/go/input` with
+`GOUNITTEST=true go test ./lib -run 'Test(ContainerState|ContainerInventory|WriteAndReadContainerState|GetDeletedContainers|_GetContainerInventoryHelper)'`.
+Inventory state filenames must be single, bounded identifiers, not paths; both
+implementations reject malformed IDs before processing and again at the file boundary.
+Missing IDs remain valid for waiting/image-pull-failure inventory but are not persisted.
+
 #### Conventions:
 1. When modifying a fluentd plugin for unit testing, any mocked classes (like KubernetesApiClient, applicationInsightsUtility, env, etc.) should be passed in as optional arguments of initialize. For example:
 ```
