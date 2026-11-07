@@ -43,7 +43,7 @@
       "minValue": 0,
       "maxValue": 65535,
       "metadata": {
-        "description": "Optional HTTP/Protobuf host port. Use 0 to omit the property and use the service default."
+        "description": "Optional HTTP/Protobuf host port. Use 0 to omit the property and use the service default. Ignored when the receiver is disabled."
       }
     },
     "openTelemetryMetricsGrpcPort": {
@@ -52,7 +52,7 @@
       "minValue": 0,
       "maxValue": 65535,
       "metadata": {
-        "description": "Optional gRPC host port. Use 0 to omit the property and use the service default."
+        "description": "Optional gRPC host port. Use 0 to omit the property and use the service default. Ignored when the receiver is disabled."
       }
     },
     "configureOpenTelemetryLogsAndTraces": {
@@ -72,7 +72,7 @@
       "minValue": 0,
       "maxValue": 65535,
       "metadata": {
-        "description": "Optional HTTP/Protobuf host port. Use 0 to omit the property and use the service default."
+        "description": "Optional HTTP/Protobuf host port. Use 0 to omit the property and use the service default. Ignored when the receiver is disabled."
       }
     },
     "openTelemetryLogsAndTracesGrpcPort": {
@@ -81,13 +81,13 @@
       "minValue": 0,
       "maxValue": 65535,
       "metadata": {
-        "description": "Optional gRPC host port. Use 0 to omit the property and use the service default."
+        "description": "Optional gRPC host port. Use 0 to omit the property and use the service default. Ignored when the receiver is disabled."
       }
     }
   },
   "variables": {
-    "openTelemetryMetricsProfile": "[union(createObject('enabled', parameters('openTelemetryMetricsEnabled')), if(greater(parameters('openTelemetryMetricsHttpPort'), 0), createObject('httpPort', parameters('openTelemetryMetricsHttpPort')), createObject()), if(greater(parameters('openTelemetryMetricsGrpcPort'), 0), createObject('grpcPort', parameters('openTelemetryMetricsGrpcPort')), createObject()))]",
-    "openTelemetryLogsAndTracesProfile": "[union(createObject('enabled', parameters('openTelemetryLogsAndTracesEnabled')), if(greater(parameters('openTelemetryLogsAndTracesHttpPort'), 0), createObject('httpPort', parameters('openTelemetryLogsAndTracesHttpPort')), createObject()), if(greater(parameters('openTelemetryLogsAndTracesGrpcPort'), 0), createObject('grpcPort', parameters('openTelemetryLogsAndTracesGrpcPort')), createObject()))]",
+    "openTelemetryMetricsProfile": "[union(createObject('enabled', parameters('openTelemetryMetricsEnabled')), if(and(parameters('openTelemetryMetricsEnabled'), greater(parameters('openTelemetryMetricsHttpPort'), 0)), createObject('httpPort', parameters('openTelemetryMetricsHttpPort')), createObject()), if(and(parameters('openTelemetryMetricsEnabled'), greater(parameters('openTelemetryMetricsGrpcPort'), 0)), createObject('grpcPort', parameters('openTelemetryMetricsGrpcPort')), createObject()))]",
+    "openTelemetryLogsAndTracesProfile": "[union(createObject('enabled', parameters('openTelemetryLogsAndTracesEnabled')), if(and(parameters('openTelemetryLogsAndTracesEnabled'), greater(parameters('openTelemetryLogsAndTracesHttpPort'), 0)), createObject('httpPort', parameters('openTelemetryLogsAndTracesHttpPort')), createObject()), if(and(parameters('openTelemetryLogsAndTracesEnabled'), greater(parameters('openTelemetryLogsAndTracesGrpcPort'), 0)), createObject('grpcPort', parameters('openTelemetryLogsAndTracesGrpcPort')), createObject()))]",
     "appMonitoringProfile": "[union(if(parameters('configureAutoInstrumentation'), createObject('autoInstrumentation', createObject('enabled', parameters('autoInstrumentationEnabled'))), createObject()), if(parameters('configureOpenTelemetryMetrics'), createObject('openTelemetryMetrics', variables('openTelemetryMetricsProfile')), createObject()), if(parameters('configureOpenTelemetryLogsAndTraces'), createObject('openTelemetryLogsAndTraces', variables('openTelemetryLogsAndTracesProfile')), createObject()))]"
   },
   "resources": [

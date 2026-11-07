@@ -15,12 +15,12 @@ param configureOpenTelemetryMetrics bool = false
 
 param openTelemetryMetricsEnabled bool = true
 
-@description('Optional HTTP/Protobuf host port. Use 0 to omit the property and use the service default.')
+@description('Optional HTTP/Protobuf host port. Use 0 to omit the property and use the service default. Ignored when the receiver is disabled.')
 @minValue(0)
 @maxValue(65535)
 param openTelemetryMetricsHttpPort int = 0
 
-@description('Optional gRPC host port. Use 0 to omit the property and use the service default.')
+@description('Optional gRPC host port. Use 0 to omit the property and use the service default. Ignored when the receiver is disabled.')
 @minValue(0)
 @maxValue(65535)
 param openTelemetryMetricsGrpcPort int = 0
@@ -30,12 +30,12 @@ param configureOpenTelemetryLogsAndTraces bool = false
 
 param openTelemetryLogsAndTracesEnabled bool = true
 
-@description('Optional HTTP/Protobuf host port. Use 0 to omit the property and use the service default.')
+@description('Optional HTTP/Protobuf host port. Use 0 to omit the property and use the service default. Ignored when the receiver is disabled.')
 @minValue(0)
 @maxValue(65535)
 param openTelemetryLogsAndTracesHttpPort int = 0
 
-@description('Optional gRPC host port. Use 0 to omit the property and use the service default.')
+@description('Optional gRPC host port. Use 0 to omit the property and use the service default. Ignored when the receiver is disabled.')
 @minValue(0)
 @maxValue(65535)
 param openTelemetryLogsAndTracesGrpcPort int = 0
@@ -44,12 +44,12 @@ var openTelemetryMetricsProfile = union(
   {
     enabled: openTelemetryMetricsEnabled
   },
-  openTelemetryMetricsHttpPort > 0
+  openTelemetryMetricsEnabled && openTelemetryMetricsHttpPort > 0
     ? {
         httpPort: openTelemetryMetricsHttpPort
       }
     : {},
-  openTelemetryMetricsGrpcPort > 0
+  openTelemetryMetricsEnabled && openTelemetryMetricsGrpcPort > 0
     ? {
         grpcPort: openTelemetryMetricsGrpcPort
       }
@@ -60,12 +60,12 @@ var openTelemetryLogsAndTracesProfile = union(
   {
     enabled: openTelemetryLogsAndTracesEnabled
   },
-  openTelemetryLogsAndTracesHttpPort > 0
+  openTelemetryLogsAndTracesEnabled && openTelemetryLogsAndTracesHttpPort > 0
     ? {
         httpPort: openTelemetryLogsAndTracesHttpPort
       }
     : {},
-  openTelemetryLogsAndTracesGrpcPort > 0
+  openTelemetryLogsAndTracesEnabled && openTelemetryLogsAndTracesGrpcPort > 0
     ? {
         grpcPort: openTelemetryLogsAndTracesGrpcPort
       }
