@@ -36,7 +36,7 @@ directly.
 | [instrumentation-codeless.yaml](kubernetes/instrumentation-codeless.yaml) | Onboards a namespace for Java autoinstrumentation. Replace `Java` with `NodeJs`, or list both only when every default-onboarded workload should receive both agents. |
 | [instrumentation-otlp.yaml](kubernetes/instrumentation-otlp.yaml) | Onboards a namespace for applications already instrumented with OpenTelemetry SDKs. |
 | [instrumentation-per-deployment.yaml](kubernetes/instrumentation-per-deployment.yaml) | Defines a named `Instrumentation` resource for selective per-deployment onboarding. |
-| [workload-autoinstrumentation.example.yaml](kubernetes/workload-autoinstrumentation.example.yaml) | Shows per-deployment Java and Node.js autoinstrumentation annotations. The Java example includes an optional gRPC transport override; Node.js autoinstrumentation uses HTTP/Protobuf for OTLP metrics. |
+| [workload-autoinstrumentation.example.yaml](kubernetes/workload-autoinstrumentation.example.yaml) | Shows per-deployment Java and Node.js autoinstrumentation and optional application-log annotations. |
 | [workload-autoconfiguration.example.yaml](kubernetes/workload-autoconfiguration.example.yaml) | Shows per-deployment OTLP SDK autoconfiguration and a gRPC protocol override. |
 
 ## Documentation placement
@@ -51,7 +51,7 @@ directly.
 | [Per-deployment onboarding](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#per-deployment-onboarding) | Link [instrumentation-per-deployment.yaml](kubernetes/instrumentation-per-deployment.yaml) and the deployments in [workload-autoinstrumentation.example.yaml](kubernetes/workload-autoinstrumentation.example.yaml). |
 | [Restart deployment](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#restart-deployment) | State that rollout restart is a Kubernetes action with no native ARM equivalent. |
 | [Remove autoinstrumentation for AKS](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#remove-autoinstrumentation-for-aks) | Delete the applicable `Instrumentation` resources and restart affected deployments while the webhook is still enabled. Only then reuse the [ARM](arm/aks-app-monitoring-profile.json) or [Bicep](bicep/aks-app-monitoring-profile.bicep) profile template with `autoInstrumentationEnabled=false`. |
-| [Annotations](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#annotations) | Link [workload-autoinstrumentation.example.yaml](kubernetes/workload-autoinstrumentation.example.yaml) for language injection, OTLP transport protocol, and application-log annotations. |
+| [Annotations](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#annotations) | Link [workload-autoinstrumentation.example.yaml](kubernetes/workload-autoinstrumentation.example.yaml) for language injection and application-log annotations. |
 | [Prepare a cluster during AKS cluster create](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#prepare-a-cluster-during-aks-cluster-create) | Add the literal `azureMonitorProfile.appMonitoring` object shown below to the full AKS creation template. |
 
 ### OTLP article
@@ -208,9 +208,10 @@ logs to demonstrate the documented annotation. Remove
 `monitor.azure.com/enable-application-logs` when Container Insights already
 collects the required logs and duplicate ingestion isn't wanted.
 
-Java autoinstrumentation and SDK autoconfiguration can use gRPC. Node.js
-autoinstrumentation exports OTLP metrics over HTTP/Protobuf, so don't set its
-`instrumentation.opentelemetry.io/otel-protocol` annotation to `grpc`.
+For SDK autoconfiguration, keep
+`instrumentation.opentelemetry.io/otel-protocol` aligned with the application's
+exporter. The autoinstrumentation examples intentionally omit protocol
+selection.
 
 To remove the webhook while leaving the node-local OTLP receivers enabled:
 
