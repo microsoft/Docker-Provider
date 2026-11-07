@@ -336,8 +336,9 @@ resource group.
   leaves the `instrumentations.monitor.azure.com` CRD. CRs created while the
   webhook is disabled are inert. A deployment that wasn't restarted and
   cleaned before disable remains instrumented; a later restart can't remove
-  the persisted mutation without restoring the webhook or redeploying the
-  original workload manifest.
+  the persisted mutation without restoring the webhook and restarting after
+  CR removal, or replacing or deleting and recreating the deployment from its
+  original manifest. `kubectl apply` alone doesn't remove injected fields.
 
 ## Cleanup order
 
