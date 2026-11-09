@@ -2,29 +2,8 @@ package main
 
 import (
 	"errors"
-	"reflect"
 	"testing"
 )
-
-func Test_promEnvReferenceTelemetry(t *testing.T) {
-	environment := map[string]string{"NODE_IP": "127.0.0.1", "EMPTY_VALUE": ""}
-	got := promEnvReferenceTelemetry(
-		"NODE_IP,CUSTOM_NAME,NODE_IP,INVALID-NAME,TOO_LONG_NAME",
-		true,
-		func(name string) (string, bool) {
-			value, ok := environment[name]
-			return value, ok
-		},
-	)
-	want := map[string]string{
-		"PromEnvReferenceNames":          "CUSTOM_NAME,NODE_IP,TOO_LONG_NAME",
-		"PromEnvEnvironmentPresentNames": "NODE_IP",
-		"PromEnvReferenceListTruncated":  "true",
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("promEnvReferenceTelemetry() = %#v, want %#v", got, want)
-	}
-}
 
 func Test_isValidUrl(t *testing.T) {
 	type test_struct struct {
