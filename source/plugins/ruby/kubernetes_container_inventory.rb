@@ -260,9 +260,20 @@ class KubernetesContainerInventory
       return containersInfoMap
     end
 
+    def cgroupMatcher(containerId)
+      return nil unless containerId.is_a?(String) && containerId.delete_prefix("crio-").match?(/\A[0-9a-fA-F]{64}\z/)
+      /(?:\A|[^0-9A-Za-z])#{Regexp.escape(containerId)}(?:[^0-9A-Za-z]|\z)/
+    end
+
     def obtainContainerEnvironmentVars(containerId)
       envValueString = ""
       begin
+        # Only full-length IDs matched as a complete cgroup path token, so a partial ID never resolves to a host process.
+        cgroupPattern = cgroupMatcher(containerId)
+        if cgroupPattern.nil?
+          $log.warn("KubernetesContainerInventory::obtainContainerEnvironmentVars: Skipping environment variables for unsupported container ID: #{containerId.inspect}")
+          return envValueString
+        end
         isCGroupPidFetchRequired = false
         if !@@containerCGroupCache.has_key?(containerId)
           isCGroupPidFetchRequired = true
@@ -280,7 +291,7 @@ class KubernetesContainerInventory
         if isCGroupPidFetchRequired
           Dir["/hostfs/proc/*/cgroup"].each do |filename|
             begin
-              if File.file?(filename) && File.exist?(filename) && File.foreach(filename).grep(/#{Regexp.escape(containerId)}/).any?
+              if File.file?(filename) && File.exist?(filename) && File.foreach(filename).grep(cgroupPattern).any?
                 # file full path is /hostfs/proc/<cGroupPid>/cgroup
                 cGroupPid = filename.split("/")[3]
                 if is_number?(cGroupPid)

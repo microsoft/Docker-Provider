@@ -28,6 +28,60 @@ func inventoryPodWithContainerIDs(statusField string, id interface{}) map[string
 	}
 }
 
+func TestCGroupMatcherRequiresCompleteContainerToken(t *testing.T) {
+	id := strings.Repeat("0123456789abcdef", 4)
+	matching := map[string][]string{
+		id: {
+			"12:memory:/kubepods/burstable/pod1234/" + id,
+			"0::/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod12_34.slice/cri-containerd-" + id + ".scope",
+			"0::/system.slice/docker-" + id + ".scope",
+			"0::/../" + id,
+		},
+		"crio-" + id: {
+			"0::/kubepods.slice/kubepods-pod12_34.slice/crio-" + id + ".scope",
+		},
+	}
+	for containerID, lines := range matching {
+		pattern := cgroupMatcher(containerID)
+		if pattern == nil {
+			t.Fatalf("Expected a matcher for %q", containerID)
+		}
+		for _, line := range lines {
+			if !pattern.MatchString(line) {
+				t.Errorf("Expected %q to match %q", containerID, line)
+			}
+		}
+	}
+
+	pattern := cgroupMatcher(id)
+	for _, line := range []string{
+		"0::/kubepods.slice/cri-containerd-" + id + "0.scope",
+		"0::/kubepods.slice/cri-containerd-0" + id + ".scope",
+		"0::/kubepods.slice/cri-containerd-" + id[:63] + ".scope",
+		"0::/kubepods.slice/kubepods-burstable.slice",
+		"0::/system.slice/containerd.service",
+	} {
+		if pattern.MatchString(line) {
+			t.Errorf("Did not expect %q to match %q", id, line)
+		}
+	}
+	if cgroupMatcher("crio-" + id).MatchString("0::/kubepods.slice/crio-conmon-" + id + ".scope") {
+		t.Error("CRI-O matcher should not match conmon cgroup")
+	}
+
+	for _, containerID := range []string{
+		"", "kubepods", "slice", "crio", "crio-", "good-id", id[:63], id + "0", "crio-" + id[:12],
+		strings.Repeat("g", 64), strings.Repeat(".", 64), strings.Repeat("a", 63) + "*", "docker-" + id,
+	} {
+		if cgroupMatcher(containerID) != nil {
+			t.Errorf("Expected no matcher for %q", containerID)
+		}
+		if env := obtainContainerEnvironmentVars(containerID); env != "" {
+			t.Errorf("Expected no environment variables for %q, got %q", containerID, env)
+		}
+	}
+}
+
 func TestContainerInventoryRejectsInvalidIDs(t *testing.T) {
 	for _, statusField := range []string{"containerStatuses", "initContainerStatuses"} {
 		for _, collectEnv := range []string{"false", "true"} {

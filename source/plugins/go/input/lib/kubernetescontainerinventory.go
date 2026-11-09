@@ -15,6 +15,7 @@ import (
 )
 
 var (
+	cgroupContainerIDPattern  = regexp.MustCompile(`^[0-9a-fA-F]{64}$`)
 	containerCGroupCache      = map[string]string{}
 	addonTokenAdapterImageTag = ""
 	FLBLogger                 *log.Logger
@@ -320,9 +321,24 @@ func getContainersInfoMap(podItem map[string]interface{}, isWindows bool) map[st
 	return containersInfoMap
 }
 
+// cgroupMatcher returns a pattern matching the container ID only as a complete cgroup path token.
+// Env vars are only resolved for full-length runc-style IDs (optionally "crio-" prefixed), so a
+// short or partial ID can never select an unrelated host process.
+func cgroupMatcher(containerID string) *regexp.Regexp {
+	if !cgroupContainerIDPattern.MatchString(strings.TrimPrefix(containerID, "crio-")) {
+		return nil
+	}
+	return regexp.MustCompile(`(^|[^0-9A-Za-z])` + regexp.QuoteMeta(containerID) + `($|[^0-9A-Za-z])`)
+}
+
 func obtainContainerEnvironmentVars(containerID string) string {
 	envValueString := ""
 	isCGroupPidFetchRequired := false
+	cgroupPattern := cgroupMatcher(containerID)
+	if cgroupPattern == nil {
+		FLBLogger.Printf("KubernetesContainerInventory::obtainContainerEnvironmentVars: Skipping environment variables for unsupported container ID: %q", containerID)
+		return envValueString
+	}
 
 	if _, exists := containerCGroupCache[containerID]; !exists {
 		isCGroupPidFetchRequired = true
@@ -341,8 +357,7 @@ func obtainContainerEnvironmentVars(containerID string) string {
 		} else {
 			for _, filename := range cGroupPids {
 				cGroupPid := strings.Split(filename, "/")[3]
-				pattern := regexp.MustCompile(regexp.QuoteMeta(containerID))
-				if fileExists(filename) && fileContains(filename, pattern) {
+				if fileExists(filename) && fileContains(filename, cgroupPattern) {
 					if isNumber(cGroupPid) {
 						if existingCGroupPid, exists := containerCGroupCache[containerID]; exists {
 							tempCGroupPid, _ := strconv.Atoi(existingCGroupPid)

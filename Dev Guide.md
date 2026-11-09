@@ -71,9 +71,11 @@ Sample tests are provided in [in_kube_nodes_test.rb](source/plugin/ruby/in_kube_
 Container inventory regression tests can run independently of Fluentd:
 `ruby -I source/plugins/ruby -r ./source/plugins/ruby/ContainerInventoryState_test.rb source/plugins/ruby/kubernetes_container_inventory_test.rb`.
 The matching Go tests run from `source/plugins/go/input` with
-`GOUNITTEST=true go test ./lib -run 'Test(ContainerState|ContainerInventory|WriteAndReadContainerState|GetDeletedContainers|_GetContainerInventoryHelper)'`.
+`GOUNITTEST=true go test ./lib -run 'Test(ContainerState|ContainerInventory|WriteAndReadContainerState|GetDeletedContainers|_GetContainerInventoryHelper|CGroupMatcher)'`.
 Inventory state filenames must be single, bounded identifiers, not paths; both
 implementations reject malformed IDs before processing and again at the file boundary.
+Container environment collection only accepts full 64-hex container IDs and matches
+them as complete tokens in `/proc/<pid>/cgroup`.
 Missing IDs remain valid for waiting/image-pull-failure inventory but are not persisted.
 
 #### Conventions:

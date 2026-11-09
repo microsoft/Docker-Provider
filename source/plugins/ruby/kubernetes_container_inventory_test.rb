@@ -89,4 +89,41 @@ class KubernetesContainerInventoryTests < Minitest::Test
       end
     end
   end
+
+  def test_cgroup_matcher_requires_complete_container_token
+    id = "0123456789abcdef" * 4
+    {
+      id => [
+        "12:memory:/kubepods/burstable/pod1234/#{id}",
+        "0::/kubepods.slice/kubepods-burstable.slice/kubepods-burstable-pod12_34.slice/cri-containerd-#{id}.scope",
+        "0::/system.slice/docker-#{id}.scope",
+        "0::/../#{id}"
+      ],
+      "crio-#{id}" => ["0::/kubepods.slice/kubepods-pod12_34.slice/crio-#{id}.scope"]
+    }.each do |container_id, lines|
+      pattern = KubernetesContainerInventory.cgroupMatcher(container_id)
+      refute_nil pattern, container_id
+      lines.each { |line| assert_match pattern, line }
+    end
+
+    pattern = KubernetesContainerInventory.cgroupMatcher(id)
+    [
+      "0::/kubepods.slice/cri-containerd-#{id}0.scope",
+      "0::/kubepods.slice/cri-containerd-0#{id}.scope",
+      "0::/kubepods.slice/cri-containerd-#{id[0, 63]}.scope",
+      "0::/kubepods.slice/kubepods-burstable.slice",
+      "0::/system.slice/containerd.service"
+    ].each { |line| refute_match pattern, line }
+    refute_match KubernetesContainerInventory.cgroupMatcher("crio-#{id}"), "0::/kubepods.slice/crio-conmon-#{id}.scope"
+
+    [
+      nil, 42, "", "kubepods", "slice", "crio", "crio-", "good-id", id[0, 63], "#{id}0", "crio-#{id[0, 12]}",
+      "g" * 64, "." * 64, "#{"a" * 63}*", "docker-#{id}"
+    ].each do |container_id|
+      assert_nil KubernetesContainerInventory.cgroupMatcher(container_id), container_id.inspect
+      Dir.stub(:[], ->(_) { flunk("cgroup files scanned for #{container_id.inspect}") }) do
+        assert_equal "", KubernetesContainerInventory.obtainContainerEnvironmentVars(container_id)
+      end
+    end
+  end
 end
