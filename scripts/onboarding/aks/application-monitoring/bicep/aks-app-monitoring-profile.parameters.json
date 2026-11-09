@@ -8,17 +8,11 @@
     "clusterLocation": {
       "value": "<aks-location>"
     },
-    "configureAutoInstrumentation": {
-      "value": true
-    },
     "autoInstrumentationEnabled": {
       "value": true
     },
-    "configureOpenTelemetryMetrics": {
-      "value": false
-    },
     "openTelemetryMetricsEnabled": {
-      "value": true
+      "value": false
     },
     "openTelemetryMetricsHttpPort": {
       "value": 0
@@ -26,11 +20,8 @@
     "openTelemetryMetricsGrpcPort": {
       "value": 0
     },
-    "configureOpenTelemetryLogsAndTraces": {
-      "value": false
-    },
     "openTelemetryLogsAndTracesEnabled": {
-      "value": true
+      "value": false
     },
     "openTelemetryLogsAndTracesHttpPort": {
       "value": 0

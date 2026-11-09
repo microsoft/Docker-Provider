@@ -8,8 +8,8 @@
     "clusterLocation": {
       "value": "<aks-location>"
     },
-    "dataCollectionRuleResourceId": {
-      "value": "<application-insights-data-collection-rule-resource-id>"
+    "applicationInsightsResourceId": {
+      "value": "<application-insights-resource-id>"
     },
     "associationName": {
       "value": ""

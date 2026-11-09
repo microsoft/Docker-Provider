@@ -5,15 +5,11 @@ param clusterName string
 @description('Azure region of the AKS cluster.')
 param clusterLocation string
 
-@description('Include the autoinstrumentation profile in this update.')
-param configureAutoInstrumentation bool = true
+@description('Enable or disable autoinstrumentation.')
+param autoInstrumentationEnabled bool
 
-param autoInstrumentationEnabled bool = true
-
-@description('Include the vendor-neutral OpenTelemetry metrics receiver profile in this update.')
-param configureOpenTelemetryMetrics bool = false
-
-param openTelemetryMetricsEnabled bool = true
+@description('Enable or disable the vendor-neutral OpenTelemetry metrics receiver.')
+param openTelemetryMetricsEnabled bool
 
 @description('Optional HTTP/Protobuf host port. Use 0 to omit the property and use the service default. Ignored when the receiver is disabled.')
 @minValue(0)
@@ -25,10 +21,8 @@ param openTelemetryMetricsHttpPort int = 0
 @maxValue(65535)
 param openTelemetryMetricsGrpcPort int = 0
 
-@description('Include the vendor-neutral OpenTelemetry logs and traces receiver profile in this update.')
-param configureOpenTelemetryLogsAndTraces bool = false
-
-param openTelemetryLogsAndTracesEnabled bool = true
+@description('Enable or disable the vendor-neutral OpenTelemetry logs and traces receiver.')
+param openTelemetryLogsAndTracesEnabled bool
 
 @description('Optional HTTP/Protobuf host port. Use 0 to omit the property and use the service default. Ignored when the receiver is disabled.')
 @minValue(0)
@@ -72,25 +66,13 @@ var openTelemetryLogsAndTracesProfile = union(
     : {}
 )
 
-var appMonitoringProfile = union(
-  configureAutoInstrumentation
-    ? {
-        autoInstrumentation: {
-          enabled: autoInstrumentationEnabled
-        }
-      }
-    : {},
-  configureOpenTelemetryMetrics
-    ? {
-        openTelemetryMetrics: openTelemetryMetricsProfile
-      }
-    : {},
-  configureOpenTelemetryLogsAndTraces
-    ? {
-        openTelemetryLogsAndTraces: openTelemetryLogsAndTracesProfile
-      }
-    : {}
-)
+var appMonitoringProfile = {
+  autoInstrumentation: {
+    enabled: autoInstrumentationEnabled
+  }
+  openTelemetryMetrics: openTelemetryMetricsProfile
+  openTelemetryLogsAndTraces: openTelemetryLogsAndTracesProfile
+}
 
 #disable-next-line BCP081
 resource cluster 'Microsoft.ContainerService/managedClusters@2026-06-01' = {

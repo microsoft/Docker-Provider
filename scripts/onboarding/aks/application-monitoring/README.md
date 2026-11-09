@@ -46,11 +46,11 @@ directly.
 | Documentation section | Artifact or note to add |
 | --- | --- |
 | [Prerequisites](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#prerequisites) | Link each Application Insights [ARM template and parameter file](arm) and [Bicep template and parameter file](bicep). |
-| [Prepare a cluster](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#prepare-a-cluster) | Add a combined Bicep/ARM tab using the profile [ARM template and parameter file](arm) and [Bicep template and parameter file](bicep) with only autoinstrumentation configured. |
+| [Prepare a cluster](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#prepare-a-cluster) | Add a combined Bicep/ARM tab using the profile [ARM template and parameter file](arm) and [Bicep template and parameter file](bicep) with only autoinstrumentation enabled. |
 | [Namespace-wide onboarding](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#namespace-wide-onboarding) | Link [instrumentation-codeless.yaml](kubernetes/instrumentation-codeless.yaml). This remains YAML rather than ARM. |
 | [Per-deployment onboarding](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#per-deployment-onboarding) | Link [instrumentation-per-deployment.yaml](kubernetes/instrumentation-per-deployment.yaml) and the deployments in [workload-autoinstrumentation.example.yaml](kubernetes/workload-autoinstrumentation.example.yaml). |
 | [Restart deployment](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#restart-deployment) | State that rollout restart is a Kubernetes action with no native ARM equivalent. |
-| [Remove autoinstrumentation for AKS](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#remove-autoinstrumentation-for-aks) | Delete the applicable `Instrumentation` resources and restart affected deployments while the webhook is still enabled. Only then reuse the [ARM](arm/aks-app-monitoring-profile.json) or [Bicep](bicep/aks-app-monitoring-profile.bicep) profile template with `autoInstrumentationEnabled=false`. |
+| [Remove autoinstrumentation for AKS](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#remove-autoinstrumentation-for-aks) | Delete the applicable `Instrumentation` resources and restart affected deployments while the webhook is still enabled. Only then reuse the [ARM](arm/aks-app-monitoring-profile.json) or [Bicep](bicep/aks-app-monitoring-profile.bicep) profile template with `autoInstrumentationEnabled=false` and the other profile values left as provided. |
 | [Annotations](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#annotations) | Link [workload-autoinstrumentation.example.yaml](kubernetes/workload-autoinstrumentation.example.yaml) for language injection and application-log annotations. |
 | [Prepare a cluster during AKS cluster create](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-codeless#prepare-a-cluster-during-aks-cluster-create) | Add the literal `azureMonitorProfile.appMonitoring` object shown below to the full AKS creation template. |
 
@@ -58,7 +58,7 @@ directly.
 
 | Documentation section | Artifact or note to add |
 | --- | --- |
-| [Prepare the cluster](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol) | If the cluster is not already monitored, deploy the prerequisite [ARM template and parameter file](arm) or [Bicep template and parameter file](bicep). The Bicep download must include [linked-template-deployment.bicep](bicep/linked-template-deployment.bicep) in the same folder. Then deploy the corresponding profile template and parameter file with all three profiles configured. |
+| [Prepare the cluster](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol) | If the cluster is not already monitored, deploy the prerequisite [ARM template and parameter file](arm) or [Bicep template and parameter file](bicep). The Bicep download must include [linked-template-deployment.bicep](bicep/linked-template-deployment.bicep) in the same folder. Then deploy the corresponding profile template and parameter file with all three `*Enabled` values set to `true`. |
 | [Create an Application Insights resource with OTLP support](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol) | Add a combined Bicep/ARM tab using the Application Insights [ARM template and parameter file](arm) and [Bicep template and parameter file](bicep). |
 | [Onboard applications to Application Insights](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol) | First deploy the DCR association [ARM template and parameter file](arm) or [Bicep template and parameter file](bicep). Then link the three `Instrumentation` manifests plus [workload-autoinstrumentation.example.yaml](kubernetes/workload-autoinstrumentation.example.yaml) and [workload-autoconfiguration.example.yaml](kubernetes/workload-autoconfiguration.example.yaml). |
 | [Restart deployments to apply changes](https://learn.microsoft.com/azure/azure-monitor/containers/kubernetes-open-protocol) | State that rollout restart is a Kubernetes action with no native ARM equivalent. |
@@ -106,8 +106,9 @@ using any valid Resource Manager deployment method. For examples, see
 4. For the OTLP flow, deploy
    the DCR association [ARM](arm/associate-application-insights-dcr.json) or
    [Bicep](bicep/associate-application-insights-dcr.bicep) template
-   to the AKS resource group using `dataCollectionRuleResourceId` from the
-   Application Insights deployment output.
+   to the AKS resource group using `applicationInsightsResourceId` from the
+   Application Insights deployment output. The association template resolves
+   the component's DCR resource ID internally.
 5. Replace the placeholders in the appropriate `Instrumentation` manifest,
    apply it to the cluster, add any per-deployment annotations, and restart the
    affected deployments.
@@ -154,19 +155,26 @@ before applying the codeless manifest.
 For codeless monitoring, edit the application-monitoring profile
 [ARM parameter file](arm/aks-app-monitoring-profile.parameters.json) or
 [Bicep parameter file](bicep/aks-app-monitoring-profile.parameters.json). Its
-defaults configure only autoinstrumentation. Deploy it with the matching
+sample values enable autoinstrumentation and disable both OpenTelemetry
+receivers. Deploy it with the matching
 [ARM template](arm/aks-app-monitoring-profile.json) or
 [Bicep template](bicep/aks-app-monitoring-profile.bicep) to the AKS resource
 group.
+
+The profile template applies all three `*Enabled` values on every deployment.
+Set each value to the desired final cluster state.
+Every deployment also reapplies the receiver port values. If an enabled
+receiver uses custom ports, keep both of its `*Port` values in the parameter
+file; `0` restores the service defaults.
 
 For the full OTLP experience, first edit the prerequisite
 [ARM parameter file](arm/aks-otlp-monitoring-prerequisites.parameters.json) or
 [Bicep parameter file](bicep/aks-otlp-monitoring-prerequisites.parameters.json)
 and deploy it with the matching template to the monitoring resource group.
-Then set both `configureOpenTelemetryMetrics` and
-`configureOpenTelemetryLogsAndTraces` to `true` in the
-application-monitoring profile parameter file and deploy the profile template
-to the AKS resource group.
+Then set `autoInstrumentationEnabled`, `openTelemetryMetricsEnabled`, and
+`openTelemetryLogsAndTracesEnabled` to `true` in the application-monitoring
+profile parameter file and deploy the profile template to the AKS resource
+group.
 
 Use this prerequisite wrapper only for first-time monitoring onboarding. Running
 it on an already monitored cluster can replace Container Insights settings or
@@ -219,9 +227,9 @@ To remove the webhook while leaving the node-local OTLP receivers enabled:
 2. Restart every affected deployment while the webhook remains enabled, then
    verify the `monitor.azure.com/instrumentation` annotation is absent.
 3. In the application-monitoring profile parameter file, set
-   `configureAutoInstrumentation=true`, `autoInstrumentationEnabled=false`,
-   `configureOpenTelemetryMetrics=false`, and
-   `configureOpenTelemetryLogsAndTraces=false`. Deploy the matching profile
+   `autoInstrumentationEnabled=false`,
+   `openTelemetryMetricsEnabled=true`, and
+   `openTelemetryLogsAndTracesEnabled=true`. Deploy the matching profile
    template to the AKS resource group.
 
 The metrics and logs/traces receiver profiles remain enabled, but disabling
@@ -230,8 +238,7 @@ OTLP autoconfiguration environment variables. Only workloads that were already
 mutated or that configure their own exporters to use the node-local receiver
 ports continue sending.
 
-To disable all three application-monitoring profiles, set all three
-`configure*` parameters to `true` and all three corresponding `*Enabled`
+To disable all three application-monitoring profiles, set all three `*Enabled`
 parameters to `false` in the profile parameter file, and then redeploy it.
 
 For a new AKS cluster, add this literal codeless profile to the complete cluster
@@ -269,14 +276,18 @@ profiles with the [ARM template and parameter file](arm) or
 [Bicep template and parameter file](bicep).
 
 Associate the Application Insights DCR before applying the OTLP
-`Instrumentation` resource. Copy `dataCollectionRuleResourceId` from the
+`Instrumentation` resource. Copy `applicationInsightsResourceId` from the
 Application Insights deployment output into the association
 [ARM parameter file](arm/associate-application-insights-dcr.parameters.json) or
 [Bicep parameter file](bicep/associate-application-insights-dcr.parameters.json).
 Deploy it with the matching
 [ARM template](arm/associate-application-insights-dcr.json) or
 [Bicep template](bicep/associate-application-insights-dcr.bicep) to the AKS
-resource group.
+resource group. The deployment identity must be able to read the Application
+Insights resource, including when it is in another subscription.
+If an existing association was created with an earlier version of this
+template, set `associationName` to that association's current name so the
+deployment updates it instead of creating another association.
 
 ## Operational safeguards
 
@@ -293,44 +304,15 @@ resource group.
   identity can also be retried after Microsoft Entra replication completes.
 - **AKS `what-if`:** `what-if` can report deletion of omitted AKS properties
   such as identity, node pools, add-ons, networking, or sibling monitoring
-  profiles. Live validation with `Microsoft.ContainerService@2026-06-01`
-  preserved those properties during focused profile updates. Verify the
-  cluster after deployment rather than treating those predictions as actual
-  deletions.
-- **In-cluster reconciliation:** ARM success can precede the webhook and agent
-  rollout. Before restarting applications, wait for the webhook deployment and
-  monitoring agents to become ready:
-
-  ```shell
-  until kubectl -n kube-system get deployment app-monitoring-webhook >/dev/null 2>&1; do sleep 10; done
-  kubectl -n kube-system get deployment app-monitoring-webhook \
-    -o jsonpath='{range .spec.template.spec.containers[0].env[*]}{.name}={.value}{"\n"}{end}'
-  # logs and traces receiver
-  kubectl -n kube-system get daemonset ama-logs \
-    -o jsonpath='{range .spec.template.spec.containers[*].ports[*]}{.name}={.hostPort}{"\n"}{end}'
-  # metrics receiver
-  kubectl -n kube-system get daemonset ama-metrics-node \
-    -o jsonpath='{range .spec.template.spec.containers[*].ports[*]}{.name}={.hostPort}{"\n"}{end}'
-  ```
-
-  For full OTLP onboarding, confirm the output includes the expected
-  `OTEL_LOGS_ENABLED`, `OTEL_METRICS_ENABLED`, `OTEL_*_PORT_*`, and DaemonSet
-  host-port values. Repeat the checks until they match the profile, and then
-  wait for the corresponding rollouts:
-
-  ```shell
-  kubectl -n kube-system rollout status deployment/app-monitoring-webhook --timeout=10m
-  # run for each enabled receiver
-  kubectl -n kube-system rollout status daemonset/ama-logs --timeout=10m
-  kubectl -n kube-system rollout status daemonset/ama-metrics-node --timeout=10m
-  ```
-
-  A successful rollout can still show stale configuration while AKS
-  reconciliation is in progress, so don't skip the value checks.
+  profiles. Verify the cluster after deployment rather than treating those
+  predictions as actual deletions.
+- **AKS reconciliation:** A cluster update can take a few minutes. Before
+  restarting applications, wait until the cluster provisioning state is
+  `Succeeded`.
 
 - **Capacity:** Leave scheduling headroom for two webhook replicas, monitoring
-  agents, and pod rollout surge. In the validated version, each injected
-  autoinstrumentation init container requested 100m CPU and 128 MiB memory.
+  agents, and pod rollout surge. Each injected autoinstrumentation init
+  container requests 100m CPU and 128 MiB memory.
   Small governed clusters can otherwise stall with `Insufficient cpu`.
 - **Disable semantics:** Disabling autoinstrumentation removes the webhook but
   leaves the `instrumentations.monitor.azure.com` CRD. CRs created while the

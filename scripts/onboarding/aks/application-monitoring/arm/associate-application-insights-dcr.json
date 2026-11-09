@@ -15,23 +15,23 @@
         "description": "Azure region of the AKS cluster."
       }
     },
-    "dataCollectionRuleResourceId": {
+    "applicationInsightsResourceId": {
       "type": "string",
       "minLength": 1,
       "metadata": {
-        "description": "DataCollectionRuleResourceId returned by the OTLP-enabled Application Insights component."
+        "description": "Resource ID of the OTLP-enabled Application Insights component."
       }
     },
     "associationName": {
       "type": "string",
       "defaultValue": "",
       "metadata": {
-        "description": "Optional association name. A deterministic name is generated from the DCR resource ID when omitted."
+        "description": "Optional association name. A deterministic name is generated from the Application Insights resource ID when omitted."
       }
     }
   },
   "variables": {
-    "effectiveAssociationName": "[if(empty(parameters('associationName')), format('appmon-{0}', uniqueString(parameters('dataCollectionRuleResourceId'))), parameters('associationName'))]"
+    "effectiveAssociationName": "[if(empty(parameters('associationName')), format('appmon-{0}', uniqueString(toLower(parameters('applicationInsightsResourceId')))), parameters('associationName'))]"
   },
   "resources": [
     {
@@ -41,7 +41,7 @@
       "location": "[parameters('clusterLocation')]",
       "properties": {
         "description": "Associates the Application Insights OTLP data collection rule with the AKS cluster.",
-        "dataCollectionRuleId": "[parameters('dataCollectionRuleResourceId')]"
+        "dataCollectionRuleId": "[reference(parameters('applicationInsightsResourceId'), '2020-02-02', 'Full').properties.DataCollectionRuleResourceId]"
       }
     }
   ],
