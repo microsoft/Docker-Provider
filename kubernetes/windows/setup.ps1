@@ -2,6 +2,16 @@
 # https://stackoverflow.com/questions/28682642/powershell-why-is-using-invoke-webrequest-much-slower-than-a-browser-download
 $ProgressPreference = 'SilentlyContinue'
 
+function Test-MicrosoftCodeSignature {
+    param([Parameter(Mandatory = $true)][string]$LiteralPath)
+
+    $signature = Get-AuthenticodeSignature -LiteralPath $LiteralPath -ErrorAction Stop
+    if ($signature.Status -ne 'Valid' -or
+        $signature.SignerCertificate.Subject -notmatch '(^|,\s*)O=Microsoft Corporation(,|$)') {
+        throw "A valid Microsoft code signature is required: $LiteralPath"
+    }
+}
+
 Write-Host ('Creating folder structure')
     New-Item -Type Directory -Path /installation -ErrorAction SilentlyContinue
 
@@ -65,10 +75,7 @@ Write-Host ('Installing Visual C++ Redistributable Package')
     $vcArgs = "/install /quiet /norestart"
     $ProgressPreference = 'SilentlyContinue'
     Invoke-WebRequest -Uri $vcRedistLocation -OutFile $vcInstallerLocation -ErrorAction Stop
-    $vcSignature = Get-AuthenticodeSignature -FilePath $vcInstallerLocation -ErrorAction Stop
-    if ($vcSignature.Status -ne 'Valid' -or $vcSignature.SignerCertificate.Subject -notmatch '(^|,\s*)O=Microsoft Corporation(,|$)') {
-        throw "Visual C++ installer must have a valid Microsoft Authenticode signature"
-    }
+    Test-MicrosoftCodeSignature -LiteralPath $vcInstallerLocation
     $vcVersionInfo = (Get-Item -Path $vcInstallerLocation -ErrorAction Stop).VersionInfo
     $vcVersion = [version]::new($vcVersionInfo.FileMajorPart, $vcVersionInfo.FileMinorPart, $vcVersionInfo.FileBuildPart, $vcVersionInfo.FilePrivatePart)
     if ($vcVersion -lt [version]'14.40.33816') {
@@ -94,9 +101,13 @@ if ([string]::IsNullOrEmpty($windowsazuremonitoragent)) {
 }
 Write-Host ('Installing Windows Azure Monitor Agent: ' + $windowsazuremonitoragent)
 try {
-    Invoke-WebRequest -Uri $windowsazuremonitoragent -OutFile /installation/windowsazuremonitoragent.zip
-    Expand-Archive -Path /installation/windowsazuremonitoragent.zip -Destination /installation/windowsazuremonitoragent
-    Move-Item -Path /installation/windowsazuremonitoragent -Destination /opt/windowsazuremonitoragent/ -ErrorAction SilentlyContinue
+    Invoke-WebRequest -Uri $windowsazuremonitoragent -OutFile /installation/windowsazuremonitoragent.zip -ErrorAction Stop
+    Expand-Archive -Path /installation/windowsazuremonitoragent.zip -Destination /installation/windowsazuremonitoragent -ErrorAction Stop
+    # The archive is not NuGet-signed; validate the Microsoft executables we launch without claiming whole-archive authentication.
+    foreach ($relativePath in @('MonAgentLauncher.exe', 'MonAgentCore.exe', 'Extensions\AMACoreAgent\AgentLauncher.exe', 'Extensions\AMACoreAgent\AMACoreAgent.exe')) {
+        Test-MicrosoftCodeSignature -LiteralPath (Join-Path '\installation\windowsazuremonitoragent\Monitoring\Agent' $relativePath)
+    }
+    Move-Item -Path /installation/windowsazuremonitoragent -Destination /opt/windowsazuremonitoragent/ -ErrorAction Stop
     $version = (Get-Item C:\opt\windowsazuremonitoragent\windowsazuremonitoragent\Monitoring\Agent\MonAgentCore.exe).VersionInfo.ProductVersion
     if ([string]::IsNullOrEmpty($version)) {
         echo "Monitoring Agent Version not found" > /opt/windowsazuremonitoragent/version.txt
