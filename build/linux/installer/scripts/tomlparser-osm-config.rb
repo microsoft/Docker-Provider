@@ -100,9 +100,13 @@ def replaceOsmTelegrafConfigPlaceHolders
       @osmMetricNamespaces.each do |namespace|
         if !namespace.nil?
           #Stripping namespaces to remove leading and trailing whitespaces
-          namespace.strip!
-          if namespace.length > 0
-            osmPluginConfigsWithNamespaces += "\n[[inputs.prometheus]]
+          namespace = namespace.strip if namespace.is_a?(String)
+          unless namespace.is_a?(String) && namespace.length <= 63 &&
+                 namespace.match?(/\A[a-z0-9](?:[-a-z0-9]*[a-z0-9])?\z/)
+            ConfigParseErrorLogger.logError("Invalid OSM monitor namespace, skipping entry")
+            next
+          end
+          osmPluginConfigsWithNamespaces += "\n[[inputs.prometheus]]
   name_prefix=\"container.azm.ms.osm/\"
   interval = \"#{@scrapeInterval}\"
   monitor_kubernetes_pods = true
@@ -115,7 +119,6 @@ def replaceOsmTelegrafConfigPlaceHolders
   timeout = \"#{@responseTimeout}\"
   tls_ca = \"#{@tlsCa}\"
   insecure_skip_verify = #{@insecureSkipVerify}\n"
-          end
         end
       end
       tgfConfig = tgfConfig.gsub("$AZMON_TELEGRAF_OSM_PROM_PLUGINS", osmPluginConfigsWithNamespaces)

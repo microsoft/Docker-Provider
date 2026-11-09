@@ -7,10 +7,48 @@ require "tomlrb"
 require_relative "ConfigParseErrorLogger"
 require "fileutils"
 
+if ARGV == ["--resolve-defaults"]
+  files = if @os_type.to_s.strip.casecmp("windows") == 0
+            ["/etc/telegraf/telegraf.conf"]
+          elsif ENV["CONTAINER_TYPE"].to_s.strip.casecmp("PrometheusSidecar") == 0
+            ["/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf", "/opt/telegraf-test-prom-side-car.conf"]
+          elsif ENV["CONTROLLER_TYPE"].to_s.strip.casecmp("ReplicaSet") == 0
+            ["/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf", "/opt/telegraf-test-rs.conf"]
+          else
+            ["/etc/opt/microsoft/docker-cimprov/telegraf.conf", "/opt/telegraf-test.conf"]
+          end
+  # Only agent-owned placeholders may inject TOML structure; customer values stay quoted.
+  structural_defaults = %w[AZMON_DS_PROM_URLS AZMON_DS_PROM_FIELDPASS AZMON_DS_PROM_FIELDDROP
+                           AZMON_TELEGRAF_CUSTOM_PROM_URLS AZMON_TELEGRAF_CUSTOM_PROM_K8S_SERVICES
+                           AZMON_TELEGRAF_CUSTOM_PROM_FIELDPASS AZMON_TELEGRAF_CUSTOM_PROM_FIELDDROP
+                           AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE
+                           AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_LABEL_SELECTOR
+                           AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR
+                           AZMON_TELEGRAF_CUSTOM_PROM_PLUGINS_WITH_NAMESPACE_FILTER AZMON_TELEGRAF_OSM_PROM_PLUGINS]
+  files.each do |path|
+    next unless File.file?(path)
+    text = File.read(path, encoding: "UTF-8").gsub(/^([ \t]*(?:(?:urls|field(?:pass|drop|include|exclude)|kubernetes_services)[ \t]*=[ \t]*)?)\$([A-Z0-9_]+)[ \t]*$/) do |line|
+      prefix, name = Regexp.last_match(1), Regexp.last_match(2)
+      structural_defaults.include?(name) ? prefix + ENV.fetch(name) : line
+    end
+    File.write(path, text)
+  end
+  exit
+end
+
 @promConfigMapMountPath = "/etc/config/settings/prometheus-data-collection-settings"
 @replicaset = "replicaset"
 @daemonset = "daemonset"
 @promSideCar = "prometheussidecar"
+TELEGRAF_ENV_ALLOWLIST = %w[
+  ACS_RESOURCE_NAME AKS_CLUSTER_NAME AKS_NODE_RESOURCE_GROUP AKS_REGION AKS_RESOURCE_ID
+  ARC_K8S_EXTENSION_NAME CLUSTER_CLOUD_ENVIRONMENT CONTAINER_RUNTIME CONTAINER_TYPE CONTROLLER_TYPE HOSTNAME
+  KUBERNETES_PORT_443_TCP_PORT
+  KUBERNETES_SERVICE_HOST KUBERNETES_SERVICE_PORT NODE_IP NODE_NAME OS_TYPE
+].freeze
+PROM_ENV_REFERENCE_REGEX = /(?<!\$)\$\{([A-Za-z_][A-Za-z0-9_]*)\}|(?<!\$)\$([A-Za-z_][A-Za-z0-9_]*)/
+PROM_ENV_REFERENCE_LIMIT = 32
+PROM_ENV_REFERENCE_BYTES_LIMIT = 512
 @windows = "windows"
 @configSchemaVersion = ""
 @defaultDsInterval = "1m"
@@ -74,6 +112,45 @@ def parseConfigMap
   end
 end
 
+def collectPromEnvReferences(value)
+  case value
+  when String
+    value.scan(PROM_ENV_REFERENCE_REGEX).map { |reference| reference.compact.first }
+  when Array
+    value.flat_map { |item| collectPromEnvReferences(item) }
+  when Hash
+    value.values.flat_map { |item| collectPromEnvReferences(item) }
+  else
+    []
+  end
+end
+
+def boundedPromEnvReferences(names)
+  result = []
+  bytes = 0
+  truncated = false
+  names.uniq.sort.each do |name|
+    if result.length >= PROM_ENV_REFERENCE_LIMIT ||
+       name.bytesize > PROM_ENV_REFERENCE_BYTES_LIMIT ||
+       bytes + (result.empty? ? 0 : 1) + name.bytesize > PROM_ENV_REFERENCE_BYTES_LIMIT
+      truncated = true
+      next
+    end
+    bytes += (result.empty? ? 0 : 1) + name.bytesize
+    result << name
+  end
+  [result.join(","), truncated]
+end
+
+def writePromEnvReferenceTelemetry
+  references, truncated = boundedPromEnvReferences(@promEnvReferences || [])
+  telemetry = "TELEMETRY_PROM_ENV_REFERENCES=#{references}\n" \
+              "TELEMETRY_PROM_ENV_REFERENCES_TRUNCATED=#{truncated}\n"
+  File.open(is_windows? ? "setpromenv.txt" : "telemetry_prom_config_env_var", "a") do |file|
+    file.write(is_windows? ? telemetry : telemetry.lines.map { |line| "export #{line}" }.join)
+  end
+end
+
 def checkForTypeArray(arrayValue, arrayType)
   if (arrayValue.nil? || (arrayValue.kind_of?(Array) && ((arrayValue.length == 0) || (arrayValue.length > 0 && arrayValue[0].kind_of?(arrayType)))))
     return true
@@ -127,7 +204,10 @@ TOML_ESCAPE_MAP = {
 # is emitted as the TOML escape \u0024: it still parses back to the identical string value but the
 # rendered text no longer contains a placeholder for a later substitution to match.
 def toTomlBasicString(value)
-  escaped = value.to_s.gsub(/[\\"\u0000-\u001F\u007F]/) do |char|
+  escaped = value.to_s.gsub(/\$\$|\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)/) do |reference|
+    name = Regexp.last_match(1) || Regexp.last_match(2)
+    name && !TELEGRAF_ENV_ALLOWLIST.include?(name) ? "$#{reference}" : reference
+  end.gsub(/[\\"\u0000-\u001F\u007F]/) do |char|
     TOML_ESCAPE_MAP[char] || format("\\u%04X", char.ord)
   end
   escaped = escaped.gsub(PLACEHOLDER_PREFIX_REGEX) { "\\u0024AZMON_" }
@@ -322,6 +402,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             end
 
             File.open(file_name, "w") { |file| file.puts new_contents }
+            @promConfigGenerated = true
             puts "config::Successfully substituted the placeholders in telegraf conf file for replicaset"
             #Set environment variables for telemetry
             file = File.open("telemetry_prom_config_env_var", "w")
@@ -424,6 +505,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             kubernetesFieldSelectorsLength = kubernetesFieldSelectors.split(",").length
 
             File.open(file_name, "w") { |file| file.puts new_contents }
+            @promConfigGenerated = true
             puts "config::Successfully substituted the placeholders in telegraf conf file for custom prometheus scraping"
             #Set environment variables for configuration and telemetry in the sidecar container
             if (!@containerType.nil? && @containerType.casecmp(@promSideCar) == 0)
@@ -445,6 +527,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               if !file.nil?
                 commands = get_command_windows("TELEMETRY_CUSTOM_PROM_MONITOR_PODS", monitorKubernetesPods)
                 file.write(commands)
+                file.close
               end
             end
           else
@@ -487,6 +570,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDDROP") { toTomlStringArray(fieldDrop) }
             new_contents = new_contents.gsub("$AZMON_DS_PROM_URLS") { toTomlStringArray(urls) }
             File.open(file_name, "w") { |file| file.puts new_contents }
+            @promConfigGenerated = true
             puts "config::Successfully substituted the placeholders in telegraf conf file for daemonset"
 
             #Set environment variables for telemetry
@@ -520,7 +604,9 @@ puts "****************Start Prometheus Config Processing********************"
 if !@configSchemaVersion.nil? && !@configSchemaVersion.empty? && @configSchemaVersion.strip.casecmp("v1") == 0 #note v1 is the only supported schema version , so hardcoding it
   configMapSettings = parseConfigMap
   if !configMapSettings.nil?
+    @promEnvReferences = collectPromEnvReferences(configMapSettings[:prometheus_data_collection_settings])
     populateSettingValuesFromConfigMap(configMapSettings)
+    writePromEnvReferenceTelemetry if @promConfigGenerated
   end
 else
   if (File.file?(@promConfigMapMountPath))

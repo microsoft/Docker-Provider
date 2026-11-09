@@ -966,6 +966,8 @@ function Start-Telegraf {
     # Set default telegraf environment variables for prometheus scraping
     Write-Host "**********Setting default environment variables for telegraf prometheus plugin..."
     .\setdefaulttelegrafenvvariables.ps1
+    ruby /opt/amalogswindows/scripts/ruby/tomlparser-prom-customconfig.rb --resolve-defaults
+    if ($LASTEXITCODE -ne 0) { throw "Failed to resolve Telegraf default configuration" }
 
     $monitorKubernetesPods = [System.Environment]::GetEnvironmentVariable('TELEMETRY_CUSTOM_PROM_MONITOR_PODS')
     if (![string]::IsNullOrEmpty($monitorKubernetesPods) -and $monitorKubernetesPods.ToLower() -eq 'true') {
@@ -1028,7 +1030,7 @@ function Start-Telegraf {
                 Write-Host "exception occured in delayed telegraf start.. continuing without exiting"
             }
             Write-Host "Running telegraf service in test mode"
-            C:\opt\telegraf\telegraf.exe --console --config "C:\etc\telegraf\telegraf.conf" --test
+            C:\opt\telegraf\telegraf.exe --console --strict-env-handling --config "C:\etc\telegraf\telegraf.conf" --test
             Write-Host "Starting telegraf service"
             Start-Service -Name telegraf -ErrorAction Stop
 

@@ -4,6 +4,8 @@ require "fileutils"
 require "tmpdir"
 require "rbconfig"
 require "open3"
+require "socket"
+require "timeout"
 
 # Regression tests for the container-azm-ms-agentconfig -> telegraf configuration generation.
 #
@@ -34,6 +36,7 @@ class PromCustomConfigTest < Minitest::Test
       template_dest: "etc/opt/microsoft/docker-cimprov/telegraf-rs.conf",
       generated: "opt/telegraf-test-rs.conf",
       section: "cluster",
+      defaults: "linux/defaultpromenvvariables-rs",
       # The replica set has no default for this setting, so it is always set explicitly here to
       # keep the generated file complete.
       base_body: "monitor_kubernetes_pods = false",
@@ -44,6 +47,7 @@ class PromCustomConfigTest < Minitest::Test
       template_dest: "etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf",
       generated: "opt/telegraf-test-prom-side-car.conf",
       section: "cluster",
+      defaults: "linux/defaultpromenvvariables-sidecar",
     },
     daemonset: {
       env: { "CONTROLLER_TYPE" => "daemonset" },
@@ -51,6 +55,7 @@ class PromCustomConfigTest < Minitest::Test
       template_dest: "etc/opt/microsoft/docker-cimprov/telegraf.conf",
       generated: "opt/telegraf-test.conf",
       section: "node",
+      defaults: "linux/defaultpromenvvariables",
     },
     windows: {
       env: { "CONTROLLER_TYPE" => "daemonset", "OS_TYPE" => "windows", "SIDECAR_SCRAPING_ENABLED" => "true" },
@@ -58,6 +63,7 @@ class PromCustomConfigTest < Minitest::Test
       template_dest: "etc/telegraf/telegraf.conf",
       generated: "etc/telegraf/telegraf.conf",
       section: "cluster",
+      defaults: "windows/setdefaulttelegrafenvvariables.ps1",
     },
   }.freeze
 
@@ -65,7 +71,7 @@ class PromCustomConfigTest < Minitest::Test
 
   # Runs the real parser against a config map in a sandbox. The parser reads and writes absolute
   # agent paths, so those prefixes are rewritten to point inside the sandbox.
-  def run_parser(scenario, configmap)
+  def run_parser(scenario, configmap, resolve_defaults: false)
     spec = SCENARIOS.fetch(scenario)
     result = nil
 
@@ -76,6 +82,9 @@ class PromCustomConfigTest < Minitest::Test
 
       File.write(File.join(sandbox, "etc/config/settings/prometheus-data-collection-settings"), configmap)
       FileUtils.cp(File.join(REPO_ROOT, spec[:template]), File.join(sandbox, spec[:template_dest]))
+      if resolve_defaults
+        File.open(File.join(sandbox, spec[:template_dest]), "ab") { |file| file.write("# duration unit: \u00b5s\n") }
+      end
       FileUtils.cp(File.join(SCRIPTS_DIR, "ConfigParseErrorLogger.rb"), File.join(sandbox, "ConfigParseErrorLogger.rb"))
 
       parser = File.join(sandbox, "parser.rb")
@@ -91,13 +100,40 @@ class PromCustomConfigTest < Minitest::Test
         "SIDECAR_SCRAPING_ENABLED" => nil,
       }.merge(spec[:env])
 
+      if resolve_defaults
+        File.foreach(File.join(REPO_ROOT, "kubernetes", spec[:defaults])) do |line|
+          match = if scenario == :windows
+                    line.match(/\A\[System.Environment\]::SetEnvironmentVariable\("([^"]+)", "([^"]*)", "process"\)/)
+                  else
+                    line.match(/\Aexport ([A-Z0-9_]+)="(.*)"$/)
+                  end
+          env[match[1]] = match[2] if match
+        end
+        if [:daemonset, :replicaset].include?(scenario)
+          npm = File.read(File.join(REPO_ROOT, "build/linux/installer/scripts/tomlparser-npm-config.rb"))
+                    .gsub('"/etc/', "\"#{sandbox}/etc/")
+          File.write(File.join(sandbox, "npm.rb"), npm)
+          out, err, status = Open3.capture3(env, RbConfig.ruby, File.join(sandbox, "npm.rb"), chdir: sandbox)
+          assert status.success?, "#{out}\n#{err}"
+        end
+      end
+
       stdout, stderr, status = Open3.capture3(env, RbConfig.ruby, parser, chdir: sandbox)
       assert status.success?, "config parser failed: #{stdout}\n#{stderr}"
 
+      if resolve_defaults
+        out, err, status = Open3.capture3(env, RbConfig.ruby, "-EUS-ASCII", parser, "--resolve-defaults", chdir: sandbox)
+        assert status.success?, "default resolution failed: #{out}\n#{err}"
+      end
       telemetry_path = File.join(sandbox, "telemetry_prom_config_env_var")
+      windows_env_path = File.join(sandbox, "setpromenv.txt")
+      generated = File.join(sandbox, spec[:generated])
+      generated = File.join(sandbox, spec[:template_dest]) if resolve_defaults && configmap.strip == "[prometheus_data_collection_settings]"
       result = {
-        conf: File.read(File.join(sandbox, spec[:generated])),
+        conf: File.read(generated),
+        environment: env,
         telemetry: File.exist?(telemetry_path) ? File.read(telemetry_path) : nil,
+        windows_env: File.exist?(windows_env_path) ? File.read(windows_env_path) : nil,
         stdout: stdout,
         stderr: stderr,
       }
@@ -136,6 +172,41 @@ class PromCustomConfigTest < Minitest::Test
 
   def baseline_plugins(scenario)
     @@baselines[scenario] ||= input_plugins(run_parser(scenario, configmap_for(scenario, "interval = \"1m\""))[:conf])
+  end
+
+  def test_every_telegraf_launch_requires_strict_environment_handling
+    ["kubernetes/linux/main.sh", "kubernetes/windows/main.ps1", "build/windows/installer/scripts/telegraf-windows-service.rb"].each do |file|
+      source = File.read(File.join(REPO_ROOT, file))
+      refute_includes source, "--non-strict-env-handling"
+      launches = source.lines.grep(%r{/opt/telegraf |telegraf\.exe --|EXECUTABLE, "--console"})
+      refute_empty launches
+      launches.each { |line| assert_includes line, "--strict-env-handling" }
+      unless file.end_with?("telegraf-windows-service.rb")
+        resolver = source.index("--resolve-defaults")
+        refute_nil resolver
+        assert_operator resolver, :<, source.index(launches.first)
+      end
+    end
+  end
+
+  def test_native_structural_defaults_are_materialized
+    SCENARIOS.each_key do |scenario|
+      result = run_parser(scenario, "[prometheus_data_collection_settings]\n", resolve_defaults: true)
+      conf = result[:conf]
+      refute_match(/^[ \t]*(?:(?:urls|field(?:pass|drop|include|exclude)|kubernetes_services)[ \t]*=[ \t]*)?\$[A-Z0-9_]+[ \t]*$/, conf)
+      parse_generated_toml(conf)
+      binary = ENV["TELEGRAF_WINDOWS_BINARY"]
+      next if binary.nil? || binary.empty?
+      assert File.file?(binary), "TELEGRAF_WINDOWS_BINARY must point to telegraf.exe"
+
+      Dir.mktmpdir("telegraf-default-check") do |dir|
+        path = File.join(dir, "telegraf.conf")
+        File.write(path, conf.gsub(/^\s*tls_ca\s*=\s*.*$/, "").gsub(/^\s*bearer_token\s*=\s*.*$/, ""))
+        out, err, status = Open3.capture3(result[:environment].merge("NODE_IP" => "127.0.0.1"), binary, "config", "check",
+                                        "--strict-env-handling", "--config", path)
+        assert status.success?, "#{scenario} defaults: #{out}\n#{err}"
+      end
+    end
   end
 
   # The core security property: untrusted config map content cannot add telegraf plugins.
@@ -209,6 +280,79 @@ class PromCustomConfigTest < Minitest::Test
     assert_equal "\"a\\tb\"", toTomlBasicString("a\tb")
     assert_equal "\"\\u0007\"", toTomlBasicString("\a")
     assert_equal "\"\"", toTomlBasicString(nil)
+    assert_equal "\"$$filter $HOSTNAME ${HOSTNAME} $NODE_IP ${NODE_IP} $$escaped\"",
+                 toTomlBasicString("$filter $HOSTNAME ${HOSTNAME} $NODE_IP ${NODE_IP} $$escaped")
+  end
+
+  def test_toml_basic_string_preserves_only_allowlisted_environment_references
+    names = %w[NODE_IP HOSTNAME NODE_NAME AKS_REGION AKS_CLUSTER_NAME AKS_NODE_RESOURCE_GROUP
+               AKS_RESOURCE_ID ARC_K8S_EXTENSION_NAME CONTROLLER_TYPE CONTAINER_TYPE CONTAINER_RUNTIME OS_TYPE
+               CLUSTER_CLOUD_ENVIRONMENT ACS_RESOURCE_NAME KUBERNETES_SERVICE_HOST KUBERNETES_SERVICE_PORT
+               KUBERNETES_PORT_443_TCP_PORT]
+    references = names.flat_map { |name| ["$#{name}", "${#{name}}"] }.join(" ")
+    assert_equal "\"#{references}\"", toTomlBasicString(references)
+
+    unapproved = "$filter ${HTTP_PROXY} ${AZMON_STDOUT_EXCLUDED_NAMESPACES} ${REDIS_SERVICE_HOST} ${USER_ASSIGNED_IDENTITY_CLIENT_ID}"
+    assert_equal "\"$$filter $${HTTP_PROXY} $${AZMON_STDOUT_EXCLUDED_NAMESPACES} $${REDIS_SERVICE_HOST} $${USER_ASSIGNED_IDENTITY_CLIENT_ID}\"",
+                 toTomlBasicString(unapproved)
+  end
+
+  def test_telegraf_does_not_recursively_expand_allowlisted_values_or_configmap_carriers
+    binary = ENV["TELEGRAF_WINDOWS_BINARY"]
+    skip "set TELEGRAF_WINDOWS_BINARY to run the packaged Telegraf integration check" if binary.nil? || binary.empty?
+
+    server = TCPServer.new("127.0.0.1", 0)
+    request = nil
+    worker = Thread.new do
+      raise "Telegraf did not connect to the loopback test server" unless IO.select([server], nil, nil, 15)
+      client = server.accept
+      request = client.gets
+      client.gets while (line = client.gets) && line != "\r\n"
+      body = "test_metric 1\n"
+      client.write "HTTP/1.1 200 OK\r\nContent-Type: text/plain; version=0.0.4\r\nContent-Length: #{body.bytesize}\r\nConnection: close\r\n\r\n#{body}"
+      client.close
+    end
+    worker.report_on_exception = false
+
+    Dir.mktmpdir("telegraf-env-expansion") do |dir|
+      path = File.join(dir, "telegraf.conf")
+      url = "http://127.0.0.1:#{server.addr[1]}/metrics?short=$" \
+            "AKS_RESOURCE_ID&braced=${AKS_RESOURCE_ID}&carrier=${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
+      File.write(path, "[[inputs.prometheus]]\n  urls = [#{toTomlBasicString(url)}]\n")
+      env = {
+        "AKS_RESOURCE_ID" => "${AZMON_STDOUT_EXCLUDED_NAMESPACES}",
+        "AZMON_STDOUT_EXCLUDED_NAMESPACES" => "carrier-sentinel",
+      }
+      out, err, status = Timeout.timeout(25) do
+        Open3.capture3(env, binary, "--strict-env-handling", "--test", "--input-filter", "prometheus", "--config", path)
+      end
+      assert status.success?, "#{out}\n#{err}"
+      worker.value
+      assert_includes request, "short=${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
+      assert_includes request, "braced=${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
+      assert_includes request, "carrier=${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
+      refute_includes request, "carrier-sentinel"
+    end
+  ensure
+    server&.close unless server&.closed?
+    worker&.kill if worker&.alive?
+    worker&.join
+  end
+
+  def test_environment_reference_telemetry_uses_authored_values_and_is_platform_appropriate
+    body = "urls = [\"http://node/$NODE_IP\", \"http://custom/${CUSTOM_METRIC}\", \"http://escaped/$$LITERAL\"]\n" \
+           "# ignored = \"$COMMENT_ONLY\""
+    linux = run_parser(:daemonset, configmap_for(:daemonset, body))
+    assert_includes linux[:telemetry], "export TELEMETRY_PROM_ENV_REFERENCES=CUSTOM_METRIC,NODE_IP\n"
+    assert_includes linux[:telemetry], "export TELEMETRY_PROM_ENV_REFERENCES_TRUNCATED=false\n"
+    refute_includes linux[:telemetry], "AZMON_DS_PROM_URLS"
+    refute_includes linux[:telemetry], "LITERAL"
+    refute_includes linux[:telemetry], "COMMENT_ONLY"
+
+    windows = run_parser(:windows, configmap_for(:windows, "kubernetes_field_selector = \"spec.nodeName=${HOSTNAME}\"\n" \
+                                                             "fieldpass = [\"$WINDOW_METRIC\"]"))
+    assert_includes windows[:windows_env], "TELEMETRY_PROM_ENV_REFERENCES=HOSTNAME,WINDOW_METRIC\n"
+    assert_includes windows[:windows_env], "TELEMETRY_PROM_ENV_REFERENCES_TRUNCATED=false\n"
   end
 
   def test_toml_basic_string_output_is_a_single_parseable_value
@@ -217,15 +361,15 @@ class PromCustomConfigTest < Minitest::Test
     assert_nil parsed["inputs"]
   end
 
-  def test_toml_basic_string_does_not_emit_template_placeholders
+  def test_toml_basic_string_escapes_template_placeholders_for_telegraf
     value = "$AZMON_TELEGRAF_CUSTOM_PROM_FIELDDROP"
     rendered = toTomlBasicString(value)
     refute_includes rendered, "$AZMON_"
-    assert_equal value, Tomlrb.parse("value = #{rendered}")["value"]
-    assert_equal "\"$HOME\"", toTomlBasicString("$HOME"), "other dollar signs must be unchanged"
+    assert_equal "$#{value}", Tomlrb.parse("value = #{rendered}")["value"]
+    assert_equal "\"$$HOME\"", toTomlBasicString("$HOME"), "unapproved environment references must remain literal"
   end
 
-  def test_placeholder_names_in_fieldpass_are_not_expanded_by_later_substitutions
+  def test_placeholder_names_in_fieldpass_are_escaped_for_telegraf
     # fieldpass is substituted before fielddrop and the namespace plugin block, so a placeholder
     # name stored in fieldpass must stay literal data instead of being expanded a second time.
     {
@@ -236,7 +380,8 @@ class PromCustomConfigTest < Minitest::Test
       result = run_parser(scenario, configmap_for(scenario, body))
       assert_no_injected_plugins(scenario, result[:conf], "placeholder text in fieldpass (#{scenario})")
       included = parse_generated_toml(result[:conf])["inputs"]["prometheus"].map { |plugin| plugin["fieldinclude"] }.compact
-      assert_includes included, names, "fieldpass must round-trip as literal strings (#{scenario})"
+      assert_includes included, names.map { |name| "$#{name}" },
+                       "fieldpass must remain literal after Telegraf unescapes it (#{scenario})"
     end
   end
 
@@ -301,8 +446,11 @@ class PromCustomConfigTest < Minitest::Test
   end
 
   def test_urls_breakout_is_neutralized
-    result = run_parser(:daemonset, configmap_for(:daemonset, "urls = ['''#{BREAKOUT}''']"))
+    url = "http://example.test/metrics?node=$NODE_IP&name=$HOSTNAME&query=$filter&excluded=${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
+    result = run_parser(:daemonset, configmap_for(:daemonset, "urls = [#{url.inspect}, '''#{BREAKOUT}''']"))
     assert_no_injected_plugins(:daemonset, result[:conf], "the node urls array")
+    assert_includes collect_values(result[:conf], "urls"),
+                    "http://example.test/metrics?node=$NODE_IP&name=$HOSTNAME&query=$$filter&excluded=$${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
   end
 
   def test_kubernetes_services_breakout_is_neutralized
@@ -387,7 +535,7 @@ class PromCustomConfigTest < Minitest::Test
     [nil, [], ["default", "kube-system"]].each do |namespaces|
       body = "monitor_kubernetes_pods = true\nfieldpass = [\"requests_total\"]\nfielddrop = [\"debug_total\"]"
       body += "\nmonitor_kubernetes_pods_namespaces = #{namespaces.inspect}" unless namespaces.nil?
-      conf = run_parser(:windows, configmap_for(:windows, body))[:conf]
+      conf = run_parser(:windows, configmap_for(:windows, body), resolve_defaults: true)[:conf]
 
       # This smoke test loads the actual generated options without contacting Kubernetes
       # or requiring a mounted service-account CA. --test never runs output plugins.
@@ -397,7 +545,7 @@ class PromCustomConfigTest < Minitest::Test
       Dir.mktmpdir("windows-telegraf-config") do |dir|
         path = File.join(dir, "telegraf.conf")
         File.write(path, conf)
-        Open3.popen3({ "NODE_IP" => "127.0.0.1" }, binary, "--console", "--test", "--config", path) do |stdin, stdout, stderr, process| # DevSkim: ignore DS162092 -- Loopback-only config smoke test.
+        Open3.popen3({ "NODE_IP" => "127.0.0.1" }, binary, "--console", "--strict-env-handling", "--test", "--config", path) do |stdin, stdout, stderr, process| # DevSkim: ignore DS162092 -- Loopback-only config smoke test.
           stdin.close
           readers = [Thread.new { stdout.read }, Thread.new { stderr.read }]
           completed = !process.join(20).nil?

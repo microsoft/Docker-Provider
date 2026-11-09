@@ -29,7 +29,7 @@ class TelegrafServiceWorker
       reader, writer = IO.pipe
       begin
         @pid = @process_api.spawn(
-          EXECUTABLE, "--console", "--config", @configuration,
+          EXECUTABLE, "--console", "--strict-env-handling", "--config", @configuration,
           in: File::NULL, out: writer, err: writer, new_pgroup: true
         )
       ensure
