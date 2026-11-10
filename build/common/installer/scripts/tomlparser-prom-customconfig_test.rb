@@ -297,7 +297,7 @@ class PromCustomConfigTest < Minitest::Test
   end
 
   def test_environment_reference_telemetry_uses_authored_values_and_is_platform_appropriate
-    body = "urls = [\"http://node/$NODE_IP\", \"http://custom/${CUSTOM_METRIC}\", \"http://escaped/$$LITERAL\"]\n" \
+    body = "urls = [\"https://node/$NODE_IP\", \"https://custom/${CUSTOM_METRIC}\", \"https://escaped/$$LITERAL\"]\n" \
            "# ignored = \"$COMMENT_ONLY\""
     linux = run_parser(:daemonset, configmap_for(:daemonset, body))
     assert_includes linux[:telemetry], "export TELEMETRY_PROM_ENV_REFERENCES=CUSTOM_METRIC,NODE_IP\n"
@@ -333,7 +333,7 @@ class PromCustomConfigTest < Minitest::Test
       replicaset: ["$AZMON_TELEGRAF_CUSTOM_PROM_FIELDDROP", "$AZMON_TELEGRAF_CUSTOM_PROM_URLS"],
       daemonset: ["$AZMON_DS_PROM_FIELDDROP", "$AZMON_DS_PROM_URLS"],
     }.each do |scenario, names|
-      body = "fieldpass = #{names.inspect}\nfielddrop = [\"a\\\"b\"]\nurls = [\"http://example.invalid/metrics\"]"
+      body = "fieldpass = #{names.inspect}\nfielddrop = [\"a\\\"b\"]\nurls = [\"https://example.invalid/metrics\"]"
       result = run_parser(scenario, configmap_for(scenario, body))
       assert_no_injected_plugins(scenario, result[:conf], "placeholder text in fieldpass (#{scenario})")
       included = parse_generated_toml(result[:conf])["inputs"]["prometheus"].map { |plugin| plugin["fieldinclude"] }.compact
@@ -350,8 +350,8 @@ class PromCustomConfigTest < Minitest::Test
   end
 
   def test_toml_string_array_escapes_structural_characters
-    parsed = Tomlrb.parse("urls = #{toTomlStringArray(["http://ok", BREAKOUT])}")
-    assert_equal ["http://ok", BREAKOUT], parsed["urls"]
+    parsed = Tomlrb.parse("urls = #{toTomlStringArray(["https://ok", BREAKOUT])}")
+    assert_equal ["https://ok", BREAKOUT], parsed["urls"]
     assert_nil parsed["inputs"]
   end
 
@@ -403,11 +403,11 @@ class PromCustomConfigTest < Minitest::Test
   end
 
   def test_urls_breakout_is_neutralized
-    url = "http://example.test/metrics?node=$NODE_IP&name=$HOSTNAME&query=$filter&excluded=${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
+    url = "https://example.test/metrics?node=$NODE_IP&name=$HOSTNAME&query=$filter&excluded=${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
     result = run_parser(:daemonset, configmap_for(:daemonset, "urls = [#{url.inspect}, '''#{BREAKOUT}''']"))
     assert_no_injected_plugins(:daemonset, result[:conf], "the node urls array")
     assert_includes collect_values(result[:conf], "urls"),
-                    "http://example.test/metrics?node=$NODE_IP&name=$HOSTNAME&query=$filter&excluded=${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
+                    "https://example.test/metrics?node=$NODE_IP&name=$HOSTNAME&query=$filter&excluded=${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
   end
 
   def test_kubernetes_services_breakout_is_neutralized
