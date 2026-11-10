@@ -14,6 +14,7 @@ spec:
         app: otlp-autoconfigured-example
       annotations:
         instrumentation.opentelemetry.io/inject-configuration: "cr1"
+        # Keep this aligned with the application's exporter; omit only for HTTP/Protobuf.
         instrumentation.opentelemetry.io/otel-protocol: "grpc"
     spec:
       containers:
