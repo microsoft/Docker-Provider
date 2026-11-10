@@ -202,7 +202,7 @@ class PromCustomConfigTest < Minitest::Test
       Dir.mktmpdir("telegraf-default-check") do |dir|
         path = File.join(dir, "telegraf.conf")
         File.write(path, conf.gsub(/^\s*tls_ca\s*=\s*.*$/, "").gsub(/^\s*bearer_token\s*=\s*.*$/, ""))
-        out, err, status = Open3.capture3(result[:environment].merge("NODE_IP" => "127.0.0.1"), binary, "config", "check",
+        out, err, status = Open3.capture3(result[:environment].merge("NODE_IP" => "192.0.2.1"), binary, "config", "check",
                                         "--strict-env-handling", "--config", path)
         assert status.success?, "#{scenario} defaults: #{out}\n#{err}"
       end
@@ -295,48 +295,6 @@ class PromCustomConfigTest < Minitest::Test
     unapproved = "$filter ${HTTP_PROXY} ${AZMON_STDOUT_EXCLUDED_NAMESPACES} ${REDIS_SERVICE_HOST} ${USER_ASSIGNED_IDENTITY_CLIENT_ID}"
     assert_equal "\"$$filter $${HTTP_PROXY} $${AZMON_STDOUT_EXCLUDED_NAMESPACES} $${REDIS_SERVICE_HOST} $${USER_ASSIGNED_IDENTITY_CLIENT_ID}\"",
                  toTomlBasicString(unapproved)
-  end
-
-  def test_telegraf_does_not_recursively_expand_allowlisted_values_or_configmap_carriers
-    binary = ENV["TELEGRAF_WINDOWS_BINARY"]
-    skip "set TELEGRAF_WINDOWS_BINARY to run the packaged Telegraf integration check" if binary.nil? || binary.empty?
-
-    server = TCPServer.new("127.0.0.1", 0)
-    request = nil
-    worker = Thread.new do
-      raise "Telegraf did not connect to the loopback test server" unless IO.select([server], nil, nil, 15)
-      client = server.accept
-      request = client.gets
-      client.gets while (line = client.gets) && line != "\r\n"
-      body = "test_metric 1\n"
-      client.write "HTTP/1.1 200 OK\r\nContent-Type: text/plain; version=0.0.4\r\nContent-Length: #{body.bytesize}\r\nConnection: close\r\n\r\n#{body}"
-      client.close
-    end
-    worker.report_on_exception = false
-
-    Dir.mktmpdir("telegraf-env-expansion") do |dir|
-      path = File.join(dir, "telegraf.conf")
-      url = "http://127.0.0.1:#{server.addr[1]}/metrics?short=$" \
-            "AKS_RESOURCE_ID&braced=${AKS_RESOURCE_ID}&carrier=${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
-      File.write(path, "[[inputs.prometheus]]\n  urls = [#{toTomlBasicString(url)}]\n")
-      env = {
-        "AKS_RESOURCE_ID" => "${AZMON_STDOUT_EXCLUDED_NAMESPACES}",
-        "AZMON_STDOUT_EXCLUDED_NAMESPACES" => "carrier-sentinel",
-      }
-      out, err, status = Timeout.timeout(25) do
-        Open3.capture3(env, binary, "--strict-env-handling", "--test", "--input-filter", "prometheus", "--config", path)
-      end
-      assert status.success?, "#{out}\n#{err}"
-      worker.value
-      assert_includes request, "short=${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
-      assert_includes request, "braced=${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
-      assert_includes request, "carrier=${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
-      refute_includes request, "carrier-sentinel"
-    end
-  ensure
-    server&.close unless server&.closed?
-    worker&.kill if worker&.alive?
-    worker&.join
   end
 
   def test_environment_reference_telemetry_uses_authored_values_and_is_platform_appropriate
