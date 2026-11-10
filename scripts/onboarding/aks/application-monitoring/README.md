@@ -424,7 +424,9 @@ use pinned versions of Microsoft's published onboarding templates:
 - Managed Prometheus:
   `Azure/prometheus-collector@71a784f49d633b9f182a50c878c6dd48c75fd58d`
 - Container Insights:
-  `microsoft/Docker-Provider@804bfb6d7eec35d04312fd5713559c65ab1fa548`
+  `microsoft/Docker-Provider@1acbe3aeaa61b86a99aa745280e76fddf9b47bc6`, which
+  enables Container Insights through `azureMonitorProfile.containerInsights`
+  instead of the legacy `omsagent` addon profile
 
 Pinning avoids silently changing an existing documentation sample when either
 upstream repository advances.
