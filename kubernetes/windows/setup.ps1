@@ -52,14 +52,14 @@ Write-Host ('Finished Installing Fluentbit')
 Write-Host ('Installing Telegraf');
 try {
     # Update the Windows Telegraf configs and tomlparser-prom-customconfig.rb together with this package.
-    $telegrafUri='https://dl.influxdata.com/telegraf/releases/telegraf-1.40.1_windows_amd64.zip'
-    $telegrafSha256='cabe07907628afc17ce8c58a1c27b3a55a838b1fb9418b2c05e9342e6e8af8d9' # DevSkim: ignore DS173237 -- Public archive SHA256, not a credential.
+    $telegrafUri='https://dl.influxdata.com/telegraf/releases/telegraf-1.40.3_windows_amd64.zip'
+    $telegrafSha256='273867d9bb070625b8fc8627f3189899b1221c2c6540dd98f6e526108a89c9c3' # DevSkim: ignore DS173237 -- Public archive SHA256, not a credential.
     Invoke-WebRequest -Uri $telegrafUri -OutFile \installation\telegraf.zip -ErrorAction Stop
     if ((Get-FileHash -Path \installation\telegraf.zip -Algorithm SHA256 -ErrorAction Stop).Hash -ne $telegrafSha256) {
         throw "SHA256 mismatch for Telegraf Windows package"
     }
     Expand-Archive -Path \installation\telegraf.zip -Destination \installation\telegraf -ErrorAction Stop
-    Move-Item -Path \installation\telegraf\telegraf-1.40.1\* -Destination \opt\telegraf\ -ErrorAction Stop
+    Move-Item -Path \installation\telegraf\telegraf-1.40.3\* -Destination \opt\telegraf\ -ErrorAction Stop
 }
 catch {
     $ex = $_.Exception
