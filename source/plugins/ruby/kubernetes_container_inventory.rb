@@ -6,6 +6,7 @@ class KubernetesContainerInventory
   require "time"
   require_relative "omslog"
   require_relative "ApplicationInsightsUtility"
+  require_relative "ContainerInventoryState"
 
   # cache the container and cgroup parent process
   @@containerCGroupCache = Hash.new
@@ -35,14 +36,19 @@ class KubernetesContainerInventory
             # containeId format is <containerRuntime>://<containerId>
             containerRuntime = ""
             containerId = ""
-            if !containerStatus["containerID"].nil?
-              containerRuntime = containerStatus["containerID"].split(":")[0]
-              containerId = containerStatus["containerID"].split("//")[1]
-              containerInventoryRecord["InstanceID"] = containerId
-            else
-              # for containers that have image issues (like invalid image/tag etc..) this will be empty. do not make it all 0
-              containerInventoryRecord["InstanceID"] = containerId
+            rawContainerId = containerStatus["containerID"]
+            if !rawContainerId.nil? && rawContainerId != ""
+              if rawContainerId.is_a?(String)
+                containerRuntime, separator, containerId = rawContainerId.partition("://")
+              end
+              unless rawContainerId.is_a?(String) && separator == "://" &&
+                  !containerRuntime.empty? && ContainerInventoryState.validContainerId?(containerId)
+                $log.warn("KubernetesContainerInventory::getContainerInventoryRecords : Invalid container ID; skipping record")
+                next
+              end
             end
+            # Containers with image issues can have no ID; retain their inventory without persisting it.
+            containerInventoryRecord["InstanceID"] = containerId
             # imagedId is either of the the format - repo@sha256:imageid or sha256:imageid
             imageIdValue = containerStatus["imageID"]
             if !imageIdValue.nil? && !imageIdValue.empty?
@@ -254,9 +260,20 @@ class KubernetesContainerInventory
       return containersInfoMap
     end
 
+    def cgroupMatcher(containerId)
+      return nil unless containerId.is_a?(String) && containerId.delete_prefix("crio-").match?(/\A[0-9a-fA-F]{64}\z/)
+      /(?:\A|[^0-9A-Za-z])#{Regexp.escape(containerId)}(?:[^0-9A-Za-z]|\z)/
+    end
+
     def obtainContainerEnvironmentVars(containerId)
       envValueString = ""
       begin
+        # Only full-length IDs matched as a complete cgroup path token, so a partial ID never resolves to a host process.
+        cgroupPattern = cgroupMatcher(containerId)
+        if cgroupPattern.nil?
+          $log.warn("KubernetesContainerInventory::obtainContainerEnvironmentVars: Skipping environment variables for unsupported container ID: #{containerId.inspect}")
+          return envValueString
+        end
         isCGroupPidFetchRequired = false
         if !@@containerCGroupCache.has_key?(containerId)
           isCGroupPidFetchRequired = true
@@ -274,7 +291,7 @@ class KubernetesContainerInventory
         if isCGroupPidFetchRequired
           Dir["/hostfs/proc/*/cgroup"].each do |filename|
             begin
-              if File.file?(filename) && File.exist?(filename) && File.foreach(filename).grep(/#{containerId}/).any?
+              if File.file?(filename) && File.exist?(filename) && File.foreach(filename).grep(cgroupPattern).any?
                 # file full path is /hostfs/proc/<cGroupPid>/cgroup
                 cGroupPid = filename.split("/")[3]
                 if is_number?(cGroupPid)
