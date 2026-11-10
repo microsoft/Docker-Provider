@@ -1,0 +1,93 @@
+trigger: none
+pr: none
+
+jobs:
+- job: CborFeedSmoke
+  timeoutInMinutes: 15
+  strategy:
+    matrix:
+      Linux:
+        image: ci-1es-managed-ubuntu-2204
+        pipConfig: /dev/null
+      Windows:
+        image: ci-1es-managed-windows-2022
+        pipConfig: NUL
+  pool:
+    name: Azure-Pipelines-CI-Test-EO
+    demands:
+    - ImageOverride -equals $(image)
+  variables:
+    PIP_CONFIG_FILE: $(pipConfig)
+    PIP_EXTRA_INDEX_URL: ''
+    PIP_NO_CACHE_DIR: 'true'
+    PIP_DISABLE_PIP_VERSION_CHECK: 'true'
+  steps:
+  - checkout: self
+    fetchDepth: 1
+    persistCredentials: false
+  - pwsh: |
+      $bytes = [Convert]::FromBase64String('0oRAoRghgkNhYmNDZGVmRXNtb2tlQA==')
+      [IO.File]::WriteAllBytes("$(Agent.TempDirectory)/payload.json", $bytes)
+    displayName: Create deterministic extraction fixture
+  - template: azure-template-notary-annotations.yml
+    parameters:
+      workingDirectory: $(Agent.TempDirectory)
+      condition: succeeded()
+  - task: PythonScript@0
+    displayName: Assert source, job identity and annotations
+    inputs:
+      scriptSource: inline
+      workingDirectory: $(Agent.TempDirectory)
+      script: |
+        import ast
+        import base64
+        import importlib.metadata
+        import json
+        import os
+        from pathlib import Path
+        import platform
+        import subprocess
+        import urllib.request
+        from urllib.parse import urlsplit
+
+        config = subprocess.check_output(
+            ["python", "-m", "pip", "config", "list"], text=True
+        )
+        settings = {k: ast.literal_eval(v) for k, v in
+                    (line.split("=", 1) for line in config.splitlines())}
+        indexes = [v for k, v in settings.items() if k.endswith("index-url") and v]
+        assert len(indexes) == 1, "Expected only one effective pip index"
+        index = urlsplit(indexes[0])
+        assert index.scheme == "https"
+        assert index.hostname == "pkgs.dev.azure.com"
+        parts = index.path.lower().strip("/").split("/")
+        assert len(parts) == 6 and parts[0] == "github-private"
+        assert parts[1] in ("microsoft", "546fe6cc-3ea0-4218-9233-c28bfc2f36ca")
+        assert parts[2] == "_packaging" and parts[4:] == ["pypi", "simple"]
+        assert parts[3] in ("microsoft_publicpackages", "afb91e65-adc0-414e-8a72-f3aa8364f5e5")
+        assert index.username and index.password, "Expected authenticated primary index"
+        assert not os.environ.get("PIP_EXTRA_INDEX_URL"), "Public fallback must be absent"
+        print("Verified sole authenticated primary feed: github-private/microsoft/microsoft_PublicPackages")
+        request = urllib.request.Request(
+            os.environ["SYSTEM_COLLECTIONURI"] + "_apis/connectionData?api-version=7.1",
+            headers={"Authorization": "Bearer " + os.environ["SYSTEM_ACCESSTOKEN"]},
+        )
+        with urllib.request.urlopen(request) as response:
+            identity = json.load(response)["authenticatedUser"]
+        print("Actual job identity:", identity["providerDisplayName"], identity["id"])
+        assert "Build Service" in identity["providerDisplayName"]
+        original = base64.b64decode("0oRAoRghgkNhYmNDZGVmRXNtb2tlQA==")
+        assert Path("payload.json").read_bytes() == original, "Input envelope changed"
+        annotations = json.loads(Path("signature-annotations.json").read_text())
+        expected = [
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+            "cb8379ac2098aa165029e3938a51da0bcecfc008fd6795f401178647f96c5b34",
+        ]
+        assert annotations == {
+            "$manifest": {"io.cncf.notary.x509chain.thumbprint#S256": json.dumps(expected)}
+        }, "Annotation shape or ordered fingerprints differ"
+        print("OS:", platform.platform(), "Python:", platform.python_version(),
+              "cbor2:", importlib.metadata.version("cbor2"))
+        print("Verified exact annotation shape, ordered lowercase SHA256 and unchanged input")
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
