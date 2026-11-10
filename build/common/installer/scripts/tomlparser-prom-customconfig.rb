@@ -40,9 +40,6 @@ end
 @replicaset = "replicaset"
 @daemonset = "daemonset"
 @promSideCar = "prometheussidecar"
-PROM_ENV_REFERENCE_REGEX = /(?<!\$)\$\{([A-Za-z_][A-Za-z0-9_]*)\}|(?<!\$)\$([A-Za-z_][A-Za-z0-9_]*)/
-PROM_ENV_REFERENCE_LIMIT = 32
-PROM_ENV_REFERENCE_BYTES_LIMIT = 512
 @windows = "windows"
 @configSchemaVersion = ""
 @defaultDsInterval = "1m"
@@ -103,45 +100,6 @@ def parseConfigMap
   rescue => errorStr
     ConfigParseErrorLogger.logError("Exception while parsing config map for prometheus config: #{errorStr}, using defaults, please check config map for errors")
     return nil
-  end
-end
-
-def collectPromEnvReferences(value)
-  case value
-  when String
-    value.scan(PROM_ENV_REFERENCE_REGEX).map { |reference| reference.compact.first }
-  when Array
-    value.flat_map { |item| collectPromEnvReferences(item) }
-  when Hash
-    value.values.flat_map { |item| collectPromEnvReferences(item) }
-  else
-    []
-  end
-end
-
-def boundedPromEnvReferences(names)
-  result = []
-  bytes = 0
-  truncated = false
-  names.uniq.sort.each do |name|
-    if result.length >= PROM_ENV_REFERENCE_LIMIT ||
-       name.bytesize > PROM_ENV_REFERENCE_BYTES_LIMIT ||
-       bytes + (result.empty? ? 0 : 1) + name.bytesize > PROM_ENV_REFERENCE_BYTES_LIMIT
-      truncated = true
-      next
-    end
-    bytes += (result.empty? ? 0 : 1) + name.bytesize
-    result << name
-  end
-  [result.join(","), truncated]
-end
-
-def writePromEnvReferenceTelemetry
-  references, truncated = boundedPromEnvReferences(@promEnvReferences || [])
-  telemetry = "TELEMETRY_PROM_ENV_REFERENCES=#{references}\n" \
-              "TELEMETRY_PROM_ENV_REFERENCES_TRUNCATED=#{truncated}\n"
-  File.open(is_windows? ? "setpromenv.txt" : "telemetry_prom_config_env_var", "a") do |file|
-    file.write(is_windows? ? telemetry : telemetry.lines.map { |line| "export #{line}" }.join)
   end
 end
 
@@ -595,9 +553,7 @@ puts "****************Start Prometheus Config Processing********************"
 if !@configSchemaVersion.nil? && !@configSchemaVersion.empty? && @configSchemaVersion.strip.casecmp("v1") == 0 #note v1 is the only supported schema version , so hardcoding it
   configMapSettings = parseConfigMap
   if !configMapSettings.nil?
-    @promEnvReferences = collectPromEnvReferences(configMapSettings[:prometheus_data_collection_settings])
     populateSettingValuesFromConfigMap(configMapSettings)
-    writePromEnvReferenceTelemetry if @promConfigGenerated
   end
 else
   if (File.file?(@promConfigMapMountPath))

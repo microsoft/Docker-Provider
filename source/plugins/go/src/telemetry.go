@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"os"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -17,13 +16,6 @@ import (
 	"github.com/fluent/fluent-bit-go/output"
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
-)
-
-var promEnvReferenceName = regexp.MustCompile(`\A[A-Za-z_][A-Za-z0-9_]{0,127}\z`)
-
-const (
-	maxPromEnvReferenceNames = 32
-	maxPromEnvReferenceBytes = 512
 )
 
 var (
@@ -166,11 +158,7 @@ func SendContainerLogPluginMetrics(telemetryPushIntervalProperty string) {
 	ContainerLogTelemetryTicker = time.NewTicker(time.Second * time.Duration(telemetryPushInterval))
 
 	start := time.Now()
-	SendEvent(eventNameContainerLogInit, promEnvReferenceTelemetry(
-		os.Getenv("TELEMETRY_PROM_ENV_REFERENCES"),
-		os.Getenv("TELEMETRY_PROM_ENV_REFERENCES_TRUNCATED") == "true",
-		os.LookupEnv,
-	))
+	SendEvent(eventNameContainerLogInit, make(map[string]string))
 
 	for ; true; <-ContainerLogTelemetryTicker.C {
 		elapsed := time.Since(start)
@@ -497,46 +485,6 @@ func SendTracesAsMetrics(telemetryPushIntervalProperty string) {
 		for metricName, metricValue := range infoMetricsSnapshot {
 			TelemetryClient.Track(appinsights.NewMetricTelemetry(metricName, metricValue))
 		}
-	}
-}
-
-func promEnvReferenceTelemetry(references string, truncated bool, lookup func(string) (string, bool)) map[string]string {
-	names := make(map[string]struct{})
-	for _, name := range strings.Split(references, ",") {
-		if promEnvReferenceName.MatchString(name) {
-			names[name] = struct{}{}
-		} else if name != "" {
-			truncated = true
-		}
-	}
-
-	var namesSorted, referenced, available []string
-	for name := range names {
-		namesSorted = append(namesSorted, name)
-	}
-	sort.Strings(namesSorted)
-	size := 0
-	for _, name := range namesSorted {
-		separator := 0
-		if len(referenced) > 0 {
-			separator = 1
-		}
-		if len(referenced) == maxPromEnvReferenceNames ||
-			size+separator+len(name) > maxPromEnvReferenceBytes {
-			truncated = true
-			continue
-		}
-		size += separator + len(name)
-		referenced = append(referenced, name)
-		if _, ok := lookup(name); ok {
-			available = append(available, name)
-		}
-	}
-
-	return map[string]string{
-		"PromEnvReferenceNames":          strings.Join(referenced, ","),
-		"PromEnvEnvironmentPresentNames": strings.Join(available, ","),
-		"PromEnvReferenceListTruncated":  strconv.FormatBool(truncated),
 	}
 }
 

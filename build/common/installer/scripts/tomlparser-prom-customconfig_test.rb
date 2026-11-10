@@ -296,20 +296,23 @@ class PromCustomConfigTest < Minitest::Test
     assert_equal "\"#{unapproved}\"", toTomlBasicString(unapproved)
   end
 
-  def test_environment_reference_telemetry_uses_authored_values_and_is_platform_appropriate
+  def test_linux_environment_references_are_not_added_to_telemetry
     body = "urls = [\"https://node/$NODE_IP\", \"https://custom/${CUSTOM_METRIC}\", \"https://escaped/$$LITERAL\"]\n" \
            "# ignored = \"$COMMENT_ONLY\""
     linux = run_parser(:daemonset, configmap_for(:daemonset, body))
-    assert_includes linux[:telemetry], "export TELEMETRY_PROM_ENV_REFERENCES=CUSTOM_METRIC,NODE_IP\n"
-    assert_includes linux[:telemetry], "export TELEMETRY_PROM_ENV_REFERENCES_TRUNCATED=false\n"
-    refute_includes linux[:telemetry], "AZMON_DS_PROM_URLS"
-    refute_includes linux[:telemetry], "LITERAL"
-    refute_includes linux[:telemetry], "COMMENT_ONLY"
+    assert_includes collect_values(linux[:conf], "urls"), "https://node/$NODE_IP"
+    assert_includes collect_values(linux[:conf], "urls"), "https://custom/${CUSTOM_METRIC}"
+    refute_includes linux[:telemetry], "TELEMETRY_PROM_ENV_REFERENCES"
+    refute_includes linux[:telemetry], "TELEMETRY_PROM_ENV_REFERENCES_TRUNCATED"
+  end
 
+  def test_windows_environment_references_are_not_added_to_telemetry
     windows = run_parser(:windows, configmap_for(:windows, "kubernetes_field_selector = \"spec.nodeName=${HOSTNAME}\"\n" \
                                                              "fieldpass = [\"$WINDOW_METRIC\"]"))
-    assert_includes windows[:windows_env], "TELEMETRY_PROM_ENV_REFERENCES=HOSTNAME,WINDOW_METRIC\n"
-    assert_includes windows[:windows_env], "TELEMETRY_PROM_ENV_REFERENCES_TRUNCATED=false\n"
+    assert_includes windows[:conf], "kubernetes_field_selector = \"spec.nodeName=${HOSTNAME}\""
+    assert_includes windows[:conf], "fieldinclude = [\"$WINDOW_METRIC\"]"
+    refute_includes windows[:windows_env], "TELEMETRY_PROM_ENV_REFERENCES"
+    refute_includes windows[:windows_env], "TELEMETRY_PROM_ENV_REFERENCES_TRUNCATED"
   end
 
   def test_toml_basic_string_output_is_a_single_parseable_value
