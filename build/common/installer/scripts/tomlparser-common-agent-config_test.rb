@@ -33,7 +33,7 @@ class CommonAgentConfigTest < Minitest::Test
         refute_includes exports, ENV_NAME
       else
         if exported
-          assert_includes exports, "export #{ENV_NAME}=true\n"
+          assert_includes exports, "export #{ENV_NAME}='true'\n"
         else
           refute_includes exports, ENV_NAME
         end
