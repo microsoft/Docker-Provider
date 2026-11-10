@@ -40,12 +40,6 @@ end
 @replicaset = "replicaset"
 @daemonset = "daemonset"
 @promSideCar = "prometheussidecar"
-TELEGRAF_ENV_ALLOWLIST = %w[
-  ACS_RESOURCE_NAME AKS_CLUSTER_NAME AKS_NODE_RESOURCE_GROUP AKS_REGION AKS_RESOURCE_ID
-  ARC_K8S_EXTENSION_NAME CLUSTER_CLOUD_ENVIRONMENT CONTAINER_RUNTIME CONTAINER_TYPE CONTROLLER_TYPE HOSTNAME
-  KUBERNETES_PORT_443_TCP_PORT
-  KUBERNETES_SERVICE_HOST KUBERNETES_SERVICE_PORT NODE_IP NODE_NAME OS_TYPE
-].freeze
 PROM_ENV_REFERENCE_REGEX = /(?<!\$)\$\{([A-Za-z_][A-Za-z0-9_]*)\}|(?<!\$)\$([A-Za-z_][A-Za-z0-9_]*)/
 PROM_ENV_REFERENCE_LIMIT = 32
 PROM_ENV_REFERENCE_BYTES_LIMIT = 512
@@ -204,10 +198,7 @@ TOML_ESCAPE_MAP = {
 # is emitted as the TOML escape \u0024: it still parses back to the identical string value but the
 # rendered text no longer contains a placeholder for a later substitution to match.
 def toTomlBasicString(value)
-  escaped = value.to_s.gsub(/\$\$|\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)/) do |reference|
-    name = Regexp.last_match(1) || Regexp.last_match(2)
-    name && !TELEGRAF_ENV_ALLOWLIST.include?(name) ? "$#{reference}" : reference
-  end.gsub(/[\\"\u0000-\u001F\u007F]/) do |char|
+  escaped = value.to_s.gsub(/[\\"\u0000-\u001F\u007F]/) do |char|
     TOML_ESCAPE_MAP[char] || format("\\u%04X", char.ord)
   end
   escaped = escaped.gsub(PLACEHOLDER_PREFIX_REGEX) { "\\u0024AZMON_" }

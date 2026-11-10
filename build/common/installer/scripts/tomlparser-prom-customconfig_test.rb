@@ -280,11 +280,11 @@ class PromCustomConfigTest < Minitest::Test
     assert_equal "\"a\\tb\"", toTomlBasicString("a\tb")
     assert_equal "\"\\u0007\"", toTomlBasicString("\a")
     assert_equal "\"\"", toTomlBasicString(nil)
-    assert_equal "\"$$filter $HOSTNAME ${HOSTNAME} $NODE_IP ${NODE_IP} $$escaped\"",
+    assert_equal "\"$filter $HOSTNAME ${HOSTNAME} $NODE_IP ${NODE_IP} $$escaped\"",
                  toTomlBasicString("$filter $HOSTNAME ${HOSTNAME} $NODE_IP ${NODE_IP} $$escaped")
   end
 
-  def test_toml_basic_string_preserves_only_allowlisted_environment_references
+  def test_toml_basic_string_preserves_all_environment_references
     names = %w[NODE_IP HOSTNAME NODE_NAME AKS_REGION AKS_CLUSTER_NAME AKS_NODE_RESOURCE_GROUP
                AKS_RESOURCE_ID ARC_K8S_EXTENSION_NAME CONTROLLER_TYPE CONTAINER_TYPE CONTAINER_RUNTIME OS_TYPE
                CLUSTER_CLOUD_ENVIRONMENT ACS_RESOURCE_NAME KUBERNETES_SERVICE_HOST KUBERNETES_SERVICE_PORT
@@ -293,8 +293,7 @@ class PromCustomConfigTest < Minitest::Test
     assert_equal "\"#{references}\"", toTomlBasicString(references)
 
     unapproved = "$filter ${HTTP_PROXY} ${AZMON_STDOUT_EXCLUDED_NAMESPACES} ${REDIS_SERVICE_HOST} ${USER_ASSIGNED_IDENTITY_CLIENT_ID}"
-    assert_equal "\"$$filter $${HTTP_PROXY} $${AZMON_STDOUT_EXCLUDED_NAMESPACES} $${REDIS_SERVICE_HOST} $${USER_ASSIGNED_IDENTITY_CLIENT_ID}\"",
-                 toTomlBasicString(unapproved)
+    assert_equal "\"#{unapproved}\"", toTomlBasicString(unapproved)
   end
 
   def test_environment_reference_telemetry_uses_authored_values_and_is_platform_appropriate
@@ -319,12 +318,12 @@ class PromCustomConfigTest < Minitest::Test
     assert_nil parsed["inputs"]
   end
 
-  def test_toml_basic_string_escapes_template_placeholders_for_telegraf
+  def test_toml_basic_string_protects_template_placeholders_for_telegraf
     value = "$AZMON_TELEGRAF_CUSTOM_PROM_FIELDDROP"
     rendered = toTomlBasicString(value)
     refute_includes rendered, "$AZMON_"
-    assert_equal "$#{value}", Tomlrb.parse("value = #{rendered}")["value"]
-    assert_equal "\"$$HOME\"", toTomlBasicString("$HOME"), "unapproved environment references must remain literal"
+    assert_equal value, Tomlrb.parse("value = #{rendered}")["value"]
+    assert_equal "\"$HOME\"", toTomlBasicString("$HOME"), "environment references must remain available to Telegraf"
   end
 
   def test_placeholder_names_in_fieldpass_are_escaped_for_telegraf
@@ -338,7 +337,7 @@ class PromCustomConfigTest < Minitest::Test
       result = run_parser(scenario, configmap_for(scenario, body))
       assert_no_injected_plugins(scenario, result[:conf], "placeholder text in fieldpass (#{scenario})")
       included = parse_generated_toml(result[:conf])["inputs"]["prometheus"].map { |plugin| plugin["fieldinclude"] }.compact
-      assert_includes included, names.map { |name| "$#{name}" },
+      assert_includes included, names,
                        "fieldpass must remain literal after Telegraf unescapes it (#{scenario})"
     end
   end
@@ -408,7 +407,7 @@ class PromCustomConfigTest < Minitest::Test
     result = run_parser(:daemonset, configmap_for(:daemonset, "urls = [#{url.inspect}, '''#{BREAKOUT}''']"))
     assert_no_injected_plugins(:daemonset, result[:conf], "the node urls array")
     assert_includes collect_values(result[:conf], "urls"),
-                    "http://example.test/metrics?node=$NODE_IP&name=$HOSTNAME&query=$$filter&excluded=$${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
+                    "http://example.test/metrics?node=$NODE_IP&name=$HOSTNAME&query=$filter&excluded=${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
   end
 
   def test_kubernetes_services_breakout_is_neutralized
