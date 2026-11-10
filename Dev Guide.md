@@ -6,12 +6,13 @@ More advanced information needed to develop or build the docker provider will li
 
 ## Windows Telegraf dependency
 
-`kubernetes/windows/setup.ps1` installs the official Telegraf 1.40.1 Windows AMD64
+`kubernetes/windows/setup.ps1` installs the official Telegraf 1.40.3 Windows AMD64
 ZIP and verifies its pinned SHA256 before extraction. The package corresponds to
-upstream commit `26b8f4478b676f4f5e5d8ce1622cdf4f6c273bda`. The existing Windows
+upstream commit `41b45388831dbb43018ebf7e475d97b355398c03` and embeds
+`github.com/andybalholm/brotli` v1.2.7. The existing Windows
 pipeline continues to sign `C:\opt\telegraf\telegraf.exe` as an OSS dependency.
 
-The official binary is built with Go 1.27.1 for `windows/amd64`, `GOAMD64=v1`.
+The official binary is built with Go 1.27.3 for `windows/amd64`, `GOAMD64=v1`.
 Go's [Windows OS floor](https://go.dev/wiki/MinimumRequirements#windows) is Windows
 10 or Windows Server 2016 and newer. Both repository image targets, LTSC2019 and
 LTSC2022, meet that floor; this does not replace validation inside those images
