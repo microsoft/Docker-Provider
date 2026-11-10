@@ -12,6 +12,8 @@ class Extension
   def initialize
     @cache = {}
     @cache_lock = Mutex.new
+    @exception_telemetry_last_sent = {}
+    @exception_telemetry_lock = Mutex.new
     $log.info("Extension::initialize complete")
   end
 
@@ -42,7 +44,7 @@ class Extension
       end
     rescue => errorStr
       $log.warn("Extension::get_extension_settings failed: #{errorStr}")
-      ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      send_exception_telemetry(errorStr)
     end
     return extensionSettings
   end
@@ -59,7 +61,7 @@ class Extension
       end
     rescue => errorStr
       $log.warn("Extension::get_extension_data_collection_settings failed: #{errorStr}")
-      ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      send_exception_telemetry(errorStr)
     end
     return dataCollectionSettings
   end
@@ -84,7 +86,7 @@ class Extension
       end
     rescue => errorStr
       $log.warn("Extension::get_stream_mapping failed: #{errorStr}")
-      ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      send_exception_telemetry(errorStr)
     end
     return dataTypeToStreamIdMap
   end
@@ -100,7 +102,7 @@ class Extension
       end
     rescue => errorStr
       $log.warn("Extension::getFluentSocketName failed: #{errorStr}")
-      ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      send_exception_telemetry(errorStr)
     end
     return fluentSocketName
   end
@@ -127,10 +129,27 @@ class Extension
       end
     rescue => errorStr
       $log.warn("Extension::get_extension_configs failed: #{errorStr}")
-      ApplicationInsightsUtility.sendExceptionTelemetry(errorStr)
+      send_exception_telemetry(errorStr)
     ensure
       clientSocket.close unless clientSocket.nil?
     end
     return extensionConfigurations
+  end
+
+  # Input plugins call into Extension on every run, so a persistent failure (e.g. the mdsd fluent socket
+  # never comes up because mdsd cannot fetch its config) would otherwise send an exception on every call.
+  # Send each exception type at most once per interval; every occurrence is still logged.
+  def send_exception_telemetry(errorStr)
+    exceptionType = errorStr.class.name
+    now = Time.now.to_i
+    shouldSend = false
+    @exception_telemetry_lock.synchronize {
+      lastSentTime = @exception_telemetry_last_sent[exceptionType]
+      if lastSentTime.nil? || (now - lastSentTime) >= Constants::EXTENSION_EXCEPTION_TELEMETRY_INTERVAL_IN_MINUTES * 60
+        @exception_telemetry_last_sent[exceptionType] = now
+        shouldSend = true
+      end
+    }
+    ApplicationInsightsUtility.sendExceptionTelemetry(errorStr) if shouldSend
   end
 end
