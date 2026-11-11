@@ -9,10 +9,10 @@ additional questions or comments.
 
 ## Release History
 ### 11/11/2026 -
-##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.10.0-<tbd> (linux)
-##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.10.0-<tbd> (windows)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.10.0-ci-prod-11-10-2026-c75cc056 (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.10.0-ci-prod-11-10-2026-c75cc056 (windows)
 - Linux
-  - azurelinux 3.0 (<tbd>)
+  - [azurelinux 3.0.20261105](https://github.com/microsoft/azurelinux/releases/tag/3.0.20261105-3.0)
   - Golang - 1.27.3
   - Ruby - arm64 - 3.3.5-7, x86_64 - 3.3.10
   - MDSD - 1.42.0
@@ -29,6 +29,7 @@ additional questions or comments.
 ##### Code change log
 ## What's Changed
 - Common (Linux + Windows)
+    * fix(helm): use sovereign MCR endpoints for Bleu and Delos by @rashmichandrashekar in https://github.com/microsoft/Docker-Provider/pull/1834
     * fix(windows): upgrade Telegraf to 1.40.3 by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1831
     * fix(windows): verify AMA entrypoint signatures before image assembly by @bragi92 in https://github.com/microsoft/Docker-Provider/pull/1829
     * Harden container inventory state persistence against invalid container IDs by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1826
