@@ -8,6 +8,49 @@ information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeo
 additional questions or comments.
 
 ## Release History
+### 11/11/2026 -
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.10.0-<tbd> (linux)
+##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.10.0-<tbd> (windows)
+- Linux
+  - azurelinux 3.0 (<tbd>)
+  - Golang - 1.27.3
+  - Ruby - arm64 - 3.3.5-7, x86_64 - 3.3.10
+  - MDSD - 1.42.0
+  - Telegraf - 1.40.3
+  - Fluent-bit - 5.1.2
+  - Fluentd - 1.19.4
+- Windows
+  - Golang - 1.27.3
+  - Ruby - 3.1.1
+  - Windows AMA - 47.14.2
+  - Telegraf - 1.40.3
+  - Fluent-bit - 5.0.3
+  - Fluentd - 1.16.3
+##### Code change log
+## What's Changed
+- Common (Linux + Windows)
+    * fix(windows): upgrade Telegraf to 1.40.3 by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1831
+    * fix(windows): verify AMA entrypoint signatures before image assembly by @bragi92 in https://github.com/microsoft/Docker-Provider/pull/1829
+    * Harden container inventory state persistence against invalid container IDs by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1826
+    * Bind internal telegraf ingestion listeners to loopback by @suyadav1 in https://github.com/microsoft/Docker-Provider/pull/1824
+    * fix(windows): upgrade AMA to 47.14.2 for Brotli security fix by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1823
+    * Reduce App Insights telemetry: throttle Extension socket exceptions, drop duplicate NodeCoreCapacity by @rashmichandrashekar in https://github.com/microsoft/Docker-Provider/pull/1799
+    * chore(deps): upgrade golang.org/x/net to v0.61.0 by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1821
+    * fix: configure Application Insights telemetry for Delos cloud by @rashmichandrashekar in https://github.com/microsoft/Docker-Provider/pull/1816
+    * fix(linux): remediate Fluentd and resolv vulnerabilities by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1820
+    * Upgrade telegraf-agent to 1.40.3 by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1818
+    * (fix) harden placeholder handling in custom prometheus config generation by @sarahpeiffer in https://github.com/microsoft/Docker-Provider/pull/1817
+    * fix: Refresh Windows runtime dependencies by @gracewehner in https://github.com/microsoft/Docker-Provider/pull/1814
+    * fix: quote config map values written into generated shell files by @gracewehner in https://github.com/microsoft/Docker-Provider/pull/1794
+    * Gangams/oci msi geneva fix by @ganga1980 in https://github.com/microsoft/Docker-Provider/pull/1805
+
+- Infra
+    * Add parameter files for AKS application monitoring templates by @tokaplan in https://github.com/microsoft/Docker-Provider/pull/1827
+    * Remove obsolete application monitoring AFEC registration by @tokaplan in https://github.com/microsoft/Docker-Provider/pull/1815
+    * fix: remove unapproved image references from test and examples by @zanejohnson-azure in https://github.com/microsoft/Docker-Provider/pull/1819
+    * docs: fill 3.9.1 image tag and Azure Linux version in release notes by @azure-monitor-assistant in https://github.com/microsoft/Docker-Provider/pull/1813
+    * Add AKS application monitoring ARM and Bicep templates by @tokaplan in https://github.com/microsoft/Docker-Provider/pull/1812
+
 ### 10/23/2026 -
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:3.9.1-ci-prod-10-25-2026-46052686 (linux)
 ##### Version mcr.microsoft.com/azuremonitor/containerinsights/ciprod:win-3.9.1-ci-prod-10-25-2026-46052686 (windows)
