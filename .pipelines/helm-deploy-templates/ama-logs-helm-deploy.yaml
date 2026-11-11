@@ -122,6 +122,12 @@ jobs:
               K8S_VERSION=$(kubectl version -o json | jq -r '.serverVersion.gitVersion' | sed 's/^v//')
               echo "Detected Kubernetes version: $K8S_VERSION"
               echo "##vso[task.setvariable variable=K8S_VERSION]$K8S_VERSION"
+        - bash: |
+            set -euo pipefail
+            start_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            echo "##vso[task.setvariable variable=timestamp;isOutput=true]$start_time"
+          name: deploymentStart
+          displayName: 'Record agent deployment start for telemetry checks'
         - task: HelmDeploy@0
           displayName: 'Helm Deploy: ama-logs to ${{ parameters.clusterName }}'
           inputs:

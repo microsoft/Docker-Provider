@@ -1,8 +1,8 @@
 package querylogs_test
 
 import (
-	"fmt"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -72,9 +72,12 @@ var _ = Describe("When querying the logs for the ContainerInventory", func() {
 		},
 		Entry("Image", "Image"),
 		Entry("ImageID", "ImageID"),
-		Entry("ImageTag", "ImageTag"),
 		Entry("Repository", "Repository"),
 	)
+
+	It("ImageTag should match the Kubernetes image reference", func() {
+		Expect(utils.CompareContainerInventoryImageTags(K8sClient, LogsClient, AKSResourceId)).NotTo(HaveOccurred())
+	})
 })
 
 var _ = Describe("When querying the number of resources of the cluster", func() {
@@ -100,18 +103,14 @@ var _ = Describe("When querying the agent telemetry", func() {
 			expectedNodes, err := utils.GetExpectedAmaLogsNodes(K8sClient)
 			Expect(err).NotTo(HaveOccurred())
 
-			query := fmt.Sprintf(`%s
-| where timestamp > ago(30m)
-| extend ClusterId = iff(isnotempty(tostring(customDimensions.ID)), tostring(customDimensions.ID), tostring(customDimensions.AKS_RESOURCE_ID))
-| where ClusterId =~ %q
-| where tostring(customDimensions.Version) in (%q, %q)
-| distinct Computer = tolower(tostring(customDimensions.Computer))`, telemetrySource, AKSResourceId, AgentTelemetryVersion, "win-"+AgentTelemetryVersion)
+			query, err := utils.BuildAgentTelemetryQuery(telemetrySource, AKSResourceId, AgentTelemetryVersion, AgentDeploymentStartTime, time.Now())
+			Expect(err).NotTo(HaveOccurred())
 
 			err = utils.CompareResourcesHelper(LogsClient, AgentTelemetryResourceId, query, expectedNodes)
 			Expect(err).NotTo(HaveOccurred())
 		},
 		Entry("customMetrics", "customMetrics"),
 		Entry("traces", "traces"),
-		Entry("heartbeat", `customEvents | where name == "ContainerLogDaemonSetHeartbeatEvent"`),
+		Entry("heartbeat", "heartbeat"),
 	)
 })
