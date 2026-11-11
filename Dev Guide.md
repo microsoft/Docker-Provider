@@ -4,6 +4,30 @@ More advanced information needed to develop or build the docker provider will li
 
 <!-- TODO: eventually move dev info from README.md to here-->
 
+## Docker build contexts
+
+Linux builds use the repository root as the context with
+`kubernetes/linux/Dockerfile.multiarch`; the root `.dockerignore` allows only
+`build`, `source` and `kubernetes/linux`. Windows builds use `kubernetes/windows`
+as the context; its `.dockerignore` allows the setup and entrypoint scripts,
+CA-distrust inputs and the generated `amalogswindows` payload.
+
+Keep these allowlists in sync with Dockerfile `COPY` inputs. Do not copy
+`.gitignore` exclusions into them: Windows requires generated ZIP, DLL and SO
+files that Git intentionally ignores.
+
+## Image signature annotations
+
+Both signing jobs use the Python example from Microsoft's
+[container signing guidance](https://eng.ms/docs/more/containers-secure-supply-chain/signing#step-4-push-the-signature-to-acr)
+to derive lowercase SHA-256 fingerprints for the certificates in the actual
+ESRP-signed `payload.json`. ORAS attaches that chain as the Notary S256
+annotation in `signature-annotations.json` for ORAS `--annotation-file`; the COSE
+payload is not rewritten.
+
+Both jobs authenticate to the `microsoft_PublicPackages` Azure Artifacts feed
+before installing `cbor2`.
+
 ## Windows Telegraf dependency
 
 `kubernetes/windows/setup.ps1` installs the official Telegraf 1.40.1 Windows AMD64
