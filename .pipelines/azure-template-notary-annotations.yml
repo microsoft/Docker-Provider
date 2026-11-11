@@ -5,20 +5,21 @@ parameters:
   type: string
 
 steps:
+# Temporary: validate the approved Python feed on PR #1832; revert after the run.
 - task: UsePythonVersion@0
   displayName: 'Select cached Python for Notary annotations'
   inputs:
     versionSpec: '3.x'
     disableDownloadFromRegistry: true
-  condition: ${{ parameters.condition }}
+  condition: succeeded()
 - task: PipAuthenticate@1
   displayName: 'Authenticate to Microsoft Python feed'
   inputs:
     artifactFeeds: 'microsoft/microsoft_PublicPackages'
-  condition: ${{ parameters.condition }}
+  condition: succeeded()
 - script: pip install cbor2
   displayName: 'Install Notary script dependency'
-  condition: ${{ parameters.condition }}
+  condition: succeeded()
 - task: PythonScript@0
   displayName: 'Generate Notary chain annotations'
   inputs:
