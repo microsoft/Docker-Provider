@@ -114,13 +114,6 @@ ENV CI_CERT_LOCATION "C://oms.crt"
 ENV CI_KEY_LOCATION "C://oms.key"
 
 # Delete unnecessary files
-RUN powershell -Command "$rubyVersion = & C:\ruby\bin\ruby.exe -rrbconfig -e 'print RbConfig::CONFIG.fetch(%q(ruby_version))'; if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($rubyVersion)) { throw 'Unable to determine Ruby version' }; Remove-Item -Recurse -Force 'C:\ruby\share\doc\ruby\html\js'; \
-Remove-Item -Force 'C:\ruby\ridk_use\ridk.ps1'; \
-Remove-Item -Recurse -Force 'C:\ruby\msys64\usr\share\texinfo\js'; \
-Remove-Item -Force 'C:\ruby\msys64\usr\share\terminfo\78\xterm.js'; \
-Remove-Item -Force 'C:\ruby\msys64\usr\lib\terminfo\78\xterm.js'; \
-Remove-Item -Recurse -Force "C:\ruby\lib\ruby\$rubyVersion\rdoc\generator\template\json_index\js"; \
-Remove-Item -Recurse -Force "C:\ruby\lib\ruby\$rubyVersion\rdoc\generator\template\darkfish\js"; \
-Remove-Item -Force 'C:\ruby\bin\ridk.ps1'"
+RUN $rubyVersion = & 'C:\ruby\bin\ruby.exe' -rrbconfig -e 'print RbConfig::CONFIG.fetch(%q(ruby_version))'; if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($rubyVersion)) { throw 'Unable to determine Ruby version' }; Remove-Item -Recurse -Force 'C:\ruby\share\doc\ruby\html\js'; Remove-Item -Force 'C:\ruby\ridk_use\ridk.ps1'; Remove-Item -Recurse -Force 'C:\ruby\msys64\usr\share\texinfo\js'; Remove-Item -Force 'C:\ruby\msys64\usr\share\terminfo\78\xterm.js'; Remove-Item -Force 'C:\ruby\msys64\usr\lib\terminfo\78\xterm.js'; Remove-Item -Recurse -Force "C:\ruby\lib\ruby\$rubyVersion\rdoc\generator\template\json_index\js"; Remove-Item -Recurse -Force "C:\ruby\lib\ruby\$rubyVersion\rdoc\generator\template\darkfish\js"; Remove-Item -Force 'C:\ruby\bin\ridk.ps1'
 
 ENTRYPOINT ["powershell", "C:\\opt\\amalogswindows\\scripts\\powershell\\main.ps1"]
