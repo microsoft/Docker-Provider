@@ -54,6 +54,32 @@ To run a specific PowerShell test file:
 
 ## Available Tests
 
+### Linux mdsd Console Logs
+`test_cases/test_mdsd_log_forwarding.sh` exercises the production forwarding
+function from `kubernetes/linux/main.sh` using BusyBox when available, or the host
+tail implementation otherwise. BusyBox is used by the Linux agent image.
+It verifies existing startup errors and subsequent errors and
+warnings reach stdout without duplicates or filename headers, files remain
+available for onboarding checks, forwarding resumes after copytruncate and file
+replacement, informational logs are not forwarded, and file preparation errors
+are surfaced. Run `bash test/unit-tests/test_cases/test_mdsd_log_forwarding.sh`.
+It also verifies that an unset, false, or invalid enablement variable produces no
+forwarder, output, or changes to the diagnostic files.
+
+`build/common/installer/scripts/tomlparser-common-agent-config_test.rb` checks
+the opt-in ConfigMap and extension settings, including precedence, defaults, invalid values and schema,
+Windows compatibility, and the generated environment's effect on the production
+shell function. Run
+`ruby build/common/installer/scripts/tomlparser-common-agent-config_test.rb`
+with the existing Ruby test dependencies installed.
+
+`test/helm/mdsd_log_forwarding_test.rb` renders both chart sources and verifies
+default, boolean and string extension values in all Linux agent roles, disabled
+sidecars, and unchanged Windows and AKS workloads. Run
+`ruby test/helm/mdsd_log_forwarding_test.rb` with Helm on `PATH` and the existing
+Ruby test dependencies installed. Generated unified chart files are confined to
+a temporary directory.
+
 ### Windows Telegraf Package
 `test_cases/Test-TelegrafPackage.ps1` exercises the Telegraf installation block from
 `kubernetes/windows/setup.ps1` with mocked package operations. It checks the pinned
