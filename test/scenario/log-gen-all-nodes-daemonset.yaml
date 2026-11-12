@@ -29,7 +29,7 @@ spec:
       - operator: Exists
       containers:
       - name: log-gen
-        image: mcr.microsoft.com/cbl-mariner/busybox:2.0
+        image: mcr.microsoft.com/azurelinux/base/core:3.0
         command: ["sh", "-c"]
         args:
         - 'i=0; while true; do i=$((i+1)); echo "log-gen-linux line $i node=$NODE_NAME ts=$(date -u +%Y-%m-%dT%H:%M:%SZ)"; sleep 1; done'
