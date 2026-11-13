@@ -332,11 +332,13 @@ class TomlParserTest < Minitest::Test
     TOML
     result = run_parser(config)
 
-    ["AZMON_STDOUT_EXCLUDED_NAMESPACES", "AZMON_STDERR_EXCLUDED_NAMESPACES",
-     "AZMON_MULTI_TENANCY_NAMESPACES", "AZMON_MULTI_TENANCY_SVC_BUFFER_CHUNK_SIZE",
-     "AZMON_MULTI_TENANCY_SVC_BUFFER_MAX_SIZE"].each do |variable|
+    ["AZMON_STDOUT_EXCLUDED_NAMESPACES", "AZMON_STDERR_EXCLUDED_NAMESPACES"].each do |variable|
       assert_equal value, result[:env][variable], variable
     end
+    assert_equal "", result[:env]["AZMON_MULTI_TENANCY_NAMESPACES"]
+    assert_equal "false", result[:env]["AZMON_MULTI_TENANCY_LOG_COLLECTION_ADVANCED_MODE"]
+    assert_equal "10m", result[:env]["AZMON_MULTI_TENANCY_SVC_BUFFER_CHUNK_SIZE"]
+    assert_equal "30m", result[:env]["AZMON_MULTI_TENANCY_SVC_BUFFER_MAX_SIZE"]
     assert_equal "kube-system:#{value}", result[:env]["AZMON_STDOUT_INCLUDED_SYSTEM_PODS"]
     assert_equal "kube-system:#{value}", result[:env]["AZMON_STDERR_INCLUDED_SYSTEM_PODS"]
     assert_equal "*.csv2,*_#{value}_*.log", result[:env]["AZMON_CLUSTER_LOG_TAIL_EXCLUDE_PATH"]

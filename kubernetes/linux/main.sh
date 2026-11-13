@@ -501,8 +501,7 @@ if [ -e "/etc/config/settings/schema-version" ] && [ -s "/etc/config/settings/sc
       #take first 10 characters
       config_schema_version="$(echo $config_schema_version | cut -c1-10)"
 
-      export AZMON_AGENT_CFG_SCHEMA_VERSION=$config_schema_version
-      echo "export AZMON_AGENT_CFG_SCHEMA_VERSION=$config_schema_version" >>~/.bashrc
+      setGlobalEnvVar AZMON_AGENT_CFG_SCHEMA_VERSION "$config_schema_version"
       source ~/.bashrc
       echo "AZMON_AGENT_CFG_SCHEMA_VERSION:$AZMON_AGENT_CFG_SCHEMA_VERSION"
 fi
@@ -516,8 +515,7 @@ if [ -e "/etc/config/settings/config-version" ] && [ -s "/etc/config/settings/co
       #take first 10 characters
       config_file_version="$(echo $config_file_version | cut -c1-10)"
 
-      export AZMON_AGENT_CFG_FILE_VERSION=$config_file_version
-      echo "export AZMON_AGENT_CFG_FILE_VERSION=$config_file_version" >>~/.bashrc
+      setGlobalEnvVar AZMON_AGENT_CFG_FILE_VERSION "$config_file_version"
       source ~/.bashrc
       echo "AZMON_AGENT_CFG_FILE_VERSION:$AZMON_AGENT_CFG_FILE_VERSION"
 fi
@@ -533,8 +531,7 @@ if [[ ((! -e "/etc/config/kube.conf") && ("${CONTAINER_TYPE}" == "PrometheusSide
             #take first 10 characters
             osm_config_schema_version="$(echo $osm_config_schema_version | cut -c1-10)"
 
-            export AZMON_OSM_CFG_SCHEMA_VERSION=$osm_config_schema_version
-            echo "export AZMON_OSM_CFG_SCHEMA_VERSION=$osm_config_schema_version" >>~/.bashrc
+            setGlobalEnvVar AZMON_OSM_CFG_SCHEMA_VERSION "$osm_config_schema_version"
             source ~/.bashrc
             echo "AZMON_OSM_CFG_SCHEMA_VERSION:$AZMON_OSM_CFG_SCHEMA_VERSION"
       fi
@@ -1213,6 +1210,8 @@ fi
 
 setGlobalEnvVar AZMON_RETINA_FLOW_LOGS_ENABLED "${AZMON_RETINA_FLOW_LOGS_ENABLED}"
 
+ruby tomlparser-prom-customconfig.rb --resolve-defaults || exit 1
+
 #start fluentd
 if [ "${CONTROLLER_TYPE}" == "ReplicaSet" ] && [ "${GENEVA_LOGS_INTEGRATION_SERVICE_MODE}" != "true" ] && [ "${AZMON_MULTI_TENANCY_LOGS_SERVICE_MODE}" != "true" ]; then
     echo "*** starting fluentd v1 in replicaset"
@@ -1247,7 +1246,7 @@ else
             if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ] && [ -e "/opt/telegraf-test-prom-side-car.conf" ]; then
                   if [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
                         echo "****************Start Telegraf in Test Mode**************************"
-                        /opt/telegraf config check --non-strict-env-handling --config /opt/telegraf-test-prom-side-car.conf
+                        /opt/telegraf --strict-env-handling --config /opt/telegraf-test-prom-side-car.conf --input-filter file -test
                         if [ $? -eq 0 ]; then
                               mv "/opt/telegraf-test-prom-side-car.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf"
                               echo "Moving test conf file to telegraf side-car conf since test run succeeded"
@@ -1259,7 +1258,7 @@ else
             else
                   if [ -e "/opt/telegraf-test.conf" ]; then
                         echo "****************Start Telegraf in Test Mode**************************"
-                        /opt/telegraf config check --non-strict-env-handling --config /opt/telegraf-test.conf
+                        /opt/telegraf --strict-env-handling --config /opt/telegraf-test.conf --input-filter file -test
                         if [ $? -eq 0 ]; then
                               mv "/opt/telegraf-test.conf" "/etc/opt/microsoft/docker-cimprov/telegraf.conf"
                               echo "Moving test conf file to telegraf daemonset conf since test run succeeded"
@@ -1270,7 +1269,7 @@ else
       else
             if [ -e "/opt/telegraf-test-rs.conf" ]; then
                   echo "****************Start Telegraf in Test Mode**************************"
-                  /opt/telegraf config check --non-strict-env-handling --config /opt/telegraf-test-rs.conf
+                  /opt/telegraf --strict-env-handling --config /opt/telegraf-test-rs.conf --input-filter file -test
                   if [ $? -eq 0 ]; then
                         mv "/opt/telegraf-test-rs.conf" "/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf"
                         echo "Moving test conf file to telegraf replicaset conf since test run succeeded"
@@ -1422,7 +1421,7 @@ elif [ "${MUTE_PROM_SIDECAR}" != "true" ]; then
     elif [ "${CONTROLLER_TYPE}" != "ReplicaSet" ] && [ "${CONTAINER_TYPE}" != "PrometheusSidecar" ] && [ "${LOGS_AND_EVENTS_ONLY}" == "true" ]; then
         echo "not starting telegraf for LOGS_AND_EVENTS_ONLY daemonset"
     else
-        /opt/telegraf --non-strict-env-handling --config $telegrafConfFile &
+        /opt/telegraf --strict-env-handling --config $telegrafConfFile &
     fi
 else
     echo "not starting telegraf (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
@@ -1446,7 +1445,7 @@ if [ "${AZMON_COLLECT_AMA_LOGS_PROCESS_METRICS}" == "true" ]; then
             appinsightsKey=$(echo "$APPLICATIONINSIGHTS_AUTH" | base64 -d | tr -d '\n')
             sed -i -e "s/placeholder_appinsights_key/$appinsightsKey/g" $amaLogsProcessMetricsConfFile
             # Use /proc so telegraf only collect process metrics inside ama-logs containers.
-            HOST_PROC=/proc /opt/telegraf --non-strict-env-handling --config $amaLogsProcessMetricsConfFile &
+            HOST_PROC=/proc /opt/telegraf --strict-env-handling --config $amaLogsProcessMetricsConfFile &
         else
             echo "APPLICATIONINSIGHTS_AUTH or AKS_RESOURCE_ID not set, skipping ama-logs process metrics monitoring"
         fi

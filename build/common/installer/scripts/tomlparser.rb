@@ -82,13 +82,22 @@ def get_command_linux(env_variable_name, env_variable_value)
   return "export #{env_variable_name}='#{escaped_value}'\n"
 end
 
+def is_valid_tenant_namespace?(value)
+  value.is_a?(String) && value.length <= 63 && value.match?(/\A[a-z0-9](?:[-a-z0-9]*[a-z0-9])?\z/)
+end
+
+def is_valid_tenant_setting?(name, value)
+  @default_settings.key?(name) && !value.nil? && !value.to_s.empty? &&
+    !value.to_s.match?(/[\x00-\x08\x0a-\x1f\x7f]/)
+end
+
 def updateDefaultConfigSetting(configEntryName, configValue)
   begin
     if !configValue.nil?
-      if is_number?(configValue) && configValue.to_i > 0
-        @default_settings[configEntryName] = configValue
-      else
+      if is_valid_tenant_setting?(configEntryName, configValue)
         @default_settings[configEntryName] = configValue.to_s
+      else
+        ConfigParseErrorLogger.logError("Invalid multi-tenancy setting #{configEntryName}, using default")
       end
     end
   rescue => errorStr
@@ -163,17 +172,17 @@ def generateAzMonMultiTenantNamespaceConfig
             puts "Throttle is disabled for namespace: #{tenant_namespace}"
           end
           templatefile = templatefile.gsub("<TENANT_NAMESPACE>", tenant_namespace)
-          templatefile = templatefile.gsub("${AZMON_TENANT_TAIL_STORAGE_TYPE}", storage_type)
-          templatefile = templatefile.gsub("${AZMON_TENANT_TAIL_MEM_BUF_LIMIT}", mem_buf_limit)
-          templatefile = templatefile.gsub("${AZMON_TENANT_TAIL_BUFFER_CHUNK_SIZE}", buffer_chunk_size)
-          templatefile = templatefile.gsub("${AZMON_TENANT_TAIL_BUFFER_MAX_SIZE}", buffer_max_size)
-          templatefile = templatefile.gsub("${AZMON_TENANT_THROTTLE_RATE}", throttle_rate)
-          templatefile = templatefile.gsub("${AZMON_TENANT_THROTTLE_WINDOW}", throttle_window)
-          templatefile = templatefile.gsub("${AZMON_TENANT_THROTTLE_INTERVAL}", throttle_interval)
-          templatefile = templatefile.gsub("${AZMON_TENANT_OUTPUT_FORWARD_WORKERS_COUNT}", out_forward_worker_count)
-          templatefile = templatefile.gsub("${AZMON_TENANT_OUTPUT_FORWARD_RETRY_LIMIT}", out_forward_retry_limit)
-          templatefile = templatefile.gsub("${AZMON_TENANT_OUTPUT_FORWARD_STORAGE_TOTAL_LIMIT_SIZE}", out_forward_storage_total_limit_size)
-          templatefile = templatefile.gsub("${AZMON_TENANT_REQUIRE_ACK_RESPONSE}", out_forward_require_ack_response.to_s)
+          templatefile = templatefile.gsub("${AZMON_TENANT_TAIL_STORAGE_TYPE}") { storage_type }
+          templatefile = templatefile.gsub("${AZMON_TENANT_TAIL_MEM_BUF_LIMIT}") { mem_buf_limit }
+          templatefile = templatefile.gsub("${AZMON_TENANT_TAIL_BUFFER_CHUNK_SIZE}") { buffer_chunk_size }
+          templatefile = templatefile.gsub("${AZMON_TENANT_TAIL_BUFFER_MAX_SIZE}") { buffer_max_size }
+          templatefile = templatefile.gsub("${AZMON_TENANT_THROTTLE_RATE}") { throttle_rate }
+          templatefile = templatefile.gsub("${AZMON_TENANT_THROTTLE_WINDOW}") { throttle_window }
+          templatefile = templatefile.gsub("${AZMON_TENANT_THROTTLE_INTERVAL}") { throttle_interval }
+          templatefile = templatefile.gsub("${AZMON_TENANT_OUTPUT_FORWARD_WORKERS_COUNT}") { out_forward_worker_count }
+          templatefile = templatefile.gsub("${AZMON_TENANT_OUTPUT_FORWARD_RETRY_LIMIT}") { out_forward_retry_limit }
+          templatefile = templatefile.gsub("${AZMON_TENANT_OUTPUT_FORWARD_STORAGE_TOTAL_LIMIT_SIZE}") { out_forward_storage_total_limit_size }
+          templatefile = templatefile.gsub("${AZMON_TENANT_REQUIRE_ACK_RESPONSE}") { out_forward_require_ack_response.to_s }
           tenant_file_path = getTenantFilePath(tenant_namespace)
           File.open(tenant_file_path, 'w') { |file| file.write(templatefile) }
       end
@@ -500,7 +509,15 @@ def populateSettingValuesFromConfigMap(parsedConfig)
                 if !namespaces.nil? && !namespaces.empty? &&
                   namespaces.kind_of?(Array) && namespaces.length > 0 &&
                   namespaces[0].kind_of?(String) # Checking only for the first element to be string because toml enforces the arrays to contain elements of same type
-                  @azMonMultiTenantNamespaces = namespaces.map(&:strip).map(&:downcase).uniq
+                  @azMonMultiTenantNamespaces = namespaces.filter_map do |namespace|
+                    namespace = namespace.strip.downcase if namespace.is_a?(String)
+                    if is_valid_tenant_namespace?(namespace)
+                      namespace
+                    else
+                      ConfigParseErrorLogger.logError("Invalid multi-tenancy namespace, skipping entry")
+                      nil
+                    end
+                  end.uniq
                 end
                 puts "config::INFO:multi_tenancy unique namespaces provided: #{@azMonMultiTenantNamespaces}"
                 if  @azMonMultiTenantNamespaces.length > 0
@@ -542,9 +559,21 @@ def populateSettingValuesFromConfigMap(parsedConfig)
                     namespace_settings.kind_of?(Array) && namespace_settings.length > 0 &&
                     namespace_settings[0].kind_of?(String) # Checking only for the first element to be string because toml enforces the arrays to contain elements of same type
                     namespace_settings.each do |entry|
-                        namespace, settings_str = entry.split(':')
-                        settings = settings_str.split(';').map { |s| s.split('=') }.to_h
-                        namespace = namespace.strip.downcase
+                        namespace, settings_str = entry.is_a?(String) ? entry.split(':', 2) : []
+                        namespace = namespace.strip.downcase if namespace
+                        unless is_valid_tenant_namespace?(namespace) && settings_str
+                          ConfigParseErrorLogger.logError("Invalid multi-tenancy namespace_settings entry, skipping entry")
+                          next
+                        end
+                        settings = {}
+                        settings_str.split(';').each do |setting|
+                          key, value = setting.split('=', 2)
+                          if is_valid_tenant_setting?(key, value)
+                            settings[key] = value
+                          else
+                            ConfigParseErrorLogger.logError("Invalid multi-tenancy namespace setting, using default")
+                          end
+                        end
                         if @namespace_to_settings.key?(namespace)
                           puts "config::WARN: Duplicate namespace settings found for namespace: #{namespace}, using the previous settings"
                         else
@@ -557,12 +586,16 @@ def populateSettingValuesFromConfigMap(parsedConfig)
 
                   # azmon multi-tenancy service buffer settings
                   service_buffer_chunk_size = parsedConfig[:log_collection_settings][:multi_tenancy][:service_buffer_chunk_size]
-                  if !service_buffer_chunk_size.nil? && !service_buffer_chunk_size.empty?
+                  if !service_buffer_chunk_size.nil? && is_valid_tenant_setting?("buffer_chunk_size", service_buffer_chunk_size)
                       @azMonMultiTenancyServiceBufferChunkSize = service_buffer_chunk_size
+                  elsif !service_buffer_chunk_size.nil?
+                      ConfigParseErrorLogger.logError("Invalid multi-tenancy service_buffer_chunk_size, using default")
                   end
                   service_buffer_max_size = parsedConfig[:log_collection_settings][:multi_tenancy][:service_buffer_max_size]
-                  if !service_buffer_max_size.nil? && !service_buffer_max_size.empty?
+                  if !service_buffer_max_size.nil? && is_valid_tenant_setting?("buffer_max_size", service_buffer_max_size)
                       @azMonMultiTenancyServiceBufferMaxSize = service_buffer_max_size
+                  elsif !service_buffer_max_size.nil?
+                      ConfigParseErrorLogger.logError("Invalid multi-tenancy service_buffer_max_size, using default")
                   end
                 else
                   puts "config::WARN: Multi-tenancy log collection is enabled with advanced_mode_enabled but no namespaces provided, disabling advanced_mode_enabled"

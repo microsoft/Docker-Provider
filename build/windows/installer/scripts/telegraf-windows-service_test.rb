@@ -113,7 +113,7 @@ class TelegrafServiceWorkerTest < Minitest::Test
     start_worker
     @worker.stop
     @thread.value
-    assert_equal [TelegrafServiceWorker::EXECUTABLE, "--console", "--config", 'C:\etc\telegraf\telegraf.conf'], @processes.command
+    assert_equal [TelegrafServiceWorker::EXECUTABLE, "--console", "--strict-env-handling", "--config", 'C:\etc\telegraf\telegraf.conf'], @processes.command
     assert @processes.options[:new_pgroup]
     assert @console.prepared
     assert_equal [:prepare, :spawn], @processes.events
