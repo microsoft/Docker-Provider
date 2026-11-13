@@ -1,0 +1,59 @@
+parameters:
+- name: workingDirectory
+  type: string
+- name: condition
+  type: string
+
+steps:
+- task: UsePythonVersion@0
+  displayName: 'Select cached Python for Notary annotations'
+  inputs:
+    versionSpec: '3.x'
+    disableDownloadFromRegistry: true
+  condition: ${{ parameters.condition }}
+- task: PipAuthenticate@1
+  displayName: 'Authenticate to Microsoft Python feed'
+  inputs:
+    artifactFeeds: 'microsoft/microsoft_PublicPackages'
+  condition: ${{ parameters.condition }}
+- script: pip install cbor2
+  displayName: 'Install Notary script dependency'
+  condition: ${{ parameters.condition }}
+- task: PythonScript@0
+  displayName: 'Generate Notary chain annotations'
+  inputs:
+    scriptSource: inline
+    workingDirectory: ${{ parameters.workingDirectory }}
+    script: |
+      import json
+      import os
+      from pathlib import Path
+      import subprocess
+      import sys
+
+      script = """#!/usr/bin/env python
+      import cbor2, argparse, hashlib, json
+      def cert_chain_sha256(file_path):
+          with open(file_path, 'rb') as fp:
+              cose_obj = cbor2.load(fp)
+              if cose_obj.tag != 18:  # COSE_Sign1_TAG
+                  raise ValueError(f"Expected tag 18, got {cose_obj.tag}")
+              cert_chain = cose_obj.value[1].get(33)  # COSE_X5CHAIN
+              if not cert_chain:
+                  raise ValueError("x5chain not found in unprotected header")
+              return json.dumps([hashlib.sha256(cert).hexdigest() for cert in cert_chain])
+      if __name__ == "__main__":
+          parser = argparse.ArgumentParser()
+          parser.add_argument('-f', '--file-path', type=str, required=True, help='Path to COSE signature envelope')
+          args = parser.parse_args()
+          print(cert_chain_sha256(args.file_path))
+      """
+      script_path = Path(os.environ["AGENT_TEMPDIRECTORY"], "generate-cert-chain-thumbprint.py")
+      script_path.write_text(script, encoding="utf-8")
+      chain = subprocess.check_output([
+          sys.executable, str(script_path), "--file-path", "./payload.json"
+      ], text=True).strip()
+      Path("signature-annotations.json").write_text(json.dumps({
+          "$manifest": {"io.cncf.notary.x509chain.thumbprint#S256": chain}
+      }), encoding="utf-8")
+  condition: ${{ parameters.condition }}

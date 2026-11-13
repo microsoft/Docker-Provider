@@ -1,36 +1,3 @@
-function Install-Go {
-    $tempDir =  $env:TEMP
-    if ($false -eq (Test-Path -Path $tempDir)) {
-        Write-Host("Invalid TEMP dir PATH : " + $tempDir + " ") -ForegroundColor Red
-        exit 1
-    }
-
-    $tempGo = Join-Path -Path $tempDir -ChildPath "gotemp"
-    Write-Host("creating gotemp dir : " + $tempGo + " ")
-    New-Item -Path $tempGo -ItemType "directory" -Force -ErrorAction Stop
-    if ($false -eq (Test-Path -Path $tempGo)) {
-        Write-Host("Invalid tempGo : " + $tempGo + " ") -ForegroundColor Red
-        exit 1
-    }
-
-   $url = "https://go.dev/dl/go1.23.8.windows-amd64.msi"
-   $output = Join-Path -Path $tempGo -ChildPath "go1.23.8.windows-amd64.msi"
-   Write-Host("downloading go msi into directory path : " + $output + "  ...")
-   Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
-   Write-Host("downloading of go msi into directory path : " + $output + "  completed")
-
-   # install go lang
-   Write-Host("installing go ...")
-   Start-Process msiexec.exe -Wait -ArgumentList '/I ', $output, '/quiet'
-   Write-Host("installing go completed")
-
-   Write-Host "updating PATH variable"
-   $GoPath = Join-Path -Path $env:SYSTEMDRIVE -ChildPath "GO"
-   $path = $env:PATH + ";=" + $GoPath
-   [System.Environment]::SetEnvironmentVariable("PATH", $path, "PROCESS")
-   [System.Environment]::SetEnvironmentVariable("PATH", $path, "USER")
-}
-
 function Build-Dependencies {
     $tempDir =  $env:TEMP
     if ($false -eq (Test-Path -Path $tempDir)) {
@@ -155,8 +122,6 @@ function Install-cmetrics() {
 # https://stackoverflow.com/questions/28682642/powershell-why-is-using-invoke-webrequest-much-slower-than-a-browser-download
 $ProgressPreference = 'SilentlyContinue'
 
-Write-Host "Install GO 1.23.8 version"
-Install-Go
 Write-Host "Install Build dependencies"
 Build-Dependencies
 

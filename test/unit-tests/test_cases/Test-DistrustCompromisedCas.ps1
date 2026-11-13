@@ -25,7 +25,7 @@ $scriptPath = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '..\..\..\kube
 $intermediatesFile = Join-Path (Split-Path $scriptPath) 'emudhra-compromised-intermediates.pem'
 $powershellExe = (Get-Process -Id $PID).Path
 
-# Roots that anchor the compromised intermediates, as shipped in the CA bundle of Ruby 3.1.1.
+# Roots that anchor the compromised intermediates, included to assert removal if present in Ruby's CA bundle.
 $aaaCertificateServicesPem = @'
 -----BEGIN CERTIFICATE-----
 MIIEMjCCAxqgAwIBAgIBATANBgkqhkiG9w0BAQUFADB7MQswCQYDVQQGEwJHQjEb
