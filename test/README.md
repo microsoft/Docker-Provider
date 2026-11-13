@@ -82,7 +82,7 @@ In this document, we will be covering ginkgo-e2e and testkube folders in detail.
         - MonAgentLauncher
 
 - Query Logs:
-    - All tables should have logs in last 15 mins (configurable):
+    - All tables should have logs in the last 5 minutes:
         - Perf
         - InsightsMetrics
         - ContainerLog (or ContainerLogV2 if configurable)
@@ -94,11 +94,19 @@ In this document, we will be covering ginkgo-e2e and testkube folders in detail.
     - ContainerInventory should not have any empty values in following columns:
         - Image
         - ImageID
-        - ImageTag
         - Repository
+    - ContainerInventory ImageTag is checked against the original Kubernetes image
+      reference, matched by container ID for both regular and init containers.
+      Explicit tags (including `image:tag@digest`) must match, untagged images
+      without a digest must report `latest`, and digest-only references may have
+      an empty tag. An empty tag without a matching Kubernetes reference fails;
+      a digest in ImageID alone is not an exemption.
     - Check that all pods and nodes data is following to respective tables:
         - Each pod should be present in KubePodInventory
         - Each node should be present in KubeNodeInventory
+    - Agent telemetry must cover every expected node for the configured version:
+        - Startup traces are queried from the deployment start timestamp.
+        - Metrics and DaemonSet heartbeats must appear in the last 30 minutes.
     
 
 
@@ -116,6 +124,16 @@ Ginkgo can be used for any tests written in golang, whether they are unit, integ
 - Install [Ginkgo](https://onsi.github.io/ginkgo/#getting-started).
 - Navigate to any folder in ./ginkgo-e2e and run command `ginkgo` to trigger the tests on the running cluster.
 - Please note that you don't need testkube to be installed on the cluster to trigger the tests locally on a cluster.
+- To enable the querylogs telemetry checks, set `AGENT_TELEMETRY_RESOURCE_ID`
+  to the Application Insights ARM resource ID, `AGENT_TELEMETRY_VERSION` to the
+  Linux telemetry version (Windows uses its `win-` prefixed counterpart), and
+  `AGENT_DEPLOYMENT_START_TIME` to the UTC RFC3339 timestamp recorded immediately
+  before deploying the image, for example `2026-11-11T08:58:00Z`.
+  Missing, invalid, or future deployment timestamps fail the telemetry checks.
+  Leave the telemetry resource ID unset only when intentionally running without
+  telemetry coverage.
+- Run helper regression tests without a cluster with `go test ./...` from
+  `test/ginkgo-e2e/utils`.
 - You can customize which tests are run with `--label-filter`:
   - `--label-filter='!/./` is an expression that runs all tests that don't have a label.
   - `--label-filter='!/./ || LABELNAME` is an expression that runs all tests that don't have a label and tests that have the label `LABELNAME`.
@@ -143,6 +161,28 @@ Some highlights are that:
 - A [Teams channel notification](https://docs.testkube.io/articles/webhooks#microsoft-teams) can integrated with testkube for notifying if a test failed. These tests can be run after every merge to main or scheduled to be run on an interval.
 - Test suites can be created out of tests with a dependency flowchart that can be set up for if some tests should run at the same time or after others, or only run if one succeeds.
 - There are many other test framework integrations including curl and postman for testing Kubernetes services and their APIs. There is also a k6 and jmeter integration for performance testing Kubernetes services.
+
+The release deployment template records its start time before Helm runs and
+passes it to Testkube as `AGENT_DEPLOYMENT_START_TIME`. The expected telemetry
+version comes from the build's telemetry tag, including any `TELEMETRY_TAG`
+override, rather than assuming it always equals the image tag.
+
+`install-and-execute-testkube-tests.sh` pins `TEST_SOURCE_REVISION` to its checked-out
+Git commit. All workflows clone that revision, so a newer `ci_prod` commit cannot
+change the tests midway through a release run. Local uncommitted changes are not
+included in that remote clone. Direct workflow invocations can set
+`--config TEST_SOURCE_REVISION=<published-commit>`; their default remains `ci_prod`.
+When enabling telemetry via the script, pass `AgentTelemetryResourceId=...`,
+`AgentTelemetryVersion=...`, and `AgentDeploymentStartTime=...` together.
+Run its cluster-free regression checks with
+`bash test/testkube/install-and-execute-testkube-tests_test.sh` from the repository root.
+
+The full querylogs suite requires active log-producing workloads and persistent
+volumes. The release pipeline installs Testkube before running the suite; its
+workloads and volumes provide those fixtures on otherwise idle clusters.
+Running the suite after successful Testkube cleanup can legitimately fail the
+ContainerLog and KubePVInventory data-presence checks. Do not disable those
+assertions to compensate for missing fixtures.
 
 
 ## Getting Started

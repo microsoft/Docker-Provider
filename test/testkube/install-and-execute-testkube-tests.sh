@@ -14,9 +14,18 @@ do
            PerNodeLogCoverage) PerNodeLogCoverage=$VALUE ;;
            AgentTelemetryResourceId) AgentTelemetryResourceId=$VALUE ;;
            AgentTelemetryVersion) AgentTelemetryVersion=$VALUE ;;
+           AgentDeploymentStartTime) AgentDeploymentStartTime=$VALUE ;;
            *)
     esac
 done
+
+if [[ -n "$AgentTelemetryResourceId" && ( -z "$AgentTelemetryVersion" || -z "$AgentDeploymentStartTime" ) ]]; then
+    echo "Error: AgentTelemetryVersion and AgentDeploymentStartTime are required when AgentTelemetryResourceId is set." >&2
+    exit 1
+fi
+
+TEST_SOURCE_REVISION=$(git rev-parse --verify HEAD) || exit 1
+echo "Test source revision: $TEST_SOURCE_REVISION"
 
 cluster="$(kubectl config current-context)"
 echo "Current cluster: $cluster"
@@ -72,8 +81,9 @@ export GENEVA_INTEGRATION=$GenevaIntegration
 export PER_NODE_LOG_COVERAGE=$PerNodeLogCoverage
 export AGENT_TELEMETRY_RESOURCE_ID=$AgentTelemetryResourceId
 export AGENT_TELEMETRY_VERSION=$AgentTelemetryVersion
-kubectl apply -f ./api-server-permissions.yaml
-kubectl apply -f ./testkube-test-crs.yaml
+export AGENT_DEPLOYMENT_START_TIME=$AgentDeploymentStartTime
+kubectl apply -f ./api-server-permissions.yaml || exit 1
+kubectl apply -f ./testkube-test-crs.yaml || exit 1
 
 echo "Wait for cluster to be ready"
 sleep 300
@@ -97,10 +107,12 @@ for wf in "${workflows[@]}"; do
         --config PER_NODE_LOG_COVERAGE="$PER_NODE_LOG_COVERAGE" \
         --config AGENT_TELEMETRY_RESOURCE_ID="$AGENT_TELEMETRY_RESOURCE_ID" \
         --config AGENT_TELEMETRY_VERSION="$AGENT_TELEMETRY_VERSION" \
+        --config AGENT_DEPLOYMENT_START_TIME="$AGENT_DEPLOYMENT_START_TIME" \
+        --config TEST_SOURCE_REVISION="$TEST_SOURCE_REVISION" \
         --config AZURE_TENANT_ID="$AZURE_TENANT_ID" \
         --config AZURE_CLIENT_ID="$AZURE_CLIENT_ID" \
         --config GOTOOLCHAIN="auto" \
-        --verbose
+        --verbose || exit 1
 
     echo "Waiting for execution to be created..."
     sleep 5
