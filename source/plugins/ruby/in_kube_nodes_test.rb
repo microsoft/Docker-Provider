@@ -55,8 +55,8 @@ class InKubeNodesTests < Minitest::Test
     kubeApiClient.expect(:getClusterName, "/cluster-name")
     kubeApiClient.expect(:getClusterId, "/cluster-id")
     def appInsightsUtil.sendExceptionTelemetry(exception)
-      if exception.to_s != "undefined method `[]' for nil:NilClass"
-        raise "an unexpected exception has occured"
+      unless exception.is_a?(NoMethodError) && exception.name == :[] && exception.receiver.nil?
+        raise exception
       end
     end
 
@@ -126,8 +126,8 @@ class InKubeNodesTests < Minitest::Test
     kubeApiClient.expect(:getClusterId, "/cluster-id")
 
     def appInsightsUtil.sendExceptionTelemetry(exception)
-      if exception.to_s != "undefined method `[]' for nil:NilClass"
-        raise "an unexpected exception has occured"
+      unless exception.is_a?(NoMethodError) && exception.name == :[] && exception.receiver.nil?
+        raise exception
       end
     end
 
