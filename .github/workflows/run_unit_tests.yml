@@ -49,6 +49,7 @@ jobs:
           sudo gem install fluentd -v "1.14.2" --no-document
           sudo gem install ipaddress --no-document
           sudo gem install tomlrb -v "2.0.1" --no-document
+          sudo gem install jwt -v "3.2.0" --no-document
           sudo fluentd --setup ./fluent
       - name: Run unit tests
         run: |
