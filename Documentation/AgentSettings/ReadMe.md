@@ -2,7 +2,8 @@
 
 Forward mdsd errors and warnings to container stdout so they are visible through
 `kubectl logs` and container log collectors. This setting is Linux-only and
-disabled by default. Original diagnostic files are retained.
+disabled by default. Fluent Bit forwards the messages as JSON records once it
+starts; original diagnostic files are retained.
 
 To enable, set the Arc extension configuration setting
 `amalogs.enableMdsdLogForwarding` to `"true"`, or add the following to the

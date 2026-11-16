@@ -130,16 +130,17 @@ Alternatively, add the following to the `agent-settings` data in the
   enabled = true
 ```
 
-When enabled, the Linux agent mirrors `mdsd.err` and `mdsd.warn` to container
+When enabled, the Linux agent forwards `mdsd.err` and `mdsd.warn` as JSON records to container
 stdout in both the main container and the active Prometheus sidecar. The original files remain
 under `/var/opt/microsoft/linuxmonagent/log` for onboarding checks and diagnostic
-collection. Forwarding includes startup messages and follows log rotation;
+collection. Forwarding begins when Fluent Bit starts, includes retained startup
+messages, and uses its existing file-position tracking and rotation handling;
 `mdsd.info` and `mdsd.qos` remain file-only. Like custom metrics, ConfigMap
 `enabled = true` enables forwarding; `false`, absent, or invalid values leave the
 extension setting unchanged. To disable forwarding, set the extension setting to
 `"false"` and remove or set the ConfigMap setting to `enabled = false`. Changes take
 effect at agent startup. Direct mdsd stderr handling
-is unchanged. This exposes diagnostics without changing readiness checks or
+is unchanged. This exposes diagnostics without adding a separate follower process or
 resolving the underlying onboarding failure. Windows agents are unaffected.
 
 # Building code

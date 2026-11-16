@@ -55,21 +55,21 @@ To run a specific PowerShell test file:
 ## Available Tests
 
 ### Linux mdsd Console Logs
-`test_cases/test_mdsd_log_forwarding.sh` exercises the production forwarding
-function from `kubernetes/linux/main.sh` using BusyBox when available, or the host
-tail implementation otherwise. BusyBox is used by the Linux agent image.
-It verifies existing startup errors and subsequent errors and
-warnings reach stdout without duplicates or filename headers, files remain
-available for onboarding checks, forwarding resumes after copytruncate and file
-replacement, informational logs are not forwarded, and file preparation errors
-are surfaced. Run `bash test/unit-tests/test_cases/test_mdsd_log_forwarding.sh`.
-It also verifies that an unset, false, or invalid enablement variable produces no
-forwarder, output, or changes to the diagnostic files.
+`test/fluent-bit/mdsd_log_forwarding_test.rb` exercises the production Fluent Bit
+diagnostics configuration with the agent image's Fluent Bit and process tools.
+It covers startup and ongoing errors/warnings, late-created files, copytruncate,
+replacement, offset recovery after process termination, info/QoS exclusion, and
+isolation from existing telemetry routing. It also runs the production liveness
+probe with real processes: stopping mdsd must fail the probe even while diagnostics
+and a misleading `tail ...mdsd.err` process remain alive.
+
+Run in an isolated Linux agent container (not a shared host process namespace):
+`ruby test/fluent-bit/mdsd_log_forwarding_test.rb`.
 
 `build/common/installer/scripts/tomlparser-common-agent-config_test.rb` checks
 the opt-in ConfigMap and extension settings, including precedence, defaults, invalid values and schema,
 Windows compatibility, and the generated environment's effect on the production
-shell function. Run
+Fluent Bit configuration. Run
 `ruby build/common/installer/scripts/tomlparser-common-agent-config_test.rb`
 with the existing Ruby test dependencies installed.
 

@@ -37,25 +37,22 @@ class CommonAgentConfigTest < Minitest::Test
         else
           refute_includes exports, ENV_NAME
         end
+        conf_dir = File.join(sandbox, "conf")
+        FileUtils.cp_r(File.join(REPO_ROOT, "build/linux/installer/conf"), conf_dir)
         function = File.read(File.join(REPO_ROOT, "kubernetes/linux/main.sh"))
-                       .match(/^startMdsdLogForwarding\(\) \{$.*?^\}/m)[0]
+                       .match(/^configureMdsdLogForwarding\(\) \{$.*?^\}/m)[0]
+                       .gsub("/etc/opt/microsoft/docker-cimprov", conf_dir)
         commands = <<~BASH
           set -euo pipefail
           source common_agent_config_env_var
           #{function}
-          tail() { printf '%s\\n' "$*" > forwarded; }
-          MDSD_LOG="$PWD"
-          startMdsdLogForwarding
-          wait
+          configureMdsdLogForwarding
         BASH
         shell_stdout, shell_stderr, shell_status = Open3.capture3(env, "bash", "-c", commands, chdir: sandbox)
         assert shell_status.success?, "Forwarding failed: #{shell_stdout}\n#{shell_stderr}"
-        %w[mdsd.err mdsd.warn forwarded].each do |file|
-          assert_equal expected, File.exist?(File.join(sandbox, file)), file
-        end
-        if expected
-          assert_equal "-q -n +1 -F #{sandbox}/mdsd.err #{sandbox}/mdsd.warn\n",
-                       File.read(File.join(sandbox, "forwarded"))
+        %w[common prom-side-car rs geneva-telemetry-svc azmon-logs-svc].each do |role|
+          contents = File.read(File.join(conf_dir, "fluent-bit-#{role}.conf"))
+          assert_equal expected, contents.lines.any? { |line| line.start_with?("@INCLUDE fluent-bit-mdsd-diagnostics.conf") }, role
         end
       end
       stderr

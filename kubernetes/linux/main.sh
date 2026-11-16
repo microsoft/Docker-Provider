@@ -62,16 +62,19 @@ getClusterCloudEnvironment() {
       esac
 }
 
-startMdsdLogForwarding() {
+configureMdsdLogForwarding() {
       if [ "${AZMON_MDSD_LOG_FORWARDING_ENABLED:-false}" != "true" ]; then
             return 0
       fi
-      if ! touch "${MDSD_LOG}/mdsd.err" "${MDSD_LOG}/mdsd.warn"; then
-            echo "ERROR: unable to prepare mdsd logs for stdout forwarding" >&2
+      if ! sed -i 's/#${MdsdLogForwardingEnabled}//g' \
+            /etc/opt/microsoft/docker-cimprov/fluent-bit-common.conf \
+            /etc/opt/microsoft/docker-cimprov/fluent-bit-prom-side-car.conf \
+            /etc/opt/microsoft/docker-cimprov/fluent-bit-rs.conf \
+            /etc/opt/microsoft/docker-cimprov/fluent-bit-geneva-telemetry-svc.conf \
+            /etc/opt/microsoft/docker-cimprov/fluent-bit-azmon-logs-svc.conf; then
+            echo "ERROR: unable to configure mdsd diagnostic forwarding in Fluent Bit" >&2
             return 1
       fi
-      # Read from the beginning to include startup failures, and follow names across log rotation.
-      tail -q -n +1 -F "${MDSD_LOG}/mdsd.err" "${MDSD_LOG}/mdsd.warn" &
 }
 
 startAMACoreAgent() {
@@ -558,6 +561,7 @@ while IFS= read -r line; do
       printf '%s\n' "$line" >> ~/.bashrc
 done < common_agent_config_env_var
 source common_agent_config_env_var
+configureMdsdLogForwarding
 
 # check if high log scale mode enabled
 if isHighLogScaleMode; then
@@ -1157,7 +1161,6 @@ if [ "${CONTAINER_TYPE}" == "PrometheusSidecar" ]; then
             SYSLOG_PORT_CONFIG="" # enable syslog listener for mdsd for prometheus sidecar in geneva mode
       fi
       # add -T 0xFFFF for full traces
-      startMdsdLogForwarding
       mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} -p 26130 -f 26230 -i 26330 "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos &
     else
       echo "not starting mdsd (no metrics to scrape since MUTE_PROM_SIDECAR is true)"
@@ -1178,7 +1181,6 @@ else
       fi
       mkdir -p /var/run/mdsd-ci
       # add -T 0xFFFF for full traces
-      startMdsdLogForwarding
       mdsd ${MDSD_AAD_MSI_AUTH_ARGS} -r ${MDSD_ROLE_PREFIX} "${SYSLOG_PORT_CONFIG}" -e ${MDSD_LOG}/mdsd.err -w ${MDSD_LOG}/mdsd.warn -o ${MDSD_LOG}/mdsd.info -q ${MDSD_LOG}/mdsd.qos 2>>/dev/null &
 fi
 
