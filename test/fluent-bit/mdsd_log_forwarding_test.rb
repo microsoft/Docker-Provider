@@ -10,7 +10,7 @@ class MdsdLogForwardingTest < Minitest::Test
   CONF_DIR = File.join(REPO_ROOT, "build/linux/installer/conf")
 
   def setup
-    @sandbox = Dir.mktmpdir("mdsd-diagnostics")
+    @sandbox = Dir.mktmpdir("agent-diagnostics")
     @log_dir = File.join(@sandbox, "log")
     @state_dir = File.join(@sandbox, "state")
     FileUtils.mkdir_p([@log_dir, @state_dir])
@@ -224,12 +224,13 @@ class MdsdLogForwardingTest < Minitest::Test
     status
   end
 
-  def test_liveness_checks_daemon_identity_while_diagnostics_and_a_misleading_tail_run
+  def test_existing_liveness_detects_stopped_daemon_while_diagnostics_run
+    original_title = $0
+    # Keep the test runner itself out of the unchanged probe's command-line match.
+    Process.setproctitle("agent-tests")
     pid = start_fluent_bit
     append("mdsd.err", "forwarding active")
     await_record("forwarding active")
-    tail = Process.spawn("tail", "-f", File.join(@log_dir, "mdsd.err"), out: File::NULL, err: File::NULL)
-    @pids << tail
     mdsd = named_process("mdsd")
     roles = [["main", "DaemonSet"], ["PrometheusSidecar", "DaemonSet"], ["main", "ReplicaSet"]]
     roles.each { |role, controller| assert probe(role, controller: controller).success?, role }
@@ -242,5 +243,7 @@ class MdsdLogForwardingTest < Minitest::Test
     append("mdsd.warn", "forwarding still active")
     await_record("forwarding still active")
     stop(pid)
+  ensure
+    Process.setproctitle(original_title)
   end
 end

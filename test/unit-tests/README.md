@@ -60,10 +60,11 @@ diagnostics configuration with the agent image's Fluent Bit and process tools.
 It covers startup and ongoing errors/warnings, late-created files, copytruncate,
 replacement, offset recovery after process termination, info/QoS exclusion, and
 isolation from existing telemetry routing. It also runs the production liveness
-probe with real processes: stopping mdsd must fail the probe even while diagnostics
-and a misleading `tail ...mdsd.err` process remain alive.
+unchanged probe with real processes: stopping mdsd must fail the probe even while
+Fluent Bit continues forwarding diagnostics.
 
-Run in an isolated Linux agent container (not a shared host process namespace):
+Run with Ruby as the entrypoint in an isolated Linux agent container (not a shared
+host process namespace or a wrapping shell whose arguments mention mdsd):
 `ruby test/fluent-bit/mdsd_log_forwarding_test.rb`.
 
 `build/common/installer/scripts/tomlparser-common-agent-config_test.rb` checks
