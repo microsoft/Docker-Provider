@@ -950,31 +950,30 @@ else
       fi
 
       if [ ! -z "$podWithValidContainerId" ]; then
-            containerRuntime=$(echo $podWithValidContainerId | jq -r '.status.containerStatuses[0].containerID' | cut -d ':' -f 1)
-            nodeName=$(echo $podWithValidContainerId | jq -r '.spec.nodeName')
+            containerRuntime=$(printf '%s\n' "$podWithValidContainerId" | jq -r '.status.containerStatuses[0].containerID' | cut -d ':' -f 1)
+            nodeName=$(printf '%s\n' "$podWithValidContainerId" | jq -r '.spec.nodeName')
             # convert to lower case so that everywhere else can be used in lowercase
-            containerRuntime=$(echo $containerRuntime | tr "[:upper:]" "[:lower:]")
-            nodeName=$(echo $nodeName | tr "[:upper:]" "[:lower:]")
+            containerRuntime=$(printf '%s' "$containerRuntime" | tr "[:upper:]" "[:lower:]")
+            nodeName=$(printf '%s' "$nodeName" | tr "[:upper:]" "[:lower:]")
             # use default container runtime if obtained runtime value is either empty or null
             if [ -z "$containerRuntime" -o "$containerRuntime" == null ]; then
                   echo "using default container runtime as $CONTAINER_RUNTIME since got containeRuntime as empty or null"
             else
-                  export CONTAINER_RUNTIME=$containerRuntime
+                  export CONTAINER_RUNTIME="$containerRuntime"
             fi
 
             if [ -z "$nodeName" -o "$nodeName" == null ]; then
                   echo "-e error nodeName in /pods API response is empty"
             else
-                  export NODE_NAME=$nodeName
-                  export HOSTNAME=$NODE_NAME
-                  echo "export HOSTNAME="$HOSTNAME >> ~/.bashrc
+                  export NODE_NAME="$nodeName"
+                  setGlobalEnvVar HOSTNAME "$NODE_NAME"
             fi
       else
             echo "-e error either /pods API request failed or no running pods"
       fi
 
-      echo "configured container runtime on kubelet is : "$CONTAINER_RUNTIME
-      echo "export CONTAINER_RUNTIME="$CONTAINER_RUNTIME >>~/.bashrc
+      echo "configured container runtime on kubelet is : $CONTAINER_RUNTIME"
+      setGlobalEnvVar CONTAINER_RUNTIME "$CONTAINER_RUNTIME"
 
       export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="kubelet_runtime_operations_total"
       echo "export KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC="$KUBELET_RUNTIME_OPERATIONS_TOTAL_METRIC >>~/.bashrc
@@ -999,7 +998,7 @@ else
 
       source ~/.bashrc
 
-      echo $NODE_NAME >/var/opt/microsoft/docker-cimprov/state/containerhostname
+      printf '%s\n' "$NODE_NAME" >/var/opt/microsoft/docker-cimprov/state/containerhostname
       #check if file was written successfully.
       cat /var/opt/microsoft/docker-cimprov/state/containerhostname
 fi
