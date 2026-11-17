@@ -209,6 +209,32 @@ class PromCustomConfigTest < Minitest::Test
     end
   end
 
+  def test_linux_config_checks_reject_invalid_prometheus_options
+    binary = ENV["TELEGRAF_WINDOWS_BINARY"]
+    skip "TELEGRAF_WINDOWS_BINARY is not set" if binary.nil? || binary.empty?
+
+    commands = File.readlines(File.join(REPO_ROOT, "kubernetes/linux/main.sh"))
+                   .grep(%r{^\s*/opt/telegraf .*--config /opt/telegraf-test})
+    assert_equal 3, commands.length
+
+    Dir.mktmpdir("telegraf-prometheus-check") do |dir|
+      path = File.join(dir, "telegraf.conf")
+      config = "[[inputs.file]]\nfiles = []\n[[inputs.prometheus]]\n"
+      commands.each do |command|
+        args = command.split.drop(1)
+        args[args.index("--config") + 1] = path
+        File.write(path, config)
+        out, err, status = Open3.capture3(binary, *args)
+        assert status.success?, "#{command}: #{out}\n#{err}"
+
+        File.write(path, config + "unexpected_prometheus_option = true\n")
+        out, err, status = Open3.capture3(binary, *args)
+        refute status.success?, "invalid Prometheus options passed #{command}: #{out}\n#{err}"
+        assert_includes out + err, "unexpected_prometheus_option"
+      end
+    end
+  end
+
   # The core security property: untrusted config map content cannot add telegraf plugins.
   # Values themselves may still appear in the output, but only escaped inside a single string.
   def assert_no_injected_plugins(scenario, conf, context)
