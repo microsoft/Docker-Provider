@@ -29,8 +29,8 @@ func TestContainerInventoryImageTags(t *testing.T) {
 		{name: "implicit latest with registry port", image: "registry.example:5000/app", tag: "latest"},
 		{name: "missing implicit latest", image: "registry.example:5000/app", tag: "", wantError: `expected ImageTag "latest"`},
 		{name: "digest with registry port", image: "registry.example:5000/app@" + digest, tag: ""},
-		{name: "unknown empty tag is not exempt", image: "registry.example/app@" + digest, tag: "", inventoryID: "previous-container", wantError: "no matching Kubernetes image reference"},
-		{name: "old tagged record retains nonempty check", image: "registry.example/app:1.2", tag: "1.1", inventoryID: "previous-container"},
+		{name: "historical digest record cannot satisfy current coverage", image: "registry.example/app@" + digest, tag: "", inventoryID: "previous-container", wantError: "has no recent ContainerInventory record"},
+		{name: "historical tagged record cannot satisfy current coverage", image: "registry.example/app:1.2", tag: "1.1", inventoryID: "previous-container", wantError: "has no recent ContainerInventory record"},
 		{name: "invalid original image", image: "registry.example/app@not-a-digest", tag: "", wantError: "invalid image reference"},
 	}
 	for _, tt := range tests {
@@ -59,6 +59,144 @@ func TestContainerInventoryImageTags(t *testing.T) {
 				t.Fatalf("expected error containing %q, got %v", tt.wantError, err)
 			}
 		})
+	}
+}
+
+func TestContainerInventoryImageTagsAfterContainerChurn(t *testing.T) {
+	digestImage := "registry.example/app@sha256:" + strings.Repeat("a", 64)
+	tests := []struct {
+		name      string
+		image     string
+		init      bool
+		rows      []azquery.Row
+		wantError string
+	}{
+		{
+			name:  "restart leaves a valid historical empty tag",
+			image: digestImage,
+			rows:  []azquery.Row{{"previous", "app-pod", ""}, {"current", "app-pod", ""}},
+		},
+		{
+			name:  "multiple restarts need no termination history",
+			image: digestImage,
+			rows:  []azquery.Row{{"older", "app-pod", ""}, {"previous", "app-pod", ""}, {"current", "app-pod", ""}},
+		},
+		{
+			name:  "init container restarts",
+			image: digestImage,
+			init:  true,
+			rows:  []azquery.Row{{"previous", "app-pod", nil}, {"current", "app-pod", nil}},
+		},
+		{
+			name:  "replacement pod leaves historical records",
+			image: digestImage,
+			rows:  []azquery.Row{{"deleted", "old-pod", ""}, {"current", "app-pod", ""}},
+		},
+		{
+			name:  "replacement has a different image reference",
+			image: "registry.example/app:1.2",
+			rows:  []azquery.Row{{"previous", "app-pod", ""}, {"current", "app-pod", "1.2"}},
+		},
+		{
+			name:      "replacement tag is still required",
+			image:     "registry.example/app:1.2",
+			rows:      []azquery.Row{{"previous", "app-pod", ""}, {"current", "app-pod", ""}},
+			wantError: `expected ImageTag "1.2"`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pod := corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{Name: "app-pod", Namespace: "default"},
+				Status:     corev1.PodStatus{Phase: corev1.PodRunning},
+			}
+			containers := []corev1.Container{{Name: "app", Image: tt.image}}
+			statuses := []corev1.ContainerStatus{{Name: "app", ContainerID: "containerd://current"}}
+			if tt.init {
+				pod.Spec.InitContainers = containers
+				pod.Status.InitContainerStatuses = statuses
+			} else {
+				pod.Spec.Containers = containers
+				pod.Status.ContainerStatuses = statuses
+			}
+			tables := []*azquery.Table{{Rows: tt.rows}}
+			err := validateContainerInventoryImageTags([]corev1.Pod{pod}, tables)
+			if tt.wantError == "" {
+				if err != nil {
+					t.Fatal(err)
+				}
+			} else if err == nil || !strings.Contains(err.Error(), tt.wantError) {
+				t.Fatalf("expected error containing %q, got %v", tt.wantError, err)
+			}
+		})
+	}
+}
+
+func TestContainerInventoryImageTagsRequiresEverySelectedContainer(t *testing.T) {
+	digestImage := "registry.example/app@sha256:" + strings.Repeat("a", 64)
+	pod := corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "app-pod", Namespace: "default"},
+		Spec: corev1.PodSpec{Containers: []corev1.Container{
+			{Name: "ready", Image: digestImage},
+			{Name: "restarted", Image: digestImage},
+		}},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
+			ContainerStatuses: []corev1.ContainerStatus{
+				{Name: "ready", ContainerID: "containerd://ready"},
+				{Name: "restarted", ContainerID: "containerd://new"},
+			},
+		},
+	}
+	tables := []*azquery.Table{{Rows: []azquery.Row{{"ready", "app-pod", ""}, {"old", "app-pod", ""}}}}
+	err := validateContainerInventoryImageTags([]corev1.Pod{pod}, tables)
+	if err == nil || !strings.Contains(err.Error(), "restarted (new)") {
+		t.Fatalf("the old instance must not replace missing coverage for the new instance: %v", err)
+	}
+	tables[0].Rows = append(tables[0].Rows, azquery.Row{"new", "app-pod", ""})
+	if err := validateContainerInventoryImageTags([]corev1.Pod{pod}, tables); err != nil {
+		t.Fatalf("the refreshed snapshot should pass after new inventory arrives: %v", err)
+	}
+	if err := validateContainerInventoryImageTags(nil, tables); err == nil {
+		t.Fatal("an empty snapshot must not pass on historical records")
+	}
+}
+
+func TestContainerImageReferencesEligibility(t *testing.T) {
+	pod := corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "app-pod"},
+		Spec:       corev1.PodSpec{Containers: []corev1.Container{{Name: "app", Image: "app:1.2"}}},
+		Status: corev1.PodStatus{
+			Phase: corev1.PodRunning,
+			ContainerStatuses: []corev1.ContainerStatus{{
+				Name: "app", ContainerID: "containerd://id",
+				State: corev1.ContainerState{Running: &corev1.ContainerStateRunning{}},
+			}},
+		},
+	}
+	for _, state := range []string{"terminating", "succeeded", "failed", "waiting"} {
+		t.Run(state, func(t *testing.T) {
+			ineligible := pod.DeepCopy()
+			switch state {
+			case "terminating":
+				now := metav1.Now()
+				ineligible.DeletionTimestamp = &now
+			case "succeeded":
+				ineligible.Status.Phase = corev1.PodSucceeded
+			case "failed":
+				ineligible.Status.Phase = corev1.PodFailed
+			case "waiting":
+				ineligible.Status.ContainerStatuses[0].State = corev1.ContainerState{Waiting: &corev1.ContainerStateWaiting{}}
+			}
+			if _, err := containerImageReferences([]corev1.Pod{*ineligible}); err == nil {
+				t.Fatal("expected an empty eligible snapshot to fail")
+			}
+		})
+	}
+	pod.Name = "ama-logs-agent"
+	pod.Status.ContainerStatuses[0].State = corev1.ContainerState{Waiting: &corev1.ContainerStateWaiting{}}
+	if images, err := containerImageReferences([]corev1.Pod{pod}); err != nil || len(images) != 1 {
+		t.Fatalf("waiting agent containers must retain coverage: %v, %v", images, err)
 	}
 }
 

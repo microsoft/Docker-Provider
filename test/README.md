@@ -96,11 +96,17 @@ In this document, we will be covering ginkgo-e2e and testkube folders in detail.
         - ImageID
         - Repository
     - ContainerInventory ImageTag is checked against the original Kubernetes image
-      reference, matched by container ID for both regular and init containers.
+      reference, matched by container ID for both regular and init containers in
+      a snapshot taken before querying. Terminating/completed pods and waiting
+      non-agent containers are excluded from this snapshot.
       Explicit tags (including `image:tag@digest`) must match, untagged images
       without a digest must report `latest`, and digest-only references may have
-      an empty tag. An empty tag without a matching Kubernetes reference fails;
-      a digest in ImageID alone is not an exemption.
+      an empty tag. Every selected container must have a recent inventory record;
+      historical container IDs cannot satisfy coverage or fail this check.
+      The check retries every 15 seconds for up to 5 minutes, taking a new
+      snapshot each time to handle restarts, replacements, and ingestion delay.
+      Missing records and incorrect tags for selected containers still fail.
+      A digest in ImageID alone is not an exemption.
     - Check that all pods and nodes data is following to respective tables:
         - Each pod should be present in KubePodInventory
         - Each node should be present in KubeNodeInventory
@@ -126,7 +132,7 @@ Ginkgo can be used for any tests written in golang, whether they are unit, integ
 - Please note that you don't need testkube to be installed on the cluster to trigger the tests locally on a cluster.
 - To enable the querylogs telemetry checks, set `AGENT_TELEMETRY_RESOURCE_ID`
   to the Application Insights ARM resource ID, `AGENT_TELEMETRY_VERSION` to the
-  Linux telemetry version (Windows uses its `win-` prefixed counterpart), and
+  Linux image tag (Windows uses its `win-` prefixed counterpart), and
   `AGENT_DEPLOYMENT_START_TIME` to the UTC RFC3339 timestamp recorded immediately
   before deploying the image, for example `2026-11-11T08:58:00Z`.
   Missing, invalid, or future deployment timestamps fail the telemetry checks.
@@ -164,8 +170,8 @@ Some highlights are that:
 
 The release deployment template records its start time before Helm runs and
 passes it to Testkube as `AGENT_DEPLOYMENT_START_TIME`. The expected telemetry
-version comes from the build's telemetry tag, including any `TELEMETRY_TAG`
-override, rather than assuming it always equals the image tag.
+version is the build's image tag, which is also embedded in the Linux and Windows
+images. There is no separate telemetry-version override.
 
 `install-and-execute-testkube-tests.sh` pins `TEST_SOURCE_REVISION` to its checked-out
 Git commit. All workflows clone that revision, so a newer `ci_prod` commit cannot

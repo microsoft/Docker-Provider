@@ -543,7 +543,11 @@ func GetExpectedAmaLogsNodes(clientset *kubernetes.Clientset) ([]string, error) 
 }
 
 func GetAllAgentPods(clientset *kubernetes.Clientset) ([]corev1.Pod, error) {
-	podList, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+	return getAllAgentPods(context.TODO(), clientset)
+}
+
+func getAllAgentPods(ctx context.Context, clientset *kubernetes.Clientset) ([]corev1.Pod, error) {
+	podList, err := clientset.CoreV1().Pods("").List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

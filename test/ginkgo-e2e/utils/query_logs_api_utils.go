@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -28,8 +29,12 @@ func SetupLogsClient() (*azquery.LogsClient, error) {
 }
 
 func QueryLogs(logsClient *azquery.LogsClient, resourceID string, query string) ([]*azquery.Table, error) {
+	return queryLogs(context.TODO(), logsClient, resourceID, query)
+}
+
+func queryLogs(ctx context.Context, logsClient *azquery.LogsClient, resourceID string, query string) ([]*azquery.Table, error) {
 	res, err := logsClient.QueryResource(
-		context.TODO(),
+		ctx,
 		resourceID,
 		azquery.Body{Query: to.Ptr(query)},
 		nil)
@@ -85,15 +90,17 @@ func QueryLogsForCount(logsClient *azquery.LogsClient, resourceID string, query 
 	return fmt.Errorf("The query returned unexpected result")
 }
 
-func CompareContainerInventoryImageTags(k8sClient *kubernetes.Clientset, logsClient *azquery.LogsClient, resourceID string) error {
-	query := `ContainerInventory
-| where TimeGenerated > ago(5m) and (ContainerState !~ 'Waiting' or ContainerHostname contains 'ama-logs')
-| distinct ContainerID, ContainerHostname, ImageTag`
-	tables, err := QueryLogs(logsClient, resourceID, query)
+func CompareContainerInventoryImageTags(ctx context.Context, k8sClient *kubernetes.Clientset, logsClient *azquery.LogsClient, resourceID string) error {
+	// Capture the original references before querying so a concurrent restart
+	// cannot associate an older container ID with its replacement's image.
+	pods, err := getAllAgentPods(ctx, k8sClient)
 	if err != nil {
 		return err
 	}
-	pods, err := GetAllAgentPods(k8sClient)
+	query := `ContainerInventory
+| where TimeGenerated > ago(5m) and (ContainerState !~ 'Waiting' or ContainerHostname contains 'ama-logs')
+| distinct ContainerID, ContainerHostname, ImageTag`
+	tables, err := queryLogs(ctx, logsClient, resourceID, query)
 	if err != nil {
 		return err
 	}
@@ -101,13 +108,17 @@ func CompareContainerInventoryImageTags(k8sClient *kubernetes.Clientset, logsCli
 }
 
 type containerImageReference struct {
-	image string
-	tag   string
+	container string
+	image     string
+	tag       string
 }
 
 func containerImageReferences(pods []corev1.Pod) (map[string]containerImageReference, error) {
 	images := make(map[string]containerImageReference)
 	for _, pod := range pods {
+		if pod.DeletionTimestamp != nil || pod.Status.Phase == corev1.PodSucceeded || pod.Status.Phase == corev1.PodFailed {
+			continue
+		}
 		specs := make(map[string]string)
 		for _, containers := range [][]corev1.Container{pod.Spec.Containers, pod.Spec.InitContainers} {
 			for _, container := range containers {
@@ -116,7 +127,7 @@ func containerImageReferences(pods []corev1.Pod) (map[string]containerImageRefer
 		}
 		for _, statuses := range [][]corev1.ContainerStatus{pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses} {
 			for _, status := range statuses {
-				if status.ContainerID == "" {
+				if status.ContainerID == "" || (status.State.Waiting != nil && !strings.Contains(pod.Name, "ama-logs")) {
 					continue
 				}
 				runtime, id, ok := strings.Cut(status.ContainerID, "://")
@@ -128,7 +139,10 @@ func containerImageReferences(pods []corev1.Pod) (map[string]containerImageRefer
 				if err != nil {
 					return nil, fmt.Errorf("invalid image reference for %s/%s/%s: %w", pod.Namespace, pod.Name, status.Name, err)
 				}
-				expected := containerImageReference{image: image}
+				expected := containerImageReference{
+					container: fmt.Sprintf("%s/%s/%s", pod.Namespace, pod.Name, status.Name),
+					image:     image,
+				}
 				if tagged, ok := named.(reference.Tagged); ok {
 					expected.tag = tagged.Tag()
 				} else if _, digested := named.(reference.Digested); !digested {
@@ -149,14 +163,13 @@ func validateContainerInventoryImageTags(pods []corev1.Pod, tables []*azquery.Ta
 	if err != nil {
 		return err
 	}
-	rows := 0
+	observed := make(map[string]bool)
 	var failures []string
 	for _, table := range tables {
 		if table == nil {
 			return fmt.Errorf("ContainerInventory returned a nil table")
 		}
 		for _, row := range table.Rows {
-			rows++
 			if len(row) != 3 {
 				return fmt.Errorf("expected ContainerID, ContainerHostname and ImageTag, got %d columns", len(row))
 			}
@@ -168,22 +181,23 @@ func validateContainerInventoryImageTags(pods []corev1.Pod, tables []*azquery.Ta
 			}
 			expected, found := images[id]
 			if !found {
-				// Old container records may outlive their pods. Only a matched original
-				// image reference can justify an empty tag; ImageID alone cannot.
-				if tag == "" {
-					failures = append(failures, fmt.Sprintf("pod %s container %s has an empty ImageTag with no matching Kubernetes image reference", pod, id))
-				}
+				// Historical instances are outside this snapshot. Coverage below
+				// prevents old records from substituting for current containers.
 				continue
 			}
+			observed[id] = true
 			if expected.tag != "" && tag != expected.tag {
 				failures = append(failures, fmt.Sprintf("pod %s container %s image %q: expected ImageTag %q, got %q", pod, id, expected.image, expected.tag, tag))
 			}
 		}
 	}
-	if rows == 0 {
-		return fmt.Errorf("ContainerInventory returned no image-tag records")
+	for id, expected := range images {
+		if !observed[id] {
+			failures = append(failures, fmt.Sprintf("container %s (%s) image %q has no recent ContainerInventory record", expected.container, id, expected.image))
+		}
 	}
 	if len(failures) > 0 {
+		sort.Strings(failures)
 		return fmt.Errorf("ContainerInventory image-tag validation failed:\n%s", strings.Join(failures, "\n"))
 	}
 	return nil

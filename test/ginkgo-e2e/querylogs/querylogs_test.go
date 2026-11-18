@@ -1,6 +1,7 @@
 package querylogs_test
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -75,8 +76,12 @@ var _ = Describe("When querying the logs for the ContainerInventory", func() {
 		Entry("Repository", "Repository"),
 	)
 
-	It("ImageTag should match the Kubernetes image reference", func() {
-		Expect(utils.CompareContainerInventoryImageTags(K8sClient, LogsClient, AKSResourceId)).NotTo(HaveOccurred())
+	It("ImageTag should match the Kubernetes image reference", func(ctx SpecContext) {
+		checkContext, cancel := context.WithTimeout(ctx, 5*time.Minute)
+		defer cancel()
+		Eventually(func() error {
+			return utils.CompareContainerInventoryImageTags(checkContext, K8sClient, LogsClient, AKSResourceId)
+		}, 5*time.Minute, 15*time.Second).WithContext(checkContext).Should(Succeed())
 	})
 })
 

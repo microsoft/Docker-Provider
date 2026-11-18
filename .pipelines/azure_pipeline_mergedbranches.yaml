@@ -27,7 +27,6 @@ variables:
   QEMU_BINFMT_IMAGE: 'mcr.microsoft.com/mirror/docker/tonistiigi/binfmt:qemu-v9.2.2-52'
   IS_PR: $[eq(variables['Build.Reason'], 'PullRequest')]
   IS_MAIN_BRANCH: $[eq(variables['Build.SourceBranchName'], 'ci_prod')]
-  IS_RELEASE: $[ne(variables['TELEMETRY_TAG'], '')]
   appRegistrationClientId: $[variables['APP_REGISTRATION_CLIENT_ID']]
   appRegistrationTenantId: $[variables['APP_REGISTRATION_TENANT_ID']]
   esrpClientId: $[variables['ESRP_CLIENT_ID']]
@@ -89,24 +88,10 @@ extends:
             SEMVER=$VERSION-$BRANCH_NAME-$DATE-$COMMIT_SHA
             linuxImagetag=$SEMVER
             windowsImageTag=win-$SEMVER
-            telemetryTag=$linuxImagetag
-            if [ -z "$TELEMETRY_TAG" ]
-              then
-                echo "\$TELEMETRY_TAG variable is not set"
-              else
-                telemetryTag=$TELEMETRY_TAG
-                echo "\$TELEMETRY_TAG is $TELEMETRY_TAG"
-            fi
-            linuxTelemetryTag="$telemetryTag"
-            windowsTelemetryTag=win-"$telemetryTag"
             echo "linuxImagetag is $linuxImagetag"
             echo "windowsImageTag is $windowsImageTag"
-            echo "linuxTelemetryTag is $linuxTelemetryTag"
-            echo "windowsTelemetryTag is $windowsTelemetryTag"
             echo "##vso[task.setvariable variable=linuxImagetag;isOutput=true]$linuxImagetag"
             echo "##vso[task.setvariable variable=windowsImageTag;isOutput=true]$windowsImageTag"
-            echo "##vso[task.setvariable variable=linuxTelemetryTag;isOutput=true]$linuxTelemetryTag"
-            echo "##vso[task.setvariable variable=windowsTelemetryTag;isOutput=true]$windowsTelemetryTag"
             echo "SEMVER is $SEMVER"
             echo "##vso[task.setvariable variable=SEMVER;isOutput=true]$SEMVER"
             # Set the pipeline run number to SEMVER so downstream release pipelines
@@ -213,7 +198,6 @@ extends:
         dependsOn: common
         variables:
           linuxImagetag: $[ dependencies.common.outputs['setup.linuxImagetag'] ]
-          linuxTelemetryTag: $[ dependencies.common.outputs['setup.linuxTelemetryTag'] ]
           Codeql.Enabled: true
           Codeql.BuildIdentifier: 'linuxbuild'
           DOCKER_BUILDKIT: 1
@@ -260,16 +244,16 @@ extends:
               docker buildx create --name dockerbuilder --driver docker-container --driver-opt image=mcr.microsoft.com/azuremonitor/containerinsights/cidev/prometheus-collector/images:buildx-stable-1 --use
               docker buildx inspect --bootstrap
               if [ "$(Build.Reason)" != "PullRequest" ]; then
-                docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --push --provenance=false .
+                docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxImagetag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --push --provenance=false .
                 echo "##vso[task.logissue type=warning]Linux image built with tag: ${{ variables.repoImageName }}:$(linuxImagetag)"
                 docker pull ${{ variables.repoImageName }}:$(linuxImagetag)
                 # Extract the resolved Azure Linux base image version for release notes
                 AZURELINUX_VERSION=$(docker run --rm --entrypoint="" ${{ variables.repoImageName }}:$(linuxImagetag) cat /etc/os-release | grep ^VERSION= | cut -d= -f2 | tr -d '"')
                 echo "##vso[task.logissue type=warning]Azure Linux base image version: $AZURELINUX_VERSION"
               else
-                docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --provenance=false .
+                docker buildx build --platform $(BUILD_PLATFORMS) --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxImagetag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --provenance=false .
                 # load the multi-arch image to run tests
-                docker buildx build --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxTelemetryTag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --load --provenance=false .
+                docker buildx build --tag ${{ variables.repoImageName }}:$(linuxImagetag) -f kubernetes/linux/Dockerfile.multiarch --metadata-file $(Build.ArtifactStagingDirectory)/linux/metadata.json --build-arg IMAGE_TAG=$(linuxImagetag) --build-arg GOLANG_BASE_IMAGE=$(GOLANG_BASE_IMAGE) --build-arg CI_BASE_IMAGE=$(CI_BASE_IMAGE) --load --provenance=false .
               fi
         - bash: |
             curl -LO "https://github.com/oras-project/oras/releases/download/v1.0.0/oras_1.0.0_linux_amd64.tar.gz"
@@ -335,7 +319,7 @@ extends:
                 --annotation "vnd.microsoft.artifact.lifecycle.end-of-life.date=$(date -u -d '-1 hour' +"%Y-%m-%dT%H:%M:%SZ")"
           workingDirectory: $(Build.ArtifactStagingDirectory)/linux/
           displayName: "ORAS Push Artifacts in $(Build.ArtifactStagingDirectory)/linux/"
-          condition: and(eq(variables.IS_RELEASE, false), eq(variables.IS_PR, false))
+          condition: eq(variables.IS_PR, false)
         - task: AzureCLI@2
           displayName: "Vulnerability Scan with Trivy"
           inputs:
@@ -415,7 +399,6 @@ extends:
         - common
         variables:
           windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
-          windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
           windows2019BaseImageVersion: ltsc2019
           Codeql.Enabled: true
           Codeql.BuildIdentifier: 'windowsbuild'
@@ -459,7 +442,7 @@ extends:
               New-Item -Path "$(Build.ArtifactStagingDirectory)/windows" -ItemType Directory -Force
               cd kubernetes/windows
               # Build the Docker image
-              docker build --pull --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2019BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
+              docker build --pull --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2019BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2019BaseImageVersion) --build-arg IMAGE_TAG=$(windowsImageTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
           displayName: "Docker windows build for ltsc2019"
           retryCountOnTaskFailure: 2
         - task: PowerShell@2
@@ -637,7 +620,6 @@ extends:
         - common
         variables:
           windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
-          windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
           windows2022BaseImageVersion: ltsc2022
           Codeql.SkipTaskAutoInjection: true
           windowsAMAUrl: $[ dependencies.common.outputs['setup.windowsAMAUrl'] ]
@@ -671,7 +653,7 @@ extends:
               az account show
               az account set -s ${{ variables.subscription }}
               az acr login -n ${{ variables.containerRegistry }}
-              docker build --pull --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2022BaseImageVersion) --build-arg IMAGE_TAG=$(windowsTelemetryTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
+              docker build --pull --isolation=hyperv --tag ${{ variables.repoImageName }}:$(windowsImageTag)-$(windows2022BaseImageVersion)-unsigned --build-arg WINDOWS_VERSION=$(windows2022BaseImageVersion) --build-arg IMAGE_TAG=$(windowsImageTag) --build-arg WINDOWS_AMA_URL=$(windowsAMAUrl) .
         - task: PowerShell@2
           displayName: Extract files to sign
           inputs:
@@ -849,7 +831,6 @@ extends:
         - build_windows_2022
         variables:
           windowsImageTag: $[ dependencies.common.outputs['setup.windowsImageTag'] ]
-          windowsTelemetryTag: $[ dependencies.common.outputs['setup.windowsTelemetryTag'] ]
           windows2019BaseImageVersion: ltsc2019
           windows2022BaseImageVersion: ltsc2022
           Codeql.SkipTaskAutoInjection: true
@@ -953,7 +934,7 @@ extends:
             oras attach ${{ variables.repoImageName }}:$(windowsImageTag) --artifact-type 'application/vnd.microsoft.artifact.lifecycle' --annotation "vnd.microsoft.artifact.lifecycle.end-of-life.date=$(powershell -Command "(Get-Date).AddHours(-1).ToString('yyyy-MM-ddTHH:mm:ssZ')")"
           workingDirectory: $(Build.ArtifactStagingDirectory)/windows
           displayName: "Run oras attach"
-          condition: and(eq(variables.IS_RELEASE, false), eq(variables.IS_PR, false))
+          condition: eq(variables.IS_PR, false)
         - task: AntiMalware@4
           displayName: 'Run MpCmdRun.exe'
           inputs:
@@ -1044,7 +1025,6 @@ extends:
         # Use image tags built from the previous build stage
         linuxImageTagUnderTest: $[stageDependencies.stage.common.outputs['setup.linuxImagetag']]
         windowsImageTagUnderTest: $[stageDependencies.stage.common.outputs['setup.windowsImageTag']]
-        agentTelemetryVersionUnderTest: $[stageDependencies.stage.common.outputs['setup.linuxTelemetryTag']]
       jobs:
       # ============================================================
       # Cluster: ci-logs-prod-aks-geneva-integration-multi-tenancy — Deploy via Helm
@@ -1073,7 +1053,7 @@ extends:
           azureClientId: $(AksGenevaIntegrationMultiTenancyClientId)
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
-          additionalTestParams: 'GenevaIntegration=true AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(agentTelemetryVersionUnderTest)'
+          additionalTestParams: 'GenevaIntegration=true AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(linuxImageTagUnderTest)'
 
       # ============================================================
       # Cluster: ci-logs-prod-aks-work-load-identity — Deploy via Helm
@@ -1102,7 +1082,7 @@ extends:
           azureClientId: $(AksWorkLoadIdentityClientId)
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
-          additionalTestParams: 'LinuxTestsOnly=true AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(agentTelemetryVersionUnderTest)'
+          additionalTestParams: 'LinuxTestsOnly=true AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(linuxImageTagUnderTest)'
 
       # ============================================================
       # Cluster: ci-logs-prod-wcus-fips — Deploy via Helm
@@ -1131,7 +1111,7 @@ extends:
           azureClientId: $(WcusFipsClientId)
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
-          additionalTestParams: 'AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(agentTelemetryVersionUnderTest)'
+          additionalTestParams: 'AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(linuxImageTagUnderTest)'
 
       # ============================================================
       # Cluster: ci-logs-prod-aks-networkflowlogs — Deploy via Helm
@@ -1161,7 +1141,7 @@ extends:
           azureClientId: $(NetworkFlowLogsClientId)
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
-          additionalTestParams: 'LinuxTestsOnly=true AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(agentTelemetryVersionUnderTest)'
+          additionalTestParams: 'LinuxTestsOnly=true AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(linuxImageTagUnderTest)'
 
       # ============================================================
       # Cluster: ci-logs-dev-aks-std-prof-config-test1 — Deploy via Helm
@@ -1213,4 +1193,4 @@ extends:
           azureClientId: $(AllNodesClientId)
           azureTenantId: $(CI_BUILD_AZURE_TENANT_ID)
           teamsWebhookUri: $(TeamsWebhookUri)
-          additionalTestParams: 'PerNodeLogCoverage=true AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(agentTelemetryVersionUnderTest)'
+          additionalTestParams: 'PerNodeLogCoverage=true AgentTelemetryResourceId=$(AGENT_TELEMETRY_RESOURCE_ID) AgentTelemetryVersion=$(linuxImageTagUnderTest)'
