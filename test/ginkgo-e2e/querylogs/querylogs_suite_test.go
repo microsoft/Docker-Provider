@@ -21,6 +21,7 @@ var GenevaIntegrationEnabled string
 var PerNodeLogCoverageEnabled string
 var AgentTelemetryResourceId string
 var AgentTelemetryVersion string
+var AgentDeploymentStartTime string
 var Cfg *rest.Config
 
 func TestQuerylogs(t *testing.T) {
@@ -40,6 +41,7 @@ var _ = BeforeSuite(func() {
 	PerNodeLogCoverageEnabled = os.Getenv("PER_NODE_LOG_COVERAGE")
 	AgentTelemetryResourceId = os.Getenv("AGENT_TELEMETRY_RESOURCE_ID")
 	AgentTelemetryVersion = os.Getenv("AGENT_TELEMETRY_VERSION")
+	AgentDeploymentStartTime = os.Getenv("AGENT_DEPLOYMENT_START_TIME")
 	LogsClient, err = utils.SetupLogsClient()
 	Expect(err).NotTo(HaveOccurred())
 })
