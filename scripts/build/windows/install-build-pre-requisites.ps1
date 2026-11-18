@@ -93,17 +93,25 @@ function Install-DotNetCoreSDK() {
         exit 1
     }
 
-   $url = "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/8.0.427/dotnet-sdk-8.0.427-win-x64.exe"
-   $output = Join-Path -Path $dotNetSdkTemp -ChildPath "dotnet-sdk-8.0.427-win-x64.exe"
+   # The CertificateGenerator global.json is the single source of truth for the SDK version.
+   $globalJsonPath = Join-Path -Path $PSScriptRoot -ChildPath "..\..\..\build\windows\installer\certificategenerator\global.json"
+   $dotNetSdkVersion = (Get-Content -Path $globalJsonPath -Raw -ErrorAction Stop | ConvertFrom-Json).sdk.version
+   if ([string]::IsNullOrEmpty($dotNetSdkVersion)) {
+       Write-Host("Unable to read the .NET SDK version from : " + $globalJsonPath + " ") -ForegroundColor Red
+       exit 1
+   }
 
-   Write-Host("downloading .NET 8 SDK: " + $dotNetSdkTemp + "  ...")
+   $url = "https://dotnetcli.blob.core.windows.net/dotnet/Sdk/$dotNetSdkVersion/dotnet-sdk-$dotNetSdkVersion-win-x64.exe"
+   $output = Join-Path -Path $dotNetSdkTemp -ChildPath "dotnet-sdk-$dotNetSdkVersion-win-x64.exe"
+
+   Write-Host("downloading .NET SDK " + $dotNetSdkVersion + ": " + $dotNetSdkTemp + "  ...")
    Invoke-WebRequest -Uri $url -OutFile $output -ErrorAction Stop
-   Write-Host("downloading .NET 8 SDK: " + $dotNetSdkTemp + " completed")
+   Write-Host("downloading .NET SDK " + $dotNetSdkVersion + ": " + $dotNetSdkTemp + " completed")
 
    # install dotNet sdk
-   Write-Host("installing .NET 8 SDK ...")
+   Write-Host("installing .NET SDK " + $dotNetSdkVersion + " ...")
    Start-Process -Wait $output -ArgumentList " /q /norestart"
-   Write-Host("installing .NET 8 SDK completed")
+   Write-Host("installing .NET SDK " + $dotNetSdkVersion + " completed")
 }
 
 function Install-Docker() {
@@ -160,7 +168,7 @@ Install-Go
 Write-Host "Install Build dependencies"
 Build-Dependencies
 
-Write-Host "Install .NET core sdk 8.0"
+Write-Host "Install .NET SDK pinned by CertificateGenerator global.json"
 Install-DotNetCoreSDK
 
 Write-Host "Install Docker"
