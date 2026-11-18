@@ -25,7 +25,7 @@ if ($null -eq $function) { throw 'Cannot locate Install-TelegrafService' }
     function Get-Command($Name, $ErrorAction) {
         Assert-Equals 'ruby.exe' $Name 'existing runtime' | Out-Null
         Assert-Equals 'Stop' $ErrorAction 'missing runtime is fatal' | Out-Null
-        [pscustomobject]@{ Source = 'C:\Program Files\Ruby31\ruby.exe' }
+        [pscustomobject]@{ Source = 'C:\ruby\bin\ruby.exe' }
     }
 
     function New-Service($Name, $BinaryPathName, $DisplayName, $StartupType, $ErrorAction) {
@@ -45,7 +45,7 @@ if ($null -eq $function) { throw 'Cannot locate Install-TelegrafService' }
         Install-TelegrafService -ServiceName $case.Name
         Assert-Equals $case.Name $script:installed.Name 'preserve service name' | Out-Null
         Assert-Equals $case.DisplayName $script:installed.DisplayName 'distinct display names' | Out-Null
-        $expected = '"C:\Program Files\Ruby31\ruby.exe" "C:\opt\amalogswindows\scripts\ruby\telegraf-windows-service.rb" ' + $case.Role
+        $expected = '"C:\ruby\bin\ruby.exe" "C:\opt\amalogswindows\scripts\ruby\telegraf-windows-service.rb" ' + $case.Role
         Assert-Equals $expected $script:installed.BinaryPath 'quoted host path; no config path in wrapper command line' | Out-Null
     }
 

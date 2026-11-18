@@ -14,14 +14,8 @@ ENV chocolateyVersion 1.4.0
 RUN powershell -Command "Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
 
 
-# Original code: https://github.com/fluent/fluentd-docker-image/blob/master/v1.16/windows-ltsc2022/Dockerfile
-# rexml 3.2.5 gem was installed during ruby 3.1.1.1 installation for xml parsing, not related to fluentd (dependency of fluentd 1.16.3: https://rubygems.org/gems/fluentd/versions/1.16.3-x64-mingw-ucrt)
-# removed it for vulnerability reasons.
-    # https://github.com/ManageIQ/rbvmomi2/issues/62
-    # when ruby has a version change, a different version of rexml might be installed,
-    # so need to review the installed version of rexml, and uninstall it.
-RUN choco install -y ruby --version 3.1.1.1 --params "'/InstallDir:C:\ruby31'" \
-&& choco install -y msys2 --version 20240113.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby31\msys64'"
+RUN powershell -Command "$ErrorActionPreference = 'Stop'; $rubyPackages = choco search ruby --all-versions --exact --limit-output; if ($LASTEXITCODE -ne 0) { throw 'Unable to query Ruby versions' }; $rubyVersion = $rubyPackages | ForEach-Object { if ($_ -match '^ruby\|(3(?:\.\d+){1,3})$') { [version]$Matches[1] } } | Sort-Object -Descending | Select-Object -First 1; if (-not $rubyVersion) { throw 'No stable Ruby 3 package found' }; Write-Host ('Installing latest Ruby 3 package: ' + $rubyVersion); choco install -y ruby --version $rubyVersion --params '/InstallDir:C:\ruby'; if ($LASTEXITCODE -ne 0) { throw 'Ruby installation failed' }"
+RUN choco install -y msys2 --version 20240113.0.0 --params "'/NoPath /NoUpdate /InstallDir:C:\ruby\msys64'"
 RUN refreshenv \
 && ridk install 3 \
 && echo gem: --no-document >> C:\ProgramData\gemrc \
@@ -31,8 +25,6 @@ RUN refreshenv \
 && gem install win32-service -v 2.3.2 \
 && gem install win32-ipc -v 0.7.0 \
 && gem install win32-event -v 0.6.3 \
-# remove rexml gem to avoid vulnerability
-&& gem uninstall rexml -v 3.2.5 --force \
 # remove net-imap gem as it has a known CVE (CVE-2025-43857) and is not used by the agent
 && gem uninstall net-imap --force \
 # The following gems are required for fluentd plugins, or ruby for configuration parsing
@@ -44,7 +36,7 @@ RUN refreshenv \
 && gem sources --clear-all
 
 # Remove gem cache and chocolatey
-RUN powershell -Command "Remove-Item -Force C:\ruby31\lib\ruby\gems\3.1.0\cache\*.gem; Remove-Item -Recurse -Force 'C:\ProgramData\chocolatey'; Remove-Item -Recurse -Force 'C:\Users\ContainerAdministrator\AppData\Local\Temp'"
+RUN powershell -Command "$rubyVersion = & C:\ruby\bin\ruby.exe -rrbconfig -e 'print RbConfig::CONFIG.fetch(%q(ruby_version))'; if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($rubyVersion)) { throw 'Unable to determine Ruby version' }; Remove-Item -Force C:\ruby\lib\ruby\gems\$rubyVersion\cache\*.gem; Remove-Item -Recurse -Force 'C:\ProgramData\chocolatey'; Remove-Item -Recurse -Force 'C:\Users\ContainerAdministrator\AppData\Local\Temp'"
 
 SHELL ["powershell"]
 
@@ -59,7 +51,7 @@ WORKDIR /opt/amalogswindows/scripts/powershell
 # own CA bundle instead of the Windows certificate stores, so Windows' automatic distrust does not reach it.
 # The script fails the build when a check fails; keep it in its own RUN so nothing can mask its exit code.
 COPY distrust-compromised-cas.ps1 emudhra-compromised-intermediates.pem /opt/amalogswindows/distrust/
-RUN C:\opt\amalogswindows\distrust\distrust-compromised-cas.ps1 -RubyExe C:\ruby31\bin\ruby.exe
+RUN C:\opt\amalogswindows\distrust\distrust-compromised-cas.ps1 -RubyExe C:\ruby\bin\ruby.exe
 RUN Remove-Item -Recurse -Force C:\opt\amalogswindows\distrust
 
 # copy certificate generator binaries zip
@@ -122,13 +114,6 @@ ENV CI_CERT_LOCATION "C://oms.crt"
 ENV CI_KEY_LOCATION "C://oms.key"
 
 # Delete unnecessary files
-RUN powershell -Command "Remove-Item -Recurse -Force 'C:\ruby31\share\doc\ruby\html\js'; \
-Remove-Item -Force 'C:\ruby31\ridk_use\ridk.ps1'; \
-Remove-Item -Recurse -Force 'C:\ruby31\msys64\usr\share\texinfo\js'; \
-Remove-Item -Force 'C:\ruby31\msys64\usr\share\terminfo\78\xterm.js'; \
-Remove-Item -Force 'C:\ruby31\msys64\usr\lib\terminfo\78\xterm.js'; \
-Remove-Item -Recurse -Force 'C:\ruby31\lib\ruby\3.1.0\rdoc\generator\template\json_index\js'; \
-Remove-Item -Recurse -Force 'C:\ruby31\lib\ruby\3.1.0\rdoc\generator\template\darkfish\js'; \
-Remove-Item -Force 'C:\ruby31\bin\ridk.ps1'"
+RUN $rubyVersion = & 'C:\ruby\bin\ruby.exe' -rrbconfig -e 'print RbConfig::CONFIG.fetch(%q(ruby_version))'; if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($rubyVersion)) { throw 'Unable to determine Ruby version' }; Remove-Item -Recurse -Force 'C:\ruby\share\doc\ruby\html\js'; Remove-Item -Force 'C:\ruby\ridk_use\ridk.ps1'; Remove-Item -Recurse -Force 'C:\ruby\msys64\usr\share\texinfo\js'; Remove-Item -Force 'C:\ruby\msys64\usr\share\terminfo\78\xterm.js'; Remove-Item -Force 'C:\ruby\msys64\usr\lib\terminfo\78\xterm.js'; Remove-Item -Recurse -Force "C:\ruby\lib\ruby\$rubyVersion\rdoc\generator\template\json_index\js"; Remove-Item -Recurse -Force "C:\ruby\lib\ruby\$rubyVersion\rdoc\generator\template\darkfish\js"; Remove-Item -Force 'C:\ruby\bin\ridk.ps1'
 
 ENTRYPOINT ["powershell", "C:\\opt\\amalogswindows\\scripts\\powershell\\main.ps1"]

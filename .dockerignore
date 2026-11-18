@@ -1,0 +1,7 @@
+# Linux Docker builds use the repository root as their context.
+**
+!build/
+!source/
+!kubernetes/
+kubernetes/**
+!kubernetes/linux/

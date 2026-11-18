@@ -1,0 +1,8 @@
+# Keep the generated payload, including ZIP, DLL and SO build outputs.
+**
+!amalogswindows/
+!setup.ps1
+!main.ps1
+!setdefaulttelegrafenvvariables.ps1
+!distrust-compromised-cas.ps1
+!emudhra-compromised-intermediates.pem
