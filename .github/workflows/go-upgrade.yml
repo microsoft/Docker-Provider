@@ -67,9 +67,31 @@ jobs:
             echo "=== Updating $dir ==="
             cd "$dir"
             go mod edit -go="$GO_VERSION"
-            go get -u ./...
+            # Let direct dependencies select compatible transitive versions.
+            DIRECT_MODULES=$(go list -mod=mod -m -f '{{if and (not .Main) (not .Indirect) (not .Replace)}}{{.Path}}@latest{{end}}' all | sed '/^$/d')
+            if [ -n "$DIRECT_MODULES" ]; then
+              mapfile -t MODULES <<< "$DIRECT_MODULES"
+              go get "${MODULES[@]}"
+            fi
             go mod tidy
             cd "$GITHUB_WORKSPACE"
+          done
+
+      - name: Validate upgraded modules
+        env:
+          GOUNITTEST: 'true'
+          ISTEST: 'true'
+        run: |
+          bash test/unit-tests/run_go_tests.sh
+          # Plugin binaries require cmetrics headers from the image build.
+          (cd source/plugins/go/input && go test -run '^$' ./lib)
+          for dir in \
+            test/ginkgo-e2e/utils \
+            test/ginkgo-e2e/querylogs \
+            test/ginkgo-e2e/containerstatus \
+            test/ginkgo-e2e/livenessprobe; do
+            echo "=== Compiling $dir ==="
+            (cd "$dir" && go test -run '^$' ./...)
           done
 
       - name: Check for changes and existing PR
@@ -113,7 +135,8 @@ jobs:
             echo ""
             echo "- **Go version**: \`${{ steps.detect.outputs.current_go_version }}\` → \`${{ steps.detect.outputs.latest_go_version }}\`"
             echo "- **GOLANG_BASE_IMAGE**: \`${{ steps.detect.outputs.golang_image }}\`"
-            echo "- **Dependencies**: Updated all go.mod files with \`go get -u ./...\` + \`go mod tidy\`"
+            echo "- **Dependencies**: Updated direct dependencies to latest; transitive versions resolved by \`go mod tidy\`"
+            echo "- **Validation**: Go unit tests passed; input library and E2E packages compiled"
             echo ""
             echo "### Modules updated"
             echo "- \`source/plugins/go/src\`"
