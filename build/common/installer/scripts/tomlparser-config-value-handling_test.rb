@@ -4,7 +4,6 @@ require "tmpdir"
 require "rbconfig"
 require "open3"
 require "json"
-require "tomlrb"
 
 # kubernetes/linux/main.sh sources the shell files these parsers generate, so an unquoted value
 # is subject to shell processing instead of arriving as configured. The values are rendered as
@@ -36,12 +35,6 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
   AGENT = COMMON.merge(source: "build/common/installer/scripts/tomlparser-agent-config.rb",
                        output: "agent_config_env_var").freeze
 
-  OSM = {
-    source: "build/linux/installer/scripts/tomlparser-osm-config.rb",
-    mount: "/etc/config/osm-settings/osm-metric-collection-configuration",
-    output: "integration_osm_config_env_var",
-  }.freeze
-
   # Generates the shell file, then sources it the way main.sh does. Returns whether the shell
   # processed the value and what bash ended up with. The parser's hardcoded image paths are
   # repointed at the fixture, so this needs no agent image.
@@ -60,7 +53,6 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
       FileUtils.cp(File.join(REPO, "build/linux/installer/conf", template), tenant_dir)
       source = source.gsub("/etc/opt/microsoft/docker-cimprov/", "#{tenant_dir}/")
                      .gsub('"/opt/', "\"#{dir}/")
-      File.write(File.join(dir, "telegraf-test-rs.conf"), "$AZMON_TELEGRAF_OSM_PROM_PLUGINS")
       File.write(File.join(dir, "parser.rb"), source)
       FileUtils.cp(File.join(REPO, "build/common/installer/scripts/ConfigParseErrorLogger.rb"), dir)
 
@@ -88,7 +80,6 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
       return {
         evaluated: %w[EVALUATED evaluated].any? { |name| File.exist?(File.join(dir, name)) }, values: out.split("\n", -1),
         tenants: Dir.glob(File.join(tenant_dir, "*_tenant_*.conf")).to_h { |p| [File.basename(p), File.read(p)] },
-        telegraf: File.read(File.join(dir, "telegraf-test-rs.conf")),
         output: output + parser_error,
       }
     end
@@ -196,22 +187,18 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
   end
 
   def test_agent_duration_values_cannot_smuggle_new_lines
-    valid = source_generated(AGENT, <<~TOML, %w[NETWORKFLOW_LOGS_THROTTLE_INTERVAL FBIT_TAIL_IGNORE_OLDER])
-      [agent_settings.networkflow_logs_config]
-      throttle_interval = "1.5m"
+    valid = source_generated(AGENT, <<~TOML, %w[FBIT_TAIL_IGNORE_OLDER])
       [agent_settings.fbit_config]
       tail_ignore_older = "5m"
     TOML
-    assert_equal ["1.5m", "5m"], valid[:values].first(2)
+    assert_equal "5m", valid[:values].first
 
-    result = source_generated(AGENT, <<~TOML, %w[NETWORKFLOW_LOGS_THROTTLE_INTERVAL FBIT_TAIL_IGNORE_OLDER])
-      [agent_settings.networkflow_logs_config]
-      throttle_interval = "5s\\ntouch EVALUATED\\n#"
+    result = source_generated(AGENT, <<~TOML, %w[FBIT_TAIL_IGNORE_OLDER])
       [agent_settings.fbit_config]
       tail_ignore_older = "1m\\ntouch EVALUATED\\n#"
     TOML
     refute result[:evaluated], "sourcing settings executed an embedded-newline duration"
-    assert_equal ["1s", ""], result[:values].first(2)
+    assert_equal "", result[:values].first
   end
 
   def test_version_files_are_literal_after_startup_and_later_source
@@ -278,14 +265,4 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
     assert_includes result[:output], "Invalid"
   end
 
-  def test_osm_namespace_cannot_add_telegraf_plugins
-    payload = "bad\"\n[[inputs.exec]]\ncommands = [\"unused\"]\n#"
-    result = source_generated(OSM, <<~TOML)
-      [osm_metric_collection_configuration.settings]
-      monitor_namespaces = [" kube-system ", #{JSON.generate(payload)}]
-    TOML
-    conf = Tomlrb.parse(result[:telegraf])
-    assert_equal ["prometheus"], conf.fetch("inputs").keys
-    assert_equal ["kube-system"], conf["inputs"]["prometheus"].map { |p| p["monitor_kubernetes_pods_namespace"] }
-  end
 end

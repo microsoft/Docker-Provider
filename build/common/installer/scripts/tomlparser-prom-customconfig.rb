@@ -9,9 +9,7 @@ require_relative "ConfigParseErrorLogger"
 require "fileutils"
 
 if ARGV == ["--resolve-defaults"]
-  files = if @os_type.to_s.strip.casecmp("windows") == 0
-            ["/etc/telegraf/telegraf.conf"]
-          elsif ENV["CONTAINER_TYPE"].to_s.strip.casecmp("PrometheusSidecar") == 0
+  files = if ENV["CONTAINER_TYPE"].to_s.strip.casecmp("PrometheusSidecar") == 0
             ["/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf", "/opt/telegraf-test-prom-side-car.conf"]
           elsif ENV["CONTROLLER_TYPE"].to_s.strip.casecmp("ReplicaSet") == 0
             ["/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf", "/opt/telegraf-test-rs.conf"]
@@ -368,7 +366,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             end
 
             File.open(file_name, "w") { |file| file.puts new_contents }
-            @promConfigGenerated = true
             puts "config::Successfully substituted the placeholders in telegraf conf file for replicaset"
             #Set environment variables for telemetry
             file = File.open("telemetry_prom_config_env_var", "w")
@@ -471,7 +468,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             kubernetesFieldSelectorsLength = kubernetesFieldSelectors.split(",").length
 
             File.open(file_name, "w") { |file| file.puts new_contents }
-            @promConfigGenerated = true
             puts "config::Successfully substituted the placeholders in telegraf conf file for custom prometheus scraping"
             #Set environment variables for configuration and telemetry in the sidecar container
             if (!@containerType.nil? && @containerType.casecmp(@promSideCar) == 0)
@@ -493,7 +489,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
               if !file.nil?
                 commands = get_command_windows("TELEMETRY_CUSTOM_PROM_MONITOR_PODS", monitorKubernetesPods)
                 file.write(commands)
-                file.close
               end
             end
           else
@@ -537,7 +532,6 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             new_contents = new_contents.gsub("$AZMON_DS_PROM_FIELDDROP") { toTomlStringArray(fieldDrop) }
             new_contents = new_contents.gsub("$AZMON_DS_PROM_URLS") { toTomlStringArray(urls) }
             File.open(file_name, "w") { |file| file.puts new_contents }
-            @promConfigGenerated = true
             puts "config::Successfully substituted the placeholders in telegraf conf file for daemonset"
 
             #Set environment variables for telemetry

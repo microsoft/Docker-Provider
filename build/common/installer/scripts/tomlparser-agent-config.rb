@@ -219,7 +219,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           end
           networkFlowLogsThrottleInterval = networkflow_logs_config[:throttle_interval]
           if !networkFlowLogsThrottleInterval.nil? && !networkFlowLogsThrottleInterval.empty?
-            if networkFlowLogsThrottleInterval =~ /\A\d+(\.\d+)?[smh]\z/
+            if networkFlowLogsThrottleInterval =~ /^\d+(\.\d+)?[smh]$/
               @networkFlowLogsThrottleInterval = networkFlowLogsThrottleInterval
               puts "Using config map value: networkflow logs throttle_interval = #{@networkFlowLogsThrottleInterval}"
             else

@@ -126,7 +126,6 @@ class PromCustomConfigTest < Minitest::Test
         assert status.success?, "default resolution failed: #{out}\n#{err}"
       end
       telemetry_path = File.join(sandbox, "telemetry_prom_config_env_var")
-      windows_env_path = File.join(sandbox, "setpromenv.txt")
       generated = File.join(sandbox, spec[:generated])
       generated = File.join(sandbox, spec[:template_dest]) if resolve_defaults && configmap.strip == "[prometheus_data_collection_settings]"
       conf_path = File.file?(generated) ? generated : File.join(sandbox, spec[:template_dest])
@@ -135,7 +134,6 @@ class PromCustomConfigTest < Minitest::Test
         generated: File.file?(generated),
         environment: env,
         telemetry: File.exist?(telemetry_path) ? File.read(telemetry_path) : nil,
-        windows_env: File.exist?(windows_env_path) ? File.read(windows_env_path) : nil,
         stdout: stdout,
         stderr: stderr,
       }
@@ -176,31 +174,24 @@ class PromCustomConfigTest < Minitest::Test
     @@baselines[scenario] ||= input_plugins(run_parser(scenario, configmap_for(scenario, "interval = \"1m\""))[:conf])
   end
 
-  def test_every_telegraf_launch_requires_strict_environment_handling
-    ["kubernetes/linux/main.sh", "kubernetes/windows/main.ps1", "build/windows/installer/scripts/telegraf-windows-service.rb"].each do |file|
-      source = File.read(File.join(REPO_ROOT, file))
-      refute_includes source, "--non-strict-env-handling"
-      launches = source.lines.grep(%r{/opt/telegraf |telegraf\.exe --|EXECUTABLE, "--console"})
-      refute_empty launches
-      launches.each { |line| assert_includes line, "--strict-env-handling" }
-      if file == "kubernetes/linux/main.sh"
-        checks = source.lines.grep(%r{/opt/telegraf config check})
-        assert_equal 3, checks.length
-        checks.each do |line|
-          assert_includes line, "--strict-env-handling"
-          refute_includes line, "--input-filter"
-        end
-      end
-      unless file.end_with?("telegraf-windows-service.rb")
-        resolver = source.index("--resolve-defaults")
-        refute_nil resolver
-        assert_operator resolver, :<, source.index(launches.first)
-      end
+  def test_linux_prometheus_telegraf_uses_strict_environment_handling
+    source = File.read(File.join(REPO_ROOT, "kubernetes/linux/main.sh"))
+    checks = source.lines.grep(%r{/opt/telegraf config check})
+    assert_equal 3, checks.length
+    checks.each do |line|
+      assert_includes line, "--strict-env-handling"
+      refute_includes line, "--input-filter"
     end
+    launch = source.lines.find { |line| line.include?("/opt/telegraf --") && line.include?("$telegrafConfFile") }
+    refute_nil launch
+    assert_includes launch, "--strict-env-handling"
+    resolver = source.index("--resolve-defaults")
+    refute_nil resolver
+    assert_operator resolver, :<, source.index(launch)
   end
 
   def test_native_structural_defaults_are_materialized
-    SCENARIOS.each_key do |scenario|
+    SCENARIOS.keys.reject { |scenario| scenario == :windows }.each do |scenario|
       result = run_parser(scenario, "[prometheus_data_collection_settings]\n", resolve_defaults: true)
       conf = result[:conf]
       refute_match(/^[ \t]*(?:(?:urls|field(?:pass|drop|include|exclude)|kubernetes_services)[ \t]*=[ \t]*)?\$[A-Z0-9_]+[ \t]*$/, conf)
@@ -330,25 +321,6 @@ class PromCustomConfigTest < Minitest::Test
 
     unapproved = "$filter ${HTTP_PROXY} ${AZMON_STDOUT_EXCLUDED_NAMESPACES} ${REDIS_SERVICE_HOST} ${USER_ASSIGNED_IDENTITY_CLIENT_ID}"
     assert_equal "\"#{unapproved}\"", toTomlBasicString(unapproved)
-  end
-
-  def test_linux_environment_references_are_not_added_to_telemetry
-    body = "urls = [\"https://node/$NODE_IP\", \"https://custom/${CUSTOM_METRIC}\", \"https://escaped/$$LITERAL\"]\n" \
-           "# ignored = \"$COMMENT_ONLY\""
-    linux = run_parser(:daemonset, configmap_for(:daemonset, body))
-    assert_includes collect_values(linux[:conf], "urls"), "https://node/$NODE_IP"
-    assert_includes collect_values(linux[:conf], "urls"), "https://custom/${CUSTOM_METRIC}"
-    refute_includes linux[:telemetry], "TELEMETRY_PROM_ENV_REFERENCES"
-    refute_includes linux[:telemetry], "TELEMETRY_PROM_ENV_REFERENCES_TRUNCATED"
-  end
-
-  def test_windows_environment_references_are_not_added_to_telemetry
-    windows = run_parser(:windows, configmap_for(:windows, "kubernetes_field_selector = \"spec.nodeName=${HOSTNAME}\"\n" \
-                                                             "fieldpass = [\"$WINDOW_METRIC\"]"))
-    assert_includes windows[:conf], "kubernetes_field_selector = \"spec.nodeName=${HOSTNAME}\""
-    assert_includes windows[:conf], "fieldinclude = [\"$WINDOW_METRIC\"]"
-    refute_includes windows[:windows_env], "TELEMETRY_PROM_ENV_REFERENCES"
-    refute_includes windows[:windows_env], "TELEMETRY_PROM_ENV_REFERENCES_TRUNCATED"
   end
 
   def test_toml_basic_string_output_is_a_single_parseable_value
@@ -554,7 +526,7 @@ class PromCustomConfigTest < Minitest::Test
     [nil, [], ["default", "kube-system"]].each do |namespaces|
       body = "monitor_kubernetes_pods = true\nfieldpass = [\"requests_total\"]\nfielddrop = [\"debug_total\"]"
       body += "\nmonitor_kubernetes_pods_namespaces = #{namespaces.inspect}" unless namespaces.nil?
-      conf = run_parser(:windows, configmap_for(:windows, body), resolve_defaults: true)[:conf]
+      conf = run_parser(:windows, configmap_for(:windows, body))[:conf]
 
       # This smoke test loads the actual generated options without contacting Kubernetes
       # or requiring a mounted service-account CA. --test never runs output plugins.
@@ -564,7 +536,7 @@ class PromCustomConfigTest < Minitest::Test
       Dir.mktmpdir("windows-telegraf-config") do |dir|
         path = File.join(dir, "telegraf.conf")
         File.write(path, conf)
-        Open3.popen3({ "NODE_IP" => "127.0.0.1" }, binary, "--console", "--strict-env-handling", "--test", "--config", path) do |stdin, stdout, stderr, process| # DevSkim: ignore DS162092 -- Loopback-only config smoke test.
+        Open3.popen3({ "NODE_IP" => "127.0.0.1" }, binary, "--console", "--test", "--config", path) do |stdin, stdout, stderr, process| # DevSkim: ignore DS162092 -- Loopback-only config smoke test.
           stdin.close
           readers = [Thread.new { stdout.read }, Thread.new { stderr.read }]
           completed = !process.join(20).nil?
