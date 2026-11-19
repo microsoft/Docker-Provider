@@ -6,12 +6,13 @@ More advanced information needed to develop or build the docker provider will li
 
 ## Windows Telegraf dependency
 
-`kubernetes/windows/setup.ps1` installs the official Telegraf 1.40.1 Windows AMD64
+`kubernetes/windows/setup.ps1` installs the official Telegraf 1.40.3 Windows AMD64
 ZIP and verifies its pinned SHA256 before extraction. The package corresponds to
-upstream commit `26b8f4478b676f4f5e5d8ce1622cdf4f6c273bda`. The existing Windows
+upstream commit `41b45388831dbb43018ebf7e475d97b355398c03` and embeds
+`github.com/andybalholm/brotli` v1.2.7. The existing Windows
 pipeline continues to sign `C:\opt\telegraf\telegraf.exe` as an OSS dependency.
 
-The official binary is built with Go 1.27.1 for `windows/amd64`, `GOAMD64=v1`.
+The official binary is built with Go 1.27.3 for `windows/amd64`, `GOAMD64=v1`.
 Go's [Windows OS floor](https://go.dev/wiki/MinimumRequirements#windows) is Windows
 10 or Windows Server 2016 and newer. Both repository image targets, LTSC2019 and
 LTSC2022, meet that floor; this does not replace validation inside those images
@@ -67,6 +68,16 @@ To run all unit tests run the commands `test/unit-tests/run_go_tests.sh` and `te
 
 ### Ruby
 Sample tests are provided in [in_kube_nodes_test.rb](source/plugin/ruby/in_kube_nodes_test.rb). They are meant to demo the tooling used for unit tests (as opposed to being comprehensive tests). Basic techniques like mocking are demonstrated there.
+
+Container inventory regression tests can run independently of Fluentd:
+`ruby -I source/plugins/ruby -r ./source/plugins/ruby/ContainerInventoryState_test.rb source/plugins/ruby/kubernetes_container_inventory_test.rb`.
+The matching Go tests run from `source/plugins/go/input` with
+`GOUNITTEST=true go test ./lib -run 'Test(ContainerState|ContainerInventory|WriteAndReadContainerState|GetDeletedContainers|_GetContainerInventoryHelper|CGroupMatcher)'`.
+Inventory state filenames must be single, bounded identifiers, not paths; both
+implementations reject malformed IDs before processing and again at the file boundary.
+Container environment collection only accepts full 64-hex container IDs and matches
+them as complete tokens in `/proc/<pid>/cgroup`.
+Missing IDs remain valid for waiting/image-pull-failure inventory but are not persisted.
 
 #### Conventions:
 1. When modifying a fluentd plugin for unit testing, any mocked classes (like KubernetesApiClient, applicationInsightsUtility, env, etc.) should be passed in as optional arguments of initialize. For example:

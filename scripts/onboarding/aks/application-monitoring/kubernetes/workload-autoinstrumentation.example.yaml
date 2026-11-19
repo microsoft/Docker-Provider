@@ -14,6 +14,7 @@ spec:
         app: java-autoinstrumented-example
       annotations:
         instrumentation.opentelemetry.io/inject-java: "cr1"
+        # Optional: remove when Container Insights already collects these logs to avoid duplicate ingestion and cost.
         monitor.azure.com/enable-application-logs: "true"
     spec:
       containers:
@@ -36,6 +37,7 @@ spec:
         app: nodejs-autoinstrumented-example
       annotations:
         instrumentation.opentelemetry.io/inject-nodejs: "cr1"
+        # Optional: remove when Container Insights already collects these logs to avoid duplicate ingestion and cost.
         monitor.azure.com/enable-application-logs: "true"
     spec:
       containers:

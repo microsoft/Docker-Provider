@@ -1,0 +1,77 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "clusterResourceId": {
+      "value": "/subscriptions/<subscription-id>/resourceGroups/<aks-resource-group>/providers/Microsoft.ContainerService/managedClusters/<aks-name>"
+    },
+    "clusterLocation": {
+      "value": "<aks-location>"
+    },
+    "monitoringWorkspaceLocation": {
+      "value": "<monitoring-workspace-location>"
+    },
+    "createAzureMonitorWorkspace": {
+      "value": true
+    },
+    "azureMonitorWorkspaceName": {
+      "value": "<azure-monitor-workspace-name>"
+    },
+    "azureMonitorWorkspaceResourceId": {
+      "value": ""
+    },
+    "createLogAnalyticsWorkspace": {
+      "value": true
+    },
+    "logAnalyticsWorkspaceName": {
+      "value": "<log-analytics-workspace-name>"
+    },
+    "logAnalyticsWorkspaceResourceId": {
+      "value": ""
+    },
+    "logAnalyticsWorkspaceRetentionInDays": {
+      "value": 30
+    },
+    "managedGrafanaName": {
+      "value": "<managed-grafana-name>"
+    },
+    "managedGrafanaLocation": {
+      "value": "<managed-grafana-location>"
+    },
+    "managedGrafanaSku": {
+      "value": "Standard"
+    },
+    "grafanaAdminPrincipalId": {
+      "value": ""
+    },
+    "grafanaAdminPrincipalType": {
+      "value": "User"
+    },
+    "metricLabelsAllowlist": {
+      "value": ""
+    },
+    "metricAnnotationsAllowList": {
+      "value": ""
+    },
+    "enableControlPlaneMetrics": {
+      "value": false
+    },
+    "containerInsightsStreams": {
+      "value": [
+        "Microsoft-ContainerInsights-Group-Default"
+      ]
+    },
+    "containerInsightsCollectionInterval": {
+      "value": "1m"
+    },
+    "preserveClusterTags": {
+      "value": true
+    },
+    "clusterTags": {
+      "value": {}
+    },
+    "tags": {
+      "value": {}
+    }
+  }
+}

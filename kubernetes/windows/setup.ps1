@@ -2,6 +2,16 @@
 # https://stackoverflow.com/questions/28682642/powershell-why-is-using-invoke-webrequest-much-slower-than-a-browser-download
 $ProgressPreference = 'SilentlyContinue'
 
+function Test-MicrosoftCodeSignature {
+    param([Parameter(Mandatory = $true)][string]$LiteralPath)
+
+    $signature = Get-AuthenticodeSignature -LiteralPath $LiteralPath -ErrorAction Stop
+    if ($signature.Status -ne 'Valid' -or
+        $signature.SignerCertificate.Subject -notmatch '(^|,\s*)O=Microsoft Corporation(,|$)') {
+        throw "A valid Microsoft code signature is required: $LiteralPath"
+    }
+}
+
 Write-Host ('Creating folder structure')
     New-Item -Type Directory -Path /installation -ErrorAction SilentlyContinue
 
@@ -42,14 +52,14 @@ Write-Host ('Finished Installing Fluentbit')
 Write-Host ('Installing Telegraf');
 try {
     # Update the Windows Telegraf configs and tomlparser-prom-customconfig.rb together with this package.
-    $telegrafUri='https://dl.influxdata.com/telegraf/releases/telegraf-1.40.1_windows_amd64.zip'
-    $telegrafSha256='cabe07907628afc17ce8c58a1c27b3a55a838b1fb9418b2c05e9342e6e8af8d9' # DevSkim: ignore DS173237 -- Public archive SHA256, not a credential.
+    $telegrafUri='https://dl.influxdata.com/telegraf/releases/telegraf-1.40.3_windows_amd64.zip'
+    $telegrafSha256='273867d9bb070625b8fc8627f3189899b1221c2c6540dd98f6e526108a89c9c3' # DevSkim: ignore DS173237 -- Public archive SHA256, not a credential.
     Invoke-WebRequest -Uri $telegrafUri -OutFile \installation\telegraf.zip -ErrorAction Stop
     if ((Get-FileHash -Path \installation\telegraf.zip -Algorithm SHA256 -ErrorAction Stop).Hash -ne $telegrafSha256) {
         throw "SHA256 mismatch for Telegraf Windows package"
     }
     Expand-Archive -Path \installation\telegraf.zip -Destination \installation\telegraf -ErrorAction Stop
-    Move-Item -Path \installation\telegraf\telegraf-1.40.1\* -Destination \opt\telegraf\ -ErrorAction Stop
+    Move-Item -Path \installation\telegraf\telegraf-1.40.3\* -Destination \opt\telegraf\ -ErrorAction Stop
 }
 catch {
     $ex = $_.Exception
@@ -65,10 +75,7 @@ Write-Host ('Installing Visual C++ Redistributable Package')
     $vcArgs = "/install /quiet /norestart"
     $ProgressPreference = 'SilentlyContinue'
     Invoke-WebRequest -Uri $vcRedistLocation -OutFile $vcInstallerLocation -ErrorAction Stop
-    $vcSignature = Get-AuthenticodeSignature -FilePath $vcInstallerLocation -ErrorAction Stop
-    if ($vcSignature.Status -ne 'Valid' -or $vcSignature.SignerCertificate.Subject -notmatch '(^|,\s*)O=Microsoft Corporation(,|$)') {
-        throw "Visual C++ installer must have a valid Microsoft Authenticode signature"
-    }
+    Test-MicrosoftCodeSignature -LiteralPath $vcInstallerLocation
     $vcVersionInfo = (Get-Item -Path $vcInstallerLocation -ErrorAction Stop).VersionInfo
     $vcVersion = [version]::new($vcVersionInfo.FileMajorPart, $vcVersionInfo.FileMinorPart, $vcVersionInfo.FileBuildPart, $vcVersionInfo.FilePrivatePart)
     if ($vcVersion -lt [version]'14.40.33816') {
@@ -94,9 +101,13 @@ if ([string]::IsNullOrEmpty($windowsazuremonitoragent)) {
 }
 Write-Host ('Installing Windows Azure Monitor Agent: ' + $windowsazuremonitoragent)
 try {
-    Invoke-WebRequest -Uri $windowsazuremonitoragent -OutFile /installation/windowsazuremonitoragent.zip
-    Expand-Archive -Path /installation/windowsazuremonitoragent.zip -Destination /installation/windowsazuremonitoragent
-    Move-Item -Path /installation/windowsazuremonitoragent -Destination /opt/windowsazuremonitoragent/ -ErrorAction SilentlyContinue
+    Invoke-WebRequest -Uri $windowsazuremonitoragent -OutFile /installation/windowsazuremonitoragent.zip -ErrorAction Stop
+    Expand-Archive -Path /installation/windowsazuremonitoragent.zip -Destination /installation/windowsazuremonitoragent -ErrorAction Stop
+    # The archive is not NuGet-signed; validate the Microsoft executables we launch without claiming whole-archive authentication.
+    foreach ($relativePath in @('MonAgentLauncher.exe', 'MonAgentCore.exe', 'Extensions\AMACoreAgent\AgentLauncher.exe', 'Extensions\AMACoreAgent\AMACoreAgent.exe')) {
+        Test-MicrosoftCodeSignature -LiteralPath (Join-Path '\installation\windowsazuremonitoragent\Monitoring\Agent' $relativePath)
+    }
+    Move-Item -Path /installation/windowsazuremonitoragent -Destination /opt/windowsazuremonitoragent/ -ErrorAction Stop
     $version = (Get-Item C:\opt\windowsazuremonitoragent\windowsazuremonitoragent\Monitoring\Agent\MonAgentCore.exe).VersionInfo.ProductVersion
     if ([string]::IsNullOrEmpty($version)) {
         echo "Monitoring Agent Version not found" > /opt/windowsazuremonitoragent/version.txt

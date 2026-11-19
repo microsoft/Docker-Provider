@@ -8,6 +8,9 @@ metadata:
     test-type: ginkgo-test
 spec:
   config:
+    TEST_SOURCE_REVISION:
+      type: string
+      default: "ci_prod"
     GENEVA_INTEGRATION:
       type: string
       default: "false"
@@ -20,7 +23,7 @@ spec:
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
-      revision: ci_prod
+      revision: "{{config.TEST_SOURCE_REVISION}}"
       paths:
       - test/ginkgo-e2e
   steps:
@@ -49,6 +52,9 @@ metadata:
     test-type: ginkgo-test
 spec:
   config:
+    TEST_SOURCE_REVISION:
+      type: string
+      default: "ci_prod"
     GENEVA_INTEGRATION:
       type: string
       default: "false"
@@ -61,7 +67,7 @@ spec:
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
-      revision: ci_prod
+      revision: "{{config.TEST_SOURCE_REVISION}}"
       paths:
       - test/ginkgo-e2e
   steps:
@@ -89,13 +95,16 @@ metadata:
     test-type: ginkgo-test
 spec:
   config:
+    TEST_SOURCE_REVISION:
+      type: string
+      default: "ci_prod"
     GOTOOLCHAIN:
       type: string
       default: ""
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
-      revision: ci_prod
+      revision: "{{config.TEST_SOURCE_REVISION}}"
       paths:
       - test/ginkgo-e2e
   steps:
@@ -121,6 +130,9 @@ metadata:
     test-type: ginkgo-test
 spec:
   config:
+    TEST_SOURCE_REVISION:
+      type: string
+      default: "ci_prod"
     AZURE_TENANT_ID:
       type: string
       default: ""
@@ -139,13 +151,16 @@ spec:
     AGENT_TELEMETRY_VERSION:
       type: string
       default: ""
+    AGENT_DEPLOYMENT_START_TIME:
+      type: string
+      default: ""
     GOTOOLCHAIN:
       type: string
       default: ""
   content:
     git:
       uri: https://github.com/microsoft/Docker-Provider/
-      revision: ci_prod
+      revision: "{{config.TEST_SOURCE_REVISION}}"
       paths:
       - test/ginkgo-e2e
   steps:
@@ -166,6 +181,8 @@ spec:
         value: "{{config.AGENT_TELEMETRY_RESOURCE_ID}}"
       - name: AGENT_TELEMETRY_VERSION
         value: "{{config.AGENT_TELEMETRY_VERSION}}"
+      - name: AGENT_DEPLOYMENT_START_TIME
+        value: "{{config.AGENT_DEPLOYMENT_START_TIME}}"
       - name: GOTOOLCHAIN
         value: "{{config.GOTOOLCHAIN}}"
     shell: ginkgo ./querylogs

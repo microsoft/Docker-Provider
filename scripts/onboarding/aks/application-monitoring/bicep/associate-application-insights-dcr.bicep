@@ -5,15 +5,17 @@ param clusterName string
 @description('Azure region of the AKS cluster.')
 param clusterLocation string
 
-@description('DataCollectionRuleResourceId returned by the OTLP-enabled Application Insights component.')
+@description('Resource ID of the OTLP-enabled Application Insights component.')
 @minLength(1)
-param dataCollectionRuleResourceId string
+param applicationInsightsResourceId string
 
-@description('Optional association name. A deterministic name is generated from the DCR resource ID when omitted.')
+@description('Optional association name. A deterministic name is generated from the Application Insights resource ID when omitted.')
 param associationName string = ''
 
+var applicationInsights = reference(applicationInsightsResourceId, '2020-02-02', 'Full')
+var dataCollectionRuleResourceId = applicationInsights.properties.DataCollectionRuleResourceId
 var effectiveAssociationName = empty(associationName)
-  ? 'appmon-${uniqueString(dataCollectionRuleResourceId)}'
+  ? 'appmon-${uniqueString(toLower(applicationInsightsResourceId))}'
   : associationName
 
 #disable-next-line BCP081

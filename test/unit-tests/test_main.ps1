@@ -26,7 +26,8 @@ $testFiles = @(
     "Test-IsCanaryRegion.ps1",
     "Test-TelegrafPackage.ps1",
     "Test-TelegrafService.ps1",
-    "Test-DistrustCompromisedCas.ps1"
+    "Test-DistrustCompromisedCas.ps1",
+    "Test-MicrosoftSignatures.ps1"
 )
 
 foreach ($testFile in $testFiles) {

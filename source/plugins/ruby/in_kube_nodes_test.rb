@@ -56,7 +56,7 @@ class InKubeNodesTests < Minitest::Test
     kubeApiClient.expect(:getClusterId, "/cluster-id")
     def appInsightsUtil.sendExceptionTelemetry(exception)
       unless exception.is_a?(NoMethodError) && exception.name == :[] && exception.receiver.nil?
-        raise "an unexpected exception has occured"
+        raise exception
       end
     end
 
@@ -127,7 +127,7 @@ class InKubeNodesTests < Minitest::Test
 
     def appInsightsUtil.sendExceptionTelemetry(exception)
       unless exception.is_a?(NoMethodError) && exception.name == :[] && exception.receiver.nil?
-        raise "an unexpected exception has occured"
+        raise exception
       end
     end
 

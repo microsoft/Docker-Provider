@@ -33,6 +33,7 @@ jobs:
     os: linux
   variables:
     skipComponentGovernanceDetection: true
+    agentDeploymentStartTime: $[ dependencies.${{ parameters.dependsOnDeployJob }}.outputs['${{ parameters.dependsOnDeployJob }}.deploymentStart.timestamp'] ]
   strategy:
     runOnce:
       deploy:
@@ -60,7 +61,7 @@ jobs:
             inlineScript: 'az aks get-credentials -g ${{ parameters.resourceGroup }} -n ${{ parameters.clusterName }}'
 
         - task: Bash@3
-          displayName: 'Wait for logs to be ingested into Log Analytics (20 min)'
+          displayName: 'Wait for logs to be ingested into Log Analytics (10 min)'
           inputs:
             targetType: 'inline'
             script: |
@@ -98,7 +99,10 @@ jobs:
               AzureClientId=${{ parameters.azureClientId }} \
               AzureTenantId=${{ parameters.azureTenantId }} \
               TeamsWebhookUri=${{ parameters.teamsWebhookUri }} \
+              "AgentDeploymentStartTime=$AGENT_DEPLOYMENT_START_TIME" \
               ${{ parameters.additionalTestParams }}
+          env:
+            AGENT_DEPLOYMENT_START_TIME: $(agentDeploymentStartTime)
           workingDirectory: $(Build.SourcesDirectory)/test/testkube/
           displayName: 'Install Testkube and run E2E tests'
 

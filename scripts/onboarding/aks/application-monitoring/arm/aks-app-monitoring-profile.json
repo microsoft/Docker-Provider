@@ -15,27 +15,17 @@
         "description": "Azure region of the AKS cluster."
       }
     },
-    "configureAutoInstrumentation": {
-      "type": "bool",
-      "defaultValue": true,
-      "metadata": {
-        "description": "Include the autoinstrumentation profile in this update."
-      }
-    },
     "autoInstrumentationEnabled": {
       "type": "bool",
-      "defaultValue": true
-    },
-    "configureOpenTelemetryMetrics": {
-      "type": "bool",
-      "defaultValue": false,
       "metadata": {
-        "description": "Include the vendor-neutral OpenTelemetry metrics receiver profile in this update."
+        "description": "Enable or disable autoinstrumentation."
       }
     },
     "openTelemetryMetricsEnabled": {
       "type": "bool",
-      "defaultValue": true
+      "metadata": {
+        "description": "Enable or disable the vendor-neutral OpenTelemetry metrics receiver."
+      }
     },
     "openTelemetryMetricsHttpPort": {
       "type": "int",
@@ -43,7 +33,7 @@
       "minValue": 0,
       "maxValue": 65535,
       "metadata": {
-        "description": "Optional HTTP/Protobuf host port. Use 0 to omit the property and use the service default."
+        "description": "Optional HTTP/Protobuf host port. Use 0 to omit the property and use the service default. Ignored when the receiver is disabled."
       }
     },
     "openTelemetryMetricsGrpcPort": {
@@ -52,19 +42,14 @@
       "minValue": 0,
       "maxValue": 65535,
       "metadata": {
-        "description": "Optional gRPC host port. Use 0 to omit the property and use the service default."
-      }
-    },
-    "configureOpenTelemetryLogsAndTraces": {
-      "type": "bool",
-      "defaultValue": false,
-      "metadata": {
-        "description": "Include the vendor-neutral OpenTelemetry logs and traces receiver profile in this update."
+        "description": "Optional gRPC host port. Use 0 to omit the property and use the service default. Ignored when the receiver is disabled."
       }
     },
     "openTelemetryLogsAndTracesEnabled": {
       "type": "bool",
-      "defaultValue": true
+      "metadata": {
+        "description": "Enable or disable the vendor-neutral OpenTelemetry logs and traces receiver."
+      }
     },
     "openTelemetryLogsAndTracesHttpPort": {
       "type": "int",
@@ -72,7 +57,7 @@
       "minValue": 0,
       "maxValue": 65535,
       "metadata": {
-        "description": "Optional HTTP/Protobuf host port. Use 0 to omit the property and use the service default."
+        "description": "Optional HTTP/Protobuf host port. Use 0 to omit the property and use the service default. Ignored when the receiver is disabled."
       }
     },
     "openTelemetryLogsAndTracesGrpcPort": {
@@ -81,14 +66,14 @@
       "minValue": 0,
       "maxValue": 65535,
       "metadata": {
-        "description": "Optional gRPC host port. Use 0 to omit the property and use the service default."
+        "description": "Optional gRPC host port. Use 0 to omit the property and use the service default. Ignored when the receiver is disabled."
       }
     }
   },
   "variables": {
-    "openTelemetryMetricsProfile": "[union(createObject('enabled', parameters('openTelemetryMetricsEnabled')), if(greater(parameters('openTelemetryMetricsHttpPort'), 0), createObject('httpPort', parameters('openTelemetryMetricsHttpPort')), createObject()), if(greater(parameters('openTelemetryMetricsGrpcPort'), 0), createObject('grpcPort', parameters('openTelemetryMetricsGrpcPort')), createObject()))]",
-    "openTelemetryLogsAndTracesProfile": "[union(createObject('enabled', parameters('openTelemetryLogsAndTracesEnabled')), if(greater(parameters('openTelemetryLogsAndTracesHttpPort'), 0), createObject('httpPort', parameters('openTelemetryLogsAndTracesHttpPort')), createObject()), if(greater(parameters('openTelemetryLogsAndTracesGrpcPort'), 0), createObject('grpcPort', parameters('openTelemetryLogsAndTracesGrpcPort')), createObject()))]",
-    "appMonitoringProfile": "[union(if(parameters('configureAutoInstrumentation'), createObject('autoInstrumentation', createObject('enabled', parameters('autoInstrumentationEnabled'))), createObject()), if(parameters('configureOpenTelemetryMetrics'), createObject('openTelemetryMetrics', variables('openTelemetryMetricsProfile')), createObject()), if(parameters('configureOpenTelemetryLogsAndTraces'), createObject('openTelemetryLogsAndTraces', variables('openTelemetryLogsAndTracesProfile')), createObject()))]"
+    "openTelemetryMetricsProfile": "[union(createObject('enabled', parameters('openTelemetryMetricsEnabled')), if(and(parameters('openTelemetryMetricsEnabled'), greater(parameters('openTelemetryMetricsHttpPort'), 0)), createObject('httpPort', parameters('openTelemetryMetricsHttpPort')), createObject()), if(and(parameters('openTelemetryMetricsEnabled'), greater(parameters('openTelemetryMetricsGrpcPort'), 0)), createObject('grpcPort', parameters('openTelemetryMetricsGrpcPort')), createObject()))]",
+    "openTelemetryLogsAndTracesProfile": "[union(createObject('enabled', parameters('openTelemetryLogsAndTracesEnabled')), if(and(parameters('openTelemetryLogsAndTracesEnabled'), greater(parameters('openTelemetryLogsAndTracesHttpPort'), 0)), createObject('httpPort', parameters('openTelemetryLogsAndTracesHttpPort')), createObject()), if(and(parameters('openTelemetryLogsAndTracesEnabled'), greater(parameters('openTelemetryLogsAndTracesGrpcPort'), 0)), createObject('grpcPort', parameters('openTelemetryLogsAndTracesGrpcPort')), createObject()))]",
+    "appMonitoringProfile": "[createObject('autoInstrumentation', createObject('enabled', parameters('autoInstrumentationEnabled')), 'openTelemetryMetrics', variables('openTelemetryMetricsProfile'), 'openTelemetryLogsAndTraces', variables('openTelemetryLogsAndTracesProfile'))]"
   },
   "resources": [
     {

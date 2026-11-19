@@ -1,0 +1,33 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "clusterName": {
+      "value": "<aks-name>"
+    },
+    "clusterLocation": {
+      "value": "<aks-location>"
+    },
+    "autoInstrumentationEnabled": {
+      "value": true
+    },
+    "openTelemetryMetricsEnabled": {
+      "value": false
+    },
+    "openTelemetryMetricsHttpPort": {
+      "value": 0
+    },
+    "openTelemetryMetricsGrpcPort": {
+      "value": 0
+    },
+    "openTelemetryLogsAndTracesEnabled": {
+      "value": false
+    },
+    "openTelemetryLogsAndTracesHttpPort": {
+      "value": 0
+    },
+    "openTelemetryLogsAndTracesGrpcPort": {
+      "value": 0
+    }
+  }
+}

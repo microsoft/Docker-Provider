@@ -74,6 +74,10 @@ MCR REPOSITORY SECTION (from AKS chart)
 {{- "mcr.microsoft.eaglex.ic.gov" }}
 {{- else if (eq $cloud_environment "USSec") }}
 {{- "mcr.microsoft.scloud" }}
+{{- else if (eq $cloud_environment "AzureBleuCloud") }}
+{{- "mcr.sovcloud-azure.fr" }}
+{{- else if (eq $cloud_environment "AzureDelosCloud") }}
+{{- "mcr.sovcloud-azure.de" }}
 {{- else }}
 {{- "mcr.microsoft.com" }}
 {{- end }}
