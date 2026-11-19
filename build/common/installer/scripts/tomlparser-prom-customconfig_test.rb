@@ -14,7 +14,7 @@ require "timeout"
 # telegraf plugins such as [[inputs.exec]] run shell commands inside a privileged agent.
 #
 # The payloads below deliberately try to break out of a quoted TOML assignment and declare an
-# extra plugin. Nothing here runs telegraf; the tests only assert on generated text.
+# extra plugin. Binary-gated cases use validation/test modes, not a long-running agent.
 
 class PromCustomConfigTest < Minitest::Test
   SCRIPTS_DIR = File.expand_path(__dir__)
@@ -129,8 +129,10 @@ class PromCustomConfigTest < Minitest::Test
       windows_env_path = File.join(sandbox, "setpromenv.txt")
       generated = File.join(sandbox, spec[:generated])
       generated = File.join(sandbox, spec[:template_dest]) if resolve_defaults && configmap.strip == "[prometheus_data_collection_settings]"
+      conf_path = File.file?(generated) ? generated : File.join(sandbox, spec[:template_dest])
       result = {
-        conf: File.read(generated),
+        conf: File.read(conf_path),
+        generated: File.file?(generated),
         environment: env,
         telemetry: File.exist?(telemetry_path) ? File.read(telemetry_path) : nil,
         windows_env: File.exist?(windows_env_path) ? File.read(windows_env_path) : nil,
@@ -181,6 +183,14 @@ class PromCustomConfigTest < Minitest::Test
       launches = source.lines.grep(%r{/opt/telegraf |telegraf\.exe --|EXECUTABLE, "--console"})
       refute_empty launches
       launches.each { |line| assert_includes line, "--strict-env-handling" }
+      if file == "kubernetes/linux/main.sh"
+        checks = source.lines.grep(%r{/opt/telegraf config check})
+        assert_equal 3, checks.length
+        checks.each do |line|
+          assert_includes line, "--strict-env-handling"
+          refute_includes line, "--input-filter"
+        end
+      end
       unless file.end_with?("telegraf-windows-service.rb")
         resolver = source.index("--resolve-defaults")
         refute_nil resolver
@@ -435,8 +445,31 @@ class PromCustomConfigTest < Minitest::Test
     url = "https://example.test/metrics?node=$NODE_IP&name=$HOSTNAME&query=$filter&excluded=${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
     result = run_parser(:daemonset, configmap_for(:daemonset, "urls = [#{url.inspect}, '''#{BREAKOUT}''']"))
     assert_no_injected_plugins(:daemonset, result[:conf], "the node urls array")
-    assert_includes collect_values(result[:conf], "urls"),
-                    "https://example.test/metrics?node=$NODE_IP&name=$HOSTNAME&query=$filter&excluded=${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
+    refute result[:generated], "the invalid scrape URL array must not replace the default config"
+    assert_includes result[:stderr], "Typecheck failed for prometheus config settings for daemonset"
+    refute_includes result[:conf], "ci-injection-sentinel"
+  end
+
+  def test_scrape_urls_are_validated_for_both_linux_controllers
+    [
+      [:daemonset, "ftp://example.test/metrics"],
+      [:replicaset, "https:///metrics"],
+      [:daemonset, "https://example.test:99999/metrics"],
+    ].each do |scenario, url|
+      result = run_parser(scenario, configmap_for(scenario, "urls = [#{url.inspect}]"))
+      refute result[:generated], "#{scenario} accepted invalid scrape URL #{url.inspect}"
+      refute_includes result[:conf], url
+      assert_includes result[:stderr], "Typecheck failed for prometheus config settings"
+    end
+  end
+
+  def test_scrape_urls_preserve_valid_environment_references_for_both_linux_controllers
+    url = "https://$NODE_IP/metrics?excluded=${AZMON_STDOUT_EXCLUDED_NAMESPACES}"
+    %i[daemonset replicaset].each do |scenario|
+      result = run_parser(scenario, configmap_for(scenario, "urls = [#{url.inspect}]"))
+      assert result[:generated], "#{scenario} rejected a valid scrape URL"
+      assert_includes collect_values(result[:conf], "urls"), url
+    end
   end
 
   def test_kubernetes_services_breakout_is_neutralized

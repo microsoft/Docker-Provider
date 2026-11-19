@@ -88,7 +88,7 @@ end
 
 def is_valid_tenant_setting?(name, value)
   @default_settings.key?(name) && !value.nil? && !value.to_s.empty? &&
-    !value.to_s.match?(/[\x00-\x08\x0a-\x1f\x7f]/)
+    !value.to_s.match?(/[\x00-\x08\x0a-\x1f\x7f\[\]]/)
 end
 
 def updateDefaultConfigSetting(configEntryName, configValue)
@@ -238,6 +238,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
             if stdoutNamespaces.length > 0 && stdoutNamespaces[0].kind_of?(String)
               #Empty the array to use the values from configmap
               stdoutNamespaces.each do |namespace|
+                unless is_valid_tenant_namespace?(namespace)
+                  ConfigParseErrorLogger.logError("Invalid stdout exclude namespace, skipping entry")
+                  next
+                end
                 if @stdoutExcludeNamespaces.empty?
                   # To not append , for the first element
                   @stdoutExcludeNamespaces.concat(namespace)

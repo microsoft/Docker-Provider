@@ -136,16 +136,15 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
     refute result[:evaluated], "sourcing the generated file let the shell process the config map value"
   end
 
-  # A value containing a single quote is the case naive escaping gets wrong.
-  def test_quote_in_value_cannot_break_out
+  def test_stdout_excluded_namespaces_reject_configmap_expansion_values
     result = source_generated(LOG, <<~TOML, %w[AZMON_STDOUT_EXCLUDED_NAMESPACES])
       [log_collection_settings.stdout]
       enabled = true
-      exclude_namespaces = ["it's$(touch EVALUATED)"]
+      exclude_namespaces = ["kube-system", #{JSON.generate("bad$namespace")}, #{JSON.generate("bad[INPUT]")}, #{JSON.generate("bad\n[OUTPUT]")}]
     TOML
 
-    refute result[:evaluated], "a single quote in the value broke out of the quoted literal"
-    assert_equal "it's$(touch EVALUATED)", result[:values].first
+    refute result[:evaluated]
+    assert_equal "kube-system", result[:values].first
   end
 
   def test_quote_survives_copy_to_bashrc
@@ -243,6 +242,8 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
 
   def test_tenant_settings_cannot_add_fluent_bit_sections
     payload = "2G\n[INPUT]\n Name dummy"
+    filter_payload = "300\n[FILTER]\n Name dummy"
+    output_payload = "30\n[OUTPUT]\n Name dummy"
     namespace_payload = "tenant-c\ntouch EVALUATED\n#"
     result = source_generated(LOG, <<~TOML, %w[AZMON_MULTI_TENANCY_SVC_BUFFER_CHUNK_SIZE AZMON_MULTI_TENANCY_SVC_BUFFER_MAX_SIZE AZMON_MULTI_TENANCY_NAMESPACES])
       [log_collection_settings.multi_tenancy]
@@ -251,7 +252,7 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
       namespaces = [" Tenant-A ", "tenant-b", #{JSON.generate(namespace_payload)}]
       storage_type = "Filesystem"
       mem_buf_limit = #{JSON.generate(payload)}
-      namespace_settings = [#{JSON.generate("tenant-a:mem_buf_limit=\\';buffer_max_size=#{payload};throttle_interval=1d")}, #{JSON.generate("#{namespace_payload}:mem_buf_limit=1M")}]
+      namespace_settings = [#{JSON.generate("tenant-a:mem_buf_limit=\\\\';buffer_max_size=#{payload};out_forward_storage_total_limit_size=2G[INPUT];throttle_interval=#{filter_payload};out_forward_retry_limit=#{output_payload};out_forward_require_ack_response=[FILTER];throttle_window=1d")}, #{JSON.generate("#{namespace_payload}:mem_buf_limit=1M")}]
       service_buffer_chunk_size = #{JSON.generate(payload)}
       service_buffer_max_size = "30m\\r[OUTPUT]"
     TOML
@@ -262,8 +263,13 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
     assert_equal %w[fluent-bit-azmon-logs_tenant_tenant-a.conf fluent-bit-azmon-logs_tenant_tenant-b.conf], result[:tenants].keys.sort
     result[:tenants].each_value do |conf|
       assert_equal 1, conf.scan(/^\[INPUT\]/).length
+      assert_equal 1, conf.scan(/^\[FILTER\]/).length
       assert_equal 1, conf.scan(/^\[OUTPUT\]/).length
       refute_includes conf, payload
+      refute_includes conf, "2G[INPUT]"
+      refute_includes conf, filter_payload
+      refute_includes conf, output_payload
+      refute_match(/^\s*Require_ack_response\s+\[FILTER\]/, conf)
       assert_includes conf, "Filesystem"
     end
     assert_includes result[:tenants].values.first, "\\'"

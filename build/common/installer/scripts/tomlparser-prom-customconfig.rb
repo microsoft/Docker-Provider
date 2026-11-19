@@ -3,6 +3,7 @@
 
 @os_type = ENV["OS_TYPE"]
 require "tomlrb"
+require "uri"
 
 require_relative "ConfigParseErrorLogger"
 require "fileutils"
@@ -144,6 +145,21 @@ TOML_ESCAPE_MAP = {
   "\f" => "\\f",
   "\r" => "\\r",
 }.freeze
+
+def checkForValidUrlArray(urls)
+  return true if urls.nil?
+  return false unless urls.is_a?(Array)
+
+  urls.all? do |url|
+    next false unless url.is_a?(String) && !url.match?(/[\x00-\x20\x7f]/)
+    normalized_url = url.gsub(/\$(?:[A-Za-z_][A-Za-z0-9_]*|\{[A-Za-z_][A-Za-z0-9_]*\})/, "placeholder")
+    uri = URI.parse(normalized_url)
+    %w[http https].include?(uri.scheme&.downcase) && !uri.host.nil? && !uri.host.empty? &&
+      uri.port.between?(1, 65_535)
+  end
+rescue URI::InvalidURIError
+  false
+end
 
 # Serializes a value as a quoted TOML basic string. Config map content is untrusted, so every
 # character that could terminate the string or introduce new TOML structure is escaped. This
@@ -293,6 +309,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
              checkForTypeArray(fieldDrop, String) &&
              checkForTypeArray(kubernetesServices, String) &&
              checkForTypeArray(urls, String) &&
+             checkForValidUrlArray(urls) &&
              # Remove below check after phased rollout
              checkForType(kubernetesLabelSelectors, String) &&
              checkForType(kubernetesFieldSelectors, String) &&
@@ -498,7 +515,8 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           if checkForType(interval, String) &&
              checkForTypeArray(fieldPass, String) &&
              checkForTypeArray(fieldDrop, String) &&
-             checkForTypeArray(urls, String)
+             checkForTypeArray(urls, String) &&
+             checkForValidUrlArray(urls)
             puts "config::Successfully passed typecheck for config settings for daemonset"
 
             #if setting is nil assign default values
