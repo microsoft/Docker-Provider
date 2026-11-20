@@ -2,6 +2,7 @@
 
 require "tomlrb"
 require "fileutils"
+require "json"
 require_relative "ConfigParseErrorLogger"
 
 @controllerType = ENV["CONTROLLER_TYPE"]
@@ -80,7 +81,14 @@ def populateSettingValuesFromConfigMap(parsedConfig)
       if !osmPromMetricNamespaces.nil? && checkForTypeArray(osmPromMetricNamespaces, String)
         # Adding a check to see if an empty array is passed for kubernetes namespaces
         if (osmPromMetricNamespaces.length > 0)
-          @osmMetricNamespaces = osmPromMetricNamespaces
+          @osmMetricNamespaces = osmPromMetricNamespaces.each_with_object([]) do |namespace, namespaces|
+            if namespace.is_a?(String)
+              namespace = namespace.strip
+              namespaces << namespace unless namespace.empty?
+            elsif !namespace.nil?
+              ConfigParseErrorLogger.logError("Invalid OSM monitor namespace, skipping entry")
+            end
+          end
         end
       end
     end
@@ -98,16 +106,12 @@ def replaceOsmTelegrafConfigPlaceHolders
     if @osmMetricNamespaces.length > 0
       osmPluginConfigsWithNamespaces = ""
       @osmMetricNamespaces.each do |namespace|
-        if !namespace.nil?
-          #Stripping namespaces to remove leading and trailing whitespaces
-          namespace.strip!
-          if namespace.length > 0
-            osmPluginConfigsWithNamespaces += "\n[[inputs.prometheus]]
+        osmPluginConfigsWithNamespaces += "\n[[inputs.prometheus]]
   name_prefix=\"container.azm.ms.osm/\"
   interval = \"#{@scrapeInterval}\"
   monitor_kubernetes_pods = true
   pod_scrape_scope = \"#{(@controllerType.casecmp(@replicaset) == 0) ? "cluster" : "node"}\"
-  monitor_kubernetes_pods_namespace = \"#{namespace}\"
+  monitor_kubernetes_pods_namespace = #{JSON.generate(namespace)}
   fieldinclude = #{@fieldPassSetting}
   metric_version = #{@metricVersion}
   url_tag = \"#{@urlTag}\"
@@ -115,10 +119,8 @@ def replaceOsmTelegrafConfigPlaceHolders
   timeout = \"#{@responseTimeout}\"
   tls_ca = \"#{@tlsCa}\"
   insecure_skip_verify = #{@insecureSkipVerify}\n"
-          end
-        end
       end
-      tgfConfig = tgfConfig.gsub("$AZMON_TELEGRAF_OSM_PROM_PLUGINS", osmPluginConfigsWithNamespaces)
+      tgfConfig = tgfConfig.gsub("$AZMON_TELEGRAF_OSM_PROM_PLUGINS") { osmPluginConfigsWithNamespaces }
     else
       puts "Using defaults for OSM configuration since there was an error in OSM config map or no namespaces were set"
       tgfConfig = tgfConfig.gsub("$AZMON_TELEGRAF_OSM_PROM_PLUGINS", "")

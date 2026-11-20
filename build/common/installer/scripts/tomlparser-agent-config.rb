@@ -219,7 +219,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           end
           networkFlowLogsThrottleInterval = networkflow_logs_config[:throttle_interval]
           if !networkFlowLogsThrottleInterval.nil? && !networkFlowLogsThrottleInterval.empty?
-            if networkFlowLogsThrottleInterval =~ /^\d+(\.\d+)?[smh]$/
+            if networkFlowLogsThrottleInterval =~ /\A\d+(\.\d+)?[smh]\z/
               @networkFlowLogsThrottleInterval = networkFlowLogsThrottleInterval
               puts "Using config map value: networkflow logs throttle_interval = #{@networkFlowLogsThrottleInterval}"
             else
@@ -273,7 +273,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         end
 
         fbitTailIgnoreOlder = fbit_config[:tail_ignore_older]
-        re = /^[0-9]+[mhd]$/
+        re = /\A[0-9]+[mhd]\z/
         if !fbitTailIgnoreOlder.nil? && !fbitTailIgnoreOlder.empty?
           if !re.match(fbitTailIgnoreOlder).nil?
             @fbitTailIgnoreOlder = fbitTailIgnoreOlder

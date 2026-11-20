@@ -3,9 +3,37 @@
 
 @os_type = ENV["OS_TYPE"]
 require "tomlrb"
+require "uri"
 
 require_relative "ConfigParseErrorLogger"
 require "fileutils"
+
+if ARGV == ["--resolve-defaults"]
+  files = if ENV["CONTAINER_TYPE"].to_s.strip.casecmp("PrometheusSidecar") == 0
+            ["/etc/opt/microsoft/docker-cimprov/telegraf-prom-side-car.conf", "/opt/telegraf-test-prom-side-car.conf"]
+          elsif ENV["CONTROLLER_TYPE"].to_s.strip.casecmp("ReplicaSet") == 0
+            ["/etc/opt/microsoft/docker-cimprov/telegraf-rs.conf", "/opt/telegraf-test-rs.conf"]
+          else
+            ["/etc/opt/microsoft/docker-cimprov/telegraf.conf", "/opt/telegraf-test.conf"]
+          end
+  # Only agent-owned placeholders may inject TOML structure; customer values stay quoted.
+  structural_defaults = %w[AZMON_DS_PROM_URLS AZMON_DS_PROM_FIELDPASS AZMON_DS_PROM_FIELDDROP
+                           AZMON_TELEGRAF_CUSTOM_PROM_URLS AZMON_TELEGRAF_CUSTOM_PROM_K8S_SERVICES
+                           AZMON_TELEGRAF_CUSTOM_PROM_FIELDPASS AZMON_TELEGRAF_CUSTOM_PROM_FIELDDROP
+                           AZMON_TELEGRAF_CUSTOM_PROM_MONITOR_PODS AZMON_TELEGRAF_CUSTOM_PROM_SCRAPE_SCOPE
+                           AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_LABEL_SELECTOR
+                           AZMON_TELEGRAF_CUSTOM_PROM_KUBERNETES_FIELD_SELECTOR
+                           AZMON_TELEGRAF_CUSTOM_PROM_PLUGINS_WITH_NAMESPACE_FILTER AZMON_TELEGRAF_OSM_PROM_PLUGINS]
+  files.each do |path|
+    next unless File.file?(path)
+    text = File.read(path, encoding: "UTF-8").gsub(/^([ \t]*(?:(?:urls|field(?:pass|drop|include|exclude)|kubernetes_services)[ \t]*=[ \t]*)?)\$([A-Z0-9_]+)[ \t]*$/) do |line|
+      prefix, name = Regexp.last_match(1), Regexp.last_match(2)
+      structural_defaults.include?(name) ? prefix + ENV.fetch(name) : line
+    end
+    File.write(path, text)
+  end
+  exit
+end
 
 @promConfigMapMountPath = "/etc/config/settings/prometheus-data-collection-settings"
 @replicaset = "replicaset"
@@ -115,6 +143,21 @@ TOML_ESCAPE_MAP = {
   "\f" => "\\f",
   "\r" => "\\r",
 }.freeze
+
+def checkForValidUrlArray(urls)
+  return true if urls.nil?
+  return false unless urls.is_a?(Array)
+
+  urls.all? do |url|
+    next false unless url.is_a?(String) && !url.match?(/[\x00-\x20\x7f]/)
+    normalized_url = url.gsub(/\$(?:[A-Za-z_][A-Za-z0-9_]*|\{[A-Za-z_][A-Za-z0-9_]*\})/, "placeholder")
+    uri = URI.parse(normalized_url)
+    %w[http https].include?(uri.scheme&.downcase) && !uri.host.nil? && !uri.host.empty? &&
+      uri.port.between?(1, 65_535)
+  end
+rescue URI::InvalidURIError
+  false
+end
 
 # Serializes a value as a quoted TOML basic string. Config map content is untrusted, so every
 # character that could terminate the string or introduce new TOML structure is escaped. This
@@ -264,6 +307,7 @@ def populateSettingValuesFromConfigMap(parsedConfig)
              checkForTypeArray(fieldDrop, String) &&
              checkForTypeArray(kubernetesServices, String) &&
              checkForTypeArray(urls, String) &&
+             checkForValidUrlArray(urls) &&
              # Remove below check after phased rollout
              checkForType(kubernetesLabelSelectors, String) &&
              checkForType(kubernetesFieldSelectors, String) &&
@@ -466,7 +510,8 @@ def populateSettingValuesFromConfigMap(parsedConfig)
           if checkForType(interval, String) &&
              checkForTypeArray(fieldPass, String) &&
              checkForTypeArray(fieldDrop, String) &&
-             checkForTypeArray(urls, String)
+             checkForTypeArray(urls, String) &&
+             checkForValidUrlArray(urls)
             puts "config::Successfully passed typecheck for config settings for daemonset"
 
             #if setting is nil assign default values
