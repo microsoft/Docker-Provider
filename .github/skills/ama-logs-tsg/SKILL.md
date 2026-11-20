@@ -258,6 +258,10 @@ After each investigation, if you wrote useful ad-hoc KQL queries via `tsg_query`
 2. Wire it into the relevant tool in `tools/ama-logs-tsg-mcp/src/index.ts`
 3. Rebuild: `cd tools/ama-logs-tsg-mcp && npx tsc`
 
+### Fix tracking (SRE agent)
+
+`ama_logs_tsg_fix_tracker_plan` (read-only) links Docker-Provider fix PRs to active IcMs and plans IcM entries as each fix moves through merged → in-image (Ev2 1032 `shell/PushAgentToACR`, exit code 0) → rolling/released (Ev2 Prod 1198 AKS, 1200 Arc; released = every Prod stage Succeeded). Release ancestry uses the image tag's SHA suffix. The ci-sre agent runs it on a schedule via `tools/ama-logs-tsg-mcp/sre-agent/icm-fix-tracker-ama-logs.yaml` and posts the entries; to confirm or reject a proposal, post `[fix-tracker:<pr-url>:linked]` or `:rejected` on the IcM. After changing the server, run `npm test && npm run bundle` and commit `plugins/ama-logs-tsg/dist/server.cjs` (the connector loads it raw from GitHub).
+
 ## Escalation Contacts
 
 | Issue/Area | ICM Service | ICM Team |

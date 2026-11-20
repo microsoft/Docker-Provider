@@ -9,6 +9,8 @@
   },
   "scripts": {
     "build": "tsc",
+    "test": "tsc && node --test test/",
+    "bundle": "npx esbuild src/index.ts --bundle --platform=node --target=node18 --format=cjs --outfile=../../plugins/ama-logs-tsg/dist/server.cjs",
     "start": "node dist/index.js",
     "dev": "tsc && node dist/index.js"
   },

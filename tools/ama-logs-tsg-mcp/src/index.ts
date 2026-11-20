@@ -11,6 +11,7 @@ import { z } from "zod";
 import { DATA_SOURCES, APP_INSIGHTS } from "./datasources.js";
 import { QUERIES, QueryCategory, parameterizeQuery } from "./queries.js";
 import { scrapeICMIncident } from "./icm-browser.js";
+import { planFixTracker } from "./fix-tracker.js";
 
 // ── Configuration ──────────────────────────────────────────────
 const QUERY_TIMEOUT_MS = parseInt(process.env.KQL_TIMEOUT_MS || "180000", 10);
@@ -743,6 +744,39 @@ server.tool(
       content: [{ type: "text" as const, text }],
     };
   }
+);
+
+// Tool: ama_logs_tsg_fix_tracker_plan
+server.tool(
+  "ama_logs_tsg_fix_tracker_plan",
+  "Read-only. Scans microsoft/Docker-Provider for PRs opened or merged in the lookback window, matches them to the given active IcMs (explicit IcM ID/link or unique MSRC case = linked; bare number, shared CVE or ambiguous MSRC = proposed), follows linked PRs through merge, pushed image (Ev2 1032 shell/PushAgentToACR, exit code 0) and AKS (1198) / Arc (1200) Ev2 Prod release rollouts (released = every Prod stage Succeeded), and returns the IcM discussion entries to post. Ev2 data comes from the caller via `rollouts` (gather it with ev2-mcp from the Prod endpoint); missing rollouts are reported as unknown. Each entry ends with a [fix-tracker:<pr-url>:<state>] marker; pass each incident's existing discussion entries so already-posted states are skipped. Release-bump PRs are never auto-matched. Does not write to IcM.",
+  {
+    incidents: z.array(z.object({
+      id: z.union([z.string(), z.number()]),
+      title: z.string().optional(),
+      status: z.string().optional(),
+      tags: z.array(z.string()).optional().describe("IcM tags; 'Fix PR: <url>' tags count as human-confirmed links"),
+      entries: z.array(z.string()).optional().describe("Existing discussion entry texts (needed for idempotency)"),
+      channel: z.enum(["aks", "arc"]).optional().describe("Affected release channel; omit to require both"),
+    })).describe("Active IcMs owned by the team"),
+    lookbackHours: z.number().default(24).describe("Scan PRs created or merged in this many hours (overlap with the previous run is safe)"),
+    rollouts: z.array(z.object({
+      definitionId: z.coerce.number().describe("1032 = ama-logs image push, 1198 = AKS release, 1200 = Arc release"),
+      endpoint: z.string().optional().describe("Ev2 endpoint the rollout was read from; only Prod counts (default Prod)"),
+      rolloutId: z.string(),
+      status: z.string().optional().describe("Overall rollout Status"),
+      startTime: z.string().optional(),
+      sourceVersion: z.string().optional().describe("RolloutDetails.ReleasePipelineInfo.AzureDevOps.SourceVersion (used for 1032 only)"),
+      artifactsVersion: z.string().optional().describe("RolloutDetails.ArtifactsRegistrationInfo.ArtifactsVersion; for 1198/1200 the deployed image tag, e.g. 3.9.1-ci-prod-10-25-2026-46052686 (its SHA suffix is the shipped commit)"),
+      url: z.string().optional(),
+      stages: z.array(z.object({ name: z.string(), status: z.string() })).optional().describe("get_rollout_summary StageInfos[].StageName/StageStatus"),
+      push: z.object({ status: z.string().optional(), exitCode: z.union([z.number(), z.string()]).optional() }).optional()
+        .describe("1032 only: shell/PushAgentToACR action status and exit code. Never pass log text."),
+    })).default([]).describe("Ev2 rollouts from ev2-mcp for the last 30 days"),
+  },
+  async ({ incidents, lookbackHours, rollouts }) => ({
+    content: [{ type: "text" as const, text: JSON.stringify(await planFixTracker(incidents, lookbackHours, rollouts), null, 2) }],
+  })
 );
 
 // ── Server Startup ─────────────────────────────────────────────
