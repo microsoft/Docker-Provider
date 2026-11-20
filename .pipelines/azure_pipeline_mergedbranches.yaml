@@ -264,9 +264,9 @@ extends:
             cat $(Build.ArtifactStagingDirectory)/linux/payload.json
           workingDirectory: $(Build.ArtifactStagingDirectory)/linux/
           displayName: "Install oras and build the payload json file"
-          condition: eq(variables.IS_PR, false)
+          condition: succeeded()
         - task: EsrpCodeSigning@6
-          condition: eq(variables.IS_PR, false)
+          condition: succeeded()
           inputs:
             ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
             UseMSIAuthentication: true
@@ -307,7 +307,7 @@ extends:
               -a "io.cncf.notary.x509chain.thumbprint#S256=[\"49D6CD5DB42623144D6990AA1669CE5D97F1F3D7\"]"
           workingDirectory: $(Build.ArtifactStagingDirectory)/linux/
           displayName: "ORAS Push Artifacts in $(Build.ArtifactStagingDirectory)/linux/"
-          condition: eq(variables.IS_PR, false)
+          condition: succeeded()
         - bash: |
             set -euxo pipefail
             oras attach ${{ variables.repoImageName }}:$(linuxImagetag) \
@@ -315,7 +315,7 @@ extends:
                 --annotation "vnd.microsoft.artifact.lifecycle.end-of-life.date=$(date -u -d '-1 hour' +"%Y-%m-%dT%H:%M:%SZ")"
           workingDirectory: $(Build.ArtifactStagingDirectory)/linux/
           displayName: "ORAS Push Artifacts in $(Build.ArtifactStagingDirectory)/linux/"
-          condition: eq(variables.IS_PR, false)
+          condition: succeeded()
         - task: AzureCLI@2
           displayName: "Vulnerability Scan with Trivy"
           inputs:
@@ -878,9 +878,9 @@ extends:
             Get-Content "$(Build.ArtifactStagingDirectory)/windows/payload.json"
           workingDirectory: $(Build.ArtifactStagingDirectory)/windows
           displayName: "Install oras and build the payload json file"
-          condition: eq(variables.IS_PR, false)
+          condition: succeeded()
         - task: EsrpCodeSigning@6
-          condition: eq(variables.IS_PR, false)
+          condition: succeeded()
           inputs:
             ConnectedServiceName: 'AME ESRPContainerInsights MSI FIC'
             UseMSIAuthentication: true
@@ -918,13 +918,13 @@ extends:
             oras attach ${{ variables.repoImageName }}:$(windowsImageTag) --artifact-type application/vnd.cncf.notary.signature ./payload.json:application/cose -a io.cncf.notary.x509chain.thumbprint#S256=[\"49D6CD5DB42623144D6990AA1669CE5D97F1F3D7\"]
           workingDirectory: $(Build.ArtifactStagingDirectory)/windows
           displayName: "Run oras attach"
-          condition: eq(variables.IS_PR, false)
+          condition: succeeded()
         - powershell: |
             $env:PATH = "$env:USERPROFILE\bin;$env:PATH"
             oras attach ${{ variables.repoImageName }}:$(windowsImageTag) --artifact-type 'application/vnd.microsoft.artifact.lifecycle' --annotation "vnd.microsoft.artifact.lifecycle.end-of-life.date=$(powershell -Command "(Get-Date).AddHours(-1).ToString('yyyy-MM-ddTHH:mm:ssZ')")"
           workingDirectory: $(Build.ArtifactStagingDirectory)/windows
           displayName: "Run oras attach"
-          condition: eq(variables.IS_PR, false)
+          condition: succeeded()
         - task: AntiMalware@4
           displayName: 'Run MpCmdRun.exe'
           inputs:
