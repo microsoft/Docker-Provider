@@ -35,6 +35,13 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
   AGENT = COMMON.merge(source: "build/common/installer/scripts/tomlparser-agent-config.rb",
                        output: "agent_config_env_var").freeze
 
+  OSM = {
+    source: "build/linux/installer/scripts/tomlparser-osm-config.rb",
+    mount: "/etc/config/osm-settings/osm-metric-collection-configuration",
+    output: "integration_osm_config_env_var",
+    telegraf_config: "build/linux/installer/conf/telegraf-rs.conf",
+  }.freeze
+
   # Generates the shell file, then sources it the way main.sh does. Returns whether the shell
   # processed the value and what bash ended up with. The parser's hardcoded image paths are
   # repointed at the fixture, so this needs no agent image.
@@ -51,6 +58,7 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
       FileUtils.mkdir_p(tenant_dir)
       template = "fluent-bit-azmon-logs_tenant.conf"
       FileUtils.cp(File.join(REPO, "build/linux/installer/conf", template), tenant_dir)
+      FileUtils.cp(File.join(REPO, parser[:telegraf_config]), tenant_dir) if parser[:telegraf_config]
       source = source.gsub("/etc/opt/microsoft/docker-cimprov/", "#{tenant_dir}/")
                      .gsub('"/opt/', "\"#{dir}/")
       File.write(File.join(dir, "parser.rb"), source)
@@ -80,6 +88,7 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
       return {
         evaluated: %w[EVALUATED evaluated].any? { |name| File.exist?(File.join(dir, name)) }, values: out.split("\n", -1),
         tenants: Dir.glob(File.join(tenant_dir, "*_tenant_*.conf")).to_h { |p| [File.basename(p), File.read(p)] },
+        configs: Dir.glob(File.join(dir, "telegraf-test-*.conf")).to_h { |p| [File.basename(p), File.read(p)] },
         output: output + parser_error,
       }
     end
@@ -199,6 +208,34 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
     TOML
     refute result[:evaluated], "sourcing settings executed an embedded-newline duration"
     assert_equal "", result[:values].first
+  end
+
+  def test_network_flow_interval_rejects_multiline_values
+    result = source_generated(AGENT, <<~TOML, %w[NETWORKFLOW_LOGS_THROTTLE_INTERVAL])
+      [agent_settings.networkflow_logs_config]
+      throttle_enabled = true
+      throttle_interval = "1s\\ntouch EVALUATED\\n#"
+    TOML
+
+    refute result[:evaluated], "sourcing settings executed an embedded-newline interval"
+    assert_equal "1s", result[:values].first
+  end
+
+  def test_osm_namespace_strings_are_toml_escaped
+    long_namespace = "Tenant-" + ("X" * 64)
+    toml_payload = "Tenant-A\"\\1\\\n[inputs.exec]\ncommand=\"echo harmless\"\\"
+    result = source_generated(OSM, <<~TOML, %w[TELEMETRY_OSM_CONFIGURATION_NAMESPACES_COUNT])
+      [osm_metric_collection_configuration.settings]
+      monitor_namespaces = ["Tenant-A", #{JSON.generate(long_namespace)}, #{JSON.generate(toml_payload)}, "  ", 42]
+    TOML
+
+    assert_equal "3", result[:values].first
+    assert_includes result[:output], "Invalid OSM monitor namespace, skipping entry"
+    config = result[:configs].fetch("telegraf-test-rs.conf")
+    assert_includes config, "monitor_kubernetes_pods_namespace = #{JSON.generate(long_namespace)}"
+    assert_includes config, "monitor_kubernetes_pods_namespace = #{JSON.generate(toml_payload)}"
+    assert_equal 3, config.scan(/name_prefix="container\.azm\.ms\.osm\/"/).length
+    refute_match(/^\[\[inputs\.exec\]\]$/, config)
   end
 
   def test_version_files_are_literal_after_startup_and_later_source

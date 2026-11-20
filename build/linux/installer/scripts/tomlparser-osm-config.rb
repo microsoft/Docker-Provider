@@ -2,6 +2,7 @@
 
 require "tomlrb"
 require "fileutils"
+require "json"
 require_relative "ConfigParseErrorLogger"
 
 @controllerType = ENV["CONTROLLER_TYPE"]
@@ -81,11 +82,10 @@ def populateSettingValuesFromConfigMap(parsedConfig)
         # Adding a check to see if an empty array is passed for kubernetes namespaces
         if (osmPromMetricNamespaces.length > 0)
           @osmMetricNamespaces = osmPromMetricNamespaces.each_with_object([]) do |namespace, namespaces|
-            namespace = namespace.strip if namespace.is_a?(String)
-            if namespace.is_a?(String) && namespace.length <= 63 &&
-               namespace.match?(/\A[a-z0-9](?:[-a-z0-9]*[a-z0-9])?\z/)
-              namespaces << namespace
-            else
+            if namespace.is_a?(String)
+              namespace = namespace.strip
+              namespaces << namespace unless namespace.empty?
+            elsif !namespace.nil?
               ConfigParseErrorLogger.logError("Invalid OSM monitor namespace, skipping entry")
             end
           end
@@ -111,7 +111,7 @@ def replaceOsmTelegrafConfigPlaceHolders
   interval = \"#{@scrapeInterval}\"
   monitor_kubernetes_pods = true
   pod_scrape_scope = \"#{(@controllerType.casecmp(@replicaset) == 0) ? "cluster" : "node"}\"
-  monitor_kubernetes_pods_namespace = \"#{namespace}\"
+  monitor_kubernetes_pods_namespace = #{JSON.generate(namespace)}
   fieldinclude = #{@fieldPassSetting}
   metric_version = #{@metricVersion}
   url_tag = \"#{@urlTag}\"
@@ -120,7 +120,7 @@ def replaceOsmTelegrafConfigPlaceHolders
   tls_ca = \"#{@tlsCa}\"
   insecure_skip_verify = #{@insecureSkipVerify}\n"
       end
-      tgfConfig = tgfConfig.gsub("$AZMON_TELEGRAF_OSM_PROM_PLUGINS", osmPluginConfigsWithNamespaces)
+      tgfConfig = tgfConfig.gsub("$AZMON_TELEGRAF_OSM_PROM_PLUGINS") { osmPluginConfigsWithNamespaces }
     else
       puts "Using defaults for OSM configuration since there was an error in OSM config map or no namespaces were set"
       tgfConfig = tgfConfig.gsub("$AZMON_TELEGRAF_OSM_PROM_PLUGINS", "")
