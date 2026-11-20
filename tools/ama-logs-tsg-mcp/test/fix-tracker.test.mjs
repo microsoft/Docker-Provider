@@ -22,7 +22,7 @@ test("markers make planning idempotent; rejected and proposed suppress repeats",
   const first = planEntries([p], [icm(1, "", { entries: linked })], lc);
   assert.deepEqual(first.map((e) => e.state), ["merged"]);
   assert.deepEqual(planEntries([p], [icm(1, "", { entries: [...linked, ...first.map((e) => e.text)] })], lc), []);
-  assert.deepEqual(planEntries([p], [icm(1, "CVE-2026-1234", { entries: [`[fix-tracker:${p.url}:rejected]`] })], lc), []);
+  assert.deepEqual(planEntries([p], [icm(1, "CVE-2026-1234", { entries: ["[ft:microsoft/Docker-Provider#1:rejected]"] })], lc), []);
 
   const proposed = planEntries([p], [icm(1, "CVE-2026-1234")], new Map());
   assert.deepEqual(proposed.map((e) => e.state), ["proposed"]);
@@ -88,7 +88,7 @@ test("end to end: pushed image plus AKS and Arc Prod rollouts finishing = releas
   const linked = icm(1, "", { entries: [`[fix-tracker:${merged.url}:linked]`] });
   const [e] = planEntries([merged], [linked], result);
   assert.equal(e.state, "released");
-  assert.match(e.text, /AKS Prod: all stages Succeeded.*ARC Prod: all stages Succeeded/);
+  assert.match(e.text, /AKS: completed in Prod.*ARC: completed in Prod/);
   const late = await lifecycles([merged], gh, [rel(1198), rel(1200)]);
   assert.equal(planEntries([merged], [linked], late.result)[0]?.state, "released", "push aged out of the Ev2 window; the release tag still proves the image");
   const lateNoFix = await lifecycles([merged], gh, [{ ...rel(1198), artifactsVersion: tag(SHA.without) }]);
@@ -98,8 +98,8 @@ test("end to end: pushed image plus AKS and Arc Prod rollouts finishing = releas
 test("merged text says unknown without Ev2 push evidence", () => {
   const linked = icm(1, "", { entries: [`[fix-tracker:${merged.url}:linked]`] });
   const text = (lc) => planEntries([merged], [linked], new Map([[merged.url.toLowerCase(), lc]]))[0].text;
-  assert.match(text({ state: "merged", rollouts: [] }), /unknown/);
-  assert.match(text({ state: "merged", pushChecked: true, rollouts: [] }), /no Ev2 image push containing it/);
+  assert.match(text({ state: "merged", rollouts: [] }), /not known yet/);
+  assert.match(text({ state: "merged", pushChecked: true, rollouts: [] }), /next agent image/);
   const release = { definitionId: 1198, endpoint: "Prod", rolloutId: "r", startTime: "2026-11-16", includesFix: true, stages: [{ name: "Canary", status: "Succeeded" }] };
   const scoped = icm(1, "", { entries: linked.entries, channel: "aks" });
   const plan = (state) => planEntries([merged], [scoped], new Map([[merged.url.toLowerCase(), { state, rollouts: [release] }]])).map((e) => e.state);
@@ -113,15 +113,53 @@ test("release finished = a Prod rollout containing the fix has every Ev2 stage S
   assert.equal(releaseState([ro(1198, "Prod"), ro(1200, "Public")]).state, "released", "sovereign clouds aren't required; Prod aliases count");
   const noArc = releaseState([ro(1198, "Prod")]);
   assert.equal(noArc.state, "rolling", "missing channel is not released");
-  assert.ok(noArc.notes.includes("ARC Prod: no Ev2 evidence (unknown)"));
+  assert.ok(noArc.notes.includes("ARC: release status unknown"));
   assert.equal(releaseState([ro(1198, "Fairfax")], ["aks"]).state, null, "non-Prod endpoints don't count");
   assert.equal(releaseState([ro(1196, "Prod")], ["aks"]).state, null, "ama-metrics AKS release (1196) doesn't count");
   const running = ro(1198, "Prod", { status: "Running", stages: [done[0], { name: "Medium", status: "Running" }] });
   const r = releaseState([running], ["aks"]);
   assert.equal(r.state, "rolling");
-  assert.match(r.notes[0], /AKS Prod: Running, stage Medium Running/);
+  assert.match(r.notes[0], /^AKS: rolling out \(.+\), ETA unknown$/);
   assert.equal(releaseState([ro(1198, "Prod", { includesFix: false })], ["aks"]).state, null, "not started");
   assert.equal(releaseState([], ["aks"]).state, null, "no evidence is not released");
   const newer = ro(1198, "Prod", { rolloutId: "new", startTime: "2026-11-18", includesFix: false });
   assert.equal(releaseState([newer, ro(1198, "Prod")], ["aks"]).state, "rolled-back");
+});
+
+test("CVE coverage: links and release text depend on which listed CVEs each PR fixes, combined across PRs", () => {
+  const a = pr({ number: 1, state: "merged" }), b = pr({ url: a.url.replace(/1$/, "2"), number: 2, title: "fix CVE-2026-0003", state: "merged" });
+  const c = pr({ url: a.url.replace(/1$/, "3"), number: 3, title: "bump x/crypto", state: "merged" });
+  const findings = [{ id: "CVE-2026-0001", fixedBy: [a.url] }, { id: "CVE-2026-0002", fixedBy: [c.url] }, { id: "CVE-2026-0003" }, { id: "CVE-2026-0004", fixed: true }];
+  const lc = new Map([a, b, c].map((p) => [p.url.toLowerCase(), { state: "merged", rollouts: [] }]));
+  const plan = planEntries([a, b, c], [icm(1, "CVE-2026-0003", { findings, entries: [`[fix-tracker:${a.url}:linked]`] })], lc);
+  assert.deepEqual(plan.map((e) => [e.prUrl.slice(-1), e.state]), [["1", "merged"], ["3", "proposed"]],
+    "b shares an open CVE with the IcM title but fixes none of its CVEs; c fixes one without naming it, so it is only proposed");
+  assert.match(plan[0].text, /Fixes 1 of 4 listed CVEs \(CVE-2026-0001\)\. 1 already fixed in released images\. 1 covered by other fix PRs\. Still open, no fix yet: CVE-2026-0003\./);
+  assert.match(plan[1].text, /Possible fix: .*Fixes 1 of 4 listed CVEs \(CVE-2026-0002\)\..*Still open, no fix yet: CVE-2026-0003\./, "proposals show partial coverage");
+
+  const rel = { definitionId: 1198, endpoint: "Prod", rolloutId: "r", url: "https://ev2/r", startTime: "2026-11-16", includesFix: true, stages: [{ name: "x", status: "Succeeded" }] };
+  const released = new Map([[a.url.toLowerCase(), { state: "in-image", rollouts: [rel] }]]);
+  const posted = ["[ft:microsoft/Docker-Provider#1:linked] [ft:microsoft/Docker-Provider#1:in-image]"];
+  const text = (fs) => planEntries([a], [icm(1, "", { findings: fs, entries: posted, channel: "aks" })], released)[0].text;
+  assert.match(text(findings), /Fix released to Prod: .*https:\/\/ev2\/r.*stays open until the remaining CVEs/);
+  assert.doesNotMatch(text(findings), /resolve/);
+  const covered = [{ id: "CVE-2026-0001", fixedBy: [a.url] }, { id: "CVE-2026-0002", fixedBy: [c.url] }, { id: "CVE-2026-0004", fixed: true }];
+  assert.match(text(covered), /stays open/, "c is not released yet");
+  posted.push(`x [fix-tracker:${c.url}:released]`);
+  assert.match(text(covered), /Every listed CVE now has a released fix; please verify and resolve\./);
+
+  const both = new Map([a, c].map((p) => [p.url.toLowerCase(), { state: "in-image", rollouts: [rel] }]));
+  const inImage = [a, c].map((p) => `[fix-tracker:${p.url}:linked] [fix-tracker:${p.url}:in-image]`);
+  const sameRun = planEntries([a, c], [icm(1, "", { findings: covered, entries: inImage, channel: "aks" })], both);
+  assert.deepEqual(sameRun.map((e) => e.state), ["released", "released"]);
+  assert.ok(sameRun.every((e) => /please verify and resolve/.test(e.text)), "PRs released in the same run count for each other");
+});
+
+test("rolling entry is short: rollout link and ETA from earlier completed Prod rollouts, no stage names", () => {
+  const p = pr({ state: "merged" }), done = [{ name: "Heavy", status: "Succeeded" }];
+  const ro = (id, start, end, over = {}) => ({ definitionId: 1198, endpoint: "Prod", rolloutId: id, url: `https://ev2/${id}`, startTime: start, endTime: end, includesFix: false, stages: done, ...over });
+  const rollouts = [ro("old1", "2026-10-01T00:00Z", "2026-10-08T00:00Z"), ro("old2", "2026-10-20T00:00Z", "2026-10-25T00:00Z"),
+    ro("now", "2026-11-17T00:00Z", undefined, { includesFix: true, stages: [{ name: "Heavy", status: "Running" }] })];
+  const [e] = planEntries([p], [icm(1, "", { channel: "aks", entries: [`[fix-tracker:${p.url}:linked]`] })], new Map([[p.url.toLowerCase(), { state: "in-image", rollouts }]]));
+  assert.equal(e.text, `Fix is rolling out: fix (${p.url}). AKS: rolling out (https://ev2/now), estimated completion 2026-11-24. [ft:microsoft/Docker-Provider#1:rolling]`);
 });

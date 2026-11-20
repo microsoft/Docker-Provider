@@ -6785,8 +6785,8 @@ var require_dist = __commonJS({
         return ajv;
       }
       const [formats, exportName] = opts.mode === "fast" ? [formats_1.fastFormats, fastName] : [formats_1.fullFormats, fullName];
-      const list = opts.formats || formats_1.formatNames;
-      addFormats(ajv, list, formats, exportName);
+      const list2 = opts.formats || formats_1.formatNames;
+      addFormats(ajv, list2, formats, exportName);
       if (opts.keywords)
         (0, limit_1.default)(ajv);
       return ajv;
@@ -6798,11 +6798,11 @@ var require_dist = __commonJS({
         throw new Error(`Unknown format "${name3}"`);
       return f;
     };
-    function addFormats(ajv, list, fs6, exportName) {
+    function addFormats(ajv, list2, fs6, exportName) {
       var _a2;
       var _b;
       (_a2 = (_b = ajv.opts.code).formats) !== null && _a2 !== void 0 ? _a2 : _b.formats = (0, codegen_1._)`require("ajv-formats/dist/formats").${exportName}`;
-      for (const f of list)
+      for (const f of list2)
         ajv.addFormat(f, fs6[f]);
     }
     module2.exports = exports2 = formatsPlugin;
@@ -8466,7 +8466,7 @@ var require_sort = __commonJS({
   "node_modules/semver/functions/sort.js"(exports2, module2) {
     "use strict";
     var compareBuild = require_compare_build();
-    var sort = (list, loose) => list.sort((a, b) => compareBuild(a, b, loose));
+    var sort = (list2, loose) => list2.sort((a, b) => compareBuild(a, b, loose));
     module2.exports = sort;
   }
 });
@@ -8476,7 +8476,7 @@ var require_rsort = __commonJS({
   "node_modules/semver/functions/rsort.js"(exports2, module2) {
     "use strict";
     var compareBuild = require_compare_build();
-    var rsort = (list, loose) => list.sort((a, b) => compareBuild(b, a, loose));
+    var rsort = (list2, loose) => list2.sort((a, b) => compareBuild(b, a, loose));
     module2.exports = rsort;
   }
 });
@@ -12453,13 +12453,13 @@ var require_buffer_util = __commonJS({
     "use strict";
     var { EMPTY_BUFFER } = require_constants2();
     var FastBuffer = Buffer[Symbol.species];
-    function concat2(list, totalLength) {
-      if (list.length === 0) return EMPTY_BUFFER;
-      if (list.length === 1) return list[0];
+    function concat2(list2, totalLength) {
+      if (list2.length === 0) return EMPTY_BUFFER;
+      if (list2.length === 1) return list2[0];
       const target = Buffer.allocUnsafe(totalLength);
       let offset = 0;
-      for (let i = 0; i < list.length; i++) {
-        const buf = list[i];
+      for (let i = 0; i < list2.length; i++) {
+        const buf = list2[i];
         target.set(buf, offset);
         offset += buf.length;
       }
@@ -14209,14 +14209,14 @@ var require_sender = __commonJS({
        * @param {Function} [cb] Callback
        * @private
        */
-      sendFrame(list, cb) {
-        if (list.length === 2) {
+      sendFrame(list2, cb) {
+        if (list2.length === 2) {
           this._socket.cork();
-          this._socket.write(list[0]);
-          this._socket.write(list[1], cb);
+          this._socket.write(list2[0]);
+          this._socket.write(list2[1], cb);
           this._socket.uncork();
         } else {
-          this._socket.write(list[0], cb);
+          this._socket.write(list2[0], cb);
         }
       }
     };
@@ -62437,13 +62437,14 @@ var REPO = "microsoft/Docker-Provider";
 var DEFS = { push: 1032, aks: 1198, arc: 1200 };
 var isProd = (r) => !/^(fairfax|mooncake|ussec|usnat|bleu|delos)$/i.test(r.endpoint?.trim() ?? "");
 var PROGRESS = ["linked", "merged", "in-image", "rolling", "released"];
-var marker = (prUrl, state3) => `[fix-tracker:${prUrl}:${state3}]`;
+var short = (prUrl) => prUrl.replace(/^https:\/\/github\.com\/([^/]+\/[^/]+)\/pull\/(\d+).*$/i, "$1#$2");
+var marker = (prUrl, state3) => `[ft:${short(prUrl)}:${state3}]`;
 function markers(entries = []) {
   const found = /* @__PURE__ */ new Map();
-  for (const m of entries.join("\n").matchAll(/\[fix-tracker:(https:\/\/github\.com\/[^\]\s]+\/pull\/\d+):([a-z-]+)\]/gi)) {
-    const url2 = m[1].toLowerCase();
+  for (const m of entries.join("\n").matchAll(/\[(?:fix-tracker:(https:\/\/github\.com\/[^\]\s]+\/pull\/\d+)|ft:([\w.-]+\/[\w.-]+)#(\d+)):([a-z-]+)\]/gi)) {
+    const url2 = (m[1] ?? `https://github.com/${m[2]}/pull/${m[3]}`).toLowerCase();
     if (!found.has(url2)) found.set(url2, /* @__PURE__ */ new Set());
-    const state3 = m[2].toLowerCase();
+    const state3 = m[4].toLowerCase();
     found.get(url2).add(state3 === "abandoned" ? "closed-unmerged" : state3);
   }
   return found;
@@ -62480,74 +62481,107 @@ function matchIcms(pr, incidents) {
 var msrcCase = (title = "") => /\bMSRC\]?\s*\[?\s*(\d{5,7})\b/i.exec(title)?.[1];
 var ref = (r) => r.url ?? `Ev2 Prod rollout ${r.rolloutId}`;
 var ok = (s) => /^succeeded$/i.test(s ?? "");
+var median = (xs) => xs.sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 function releaseState(rollouts, channels = ["aks", "arc"]) {
   let done = 0, started = false, back = false;
   const notes = [];
   for (const channel of channels) {
     const rs = rollouts.filter((r) => r.definitionId === DEFS[channel] && isProd(r)).sort((a, b) => Date.parse(b.startTime ?? "") - Date.parse(a.startTime ?? ""));
-    const label = `${channel.toUpperCase()} Prod`, latest = rs[0], idx = rs.findIndex((r) => r.includesFix);
-    const shipped = rs.find((r) => r.includesFix && r.stages?.length && r.stages.every((s) => ok(s.status)));
-    if (!latest) notes.push(`${label}: no Ev2 evidence (unknown)`);
+    const label = channel.toUpperCase(), latest = rs[0], idx = rs.findIndex((r) => r.includesFix);
+    const complete = (r) => !!r.stages?.length && r.stages.every((s) => ok(s.status));
+    const shipped = rs.find((r) => r.includesFix && complete(r));
+    if (!latest) notes.push(`${label}: release status unknown`);
     else if (idx > 0) {
       back = true;
-      notes.push(`${label}: latest ${ref(latest)} does not contain the fix; ${ref(rs[idx])} did`);
+      notes.push(`${label}: newer rollout ${ref(latest)} does not include the fix`);
     } else if (shipped) {
       done++;
-      notes.push(`${label}: all stages Succeeded (${ref(shipped)})`);
+      notes.push(`${label}: completed in Prod (${ref(shipped)})`);
     } else if (idx === 0) {
       started = true;
-      const at = latest.stages?.find((s) => !ok(s.status));
-      notes.push(`${label}: ${latest.status ?? "status unknown"}${at ? `, stage ${at.name} ${at.status}` : ""} (${ref(latest)})`);
+      const took = rs.slice(1).filter((r) => complete(r) && r.startTime && r.endTime).map((r) => Date.parse(r.endTime) - Date.parse(r.startTime));
+      const eta = took.length && latest.startTime ? new Date(Date.parse(latest.startTime) + median(took)).toISOString().slice(0, 10) : null;
+      notes.push(`${label}: rolling out (${ref(latest)}), ${eta ? `estimated completion ${eta}` : "ETA unknown"}`);
     } else notes.push(`${label}: not started`);
   }
   const state3 = back ? "rolled-back" : channels.length && done === channels.length ? "released" : started || done ? "rolling" : null;
   return { state: state3, notes };
 }
 var DETAIL = {
-  merged: (l) => l.pushChecked ? "Fix PR merged; no Ev2 image push containing it has a succeeded push action (exit code 0) yet." : "Fix PR merged; image and rollout status unknown (no Ev2 push evidence supplied).",
-  "in-image": (l, n) => `Fix is in image ${l.image ?? "(tag unknown)"} (${l.imageRef}). Release: ${n.join("; ") || "not started"}.`,
-  rolling: (_, n) => `Fix is rolling out (Ev2 stage status): ${n.join("; ")}.`,
-  released: (_, n) => `All required Ev2 release rollouts containing the fix have every stage Succeeded: ${n.join("; ")}. Ev2 completion is not fleet adoption; a human should verify and mitigate/resolve.`,
-  "rolled-back": (_, n) => `A newer Ev2 rollout no longer contains this fix (rollback or older version): ${n.join("; ")}. Needs human review.`,
-  "closed-unmerged": () => "Fix PR was closed without merging. Needs human review."
+  linked: (fix) => `Fix in progress: ${fix}.`,
+  merged: (fix, l) => `Fix merged: ${fix}. ${l?.pushChecked ? "It will ship in the next agent image." : "Image and rollout status not known yet."}`,
+  "in-image": (fix, l, n) => `Fix is built into agent image ${l?.image ?? "(tag unknown)"}: ${fix}. ${n.join("; ") || "Rollout not started"}.`,
+  rolling: (fix, _, n) => `Fix is rolling out: ${fix}. ${n.join("; ")}.`,
+  released: (fix, _, n) => `Fix released to Prod: ${fix}. ${n.join("; ")}.`,
+  "rolled-back": (fix, _, n) => `Fix was rolled back: ${fix}. ${n.join("; ")}. We are reviewing.`,
+  "closed-unmerged": (fix) => `Fix PR was closed without merging: ${fix}. We are reviewing next steps.`
 };
+var list = (ids) => ids.length > 5 ? `${ids.slice(0, 5).join(", ")} and ${ids.length - 5} more` : ids.join(", ");
+var fixes = (i, key) => (i.findings ?? []).filter((f) => f.fixedBy?.some((u) => u.toLowerCase() === key)).map((f) => f.id);
+var unfixed = (i) => (i.findings ?? []).filter((f) => !f.fixed && !f.fixedBy?.length).map((f) => f.id);
+function coverage(i, key, state3, releasedPrs) {
+  const all = i.findings ?? [];
+  if (!all.length) return state3 === "released" ? " Please verify and resolve." : "";
+  const mine = fixes(i, key), open2 = unfixed(i), done = all.filter((f) => f.fixed && !mine.includes(f.id)).length;
+  const others = all.length - mine.length - open2.length - done;
+  let text = ` Fixes ${mine.length} of ${all.length} listed CVEs${mine.length ? ` (${list(mine)})` : ""}.`;
+  if (done) text += ` ${done} already fixed in released images.`;
+  if (others) text += ` ${others} covered by other fix PRs.`;
+  if (open2.length) text += ` Still open, no fix yet: ${list(open2)}.`;
+  if (state3 !== "released") return text;
+  const pending = all.some((f) => !f.fixed && !f.fixedBy?.some((u) => u.toLowerCase() === key || releasedPrs.has(u.toLowerCase())));
+  return text + (pending ? " The incident stays open until the remaining CVEs are fixed and released." : " Every listed CVE now has a released fix; please verify and resolve.");
+}
 function planEntries(prs, incidents, lifecycles2) {
   const out = [], active = incidents.filter((i) => !/resolved/i.test(i.status ?? ""));
   const matches = new Map(prs.map((pr) => [pr.url.toLowerCase(), isReleaseBump(pr.title) ? [] : matchIcms(pr, active)]));
   for (const incident of active) {
     const id = String(incident.id), seen = markers(incident.entries);
+    const releasedPrs = new Set([...seen].filter(([, s]) => s.has("released")).map(([u]) => u));
+    const render = [];
     const tagged = new Set((incident.tags ?? []).map((t) => /^Fix PR:\s*(\S+)/i.exec(t)?.[1]?.toLowerCase()).filter(Boolean));
     for (const pr of prs) {
       const key = pr.url.toLowerCase(), posted = seen.get(key) ?? /* @__PURE__ */ new Set();
       if (posted.has("rejected")) continue;
-      const match = matches.get(key).find((m) => m.incidentId === id);
+      const covers = fixes(incident, key);
+      if (incident.findings?.length && !covers.length && !posted.has("linked") && !tagged.has(key)) continue;
+      const match = matches.get(key).find((m) => m.incidentId === id) ?? (covers.length ? { incidentId: id, confidence: "proposed", evidence: `it updates the packages for ${list(covers)}` } : void 0);
       const title = pr.title.replace(/[[\]]/g, "");
       const linked = posted.has("linked") || tagged.has(key) || match?.confidence === "linked";
-      const add = (state4, detail) => out.push({ incidentId: id, prUrl: pr.url, state: state4, text: `${detail} ${marker(pr.url, state4)}` });
+      const fix = `${title} (${pr.url})`, lc = lifecycles2.get(key);
+      const add = (state4, notes = []) => {
+        if (state4 === "released") releasedPrs.add(key);
+        render.push(() => ({
+          incidentId: id,
+          prUrl: pr.url,
+          state: state4,
+          text: `${DETAIL[state4](fix, lc, notes)}${/closed|rolled/.test(state4) ? "" : coverage(incident, key, state4, releasedPrs)} ${marker(pr.url, state4)}`
+        }));
+      };
       if (!linked) {
-        if (match && !posted.has("proposed") && lifecycles2.get(key)?.state !== "closed-unmerged")
-          add("proposed", `Possible fix PR ${pr.url} ("${title}"). Evidence: ${match.evidence}. Not linked automatically. To confirm, post an entry containing "fix-tracker:${pr.url}:linked" in square brackets; to reject, use ":rejected" instead.`);
+        if (match && !posted.has("proposed") && lc?.state !== "closed-unmerged")
+          render.push(() => ({ incidentId: id, prUrl: pr.url, state: "proposed", text: `Possible fix: ${fix}, because ${match.evidence}.${coverage(incident, key, "proposed", releasedPrs)} Not linked yet. To confirm, add the tag "Fix PR: ${pr.url}"; to reject, post an entry containing ft:${short(pr.url)}:rejected in square brackets. ${marker(pr.url, "proposed")}` }));
         continue;
       }
-      const lc = lifecycles2.get(key);
       if (!posted.has("linked") && !tagged.has(key)) {
         if (lc?.state === "closed-unmerged") continue;
-        add("linked", `Fix PR linked: ${pr.url} ("${title}"). Evidence: ${match?.evidence ?? "confirmed by a human"}.`);
+        add("linked");
       }
       if (!lc || lc.state === "open") continue;
       if (lc.state === "closed-unmerged") {
-        if (!posted.has(lc.state)) add(lc.state, DETAIL[lc.state](lc, []));
+        if (!posted.has(lc.state)) add(lc.state);
         continue;
       }
       const rel = lc.state === "in-image" ? releaseState(lc.rollouts, incident.channel ? [incident.channel] : void 0) : { state: null, notes: [] };
       const state3 = rel.state ?? lc.state;
       if (state3 === "rolled-back") {
-        if (!posted.has(state3)) add(state3, DETAIL[state3](lc, rel.notes));
+        if (!posted.has(state3)) add(state3, rel.notes);
         continue;
       }
       const top3 = Math.max(...[...posted].map((s) => PROGRESS.indexOf(s)), 0);
-      if (PROGRESS.indexOf(state3) > top3) add(state3, DETAIL[state3](lc, rel.notes));
+      if (PROGRESS.indexOf(state3) > top3) add(state3, rel.notes);
     }
+    out.push(...render.map((r) => r()));
   }
   return out;
 }
@@ -62624,6 +62658,7 @@ async function planFixTracker(incidents, lookbackHours = 24, rollouts = [], gh =
       const u = /^Fix PR:\s*(\S+)/i.exec(t)?.[1];
       if (u) tracked.add(u.toLowerCase());
     }
+    for (const f of i.findings ?? []) for (const u of f.fixedBy ?? []) tracked.add(u.toLowerCase());
   }
   const prs = new Map(scanned.map((p) => [p.url.toLowerCase(), p]));
   const prefix = `https://github.com/${REPO.toLowerCase()}/pull/`, fetchErrors = [];
@@ -62642,7 +62677,8 @@ async function planFixTracker(incidents, lookbackHours = 24, rollouts = [], gh =
     scanned: scanned.length,
     excludedReleaseBumps: scanned.filter((p) => isReleaseBump(p.title)).map((p) => p.url),
     entries: planEntries(all, incidents, result),
-    errors: [...fetchErrors, ...errors]
+    errors: [...fetchErrors, ...errors],
+    needsFixPr: active.map((i) => ({ incidentId: String(i.id), cves: unfixed(i) })).filter((n) => n.cves.length)
   };
 }
 
@@ -63200,7 +63236,7 @@ server.tool(
 );
 server.tool(
   "ama_logs_tsg_fix_tracker_plan",
-  "Read-only. Scans microsoft/Docker-Provider for PRs opened or merged in the lookback window, matches them to the given active IcMs (explicit IcM ID/link or unique MSRC case = linked; bare number, shared CVE or ambiguous MSRC = proposed), follows linked PRs through merge, pushed image (Ev2 1032 shell/PushAgentToACR, exit code 0) and AKS (1198) / Arc (1200) Ev2 Prod release rollouts (released = every Prod stage Succeeded), and returns the IcM discussion entries to post. Ev2 data comes from the caller via `rollouts` (gather it with ev2-mcp from the Prod endpoint); missing rollouts are reported as unknown. Each entry ends with a [fix-tracker:<pr-url>:<state>] marker; pass each incident's existing discussion entries so already-posted states are skipped. Release-bump PRs are never auto-matched. Does not write to IcM.",
+  "Read-only. Scans microsoft/Docker-Provider for PRs opened or merged in the lookback window, matches them to the given active IcMs (explicit IcM ID/link or unique MSRC case = linked; bare number, shared CVE or ambiguous MSRC = proposed), follows linked PRs through merge, pushed image (Ev2 1032 shell/PushAgentToACR, exit code 0) and AKS (1198) / Arc (1200) Ev2 Prod release rollouts (released = every Prod stage Succeeded), and returns short customer-readable IcM discussion entries to post (what is fixed, CVE coverage, rollout link, ETA) plus needsFixPr (listed CVEs with no fix PR). Ev2 data comes from the caller via `rollouts` (gather it with ev2-mcp from the Prod endpoint); missing rollouts are reported as unknown. Each entry ends with an [ft:<owner/repo>#<n>:<state>] marker; pass each incident's existing discussion entries so already-posted states are skipped. Release-bump PRs are never auto-matched. Does not write to IcM.",
   {
     incidents: external_exports3.array(external_exports3.object({
       id: external_exports3.union([external_exports3.string(), external_exports3.number()]),
@@ -63208,7 +63244,12 @@ server.tool(
       status: external_exports3.string().optional(),
       tags: external_exports3.array(external_exports3.string()).optional().describe("IcM tags; 'Fix PR: <url>' tags count as human-confirmed links"),
       entries: external_exports3.array(external_exports3.string()).optional().describe("Existing discussion entry texts (needed for idempotency)"),
-      channel: external_exports3.enum(["aks", "arc"]).optional().describe("Affected release channel; omit to require both")
+      channel: external_exports3.enum(["aks", "arc"]).optional().describe("Affected release channel; omit to require both"),
+      findings: external_exports3.array(external_exports3.object({
+        id: external_exports3.string().describe("CVE or finding ID listed in the incident"),
+        fixedBy: external_exports3.array(external_exports3.string()).optional().describe("Fix PR URLs you verified update the affected package to at least its fixed version"),
+        fixed: external_exports3.boolean().optional().describe("True only if a version already released to Prod contains the fix")
+      })).optional().describe("Vulnerability incidents only: every listed CVE. Entries then state coverage, PRs covering none are not linked, and 'released' only invites resolving when every CVE has a released fix")
     })).describe("Active IcMs owned by the team"),
     lookbackHours: external_exports3.number().default(24).describe("Scan PRs created or merged in this many hours (overlap with the previous run is safe)"),
     rollouts: external_exports3.array(external_exports3.object({
@@ -63217,6 +63258,7 @@ server.tool(
       rolloutId: external_exports3.string(),
       status: external_exports3.string().optional().describe("Overall rollout Status"),
       startTime: external_exports3.string().optional(),
+      endTime: external_exports3.string().optional().describe("Completed rollouts: used to estimate the ETA of the current one"),
       sourceVersion: external_exports3.string().optional().describe("RolloutDetails.ReleasePipelineInfo.AzureDevOps.SourceVersion (used for 1032 only)"),
       artifactsVersion: external_exports3.string().optional().describe("RolloutDetails.ArtifactsRegistrationInfo.ArtifactsVersion; for 1198/1200 the deployed image tag, e.g. 3.9.1-ci-prod-10-25-2026-46052686 (its SHA suffix is the shipped commit)"),
       url: external_exports3.string().optional(),

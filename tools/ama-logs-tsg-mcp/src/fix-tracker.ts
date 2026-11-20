@@ -9,25 +9,29 @@ type Channel = "aks" | "arc";
 const isProd = (r: Rollout) => !/^(fairfax|mooncake|ussec|usnat|bleu|delos)$/i.test(r.endpoint?.trim() ?? "");
 const PROGRESS = ["linked", "merged", "in-image", "rolling", "released"];
 
-export interface Incident { id: string | number; title?: string; status?: string; tags?: string[]; entries?: string[]; channel?: Channel }
+// findings: CVEs the agent extracted from the incident; fixedBy = fix PR URLs it verified; fixed = already in a released image.
+export interface Finding { id: string; fixedBy?: string[]; fixed?: boolean }
+export interface Incident { id: string | number; title?: string; status?: string; tags?: string[]; entries?: string[]; channel?: Channel; findings?: Finding[] }
 export interface PullRequest { url: string; number: number; title: string; body?: string | null; branch?: string; state: "open" | "closed" | "merged"; mergeSha?: string | null }
 export interface Match { incidentId: string; confidence: "linked" | "proposed"; evidence: string }
 // Shaped from ev2-mcp get_rollout_summary (stages) and get_rollout_details for shell/PushAgentToACR (push). No log text.
 export interface Rollout {
-  definitionId: number; endpoint?: string; rolloutId: string; status?: string; startTime?: string; sourceVersion?: string;
+  definitionId: number; endpoint?: string; rolloutId: string; status?: string; startTime?: string; endTime?: string; sourceVersion?: string;
   artifactsVersion?: string; url?: string; stages?: { name: string; status: string }[]; push?: { status?: string; exitCode?: number | string };
 }
 export type TrackedRollout = Rollout & { includesFix: boolean };
 export interface PlannedEntry { incidentId: string; prUrl: string; state: string; text: string }
 
-export const marker = (prUrl: string, state: string) => `[fix-tracker:${prUrl}:${state}]`;
+// Short so it stays unobtrusive in customer-facing entries; markers() also reads the older [fix-tracker:<url>:<state>] form.
+const short = (prUrl: string) => prUrl.replace(/^https:\/\/github\.com\/([^/]+\/[^/]+)\/pull\/(\d+).*$/i, "$1#$2");
+export const marker = (prUrl: string, state: string) => `[ft:${short(prUrl)}:${state}]`;
 
 export function markers(entries: string[] = []) {
   const found = new Map<string, Set<string>>();
-  for (const m of entries.join("\n").matchAll(/\[fix-tracker:(https:\/\/github\.com\/[^\]\s]+\/pull\/\d+):([a-z-]+)\]/gi)) {
-    const url = m[1].toLowerCase();
+  for (const m of entries.join("\n").matchAll(/\[(?:fix-tracker:(https:\/\/github\.com\/[^\]\s]+\/pull\/\d+)|ft:([\w.-]+\/[\w.-]+)#(\d+)):([a-z-]+)\]/gi)) {
+    const url = (m[1] ?? `https://github.com/${m[2]}/pull/${m[3]}`).toLowerCase();
     if (!found.has(url)) found.set(url, new Set());
-    const state = m[2].toLowerCase();
+    const state = m[4].toLowerCase();
     found.get(url)!.add(state === "abandoned" ? "closed-unmerged" : state);
   }
   return found;
@@ -65,6 +69,7 @@ const msrcCase = (title = "") => /\bMSRC\]?\s*\[?\s*(\d{5,7})\b/i.exec(title)?.[
 
 const ref = (r: Rollout) => r.url ?? `Ev2 Prod rollout ${r.rolloutId}`;
 const ok = (s?: string) => /^succeeded$/i.test(s ?? "");
+const median = (xs: number[]) => xs.sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 
 // Per channel from Prod Ev2 stage summaries. Released = a rollout containing the fix has every stage Succeeded and
 // no later rollout dropped it. Missing evidence is reported as unknown, never as done. This is not fleet adoption.
@@ -74,15 +79,18 @@ export function releaseState(rollouts: TrackedRollout[], channels: Channel[] = [
   for (const channel of channels) {
     const rs = rollouts.filter((r) => r.definitionId === DEFS[channel] && isProd(r))
       .sort((a, b) => Date.parse(b.startTime ?? "") - Date.parse(a.startTime ?? ""));
-    const label = `${channel.toUpperCase()} Prod`, latest = rs[0], idx = rs.findIndex((r) => r.includesFix);
-    const shipped = rs.find((r) => r.includesFix && r.stages?.length && r.stages.every((s) => ok(s.status)));
-    if (!latest) notes.push(`${label}: no Ev2 evidence (unknown)`);
-    else if (idx > 0) { back = true; notes.push(`${label}: latest ${ref(latest)} does not contain the fix; ${ref(rs[idx])} did`); }
-    else if (shipped) { done++; notes.push(`${label}: all stages Succeeded (${ref(shipped)})`); }
+    const label = channel.toUpperCase(), latest = rs[0], idx = rs.findIndex((r) => r.includesFix);
+    const complete = (r: Rollout) => !!r.stages?.length && r.stages.every((s) => ok(s.status));
+    const shipped = rs.find((r) => r.includesFix && complete(r));
+    if (!latest) notes.push(`${label}: release status unknown`);
+    else if (idx > 0) { back = true; notes.push(`${label}: newer rollout ${ref(latest)} does not include the fix`); }
+    else if (shipped) { done++; notes.push(`${label}: completed in Prod (${ref(shipped)})`); }
     else if (idx === 0) {
       started = true;
-      const at = latest.stages?.find((s) => !ok(s.status));
-      notes.push(`${label}: ${latest.status ?? "status unknown"}${at ? `, stage ${at.name} ${at.status}` : ""} (${ref(latest)})`);
+      // ETA = start + median duration of earlier completed Prod rollouts of this definition: an estimate, not a promise.
+      const took = rs.slice(1).filter((r) => complete(r) && r.startTime && r.endTime).map((r) => Date.parse(r.endTime!) - Date.parse(r.startTime!));
+      const eta = took.length && latest.startTime ? new Date(Date.parse(latest.startTime) + median(took)).toISOString().slice(0, 10) : null;
+      notes.push(`${label}: rolling out (${ref(latest)}), ${eta ? `estimated completion ${eta}` : "ETA unknown"}`);
     } else notes.push(`${label}: not started`);
   }
   const state = back ? "rolled-back" : channels.length && done === channels.length ? "released" : started || done ? "rolling" : null;
@@ -91,15 +99,36 @@ export function releaseState(rollouts: TrackedRollout[], channels: Channel[] = [
 
 export interface Lifecycle { state: "open" | "closed-unmerged" | "merged" | "in-image"; image?: string; imageRef?: string; pushChecked?: boolean; rollouts: TrackedRollout[] }
 
-const DETAIL: Record<string, (l: Lifecycle, notes: string[]) => string> = {
-  merged: (l) => l.pushChecked ? "Fix PR merged; no Ev2 image push containing it has a succeeded push action (exit code 0) yet."
-    : "Fix PR merged; image and rollout status unknown (no Ev2 push evidence supplied).",
-  "in-image": (l, n) => `Fix is in image ${l.image ?? "(tag unknown)"} (${l.imageRef}). Release: ${n.join("; ") || "not started"}.`,
-  rolling: (_, n) => `Fix is rolling out (Ev2 stage status): ${n.join("; ")}.`,
-  released: (_, n) => `All required Ev2 release rollouts containing the fix have every stage Succeeded: ${n.join("; ")}. Ev2 completion is not fleet adoption; a human should verify and mitigate/resolve.`,
-  "rolled-back": (_, n) => `A newer Ev2 rollout no longer contains this fix (rollback or older version): ${n.join("; ")}. Needs human review.`,
-  "closed-unmerged": () => "Fix PR was closed without merging. Needs human review.",
+// Customer-readable: what is fixed, the rollout link and ETA. Stage internals stay in Ev2.
+const DETAIL: Record<string, (fix: string, l: Lifecycle | undefined, notes: string[]) => string> = {
+  linked: (fix) => `Fix in progress: ${fix}.`,
+  merged: (fix, l) => `Fix merged: ${fix}. ${l?.pushChecked ? "It will ship in the next agent image." : "Image and rollout status not known yet."}`,
+  "in-image": (fix, l, n) => `Fix is built into agent image ${l?.image ?? "(tag unknown)"}: ${fix}. ${n.join("; ") || "Rollout not started"}.`,
+  rolling: (fix, _, n) => `Fix is rolling out: ${fix}. ${n.join("; ")}.`,
+  released: (fix, _, n) => `Fix released to Prod: ${fix}. ${n.join("; ")}.`,
+  "rolled-back": (fix, _, n) => `Fix was rolled back: ${fix}. ${n.join("; ")}. We are reviewing.`,
+  "closed-unmerged": (fix) => `Fix PR was closed without merging: ${fix}. We are reviewing next steps.`,
 };
+
+const list = (ids: string[]) => ids.length > 5 ? `${ids.slice(0, 5).join(", ")} and ${ids.length - 5} more` : ids.join(", ");
+const fixes = (i: Incident, key: string) => (i.findings ?? []).filter((f) => f.fixedBy?.some((u) => u.toLowerCase() === key)).map((f) => f.id);
+// Findings with neither a verified fix PR nor an already-released fix: candidates for a new fix PR.
+export const unfixed = (i: Incident) => (i.findings ?? []).filter((f) => !f.fixed && !f.fixedBy?.length).map((f) => f.id);
+
+// Coverage combines all fix PRs; "released" only invites resolving when every finding has a released fix.
+function coverage(i: Incident, key: string, state: string, releasedPrs: Set<string>) {
+  const all = i.findings ?? [];
+  if (!all.length) return state === "released" ? " Please verify and resolve." : "";
+  const mine = fixes(i, key), open = unfixed(i), done = all.filter((f) => f.fixed && !mine.includes(f.id)).length;
+  const others = all.length - mine.length - open.length - done;
+  let text = ` Fixes ${mine.length} of ${all.length} listed CVEs${mine.length ? ` (${list(mine)})` : ""}.`;
+  if (done) text += ` ${done} already fixed in released images.`;
+  if (others) text += ` ${others} covered by other fix PRs.`;
+  if (open.length) text += ` Still open, no fix yet: ${list(open)}.`;
+  if (state !== "released") return text;
+  const pending = all.some((f) => !f.fixed && !f.fixedBy?.some((u) => u.toLowerCase() === key || releasedPrs.has(u.toLowerCase())));
+  return text + (pending ? " The incident stays open until the remaining CVEs are fixed and released." : " Every listed CVE now has a released fix; please verify and resolve.");
+}
 
 export function planEntries(prs: PullRequest[], incidents: Incident[], lifecycles: Map<string, Lifecycle>): PlannedEntry[] {
   const out: PlannedEntry[] = [], active = incidents.filter((i) => !/resolved/i.test(i.status ?? ""));
@@ -108,35 +137,46 @@ export function planEntries(prs: PullRequest[], incidents: Incident[], lifecycle
   const matches = new Map(prs.map((pr) => [pr.url.toLowerCase(), isReleaseBump(pr.title) ? [] : matchIcms(pr, active)]));
   for (const incident of active) {
     const id = String(incident.id), seen = markers(incident.entries);
+    const releasedPrs = new Set([...seen].filter(([, s]) => s.has("released")).map(([u]) => u));
+    // Rendered after every PR is planned, so PRs released in the same run count as released for each other.
+    const render: (() => PlannedEntry)[] = [];
     const tagged = new Set((incident.tags ?? []).map((t) => /^Fix PR:\s*(\S+)/i.exec(t)?.[1]?.toLowerCase()).filter(Boolean));
     for (const pr of prs) {
       const key = pr.url.toLowerCase(), posted = seen.get(key) ?? new Set<string>();
       if (posted.has("rejected")) continue;
-      const match = matches.get(key)!.find((m) => m.incidentId === id);
-      // Brackets stripped so a PR title cannot smuggle a [fix-tracker:...] marker into a posted entry.
+      const covers = fixes(incident, key);
+      // A PR that fixes none of the incident's listed CVEs is not its fix, whatever its text says; humans can still link it.
+      if (incident.findings?.length && !covers.length && !posted.has("linked") && !tagged.has(key)) continue;
+      const match = matches.get(key)!.find((m) => m.incidentId === id)
+        ?? (covers.length ? { incidentId: id, confidence: "proposed" as const, evidence: `it updates the packages for ${list(covers)}` } : undefined);
+      // Brackets stripped so a PR title cannot smuggle a marker into a posted entry.
       const title = pr.title.replace(/[[\]]/g, "");
       const linked = posted.has("linked") || tagged.has(key) || match?.confidence === "linked";
-      const add = (state: string, detail: string) =>
-        out.push({ incidentId: id, prUrl: pr.url, state, text: `${detail} ${marker(pr.url, state)}` });
+      const fix = `${title} (${pr.url})`, lc = lifecycles.get(key);
+      const add = (state: string, notes: string[] = []) => {
+        if (state === "released") releasedPrs.add(key);
+        render.push(() => ({ incidentId: id, prUrl: pr.url, state,
+          text: `${DETAIL[state](fix, lc, notes)}${/closed|rolled/.test(state) ? "" : coverage(incident, key, state, releasedPrs)} ${marker(pr.url, state)}` }));
+      };
       if (!linked) {
-        if (match && !posted.has("proposed") && lifecycles.get(key)?.state !== "closed-unmerged")
-          add("proposed", `Possible fix PR ${pr.url} ("${title}"). Evidence: ${match.evidence}. Not linked automatically. ` +
-            `To confirm, post an entry containing "fix-tracker:${pr.url}:linked" in square brackets; to reject, use ":rejected" instead.`);
+        if (match && !posted.has("proposed") && lc?.state !== "closed-unmerged")
+          render.push(() => ({ incidentId: id, prUrl: pr.url, state: "proposed", text: `Possible fix: ${fix}, because ${match.evidence}.${coverage(incident, key, "proposed", releasedPrs)} Not linked yet. ` +
+            `To confirm, add the tag "Fix PR: ${pr.url}"; to reject, post an entry containing ft:${short(pr.url)}:rejected in square brackets. ${marker(pr.url, "proposed")}` }));
         continue;
       }
-      const lc = lifecycles.get(key);
       if (!posted.has("linked") && !tagged.has(key)) {
         if (lc?.state === "closed-unmerged") continue;
-        add("linked", `Fix PR linked: ${pr.url} ("${title}"). Evidence: ${match?.evidence ?? "confirmed by a human"}.`);
+        add("linked");
       }
       if (!lc || lc.state === "open") continue;
-      if (lc.state === "closed-unmerged") { if (!posted.has(lc.state)) add(lc.state, DETAIL[lc.state](lc, [])); continue; }
+      if (lc.state === "closed-unmerged") { if (!posted.has(lc.state)) add(lc.state); continue; }
       const rel = lc.state === "in-image" ? releaseState(lc.rollouts, incident.channel ? [incident.channel] : undefined) : { state: null, notes: [] };
       const state = rel.state ?? lc.state;
-      if (state === "rolled-back") { if (!posted.has(state)) add(state, DETAIL[state](lc, rel.notes)); continue; }
+      if (state === "rolled-back") { if (!posted.has(state)) add(state, rel.notes); continue; }
       const top = Math.max(...[...posted].map((s) => PROGRESS.indexOf(s)), 0);
-      if (PROGRESS.indexOf(state) > top) add(state, DETAIL[state](lc, rel.notes));
+      if (PROGRESS.indexOf(state) > top) add(state, rel.notes);
     }
+    out.push(...render.map((r) => r()));
   }
   return out;
 }
@@ -211,6 +251,7 @@ export async function planFixTracker(incidents: Incident[], lookbackHours = 24, 
   for (const i of incidents) {
     for (const url of markers(i.entries).keys()) tracked.add(url);
     for (const t of i.tags ?? []) { const u = /^Fix PR:\s*(\S+)/i.exec(t)?.[1]; if (u) tracked.add(u.toLowerCase()); }
+    for (const f of i.findings ?? []) for (const u of f.fixedBy ?? []) tracked.add(u.toLowerCase());
   }
   const prs = new Map(scanned.map((p) => [p.url.toLowerCase(), p]));
   const prefix = `https://github.com/${REPO.toLowerCase()}/pull/`, fetchErrors: string[] = [];
@@ -227,5 +268,6 @@ export async function planFixTracker(incidents: Incident[], lookbackHours = 24, 
     since: since.toISOString(), scanned: scanned.length,
     excludedReleaseBumps: scanned.filter((p) => isReleaseBump(p.title)).map((p) => p.url),
     entries: planEntries(all, incidents, result), errors: [...fetchErrors, ...errors],
+    needsFixPr: active.map((i) => ({ incidentId: String(i.id), cves: unfixed(i) })).filter((n) => n.cves.length),
   };
 }

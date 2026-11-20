@@ -749,7 +749,7 @@ server.tool(
 // Tool: ama_logs_tsg_fix_tracker_plan
 server.tool(
   "ama_logs_tsg_fix_tracker_plan",
-  "Read-only. Scans microsoft/Docker-Provider for PRs opened or merged in the lookback window, matches them to the given active IcMs (explicit IcM ID/link or unique MSRC case = linked; bare number, shared CVE or ambiguous MSRC = proposed), follows linked PRs through merge, pushed image (Ev2 1032 shell/PushAgentToACR, exit code 0) and AKS (1198) / Arc (1200) Ev2 Prod release rollouts (released = every Prod stage Succeeded), and returns the IcM discussion entries to post. Ev2 data comes from the caller via `rollouts` (gather it with ev2-mcp from the Prod endpoint); missing rollouts are reported as unknown. Each entry ends with a [fix-tracker:<pr-url>:<state>] marker; pass each incident's existing discussion entries so already-posted states are skipped. Release-bump PRs are never auto-matched. Does not write to IcM.",
+  "Read-only. Scans microsoft/Docker-Provider for PRs opened or merged in the lookback window, matches them to the given active IcMs (explicit IcM ID/link or unique MSRC case = linked; bare number, shared CVE or ambiguous MSRC = proposed), follows linked PRs through merge, pushed image (Ev2 1032 shell/PushAgentToACR, exit code 0) and AKS (1198) / Arc (1200) Ev2 Prod release rollouts (released = every Prod stage Succeeded), and returns short customer-readable IcM discussion entries to post (what is fixed, CVE coverage, rollout link, ETA) plus needsFixPr (listed CVEs with no fix PR). Ev2 data comes from the caller via `rollouts` (gather it with ev2-mcp from the Prod endpoint); missing rollouts are reported as unknown. Each entry ends with an [ft:<owner/repo>#<n>:<state>] marker; pass each incident's existing discussion entries so already-posted states are skipped. Release-bump PRs are never auto-matched. Does not write to IcM.",
   {
     incidents: z.array(z.object({
       id: z.union([z.string(), z.number()]),
@@ -758,6 +758,11 @@ server.tool(
       tags: z.array(z.string()).optional().describe("IcM tags; 'Fix PR: <url>' tags count as human-confirmed links"),
       entries: z.array(z.string()).optional().describe("Existing discussion entry texts (needed for idempotency)"),
       channel: z.enum(["aks", "arc"]).optional().describe("Affected release channel; omit to require both"),
+            findings: z.array(z.object({
+              id: z.string().describe("CVE or finding ID listed in the incident"),
+              fixedBy: z.array(z.string()).optional().describe("Fix PR URLs you verified update the affected package to at least its fixed version"),
+              fixed: z.boolean().optional().describe("True only if a version already released to Prod contains the fix"),
+            })).optional().describe("Vulnerability incidents only: every listed CVE. Entries then state coverage, PRs covering none are not linked, and 'released' only invites resolving when every CVE has a released fix"),
     })).describe("Active IcMs owned by the team"),
     lookbackHours: z.number().default(24).describe("Scan PRs created or merged in this many hours (overlap with the previous run is safe)"),
     rollouts: z.array(z.object({
@@ -766,6 +771,7 @@ server.tool(
       rolloutId: z.string(),
       status: z.string().optional().describe("Overall rollout Status"),
       startTime: z.string().optional(),
+      endTime: z.string().optional().describe("Completed rollouts: used to estimate the ETA of the current one"),
       sourceVersion: z.string().optional().describe("RolloutDetails.ReleasePipelineInfo.AzureDevOps.SourceVersion (used for 1032 only)"),
       artifactsVersion: z.string().optional().describe("RolloutDetails.ArtifactsRegistrationInfo.ArtifactsVersion; for 1198/1200 the deployed image tag, e.g. 3.9.1-ci-prod-10-25-2026-46052686 (its SHA suffix is the shipped commit)"),
       url: z.string().optional(),

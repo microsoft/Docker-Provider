@@ -16,6 +16,12 @@ spec:
     1. List the team's ACTIVE incidents. For each, collect id, title, status, tags, and the text of
        every discussion entry. If the release channel (aks or arc) is stated in the incident,
        include it; otherwise omit it.
+       For vulnerability incidents (CVE/FedRAMP/S360 findings), also set findings: one item per CVE the
+       incident lists, {id}. Add fixedBy = URLs of open or merged microsoft/Docker-Provider PRs whose diff raises the
+       affected module, package, Go version or base image to at least the fixed version (look the fixed
+       version up on osv.dev; search PRs by CVE ID and package name; one CVE may need several PRs).
+       Set fixed true only if a version already released to Prod contains the fixed version. If unsure,
+       leave the CVE without fixedBy or fixed: an open CVE is never reported as fixed.
     2. Gather Ev2 rollouts with ev2-mcp read tools only (serviceId 3170cdd2-19f0-4027-912b-1027311691a2;
        never start, approve, suspend or cancel a rollout). From the Prod endpoint only, list rollout
        history for the last 29 days (windows over 30 days are rejected):
@@ -23,7 +29,7 @@ spec:
        - service group microsoft.azuremonitor.containers: keep DefinitionId 1198 (AKS) and 1200 (Arc).
        If a call fails, report it.
        For each kept rollout call get_rollout_summary and build one rollouts item:
-       definitionId, endpoint, rolloutId, status, startTime,
+       definitionId, endpoint, rolloutId, status, startTime, endTime (completed rollouts),
        sourceVersion = RolloutDetails.ReleasePipelineInfo.AzureDevOps.SourceVersion,
        artifactsVersion = RolloutDetails.ArtifactsRegistrationInfo.ArtifactsVersion,
        stages = StageInfos[] as {name: StageName, status: StageStatus}.
@@ -37,10 +43,11 @@ spec:
     3. Call ama-logs-tsg_ama_logs_tsg_fix_tracker_plan with those incidents, lookbackHours 24 and rollouts.
     4. For each item in "entries", post its "text" verbatim as a discussion entry on incidentId.
        Do not post anything that is not in "entries", and do not reword the text: the trailing
-       [fix-tracker:...] marker is how the next run avoids duplicates.
+       [ft:...] marker is how the next run avoids duplicates.
        If the item's state is "linked", also add the tag "Fix PR: <prUrl>" to incidentId unless it is
        already there; that tag is how the next run follows the PR.
     5. Before posting, re-read that incident's entries; skip the item if its marker is already there.
-    6. Report what you posted and tagged and every item in "errors". If the tool call fails, post nothing.
+    6. Report what you posted and tagged, every item in "errors", and every item in "needsFixPr" (CVEs with no fix PR yet).
+       Do not open PRs. If the tool call fails, post nothing.
   status: Active
   agentMode: autonomous
