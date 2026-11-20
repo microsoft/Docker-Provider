@@ -65,18 +65,19 @@ MCR REPOSITORY SECTION (from AKS chart)
 =============================================================================
 */}}
 
-{{/* MCR repository base - returns cloud-specific MCR URL */}}
+{{/* MCR repository base - returns cloud-specific MCR URL.
+     The cloud name is lowercased so that either casing matches. */}}
 {{- define "mcr_repository_base" }}
-{{- $cloud_environment := (.Values.global.commonGlobals.CloudEnvironment| default "AZUREPUBLICCLOUD") }}
-{{- if (eq $cloud_environment "AZURECHINACLOUD") }}
-{{- "mcr.azk8s.cn" }}
-{{- else if (eq $cloud_environment "USNat") }}
+{{- $cloud_environment := lower (.Values.global.commonGlobals.CloudEnvironment | default "azurepubliccloud") }}
+{{- if (eq $cloud_environment "azurechinacloud") }}
+{{- "mcr.azure.cn" }}
+{{- else if (eq $cloud_environment "usnat") }}
 {{- "mcr.microsoft.eaglex.ic.gov" }}
-{{- else if (eq $cloud_environment "USSec") }}
+{{- else if (eq $cloud_environment "ussec") }}
 {{- "mcr.microsoft.scloud" }}
-{{- else if (eq $cloud_environment "AzureBleuCloud") }}
+{{- else if (eq $cloud_environment "azurebleucloud") }}
 {{- "mcr.sovcloud-azure.fr" }}
-{{- else if (eq $cloud_environment "AzureDelosCloud") }}
+{{- else if (eq $cloud_environment "azuredeloscloud") }}
 {{- "mcr.sovcloud-azure.de" }}
 {{- else }}
 {{- "mcr.microsoft.com" }}

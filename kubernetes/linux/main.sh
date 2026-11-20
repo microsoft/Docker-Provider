@@ -664,8 +664,8 @@ if [ -e "/etc/ama-logs-secret/WSID" ]; then
       if [ $? -ne 0 ]; then
             registry="https://mcr.microsoft.com/v2/"
             if [ $CLOUD_ENVIRONMENT == "azurechinacloud" ]; then
-                  registry="https://mcr.azk8s.cn/v2/"
-            elif [ $CLOUD_ENVIRONMENT == "usnat" ] || [ $CLOUD_ENVIRONMENT == "ussec" ]; then
+                  registry="https://mcr.azure.cn/v2/"
+            elif [ $CLOUD_ENVIRONMENT == "usnat" ] || [ $CLOUD_ENVIRONMENT == "ussec" ] || [ $CLOUD_ENVIRONMENT == "azurebleucloud" ] || [ $CLOUD_ENVIRONMENT == "azuredeloscloud" ]; then
                   registry=$MCR_URL
             fi
             if [ -z $registry ]; then
@@ -722,7 +722,7 @@ fi
 # These need to be copied to a different location for AzureLinux vs Ubuntu containers.
 # OS_ID here is the container distro.
 # Adding AzureLinux now even though the elif will never currently evaluate.
-if [ $CLOUD_ENVIRONMENT == "usnat" ] || [ $CLOUD_ENVIRONMENT == "ussec" ] || [ "$IS_CUSTOM_CERT" == "true" ]; then
+if [ $CLOUD_ENVIRONMENT == "usnat" ] || [ $CLOUD_ENVIRONMENT == "ussec" ] || [ $CLOUD_ENVIRONMENT == "azurebleucloud" ] || [ $CLOUD_ENVIRONMENT == "azuredeloscloud" ] || [ "$IS_CUSTOM_CERT" == "true" ]; then
   OS_ID=$(cat /etc/os-release | grep ^ID= | cut -d '=' -f2 | tr -d '"' | tr -d "'")
   if [ $OS_ID == "ubuntu" ]; then
     cp /anchors/ubuntu/* /usr/local/share/ca-certificates/
