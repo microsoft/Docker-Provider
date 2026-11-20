@@ -62500,7 +62500,8 @@ function releaseState(rollouts, channels = ["aks", "arc"]) {
     } else if (idx === 0) {
       started = true;
       const took = rs.slice(1).filter((r) => complete(r) && r.startTime && r.endTime).map((r) => Date.parse(r.endTime) - Date.parse(r.startTime));
-      const eta = took.length && latest.startTime ? new Date(Date.parse(latest.startTime) + median(took)).toISOString().slice(0, 10) : null;
+      const at = took.length && latest.startTime ? Date.parse(latest.startTime) + median(took) : 0;
+      const eta = at > Date.now() ? new Date(at).toISOString().slice(0, 10) : null;
       notes.push(`${label}: rolling out (${ref(latest)}), ${eta ? `estimated completion ${eta}` : "ETA unknown"}`);
     } else notes.push(`${label}: not started`);
   }
@@ -62614,7 +62615,7 @@ async function recentPrs(gh, since) {
   }
   return prs;
 }
-var commitOf = (r) => r.artifactsVersion?.match(/-([0-9a-f]{7,40})$/i)?.[1] || (r.definitionId === DEFS.push ? r.sourceVersion : void 0);
+var commitOf = (r) => r.artifactsVersion?.match(/-([0-9a-f]{7,40})(?:-arc)?$/i)?.[1] || (r.definitionId === DEFS.push ? r.sourceVersion : void 0);
 async function lifecycles(prs, gh, rollouts, track) {
   const result = /* @__PURE__ */ new Map(), errors = [], cache = /* @__PURE__ */ new Map();
   for (const p of prs) if (p.state !== "merged") result.set(p.url.toLowerCase(), { state: p.state === "open" ? "open" : "closed-unmerged", rollouts: [] });

@@ -76,6 +76,7 @@ test("1198/1200 ancestry comes from the image tag SHA; their SourceVersion is ne
   const fixOf = async (r) => (await run(r)).result.get(merged.url.toLowerCase()).rollouts.find((x) => x.definitionId === 1198)?.includesFix;
   assert.equal(await fixOf(release({ artifactsVersion: tag(SHA.with), sourceVersion: SHA.without })), true, "tag SHA wins over SourceVersion");
   assert.equal(await fixOf(release({ artifactsVersion: tag(SHA.without), sourceVersion: SHA.with })), false, "tag lacks the fix");
+  assert.equal(await fixOf(release({ artifactsVersion: `${tag(SHA.with)}-arc`, sourceVersion: SHA.without })), true, "Arc tags end in -arc");
   const untagged = await run(release({ sourceVersion: SHA.with }));
   assert.equal(untagged.result.get(merged.url.toLowerCase()).rollouts.some((x) => x.definitionId === 1198), false, "no tag SHA = unknown, not compared");
   assert.match(untagged.errors[0], /1 rollout\(s\) without a Docker-Provider commit/);
@@ -158,8 +159,10 @@ test("CVE coverage: links and release text depend on which listed CVEs each PR f
 test("rolling entry is short: rollout link and ETA from earlier completed Prod rollouts, no stage names", () => {
   const p = pr({ state: "merged" }), done = [{ name: "Heavy", status: "Succeeded" }];
   const ro = (id, start, end, over = {}) => ({ definitionId: 1198, endpoint: "Prod", rolloutId: id, url: `https://ev2/${id}`, startTime: start, endTime: end, includesFix: false, stages: done, ...over });
-  const rollouts = [ro("old1", "2026-10-01T00:00Z", "2026-10-08T00:00Z"), ro("old2", "2026-10-20T00:00Z", "2026-10-25T00:00Z"),
-    ro("now", "2026-11-17T00:00Z", undefined, { includesFix: true, stages: [{ name: "Heavy", status: "Running" }] })];
-  const [e] = planEntries([p], [icm(1, "", { channel: "aks", entries: [`[fix-tracker:${p.url}:linked]`] })], new Map([[p.url.toLowerCase(), { state: "in-image", rollouts }]]));
-  assert.equal(e.text, `Fix is rolling out: fix (${p.url}). AKS: rolling out (https://ev2/now), estimated completion 2026-11-24. [ft:microsoft/Docker-Provider#1:rolling]`);
+  const day = 864e5, iso = (t) => new Date(t).toISOString(), now = Date.now();
+  const plan = (start) => planEntries([p], [icm(1, "", { channel: "aks", entries: [`[fix-tracker:${p.url}:linked]`] })], new Map([[p.url.toLowerCase(), { state: "in-image", rollouts: [
+    ro("old1", "2026-10-01T00:00Z", "2026-10-08T00:00Z"), ro("old2", "2026-10-20T00:00Z", "2026-10-25T00:00Z"),
+    ro("now", iso(start), undefined, { includesFix: true, stages: [{ name: "Heavy", status: "Running" }] })] }]]))[0].text;
+  assert.equal(plan(now - day), `Fix is rolling out: fix (${p.url}). AKS: rolling out (https://ev2/now), estimated completion ${iso(now + 6 * day).slice(0, 10)}. [ft:microsoft/Docker-Provider#1:rolling]`);
+  assert.match(plan(now - 30 * day), /AKS: rolling out \(https:\/\/ev2\/now\), ETA unknown\./, "an overdue ETA is dropped, not shown in the past");
 });

@@ -89,7 +89,8 @@ export function releaseState(rollouts: TrackedRollout[], channels: Channel[] = [
       started = true;
       // ETA = start + median duration of earlier completed Prod rollouts of this definition: an estimate, not a promise.
       const took = rs.slice(1).filter((r) => complete(r) && r.startTime && r.endTime).map((r) => Date.parse(r.endTime!) - Date.parse(r.startTime!));
-      const eta = took.length && latest.startTime ? new Date(Date.parse(latest.startTime) + median(took)).toISOString().slice(0, 10) : null;
+      const at = took.length && latest.startTime ? Date.parse(latest.startTime) + median(took) : 0;
+      const eta = at > Date.now() ? new Date(at).toISOString().slice(0, 10) : null; // an overdue estimate is no estimate
       notes.push(`${label}: rolling out (${ref(latest)}), ${eta ? `estimated completion ${eta}` : "ETA unknown"}`);
     } else notes.push(`${label}: not started`);
   }
@@ -211,7 +212,7 @@ export async function recentPrs(gh: Get, since: Date) {
 // (3.9.1-ci-prod-10-25-2026-46052686) but run from another repo, so their SourceVersion is not trusted.
 // 1032's ArtifactsVersion is a build number with no SHA, so its SourceVersion is the fallback.
 export const commitOf = (r: Rollout) =>
-  r.artifactsVersion?.match(/-([0-9a-f]{7,40})$/i)?.[1] || (r.definitionId === DEFS.push ? r.sourceVersion : undefined);
+  r.artifactsVersion?.match(/-([0-9a-f]{7,40})(?:-arc)?$/i)?.[1] || (r.definitionId === DEFS.push ? r.sourceVersion : undefined);
 
 // Annotates every rollout with whether its commit contains the PR's merge commit (GitHub compare).
 export async function lifecycles(prs: PullRequest[], gh: Get, rollouts: Rollout[], track?: Set<string>) {
