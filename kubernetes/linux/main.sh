@@ -62,6 +62,21 @@ getClusterCloudEnvironment() {
       esac
 }
 
+configureMdsdLogForwarding() {
+      if [ "${AZMON_MDSD_LOG_FORWARDING_ENABLED:-false}" != "true" ]; then
+            return 0
+      fi
+      if ! sed -i 's/#${MdsdLogForwardingEnabled}//g' \
+            /etc/opt/microsoft/docker-cimprov/fluent-bit-common.conf \
+            /etc/opt/microsoft/docker-cimprov/fluent-bit-prom-side-car.conf \
+            /etc/opt/microsoft/docker-cimprov/fluent-bit-rs.conf \
+            /etc/opt/microsoft/docker-cimprov/fluent-bit-geneva-telemetry-svc.conf \
+            /etc/opt/microsoft/docker-cimprov/fluent-bit-azmon-logs-svc.conf; then
+            echo "ERROR: unable to configure mdsd diagnostic forwarding in Fluent Bit" >&2
+            return 1
+      fi
+}
+
 startAMACoreAgent() {
       echo "AMACoreAgent: Starting AMA Core Agent since High Log scale or OpenTelemetry logs is enabled"
 
@@ -546,6 +561,7 @@ while IFS= read -r line; do
       printf '%s\n' "$line" >> ~/.bashrc
 done < common_agent_config_env_var
 source common_agent_config_env_var
+configureMdsdLogForwarding
 
 # check if high log scale mode enabled
 if isHighLogScaleMode; then

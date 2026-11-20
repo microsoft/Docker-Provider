@@ -50,6 +50,7 @@ MAINTAINER:              'Microsoft Corporation'
 /opt/fluent-bit-geneva-conf-customizer.rb;                     build/common/installer/scripts/fluent-bit-geneva-conf-customizer.rb;     755; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit-input.conf;			       build/linux/installer/conf/fluent-bit-input.conf;                644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit-common.conf;			    build/linux/installer/conf/fluent-bit-common.conf;                644; root; root
+/etc/opt/microsoft/docker-cimprov/fluent-bit-mdsd-diagnostics.conf;       build/linux/installer/conf/fluent-bit-mdsd-diagnostics.conf;       644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit-geneva.conf;			    build/linux/installer/conf/fluent-bit-geneva.conf;                644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit-geneva-logs_infra.conf;  build/linux/installer/conf/fluent-bit-geneva-logs_infra.conf;   644; root; root
 /etc/opt/microsoft/docker-cimprov/fluent-bit-geneva-logs_infra_filter.conf;  build/linux/installer/conf/fluent-bit-geneva-logs_infra_filter.conf;   644; root; root

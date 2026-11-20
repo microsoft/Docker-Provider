@@ -69,6 +69,9 @@ amalogs:
   # This flag to enable and disable custom metrics. Custom metrics is getting deprecated so default is disabled
   enableCustomMetrics: false
 
+  # Opt in to forwarding Linux mdsd error and warning files to container stdout.
+  enableMdsdLogForwarding: false
+
   # This flag to enable and disable Telegraf livenessprobe and default is disabled
   enableTelegrafLivenessprobe: false
 
