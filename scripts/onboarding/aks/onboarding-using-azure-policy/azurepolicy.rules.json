@@ -9,11 +9,10 @@
 			"type": "Microsoft.ContainerService/managedClusters",
 			"name": "[field('name')]",
 			"roleDefinitionIds": [
-				"/providers/Microsoft.Authorization/roleDefinitions/ed7f3fbd-7b88-4dd4-9017-9adb7ce333f8",
-				"/providers/Microsoft.Authorization/roleDefinitions/92aaf0da-9dab-42b6-94a3-d43ce8d16293"
+				"/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c"
 			],
 			"existenceCondition": {
-				"field": "Microsoft.ContainerService/managedClusters/addonProfiles.omsagent.enabled",
+				"field": "Microsoft.ContainerService/managedClusters/azureMonitorProfile.containerInsights.enabled",
 				"equals": "true"
 			},
 			"deployment": {
@@ -46,27 +45,131 @@
 								"apiVersion": "2019-05-01",
 								"properties": {
 									"mode": "Incremental",
+									"expressionEvaluationOptions": {
+										"scope": "inner"
+									},
+									"parameters": {
+										"clusterName": {
+											"value": "[parameters('clusterName')]"
+										},
+										"clusterLocation": {
+											"value": "[parameters('clusterLocation')]"
+										},
+										"clusterTags": {
+											"value": "[parameters('clusterTags')]"
+										},
+										"workspaceResourceId": {
+											"value": "[parameters('workspaceResourceId')]"
+										},
+										"workspaceLocation": {
+											"value": "[reference(parameters('workspaceResourceId'), '2022-10-01', 'Full').location]"
+										}
+									},
 									"template": {
 										"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
 										"contentVersion": "1.0.0.0",
-										"parameters": {},
-										"variables": {},
+										"parameters": {
+											"clusterName": {
+												"type": "string"
+											},
+											"clusterLocation": {
+												"type": "string"
+											},
+											"clusterTags": {
+												"type": "object"
+											},
+											"workspaceResourceId": {
+												"type": "string"
+											},
+											"workspaceLocation": {
+												"type": "string"
+											}
+										},
+										"variables": {
+											"ciDcrNameFull": "[concat('MSCI-', parameters('clusterName'))]",
+											"ciDcrName": "[if(greater(length(variables('ciDcrNameFull')), 64), substring(variables('ciDcrNameFull'), 0, 64), variables('ciDcrNameFull'))]",
+											"ciStreams": [
+												"Microsoft-ContainerLog",
+												"Microsoft-ContainerLogV2",
+												"Microsoft-KubeEvents",
+												"Microsoft-KubePodInventory",
+												"Microsoft-KubeNodeInventory",
+												"Microsoft-KubePVInventory",
+												"Microsoft-KubeServices",
+												"Microsoft-KubeMonAgentEvents",
+												"Microsoft-InsightsMetrics",
+												"Microsoft-ContainerInventory",
+												"Microsoft-ContainerNodeInventory",
+												"Microsoft-Perf"
+											]
+										},
 										"resources": [
+											{
+												"type": "Microsoft.Insights/dataCollectionRules",
+												"apiVersion": "2022-06-01",
+												"name": "[variables('ciDcrName')]",
+												"location": "[parameters('workspaceLocation')]",
+												"tags": "[parameters('clusterTags')]",
+												"kind": "Linux",
+												"properties": {
+													"dataSources": {
+														"extensions": [
+															{
+																"name": "ContainerInsightsExtension",
+																"extensionName": "ContainerInsights",
+																"streams": "[variables('ciStreams')]",
+																"extensionSettings": {
+																	"dataCollectionSettings": {
+																		"interval": "1m",
+																		"namespaceFilteringMode": "Off",
+																		"namespaces": [],
+																		"enableContainerLogV2": false
+																	}
+																}
+															}
+														]
+													},
+													"destinations": {
+														"logAnalytics": [
+															{
+																"workspaceResourceId": "[parameters('workspaceResourceId')]",
+																"name": "ciworkspace"
+															}
+														]
+													},
+													"dataFlows": [
+														{
+															"streams": "[variables('ciStreams')]",
+															"destinations": ["ciworkspace"]
+														}
+													]
+												}
+											},
+											{
+												"type": "Microsoft.ContainerService/managedClusters/providers/dataCollectionRuleAssociations",
+												"apiVersion": "2022-06-01",
+												"name": "[concat(parameters('clusterName'), '/microsoft.insights/ContainerInsightsExtension')]",
+												"dependsOn": [
+													"[resourceId('Microsoft.Insights/dataCollectionRules', variables('ciDcrName'))]"
+												],
+												"properties": {
+													"dataCollectionRuleId": "[resourceId('Microsoft.Insights/dataCollectionRules', variables('ciDcrName'))]"
+												}
+											},
 											{
 												"name": "[parameters('clusterName')]",
 												"type": "Microsoft.ContainerService/managedClusters",
 												"location": "[parameters('clusterLocation')]",
 												"tags": "[parameters('clusterTags')]",
-												"apiVersion": "2023-04-01",
+												"apiVersion": "2026-07-01",
+												"dependsOn": [
+													"[resourceId('Microsoft.ContainerService/managedClusters/providers/dataCollectionRuleAssociations', parameters('clusterName'), 'microsoft.insights', 'ContainerInsightsExtension')]"
+												],
 												"properties": {
-													"mode": "Incremental",
-													"id": "[resourceId(parameters('clusterResourceGroupName'), 'Microsoft.ContainerService/managedClusters', parameters('clusterName'))]",
-													"addonProfiles": {
-														"omsagent": {
+													"azureMonitorProfile": {
+														"containerInsights": {
 															"enabled": true,
-															"config": {
-																"logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]"
-															}
+															"logAnalyticsWorkspaceResourceId": "[parameters('workspaceResourceId')]"
 														}
 													}
 												}

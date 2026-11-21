@@ -20,6 +20,9 @@
     "enableRetinaNetworkFlowLogs": {
       "value": false
     },
+    "disablePrometheusMetricsScraping": {
+      "value": false
+    },
     "resourceTagValues": {
       "value": {
         "<existingOrnew-tag-name1>": "<existingOrnew-tag-value1>",
