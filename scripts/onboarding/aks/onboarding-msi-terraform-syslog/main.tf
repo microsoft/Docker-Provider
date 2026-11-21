@@ -24,10 +24,6 @@ resource "azapi_resource" "k8s" {
         osType = "Linux"
         type   = "VirtualMachineScaleSets"
       }]
-      networkProfile = {
-        networkPlugin   = "kubenet"
-        loadBalancerSku = "standard"
-      }
       azureMonitorProfile = {
         containerInsights = {
           enabled                         = true
@@ -40,6 +36,13 @@ resource "azapi_resource" "k8s" {
   identity {
     type = var.identity_type
   }
+}
+
+# Older versions of this template managed the cluster with azurerm_kubernetes_cluster.
+# Move that state to AzAPI so upgrading never plans to destroy and recreate the cluster.
+moved {
+  from = azurerm_kubernetes_cluster.k8s
+  to   = azapi_resource.k8s
 }
 
 data "azurerm_kubernetes_cluster" "k8s" {
