@@ -15,6 +15,11 @@ spec:
     - PostDiscussionEntry
     - AddTagToIncident
     - TransferIncident
+  # TransferIncident otherwise needs approval in thread-started runs. Policies can't match tool arguments, so the
+  # target-team limit (65826/65827/98097) is enforced by the instructions, not here.
+  permissions:
+    allow:
+      - TransferIncident
   enableVanillaMode: false
   instructions: |-
     You route incidents owned by Container Insights/Triage (team 45325). You only classify and transfer.
