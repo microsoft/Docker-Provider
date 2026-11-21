@@ -16,6 +16,9 @@ spec:
     1. List the team's ACTIVE incidents. For each, collect id, title, status, tags, and the text of
        every discussion entry. If the release channel (aks or arc) is stated in the incident,
        include it; otherwise omit it.
+       Pass every active incident, alerts included (a PR may name any of them), with its full title (MSRC
+       case matching uses it) and all tags. To keep the payload small, entries may be limited to those
+       containing "[ft:" or "[fix-tracker:", but never left out when such entries exist.
        For vulnerability incidents (CVE/FedRAMP/S360 findings), also set findings: one item per CVE the
        incident lists, {id}. Add fixedBy = URLs of open or merged microsoft/Docker-Provider PRs whose diff raises the
        affected module, package, Go version or base image to at least the fixed version (look the fixed
