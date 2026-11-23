@@ -62503,8 +62503,10 @@ function releaseState(rollouts, channels = ["aks", "arc"]) {
     } else if (idx === 0) {
       started = true;
       const took = rs.slice(1).filter((r) => full(r) && r.startTime && r.endTime).map((r) => Date.parse(r.endTime) - Date.parse(r.startTime));
-      const at = took.length && latest.startTime ? Date.parse(latest.startTime) + median(took) : 0;
-      const eta = at > Date.now() ? new Date(at).toISOString().slice(0, 10) : null;
+      const start = Date.parse(latest.startTime ?? ""), n = RINGS.filter((x) => passed(latest).has(x)).length, now = Date.now();
+      let at = took.length ? start + median(took) : NaN;
+      if (!(at > now) && n && /^running$/i.test(latest.status ?? "")) at = now + (now - start) * (RINGS.length - n) / n;
+      const eta = at > now ? new Date(at).toISOString().slice(0, 10) : null;
       notes.push(`${label}: rolling out (${ref(latest)}), ${eta ? `estimated completion ${eta}` : "ETA unknown"}`);
     } else notes.push(`${label}: not started`);
   }
