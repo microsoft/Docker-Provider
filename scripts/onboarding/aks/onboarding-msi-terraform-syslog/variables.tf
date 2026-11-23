@@ -58,6 +58,23 @@ variable "syslog_facilities" {
   default = ["auth", "authpriv", "cron", "daemon", "mark", "kern", "local0", "local1", "local2", "local3", "local4", "local5", "local6", "local7", "lpr", "mail", "news", "syslog", "user", "uucp"]
 }
 
+variable "syslog_port" {
+  description = "Syslog host port used by the Container Insights agent"
+  type        = number
+  default     = 28330
+
+  validation {
+    condition     = var.syslog_port >= 1 && var.syslog_port <= 65535 && floor(var.syslog_port) == var.syslog_port
+    error_message = "syslog_port must be an integer between 1 and 65535."
+  }
+}
+
+variable "disable_prometheus_metrics_scraping" {
+  description = "Disable Prometheus metrics scraping by Container Insights"
+  type        = bool
+  default     = false
+}
+
 variable "resource_tag_values" {
   description = "Resource Tag Values"
   type        = map(string)

@@ -48,6 +48,12 @@ variable "workspace_region" {
   default = "<workspaceRegion>"
 }
 
+variable "disable_prometheus_metrics_scraping" {
+  description = "Disable Prometheus metrics scraping by Container Insights"
+  type        = bool
+  default     = false
+}
+
 variable "resource_tag_values" {
   description = "Resource Tag Values"
   type        = map(string)

@@ -26,8 +26,9 @@ resource "azapi_resource" "k8s" {
       }]
       azureMonitorProfile = {
         containerInsights = {
-          enabled                         = true
-          logAnalyticsWorkspaceResourceId = var.workspace_resource_id
+          enabled                          = true
+          logAnalyticsWorkspaceResourceId  = var.workspace_resource_id
+          disablePrometheusMetricsScraping = var.disable_prometheus_metrics_scraping
         }
       }
     }

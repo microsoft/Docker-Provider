@@ -42,6 +42,9 @@ variables {
   agent_count             = 2
   vm_size                 = "Standard_D4_v2"
   resource_tag_values     = { environment = "test" }
+
+  syslog_port                         = 28331
+  disable_prometheus_metrics_scraping = true
 }
 
 run "profile_onboarding" {
@@ -53,6 +56,13 @@ run "profile_onboarding" {
       azapi_resource.k8s.body.properties.azureMonitorProfile.containerInsights.logAnalyticsWorkspaceResourceId == var.workspace_resource_id
     )
     error_message = "Container Insights must be enabled with the requested workspace through Azure Monitor Profile."
+  }
+  assert {
+    condition = (
+      azapi_resource.k8s.body.properties.azureMonitorProfile.containerInsights.syslogPort == var.syslog_port &&
+      azapi_resource.k8s.body.properties.azureMonitorProfile.containerInsights.disablePrometheusMetricsScraping == var.disable_prometheus_metrics_scraping
+    )
+    error_message = "The syslog port and Prometheus scraping inputs must be set on the Container Insights profile."
   }
   assert {
     condition = (
