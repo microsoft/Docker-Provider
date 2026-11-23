@@ -62654,7 +62654,12 @@ async function lifecycles(prs, gh, rollouts, track) {
   }
   return { result, errors };
 }
-async function planFixTracker(incidents, lookbackHours = 24, rollouts = [], gh = githubGet()) {
+async function planFixTracker(incidents, lookbackHours = 24, input = [], listed, gh = githubGet()) {
+  const rollouts = input.map((r) => typeof r.stages !== "string" ? r : { ...r, stages: r.stages.split(",").filter(Boolean).map((s) => ({ name: s.slice(0, s.lastIndexOf(":")).trim(), status: s.slice(s.lastIndexOf(":") + 1).trim() })) });
+  const missing = (ids, have) => ids.map(String).filter((id) => !have.map(String).includes(id));
+  const noIcm = missing(listed.incidentIds, incidents.map((i) => i.id)), noRollout = missing(listed.rolloutIds, rollouts.map((r) => r.rolloutId));
+  if (noIcm.length) throw new Error(`Listed incidents missing from incidents: ${noIcm.join(", ")}`);
+  if (noRollout.length) throw new Error(`Listed rollouts missing from rollouts: ${noRollout.join(", ")}`);
   const untitled = incidents.filter((i) => !i.title?.trim());
   if (untitled.length) throw new Error(`Every incident needs its full title: ${untitled.map((i) => i.id).join(", ")}`);
   const noFindings = incidents.filter((i) => !i.findings?.length && /\bCVE\b|CVE-\d|FedRAMP|vulnerab/i.test([i.title, ...i.tags ?? []].join(" ")));
@@ -62684,6 +62689,8 @@ async function planFixTracker(incidents, lookbackHours = 24, rollouts = [], gh =
   const all = [...prs.values()], active = incidents.filter((i) => !/resolved/i.test(i.status ?? ""));
   const linked = /* @__PURE__ */ new Set([...tracked, ...all.filter((p) => !isReleaseBump(p.title) && matchIcms(p, active).some((m) => m.confidence === "linked")).map((p) => p.url.toLowerCase())]);
   const { result, errors } = await lifecycles(all, gh, rollouts, linked);
+  if (!rollouts.length && [...result.values()].some((l) => l.state === "merged"))
+    throw new Error("A linked fix is merged but no Ev2 rollouts were passed: list Prod history and pass every rollout");
   return {
     since: since.toISOString(),
     scanned: scanned.length,
@@ -63263,6 +63270,8 @@ server.tool(
         fixed: external_exports3.boolean().optional().describe("True only if a version already released to Prod contains the fix")
       })).optional().describe("Vulnerability incidents only: every listed CVE. Entries then state coverage, PRs covering none are not linked, and 'released' only invites resolving when every CVE has a released fix")
     })).describe("Active IcMs owned by the team"),
+    listedIncidentIds: external_exports3.array(external_exports3.union([external_exports3.string(), external_exports3.number()])).describe("Every incident ID the IcM list call returned (extract with a script); each must also be in incidents"),
+    listedRolloutIds: external_exports3.array(external_exports3.string()).describe("Every 1032/1198/1200 Prod RolloutId the Ev2 history calls returned; each must also be in rollouts"),
     lookbackHours: external_exports3.number().default(24).describe("Scan PRs created or merged in this many hours (overlap with the previous run is safe)"),
     rollouts: external_exports3.array(external_exports3.object({
       definitionId: external_exports3.coerce.number().describe("1032 = ama-logs image push, 1198 = AKS release, 1200 = Arc release"),
@@ -63274,13 +63283,18 @@ server.tool(
       sourceVersion: external_exports3.string().optional().describe("RolloutDetails.ReleasePipelineInfo.AzureDevOps.SourceVersion (used for 1032 only)"),
       artifactsVersion: external_exports3.string().optional().describe("RolloutDetails.ArtifactsRegistrationInfo.ArtifactsVersion; for 1198/1200 the deployed image tag, e.g. 3.9.1-ci-prod-10-25-2026-46052686 (its SHA suffix is the shipped commit)"),
       url: external_exports3.string().optional(),
-      stages: external_exports3.array(external_exports3.object({ name: external_exports3.string(), status: external_exports3.string() })).optional().describe("1198/1200: every get_rollout_summary StageInfos[] entry as StageName/StageStatus, unfiltered"),
+      stages: external_exports3.union([external_exports3.array(external_exports3.object({ name: external_exports3.string(), status: external_exports3.string() })), external_exports3.string()]).optional().describe('1198/1200: every get_rollout_summary StageInfos[] entry, unfiltered, as [{name: StageName, status: StageStatus}] or the compact string "StageName:StageStatus,..." (full status words)'),
       stageCount: external_exports3.number().optional().describe("1198/1200: StageInfos length; must equal stages.length"),
       push: external_exports3.object({ status: external_exports3.string().optional(), exitCode: external_exports3.union([external_exports3.number(), external_exports3.string()]).optional() }).optional().describe("1032 only: shell/PushAgentToACR action status and exit code. Never pass log text.")
     })).default([]).describe("Ev2 rollouts from ev2-mcp for the last 30 days")
   },
-  async ({ incidents, lookbackHours, rollouts }) => ({
-    content: [{ type: "text", text: JSON.stringify(await planFixTracker(incidents, lookbackHours, rollouts), null, 2) }]
+  async ({ incidents, lookbackHours, rollouts, listedIncidentIds, listedRolloutIds }) => ({
+    content: [{ type: "text", text: JSON.stringify(await planFixTracker(
+      incidents,
+      lookbackHours,
+      rollouts,
+      { incidentIds: listedIncidentIds, rolloutIds: listedRolloutIds }
+    ), null, 2) }]
   })
 );
 async function main() {
