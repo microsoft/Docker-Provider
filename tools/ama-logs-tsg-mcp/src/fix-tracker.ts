@@ -95,8 +95,11 @@ export function releaseState(rollouts: TrackedRollout[], channels: Channel[] = [
       started = true;
       // ETA = start + median duration of earlier full-ring Prod rollouts of this definition: an estimate, not a promise.
       const took = rs.slice(1).filter((r) => full(r) && r.startTime && r.endTime).map((r) => Date.parse(r.endTime!) - Date.parse(r.startTime!));
-      const at = took.length && latest.startTime ? Date.parse(latest.startTime) + median(took) : 0;
-      const eta = at > Date.now() ? new Date(at).toISOString().slice(0, 10) : null; // an overdue estimate is no estimate
+      const start = Date.parse(latest.startTime ?? ""), n = RINGS.filter((x) => passed(latest).has(x)).length, now = Date.now();
+      let at = took.length ? start + median(took) : NaN;
+      // Overdue but still Running (slower than usual, e.g. paused): extrapolate its own pace over its remaining rings.
+      if (!(at > now) && n && /^running$/i.test(latest.status ?? "")) at = now + ((now - start) * (RINGS.length - n)) / n;
+      const eta = at > now ? new Date(at).toISOString().slice(0, 10) : null;
       notes.push(`${label}: rolling out (${ref(latest)}), ${eta ? `estimated completion ${eta}` : "ETA unknown"}`);
     } else notes.push(`${label}: not started`);
   }

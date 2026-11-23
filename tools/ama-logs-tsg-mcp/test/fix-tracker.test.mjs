@@ -121,7 +121,7 @@ test("release finished = Prod rollouts containing the fix together finish every 
   const running = ro(1198, "Prod", { status: "Running", stages: [done[0], { name: "Pilot", status: "Running" }] });
   const r = releaseState([running], ["aks"]);
   assert.equal(r.state, "rolling");
-  assert.match(r.notes[0], /^AKS: rolling out \(.+\), ETA unknown$/);
+  assert.match(r.notes[0], /^AKS: rolling out \(.+\), estimated completion \d{4}-\d{2}-\d{2}$/, "no earlier full rollout: ETA from its own pace");
   assert.equal(releaseState([ro(1198, "Prod", { includesFix: false })], ["aks"]).state, null, "not started");
   assert.equal(releaseState([], ["aks"]).state, null, "no evidence is not released");
   const newer = ro(1198, "Prod", { rolloutId: "new", startTime: "2026-11-18", includesFix: false });
@@ -174,7 +174,14 @@ test("rolling entry is short: rollout link and ETA from earlier full-ring Prod r
     ro("region", "2026-09-20T00:00Z", "2026-09-20T01:00Z", { stages: [{ name: "Broad4", status: "Succeeded" }] }),
     ro("now", iso(start), undefined, { includesFix: true, stages: [{ name: "Heavy", status: "Running" }] })] }]]))[0].text;
   assert.equal(plan(now - day), `Fix is rolling out: fix (${p.url}). AKS: rolling out (https://ev2/now), estimated completion ${iso(now + 6 * day).slice(0, 10)}. [ft:microsoft/Docker-Provider#1:rolling]`);
-  assert.match(plan(now - 30 * day), /AKS: rolling out \(https:\/\/ev2\/now\), ETA unknown\./, "an overdue ETA is dropped, not shown in the past");
+  assert.match(plan(now - 30 * day), /AKS: rolling out \(https:\/\/ev2\/now\), ETA unknown\./, "an overdue ETA with no ring done yet is dropped, not shown in the past");
+  // Like ed84d442: ADO gave up waiting, Ev2 still Running at Broad3 long past the usual duration. Still rolling, ETA from its own pace.
+  const sixDone = [...ALL.filter((s) => !/Broad[34]/.test(s.name)), { name: "Broad3", status: "Running" }];
+  const t = Date.now(), slow = releaseState([ro("slow", iso(t - 12 * day), undefined, { includesFix: true, status: "Running", stages: sixDone }), ro("old1", "2026-10-01T00:00Z", "2026-10-04T00:00Z")], ["aks"]);
+  assert.equal(slow.state, "rolling");
+  assert.equal(slow.notes[0], `AKS: rolling out (https://ev2/slow), estimated completion ${iso(t + 4 * day).slice(0, 10)}`);
+  const stopped = releaseState([ro("slow", iso(t - 12 * day), undefined, { includesFix: true, status: "Cancelled", stages: sixDone })], ["aks"]);
+  assert.match(stopped.notes[0], /ETA unknown$/, "a stopped rollout gets no forecast");
 });
 test("planner fails loudly on dropped titles, CVE incidents without findings, or a filtered stage list", async () => {
   const gh = async () => [];
