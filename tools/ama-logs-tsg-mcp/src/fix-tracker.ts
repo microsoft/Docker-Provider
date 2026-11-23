@@ -7,6 +7,8 @@ export const DEFS = { push: 1032, aks: 1198, arc: 1200 };
 type Channel = "aks" | "arc";
 // ponytail: release = the Ev2 Prod endpoint finishing (team decision); sovereign endpoints aren't tracked.
 const isProd = (r: Rollout) => !/^(fairfax|mooncake|ussec|usnat|bleu|delos)$/i.test(r.endpoint?.trim() ?? "");
+// Prod SDP rings: Ev2 top-level stage names (per-region stages are "<ring>.<region>"), seen on 1198 and 1200 rollouts.
+export const RINGS = ["Canary", "Pilot", "Medium", "Heavy", "Broad1", "Broad2", "Broad3", "Broad4"];
 const PROGRESS = ["linked", "merged", "in-image", "rolling", "released"];
 
 // findings: CVEs the agent extracted from the incident; fixedBy = fix PR URLs it verified; fixed = already in a released image.
@@ -71,7 +73,7 @@ const ref = (r: Rollout) => r.url ?? `Ev2 Prod rollout ${r.rolloutId}`;
 const ok = (s?: string) => /^succeeded$/i.test(s ?? "");
 const median = (xs: number[]) => xs.sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 
-// Per channel from Prod Ev2 stage summaries. Released = a rollout containing the fix has every stage Succeeded and
+// Per channel from Prod Ev2 stage summaries. Released = rollouts containing the fix together finished every Prod ring and
 // no later rollout dropped it. Missing evidence is reported as unknown, never as done. This is not fleet adoption.
 export function releaseState(rollouts: TrackedRollout[], channels: Channel[] = ["aks", "arc"]) {
   let done = 0, started = false, back = false;
@@ -80,15 +82,19 @@ export function releaseState(rollouts: TrackedRollout[], channels: Channel[] = [
     const rs = rollouts.filter((r) => r.definitionId === DEFS[channel] && isProd(r))
       .sort((a, b) => Date.parse(b.startTime ?? "") - Date.parse(a.startTime ?? ""));
     const label = channel.toUpperCase(), latest = rs[0], idx = rs.findIndex((r) => r.includesFix);
-    const complete = (r: Rollout) => !!r.stages?.length && r.stages.every((s) => ok(s.status));
-    const shipped = rs.find((r) => r.includesFix && complete(r));
+    const passed = (r: Rollout) => new Set(r.stages?.filter((s) => ok(s.status)).map((s) => s.name));
+    const full = (r: Rollout) => RINGS.every((n) => passed(r).has(n));
+    // A single-region or partial rollout is still rolling: the fix's rollouts together must finish every Prod ring.
+    // Only the newest unbroken run of fix rollouts counts; an older run was overwritten by the rollout without the fix.
+    const cut = rs.findIndex((r) => !r.includesFix), shipped = rs.slice(0, cut < 0 ? rs.length : cut).filter((r) => RINGS.some((n) => passed(r).has(n)));
+    const rings = new Set(shipped.flatMap((r) => [...passed(r)]));
     if (!latest) notes.push(`${label}: release status unknown`);
     else if (idx > 0) { back = true; notes.push(`${label}: newer rollout ${ref(latest)} does not include the fix`); }
-    else if (shipped) { done++; notes.push(`${label}: completed in Prod (${ref(shipped)})`); }
+    else if (RINGS.every((n) => rings.has(n))) { done++; notes.push(`${label}: completed in Prod (${shipped.map(ref).join(", ")})`); }
     else if (idx === 0) {
       started = true;
-      // ETA = start + median duration of earlier completed Prod rollouts of this definition: an estimate, not a promise.
-      const took = rs.slice(1).filter((r) => complete(r) && r.startTime && r.endTime).map((r) => Date.parse(r.endTime!) - Date.parse(r.startTime!));
+      // ETA = start + median duration of earlier full-ring Prod rollouts of this definition: an estimate, not a promise.
+      const took = rs.slice(1).filter((r) => full(r) && r.startTime && r.endTime).map((r) => Date.parse(r.endTime!) - Date.parse(r.startTime!));
       const at = took.length && latest.startTime ? Date.parse(latest.startTime) + median(took) : 0;
       const eta = at > Date.now() ? new Date(at).toISOString().slice(0, 10) : null; // an overdue estimate is no estimate
       notes.push(`${label}: rolling out (${ref(latest)}), ${eta ? `estimated completion ${eta}` : "ETA unknown"}`);

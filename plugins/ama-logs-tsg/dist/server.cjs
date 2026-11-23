@@ -62436,6 +62436,7 @@ async function scrapeICMIncident(incidentId) {
 var REPO = "microsoft/Docker-Provider";
 var DEFS = { push: 1032, aks: 1198, arc: 1200 };
 var isProd = (r) => !/^(fairfax|mooncake|ussec|usnat|bleu|delos)$/i.test(r.endpoint?.trim() ?? "");
+var RINGS = ["Canary", "Pilot", "Medium", "Heavy", "Broad1", "Broad2", "Broad3", "Broad4"];
 var PROGRESS = ["linked", "merged", "in-image", "rolling", "released"];
 var short = (prUrl) => prUrl.replace(/^https:\/\/github\.com\/([^/]+\/[^/]+)\/pull\/(\d+).*$/i, "$1#$2");
 var marker = (prUrl, state3) => `[ft:${short(prUrl)}:${state3}]`;
@@ -62488,18 +62489,20 @@ function releaseState(rollouts, channels = ["aks", "arc"]) {
   for (const channel of channels) {
     const rs = rollouts.filter((r) => r.definitionId === DEFS[channel] && isProd(r)).sort((a, b) => Date.parse(b.startTime ?? "") - Date.parse(a.startTime ?? ""));
     const label = channel.toUpperCase(), latest = rs[0], idx = rs.findIndex((r) => r.includesFix);
-    const complete = (r) => !!r.stages?.length && r.stages.every((s) => ok(s.status));
-    const shipped = rs.find((r) => r.includesFix && complete(r));
+    const passed = (r) => new Set(r.stages?.filter((s) => ok(s.status)).map((s) => s.name));
+    const full = (r) => RINGS.every((n) => passed(r).has(n));
+    const cut = rs.findIndex((r) => !r.includesFix), shipped = rs.slice(0, cut < 0 ? rs.length : cut).filter((r) => RINGS.some((n) => passed(r).has(n)));
+    const rings = new Set(shipped.flatMap((r) => [...passed(r)]));
     if (!latest) notes.push(`${label}: release status unknown`);
     else if (idx > 0) {
       back = true;
       notes.push(`${label}: newer rollout ${ref(latest)} does not include the fix`);
-    } else if (shipped) {
+    } else if (RINGS.every((n) => rings.has(n))) {
       done++;
-      notes.push(`${label}: completed in Prod (${ref(shipped)})`);
+      notes.push(`${label}: completed in Prod (${shipped.map(ref).join(", ")})`);
     } else if (idx === 0) {
       started = true;
-      const took = rs.slice(1).filter((r) => complete(r) && r.startTime && r.endTime).map((r) => Date.parse(r.endTime) - Date.parse(r.startTime));
+      const took = rs.slice(1).filter((r) => full(r) && r.startTime && r.endTime).map((r) => Date.parse(r.endTime) - Date.parse(r.startTime));
       const at = took.length && latest.startTime ? Date.parse(latest.startTime) + median(took) : 0;
       const eta = at > Date.now() ? new Date(at).toISOString().slice(0, 10) : null;
       notes.push(`${label}: rolling out (${ref(latest)}), ${eta ? `estimated completion ${eta}` : "ETA unknown"}`);
@@ -63243,7 +63246,7 @@ server.tool(
 );
 server.tool(
   "ama_logs_tsg_fix_tracker_plan",
-  "Read-only. Scans microsoft/Docker-Provider for PRs opened or merged in the lookback window, matches them to the given active IcMs (explicit IcM ID/link or unique MSRC case = linked; bare number, shared CVE or ambiguous MSRC = proposed), follows linked PRs through merge, pushed image (Ev2 1032 shell/PushAgentToACR, exit code 0) and AKS (1198) / Arc (1200) Ev2 Prod release rollouts (released = every Prod stage Succeeded), and returns short customer-readable IcM discussion entries to post (what is fixed, CVE coverage, rollout link, ETA) plus needsFixPr (listed CVEs with no fix PR). Ev2 data comes from the caller via `rollouts` (gather it with ev2-mcp from the Prod endpoint); missing rollouts are reported as unknown. Each entry ends with an [ft:<owner/repo>#<n>:<state>] marker; pass each incident's existing discussion entries so already-posted states are skipped. Release-bump PRs are never auto-matched. Does not write to IcM.",
+  "Read-only. Scans microsoft/Docker-Provider for PRs opened or merged in the lookback window, matches them to the given active IcMs (explicit IcM ID/link or unique MSRC case = linked; bare number, shared CVE or ambiguous MSRC = proposed), follows linked PRs through merge, pushed image (Ev2 1032 shell/PushAgentToACR, exit code 0) and AKS (1198) / Arc (1200) Ev2 Prod release rollouts (released = rollouts containing the fix together finished every Prod ring, Canary through Broad4), and returns short customer-readable IcM discussion entries to post (what is fixed, CVE coverage, rollout link, ETA) plus needsFixPr (listed CVEs with no fix PR). Ev2 data comes from the caller via `rollouts` (gather it with ev2-mcp from the Prod endpoint); missing rollouts are reported as unknown. Each entry ends with an [ft:<owner/repo>#<n>:<state>] marker; pass each incident's existing discussion entries so already-posted states are skipped. Release-bump PRs are never auto-matched. Does not write to IcM.",
   {
     incidents: external_exports3.array(external_exports3.object({
       id: external_exports3.union([external_exports3.string(), external_exports3.number()]),

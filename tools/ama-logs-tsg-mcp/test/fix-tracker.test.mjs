@@ -1,9 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isReleaseBump, markers, planEntries, releaseState, lifecycles, planFixTracker } from "../dist/fix-tracker.js";
+import { isReleaseBump, markers, planEntries, releaseState, lifecycles, planFixTracker, RINGS } from "../dist/fix-tracker.js";
 
 const pr = (over) => ({ url: "https://github.com/microsoft/Docker-Provider/pull/1", number: 1, title: "fix", body: "", branch: "b", state: "open", ...over });
 const icm = (id, title = "", over = {}) => ({ id, title, status: "ACTIVE", entries: [], ...over });
+const ALL = RINGS.map((name) => ({ name, status: "Succeeded" }));
 
 test("release-bump PRs are excluded from matching but still tracked when a human links them", () => {
   assert.ok(isReleaseBump("version bump and rel notes for 3.9.1"));
@@ -83,7 +84,7 @@ test("1198/1200 ancestry comes from the image tag SHA; their SourceVersion is ne
 });
 
 test("end to end: pushed image plus AKS and Arc Prod rollouts finishing = released", async () => {
-  const done = [{ name: "Canary", status: "Succeeded" }];
+  const done = ALL;
   const rel = (definitionId) => ({ definitionId, endpoint: "Prod", rolloutId: `r${definitionId}`, startTime: "2026-11-16", artifactsVersion: tag(SHA.with), stages: done });
   const { result } = await lifecycles([merged], gh, [push({ push: ok0 }), rel(1198), rel(1200)]);
   const linked = icm(1, "", { entries: [`[fix-tracker:${merged.url}:linked]`] });
@@ -101,15 +102,15 @@ test("merged text says unknown without Ev2 push evidence", () => {
   const text = (lc) => planEntries([merged], [linked], new Map([[merged.url.toLowerCase(), lc]]))[0].text;
   assert.match(text({ state: "merged", rollouts: [] }), /not known yet/);
   assert.match(text({ state: "merged", pushChecked: true, rollouts: [] }), /next agent image/);
-  const release = { definitionId: 1198, endpoint: "Prod", rolloutId: "r", startTime: "2026-11-16", includesFix: true, stages: [{ name: "Canary", status: "Succeeded" }] };
+  const release = { definitionId: 1198, endpoint: "Prod", rolloutId: "r", startTime: "2026-11-16", includesFix: true, stages: ALL };
   const scoped = icm(1, "", { entries: linked.entries, channel: "aks" });
   const plan = (state) => planEntries([merged], [scoped], new Map([[merged.url.toLowerCase(), { state, rollouts: [release] }]])).map((e) => e.state);
   assert.deepEqual(plan("merged"), ["merged"], "a release rollout without push evidence is not progress");
   assert.deepEqual(plan("in-image"), ["released"]);
 });
 
-test("release finished = a Prod rollout containing the fix has every Ev2 stage Succeeded, per channel", () => {
-  const done = [{ name: "Canary", status: "Succeeded" }, { name: "Medium", status: "Succeeded" }];
+test("release finished = Prod rollouts containing the fix together finish every ring, per channel", () => {
+  const done = ALL;
   const ro = (definitionId, endpoint, over = {}) => ({ definitionId, endpoint, rolloutId: `${definitionId}-${endpoint}`, startTime: "2026-11-16", includesFix: true, status: "Succeeded", stages: done, ...over });
   assert.equal(releaseState([ro(1198, "Prod"), ro(1200, "Public")]).state, "released", "sovereign clouds aren't required; Prod aliases count");
   const noArc = releaseState([ro(1198, "Prod")]);
@@ -117,7 +118,7 @@ test("release finished = a Prod rollout containing the fix has every Ev2 stage S
   assert.ok(noArc.notes.includes("ARC: release status unknown"));
   assert.equal(releaseState([ro(1198, "Fairfax")], ["aks"]).state, null, "non-Prod endpoints don't count");
   assert.equal(releaseState([ro(1196, "Prod")], ["aks"]).state, null, "ama-metrics AKS release (1196) doesn't count");
-  const running = ro(1198, "Prod", { status: "Running", stages: [done[0], { name: "Medium", status: "Running" }] });
+  const running = ro(1198, "Prod", { status: "Running", stages: [done[0], { name: "Pilot", status: "Running" }] });
   const r = releaseState([running], ["aks"]);
   assert.equal(r.state, "rolling");
   assert.match(r.notes[0], /^AKS: rolling out \(.+\), ETA unknown$/);
@@ -125,6 +126,14 @@ test("release finished = a Prod rollout containing the fix has every Ev2 stage S
   assert.equal(releaseState([], ["aks"]).state, null, "no evidence is not released");
   const newer = ro(1198, "Prod", { rolloutId: "new", startTime: "2026-11-18", includesFix: false });
   assert.equal(releaseState([newer, ro(1198, "Prod")], ["aks"]).state, "rolled-back");
+  // A finished single-region rollout (only Broad4) is not a release; rings split across the fix's rollouts add up.
+  const broad4 = [{ name: "__ROLLOUT_PRE_CHECK__", status: "Succeeded" }, { name: "Broad4", status: "Succeeded" }, { name: "Broad4.saudiarabiaeast", status: "Succeeded" }];
+  assert.equal(releaseState([ro(1198, "Prod", { stages: broad4 })], ["aks"]).state, "rolling");
+  const early = ro(1198, "Prod", { rolloutId: "early", startTime: "2026-11-10", stages: ALL.filter((s) => s.name !== "Broad4") });
+  assert.equal(releaseState([ro(1198, "Prod", { stages: broad4 }), early], ["aks"]).state, "released");
+  assert.equal(releaseState([ro(1198, "Prod", { stages: broad4 }), { ...early, includesFix: false }], ["aks"]).state, "rolling", "rings from an image without the fix don't count");
+  const redo = ro(1198, "Prod", { rolloutId: "redo", startTime: "2026-11-20", stages: [ALL[0]] }), between = { ...early, rolloutId: "between", startTime: "2026-11-18", includesFix: false, stages: ALL };
+  assert.equal(releaseState([redo, between, ro(1198, "Prod", { startTime: "2026-11-01" })], ["aks"]).state, "rolling", "rings overwritten by a rollout without the fix don't count");
 });
 
 test("CVE coverage: links and release text depend on which listed CVEs each PR fixes, combined across PRs", () => {
@@ -138,7 +147,7 @@ test("CVE coverage: links and release text depend on which listed CVEs each PR f
   assert.match(plan[0].text, /Fixes 1 of 4 listed CVEs \(CVE-2026-0001\)\. 1 already fixed in released images\. 1 covered by other fix PRs\. Still open, no fix yet: CVE-2026-0003\./);
   assert.match(plan[1].text, /Possible fix: .*Fixes 1 of 4 listed CVEs \(CVE-2026-0002\)\..*Still open, no fix yet: CVE-2026-0003\./, "proposals show partial coverage");
 
-  const rel = { definitionId: 1198, endpoint: "Prod", rolloutId: "r", url: "https://ev2/r", startTime: "2026-11-16", includesFix: true, stages: [{ name: "x", status: "Succeeded" }] };
+  const rel = { definitionId: 1198, endpoint: "Prod", rolloutId: "r", url: "https://ev2/r", startTime: "2026-11-16", includesFix: true, stages: ALL };
   const released = new Map([[a.url.toLowerCase(), { state: "in-image", rollouts: [rel] }]]);
   const posted = ["[ft:microsoft/Docker-Provider#1:linked] [ft:microsoft/Docker-Provider#1:in-image]"];
   const text = (fs) => planEntries([a], [icm(1, "", { findings: fs, entries: posted, channel: "aks" })], released)[0].text;
@@ -156,12 +165,13 @@ test("CVE coverage: links and release text depend on which listed CVEs each PR f
   assert.ok(sameRun.every((e) => /please verify and resolve/.test(e.text)), "PRs released in the same run count for each other");
 });
 
-test("rolling entry is short: rollout link and ETA from earlier completed Prod rollouts, no stage names", () => {
-  const p = pr({ state: "merged" }), done = [{ name: "Heavy", status: "Succeeded" }];
+test("rolling entry is short: rollout link and ETA from earlier full-ring Prod rollouts, no stage names", () => {
+  const p = pr({ state: "merged" }), done = ALL;
   const ro = (id, start, end, over = {}) => ({ definitionId: 1198, endpoint: "Prod", rolloutId: id, url: `https://ev2/${id}`, startTime: start, endTime: end, includesFix: false, stages: done, ...over });
   const day = 864e5, iso = (t) => new Date(t).toISOString(), now = Date.now();
   const plan = (start) => planEntries([p], [icm(1, "", { channel: "aks", entries: [`[fix-tracker:${p.url}:linked]`] })], new Map([[p.url.toLowerCase(), { state: "in-image", rollouts: [
     ro("old1", "2026-10-01T00:00Z", "2026-10-08T00:00Z"), ro("old2", "2026-10-20T00:00Z", "2026-10-25T00:00Z"),
+    ro("region", "2026-09-20T00:00Z", "2026-09-20T01:00Z", { stages: [{ name: "Broad4", status: "Succeeded" }] }),
     ro("now", iso(start), undefined, { includesFix: true, stages: [{ name: "Heavy", status: "Running" }] })] }]]))[0].text;
   assert.equal(plan(now - day), `Fix is rolling out: fix (${p.url}). AKS: rolling out (https://ev2/now), estimated completion ${iso(now + 6 * day).slice(0, 10)}. [ft:microsoft/Docker-Provider#1:rolling]`);
   assert.match(plan(now - 30 * day), /AKS: rolling out \(https:\/\/ev2\/now\), ETA unknown\./, "an overdue ETA is dropped, not shown in the past");
