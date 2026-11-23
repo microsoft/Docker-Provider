@@ -17,7 +17,7 @@ export interface Match { incidentId: string; confidence: "linked" | "proposed"; 
 // Shaped from ev2-mcp get_rollout_summary (stages) and get_rollout_details for shell/PushAgentToACR (push). No log text.
 export interface Rollout {
   definitionId: number; endpoint?: string; rolloutId: string; status?: string; startTime?: string; endTime?: string; sourceVersion?: string;
-  artifactsVersion?: string; url?: string; stages?: { name: string; status: string }[]; push?: { status?: string; exitCode?: number | string };
+  artifactsVersion?: string; url?: string; stages?: { name: string; status: string }[]; stageCount?: number; push?: { status?: string; exitCode?: number | string };
 }
 export type TrackedRollout = Rollout & { includesFix: boolean };
 export interface PlannedEntry { incidentId: string; prUrl: string; state: string; text: string }
@@ -246,6 +246,15 @@ export async function lifecycles(prs: PullRequest[], gh: Get, rollouts: Rollout[
 }
 
 export async function planFixTracker(incidents: Incident[], lookbackHours = 24, rollouts: Rollout[] = [], gh = githubGet()) {
+  // Fail the whole call, not just one incident: an agent that dropped titles or findings must redo its input before posting anything.
+  const untitled = incidents.filter((i) => !i.title?.trim());
+  if (untitled.length) throw new Error(`Every incident needs its full title: ${untitled.map((i) => i.id).join(", ")}`);
+  const noFindings = incidents.filter((i) => !i.findings?.length && /\bCVE\b|CVE-\d|FedRAMP|vulnerab/i.test([i.title, ...(i.tags ?? [])].join(" ")));
+  if (noFindings.length) throw new Error(`CVE incidents need findings (one per listed CVE): ${noFindings.map((i) => i.id).join(", ")}`);
+  // A filtered stage list could fake "released". Ev2 lists __ROLLOUT_PRE_CHECK__ in every started rollout; the agent's own count catches dropped regions.
+  const partial = rollouts.filter((r) => r.definitionId !== DEFS.push && isProd(r) && ((r.stages?.length ?? 0) !== r.stageCount
+    || (!!r.stages?.length && !r.stages.some((s) => s.name === "__ROLLOUT_PRE_CHECK__"))));
+  if (partial.length) throw new Error(`Rollouts need every StageInfos entry and stageCount: ${partial.map((r) => r.rolloutId).join(", ")}`);
   const since = new Date(Date.now() - lookbackHours * 3600e3);
   const scanned = await recentPrs(gh, since);
   const tracked = new Set<string>();

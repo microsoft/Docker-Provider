@@ -17,10 +17,12 @@ spec:
        every discussion entry. If the release channel (aks or arc) is stated in the incident,
        include it; otherwise omit it.
        Pass every active incident, alerts included (a PR may name any of them), with its full title (MSRC
-       case matching uses it) and all tags. To keep the payload small, entries may be limited to those
-       containing "[ft:" or "[fix-tracker:", but never left out when such entries exist.
-       For vulnerability incidents (CVE/FedRAMP/S360 findings), also set findings: one item per CVE the
-       incident lists, {id}. Add fixedBy = URLs of open or merged microsoft/Docker-Provider PRs whose diff raises the
+       case matching uses it) and all tags. Never drop an incident: if the list view truncates or omits a
+       title, fetch the incident to get it. The tool rejects any incident without a title. To keep the
+       payload small, entries may be limited to those containing "[ft:" or "[fix-tracker:", but never left
+       out when such entries exist.
+       For vulnerability incidents (CVE/FedRAMP/S360 findings), always set findings: one item per CVE the
+       incident lists, {id}; the tool rejects a CVE/FedRAMP/vulnerability incident without findings. Add fixedBy = URLs of open or merged microsoft/Docker-Provider PRs whose diff raises the
        affected module, package, Go version or base image to at least the fixed version (look the fixed
        version up on osv.dev; search PRs by CVE ID and package name; one CVE may need several PRs).
        Set fixed true only if a version already released to Prod contains the fixed version. If unsure,
@@ -35,7 +37,10 @@ spec:
        definitionId, endpoint, rolloutId, status, startTime, endTime (completed rollouts),
        sourceVersion = RolloutDetails.ReleasePipelineInfo.AzureDevOps.SourceVersion,
        artifactsVersion = RolloutDetails.ArtifactsRegistrationInfo.ArtifactsVersion,
-       stages = StageInfos[] as {name: StageName, status: StageStatus}.
+       stages = every StageInfos[] entry as {name: StageName, status: StageStatus}, unfiltered (precheck
+       and per-region stages included; a large list may be read from the saved tool output file), and
+       stageCount = the number of StageInfos entries (0 if the rollout has none yet). The tool rejects
+       1198/1200 Prod rollouts whose stages are filtered or whose length differs from stageCount.
        For 1198/1200, artifactsVersion must be the deployed ama-logs image tag (e.g.
        3.9.1-ci-prod-10-25-2026-46052686); if ArtifactsVersion is not that tag, use the image tag the
        rollout deploys instead, or omit it.
@@ -51,6 +56,6 @@ spec:
        already there; that tag is how the next run follows the PR.
     5. Before posting, re-read that incident's entries; skip the item if its marker is already there.
     6. Report what you posted and tagged, every item in "errors", and every item in "needsFixPr" (CVEs with no fix PR yet).
-       Do not open PRs. If the tool call fails, post nothing.
+       Do not open PRs. If the tool call fails, post nothing; if it rejects the input, fix what it names and call it again.
   status: Active
   agentMode: autonomous

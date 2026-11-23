@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isReleaseBump, markers, planEntries, releaseState, lifecycles } from "../dist/fix-tracker.js";
+import { isReleaseBump, markers, planEntries, releaseState, lifecycles, planFixTracker } from "../dist/fix-tracker.js";
 
 const pr = (over) => ({ url: "https://github.com/microsoft/Docker-Provider/pull/1", number: 1, title: "fix", body: "", branch: "b", state: "open", ...over });
 const icm = (id, title = "", over = {}) => ({ id, title, status: "ACTIVE", entries: [], ...over });
@@ -165,4 +165,20 @@ test("rolling entry is short: rollout link and ETA from earlier completed Prod r
     ro("now", iso(start), undefined, { includesFix: true, stages: [{ name: "Heavy", status: "Running" }] })] }]]))[0].text;
   assert.equal(plan(now - day), `Fix is rolling out: fix (${p.url}). AKS: rolling out (https://ev2/now), estimated completion ${iso(now + 6 * day).slice(0, 10)}. [ft:microsoft/Docker-Provider#1:rolling]`);
   assert.match(plan(now - 30 * day), /AKS: rolling out \(https:\/\/ev2\/now\), ETA unknown\./, "an overdue ETA is dropped, not shown in the past");
+});
+test("planner fails loudly on dropped titles, CVE incidents without findings, or a filtered stage list", async () => {
+  const gh = async () => [];
+  const stages = [{ name: "__ROLLOUT_PRE_CHECK__", status: "Succeeded" }, { name: "Broad4", status: "Succeeded" }];
+  const rollout = { definitionId: 1198, rolloutId: "r1", stages, stageCount: 2 };
+  await assert.rejects(planFixTracker([icm(1, "")], 24, [], gh), /full title: 1/);
+  await assert.rejects(planFixTracker([icm(2, "[AKS Container CVE] 3 vulns")], 24, [], gh), /findings.*: 2/);
+  await assert.rejects(planFixTracker([icm(3, "FedRAMP P0 child")], 24, [], gh), /findings.*: 3/);
+  await assert.rejects(planFixTracker([icm(4, "x")], 24, [{ ...rollout, stages: stages.slice(1) }], gh), /stageCount: r1/);
+  await assert.rejects(planFixTracker([icm(4, "x")], 24, [{ ...rollout, stageCount: undefined }], gh), /stageCount: r1/);
+  // Self-consistent but filtered: last run passed just Broad4 with a matching count.
+  await assert.rejects(planFixTracker([icm(4, "x")], 24, [{ ...rollout, stages: stages.slice(1), stageCount: 1 }], gh), /stageCount: r1/);
+  const okRun = await planFixTracker([icm(4, "Alert: heartbeat missing"), icm(5, "CVE-2026-1 status", { findings: [{ id: "CVE-2026-1" }] })], 24,
+    [rollout, { definitionId: 1032, rolloutId: "p1" }, { definitionId: 1200, rolloutId: "queued", stageCount: 0 },
+      { definitionId: 1198, rolloutId: "ff", endpoint: "Fairfax" }], gh);
+  assert.deepEqual(okRun.needsFixPr, [{ incidentId: "5", cves: ["CVE-2026-1"] }]);
 });

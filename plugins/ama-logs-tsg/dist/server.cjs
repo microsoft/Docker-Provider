@@ -62650,6 +62650,12 @@ async function lifecycles(prs, gh, rollouts, track) {
   return { result, errors };
 }
 async function planFixTracker(incidents, lookbackHours = 24, rollouts = [], gh = githubGet()) {
+  const untitled = incidents.filter((i) => !i.title?.trim());
+  if (untitled.length) throw new Error(`Every incident needs its full title: ${untitled.map((i) => i.id).join(", ")}`);
+  const noFindings = incidents.filter((i) => !i.findings?.length && /\bCVE\b|CVE-\d|FedRAMP|vulnerab/i.test([i.title, ...i.tags ?? []].join(" ")));
+  if (noFindings.length) throw new Error(`CVE incidents need findings (one per listed CVE): ${noFindings.map((i) => i.id).join(", ")}`);
+  const partial2 = rollouts.filter((r) => r.definitionId !== DEFS.push && isProd(r) && ((r.stages?.length ?? 0) !== r.stageCount || !!r.stages?.length && !r.stages.some((s) => s.name === "__ROLLOUT_PRE_CHECK__")));
+  if (partial2.length) throw new Error(`Rollouts need every StageInfos entry and stageCount: ${partial2.map((r) => r.rolloutId).join(", ")}`);
   const since = new Date(Date.now() - lookbackHours * 36e5);
   const scanned = await recentPrs(gh, since);
   const tracked = /* @__PURE__ */ new Set();
@@ -63241,7 +63247,7 @@ server.tool(
   {
     incidents: external_exports3.array(external_exports3.object({
       id: external_exports3.union([external_exports3.string(), external_exports3.number()]),
-      title: external_exports3.string().optional(),
+      title: external_exports3.string().min(1).describe("Full, untruncated incident title"),
       status: external_exports3.string().optional(),
       tags: external_exports3.array(external_exports3.string()).optional().describe("IcM tags; 'Fix PR: <url>' tags count as human-confirmed links"),
       entries: external_exports3.array(external_exports3.string()).optional().describe("Existing discussion entry texts (needed for idempotency)"),
@@ -63263,7 +63269,8 @@ server.tool(
       sourceVersion: external_exports3.string().optional().describe("RolloutDetails.ReleasePipelineInfo.AzureDevOps.SourceVersion (used for 1032 only)"),
       artifactsVersion: external_exports3.string().optional().describe("RolloutDetails.ArtifactsRegistrationInfo.ArtifactsVersion; for 1198/1200 the deployed image tag, e.g. 3.9.1-ci-prod-10-25-2026-46052686 (its SHA suffix is the shipped commit)"),
       url: external_exports3.string().optional(),
-      stages: external_exports3.array(external_exports3.object({ name: external_exports3.string(), status: external_exports3.string() })).optional().describe("get_rollout_summary StageInfos[].StageName/StageStatus"),
+      stages: external_exports3.array(external_exports3.object({ name: external_exports3.string(), status: external_exports3.string() })).optional().describe("1198/1200: every get_rollout_summary StageInfos[] entry as StageName/StageStatus, unfiltered"),
+      stageCount: external_exports3.number().optional().describe("1198/1200: StageInfos length; must equal stages.length"),
       push: external_exports3.object({ status: external_exports3.string().optional(), exitCode: external_exports3.union([external_exports3.number(), external_exports3.string()]).optional() }).optional().describe("1032 only: shell/PushAgentToACR action status and exit code. Never pass log text.")
     })).default([]).describe("Ev2 rollouts from ev2-mcp for the last 30 days")
   },

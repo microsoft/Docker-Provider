@@ -753,7 +753,7 @@ server.tool(
   {
     incidents: z.array(z.object({
       id: z.union([z.string(), z.number()]),
-      title: z.string().optional(),
+      title: z.string().min(1).describe("Full, untruncated incident title"),
       status: z.string().optional(),
       tags: z.array(z.string()).optional().describe("IcM tags; 'Fix PR: <url>' tags count as human-confirmed links"),
       entries: z.array(z.string()).optional().describe("Existing discussion entry texts (needed for idempotency)"),
@@ -775,7 +775,8 @@ server.tool(
       sourceVersion: z.string().optional().describe("RolloutDetails.ReleasePipelineInfo.AzureDevOps.SourceVersion (used for 1032 only)"),
       artifactsVersion: z.string().optional().describe("RolloutDetails.ArtifactsRegistrationInfo.ArtifactsVersion; for 1198/1200 the deployed image tag, e.g. 3.9.1-ci-prod-10-25-2026-46052686 (its SHA suffix is the shipped commit)"),
       url: z.string().optional(),
-      stages: z.array(z.object({ name: z.string(), status: z.string() })).optional().describe("get_rollout_summary StageInfos[].StageName/StageStatus"),
+      stages: z.array(z.object({ name: z.string(), status: z.string() })).optional().describe("1198/1200: every get_rollout_summary StageInfos[] entry as StageName/StageStatus, unfiltered"),
+      stageCount: z.number().optional().describe("1198/1200: StageInfos length; must equal stages.length"),
       push: z.object({ status: z.string().optional(), exitCode: z.union([z.number(), z.string()]).optional() }).optional()
         .describe("1032 only: shell/PushAgentToACR action status and exit code. Never pass log text."),
     })).default([]).describe("Ev2 rollouts from ev2-mcp for the last 30 days"),
