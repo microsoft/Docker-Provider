@@ -13,13 +13,15 @@ spec:
     Track microsoft/Docker-Provider fix PRs for active ContainerInsightsAgent (team 65826) IcMs. Only post IcM discussion entries
     and add Fix PR tags; never remove tags or change state, severity, owner, or mitigate/resolve an incident.
 
-    1. List the team's ACTIVE incidents. For each, collect id, title, status, tags, and the text of
+    1. List the team's ACTIVE incidents of every incident type: the list call takes one type, so call it
+       for both LiveSite and CustomerReported (CRIs carry fix PRs too) and page until a call returns fewer
+       than its limit. For each, collect id, title, status, tags, and the text of
        every discussion entry. If the release channel (aks or arc) is stated in the incident,
        include it; otherwise omit it.
        Pass every active incident, alerts included (a PR may name any of them), with its full title (MSRC
        case matching uses it) and all tags. Never drop an incident: if the list view truncates or omits a
        title, fetch the incident to get it. The tool rejects any incident without a title. Set
-       listedIncidentIds = every incident ID the list call returned (extract them with a script from the saved
+       listedIncidentIds = every incident ID the list calls returned (extract them with a script from the saved
        output); the tool rejects the call if any of them is missing from incidents. To keep the
        payload small, entries may be limited to those containing "[ft:" or "[fix-tracker:", but never left
        out when such entries exist.
