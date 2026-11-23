@@ -18,7 +18,9 @@ spec:
        include it; otherwise omit it.
        Pass every active incident, alerts included (a PR may name any of them), with its full title (MSRC
        case matching uses it) and all tags. Never drop an incident: if the list view truncates or omits a
-       title, fetch the incident to get it. The tool rejects any incident without a title. To keep the
+       title, fetch the incident to get it. The tool rejects any incident without a title. Set
+       listedIncidentIds = every incident ID the list call returned (extract them with a script from the saved
+       output); the tool rejects the call if any of them is missing from incidents. To keep the
        payload small, entries may be limited to those containing "[ft:" or "[fix-tracker:", but never left
        out when such entries exist.
        For vulnerability incidents (CVE/FedRAMP/S360 findings), always set findings: one item per CVE the
@@ -37,10 +39,15 @@ spec:
        definitionId, endpoint, rolloutId, status, startTime, endTime (completed rollouts),
        sourceVersion = RolloutDetails.ReleasePipelineInfo.AzureDevOps.SourceVersion,
        artifactsVersion = RolloutDetails.ArtifactsRegistrationInfo.ArtifactsVersion,
-       stages = every StageInfos[] entry as {name: StageName, status: StageStatus}, unfiltered (precheck
-       and per-region stages included; a large list may be read from the saved tool output file), and
+       stages = every StageInfos[] entry, unfiltered (precheck and per-region stages included), either as
+       [{name: StageName, status: StageStatus}] or, to keep it small, as one string
+       "StageName:StageStatus,StageName:StageStatus,..." with full status words, built by a script from the
+       saved tool output file, and
        stageCount = the number of StageInfos entries (0 if the rollout has none yet). The tool rejects
        1198/1200 Prod rollouts whose stages are filtered or whose length differs from stageCount.
+       Set listedRolloutIds = every kept RolloutId from the history calls; the tool rejects the call if any
+       is missing from rollouts, or if a linked fix is merged and no rollouts are passed. Never drop a
+       rollout or its stages to shorten the call.
        For 1198/1200, artifactsVersion must be the deployed ama-logs image tag (e.g.
        3.9.1-ci-prod-10-25-2026-46052686); if ArtifactsVersion is not that tag, use the image tag the
        rollout deploys instead, or omit it.
@@ -48,7 +55,8 @@ spec:
        and includeStatusMessages true, and set push = {status, exitCode} from that action
        (exitCode from its EXITCODE#n message; omit exitCode if there is none). Never copy log lines,
        tokens, identities or any other status-message text into the tool input, the IcM, or your report.
-    3. Call ama-logs-tsg_ama_logs_tsg_fix_tracker_plan with those incidents, lookbackHours 24 and rollouts.
+    3. Call ama-logs-tsg_ama_logs_tsg_fix_tracker_plan with those incidents, listedIncidentIds, lookbackHours 24,
+       rollouts and listedRolloutIds.
     4. For each item in "entries", post its "text" verbatim as a discussion entry on incidentId.
        Do not post anything that is not in "entries", and do not reword the text: the trailing
        [ft:...] marker is how the next run avoids duplicates.

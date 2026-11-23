@@ -764,6 +764,8 @@ server.tool(
               fixed: z.boolean().optional().describe("True only if a version already released to Prod contains the fix"),
             })).optional().describe("Vulnerability incidents only: every listed CVE. Entries then state coverage, PRs covering none are not linked, and 'released' only invites resolving when every CVE has a released fix"),
     })).describe("Active IcMs owned by the team"),
+    listedIncidentIds: z.array(z.union([z.string(), z.number()])).describe("Every incident ID the IcM list call returned (extract with a script); each must also be in incidents"),
+    listedRolloutIds: z.array(z.string()).describe("Every 1032/1198/1200 Prod RolloutId the Ev2 history calls returned; each must also be in rollouts"),
     lookbackHours: z.number().default(24).describe("Scan PRs created or merged in this many hours (overlap with the previous run is safe)"),
     rollouts: z.array(z.object({
       definitionId: z.coerce.number().describe("1032 = ama-logs image push, 1198 = AKS release, 1200 = Arc release"),
@@ -775,14 +777,16 @@ server.tool(
       sourceVersion: z.string().optional().describe("RolloutDetails.ReleasePipelineInfo.AzureDevOps.SourceVersion (used for 1032 only)"),
       artifactsVersion: z.string().optional().describe("RolloutDetails.ArtifactsRegistrationInfo.ArtifactsVersion; for 1198/1200 the deployed image tag, e.g. 3.9.1-ci-prod-10-25-2026-46052686 (its SHA suffix is the shipped commit)"),
       url: z.string().optional(),
-      stages: z.array(z.object({ name: z.string(), status: z.string() })).optional().describe("1198/1200: every get_rollout_summary StageInfos[] entry as StageName/StageStatus, unfiltered"),
+      stages: z.union([z.array(z.object({ name: z.string(), status: z.string() })), z.string()]).optional()
+        .describe("1198/1200: every get_rollout_summary StageInfos[] entry, unfiltered, as [{name: StageName, status: StageStatus}] or the compact string \"StageName:StageStatus,...\" (full status words)"),
       stageCount: z.number().optional().describe("1198/1200: StageInfos length; must equal stages.length"),
       push: z.object({ status: z.string().optional(), exitCode: z.union([z.number(), z.string()]).optional() }).optional()
         .describe("1032 only: shell/PushAgentToACR action status and exit code. Never pass log text."),
     })).default([]).describe("Ev2 rollouts from ev2-mcp for the last 30 days"),
   },
-  async ({ incidents, lookbackHours, rollouts }) => ({
-    content: [{ type: "text" as const, text: JSON.stringify(await planFixTracker(incidents, lookbackHours, rollouts), null, 2) }],
+  async ({ incidents, lookbackHours, rollouts, listedIncidentIds, listedRolloutIds }) => ({
+    content: [{ type: "text" as const, text: JSON.stringify(await planFixTracker(incidents, lookbackHours, rollouts,
+      { incidentIds: listedIncidentIds, rolloutIds: listedRolloutIds }), null, 2) }],
   })
 );
 

@@ -254,7 +254,17 @@ export async function lifecycles(prs: PullRequest[], gh: Get, rollouts: Rollout[
   return { result, errors };
 }
 
-export async function planFixTracker(incidents: Incident[], lookbackHours = 24, rollouts: Rollout[] = [], gh = githubGet()) {
+// listed = raw IDs from the agent's own IcM list and Ev2 history calls; payload items it dropped (for size) fail the call.
+type RolloutInput = Omit<Rollout, "stages"> & { stages?: Rollout["stages"] | string };
+export async function planFixTracker(incidents: Incident[], lookbackHours = 24, input: RolloutInput[] = [],
+  listed: { incidentIds: (string | number)[]; rolloutIds: string[] }, gh = githubGet()) {
+  // Compact "Name:Status,..." form keeps ~90-stage lists small enough to pass whole; it is checked like the array form.
+  const rollouts: Rollout[] = input.map((r) => typeof r.stages !== "string" ? r as Rollout : { ...r, stages: r.stages.split(",").filter(Boolean)
+    .map((s) => ({ name: s.slice(0, s.lastIndexOf(":")).trim(), status: s.slice(s.lastIndexOf(":") + 1).trim() })) });
+  const missing = (ids: (string | number)[], have: (string | number)[]) => ids.map(String).filter((id) => !have.map(String).includes(id));
+  const noIcm = missing(listed.incidentIds, incidents.map((i) => i.id)), noRollout = missing(listed.rolloutIds, rollouts.map((r) => r.rolloutId));
+  if (noIcm.length) throw new Error(`Listed incidents missing from incidents: ${noIcm.join(", ")}`);
+  if (noRollout.length) throw new Error(`Listed rollouts missing from rollouts: ${noRollout.join(", ")}`);
   // Fail the whole call, not just one incident: an agent that dropped titles or findings must redo its input before posting anything.
   const untitled = incidents.filter((i) => !i.title?.trim());
   if (untitled.length) throw new Error(`Every incident needs its full title: ${untitled.map((i) => i.id).join(", ")}`);
@@ -283,6 +293,9 @@ export async function planFixTracker(incidents: Incident[], lookbackHours = 24, 
   const linked = new Set([...tracked, ...all.filter((p) => !isReleaseBump(p.title) && matchIcms(p, active).some((m) => m.confidence === "linked"))
     .map((p) => p.url.toLowerCase())]);
   const { result, errors } = await lifecycles(all, gh, rollouts, linked);
+  // 1032 pushes at least weekly, so 29 days of Prod history is never empty; no rollouts means the agent skipped Ev2.
+  if (!rollouts.length && [...result.values()].some((l) => l.state === "merged"))
+    throw new Error("A linked fix is merged but no Ev2 rollouts were passed: list Prod history and pass every rollout");
   return {
     since: since.toISOString(), scanned: scanned.length,
     excludedReleaseBumps: scanned.filter((p) => isReleaseBump(p.title)).map((p) => p.url),

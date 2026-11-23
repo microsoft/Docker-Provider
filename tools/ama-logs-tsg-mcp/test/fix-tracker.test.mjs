@@ -185,17 +185,35 @@ test("rolling entry is short: rollout link and ETA from earlier full-ring Prod r
 });
 test("planner fails loudly on dropped titles, CVE incidents without findings, or a filtered stage list", async () => {
   const gh = async () => [];
+  const none = { incidentIds: [], rolloutIds: [] };
   const stages = [{ name: "__ROLLOUT_PRE_CHECK__", status: "Succeeded" }, { name: "Broad4", status: "Succeeded" }];
   const rollout = { definitionId: 1198, rolloutId: "r1", stages, stageCount: 2 };
-  await assert.rejects(planFixTracker([icm(1, "")], 24, [], gh), /full title: 1/);
-  await assert.rejects(planFixTracker([icm(2, "[AKS Container CVE] 3 vulns")], 24, [], gh), /findings.*: 2/);
-  await assert.rejects(planFixTracker([icm(3, "FedRAMP P0 child")], 24, [], gh), /findings.*: 3/);
-  await assert.rejects(planFixTracker([icm(4, "x")], 24, [{ ...rollout, stages: stages.slice(1) }], gh), /stageCount: r1/);
-  await assert.rejects(planFixTracker([icm(4, "x")], 24, [{ ...rollout, stageCount: undefined }], gh), /stageCount: r1/);
+  await assert.rejects(planFixTracker([icm(1, "")], 24, [], none, gh), /full title: 1/);
+  await assert.rejects(planFixTracker([icm(2, "[AKS Container CVE] 3 vulns")], 24, [], none, gh), /findings.*: 2/);
+  await assert.rejects(planFixTracker([icm(3, "FedRAMP P0 child")], 24, [], none, gh), /findings.*: 3/);
+  await assert.rejects(planFixTracker([icm(4, "x")], 24, [{ ...rollout, stages: stages.slice(1) }], none, gh), /stageCount: r1/);
+  await assert.rejects(planFixTracker([icm(4, "x")], 24, [{ ...rollout, stageCount: undefined }], none, gh), /stageCount: r1/);
   // Self-consistent but filtered: last run passed just Broad4 with a matching count.
-  await assert.rejects(planFixTracker([icm(4, "x")], 24, [{ ...rollout, stages: stages.slice(1), stageCount: 1 }], gh), /stageCount: r1/);
+  await assert.rejects(planFixTracker([icm(4, "x")], 24, [{ ...rollout, stages: stages.slice(1), stageCount: 1 }], none, gh), /stageCount: r1/);
   const okRun = await planFixTracker([icm(4, "Alert: heartbeat missing"), icm(5, "CVE-2026-1 status", { findings: [{ id: "CVE-2026-1" }] })], 24,
     [rollout, { definitionId: 1032, rolloutId: "p1" }, { definitionId: 1200, rolloutId: "queued", stageCount: 0 },
-      { definitionId: 1198, rolloutId: "ff", endpoint: "Fairfax" }], gh);
+      { definitionId: 1198, rolloutId: "ff", endpoint: "Fairfax" }], none, gh);
   assert.deepEqual(okRun.needsFixPr, [{ incidentId: "5", cves: ["CVE-2026-1"] }]);
+});
+
+test("planner rejects incidents or rollouts dropped from its own list calls; compact stages are checked like the array form", async () => {
+  const fix = { html_url: merged.url, number: 1, title: "fix", merged_at: "2026-11-10T00:00:00Z", merge_commit_sha: SHA.fix };
+  const gh = async (path) => path.includes("/pulls?") ? [] : path.includes("/pulls/") ? fix : { status: "ahead" };
+  const tagged = icm(7, "Container logs missing", { tags: [`Fix PR: ${merged.url}`] });
+  const listed = (incidentIds, rolloutIds = []) => ({ incidentIds, rolloutIds });
+  await assert.rejects(planFixTracker([icm(4, "Alert: heartbeat missing")], 24, [], listed([4, 7]), gh), /missing from incidents: 7/);
+  await assert.rejects(planFixTracker([tagged], 24, [], listed([7]), gh), /no Ev2 rollouts were passed/);
+  const compact = `__ROLLOUT_PRE_CHECK__:Succeeded,${RINGS.map((n) => `${n}:Succeeded`).join(",")}`;
+  const rel = (definitionId) => ({ definitionId, endpoint: "Prod", rolloutId: `r${definitionId}`, startTime: "2026-11-16",
+    artifactsVersion: tag(SHA.with), stages: compact, stageCount: RINGS.length + 1 });
+  await assert.rejects(planFixTracker([tagged], 24, [rel(1198)], listed([7], ["r1198", "r1200"]), gh), /missing from rollouts: r1200/);
+  await assert.rejects(planFixTracker([tagged], 24, [{ ...rel(1198), stages: compact.split(",").slice(1).join(",") }, rel(1200)],
+    listed([7], ["r1198", "r1200"]), gh), /stageCount: r1198/, "a filtered compact list still fails closed");
+  const run = await planFixTracker([tagged], 24, [rel(1198), rel(1200)], listed([7], ["r1198", "r1200"]), gh);
+  assert.deepEqual(run.entries.map((e) => e.state), ["released"]);
 });
