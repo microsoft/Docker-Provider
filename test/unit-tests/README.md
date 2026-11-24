@@ -54,6 +54,33 @@ To run a specific PowerShell test file:
 
 ## Available Tests
 
+### Linux mdsd Console Logs
+`test/fluent-bit/mdsd_log_forwarding_test.rb` exercises the production Fluent Bit
+diagnostics configuration with the agent image's Fluent Bit and process tools.
+It covers startup and ongoing errors/warnings, late-created files, copytruncate,
+replacement, offset recovery after process termination, info/QoS exclusion, and
+isolation from existing telemetry routing. It also runs the production liveness
+unchanged probe with real processes: stopping mdsd must fail the probe even while
+Fluent Bit continues forwarding diagnostics.
+
+Run with Ruby as the entrypoint in an isolated Linux agent container (not a shared
+host process namespace or a wrapping shell whose arguments mention mdsd):
+`ruby test/fluent-bit/mdsd_log_forwarding_test.rb`.
+
+`build/common/installer/scripts/tomlparser-common-agent-config_test.rb` checks
+the opt-in ConfigMap and extension settings, including precedence, defaults, invalid values and schema,
+Windows compatibility, and the generated environment's effect on the production
+Fluent Bit configuration. Run
+`ruby build/common/installer/scripts/tomlparser-common-agent-config_test.rb`
+with the existing Ruby test dependencies installed.
+
+`test/helm/mdsd_log_forwarding_test.rb` renders both chart sources and verifies
+default, boolean and string extension values in all Linux agent roles, disabled
+sidecars, and unchanged Windows and AKS workloads. Run
+`ruby test/helm/mdsd_log_forwarding_test.rb` with Helm on `PATH` and the existing
+Ruby test dependencies installed. Generated unified chart files are confined to
+a temporary directory.
+
 ### Windows Telegraf Package
 `test_cases/Test-TelegrafPackage.ps1` exercises the Telegraf installation block from
 `kubernetes/windows/setup.ps1` with mocked package operations. It checks the pinned

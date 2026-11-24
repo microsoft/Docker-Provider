@@ -114,6 +114,35 @@ Pull request must be approved by at least one engineering team members.
 
 We recommend using [Visual Studio Code](https://code.visualstudio.com/) for authoring. Windows 10 with Ubuntu App can be used for both Windows and Linux  Agent development and recommened to clone the code onto Ubuntu app so that you dont need to worry about line ending issues LF vs CRLF.
 
+# Linux Agent Diagnostic Logs
+
+Linux mdsd log forwarding is disabled by default. For an Arc extension release
+containing this feature, set the extension configuration setting
+`amalogs.enableMdsdLogForwarding` to `"true"` (or the equivalent Helm value to
+`true`). Both chart sources in this repository pass the setting to Linux
+DaemonSet main containers, Prometheus sidecars, and the ReplicaSet.
+
+Alternatively, add the following to the `agent-settings` data in the
+`container-azm-ms-agentconfig` ConfigMap:
+
+```toml
+[agent_settings.mdsd_log_forwarding]
+  enabled = true
+```
+
+When enabled, the Linux agent forwards `mdsd.err` and `mdsd.warn` as JSON records to container
+stdout in both the main container and the active Prometheus sidecar. The original files remain
+under `/var/opt/microsoft/linuxmonagent/log` for onboarding checks and diagnostic
+collection. Forwarding begins when Fluent Bit starts, includes retained startup
+messages, and uses its existing file-position tracking and rotation handling;
+`mdsd.info` and `mdsd.qos` remain file-only. Like custom metrics, ConfigMap
+`enabled = true` enables forwarding; `false`, absent, or invalid values leave the
+extension setting unchanged. To disable forwarding, set the extension setting to
+`"false"` and remove or set the ConfigMap setting to `enabled = false`. Changes take
+effect at agent startup. Direct mdsd stderr handling
+is unchanged. This exposes diagnostics without adding a separate follower process or
+resolving the underlying onboarding failure. Windows agents are unaffected.
+
 # Building code
 
 > Note: Building code in local computer is broken, please open github issue if you are blocked on this.
