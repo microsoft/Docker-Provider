@@ -62504,8 +62504,13 @@ function releaseState(rollouts, channels = ["aks", "arc"]) {
       started = true;
       const took = rs.slice(1).filter((r) => full(r) && r.startTime && r.endTime).map((r) => Date.parse(r.endTime) - Date.parse(r.startTime));
       const start = Date.parse(latest.startTime ?? ""), n = RINGS.filter((x) => passed(latest).has(x)).length, now = Date.now();
-      let at = took.length ? start + median(took) : NaN;
-      if (!(at > now) && n && /^running$/i.test(latest.status ?? "")) at = now + (now - start) * (RINGS.length - n) / n;
+      const ring = (name3) => latest.stages?.find((s) => s.name === name3);
+      const per = RINGS.slice(1).map(ring).filter((s) => ok(s?.status) && s.startTime && s.endTime).map((s) => Date.parse(s.endTime) - Date.parse(s.startTime)).filter((d) => d > 0);
+      const cur = Date.parse(ring(RINGS.find((x) => !passed(latest).has(x)) ?? "")?.startTime ?? "");
+      const running = /^running$/i.test(latest.status ?? "");
+      let at = running && per.length && n < RINGS.length ? (cur || now) + median(per) * (RINGS.length - n) : NaN;
+      if (!(at > now)) at = took.length ? start + median(took) : NaN;
+      if (!(at > now) && n && running) at = now + (now - start) * (RINGS.length - n) / n;
       const eta = at > now ? new Date(at).toISOString().slice(0, 10) : null;
       notes.push(`${label}: rolling out (${ref(latest)}), ${eta ? `estimated completion ${eta}` : "ETA unknown"}`);
     } else notes.push(`${label}: not started`);
@@ -62655,7 +62660,10 @@ async function lifecycles(prs, gh, rollouts, track) {
   return { result, errors };
 }
 async function planFixTracker(incidents, lookbackHours = 24, input = [], listed, gh = githubGet()) {
-  const rollouts = input.map((r) => typeof r.stages !== "string" ? r : { ...r, stages: r.stages.split(",").filter(Boolean).map((s) => ({ name: s.slice(0, s.lastIndexOf(":")).trim(), status: s.slice(s.lastIndexOf(":") + 1).trim() })) });
+  const rollouts = input.map((r) => typeof r.stages !== "string" ? r : { ...r, stages: r.stages.split(",").filter(Boolean).map((x) => {
+    const [s, t = ""] = x.split("@"), [startTime2, endTime] = t.split("/");
+    return { name: s.slice(0, s.lastIndexOf(":")).trim(), status: s.slice(s.lastIndexOf(":") + 1).trim(), startTime: startTime2 || void 0, endTime: endTime || void 0 };
+  }) });
   const missing = (ids, have) => ids.map(String).filter((id) => !have.map(String).includes(id));
   const noIcm = missing(listed.incidentIds, incidents.map((i) => i.id)), noRollout = missing(listed.rolloutIds, rollouts.map((r) => r.rolloutId));
   if (noIcm.length) throw new Error(`Listed incidents missing from incidents: ${noIcm.join(", ")}`);
@@ -62691,11 +62699,13 @@ async function planFixTracker(incidents, lookbackHours = 24, input = [], listed,
   const { result, errors } = await lifecycles(all, gh, rollouts, linked);
   if (!rollouts.length && [...result.values()].some((l) => l.state === "merged"))
     throw new Error("A linked fix is merged but no Ev2 rollouts were passed: list Prod history and pass every rollout");
+  const uncredited = new Set(active.filter((i) => i.findings?.length).flatMap((i) => (i.tags ?? []).map((t) => /^Fix PR:\s*(\S+)/i.exec(t)?.[1]?.toLowerCase()).filter((u) => u && result.get(u)?.state !== "closed-unmerged" && !i.findings.some((f) => f.fixedBy?.some((x) => x.toLowerCase() === u))).map((u) => `${i.id} ${u}`)));
+  for (const k of uncredited) errors.push(`${k.replace(" ", ": tagged fix ")} is in no finding's fixedBy; check its diff against the osv.dev fixed version, set fixedBy, and call again`);
   return {
     since: since.toISOString(),
     scanned: scanned.length,
     excludedReleaseBumps: scanned.filter((p) => isReleaseBump(p.title)).map((p) => p.url),
-    entries: planEntries(all, incidents, result),
+    entries: planEntries(all, incidents, result).filter((e) => !uncredited.has(`${e.incidentId} ${e.prUrl.toLowerCase()}`)),
     errors: [...fetchErrors, ...errors],
     needsFixPr: active.map((i) => ({ incidentId: String(i.id), cves: unfixed(i) })).filter((n) => n.cves.length)
   };
