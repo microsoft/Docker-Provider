@@ -19,7 +19,7 @@ export interface Match { incidentId: string; confidence: "linked" | "proposed"; 
 // Shaped from ev2-mcp get_rollout_summary (stages) and get_rollout_details for shell/PushAgentToACR (push). No log text.
 export interface Rollout {
   definitionId: number; endpoint?: string; rolloutId: string; status?: string; startTime?: string; endTime?: string; sourceVersion?: string;
-  artifactsVersion?: string; url?: string; stages?: { name: string; status: string }[]; stageCount?: number; push?: { status?: string; exitCode?: number | string };
+  artifactsVersion?: string; url?: string; stages?: { name: string; status: string; startTime?: string; endTime?: string }[]; stageCount?: number; push?: { status?: string; exitCode?: number | string };
 }
 export type TrackedRollout = Rollout & { includesFix: boolean };
 export interface PlannedEntry { incidentId: string; prUrl: string; state: string; text: string }
@@ -96,9 +96,16 @@ export function releaseState(rollouts: TrackedRollout[], channels: Channel[] = [
       // ETA = start + median duration of earlier full-ring Prod rollouts of this definition: an estimate, not a promise.
       const took = rs.slice(1).filter((r) => full(r) && r.startTime && r.endTime).map((r) => Date.parse(r.endTime!) - Date.parse(r.startTime!));
       const start = Date.parse(latest.startTime ?? ""), n = RINGS.filter((x) => passed(latest).has(x)).length, now = Date.now();
-      let at = took.length ? start + median(took) : NaN;
+      // Best: this rollout's own finished rings (Canary is a multi-day bake, so it is left out), then the current ring's start.
+      const ring = (name: string) => latest.stages?.find((s) => s.name === name);
+      const per = RINGS.slice(1).map(ring).filter((s) => ok(s?.status) && s!.startTime && s!.endTime)
+        .map((s) => Date.parse(s!.endTime!) - Date.parse(s!.startTime!)).filter((d) => d > 0);
+      const cur = Date.parse(ring(RINGS.find((x) => !passed(latest).has(x)) ?? "")?.startTime ?? "");
+      const running = /^running$/i.test(latest.status ?? "");
+      let at = running && per.length && n < RINGS.length ? (cur || now) + median(per) * (RINGS.length - n) : NaN;
+      if (!(at > now)) at = took.length ? start + median(took) : NaN;
       // Overdue but still Running (slower than usual, e.g. paused): extrapolate its own pace over its remaining rings.
-      if (!(at > now) && n && /^running$/i.test(latest.status ?? "")) at = now + ((now - start) * (RINGS.length - n)) / n;
+      if (!(at > now) && n && running) at = now + ((now - start) * (RINGS.length - n)) / n;
       const eta = at > now ? new Date(at).toISOString().slice(0, 10) : null;
       notes.push(`${label}: rolling out (${ref(latest)}), ${eta ? `estimated completion ${eta}` : "ETA unknown"}`);
     } else notes.push(`${label}: not started`);
@@ -259,8 +266,10 @@ type RolloutInput = Omit<Rollout, "stages"> & { stages?: Rollout["stages"] | str
 export async function planFixTracker(incidents: Incident[], lookbackHours = 24, input: RolloutInput[] = [],
   listed: { incidentIds: (string | number)[]; rolloutIds: string[] }, gh = githubGet()) {
   // Compact "Name:Status,..." form keeps ~90-stage lists small enough to pass whole; it is checked like the array form.
+  // Ring stages may append "@StartTime/EndTime" (ISO, EndTime empty while running) for the ETA.
   const rollouts: Rollout[] = input.map((r) => typeof r.stages !== "string" ? r as Rollout : { ...r, stages: r.stages.split(",").filter(Boolean)
-    .map((s) => ({ name: s.slice(0, s.lastIndexOf(":")).trim(), status: s.slice(s.lastIndexOf(":") + 1).trim() })) });
+    .map((x) => { const [s, t = ""] = x.split("@"), [startTime, endTime] = t.split("/");
+      return { name: s.slice(0, s.lastIndexOf(":")).trim(), status: s.slice(s.lastIndexOf(":") + 1).trim(), startTime: startTime || undefined, endTime: endTime || undefined }; }) });
   const missing = (ids: (string | number)[], have: (string | number)[]) => ids.map(String).filter((id) => !have.map(String).includes(id));
   const noIcm = missing(listed.incidentIds, incidents.map((i) => i.id)), noRollout = missing(listed.rolloutIds, rollouts.map((r) => r.rolloutId));
   if (noIcm.length) throw new Error(`Listed incidents missing from incidents: ${noIcm.join(", ")}`);
@@ -296,10 +305,16 @@ export async function planFixTracker(incidents: Incident[], lookbackHours = 24, 
   // 1032 pushes at least weekly, so 29 days of Prod history is never empty; no rollouts means the agent skipped Ev2.
   if (!rollouts.length && [...result.values()].some((l) => l.state === "merged"))
     throw new Error("A linked fix is merged but no Ev2 rollouts were passed: list Prod history and pass every rollout");
+  // A human-tagged fix that no finding credits means the agent skipped the osv.dev check; posting would say "no fix yet".
+  const uncredited = new Set(active.filter((i) => i.findings?.length).flatMap((i) => (i.tags ?? [])
+    .map((t) => /^Fix PR:\s*(\S+)/i.exec(t)?.[1]?.toLowerCase())
+    .filter((u) => u && result.get(u)?.state !== "closed-unmerged" && !i.findings!.some((f) => f.fixedBy?.some((x) => x.toLowerCase() === u))).map((u) => `${i.id} ${u}`)));
+  for (const k of uncredited) errors.push(`${k.replace(" ", ": tagged fix ")} is in no finding's fixedBy; check its diff against the osv.dev fixed version, set fixedBy, and call again`);
   return {
     since: since.toISOString(), scanned: scanned.length,
     excludedReleaseBumps: scanned.filter((p) => isReleaseBump(p.title)).map((p) => p.url),
-    entries: planEntries(all, incidents, result), errors: [...fetchErrors, ...errors],
+    entries: planEntries(all, incidents, result).filter((e) => !uncredited.has(`${e.incidentId} ${e.prUrl.toLowerCase()}`)),
+    errors: [...fetchErrors, ...errors],
     needsFixPr: active.map((i) => ({ incidentId: String(i.id), cves: unfixed(i) })).filter((n) => n.cves.length),
   };
 }

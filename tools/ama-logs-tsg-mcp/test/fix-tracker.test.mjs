@@ -183,6 +183,27 @@ test("rolling entry is short: rollout link and ETA from earlier full-ring Prod r
   const stopped = releaseState([ro("slow", iso(t - 12 * day), undefined, { includesFix: true, status: "Cancelled", stages: sixDone })], ["aks"]);
   assert.match(stopped.notes[0], /ETA unknown$/, "a stopped rollout gets no forecast");
 });
+test("rolling ETA uses the rollout's own post-Canary ring times; falls back without them or when overdue", async (t) => {
+  // Real 1198 ring timing at the 11-24 00:07Z run: Canary baked 4.7 days, later rings ~25h each, Broad3 running.
+  const times = "Canary:Succeeded@2026-11-13T00:47:58Z/2026-11-17T18:00:08Z,Pilot:Succeeded@2026-11-17T18:00:43Z/2026-11-18T19:08:53Z," +
+    "Medium:Succeeded@2026-11-18T19:09:27Z/2026-11-19T20:18:36Z,Heavy:Succeeded@2026-11-19T20:19:13Z/2026-11-20T21:27:38Z," +
+    "Broad1:Succeeded@2026-11-20T21:28:14Z/2026-11-21T22:40:59Z,Broad2:Succeeded@2026-11-21T22:41:35Z/2026-11-22T23:55:06Z," +
+    "Broad3:Running@2026-11-22T23:55:42Z/,Broad4:NotStarted";
+  const merged = pr({ state: "merged" });
+  const fix = { html_url: merged.url, number: 1, title: "fix", merged_at: "2026-11-10T00:00:00Z", merge_commit_sha: "a".repeat(40) };
+  const gh = async (path) => path.includes("/pulls?") ? [] : path.includes("/pulls/") ? fix : { status: "ahead" };
+  const eta = async (now, stages) => {
+    t.mock.method(Date, "now", () => Date.parse(now));
+    const r = { definitionId: 1198, endpoint: "Prod", rolloutId: "r", status: "Running", startTime: "2026-11-13T00:47:07Z",
+      artifactsVersion: `3.10.0-ci-prod-11-10-2026-${"b".repeat(8)}`, stages: `__ROLLOUT_PRE_CHECK__:Succeeded,${stages}`, stageCount: stages.split(",").length + 1 };
+    const run = await planFixTracker([icm(7, "x", { channel: "aks", tags: [`Fix PR: ${merged.url}`] })], 24, [r], { incidentIds: [7], rolloutIds: ["r"] }, gh);
+    return run.entries[0].text.match(/AKS: [^.;]*/)[0];
+  };
+  assert.equal(await eta("2026-11-24T00:07:05Z", times), "AKS: rolling out (Ev2 Prod rollout r), estimated completion 2026-11-25");
+  const bare = times.replace(/@[^,]*/g, "");
+  assert.equal(await eta("2026-11-24T00:07:05Z", bare), "AKS: rolling out (Ev2 Prod rollout r), estimated completion 2026-11-27", "no ring times: own-pace fallback");
+  assert.equal(await eta("2026-11-26T00:00:00Z", times), "AKS: rolling out (Ev2 Prod rollout r), estimated completion 2026-11-30", "Broad3 overdue: own-pace fallback, never a past date");
+});
 test("planner fails loudly on dropped titles, CVE incidents without findings, or a filtered stage list", async () => {
   const gh = async () => [];
   const none = { incidentIds: [], rolloutIds: [] };
@@ -216,4 +237,14 @@ test("planner rejects incidents or rollouts dropped from its own list calls; com
     listed([7], ["r1198", "r1200"]), gh), /stageCount: r1198/, "a filtered compact list still fails closed");
   const run = await planFixTracker([tagged], 24, [rel(1198), rel(1200)], listed([7], ["r1198", "r1200"]), gh);
   assert.deepEqual(run.entries.map((e) => e.state), ["released"]);
+  // A tagged fix PR that no finding credits would post "Fixes 0 of 1 ... no fix yet": withhold it and say what to verify.
+  const cve = (fixedBy) => ({ ...tagged, title: "CVE-2026-1 status", findings: [{ id: "CVE-2026-1", fixedBy }] });
+  const unverified = await planFixTracker([cve()], 24, [rel(1198), rel(1200)], listed([7], ["r1198", "r1200"]), gh);
+  assert.deepEqual(unverified.entries, []);
+  assert.match(unverified.errors.join("\n"), new RegExp(`7: tagged fix ${merged.url} is in no finding's fixedBy`, "i"));
+  const verified = await planFixTracker([cve([merged.url])], 24, [rel(1198), rel(1200)], listed([7], ["r1198", "r1200"]), gh);
+  assert.match(verified.entries[0].text, /Fixes 1 of 1 listed CVEs/);
+  const closedGh = async (path) => path.includes("/pulls?") ? [] : { ...fix, state: "closed", merged_at: null, merge_commit_sha: null };
+  const closed = await planFixTracker([cve()], 24, [rel(1198), rel(1200)], listed([7], ["r1198", "r1200"]), closedGh);
+  assert.deepEqual(closed.entries.map((e) => e.state), ["closed-unmerged"], "an abandoned tagged fix is still reported");
 });

@@ -29,6 +29,8 @@ spec:
        incident lists, {id}; the tool rejects a CVE/FedRAMP/vulnerability incident without findings. Add fixedBy = URLs of open or merged microsoft/Docker-Provider PRs whose diff raises the
        affected module, package, Go version or base image to at least the fixed version (look the fixed
        version up on osv.dev; search PRs by CVE ID and package name; one CVE may need several PRs).
+       Check every PR in the incident's "Fix PR:" tags this way: the tool withholds a tagged PR's entry until a
+       finding lists it in fixedBy.
        Set fixed true only if a version already released to Prod contains the fixed version. If unsure,
        leave the CVE without fixedBy or fixed: an open CVE is never reported as fixed.
     2. Gather Ev2 rollouts with ev2-mcp read tools only (serviceId 3170cdd2-19f0-4027-912b-1027311691a2;
@@ -44,7 +46,9 @@ spec:
        stages = every StageInfos[] entry, unfiltered (precheck and per-region stages included), either as
        [{name: StageName, status: StageStatus}] or, to keep it small, as one string
        "StageName:StageStatus,StageName:StageStatus,..." with full status words, built by a script from the
-       saved tool output file, and
+       saved tool output file. For the ring stages (Canary, Pilot, Medium, Heavy, Broad1-4) of a Running
+       1198/1200 rollout, add their StartTime/EndTime for the ETA: {startTime, endTime} in the array form, or
+       "StageName:StageStatus@StartTime/EndTime" in the string form (EndTime empty while running). And set
        stageCount = the number of StageInfos entries (0 if the rollout has none yet). The tool rejects
        1198/1200 Prod rollouts whose stages are filtered or whose length differs from stageCount.
        Set listedRolloutIds = every kept RolloutId from the history calls; the tool rejects the call if any
