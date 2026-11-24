@@ -3,6 +3,7 @@ require "fileutils"
 require "tmpdir"
 require "rbconfig"
 require "open3"
+require "json"
 
 # kubernetes/linux/main.sh sources the shell files these parsers generate, so an unquoted value
 # is subject to shell processing instead of arriving as configured. The values are rendered as
@@ -31,6 +32,16 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
     output: "config_env_var",
   }.freeze
 
+  AGENT = COMMON.merge(source: "build/common/installer/scripts/tomlparser-agent-config.rb",
+                       output: "agent_config_env_var").freeze
+
+  OSM = {
+    source: "build/linux/installer/scripts/tomlparser-osm-config.rb",
+    mount: "/etc/config/osm-settings/osm-metric-collection-configuration",
+    output: "integration_osm_config_env_var",
+    telegraf_config: "build/linux/installer/conf/telegraf-rs.conf",
+  }.freeze
+
   # Generates the shell file, then sources it the way main.sh does. Returns whether the shell
   # processed the value and what bash ended up with. The parser's hardcoded image paths are
   # repointed at the fixture, so this needs no agent image.
@@ -43,11 +54,22 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
                    .sub(parser[:mount].inspect, settings.inspect)
                    .sub('require_relative "/etc/fluent/plugin/constants"',
                         "require_relative #{File.join(REPO, "source/plugins/ruby/constants.rb").inspect}")
+      tenant_dir = File.join(dir, "tenant")
+      FileUtils.mkdir_p(tenant_dir)
+      template = "fluent-bit-azmon-logs_tenant.conf"
+      FileUtils.cp(File.join(REPO, "build/linux/installer/conf", template), tenant_dir)
+      FileUtils.cp(File.join(REPO, parser[:telegraf_config]), tenant_dir) if parser[:telegraf_config]
+      source = source.gsub("/etc/opt/microsoft/docker-cimprov/", "#{tenant_dir}/")
+                     .gsub('"/opt/', "\"#{dir}/")
       File.write(File.join(dir, "parser.rb"), source)
       FileUtils.cp(File.join(REPO, "build/common/installer/scripts/ConfigParseErrorLogger.rb"), dir)
 
-      Open3.capture3({ "AZMON_AGENT_CFG_SCHEMA_VERSION" => "v1" },
-                     RbConfig.ruby, File.join(dir, "parser.rb"), chdir: dir)
+      output, parser_error, status = Open3.capture3({
+        "AZMON_AGENT_CFG_SCHEMA_VERSION" => "v1", "AZMON_OSM_CFG_SCHEMA_VERSION" => "v1",
+        "OS_TYPE" => "linux", "CONTROLLER_TYPE" => "replicaset",
+        "CONTAINER_TYPE" => nil, "SIDECAR_SCRAPING_ENABLED" => "false",
+      }, RbConfig.ruby, File.join(dir, "parser.rb"), chdir: dir)
+      assert status.success?, "parser failed: #{output}\n#{parser_error}"
 
       commands = if persist_to_bashrc
                    main = File.read(File.join(REPO, "kubernetes/linux/main.sh"))
@@ -60,8 +82,15 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
                    ". ./#{parser[:output]}"
                  end
       script = commands + "; " + vars.map { |v| "printf '%s\\n' \"$#{v}\"" }.join("; ")
-      out, = Open3.capture3({ "HOME" => dir }, "bash", "-c", script, chdir: dir)
-      return { evaluated: File.exist?(File.join(dir, "EVALUATED")), values: out.split("\n", -1) }
+      out, error, status = Open3.capture3({ "HOME" => dir, "BASH_ENV" => nil }, "bash", "-c",
+                                        "set -e\n#{script}", chdir: dir)
+      assert status.success?, "sourcing settings failed: #{error}"
+      return {
+        evaluated: %w[EVALUATED evaluated].any? { |name| File.exist?(File.join(dir, name)) }, values: out.split("\n", -1),
+        tenants: Dir.glob(File.join(tenant_dir, "*_tenant_*.conf")).to_h { |p| [File.basename(p), File.read(p)] },
+        configs: Dir.glob(File.join(dir, "telegraf-test-*.conf")).to_h { |p| [File.basename(p), File.read(p)] },
+        output: output + parser_error,
+      }
     end
   end
 
@@ -107,16 +136,15 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
     refute result[:evaluated], "sourcing the generated file let the shell process the config map value"
   end
 
-  # A value containing a single quote is the case naive escaping gets wrong.
-  def test_quote_in_value_cannot_break_out
+  def test_stdout_excluded_namespaces_reject_configmap_expansion_values
     result = source_generated(LOG, <<~TOML, %w[AZMON_STDOUT_EXCLUDED_NAMESPACES])
       [log_collection_settings.stdout]
       enabled = true
-      exclude_namespaces = ["it's$(touch EVALUATED)"]
+      exclude_namespaces = ["kube-system", #{JSON.generate("bad$namespace")}, #{JSON.generate("bad[INPUT]")}, #{JSON.generate("bad\n[OUTPUT]")}]
     TOML
 
-    refute result[:evaluated], "a single quote in the value broke out of the quoted literal"
-    assert_equal "it's$(touch EVALUATED)", result[:values].first
+    refute result[:evaluated]
+    assert_equal "kube-system", result[:values].first
   end
 
   def test_quote_survives_copy_to_bashrc
@@ -166,4 +194,112 @@ class TomlParserConfigValueHandlingTest < Minitest::Test
     assert_equal "kube-system,gatekeeper-system", result[:values][1]
     assert_equal "v2", result[:values][2]
   end
+
+  def test_agent_duration_values_cannot_smuggle_new_lines
+    valid = source_generated(AGENT, <<~TOML, %w[FBIT_TAIL_IGNORE_OLDER])
+      [agent_settings.fbit_config]
+      tail_ignore_older = "5m"
+    TOML
+    assert_equal "5m", valid[:values].first
+
+    result = source_generated(AGENT, <<~TOML, %w[FBIT_TAIL_IGNORE_OLDER])
+      [agent_settings.fbit_config]
+      tail_ignore_older = "1m\\ntouch EVALUATED\\n#"
+    TOML
+    refute result[:evaluated], "sourcing settings executed an embedded-newline duration"
+    assert_equal "", result[:values].first
+  end
+
+  def test_network_flow_interval_rejects_multiline_values
+    result = source_generated(AGENT, <<~TOML, %w[NETWORKFLOW_LOGS_THROTTLE_INTERVAL])
+      [agent_settings.networkflow_logs_config]
+      throttle_enabled = true
+      throttle_interval = "1s\\ntouch EVALUATED\\n#"
+    TOML
+
+    refute result[:evaluated], "sourcing settings executed an embedded-newline interval"
+    assert_equal "1s", result[:values].first
+  end
+
+  def test_osm_namespace_strings_are_toml_escaped
+    long_namespace = "Tenant-" + ("X" * 64)
+    toml_payload = "Tenant-A\"\\1\\\n[inputs.exec]\ncommand=\"echo harmless\"\\"
+    result = source_generated(OSM, <<~TOML, %w[TELEMETRY_OSM_CONFIGURATION_NAMESPACES_COUNT])
+      [osm_metric_collection_configuration.settings]
+      monitor_namespaces = ["Tenant-A", #{JSON.generate(long_namespace)}, #{JSON.generate(toml_payload)}, "  ", 42]
+    TOML
+
+    assert_equal "3", result[:values].first
+    assert_includes result[:output], "Invalid OSM monitor namespace, skipping entry"
+    config = result[:configs].fetch("telegraf-test-rs.conf")
+    assert_includes config, "monitor_kubernetes_pods_namespace = #{JSON.generate(long_namespace)}"
+    assert_includes config, "monitor_kubernetes_pods_namespace = #{JSON.generate(toml_payload)}"
+    assert_equal 3, config.scan(/name_prefix="container\.azm\.ms\.osm\/"/).length
+    refute_match(/^\[\[inputs\.exec\]\]$/, config)
+  end
+
+  def test_version_files_are_literal_after_startup_and_later_source
+    main = File.read(File.join(REPO, "kubernetes/linux/main.sh"))
+    helper = main[/^setGlobalEnvVar\(\) \{.*?^\}/m]
+    block = main[/^#set agent config schema version.*?(?=^# common agent config)/m]
+    refute_nil helper
+    refute_nil block
+    Dir.mktmpdir do |dir|
+      FileUtils.mkdir_p(File.join(dir, "settings"))
+      FileUtils.mkdir_p(File.join(dir, "osm-settings"))
+      value = "$(>PWNED)"
+      %w[settings/schema-version settings/config-version osm-settings/schema-version].each do |file|
+        File.write(File.join(dir, file), value)
+      end
+      File.write(File.join(dir, ".bashrc"), "source ./env_vars\n")
+      File.write(File.join(dir, "env_vars"), "")
+      script = (helper + "\n" + block).gsub("/opt/env_vars", "./env_vars").gsub("/etc/config/", "./")
+      script += "\nsource \"$HOME/.bashrc\"\nprintf '%s\\n' \"$AZMON_AGENT_CFG_SCHEMA_VERSION\" \"$AZMON_AGENT_CFG_FILE_VERSION\" \"$AZMON_OSM_CFG_SCHEMA_VERSION\""
+      out, error, status = Open3.capture3({
+        "HOME" => dir, "BASH_ENV" => nil, "CONTAINER_TYPE" => "PrometheusSidecar",
+      }, "bash", "-c", "set -e\n#{script}", chdir: dir)
+      assert status.success?, error
+      refute File.exist?(File.join(dir, "PWNED")), "version metadata was executed"
+      assert_equal [value] * 3, out.lines.last(3).map(&:strip)
+    end
+  end
+
+  def test_tenant_settings_cannot_add_fluent_bit_sections
+    payload = "2G\n[INPUT]\n Name dummy"
+    filter_payload = "300\n[FILTER]\n Name dummy"
+    output_payload = "30\n[OUTPUT]\n Name dummy"
+    namespace_payload = "tenant-c\ntouch EVALUATED\n#"
+    result = source_generated(LOG, <<~TOML, %w[AZMON_MULTI_TENANCY_SVC_BUFFER_CHUNK_SIZE AZMON_MULTI_TENANCY_SVC_BUFFER_MAX_SIZE AZMON_MULTI_TENANCY_NAMESPACES])
+      [log_collection_settings.multi_tenancy]
+      enabled = true
+      advanced_mode_enabled = true
+      namespaces = [" Tenant-A ", "tenant-b", #{JSON.generate(namespace_payload)}]
+      storage_type = "Filesystem"
+      mem_buf_limit = #{JSON.generate(payload)}
+      namespace_settings = [#{JSON.generate("tenant-a:mem_buf_limit=\\\\';buffer_max_size=#{payload};out_forward_storage_total_limit_size=2G[INPUT];throttle_interval=#{filter_payload};out_forward_retry_limit=#{output_payload};out_forward_require_ack_response=[FILTER];throttle_window=1d")}, #{JSON.generate("#{namespace_payload}:mem_buf_limit=1M")}]
+      service_buffer_chunk_size = #{JSON.generate(payload)}
+      service_buffer_max_size = "30m\\r[OUTPUT]"
+    TOML
+    assert_equal "tenant-a,tenant-b", result[:values][2]
+    refute result[:evaluated], "sourcing settings executed a multiline tenant namespace"
+    assert_includes result[:output], "Invalid multi-tenancy namespace, skipping entry"
+    assert_includes result[:output], "Invalid multi-tenancy namespace_settings entry, skipping entry"
+    assert_equal %w[fluent-bit-azmon-logs_tenant_tenant-a.conf fluent-bit-azmon-logs_tenant_tenant-b.conf], result[:tenants].keys.sort
+    result[:tenants].each_value do |conf|
+      assert_equal 1, conf.scan(/^\[INPUT\]/).length
+      assert_equal 1, conf.scan(/^\[FILTER\]/).length
+      assert_equal 1, conf.scan(/^\[OUTPUT\]/).length
+      refute_includes conf, payload
+      refute_includes conf, "2G[INPUT]"
+      refute_includes conf, filter_payload
+      refute_includes conf, output_payload
+      refute_match(/^\s*Require_ack_response\s+\[FILTER\]/, conf)
+      assert_includes conf, "Filesystem"
+    end
+    assert_includes result[:tenants].values.first, "\\'"
+    assert_includes result[:tenants].values.first, "1d"
+    assert_equal ["10m", "30m"], result[:values].first(2)
+    assert_includes result[:output], "Invalid"
+  end
+
 end
