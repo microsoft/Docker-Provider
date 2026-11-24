@@ -1,9 +1,12 @@
 terraform {
+  # Terraform 1.8+ and AzAPI 2.12+ are required to move the cluster state from AzureRM to AzAPI.
+  required_version = ">= 1.8.0"
+
   required_providers {
 
     azapi = {
       source  = "azure/azapi"
-      version = "=0.1.0"
+      version = ">= 2.12"
     }
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -12,12 +15,7 @@ terraform {
   }
 }
 
-provider "azapi" {
-  default_location = "eastus"
-  default_tags = {
-    team = "Azure deployments"
-  }
-}
+provider "azapi" {}
 
 provider "azurerm" {
   features {}

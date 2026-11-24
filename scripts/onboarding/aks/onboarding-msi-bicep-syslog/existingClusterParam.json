@@ -20,6 +20,9 @@
     "enableRetinaNetworkFlowLogs": {
       "value": false
     },
+    "disablePrometheusMetricsScraping": {
+      "value": false
+    },
     "syslogLevels": {
       "value": [
         "Debug",
@@ -55,6 +58,9 @@
         "user",
         "uucp"
       ]
+    },
+    "syslogPort": {
+      "value": 28330
     },
     "resourceTagValues": {
       "value": {

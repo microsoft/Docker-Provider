@@ -47,7 +47,14 @@
         "enableRetinaNetworkFlowLogs": {
             "type": "bool",
             "metadata": {
-                "description": "Enable Retina Network Flow Logs in omsagent addon profile"
+                "description": "Enable Retina Network Flow Logs in Container Insights profile"
+            },
+            "defaultValue": false
+        },
+        "disablePrometheusMetricsScraping": {
+            "type": "bool",
+            "metadata": {
+                "description": "Disable Prometheus metrics scraping in Container Insights profile. Defaults to false i.e. Prometheus scraping is enabled"
             },
             "defaultValue": false
         },
@@ -68,6 +75,15 @@
             "metadata": {
                 "description": "Array of allowed syslog facilities"
             }
+        },
+        "syslogPort": {
+            "type": "int",
+            "metadata": {
+                "description": "Syslog host port used by the Container Insights agent. Defaults to 28330"
+            },
+            "minValue": 1,
+            "maxValue": 65535,
+            "defaultValue": 28330
         },
         "dataCollectionInterval": {
             "type": "string",
@@ -472,18 +488,15 @@
                             "type": "Microsoft.ContainerService/managedClusters",
                             "location": "[parameters('aksResourceLocation')]",
                             "tags": "[parameters('resourceTagValues')]",
-                            "apiVersion": "2023-04-01",
+                            "apiVersion": "2026-07-01",
                             "properties": {
-                                "mode": "Incremental",
-                                "id": "[parameters('aksResourceId')]",
-                                "addonProfiles": {
-                                    "omsagent": {
+                                "azureMonitorProfile": {
+                                    "containerInsights": {
                                         "enabled": true,
-                                        "config": {
-                                            "logAnalyticsWorkspaceResourceID": "[parameters('workspaceResourceId')]",
-                                            "useAADAuth": "true",
-                                            "enableRetinaNetworkFlags": "[if(parameters('enableRetinaNetworkFlowLogs'), 'true', 'false')]"
-                                        }
+                                        "logAnalyticsWorkspaceResourceId": "[parameters('workspaceResourceId')]",
+                                        "containerNetworkLogs": "[if(parameters('enableRetinaNetworkFlowLogs'), 'Enabled', 'Disabled')]",
+                                        "disablePrometheusMetricsScraping": "[parameters('disablePrometheusMetricsScraping')]",
+                                        "syslogPort": "[parameters('syslogPort')]"
                                     }
                                 }
                             }

@@ -11,3 +11,13 @@ If you are deploying a new AKS cluster using Terraform with ama logs addon enabl
 - If resource group already exists, please run `terraform import azurerm_resource_group.rg /subscriptions/<Subscription_ID>/resourceGroups/<Resource_Group_Name>` before terraform plan
 - Data will start flowing after 10 minutes since the cluster needs to be ready first
 - Workspace ID needs to match format '/subscriptions/12345678-1234-9876-4563-123456789012/resourceGroups/example-resource-group/providers/Microsoft.OperationalInsights/workspaces/workspaceValue'
+- The AKS cluster is managed by AzAPI through `azureMonitorProfile.containerInsights` using the GA `2026-07-01` API. AzureRM continues to manage the monitoring resources and read the cluster credentials.
+- If you already applied an older version of this template, the `moved` block in `main.tf` migrates the cluster's Terraform state from `azurerm_kubernetes_cluster.k8s` to `azapi_resource.k8s` during the next plan. This requires Terraform 1.8 or later and AzAPI 2.12 or later. Back up the state securely, run `terraform init -upgrade`, then `terraform plan -out main.tfplan`. The plan must report that `azurerm_kubernetes_cluster.k8s` has moved to `azapi_resource.k8s` and update it in place. Do not apply a plan that destroys or replaces the cluster.
+- If your tool cannot move state between providers (for example, OpenTofu), remove the `moved` block and migrate the state manually instead. This changes Terraform ownership, not the Azure cluster; do not run `terraform apply` between removing and importing the state entry.
+
+```sh
+terraform init -upgrade
+terraform state rm azurerm_kubernetes_cluster.k8s
+terraform import azapi_resource.k8s "<AKS_RESOURCE_ID>?api-version=2026-07-01"
+terraform plan -out main.tfplan
+```

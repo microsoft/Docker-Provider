@@ -80,7 +80,7 @@ var managedPrometheusModuleName = 'application-monitoring-prometheus-${uniqueStr
 var containerInsightsModuleName = 'application-monitoring-container-insights-${uniqueString(clusterResourceId)}'
 var unusedPrivateLinkScopeResourceId = '/subscriptions/${clusterSubscriptionId}/resourceGroups/${clusterResourceGroup}/providers/Microsoft.Insights/privateLinkScopes/not-used'
 var managedPrometheusTemplateUri = 'https://raw.githubusercontent.com/Azure/prometheus-collector/71a784f49d633b9f182a50c878c6dd48c75fd58d/AddonArmTemplate/FullAzureMonitorMetricsProfile.json'
-var containerInsightsTemplateUri = 'https://raw.githubusercontent.com/microsoft/Docker-Provider/804bfb6d7eec35d04312fd5713559c65ab1fa548/scripts/onboarding/aks/onboarding-using-msi-auth/existingClusterOnboarding.json'
+var containerInsightsTemplateUri = 'https://raw.githubusercontent.com/microsoft/Docker-Provider/1acbe3aeaa61b86a99aa745280e76fddf9b47bc6/scripts/onboarding/aks/onboarding-using-msi-auth/existingClusterOnboarding.json'
 var clusterState = reference(clusterResourceId, '2026-06-01', 'Full')
 var existingClusterTags = contains(clusterState, 'tags')
   ? empty(clusterState.tags)
