@@ -202,7 +202,6 @@ resource privateLinkScope_workspace 'Microsoft.Insights/privateLinkScopes/scoped
   }
 }
 
-#disable-next-line BCP081
 resource aks_monitoring_ci_profile 'Microsoft.ContainerService/managedClusters@2026-07-01' = {
   name: clusterName
   location: aksResourceLocation
